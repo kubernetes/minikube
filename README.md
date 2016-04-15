@@ -1,0 +1,2 @@
+# minikube
+Run Kubernetes locally
