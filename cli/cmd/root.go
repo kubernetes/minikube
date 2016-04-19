@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/kubernetes/minikube/cli/cluster"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +29,18 @@ var RootCmd = &cobra.Command{
 	Long: `Minikube is a CLI tool that provisions and manages single-node Kubernetes
 clusters optimized for development workflows.
 	`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
+			driverName := os.Getenv(localbinary.PluginEnvDriverName)
+			cluster.StartDriver(driverName)
+			return
+		}
+	},
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if os.Getenv(localbinary.PluginEnvKey) != localbinary.PluginEnvVal {
+			localbinary.CurrentBinaryIsDockerMachine = true
+		}
+	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
