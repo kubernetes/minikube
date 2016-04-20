@@ -21,6 +21,8 @@ Access the cluster with:
  First run the command from above:
 
     kubectl config set-cluster localkube --insecure-skip-tls-verify=true --server=http://192.168.99.100:8080
+    kubectl config set-context localkube --cluster=localkube
+    kubectl config use-context localkube
 
 Then use kubectl normally:
 
