@@ -41,11 +41,18 @@ var Minipath = filepath.Join(os.Getenv("HOME"), "minikube")
 func StartHost(api *libmachine.Client) (*host.Host, error) {
 	setupDirs()
 
-	h, err := getOrCreateHost(api)
-	if err != nil {
-		log.Panicf("Error getting host: ", err)
+	if exists, err := api.Exists(machineName); err != nil {
+		return nil, fmt.Errorf("Error checking if host exists: %s", err)
+	} else if exists {
+		log.Println("Machine exists!")
+		h, err := api.Load(machineName)
+		if err != nil {
+			return nil, fmt.Errorf("Error loading existing host.")
+		}
+		return h, nil
+	} else {
+		return createHost(api)
 	}
-	return h, nil
 }
 
 // StartCluster starts as k8s cluster on the specified Host.
@@ -85,21 +92,6 @@ func StartCluster(h *host.Host) (string, error) {
 		return "", err
 	}
 	return kubeHost, nil
-}
-
-func getOrCreateHost(api *libmachine.Client) (*host.Host, error) {
-	if exists, err := api.Exists(machineName); err != nil {
-		return nil, fmt.Errorf("Error checking if host exists: %s", err)
-	} else if exists {
-		log.Println("Machine exists!")
-		h, err := api.Load(machineName)
-		if err != nil {
-			return nil, fmt.Errorf("Error loading existing host.")
-		}
-		return h, nil
-	} else {
-		return createHost(api)
-	}
 }
 
 func createHost(api *libmachine.Client) (*host.Host, error) {
