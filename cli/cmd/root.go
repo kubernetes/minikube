@@ -18,7 +18,7 @@ import (
 	"os"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"github.com/kubernetes/minikube/cli/cluster"
+	"github.com/kubernetes/minikube/cli/machine"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ clusters optimized for development workflows.
 	Run: func(cmd *cobra.Command, args []string) {
 		if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
 			driverName := os.Getenv(localbinary.PluginEnvDriverName)
-			cluster.StartDriver(driverName)
+			machine.StartDriver(driverName)
 			return
 		}
 	},

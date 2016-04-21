@@ -15,7 +15,9 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/kubernetes/minikube/cli/cluster"
 	"github.com/spf13/cobra"
 )
@@ -26,13 +28,25 @@ var startCmd = &cobra.Command{
 	Short: "Starts a local kubernetes cluster.",
 	Long: `Starts a local kubernetes cluster using Virtualbox. This command
 assumes you already have Virtualbox installed.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Starting local Kubernetes cluster...")
-		err := cluster.StartHost()
-		if err != nil {
-			fmt.Println("Error starting host: ", err)
-		}
-	},
+	Run: run,
+}
+
+func run(cmd *cobra.Command, args []string) {
+	fmt.Println("Starting local Kubernetes cluster...")
+	api := libmachine.NewClient(cluster.Minipath, cluster.MakeMiniPath("certs"))
+	defer api.Close()
+	host, err := cluster.StartHost(api)
+	if err != nil {
+		fmt.Println("Error starting host: ", err)
+	}
+	kubeHost, err := cluster.StartCluster(host)
+	if err != nil {
+		fmt.Println("Error starting cluster: ", err)
+	}
+	log.Printf("Kubernetes is available at %s.\n", kubeHost)
+	log.Println("Run this command to use the cluster: ")
+	log.Printf("kubectl config set-cluster localkube --insecure-skip-tls-verify=true --server=%s\n", kubeHost)
+
 }
 
 func init() {

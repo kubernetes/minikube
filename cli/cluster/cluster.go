@@ -22,11 +22,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
@@ -34,80 +32,59 @@ import (
 	"rsprd.com/localkube/pkg/localkubectl"
 )
 
-const machineName = "mymachine"
+const machineName = "minikubeVM"
 
 // Fix for windows
-var minipath = filepath.Join(os.Getenv("HOME"), "minikube")
-
-// StartDriver starts the specified driver.
-func StartDriver(driverName string) {
-	switch driverName {
-	case "virtualbox":
-		plugin.RegisterDriver(virtualbox.NewDriver("", ""))
-	default:
-		fmt.Fprintf(os.Stderr, "Unsupported driver: %s\n", driverName)
-		os.Exit(1)
-	}
-}
+var Minipath = filepath.Join(os.Getenv("HOME"), "minikube")
 
 // StartHost starts a host VM.
-func StartHost() error {
+func StartHost(api *libmachine.Client) (*host.Host, error) {
 	setupDirs()
-	api := libmachine.NewClient(minipath, makeMiniPath("certs"))
-	defer api.Close()
 
 	h, err := getOrCreateHost(api)
 	if err != nil {
 		log.Panicf("Error getting host: ", err)
 	}
+	return h, nil
+}
+
+// StartCluster starts as k8s cluster on the specified Host.
+func StartCluster(h *host.Host) (string, error) {
 	host, err := h.Driver.GetURL()
 	if err != nil {
-		log.Panicf("Error getting URL: ", err)
+		return "", err
 	}
+	kubeHost := strings.Replace(host, "tcp://", "http://", -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
+
 	os.Setenv("DOCKER_HOST", host)
-	os.Setenv("DOCKER_CERT_PATH", makeMiniPath("certs"))
+	os.Setenv("DOCKER_CERT_PATH", MakeMiniPath("certs"))
 	os.Setenv("DOCKER_TLS_VERIFY", "1")
 	ctlr, err := localkubectl.NewControllerFromEnv(os.Stdout)
 	if err != nil {
 		log.Panicf("Error creating controller: ", err)
 	}
 
-	startCluster := func() error {
-		ctrID, running, err := ctlr.OnlyLocalkubeCtr()
+	// Look for an existing container
+	ctrID, running, err := ctlr.OnlyLocalkubeCtr()
+	if running {
+		log.Println("Localkube is already running")
+		return kubeHost, nil
+	}
+	if err == localkubectl.ErrNoContainer {
+		// If container doesn't exist, create
+		ctrID, running, err = ctlr.CreateCtr(localkubectl.LocalkubeContainerName, "latest")
 		if err != nil {
-			if err == localkubectl.ErrNoContainer {
-				// if container doesn't exist, create
-				ctrID, running, err = ctlr.CreateCtr(localkubectl.LocalkubeContainerName, "latest")
-				if err != nil {
-					return err
-				}
-			} else {
-				// stop for all other errors
-				return err
-			}
+			return "", err
 		}
-
-		// start container if not running
-		if !running {
-			err = ctlr.StartCtr(ctrID, "")
-			if err != nil {
-				return err
-			}
-		} else {
-			log.Println("Localkube is already running")
-		}
-		return nil
+		return kubeHost, nil
 	}
-	if err := startCluster(); err != nil {
-		log.Println("Error starting cluster: ", err)
-	} else {
-		kubeHost := strings.Replace(host, "tcp://", "http://", -1)
-		kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
-		log.Printf("Kubernetes is available at %s.\n", kubeHost)
-		log.Println("Run this command to use the cluster: ")
-		log.Printf("kubectl config set-cluster localkube --insecure-skip-tls-verify=true --server=%s\n", kubeHost)
+	// Start container.
+	err = ctlr.StartCtr(ctrID, "")
+	if err != nil {
+		return "", err
 	}
-	return nil
+	return kubeHost, nil
 }
 
 func getOrCreateHost(api *libmachine.Client) (*host.Host, error) {
@@ -128,7 +105,7 @@ func getOrCreateHost(api *libmachine.Client) (*host.Host, error) {
 func createHost(api *libmachine.Client) (*host.Host, error) {
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: machineName,
-		StorePath:   minipath,
+		StorePath:   Minipath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Error attempting to marshal bare driver data: %s", err)
@@ -158,7 +135,7 @@ func createHost(api *libmachine.Client) (*host.Host, error) {
 }
 
 func setupDirs() error {
-	for _, path := range [...]string{minipath, makeMiniPath("certs"), makeMiniPath("machines")} {
+	for _, path := range [...]string{Minipath, MakeMiniPath("certs"), MakeMiniPath("machines")} {
 		if err := os.MkdirAll(path, 0777); err != nil {
 			return fmt.Errorf("Error creating minikube directory: ", err)
 		}
@@ -167,24 +144,24 @@ func setupDirs() error {
 }
 
 func certPath(fileName string) string {
-	return filepath.Join(minipath, "certs", fileName)
+	return filepath.Join(Minipath, "certs", fileName)
 }
 
-func makeMiniPath(fileName string) string {
-	return filepath.Join(minipath, fileName)
+func MakeMiniPath(fileName string) string {
+	return filepath.Join(Minipath, fileName)
 }
 
 func setHostOptions(h *host.Host) {
 	h.HostOptions = &host.Options{
 		AuthOptions: &auth.Options{
-			CertDir:          minipath,
+			CertDir:          Minipath,
 			CaCertPath:       certPath("ca.pem"),
 			CaPrivateKeyPath: certPath("ca-key.pem"),
 			ClientCertPath:   certPath("cert.pem"),
 			ClientKeyPath:    certPath("key.pem"),
 			ServerCertPath:   certPath("server.pem"),
 			ServerKeyPath:    certPath("server-key.pem"),
-			StorePath:        minipath,
+			StorePath:        Minipath,
 			ServerCertSANs:   []string{},
 		},
 		EngineOptions: &engine.Options{
