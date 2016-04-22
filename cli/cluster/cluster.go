@@ -38,7 +38,7 @@ const machineName = "minikubeVM"
 var Minipath = filepath.Join(os.Getenv("HOME"), "minikube")
 
 // StartHost starts a host VM.
-func StartHost(api *libmachine.Client) (*host.Host, error) {
+func StartHost(api libmachine.API) (*host.Host, error) {
 	setupDirs()
 
 	if exists, err := api.Exists(machineName); err != nil {
@@ -69,7 +69,7 @@ func StartCluster(h *host.Host) (string, error) {
 	os.Setenv("DOCKER_TLS_VERIFY", "1")
 	ctlr, err := localkubectl.NewControllerFromEnv(os.Stdout)
 	if err != nil {
-		log.Panicf("Error creating controller: ", err)
+		log.Panicf("Error creating controller: %s", err)
 	}
 
 	// Look for an existing container
@@ -94,7 +94,7 @@ func StartCluster(h *host.Host) (string, error) {
 	return kubeHost, nil
 }
 
-func createHost(api *libmachine.Client) (*host.Host, error) {
+func createHost(api libmachine.API) (*host.Host, error) {
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
 		MachineName: machineName,
 		StorePath:   Minipath,
@@ -129,7 +129,7 @@ func createHost(api *libmachine.Client) (*host.Host, error) {
 func setupDirs() error {
 	for _, path := range [...]string{Minipath, MakeMiniPath("certs"), MakeMiniPath("machines")} {
 		if err := os.MkdirAll(path, 0777); err != nil {
-			return fmt.Errorf("Error creating minikube directory: ", err)
+			return fmt.Errorf("Error creating minikube directory: %s", err)
 		}
 	}
 	return nil
