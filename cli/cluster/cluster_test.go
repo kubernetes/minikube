@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/kubernetes/minikube/cli/machine"
+	"github.com/kubernetes/minikube/cli/tests"
 )
 
 func TestCreateHost(t *testing.T) {
-	api := &machine.MockAPI{}
+	api := &tests.MockAPI{}
 
 	exists, _ := api.Exists(machineName)
 	if exists {

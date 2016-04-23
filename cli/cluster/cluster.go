@@ -29,23 +29,19 @@ import (
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/swarm"
+	"github.com/kubernetes/minikube/cli/constants"
 	"rsprd.com/localkube/pkg/localkubectl"
 )
-
-const machineName = "minikubeVM"
-
-// Fix for windows
-var Minipath = filepath.Join(os.Getenv("HOME"), "minikube")
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API) (*host.Host, error) {
 	setupDirs()
 
-	if exists, err := api.Exists(machineName); err != nil {
+	if exists, err := api.Exists(constants.MachineName); err != nil {
 		return nil, fmt.Errorf("Error checking if host exists: %s", err)
 	} else if exists {
 		log.Println("Machine exists!")
-		h, err := api.Load(machineName)
+		h, err := api.Load(constants.MachineName)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading existing host.")
 		}
@@ -65,7 +61,7 @@ func StartCluster(h *host.Host) (string, error) {
 	kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
 
 	os.Setenv("DOCKER_HOST", host)
-	os.Setenv("DOCKER_CERT_PATH", MakeMiniPath("certs"))
+	os.Setenv("DOCKER_CERT_PATH", constants.MakeMiniPath("certs"))
 	os.Setenv("DOCKER_TLS_VERIFY", "1")
 	ctlr, err := localkubectl.NewControllerFromEnv(os.Stdout)
 	if err != nil {
@@ -96,8 +92,8 @@ func StartCluster(h *host.Host) (string, error) {
 
 func createHost(api libmachine.API) (*host.Host, error) {
 	rawDriver, err := json.Marshal(&drivers.BaseDriver{
-		MachineName: machineName,
-		StorePath:   Minipath,
+		MachineName: constants.MachineName,
+		StorePath:   constants.Minipath,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("Error attempting to marshal bare driver data: %s", err)
@@ -127,7 +123,12 @@ func createHost(api libmachine.API) (*host.Host, error) {
 }
 
 func setupDirs() error {
-	for _, path := range [...]string{Minipath, MakeMiniPath("certs"), MakeMiniPath("machines")} {
+	dirs := [...]string{
+		constants.Minipath,
+		constants.MakeMiniPath("certs"),
+		constants.MakeMiniPath("machines")}
+
+	for _, path := range dirs {
 		if err := os.MkdirAll(path, 0777); err != nil {
 			return fmt.Errorf("Error creating minikube directory: %s", err)
 		}
@@ -136,24 +137,20 @@ func setupDirs() error {
 }
 
 func certPath(fileName string) string {
-	return filepath.Join(Minipath, "certs", fileName)
-}
-
-func MakeMiniPath(fileName string) string {
-	return filepath.Join(Minipath, fileName)
+	return filepath.Join(constants.Minipath, "certs", fileName)
 }
 
 func setHostOptions(h *host.Host) {
 	h.HostOptions = &host.Options{
 		AuthOptions: &auth.Options{
-			CertDir:          Minipath,
+			CertDir:          constants.Minipath,
 			CaCertPath:       certPath("ca.pem"),
 			CaPrivateKeyPath: certPath("ca-key.pem"),
 			ClientCertPath:   certPath("cert.pem"),
 			ClientKeyPath:    certPath("key.pem"),
 			ServerCertPath:   certPath("server.pem"),
 			ServerKeyPath:    certPath("server-key.pem"),
-			StorePath:        Minipath,
+			StorePath:        constants.Minipath,
 			ServerCertSANs:   []string{},
 		},
 		EngineOptions: &engine.Options{

@@ -1,82 +1,20 @@
-package machine
+package tests
 
 import (
 	"encoding/json"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
 )
 
-type MockAPI struct {
-	Hosts []*host.Host
-}
-
-type MockDriver struct {
-	drivers.BaseDriver
-	CurrentState state.State
-}
-
-func (driver *MockDriver) Create() error {
-	driver.CurrentState = state.Running
-	return nil
-}
-
-func (driver *MockDriver) GetCreateFlags() []mcnflag.Flag {
-	return []mcnflag.Flag{}
-}
-
-func (driver *MockDriver) GetSSHHostname() (string, error) {
-	return "", nil
-}
-
-func (driver *MockDriver) GetState() (state.State, error) {
-	return driver.CurrentState, nil
-}
-
-func (driver *MockDriver) GetURL() (string, error) {
-	return "", nil
-}
-
-func (driver *MockDriver) Kill() error {
-	driver.CurrentState = state.Stopped
-	return nil
-}
-
-func (driver *MockDriver) Remove() error {
-	return nil
-}
-
-func (driver *MockDriver) Restart() error {
-	driver.CurrentState = state.Running
-	return nil
-}
-
-func (driver *MockDriver) SetConfigFromFlags(opts drivers.DriverOptions) error {
-	return nil
-}
-
-func (driver *MockDriver) Start() error {
-	driver.CurrentState = state.Running
-	return nil
-}
-
-func (driver *MockDriver) Stop() error {
-	driver.CurrentState = state.Stopped
-	return nil
-}
-
-// func (api *MockAPI) NewPluginDriver(string, []byte) (drivers.Driver, error) {
-// 	return nil, nil
-// }
-
+// Close closes the API.
 func (api *MockAPI) Close() error {
 	return nil
 }
 
+// NewHost creates a new host.Host instance.
 func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
 	var driver MockDriver
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
@@ -91,10 +29,12 @@ func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, er
 	return h, nil
 }
 
+// Create creates the actual host.
 func (api *MockAPI) Create(h *host.Host) error {
 	return h.Driver.Create()
 }
 
+// Exists determines if the host already exists.
 func (api *MockAPI) Exists(name string) (bool, error) {
 	for _, host := range api.Hosts {
 		if name == host.Name {
@@ -105,10 +45,12 @@ func (api *MockAPI) Exists(name string) (bool, error) {
 	return false, nil
 }
 
+// List the existing hosts.
 func (api *MockAPI) List() ([]string, error) {
 	return []string{}, nil
 }
 
+// Load loads a host from disk.
 func (api *MockAPI) Load(name string) (*host.Host, error) {
 	for _, host := range api.Hosts {
 		if name == host.Name {
@@ -121,6 +63,7 @@ func (api *MockAPI) Load(name string) (*host.Host, error) {
 	}
 }
 
+// Remove a host.
 func (api *MockAPI) Remove(name string) error {
 	newHosts := []*host.Host{}
 
@@ -135,21 +78,25 @@ func (api *MockAPI) Remove(name string) error {
 	return nil
 }
 
+// Save saves a host to disk.
 func (api *MockAPI) Save(host *host.Host) error {
 	api.Hosts = append(api.Hosts, host)
 	return nil
 }
 
+// GetMachinesDir returns the directory to store machines in.
 func (api MockAPI) GetMachinesDir() string {
 	return ""
 }
 
+// State returns the state of a host.
 func State(api libmachine.API, name string) state.State {
 	host, _ := api.Load(name)
 	machineState, _ := host.Driver.GetState()
 	return machineState
 }
 
+// Exists tells whether a named host exists.
 func Exists(api libmachine.API, name string) bool {
 	exists, _ := api.Exists(name)
 	return exists

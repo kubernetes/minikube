@@ -19,6 +19,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/kubernetes/minikube/cli/cluster"
+	"github.com/kubernetes/minikube/cli/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -33,7 +34,7 @@ assumes you already have Virtualbox installed.`,
 
 func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Starting local Kubernetes cluster...")
-	api := libmachine.NewClient(cluster.Minipath, cluster.MakeMiniPath("certs"))
+	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 	defer api.Close()
 	host, err := cluster.StartHost(api)
 	if err != nil {
