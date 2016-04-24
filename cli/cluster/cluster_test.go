@@ -4,13 +4,14 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
+	"github.com/kubernetes/minikube/cli/constants"
 	"github.com/kubernetes/minikube/cli/tests"
 )
 
 func TestCreateHost(t *testing.T) {
 	api := &tests.MockAPI{}
 
-	exists, _ := api.Exists(machineName)
+	exists, _ := api.Exists(constants.MachineName)
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
@@ -18,12 +19,12 @@ func TestCreateHost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, _ = api.Exists(machineName)
+	exists, _ = api.Exists(constants.MachineName)
 	if !exists {
 		t.Fatal("Machine does not exist, but should.")
 	}
 
-	h, err := api.Load(machineName)
+	h, err := api.Load(constants.MachineName)
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}

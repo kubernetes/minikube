@@ -17,8 +17,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"github.com/kubernetes/minikube/cli/machine"
 	"github.com/spf13/cobra"
 )
 
@@ -29,8 +27,6 @@ var RootCmd = &cobra.Command{
 	Long: `Minikube is a CLI tool that provisions and manages single-node Kubernetes
 clusters optimized for development workflows.
 	`,
-	Run:              runRoot,
-	PersistentPreRun: preRunRoot,
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -39,24 +35,6 @@ func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
-	}
-}
-
-func runRoot(cmd *cobra.Command, args []string) {
-	// The libmachine driver model attempts to start the same binary it's run from as a "driver" process.
-	// If this environment varialbe is set, we have to act as a "driver" isntead of a CLI.
-	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
-		driverName := os.Getenv(localbinary.PluginEnvDriverName)
-		machine.StartDriver(driverName)
-		return
-	}
-}
-
-func preRunRoot(cmd *cobra.Command, args []string) {
-	// Libmachine code uses this boolean to indicate that this process should run as the main CLI, not as
-	// a "driver".
-	if os.Getenv(localbinary.PluginEnvKey) != localbinary.PluginEnvVal {
-		localbinary.CurrentBinaryIsDockerMachine = true
 	}
 }
 

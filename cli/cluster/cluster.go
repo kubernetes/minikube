@@ -22,9 +22,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
@@ -91,18 +91,16 @@ func StartCluster(h *host.Host) (string, error) {
 }
 
 func createHost(api libmachine.API) (*host.Host, error) {
-	rawDriver, err := json.Marshal(&drivers.BaseDriver{
-		MachineName: constants.MachineName,
-		StorePath:   constants.Minipath,
-	})
+	driver := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
+	data, err := json.Marshal(driver)
 	if err != nil {
-		return nil, fmt.Errorf("Error attempting to marshal bare driver data: %s", err)
+		return nil, err
 	}
 
 	driverName := "virtualbox"
-	h, err := api.NewHost(driverName, rawDriver)
+	h, err := api.NewHost(driverName, data)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting new host: %s", err)
+		return nil, fmt.Errorf("Error creating new host: %s", err)
 	}
 
 	setHostOptions(h)
