@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -31,8 +30,6 @@ import (
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API) (*host.Host, error) {
-	setupDirs()
-
 	if exists, err := api.Exists(constants.MachineName); err != nil {
 		return nil, fmt.Errorf("Error checking if host exists: %s", err)
 	} else if exists {
@@ -76,12 +73,11 @@ func StartCluster(h *host.Host) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return kubeHost, nil
-	}
-	// Start container.
-	err = ctlr.StartCtr(ctrID, "")
-	if err != nil {
-		return "", err
+		// Start container.
+		err = ctlr.StartCtr(ctrID, "")
+		if err != nil {
+			return "", err
+		}
 	}
 	return kubeHost, nil
 }
@@ -113,22 +109,4 @@ func createHost(api libmachine.API) (*host.Host, error) {
 		return nil, fmt.Errorf("Error attempting to save store: %s", err)
 	}
 	return h, nil
-}
-
-func setupDirs() error {
-	dirs := [...]string{
-		constants.Minipath,
-		constants.MakeMiniPath("certs"),
-		constants.MakeMiniPath("machines")}
-
-	for _, path := range dirs {
-		if err := os.MkdirAll(path, 0777); err != nil {
-			return fmt.Errorf("Error creating minikube directory: %s", err)
-		}
-	}
-	return nil
-}
-
-func certPath(fileName string) string {
-	return filepath.Join(constants.Minipath, "certs", fileName)
 }

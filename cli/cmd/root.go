@@ -15,8 +15,10 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/kubernetes/minikube/cli/constants"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +29,18 @@ var RootCmd = &cobra.Command{
 	Long: `Minikube is a CLI tool that provisions and manages single-node Kubernetes
 clusters optimized for development workflows.
 	`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		dirs := [...]string{
+			constants.Minipath,
+			constants.MakeMiniPath("certs"),
+			constants.MakeMiniPath("machines")}
+
+		for _, path := range dirs {
+			if err := os.MkdirAll(path, 0777); err != nil {
+				log.Panicf("Error creating minikube directory: %s", err)
+			}
+		}
+	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.

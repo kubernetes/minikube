@@ -33,6 +33,7 @@ assumes you already have Virtualbox installed.`,
 }
 
 func runStart(cmd *cobra.Command, args []string) {
+
 	fmt.Println("Starting local Kubernetes cluster...")
 	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 	defer api.Close()
@@ -47,7 +48,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	log.Printf("Kubernetes is available at %s.\n", kubeHost)
 	log.Println("Run this command to use the cluster: ")
 	log.Printf("kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=%s\n", kubeHost)
-
 }
 
 func init() {
