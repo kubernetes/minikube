@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
@@ -21,10 +22,11 @@ func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, er
 		return nil, err
 	}
 	h := &host.Host{
-		DriverName: driverName,
-		RawDriver:  rawDriver,
-		Driver:     &MockDriver{},
-		Name:       driver.GetMachineName(),
+		DriverName:  driverName,
+		RawDriver:   rawDriver,
+		Driver:      &MockDriver{},
+		Name:        driver.GetMachineName(),
+		HostOptions: &host.Options{AuthOptions: &auth.Options{}},
 	}
 	return h, nil
 }

@@ -24,11 +24,7 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/auth"
-	"github.com/docker/machine/libmachine/drivers/rpc"
-	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/swarm"
 	"github.com/kubernetes/minikube/cli/constants"
 	"rsprd.com/localkube/pkg/localkubectl"
 )
@@ -92,6 +88,7 @@ func StartCluster(h *host.Host) (string, error) {
 
 func createHost(api libmachine.API) (*host.Host, error) {
 	driver := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
+	driver.Boot2DockerURL = "https://storage.googleapis.com/tinykube/boot2docker.iso"
 	data, err := json.Marshal(driver)
 	if err != nil {
 		return nil, err
@@ -103,10 +100,8 @@ func createHost(api libmachine.API) (*host.Host, error) {
 		return nil, fmt.Errorf("Error creating new host: %s", err)
 	}
 
-	setHostOptions(h)
-	if err := setDriverOptions(h); err != nil {
-		return nil, fmt.Errorf("Error setting driver options: %s", err)
-	}
+	h.HostOptions.AuthOptions.CertDir = constants.Minipath
+	h.HostOptions.AuthOptions.StorePath = constants.Minipath
 
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client
@@ -136,56 +131,4 @@ func setupDirs() error {
 
 func certPath(fileName string) string {
 	return filepath.Join(constants.Minipath, "certs", fileName)
-}
-
-func setHostOptions(h *host.Host) {
-	h.HostOptions = &host.Options{
-		AuthOptions: &auth.Options{
-			CertDir:          constants.Minipath,
-			CaCertPath:       certPath("ca.pem"),
-			CaPrivateKeyPath: certPath("ca-key.pem"),
-			ClientCertPath:   certPath("cert.pem"),
-			ClientKeyPath:    certPath("key.pem"),
-			ServerCertPath:   certPath("server.pem"),
-			ServerKeyPath:    certPath("server-key.pem"),
-			StorePath:        constants.Minipath,
-			ServerCertSANs:   []string{},
-		},
-		EngineOptions: &engine.Options{
-			TLSVerify:        true,
-			ArbitraryFlags:   []string{},
-			Env:              []string{},
-			InsecureRegistry: []string{},
-			Labels:           []string{},
-			RegistryMirror:   []string{},
-			StorageDriver:    "",
-			InstallURL:       "https://get.docker.com",
-		},
-		SwarmOptions: &swarm.Options{
-			IsSwarm:        false,
-			Image:          "",
-			Master:         false,
-			Discovery:      "",
-			Address:        "",
-			Host:           "",
-			Strategy:       "",
-			ArbitraryFlags: []string{},
-			IsExperimental: false,
-		},
-	}
-}
-
-func setDriverOptions(h *host.Host) error {
-	driverOpts := rpcdriver.RPCFlags{
-		Values: make(map[string]interface{}),
-	}
-	mcnFlags := h.Driver.GetCreateFlags()
-	for _, f := range mcnFlags {
-		driverOpts.Values[f.String()] = f.Default()
-	}
-	driverOpts.Values["virtualbox-boot2docker-url"] = "https://storage.googleapis.com/tinykube/boot2docker.iso"
-	if err := h.Driver.SetConfigFromFlags(driverOpts); err != nil {
-		return fmt.Errorf("Error setting machine configuration from flags provided: %s", err)
-	}
-	return nil
 }
