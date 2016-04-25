@@ -16,6 +16,7 @@ package cmd
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/kubernetes/minikube/cli/cluster"
@@ -39,11 +40,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	defer api.Close()
 	host, err := cluster.StartHost(api)
 	if err != nil {
-		fmt.Println("Error starting host: ", err)
+		log.Println("Error starting host: ", err)
+		os.Exit(1)
 	}
 	kubeHost, err := cluster.StartCluster(host)
 	if err != nil {
-		fmt.Println("Error starting cluster: ", err)
+		log.Println("Error starting cluster: ", err)
+		os.Exit(1)
 	}
 	log.Printf("Kubernetes is available at %s.\n", kubeHost)
 	log.Println("Run this command to use the cluster: ")

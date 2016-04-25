@@ -18,9 +18,17 @@ import (
 	"log"
 	"os"
 
+	"github.com/docker/machine/drivers/virtualbox"
+	"github.com/docker/machine/libmachine/drivers/plugin"
+	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/kubernetes/minikube/cli/constants"
 	"github.com/spf13/cobra"
 )
+
+var dirs = [...]string{
+	constants.Minipath,
+	constants.MakeMiniPath("certs"),
+	constants.MakeMiniPath("machines")}
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -30,10 +38,18 @@ var RootCmd = &cobra.Command{
 clusters optimized for development workflows.
 	`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		dirs := [...]string{
-			constants.Minipath,
-			constants.MakeMiniPath("certs"),
-			constants.MakeMiniPath("machines")}
+		localbinary.CurrentBinaryIsDockerMachine = true
+		if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
+			driverName := os.Getenv(localbinary.PluginEnvDriverName)
+			switch driverName {
+			case "virtualbox":
+				plugin.RegisterDriver(virtualbox.NewDriver("", ""))
+			default:
+				fmt.Fprintf(os.Stderr, "Unsupported driver: %s\n", driverName)
+				os.Exit(1)
+			}
+			return
+		}
 
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
