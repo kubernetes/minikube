@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.6
+# We shouldn't need to install anything because we use vendoring.
+install:
+- echo "Don't run anything."
+
+# Don't test vendored code.
+script: go test $(go list ./... | grep -v /vendor/)
