@@ -2,6 +2,8 @@
 
 Run Kubernetes locally
 
+[![Build Status](https://travis-ci.org/kubernetes/minikube.svg?branch=master)](https://travis-ci.org/kubernetes/minikube)
+
 ## Background
 
 Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs
