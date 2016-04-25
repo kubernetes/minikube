@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -25,7 +24,6 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/kubernetes/minikube/cli/constants"
-	"rsprd.com/localkube/pkg/localkubectl"
 )
 
 // StartHost starts a host VM.
@@ -53,32 +51,34 @@ func StartCluster(h *host.Host) (string, error) {
 	kubeHost := strings.Replace(host, "tcp://", "http://", -1)
 	kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
 
-	os.Setenv("DOCKER_HOST", host)
-	os.Setenv("DOCKER_CERT_PATH", constants.MakeMiniPath("certs"))
-	os.Setenv("DOCKER_TLS_VERIFY", "1")
-	ctlr, err := localkubectl.NewControllerFromEnv(os.Stdout)
-	if err != nil {
-		log.Panicf("Error creating controller: %s", err)
+	for _, cmd := range []string{
+		// Download and install weave, if it doesn't exist.
+		`if [ ! -e /usr/local/bin/weave ];
+		 then
+		   sudo curl -L git.io/weave -o /usr/local/bin/weave
+		   sudo chmod a+x /usr/local/bin/weave;
+		 fi`,
+		// Download and install localkube, if it doesn't exist yet.
+		`if [ ! -e /usr/local/bin/localkube ];
+		 then
+		   sudo curl -L https://github.com/redspread/localkube/releases/download/v1.2.1-v1/localkube-linux -o /usr/local/bin/localkube
+		   sudo chmod a+x /usr/local/bin/localkube;
+		 fi`,
+		// Start weave.
+		"weave launch-router",
+		"weave launch-proxy --without-dns --rewrite-inspect",
+		"weave expose -h \"localkube.weave.local\"",
+		// Localkube assumes containerized kubelet, which looks at /rootfs.
+		"if [ ! -e /rootfs ]; then sudo ln -s / /rootfs; fi",
+		// Run with nohup so it stays up. Redirect logs to useful places.
+		"PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start > /var/log/localkube.out 2> /var/log/localkube.err < /dev/null &"} {
+		output, err := h.RunSSHCommand(cmd)
+		log.Println(output)
+		if err != nil {
+			return "", err
+		}
 	}
 
-	// Look for an existing container
-	ctrID, running, err := ctlr.OnlyLocalkubeCtr()
-	if running {
-		log.Println("Localkube is already running")
-		return kubeHost, nil
-	}
-	if err == localkubectl.ErrNoContainer {
-		// If container doesn't exist, create
-		ctrID, running, err = ctlr.CreateCtr(localkubectl.LocalkubeContainerName, "latest")
-		if err != nil {
-			return "", err
-		}
-		// Start container.
-		err = ctlr.StartCtr(ctrID, "")
-		if err != nil {
-			return "", err
-		}
-	}
 	return kubeHost, nil
 }
 
