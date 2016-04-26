@@ -2,6 +2,7 @@ package cluster
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine/host"
@@ -155,5 +156,79 @@ func TestStopHost(t *testing.T) {
 	}
 	if s, _ := h.Driver.GetState(); s != state.Stopped {
 		t.Fatalf("Machine not stopped. Currently in state: %s", s)
+	}
+}
+
+func TestMultiError(t *testing.T) {
+	m := multiError{}
+
+	m.Collect(fmt.Errorf("Error 1"))
+	m.Collect(fmt.Errorf("Error 2"))
+
+	err := m.ToError()
+	expected := `Error 1
+Error 2`
+	if err.Error() != expected {
+		t.Fatalf("%s != %s", err, expected)
+	}
+
+	m = multiError{}
+	if err := m.ToError(); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+}
+
+func TestDeleteHost(t *testing.T) {
+	api := &tests.MockAPI{}
+	createHost(api)
+
+	if err := DeleteHost(api); err != nil {
+		t.Fatalf("Unexpected error deleting host: %s", err)
+	}
+}
+
+func TestDeleteHostErrorDeletingVM(t *testing.T) {
+	api := &tests.MockAPI{}
+	h, _ := createHost(api)
+
+	d := &tests.MockDriver{RemoveError: true}
+
+	h.Driver = d
+
+	if err := DeleteHost(api); err == nil {
+		t.Fatal("Expected error deleting host.")
+	}
+}
+
+func TestDeleteHostErrorDeletingFiles(t *testing.T) {
+	api := &tests.MockAPI{RemoveError: true}
+	createHost(api)
+
+	if err := DeleteHost(api); err == nil {
+		t.Fatal("Expected error deleting host.")
+	}
+}
+
+func TestDeleteHostMultipleErrors(t *testing.T) {
+	api := &tests.MockAPI{
+		RemoveError: true,
+	}
+	h, _ := createHost(api)
+
+	d := &tests.MockDriver{RemoveError: true}
+
+	h.Driver = d
+
+	err := DeleteHost(api)
+
+	if err == nil {
+		t.Fatal("Expected error deleting host, didn't get one.")
+	}
+
+	expectedErrors := []string{"Error removing minikubeVM", "Error deleting machine"}
+	for _, expectedError := range expectedErrors {
+		if !strings.Contains(err.Error(), expectedError) {
+			t.Fatalf("Error %s expected to contain: %s. ", err)
+		}
 	}
 }

@@ -15,6 +15,7 @@ import (
 type MockAPI struct {
 	Hosts       []*host.Host
 	CreateError bool
+	RemoveError bool
 }
 
 // Close closes the API.
@@ -77,6 +78,10 @@ func (api *MockAPI) Load(name string) (*host.Host, error) {
 
 // Remove a host.
 func (api *MockAPI) Remove(name string) error {
+	if api.RemoveError {
+		return fmt.Errorf("Error removing %s", name)
+	}
+
 	newHosts := []*host.Host{}
 
 	for _, host := range api.Hosts {
