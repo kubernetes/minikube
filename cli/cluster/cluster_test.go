@@ -93,6 +93,33 @@ func TestStartHostExists(t *testing.T) {
 	if h.Name != constants.MachineName {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
+	if s, _ := h.Driver.GetState(); s != state.Running {
+		t.Fatalf("Machine not started.")
+	}
+}
+
+func TestStartStoppedHost(t *testing.T) {
+	api := &tests.MockAPI{}
+	// Create an initial host.
+	h, err := createHost(api)
+	if err != nil {
+		t.Fatalf("Error creating host: %v", err)
+	}
+	d := tests.MockDriver{}
+	h.Driver = &d
+	d.CurrentState = state.Stopped
+
+	h, err = StartHost(api)
+	if err != nil {
+		t.Fatal("Error starting host.")
+	}
+	if h.Name != constants.MachineName {
+		t.Fatalf("Machine created with incorrect name: %s", h.Name)
+	}
+
+	if s, _ := h.Driver.GetState(); s != state.Running {
+		t.Fatalf("Machine not started.")
+	}
 }
 
 func TestStartHost(t *testing.T) {
@@ -107,5 +134,26 @@ func TestStartHost(t *testing.T) {
 	}
 	if exists, _ := api.Exists(h.Name); !exists {
 		t.Fatal("Machine not saved.")
+	}
+	if s, _ := h.Driver.GetState(); s != state.Running {
+		t.Fatalf("Machine not started.")
+	}
+}
+
+func TestStopHostError(t *testing.T) {
+	api := &tests.MockAPI{}
+	if err := StopHost(api); err == nil {
+		t.Fatal("An error should be thrown when stopping non-existing machine.")
+	}
+}
+
+func TestStopHost(t *testing.T) {
+	api := &tests.MockAPI{}
+	h, _ := createHost(api)
+	if err := StopHost(api); err != nil {
+		t.Fatal("An error should be thrown when stopping non-existing machine.")
+	}
+	if s, _ := h.Driver.GetState(); s != state.Stopped {
+		t.Fatalf("Machine not stopped. Currently in state: %s", s)
 	}
 }
