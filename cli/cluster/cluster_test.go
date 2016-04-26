@@ -157,6 +157,7 @@ func TestStopHost(t *testing.T) {
 	if s, _ := h.Driver.GetState(); s != state.Stopped {
 		t.Fatalf("Machine not stopped. Currently in state: %s", s)
 	}
+
 }
 
 func TestMultiError(t *testing.T) {
