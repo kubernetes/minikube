@@ -1,6 +1,8 @@
 package tests
 
 import (
+	"fmt"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
@@ -10,6 +12,7 @@ import (
 type MockDriver struct {
 	drivers.BaseDriver
 	CurrentState state.State
+	RemoveError  bool
 }
 
 // Create creates a MockDriver instance
@@ -46,6 +49,9 @@ func (driver *MockDriver) Kill() error {
 
 // Remove removes the machine
 func (driver *MockDriver) Remove() error {
+	if driver.RemoveError {
+		return fmt.Errorf("Error deleting machine.")
+	}
 	return nil
 }
 
