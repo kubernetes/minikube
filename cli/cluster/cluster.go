@@ -22,6 +22,7 @@ import (
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/kubernetes/minikube/cli/constants"
 )
 
@@ -33,12 +34,33 @@ func StartHost(api libmachine.API) (*host.Host, error) {
 		log.Println("Machine exists!")
 		h, err := api.Load(constants.MachineName)
 		if err != nil {
-			return nil, fmt.Errorf("Error loading existing host.")
+			return nil, fmt.Errorf("Error loading existing host: %s", err)
+		}
+		s, err := h.Driver.GetState()
+		if err != nil {
+			return nil, fmt.Errorf("Error getting state for host: %s", err)
+		}
+		if s != state.Running {
+			if err := h.Driver.Start(); err != nil {
+				return nil, fmt.Errorf("Error starting stopped host: %s", err)
+			}
 		}
 		return h, nil
 	} else {
 		return createHost(api)
 	}
+}
+
+// StopHost stops the host VM.
+func StopHost(api libmachine.API) error {
+	host, err := api.Load(constants.MachineName)
+	if err != nil {
+		return err
+	}
+	if err := host.Stop(); err != nil {
+		return err
+	}
+	return nil
 }
 
 type sshAble interface {
@@ -49,8 +71,7 @@ type sshAble interface {
 func StartCluster(h sshAble) error {
 	for _, cmd := range []string{
 		// Download and install weave, if it doesn't exist.
-		`if [ ! -e /usr/local/bin/weave ];
-		 then
+		`if [ ! -e /usr/local/bin/weave ]; then
 		   sudo curl -L git.io/weave -o /usr/local/bin/weave
 		   sudo chmod a+x /usr/local/bin/weave;
 		 fi`,
