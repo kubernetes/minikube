@@ -98,6 +98,29 @@ func DeleteHost(api libmachine.API) error {
 	return m.ToError()
 }
 
+// GetHostStatus gets the status of the host VM.
+func GetHostStatus(api libmachine.API) (string, error) {
+	dne := "Does Not Exist"
+	exists, err := api.Exists(constants.MachineName)
+	if err != nil {
+		return "", err
+	}
+	if !exists {
+		return dne, nil
+	}
+
+	host, err := api.Load(constants.MachineName)
+	if err != nil {
+		return "", err
+	}
+
+	s, err := host.Driver.GetState()
+	if s.String() == "" {
+		return dne, err
+	}
+	return s.String(), err
+}
+
 type sshAble interface {
 	RunSSHCommand(string) (string, error)
 }

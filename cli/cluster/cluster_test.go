@@ -233,3 +233,25 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestGetHostStatus(t *testing.T) {
+	api := &tests.MockAPI{}
+
+	checkState := func(expected string) {
+		s, err := GetHostStatus(api)
+		if err != nil {
+			t.Fatalf("Unexpected error getting status: %s", s)
+		}
+		if s != expected {
+			t.Fatalf("Expected status: %s, got %s", s, expected)
+		}
+	}
+
+	checkState("Does Not Exist")
+
+	createHost(api)
+	checkState(state.Running.String())
+
+	StopHost(api)
+	checkState(state.Stopped.String())
+}
