@@ -15,6 +15,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/kubernetes/minikube/cli/cluster"
