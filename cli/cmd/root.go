@@ -39,6 +39,14 @@ clusters optimized for development workflows.
 	`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		localbinary.CurrentBinaryIsDockerMachine = true
+
+		for _, path := range dirs {
+			if err := os.MkdirAll(path, 0777); err != nil {
+				log.Panicf("Error creating minikube directory: %s", err)
+			}
+		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
 		if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
 			driverName := os.Getenv(localbinary.PluginEnvDriverName)
 			switch driverName {
@@ -49,12 +57,6 @@ clusters optimized for development workflows.
 				os.Exit(1)
 			}
 			return
-		}
-
-		for _, path := range dirs {
-			if err := os.MkdirAll(path, 0777); err != nil {
-				log.Panicf("Error creating minikube directory: %s", err)
-			}
 		}
 	},
 }

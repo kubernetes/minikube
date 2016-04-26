@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
@@ -42,15 +41,12 @@ func StartHost(api libmachine.API) (*host.Host, error) {
 	}
 }
 
-// StartCluster starts as k8s cluster on the specified Host.
-func StartCluster(h *host.Host) (string, error) {
-	host, err := h.Driver.GetURL()
-	if err != nil {
-		return "", err
-	}
-	kubeHost := strings.Replace(host, "tcp://", "http://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
+type sshAble interface {
+	RunSSHCommand(string) (string, error)
+}
 
+// StartCluster starts as k8s cluster on the specified Host.
+func StartCluster(h sshAble) error {
 	for _, cmd := range []string{
 		// Download and install weave, if it doesn't exist.
 		`if [ ! -e /usr/local/bin/weave ];
@@ -75,11 +71,11 @@ func StartCluster(h *host.Host) (string, error) {
 		output, err := h.RunSSHCommand(cmd)
 		log.Println(output)
 		if err != nil {
-			return "", err
+			return err
 		}
 	}
 
-	return kubeHost, nil
+	return nil
 }
 
 func createHost(api libmachine.API) (*host.Host, error) {

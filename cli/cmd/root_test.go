@@ -22,10 +22,10 @@ func makeTempDir() string {
 	return tempDir
 }
 
-func runCommand() {
+func runCommand(f func(*cobra.Command, []string)) {
 	cmd := cobra.Command{}
 	var args []string
-	RootCmd.PersistentPreRun(&cmd, args)
+	f(&cmd, args)
 }
 
 func TestPreRunDirectories(t *testing.T) {
@@ -33,7 +33,7 @@ func TestPreRunDirectories(t *testing.T) {
 	tempDir := makeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	runCommand()
+	runCommand(RootCmd.PersistentPreRun)
 
 	for _, dir := range dirs {
 		_, err := os.Stat(dir)
@@ -46,13 +46,13 @@ func TestPreRunDirectories(t *testing.T) {
 func TestPreRunNotDriver(t *testing.T) {
 	tempDir := makeTempDir()
 	defer os.RemoveAll(tempDir)
-	runCommand()
+	runCommand(RootCmd.PersistentPreRun)
 	if !localbinary.CurrentBinaryIsDockerMachine {
 		t.Fatal("CurrentBinaryIsDockerMachine not set. This will break driver initialization.")
 	}
 }
 
-func TestPreRunDriver(t *testing.T) {
+func TestRunDriver(t *testing.T) {
 	// This test is a bit complicated. It verifies that when the root command is
 	// called with the proper environment variables, we setup the libmachine driver.
 
@@ -70,7 +70,7 @@ func TestPreRunDriver(t *testing.T) {
 	}()
 
 	// Run the command asynchronously. It should listen on a port for connections.
-	go runCommand()
+	go runCommand(RootCmd.Run)
 
 	// The command will write out what port it's listening on over stdout.
 	reader := bufio.NewReader(r)

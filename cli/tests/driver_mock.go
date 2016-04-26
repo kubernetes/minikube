@@ -2,15 +2,9 @@ package tests
 
 import (
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
 )
-
-// MockAPI is a struct used to mock out libmachine.API
-type MockAPI struct {
-	Hosts []*host.Host
-}
 
 // MockDriver is a struct used to mock out libmachine.Driver
 type MockDriver struct {

@@ -2,6 +2,7 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
@@ -9,6 +10,12 @@ import (
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
 )
+
+// MockAPI is a struct used to mock out libmachine.API
+type MockAPI struct {
+	Hosts       []*host.Host
+	CreateError bool
+}
 
 // Close closes the API.
 func (api *MockAPI) Close() error {
@@ -33,6 +40,9 @@ func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, er
 
 // Create creates the actual host.
 func (api *MockAPI) Create(h *host.Host) error {
+	if api.CreateError {
+		return fmt.Errorf("Error creating host.")
+	}
 	return h.Driver.Create()
 }
 

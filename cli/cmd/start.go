@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/kubernetes/minikube/cli/cluster"
@@ -43,11 +44,18 @@ func runStart(cmd *cobra.Command, args []string) {
 		log.Println("Error starting host: ", err)
 		os.Exit(1)
 	}
-	kubeHost, err := cluster.StartCluster(host)
-	if err != nil {
+
+	if err := cluster.StartCluster(host); err != nil {
 		log.Println("Error starting cluster: ", err)
 		os.Exit(1)
 	}
+
+	kubeHost, err := host.Driver.GetURL()
+	if err != nil {
+		log.Println("Error connecting to cluster: ", err)
+	}
+	kubeHost = strings.Replace(kubeHost, "tcp://", "http://", -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
 	log.Printf("Kubernetes is available at %s.\n", kubeHost)
 	log.Println("Run this command to use the cluster: ")
 	log.Printf("kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=%s\n", kubeHost)
