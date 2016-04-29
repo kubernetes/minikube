@@ -14,6 +14,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -36,7 +37,7 @@ var statusCmd = &cobra.Command{
 			log.Println("Error getting machine status:", err)
 			os.Exit(1)
 		}
-		log.Println("Status:", s)
+		fmt.Fprintln(os.Stdout, s)
 	},
 }
 
