@@ -57,11 +57,19 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Println("Error connecting to cluster: ", err)
 	}
-	kubeHost = strings.Replace(kubeHost, "tcp://", "http://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
+	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":443", -1)
 	log.Printf("Kubernetes is available at %s.\n", kubeHost)
 	log.Println("Run this command to use the cluster: ")
-	log.Printf("kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=%s\n", kubeHost)
+	log.Printf("kubectl config set-cluster minikube --server=%s --certificate-authority=$HOME/.minikube/ca.crt\n", kubeHost)
+	log.Println("kubectl config set-credentials minikube --client-certificate=$HOME/.minikube/kubecfg.crt --client-key=$HOME/.minikube/kubecfg.key")
+	log.Println("kubectl config set-context minikube --cluster=minikube --user=minikube")
+	log.Println("kubectl config use-context minikube")
+
+	if err := cluster.GetCreds(host); err != nil {
+		log.Println("Error configuring authentication: ", err)
+		os.Exit(1)
+	}
 }
 
 func init() {
