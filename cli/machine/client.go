@@ -19,15 +19,21 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers/plugin"
+	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 )
 
-// StartDriver starts the specified libmachine driver.
-func StartDriver(driverName string) {
-	switch driverName {
-	case "virtualbox":
-		plugin.RegisterDriver(virtualbox.NewDriver("", ""))
-	default:
-		fmt.Fprintf(os.Stderr, "Unsupported driver: %s\n", driverName)
-		os.Exit(1)
+// StartDriver starts the desired machine driver if necessary.
+func StartDriver() {
+	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
+		driverName := os.Getenv(localbinary.PluginEnvDriverName)
+		switch driverName {
+		case "virtualbox":
+			plugin.RegisterDriver(virtualbox.NewDriver("", ""))
+		default:
+			fmt.Fprintf(os.Stderr, "Unsupported driver: %s\n", driverName)
+			os.Exit(1)
+		}
+		return
 	}
+	localbinary.CurrentBinaryIsDockerMachine = true
 }

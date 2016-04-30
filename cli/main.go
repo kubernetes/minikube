@@ -13,8 +13,13 @@ limitations under the License.
 
 package main
 
-import "github.com/kubernetes/minikube/cli/cmd"
+import (
+	"github.com/kubernetes/minikube/cli/cmd"
+	"github.com/kubernetes/minikube/cli/machine"
+)
 
 func main() {
+	machine.StartDriver()
 	cmd.Execute()
+
 }
