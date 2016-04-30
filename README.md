@@ -34,13 +34,13 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 
 ## Build Instructions
 
-    go build cli/main.go
+    go build -o minikube cli/main.go
 
 ## Run Instructions
 
 Start the cluster with:
 
-    ./main start
+    ./minikube start
     Starting local Kubernetes cluster...
     2016/04/19 11:41:26 Machine exists!
     2016/04/19 11:41:27 Kubernetes is available at http://192.168.99.100:8080.
@@ -56,3 +56,26 @@ Access the cluster with:
 Then use kubectl normally:
 
     kubectl get pods --cluster=minikube
+
+## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull requests.
+
+### Running Tests
+
+#### Unit Tests
+
+Unit tests are run on Travis before code is merged. To run as part of a development cycle:
+
+	go test $(go list ./... | grep -v /vendor/)
+
+#### Integration Tests
+
+Integration tests are currently run manually. To run them, first build the binary:
+	
+	go build -o minikube cli/main.go
+
+Then test it:
+
+	go test ./integration --tags=integration
+
