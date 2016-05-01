@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"k8s.io/minikube/cli/constants"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cli/constants"
 )
 
 func makeTempDir() string {

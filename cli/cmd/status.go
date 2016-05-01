@@ -19,9 +19,9 @@ import (
 	"os"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/spf13/cobra"
 	"k8s.io/minikube/cli/cluster"
 	"k8s.io/minikube/cli/constants"
-	"github.com/spf13/cobra"
 )
 
 // statusCmd represents the status command

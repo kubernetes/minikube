@@ -18,8 +18,8 @@ import (
 	"log"
 	"os"
 
-	"k8s.io/minikube/cli/constants"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cli/constants"
 )
 
 var dirs = [...]string{
