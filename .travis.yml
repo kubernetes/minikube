@@ -7,4 +7,4 @@ install:
 - echo "Don't run anything."
 
 # Don't test vendored code.
-script: go test $(go list ./... | grep -v /vendor/)
+script: ./test.sh

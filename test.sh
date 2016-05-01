@@ -13,17 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+# First, build the binary
+source ./build.sh
 
-REPO_PATH="k8s.io/minikube"
+# Then run all test files
+for TEST in $(find -name "*.go" | grep -v vendor | grep -v integration | grep _test.go | cut -d/ -f2- | sed 's|/\w*.go||g' | uniq); do
+	echo $TEST
+	go test -v ${REPO_PATH}/${TEST}
+done
 
-export GOPATH=${PWD}/.gopath
-export GO15VENDOREXPERIMENT=1
-export OS=${OS:-$(go env GOOS)}
-export ARCH=${ARCH:-$(go env GOARCH)}
-
-rm -f ${GOPATH}/src/${REPO_PATH}
-mkdir -p $(dirname ${GOPATH}/src/${REPO_PATH})
-ln -s ${PWD} $GOPATH/src/${REPO_PATH}
-
-CGO_ENABLED=0 GOARCH=${ARCH} GOOS=${OS} go build --installsuffix cgo -a -o minikube cli/main.go

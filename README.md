@@ -72,7 +72,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull reque
 Unit tests are run on Travis before code is merged. To run as part of a development cycle:
 
 ```shell
-go test $(go list ./... | grep -v /vendor/)
+./test.sh
 ```
 
 #### Integration Tests
