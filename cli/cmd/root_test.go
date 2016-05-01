@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/kubernetes/minikube/cli/constants"
+	"k8s.io/minikube/cli/constants"
 	"github.com/spf13/cobra"
 )
 

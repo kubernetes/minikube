@@ -20,8 +20,8 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/kubernetes/minikube/cli/cluster"
-	"github.com/kubernetes/minikube/cli/constants"
+	"k8s.io/minikube/cli/cluster"
+	"k8s.io/minikube/cli/constants"
 	"github.com/spf13/cobra"
 )
 

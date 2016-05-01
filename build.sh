@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REPO_PATH="github.com/kubernetes/minikube"
+REPO_PATH="k8s.io/minikube"
 
 export GOPATH=${PWD}/gopath
 export GO15VENDOREXPERIMENT=1

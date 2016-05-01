@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/kubernetes/minikube",
+	"ImportPath": "k8s.io/minikube",
 	"GoVersion": "go1.6",
 	"GodepVersion": "v62",
 	"Packages": [

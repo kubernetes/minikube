@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"github.com/kubernetes/minikube/cli/constants"
+	"k8s.io/minikube/cli/constants"
 )
 
 func makeTempDir() string {
