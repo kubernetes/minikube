@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -20,9 +20,9 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/kubernetes/minikube/cli/cluster"
-	"github.com/kubernetes/minikube/cli/constants"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cli/cluster"
+	"k8s.io/minikube/cli/constants"
 )
 
 // startCmd represents the start command

@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,8 +18,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/kubernetes/minikube/cli/constants"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/cli/constants"
 )
 
 var dirs = [...]string{
@@ -29,11 +29,9 @@ var dirs = [...]string{
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "cli",
+	Use:   "minikube",
 	Short: "Minikube is a tool for managing local Kubernetes clusters.",
-	Long: `Minikube is a CLI tool that provisions and manages single-node Kubernetes
-clusters optimized for development workflows.
-	`,
+	Long: `Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {

@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -14,12 +14,11 @@ limitations under the License.
 package main
 
 import (
-	"github.com/kubernetes/minikube/cli/cmd"
-	"github.com/kubernetes/minikube/cli/machine"
+	"k8s.io/minikube/cli/cmd"
+	"k8s.io/minikube/cli/machine"
 )
 
 func main() {
 	machine.StartDriver()
 	cmd.Execute()
-
 }
