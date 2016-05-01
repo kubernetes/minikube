@@ -29,11 +29,9 @@ var dirs = [...]string{
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "cli",
+	Use:   "minikube",
 	Short: "Minikube is a tool for managing local Kubernetes clusters.",
-	Long: `Minikube is a CLI tool that provisions and manages single-node Kubernetes
-clusters optimized for development workflows.
-	`,
+	Long: `Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {

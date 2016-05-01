@@ -21,5 +21,4 @@ import (
 func main() {
 	machine.StartDriver()
 	cmd.Execute()
-
 }
