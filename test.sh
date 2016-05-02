@@ -22,3 +22,5 @@ for TEST in $(find -name "*.go" | grep -v vendor | grep -v integration | grep _t
 	go test -v ${REPO_PATH}/${TEST}
 done
 
+# Check gofmt
+diff -u <(echo -n) <(gofmt -l -s . | grep -v vendor)

@@ -6,6 +6,5 @@ go:
 install:
 - echo "Don't run anything."
 
-# Check non-vendored code for formatting.
-script: diff -u <(echo -n) <(gofmt -l -s . | grep -v vendor)
+# Run unit tests and linters.
 script: ./test.sh
