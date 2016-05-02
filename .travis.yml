@@ -6,5 +6,6 @@ go:
 install:
 - echo "Don't run anything."
 
-# Don't test vendored code.
+# Check non-vendored code for formatting.
+script: diff -u <(echo -n) <(gofmt -l -s . | grep -v vendor)
 script: ./test.sh
