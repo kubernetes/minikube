@@ -23,4 +23,4 @@ _testmain.go
 *.test
 *.prof
 
-minikube
+/out

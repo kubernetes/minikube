@@ -16,6 +16,7 @@
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 REPO_PATH="k8s.io/minikube"
+BUILD_DIR="${PWD}/out"
 
 export GOPATH=${PWD}/.gopath
 export GO15VENDOREXPERIMENT=1
@@ -26,4 +27,7 @@ rm -f ${GOPATH}/src/${REPO_PATH}
 mkdir -p $(dirname ${GOPATH}/src/${REPO_PATH})
 ln -s ${PWD} $GOPATH/src/${REPO_PATH}
 
-CGO_ENABLED=0 GOARCH=${ARCH} GOOS=${OS} go build --installsuffix cgo -a -o minikube cli/main.go
+CGO_ENABLED=0 GOARCH=${ARCH} GOOS=${OS} go build --installsuffix cgo -a -o ${BUILD_DIR}/minikube k8s.io/minikube/cmd/minikube
+
+# Build minimal localkube binary
+GOARCH=${ARCH} GOOS=${OS} go build -o ${BUILD_DIR}/localkube -i --ldflags '-extldflags "-static" --s -w' k8s.io/minikube/cmd/localkube
