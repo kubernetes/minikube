@@ -20,13 +20,14 @@ package integration
 
 import (
 	"flag"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-var binaryPath = flag.String("binary", "../minikube", "path to minikube binary")
+var binaryPath = flag.String("binary", "../out/minikube", "path to minikube binary")
 
 func runCommand(t *testing.T, command string, checkError bool) string {
 	path, _ := filepath.Abs(*binaryPath)
@@ -34,7 +35,7 @@ func runCommand(t *testing.T, command string, checkError bool) string {
 	stdout, err := cmd.Output()
 
 	if checkError && err != nil {
-		t.Fatalf("Error running command: %s %s", command, err)
+		t.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
 	}
 	return string(stdout)
 }
@@ -67,4 +68,9 @@ func TestStartStop(t *testing.T) {
 
 	runCommand(t, "delete", true)
 	checkStatus("Does Not Exist")
+}
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	os.Exit(m.Run())
 }
