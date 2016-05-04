@@ -35,7 +35,7 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 ## Build Instructions
 
 ```shell
-./build.sh
+make minikube
 ```
 
 ## Run Instructions
@@ -72,7 +72,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull reque
 Unit tests are run on Travis before code is merged. To run as part of a development cycle:
 
 ```shell
-./test.sh
+make test
 ```
 
 #### Integration Tests
@@ -81,6 +81,5 @@ Integration tests are currently run manually.
 To run them, build the binary and run the tests:
 
 ```shell
-./build.sh
-go test ./integration --tags=integration
+make integration
 ```

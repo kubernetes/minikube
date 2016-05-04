@@ -7,4 +7,4 @@ install:
 - echo "Don't run anything."
 
 # Run unit tests and linters.
-script: ./test.sh
+script: make test
