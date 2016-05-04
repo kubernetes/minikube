@@ -33,17 +33,17 @@ var (
 	KubeletStop    chan struct{}
 )
 
-func NewKubeletServer(clusterDomain, clusterDNS string) Server {
+func NewKubeletServer(clusterDomain, clusterDNS string, containerized bool) Server {
 	return &SimpleServer{
 		ComponentName: KubeletName,
-		StartupFn:     StartKubeletServer(clusterDomain, clusterDNS),
+		StartupFn:     StartKubeletServer(clusterDomain, clusterDNS, containerized),
 		ShutdownFn: func() {
 			close(KubeletStop)
 		},
 	}
 }
 
-func StartKubeletServer(clusterDomain, clusterDNS string) func() {
+func StartKubeletServer(clusterDomain, clusterDNS string, containerized bool) func() {
 	KubeletStop = make(chan struct{})
 	config := options.NewKubeletServer()
 
@@ -51,7 +51,7 @@ func StartKubeletServer(clusterDomain, clusterDNS string) func() {
 	config.APIServerList = []string{APIServerURL}
 
 	// Docker
-	config.Containerized = true
+	config.Containerized = containerized
 	config.DockerEndpoint = WeaveProxySock
 
 	// Networking
@@ -59,7 +59,11 @@ func StartKubeletServer(clusterDomain, clusterDNS string) func() {
 	config.ClusterDNS = clusterDNS
 
 	// use hosts resolver config
-	config.ResolverConfig = "/rootfs/etc/resolv.conf"
+	if containerized {
+		config.ResolverConfig = "/rootfs/etc/resolv.conf"
+	} else {
+		config.ResolverConfig = "/etc/resolv.conf"
+	}
 
 	schedFn := func() error {
 		return kubelet.Run(config, nil)
