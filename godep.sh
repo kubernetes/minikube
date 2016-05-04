@@ -25,6 +25,8 @@ rm -rf Godeps vendor
 GO15VENDOREXPERIMENT="1" godep save -v ./...
 
 # apply patch to golang.org/x/net/trace/trace.go
+# Comments out init block to prevent a panic caused by trying to register an HTTP
+# route which has been registered by a copy of the same packaged vendored by etcd.
 patch vendor/golang.org/x/net/trace/trace.go - <<EOF
 109a110
 > 	/*
