@@ -4,6 +4,7 @@ GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
 GOPATH := $(shell pwd)/.gopath
 REPOPATH ?= k8s.io/minikube
+GO15VENDOREXPERIMENT := 1
 
 .PHONY: clean
 clean:
