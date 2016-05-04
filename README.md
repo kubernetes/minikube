@@ -43,7 +43,7 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 Start the cluster with:
 
 ```console
-$ ./minikube start
+$ ./out/minikube start
 Starting local Kubernetes cluster...
 2016/04/19 11:41:26 Machine exists!
 2016/04/19 11:41:27 Kubernetes is available at http://192.168.99.100:8080.
