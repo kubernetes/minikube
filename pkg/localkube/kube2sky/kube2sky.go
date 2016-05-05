@@ -17,10 +17,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// kube2sky is a bridge between Kubernetes and SkyDNS.  It watches the
+// kube2sky is a bridge between Kubernetes and SkyDNS. It watches the
 // Kubernetes master for changes in Services and manifests them into etcd for
 // SkyDNS to serve as DNS records.
-package lib
+package kube2sky
 
 import (
 	"encoding/json"

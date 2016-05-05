@@ -27,7 +27,7 @@ import (
 	"testing"
 )
 
-var binaryPath = flag.String("binary", "../out/minikube", "path to minikube binary")
+var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 
 func runCommand(t *testing.T, command string, checkError bool) string {
 	path, _ := filepath.Abs(*binaryPath)

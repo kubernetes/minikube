@@ -18,32 +18,33 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/cli/cluster"
-	"k8s.io/minikube/cli/constants"
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// statusCmd represents the status command
-var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Gets the status of a local kubernetes cluster.",
-	Long:  `Gets the status of a local kubernetes cluster.`,
+// deleteCmd represents the delete command
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Deletes a local kubernetes cluster.",
+	Long: `Deletes a local kubernetes cluster. This command deletes the VM, and removes all
+associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("Deleting local Kubernetes cluster...")
 		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 		defer api.Close()
-		s, err := cluster.GetHostStatus(api)
-		if err != nil {
-			log.Println("Error getting machine status:", err)
+
+		if err := cluster.DeleteHost(api); err != nil {
+			fmt.Println("Errors occurred deleting machine: ", err)
 			os.Exit(1)
 		}
-		fmt.Fprintln(os.Stdout, s)
+		fmt.Println("Machine deleted.")
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(statusCmd)
+	RootCmd.AddCommand(deleteCmd)
 }

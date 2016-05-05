@@ -27,7 +27,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/cli/constants"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // StartHost starts a host VM.

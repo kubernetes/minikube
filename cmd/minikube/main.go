@@ -17,8 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"k8s.io/minikube/cli/cmd"
-	"k8s.io/minikube/cli/machine"
+	"k8s.io/minikube/cmd/minikube/cmd"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 func main() {
