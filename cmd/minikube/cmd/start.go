@@ -37,6 +37,10 @@ assumes you already have Virtualbox installed.`,
 	Run: runStart,
 }
 
+var (
+	localkubeURL string
+)
+
 func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Starting local Kubernetes cluster...")
@@ -48,7 +52,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if err := cluster.StartCluster(host); err != nil {
+	config := cluster.KubernetesConfig{
+		LocalkubeURL: localkubeURL,
+	}
+
+	if err := cluster.StartCluster(host, config); err != nil {
 		log.Println("Error starting cluster: ", err)
 		os.Exit(1)
 	}
@@ -73,5 +81,7 @@ func runStart(cmd *cobra.Command, args []string) {
 }
 
 func init() {
+	startCmd.Flags().StringVarP(&localkubeURL, "localkube-url", "", "https://storage.googleapis.com/tinykube/localkube", "Location of the localkube binary")
+	startCmd.Flags().MarkHidden("localkube-url")
 	RootCmd.AddCommand(startCmd)
 }
