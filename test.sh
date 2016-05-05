@@ -13,13 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# First, build the binary
-source ./build.sh
+REPO_PATH="k8s.io/minikube"
 
-# Then run all test files
+# Run all test files.
 for TEST in $(find -name "*.go" | grep -v vendor | grep -v integration | grep _test.go | cut -d/ -f2- | sed 's|/\w*.go||g' | uniq); do
-	echo $TEST
-	go test -v ${REPO_PATH}/${TEST}
+  echo $TEST
+  go test -v ${REPO_PATH}/${TEST}
 done
 
 # Check gofmt
