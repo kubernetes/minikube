@@ -22,7 +22,7 @@ import (
 	"os"
 	"time"
 
-	kube2sky "k8s.io/minikube/k2s"
+	"k8s.io/minikube/pkg/localkube/kube2sky"
 
 	"github.com/coreos/go-etcd/etcd"
 	backendetcd "github.com/skynetservices/skydns/backends/etcd"

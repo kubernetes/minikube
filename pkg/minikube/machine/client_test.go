@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"k8s.io/minikube/cli/constants"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func makeTempDir() string {

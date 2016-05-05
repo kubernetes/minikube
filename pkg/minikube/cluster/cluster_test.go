@@ -23,8 +23,8 @@ import (
 
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/cli/constants"
-	"k8s.io/minikube/cli/tests"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestCreateHost(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"k8s.io/minikube/localkube"
+	"k8s.io/minikube/pkg/localkube"
 )
 
 var (

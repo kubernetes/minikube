@@ -24,8 +24,8 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/cli/cluster"
-	"k8s.io/minikube/cli/constants"
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // startCmd represents the start command
