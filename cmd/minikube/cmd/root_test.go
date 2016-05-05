@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/cli/tests"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func runCommand(f func(*cobra.Command, []string)) {

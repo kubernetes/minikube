@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"log"
 
-	"k8s.io/minikube/cli/constants"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func MakeTempDir() string {

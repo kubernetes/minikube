@@ -82,7 +82,7 @@ func (m mockHost) RunSSHCommand(cmd string) (string, error) {
 
 func TestStartCluster(t *testing.T) {
 	h := mockHost{}
-	err := StartCluster(h)
+	err := StartCluster(h, KubernetesConfig{})
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
@@ -90,7 +90,7 @@ func TestStartCluster(t *testing.T) {
 
 func TestStartClusterError(t *testing.T) {
 	h := mockHost{Error: "error"}
-	err := StartCluster(h)
+	err := StartCluster(h, KubernetesConfig{})
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
 	}
