@@ -138,52 +138,17 @@ type sshAble interface {
 	RunSSHCommand(string) (string, error)
 }
 
+// KubernetesConfig contains the parameters used to start a cluster.
+type KubernetesConfig struct {
+	LocalkubeURL string
+}
+
 // StartCluster starts a k8s cluster on the specified Host.
-func StartCluster(h sshAble) error {
-	for _, cmd := range []string{
-		// Download and install weave, if it doesn't exist.
-		`if [ ! -e /usr/local/bin/weave ]; then
-       		sudo curl -L git.io/weave -o /usr/local/bin/weave
-       		sudo chmod a+x /usr/local/bin/weave;
-     	fi`,
-		// Download and install localkube, if it doesn't exist yet.
-		`if [ ! -e /usr/local/bin/localkube ]; then
-	       sudo curl -L https://storage.googleapis.com/tinykube/localkube -o /usr/local/bin/localkube
-    	   sudo chmod a+x /usr/local/bin/localkube;
-     	fi`,
-		// Create certificates.
-		`sudo mkdir -p /srv/kubernetes/certs`,
-		`if [ ! -e easy-rsa.tar.gz ]; then
-        	curl -L -O https://storage.googleapis.com/kubernetes-release/easy-rsa/easy-rsa.tar.gz
-        	rm -rf easy-rsa-master
-        	tar xzf easy-rsa.tar.gz
-     	fi`,
-		`cert_ip=$(ip addr show ${interface} | grep 192.168 | sed -nEe 's/^[ \t]*inet[ \t]*([0-9.]+)\/.*$/\1/p')
-     	ts=$(date +%s)
-     	if ! grep $cert_ip /srv/kubernetes/certs/kubernetes-master.crt; then
-       		cd easy-rsa-master/easyrsa3
-       		./easyrsa init-pki
-       		./easyrsa --batch "--req-cn=$cert_ip@$ts" build-ca nopass
-       		./easyrsa --subject-alt-name="IP:$cert_ip" build-server-full kubernetes-master nopass
-       		./easyrsa build-client-full kubecfg nopass
-       		sudo cp -p pki/ca.crt /srv/kubernetes/certs/
-       		sudo cp -p pki/issued/kubecfg.crt /srv/kubernetes/certs/
-       		sudo cp -p pki/private/kubecfg.key /srv/kubernetes/certs/
-       		sudo cp -p pki/issued/kubernetes-master.crt /srv/kubernetes/certs/
-       		sudo cp -p pki/private/kubernetes-master.key /srv/kubernetes/certs/
-     	fi`,
-		// Start weave.
-		"weave launch-router",
-		"weave launch-proxy --without-dns --rewrite-inspect",
-		"weave expose -h \"localkube.weave.local\"",
-		"sudo killall localkube || true",
-		// Run with nohup so it stays up. Redirect logs to useful places.
-		"PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start > /var/log/localkube.out 2> /var/log/localkube.err < /dev/null &"} {
-		output, err := h.RunSSHCommand(cmd)
-		log.Println(output)
-		if err != nil {
-			return err
-		}
+func StartCluster(h sshAble, config KubernetesConfig) error {
+	output, err := h.RunSSHCommand(fmt.Sprintf(startCommand, config.LocalkubeURL))
+	log.Println(output)
+	if err != nil {
+		return err
 	}
 
 	return nil
