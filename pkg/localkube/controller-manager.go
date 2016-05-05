@@ -18,6 +18,7 @@ package localkube
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	controllerManager "k8s.io/kubernetes/cmd/kube-controller-manager/app"
@@ -50,6 +51,7 @@ func StartControllerManagerServer() {
 	config.DeletingPodsQps = 0.1
 	config.DeletingPodsBurst = 10
 	config.EnableProfiling = true
+	config.ServiceAccountKeyFile = filepath.Join(certPath, "kubernetes-master.key")
 
 	fn := func() error {
 		return controllerManager.Run(config)

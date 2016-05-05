@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -29,9 +30,12 @@ import (
 )
 
 const (
-	APIServerName = "apiserver"
-	APIServerHost = "0.0.0.0"
-	APIServerPort = 8080
+	APIServerName       = "apiserver"
+	APIServerHost       = "127.0.0.1"
+	APIServerPort       = 8080
+	APIServerSecureHost = "0.0.0.0"
+	APIServerSecurePort = 443
+	certPath            = "/srv/kubernetes/certs/"
 )
 
 var (
@@ -62,8 +66,15 @@ func StartAPIServer() {
 	config := options.NewAPIServer()
 
 	// use host/port from vars
+	config.BindAddress = net.ParseIP(APIServerSecureHost)
+	config.SecurePort = APIServerSecurePort
 	config.InsecureBindAddress = net.ParseIP(APIServerHost)
 	config.InsecurePort = APIServerPort
+
+	config.ClientCAFile = filepath.Join(certPath, "ca.crt")
+	config.TLSCertFile = filepath.Join(certPath, "kubernetes-master.crt")
+	config.TLSPrivateKeyFile = filepath.Join(certPath, "kubernetes-master.key")
+	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
 
 	// use localkube etcd
 	config.EtcdConfig = etcdstorage.EtcdConfig{
