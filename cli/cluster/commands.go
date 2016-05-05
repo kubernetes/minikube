@@ -1,11 +1,6 @@
 package cluster
 
 var startCommand = `
-# Download and install weave, if it doesn't exist.
-if [ ! -e /usr/local/bin/weave ]; then
-	sudo curl -L git.io/weave -o /usr/local/bin/weave
-	sudo chmod a+x /usr/local/bin/weave;
-fi
 sudo killall localkube || true
 # Download and install localkube, if it doesn't exist yet.
 if [ ! -e /usr/local/bin/localkube2 ]; then
@@ -34,10 +29,6 @@ if ! grep $cert_ip /srv/kubernetes/certs/kubernetes-master.crt; then
 	cp -p pki/issued/kubernetes-master.crt /srv/kubernetes/certs/
 	cp -p pki/private/kubernetes-master.key /srv/kubernetes/certs/
 fi
-# Start weave.
-weave launch-router
-weave launch-proxy --without-dns --rewrite-inspect
-weave expose -h \"localkube.weave.local\"
 # Drop this once we get the containerized flag in.
 sudo ln -s / /rootfs
 # Run with nohup so it stays up. Redirect logs to useful places.
