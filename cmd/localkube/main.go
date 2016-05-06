@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -14,6 +15,8 @@ var (
 	DNSDomain     = "cluster.local"
 	ClusterDNSIP  = "10.1.30.3"
 	DNSServerAddr = "172.17.0.1:1970"
+
+	containerized = flag.Bool("containerized", true, "Whether localkube is inside a container or not")
 )
 
 func init() {
@@ -49,7 +52,7 @@ func load() {
 	LK.Add(scheduler)
 
 	// setup kubelet (configured for weave proxy)
-	kubelet := localkube.NewKubeletServer(DNSDomain, ClusterDNSIP)
+	kubelet := localkube.NewKubeletServer(DNSDomain, ClusterDNSIP, *containerized)
 	LK.Add(kubelet)
 
 	// proxy
@@ -64,11 +67,10 @@ func load() {
 }
 
 func main() {
-	// check for network
-
+	flag.Parse()
 	// if first
 	load()
-	err := LK.Run(os.Args, os.Stderr)
+	err := LK.Run(flag.Args(), os.Stderr)
 	if err != nil {
 		fmt.Printf("localkube errored: %v\n", err)
 		os.Exit(1)
