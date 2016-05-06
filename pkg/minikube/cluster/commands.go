@@ -29,8 +29,6 @@ if ! grep $cert_ip /srv/kubernetes/certs/kubernetes-master.crt; then
 	cp -p pki/issued/kubernetes-master.crt /srv/kubernetes/certs/
 	cp -p pki/private/kubernetes-master.key /srv/kubernetes/certs/
 fi
-# Drop this once we get the containerized flag in.
-sudo ln -s / /rootfs
 # Run with nohup so it stays up. Redirect logs to useful places.
-PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start > /var/log/localkube.out 2> /var/log/localkube.err < /dev/null &
+PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube --containerized=false start > /var/log/localkube.out 2> /var/log/localkube.err < /dev/null &
 `
