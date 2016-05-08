@@ -145,7 +145,7 @@ type KubernetesConfig struct {
 
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble, config KubernetesConfig) error {
-	output, err := h.RunSSHCommand(fmt.Sprintf(startCommand, config.LocalkubeURL))
+	output, err := h.RunSSHCommand(getStartCommand(config.LocalkubeURL))
 	log.Println(output)
 	if err != nil {
 		return err
