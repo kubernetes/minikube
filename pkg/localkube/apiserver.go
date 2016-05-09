@@ -17,59 +17,34 @@ limitations under the License.
 package localkube
 
 import (
-	"fmt"
 	"net"
-	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	etcdstorage "k8s.io/kubernetes/pkg/storage/etcd"
+
+	kuberest "k8s.io/kubernetes/pkg/client/restclient"
+	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 )
 
 const (
-	APIServerName       = "apiserver"
-	APIServerHost       = "127.0.0.1"
-	APIServerPort       = 8080
-	APIServerSecureHost = "0.0.0.0"
-	APIServerSecurePort = 443
-	certPath            = "/srv/kubernetes/certs/"
+	certPath = "/srv/kubernetes/certs/"
 )
 
-var (
-	APIServerURL   string
-	ServiceIPRange = "10.1.30.0/24"
-	APIServerStop  chan struct{}
-)
 
-func init() {
-	APIServerURL = fmt.Sprintf("http://%s:%d", APIServerHost, APIServerPort)
-	if ipRange := os.Getenv("SERVICE_IP_RANGE"); len(ipRange) != 0 {
-		ServiceIPRange = ipRange
-	}
+func (lk LocalkubeServer) NewAPIServer() Server {
+	return NewSimpleServer("apiserver", serverInterval, StartAPIServer(lk))
 }
 
-func NewAPIServer() Server {
-	return &SimpleServer{
-		ComponentName: APIServerName,
-		StartupFn:     StartAPIServer,
-		ShutdownFn: func() {
-			close(APIServerStop)
-		},
-	}
-}
-
-func StartAPIServer() {
-	APIServerStop = make(chan struct{})
+func StartAPIServer(lk LocalkubeServer) func() error {
 	config := options.NewAPIServer()
 
-	// use host/port from vars
-	config.BindAddress = net.ParseIP(APIServerSecureHost)
-	config.SecurePort = APIServerSecurePort
-	config.InsecureBindAddress = net.ParseIP(APIServerHost)
-	config.InsecurePort = APIServerPort
+	config.BindAddress = net.ParseIP(lk.APIServerAddress)
+	config.SecurePort = lk.APIServerPort
+	config.InsecureBindAddress = net.ParseIP(lk.APIServerInsecureAddress)
+	config.InsecurePort = lk.APIServerInsecurePort
 
 	config.ClientCAFile = filepath.Join(certPath, "ca.crt")
 	config.TLSCertFile = filepath.Join(certPath, "kubernetes-master.crt")
@@ -82,7 +57,7 @@ func StartAPIServer() {
 	}
 
 	// set Service IP range
-	_, ipnet, err := net.ParseCIDR(ServiceIPRange)
+	_, ipnet, err := net.ParseCIDR(lk.ServiceClusterIPRange)
 	if err != nil {
 		panic(err)
 	}
@@ -93,12 +68,9 @@ func StartAPIServer() {
 	config.EnableWatchCache = true
 	config.MinRequestTimeout = 1800
 
-	fn := func() error {
+	return func() error {
 		return apiserver.Run(config)
 	}
-
-	// start API server in it's own goroutine
-	go until(fn, os.Stdout, APIServerName, 200*time.Millisecond, SchedulerStop)
 }
 
 // notFoundErr returns true if the passed error is an API server object not found error
@@ -107,4 +79,15 @@ func notFoundErr(err error) bool {
 		return false
 	}
 	return strings.HasSuffix(err.Error(), "not found")
+}
+
+func kubeClient() *kubeclient.Client {
+	config := &kuberest.Config{
+		Host: "http://localhost:8080", // TODO: Make configurable
+	}
+	client, err := kubeclient.New(config)
+	if err != nil {
+		panic(err)
+	}
+	return client
 }

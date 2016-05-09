@@ -14,27 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package localkube
+package cmd
 
 import (
-	scheduler "k8s.io/kubernetes/plugin/cmd/kube-scheduler/app"
-	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
+	"github.com/spf13/cobra"
 )
 
-func (lk LocalkubeServer) NewSchedulerServer() Server {
-	return NewSimpleServer("scheduler", serverInterval, StartSchedulerServer(lk))
+var RootCmd = &cobra.Command{
+	Use:   "localkube",
+	Short: "localkube is a all-in-one kubernetes binary.",
+	Long:  `localkube is a all-in-one kubernetes binary that runs all servers at the same time.`,
 }
 
-func StartSchedulerServer(lk LocalkubeServer) func() error {
-	config := options.NewSchedulerServer()
+func init(){
+	cobra.OnInitialize(initConfig)
+}
 
-	// master details
-	config.Master = lk.GetAPIServerInsecureURL()
-
-	// defaults from command
-	config.EnableProfiling = true
-
-	return func() error {
-		return scheduler.Run(config)
-	}
+func initConfig(){
 }

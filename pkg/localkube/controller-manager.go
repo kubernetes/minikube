@@ -17,35 +17,20 @@ limitations under the License.
 package localkube
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	controllerManager "k8s.io/kubernetes/cmd/kube-controller-manager/app"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
 )
 
-const (
-	ControllerManagerName = "controller-manager"
-)
-
-var (
-	CMStop chan struct{}
-)
-
-func NewControllerManagerServer() Server {
-	return &SimpleServer{
-		ComponentName: ControllerManagerName,
-		StartupFn:     StartControllerManagerServer,
-		ShutdownFn: func() {
-			close(CMStop)
-		},
-	}
+func (lk LocalkubeServer) NewControllerManagerServer() Server {
+	return NewSimpleServer("controller-manager", serverInterval, StartControllerManagerServer(lk))
 }
 
-func StartControllerManagerServer() {
-	CMStop = make(chan struct{})
+func StartControllerManagerServer(lk LocalkubeServer) func() error {
 	config := options.NewCMServer()
+
+	config.Master = lk.GetAPIServerInsecureURL()
 
 	// defaults from command
 	config.DeletingPodsQps = 0.1
@@ -53,10 +38,7 @@ func StartControllerManagerServer() {
 	config.EnableProfiling = true
 	config.ServiceAccountKeyFile = filepath.Join(certPath, "kubernetes-master.key")
 
-	fn := func() error {
+	return func() error {
 		return controllerManager.Run(config)
 	}
-
-	// start controller manager in it's own goroutine
-	go until(fn, os.Stdout, ControllerManagerName, 200*time.Millisecond, SchedulerStop)
 }

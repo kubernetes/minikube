@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"time"
+	str "strings"
 
 	"k8s.io/minikube/pkg/localkube/kube2sky"
 
@@ -30,6 +31,8 @@ import (
 	kube "k8s.io/kubernetes/pkg/api"
 	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
+
+	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -37,12 +40,6 @@ const (
 
 	DNSServiceName      = "kube-dns"
 	DNSServiceNamespace = "kube-system"
-)
-
-var (
-	DNSEtcdURLs = []string{"http://localhost:9090"}
-
-	DNSEtcdDataDirectory = "/var/dns/data"
 )
 
 type DNSServer struct {
@@ -54,10 +51,28 @@ type DNSServer struct {
 	done          chan struct{}
 }
 
-func NewDNSServer(rootDomain, clusterIP, serverAddress, kubeAPIServer string) (*DNSServer, error) {
+func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer string) (*DNSServer, error) {
 	// setup backing etcd store
 	peerURLs := []string{"http://localhost:9256"}
-	etcdServer, err := NewEtcd(DNSEtcdURLs, peerURLs, DNSName, DNSEtcdDataDirectory)
+	DNSEtcdURLs := []string{"http://localhost:9090"}
+
+	addrs, err := net.InterfaceAddrs()
+	publicIP := ""
+	if err != nil {
+		return nil, err
+	}
+
+	for _, addr := range addrs {
+
+		// Cast addr to an IPNet and use one that starts with 192.168. that probably is this machine
+		if ipnet, ok := addr.(*net.IPNet); ok && str.Contains(addr.String(), "192.168.") {
+			publicIP = ipnet.IP.String()
+			break
+		}
+	}
+
+	serverAddress := fmt.Sprintf("%s:%d", publicIP, 53)
+	etcdServer, err := lk.NewEtcd(DNSEtcdURLs, peerURLs, DNSName, lk.GetDNSDataDirectory())
 	if err != nil {
 		return nil, err
 	}
@@ -99,15 +114,15 @@ func NewDNSServer(rootDomain, clusterIP, serverAddress, kubeAPIServer string) (*
 
 func (dns *DNSServer) Start() {
 	if dns.done != nil {
-		fmt.Fprint(os.Stderr, pad("DNS server already started"))
+		fmt.Fprint(os.Stderr, util.Pad("DNS server already started"))
 		return
 	}
 
 	dns.done = make(chan struct{})
 
 	dns.etcd.Start()
-	go until(dns.kube2sky, os.Stderr, "kube2sky", 2*time.Second, dns.done)
-	go until(dns.sky.Run, os.Stderr, "skydns", 1*time.Second, dns.done)
+	go util.Until(dns.kube2sky, os.Stderr, "kube2sky", 2*time.Second, dns.done)
+	go util.Until(dns.sky.Run, os.Stderr, "skydns", 1*time.Second, dns.done)
 
 	go func() {
 		var err error
@@ -146,7 +161,7 @@ func (dns *DNSServer) Start() {
 			if _, err = client.Endpoints(meta.Namespace).Get(meta.Name); notFoundErr(err) {
 				// create endpoint if doesn't exist
 				err = createEndpoint(client, meta, dns.dnsServerAddr.IP.String(), dns.dnsServerAddr.Port)
-				if err == nil {
+				if err != nil {
 					fmt.Printf("Failed to create Endpoint for DNS: %v\n", err)
 					continue
 				}
@@ -170,14 +185,6 @@ func (dns *DNSServer) Stop() {
 	close(dns.done)
 
 	dns.etcd.Stop()
-}
-
-// Status is currently not support by DNSServer
-func (dns *DNSServer) Status() Status {
-	if dns.done == nil {
-		return Stopped
-	}
-	return Started
 }
 
 // Name returns the servers unique name

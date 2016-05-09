@@ -17,8 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-	"os"
-	"time"
 
 	kubeproxy "k8s.io/kubernetes/cmd/kube-proxy/app"
 	"k8s.io/kubernetes/cmd/kube-proxy/app/options"
@@ -26,38 +24,26 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 )
 
-const (
-	ProxyName = "proxy"
-)
-
 var (
 	MasqueradeBit = 14
-	ProxyStop     chan struct{}
+	OOMScoreAdj = qos.KubeProxyOOMScoreAdj
 )
 
-func NewProxyServer() Server {
-	return &SimpleServer{
-		ComponentName: ProxyName,
-		StartupFn:     StartProxyServer,
-		ShutdownFn: func() {
-			close(ProxyStop)
-		},
-	}
+func (lk LocalkubeServer) NewProxyServer() Server {
+	return NewSimpleServer("proxy", serverInterval, StartProxyServer(lk))
 }
 
-func StartProxyServer() {
-	ProxyStop = make(chan struct{})
+func StartProxyServer(lk LocalkubeServer) func() error {
 	config := options.NewProxyConfig()
 
 	// master details
-	config.Master = APIServerURL
+	config.Master = lk.GetAPIServerInsecureURL()
 
 	// TODO: investigate why IP tables is not working
 	config.Mode = componentconfig.ProxyModeUserspace
 
 	// defaults
-	oom := qos.KubeProxyOOMScoreAdj
-	config.OOMScoreAdj = &oom
+	config.OOMScoreAdj = &OOMScoreAdj
 	config.IPTablesMasqueradeBit = &MasqueradeBit
 
 	server, err := kubeproxy.NewProxyServerDefault(config)
@@ -65,5 +51,7 @@ func StartProxyServer() {
 		panic(err)
 	}
 
-	go until(server.Run, os.Stdout, ProxyName, 200*time.Millisecond, ProxyStop)
+	return func() error {
+		return server.Run()
+	}
 }

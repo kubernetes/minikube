@@ -17,56 +17,41 @@ limitations under the License.
 package localkube
 
 import (
-	"os"
-	"time"
 
 	kubelet "k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
 )
 
 const (
-	KubeletName = "kubelet"
+	HostnameOverride = "127.0.0.1"
 )
 
-var (
-	KubeletStop chan struct{}
-)
-
-func NewKubeletServer(clusterDomain, clusterDNS string, containerized bool) Server {
-	return &SimpleServer{
-		ComponentName: KubeletName,
-		StartupFn:     StartKubeletServer(clusterDomain, clusterDNS, containerized),
-		ShutdownFn: func() {
-			close(KubeletStop)
-		},
-	}
+func (lk LocalkubeServer) NewKubeletServer() Server {
+	return NewSimpleServer("kubelet", serverInterval, StartKubeletServer(lk))
 }
 
-func StartKubeletServer(clusterDomain, clusterDNS string, containerized bool) func() {
-	KubeletStop = make(chan struct{})
+func StartKubeletServer(lk LocalkubeServer) func() error {
 	config := options.NewKubeletServer()
 
-	// master details
-	config.APIServerList = []string{APIServerURL}
+	// Master details
+	config.APIServerList = []string{lk.GetAPIServerInsecureURL()}
 
-	config.Containerized = containerized
+	// Set containerized based on the flag
+	config.Containerized = lk.Containerized
 
 	// Networking
-	config.ClusterDomain = clusterDomain
-	config.ClusterDNS = clusterDNS
+	config.ClusterDomain = lk.DNSDomain
+	config.ClusterDNS = lk.DNSIP
+	config.HostnameOverride = HostnameOverride
 
-	// use hosts resolver config
-	if containerized {
+	// Use the host's resolver config
+	if lk.Containerized {
 		config.ResolverConfig = "/rootfs/etc/resolv.conf"
 	} else {
 		config.ResolverConfig = "/etc/resolv.conf"
 	}
 
-	schedFn := func() error {
+	return func() error {
 		return kubelet.Run(config, nil)
-	}
-
-	return func() {
-		go until(schedFn, os.Stdout, KubeletName, 200*time.Millisecond, KubeletStop)
 	}
 }

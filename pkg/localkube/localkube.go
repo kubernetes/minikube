@@ -17,61 +17,46 @@ limitations under the License.
 package localkube
 
 import (
-	"errors"
+	"path"
 	"fmt"
-	"io"
 )
 
-// LocalKube provides a fully functional Kubernetes cluster running entirely through goroutines
-type LocalKube struct {
+const serverInterval = 200
+
+// LocalkubeServer provides a fully functional Kubernetes cluster running entirely through goroutines
+type LocalkubeServer struct {
+	// Inherits Servers
 	Servers
+
+	// Options
+	Containerized bool
+	EnableDNS     bool
+	DNSDomain     string
+	DNSIP         string
+	LocalkubeDirectory  string
+	ServiceClusterIPRange string
+	APIServerAddress string
+	APIServerPort int
+	APIServerInsecureAddress string
+	APIServerInsecurePort int
 }
 
-func (lk *LocalKube) Add(server Server) {
+func (lk *LocalkubeServer) AddServer(server Server) {
 	lk.Servers = append(lk.Servers, server)
 }
 
-func (lk *LocalKube) Run(args []string, out io.Writer) error {
-	if len(args) < 1 {
-		return errors.New("you must choose start <name>, stop <name>, or status")
-	}
+func (lk LocalkubeServer) GetEtcdDataDirectory() string {
+	return path.Join(lk.LocalkubeDirectory, "etcd")
+}
 
-	switch args[0] {
-	case "start":
-		// check if just start
-		if len(args) == 1 {
-			fmt.Fprintln(out, "Starting LocalKube...")
-			lk.StartAll()
-			return nil
-		} else if len(args) == 2 {
-			serverName := args[1]
-			fmt.Fprintf(out, "Starting `%s`...\n", serverName)
-			return lk.Start(serverName)
+func (lk LocalkubeServer) GetDNSDataDirectory() string {
+	return path.Join(lk.LocalkubeDirectory, "dns")
+}
 
-		} else {
-			return errors.New("start: too many arguments")
-		}
-	case "stop":
-		// check if just stop
-		if len(args) == 1 {
-			fmt.Fprintln(out, "Stopping LocalKube...")
-			lk.StopAll()
-			return nil
-		} else if len(args) == 2 {
-			serverName := args[1]
-			fmt.Fprintf(out, "Stopping `%s`...\n", serverName)
-			return lk.Stop(serverName)
-		}
-	case "status":
-		fmt.Fprintln(out, "LocalKube Status")
-		fmt.Fprintln(out, "################\n")
+func (lk LocalkubeServer) GetAPIServerSecureURL() string {
+	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress, lk.APIServerPort)
+}
 
-		fmt.Fprintln(out, "Order\tStatus\tName")
-		for num, server := range lk.Servers {
-			fmt.Fprintf(out, "%d\t%s\t%s\n", num, server.Status(), server.Name())
-		}
-
-		fmt.Fprintln(out)
-	}
-	return errors.New("you must choose start <name>, stop <name>, or status")
+func (lk LocalkubeServer) GetAPIServerInsecureURL() string {
+	return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress, lk.APIServerInsecurePort)
 }
