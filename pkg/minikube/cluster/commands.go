@@ -5,7 +5,7 @@ import "fmt"
 var startCommand = `sudo killall localkube || true
 # Download and install localkube, if it doesn't exist yet.
 if [ ! -e /usr/local/bin/localkube ]; then
-	sudo curl -L %s -o /usr/local/bin/localkube
+	sudo curl --compressed -L %s -o /usr/local/bin/localkube
 	sudo chmod a+x /usr/local/bin/localkube;
 fi
 # Fetch easy-rsa.
