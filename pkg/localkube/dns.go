@@ -62,6 +62,7 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 		return nil, err
 	}
 
+	// TODO: Use "k8s.io/kubernetes/pkg/util/net" to detect the public ip address instead of this
 	for _, addr := range addrs {
 
 		// Cast addr to an IPNet and use one that starts with 192.168. that probably is this machine
@@ -70,6 +71,7 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 			break
 		}
 	}
+
 
 	serverAddress := fmt.Sprintf("%s:%d", publicIP, 53)
 	etcdServer, err := lk.NewEtcd(DNSEtcdURLs, peerURLs, DNSName, lk.GetDNSDataDirectory())
@@ -141,6 +143,17 @@ func (dns *DNSServer) Start() {
 		for {
 			if err != nil {
 				time.Sleep(2 * time.Second)
+			}
+
+			if _, err = client.Namespaces().Get(DNSServiceNamespace); notFoundErr(err) {
+				err = createKubeSystemIfNotPresent(client)
+				if err != nil {
+					fmt.Printf("Failed to create the kube-system namespace: %v\n", err)
+					continue
+				}
+			} else if err != nil {
+				fmt.Printf("Failed to check for kube-system namespace existence: %v\n", err)
+				continue
 			}
 
 			// setup service
@@ -249,6 +262,20 @@ func createEndpoint(client *kubeclient.Client, meta kube.ObjectMeta, dnsIP strin
 	}
 
 	_, err := client.Endpoints(meta.Namespace).Create(endpoints)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func createKubeSystemIfNotPresent(client *kubeclient.Client) error {
+
+	var ns = &kube.Namespace{
+		ObjectMeta: kube.ObjectMeta{
+			Name: DNSServiceNamespace,
+		},
+	}
+	_, err := client.Namespaces().Create(ns)
 	if err != nil {
 		return err
 	}
