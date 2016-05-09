@@ -26,9 +26,9 @@ var RootCmd = &cobra.Command{
 	Long:  `localkube is a all-in-one kubernetes binary that runs all servers at the same time.`,
 }
 
-func init(){
+func init() {
 	cobra.OnInitialize(initConfig)
 }
 
-func initConfig(){
+func initConfig() {
 }

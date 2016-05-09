@@ -17,8 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"os"
 	"fmt"
+	"os"
 
 	"k8s.io/minikube/cmd/localkube/cmd"
 )

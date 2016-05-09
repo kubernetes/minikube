@@ -17,8 +17,8 @@ limitations under the License.
 package localkube
 
 import (
-	"time"
 	"os"
+	"time"
 
 	"k8s.io/minikube/pkg/util"
 )
@@ -48,10 +48,10 @@ type SimpleServer struct {
 func NewSimpleServer(componentName string, msInterval int32, serverRoutine func() error) *SimpleServer {
 	return &SimpleServer{
 		ComponentName: componentName,
-		Interval: time.Duration(msInterval) * time.Millisecond,
+		Interval:      time.Duration(msInterval) * time.Millisecond,
 
 		serverRoutine: serverRoutine,
-		stopChannel: make(chan struct{}),
+		stopChannel:   make(chan struct{}),
 	}
 }
 

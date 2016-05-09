@@ -17,7 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-
 	kubeproxy "k8s.io/kubernetes/cmd/kube-proxy/app"
 	"k8s.io/kubernetes/cmd/kube-proxy/app/options"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
@@ -26,7 +25,7 @@ import (
 
 var (
 	MasqueradeBit = 14
-	OOMScoreAdj = qos.KubeProxyOOMScoreAdj
+	OOMScoreAdj   = qos.KubeProxyOOMScoreAdj
 )
 
 func (lk LocalkubeServer) NewProxyServer() Server {

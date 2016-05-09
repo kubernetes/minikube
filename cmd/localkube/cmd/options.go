@@ -24,16 +24,16 @@ import (
 
 func NewLocalkubeServer() *localkube.LocalkubeServer {
 	return &localkube.LocalkubeServer{
-		Containerized: false,
-		EnableDNS: true,
-		DNSDomain: "cluster.local",
-		DNSIP: "10.0.0.10",
-		LocalkubeDirectory: "/var/lib/localkube",
-		ServiceClusterIPRange: "10.0.0.1/24",
-		APIServerAddress: "0.0.0.0",
-		APIServerPort: 443,
+		Containerized:            false,
+		EnableDNS:                true,
+		DNSDomain:                "cluster.local",
+		DNSIP:                    "10.0.0.10",
+		LocalkubeDirectory:       "/var/lib/localkube",
+		ServiceClusterIPRange:    "10.0.0.1/24",
+		APIServerAddress:         "0.0.0.0",
+		APIServerPort:            443,
 		APIServerInsecureAddress: "127.0.0.1",
-		APIServerInsecurePort: 8080,
+		APIServerInsecurePort:    8080,
 	}
 }
 
@@ -50,7 +50,6 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.StringVar(&s.APIServerInsecureAddress, "apiserver-insecure-address", s.APIServerInsecureAddress, "The address the apiserver will listen insecurely on")
 	flag.IntVar(&s.APIServerInsecurePort, "apiserver-insecure-port", s.APIServerInsecurePort, "The port the apiserver will listen insecurely on")
 
-
 	// These two come from vendor/ packages that use flags. We should hide them
 	flag.CommandLine.MarkHidden("google-json-key")
 	flag.CommandLine.MarkHidden("log-flush-frequency")
@@ -58,4 +57,3 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	// Parse them
 	flag.Parse()
 }
-

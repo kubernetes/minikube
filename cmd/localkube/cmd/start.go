@@ -38,7 +38,7 @@ var StartCmd = &cobra.Command{
 
 		SetupServer(Server)
 		Server.StartAll()
-		
+
 		defer Server.StopAll()
 
 		interruptChan := make(chan os.Signal, 1)
@@ -49,12 +49,12 @@ var StartCmd = &cobra.Command{
 	},
 }
 
-func init(){
+func init() {
 	Server = NewLocalkubeServer()
 	RootCmd.AddCommand(StartCmd)
 }
 
-func SetupServer(s *localkube.LocalkubeServer){
+func SetupServer(s *localkube.LocalkubeServer) {
 	// setup etcd
 	etcd, err := s.NewEtcd(localkube.KubeEtcdClientURLs, localkube.KubeEtcdPeerURLs, "kubeetcd", s.GetEtcdDataDirectory())
 	if err != nil {

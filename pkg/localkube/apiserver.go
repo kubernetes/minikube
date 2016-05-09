@@ -33,7 +33,6 @@ const (
 	certPath = "/srv/kubernetes/certs/"
 )
 
-
 func (lk LocalkubeServer) NewAPIServer() Server {
 	return NewSimpleServer("apiserver", serverInterval, StartAPIServer(lk))
 }

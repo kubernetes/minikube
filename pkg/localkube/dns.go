@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"time"
 	str "strings"
+	"time"
 
 	"k8s.io/minikube/pkg/localkube/kube2sky"
 
@@ -71,7 +71,6 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 			break
 		}
 	}
-
 
 	serverAddress := fmt.Sprintf("%s:%d", publicIP, 53)
 	etcdServer, err := lk.NewEtcd(DNSEtcdURLs, peerURLs, DNSName, lk.GetDNSDataDirectory())

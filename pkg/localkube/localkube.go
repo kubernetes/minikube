@@ -17,8 +17,8 @@ limitations under the License.
 package localkube
 
 import (
-	"path"
 	"fmt"
+	"path"
 )
 
 const serverInterval = 200
@@ -29,16 +29,16 @@ type LocalkubeServer struct {
 	Servers
 
 	// Options
-	Containerized bool
-	EnableDNS     bool
-	DNSDomain     string
-	DNSIP         string
-	LocalkubeDirectory  string
-	ServiceClusterIPRange string
-	APIServerAddress string
-	APIServerPort int
+	Containerized            bool
+	EnableDNS                bool
+	DNSDomain                string
+	DNSIP                    string
+	LocalkubeDirectory       string
+	ServiceClusterIPRange    string
+	APIServerAddress         string
+	APIServerPort            int
 	APIServerInsecureAddress string
-	APIServerInsecurePort int
+	APIServerInsecurePort    int
 }
 
 func (lk *LocalkubeServer) AddServer(server Server) {

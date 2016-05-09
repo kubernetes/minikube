@@ -17,7 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-
 	kubelet "k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
 )

@@ -17,9 +17,9 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io"
 	"time"
-	"fmt"
 )
 
 // Until endlessly loops the provided function until a message is received on the done channel.
