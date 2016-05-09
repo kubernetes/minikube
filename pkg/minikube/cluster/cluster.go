@@ -19,7 +19,9 @@ package cluster
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -28,6 +30,14 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
+)
+
+const (
+	remotePath = "/srv/kubernetes/certs"
+)
+
+var (
+	certs = []string{"ca.crt", "kubecfg.key", "kubecfg.crt"}
 )
 
 // StartHost starts a host VM.
@@ -128,35 +138,37 @@ type sshAble interface {
 	RunSSHCommand(string) (string, error)
 }
 
-// StartCluster starts as k8s cluster on the specified Host.
-func StartCluster(h sshAble) error {
-	for _, cmd := range []string{
-		// Download and install weave, if it doesn't exist.
-		`if [ ! -e /usr/local/bin/weave ]; then
-		   sudo curl -L git.io/weave -o /usr/local/bin/weave
-		   sudo chmod a+x /usr/local/bin/weave;
-		 fi`,
-		// Download and install localkube, if it doesn't exist yet.
-		`if [ ! -e /usr/local/bin/localkube ];
-		 then
-		   sudo curl -L https://github.com/redspread/localkube/releases/download/v1.2.1-v1/localkube-linux -o /usr/local/bin/localkube
-		   sudo chmod a+x /usr/local/bin/localkube;
-		 fi`,
-		// Start weave.
-		"weave launch-router",
-		"weave launch-proxy --without-dns --rewrite-inspect",
-		"weave expose -h \"localkube.weave.local\"",
-		// Localkube assumes containerized kubelet, which looks at /rootfs.
-		"if [ ! -e /rootfs ]; then sudo ln -s / /rootfs; fi",
-		// Run with nohup so it stays up. Redirect logs to useful places.
-		"PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start > /var/log/localkube.out 2> /var/log/localkube.err < /dev/null &"} {
-		output, err := h.RunSSHCommand(cmd)
-		log.Println(output)
+// KubernetesConfig contains the parameters used to start a cluster.
+type KubernetesConfig struct {
+	LocalkubeURL string
+}
+
+// StartCluster starts a k8s cluster on the specified Host.
+func StartCluster(h sshAble, config KubernetesConfig) error {
+	output, err := h.RunSSHCommand(getStartCommand(config.LocalkubeURL))
+	log.Println(output)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetCreds gets the generated credentials required to talk to the APIServer.
+func GetCreds(h sshAble) error {
+	localPath := constants.Minipath
+
+	for _, cert := range certs {
+		remoteCertPath := filepath.Join(remotePath, cert)
+		localCertPath := filepath.Join(localPath, cert)
+		data, err := h.RunSSHCommand(fmt.Sprintf("cat %s", remoteCertPath))
 		if err != nil {
 			return err
 		}
+		if err := ioutil.WriteFile(localCertPath, []byte(data), 0644); err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 

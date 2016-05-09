@@ -37,6 +37,10 @@ assumes you already have Virtualbox installed.`,
 	Run: runStart,
 }
 
+var (
+	localkubeURL string
+)
+
 func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Starting local Kubernetes cluster...")
@@ -48,7 +52,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if err := cluster.StartCluster(host); err != nil {
+	config := cluster.KubernetesConfig{
+		LocalkubeURL: localkubeURL,
+	}
+
+	if err := cluster.StartCluster(host, config); err != nil {
 		log.Println("Error starting cluster: ", err)
 		os.Exit(1)
 	}
@@ -57,13 +65,23 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Println("Error connecting to cluster: ", err)
 	}
-	kubeHost = strings.Replace(kubeHost, "tcp://", "http://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":8080", -1)
-	log.Printf("Kubernetes is available at %s.\n", kubeHost)
-	log.Println("Run this command to use the cluster: ")
-	log.Printf("kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=%s\n", kubeHost)
+	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":443", -1)
+	fmt.Printf("Kubernetes is available at %s.\n", kubeHost)
+	fmt.Println("Run this command to use the cluster: ")
+	fmt.Printf("kubectl config set-cluster minikube --server=%s --certificate-authority=$HOME/.minikube/ca.crt\n", kubeHost)
+	fmt.Println("kubectl config set-credentials minikube --client-certificate=$HOME/.minikube/kubecfg.crt --client-key=$HOME/.minikube/kubecfg.key")
+	fmt.Println("kubectl config set-context minikube --cluster=minikube --user=minikube")
+	fmt.Println("kubectl config use-context minikube")
+
+	if err := cluster.GetCreds(host); err != nil {
+		log.Println("Error configuring authentication: ", err)
+		os.Exit(1)
+	}
 }
 
 func init() {
+	startCmd.Flags().StringVarP(&localkubeURL, "localkube-url", "", "https://storage.googleapis.com/tinykube/localkube", "Location of the localkube binary")
+	startCmd.Flags().MarkHidden("localkube-url")
 	RootCmd.AddCommand(startCmd)
 }

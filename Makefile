@@ -24,9 +24,8 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 gopath:
-	rm -rf $(GOPATH)
 	mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH))
-	ln -s $(shell pwd) $(GOPATH)/src/$(REPOPATH)
+	ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
 
 .PHONY: minikube
 minikube: minikube-$(GOOS)-$(GOARCH)
@@ -45,6 +44,12 @@ localkube-$(GOOS)-$(GOARCH): gopath
 .PHONY: integration
 integration: minikube
 	go test -v ./test/integration --tags=integration
+
+localkube-incremental:
+	GOPATH=/go CGO_ENABLED=1 GOBIN=$(shell pwd)/$(BUILD_DIR) go install ./cmd/localkube
+
+docker/localkube:
+	docker run -w /go/src/k8s.io/minikube -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make localkube-incremental
 
 .PHONY: test
 test: gopath

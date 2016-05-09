@@ -18,6 +18,10 @@ package cluster
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -57,32 +61,36 @@ func TestCreateHost(t *testing.T) {
 	}
 }
 
+// Mock Host used for testing. When commands are run, the output from CommandOutput
+// is used, if present. Then the output from Error is used, if present. Finally,
+// "", nil is returned.
 type mockHost struct {
-	Commands []string
+	CommandOutput map[string]string
+	Error         string
 }
 
 func (m mockHost) RunSSHCommand(cmd string) (string, error) {
-	m.Commands = append(m.Commands, cmd)
+	output, ok := m.CommandOutput[cmd]
+	if ok {
+		return output, nil
+	}
+	if m.Error != "" {
+		return "", fmt.Errorf(m.Error)
+	}
 	return "", nil
 }
 
 func TestStartCluster(t *testing.T) {
 	h := mockHost{}
-	err := StartCluster(h)
+	err := StartCluster(h, KubernetesConfig{})
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
 }
 
-type mockHostError struct{}
-
-func (m mockHostError) RunSSHCommand(cmd string) (string, error) {
-	return "", fmt.Errorf("Error calling command: %s", cmd)
-}
-
 func TestStartClusterError(t *testing.T) {
-	h := mockHostError{}
-	err := StartCluster(h)
+	h := mockHost{Error: "error"}
+	err := StartCluster(h, KubernetesConfig{})
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
 	}
@@ -270,4 +278,54 @@ func TestGetHostStatus(t *testing.T) {
 
 	StopHost(api)
 	checkState(state.Stopped.String())
+}
+
+func TestGetCreds(t *testing.T) {
+	m := make(map[string]string)
+	for _, cert := range certs {
+		m[fmt.Sprintf("cat %s/%s", remotePath, cert)] = cert
+	}
+
+	h := mockHost{CommandOutput: m}
+
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
+	if err := GetCreds(h); err != nil {
+		t.Fatalf("Error starting cluster: %s", err)
+	}
+
+	for _, cert := range certs {
+		// Files should be created with contents matching the output.
+		certPath := filepath.Join(tempDir, cert)
+		contents, err := ioutil.ReadFile(certPath)
+		if err != nil {
+			t.Fatalf("Error %s reading file: %s", err, certPath)
+		}
+		if !reflect.DeepEqual(contents, []byte(cert)) {
+			t.Fatalf("Contents of file are: %s, should be %s", contents, cert)
+		}
+	}
+}
+
+func TestGetCredsError(t *testing.T) {
+	h := mockHost{
+		Error: "error getting creds",
+	}
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
+	if err := GetCreds(h); err == nil {
+		t.Fatalf("Error should have been thrown, but was not.")
+	}
+
+	// No files should have been created.
+	for _, cert := range certs {
+		certPath := filepath.Join(tempDir, cert)
+		_, err := os.Stat(certPath)
+		if !os.IsNotExist(err) {
+			t.Fatalf("File %s should not exist.", certPath)
+		}
+	}
+
 }

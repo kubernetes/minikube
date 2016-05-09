@@ -17,23 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
-
-func makeTempDir() string {
-	tempDir, err := ioutil.TempDir("", "minipath")
-	if err != nil {
-		log.Fatal(err)
-	}
-	constants.Minipath = tempDir
-	return tempDir
-}
 
 func runCommand(f func(*cobra.Command, []string)) {
 	cmd := cobra.Command{}
@@ -43,7 +32,7 @@ func runCommand(f func(*cobra.Command, []string)) {
 
 func TestPreRunDirectories(t *testing.T) {
 	// Make sure we create the required directories.
-	tempDir := makeTempDir()
+	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
 	runCommand(RootCmd.PersistentPreRun)

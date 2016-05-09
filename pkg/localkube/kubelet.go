@@ -29,8 +29,7 @@ const (
 )
 
 var (
-	WeaveProxySock = "unix:///var/run/weave/weave.sock"
-	KubeletStop    chan struct{}
+	KubeletStop chan struct{}
 )
 
 func NewKubeletServer(clusterDomain, clusterDNS string, containerized bool) Server {
@@ -50,9 +49,7 @@ func StartKubeletServer(clusterDomain, clusterDNS string, containerized bool) fu
 	// master details
 	config.APIServerList = []string{APIServerURL}
 
-	// Docker
 	config.Containerized = containerized
-	config.DockerEndpoint = WeaveProxySock
 
 	// Networking
 	config.ClusterDomain = clusterDomain
