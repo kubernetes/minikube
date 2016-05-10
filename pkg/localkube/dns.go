@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	str "strings"
 	"time"
 
 	"k8s.io/minikube/pkg/localkube/kube2sky"
@@ -56,23 +55,12 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 	peerURLs := []string{"http://localhost:9256"}
 	DNSEtcdURLs := []string{"http://localhost:9090"}
 
-	addrs, err := net.InterfaceAddrs()
-	publicIP := ""
+	publicIP, err := lk.GetHostIP()
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Use "k8s.io/kubernetes/pkg/util/net" to detect the public ip address instead of this
-	for _, addr := range addrs {
-
-		// Cast addr to an IPNet and use one that starts with 192.168. that probably is this machine
-		if ipnet, ok := addr.(*net.IPNet); ok && str.Contains(addr.String(), "192.168.") {
-			publicIP = ipnet.IP.String()
-			break
-		}
-	}
-
-	serverAddress := fmt.Sprintf("%s:%d", publicIP, 53)
+	serverAddress := fmt.Sprintf("%s:%d", publicIP.String(), 53)
 	etcdServer, err := lk.NewEtcd(DNSEtcdURLs, peerURLs, DNSName, lk.GetDNSDataDirectory())
 	if err != nil {
 		return nil, err

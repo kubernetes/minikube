@@ -40,7 +40,7 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 
 	// Networking
 	config.ClusterDomain = lk.DNSDomain
-	config.ClusterDNS = lk.DNSIP
+	config.ClusterDNS = lk.DNSIP.String()
 	config.HostnameOverride = HostnameOverride
 
 	// Use the host's resolver config

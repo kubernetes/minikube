@@ -17,7 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-	"net"
 	"path/filepath"
 	"strings"
 
@@ -36,9 +35,9 @@ func (lk LocalkubeServer) NewAPIServer() Server {
 func StartAPIServer(lk LocalkubeServer) func() error {
 	config := options.NewAPIServer()
 
-	config.BindAddress = net.ParseIP(lk.APIServerAddress)
+	config.BindAddress = lk.APIServerAddress
 	config.SecurePort = lk.APIServerPort
-	config.InsecureBindAddress = net.ParseIP(lk.APIServerInsecureAddress)
+	config.InsecureBindAddress = lk.APIServerInsecureAddress
 	config.InsecurePort = lk.APIServerInsecurePort
 
 	config.ClientCAFile = filepath.Join(lk.GetCertificateDirectory(), "ca.crt")
@@ -52,11 +51,7 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	}
 
 	// set Service IP range
-	_, ipnet, err := net.ParseCIDR(lk.ServiceClusterIPRange)
-	if err != nil {
-		panic(err)
-	}
-	config.ServiceClusterIPRange = *ipnet
+	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
 
 	// defaults from apiserver command
 	config.EnableProfiling = true

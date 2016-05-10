@@ -19,6 +19,9 @@ package localkube
 import (
 	"fmt"
 	"path"
+	"net"
+
+	utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
 const serverInterval = 200
@@ -32,12 +35,12 @@ type LocalkubeServer struct {
 	Containerized            bool
 	EnableDNS                bool
 	DNSDomain                string
-	DNSIP                    string
+	DNSIP                    net.IP
 	LocalkubeDirectory       string
-	ServiceClusterIPRange    string
-	APIServerAddress         string
+	ServiceClusterIPRange    net.IPNet
+	APIServerAddress         net.IP
 	APIServerPort            int
-	APIServerInsecureAddress string
+	APIServerInsecureAddress net.IP
 	APIServerInsecurePort    int
 }
 
@@ -58,9 +61,14 @@ func (lk LocalkubeServer) GetCertificateDirectory() string {
 }
 
 func (lk LocalkubeServer) GetAPIServerSecureURL() string {
-	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress, lk.APIServerPort)
+	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress.String(), lk.APIServerPort)
 }
 
 func (lk LocalkubeServer) GetAPIServerInsecureURL() string {
-	return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress, lk.APIServerInsecurePort)
+	return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress.String(), lk.APIServerInsecurePort)
+}
+
+// Get the host's public IP address
+func (lk LocalkubeServer) GetHostIP() (net.IP, error) {
+	return utilnet.ChooseBindAddress(net.ParseIP("0.0.0.0"))
 }

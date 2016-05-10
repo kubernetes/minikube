@@ -85,7 +85,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	// setup dns if we should
 	if s.EnableDNS {
 
-		dns, err := s.NewDNSServer(s.DNSDomain, s.DNSIP, s.GetAPIServerInsecureURL())
+		dns, err := s.NewDNSServer(s.DNSDomain, s.DNSIP.String(), s.GetAPIServerInsecureURL())
 		if err != nil {
 			panic(err)
 		}

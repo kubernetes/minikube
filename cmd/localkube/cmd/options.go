@@ -17,22 +17,27 @@ limitations under the License.
 package cmd
 
 import (
+	"net"
+
 	flag "github.com/spf13/pflag"
 
 	"k8s.io/minikube/pkg/localkube"
 )
 
 func NewLocalkubeServer() *localkube.LocalkubeServer {
+	// net.ParseCIDR returns multiple values. Use the IPNet return value
+	_, defaultServiceClusterIPRange, _ := net.ParseCIDR("10.0.0.1/24")
+
 	return &localkube.LocalkubeServer{
 		Containerized:            false,
 		EnableDNS:                true,
 		DNSDomain:                "cluster.local",
-		DNSIP:                    "10.0.0.10",
+		DNSIP:                    net.ParseIP("10.0.0.10"),
 		LocalkubeDirectory:       "/var/lib/localkube",
-		ServiceClusterIPRange:    "10.0.0.1/24",
-		APIServerAddress:         "0.0.0.0",
+		ServiceClusterIPRange:    *defaultServiceClusterIPRange,
+		APIServerAddress:         net.ParseIP("0.0.0.0"),
 		APIServerPort:            443,
-		APIServerInsecureAddress: "127.0.0.1",
+		APIServerInsecureAddress: net.ParseIP("127.0.0.1"),
 		APIServerInsecurePort:    8080,
 	}
 }
@@ -42,12 +47,12 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.BoolVar(&s.Containerized, "containerized", s.Containerized, "If kubelet should run in containerized mode")
 	flag.BoolVar(&s.EnableDNS, "enable-dns", s.EnableDNS, "If dns should be enabled")
 	flag.StringVar(&s.DNSDomain, "dns-domain", s.DNSDomain, "The cluster dns domain")
-	flag.StringVar(&s.DNSIP, "dns-ip", s.DNSIP, "The cluster dns IP")
+	flag.IPVar(&s.DNSIP, "dns-ip", s.DNSIP, "The cluster dns IP")
 	flag.StringVar(&s.LocalkubeDirectory, "localkube-directory", s.LocalkubeDirectory, "The directory localkube will store files in")
-	flag.StringVar(&s.ServiceClusterIPRange, "service-cluster-ip-range", s.ServiceClusterIPRange, "The service-cluster-ip-range for the apiserver")
-	flag.StringVar(&s.APIServerAddress, "apiserver-address", s.APIServerAddress, "The address the apiserver will listen securely on")
+	flag.IPNetVar(&s.ServiceClusterIPRange, "service-cluster-ip-range", s.ServiceClusterIPRange, "The service-cluster-ip-range for the apiserver")
+	flag.IPVar(&s.APIServerAddress, "apiserver-address", s.APIServerAddress, "The address the apiserver will listen securely on")
 	flag.IntVar(&s.APIServerPort, "apiserver-port", s.APIServerPort, "The port the apiserver will listen securely on")
-	flag.StringVar(&s.APIServerInsecureAddress, "apiserver-insecure-address", s.APIServerInsecureAddress, "The address the apiserver will listen insecurely on")
+	flag.IPVar(&s.APIServerInsecureAddress, "apiserver-insecure-address", s.APIServerInsecureAddress, "The address the apiserver will listen insecurely on")
 	flag.IntVar(&s.APIServerInsecurePort, "apiserver-insecure-port", s.APIServerInsecurePort, "The port the apiserver will listen insecurely on")
 
 	// These two come from vendor/ packages that use flags. We should hide them
