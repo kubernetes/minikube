@@ -36,7 +36,6 @@ import (
 	etcd "github.com/coreos/go-etcd/etcd"
 	"github.com/golang/glog"
 	skymsg "github.com/skynetservices/skydns/msg"
-	//flag "github.com/spf13/pflag"
 	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/endpoints"
 	"k8s.io/kubernetes/pkg/api/unversioned"

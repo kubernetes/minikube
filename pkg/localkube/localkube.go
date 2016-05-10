@@ -82,11 +82,11 @@ func (lk LocalkubeServer) GetHostIP() (net.IP, error) {
 	return utilnet.ChooseBindAddress(net.ParseIP("0.0.0.0"))
 }
 
-func (lk LocalkubeServer) GenerateCerts() {
+func (lk LocalkubeServer) GenerateCerts() error {
 
 	if util.CanReadFile(lk.GetPublicKeyCertPath()) && util.CanReadFile(lk.GetPrivateKeyCertPath()) {
-		fmt.Println("Using existing certs")
-		return
+		fmt.Println("Using these existing certs: ", lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
+		return nil
 	}
 
 	alternateIPs := []net.IP{lk.ServiceClusterIPRange.IP}
@@ -94,9 +94,13 @@ func (lk LocalkubeServer) GenerateCerts() {
 	hostIP, err := lk.GetHostIP()
 	if err != nil {
 		fmt.Println("Failed to get host IP: ", err)
+		return err
 	}
 
 	if err := utilcrypto.GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), alternateIPs, alternateDNS); err != nil {
 		fmt.Println("Failed to create certs: ", err)
+		return err
 	}
+
+	return nil
 }
