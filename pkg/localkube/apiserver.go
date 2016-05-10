@@ -17,7 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-	"path/filepath"
 	"strings"
 
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
@@ -40,9 +39,9 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.InsecureBindAddress = lk.APIServerInsecureAddress
 	config.InsecurePort = lk.APIServerInsecurePort
 
-	config.ClientCAFile = filepath.Join(lk.GetCertificateDirectory(), "ca.crt")
-	config.TLSCertFile = filepath.Join(lk.GetCertificateDirectory(), "kubernetes-master.crt")
-	config.TLSPrivateKeyFile = filepath.Join(lk.GetCertificateDirectory(), "kubernetes-master.key")
+	config.ClientCAFile = lk.GetPublicKeyCertPath()
+	config.TLSCertFile = lk.GetPublicKeyCertPath()
+	config.TLSPrivateKeyFile = lk.GetPrivateKeyCertPath()
 	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
 
 	// use localkube etcd

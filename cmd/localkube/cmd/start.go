@@ -55,6 +55,9 @@ func init() {
 }
 
 func SetupServer(s *localkube.LocalkubeServer) {
+
+	s.GenerateCerts()
+
 	// setup etcd
 	etcd, err := s.NewEtcd(localkube.KubeEtcdClientURLs, localkube.KubeEtcdPeerURLs, "kubeetcd", s.GetEtcdDataDirectory())
 	if err != nil {

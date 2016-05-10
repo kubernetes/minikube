@@ -18,10 +18,13 @@ package localkube
 
 import (
 	"fmt"
-	"path"
 	"net"
+	"path"
 
+	utilcrypto "k8s.io/kubernetes/pkg/util"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
+
+	"k8s.io/minikube/pkg/util"
 )
 
 const serverInterval = 200
@@ -59,6 +62,12 @@ func (lk LocalkubeServer) GetDNSDataDirectory() string {
 func (lk LocalkubeServer) GetCertificateDirectory() string {
 	return path.Join(lk.LocalkubeDirectory, "certs")
 }
+func (lk LocalkubeServer) GetPrivateKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "apiserver.key")
+}
+func (lk LocalkubeServer) GetPublicKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "apiserver.crt")
+}
 
 func (lk LocalkubeServer) GetAPIServerSecureURL() string {
 	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress.String(), lk.APIServerPort)
@@ -71,4 +80,23 @@ func (lk LocalkubeServer) GetAPIServerInsecureURL() string {
 // Get the host's public IP address
 func (lk LocalkubeServer) GetHostIP() (net.IP, error) {
 	return utilnet.ChooseBindAddress(net.ParseIP("0.0.0.0"))
+}
+
+func (lk LocalkubeServer) GenerateCerts() {
+
+	if util.CanReadFile(lk.GetPublicKeyCertPath()) && util.CanReadFile(lk.GetPrivateKeyCertPath()) {
+		fmt.Println("Using existing certs")
+		return
+	}
+
+	alternateIPs := []net.IP{lk.ServiceClusterIPRange.IP}
+	alternateDNS := []string{fmt.Sprintf("%s.%s", "kubernetes.default.svc", lk.DNSDomain), "kubernetes.default.svc", "kubernetes.default", "kubernetes"}
+	hostIP, err := lk.GetHostIP()
+	if err != nil {
+		fmt.Println("Failed to get host IP: ", err)
+	}
+
+	if err := utilcrypto.GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), alternateIPs, alternateDNS); err != nil {
+		fmt.Println("Failed to create certs: ", err)
+	}
 }

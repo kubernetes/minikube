@@ -17,8 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-	"path/filepath"
-
 	controllerManager "k8s.io/kubernetes/cmd/kube-controller-manager/app"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
 )
@@ -36,7 +34,8 @@ func StartControllerManagerServer(lk LocalkubeServer) func() error {
 	config.DeletingPodsQps = 0.1
 	config.DeletingPodsBurst = 10
 	config.EnableProfiling = true
-	config.ServiceAccountKeyFile = filepath.Join(lk.GetCertificateDirectory(), "kubernetes-master.key")
+	config.ServiceAccountKeyFile = lk.GetPrivateKeyCertPath()
+	config.RootCAFile = lk.GetPublicKeyCertPath()
 
 	return func() error {
 		return controllerManager.Run(config)
