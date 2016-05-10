@@ -36,7 +36,7 @@ func StartControllerManagerServer(lk LocalkubeServer) func() error {
 	config.DeletingPodsQps = 0.1
 	config.DeletingPodsBurst = 10
 	config.EnableProfiling = true
-	config.ServiceAccountKeyFile = filepath.Join(certPath, "kubernetes-master.key")
+	config.ServiceAccountKeyFile = filepath.Join(lk.GetCertificateDirectory(), "kubernetes-master.key")
 
 	return func() error {
 		return controllerManager.Run(config)

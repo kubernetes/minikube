@@ -29,10 +29,6 @@ import (
 	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 )
 
-const (
-	certPath = "/srv/kubernetes/certs/"
-)
-
 func (lk LocalkubeServer) NewAPIServer() Server {
 	return NewSimpleServer("apiserver", serverInterval, StartAPIServer(lk))
 }
@@ -45,9 +41,9 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.InsecureBindAddress = net.ParseIP(lk.APIServerInsecureAddress)
 	config.InsecurePort = lk.APIServerInsecurePort
 
-	config.ClientCAFile = filepath.Join(certPath, "ca.crt")
-	config.TLSCertFile = filepath.Join(certPath, "kubernetes-master.crt")
-	config.TLSPrivateKeyFile = filepath.Join(certPath, "kubernetes-master.key")
+	config.ClientCAFile = filepath.Join(lk.GetCertificateDirectory(), "ca.crt")
+	config.TLSCertFile = filepath.Join(lk.GetCertificateDirectory(), "kubernetes-master.crt")
+	config.TLSPrivateKeyFile = filepath.Join(lk.GetCertificateDirectory(), "kubernetes-master.key")
 	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
 
 	// use localkube etcd

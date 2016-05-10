@@ -53,6 +53,10 @@ func (lk LocalkubeServer) GetDNSDataDirectory() string {
 	return path.Join(lk.LocalkubeDirectory, "dns")
 }
 
+func (lk LocalkubeServer) GetCertificateDirectory() string {
+	return path.Join(lk.LocalkubeDirectory, "certs")
+}
+
 func (lk LocalkubeServer) GetAPIServerSecureURL() string {
 	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress, lk.APIServerPort)
 }
