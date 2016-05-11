@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/coreos/etcd/etcdserver"
@@ -39,17 +38,7 @@ var (
 
 	// EtcdPeerURLs don't have listeners created for them, they are used to pass Etcd validation
 	KubeEtcdPeerURLs = []string{"http://localhost:2380"}
-
-	// EtcdDataDirectory is where all state is stored. Can be changed with env var ETCD_DATA_DIRECTORY
-	KubeEtcdDataDirectory = "/var/etcd/data"
 )
-
-func init() {
-
-	if dataDir := os.Getenv("KUBE_ETCD_DATA_DIRECTORY"); len(dataDir) != 0 {
-		KubeEtcdDataDirectory = dataDir
-	}
-}
 
 // Etcd is a Server which manages an Etcd cluster
 type EtcdServer struct {
@@ -59,7 +48,7 @@ type EtcdServer struct {
 }
 
 // NewEtcd creates a new default etcd Server using 'dataDir' for persistence. Panics if could not be configured.
-func NewEtcd(clientURLStrs, peerURLStrs []string, name, dataDirectory string) (*EtcdServer, error) {
+func (lk LocalkubeServer) NewEtcd(clientURLStrs, peerURLStrs []string, name, dataDirectory string) (*EtcdServer, error) {
 	clientURLs, err := types.NewURLs(clientURLStrs)
 	if err != nil {
 		return nil, err
@@ -133,11 +122,6 @@ func (e *EtcdServer) Stop() {
 	for _, l := range e.clientListens {
 		l.Close()
 	}
-}
-
-// Status is currently not support by Etcd
-func (EtcdServer) Status() Status {
-	return NotImplemented
 }
 
 // Name returns the servers unique name

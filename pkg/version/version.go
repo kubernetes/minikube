@@ -14,27 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package localkube
+package version
 
-import (
-	scheduler "k8s.io/kubernetes/plugin/cmd/kube-scheduler/app"
-	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
-)
-
-func (lk LocalkubeServer) NewSchedulerServer() Server {
-	return NewSimpleServer("scheduler", serverInterval, StartSchedulerServer(lk))
-}
-
-func StartSchedulerServer(lk LocalkubeServer) func() error {
-	config := options.NewSchedulerServer()
-
-	// master details
-	config.Master = lk.GetAPIServerInsecureURL()
-
-	// defaults from command
-	config.EnableProfiling = true
-
-	return func() error {
-		return scheduler.Run(config)
-	}
-}
+// The current version of the binary
+const Version = "0.0.5"

@@ -30,6 +30,8 @@ import (
 	kube "k8s.io/kubernetes/pkg/api"
 	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
+
+	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -37,12 +39,6 @@ const (
 
 	DNSServiceName      = "kube-dns"
 	DNSServiceNamespace = "kube-system"
-)
-
-var (
-	DNSEtcdURLs = []string{"http://localhost:9090"}
-
-	DNSEtcdDataDirectory = "/var/dns/data"
 )
 
 type DNSServer struct {
@@ -54,10 +50,18 @@ type DNSServer struct {
 	done          chan struct{}
 }
 
-func NewDNSServer(rootDomain, clusterIP, serverAddress, kubeAPIServer string) (*DNSServer, error) {
+func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer string) (*DNSServer, error) {
 	// setup backing etcd store
 	peerURLs := []string{"http://localhost:9256"}
-	etcdServer, err := NewEtcd(DNSEtcdURLs, peerURLs, DNSName, DNSEtcdDataDirectory)
+	DNSEtcdURLs := []string{"http://localhost:9090"}
+
+	publicIP, err := lk.GetHostIP()
+	if err != nil {
+		return nil, err
+	}
+
+	serverAddress := fmt.Sprintf("%s:%d", publicIP.String(), 53)
+	etcdServer, err := lk.NewEtcd(DNSEtcdURLs, peerURLs, DNSName, lk.GetDNSDataDirectory())
 	if err != nil {
 		return nil, err
 	}
@@ -99,15 +103,15 @@ func NewDNSServer(rootDomain, clusterIP, serverAddress, kubeAPIServer string) (*
 
 func (dns *DNSServer) Start() {
 	if dns.done != nil {
-		fmt.Fprint(os.Stderr, pad("DNS server already started"))
+		fmt.Fprint(os.Stderr, util.Pad("DNS server already started"))
 		return
 	}
 
 	dns.done = make(chan struct{})
 
 	dns.etcd.Start()
-	go until(dns.kube2sky, os.Stderr, "kube2sky", 2*time.Second, dns.done)
-	go until(dns.sky.Run, os.Stderr, "skydns", 1*time.Second, dns.done)
+	go util.Until(dns.kube2sky, os.Stderr, "kube2sky", 2*time.Second, dns.done)
+	go util.Until(dns.sky.Run, os.Stderr, "skydns", 1*time.Second, dns.done)
 
 	go func() {
 		var err error
@@ -128,6 +132,17 @@ func (dns *DNSServer) Start() {
 				time.Sleep(2 * time.Second)
 			}
 
+			if _, err = client.Namespaces().Get(DNSServiceNamespace); notFoundErr(err) {
+				err = createKubeSystemIfNotPresent(client)
+				if err != nil {
+					fmt.Printf("Failed to create the kube-system namespace: %v\n", err)
+					continue
+				}
+			} else if err != nil {
+				fmt.Printf("Failed to check for kube-system namespace existence: %v\n", err)
+				continue
+			}
+
 			// setup service
 			if _, err = client.Services(meta.Namespace).Get(meta.Name); notFoundErr(err) {
 				// create service if doesn't exist
@@ -146,7 +161,7 @@ func (dns *DNSServer) Start() {
 			if _, err = client.Endpoints(meta.Namespace).Get(meta.Name); notFoundErr(err) {
 				// create endpoint if doesn't exist
 				err = createEndpoint(client, meta, dns.dnsServerAddr.IP.String(), dns.dnsServerAddr.Port)
-				if err == nil {
+				if err != nil {
 					fmt.Printf("Failed to create Endpoint for DNS: %v\n", err)
 					continue
 				}
@@ -170,14 +185,6 @@ func (dns *DNSServer) Stop() {
 	close(dns.done)
 
 	dns.etcd.Stop()
-}
-
-// Status is currently not support by DNSServer
-func (dns *DNSServer) Status() Status {
-	if dns.done == nil {
-		return Stopped
-	}
-	return Started
 }
 
 // Name returns the servers unique name
@@ -242,6 +249,20 @@ func createEndpoint(client *kubeclient.Client, meta kube.ObjectMeta, dnsIP strin
 	}
 
 	_, err := client.Endpoints(meta.Namespace).Create(endpoints)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func createKubeSystemIfNotPresent(client *kubeclient.Client) error {
+
+	var ns = &kube.Namespace{
+		ObjectMeta: kube.ObjectMeta{
+			Name: DNSServiceNamespace,
+		},
+	}
+	_, err := client.Namespaces().Create(ns)
 	if err != nil {
 		return err
 	}
