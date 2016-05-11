@@ -29,8 +29,6 @@ type MockDriver struct {
 	drivers.BaseDriver
 	CurrentState state.State
 	RemoveError  bool
-	HostError    bool
-	Port         int
 }
 
 // Create creates a MockDriver instance
@@ -39,30 +37,14 @@ func (driver *MockDriver) Create() error {
 	return nil
 }
 
-func (driver *MockDriver) GetIP() (string, error) {
-	return driver.BaseDriver.GetIP()
-}
-
 // GetCreateFlags returns the flags used to create a MockDriver
 func (driver *MockDriver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{}
 }
 
-func (driver *MockDriver) GetSSHPort() (int, error) {
-	return driver.Port, nil
-}
-
 // GetSSHHostname returns the hostname for SSH
 func (driver *MockDriver) GetSSHHostname() (string, error) {
-	if driver.HostError {
-		return "", fmt.Errorf("Error getting host!")
-	}
-	return "localhost", nil
-}
-
-// GetSSHHostname returns the hostname for SSH
-func (driver *MockDriver) GetSSHKeyPath() string {
-	return driver.BaseDriver.SSHKeyPath
+	return "", nil
 }
 
 // GetState returns the state of the driver

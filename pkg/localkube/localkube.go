@@ -17,7 +17,10 @@ limitations under the License.
 package localkube
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"path"
 
@@ -82,20 +85,52 @@ func (lk LocalkubeServer) GetHostIP() (net.IP, error) {
 	return utilnet.ChooseBindAddress(net.ParseIP("0.0.0.0"))
 }
 
-func (lk LocalkubeServer) GenerateCerts() error {
+func (lk LocalkubeServer) loadCert(path string) (*x509.Certificate, error) {
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	decoded, _ := pem.Decode(contents)
+	if decoded == nil {
+		return nil, fmt.Errorf("Unable to decode certificate.")
+	}
 
-	if util.CanReadFile(lk.GetPublicKeyCertPath()) && util.CanReadFile(lk.GetPrivateKeyCertPath()) {
+	return x509.ParseCertificate(decoded.Bytes)
+}
+
+func (lk LocalkubeServer) shouldGenerateCerts(hostIP net.IP) bool {
+	if !(util.CanReadFile(lk.GetPublicKeyCertPath()) &&
+		util.CanReadFile(lk.GetPrivateKeyCertPath())) {
+		fmt.Println("Regenerating certs because the files aren't readable.")
+		return true
+	}
+
+	cert, err := lk.loadCert(lk.GetPublicKeyCertPath())
+	if err != nil {
+		fmt.Println("Regenerating certs because there was an error loading the certificate: ", err)
+		return true
+	}
+
+	for _, certIP := range cert.IPAddresses {
+		if certIP.Equal(hostIP) {
+			return false
+		}
+	}
+	fmt.Printf(
+		"Regenerating certs because the IP didn't match. Got %s, expected %s",
+		cert.IPAddresses, hostIP)
+	return true
+}
+
+func (lk LocalkubeServer) GenerateCerts(hostIP net.IP) error {
+
+	if !lk.shouldGenerateCerts(hostIP) {
 		fmt.Println("Using these existing certs: ", lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
 		return nil
 	}
 
 	alternateIPs := []net.IP{lk.ServiceClusterIPRange.IP}
 	alternateDNS := []string{fmt.Sprintf("%s.%s", "kubernetes.default.svc", lk.DNSDomain), "kubernetes.default.svc", "kubernetes.default", "kubernetes"}
-	hostIP, err := lk.GetHostIP()
-	if err != nil {
-		fmt.Println("Failed to get host IP: ", err)
-		return err
-	}
 
 	if err := utilcrypto.GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), alternateIPs, alternateDNS); err != nil {
 		fmt.Println("Failed to create certs: ", err)
