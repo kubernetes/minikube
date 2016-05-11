@@ -24,7 +24,6 @@ import (
 	"net"
 	"path"
 
-	utilcrypto "k8s.io/kubernetes/pkg/util"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 
 	"k8s.io/minikube/pkg/util"
@@ -147,7 +146,7 @@ func (lk LocalkubeServer) GenerateCerts(hostIP net.IP) error {
 	fmt.Println("Creating cert with IPs: ", ips)
 	alternateDNS := []string{fmt.Sprintf("%s.%s", "kubernetes.default.svc", lk.DNSDomain), "kubernetes.default.svc", "kubernetes.default", "kubernetes"}
 
-	if err := utilcrypto.GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, alternateDNS); err != nil {
+	if err := GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, alternateDNS); err != nil {
 		fmt.Println("Failed to create certs: ", err)
 		return err
 	}
