@@ -124,12 +124,11 @@ func (lk LocalkubeServer) shouldGenerateCerts(ips []net.IP) bool {
 	return false
 }
 
-func (lk LocalkubeServer) GenerateCerts(hostIP net.IP) error {
-
-	ips := []net.IP{lk.ServiceClusterIPRange.IP, hostIP}
+func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
+	ips := []net.IP{lk.ServiceClusterIPRange.IP}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, addr := range addrs {
 		ipnet, ok := addr.(*net.IPNet)
@@ -139,6 +138,16 @@ func (lk LocalkubeServer) GenerateCerts(hostIP net.IP) error {
 		}
 		ips = append(ips, ipnet.IP)
 	}
+	return ips, nil
+}
+
+func (lk LocalkubeServer) GenerateCerts() error {
+
+	ips, err := lk.getAllIPs()
+	if err != nil {
+		return err
+	}
+
 	if !lk.shouldGenerateCerts(ips) {
 		fmt.Println("Using these existing certs: ", lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
 		return nil
@@ -146,7 +155,7 @@ func (lk LocalkubeServer) GenerateCerts(hostIP net.IP) error {
 	fmt.Println("Creating cert with IPs: ", ips)
 	alternateDNS := []string{fmt.Sprintf("%s.%s", "kubernetes.default.svc", lk.DNSDomain), "kubernetes.default.svc", "kubernetes.default", "kubernetes"}
 
-	if err := GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, alternateDNS); err != nil {
+	if err := GenerateSelfSignedCert(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, alternateDNS); err != nil {
 		fmt.Println("Failed to create certs: ", err)
 		return err
 	}

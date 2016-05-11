@@ -56,12 +56,7 @@ func init() {
 
 func SetupServer(s *localkube.LocalkubeServer) {
 
-	hostIP, err := s.GetHostIP()
-	if err != nil {
-		fmt.Println("Error getting host IP!")
-		panic(err)
-	}
-	if err := s.GenerateCerts(hostIP); err != nil {
+	if err := s.GenerateCerts(); err != nil {
 		fmt.Println("Failed to create certificates!")
 		panic(err)
 	}
