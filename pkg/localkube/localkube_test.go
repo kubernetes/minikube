@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-var testIP = net.ParseIP("1.2.3.4")
+var testIPs = []net.IP{net.ParseIP("1.2.3.4")}
 
 func TestGenerateCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
@@ -39,7 +39,7 @@ func TestGenerateCerts(t *testing.T) {
 		ServiceClusterIPRange: *ipRange,
 	}
 
-	if err := lk.GenerateCerts(testIP); err != nil {
+	if err := lk.GenerateCerts(testIPs[0]); err != nil {
 		t.Fatalf("Unexpected error generating certs: %s", err)
 	}
 
@@ -54,14 +54,14 @@ func TestGenerateCerts(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error parsing cert: %s", err)
 	}
-	if !cert.IPAddresses[0].Equal(testIP) {
-		t.Fatalf("IP mismatch: %s != %s.", cert.IPAddresses[0], testIP)
+	if !cert.IPAddresses[0].Equal(testIPs[0]) {
+		t.Fatalf("IP mismatch: %s != %s.", cert.IPAddresses[0], testIPs[0])
 	}
 }
 
 func TestShouldGenerateCertsNoFiles(t *testing.T) {
 	lk := LocalkubeServer{LocalkubeDirectory: "baddir"}
-	if !lk.shouldGenerateCerts(testIP) {
+	if !lk.shouldGenerateCerts(testIPs) {
 		t.Fatalf("No certs exist, we should generate.")
 	}
 }
@@ -72,7 +72,7 @@ func TestShouldGenerateCertsOneFile(t *testing.T) {
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 	ioutil.WriteFile(filepath.Join(tempDir, "certs", "apiserver.crt"), []byte(""), 0644)
 	lk := LocalkubeServer{LocalkubeDirectory: tempDir}
-	if !lk.shouldGenerateCerts(testIP) {
+	if !lk.shouldGenerateCerts(testIPs) {
 		t.Fatalf("Not all certs exist, we should generate.")
 	}
 }
@@ -85,7 +85,7 @@ func TestShouldGenerateCertsBadFiles(t *testing.T) {
 		ioutil.WriteFile(filepath.Join(tempDir, "certs", f), []byte(""), 0644)
 	}
 	lk := LocalkubeServer{LocalkubeDirectory: tempDir}
-	if !lk.shouldGenerateCerts(testIP) {
+	if !lk.shouldGenerateCerts(testIPs) {
 		t.Fatalf("Certs are badly formatted, we should generate.")
 	}
 }
@@ -100,8 +100,9 @@ func TestShouldGenerateCertsMismatchedIP(t *testing.T) {
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
 	}
-	lk.GenerateCerts(testIP)
-	if !lk.shouldGenerateCerts(net.ParseIP("4.3.2.1")) {
+	lk.GenerateCerts(testIPs[0])
+
+	if !lk.shouldGenerateCerts([]net.IP{net.ParseIP("4.3.2.1")}) {
 		t.Fatalf("IPs don't match, we should generate.")
 	}
 }
@@ -116,8 +117,8 @@ func TestShouldNotGenerateCerts(t *testing.T) {
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
 	}
-	lk.GenerateCerts(testIP)
-	if lk.shouldGenerateCerts(testIP) {
+	lk.GenerateCerts(testIPs[0])
+	if lk.shouldGenerateCerts(testIPs) {
 		t.Fatalf("IPs match, we should not generate.")
 	}
 }

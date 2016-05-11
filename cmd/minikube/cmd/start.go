@@ -69,8 +69,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeHost = strings.Replace(kubeHost, ":2376", ":443", -1)
 	fmt.Printf("Kubernetes is available at %s.\n", kubeHost)
 	fmt.Println("Run this command to use the cluster: ")
-	fmt.Printf("kubectl config set-cluster minikube --server=%s --certificate-authority=$HOME/.minikube/ca.crt\n", kubeHost)
-	fmt.Println("kubectl config set-credentials minikube --client-certificate=$HOME/.minikube/kubecfg.crt --client-key=$HOME/.minikube/kubecfg.key")
+	fmt.Printf("kubectl config set-cluster minikube --server=%s --certificate-authority=$HOME/.minikube/apiserver.crt\n", kubeHost)
+	fmt.Println("kubectl config set-credentials minikube --client-certificate=$HOME/.minikube/apiserver.crt --client-key=$HOME/.minikube/apiserver.key")
 	fmt.Println("kubectl config set-context minikube --cluster=minikube --user=minikube")
 	fmt.Println("kubectl config use-context minikube")
 

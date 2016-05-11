@@ -33,11 +33,11 @@ import (
 )
 
 const (
-	remotePath = "/srv/kubernetes/certs"
+	remotePath = "/var/lib/localkube/certs"
 )
 
 var (
-	certs = []string{"ca.crt", "kubecfg.key", "kubecfg.crt"}
+	certs = []string{"apiserver.crt", "apiserver.key"}
 )
 
 // StartHost starts a host VM.
@@ -161,7 +161,7 @@ func GetCreds(h sshAble) error {
 	for _, cert := range certs {
 		remoteCertPath := filepath.Join(remotePath, cert)
 		localCertPath := filepath.Join(localPath, cert)
-		data, err := h.RunSSHCommand(fmt.Sprintf("cat %s", remoteCertPath))
+		data, err := h.RunSSHCommand(fmt.Sprintf("sudo cat %s", remoteCertPath))
 		if err != nil {
 			return err
 		}
