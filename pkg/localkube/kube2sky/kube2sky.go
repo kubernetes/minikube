@@ -36,7 +36,6 @@ import (
 	etcd "github.com/coreos/go-etcd/etcd"
 	"github.com/golang/glog"
 	skymsg "github.com/skynetservices/skydns/msg"
-	flag "github.com/spf13/pflag"
 	kapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/endpoints"
 	"k8s.io/kubernetes/pkg/api/unversioned"
@@ -70,12 +69,20 @@ func NewKube2Sky(domain, etcdServerURL, kubecfgFile, kubeMasterURL string, etcdM
 const kubernetesSvcName = "kubernetes"
 
 var (
-	argDomain              = flag.String("domain", "cluster.local", "domain under which to create names")
-	argEtcdMutationTimeout = flag.Duration("etcd-mutation-timeout", 10*time.Second, "crash after retrying etcd mutation for a specified duration")
-	argEtcdServer          = flag.String("etcd-server", "http://127.0.0.1:4001", "URL to etcd server")
-	argKubecfgFile         = flag.String("kubecfg-file", "", "Location of kubecfg file for access to kubernetes master service; --kube-master-url overrides the URL part of this; if neither this nor --kube-master-url are provided, defaults to service account tokens")
-	argKubeMasterURL       = flag.String("kube-master-url", "", "URL to reach kubernetes master. Env variables in this flag will be expanded.")
-	healthzPort            = flag.Int("healthz-port", 8081, "port on which to serve a kube2sky HTTP readiness probe.")
+	// KUBERNETES CHANGE: COMMENT OUT FLAG REGISTRATION
+	dummy_argDomain              = "cluster.local"
+	dummy_argEtcdMutationTimeout = 10 * time.Second
+	dummy_argEtcdServer          = "http://127.0.0.1:4001"
+	dummy_argKubecfgFile         = ""
+	dummy_argKubeMasterURL       = ""
+	dummy_healthzPort            = 8081
+
+	argDomain              = &dummy_argDomain              //flag.String("domain", "cluster.local", "domain under which to create names")
+	argEtcdMutationTimeout = &dummy_argEtcdMutationTimeout //flag.Duration("etcd-mutation-timeout", 10*time.Second, "crash after retrying etcd mutation for a specified duration")
+	argEtcdServer          = &dummy_argEtcdServer          //flag.String("etcd-server", "http://127.0.0.1:4001", "URL to etcd server")
+	argKubecfgFile         = &dummy_argKubecfgFile         //flag.String("kubecfg-file", "", "Location of kubecfg file for access to kubernetes master service; --kube-master-url overrides the URL part of this; if neither this nor --kube-master-url are provided, defaults to service account tokens")
+	argKubeMasterURL       = &dummy_argKubeMasterURL       //flag.String("kube-master-url", "", "URL to reach kubernetes master. Env variables in this flag will be expanded.")
+	healthzPort            = &dummy_healthzPort            //flag.Int("healthz-port", 8081, "port on which to serve a kube2sky HTTP readiness probe.")
 )
 
 const (
