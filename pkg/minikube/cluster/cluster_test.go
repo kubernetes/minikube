@@ -283,7 +283,7 @@ func TestGetHostStatus(t *testing.T) {
 func TestGetCreds(t *testing.T) {
 	m := make(map[string]string)
 	for _, cert := range certs {
-		m[fmt.Sprintf("cat %s/%s", remotePath, cert)] = cert
+		m[fmt.Sprintf("sudo cat %s/%s", remotePath, cert)] = cert
 	}
 
 	h := mockHost{CommandOutput: m}

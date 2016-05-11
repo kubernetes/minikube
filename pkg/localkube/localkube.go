@@ -98,10 +98,10 @@ func (lk LocalkubeServer) loadCert(path string) (*x509.Certificate, error) {
 	return x509.ParseCertificate(decoded.Bytes)
 }
 
-func (lk LocalkubeServer) shouldGenerateCerts(hostIP net.IP) bool {
+func (lk LocalkubeServer) shouldGenerateCerts(ips []net.IP) bool {
 	if !(util.CanReadFile(lk.GetPublicKeyCertPath()) &&
 		util.CanReadFile(lk.GetPrivateKeyCertPath())) {
-		fmt.Println("Regenerating certs because the files aren't readable.")
+		fmt.Println("Regenerating certs because the files aren't readable")
 		return true
 	}
 
@@ -111,28 +111,43 @@ func (lk LocalkubeServer) shouldGenerateCerts(hostIP net.IP) bool {
 		return true
 	}
 
+	certIPs := map[string]bool{}
 	for _, certIP := range cert.IPAddresses {
-		if certIP.Equal(hostIP) {
-			return false
+		certIPs[certIP.String()] = true
+	}
+
+	for _, ip := range ips {
+		if _, ok := certIPs[ip.String()]; !ok {
+			fmt.Println("Regenerating certs becase an IP is missing: ", ip)
+			return true
 		}
 	}
-	fmt.Printf(
-		"Regenerating certs because the IP didn't match. Got %s, expected %s",
-		cert.IPAddresses, hostIP)
-	return true
+	return false
 }
 
 func (lk LocalkubeServer) GenerateCerts(hostIP net.IP) error {
 
-	if !lk.shouldGenerateCerts(hostIP) {
+	ips := []net.IP{lk.ServiceClusterIPRange.IP, hostIP}
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return err
+	}
+	for _, addr := range addrs {
+		ipnet, ok := addr.(*net.IPNet)
+		if !ok {
+			fmt.Println("Skipping: ", addr)
+			continue
+		}
+		ips = append(ips, ipnet.IP)
+	}
+	if !lk.shouldGenerateCerts(ips) {
 		fmt.Println("Using these existing certs: ", lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
 		return nil
 	}
-
-	alternateIPs := []net.IP{lk.ServiceClusterIPRange.IP}
+	fmt.Println("Creating cert with IPs: ", ips)
 	alternateDNS := []string{fmt.Sprintf("%s.%s", "kubernetes.default.svc", lk.DNSDomain), "kubernetes.default.svc", "kubernetes.default", "kubernetes"}
 
-	if err := utilcrypto.GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), alternateIPs, alternateDNS); err != nil {
+	if err := utilcrypto.GenerateSelfSignedCert(hostIP.String(), lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, alternateDNS); err != nil {
 		fmt.Println("Failed to create certs: ", err)
 		return err
 	}
