@@ -62,7 +62,7 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 func Transfer(data []byte, remotedir, filename string, perm string, c *ssh.Client) error {
 	// Delete the old file first. This makes sure permissions get reset.
 	deleteCmd := fmt.Sprintf("sudo rm -f %s", filepath.Join(remotedir, filename))
-	if err := runCommand(c, deleteCmd); err != nil {
+	if err := RunCommand(c, deleteCmd); err != nil {
 		return err
 	}
 
@@ -92,7 +92,7 @@ func Transfer(data []byte, remotedir, filename string, perm string, c *ssh.Clien
 	return nil
 }
 
-func runCommand(c *ssh.Client, cmd string) error {
+func RunCommand(c *ssh.Client, cmd string) error {
 	s, err := c.NewSession()
 	defer s.Close()
 	if err != nil {

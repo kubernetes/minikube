@@ -17,10 +17,6 @@ limitations under the License.
 package sshutil
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
 	"strings"
 	"testing"
 
@@ -29,7 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func TestNewSSHSession(t *testing.T) {
+func TestNewSSHClient(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
@@ -42,18 +38,16 @@ func TestNewSSHSession(t *testing.T) {
 			SSHKeyPath: "",
 		},
 	}
-	session, err := NewSSHSession(d)
+	c, err := NewSSHClient(d)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
+	cmd := "foo"
+	RunCommand(c, cmd)
 	if !s.Connected {
 		t.Fatalf("Error!")
 	}
-
-	cmd := "foo"
-	session.Start(cmd)
-	session.Wait()
 
 	if !strings.Contains(s.Commands[0], cmd) {
 		t.Fatalf("Expected command: %s, got %s", cmd, s.Commands[0])
@@ -110,21 +104,13 @@ func TestTransfer(t *testing.T) {
 			SSHKeyPath: "",
 		},
 	}
-	session, err := NewSSHSession(d)
+	c, err := NewSSHClient(d)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
 
-	src := path.Join(tempDir, "foo")
 	dest := "bar"
-	ioutil.WriteFile(src, []byte("testcontents"), 0644)
-	if err := Transfer(src, dest, session); err != nil {
+	if err := Transfer([]byte("testcontents"), "/tmp", dest, "0777", c); err != nil {
 		t.Fatalf("Unexpected error: %s", err)
-	}
-	cmd := fmt.Sprintf("cat > %s", dest)
-	if !strings.Contains(s.Commands[0], cmd) {
-		t.Fatalf("Expected command: %s, got %s", cmd, s.Commands[0])
 	}
 }

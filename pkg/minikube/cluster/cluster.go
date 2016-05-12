@@ -159,7 +159,7 @@ func StartCluster(h sshAble, config KubernetesConfig) error {
 func UpdateCluster(d drivers.Driver) error {
 	localkube, err := Asset("out/localkube")
 	if err != nil {
-		log.Println("error loadking localkube: ", err)
+		log.Println("Error loading localkube: ", err)
 		return err
 	}
 
@@ -167,7 +167,11 @@ func UpdateCluster(d drivers.Driver) error {
 	if err != nil {
 		return err
 	}
-	return sshutil.Transfer(localkube, "/usr/local/bin/", "localkube", "0777", client)
+	if err := sshutil.Transfer(localkube, "/usr/local/bin/", "localkube", "0777", client); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetCreds gets the generated credentials required to talk to the APIServer.
