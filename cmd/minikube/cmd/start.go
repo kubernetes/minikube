@@ -56,6 +56,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		LocalkubeURL: localkubeURL,
 	}
 
+	if err := cluster.UpdateCluster(host.Driver); err != nil {
+		log.Println("Error updating cluster: ", err)
+		os.Exit(1)
+	}
+
 	if err := cluster.StartCluster(host, config); err != nil {
 		log.Println("Error starting cluster: ", err)
 		os.Exit(1)

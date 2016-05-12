@@ -54,3 +54,11 @@ docker/localkube:
 .PHONY: test
 test: gopath
 	./test.sh
+
+docker/minikube-full: docker/localkube-incremental
+	go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
+	make minikube
+
+minikube-full: localkube
+	go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
+	make minikube
