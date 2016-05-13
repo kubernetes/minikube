@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	k8serr "k8s.io/kubernetes/pkg/api/errors"
-	etcderr "k8s.io/kubernetes/pkg/api/errors/etcd"
+	storeerr "k8s.io/kubernetes/pkg/api/errors/storage"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/registry/service"
 	"k8s.io/kubernetes/pkg/registry/service/allocator"
@@ -143,7 +143,7 @@ func (e *Etcd) Release(item int) error {
 
 // tryUpdate performs a read-update to persist the latest snapshot state of allocation.
 func (e *Etcd) tryUpdate(fn func() error) error {
-	err := e.storage.GuaranteedUpdate(context.TODO(), e.baseKey, &api.RangeAllocation{}, true,
+	err := e.storage.GuaranteedUpdate(context.TODO(), e.baseKey, &api.RangeAllocation{}, true, nil,
 		storage.SimpleUpdate(func(input runtime.Object) (output runtime.Object, err error) {
 			existing := input.(*api.RangeAllocation)
 			if len(existing.ResourceVersion) == 0 {
@@ -164,7 +164,7 @@ func (e *Etcd) tryUpdate(fn func() error) error {
 			return existing, nil
 		}),
 	)
-	return etcderr.InterpretUpdateError(err, e.resource, "")
+	return storeerr.InterpretUpdateError(err, e.resource, "")
 }
 
 // Refresh reloads the RangeAllocation from etcd.
@@ -177,7 +177,7 @@ func (e *Etcd) Refresh() (*api.RangeAllocation, error) {
 		if storage.IsNotFound(err) {
 			return nil, nil
 		}
-		return nil, etcderr.InterpretGetError(err, e.resource, "")
+		return nil, storeerr.InterpretGetError(err, e.resource, "")
 	}
 
 	return existing, nil
@@ -188,7 +188,7 @@ func (e *Etcd) Refresh() (*api.RangeAllocation, error) {
 func (e *Etcd) Get() (*api.RangeAllocation, error) {
 	existing := &api.RangeAllocation{}
 	if err := e.storage.Get(context.TODO(), e.baseKey, existing, true); err != nil {
-		return nil, etcderr.InterpretGetError(err, e.resource, "")
+		return nil, storeerr.InterpretGetError(err, e.resource, "")
 	}
 	return existing, nil
 }
@@ -200,7 +200,7 @@ func (e *Etcd) CreateOrUpdate(snapshot *api.RangeAllocation) error {
 	defer e.lock.Unlock()
 
 	last := ""
-	err := e.storage.GuaranteedUpdate(context.TODO(), e.baseKey, &api.RangeAllocation{}, true,
+	err := e.storage.GuaranteedUpdate(context.TODO(), e.baseKey, &api.RangeAllocation{}, true, nil,
 		storage.SimpleUpdate(func(input runtime.Object) (output runtime.Object, err error) {
 			existing := input.(*api.RangeAllocation)
 			switch {
@@ -216,7 +216,7 @@ func (e *Etcd) CreateOrUpdate(snapshot *api.RangeAllocation) error {
 		}),
 	)
 	if err != nil {
-		return etcderr.InterpretUpdateError(err, e.resource, "")
+		return storeerr.InterpretUpdateError(err, e.resource, "")
 	}
 	err = e.alloc.Restore(snapshot.Range, snapshot.Data)
 	if err == nil {

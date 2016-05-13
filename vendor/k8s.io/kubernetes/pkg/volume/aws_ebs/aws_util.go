@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
 	"k8s.io/kubernetes/pkg/util/keymutex"
 	"k8s.io/kubernetes/pkg/util/runtime"
@@ -48,7 +47,7 @@ type AWSDiskUtil struct{}
 
 // Attaches a disk to the current kubelet.
 // Mounts the disk to it's global path.
-func (diskUtil *AWSDiskUtil) AttachAndMountDisk(b *awsElasticBlockStoreBuilder, globalPDPath string) error {
+func (diskUtil *AWSDiskUtil) AttachAndMountDisk(b *awsElasticBlockStoreMounter, globalPDPath string) error {
 	glog.V(5).Infof("AttachAndMountDisk(...) called for PD %q. Will block for existing operations, if any. (globalPDPath=%q)\r\n", b.volumeID, globalPDPath)
 
 	// Block execution until any pending detach operations for this PD have completed
@@ -95,7 +94,7 @@ func (diskUtil *AWSDiskUtil) AttachAndMountDisk(b *awsElasticBlockStoreBuilder, 
 }
 
 // Unmounts the device and detaches the disk from the kubelet's host machine.
-func (util *AWSDiskUtil) DetachDisk(c *awsElasticBlockStoreCleaner) error {
+func (util *AWSDiskUtil) DetachDisk(c *awsElasticBlockStoreUnmounter) error {
 	glog.V(5).Infof("DetachDisk(...) for PD %q\r\n", c.volumeID)
 
 	if err := unmountPDAndRemoveGlobalPath(c); err != nil {
@@ -108,7 +107,7 @@ func (util *AWSDiskUtil) DetachDisk(c *awsElasticBlockStoreCleaner) error {
 }
 
 func (util *AWSDiskUtil) DeleteVolume(d *awsElasticBlockStoreDeleter) error {
-	cloud, err := getCloudProvider()
+	cloud, err := getCloudProvider(d.awsElasticBlockStore.plugin)
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,7 @@ func (util *AWSDiskUtil) DeleteVolume(d *awsElasticBlockStoreDeleter) error {
 // CreateVolume creates an AWS EBS volume.
 // Returns: volumeID, volumeSizeGB, labels, error
 func (util *AWSDiskUtil) CreateVolume(c *awsElasticBlockStoreProvisioner) (string, int, map[string]string, error) {
-	cloud, err := getCloudProvider()
+	cloud, err := getCloudProvider(c.awsElasticBlockStore.plugin)
 	if err != nil {
 		return "", 0, nil, err
 	}
@@ -168,14 +167,14 @@ func (util *AWSDiskUtil) CreateVolume(c *awsElasticBlockStoreProvisioner) (strin
 }
 
 // Attaches the specified persistent disk device to node, verifies that it is attached, and retries if it fails.
-func attachDiskAndVerify(b *awsElasticBlockStoreBuilder, xvdBeforeSet sets.String) (string, error) {
+func attachDiskAndVerify(b *awsElasticBlockStoreMounter, xvdBeforeSet sets.String) (string, error) {
 	var awsCloud *aws.AWSCloud
 	var attachError error
 
 	for numRetries := 0; numRetries < maxRetries; numRetries++ {
 		var err error
 		if awsCloud == nil {
-			awsCloud, err = getCloudProvider()
+			awsCloud, err = getCloudProvider(b.awsElasticBlockStore.plugin)
 			if err != nil || awsCloud == nil {
 				// Retry on error. See issue #11321
 				glog.Errorf("Error getting AWSCloudProvider while detaching PD %q: %v", b.volumeID, err)
@@ -236,7 +235,7 @@ func verifyDevicePath(devicePaths []string) (string, error) {
 
 // Detaches the specified persistent disk device from node, verifies that it is detached, and retries if it fails.
 // This function is intended to be called asynchronously as a go routine.
-func detachDiskAndVerify(c *awsElasticBlockStoreCleaner) {
+func detachDiskAndVerify(c *awsElasticBlockStoreUnmounter) {
 	glog.V(5).Infof("detachDiskAndVerify(...) for pd %q. Will block for pending operations", c.volumeID)
 	defer runtime.HandleCrash()
 
@@ -250,7 +249,7 @@ func detachDiskAndVerify(c *awsElasticBlockStoreCleaner) {
 	for numRetries := 0; numRetries < maxRetries; numRetries++ {
 		var err error
 		if awsCloud == nil {
-			awsCloud, err = getCloudProvider()
+			awsCloud, err = getCloudProvider(c.awsElasticBlockStore.plugin)
 			if err != nil || awsCloud == nil {
 				// Retry on error. See issue #11321
 				glog.Errorf("Error getting AWSCloudProvider while detaching PD %q: %v", c.volumeID, err)
@@ -295,7 +294,7 @@ func detachDiskAndVerify(c *awsElasticBlockStoreCleaner) {
 }
 
 // Unmount the global PD mount, which should be the only one, and delete it.
-func unmountPDAndRemoveGlobalPath(c *awsElasticBlockStoreCleaner) error {
+func unmountPDAndRemoveGlobalPath(c *awsElasticBlockStoreUnmounter) error {
 	globalPDPath := makeGlobalPDPath(c.plugin.host, c.volumeID)
 
 	err := c.mounter.Unmount(globalPDPath)
@@ -348,12 +347,19 @@ func pathExists(path string) (bool, error) {
 }
 
 // Return cloud provider
-func getCloudProvider() (*aws.AWSCloud, error) {
-	awsCloudProvider, err := cloudprovider.GetCloudProvider("aws", nil)
-	if err != nil || awsCloudProvider == nil {
-		return nil, err
+func getCloudProvider(plugin *awsElasticBlockStorePlugin) (*aws.AWSCloud, error) {
+	if plugin == nil {
+		return nil, fmt.Errorf("Failed to get AWS Cloud Provider. plugin object is nil.")
+	}
+	if plugin.host == nil {
+		return nil, fmt.Errorf("Failed to get AWS Cloud Provider. plugin.host object is nil.")
 	}
 
-	// The conversion must be safe otherwise bug in GetCloudProvider()
-	return awsCloudProvider.(*aws.AWSCloud), nil
+	cloudProvider := plugin.host.GetCloudProvider()
+	awsCloudProvider, ok := cloudProvider.(*aws.AWSCloud)
+	if !ok || awsCloudProvider == nil {
+		return nil, fmt.Errorf("Failed to get AWS Cloud Provider. plugin.host.GetCloudProvider returned %v instead", cloudProvider)
+	}
+
+	return awsCloudProvider, nil
 }

@@ -18,6 +18,7 @@ package storage
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
@@ -25,11 +26,14 @@ import (
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/rest"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/cache"
 	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/runtime"
+	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/watch"
 
@@ -234,13 +238,8 @@ func (c *Cacher) Create(ctx context.Context, key string, obj, out runtime.Object
 }
 
 // Implements storage.Interface.
-func (c *Cacher) Set(ctx context.Context, key string, obj, out runtime.Object, ttl uint64) error {
-	return c.storage.Set(ctx, key, obj, out, ttl)
-}
-
-// Implements storage.Interface.
-func (c *Cacher) Delete(ctx context.Context, key string, out runtime.Object) error {
-	return c.storage.Delete(ctx, key, out)
+func (c *Cacher) Delete(ctx context.Context, key string, out runtime.Object, preconditions *Preconditions) error {
+	return c.storage.Delete(ctx, key, out, preconditions)
 }
 
 // Implements storage.Interface.
@@ -263,12 +262,15 @@ func (c *Cacher) Watch(ctx context.Context, key string, resourceVersion string, 
 	defer c.watchCache.RUnlock()
 	initEvents, err := c.watchCache.GetAllEventsSinceThreadUnsafe(watchRV)
 	if err != nil {
-		return nil, err
+		// To match the uncached watch implementation, once we have passed authn/authz/admission,
+		// and successfully parsed a resource version, other errors must fail with a watch event of type ERROR,
+		// rather than a directly returned error.
+		return newErrWatcher(err), nil
 	}
 
 	c.Lock()
 	defer c.Unlock()
-	watcher := newCacheWatcher(initEvents, filterFunction(key, c.keyFunc, filter), forgetWatcher(c, c.watcherIdx))
+	watcher := newCacheWatcher(watchRV, initEvents, filterFunction(key, c.keyFunc, filter), forgetWatcher(c, c.watcherIdx))
 	c.watchers[c.watcherIdx] = watcher
 	c.watcherIdx++
 	return watcher, nil
@@ -347,8 +349,8 @@ func (c *Cacher) List(ctx context.Context, key string, resourceVersion string, f
 }
 
 // Implements storage.Interface.
-func (c *Cacher) GuaranteedUpdate(ctx context.Context, key string, ptrToType runtime.Object, ignoreNotFound bool, tryUpdate UpdateFunc) error {
-	return c.storage.GuaranteedUpdate(ctx, key, ptrToType, ignoreNotFound, tryUpdate)
+func (c *Cacher) GuaranteedUpdate(ctx context.Context, key string, ptrToType runtime.Object, ignoreNotFound bool, preconditions *Preconditions, tryUpdate UpdateFunc) error {
+	return c.storage.GuaranteedUpdate(ctx, key, ptrToType, ignoreNotFound, preconditions, tryUpdate)
 }
 
 // Implements storage.Interface.
@@ -459,6 +461,46 @@ func (lw *cacherListerWatcher) Watch(options api.ListOptions) (watch.Interface, 
 	return lw.storage.WatchList(context.TODO(), lw.resourcePrefix, options.ResourceVersion, Everything)
 }
 
+// cacherWatch implements watch.Interface to return a single error
+type errWatcher struct {
+	result chan watch.Event
+}
+
+func newErrWatcher(err error) *errWatcher {
+	// Create an error event
+	errEvent := watch.Event{Type: watch.Error}
+	switch err := err.(type) {
+	case runtime.Object:
+		errEvent.Object = err
+	case *errors.StatusError:
+		errEvent.Object = &err.ErrStatus
+	default:
+		errEvent.Object = &unversioned.Status{
+			Status:  unversioned.StatusFailure,
+			Message: err.Error(),
+			Reason:  unversioned.StatusReasonInternalError,
+			Code:    http.StatusInternalServerError,
+		}
+	}
+
+	// Create a watcher with room for a single event, populate it, and close the channel
+	watcher := &errWatcher{result: make(chan watch.Event, 1)}
+	watcher.result <- errEvent
+	close(watcher.result)
+
+	return watcher
+}
+
+// Implements watch.Interface.
+func (c *errWatcher) ResultChan() <-chan watch.Event {
+	return c.result
+}
+
+// Implements watch.Interface.
+func (c *errWatcher) Stop() {
+	// no-op
+}
+
 // cacherWatch implements watch.Interface
 type cacheWatcher struct {
 	sync.Mutex
@@ -469,7 +511,7 @@ type cacheWatcher struct {
 	forget  func(bool)
 }
 
-func newCacheWatcher(initEvents []watchCacheEvent, filter FilterFunc, forget func(bool)) *cacheWatcher {
+func newCacheWatcher(resourceVersion uint64, initEvents []watchCacheEvent, filter FilterFunc, forget func(bool)) *cacheWatcher {
 	watcher := &cacheWatcher{
 		input:   make(chan watchCacheEvent, 10),
 		result:  make(chan watch.Event, 10),
@@ -477,7 +519,7 @@ func newCacheWatcher(initEvents []watchCacheEvent, filter FilterFunc, forget fun
 		stopped: false,
 		forget:  forget,
 	}
-	go watcher.process(initEvents)
+	go watcher.process(initEvents, resourceVersion)
 	return watcher
 }
 
@@ -501,12 +543,39 @@ func (c *cacheWatcher) stop() {
 	}
 }
 
+var timerPool sync.Pool
+
 func (c *cacheWatcher) add(event watchCacheEvent) {
+	// Try to send the event immediately, without blocking.
 	select {
 	case c.input <- event:
-	case <-time.After(5 * time.Second):
+		return
+	default:
+	}
+
+	// OK, block sending, but only for up to 5 seconds.
+	// cacheWatcher.add is called very often, so arrange
+	// to reuse timers instead of constantly allocating.
+	const timeout = 5 * time.Second
+	t, ok := timerPool.Get().(*time.Timer)
+	if ok {
+		t.Reset(timeout)
+	} else {
+		t = time.NewTimer(timeout)
+	}
+	defer timerPool.Put(t)
+
+	select {
+	case c.input <- event:
+		stopped := t.Stop()
+		if !stopped {
+			// Consume triggered (but not yet received) timer event
+			// so that future reuse does not get a spurious timeout.
+			<-t.C
+		}
+	case <-t.C:
 		// This means that we couldn't send event to that watcher.
-		// Since we don't want to blockin on it infinitely,
+		// Since we don't want to block on it infinitely,
 		// we simply terminate it.
 		c.forget(false)
 		c.stop()
@@ -539,7 +608,9 @@ func (c *cacheWatcher) sendWatchCacheEvent(event watchCacheEvent) {
 	}
 }
 
-func (c *cacheWatcher) process(initEvents []watchCacheEvent) {
+func (c *cacheWatcher) process(initEvents []watchCacheEvent, resourceVersion uint64) {
+	defer utilruntime.HandleCrash()
+
 	for _, event := range initEvents {
 		c.sendWatchCacheEvent(event)
 	}
@@ -550,6 +621,9 @@ func (c *cacheWatcher) process(initEvents []watchCacheEvent) {
 		if !ok {
 			return
 		}
-		c.sendWatchCacheEvent(event)
+		// only send events newer than resourceVersion
+		if event.ResourceVersion > resourceVersion {
+			c.sendWatchCacheEvent(event)
+		}
 	}
 }

@@ -34,7 +34,7 @@ const (
 	PossibleResourceTypes = `Possible resource types include (case insensitive): pods (po), services (svc), deployments,
 replicasets (rs), replicationcontrollers (rc), nodes (no), events (ev), limitranges (limits),
 persistentvolumes (pv), persistentvolumeclaims (pvc), resourcequotas (quota), namespaces (ns),
-serviceaccounts, ingresses (ing), horizontalpodautoscalers (hpa), daemonsets (ds), configmaps,
+serviceaccounts (sa), ingresses (ing), horizontalpodautoscalers (hpa), daemonsets (ds), configmaps,
 componentstatuses (cs), endpoints (ep), and secrets.`
 )
 
@@ -52,6 +52,28 @@ func listOfImages(spec *api.PodSpec) []string {
 
 func makeImageList(spec *api.PodSpec) string {
 	return strings.Join(listOfImages(spec), ",")
+}
+
+func NewThirdPartyResourceMapper(gvs []unversioned.GroupVersion, gvks []unversioned.GroupVersionKind) (meta.RESTMapper, error) {
+	mapper := meta.NewDefaultRESTMapper(gvs, func(gv unversioned.GroupVersion) (*meta.VersionInterfaces, error) {
+		for ix := range gvs {
+			if gvs[ix].Group == gv.Group && gvs[ix].Version == gv.Version {
+				return &meta.VersionInterfaces{
+					ObjectConvertor:  api.Scheme,
+					MetadataAccessor: meta.NewAccessor(),
+				}, nil
+			}
+		}
+		groupVersions := []string{}
+		for ix := range gvs {
+			groupVersions = append(groupVersions, gvs[ix].String())
+		}
+		return nil, fmt.Errorf("unsupported storage version: %s (valid: %s)", gv.String(), strings.Join(groupVersions, ", "))
+	})
+	for ix := range gvks {
+		mapper.Add(gvks[ix], meta.RESTScopeNamespace)
+	}
+	return mapper, nil
 }
 
 // OutputVersionMapper is a RESTMapper that will prefer mappings that
@@ -138,6 +160,7 @@ var shortForms = map[string]string{
 	"quota":  "resourcequotas",
 	"rc":     "replicationcontrollers",
 	"rs":     "replicasets",
+	"sa":     "serviceaccounts",
 	"svc":    "services",
 }
 
@@ -150,6 +173,35 @@ func expandResourceShortcut(resource unversioned.GroupVersionResource) unversion
 		resource.Resource = expanded
 	}
 	return resource
+}
+
+// ResourceAliases returns the resource shortcuts and plural forms for the given resources.
+func ResourceAliases(rs []string) []string {
+	as := make([]string, 0, len(rs))
+	plurals := make(map[string]struct{}, len(rs))
+	for _, r := range rs {
+		var plural string
+		switch {
+		case r == "endpoints":
+			plural = r // exception. "endpoint" does not exist. Why?
+		case strings.HasSuffix(r, "y"):
+			plural = r[0:len(r)-1] + "ies"
+		case strings.HasSuffix(r, "s"):
+			plural = r + "es"
+		default:
+			plural = r + "s"
+		}
+		as = append(as, plural)
+
+		plurals[plural] = struct{}{}
+	}
+
+	for sf, r := range shortForms {
+		if _, found := plurals[r]; found {
+			as = append(as, sf)
+		}
+	}
+	return as
 }
 
 // parseFileSource parses the source given. Acceptable formats include:
@@ -177,7 +229,12 @@ func parseFileSource(source string) (keyName, filePath string, err error) {
 
 // parseLiteralSource parses the source key=val pair
 func parseLiteralSource(source string) (keyName, value string, err error) {
-	items := strings.Split(source, "=")
+	// leading equal is invalid
+	if strings.Index(source, "=") == 0 {
+		return "", "", fmt.Errorf("invalid literal source %v, expected key=value", source)
+	}
+	// split after the first equal (so values can have the = character)
+	items := strings.SplitN(source, "=", 2)
 	if len(items) != 2 {
 		return "", "", fmt.Errorf("invalid literal source %v, expected key=value", source)
 	}

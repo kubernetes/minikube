@@ -55,8 +55,8 @@ type handler struct {
 	summaryProvider SummaryProvider
 }
 
-func CreateHandlers(provider StatsProvider, resourceAnalyzer ResourceAnalyzer) *restful.WebService {
-	h := &handler{provider, NewSummaryProvider(provider, resourceAnalyzer)}
+func CreateHandlers(provider StatsProvider, summaryProvider SummaryProvider) *restful.WebService {
+	h := &handler{provider, summaryProvider}
 
 	ws := &restful.WebService{}
 	ws.Path("/stats/").
@@ -220,12 +220,8 @@ func (h *handler) handlePodContainer(request *restful.Request, response *restful
 }
 
 func writeResponse(response *restful.Response, stats interface{}) {
-	if stats == nil {
-		return
-	}
-	err := response.WriteAsJson(stats)
-	if err != nil {
-		handleError(response, err)
+	if err := response.WriteAsJson(stats); err != nil {
+		glog.Errorf("Error writing response: %v", err)
 	}
 }
 
@@ -236,7 +232,7 @@ func handleError(response *restful.Response, err error) {
 		response.WriteError(http.StatusNotFound, err)
 	default:
 		msg := fmt.Sprintf("Internal Error: %v", err)
-		glog.Infof("HTTP InternalServerError: %s", msg)
+		glog.Errorf("HTTP InternalServerError: %s", msg)
 		response.WriteErrorString(http.StatusInternalServerError, msg)
 	}
 }

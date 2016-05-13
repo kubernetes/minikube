@@ -34,7 +34,6 @@ import (
 	"k8s.io/kubernetes/pkg/apiserver/metrics"
 	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/runtime"
-	watchjson "k8s.io/kubernetes/pkg/watch/json"
 
 	"github.com/emicklei/go-restful"
 )
@@ -284,6 +283,14 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 		isGetter = true
 	}
 
+	var versionedWatchEvent runtime.Object
+	if isWatcher {
+		versionedWatchEvent, err = a.group.Creater.New(a.group.GroupVersion.WithKind("WatchEvent"))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	var (
 		connectOptions             runtime.Object
 		versionedConnectOptions    runtime.Object
@@ -464,7 +471,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 	for _, action := range actions {
 		reqScope.Namer = action.Namer
 		namespaced := ""
-		if strings.Contains(action.Path, scope.ArgumentName()) {
+		if apiResource.Namespaced {
 			namespaced = "Namespaced"
 		}
 		switch action.Verb {
@@ -633,9 +640,9 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed.")).
 				Operation("watch"+namespaced+kind+strings.Title(subresource)).
-				Produces("application/json").
-				Returns(http.StatusOK, "OK", watchjson.WatchEvent{}).
-				Writes(watchjson.WatchEvent{})
+				Produces(a.group.Serializer.SupportedStreamingMediaTypes()...).
+				Returns(http.StatusOK, "OK", versionedWatchEvent).
+				Writes(versionedWatchEvent)
 			if err := addObjectParams(ws, route, versionedListOptions); err != nil {
 				return nil, err
 			}
@@ -652,9 +659,9 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				Doc(doc).
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed.")).
 				Operation("watch"+namespaced+kind+strings.Title(subresource)+"List").
-				Produces("application/json").
-				Returns(http.StatusOK, "OK", watchjson.WatchEvent{}).
-				Writes(watchjson.WatchEvent{})
+				Produces(a.group.Serializer.SupportedStreamingMediaTypes()...).
+				Returns(http.StatusOK, "OK", versionedWatchEvent).
+				Writes(versionedWatchEvent)
 			if err := addObjectParams(ws, route, versionedListOptions); err != nil {
 				return nil, err
 			}

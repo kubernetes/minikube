@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"path"
 	"regexp"
 	"sort"
@@ -38,13 +39,14 @@ import (
 	"k8s.io/kubernetes/pkg/auth/authenticator"
 	"k8s.io/kubernetes/pkg/auth/authorizer"
 	"k8s.io/kubernetes/pkg/auth/handlers"
+	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/registry/generic"
-	genericetcd "k8s.io/kubernetes/pkg/registry/generic/etcd"
+	"k8s.io/kubernetes/pkg/registry/generic/registry"
 	ipallocator "k8s.io/kubernetes/pkg/registry/service/ipallocator"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/storage"
 	"k8s.io/kubernetes/pkg/ui"
 	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/crypto"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/sets"
@@ -53,122 +55,13 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/emicklei/go-restful/swagger"
 	"github.com/golang/glog"
-	"golang.org/x/net/context"
 )
 
 const (
-	DefaultEtcdPathPrefix = "/registry"
+	DefaultEtcdPathPrefix           = "/registry"
+	DefaultDeserializationCacheSize = 50000
+	globalTimeout                   = time.Minute
 )
-
-// StorageDestinations is a mapping from API group & resource to
-// the underlying storage interfaces.
-type StorageDestinations struct {
-	APIGroups map[string]*StorageDestinationsForAPIGroup
-}
-
-type StorageDestinationsForAPIGroup struct {
-	Default   storage.Interface
-	Overrides map[string]storage.Interface
-}
-
-func NewStorageDestinations() StorageDestinations {
-	return StorageDestinations{
-		APIGroups: map[string]*StorageDestinationsForAPIGroup{},
-	}
-}
-
-// AddAPIGroup replaces 'group' if it's already registered.
-func (s *StorageDestinations) AddAPIGroup(group string, defaultStorage storage.Interface) {
-	glog.Infof("Adding storage destination for group %v", group)
-	s.APIGroups[group] = &StorageDestinationsForAPIGroup{
-		Default:   defaultStorage,
-		Overrides: map[string]storage.Interface{},
-	}
-}
-
-func (s *StorageDestinations) AddStorageOverride(group, resource string, override storage.Interface) {
-	if _, ok := s.APIGroups[group]; !ok {
-		s.AddAPIGroup(group, nil)
-	}
-	if s.APIGroups[group].Overrides == nil {
-		s.APIGroups[group].Overrides = map[string]storage.Interface{}
-	}
-	s.APIGroups[group].Overrides[resource] = override
-}
-
-// Get finds the storage destination for the given group and resource. It will
-// Fatalf if the group has no storage destination configured.
-func (s *StorageDestinations) Get(group, resource string) storage.Interface {
-	apigroup, ok := s.APIGroups[group]
-	if !ok {
-		// TODO: return an error like a normal function. For now,
-		// Fatalf is better than just logging an error, because this
-		// condition guarantees future problems and this is a less
-		// mysterious failure point.
-		glog.Fatalf("No storage defined for API group: '%s'. Defined groups: %#v", group, s.APIGroups)
-		return nil
-	}
-	if apigroup.Overrides != nil {
-		if client, exists := apigroup.Overrides[resource]; exists {
-			return client
-		}
-	}
-	return apigroup.Default
-}
-
-// Search is like Get, but can be used to search a list of groups. It tries the
-// groups in order (and Fatalf's if none of them exist). The intention is for
-// this to be used for resources that move between groups.
-func (s *StorageDestinations) Search(groups []string, resource string) storage.Interface {
-	for _, group := range groups {
-		apigroup, ok := s.APIGroups[group]
-		if !ok {
-			continue
-		}
-		if apigroup.Overrides != nil {
-			if client, exists := apigroup.Overrides[resource]; exists {
-				return client
-			}
-		}
-		return apigroup.Default
-	}
-	// TODO: return an error like a normal function. For now,
-	// Fatalf is better than just logging an error, because this
-	// condition guarantees future problems and this is a less
-	// mysterious failure point.
-	glog.Fatalf("No storage defined for any of the groups: %v. Defined groups: %#v", groups, s.APIGroups)
-	return nil
-}
-
-// Get all backends for all registered storage destinations.
-// Used for getting all instances for health validations.
-func (s *StorageDestinations) Backends() []string {
-	backends := sets.String{}
-	for _, group := range s.APIGroups {
-		if group.Default != nil {
-			for _, backend := range group.Default.Backends(context.TODO()) {
-				backends.Insert(backend)
-			}
-		}
-		if group.Overrides != nil {
-			for _, storage := range group.Overrides {
-				for _, backend := range storage.Backends(context.TODO()) {
-					backends.Insert(backend)
-				}
-			}
-		}
-	}
-	return backends.List()
-}
-
-// Specifies the overrides for various API group versions.
-// This can be used to enable/disable entire group versions or specific resources.
-type APIGroupVersionOverride struct {
-	// Whether to enable or disable this group version.
-	Disable bool
-	// List of overrides for individual resources in this group version.
-	ResourceOverrides map[string]bool
-}
 
 // Info about an API group.
 type APIGroupInfo struct {
@@ -202,16 +95,18 @@ type APIGroupInfo struct {
 
 // Config is a structure used to configure a GenericAPIServer.
 type Config struct {
-	StorageDestinations StorageDestinations
-	// StorageVersions is a map between groups and their storage versions
-	StorageVersions map[string]string
+	StorageFactory StorageFactory
 	// allow downstream consumers to disable the core controller loops
 	EnableLogsSupport bool
 	EnableUISupport   bool
-	// allow downstream consumers to disable swagger
+	// Allow downstream consumers to disable swagger.
+	// This includes returning the generated swagger spec at /swaggerapi and swagger ui at /swagger-ui.
 	EnableSwaggerSupport bool
+	// Allow downstream consumers to disable swagger ui.
+	// Note that this is ignored if either EnableSwaggerSupport or EnableUISupport is false.
+	EnableSwaggerUI bool
 	// Allows api group versions or specific resources to be conditionally enabled/disabled.
-	APIGroupVersionOverrides map[string]APIGroupVersionOverride
+	APIResourceConfigSource APIResourceConfigSource
 	// allow downstream consumers to disable the index route
 	EnableIndex           bool
 	EnableProfiling       bool
@@ -298,24 +193,24 @@ type GenericAPIServer struct {
 	cacheTimeout          time.Duration
 	MinRequestTimeout     time.Duration
 
-	mux                      apiserver.Mux
-	MuxHelper                *apiserver.MuxHelper
-	HandlerContainer         *restful.Container
-	RootWebService           *restful.WebService
-	enableLogsSupport        bool
-	enableUISupport          bool
-	enableSwaggerSupport     bool
-	enableProfiling          bool
-	enableWatchCache         bool
-	APIPrefix                string
-	APIGroupPrefix           string
-	corsAllowedOriginList    []string
-	authenticator            authenticator.Request
-	authorizer               authorizer.Authorizer
-	AdmissionControl         admission.Interface
-	MasterCount              int
-	ApiGroupVersionOverrides map[string]APIGroupVersionOverride
-	RequestContextMapper     api.RequestContextMapper
+	mux                   apiserver.Mux
+	MuxHelper             *apiserver.MuxHelper
+	HandlerContainer      *restful.Container
+	RootWebService        *restful.WebService
+	enableLogsSupport     bool
+	enableUISupport       bool
+	enableSwaggerSupport  bool
+	enableSwaggerUI       bool
+	enableProfiling       bool
+	enableWatchCache      bool
+	APIPrefix             string
+	APIGroupPrefix        string
+	corsAllowedOriginList []string
+	authenticator         authenticator.Request
+	authorizer            authorizer.Authorizer
+	AdmissionControl      admission.Interface
+	MasterCount           int
+	RequestContextMapper  api.RequestContextMapper
 
 	// ExternalAddress is the address (hostname or IP and port) that should be used in
 	// external (public internet) URLs for this GenericAPIServer.
@@ -352,7 +247,7 @@ type GenericAPIServer struct {
 
 func (s *GenericAPIServer) StorageDecorator() generic.StorageDecorator {
 	if s.enableWatchCache {
-		return genericetcd.StorageWithCacher
+		return registry.StorageWithCacher
 	}
 	return generic.UndecoratedStorage
 }
@@ -443,23 +338,23 @@ func New(c *Config) (*GenericAPIServer, error) {
 	setDefaults(c)
 
 	s := &GenericAPIServer{
-		ServiceClusterIPRange:    c.ServiceClusterIPRange,
-		ServiceNodePortRange:     c.ServiceNodePortRange,
-		RootWebService:           new(restful.WebService),
-		enableLogsSupport:        c.EnableLogsSupport,
-		enableUISupport:          c.EnableUISupport,
-		enableSwaggerSupport:     c.EnableSwaggerSupport,
-		enableProfiling:          c.EnableProfiling,
-		enableWatchCache:         c.EnableWatchCache,
-		APIPrefix:                c.APIPrefix,
-		APIGroupPrefix:           c.APIGroupPrefix,
-		corsAllowedOriginList:    c.CorsAllowedOriginList,
-		authenticator:            c.Authenticator,
-		authorizer:               c.Authorizer,
-		AdmissionControl:         c.AdmissionControl,
-		ApiGroupVersionOverrides: c.APIGroupVersionOverrides,
-		RequestContextMapper:     c.RequestContextMapper,
-		Serializer:               c.Serializer,
+		ServiceClusterIPRange: c.ServiceClusterIPRange,
+		ServiceNodePortRange:  c.ServiceNodePortRange,
+		RootWebService:        new(restful.WebService),
+		enableLogsSupport:     c.EnableLogsSupport,
+		enableUISupport:       c.EnableUISupport,
+		enableSwaggerSupport:  c.EnableSwaggerSupport,
+		enableSwaggerUI:       c.EnableSwaggerUI,
+		enableProfiling:       c.EnableProfiling,
+		enableWatchCache:      c.EnableWatchCache,
+		APIPrefix:             c.APIPrefix,
+		APIGroupPrefix:        c.APIGroupPrefix,
+		corsAllowedOriginList: c.CorsAllowedOriginList,
+		authenticator:         c.Authenticator,
+		authorizer:            c.Authorizer,
+		AdmissionControl:      c.AdmissionControl,
+		RequestContextMapper:  c.RequestContextMapper,
+		Serializer:            c.Serializer,
 
 		cacheTimeout:      c.CacheTimeout,
 		MinRequestTimeout: time.Duration(c.MinRequestTimeout) * time.Second,
@@ -498,8 +393,8 @@ func New(c *Config) (*GenericAPIServer, error) {
 
 func (s *GenericAPIServer) NewRequestInfoResolver() *apiserver.RequestInfoResolver {
 	return &apiserver.RequestInfoResolver{
-		sets.NewString(strings.Trim(s.APIPrefix, "/"), strings.Trim(s.APIGroupPrefix, "/")), // all possible API prefixes
-		sets.NewString(strings.Trim(s.APIPrefix, "/")),                                      // APIPrefixes that won't have groups (legacy)
+		APIPrefixes:          sets.NewString(strings.Trim(s.APIPrefix, "/"), strings.Trim(s.APIGroupPrefix, "/")), // all possible API prefixes
+		GrouplessAPIPrefixes: sets.NewString(strings.Trim(s.APIPrefix, "/")),                                      // APIPrefixes that won't have groups (legacy)
 	}
 }
 
@@ -551,7 +446,7 @@ func (s *GenericAPIServer) init(c *Config) {
 		apiserver.InstallLogsSupport(s.MuxHelper)
 	}
 	if c.EnableUISupport {
-		ui.InstallSupport(s.MuxHelper, s.enableSwaggerSupport)
+		ui.InstallSupport(s.MuxHelper, s.enableSwaggerSupport && s.enableSwaggerUI)
 	}
 
 	if c.EnableProfiling {
@@ -559,6 +454,8 @@ func (s *GenericAPIServer) init(c *Config) {
 		s.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
 		s.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	}
+
+	apiserver.InstallVersionHandler(s.MuxHelper, s.HandlerContainer)
 
 	handler := http.Handler(s.mux.(*http.ServeMux))
 
@@ -578,6 +475,7 @@ func (s *GenericAPIServer) init(c *Config) {
 
 	attributeGetter := apiserver.NewRequestAttributeGetter(s.RequestContextMapper, s.NewRequestInfoResolver())
 	handler = apiserver.WithAuthorizationCheck(handler, attributeGetter, s.authorizer)
+	handler = apiserver.WithImpersonation(handler, s.RequestContextMapper, s.authorizer)
 
 	// Install Authenticator
 	if c.Authenticator != nil {
@@ -607,15 +505,12 @@ func (s *GenericAPIServer) init(c *Config) {
 	s.installGroupsDiscoveryHandler()
 }
 
-// Exposes the given group versions in API.
+// Exposes the given group versions in API. Helper method to install multiple group versions at once.
 func (s *GenericAPIServer) InstallAPIGroups(groupsInfo []APIGroupInfo) error {
 	for _, apiGroupInfo := range groupsInfo {
-		if err := s.installAPIGroup(&apiGroupInfo); err != nil {
+		if err := s.InstallAPIGroup(&apiGroupInfo); err != nil {
 			return err
 		}
-	}
-	if s.enableSwaggerSupport {
-		s.InstallSwaggerAPI()
 	}
 	return nil
 }
@@ -642,8 +537,109 @@ func (s *GenericAPIServer) installGroupsDiscoveryHandler() {
 	})
 }
 
+// TODO: Longer term we should read this from some config store, rather than a flag.
+func verifyClusterIPFlags(options *ServerRunOptions) {
+	if options.ServiceClusterIPRange.IP == nil {
+		glog.Fatal("No --service-cluster-ip-range specified")
+	}
+	var ones, bits = options.ServiceClusterIPRange.Mask.Size()
+	if bits-ones > 20 {
+		glog.Fatal("Specified --service-cluster-ip-range is too large")
+	}
+}
+
+func NewConfig(options *ServerRunOptions) *Config {
+	return &Config{
+		APIGroupPrefix:            options.APIGroupPrefix,
+		APIPrefix:                 options.APIPrefix,
+		CorsAllowedOriginList:     options.CorsAllowedOriginList,
+		EnableIndex:               true,
+		EnableLogsSupport:         options.EnableLogsSupport,
+		EnableProfiling:           options.EnableProfiling,
+		EnableSwaggerSupport:      true,
+		EnableSwaggerUI:           options.EnableSwaggerUI,
+		EnableUISupport:           true,
+		EnableWatchCache:          options.EnableWatchCache,
+		ExternalHost:              options.ExternalHost,
+		KubernetesServiceNodePort: options.KubernetesServiceNodePort,
+		MasterCount:               options.MasterCount,
+		MinRequestTimeout:         options.MinRequestTimeout,
+		PublicAddress:             options.AdvertiseAddress,
+		ReadWritePort:             options.SecurePort,
+		ServiceClusterIPRange:     &options.ServiceClusterIPRange,
+		ServiceNodePortRange:      options.ServiceNodePortRange,
+	}
+}
+
+func verifyServiceNodePort(options *ServerRunOptions) {
+	if options.KubernetesServiceNodePort > 0 && !options.ServiceNodePortRange.Contains(options.KubernetesServiceNodePort) {
+		glog.Fatalf("Kubernetes service port range %v doesn't contain %v", options.ServiceNodePortRange, (options.KubernetesServiceNodePort))
+	}
+}
+
+func verifyEtcdServersList(options *ServerRunOptions) {
+	if len(options.StorageConfig.ServerList) == 0 {
+		glog.Fatalf("--etcd-servers must be specified")
+	}
+}
+
+func ValidateRunOptions(options *ServerRunOptions) {
+	verifyClusterIPFlags(options)
+	verifyServiceNodePort(options)
+	verifyEtcdServersList(options)
+}
+
+func DefaultAndValidateRunOptions(options *ServerRunOptions) {
+	ValidateRunOptions(options)
+
+	// If advertise-address is not specified, use bind-address. If bind-address
+	// is not usable (unset, 0.0.0.0, or loopback), we will use the host's default
+	// interface as valid public addr for master (see: util/net#ValidPublicAddrForMaster)
+	if options.AdvertiseAddress == nil || options.AdvertiseAddress.IsUnspecified() {
+		hostIP, err := utilnet.ChooseBindAddress(options.BindAddress)
+		if err != nil {
+			glog.Fatalf("Unable to find suitable network address.error='%v' . "+
+				"Try to set the AdvertiseAddress directly or provide a valid BindAddress to fix this.", err)
+		}
+		options.AdvertiseAddress = hostIP
+	}
+	glog.Infof("Will report %v as public IP address.", options.AdvertiseAddress)
+
+	// Set default value for ExternalHost if not specified.
+	if len(options.ExternalHost) == 0 {
+		// TODO: extend for other providers
+		if options.CloudProvider == "gce" {
+			cloud, err := cloudprovider.InitCloudProvider(options.CloudProvider, options.CloudConfigFile)
+			if err != nil {
+				glog.Fatalf("Cloud provider could not be initialized: %v", err)
+			}
+			instances, supported := cloud.Instances()
+			if !supported {
+				glog.Fatalf("GCE cloud provider has no instances.  this shouldn't happen. exiting.")
+			}
+			name, err := os.Hostname()
+			if err != nil {
+				glog.Fatalf("Failed to get hostname: %v", err)
+			}
+			addrs, err := instances.NodeAddresses(name)
+			if err != nil {
+				glog.Warningf("Unable to obtain external host address from cloud provider: %v", err)
+			} else {
+				for _, addr := range addrs {
+					if addr.Type == api.NodeExternalIP {
+						options.ExternalHost = addr.Address
+					}
+				}
+			}
+		}
+	}
+}
+
 func (s *GenericAPIServer) Run(options *ServerRunOptions) {
-	// We serve on 2 ports.  See docs/accessing_the_api.md
+	if s.enableSwaggerSupport {
+		s.InstallSwaggerAPI()
+	}
+	// We serve on 2 ports. See docs/accessing_the_api.md
 	secureLocation := ""
 	if options.SecurePort != 0 {
 		secureLocation = net.JoinHostPort(options.BindAddress.String(), strconv.Itoa(options.SecurePort))
@@ -662,7 +658,7 @@ func (s *GenericAPIServer) Run(options *ServerRunOptions) {
 		if longRunningRequestCheck(req) {
 			return nil, ""
 		}
-		return time.After(time.Minute), ""
+		return time.After(globalTimeout), ""
 	}
 
 	if secureLocation != "" {
@@ -678,7 +674,7 @@ func (s *GenericAPIServer) Run(options *ServerRunOptions) {
 		}
 
 		if len(options.ClientCAFile) > 0 {
-			clientCAs, err := util.CertPoolFromFile(options.ClientCAFile)
+			clientCAs, err := crypto.CertPoolFromFile(options.ClientCAFile)
 			if err != nil {
 				glog.Fatalf("Unable to load client CA file: %v", err)
 			}
@@ -698,10 +694,12 @@ func (s *GenericAPIServer) Run(options *ServerRunOptions) {
 			alternateDNS := []string{"kubernetes.default.svc", "kubernetes.default", "kubernetes"}
 			// It would be nice to set a fqdn subject alt name, but only the kubelets know, the apiserver is clueless
 			// alternateDNS = append(alternateDNS, "kubernetes.default.svc.CLUSTER.DNS.NAME")
-			if err := util.GenerateSelfSignedCert(s.ClusterIP.String(), options.TLSCertFile, options.TLSPrivateKeyFile, alternateIPs, alternateDNS); err != nil {
-				glog.Errorf("Unable to generate self signed cert: %v", err)
-			} else {
-				glog.Infof("Using self-signed cert (%v, %v)", options.TLSCertFile, options.TLSPrivateKeyFile)
+			if shouldGenSelfSignedCerts(options.TLSCertFile, options.TLSPrivateKeyFile) {
+				if err := crypto.GenerateSelfSignedCert(s.ClusterIP.String(), options.TLSCertFile, options.TLSPrivateKeyFile, alternateIPs, alternateDNS); err != nil {
+					glog.Errorf("Unable to generate self signed cert: %v", err)
+				} else {
+					glog.Infof("Using self-signed cert (%s, %s)", options.TLSCertFile, options.TLSPrivateKeyFile)
+				}
 			}
 		}
 
@@ -735,7 +733,30 @@ func (s *GenericAPIServer) Run(options *ServerRunOptions) {
 	glog.Fatal(http.ListenAndServe())
 }
 
-func (s *GenericAPIServer) installAPIGroup(apiGroupInfo *APIGroupInfo) error {
+// If the file represented by path exists and
+// readable, return true otherwise return false.
+func canReadFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+
+	defer f.Close()
+
+	return true
+}
+
+func shouldGenSelfSignedCerts(certPath, keyPath string) bool {
+	if canReadFile(certPath) || canReadFile(keyPath) {
+		glog.Infof("using existing apiserver.crt and apiserver.key files")
+		return false
+	}
+
+	return true
+}
+
+// Exposes the given group version in API.
+func (s *GenericAPIServer) InstallAPIGroup(apiGroupInfo *APIGroupInfo) error {
 	apiPrefix := s.APIGroupPrefix
 	if apiGroupInfo.IsLegacyGroup {
 		apiPrefix = s.APIPrefix

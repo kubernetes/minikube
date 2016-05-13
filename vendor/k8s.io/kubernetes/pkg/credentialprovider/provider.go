@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	dockertypes "github.com/docker/engine-api/types"
 	"github.com/golang/glog"
 )
 
@@ -30,6 +31,19 @@ import (
 type DockerConfigProvider interface {
 	Enabled() bool
 	Provide() DockerConfig
+	// LazyProvide() gets called after URL matches have been performed, so the
+	// location used as the key in DockerConfig would be redundant.
+	LazyProvide() *DockerConfigEntry
+}
+
+func LazyProvide(creds LazyAuthConfiguration) dockertypes.AuthConfig {
+	if creds.Provider != nil {
+		entry := *creds.Provider.LazyProvide()
+		return DockerConfigEntryToLazyAuthConfiguration(entry).AuthConfig
+	} else {
+		return creds.AuthConfig
+	}
+
 }
 
 // A DockerConfigProvider that simply reads the .dockercfg file
@@ -73,9 +87,19 @@ func (d *defaultDockerConfigProvider) Provide() DockerConfig {
 	return DockerConfig{}
 }
 
+// LazyProvide implements dockerConfigProvider. Should never be called.
+func (d *defaultDockerConfigProvider) LazyProvide() *DockerConfigEntry {
+	return nil
+}
+
 // Enabled implements dockerConfigProvider
 func (d *CachingDockerConfigProvider) Enabled() bool {
 	return d.Provider.Enabled()
+}
+
+// LazyProvide implements dockerConfigProvider. Should never be called.
+func (d *CachingDockerConfigProvider) LazyProvide() *DockerConfigEntry {
+	return nil
 }
 
 // Provide implements dockerConfigProvider
@@ -88,7 +112,7 @@ func (d *CachingDockerConfigProvider) Provide() DockerConfig {
 		return d.cacheDockerConfig
 	}
 
-	glog.Infof("Refreshing cache for provider: %v", reflect.TypeOf(d.Provider).String())
+	glog.V(2).Infof("Refreshing cache for provider: %v", reflect.TypeOf(d.Provider).String())
 	d.cacheDockerConfig = d.Provider.Provide()
 	d.expiration = time.Now().Add(d.Lifetime)
 	return d.cacheDockerConfig

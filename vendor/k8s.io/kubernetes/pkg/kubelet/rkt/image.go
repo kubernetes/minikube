@@ -28,7 +28,7 @@ import (
 
 	appcschema "github.com/appc/spec/schema"
 	rktapi "github.com/coreos/rkt/api/v1alpha"
-	"github.com/fsouza/go-dockerclient"
+	dockertypes "github.com/docker/engine-api/types"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
 	"k8s.io/kubernetes/pkg/api"
@@ -47,7 +47,11 @@ func (r *Runtime) PullImage(image kubecontainer.ImageSpec, pullSecrets []api.Sec
 	img := image.Image
 	// TODO(yifan): The credential operation is a copy from dockertools package,
 	// Need to resolve the code duplication.
-	repoToPull, _ := parsers.ParseImageName(img)
+	repoToPull, _, _, err := parsers.ParseImageName(img)
+	if err != nil {
+		return err
+	}
+
 	keyring, err := credentialprovider.MakeDockerKeyring(pullSecrets, r.dockerKeyring)
 	if err != nil {
 		return err
@@ -138,7 +142,11 @@ func (s sortByImportTime) Less(i, j int) bool { return s[i].ImportTimestamp < s[
 // will return the result reversely sorted by the import time, so that the latest
 // image comes first.
 func (r *Runtime) listImages(image string, detail bool) ([]*rktapi.Image, error) {
-	repoToPull, tag := parsers.ParseImageName(image)
+	repoToPull, tag, _, err := parsers.ParseImageName(image)
+	if err != nil {
+		return nil, err
+	}
+
 	listResp, err := r.apisvc.ListImages(context.Background(), &rktapi.ListImagesRequest{
 		Detail: detail,
 		Filters: []*rktapi.ImageFilter{
@@ -178,15 +186,15 @@ func (r *Runtime) getImageManifest(image string) (*appcschema.ImageManifest, err
 
 // TODO(yifan): This is very racy, unefficient, and unsafe, we need to provide
 // different namespaces. See: https://github.com/coreos/rkt/issues/836.
-func (r *Runtime) writeDockerAuthConfig(image string, credsSlice []docker.AuthConfiguration) error {
+func (r *Runtime) writeDockerAuthConfig(image string, credsSlice []credentialprovider.LazyAuthConfiguration) error {
 	if len(credsSlice) == 0 {
 		return nil
 	}
 
-	creds := docker.AuthConfiguration{}
+	creds := dockertypes.AuthConfig{}
 	// TODO handle multiple creds
 	if len(credsSlice) >= 1 {
-		creds = credsSlice[0]
+		creds = credentialprovider.LazyProvide(credsSlice[0])
 	}
 
 	registry := "index.docker.io"
@@ -196,11 +204,15 @@ func (r *Runtime) writeDockerAuthConfig(image string, credsSlice []docker.AuthCo
 		registry = strings.Split(image, "/")[0]
 	}
 
-	localConfigDir := rktLocalConfigDir
-	if r.config.LocalConfigDir != "" {
-		localConfigDir = r.config.LocalConfigDir
+	configDir := r.config.UserConfigDir
+	if configDir == "" {
+		configDir = r.config.LocalConfigDir
 	}
-	authDir := path.Join(localConfigDir, "auth.d")
+	if configDir == "" {
+		return fmt.Errorf("No user or local config dir is specified")
+	}
+
+	authDir := path.Join(configDir, "auth.d")
 	if _, err := os.Stat(authDir); os.IsNotExist(err) {
 		if err := os.Mkdir(authDir, 0600); err != nil {
 			glog.Errorf("rkt: Cannot create auth dir: %v", err)

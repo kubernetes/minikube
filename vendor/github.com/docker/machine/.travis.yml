@@ -1,0 +1,12 @@
+sudo: required
+dist: trusty
+language: bash
+services: docker
+env:
+  matrix:
+    - TARGET_OS=linux TARGET_ARCH=amd64 TARGETS="build validate"
+    - TARGET_OS=darwin TARGET_ARCH=amd64 TARGETS="build-x"
+    - TARGET_OS=windows TARGET_ARCH=amd64 TARGETS="build-x"
+script:
+    - USE_CONTAINER=true make "$TARGETS"
+    - "[[ \"$(find bin -type f -name docker-machine*)\" != \"\" ]]"

@@ -42,7 +42,6 @@ func NewNodeAffinityPriority(nodeLister algorithm.NodeLister) algorithm.Priority
 // the node satisfies and the more the preferredSchedulingTerm that is satisfied weights, the higher
 // score the node gets.
 func (s *NodeAffinity) CalculateNodeAffinityPriority(pod *api.Pod, nodeNameToInfo map[string]*schedulercache.NodeInfo, nodeLister algorithm.NodeLister) (schedulerapi.HostPriorityList, error) {
-
 	var maxCount int
 	counts := map[string]int{}
 
@@ -73,7 +72,7 @@ func (s *NodeAffinity) CalculateNodeAffinityPriority(pod *api.Pod, nodeNameToInf
 
 			for _, node := range nodes.Items {
 				if nodeSelector.Matches(labels.Set(node.Labels)) {
-					counts[node.Name] += preferredSchedulingTerm.Weight
+					counts[node.Name] += int(preferredSchedulingTerm.Weight)
 				}
 
 				if counts[node.Name] > maxCount {

@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.4
+
+script:
+ - ./test
+
+notifications:
+  email: false

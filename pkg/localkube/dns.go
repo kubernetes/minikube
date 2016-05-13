@@ -237,11 +237,11 @@ func createEndpoint(client *kubeclient.Client, meta kube.ObjectMeta, dnsIP strin
 				Ports: []kube.EndpointPort{
 					{
 						Name: "dns",
-						Port: dnsPort,
+						Port: int32(dnsPort),
 					},
 					{
 						Name: "dns-tcp",
-						Port: dnsPort,
+						Port: int32(dnsPort),
 					},
 				},
 			},

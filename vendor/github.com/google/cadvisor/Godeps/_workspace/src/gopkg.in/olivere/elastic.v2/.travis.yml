@@ -1,0 +1,19 @@
+sudo: false
+
+language: go
+
+go:
+  - 1.5
+  - tip
+
+env:
+  matrix:
+    - ES_VERSION=1.6.2
+    - ES_VERSION=1.7.2
+
+before_script:
+  - mkdir ${HOME}/elasticsearch
+  - wget http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz
+  - tar -xzf elasticsearch-${ES_VERSION}.tar.gz -C ${HOME}/elasticsearch
+  - ${HOME}/elasticsearch/elasticsearch-${ES_VERSION}/bin/elasticsearch >& /dev/null &
+  - sleep 15

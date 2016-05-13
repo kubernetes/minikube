@@ -1,0 +1,160 @@
+# engine-api maintainers file
+#
+# This file describes who runs the docker/engine-api project and how.
+# This is a living document - if you see something out of date or missing, speak up!
+#
+# It is structured to be consumable by both humans and programs.
+# To extract its contents programmatically, use any TOML-compliant parser.
+#
+# This file is compiled into the MAINTAINERS file in docker/opensource.
+#
+[Org]
+	[Org."Core maintainers"]
+		people = [
+			"aaronlehmann",
+			"calavera",
+			"coolljt0725",
+			"cpuguy83",
+			"crosbymichael",
+			"dnephin",
+			"dongluochen",
+			"duglin",
+			"estesp",
+			"icecrime",
+			"jhowardmsft",
+			"lk4d4",
+			"mavenugo",
+			"mhbauer",
+			"runcom",
+			"stevvooe",
+			"thajeztah",
+			"tianon",
+			"tibor",
+			"tonistiigi",
+			"unclejack",
+			"vdemeester",
+			"vieux"
+		]
+
+[people]
+
+# A reference list of all people associated with the project.
+# All other sections should refer to people by their canonical key
+# in the people section.
+
+	# ADD YOURSELF HERE IN ALPHABETICAL ORDER
+
+	[people.aaronlehmann]
+	Name = "Aaron Lehmann"
+	Email = "aaron.lehmann@docker.com"
+	GitHub = "aaronlehmann"
+
+	[people.calavera]
+	Name = "David Calavera"
+	Email = "david.calavera@gmail.com"
+	GitHub = "calavera"
+
+	[people.coolljt0725]
+	Name = "Lei Jitang"
+	Email = "leijitang@huawei.com"
+	GitHub = "coolljt0725"
+
+	[people.cpuguy83]
+	Name = "Brian Goff"
+	Email = "cpuguy83@gmail.com"
+	Github = "cpuguy83"
+
+	[people.crosbymichael]
+	Name = "Michael Crosby"
+	Email = "crosbymichael@gmail.com"
+	GitHub = "crosbymichael"
+
+	[people.dnephin]
+	Name = "Daniel Nephin"
+	Email = "dnephin@gmail.com"
+	GitHub = "dnephin"
+
+	[people.dongluochen]
+	Name = "Dongluo Chen"
+	Email = "dongluo.chen@docker.com"
+	GitHub = "dongluochen"
+
+	[people.duglin]
+	Name = "Doug Davis"
+	Email = "dug@us.ibm.com"
+	GitHub = "duglin"
+
+	[people.estesp]
+	Name = "Phil Estes"
+	Email = "estesp@linux.vnet.ibm.com"
+	GitHub = "estesp"
+
+	[people.icecrime]
+	Name = "Arnaud Porterie"
+	Email = "arnaud@docker.com"
+	GitHub = "icecrime"
+
+	[people.jhowardmsft]
+	Name = "John Howard"
+	Email = "jhoward@microsoft.com"
+	GitHub = "jhowardmsft"
+
+	[people.lk4d4]
+	Name = "Alexander Morozov"
+	Email = "lk4d4@docker.com"
+	GitHub = "lk4d4"
+
+	[people.mavenugo]
+	Name = "Madhu Venugopal"
+	Email = "madhu@docker.com"
+	GitHub = "mavenugo"
+
+	[people.mhbauer]
+	Name = "Morgan Bauer"
+	Email = "mbauer@us.ibm.com"
+	GitHub = "mhbauer"
+
+	[people.runcom]
+	Name = "Antonio Murdaca"
+	Email = "runcom@redhat.com"
+	GitHub = "runcom"
+
+	[people.stevvooe]
+	Name = "Stephen Day"
+	Email = "stephen.day@docker.com"
+	GitHub = "stevvooe"
+	
+	[people.thajeztah]
+	Name = "Sebastiaan van Stijn"
+	Email = "github@gone.nl"
+	GitHub = "thaJeztah"
+
+	[people.tianon]
+	Name = "Tianon Gravi"
+	Email = "admwiggin@gmail.com"
+	GitHub = "tianon"
+
+	[people.tibor]
+	Name = "Tibor Vass"
+	Email = "tibor@docker.com"
+	GitHub = "tiborvass"
+
+	[people.tonistiigi]
+	Name = "Tõnis Tiigi"
+	Email = "tonis@docker.com"
+	GitHub = "tonistiigi"
+
+	[people.unclejack]
+	Name = "Cristian Staretu"
+	Email = "cristian.staretu@gmail.com"
+	GitHub = "unclejack"
+
+	[people.vdemeester]
+	Name = "Vincent Demeester"
+	Email = "vincent@sbr.pm"
+	GitHub = "vdemeester"
+
+	[people.vieux]
+	Name = "Victor Vieux"
+	Email = "vieux@docker.com"
+	GitHub = "vieux"

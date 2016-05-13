@@ -23,6 +23,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	goruntime "runtime"
 	"strings"
 
 	"github.com/golang/glog"
@@ -33,6 +34,7 @@ import (
 	clientcmdlatest "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api/latest"
 	"k8s.io/kubernetes/pkg/runtime"
 	utilerrors "k8s.io/kubernetes/pkg/util/errors"
+	"k8s.io/kubernetes/pkg/util/homedir"
 )
 
 const (
@@ -43,9 +45,23 @@ const (
 	RecommendedSchemaName       = "schema"
 )
 
-var OldRecommendedHomeFile = path.Join(os.Getenv("HOME"), "/.kube/.kubeconfig")
-var RecommendedHomeFile = path.Join(os.Getenv("HOME"), RecommendedHomeDir, RecommendedFileName)
-var RecommendedSchemaFile = path.Join(os.Getenv("HOME"), RecommendedHomeDir, RecommendedSchemaName)
+var RecommendedHomeFile = path.Join(homedir.HomeDir(), RecommendedHomeDir, RecommendedFileName)
+var RecommendedSchemaFile = path.Join(homedir.HomeDir(), RecommendedHomeDir, RecommendedSchemaName)
+
+// currentMigrationRules returns a map that holds the history of recommended home directories used in previous versions.
+// Any future changes to RecommendedHomeFile and related are expected to add a migration rule here, in order to make
+// sure existing config files are migrated to their new locations properly.
+func currentMigrationRules() map[string]string {
+	oldRecommendedHomeFile := path.Join(os.Getenv("HOME"), "/.kube/.kubeconfig")
+	oldRecommendedWindowsHomeFile := path.Join(os.Getenv("HOME"), RecommendedHomeDir, RecommendedFileName)
+
+	migrationRules := map[string]string{}
+	migrationRules[RecommendedHomeFile] = oldRecommendedHomeFile
+	if goruntime.GOOS == "windows" {
+		migrationRules[RecommendedHomeFile] = oldRecommendedWindowsHomeFile
+	}
+	return migrationRules
+}
 
 // ClientConfigLoadingRules is an ExplicitPath and string slice of specific locations that are used for merging together a Config
 // Callers can put the chain together however they want, but we'd recommend:
@@ -68,7 +84,6 @@ type ClientConfigLoadingRules struct {
 // use this constructor
 func NewDefaultClientConfigLoadingRules() *ClientConfigLoadingRules {
 	chain := []string{}
-	migrationRules := map[string]string{}
 
 	envVarFiles := os.Getenv(RecommendedConfigPathEnvVar)
 	if len(envVarFiles) != 0 {
@@ -76,13 +91,11 @@ func NewDefaultClientConfigLoadingRules() *ClientConfigLoadingRules {
 
 	} else {
 		chain = append(chain, RecommendedHomeFile)
-		migrationRules[RecommendedHomeFile] = OldRecommendedHomeFile
-
 	}
 
 	return &ClientConfigLoadingRules{
 		Precedence:     chain,
-		MigrationRules: migrationRules,
+		MigrationRules: currentMigrationRules(),
 	}
 }
 
@@ -214,6 +227,54 @@ func (rules *ClientConfigLoadingRules) Migrate() error {
 	}
 
 	return nil
+}
+
+// GetLoadingPrecedence implements ConfigAccess
+func (rules *ClientConfigLoadingRules) GetLoadingPrecedence() []string {
+	return rules.Precedence
+}
+
+// GetStartingConfig implements ConfigAccess
+func (rules *ClientConfigLoadingRules) GetStartingConfig() (*clientcmdapi.Config, error) {
+	clientConfig := NewNonInteractiveDeferredLoadingClientConfig(rules, &ConfigOverrides{})
+	rawConfig, err := clientConfig.RawConfig()
+	if os.IsNotExist(err) {
+		return clientcmdapi.NewConfig(), nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &rawConfig, nil
+}
+
+// GetDefaultFilename implements ConfigAccess
+func (rules *ClientConfigLoadingRules) GetDefaultFilename() string {
+	// Explicit file if we have one.
+	if rules.IsExplicitFile() {
+		return rules.GetExplicitFile()
+	}
+	// Otherwise, first existing file from precedence.
+	for _, filename := range rules.GetLoadingPrecedence() {
+		if _, err := os.Stat(filename); err == nil {
+			return filename
+		}
+	}
+	// If none exists, use the first from precedence.
+	if len(rules.Precedence) > 0 {
+		return rules.Precedence[0]
+	}
+	return ""
+}
+
+// IsExplicitFile implements ConfigAccess
+func (rules *ClientConfigLoadingRules) IsExplicitFile() bool {
+	return len(rules.ExplicitPath) > 0
+}
+
+// GetExplicitFile implements ConfigAccess
+func (rules *ClientConfigLoadingRules) GetExplicitFile() string {
+	return rules.ExplicitPath
 }
 
 // LoadFromFile takes a filename and deserializes the contents into Config object
