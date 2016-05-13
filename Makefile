@@ -48,8 +48,8 @@ integration: out/minikube
 test: .gopath
 	./test.sh
 
-pkg/minikube/cluster/localkubecontents.go: out/localkube $(GOPATH/bin/go-bindata)
+pkg/minikube/cluster/localkubecontents.go: out/localkube $(GOPATH)/bin/go-bindata
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
 
-$(GOPATH/bin/go-bindata): .gopath
-	go install github.com/jteeuwen/go-bindata/...
+$(GOPATH)/bin/go-bindata: .gopath
+	go get github.com/jteeuwen/go-bindata/...
