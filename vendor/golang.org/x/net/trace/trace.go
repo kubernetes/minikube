@@ -107,7 +107,6 @@ var AuthRequest = func(req *http.Request) (any, sensitive bool) {
 }
 
 func init() {
-	/*
 	http.HandleFunc("/debug/requests", func(w http.ResponseWriter, req *http.Request) {
 		any, sensitive := AuthRequest(req)
 		if !any {
@@ -124,7 +123,6 @@ func init() {
 		}
 		RenderEvents(w, req, sensitive)
 	})
-	*/
 }
 
 // Render renders the HTML page typically served at /debug/requests.

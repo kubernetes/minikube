@@ -17,6 +17,7 @@ limitations under the License.
 package localkube
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -69,7 +70,6 @@ func (lk LocalkubeServer) NewEtcd(clientURLStrs, peerURLStrs []string, name, dat
 		PeerURLs:           peerURLs,
 		DataDir:            dataDirectory,
 		InitialPeerURLsMap: urlsMap,
-		Transport:          http.DefaultTransport.(*http.Transport),
 
 		NewCluster: true,
 
@@ -141,7 +141,7 @@ func createListenersOrPanic(urls types.URLs) (listeners []net.Listener) {
 			panic(err)
 		}
 
-		l, err = transport.NewKeepAliveListener(l, url.Scheme, transport.TLSInfo{})
+		l, err = transport.NewKeepAliveListener(l, url.Scheme, &tls.Config{})
 		if err != nil {
 			panic(err)
 		}

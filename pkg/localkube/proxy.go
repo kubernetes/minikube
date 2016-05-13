@@ -24,8 +24,8 @@ import (
 )
 
 var (
-	MasqueradeBit = 14
-	OOMScoreAdj   = qos.KubeProxyOOMScoreAdj
+	MasqueradeBit = int32(14)
+	OOMScoreAdj   = int32(qos.KubeProxyOOMScoreAdj)
 )
 
 func (lk LocalkubeServer) NewProxyServer() Server {
