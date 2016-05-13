@@ -76,8 +76,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	certAuth := constants.MakeMiniPath("apiserver.crt")
 	clientCert := constants.MakeMiniPath("apiserver.crt")
 	clientKey := constants.MakeMiniPath("apiserver.key")
-	active, err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey)
-	if err != nil {
+	if active, err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey); err != nil {
 		log.Println("Error setting up kubeconfig: ", err)
 		os.Exit(1)
 	} else if !active {
