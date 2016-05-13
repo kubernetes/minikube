@@ -32,7 +32,7 @@ out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 
 out/localkube: .gopath
 ifeq ($(GOOS),linux)
-	CGO_ENABLED=1 go build -v -x -ldflags="-s"-o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=1 go build -v -ldflags="-s" -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
 	docker run -w /go/src/k8s.io/minikube -e GOPATH=/go -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make out/localkube
 endif
@@ -48,5 +48,8 @@ integration: out/minikube
 test: .gopath
 	./test.sh
 
-pkg/minikube/cluster/localkubecontents.go: out/localkube
-	go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
+pkg/minikube/cluster/localkubecontents.go: out/localkube $(GOPATH/bin/go-bindata)
+	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
+
+$(GOPATH/bin/go-bindata): .gopath
+	go install github.com/jteeuwen/go-bindata/...

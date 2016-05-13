@@ -33,9 +33,8 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 
 ## Build Requirements
 
-* A recent Go distribution (>1.5)
+* A recent Go distribution (>1.6)
 * If you're not on Linux, you'll need a Docker installation
-* You'll need "go-bindata", available via `go get -u github.com/jteeuwen/go-bindata/...`
 
 ## Build Instructions
 
