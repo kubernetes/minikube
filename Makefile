@@ -32,7 +32,7 @@ out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 
 out/localkube: .gopath
 ifeq ($(GOOS),linux)
-	CGO_ENABLED=1 go build -v -ldflags="-s" -o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=1 go build -ldflags="-s" -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
 	docker run -w /go/src/k8s.io/minikube -e GOPATH=/go -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make out/localkube
 endif
