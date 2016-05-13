@@ -31,11 +31,15 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 * Simplifying kubernetes production deployment experience. Kube-deploy is attempting to tackle this problem.
 * Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
 
+## Build Requirements
+
+* A recent Go distribution (>1.6)
+* If you're not on Linux, you'll need a Docker installation
 
 ## Build Instructions
 
 ```shell
-make minikube
+make out/minikube
 ```
 
 ## Run Instructions

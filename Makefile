@@ -15,7 +15,7 @@
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
-GOPATH := $(shell pwd)/.gopath
+GOPATH ?= $(shell pwd)/.gopath
 REPOPATH ?= k8s.io/minikube
 export GO15VENDOREXPERIMENT=1
 
@@ -23,34 +23,33 @@ clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
 
-gopath:
+.gopath:
 	mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH))
 	ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
 
-.PHONY: minikube
-minikube: minikube-$(GOOS)-$(GOARCH)
+out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube
 
-.PHONY: localkube
-localkube: localkube-$(GOOS)-$(GOARCH)
-	cp $(BUILD_DIR)/localkube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/localkube
+out/localkube: .gopath
+ifeq ($(GOOS),linux)
+	CGO_ENABLED=1 go build -ldflags="-s" -o $(BUILD_DIR)/localkube ./cmd/localkube
+else
+	docker run -w /go/src/k8s.io/minikube -e GOPATH=/go -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make out/localkube
+endif
 
-minikube-$(GOOS)-$(GOARCH): gopath
+out/minikube-$(GOOS)-$(GOARCH): .gopath pkg/minikube/cluster/localkubecontents.go
 	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
 
-localkube-$(GOOS)-$(GOARCH): gopath
-	GOARCH=$(GOARCH) GOOS=$(GOOS) go build -o $(BUILD_DIR)/localkube-$(GOOS)-$(GOARCH) ./cmd/localkube
-
 .PHONY: integration
-integration: minikube
+integration: out/minikube
 	go test -v ./test/integration --tags=integration
 
-localkube-incremental:
-	GOPATH=/go CGO_ENABLED=1 GOBIN=$(shell pwd)/$(BUILD_DIR) go install ./cmd/localkube
-
-docker/localkube:
-	docker run -w /go/src/k8s.io/minikube -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make localkube-incremental
-
 .PHONY: test
-test: gopath
+test: .gopath pkg/minikube/cluster/localkubecontents.go
 	./test.sh
+
+pkg/minikube/cluster/localkubecontents.go: out/localkube $(GOPATH)/bin/go-bindata
+	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
+
+$(GOPATH)/bin/go-bindata: .gopath
+	go get github.com/jteeuwen/go-bindata/...

@@ -22,4 +22,4 @@ for TEST in $(find -name "*.go" | grep -v vendor | grep -v integration | grep _t
 done
 
 # Check gofmt
-diff -u <(echo -n) <(gofmt -l -s . | grep -v vendor)
+diff -u <(echo -n) <(gofmt -l -s . | grep -v "vendor\|\.gopath\|localkubecontents.go")

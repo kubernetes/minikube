@@ -27,9 +27,11 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 const (
@@ -145,9 +147,27 @@ type KubernetesConfig struct {
 
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble, config KubernetesConfig) error {
-	output, err := h.RunSSHCommand(getStartCommand(config.LocalkubeURL))
+	output, err := h.RunSSHCommand(getStartCommand())
 	log.Println(output)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func UpdateCluster(d drivers.Driver) error {
+	localkube, err := Asset("out/localkube")
+	if err != nil {
+		log.Println("Error loading localkube: ", err)
+		return err
+	}
+
+	client, err := sshutil.NewSSHClient(d)
+	if err != nil {
+		return err
+	}
+	if err := sshutil.Transfer(localkube, "/usr/local/bin/", "localkube", "0777", client); err != nil {
 		return err
 	}
 
