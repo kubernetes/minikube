@@ -45,7 +45,7 @@ integration: out/minikube
 	go test -v ./test/integration --tags=integration
 
 .PHONY: test
-test: .gopath
+test: .gopath pkg/minikube/cluster/localkubecontents.go
 	./test.sh
 
 pkg/minikube/cluster/localkubecontents.go: out/localkube $(GOPATH)/bin/go-bindata
