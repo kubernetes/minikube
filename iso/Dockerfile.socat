@@ -1,0 +1,8 @@
+FROM golang:1.6
+
+RUN apt-get update && apt-get install libssl-dev -q	-y
+
+ENV SOCAT socat-2.0.0-b8
+RUN wget http://www.dest-unreach.org/socat/download/$SOCAT.tar.gz
+RUN tar -zvxf $SOCAT.tar.gz
+RUN cd $SOCAT && ./configure --disable-readline && make && mv ./socat /go/

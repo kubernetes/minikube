@@ -7,8 +7,14 @@ echo "Building in $tmpdir."
 cp -r . $tmpdir/
 
 pushd $tmpdir
+
 # Get nsenter.
 docker run --rm jpetazzo/nsenter cat /nsenter > $tmpdir/nsenter && chmod +x $tmpdir/nsenter
+
+# Get socat
+docker build -t socat -f Dockerfile.socat .
+docker run socat cat socat > $tmpdir/socat
+chmod +x $tmpdir/socat
 
 # Do the build.
 docker build -t iso .
