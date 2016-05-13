@@ -41,6 +41,7 @@ import (
 	"k8s.io/kubernetes/pkg/types"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
 	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
+	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/util/slice"
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 )
@@ -160,6 +161,8 @@ type Proxier struct {
 	iptables       utiliptables.Interface
 	masqueradeAll  bool
 	masqueradeMark string
+	exec           utilexec.Interface
+	clusterCIDR    string
 }
 
 type localPort struct {
@@ -185,7 +188,7 @@ var _ proxy.ProxyProvider = &Proxier{}
 // An error will be returned if iptables fails to update or acquire the initial lock.
 // Once a proxier is created, it will keep iptables up to date in the background and
 // will not terminate if a particular iptables call fails.
-func NewProxier(ipt utiliptables.Interface, exec utilexec.Interface, syncPeriod time.Duration, masqueradeAll bool, masqueradeBit int) (*Proxier, error) {
+func NewProxier(ipt utiliptables.Interface, exec utilexec.Interface, syncPeriod time.Duration, masqueradeAll bool, masqueradeBit int, clusterCIDR string) (*Proxier, error) {
 	// Set the route_localnet sysctl we need for
 	if err := utilsysctl.SetSysctl(sysctlRouteLocalnet, 1); err != nil {
 		return nil, fmt.Errorf("can't set sysctl %s: %v", sysctlRouteLocalnet, err)
@@ -220,6 +223,8 @@ func NewProxier(ipt utiliptables.Interface, exec utilexec.Interface, syncPeriod 
 		iptables:       ipt,
 		masqueradeAll:  masqueradeAll,
 		masqueradeMark: masqueradeMark,
+		exec:           exec,
+		clusterCIDR:    clusterCIDR,
 	}, nil
 }
 
@@ -325,7 +330,7 @@ func CleanupLeftovers(ipt utiliptables.Interface) (encounteredError bool) {
 }
 
 func (proxier *Proxier) sameConfig(info *serviceInfo, service *api.Service, port *api.ServicePort) bool {
-	if info.protocol != port.Protocol || info.port != port.Port || info.nodePort != port.NodePort {
+	if info.protocol != port.Protocol || info.port != int(port.Port) || info.nodePort != int(port.NodePort) {
 		return false
 	}
 	if !info.clusterIP.Equal(net.ParseIP(service.Spec.ClusterIP)) {
@@ -421,9 +426,9 @@ func (proxier *Proxier) OnServiceUpdate(allServices []api.Service) {
 			glog.V(1).Infof("Adding new service %q at %s:%d/%s", serviceName, serviceIP, servicePort.Port, servicePort.Protocol)
 			info = newServiceInfo(serviceName)
 			info.clusterIP = serviceIP
-			info.port = servicePort.Port
+			info.port = int(servicePort.Port)
 			info.protocol = servicePort.Protocol
-			info.nodePort = servicePort.NodePort
+			info.nodePort = int(servicePort.NodePort)
 			info.externalIPs = service.Spec.ExternalIPs
 			// Deep-copy in case the service instance changes
 			info.loadBalancerStatus = *api.LoadBalancerStatusDeepCopy(&service.Status.LoadBalancer)
@@ -434,15 +439,21 @@ func (proxier *Proxier) OnServiceUpdate(allServices []api.Service) {
 		}
 	}
 
+	staleUDPServices := sets.NewString()
 	// Remove services missing from the update.
 	for name := range proxier.serviceMap {
 		if !activeServices[name] {
 			glog.V(1).Infof("Removing service %q", name)
+			if proxier.serviceMap[name].protocol == api.ProtocolUDP {
+				staleUDPServices.Insert(proxier.serviceMap[name].clusterIP.String())
+			}
 			delete(proxier.serviceMap, name)
 		}
 	}
 
 	proxier.syncProxyRules()
+	proxier.deleteServiceConnections(staleUDPServices.List())
+
 }
 
 // OnEndpointsUpdate takes in a slice of updated endpoints.
@@ -457,6 +468,7 @@ func (proxier *Proxier) OnEndpointsUpdate(allEndpoints []api.Endpoints) {
 	proxier.haveReceivedEndpointsUpdate = true
 
 	activeEndpoints := make(map[proxy.ServicePortName]bool) // use a map as a set
+	staleConnections := make(map[endpointServicePair]bool)
 
 	// Update endpoints for services.
 	for i := range allEndpoints {
@@ -471,7 +483,7 @@ func (proxier *Proxier) OnEndpointsUpdate(allEndpoints []api.Endpoints) {
 				port := &ss.Ports[i]
 				for i := range ss.Addresses {
 					addr := &ss.Addresses[i]
-					portsToEndpoints[port.Name] = append(portsToEndpoints[port.Name], hostPortPair{addr.IP, port.Port})
+					portsToEndpoints[port.Name] = append(portsToEndpoints[port.Name], hostPortPair{addr.IP, int(port.Port)})
 				}
 			}
 		}
@@ -480,7 +492,12 @@ func (proxier *Proxier) OnEndpointsUpdate(allEndpoints []api.Endpoints) {
 			svcPort := proxy.ServicePortName{NamespacedName: types.NamespacedName{Namespace: svcEndpoints.Namespace, Name: svcEndpoints.Name}, Port: portname}
 			curEndpoints := proxier.endpointsMap[svcPort]
 			newEndpoints := flattenValidEndpoints(portsToEndpoints[portname])
+
 			if len(curEndpoints) != len(newEndpoints) || !slicesEquiv(slice.CopyStrings(curEndpoints), newEndpoints) {
+				removedEndpoints := getRemovedEndpoints(curEndpoints, newEndpoints)
+				for _, ep := range removedEndpoints {
+					staleConnections[endpointServicePair{endpoint: ep, servicePortName: svcPort}] = true
+				}
 				glog.V(1).Infof("Setting endpoints for %q to %+v", svcPort, newEndpoints)
 				proxier.endpointsMap[svcPort] = newEndpoints
 			}
@@ -491,12 +508,18 @@ func (proxier *Proxier) OnEndpointsUpdate(allEndpoints []api.Endpoints) {
 	// Remove endpoints missing from the update.
 	for name := range proxier.endpointsMap {
 		if !activeEndpoints[name] {
+			// record endpoints of unactive service to stale connections
+			for _, ep := range proxier.endpointsMap[name] {
+				staleConnections[endpointServicePair{endpoint: ep, servicePortName: name}] = true
+			}
+
 			glog.V(2).Infof("Removing endpoints for %q", name)
 			delete(proxier.endpointsMap, name)
 		}
 	}
 
 	proxier.syncProxyRules()
+	proxier.deleteEndpointConnections(staleConnections)
 }
 
 // used in OnEndpointsUpdate
@@ -550,6 +573,64 @@ func servicePortEndpointChainName(s proxy.ServicePortName, protocol string, endp
 	hash := sha256.Sum256([]byte(s.String() + protocol + endpoint))
 	encoded := base32.StdEncoding.EncodeToString(hash[:])
 	return utiliptables.Chain("KUBE-SEP-" + encoded[:16])
+}
+
+// getRemovedEndpoints returns the endpoint IPs that are missing in the new endpoints
+func getRemovedEndpoints(curEndpoints, newEndpoints []string) []string {
+	return sets.NewString(curEndpoints...).Difference(sets.NewString(newEndpoints...)).List()
+}
+
+type endpointServicePair struct {
+	endpoint        string
+	servicePortName proxy.ServicePortName
+}
+
+const noConnectionToDelete = "0 flow entries have been deleted"
+
+// After a UDP endpoint has been removed, we must flush any pending conntrack entries to it, or else we
+// risk sending more traffic to it, all of which will be lost (because UDP).
+// This assumes the proxier mutex is held
+func (proxier *Proxier) deleteEndpointConnections(connectionMap map[endpointServicePair]bool) {
+	for epSvcPair := range connectionMap {
+		if svcInfo, ok := proxier.serviceMap[epSvcPair.servicePortName]; ok && svcInfo.protocol == api.ProtocolUDP {
+			endpointIP := strings.Split(epSvcPair.endpoint, ":")[0]
+			glog.V(2).Infof("Deleting connection tracking state for service IP %s, endpoint IP %s", svcInfo.clusterIP.String(), endpointIP)
+			err := proxier.execConntrackTool("-D", "--orig-dst", svcInfo.clusterIP.String(), "--dst-nat", endpointIP, "-p", "udp")
+			if err != nil && !strings.Contains(err.Error(), noConnectionToDelete) {
+				// TODO: Better handling for deletion failure. When failure occur, stale udp connection may not get flushed.
+				// These stale udp connection will keep black hole traffic. Making this a best effort operation for now, since it
+				// is expensive to baby sit all udp connections to kubernetes services.
+				glog.Errorf("conntrack return with error: %v", err)
+			}
+		}
+	}
+}
+
+// deleteServiceConnection use conntrack-tool to delete UDP connection specified by service ip
+func (proxier *Proxier) deleteServiceConnections(svcIPs []string) {
+	for _, ip := range svcIPs {
+		glog.V(2).Infof("Deleting connection tracking state for service IP %s", ip)
+		err := proxier.execConntrackTool("-D", "--orig-dst", ip, "-p", "udp")
+		if err != nil && !strings.Contains(err.Error(), noConnectionToDelete) {
+			// TODO: Better handling for deletion failure. When failure occur, stale udp connection may not get flushed.
+			// These stale udp connection will keep black hole traffic. Making this a best effort operation for now, since it
+			// is expensive to baby sit all udp connections to kubernetes services.
+			glog.Errorf("conntrack return with error: %v", err)
+		}
+	}
+}
+
+//execConntrackTool executes conntrack tool using given parameters
+func (proxier *Proxier) execConntrackTool(parameters ...string) error {
+	conntrackPath, err := proxier.exec.LookPath("conntrack")
+	if err != nil {
+		return fmt.Errorf("Error looking for path of conntrack: %v", err)
+	}
+	output, err := proxier.exec.Command(conntrackPath, parameters...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("Conntrack command returned: %q, error message: %s", string(output), err)
+	}
+	return nil
 }
 
 // This is where all of the iptables-save/restore calls happen.
@@ -686,8 +767,8 @@ func (proxier *Proxier) syncProxyRules() {
 	// Accumulate NAT chains to keep.
 	activeNATChains := map[utiliptables.Chain]bool{} // use a map as a set
 
-	// Accumulate new local ports that we have opened.
-	newLocalPorts := map[localPort]closeable{}
+	// Accumulate the set of local ports that we will be holding open once this update is complete
+	replacementPortsMap := map[localPort]closeable{}
 
 	// Build rules for each service.
 	for svcName, svcInfo := range proxier.serviceMap {
@@ -713,6 +794,9 @@ func (proxier *Proxier) syncProxyRules() {
 		if proxier.masqueradeAll {
 			writeLine(natRules, append(args, "-j", string(kubeMarkMasqChain))...)
 		}
+		if len(proxier.clusterCIDR) > 0 {
+			writeLine(natRules, append(args, "! -s", proxier.clusterCIDR, "-j", string(kubeMarkMasqChain))...)
+		}
 		writeLine(natRules, append(args, "-j", string(svcChain))...)
 
 		// Capture externalIPs.
@@ -730,14 +814,15 @@ func (proxier *Proxier) syncProxyRules() {
 					protocol: protocol,
 				}
 				if proxier.portsMap[lp] != nil {
-					newLocalPorts[lp] = proxier.portsMap[lp]
+					glog.V(4).Infof("Port %s was open before and is still needed", lp.String())
+					replacementPortsMap[lp] = proxier.portsMap[lp]
 				} else {
 					socket, err := openLocalPort(&lp)
 					if err != nil {
 						glog.Errorf("can't open %s, skipping this externalIP: %v", lp.String(), err)
 						continue
 					}
-					newLocalPorts[lp] = socket
+					replacementPortsMap[lp] = socket
 				}
 			} // We're holding the port, so it's OK to install iptables rules.
 			args := []string{
@@ -793,14 +878,15 @@ func (proxier *Proxier) syncProxyRules() {
 				protocol: protocol,
 			}
 			if proxier.portsMap[lp] != nil {
-				newLocalPorts[lp] = proxier.portsMap[lp]
+				glog.V(4).Infof("Port %s was open before and is still needed", lp.String())
+				replacementPortsMap[lp] = proxier.portsMap[lp]
 			} else {
 				socket, err := openLocalPort(&lp)
 				if err != nil {
 					glog.Errorf("can't open %s, skipping this nodePort: %v", lp.String(), err)
 					continue
 				}
-				newLocalPorts[lp] = socket
+				replacementPortsMap[lp] = socket
 			} // We're holding the port, so it's OK to install iptables rules.
 
 			args := []string{
@@ -940,20 +1026,17 @@ func (proxier *Proxier) syncProxyRules() {
 	if err != nil {
 		glog.Errorf("Failed to execute iptables-restore: %v", err)
 		// Revert new local ports.
-		for k, v := range newLocalPorts {
-			glog.Errorf("Closing local port %s", k.String())
-			v.Close()
-		}
+		revertPorts(replacementPortsMap, proxier.portsMap)
 		return
 	}
 
 	// Close old local ports and save new ones.
 	for k, v := range proxier.portsMap {
-		if newLocalPorts[k] == nil {
+		if replacementPortsMap[k] == nil {
 			v.Close()
 		}
 	}
-	proxier.portsMap = newLocalPorts
+	proxier.portsMap = replacementPortsMap
 
 	// Clean up the older SNAT rule which was directly in POSTROUTING.
 	// TODO(thockin): Remove this for v1.3 or v1.4.
@@ -1113,4 +1196,16 @@ func openLocalPort(lp *localPort) (closeable, error) {
 	}
 	glog.V(2).Infof("Opened local port %s", lp.String())
 	return socket, nil
+}
+
+// revertPorts is closing ports in replacementPortsMap but not in originalPortsMap. In other words, it only
+// closes the ports opened in this sync.
+func revertPorts(replacementPortsMap, originalPortsMap map[localPort]closeable) {
+	for k, v := range replacementPortsMap {
+		// Only close newly opened local ports - leave ones that were open before this update
+		if originalPortsMap[k] == nil {
+			glog.V(2).Infof("Closing local port %s after iptables-restore failure", k.String())
+			v.Close()
+		}
+	}
 }

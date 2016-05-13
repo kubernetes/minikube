@@ -1,0 +1,4 @@
+2601:9:8480:11d2:7909:b2e5:3722:ef57 - - [08/Jul/2014:01:16:25 -0700] "GET / HTTP/1.1" 500 0 - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"
+2601:9:8480:11d2:7909:b2e5:3722:ef57 - - [08/Jul/2014:01:16:25 -0700] "GET /favicon.ico HTTP/1.1" 500 0 - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"
+2601:9:8480:11d2:7909:b2e5:3722:ef57 - - [08/Jul/2014:01:18:20 -0700] "GET / HTTP/1.1" 500 0 - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"
+2601:9:8480:11d2:7909:b2e5:3722:ef57 - - [08/Jul/2014:01:18:20 -0700] "GET /favicon.ico HTTP/1.1" 500 0 - "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36"

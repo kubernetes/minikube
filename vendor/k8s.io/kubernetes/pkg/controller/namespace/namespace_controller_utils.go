@@ -29,6 +29,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/typed/discovery"
 	"k8s.io/kubernetes/pkg/client/typed/dynamic"
 	"k8s.io/kubernetes/pkg/runtime"
+	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/util/sets"
 
 	"github.com/golang/glog"
@@ -146,16 +147,16 @@ func deleteCollection(
 	gvr unversioned.GroupVersionResource,
 	namespace string,
 ) (bool, error) {
-	glog.V(4).Infof("namespace controller - deleteCollection - namespace: %s, gvr: %v", namespace, gvr)
+	glog.V(5).Infof("namespace controller - deleteCollection - namespace: %s, gvr: %v", namespace, gvr)
 
 	key := operationKey{op: operationDeleteCollection, gvr: gvr}
 	if !opCache.isSupported(key) {
-		glog.V(4).Infof("namespace controller - deleteCollection ignored since not supported - namespace: %s, gvr: %v", namespace, gvr)
+		glog.V(5).Infof("namespace controller - deleteCollection ignored since not supported - namespace: %s, gvr: %v", namespace, gvr)
 		return false, nil
 	}
 
 	apiResource := unversioned.APIResource{Name: gvr.Resource, Namespaced: true}
-	err := dynamicClient.Resource(&apiResource, namespace).DeleteCollection(nil, v1.ListOptions{})
+	err := dynamicClient.Resource(&apiResource, namespace).DeleteCollection(nil, &v1.ListOptions{})
 
 	if err == nil {
 		return true, nil
@@ -168,12 +169,12 @@ func deleteCollection(
 	// when working with this resource type, we will get a literal not found error rather than expected method not supported
 	// remember next time that this resource does not support delete collection...
 	if errors.IsMethodNotSupported(err) || errors.IsNotFound(err) {
-		glog.V(4).Infof("namespace controller - deleteCollection not supported - namespace: %s, gvr: %v", namespace, gvr)
+		glog.V(5).Infof("namespace controller - deleteCollection not supported - namespace: %s, gvr: %v", namespace, gvr)
 		opCache[key] = true
 		return false, nil
 	}
 
-	glog.V(4).Infof("namespace controller - deleteCollection unexpected error - namespace: %s, gvr: %v, error: %v", namespace, gvr, err)
+	glog.V(5).Infof("namespace controller - deleteCollection unexpected error - namespace: %s, gvr: %v, error: %v", namespace, gvr, err)
 	return true, err
 }
 
@@ -188,16 +189,16 @@ func listCollection(
 	gvr unversioned.GroupVersionResource,
 	namespace string,
 ) (*runtime.UnstructuredList, bool, error) {
-	glog.V(4).Infof("namespace controller - listCollection - namespace: %s, gvr: %v", namespace, gvr)
+	glog.V(5).Infof("namespace controller - listCollection - namespace: %s, gvr: %v", namespace, gvr)
 
 	key := operationKey{op: operationList, gvr: gvr}
 	if !opCache.isSupported(key) {
-		glog.V(4).Infof("namespace controller - listCollection ignored since not supported - namespace: %s, gvr: %v", namespace, gvr)
+		glog.V(5).Infof("namespace controller - listCollection ignored since not supported - namespace: %s, gvr: %v", namespace, gvr)
 		return nil, false, nil
 	}
 
 	apiResource := unversioned.APIResource{Name: gvr.Resource, Namespaced: true}
-	unstructuredList, err := dynamicClient.Resource(&apiResource, namespace).List(v1.ListOptions{})
+	unstructuredList, err := dynamicClient.Resource(&apiResource, namespace).List(&v1.ListOptions{})
 	if err == nil {
 		return unstructuredList, true, nil
 	}
@@ -209,7 +210,7 @@ func listCollection(
 	// when working with this resource type, we will get a literal not found error rather than expected method not supported
 	// remember next time that this resource does not support delete collection...
 	if errors.IsMethodNotSupported(err) || errors.IsNotFound(err) {
-		glog.V(4).Infof("namespace controller - listCollection not supported - namespace: %s, gvr: %v", namespace, gvr)
+		glog.V(5).Infof("namespace controller - listCollection not supported - namespace: %s, gvr: %v", namespace, gvr)
 		opCache[key] = true
 		return nil, false, nil
 	}
@@ -224,7 +225,7 @@ func deleteEachItem(
 	gvr unversioned.GroupVersionResource,
 	namespace string,
 ) error {
-	glog.V(4).Infof("namespace controller - deleteEachItem - namespace: %s, gvr: %v", namespace, gvr)
+	glog.V(5).Infof("namespace controller - deleteEachItem - namespace: %s, gvr: %v", namespace, gvr)
 
 	unstructuredList, listSupported, err := listCollection(dynamicClient, opCache, gvr, namespace)
 	if err != nil {
@@ -235,7 +236,7 @@ func deleteEachItem(
 	}
 	apiResource := unversioned.APIResource{Name: gvr.Resource, Namespaced: true}
 	for _, item := range unstructuredList.Items {
-		if err = dynamicClient.Resource(&apiResource, namespace).Delete(item.Name, nil); err != nil && !errors.IsNotFound(err) && !errors.IsMethodNotSupported(err) {
+		if err = dynamicClient.Resource(&apiResource, namespace).Delete(item.GetName(), nil); err != nil && !errors.IsNotFound(err) && !errors.IsMethodNotSupported(err) {
 			return err
 		}
 	}
@@ -243,7 +244,7 @@ func deleteEachItem(
 }
 
 // deleteAllContentForGroupVersionResource will use the dynamic client to delete each resource identified in gvr.
-// It returns an estimate of the time remaining before the remaing resources are deleted.
+// It returns an estimate of the time remaining before the remaining resources are deleted.
 // If estimate > 0, not all resources are guaranteed to be gone.
 func deleteAllContentForGroupVersionResource(
 	kubeClient clientset.Interface,
@@ -253,20 +254,20 @@ func deleteAllContentForGroupVersionResource(
 	namespace string,
 	namespaceDeletedAt unversioned.Time,
 ) (int64, error) {
-	glog.V(4).Infof("namespace controller - deleteAllContentForGroupVersionResource - namespace: %s, gvr: %v", namespace, gvr)
+	glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - namespace: %s, gvr: %v", namespace, gvr)
 
 	// estimate how long it will take for the resource to be deleted (needed for objects that support graceful delete)
 	estimate, err := estimateGracefulTermination(kubeClient, gvr, namespace, namespaceDeletedAt)
 	if err != nil {
-		glog.V(4).Infof("namespace controller - deleteAllContentForGroupVersionResource - unable to estimate - namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
+		glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - unable to estimate - namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
 		return estimate, err
 	}
-	glog.V(4).Infof("namespace controller - deleteAllContentForGroupVersionResource - estimate - namespace: %s, gvr: %v, estimate: %v", namespace, gvr, estimate)
+	glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - estimate - namespace: %s, gvr: %v, estimate: %v", namespace, gvr, estimate)
 
 	// get a client for this group version...
 	dynamicClient, err := clientPool.ClientForGroupVersion(gvr.GroupVersion())
 	if err != nil {
-		glog.V(4).Infof("namespace controller - deleteAllContentForGroupVersionResource - unable to get client - namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
+		glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - unable to get client - namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
 		return estimate, err
 	}
 
@@ -286,16 +287,16 @@ func deleteAllContentForGroupVersionResource(
 
 	// verify there are no more remaining items
 	// it is not an error condition for there to be remaining items if local estimate is non-zero
-	glog.V(4).Infof("namespace controller - deleteAllContentForGroupVersionResource - checking for no more items in namespace: %s, gvr: %v", namespace, gvr)
+	glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - checking for no more items in namespace: %s, gvr: %v", namespace, gvr)
 	unstructuredList, listSupported, err := listCollection(dynamicClient, opCache, gvr, namespace)
 	if err != nil {
-		glog.V(4).Infof("namespace controller - deleteAllContentForGroupVersionResource - error verifying no items in namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
+		glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - error verifying no items in namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
 		return estimate, err
 	}
 	if !listSupported {
 		return estimate, nil
 	}
-	glog.V(4).Infof("namespace controller - deleteAllContentForGroupVersionResource - items remaining - namespace: %s, gvr: %v, items: %v", namespace, gvr, len(unstructuredList.Items))
+	glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - items remaining - namespace: %s, gvr: %v, items: %v", namespace, gvr, len(unstructuredList.Items))
 	if len(unstructuredList.Items) != 0 && estimate == int64(0) {
 		return estimate, fmt.Errorf("unexpected items still remain in namespace: %s for gvr: %v", namespace, gvr)
 	}
@@ -303,7 +304,7 @@ func deleteAllContentForGroupVersionResource(
 }
 
 // deleteAllContent will use the dynamic client to delete each resource identified in groupVersionResources.
-// It returns an estimate of the time remaining before the remaing resources are deleted.
+// It returns an estimate of the time remaining before the remaining resources are deleted.
 // If estimate > 0, not all resources are guaranteed to be gone.
 func deleteAllContent(
 	kubeClient clientset.Interface,
@@ -353,7 +354,7 @@ func syncNamespace(
 		return err
 	}
 
-	glog.V(4).Infof("namespace controller - syncNamespace - namespace: %s, finalizerToken: %s", namespace.Name, finalizerToken)
+	glog.V(5).Infof("namespace controller - syncNamespace - namespace: %s, finalizerToken: %s", namespace.Name, finalizerToken)
 
 	// ensure that the status is up to date on the namespace
 	// if we get a not found error, we assume the namespace is truly gone
@@ -409,7 +410,7 @@ func syncNamespace(
 // estimateGrracefulTermination will estimate the graceful termination required for the specific entity in the namespace
 func estimateGracefulTermination(kubeClient clientset.Interface, groupVersionResource unversioned.GroupVersionResource, ns string, namespaceDeletedAt unversioned.Time) (int64, error) {
 	groupResource := groupVersionResource.GroupResource()
-	glog.V(4).Infof("namespace controller - estimateGracefulTermination - group %s, resource: %s", groupResource.Group, groupResource.Resource)
+	glog.V(5).Infof("namespace controller - estimateGracefulTermination - group %s, resource: %s", groupResource.Group, groupResource.Resource)
 	estimate := int64(0)
 	var err error
 	switch groupResource {
@@ -430,7 +431,7 @@ func estimateGracefulTermination(kubeClient clientset.Interface, groupVersionRes
 
 // estimateGracefulTerminationForPods determines the graceful termination period for pods in the namespace
 func estimateGracefulTerminationForPods(kubeClient clientset.Interface, ns string) (int64, error) {
-	glog.V(4).Infof("namespace controller - estimateGracefulTerminationForPods - namespace %s", ns)
+	glog.V(5).Infof("namespace controller - estimateGracefulTerminationForPods - namespace %s", ns)
 	estimate := int64(0)
 	items, err := kubeClient.Core().Pods(ns).List(api.ListOptions{})
 	if err != nil {
@@ -459,11 +460,14 @@ func ServerPreferredNamespacedGroupVersionResources(discoveryClient discovery.Di
 	if err != nil {
 		return results, err
 	}
+
+	allErrs := []error{}
 	for _, apiGroup := range serverGroupList.Groups {
 		preferredVersion := apiGroup.PreferredVersion
 		apiResourceList, err := discoveryClient.ServerResourcesForGroupVersion(preferredVersion.GroupVersion)
 		if err != nil {
-			return results, err
+			allErrs = append(allErrs, err)
+			continue
 		}
 		groupVersion := unversioned.GroupVersion{Group: apiGroup.Name, Version: preferredVersion.Version}
 		for _, apiResource := range apiResourceList.APIResources {
@@ -476,5 +480,5 @@ func ServerPreferredNamespacedGroupVersionResources(discoveryClient discovery.Di
 			results = append(results, groupVersion.WithResource(apiResource.Name))
 		}
 	}
-	return results, nil
+	return results, utilerrors.NewAggregate(allErrs)
 }

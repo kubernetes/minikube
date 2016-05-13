@@ -1,0 +1,15 @@
+{
+  "Version": "0.0.1",
+  "Vendor": "yvasiyarov",
+  "Authors": [
+    {
+      "FullName": "Yuriy Vasiyarov",
+      "Email": "varyous@gmail.com"
+    }
+  ],
+  "ExtraFiles": [
+    "README.md",
+    "LICENSE"
+  ],
+  "Homepage": "https://github.com/yvasiyarov/newrelic_platform_go"
+}

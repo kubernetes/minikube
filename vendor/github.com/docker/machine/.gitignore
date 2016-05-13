@@ -1,0 +1,6 @@
+docker-machine*
+*.log
+*.iml
+.idea/
+./bin
+cover

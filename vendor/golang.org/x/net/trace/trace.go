@@ -60,7 +60,7 @@ The /debug/events HTTP endpoint organizes the event logs by family and
 by time since the last error.  The expanded view displays recent log
 entries and the log's call stack.
 */
-package trace
+package trace // import "golang.org/x/net/trace"
 
 import (
 	"bytes"
@@ -107,7 +107,6 @@ var AuthRequest = func(req *http.Request) (any, sensitive bool) {
 }
 
 func init() {
-	/*
 	http.HandleFunc("/debug/requests", func(w http.ResponseWriter, req *http.Request) {
 		any, sensitive := AuthRequest(req)
 		if !any {
@@ -124,7 +123,6 @@ func init() {
 		}
 		RenderEvents(w, req, sensitive)
 	})
-	*/
 }
 
 // Render renders the HTML page typically served at /debug/requests.

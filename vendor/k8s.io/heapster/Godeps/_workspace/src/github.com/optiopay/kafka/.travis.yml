@@ -1,0 +1,23 @@
+language: go
+go:
+- 1.4.2
+- 1.5
+- tip
+
+
+before_install:
+- export REPOSITORY_ROOT=${TRAVIS_BUILD_DIR}
+- go get golang.org/x/tools/cmd/vet
+- go get github.com/kisielk/errcheck
+
+
+script:
+- go test -v -race -timeout=90s github.com/optiopay/kafka/...
+- go vet github.com/optiopay/kafka/...
+- errcheck github.com/optiopay/kafka/...
+- go test -bench '.*' -run none github.com/optiopay/kafka/...
+
+env:
+- WITH_INTEGRATION=true GOMAXPROCS=4
+
+sudo: false

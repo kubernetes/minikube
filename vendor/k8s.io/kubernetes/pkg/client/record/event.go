@@ -31,11 +31,12 @@ import (
 	"k8s.io/kubernetes/pkg/watch"
 
 	"github.com/golang/glog"
+	"net/http"
 )
 
 const maxTriesPerEvent = 12
 
-var sleepDuration = 10 * time.Second
+var defaultSleepDuration = 10 * time.Second
 
 const maxQueuedEvents = 1000
 
@@ -93,11 +94,16 @@ type EventBroadcaster interface {
 
 // Creates a new event broadcaster.
 func NewBroadcaster() EventBroadcaster {
-	return &eventBroadcasterImpl{watch.NewBroadcaster(maxQueuedEvents, watch.DropIfChannelFull)}
+	return &eventBroadcasterImpl{watch.NewBroadcaster(maxQueuedEvents, watch.DropIfChannelFull), defaultSleepDuration}
+}
+
+func NewBroadcasterForTests(sleepDuration time.Duration) EventBroadcaster {
+	return &eventBroadcasterImpl{watch.NewBroadcaster(maxQueuedEvents, watch.DropIfChannelFull), sleepDuration}
 }
 
 type eventBroadcasterImpl struct {
 	*watch.Broadcaster
+	sleepDuration time.Duration
 }
 
 // StartRecordingToSink starts sending events received from the specified eventBroadcaster to the given sink.
@@ -110,11 +116,11 @@ func (eventBroadcaster *eventBroadcasterImpl) StartRecordingToSink(sink EventSin
 	eventCorrelator := NewEventCorrelator(util.RealClock{})
 	return eventBroadcaster.StartEventWatcher(
 		func(event *api.Event) {
-			recordToSink(sink, event, eventCorrelator, randGen)
+			recordToSink(sink, event, eventCorrelator, randGen, eventBroadcaster.sleepDuration)
 		})
 }
 
-func recordToSink(sink EventSink, event *api.Event, eventCorrelator *EventCorrelator, randGen *rand.Rand) {
+func recordToSink(sink EventSink, event *api.Event, eventCorrelator *EventCorrelator, randGen *rand.Rand, sleepDuration time.Duration) {
 	// Make a copy before modification, because there could be multiple listeners.
 	// Events are safe to copy like this.
 	eventCopy := *event
@@ -148,12 +154,11 @@ func recordToSink(sink EventSink, event *api.Event, eventCorrelator *EventCorrel
 
 func isKeyNotFoundError(err error) bool {
 	statusErr, _ := err.(*errors.StatusError)
-	// At the moment the server is returning 500 instead of a more specific
-	// error. When changing this remember that it should be backward compatible
-	// with old api servers that may be still returning 500.
-	if statusErr != nil && statusErr.Status().Code == 500 {
+
+	if statusErr != nil && statusErr.Status().Code == http.StatusNotFound {
 		return true
 	}
+
 	return false
 }
 
@@ -289,7 +294,7 @@ func (recorder *recorderImpl) PastEventf(object runtime.Object, timestamp unvers
 }
 
 func (recorder *recorderImpl) makeEvent(ref *api.ObjectReference, eventtype, reason, message string) *api.Event {
-	t := unversioned.Time{recorder.clock.Now()}
+	t := unversioned.Time{Time: recorder.clock.Now()}
 	namespace := ref.Namespace
 	if namespace == "" {
 		namespace = api.NamespaceDefault

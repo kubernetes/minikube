@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Application error</title>
+	</head>
+	<body>
+		{{if eq .RunMode "dev"}}
+		{{template "errors/500-dev.html" .}}
+		{{else}}
+		<h1>Oops, an error occured</h1>
+		<p>
+			This exception has been logged.
+		</p>
+		{{end}}
+	</body>
+</html>

@@ -17,27 +17,27 @@ limitations under the License.
 package admission
 
 import (
-	"k8s.io/kubernetes/pkg/api"
 	apierrors "k8s.io/kubernetes/pkg/api/errors"
+	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 )
 
 func extractResourceName(a Attributes) (name string, resource unversioned.GroupResource, err error) {
 	name = "Unknown"
-	resource = a.GetResource()
+	resource = a.GetResource().GroupResource()
 	obj := a.GetObject()
 	if obj != nil {
-		objectMeta, err := api.ObjectMetaFor(obj)
+		accessor, err := meta.Accessor(obj)
 		if err != nil {
 			return "", unversioned.GroupResource{}, err
 		}
 
 		// this is necessary because name object name generation has not occurred yet
-		if len(objectMeta.Name) > 0 {
-			name = objectMeta.Name
-		} else if len(objectMeta.GenerateName) > 0 {
-			name = objectMeta.GenerateName
+		if len(accessor.GetName()) > 0 {
+			name = accessor.GetName()
+		} else if len(accessor.GetGenerateName()) > 0 {
+			name = accessor.GetGenerateName()
 		}
 	}
 	return name, resource, nil

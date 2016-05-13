@@ -20,6 +20,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/runtime"
+	versionedwatch "k8s.io/kubernetes/pkg/watch/versioned"
 )
 
 // GroupName is the group name use in this package
@@ -31,7 +32,6 @@ var SchemeGroupVersion = unversioned.GroupVersion{Group: GroupName, Version: "v1
 func AddToScheme(scheme *runtime.Scheme) {
 	addKnownTypes(scheme)
 	addDefaultingFuncs(scheme)
-	addConversionFuncs(scheme)
 }
 
 // Adds the list of known types to api.Scheme.
@@ -42,6 +42,7 @@ func addKnownTypes(scheme *runtime.Scheme) {
 		&Scale{},
 		&v1.ListOptions{},
 	)
+	versionedwatch.AddToGroupVersion(scheme, SchemeGroupVersion)
 }
 
 func (obj *HorizontalPodAutoscaler) GetObjectKind() unversioned.ObjectKind     { return &obj.TypeMeta }

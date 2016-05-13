@@ -23,21 +23,21 @@ import (
 	"os/exec"
 	"time"
 
-	docker "github.com/fsouza/go-dockerclient"
+	dockertypes "github.com/docker/engine-api/types"
 	"github.com/golang/glog"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 )
 
 // ExecHandler knows how to execute a command in a running Docker container.
 type ExecHandler interface {
-	ExecInContainer(client DockerInterface, container *docker.Container, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error
+	ExecInContainer(client DockerInterface, container *dockertypes.ContainerJSON, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error
 }
 
 // NsenterExecHandler executes commands in Docker containers using nsenter.
 type NsenterExecHandler struct{}
 
 // TODO should we support nsenter in a container, running with elevated privs and --pid=host?
-func (*NsenterExecHandler) ExecInContainer(client DockerInterface, container *docker.Container, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
+func (*NsenterExecHandler) ExecInContainer(client DockerInterface, container *dockertypes.ContainerJSON, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
 	nsenter, err := exec.LookPath("nsenter")
 	if err != nil {
 		return fmt.Errorf("exec unavailable - unable to locate nsenter")
@@ -98,28 +98,26 @@ func (*NsenterExecHandler) ExecInContainer(client DockerInterface, container *do
 // NativeExecHandler executes commands in Docker containers using Docker's exec API.
 type NativeExecHandler struct{}
 
-func (*NativeExecHandler) ExecInContainer(client DockerInterface, container *docker.Container, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
-	createOpts := docker.CreateExecOptions{
-		Container:    container.ID,
+func (*NativeExecHandler) ExecInContainer(client DockerInterface, container *dockertypes.ContainerJSON, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool) error {
+	createOpts := dockertypes.ExecConfig{
 		Cmd:          cmd,
 		AttachStdin:  stdin != nil,
 		AttachStdout: stdout != nil,
 		AttachStderr: stderr != nil,
 		Tty:          tty,
 	}
-	execObj, err := client.CreateExec(createOpts)
+	execObj, err := client.CreateExec(container.ID, createOpts)
 	if err != nil {
 		return fmt.Errorf("failed to exec in container - Exec setup failed - %v", err)
 	}
-	startOpts := docker.StartExecOptions{
-		Detach:       false,
+	startOpts := dockertypes.ExecStartCheck{Detach: false, Tty: tty}
+	streamOpts := StreamOptions{
 		InputStream:  stdin,
 		OutputStream: stdout,
 		ErrorStream:  stderr,
-		Tty:          tty,
 		RawTerminal:  tty,
 	}
-	err = client.StartExec(execObj.ID, startOpts)
+	err = client.StartExec(execObj.ID, startOpts, streamOpts)
 	if err != nil {
 		return err
 	}

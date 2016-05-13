@@ -1,0 +1,18 @@
+version: "{build}"
+
+skip_tags: true
+
+os: Windows Server 2012 R2
+
+environment:
+  GOPATH: c:\gopath
+
+clone_folder: c:\gopath\src\github.com\docker\machine
+
+build_script:
+  - go build -i -o ./bin/docker-machine.exe ./cmd/machine.go
+
+test_script:
+  - powershell -Command go test -v ./libmachine/shell
+
+deploy: off

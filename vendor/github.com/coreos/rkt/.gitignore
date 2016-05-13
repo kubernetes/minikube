@@ -1,0 +1,13 @@
+*~
+
+/autom4te.cache
+/config.log
+/config.status
+/.config.args
+/configure
+/makelib/variables.mk
+/build-rkt*
+/build-rir*
+.vagrant
+/tags
+/acbuild
