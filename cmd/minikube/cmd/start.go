@@ -24,8 +24,10 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
+	cfg "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 )
 
 // startCmd represents the start command
@@ -68,16 +70,71 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
 	kubeHost = strings.Replace(kubeHost, ":2376", ":443", -1)
 	fmt.Printf("Kubernetes is available at %s.\n", kubeHost)
-	fmt.Println("Run this command to use the cluster: ")
-	fmt.Printf("kubectl config set-cluster minikube --server=%s --certificate-authority=$HOME/.minikube/apiserver.crt\n", kubeHost)
-	fmt.Println("kubectl config set-credentials minikube --client-certificate=$HOME/.minikube/apiserver.crt --client-key=$HOME/.minikube/apiserver.key")
-	fmt.Println("kubectl config set-context minikube --cluster=minikube --user=minikube")
-	fmt.Println("kubectl config use-context minikube")
+
+	// setup kubeconfig
+	name := constants.MinikubeContext
+	certAuth := constants.MakeMiniPath("apiserver.crt")
+	clientCert := constants.MakeMiniPath("apiserver.crt")
+	clientKey := constants.MakeMiniPath("apiserver.key")
+	active, err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey)
+	if err != nil {
+		log.Println("Error setting up kubeconfig: ", err)
+		os.Exit(1)
+	} else if !active {
+		fmt.Println("Run this command to use the cluster: ")
+		fmt.Printf("kubectl config use-context %s\n", name)
+	}
 
 	if err := cluster.GetCreds(host); err != nil {
 		log.Println("Error configuring authentication: ", err)
 		os.Exit(1)
 	}
+}
+
+// setupKubeconfig reads config from disk, adds the minikube settings and writes it back.
+// activeContext is true when minikube is the CurrentContext
+// If no CurrentContext is set, the given name will be used.
+func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) (activeContext bool, err error) {
+	configFile := constants.KubeconfigPath
+
+	// read existing config or create new if does not exist
+	config, err := kubeconfig.ReadConfigOrNew(configFile)
+	if err != nil {
+		return false, err
+	}
+
+	clusterName := name
+	cluster := cfg.NewCluster()
+	cluster.Server = server
+	cluster.CertificateAuthority = certAuth
+	config.Clusters[clusterName] = cluster
+
+	// user
+	userName := name
+	user := cfg.NewAuthInfo()
+	user.ClientCertificate = cliCert
+	user.ClientKey = cliKey
+	config.AuthInfos[userName] = user
+
+	// context
+	contextName := name
+	context := cfg.NewContext()
+	context.Cluster = clusterName
+	context.AuthInfo = userName
+	config.Contexts[contextName] = context
+
+	// set current context to minikube if unset
+	if len(config.CurrentContext) == 0 {
+		config.CurrentContext = contextName
+	}
+
+	// write back to disk
+	if err := kubeconfig.WriteConfig(config, configFile); err != nil {
+		return false, err
+	}
+
+	// activeContext if current matches name
+	return name == config.CurrentContext, nil
 }
 
 func init() {

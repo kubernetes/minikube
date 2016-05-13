@@ -11,11 +11,14 @@ import (
 	"k8s.io/kubernetes/pkg/runtime"
 )
 
-// ReadConfig retrieves Kubernetes client configuration from a file.
-func ReadConfig(filename string) (*api.Config, error) {
+// ReadConfigOrNew retrieves Kubernetes client configuration from a file.
+// If no files exists, an empty configuration is returned.
+func ReadConfigOrNew(filename string) (*api.Config, error) {
 	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("could not read config: %v", err)
+	if os.IsNotExist(err) {
+		return api.NewConfig(), nil
+	} else if err != nil {
+		return nil, err
 	}
 
 	// decode config, empty if no bytes

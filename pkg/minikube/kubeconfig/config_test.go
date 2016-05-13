@@ -13,7 +13,7 @@ func TestEmptyConfig(t *testing.T) {
 	tmp := tempFile(t, []byte{})
 	defer os.Remove(tmp)
 
-	cfg, err := ReadConfig(tmp)
+	cfg, err := ReadConfigOrNew(tmp)
 	if err != nil {
 		t.Fatalf("could not read config: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestNewConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actual, err := ReadConfig(filename)
+	actual, err := ReadConfigOrNew(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
