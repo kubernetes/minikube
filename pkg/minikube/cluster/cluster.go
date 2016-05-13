@@ -43,7 +43,7 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API) (*host.Host, error) {
+func StartHost(api libmachine.API, config KubernetesConfig) (*host.Host, error) {
 	if exists, err := api.Exists(constants.MachineName); err != nil {
 		return nil, fmt.Errorf("Error checking if host exists: %s", err)
 	} else if exists {
@@ -63,7 +63,7 @@ func StartHost(api libmachine.API) (*host.Host, error) {
 		}
 		return h, nil
 	} else {
-		return createHost(api)
+		return createHost(api, config)
 	}
 }
 
@@ -140,13 +140,13 @@ type sshAble interface {
 	RunSSHCommand(string) (string, error)
 }
 
-// KubernetesConfig contains the parameters used to start a cluster.
-type KubernetesConfig struct {
-	LocalkubeURL string
+// MachineConfig contains the parameters used to start a cluster.
+type MachineConfig struct {
+	MinikubeISO string
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
-func StartCluster(h sshAble, config KubernetesConfig) error {
+func StartCluster(h sshAble) error {
 	output, err := h.RunSSHCommand(getStartCommand())
 	log.Println(output)
 	if err != nil {
@@ -192,9 +192,9 @@ func GetCreds(h sshAble) error {
 	return nil
 }
 
-func createHost(api libmachine.API) (*host.Host, error) {
+func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	driver := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
-	driver.Boot2DockerURL = "https://storage.googleapis.com/tinykube/boot2docker.iso"
+	driver.Boot2DockerURL = config.MinikubeISO
 	data, err := json.Marshal(driver)
 	if err != nil {
 		return nil, err
