@@ -52,6 +52,7 @@ func TestNewConfig(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer os.RemoveAll(dir)
 
 	// setup minikube config
 	expected := api.NewConfig()

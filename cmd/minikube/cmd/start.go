@@ -91,7 +91,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 }
 
-// setupKubeconfig reads config from disk, adds the minikube settings and writes it back.
+// setupKubeconfig reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
 func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) (activeContext bool, err error) {
