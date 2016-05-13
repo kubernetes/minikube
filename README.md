@@ -46,15 +46,15 @@ Start the cluster with:
 $ ./out/minikube start
 Starting local Kubernetes cluster...
 2016/04/19 11:41:26 Machine exists!
-2016/04/19 11:41:27 Kubernetes is available at http://192.168.99.100:8080.
+2016/04/19 11:41:27 Kubernetes is available at https://192.168.99.100:443.
 2016/04/19 11:41:27 Run this command to use the cluster: 
-2016/04/19 11:41:27 kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=http://192.168.99.100:8080
+2016/04/19 11:41:27 kubectl config set-cluster minikube --server=https://192.168.99.100:443 --certificate-authority=$HOME/.minikube/apiserver.crt
 ```
 
-Access the cluster by adding `-s=http://192.168.x.x:8080` to every `kubectl` command, or run the commands below:
+Access the cluster by adding `-s=https://192.168.x.x:443` to every `kubectl` command, or run the commands below:
 
 ```shell
-kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=http://192.168.99.100:8080
+kubectl config set-cluster minikube --server=https://192.168.99.100:443 --certificate-authority=$HOME/.minikube/apiserver.crt
 kubectl config set-context minikube --cluster=minikube
 kubectl config use-context minikube
 ```
