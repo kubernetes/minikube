@@ -29,6 +29,7 @@ import (
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
 	ioutil "k8s.io/kubernetes/pkg/util/io"
+	"k8s.io/kubernetes/pkg/util/metrics"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
 	"k8s.io/kubernetes/pkg/watch"
@@ -66,6 +67,9 @@ type releasedVolumeStatus struct {
 // NewPersistentVolumeRecycler creates a new PersistentVolumeRecycler
 func NewPersistentVolumeRecycler(kubeClient clientset.Interface, syncPeriod time.Duration, maximumRetry int, plugins []volume.VolumePlugin, cloud cloudprovider.Interface) (*PersistentVolumeRecycler, error) {
 	recyclerClient := NewRecyclerClient(kubeClient)
+	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("pv_recycler_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	}
 	recycler := &PersistentVolumeRecycler{
 		client:          recyclerClient,
 		kubeClient:      kubeClient,
@@ -113,6 +117,7 @@ func NewPersistentVolumeRecycler(kubeClient clientset.Interface, syncPeriod time
 					glog.Errorf("Error casting object to PersistentVolume: %v", obj)
 					return
 				}
+				recycler.reclaimVolume(pv)
 				recycler.removeReleasedVolume(pv)
 			},
 		},
@@ -385,12 +390,12 @@ func (f *PersistentVolumeRecycler) GetKubeClient() clientset.Interface {
 	return f.kubeClient
 }
 
-func (f *PersistentVolumeRecycler) NewWrapperBuilder(volName string, spec volume.Spec, pod *api.Pod, opts volume.VolumeOptions) (volume.Builder, error) {
-	return nil, fmt.Errorf("NewWrapperBuilder not supported by PVClaimBinder's VolumeHost implementation")
+func (f *PersistentVolumeRecycler) NewWrapperMounter(volName string, spec volume.Spec, pod *api.Pod, opts volume.VolumeOptions) (volume.Mounter, error) {
+	return nil, fmt.Errorf("NewWrapperMounter not supported by PVClaimBinder's VolumeHost implementation")
 }
 
-func (f *PersistentVolumeRecycler) NewWrapperCleaner(volName string, spec volume.Spec, podUID types.UID) (volume.Cleaner, error) {
-	return nil, fmt.Errorf("NewWrapperCleaner not supported by PVClaimBinder's VolumeHost implementation")
+func (f *PersistentVolumeRecycler) NewWrapperUnmounter(volName string, spec volume.Spec, podUID types.UID) (volume.Unmounter, error) {
+	return nil, fmt.Errorf("NewWrapperUnmounter not supported by PVClaimBinder's VolumeHost implementation")
 }
 
 func (f *PersistentVolumeRecycler) GetCloudProvider() cloudprovider.Interface {

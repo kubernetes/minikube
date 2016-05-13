@@ -17,10 +17,10 @@ package walpb
 import (
 	"fmt"
 
-	proto "github.com/coreos/etcd/Godeps/_workspace/src/github.com/gogo/protobuf/proto"
-)
+	proto "github.com/gogo/protobuf/proto"
 
-import math "math"
+	math "math"
+)
 
 import io "io"
 

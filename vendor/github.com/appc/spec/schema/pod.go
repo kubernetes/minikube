@@ -22,7 +22,7 @@ import (
 
 	"github.com/appc/spec/schema/types"
 
-	"github.com/appc/spec/Godeps/_workspace/src/github.com/camlistore/go4/errorutil"
+	"go4.org/errorutil"
 )
 
 const PodManifestKind = types.ACKind("PodManifest")

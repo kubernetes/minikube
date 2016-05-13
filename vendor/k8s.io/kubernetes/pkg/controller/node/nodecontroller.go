@@ -30,8 +30,8 @@ import (
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
-	unversionedcore "k8s.io/kubernetes/pkg/client/typed/generated/core/unversioned"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/framework"
@@ -40,7 +40,8 @@ import (
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/flowcontrol"
+	"k8s.io/kubernetes/pkg/util/metrics"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/util/wait"
@@ -69,7 +70,7 @@ type NodeController struct {
 	allocateNodeCIDRs       bool
 	cloud                   cloudprovider.Interface
 	clusterCIDR             *net.IPNet
-	deletingPodsRateLimiter util.RateLimiter
+	deletingPodsRateLimiter flowcontrol.RateLimiter
 	knownNodeSet            sets.String
 	kubeClient              clientset.Interface
 	// Method for easy mocking in unittest.
@@ -129,8 +130,8 @@ func NewNodeController(
 	cloud cloudprovider.Interface,
 	kubeClient clientset.Interface,
 	podEvictionTimeout time.Duration,
-	deletionEvictionLimiter util.RateLimiter,
-	terminationEvictionLimiter util.RateLimiter,
+	deletionEvictionLimiter flowcontrol.RateLimiter,
+	terminationEvictionLimiter flowcontrol.RateLimiter,
 	nodeMonitorGracePeriod time.Duration,
 	nodeStartupGracePeriod time.Duration,
 	nodeMonitorPeriod time.Duration,
@@ -141,10 +142,15 @@ func NewNodeController(
 	eventBroadcaster.StartLogging(glog.Infof)
 	if kubeClient != nil {
 		glog.Infof("Sending events to api server.")
-		eventBroadcaster.StartRecordingToSink(&unversionedcore.EventSinkImpl{kubeClient.Core().Events("")})
+		eventBroadcaster.StartRecordingToSink(&unversionedcore.EventSinkImpl{Interface: kubeClient.Core().Events("")})
 	} else {
 		glog.Infof("No api server defined - no events will be sent to API server.")
 	}
+
+	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("node_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	}
+
 	if allocateNodeCIDRs && clusterCIDR == nil {
 		glog.Fatal("NodeController: Must specify clusterCIDR if allocateNodeCIDRs == true.")
 	}
@@ -172,7 +178,7 @@ func NewNodeController(
 		nodeExistsInCloudProvider: func(nodeName string) (bool, error) { return nodeExistsInCloudProvider(cloud, nodeName) },
 	}
 
-	nc.podStore.Store, nc.podController = framework.NewInformer(
+	nc.podStore.Indexer, nc.podController = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return nc.kubeClient.Core().Pods(api.NamespaceAll).List(options)
@@ -187,6 +193,10 @@ func NewNodeController(
 			AddFunc:    nc.maybeDeleteTerminatingPod,
 			UpdateFunc: func(_, obj interface{}) { nc.maybeDeleteTerminatingPod(obj) },
 		},
+		// We don't need to build a index for podStore here actually, but build one for consistency.
+		// It will ensure that if people start making use of the podStore in more specific ways,
+		// they'll get the benefits they expect. It will also reserve the name for future refactorings.
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	nc.nodeStore.Store, nc.nodeController = framework.NewInformer(
 		&cache.ListWatch{
@@ -469,18 +479,18 @@ func (nc *NodeController) monitorNodeStatus() error {
 			if lastReadyCondition.Status == api.ConditionFalse &&
 				decisionTimestamp.After(nc.nodeStatusMap[node.Name].readyTransitionTimestamp.Add(nc.podEvictionTimeout)) {
 				if nc.evictPods(node.Name) {
-					glog.Infof("Evicting pods on node %s: %v is later than %v + %v", node.Name, decisionTimestamp, nc.nodeStatusMap[node.Name].readyTransitionTimestamp, nc.podEvictionTimeout)
+					glog.V(4).Infof("Evicting pods on node %s: %v is later than %v + %v", node.Name, decisionTimestamp, nc.nodeStatusMap[node.Name].readyTransitionTimestamp, nc.podEvictionTimeout)
 				}
 			}
 			if lastReadyCondition.Status == api.ConditionUnknown &&
 				decisionTimestamp.After(nc.nodeStatusMap[node.Name].probeTimestamp.Add(nc.podEvictionTimeout)) {
 				if nc.evictPods(node.Name) {
-					glog.Infof("Evicting pods on node %s: %v is later than %v + %v", node.Name, decisionTimestamp, nc.nodeStatusMap[node.Name].readyTransitionTimestamp, nc.podEvictionTimeout-gracePeriod)
+					glog.V(4).Infof("Evicting pods on node %s: %v is later than %v + %v", node.Name, decisionTimestamp, nc.nodeStatusMap[node.Name].readyTransitionTimestamp, nc.podEvictionTimeout-gracePeriod)
 				}
 			}
 			if lastReadyCondition.Status == api.ConditionTrue {
 				if nc.cancelPodEviction(node.Name) {
-					glog.Infof("Node %s is ready again, cancelled pod eviction", node.Name)
+					glog.V(2).Infof("Node %s is ready again, cancelled pod eviction", node.Name)
 				}
 			}
 
@@ -729,7 +739,7 @@ func (nc *NodeController) tryUpdateNodeStatus(node *api.Node) (time.Duration, ap
 				LastTransitionTime: nc.now(),
 			})
 		} else {
-			glog.V(2).Infof("node %v hasn't been updated for %+v. Last ready condition is: %+v",
+			glog.V(4).Infof("node %v hasn't been updated for %+v. Last ready condition is: %+v",
 				node.Name, nc.now().Time.Sub(savedNodeStatus.probeTimestamp.Time), lastReadyCondition)
 			if lastReadyCondition.Status != api.ConditionUnknown {
 				readyCondition.Status = api.ConditionUnknown
@@ -756,7 +766,7 @@ func (nc *NodeController) tryUpdateNodeStatus(node *api.Node) (time.Duration, ap
 				LastTransitionTime: nc.now(),
 			})
 		} else {
-			glog.V(2).Infof("node %v hasn't been updated for %+v. Last out of disk condition is: %+v",
+			glog.V(4).Infof("node %v hasn't been updated for %+v. Last out of disk condition is: %+v",
 				node.Name, nc.now().Time.Sub(savedNodeStatus.probeTimestamp.Time), oodCondition)
 			if oodCondition.Status != api.ConditionUnknown {
 				oodCondition.Status = api.ConditionUnknown
@@ -869,7 +879,7 @@ func (nc *NodeController) markAllPodsNotReady(nodeName string) error {
 				glog.V(2).Infof("Updating ready status of pod %v to false", pod.Name)
 				pod, err := nc.kubeClient.Core().Pods(pod.Namespace).UpdateStatus(&pod)
 				if err != nil {
-					glog.Warningf("Failed to updated status for pod %q: %v", format.Pod(pod), err)
+					glog.Warningf("Failed to update status for pod %q: %v", format.Pod(pod), err)
 					errMsg = append(errMsg, fmt.Sprintf("%v", err))
 				}
 				break

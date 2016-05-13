@@ -33,14 +33,16 @@ import (
 
 // PluginFactoryArgs are passed to all plugin factory functions.
 type PluginFactoryArgs struct {
-	PodLister        algorithm.PodLister
-	ServiceLister    algorithm.ServiceLister
-	ControllerLister algorithm.ControllerLister
-	ReplicaSetLister algorithm.ReplicaSetLister
-	NodeLister       algorithm.NodeLister
-	NodeInfo         predicates.NodeInfo
-	PVInfo           predicates.PersistentVolumeInfo
-	PVCInfo          predicates.PersistentVolumeClaimInfo
+	PodLister                      algorithm.PodLister
+	ServiceLister                  algorithm.ServiceLister
+	ControllerLister               algorithm.ControllerLister
+	ReplicaSetLister               algorithm.ReplicaSetLister
+	NodeLister                     algorithm.NodeLister
+	NodeInfo                       predicates.NodeInfo
+	PVInfo                         predicates.PersistentVolumeInfo
+	PVCInfo                        predicates.PersistentVolumeClaimInfo
+	HardPodAffinitySymmetricWeight int
+	FailureDomains                 []string
 }
 
 // A FitPredicateFactory produces a FitPredicate from the given args.
@@ -111,7 +113,6 @@ func RegisterCustomFitPredicate(policy schedulerapi.PredicatePolicy) string {
 		} else if policy.Argument.LabelsPresence != nil {
 			predicateFactory = func(args PluginFactoryArgs) algorithm.FitPredicate {
 				return predicates.NewNodeLabelPredicate(
-					args.NodeInfo,
 					policy.Argument.LabelsPresence.Labels,
 					policy.Argument.LabelsPresence.Presence,
 				)

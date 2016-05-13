@@ -14,22 +14,24 @@
 
 package snap
 
-import "github.com/coreos/etcd/Godeps/_workspace/src/github.com/prometheus/client_golang/prometheus"
+import "github.com/prometheus/client_golang/prometheus"
 
 var (
 	// TODO: save_fsync latency?
-	saveDurations = prometheus.NewSummary(prometheus.SummaryOpts{
+	saveDurations = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "etcd",
 		Subsystem: "snapshot",
-		Name:      "save_total_durations_microseconds",
+		Name:      "save_total_durations_seconds",
 		Help:      "The total latency distributions of save called by snapshot.",
+		Buckets:   prometheus.ExponentialBuckets(0.001, 2, 14),
 	})
 
-	marshallingDurations = prometheus.NewSummary(prometheus.SummaryOpts{
+	marshallingDurations = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "etcd",
 		Subsystem: "snapshot",
-		Name:      "save_marshalling_durations_microseconds",
+		Name:      "save_marshalling_durations_seconds",
 		Help:      "The marshalling cost distributions of save called by snapshot.",
+		Buckets:   prometheus.ExponentialBuckets(0.001, 2, 14),
 	})
 )
 

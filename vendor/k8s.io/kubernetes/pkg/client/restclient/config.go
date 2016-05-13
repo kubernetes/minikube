@@ -30,8 +30,10 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
+	clientcmdapi "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/crypto"
+	"k8s.io/kubernetes/pkg/util/flowcontrol"
 	"k8s.io/kubernetes/pkg/version"
 )
 
@@ -62,6 +64,15 @@ type Config struct {
 	// TODO: demonstrate an OAuth2 compatible client.
 	BearerToken string
 
+	// Impersonate is the username that this RESTClient will impersonate
+	Impersonate string
+
+	// Server requires plugin-specified authentication.
+	AuthProvider *clientcmdapi.AuthProviderConfig
+
+	// Callback to persist config for AuthProvider.
+	AuthConfigPersister AuthProviderConfigPersister
+
 	// TLSClientConfig contains settings to enable transport layer security
 	TLSClientConfig
 
@@ -87,6 +98,9 @@ type Config struct {
 
 	// Maximum burst for throttle
 	Burst int
+
+	// Rate limiter for limiting connections to the master from this client. If present overwrites QPS/Burst
+	RateLimiter flowcontrol.RateLimiter
 }
 
 // TLSClientConfig contains settings to enable transport layer security
@@ -119,9 +133,17 @@ type ContentConfig struct {
 	// a RESTClient directly. When initializing a Client, will be set with the default
 	// code version.
 	GroupVersion *unversioned.GroupVersion
+	// NegotiatedSerializer is used for obtaining encoders and decoders for multiple
+	// supported media types.
+	NegotiatedSerializer runtime.NegotiatedSerializer
+
 	// Codec specifies the encoding and decoding behavior for runtime.Objects passed
 	// to a RESTClient or Client. Required when initializing a RESTClient, optional
 	// when initializing a Client.
+	//
+	// DEPRECATED: Please use NegotiatedSerializer instead.
+	// Codec is currently used only in some tests and will be removed soon.
+	// All production setups should use NegotiatedSerializer.
 	Codec runtime.Codec
 }
 
@@ -133,8 +155,8 @@ func RESTClientFor(config *Config) (*RESTClient, error) {
 	if config.GroupVersion == nil {
 		return nil, fmt.Errorf("GroupVersion is required when initializing a RESTClient")
 	}
-	if config.Codec == nil {
-		return nil, fmt.Errorf("Codec is required when initializing a RESTClient")
+	if config.NegotiatedSerializer == nil {
+		return nil, fmt.Errorf("NegotiatedSerializer is required when initializing a RESTClient")
 	}
 
 	baseURL, versionedAPIPath, err := defaultServerUrlFor(config)
@@ -152,16 +174,14 @@ func RESTClientFor(config *Config) (*RESTClient, error) {
 		httpClient = &http.Client{Transport: transport}
 	}
 
-	client := NewRESTClient(baseURL, versionedAPIPath, config.ContentConfig, config.QPS, config.Burst, httpClient)
-
-	return client, nil
+	return NewRESTClient(baseURL, versionedAPIPath, config.ContentConfig, config.QPS, config.Burst, config.RateLimiter, httpClient)
 }
 
 // UnversionedRESTClientFor is the same as RESTClientFor, except that it allows
 // the config.Version to be empty.
 func UnversionedRESTClientFor(config *Config) (*RESTClient, error) {
-	if config.Codec == nil {
-		return nil, fmt.Errorf("Codec is required when initializing a RESTClient")
+	if config.NegotiatedSerializer == nil {
+		return nil, fmt.Errorf("NeogitatedSerializer is required when initializing a RESTClient")
 	}
 
 	baseURL, versionedAPIPath, err := defaultServerUrlFor(config)
@@ -185,8 +205,7 @@ func UnversionedRESTClientFor(config *Config) (*RESTClient, error) {
 		versionConfig.GroupVersion = &v
 	}
 
-	client := NewRESTClient(baseURL, versionedAPIPath, versionConfig, config.QPS, config.Burst, httpClient)
-	return client, nil
+	return NewRESTClient(baseURL, versionedAPIPath, versionConfig, config.QPS, config.Burst, config.RateLimiter, httpClient)
 }
 
 // SetKubernetesDefaults sets default values on the provided client config for accessing the
@@ -235,7 +254,7 @@ func InClusterConfig() (*Config, error) {
 	}
 	tlsClientConfig := TLSClientConfig{}
 	rootCAFile := "/var/run/secrets/kubernetes.io/serviceaccount/" + api.ServiceAccountRootCAKey
-	if _, err := util.CertPoolFromFile(rootCAFile); err != nil {
+	if _, err := crypto.CertPoolFromFile(rootCAFile); err != nil {
 		glog.Errorf("Expected to load root CA config from %s, but got err: %v", rootCAFile, err)
 	} else {
 		tlsClientConfig.CAFile = rootCAFile

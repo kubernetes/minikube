@@ -17,17 +17,18 @@ package etcdserver
 import (
 	"time"
 
-	"github.com/coreos/etcd/Godeps/_workspace/src/github.com/prometheus/client_golang/prometheus"
 	"github.com/coreos/etcd/pkg/runtime"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
 	// TODO: with label in v3?
-	proposeDurations = prometheus.NewSummary(prometheus.SummaryOpts{
+	proposeDurations = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Namespace: "etcd",
 		Subsystem: "server",
-		Name:      "proposal_durations_milliseconds",
+		Name:      "proposal_durations_seconds",
 		Help:      "The latency distributions of committing proposal.",
+		Buckets:   prometheus.ExponentialBuckets(0.001, 2, 14),
 	})
 	proposePending = prometheus.NewGauge(prometheus.GaugeOpts{
 		Namespace: "etcd",

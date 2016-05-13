@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/coreos/etcd/etcdserver"
-	"github.com/coreos/etcd/etcdserver/etcdhttp"
+	"github.com/coreos/etcd/etcdserver/api/v2http"
 	"github.com/coreos/etcd/pkg/transport"
 	"github.com/coreos/etcd/pkg/types"
 )
@@ -101,7 +101,7 @@ func (e *EtcdServer) Start() {
 	e.EtcdServer.Start()
 
 	// setup client listeners
-	ch := etcdhttp.NewClientHandler(e.EtcdServer, e.requestTimeout())
+	ch := v2http.NewClientHandler(e.EtcdServer, e.requestTimeout())
 	for _, l := range clientListeners {
 		go func(l net.Listener) {
 			srv := &http.Server{

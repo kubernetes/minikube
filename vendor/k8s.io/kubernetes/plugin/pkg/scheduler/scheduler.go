@@ -27,6 +27,7 @@ import (
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/metrics"
+	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 
 	"github.com/golang/glog"
 )
@@ -36,30 +37,8 @@ type Binder interface {
 	Bind(binding *api.Binding) error
 }
 
-// SystemModeler can help scheduler produce a model of the system that
-// anticipates reality. For example, if scheduler has pods A and B both
-// using hostPort 80, when it binds A to machine M it should not bind B
-// to machine M in the time when it hasn't observed the binding of A
-// take effect yet.
-//
-// Since the model is only an optimization, it's expected to handle
-// any errors itself without sending them back to the scheduler.
-type SystemModeler interface {
-	// AssumePod assumes that the given pod exists in the system.
-	// The assumtion should last until the system confirms the
-	// assumtion or disconfirms it.
-	AssumePod(pod *api.Pod)
-	// ForgetPod removes a pod assumtion. (It won't make the model
-	// show the absence of the given pod if the pod is in the scheduled
-	// pods list!)
-	ForgetPod(pod *api.Pod)
-	ForgetPodByKey(key string)
-
-	// For serializing calls to Assume/ForgetPod: imagine you want to add
-	// a pod if and only if a bind succeeds, but also remove a pod if it is deleted.
-	// TODO: if SystemModeler begins modeling things other than pods, this
-	// should probably be parameterized or specialized for pods.
-	LockedAction(f func())
+type PodConditionUpdater interface {
+	Update(pod *api.Pod, podCondition *api.PodCondition) error
 }
 
 // Scheduler watches for new unscheduled pods. It attempts to find
@@ -69,12 +48,16 @@ type Scheduler struct {
 }
 
 type Config struct {
-	// It is expected that changes made via modeler will be observed
+	// It is expected that changes made via SchedulerCache will be observed
 	// by NodeLister and Algorithm.
-	Modeler    SystemModeler
-	NodeLister algorithm.NodeLister
-	Algorithm  algorithm.ScheduleAlgorithm
-	Binder     Binder
+	SchedulerCache schedulercache.Cache
+	NodeLister     algorithm.NodeLister
+	Algorithm      algorithm.ScheduleAlgorithm
+	Binder         Binder
+	// PodConditionUpdater is used only in case of scheduling errors. If we succeed
+	// with scheduling, PodScheduled condition will be updated in apiserver in /bind
+	// handler so that binding and setting PodCondition it is atomic.
+	PodConditionUpdater PodConditionUpdater
 
 	// NextPod should be a function that blocks until the next pod
 	// is available. We don't use a channel for this, because scheduling
@@ -115,38 +98,58 @@ func (s *Scheduler) scheduleOne() {
 	dest, err := s.config.Algorithm.Schedule(pod, s.config.NodeLister)
 	if err != nil {
 		glog.V(1).Infof("Failed to schedule: %+v", pod)
-		s.config.Recorder.Eventf(pod, api.EventTypeWarning, "FailedScheduling", "%v", err)
 		s.config.Error(pod, err)
+		s.config.Recorder.Eventf(pod, api.EventTypeWarning, "FailedScheduling", "%v", err)
+		s.config.PodConditionUpdater.Update(pod, &api.PodCondition{
+			Type:    api.PodScheduled,
+			Status:  api.ConditionFalse,
+			Reason:  "Unschedulable",
+			Message: err.Error(),
+		})
 		return
 	}
 	metrics.SchedulingAlgorithmLatency.Observe(metrics.SinceInMicroseconds(start))
 
-	b := &api.Binding{
-		ObjectMeta: api.ObjectMeta{Namespace: pod.Namespace, Name: pod.Name},
-		Target: api.ObjectReference{
-			Kind: "Node",
-			Name: dest,
-		},
-	}
+	// Optimistically assume that the binding will succeed and send it to apiserver
+	// in the background.
+	// The only risk in this approach is that if the binding fails because of some
+	// reason, scheduler will be assuming that it succeeded while scheduling next
+	// pods, until the assumption in the internal cache expire (expiration is
+	// defined as "didn't read the binding via watch within a given timeout",
+	// timeout is currently set to 30s). However, after this timeout, the situation
+	// will self-repair.
+	assumed := *pod
+	assumed.Spec.NodeName = dest
+	s.config.SchedulerCache.AssumePod(&assumed)
 
-	// We want to add the pod to the model if and only if the bind succeeds,
-	// but we don't want to race with any deletions, which happen asynchronously.
-	s.config.Modeler.LockedAction(func() {
+	go func() {
+		defer metrics.E2eSchedulingLatency.Observe(metrics.SinceInMicroseconds(start))
+
+		b := &api.Binding{
+			ObjectMeta: api.ObjectMeta{Namespace: pod.Namespace, Name: pod.Name},
+			Target: api.ObjectReference{
+				Kind: "Node",
+				Name: dest,
+			},
+		}
+
 		bindingStart := time.Now()
+		// If binding succeded then PodScheduled condition will be updated in apiserver so that
+		// it's atomic with setting host.
 		err := s.config.Binder.Bind(b)
 		if err != nil {
 			glog.V(1).Infof("Failed to bind pod: %+v", err)
-			s.config.Recorder.Eventf(pod, api.EventTypeNormal, "FailedScheduling", "Binding rejected: %v", err)
 			s.config.Error(pod, err)
+			s.config.Recorder.Eventf(pod, api.EventTypeNormal, "FailedScheduling", "Binding rejected: %v", err)
+			s.config.PodConditionUpdater.Update(pod, &api.PodCondition{
+				Type:    api.PodScheduled,
+				Status:  api.ConditionFalse,
+				Reason:  "BindingRejected",
+				Message: err.Error(),
+			})
 			return
 		}
 		metrics.BindingLatency.Observe(metrics.SinceInMicroseconds(bindingStart))
 		s.config.Recorder.Eventf(pod, api.EventTypeNormal, "Scheduled", "Successfully assigned %v to %v", pod.Name, dest)
-		// tell the model to assume that this binding took effect.
-		assumed := *pod
-		assumed.Spec.NodeName = dest
-		s.config.Modeler.AssumePod(&assumed)
-	})
-
-	metrics.E2eSchedulingLatency.Observe(metrics.SinceInMicroseconds(start))
+	}()
 }

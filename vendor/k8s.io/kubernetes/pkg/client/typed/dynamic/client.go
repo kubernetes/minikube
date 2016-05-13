@@ -26,11 +26,13 @@ import (
 	"net/url"
 	"strings"
 
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/restclient"
 	"k8s.io/kubernetes/pkg/conversion/queryparams"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/runtime/serializer"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
@@ -47,7 +49,12 @@ func NewClient(conf *restclient.Config) (*Client, error) {
 	confCopy := *conf
 	conf = &confCopy
 
-	conf.Codec = dynamicCodec{}
+	codec := dynamicCodec{}
+
+	// TODO: it's questionable that this should be using anything other than unstructured schema and JSON
+	conf.ContentType = runtime.ContentTypeJSON
+	streamingInfo, _ := api.Codecs.StreamingSerializerForMediaType("application/json;stream=watch", nil)
+	conf.NegotiatedSerializer = serializer.NegotiatedSerializerWrapper(runtime.SerializerInfo{Serializer: codec}, streamingInfo)
 
 	if conf.APIPath == "" {
 		conf.APIPath = "/api"
@@ -102,11 +109,11 @@ func (rc *ResourceClient) namespace(req *restclient.Request) *restclient.Request
 }
 
 // List returns a list of objects for this resource.
-func (rc *ResourceClient) List(opts v1.ListOptions) (*runtime.UnstructuredList, error) {
+func (rc *ResourceClient) List(opts runtime.Object) (*runtime.UnstructuredList, error) {
 	result := new(runtime.UnstructuredList)
 	err := rc.namespace(rc.cl.Get()).
 		Resource(rc.resource.Name).
-		VersionedParams(&opts, parameterEncoder).
+		VersionedParams(opts, parameterEncoder).
 		Do().
 		Into(result)
 	return result, err
@@ -134,10 +141,10 @@ func (rc *ResourceClient) Delete(name string, opts *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (rc *ResourceClient) DeleteCollection(deleteOptions *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (rc *ResourceClient) DeleteCollection(deleteOptions *v1.DeleteOptions, listOptions runtime.Object) error {
 	return rc.namespace(rc.cl.Delete()).
 		Resource(rc.resource.Name).
-		VersionedParams(&listOptions, parameterEncoder).
+		VersionedParams(listOptions, parameterEncoder).
 		Body(deleteOptions).
 		Do().
 		Error()
@@ -157,12 +164,12 @@ func (rc *ResourceClient) Create(obj *runtime.Unstructured) (*runtime.Unstructur
 // Update updates the provided resource.
 func (rc *ResourceClient) Update(obj *runtime.Unstructured) (*runtime.Unstructured, error) {
 	result := new(runtime.Unstructured)
-	if len(obj.Name) == 0 {
+	if len(obj.GetName()) == 0 {
 		return result, errors.New("object missing name")
 	}
 	err := rc.namespace(rc.cl.Put()).
 		Resource(rc.resource.Name).
-		Name(obj.Name).
+		Name(obj.GetName()).
 		Body(obj).
 		Do().
 		Into(result)
@@ -170,10 +177,10 @@ func (rc *ResourceClient) Update(obj *runtime.Unstructured) (*runtime.Unstructur
 }
 
 // Watch returns a watch.Interface that watches the resource.
-func (rc *ResourceClient) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (rc *ResourceClient) Watch(opts runtime.Object) (watch.Interface, error) {
 	return rc.namespace(rc.cl.Get().Prefix("watch")).
 		Resource(rc.resource.Name).
-		VersionedParams(&opts, parameterEncoder).
+		VersionedParams(opts, parameterEncoder).
 		Watch()
 }
 

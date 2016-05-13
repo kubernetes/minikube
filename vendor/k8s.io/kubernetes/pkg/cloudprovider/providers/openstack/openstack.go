@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -40,14 +40,13 @@ import (
 	"github.com/rackspace/gophercloud/openstack/networking/v2/extensions/lbaas/pools"
 	"github.com/rackspace/gophercloud/openstack/networking/v2/extensions/lbaas/vips"
 	"github.com/rackspace/gophercloud/pagination"
-	"github.com/scalingdata/gcfg"
+	"gopkg.in/gcfg.v1"
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/api/service"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/types"
 )
 
 const ProviderName = "openstack"
@@ -85,7 +84,7 @@ func (d *MyDuration) UnmarshalText(text []byte) error {
 type LoadBalancerOpts struct {
 	SubnetId          string     `gcfg:"subnet-id"` // required
 	FloatingNetworkId string     `gcfg:"floating-network-id"`
-	LBMethod          string     `gfcg:"lb-method"`
+	LBMethod          string     `gcfg:"lb-method"`
 	CreateMonitor     bool       `gcfg:"create-monitor"`
 	MonitorDelay      MyDuration `gcfg:"monitor-delay"`
 	MonitorTimeout    MyDuration `gcfg:"monitor-timeout"`
@@ -470,6 +469,11 @@ func (i *Instances) ExternalID(name string) (string, error) {
 	return srv.ID, nil
 }
 
+// InstanceID returns the kubelet's cloud provider ID.
+func (os *OpenStack) InstanceID() (string, error) {
+	return os.localInstanceID, nil
+}
+
 // InstanceID returns the cloud provider ID of the specified instance.
 func (i *Instances) InstanceID(name string) (string, error) {
 	srv, err := getServerByName(i.compute, name)
@@ -641,8 +645,9 @@ func getFloatingIPByPortID(client *gophercloud.ServiceClient, portID string) (*f
 	return &floatingIPList[0], nil
 }
 
-func (lb *LoadBalancer) GetLoadBalancer(name, region string) (*api.LoadBalancerStatus, bool, error) {
-	vip, err := getVipByName(lb.network, name)
+func (lb *LoadBalancer) GetLoadBalancer(service *api.Service) (*api.LoadBalancerStatus, bool, error) {
+	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
+	vip, err := getVipByName(lb.network, loadBalancerName)
 	if err == ErrNotFound {
 		return nil, false, nil
 	}
@@ -661,9 +666,10 @@ func (lb *LoadBalancer) GetLoadBalancer(name, region string) (*api.LoadBalancerS
 // a list of regions (from config) and query/create loadbalancers in
 // each region.
 
-func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP net.IP, ports []*api.ServicePort, hosts []string, serviceName types.NamespacedName, affinity api.ServiceAffinity, annotations map[string]string) (*api.LoadBalancerStatus, error) {
-	glog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", name, region, loadBalancerIP, ports, hosts, serviceName, annotations)
+func (lb *LoadBalancer) EnsureLoadBalancer(apiService *api.Service, hosts []string, annotations map[string]string) (*api.LoadBalancerStatus, error) {
+	glog.V(4).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v)", apiService.Namespace, apiService.Name, apiService.Spec.LoadBalancerIP, apiService.Spec.Ports, hosts, annotations)
 
+	ports := apiService.Spec.Ports
 	if len(ports) > 1 {
 		return nil, fmt.Errorf("multiple ports are not yet supported in openstack load balancers")
 	} else if len(ports) == 0 {
@@ -676,6 +682,7 @@ func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP n
 		return nil, fmt.Errorf("Only TCP LoadBalancer is supported for openstack load balancers")
 	}
 
+	affinity := apiService.Spec.SessionAffinity
 	var persistence *vips.SessionPersistence
 	switch affinity {
 	case api.ServiceAffinityNone:
@@ -695,8 +702,8 @@ func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP n
 		return nil, fmt.Errorf("Source range restrictions are not supported for openstack load balancers")
 	}
 
-	glog.V(2).Infof("Checking if openstack load balancer already exists: %s", name)
-	_, exists, err := lb.GetLoadBalancer(name, region)
+	glog.V(2).Infof("Checking if openstack load balancer already exists: %s", cloudprovider.GetLoadBalancerName(apiService))
+	_, exists, err := lb.GetLoadBalancer(apiService)
 	if err != nil {
 		return nil, fmt.Errorf("error checking if openstack load balancer already exists: %v", err)
 	}
@@ -704,7 +711,7 @@ func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP n
 	// TODO: Implement a more efficient update strategy for common changes than delete & create
 	// In particular, if we implement hosts update, we can get rid of UpdateHosts
 	if exists {
-		err := lb.EnsureLoadBalancerDeleted(name, region)
+		err := lb.EnsureLoadBalancerDeleted(apiService)
 		if err != nil {
 			return nil, fmt.Errorf("error deleting existing openstack load balancer: %v", err)
 		}
@@ -714,6 +721,7 @@ func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP n
 	if lbmethod == "" {
 		lbmethod = pools.LBMethodRoundRobin
 	}
+	name := cloudprovider.GetLoadBalancerName(apiService)
 	pool, err := pools.Create(lb.network, pools.CreateOpts{
 		Name:     name,
 		Protocol: pools.ProtocolTCP,
@@ -732,7 +740,7 @@ func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP n
 
 		_, err = members.Create(lb.network, members.CreateOpts{
 			PoolID:       pool.ID,
-			ProtocolPort: ports[0].NodePort, //TODO: need to handle multi-port
+			ProtocolPort: int(ports[0].NodePort), //TODO: need to handle multi-port
 			Address:      addr,
 		}).Extract()
 		if err != nil {
@@ -766,13 +774,15 @@ func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP n
 		Name:         name,
 		Description:  fmt.Sprintf("Kubernetes external service %s", name),
 		Protocol:     "TCP",
-		ProtocolPort: ports[0].Port, //TODO: need to handle multi-port
+		ProtocolPort: int(ports[0].Port), //TODO: need to handle multi-port
 		PoolID:       pool.ID,
 		SubnetID:     lb.opts.SubnetId,
 		Persistence:  persistence,
 	}
-	if loadBalancerIP != nil {
-		createOpts.Address = loadBalancerIP.String()
+
+	loadBalancerIP := apiService.Spec.LoadBalancerIP
+	if loadBalancerIP != "" {
+		createOpts.Address = loadBalancerIP
 	}
 
 	vip, err := vips.Create(lb.network, createOpts).Extract()
@@ -805,10 +815,11 @@ func (lb *LoadBalancer) EnsureLoadBalancer(name, region string, loadBalancerIP n
 
 }
 
-func (lb *LoadBalancer) UpdateLoadBalancer(name, region string, hosts []string) error {
-	glog.V(4).Infof("UpdateLoadBalancer(%v, %v, %v)", name, region, hosts)
+func (lb *LoadBalancer) UpdateLoadBalancer(service *api.Service, hosts []string) error {
+	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
+	glog.V(4).Infof("UpdateLoadBalancer(%v, %v)", loadBalancerName, hosts)
 
-	vip, err := getVipByName(lb.network, name)
+	vip, err := getVipByName(lb.network, loadBalancerName)
 	if err != nil {
 		return err
 	}
@@ -866,10 +877,11 @@ func (lb *LoadBalancer) UpdateLoadBalancer(name, region string, hosts []string) 
 	return nil
 }
 
-func (lb *LoadBalancer) EnsureLoadBalancerDeleted(name, region string) error {
-	glog.V(4).Infof("EnsureLoadBalancerDeleted(%v, %v)", name, region)
+func (lb *LoadBalancer) EnsureLoadBalancerDeleted(service *api.Service) error {
+	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
+	glog.V(4).Infof("EnsureLoadBalancerDeleted(%v)", loadBalancerName)
 
-	vip, err := getVipByName(lb.network, name)
+	vip, err := getVipByName(lb.network, loadBalancerName)
 	if err != nil && err != ErrNotFound {
 		return err
 	}
@@ -907,7 +919,7 @@ func (lb *LoadBalancer) EnsureLoadBalancerDeleted(name, region string) error {
 		// still exists that we failed to delete on some
 		// previous occasion.  Make a best effort attempt to
 		// cleanup any pools with the same name as the VIP.
-		pool, err = getPoolByName(lb.network, name)
+		pool, err = getPoolByName(lb.network, service.Name)
 		if err != nil && err != ErrNotFound {
 			return err
 		}
@@ -950,7 +962,7 @@ func (os *OpenStack) Routes() (cloudprovider.Routes, bool) {
 }
 
 // Attaches given cinder volume to the compute running kubelet
-func (os *OpenStack) AttachDisk(diskName string) (string, error) {
+func (os *OpenStack) AttachDisk(instanceID string, diskName string) (string, error) {
 	disk, err := os.getVolume(diskName)
 	if err != nil {
 		return "", err
@@ -964,8 +976,8 @@ func (os *OpenStack) AttachDisk(diskName string) (string, error) {
 	}
 
 	if len(disk.Attachments) > 0 && disk.Attachments[0]["server_id"] != nil {
-		if os.localInstanceID == disk.Attachments[0]["server_id"] {
-			glog.V(4).Infof("Disk: %q is already attached to compute: %q", diskName, os.localInstanceID)
+		if instanceID == disk.Attachments[0]["server_id"] {
+			glog.V(4).Infof("Disk: %q is already attached to compute: %q", diskName, instanceID)
 			return disk.ID, nil
 		} else {
 			errMsg := fmt.Sprintf("Disk %q is attached to a different compute: %q, should be detached before proceeding", diskName, disk.Attachments[0]["server_id"])
@@ -974,19 +986,19 @@ func (os *OpenStack) AttachDisk(diskName string) (string, error) {
 		}
 	}
 	// add read only flag here if possible spothanis
-	_, err = volumeattach.Create(cClient, os.localInstanceID, &volumeattach.CreateOpts{
+	_, err = volumeattach.Create(cClient, instanceID, &volumeattach.CreateOpts{
 		VolumeID: disk.ID,
 	}).Extract()
 	if err != nil {
-		glog.Errorf("Failed to attach %s volume to %s compute", diskName, os.localInstanceID)
+		glog.Errorf("Failed to attach %s volume to %s compute", diskName, instanceID)
 		return "", err
 	}
-	glog.V(2).Infof("Successfully attached %s volume to %s compute", diskName, os.localInstanceID)
+	glog.V(2).Infof("Successfully attached %s volume to %s compute", diskName, instanceID)
 	return disk.ID, nil
 }
 
 // Detaches given cinder volume from the compute running kubelet
-func (os *OpenStack) DetachDisk(partialDiskId string) error {
+func (os *OpenStack) DetachDisk(instanceID string, partialDiskId string) error {
 	disk, err := os.getVolume(partialDiskId)
 	if err != nil {
 		return err
@@ -998,17 +1010,17 @@ func (os *OpenStack) DetachDisk(partialDiskId string) error {
 		glog.Errorf("Unable to initialize nova client for region: %s", os.region)
 		return err
 	}
-	if len(disk.Attachments) > 0 && disk.Attachments[0]["server_id"] != nil && os.localInstanceID == disk.Attachments[0]["server_id"] {
+	if len(disk.Attachments) > 0 && disk.Attachments[0]["server_id"] != nil && instanceID == disk.Attachments[0]["server_id"] {
 		// This is a blocking call and effects kubelet's performance directly.
 		// We should consider kicking it out into a separate routine, if it is bad.
-		err = volumeattach.Delete(cClient, os.localInstanceID, disk.ID).ExtractErr()
+		err = volumeattach.Delete(cClient, instanceID, disk.ID).ExtractErr()
 		if err != nil {
-			glog.Errorf("Failed to delete volume %s from compute %s attached %v", disk.ID, os.localInstanceID, err)
+			glog.Errorf("Failed to delete volume %s from compute %s attached %v", disk.ID, instanceID, err)
 			return err
 		}
-		glog.V(2).Infof("Successfully detached volume: %s from compute: %s", disk.ID, os.localInstanceID)
+		glog.V(2).Infof("Successfully detached volume: %s from compute: %s", disk.ID, instanceID)
 	} else {
-		errMsg := fmt.Sprintf("Disk: %s has no attachments or is not attached to compute: %s", disk.Name, os.localInstanceID)
+		errMsg := fmt.Sprintf("Disk: %s has no attachments or is not attached to compute: %s", disk.Name, instanceID)
 		glog.Errorf(errMsg)
 		return errors.New(errMsg)
 	}
@@ -1078,6 +1090,22 @@ func (os *OpenStack) CreateVolume(name string, size int, tags *map[string]string
 	}
 	glog.Infof("Created volume %v", vol.ID)
 	return vol.ID, err
+}
+
+// GetDevicePath returns the path of an attached block storage volume, specified by its id.
+func (os *OpenStack) GetDevicePath(diskId string) string {
+	files, _ := ioutil.ReadDir("/dev/disk/by-id/")
+	for _, f := range files {
+		if strings.Contains(f.Name(), "virtio-") {
+			devid_prefix := f.Name()[len("virtio-"):len(f.Name())]
+			if strings.Contains(diskId, devid_prefix) {
+				glog.V(4).Infof("Found disk attached as %q; full devicepath: %s\n", f.Name(), path.Join("/dev/disk/by-id/", f.Name()))
+				return path.Join("/dev/disk/by-id/", f.Name())
+			}
+		}
+	}
+	glog.Warningf("Failed to find device for the diskid: %q\n", diskId)
+	return ""
 }
 
 func (os *OpenStack) DeleteVolume(volumeName string) error {

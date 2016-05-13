@@ -28,9 +28,8 @@ package v1beta1
 
 // AUTO-GENERATED FUNCTIONS START HERE
 var map_APIVersion = map[string]string{
-	"":         "An APIVersion represents a single concrete version of an object model.",
-	"name":     "Name of this version (e.g. 'v1').",
-	"apiGroup": "The API group to add this object into, default 'experimental'.",
+	"":     "An APIVersion represents a single concrete version of an object model.",
+	"name": "Name of this version (e.g. 'v1').",
 }
 
 func (APIVersion) SwaggerDoc() map[string]string {
@@ -66,9 +65,9 @@ func (CustomMetricTarget) SwaggerDoc() map[string]string {
 
 var map_DaemonSet = map[string]string{
 	"":         "DaemonSet represents the configuration of a daemon set.",
-	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
-	"spec":     "Spec defines the desired behavior of this daemon set. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
-	"status":   "Status is the current status of this daemon set. This data may be out of date by some window of time. Populated by the system. Read-only. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
+	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
+	"spec":     "Spec defines the desired behavior of this daemon set. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
+	"status":   "Status is the current status of this daemon set. This data may be out of date by some window of time. Populated by the system. Read-only. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
 }
 
 func (DaemonSet) SwaggerDoc() map[string]string {
@@ -77,7 +76,7 @@ func (DaemonSet) SwaggerDoc() map[string]string {
 
 var map_DaemonSetList = map[string]string{
 	"":         "DaemonSetList is a collection of daemon sets.",
-	"metadata": "Standard list metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
+	"metadata": "Standard list metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
 	"items":    "Items is a list of daemon sets.",
 }
 
@@ -87,8 +86,8 @@ func (DaemonSetList) SwaggerDoc() map[string]string {
 
 var map_DaemonSetSpec = map[string]string{
 	"":         "DaemonSetSpec is the specification of a daemon set.",
-	"selector": "Selector is a label query over pods that are managed by the daemon set. Must match in order to be controlled. If empty, defaulted to labels on Pod template. More info: http://releases.k8s.io/release-1.2/docs/user-guide/labels.md#label-selectors",
-	"template": "Template is the object that describes the pod that will be created. The DaemonSet will create exactly one copy of this pod on every node that matches the template's node selector (or on every node if no node selector is specified). More info: http://releases.k8s.io/release-1.2/docs/user-guide/replication-controller.md#pod-template",
+	"selector": "Selector is a label query over pods that are managed by the daemon set. Must match in order to be controlled. If empty, defaulted to labels on Pod template. More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors",
+	"template": "Template is the object that describes the pod that will be created. The DaemonSet will create exactly one copy of this pod on every node that matches the template's node selector (or on every node if no node selector is specified). More info: http://releases.k8s.io/HEAD/docs/user-guide/replication-controller.md#pod-template",
 }
 
 func (DaemonSetSpec) SwaggerDoc() map[string]string {
@@ -97,9 +96,9 @@ func (DaemonSetSpec) SwaggerDoc() map[string]string {
 
 var map_DaemonSetStatus = map[string]string{
 	"": "DaemonSetStatus represents the current status of a daemon set.",
-	"currentNumberScheduled": "CurrentNumberScheduled is the number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod. More info: http://releases.k8s.io/release-1.2/docs/admin/daemons.md",
-	"numberMisscheduled":     "NumberMisscheduled is the number of nodes that are running the daemon pod, but are not supposed to run the daemon pod. More info: http://releases.k8s.io/release-1.2/docs/admin/daemons.md",
-	"desiredNumberScheduled": "DesiredNumberScheduled is the total number of nodes that should be running the daemon pod (including nodes correctly running the daemon pod). More info: http://releases.k8s.io/release-1.2/docs/admin/daemons.md",
+	"currentNumberScheduled": "CurrentNumberScheduled is the number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod. More info: http://releases.k8s.io/HEAD/docs/admin/daemons.md",
+	"numberMisscheduled":     "NumberMisscheduled is the number of nodes that are running the daemon pod, but are not supposed to run the daemon pod. More info: http://releases.k8s.io/HEAD/docs/admin/daemons.md",
+	"desiredNumberScheduled": "DesiredNumberScheduled is the total number of nodes that should be running the daemon pod (including nodes correctly running the daemon pod). More info: http://releases.k8s.io/HEAD/docs/admin/daemons.md",
 }
 
 func (DaemonSetStatus) SwaggerDoc() map[string]string {
@@ -187,6 +186,16 @@ func (ExportOptions) SwaggerDoc() map[string]string {
 	return map_ExportOptions
 }
 
+var map_FSGroupStrategyOptions = map[string]string{
+	"":       "FSGroupStrategyOptions defines the strategy type and options used to create the strategy.",
+	"rule":   "Rule is the strategy that will dictate what FSGroup is used in the SecurityContext.",
+	"ranges": "Ranges are the allowed ranges of fs groups.  If you would like to force a single fs group then supply a single range with the same start and end.",
+}
+
+func (FSGroupStrategyOptions) SwaggerDoc() map[string]string {
+	return map_FSGroupStrategyOptions
+}
+
 var map_HTTPIngressPath = map[string]string{
 	"":        "HTTPIngressPath associates a path regex with a backend. Incoming urls matching the path are forwarded to the backend.",
 	"path":    "Path is a extended POSIX regex as defined by IEEE Std 1003.1, (i.e this follows the egrep/unix syntax, not the perl syntax) matched against the path of an incoming request. Currently it can contain characters disallowed from the conventional \"path\" part of a URL as defined by RFC 3986. Paths must begin with a '/'. If unspecified, the path defaults to a catch all sending traffic to the backend.",
@@ -208,8 +217,8 @@ func (HTTPIngressRuleValue) SwaggerDoc() map[string]string {
 
 var map_HorizontalPodAutoscaler = map[string]string{
 	"":         "configuration of a horizontal pod autoscaler.",
-	"metadata": "Standard object metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
-	"spec":     "behaviour of autoscaler. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status.",
+	"metadata": "Standard object metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
+	"spec":     "behaviour of autoscaler. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status.",
 	"status":   "current information about the autoscaler.",
 }
 
@@ -274,9 +283,9 @@ func (IDRange) SwaggerDoc() map[string]string {
 
 var map_Ingress = map[string]string{
 	"":         "Ingress is a collection of rules that allow inbound connections to reach the endpoints defined by a backend. An Ingress can be configured to give services externally-reachable urls, load balance traffic, terminate SSL, offer name based virtual hosting etc.",
-	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
-	"spec":     "Spec is the desired state of the Ingress. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
-	"status":   "Status is the current state of the Ingress. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
+	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
+	"spec":     "Spec is the desired state of the Ingress. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
+	"status":   "Status is the current state of the Ingress. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
 }
 
 func (Ingress) SwaggerDoc() map[string]string {
@@ -295,7 +304,7 @@ func (IngressBackend) SwaggerDoc() map[string]string {
 
 var map_IngressList = map[string]string{
 	"":         "IngressList is a collection of Ingress.",
-	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
+	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
 	"items":    "Items is the list of Ingress.",
 }
 
@@ -352,9 +361,9 @@ func (IngressTLS) SwaggerDoc() map[string]string {
 
 var map_Job = map[string]string{
 	"":         "Job represents the configuration of a single job.",
-	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
-	"spec":     "Spec is a structure defining the expected behavior of a job. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
-	"status":   "Status is a structure describing current status of a job. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
+	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
+	"spec":     "Spec is a structure defining the expected behavior of a job. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
+	"status":   "Status is a structure describing current status of a job. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
 }
 
 func (Job) SwaggerDoc() map[string]string {
@@ -377,7 +386,7 @@ func (JobCondition) SwaggerDoc() map[string]string {
 
 var map_JobList = map[string]string{
 	"":         "JobList is a collection of jobs.",
-	"metadata": "Standard list metadata More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
+	"metadata": "Standard list metadata More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
 	"items":    "Items is the list of Job.",
 }
 
@@ -387,12 +396,12 @@ func (JobList) SwaggerDoc() map[string]string {
 
 var map_JobSpec = map[string]string{
 	"":                      "JobSpec describes how the job execution will look like.",
-	"parallelism":           "Parallelism specifies the maximum desired number of pods the job should run at any given time. The actual number of pods running in steady state will be less than this number when ((.spec.completions - .status.successful) < .spec.parallelism), i.e. when the work left to do is less than max parallelism. More info: http://releases.k8s.io/release-1.2/docs/user-guide/jobs.md",
-	"completions":           "Completions specifies the desired number of successfully finished pods the job should be run with.  Setting to nil means that the success of any pod signals the success of all pods, and allows parallelism to have any positive value.  Setting to 1 means that parallelism is limited to 1 and the success of that pod signals the success of the job. More info: http://releases.k8s.io/release-1.2/docs/user-guide/jobs.md",
+	"parallelism":           "Parallelism specifies the maximum desired number of pods the job should run at any given time. The actual number of pods running in steady state will be less than this number when ((.spec.completions - .status.successful) < .spec.parallelism), i.e. when the work left to do is less than max parallelism. More info: http://releases.k8s.io/HEAD/docs/user-guide/jobs.md",
+	"completions":           "Completions specifies the desired number of successfully finished pods the job should be run with.  Setting to nil means that the success of any pod signals the success of all pods, and allows parallelism to have any positive value.  Setting to 1 means that parallelism is limited to 1 and the success of that pod signals the success of the job. More info: http://releases.k8s.io/HEAD/docs/user-guide/jobs.md",
 	"activeDeadlineSeconds": "Optional duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer",
-	"selector":              "Selector is a label query over pods that should match the pod count. Normally, the system sets this field for you. More info: http://releases.k8s.io/release-1.2/docs/user-guide/labels.md#label-selectors",
-	"autoSelector":          "AutoSelector controls generation of pod labels and pod selectors. It was not present in the original extensions/v1beta1 Job definition, but exists to allow conversion from batch/v1 Jobs, where it corresponds to, but has the opposite meaning as, ManualSelector. More info: http://releases.k8s.io/release-1.2/docs/design/selector-generation.md",
-	"template":              "Template is the object that describes the pod that will be created when executing a job. More info: http://releases.k8s.io/release-1.2/docs/user-guide/jobs.md",
+	"selector":              "Selector is a label query over pods that should match the pod count. Normally, the system sets this field for you. More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors",
+	"autoSelector":          "AutoSelector controls generation of pod labels and pod selectors. It was not present in the original extensions/v1beta1 Job definition, but exists to allow conversion from batch/v1 Jobs, where it corresponds to, but has the opposite meaning as, ManualSelector. More info: http://releases.k8s.io/HEAD/docs/design/selector-generation.md",
+	"template":              "Template is the object that describes the pod that will be created when executing a job. More info: http://releases.k8s.io/HEAD/docs/user-guide/jobs.md",
 }
 
 func (JobSpec) SwaggerDoc() map[string]string {
@@ -401,7 +410,7 @@ func (JobSpec) SwaggerDoc() map[string]string {
 
 var map_JobStatus = map[string]string{
 	"":               "JobStatus represents the current state of a Job.",
-	"conditions":     "Conditions represent the latest available observations of an object's current state. More info: http://releases.k8s.io/release-1.2/docs/user-guide/jobs.md",
+	"conditions":     "Conditions represent the latest available observations of an object's current state. More info: http://releases.k8s.io/HEAD/docs/user-guide/jobs.md",
 	"startTime":      "StartTime represents time when the job was acknowledged by the Job Manager. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
 	"completionTime": "CompletionTime represents time when the job was completed. It is not guaranteed to be set in happens-before order across separate operations. It is represented in RFC3339 form and is in UTC.",
 	"active":         "Active is the number of actively running pods.",
@@ -449,7 +458,7 @@ func (ListOptions) SwaggerDoc() map[string]string {
 
 var map_PodSecurityPolicy = map[string]string{
 	"":         "Pod Security Policy governs the ability to make requests that affect the Security Context that will be applied to a pod and container.",
-	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
+	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
 	"spec":     "spec defines the policy enforced.",
 }
 
@@ -459,7 +468,7 @@ func (PodSecurityPolicy) SwaggerDoc() map[string]string {
 
 var map_PodSecurityPolicyList = map[string]string{
 	"":         "Pod Security Policy List is a list of PodSecurityPolicy objects.",
-	"metadata": "Standard list metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
+	"metadata": "Standard list metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
 	"items":    "Items is a list of schema objects.",
 }
 
@@ -468,16 +477,21 @@ func (PodSecurityPolicyList) SwaggerDoc() map[string]string {
 }
 
 var map_PodSecurityPolicySpec = map[string]string{
-	"":             "Pod Security Policy Spec defines the policy enforced.",
-	"privileged":   "privileged determines if a pod can request to be run as privileged.",
-	"capabilities": "capabilities is a list of capabilities that can be added.",
-	"volumes":      "volumes is a white list of allowed volume plugins.  Empty indicates that all plugins may be used.",
-	"hostNetwork":  "hostNetwork determines if the policy allows the use of HostNetwork in the pod spec.",
-	"hostPorts":    "hostPorts determines which host port ranges are allowed to be exposed.",
-	"hostPID":      "hostPID determines if the policy allows the use of HostPID in the pod spec.",
-	"hostIPC":      "hostIPC determines if the policy allows the use of HostIPC in the pod spec.",
-	"seLinux":      "seLinux is the strategy that will dictate the allowable labels that may be set.",
-	"runAsUser":    "runAsUser is the strategy that will dictate the allowable RunAsUser values that may be set.",
+	"":                         "Pod Security Policy Spec defines the policy enforced.",
+	"privileged":               "privileged determines if a pod can request to be run as privileged.",
+	"defaultAddCapabilities":   "DefaultAddCapabilities is the default set of capabilities that will be added to the container unless the pod spec specifically drops the capability.  You may not list a capabiility in both DefaultAddCapabilities and RequiredDropCapabilities.",
+	"requiredDropCapabilities": "RequiredDropCapabilities are the capabilities that will be dropped from the container.  These are required to be dropped and cannot be added.",
+	"allowedCapabilities":      "AllowedCapabilities is a list of capabilities that can be requested to add to the container. Capabilities in this field may be added at the pod author's discretion. You must not list a capability in both AllowedCapabilities and RequiredDropCapabilities.",
+	"volumes":                  "volumes is a white list of allowed volume plugins.  Empty indicates that all plugins may be used.",
+	"hostNetwork":              "hostNetwork determines if the policy allows the use of HostNetwork in the pod spec.",
+	"hostPorts":                "hostPorts determines which host port ranges are allowed to be exposed.",
+	"hostPID":                  "hostPID determines if the policy allows the use of HostPID in the pod spec.",
+	"hostIPC":                  "hostIPC determines if the policy allows the use of HostIPC in the pod spec.",
+	"seLinux":                  "seLinux is the strategy that will dictate the allowable labels that may be set.",
+	"runAsUser":                "runAsUser is the strategy that will dictate the allowable RunAsUser values that may be set.",
+	"supplementalGroups":       "SupplementalGroups is the strategy that will dictate what supplemental groups are used by the SecurityContext.",
+	"fsGroup":                  "FSGroup is the strategy that will dictate what fs group is used by the SecurityContext.",
+	"readOnlyRootFilesystem":   "ReadOnlyRootFilesystem when set to true will force containers to run with a read only root file system.  If the container specifically requests to run with a non-read only root file system the PSP should deny the pod. If set to false the container may run with a read only root file system if it wishes but it will not be forced to.",
 }
 
 func (PodSecurityPolicySpec) SwaggerDoc() map[string]string {
@@ -486,9 +500,9 @@ func (PodSecurityPolicySpec) SwaggerDoc() map[string]string {
 
 var map_ReplicaSet = map[string]string{
 	"":         "ReplicaSet represents the configuration of a ReplicaSet.",
-	"metadata": "If the Labels of a ReplicaSet are empty, they are defaulted to be the same as the Pod(s) that the ReplicaSet manages. Standard object's metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
-	"spec":     "Spec defines the specification of the desired behavior of the ReplicaSet. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
-	"status":   "Status is the most recently observed status of the ReplicaSet. This data may be out of date by some window of time. Populated by the system. Read-only. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status",
+	"metadata": "If the Labels of a ReplicaSet are empty, they are defaulted to be the same as the Pod(s) that the ReplicaSet manages. Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
+	"spec":     "Spec defines the specification of the desired behavior of the ReplicaSet. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
+	"status":   "Status is the most recently observed status of the ReplicaSet. This data may be out of date by some window of time. Populated by the system. Read-only. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status",
 }
 
 func (ReplicaSet) SwaggerDoc() map[string]string {
@@ -497,8 +511,8 @@ func (ReplicaSet) SwaggerDoc() map[string]string {
 
 var map_ReplicaSetList = map[string]string{
 	"":         "ReplicaSetList is a collection of ReplicaSets.",
-	"metadata": "Standard list metadata. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#types-kinds",
-	"items":    "List of ReplicaSets. More info: http://releases.k8s.io/release-1.2/docs/user-guide/replication-controller.md",
+	"metadata": "Standard list metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds",
+	"items":    "List of ReplicaSets. More info: http://releases.k8s.io/HEAD/docs/user-guide/replication-controller.md",
 }
 
 func (ReplicaSetList) SwaggerDoc() map[string]string {
@@ -507,9 +521,9 @@ func (ReplicaSetList) SwaggerDoc() map[string]string {
 
 var map_ReplicaSetSpec = map[string]string{
 	"":         "ReplicaSetSpec is the specification of a ReplicaSet.",
-	"replicas": "Replicas is the number of desired replicas. This is a pointer to distinguish between explicit zero and unspecified. Defaults to 1. More info: http://releases.k8s.io/release-1.2/docs/user-guide/replication-controller.md#what-is-a-replication-controller",
-	"selector": "Selector is a label query over pods that should match the replica count. If the selector is empty, it is defaulted to the labels present on the pod template. Label keys and values that must match in order to be controlled by this replica set. More info: http://releases.k8s.io/release-1.2/docs/user-guide/labels.md#label-selectors",
-	"template": "Template is the object that describes the pod that will be created if insufficient replicas are detected. More info: http://releases.k8s.io/release-1.2/docs/user-guide/replication-controller.md#pod-template",
+	"replicas": "Replicas is the number of desired replicas. This is a pointer to distinguish between explicit zero and unspecified. Defaults to 1. More info: http://releases.k8s.io/HEAD/docs/user-guide/replication-controller.md#what-is-a-replication-controller",
+	"selector": "Selector is a label query over pods that should match the replica count. If the selector is empty, it is defaulted to the labels present on the pod template. Label keys and values that must match in order to be controlled by this replica set. More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors",
+	"template": "Template is the object that describes the pod that will be created if insufficient replicas are detected. More info: http://releases.k8s.io/HEAD/docs/user-guide/replication-controller.md#pod-template",
 }
 
 func (ReplicaSetSpec) SwaggerDoc() map[string]string {
@@ -518,7 +532,7 @@ func (ReplicaSetSpec) SwaggerDoc() map[string]string {
 
 var map_ReplicaSetStatus = map[string]string{
 	"":                     "ReplicaSetStatus represents the current status of a ReplicaSet.",
-	"replicas":             "Replicas is the most recently oberved number of replicas. More info: http://releases.k8s.io/release-1.2/docs/user-guide/replication-controller.md#what-is-a-replication-controller",
+	"replicas":             "Replicas is the most recently oberved number of replicas. More info: http://releases.k8s.io/HEAD/docs/user-guide/replication-controller.md#what-is-a-replication-controller",
 	"fullyLabeledReplicas": "The number of pods that have labels matching the labels of the pod template of the replicaset.",
 	"observedGeneration":   "ObservedGeneration reflects the generation of the most recently observed ReplicaSet.",
 }
@@ -566,7 +580,7 @@ func (RunAsUserStrategyOptions) SwaggerDoc() map[string]string {
 var map_SELinuxStrategyOptions = map[string]string{
 	"":               "SELinux  Strategy Options defines the strategy type and any options used to create the strategy.",
 	"rule":           "type is the strategy that will dictate the allowable labels that may be set.",
-	"seLinuxOptions": "seLinuxOptions required to run as; required for MustRunAs More info: http://releases.k8s.io/release-1.2/docs/design/security_context.md#security-context",
+	"seLinuxOptions": "seLinuxOptions required to run as; required for MustRunAs More info: http://releases.k8s.io/HEAD/docs/design/security_context.md#security-context",
 }
 
 func (SELinuxStrategyOptions) SwaggerDoc() map[string]string {
@@ -575,9 +589,9 @@ func (SELinuxStrategyOptions) SwaggerDoc() map[string]string {
 
 var map_Scale = map[string]string{
 	"":         "represents a scaling request for a resource.",
-	"metadata": "Standard object metadata; More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata.",
-	"spec":     "defines the behavior of the scale. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status.",
-	"status":   "current status of the scale. More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#spec-and-status. Read-only.",
+	"metadata": "Standard object metadata; More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata.",
+	"spec":     "defines the behavior of the scale. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status.",
+	"status":   "current status of the scale. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status. Read-only.",
 }
 
 func (Scale) SwaggerDoc() map[string]string {
@@ -596,8 +610,8 @@ func (ScaleSpec) SwaggerDoc() map[string]string {
 var map_ScaleStatus = map[string]string{
 	"":               "represents the current status of a scale subresource.",
 	"replicas":       "actual number of observed instances of the scaled object.",
-	"selector":       "label query over pods that should match the replicas count. More info: http://releases.k8s.io/release-1.2/docs/user-guide/labels.md#label-selectors",
-	"targetSelector": "label selector for pods that should match the replicas count. This is a serializated version of both map-based and more expressive set-based selectors. This is done to avoid introspection in the clients. The string will be in the same format as the query-param syntax. If the target type only supports map-based selectors, both this field and map-based selector field are populated. More info: http://releases.k8s.io/release-1.2/docs/user-guide/labels.md#label-selectors",
+	"selector":       "label query over pods that should match the replicas count. More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors",
+	"targetSelector": "label selector for pods that should match the replicas count. This is a serializated version of both map-based and more expressive set-based selectors. This is done to avoid introspection in the clients. The string will be in the same format as the query-param syntax. If the target type only supports map-based selectors, both this field and map-based selector field are populated. More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors",
 }
 
 func (ScaleStatus) SwaggerDoc() map[string]string {
@@ -606,14 +620,24 @@ func (ScaleStatus) SwaggerDoc() map[string]string {
 
 var map_SubresourceReference = map[string]string{
 	"":            "SubresourceReference contains enough information to let you inspect or modify the referred subresource.",
-	"kind":        "Kind of the referent; More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#types-kinds\"",
-	"name":        "Name of the referent; More info: http://releases.k8s.io/release-1.2/docs/user-guide/identifiers.md#names",
+	"kind":        "Kind of the referent; More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds",
+	"name":        "Name of the referent; More info: http://releases.k8s.io/HEAD/docs/user-guide/identifiers.md#names",
 	"apiVersion":  "API version of the referent",
 	"subresource": "Subresource name of the referent",
 }
 
 func (SubresourceReference) SwaggerDoc() map[string]string {
 	return map_SubresourceReference
+}
+
+var map_SupplementalGroupsStrategyOptions = map[string]string{
+	"":       "SupplementalGroupsStrategyOptions defines the strategy type and options used to create the strategy.",
+	"rule":   "Rule is the strategy that will dictate what supplemental groups is used in the SecurityContext.",
+	"ranges": "Ranges are the allowed ranges of supplemental groups.  If you would like to force a single supplemental group then supply a single range with the same start and end.",
+}
+
+func (SupplementalGroupsStrategyOptions) SwaggerDoc() map[string]string {
+	return map_SupplementalGroupsStrategyOptions
 }
 
 var map_ThirdPartyResource = map[string]string{
@@ -639,7 +663,7 @@ func (ThirdPartyResourceData) SwaggerDoc() map[string]string {
 
 var map_ThirdPartyResourceDataList = map[string]string{
 	"":         "ThirdPartyResrouceDataList is a list of ThirdPartyResourceData.",
-	"metadata": "Standard list metadata More info: http://releases.k8s.io/release-1.2/docs/devel/api-conventions.md#metadata",
+	"metadata": "Standard list metadata More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
 	"items":    "Items is the list of ThirdpartyResourceData.",
 }
 
