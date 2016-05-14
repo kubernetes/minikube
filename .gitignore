@@ -26,5 +26,5 @@ _testmain.go
 /out
 /.gopath
 
-pkg/minikube/cluster/localkubecontents.go
-minikube
+/pkg/minikube/cluster/localkubecontents.go
+/minikube
