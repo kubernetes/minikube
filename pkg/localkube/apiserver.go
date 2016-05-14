@@ -21,10 +21,10 @@ import (
 
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
-	etcdstorage "k8s.io/kubernetes/pkg/storage/etcd"
 
 	kuberest "k8s.io/kubernetes/pkg/client/restclient"
 	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/storage/storagebackend"
 )
 
 func (lk LocalkubeServer) NewAPIServer() Server {
@@ -45,9 +45,7 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
 
 	// use localkube etcd
-	config.EtcdConfig = etcdstorage.EtcdConfig{
-		ServerList: KubeEtcdClientURLs,
-	}
+	config.StorageConfig = storagebackend.Config{ServerList: KubeEtcdClientURLs}
 
 	// set Service IP range
 	config.ServiceClusterIPRange = lk.ServiceClusterIPRange

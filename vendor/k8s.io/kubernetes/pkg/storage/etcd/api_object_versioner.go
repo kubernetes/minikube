@@ -18,10 +18,9 @@ package etcd
 
 import (
 	"strconv"
-	"time"
 
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/storage"
 )
@@ -31,19 +30,16 @@ import (
 type APIObjectVersioner struct{}
 
 // UpdateObject implements Versioner
-func (a APIObjectVersioner) UpdateObject(obj runtime.Object, expiration *time.Time, resourceVersion uint64) error {
-	objectMeta, err := api.ObjectMetaFor(obj)
+func (a APIObjectVersioner) UpdateObject(obj runtime.Object, resourceVersion uint64) error {
+	accessor, err := meta.Accessor(obj)
 	if err != nil {
 		return err
-	}
-	if expiration != nil {
-		objectMeta.DeletionTimestamp = &unversioned.Time{Time: *expiration}
 	}
 	versionString := ""
 	if resourceVersion != 0 {
 		versionString = strconv.FormatUint(resourceVersion, 10)
 	}
-	objectMeta.ResourceVersion = versionString
+	accessor.SetResourceVersion(versionString)
 	return nil
 }
 
@@ -63,11 +59,11 @@ func (a APIObjectVersioner) UpdateList(obj runtime.Object, resourceVersion uint6
 
 // ObjectResourceVersion implements Versioner
 func (a APIObjectVersioner) ObjectResourceVersion(obj runtime.Object) (uint64, error) {
-	meta, err := api.ObjectMetaFor(obj)
+	accessor, err := meta.Accessor(obj)
 	if err != nil {
 		return 0, err
 	}
-	version := meta.ResourceVersion
+	version := accessor.GetResourceVersion()
 	if len(version) == 0 {
 		return 0, nil
 	}

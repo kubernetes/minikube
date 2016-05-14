@@ -160,7 +160,7 @@ func (dns *DNSServer) Start() {
 			// setup endpoint
 			if _, err = client.Endpoints(meta.Namespace).Get(meta.Name); notFoundErr(err) {
 				// create endpoint if doesn't exist
-				err = createEndpoint(client, meta, dns.dnsServerAddr.IP.String(), dns.dnsServerAddr.Port)
+				err = createEndpoint(client, meta, dns.dnsServerAddr.IP.String(), int32(dns.dnsServerAddr.Port))
 				if err != nil {
 					fmt.Printf("Failed to create Endpoint for DNS: %v\n", err)
 					continue
@@ -226,7 +226,7 @@ func createService(client *kubeclient.Client, meta kube.ObjectMeta, clusterIP st
 	return nil
 }
 
-func createEndpoint(client *kubeclient.Client, meta kube.ObjectMeta, dnsIP string, dnsPort int) error {
+func createEndpoint(client *kubeclient.Client, meta kube.ObjectMeta, dnsIP string, dnsPort int32) error {
 	endpoints := &kube.Endpoints{
 		ObjectMeta: meta,
 		Subsets: []kube.EndpointSubset{

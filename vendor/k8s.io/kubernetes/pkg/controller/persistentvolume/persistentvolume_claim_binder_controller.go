@@ -28,6 +28,7 @@ import (
 	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/util/metrics"
 	"k8s.io/kubernetes/pkg/watch"
 
 	"github.com/golang/glog"
@@ -45,6 +46,9 @@ type PersistentVolumeClaimBinder struct {
 
 // NewPersistentVolumeClaimBinder creates a new PersistentVolumeClaimBinder
 func NewPersistentVolumeClaimBinder(kubeClient clientset.Interface, syncPeriod time.Duration) *PersistentVolumeClaimBinder {
+	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("pv_claim_binder_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	}
 	volumeIndex := NewPersistentVolumeOrderedIndex()
 	binderClient := NewBinderClient(kubeClient)
 	binder := &PersistentVolumeClaimBinder{
@@ -230,15 +234,20 @@ func syncVolume(volumeIndex *persistentVolumeOrderedIndex, binderClient binderCl
 	switch currentPhase {
 	case api.VolumePending:
 
-		// 3 possible states:
-		//  1.  ClaimRef != nil and Claim exists:   Prebound to claim. Make volume available for binding (it will match PVC).
-		//  2.  ClaimRef != nil and Claim !exists:  Recently recycled. Remove bind. Make volume available for new claim.
-		//  3.  ClaimRef == nil: Neither recycled nor prebound.  Make volume available for binding.
+		// 4 possible states:
+		//  1.  ClaimRef != nil, Claim exists, Claim UID == ClaimRef UID: Prebound to claim. Make volume available for binding (it will match PVC).
+		//  2.  ClaimRef != nil, Claim exists, Claim UID != ClaimRef UID: Recently recycled. Remove bind. Make volume available for new claim.
+		//  3.  ClaimRef != nil, Claim !exists: Recently recycled. Remove bind. Make volume available for new claim.
+		//  4.  ClaimRef == nil: Neither recycled nor prebound.  Make volume available for binding.
 		nextPhase = api.VolumeAvailable
 
 		if volume.Spec.ClaimRef != nil {
 			claim, err := binderClient.GetPersistentVolumeClaim(volume.Spec.ClaimRef.Namespace, volume.Spec.ClaimRef.Name)
-			if errors.IsNotFound(err) {
+			switch {
+			case err != nil && !errors.IsNotFound(err):
+				return fmt.Errorf("Error getting PersistentVolumeClaim[%s/%s]: %v", volume.Spec.ClaimRef.Namespace, volume.Spec.ClaimRef.Name, err)
+			case errors.IsNotFound(err) || (claim != nil && claim.UID != volume.Spec.ClaimRef.UID):
+				glog.V(5).Infof("PersistentVolume[%s] has a claim ref to a claim which does not exist", volume.Name)
 				if volume.Spec.PersistentVolumeReclaimPolicy == api.PersistentVolumeReclaimRecycle {
 					// Pending volumes that have a ClaimRef where the claim is missing were recently recycled.
 					// The Recycler set the phase to VolumePending to start the volume at the beginning of this lifecycle.
@@ -251,6 +260,7 @@ func syncVolume(volumeIndex *persistentVolumeOrderedIndex, binderClient binderCl
 					if !ok {
 						return fmt.Errorf("Unexpected pv cast error : %v\n", volumeClone)
 					}
+					glog.V(5).Infof("PersistentVolume[%s] is recently recycled; remove claimRef.", volume.Name)
 					volumeClone.Spec.ClaimRef = nil
 
 					if updatedVolume, err := binderClient.UpdatePersistentVolume(volumeClone); err != nil {
@@ -265,8 +275,6 @@ func syncVolume(volumeIndex *persistentVolumeOrderedIndex, binderClient binderCl
 					// Mark the volume as Released, it will be deleted.
 					nextPhase = api.VolumeReleased
 				}
-			} else if err != nil {
-				return fmt.Errorf("Error getting PersistentVolumeClaim[%s/%s]: %v", volume.Spec.ClaimRef.Namespace, volume.Spec.ClaimRef.Name, err)
 			}
 
 			// Dynamically provisioned claims remain Pending until its volume is completely provisioned.

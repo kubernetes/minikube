@@ -1,3 +1,17 @@
+// Copyright 2015 CoreOS, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package storage
 
 import (
@@ -5,9 +19,7 @@ import (
 	"time"
 )
 
-func (s *store) scheduleCompaction(compactMainRev int64, keep map[revision]struct{}) {
-	defer s.wg.Done()
-
+func (s *store) scheduleCompaction(compactMainRev int64, keep map[revision]struct{}) bool {
 	totalStart := time.Now()
 	defer dbCompactionTotalDurations.Observe(float64(time.Now().Sub(totalStart) / time.Millisecond))
 
@@ -36,7 +48,7 @@ func (s *store) scheduleCompaction(compactMainRev int64, keep map[revision]struc
 			revToBytes(revision{main: compactMainRev}, rbytes)
 			tx.UnsafePut(metaBucketName, finishedCompactKeyName, rbytes)
 			tx.Unlock()
-			return
+			return true
 		}
 
 		// update last
@@ -47,7 +59,7 @@ func (s *store) scheduleCompaction(compactMainRev int64, keep map[revision]struc
 		select {
 		case <-time.After(100 * time.Millisecond):
 		case <-s.stopc:
-			return
+			return false
 		}
 	}
 }

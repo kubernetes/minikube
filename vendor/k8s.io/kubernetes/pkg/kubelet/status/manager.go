@@ -32,7 +32,7 @@ import (
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/diff"
 	"k8s.io/kubernetes/pkg/util/wait"
 )
 
@@ -396,7 +396,10 @@ func (m *manager) syncPod(uid types.UID, status versionedPodStatus) {
 				glog.V(3).Infof("Pod %q is terminated, but some containers are still running", format.Pod(pod))
 				return
 			}
-			if err := m.kubeClient.Core().Pods(pod.Namespace).Delete(pod.Name, api.NewDeleteOptions(0)); err == nil {
+			deleteOptions := api.NewDeleteOptions(0)
+			// Use the pod UID as the precondition for deletion to prevent deleting a newly created pod with the same name and namespace.
+			deleteOptions.Preconditions = api.NewUIDPreconditions(string(pod.UID))
+			if err := m.kubeClient.Core().Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err == nil {
 				glog.V(3).Infof("Pod %q fully terminated and removed from etcd", format.Pod(pod))
 				m.deletePodStatus(uid)
 				return
@@ -453,7 +456,7 @@ func (m *manager) needsReconcile(uid types.UID, status api.PodStatus) bool {
 		return false
 	}
 	glog.V(3).Infof("Pod status is inconsistent with cached status for pod %q, a reconciliation should be triggered:\n %+v", format.Pod(pod),
-		util.ObjectDiff(podStatus, status))
+		diff.ObjectDiff(podStatus, status))
 
 	return true
 }

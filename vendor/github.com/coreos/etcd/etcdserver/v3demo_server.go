@@ -15,178 +15,259 @@
 package etcdserver
 
 import (
-	"bytes"
+	"time"
 
-	"github.com/coreos/etcd/Godeps/_workspace/src/github.com/gogo/protobuf/proto"
-	"github.com/coreos/etcd/Godeps/_workspace/src/golang.org/x/net/context"
 	pb "github.com/coreos/etcd/etcdserver/etcdserverpb"
+	"github.com/coreos/etcd/lease"
+	"github.com/coreos/etcd/lease/leasehttp"
 	dstorage "github.com/coreos/etcd/storage"
-	"github.com/coreos/etcd/storage/storagepb"
+	"golang.org/x/net/context"
 )
 
-type V3DemoServer interface {
-	V3DemoDo(ctx context.Context, r pb.InternalRaftRequest) proto.Message
+const (
+	// the max request size that raft accepts.
+	// TODO: make this a flag? But we probably do not want to
+	// accept large request which might block raft stream. User
+	// specify a large value might end up with shooting in the foot.
+	maxRequestBytes = 1.5 * 1024 * 1024
+)
+
+type RaftKV interface {
+	Range(ctx context.Context, r *pb.RangeRequest) (*pb.RangeResponse, error)
+	Put(ctx context.Context, r *pb.PutRequest) (*pb.PutResponse, error)
+	DeleteRange(ctx context.Context, r *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error)
+	Txn(ctx context.Context, r *pb.TxnRequest) (*pb.TxnResponse, error)
+	Compact(ctx context.Context, r *pb.CompactionRequest) (*pb.CompactionResponse, error)
 }
 
-func (s *EtcdServer) V3DemoDo(ctx context.Context, r pb.InternalRaftRequest) proto.Message {
-	switch {
-	case r.Range != nil:
-		return doRange(s.kv, r.Range)
-	case r.Put != nil:
-		return doPut(s.kv, r.Put)
-	case r.DeleteRange != nil:
-		return doDeleteRange(s.kv, r.DeleteRange)
-	case r.Txn != nil:
-		return doTxn(s.kv, r.Txn)
-	default:
-		panic("not implemented")
+type Lessor interface {
+	// LeaseGrant sends LeaseGrant request to raft and apply it after committed.
+	LeaseGrant(ctx context.Context, r *pb.LeaseGrantRequest) (*pb.LeaseGrantResponse, error)
+	// LeaseRevoke sends LeaseRevoke request to raft and apply it after committed.
+	LeaseRevoke(ctx context.Context, r *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error)
+
+	// LeaseRenew renews the lease with given ID. The renewed TTL is returned. Or an error
+	// is returned.
+	LeaseRenew(id lease.LeaseID) (int64, error)
+}
+
+type Authenticator interface {
+	AuthEnable(ctx context.Context, r *pb.AuthEnableRequest) (*pb.AuthEnableResponse, error)
+	UserAdd(ctx context.Context, r *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error)
+	UserDelete(ctx context.Context, r *pb.AuthUserDeleteRequest) (*pb.AuthUserDeleteResponse, error)
+	UserChangePassword(ctx context.Context, r *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error)
+	RoleAdd(ctx context.Context, r *pb.AuthRoleAddRequest) (*pb.AuthRoleAddResponse, error)
+}
+
+func (s *EtcdServer) Range(ctx context.Context, r *pb.RangeRequest) (*pb.RangeResponse, error) {
+	if r.Serializable {
+		return s.applyV3.Range(noTxn, r)
 	}
-}
 
-func doPut(kv dstorage.KV, p *pb.PutRequest) *pb.PutResponse {
-	resp := &pb.PutResponse{}
-	resp.Header = &pb.ResponseHeader{}
-	rev := kv.Put(p.Key, p.Value)
-	resp.Header.Revision = rev
-	return resp
-}
-
-func doRange(kv dstorage.KV, r *pb.RangeRequest) *pb.RangeResponse {
-	resp := &pb.RangeResponse{}
-	resp.Header = &pb.ResponseHeader{}
-	kvs, rev, err := kv.Range(r.Key, r.RangeEnd, r.Limit, 0)
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{Range: r})
 	if err != nil {
-		panic("not handled error")
+		return nil, err
 	}
-
-	resp.Header.Revision = rev
-	for i := range kvs {
-		resp.Kvs = append(resp.Kvs, &kvs[i])
-	}
-	return resp
+	return result.resp.(*pb.RangeResponse), result.err
 }
 
-func doDeleteRange(kv dstorage.KV, dr *pb.DeleteRangeRequest) *pb.DeleteRangeResponse {
-	resp := &pb.DeleteRangeResponse{}
-	resp.Header = &pb.ResponseHeader{}
-	_, rev := kv.DeleteRange(dr.Key, dr.RangeEnd)
-	resp.Header.Revision = rev
-	return resp
+func (s *EtcdServer) Put(ctx context.Context, r *pb.PutRequest) (*pb.PutResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{Put: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.PutResponse), result.err
 }
 
-func doTxn(kv dstorage.KV, rt *pb.TxnRequest) *pb.TxnResponse {
-	var revision int64
+func (s *EtcdServer) DeleteRange(ctx context.Context, r *pb.DeleteRangeRequest) (*pb.DeleteRangeResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{DeleteRange: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.DeleteRangeResponse), result.err
+}
 
-	ok := true
-	for _, c := range rt.Compare {
-		if revision, ok = doCompare(kv, c); !ok {
+func (s *EtcdServer) Txn(ctx context.Context, r *pb.TxnRequest) (*pb.TxnResponse, error) {
+	if isTxnSerializable(r) {
+		return s.applyV3.Txn(r)
+	}
+
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{Txn: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.TxnResponse), result.err
+}
+
+func isTxnSerializable(r *pb.TxnRequest) bool {
+	for _, u := range r.Success {
+		if r := u.GetRequestRange(); r == nil || !r.Serializable {
+			return false
+		}
+	}
+	for _, u := range r.Failure {
+		if r := u.GetRequestRange(); r == nil || !r.Serializable {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *EtcdServer) Compact(ctx context.Context, r *pb.CompactionRequest) (*pb.CompactionResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{Compaction: r})
+	if r.Physical && result.physc != nil {
+		<-result.physc
+		// The compaction is done deleting keys; the hash is now settled
+		// but the data is not necessarily committed. If there's a crash,
+		// the hash may revert to a hash prior to compaction completing
+		// if the compaction resumes. Force the finished compaction to
+		// commit so it won't resume following a crash.
+		s.be.ForceCommit()
+	}
+	if err != nil {
+		return nil, err
+	}
+	resp := result.resp.(*pb.CompactionResponse)
+	if resp == nil {
+		resp = &pb.CompactionResponse{}
+	}
+	if resp.Header == nil {
+		resp.Header = &pb.ResponseHeader{}
+	}
+	resp.Header.Revision = s.kv.Rev()
+	return resp, result.err
+}
+
+func (s *EtcdServer) LeaseGrant(ctx context.Context, r *pb.LeaseGrantRequest) (*pb.LeaseGrantResponse, error) {
+	// no id given? choose one
+	for r.ID == int64(lease.NoLease) {
+		// only use positive int64 id's
+		r.ID = int64(s.reqIDGen.Next() & ((1 << 63) - 1))
+	}
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{LeaseGrant: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.LeaseGrantResponse), result.err
+}
+
+func (s *EtcdServer) LeaseRevoke(ctx context.Context, r *pb.LeaseRevokeRequest) (*pb.LeaseRevokeResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{LeaseRevoke: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.LeaseRevokeResponse), result.err
+}
+
+func (s *EtcdServer) LeaseRenew(id lease.LeaseID) (int64, error) {
+	ttl, err := s.lessor.Renew(id)
+	if err == nil {
+		return ttl, nil
+	}
+	if err != lease.ErrNotPrimary {
+		return -1, err
+	}
+
+	// renewals don't go through raft; forward to leader manually
+	leader := s.cluster.Member(s.Leader())
+	for i := 0; i < 5 && leader == nil; i++ {
+		// wait an election
+		dur := time.Duration(s.cfg.ElectionTicks) * time.Duration(s.cfg.TickMs) * time.Millisecond
+		select {
+		case <-time.After(dur):
+			leader = s.cluster.Member(s.Leader())
+		case <-s.done:
+			return -1, ErrStopped
+		}
+	}
+	if leader == nil || len(leader.PeerURLs) == 0 {
+		return -1, ErrNoLeader
+	}
+
+	for _, url := range leader.PeerURLs {
+		lurl := url + "/leases"
+		ttl, err = leasehttp.RenewHTTP(id, lurl, s.peerRt, s.cfg.peerDialTimeout())
+		if err == nil {
 			break
 		}
 	}
-
-	var reqs []*pb.RequestUnion
-	if ok {
-		reqs = rt.Success
-	} else {
-		reqs = rt.Failure
-	}
-	resps := make([]*pb.ResponseUnion, len(reqs))
-	for i := range reqs {
-		resps[i] = doUnion(kv, reqs[i])
-	}
-	if len(resps) != 0 {
-		revision += 1
-	}
-
-	txnResp := &pb.TxnResponse{}
-	txnResp.Header = &pb.ResponseHeader{}
-	txnResp.Header.Revision = revision
-	txnResp.Responses = resps
-	txnResp.Succeeded = ok
-	return txnResp
+	return ttl, err
 }
 
-func doUnion(kv dstorage.KV, union *pb.RequestUnion) *pb.ResponseUnion {
-	switch tv := union.Request.(type) {
-	case *pb.RequestUnion_RequestRange:
-		if tv.RequestRange != nil {
-			return &pb.ResponseUnion{Response: &pb.ResponseUnion_ResponseRange{ResponseRange: doRange(kv, tv.RequestRange)}}
-		}
-	case *pb.RequestUnion_RequestPut:
-		if tv.RequestPut != nil {
-			return &pb.ResponseUnion{Response: &pb.ResponseUnion_ResponsePut{ResponsePut: doPut(kv, tv.RequestPut)}}
-		}
-	case *pb.RequestUnion_RequestDeleteRange:
-		if tv.RequestDeleteRange != nil {
-			return &pb.ResponseUnion{Response: &pb.ResponseUnion_ResponseDeleteRange{ResponseDeleteRange: doDeleteRange(kv, tv.RequestDeleteRange)}}
-		}
-	default:
-		// empty union
-		return nil
-	}
-	return nil
-}
-
-func doCompare(kv dstorage.KV, c *pb.Compare) (int64, bool) {
-	ckvs, rev, err := kv.Range(c.Key, nil, 1, 0)
+func (s *EtcdServer) Alarm(ctx context.Context, r *pb.AlarmRequest) (*pb.AlarmResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{Alarm: r})
 	if err != nil {
-		return rev, false
+		return nil, err
 	}
-	var ckv storagepb.KeyValue
-	if len(ckvs) != 0 {
-		ckv = ckvs[0]
-	}
-
-	// -1 is less, 0 is equal, 1 is greater
-	var result int
-	switch c.Target {
-	case pb.Compare_VALUE:
-		tv, _ := c.TargetUnion.(*pb.Compare_Value)
-		if tv != nil {
-			result = bytes.Compare(ckv.Value, tv.Value)
-		}
-	case pb.Compare_CREATE:
-		tv, _ := c.TargetUnion.(*pb.Compare_CreateRevision)
-		if tv != nil {
-			result = compareInt64(ckv.CreateRevision, tv.CreateRevision)
-		}
-
-	case pb.Compare_MOD:
-		tv, _ := c.TargetUnion.(*pb.Compare_ModRevision)
-		if tv != nil {
-			result = compareInt64(ckv.ModRevision, tv.ModRevision)
-		}
-	case pb.Compare_VERSION:
-		tv, _ := c.TargetUnion.(*pb.Compare_Version)
-		if tv != nil {
-			result = compareInt64(ckv.Version, tv.Version)
-		}
-	}
-
-	switch c.Result {
-	case pb.Compare_EQUAL:
-		if result != 0 {
-			return rev, false
-		}
-	case pb.Compare_GREATER:
-		if result != 1 {
-			return rev, false
-		}
-	case pb.Compare_LESS:
-		if result != -1 {
-			return rev, false
-		}
-	}
-	return rev, true
+	return result.resp.(*pb.AlarmResponse), result.err
 }
 
-func compareInt64(a, b int64) int {
-	switch {
-	case a < b:
-		return -1
-	case a > b:
-		return 1
-	default:
-		return 0
+func (s *EtcdServer) AuthEnable(ctx context.Context, r *pb.AuthEnableRequest) (*pb.AuthEnableResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{AuthEnable: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.AuthEnableResponse), result.err
+}
+
+func (s *EtcdServer) UserAdd(ctx context.Context, r *pb.AuthUserAddRequest) (*pb.AuthUserAddResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{AuthUserAdd: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.AuthUserAddResponse), result.err
+}
+
+func (s *EtcdServer) UserDelete(ctx context.Context, r *pb.AuthUserDeleteRequest) (*pb.AuthUserDeleteResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{AuthUserDelete: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.AuthUserDeleteResponse), result.err
+}
+
+func (s *EtcdServer) UserChangePassword(ctx context.Context, r *pb.AuthUserChangePasswordRequest) (*pb.AuthUserChangePasswordResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{AuthUserChangePassword: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.AuthUserChangePasswordResponse), result.err
+}
+
+func (s *EtcdServer) RoleAdd(ctx context.Context, r *pb.AuthRoleAddRequest) (*pb.AuthRoleAddResponse, error) {
+	result, err := s.processInternalRaftRequest(ctx, pb.InternalRaftRequest{AuthRoleAdd: r})
+	if err != nil {
+		return nil, err
+	}
+	return result.resp.(*pb.AuthRoleAddResponse), result.err
+}
+
+func (s *EtcdServer) processInternalRaftRequest(ctx context.Context, r pb.InternalRaftRequest) (*applyResult, error) {
+	r.ID = s.reqIDGen.Next()
+
+	data, err := r.Marshal()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(data) > maxRequestBytes {
+		return nil, ErrRequestTooLarge
+	}
+
+	ch := s.w.Register(r.ID)
+
+	s.r.Propose(ctx, data)
+
+	select {
+	case x := <-ch:
+		return x.(*applyResult), nil
+	case <-ctx.Done():
+		s.w.Trigger(r.ID, nil) // GC wait
+		return nil, ctx.Err()
+	case <-s.done:
+		return nil, ErrStopped
 	}
 }
+
+// Watchable returns a watchable interface attached to the etcdserver.
+func (s *EtcdServer) Watchable() dstorage.Watchable { return s.KV() }

@@ -18,51 +18,51 @@ package etcd
 
 import (
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/kubernetes/pkg/apis/autoscaling"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/generic"
-	etcdgeneric "k8s.io/kubernetes/pkg/registry/generic/etcd"
+	"k8s.io/kubernetes/pkg/registry/generic/registry"
 	"k8s.io/kubernetes/pkg/registry/horizontalpodautoscaler"
 	"k8s.io/kubernetes/pkg/runtime"
 )
 
 type REST struct {
-	*etcdgeneric.Etcd
+	*registry.Store
 }
 
 // NewREST returns a RESTStorage object that will work against horizontal pod autoscalers.
 func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 	prefix := "/horizontalpodautoscalers"
 
-	newListFunc := func() runtime.Object { return &extensions.HorizontalPodAutoscalerList{} }
+	newListFunc := func() runtime.Object { return &autoscaling.HorizontalPodAutoscalerList{} }
 	storageInterface := opts.Decorator(
-		opts.Storage, cachesize.GetWatchCacheSizeByResource(cachesize.HorizontalPodAutoscalers), &extensions.HorizontalPodAutoscaler{}, prefix, horizontalpodautoscaler.Strategy, newListFunc)
+		opts.Storage, cachesize.GetWatchCacheSizeByResource(cachesize.HorizontalPodAutoscalers), &autoscaling.HorizontalPodAutoscaler{}, prefix, horizontalpodautoscaler.Strategy, newListFunc)
 
-	store := &etcdgeneric.Etcd{
-		NewFunc: func() runtime.Object { return &extensions.HorizontalPodAutoscaler{} },
+	store := &registry.Store{
+		NewFunc: func() runtime.Object { return &autoscaling.HorizontalPodAutoscaler{} },
 		// NewListFunc returns an object capable of storing results of an etcd list.
 		NewListFunc: newListFunc,
 		// Produces a path that etcd understands, to the root of the resource
 		// by combining the namespace in the context with the given prefix
 		KeyRootFunc: func(ctx api.Context) string {
-			return etcdgeneric.NamespaceKeyRootFunc(ctx, prefix)
+			return registry.NamespaceKeyRootFunc(ctx, prefix)
 		},
 		// Produces a path that etcd understands, to the resource by combining
 		// the namespace in the context with the given prefix
 		KeyFunc: func(ctx api.Context, name string) (string, error) {
-			return etcdgeneric.NamespaceKeyFunc(ctx, prefix, name)
+			return registry.NamespaceKeyFunc(ctx, prefix, name)
 		},
 		// Retrieve the name field of an autoscaler
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
-			return obj.(*extensions.HorizontalPodAutoscaler).Name, nil
+			return obj.(*autoscaling.HorizontalPodAutoscaler).Name, nil
 		},
 		// Used to match objects based on labels/fields for list
 		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
 			return horizontalpodautoscaler.MatchAutoscaler(label, field)
 		},
-		QualifiedResource:       extensions.Resource("horizontalpodautoscalers"),
+		QualifiedResource:       autoscaling.Resource("horizontalpodautoscalers"),
 		DeleteCollectionWorkers: opts.DeleteCollectionWorkers,
 
 		// Used to validate autoscaler creation
@@ -70,6 +70,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 
 		// Used to validate autoscaler updates
 		UpdateStrategy: horizontalpodautoscaler.Strategy,
+		DeleteStrategy: horizontalpodautoscaler.Strategy,
 
 		Storage: storageInterface,
 	}
@@ -80,11 +81,11 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 
 // StatusREST implements the REST endpoint for changing the status of a daemonset
 type StatusREST struct {
-	store *etcdgeneric.Etcd
+	store *registry.Store
 }
 
 func (r *StatusREST) New() runtime.Object {
-	return &extensions.HorizontalPodAutoscaler{}
+	return &autoscaling.HorizontalPodAutoscaler{}
 }
 
 // Update alters the status subset of an object.
