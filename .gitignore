@@ -27,3 +27,4 @@ _testmain.go
 /.gopath
 
 pkg/minikube/cluster/localkubecontents.go
+minikube
