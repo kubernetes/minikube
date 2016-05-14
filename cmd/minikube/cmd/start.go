@@ -88,6 +88,5 @@ func runStart(cmd *cobra.Command, args []string) {
 
 func init() {
 	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", "https://storage.googleapis.com/tinykube/minikube.iso", "Location of the minikube iso")
-	startCmd.Flags().MarkHidden("iso-url")
 	RootCmd.AddCommand(startCmd)
 }

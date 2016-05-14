@@ -43,7 +43,7 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, config KubernetesConfig) (*host.Host, error) {
+func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	if exists, err := api.Exists(constants.MachineName); err != nil {
 		return nil, fmt.Errorf("Error checking if host exists: %s", err)
 	} else if exists {
