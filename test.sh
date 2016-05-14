@@ -12,11 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+set -e
 
 REPO_PATH="k8s.io/minikube"
 
 # Run all test files.
-for TEST in $(find -name "*.go" | grep -v vendor | grep -v integration | grep _test.go | cut -d/ -f2- | sed 's|/\w*.go||g' | uniq); do
+for TEST in $(find -name "*.go" | grep -v vendor | grep -v integration | grep _test.go | grep -v go-bindata | cut -d/ -f2- | sed 's|/\w*.go||g' | uniq); do
   echo $TEST
   go test -v ${REPO_PATH}/${TEST}
 done

@@ -38,7 +38,7 @@ func TestCreateHost(t *testing.T) {
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
-	_, err := createHost(api)
+	_, err := createHost(api, MachineConfig{})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -82,7 +82,7 @@ func (m mockHost) RunSSHCommand(cmd string) (string, error) {
 
 func TestStartCluster(t *testing.T) {
 	h := mockHost{}
-	err := StartCluster(h, KubernetesConfig{})
+	err := StartCluster(h)
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
@@ -90,7 +90,7 @@ func TestStartCluster(t *testing.T) {
 
 func TestStartClusterError(t *testing.T) {
 	h := mockHost{Error: "error"}
-	err := StartCluster(h, KubernetesConfig{})
+	err := StartCluster(h)
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
 	}
@@ -99,7 +99,7 @@ func TestStartClusterError(t *testing.T) {
 func TestStartHostExists(t *testing.T) {
 	api := &tests.MockAPI{}
 	// Create an initial host.
-	_, err := createHost(api)
+	_, err := createHost(api, MachineConfig{})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -111,7 +111,7 @@ func TestStartHostExists(t *testing.T) {
 	}
 
 	// This should pass without calling Create because the host exists already.
-	h, err := StartHost(api)
+	h, err := StartHost(api, MachineConfig{})
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -126,7 +126,7 @@ func TestStartHostExists(t *testing.T) {
 func TestStartStoppedHost(t *testing.T) {
 	api := &tests.MockAPI{}
 	// Create an initial host.
-	h, err := createHost(api)
+	h, err := createHost(api, MachineConfig{})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestStartStoppedHost(t *testing.T) {
 	h.Driver = &d
 	d.CurrentState = state.Stopped
 
-	h, err = StartHost(api)
+	h, err = StartHost(api, MachineConfig{})
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -150,7 +150,7 @@ func TestStartStoppedHost(t *testing.T) {
 func TestStartHost(t *testing.T) {
 	api := &tests.MockAPI{}
 
-	h, err := StartHost(api)
+	h, err := StartHost(api, MachineConfig{})
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -174,7 +174,7 @@ func TestStopHostError(t *testing.T) {
 
 func TestStopHost(t *testing.T) {
 	api := &tests.MockAPI{}
-	h, _ := createHost(api)
+	h, _ := createHost(api, MachineConfig{})
 	if err := StopHost(api); err != nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
@@ -205,7 +205,7 @@ Error 2`
 
 func TestDeleteHost(t *testing.T) {
 	api := &tests.MockAPI{}
-	createHost(api)
+	createHost(api, MachineConfig{})
 
 	if err := DeleteHost(api); err != nil {
 		t.Fatalf("Unexpected error deleting host: %s", err)
@@ -214,7 +214,7 @@ func TestDeleteHost(t *testing.T) {
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	api := &tests.MockAPI{}
-	h, _ := createHost(api)
+	h, _ := createHost(api, MachineConfig{})
 
 	d := &tests.MockDriver{RemoveError: true}
 
@@ -227,7 +227,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	api := &tests.MockAPI{RemoveError: true}
-	createHost(api)
+	createHost(api, MachineConfig{})
 
 	if err := DeleteHost(api); err == nil {
 		t.Fatal("Expected error deleting host.")
@@ -238,7 +238,7 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 	api := &tests.MockAPI{
 		RemoveError: true,
 	}
-	h, _ := createHost(api)
+	h, _ := createHost(api, MachineConfig{})
 
 	d := &tests.MockDriver{RemoveError: true}
 
@@ -273,7 +273,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState("Does Not Exist")
 
-	createHost(api)
+	createHost(api, MachineConfig{})
 	checkState(state.Running.String())
 
 	StopHost(api)

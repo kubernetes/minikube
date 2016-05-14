@@ -38,7 +38,7 @@ assumes you already have Virtualbox installed.`,
 }
 
 var (
-	localkubeURL string
+	minikubeISO string
 )
 
 func runStart(cmd *cobra.Command, args []string) {
@@ -46,14 +46,15 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Starting local Kubernetes cluster...")
 	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 	defer api.Close()
-	host, err := cluster.StartHost(api)
+
+	config := cluster.MachineConfig{
+		MinikubeISO: minikubeISO,
+	}
+
+	host, err := cluster.StartHost(api, config)
 	if err != nil {
 		log.Println("Error starting host: ", err)
 		os.Exit(1)
-	}
-
-	config := cluster.KubernetesConfig{
-		LocalkubeURL: localkubeURL,
 	}
 
 	if err := cluster.UpdateCluster(host.Driver); err != nil {
@@ -61,7 +62,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if err := cluster.StartCluster(host, config); err != nil {
+	if err := cluster.StartCluster(host); err != nil {
 		log.Println("Error starting cluster: ", err)
 		os.Exit(1)
 	}
@@ -86,7 +87,6 @@ func runStart(cmd *cobra.Command, args []string) {
 }
 
 func init() {
-	startCmd.Flags().StringVarP(&localkubeURL, "localkube-url", "", "https://storage.googleapis.com/tinykube/localkube", "Location of the localkube binary")
-	startCmd.Flags().MarkHidden("localkube-url")
+	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", "https://storage.googleapis.com/tinykube/minikube.iso", "Location of the minikube iso")
 	RootCmd.AddCommand(startCmd)
 }
