@@ -23,7 +23,13 @@ else
 endif
 
 REPOPATH ?= k8s.io/minikube
+K8S_VENDOR_PATH := $(REPOPATH)/vendor/k8s.io/kubernetes
 export GO15VENDOREXPERIMENT=1
+
+# Update this to match the vendored version of k8s in godeps.json
+K8S_VERSION := v1.3.0-alpha.3-838+ba170aa191f8c7
+# Set the version information in kubernetes.
+LD_FLAGS = "-s -w -X $(K8S_VENDOR_PATH)/pkg/version.gitVersion=$(K8S_VERSION) -X $(K8S_VENDOR_PATH)/pkg/version.gitCommit=$(shell git rev-parse HEAD)"
 
 clean:
 	rm -rf $(GOPATH)
@@ -40,9 +46,9 @@ out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 out/localkube: $(LOCALKUBEFILES)
 	$(MKGOPATH)
 ifeq ($(GOOS),linux)
-	CGO_ENABLED=1 go build -ldflags="-s" -o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=1 go build -ldflags=$(LD_FLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
-	docker run -w /go/src/k8s.io/minikube -e IN_DOCKER=1 -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make out/localkube
+	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) golang:1.6 make out/localkube
 endif
 
 out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/localkubecontents.go
