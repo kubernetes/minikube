@@ -1,0 +1,5 @@
+FROM golang:1.6
+ENV ETHTOOL ethtool-3.16
+RUN wget https://www.kernel.org/pub/software/network/ethtool/$ETHTOOL.tar.gz
+RUN tar -xvzf $ETHTOOL.tar.gz
+RUN cd $ETHTOOL && ./configure LDFLAGS=-static && make && cp ethtool /go/

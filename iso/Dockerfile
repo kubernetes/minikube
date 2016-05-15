@@ -9,6 +9,7 @@ ENV DOCKER_SHA 8824f8a67fbe55d1e52dcbebc74219ba8090006e
 # Add other dependencies here to $ROOTFS/
 ADD nsenter $ROOTFS/usr/bin/
 ADD socat $ROOTFS/usr/bin
+ADD ethtool $ROOTFS/usr/bin
 
 # Get a specific version of Docker. This will overwrite the binary installed
 # in the base image.
