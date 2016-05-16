@@ -42,7 +42,7 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.ClientCAFile = lk.GetPublicKeyCertPath()
 	config.TLSCertFile = lk.GetPublicKeyCertPath()
 	config.TLSPrivateKeyFile = lk.GetPrivateKeyCertPath()
-	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,SecurityContextDeny,ServiceAccount,ResourceQuota"
+	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota"
 
 	// use localkube etcd
 	config.StorageConfig = storagebackend.Config{ServerList: KubeEtcdClientURLs}
