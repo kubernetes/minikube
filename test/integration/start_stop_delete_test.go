@@ -20,7 +20,9 @@ package integration
 
 import (
 	"flag"
+	"net"
 	"os"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/test/integration/util"
@@ -36,6 +38,12 @@ func TestStartStop(t *testing.T) {
 
 	runner.RunCommand("start", true)
 	runner.CheckStatus("Running")
+
+	ip := runner.RunCommand("ip", true)
+	ip = strings.TrimRight(ip, "\n")
+	if net.ParseIP(ip) == nil {
+		t.Fatalf("IP command returned an invalid address: %s", ip)
+	}
 
 	runner.RunCommand("stop", true)
 	runner.CheckStatus("Stopped")
