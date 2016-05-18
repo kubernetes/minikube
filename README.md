@@ -42,6 +42,10 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 make out/minikube
 ```
 
+## Requirements For Running Minikube
+* VirtualBox installation
+* VT-x/AMD-v virtualization must be enabled in BIOS
+
 ## Run Instructions
 
 Start the cluster with:
