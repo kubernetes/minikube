@@ -29,21 +29,23 @@ clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
 
-.gopath:
-	mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH))
-	ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
+MKGOPATH := mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH)) && ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
+LOCALKUBEFILES := $(shell find pkg/localkube -name '*.go') $(shell find cmd/localkube -name '*.go') $(shell find vendor -name '*.go')
+MINIKUBEFILES := $(shell find pkg/minikube -name '*.go') $(shell find cmd/minikube -name '*.go') $(shell find vendor -name '*.go')
 
 out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube
 
-out/localkube: .gopath
+out/localkube: $(LOCALKUBEFILES)
+	$(MKGOPATH)
 ifeq ($(GOOS),linux)
 	CGO_ENABLED=1 go build -ldflags="-s" -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
 	docker run -w /go/src/k8s.io/minikube -e IN_DOCKER=1 -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make out/localkube
 endif
 
-out/minikube-$(GOOS)-$(GOARCH): .gopath pkg/minikube/cluster/localkubecontents.go
+out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/localkubecontents.go
+	$(MKGOPATH)
 	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
 
 .PHONY: integration
@@ -51,11 +53,13 @@ integration: out/minikube
 	go test -v ./test/integration --tags=integration
 
 .PHONY: test
-test: .gopath pkg/minikube/cluster/localkubecontents.go
+test: pkg/minikube/cluster/localkubecontents.go
+	$(MKGOPATH)
 	./test.sh
 
 pkg/minikube/cluster/localkubecontents.go: out/localkube $(GOPATH)/bin/go-bindata
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
 
-$(GOPATH)/bin/go-bindata: .gopath
+$(GOPATH)/bin/go-bindata:
+	$(MKGOPATH)
 	go get github.com/jteeuwen/go-bindata/...
