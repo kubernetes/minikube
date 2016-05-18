@@ -47,6 +47,7 @@ type LocalkubeServer struct {
 	APIServerPort            int
 	APIServerInsecureAddress net.IP
 	APIServerInsecurePort    int
+	ShouldGenerateCerts      bool
 }
 
 func (lk *LocalkubeServer) AddServer(server Server) {
@@ -153,9 +154,8 @@ func (lk LocalkubeServer) GenerateCerts() error {
 		return nil
 	}
 	fmt.Println("Creating cert with IPs: ", ips)
-	alternateDNS := []string{fmt.Sprintf("%s.%s", "kubernetes.default.svc", lk.DNSDomain), "kubernetes.default.svc", "kubernetes.default", "kubernetes"}
 
-	if err := GenerateSelfSignedCert(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, alternateDNS); err != nil {
+	if err := util.GenerateSelfSignedCert(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, util.GetAlternateDNS(lk.DNSDomain)); err != nil {
 		fmt.Println("Failed to create certs: ", err)
 		return err
 	}

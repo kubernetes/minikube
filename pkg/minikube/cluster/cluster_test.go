@@ -17,14 +17,14 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -67,9 +67,18 @@ func TestCreateHost(t *testing.T) {
 type mockHost struct {
 	CommandOutput map[string]string
 	Error         string
+	Commands      map[string]int
+}
+
+func newMockHost() *mockHost {
+	return &mockHost{
+		CommandOutput: make(map[string]string),
+		Commands:      make(map[string]int),
+	}
 }
 
 func (m mockHost) RunSSHCommand(cmd string) (string, error) {
+	m.Commands[cmd] = 1
 	output, ok := m.CommandOutput[cmd]
 	if ok {
 		return output, nil
@@ -81,15 +90,23 @@ func (m mockHost) RunSSHCommand(cmd string) (string, error) {
 }
 
 func TestStartCluster(t *testing.T) {
-	h := mockHost{}
+	h := newMockHost()
 	err := StartCluster(h)
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
+
+	for _, cmd := range []string{startCommand} {
+		if _, ok := h.Commands[cmd]; !ok {
+			t.Fatalf("Expected command not run: %s. Commands run: %s", cmd, h.Commands)
+		}
+	}
 }
 
 func TestStartClusterError(t *testing.T) {
-	h := mockHost{Error: "error"}
+	h := newMockHost()
+	h.Error = "error"
+
 	err := StartCluster(h)
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
@@ -284,52 +301,33 @@ func TestGetHostStatus(t *testing.T) {
 	checkState(state.Stopped.String())
 }
 
-func TestGetCreds(t *testing.T) {
-	m := make(map[string]string)
-	for _, cert := range certs {
-		m[fmt.Sprintf("sudo cat %s/%s", remotePath, cert)] = cert
+func TestSetupCerts(t *testing.T) {
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	h := mockHost{CommandOutput: m}
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+	}
 
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	if err := GetCreds(h); err != nil {
+	if err := SetupCerts(d); err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
 
 	for _, cert := range certs {
-		// Files should be created with contents matching the output.
-		certPath := filepath.Join(tempDir, cert)
-		contents, err := ioutil.ReadFile(certPath)
-		if err != nil {
-			t.Fatalf("Error %s reading file: %s", err, certPath)
-		}
-		if !reflect.DeepEqual(contents, []byte(cert)) {
-			t.Fatalf("Contents of file are: %s, should be %s", contents, cert)
+		contents, _ := ioutil.ReadFile(cert)
+		transferred := s.Transfers.Bytes()
+		if !bytes.Contains(transferred, contents) {
+			t.Fatalf("Certificate not copied. Expected transfers to contain %s. It was: %s", contents, transferred)
 		}
 	}
-}
-
-func TestGetCredsError(t *testing.T) {
-	h := mockHost{
-		Error: "error getting creds",
-	}
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	if err := GetCreds(h); err == nil {
-		t.Fatalf("Error should have been thrown, but was not.")
-	}
-
-	// No files should have been created.
-	for _, cert := range certs {
-		certPath := filepath.Join(tempDir, cert)
-		_, err := os.Stat(certPath)
-		if !os.IsNotExist(err) {
-			t.Fatalf("File %s should not exist.", certPath)
-		}
-	}
-
 }

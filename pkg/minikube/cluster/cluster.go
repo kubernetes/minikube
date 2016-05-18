@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"path/filepath"
 	"strings"
 	"time"
@@ -32,10 +33,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
-)
-
-const (
-	remotePath = "/var/lib/localkube/certs"
+	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -150,10 +148,14 @@ type MachineConfig struct {
 
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble) error {
-	output, err := h.RunSSHCommand(getStartCommand())
-	log.Println(output)
-	if err != nil {
-		return err
+	commands := []string{startCommand}
+
+	for _, cmd := range commands {
+		output, err := h.RunSSHCommand(cmd)
+		log.Println(output)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -177,18 +179,33 @@ func UpdateCluster(d drivers.Driver) error {
 	return nil
 }
 
-// GetCreds gets the generated credentials required to talk to the APIServer.
-func GetCreds(h sshAble) error {
+// SetupCerts gets the generated credentials required to talk to the APIServer.
+func SetupCerts(d drivers.Driver) error {
 	localPath := constants.Minipath
+	ipStr, err := d.GetIP()
+	if err != nil {
+		return err
+	}
+
+	ip := net.ParseIP(ipStr)
+	publicPath := filepath.Join(localPath, "apiserver.crt")
+	privatePath := filepath.Join(localPath, "apiserver.key")
+	if err := GenerateCerts(publicPath, privatePath, ip); err != nil {
+		return err
+	}
+
+	client, err := sshutil.NewSSHClient(d)
+	if err != nil {
+		return err
+	}
 
 	for _, cert := range certs {
-		remoteCertPath := filepath.Join(remotePath, cert)
-		localCertPath := filepath.Join(localPath, cert)
-		data, err := h.RunSSHCommand(fmt.Sprintf("sudo cat %s", remoteCertPath))
+		p := filepath.Join(localPath, cert)
+		data, err := ioutil.ReadFile(p)
 		if err != nil {
 			return err
 		}
-		if err := ioutil.WriteFile(localCertPath, []byte(data), 0644); err != nil {
+		if err := sshutil.Transfer(data, util.CertPath, cert, "0644", client); err != nil {
 			return err
 		}
 	}
