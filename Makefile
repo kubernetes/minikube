@@ -28,6 +28,7 @@ export GO15VENDOREXPERIMENT=1
 clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
+	rm pkg/minikube/cluster/localkubecontents.go
 
 MKGOPATH := mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH)) && ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
 LOCALKUBEFILES := $(shell find pkg/localkube -name '*.go') $(shell find cmd/localkube -name '*.go') $(shell find vendor -name '*.go')
