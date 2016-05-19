@@ -25,9 +25,6 @@ endif
 REPOPATH ?= k8s.io/minikube
 export GO15VENDOREXPERIMENT=1
 
-# Update this to match the vendored version of k8s in godeps.json
-K8S_VERSION := v1.3.0-alpha.3-838+ba170aa191f8c7
-
 # Set the version information in kubernetes.
 LD_FLAGS = "-s -w $(shell python hack/get_k8s_version.py)"
 
