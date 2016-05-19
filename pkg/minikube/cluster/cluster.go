@@ -60,6 +60,9 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 			if err := h.Driver.Start(); err != nil {
 				return nil, fmt.Errorf("Error starting stopped host: %s", err)
 			}
+			if err := api.Save(h); err != nil {
+				return nil, fmt.Errorf("Error saving started host: %s", err)
+			}
 		}
 		return h, nil
 	} else {

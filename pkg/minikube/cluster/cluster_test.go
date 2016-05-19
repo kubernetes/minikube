@@ -32,7 +32,7 @@ import (
 )
 
 func TestCreateHost(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 
 	exists, _ := api.Exists(constants.MachineName)
 	if exists {
@@ -97,7 +97,7 @@ func TestStartClusterError(t *testing.T) {
 }
 
 func TestStartHostExists(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 	// Create an initial host.
 	_, err := createHost(api, MachineConfig{})
 	if err != nil {
@@ -124,7 +124,7 @@ func TestStartHostExists(t *testing.T) {
 }
 
 func TestStartStoppedHost(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 	// Create an initial host.
 	h, err := createHost(api, MachineConfig{})
 	if err != nil {
@@ -145,10 +145,14 @@ func TestStartStoppedHost(t *testing.T) {
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
 	}
+
+	if !api.SaveCalled {
+		t.Fatalf("Machine must be saved after starting.")
+	}
 }
 
 func TestStartHost(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 
 	h, err := StartHost(api, MachineConfig{})
 	if err != nil {
@@ -166,14 +170,14 @@ func TestStartHost(t *testing.T) {
 }
 
 func TestStopHostError(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 	if err := StopHost(api); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 }
 
 func TestStopHost(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 	h, _ := createHost(api, MachineConfig{})
 	if err := StopHost(api); err != nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
@@ -204,7 +208,7 @@ Error 2`
 }
 
 func TestDeleteHost(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 	createHost(api, MachineConfig{})
 
 	if err := DeleteHost(api); err != nil {
@@ -213,7 +217,7 @@ func TestDeleteHost(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 	h, _ := createHost(api, MachineConfig{})
 
 	d := &tests.MockDriver{RemoveError: true}
@@ -226,7 +230,8 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
-	api := &tests.MockAPI{RemoveError: true}
+	api := tests.NewMockAPI()
+	api.RemoveError = true
 	createHost(api, MachineConfig{})
 
 	if err := DeleteHost(api); err == nil {
@@ -235,9 +240,8 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 }
 
 func TestDeleteHostMultipleErrors(t *testing.T) {
-	api := &tests.MockAPI{
-		RemoveError: true,
-	}
+	api := tests.NewMockAPI()
+	api.RemoveError = true
 	h, _ := createHost(api, MachineConfig{})
 
 	d := &tests.MockDriver{RemoveError: true}
@@ -259,7 +263,7 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 }
 
 func TestGetHostStatus(t *testing.T) {
-	api := &tests.MockAPI{}
+	api := tests.NewMockAPI()
 
 	checkState := func(expected string) {
 		s, err := GetHostStatus(api)
