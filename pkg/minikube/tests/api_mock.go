@@ -29,9 +29,17 @@ import (
 
 // MockAPI is a struct used to mock out libmachine.API
 type MockAPI struct {
-	Hosts       []*host.Host
+	Hosts       map[string]*host.Host
 	CreateError bool
 	RemoveError bool
+	SaveCalled  bool
+}
+
+func NewMockAPI() *MockAPI {
+	m := MockAPI{
+		Hosts: make(map[string]*host.Host),
+	}
+	return &m
 }
 
 // Close closes the API.
@@ -65,13 +73,8 @@ func (api *MockAPI) Create(h *host.Host) error {
 
 // Exists determines if the host already exists.
 func (api *MockAPI) Exists(name string) (bool, error) {
-	for _, host := range api.Hosts {
-		if name == host.Name {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	_, ok := api.Hosts[name]
+	return ok, nil
 }
 
 // List the existing hosts.
@@ -81,15 +84,14 @@ func (api *MockAPI) List() ([]string, error) {
 
 // Load loads a host from disk.
 func (api *MockAPI) Load(name string) (*host.Host, error) {
-	for _, host := range api.Hosts {
-		if name == host.Name {
-			return host, nil
+	h, ok := api.Hosts[name]
+	if !ok {
+		return nil, mcnerror.ErrHostDoesNotExist{
+			Name: name,
 		}
-	}
 
-	return nil, mcnerror.ErrHostDoesNotExist{
-		Name: name,
 	}
+	return h, nil
 }
 
 // Remove a host.
@@ -98,22 +100,14 @@ func (api *MockAPI) Remove(name string) error {
 		return fmt.Errorf("Error removing %s", name)
 	}
 
-	newHosts := []*host.Host{}
-
-	for _, host := range api.Hosts {
-		if name != host.Name {
-			newHosts = append(newHosts, host)
-		}
-	}
-
-	api.Hosts = newHosts
-
+	delete(api.Hosts, name)
 	return nil
 }
 
 // Save saves a host to disk.
 func (api *MockAPI) Save(host *host.Host) error {
-	api.Hosts = append(api.Hosts, host)
+	api.Hosts[host.Name] = host
+	api.SaveCalled = true
 	return nil
 }
 
