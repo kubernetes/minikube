@@ -34,6 +34,12 @@ var KubeconfigPath = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 // MinikubeContext is the kubeconfig context name used for minikube
 const MinikubeContext = "minikube"
 
+// The version of the minikube ISO to download by default.
+const ISOVersion = "0.1"
+
+const ISOMapURL = "https://storage.googleapis.com/minikube/versionmap.json"
+const DefaultISOURL = "https://storage.googleapis.com/tinykube/minikube.iso"
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName string) string {
 	return filepath.Join(Minipath, fileName)

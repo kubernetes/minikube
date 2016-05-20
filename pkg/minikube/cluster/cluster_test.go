@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -359,5 +361,39 @@ func TestGetHostDockerEnv(t *testing.T) {
 		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
 			t.Fatalf("Expected envMap[\"%s\"] key to be defined", dockerEnvKey)
 		}
+	}
+}
+
+func TestGetISOUrl(t *testing.T) {
+	runTest := func(response, expectedURL string) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintln(w, response)
+		}))
+		defer ts.Close()
+
+		result, _ := GetIsoUrl(ts.URL, "0.1")
+		if result != expectedURL {
+			t.Fatalf("Expected %s, got %s", expectedURL, result)
+		}
+	}
+
+	var tests = []struct {
+		response string
+		expected string
+	}{
+		// No response
+		{"", ""},
+		// Invalid response
+		{"badresponse", ""},
+		// Valid response, no version
+		{"{\"someVersion\": {\"ISOURL\": \"someURL\"}}", ""},
+		// Valid response, one version
+		{"{\"0.1\": {\"ISOURL\": \"someURL\"}}", "someURL"},
+		// Valid response, two versions
+		{"{\"0.1\": {\"ISOURL\": \"someURL\"}, \"2\": {\"ISOURL\": \"otherURL\"}}", "someURL"},
+	}
+
+	for _, test := range tests {
+		runTest(test.response, test.expected)
 	}
 }
