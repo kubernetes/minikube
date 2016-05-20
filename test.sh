@@ -16,11 +16,10 @@ set -e
 
 REPO_PATH="k8s.io/minikube"
 
-# Run all test files.
-for TEST in $(find -name "*.go" | grep -v vendor | grep -v integration | grep _test.go | grep -v go-bindata | cut -d/ -f2- | sed 's|/\w*.go||g' | uniq); do
-  echo $TEST
-  go test -v ${REPO_PATH}/${TEST}
-done
+# Run "go test" on packages that have test files.
+cd ${GOPATH}/src/${REPO_PATH}
+TESTS=$(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...)
+go test -v ${TESTS}
 
 # Check gofmt
 diff -u <(echo -n) <(gofmt -l -s . | grep -v "vendor\|\.gopath\|localkubecontents.go")
