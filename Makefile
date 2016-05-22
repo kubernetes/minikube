@@ -25,6 +25,9 @@ endif
 REPOPATH ?= k8s.io/minikube
 export GO15VENDOREXPERIMENT=1
 
+# Set the version information in kubernetes.
+LD_FLAGS = "-s -w $(shell python hack/get_k8s_version.py)"
+
 clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
@@ -40,9 +43,9 @@ out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 out/localkube: $(LOCALKUBEFILES)
 	$(MKGOPATH)
 ifeq ($(GOOS),linux)
-	CGO_ENABLED=1 go build -ldflags="-s" -o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=1 go build -ldflags=$(LD_FLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
-	docker run -w /go/src/k8s.io/minikube -e IN_DOCKER=1 -v $(shell pwd):/go/src/k8s.io/minikube golang:1.6 make out/localkube
+	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) golang:1.6 make out/localkube
 endif
 
 out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/localkubecontents.go
