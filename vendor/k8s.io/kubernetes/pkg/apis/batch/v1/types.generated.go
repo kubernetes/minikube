@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,12 +25,11 @@ import (
 	"errors"
 	"fmt"
 	codec1978 "github.com/ugorji/go/codec"
-	pkg5_inf_v0 "gopkg.in/inf.v0"
 	pkg4_resource "k8s.io/kubernetes/pkg/api/resource"
 	pkg1_unversioned "k8s.io/kubernetes/pkg/api/unversioned"
 	pkg2_v1 "k8s.io/kubernetes/pkg/api/v1"
 	pkg3_types "k8s.io/kubernetes/pkg/types"
-	pkg6_intstr "k8s.io/kubernetes/pkg/util/intstr"
+	pkg5_intstr "k8s.io/kubernetes/pkg/util/intstr"
 	"reflect"
 	"runtime"
 	time "time"
@@ -66,14 +65,13 @@ func init() {
 		panic(err)
 	}
 	if false { // reference the types, but skip this branch at build/run time
-		var v0 pkg5_inf_v0.Dec
-		var v1 pkg4_resource.Quantity
-		var v2 pkg1_unversioned.TypeMeta
-		var v3 pkg2_v1.ObjectMeta
-		var v4 pkg3_types.UID
-		var v5 pkg6_intstr.IntOrString
-		var v6 time.Time
-		_, _, _, _, _, _, _ = v0, v1, v2, v3, v4, v5, v6
+		var v0 pkg4_resource.Quantity
+		var v1 pkg1_unversioned.TypeMeta
+		var v2 pkg2_v1.ObjectMeta
+		var v3 pkg3_types.UID
+		var v4 pkg5_intstr.IntOrString
+		var v5 time.Time
+		_, _, _, _, _, _ = v0, v1, v2, v3, v4, v5
 	}
 }
 
@@ -2867,7 +2865,7 @@ func (x codecSelfer1234) decSliceJob(v *[]Job, d *codec1978.Decoder) {
 
 			yyrg1 := len(yyv1) > 0
 			yyv21 := yyv1
-			yyrl1, yyrt1 = z.DecInferLen(yyl1, z.DecBasicHandle().MaxInitLen, 768)
+			yyrl1, yyrt1 = z.DecInferLen(yyl1, z.DecBasicHandle().MaxInitLen, 792)
 			if yyrt1 {
 				if yyrl1 <= cap(yyv1) {
 					yyv1 = yyv1[:yyrl1]

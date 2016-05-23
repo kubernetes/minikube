@@ -19,7 +19,9 @@ package kubelet
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
+	"strconv"
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
@@ -32,6 +34,10 @@ import (
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
+)
+
+const (
+	volumeGidAnnotationKey = "pv.beta.kubernetes.io/gid"
 )
 
 // This just exports required functions from kubelet proper, for use by volume
@@ -126,8 +132,20 @@ func (kl *Kubelet) mountExternalVolumes(pod *api.Pod) (kubecontainer.VolumeMap, 
 			return nil, err
 		}
 
+		var volSpec *volume.Spec
+		if pod.Spec.Volumes[i].VolumeSource.PersistentVolumeClaim != nil {
+			claimName := pod.Spec.Volumes[i].PersistentVolumeClaim.ClaimName
+			pv, err := kl.getPersistentVolumeByClaimName(claimName, pod.Namespace)
+			if err != nil {
+				glog.Errorf("Could not find persistentVolume for claim %s err %v", claimName, err)
+				return nil, err
+			}
+			kl.applyPersistentVolumeAnnotations(pv, pod)
+			volSpec = volume.NewSpecFromPersistentVolume(pv, pod.Spec.Volumes[i].PersistentVolumeClaim.ReadOnly)
+		} else {
+			volSpec = volume.NewSpecFromVolume(&pod.Spec.Volumes[i])
+		}
 		// Try to use a plugin for this volume.
-		volSpec := volume.NewSpecFromVolume(&pod.Spec.Volumes[i])
 		mounter, err := kl.newVolumeMounterFromPlugins(volSpec, pod, volume.VolumeOptions{RootContext: rootContext})
 		if err != nil {
 			glog.Errorf("Could not create volume mounter for pod %s: %v", pod.UID, err)
@@ -137,25 +155,33 @@ func (kl *Kubelet) mountExternalVolumes(pod *api.Pod) (kubecontainer.VolumeMap, 
 		// some volumes require attachment before mounter's setup.
 		// The plugin can be nil, but non-nil errors are legitimate errors.
 		// For non-nil plugins, Attachment to a node is required before Mounter's setup.
-		attacher, err := kl.newVolumeAttacherFromPlugins(volSpec, pod, volume.VolumeOptions{RootContext: rootContext})
+		attacher, err := kl.newVolumeAttacherFromPlugins(volSpec, pod)
 		if err != nil {
 			glog.Errorf("Could not create volume attacher for pod %s: %v", pod.UID, err)
 			return nil, err
 		}
 		if attacher != nil {
-			err = attacher.Attach(volSpec, kl.hostname)
-			if err != nil {
+			// If the device path is already mounted, avoid an expensive call to the
+			// cloud provider.
+			deviceMountPath := attacher.GetDeviceMountPath(volSpec)
+			notMountPoint, err := kl.mounter.IsLikelyNotMountPoint(deviceMountPath)
+			if err != nil && !os.IsNotExist(err) {
 				return nil, err
 			}
+			if notMountPoint {
+				err = attacher.Attach(volSpec, kl.hostname)
+				if err != nil {
+					return nil, err
+				}
 
-			devicePath, err := attacher.WaitForAttach(volSpec, maxWaitForVolumeOps)
-			if err != nil {
-				return nil, err
-			}
+				devicePath, err := attacher.WaitForAttach(volSpec, maxWaitForVolumeOps)
+				if err != nil {
+					return nil, err
+				}
 
-			deviceMountPath := attacher.GetDeviceMountPath(&volumeHost{kl}, volSpec)
-			if err = attacher.MountDevice(volSpec, devicePath, deviceMountPath, kl.mounter); err != nil {
-				return nil, err
+				if err = attacher.MountDevice(volSpec, devicePath, deviceMountPath, kl.mounter); err != nil {
+					return nil, err
+				}
 			}
 		}
 
@@ -163,7 +189,7 @@ func (kl *Kubelet) mountExternalVolumes(pod *api.Pod) (kubecontainer.VolumeMap, 
 		if err != nil {
 			return nil, err
 		}
-		podVolumes[volSpec.Volume.Name] = kubecontainer.VolumeInfo{Mounter: mounter}
+		podVolumes[pod.Spec.Volumes[i].Name] = kubecontainer.VolumeInfo{Mounter: mounter}
 	}
 	return podVolumes, nil
 }
@@ -270,6 +296,57 @@ func (kl *Kubelet) getPodVolumesFromDisk() map[string]cleaner {
 	return currentVolumes
 }
 
+func (kl *Kubelet) getPersistentVolumeByClaimName(claimName string, namespace string) (*api.PersistentVolume, error) {
+	claim, err := kl.kubeClient.Core().PersistentVolumeClaims(namespace).Get(claimName)
+	if err != nil {
+		glog.Errorf("Error finding claim: %+v\n", claimName)
+		return nil, err
+	}
+	glog.V(5).Infof("Found claim %v ", claim)
+
+	if claim.Spec.VolumeName == "" {
+		return nil, fmt.Errorf("The claim %+v is not yet bound to a volume", claimName)
+	}
+
+	pv, err := kl.kubeClient.Core().PersistentVolumes().Get(claim.Spec.VolumeName)
+	if err != nil {
+		glog.Errorf("Error finding persistent volume for claim: %+v\n", claimName)
+		return nil, err
+	}
+
+	if pv.Spec.ClaimRef == nil {
+		return nil, fmt.Errorf("The volume is not yet bound to the claim. Expected to find the bind on volume.Spec.ClaimRef: %+v", pv)
+	}
+
+	if pv.Spec.ClaimRef.UID != claim.UID {
+		return nil, fmt.Errorf("Expected volume.Spec.ClaimRef.UID %+v but have %+v", pv.Spec.ClaimRef.UID, claim.UID)
+	}
+
+	return pv, nil
+}
+
+func (kl *Kubelet) applyPersistentVolumeAnnotations(pv *api.PersistentVolume, pod *api.Pod) error {
+	// If a GID annotation is provided set the GID attribute.
+	if volumeGid, ok := pv.Annotations[volumeGidAnnotationKey]; ok {
+		gid, err := strconv.ParseInt(volumeGid, 10, 64)
+		if err != nil {
+			return fmt.Errorf("Invalid value for %s %v", volumeGidAnnotationKey, err)
+		}
+
+		if pod.Spec.SecurityContext == nil {
+			pod.Spec.SecurityContext = &api.PodSecurityContext{}
+		}
+		for _, existingGid := range pod.Spec.SecurityContext.SupplementalGroups {
+			if gid == existingGid {
+				return nil
+			}
+		}
+		pod.Spec.SecurityContext.SupplementalGroups = append(pod.Spec.SecurityContext.SupplementalGroups, gid)
+	}
+
+	return nil
+}
+
 // newVolumeMounterFromPlugins attempts to find a plugin by volume spec, pod
 // and volume options and then creates a Mounter.
 // Returns a valid Unmounter or an error.
@@ -293,7 +370,7 @@ func (kl *Kubelet) newVolumeMounterFromPlugins(spec *volume.Spec, pod *api.Pod, 
 //  - an error if no plugin was found for the volume
 //    or the attacher failed to instantiate
 //  - nil if there is no appropriate attacher for this volume
-func (kl *Kubelet) newVolumeAttacherFromPlugins(spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions) (volume.Attacher, error) {
+func (kl *Kubelet) newVolumeAttacherFromPlugins(spec *volume.Spec, pod *api.Pod) (volume.Attacher, error) {
 	plugin, err := kl.volumePluginMgr.FindAttachablePluginBySpec(spec)
 	if err != nil {
 		return nil, fmt.Errorf("can't use volume plugins for %s: %v", spec.Name(), err)

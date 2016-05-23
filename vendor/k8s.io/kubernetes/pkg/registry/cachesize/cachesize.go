@@ -34,10 +34,12 @@ const (
 	Endpoints                Resource = "endpoints"
 	HorizontalPodAutoscalers Resource = "horizontalpodautoscalers"
 	Ingress                  Resource = "ingress"
+	PodDisruptionBudget      Resource = "poddisruptionbudgets"
 	PetSet                   Resource = "petset"
 	Jobs                     Resource = "jobs"
 	LimitRanges              Resource = "limitranges"
 	Namespaces               Resource = "namespaces"
+	NetworkPolicys           Resource = "networkpolicies"
 	Nodes                    Resource = "nodes"
 	PersistentVolumes        Resource = "persistentvolumes"
 	PersistentVolumeClaims   Resource = "persistentvolumeclaims"
@@ -45,6 +47,7 @@ const (
 	PodTemplates             Resource = "podtemplates"
 	Replicasets              Resource = "replicasets"
 	ResourceQuotas           Resource = "resourcequotas"
+	ScheduledJobs            Resource = "scheduledjobs"
 	Secrets                  Resource = "secrets"
 	ServiceAccounts          Resource = "serviceaccounts"
 	Services                 Resource = "services"
@@ -61,9 +64,11 @@ func init() {
 	watchCacheSizes[HorizontalPodAutoscalers] = 100
 	watchCacheSizes[Ingress] = 100
 	watchCacheSizes[PetSet] = 100
+	watchCacheSizes[PodDisruptionBudget] = 100
 	watchCacheSizes[Jobs] = 100
 	watchCacheSizes[LimitRanges] = 100
 	watchCacheSizes[Namespaces] = 100
+	watchCacheSizes[NetworkPolicys] = 100
 	watchCacheSizes[Nodes] = 1000
 	watchCacheSizes[PersistentVolumes] = 100
 	watchCacheSizes[PersistentVolumeClaims] = 100
@@ -71,6 +76,7 @@ func init() {
 	watchCacheSizes[PodTemplates] = 100
 	watchCacheSizes[Replicasets] = 100
 	watchCacheSizes[ResourceQuotas] = 100
+	watchCacheSizes[ScheduledJobs] = 100
 	watchCacheSizes[Secrets] = 100
 	watchCacheSizes[ServiceAccounts] = 100
 	watchCacheSizes[Services] = 100

@@ -92,6 +92,8 @@ func GetPodReadyCondition(status PodStatus) *PodCondition {
 	return condition
 }
 
+// GetPodCondition extracts the provided condition from the given status and returns that.
+// Returns nil and -1 if the condition is not present, and the the index of the located condition.
 func GetPodCondition(status *PodStatus, conditionType PodConditionType) (int, *PodCondition) {
 	for i, c := range status.Conditions {
 		if c.Type == conditionType {
@@ -118,13 +120,16 @@ func UpdatePodCondition(status *PodStatus, condition *PodCondition) bool {
 		if condition.Status == oldCondition.Status {
 			condition.LastTransitionTime = oldCondition.LastTransitionTime
 		}
+
+		isEqual := condition.Status == oldCondition.Status &&
+			condition.Reason == oldCondition.Reason &&
+			condition.Message == oldCondition.Message &&
+			condition.LastProbeTime.Equal(oldCondition.LastProbeTime) &&
+			condition.LastTransitionTime.Equal(oldCondition.LastTransitionTime)
+
 		status.Conditions[conditionIndex] = *condition
 		// Return true if one of the fields have changed.
-		return condition.Status != oldCondition.Status ||
-			condition.Reason != oldCondition.Reason ||
-			condition.Message != oldCondition.Message ||
-			!condition.LastProbeTime.Equal(oldCondition.LastProbeTime) ||
-			!condition.LastTransitionTime.Equal(oldCondition.LastTransitionTime)
+		return !isEqual
 	}
 }
 
@@ -146,15 +151,40 @@ func PodRequestsAndLimits(pod *Pod) (reqs map[ResourceName]resource.Quantity, li
 		for name, quantity := range container.Resources.Requests {
 			if value, ok := reqs[name]; !ok {
 				reqs[name] = *quantity.Copy()
-			} else if err = value.Add(quantity); err != nil {
-				return nil, nil, err
+			} else {
+				value.Add(quantity)
+				reqs[name] = value
 			}
 		}
 		for name, quantity := range container.Resources.Limits {
 			if value, ok := limits[name]; !ok {
 				limits[name] = *quantity.Copy()
-			} else if err = value.Add(quantity); err != nil {
-				return nil, nil, err
+			} else {
+				value.Add(quantity)
+				limits[name] = value
+			}
+		}
+	}
+	// init containers define the minimum of any resource
+	for _, container := range pod.Spec.InitContainers {
+		for name, quantity := range container.Resources.Requests {
+			value, ok := reqs[name]
+			if !ok {
+				reqs[name] = *quantity.Copy()
+				continue
+			}
+			if quantity.Cmp(value) > 0 {
+				reqs[name] = *quantity.Copy()
+			}
+		}
+		for name, quantity := range container.Resources.Limits {
+			value, ok := limits[name]
+			if !ok {
+				limits[name] = *quantity.Copy()
+				continue
+			}
+			if quantity.Cmp(value) > 0 {
+				limits[name] = *quantity.Copy()
 			}
 		}
 	}

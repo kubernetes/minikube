@@ -69,7 +69,7 @@ type Runtime interface {
 	APIVersion() (Version, error)
 	// Status returns error if the runtime is unhealthy; nil otherwise.
 	Status() error
-	// GetPods returns a list containers group by pods. The boolean parameter
+	// GetPods returns a list of containers grouped by pods. The boolean parameter
 	// specifies whether the runtime returns all containers including those already
 	// exited and dead containers (used for garbage collection).
 	GetPods(all bool) ([]*Pod, error)
@@ -97,6 +97,12 @@ type Runtime interface {
 	RemoveImage(image ImageSpec) error
 	// Returns Image statistics.
 	ImageStats() (*ImageStats, error)
+	// Returns the filesystem path of the pod's network namespace; if the
+	// runtime does not handle namespace creation itself, or cannot return
+	// the network namespace path, it should return an error.
+	// TODO: Change ContainerID to a Pod ID since the namespace is shared
+	// by all containers in the pod.
+	GetNetNS(containerID ContainerID) (string, error)
 	// TODO(vmarmol): Unify pod and containerID args.
 	// GetContainerLogs returns logs of a specific container. By
 	// default, it returns a snapshot of the container log. Set 'follow' to true to
@@ -115,9 +121,6 @@ type ContainerAttacher interface {
 
 // CommandRunner encapsulates the command runner interfaces for testability.
 type ContainerCommandRunner interface {
-	// TODO(vmarmol): Merge RunInContainer and ExecInContainer.
-	// Runs the command in the container of the specified pod.
-	RunInContainer(containerID ContainerID, cmd []string) ([]byte, error)
 	// Runs the command in the container of the specified pod using nsenter.
 	// Attaches the processes stdin, stdout, and stderr. Optionally uses a
 	// tty.

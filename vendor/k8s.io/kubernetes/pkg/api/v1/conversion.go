@@ -17,9 +17,8 @@ limitations under the License.
 package v1
 
 import (
+	"encoding/json"
 	"fmt"
-
-	inf "gopkg.in/inf.v0"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/conversion"
@@ -258,6 +257,81 @@ func Convert_v1_ReplicationControllerSpec_To_api_ReplicationControllerSpec(in *R
 	return nil
 }
 
+func Convert_api_PodStatusResult_To_v1_PodStatusResult(in *api.PodStatusResult, out *PodStatusResult, s conversion.Scope) error {
+	if err := autoConvert_api_PodStatusResult_To_v1_PodStatusResult(in, out, s); err != nil {
+		return err
+	}
+
+	if len(out.Status.InitContainerStatuses) > 0 {
+		if out.Annotations == nil {
+			out.Annotations = make(map[string]string)
+		}
+		value, err := json.Marshal(out.Status.InitContainerStatuses)
+		if err != nil {
+			return err
+		}
+		out.Annotations[PodInitContainerStatusesAnnotationKey] = string(value)
+	} else {
+		delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+	}
+	return nil
+}
+
+func Convert_v1_PodStatusResult_To_api_PodStatusResult(in *PodStatusResult, out *api.PodStatusResult, s conversion.Scope) error {
+	// TODO: when we move init container to beta, remove these conversions
+	if value, ok := in.Annotations[PodInitContainerStatusesAnnotationKey]; ok {
+		var values []ContainerStatus
+		if err := json.Unmarshal([]byte(value), &values); err != nil {
+			return err
+		}
+		in.Status.InitContainerStatuses = values
+	}
+
+	if err := autoConvert_v1_PodStatusResult_To_api_PodStatusResult(in, out, s); err != nil {
+		return err
+	}
+	delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+	return nil
+}
+
+func Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(in *api.PodTemplateSpec, out *PodTemplateSpec, s conversion.Scope) error {
+	if err := autoConvert_api_PodTemplateSpec_To_v1_PodTemplateSpec(in, out, s); err != nil {
+		return err
+	}
+
+	// TODO: when we move init container to beta, remove these conversions
+	if len(out.Spec.InitContainers) > 0 {
+		if out.Annotations == nil {
+			out.Annotations = make(map[string]string)
+		}
+		value, err := json.Marshal(out.Spec.InitContainers)
+		if err != nil {
+			return err
+		}
+		out.Annotations[PodInitContainersAnnotationKey] = string(value)
+	} else {
+		delete(out.Annotations, PodInitContainersAnnotationKey)
+	}
+	return nil
+}
+
+func Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in *PodTemplateSpec, out *api.PodTemplateSpec, s conversion.Scope) error {
+	// TODO: when we move init container to beta, remove these conversions
+	if value, ok := in.Annotations[PodInitContainersAnnotationKey]; ok {
+		var values []Container
+		if err := json.Unmarshal([]byte(value), &values); err != nil {
+			return err
+		}
+		in.Spec.InitContainers = values
+	}
+
+	if err := autoConvert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in, out, s); err != nil {
+		return err
+	}
+	delete(out.Annotations, PodInitContainersAnnotationKey)
+	return nil
+}
+
 // The following two PodSpec conversions are done here to support ServiceAccount
 // as an alias for ServiceAccountName.
 func Convert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *PodSpec, s conversion.Scope) error {
@@ -270,6 +344,16 @@ func Convert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *PodSpec, s conversi
 		}
 	} else {
 		out.Volumes = nil
+	}
+	if in.InitContainers != nil {
+		out.InitContainers = make([]Container, len(in.InitContainers))
+		for i := range in.InitContainers {
+			if err := Convert_api_Container_To_v1_Container(&in.InitContainers[i], &out.InitContainers[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.InitContainers = nil
 	}
 	if in.Containers != nil {
 		out.Containers = make([]Container, len(in.Containers))
@@ -346,6 +430,16 @@ func Convert_v1_PodSpec_To_api_PodSpec(in *PodSpec, out *api.PodSpec, s conversi
 	} else {
 		out.Volumes = nil
 	}
+	if in.InitContainers != nil {
+		out.InitContainers = make([]api.Container, len(in.InitContainers))
+		for i := range in.InitContainers {
+			if err := Convert_v1_Container_To_api_Container(&in.InitContainers[i], &out.InitContainers[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.InitContainers = nil
+	}
 	if in.Containers != nil {
 		out.Containers = make([]api.Container, len(in.Containers))
 		for i := range in.Containers {
@@ -419,6 +513,33 @@ func Convert_api_Pod_To_v1_Pod(in *api.Pod, out *Pod, s conversion.Scope) error 
 	if err := autoConvert_api_Pod_To_v1_Pod(in, out, s); err != nil {
 		return err
 	}
+
+	// TODO: when we move init container to beta, remove these conversions
+	if len(out.Spec.InitContainers) > 0 {
+		if out.Annotations == nil {
+			out.Annotations = make(map[string]string)
+		}
+		value, err := json.Marshal(out.Spec.InitContainers)
+		if err != nil {
+			return err
+		}
+		out.Annotations[PodInitContainersAnnotationKey] = string(value)
+	} else {
+		delete(out.Annotations, PodInitContainersAnnotationKey)
+	}
+	if len(out.Status.InitContainerStatuses) > 0 {
+		if out.Annotations == nil {
+			out.Annotations = make(map[string]string)
+		}
+		value, err := json.Marshal(out.Status.InitContainerStatuses)
+		if err != nil {
+			return err
+		}
+		out.Annotations[PodInitContainerStatusesAnnotationKey] = string(value)
+	} else {
+		delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+	}
+
 	// We need to reset certain fields for mirror pods from pre-v1.1 kubelet
 	// (#15960).
 	// TODO: Remove this code after we drop support for v1.0 kubelets.
@@ -434,7 +555,28 @@ func Convert_api_Pod_To_v1_Pod(in *api.Pod, out *Pod, s conversion.Scope) error 
 }
 
 func Convert_v1_Pod_To_api_Pod(in *Pod, out *api.Pod, s conversion.Scope) error {
-	return autoConvert_v1_Pod_To_api_Pod(in, out, s)
+	// TODO: when we move init container to beta, remove these conversions
+	if value, ok := in.Annotations[PodInitContainersAnnotationKey]; ok {
+		var values []Container
+		if err := json.Unmarshal([]byte(value), &values); err != nil {
+			return err
+		}
+		in.Spec.InitContainers = values
+	}
+	if value, ok := in.Annotations[PodInitContainerStatusesAnnotationKey]; ok {
+		var values []ContainerStatus
+		if err := json.Unmarshal([]byte(value), &values); err != nil {
+			return err
+		}
+		in.Status.InitContainerStatuses = values
+	}
+
+	if err := autoConvert_v1_Pod_To_api_Pod(in, out, s); err != nil {
+		return err
+	}
+	delete(out.Annotations, PodInitContainersAnnotationKey)
+	delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+	return nil
 }
 
 func Convert_api_ServiceSpec_To_v1_ServiceSpec(in *api.ServiceSpec, out *ServiceSpec, s conversion.Scope) error {
@@ -535,8 +677,8 @@ func Convert_v1_ResourceList_To_api_ResourceList(in *ResourceList, out *api.Reso
 
 		// TODO(#18538): We round up resource values to milli scale to maintain API compatibility.
 		// In the future, we should instead reject values that need rounding.
-		const milliScale = 3
-		value.Amount.Round(value.Amount, milliScale, inf.RoundUp)
+		const milliScale = -3
+		value.RoundUp(milliScale)
 
 		converted[api.ResourceName(key)] = *value
 	}

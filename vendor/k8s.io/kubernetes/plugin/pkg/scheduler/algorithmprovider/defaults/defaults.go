@@ -145,6 +145,17 @@ func defaultPredicates() sets.String {
 		// GeneralPredicates are the predicates that are enforced by all Kubernetes components
 		// (e.g. kubelet and all schedulers)
 		factory.RegisterFitPredicate("GeneralPredicates", predicates.GeneralPredicates),
+
+		// Fit is determined based on whether a pod can tolerate all of the node's taints
+		factory.RegisterFitPredicateFactory(
+			"PodToleratesNodeTaints",
+			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
+				return predicates.NewTolerationMatchPredicate(args.NodeInfo)
+			},
+		),
+
+		// Fit is determined by node memory pressure condition.
+		factory.RegisterFitPredicate("CheckNodeMemoryPressure", predicates.CheckNodeMemoryPressurePredicate),
 	)
 }
 
@@ -169,6 +180,15 @@ func defaultPriorities() sets.String {
 			factory.PriorityConfigFactory{
 				Function: func(args factory.PluginFactoryArgs) algorithm.PriorityFunction {
 					return priorities.NewNodeAffinityPriority(args.NodeLister)
+				},
+				Weight: 1,
+			},
+		),
+		factory.RegisterPriorityConfigFactory(
+			"TaintTolerationPriority",
+			factory.PriorityConfigFactory{
+				Function: func(args factory.PluginFactoryArgs) algorithm.PriorityFunction {
+					return priorities.NewTaintTolerationPriority(args.NodeLister)
 				},
 				Weight: 1,
 			},

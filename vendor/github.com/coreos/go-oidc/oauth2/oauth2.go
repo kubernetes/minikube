@@ -8,19 +8,55 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 
 	phttp "github.com/coreos/go-oidc/http"
 )
 
+// ResponseTypesEqual compares two response_type values. If either
+// contains a space, it is treated as an unordered list. For example,
+// comparing "code id_token" and "id_token code" would evaluate to true.
+func ResponseTypesEqual(r1, r2 string) bool {
+	if !strings.Contains(r1, " ") || !strings.Contains(r2, " ") {
+		// fast route, no split needed
+		return r1 == r2
+	}
+
+	// split, sort, and compare
+	r1Fields := strings.Fields(r1)
+	r2Fields := strings.Fields(r2)
+	if len(r1Fields) != len(r2Fields) {
+		return false
+	}
+	sort.Strings(r1Fields)
+	sort.Strings(r2Fields)
+	for i, r1Field := range r1Fields {
+		if r1Field != r2Fields[i] {
+			return false
+		}
+	}
+	return true
+}
+
 const (
-	ResponseTypeCode = "code"
+	// OAuth2.0 response types registered by OIDC.
+	//
+	// See: https://openid.net/specs/oauth-v2-multiple-response-types-1_0.html#RegistryContents
+	ResponseTypeCode             = "code"
+	ResponseTypeCodeIDToken      = "code id_token"
+	ResponseTypeCodeIDTokenToken = "code id_token token"
+	ResponseTypeIDToken          = "id_token"
+	ResponseTypeIDTokenToken     = "id_token token"
+	ResponseTypeToken            = "token"
+	ResponseTypeNone             = "none"
 )
 
 const (
 	GrantTypeAuthCode     = "authorization_code"
 	GrantTypeClientCreds  = "client_credentials"
+	GrantTypeUserCreds    = "password"
 	GrantTypeImplicit     = "implicit"
 	GrantTypeRefreshToken = "refresh_token"
 
@@ -105,6 +141,11 @@ func NewClient(hc phttp.Client, cfg Config) (c *Client, err error) {
 	return
 }
 
+// Return the embedded HTTP client
+func (c *Client) HttpClient() phttp.Client {
+	return c.hc
+}
+
 // Generate the url for initial redirect to oauth provider.
 func (c *Client) AuthCodeURL(state, accessType, prompt string) string {
 	v := c.commonURLValues()
@@ -136,22 +177,24 @@ func (c *Client) commonURLValues() url.Values {
 	}
 }
 
-func (c *Client) newAuthenticatedRequest(url string, values url.Values) (*http.Request, error) {
+func (c *Client) newAuthenticatedRequest(urlToken string, values url.Values) (*http.Request, error) {
 	var req *http.Request
 	var err error
 	switch c.authMethod {
 	case AuthMethodClientSecretPost:
 		values.Set("client_secret", c.creds.Secret)
-		req, err = http.NewRequest("POST", url, strings.NewReader(values.Encode()))
+		req, err = http.NewRequest("POST", urlToken, strings.NewReader(values.Encode()))
 		if err != nil {
 			return nil, err
 		}
 	case AuthMethodClientSecretBasic:
-		req, err = http.NewRequest("POST", url, strings.NewReader(values.Encode()))
+		req, err = http.NewRequest("POST", urlToken, strings.NewReader(values.Encode()))
 		if err != nil {
 			return nil, err
 		}
-		req.SetBasicAuth(c.creds.ID, c.creds.Secret)
+		encodedID := url.QueryEscape(c.creds.ID)
+		encodedSecret := url.QueryEscape(c.creds.Secret)
+		req.SetBasicAuth(encodedID, encodedSecret)
 	default:
 		panic("misconfigured client: auth method not supported")
 	}
@@ -167,6 +210,30 @@ func (c *Client) ClientCredsToken(scope []string) (result TokenResponse, err err
 	v := url.Values{
 		"scope":      {strings.Join(scope, " ")},
 		"grant_type": {GrantTypeClientCreds},
+	}
+
+	req, err := c.newAuthenticatedRequest(c.tokenURL.String(), v)
+	if err != nil {
+		return
+	}
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+
+	return parseTokenResponse(resp)
+}
+
+// UserCredsToken posts the username and password to obtain a token scoped to the OAuth2 client via the "password" grant_type
+// May not be supported by all OAuth2 servers.
+func (c *Client) UserCredsToken(username, password string) (result TokenResponse, err error) {
+	v := url.Values{
+		"scope":      {strings.Join(c.scope, " ")},
+		"grant_type": {GrantTypeUserCreds},
+		"username":   {username},
+		"password":   {password},
 	}
 
 	req, err := c.newAuthenticatedRequest(c.tokenURL.String(), v)
