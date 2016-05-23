@@ -184,7 +184,7 @@ type ObjectMeta struct {
 	// is an identifier for the responsible component that will remove the entry
 	// from the list. If the deletionTimestamp of the object is non-nil, entries
 	// in this list can only be removed.
-	Finalizers []string `json:"finalizers,omitempty" protobuf:"bytes,14,rep,name=finalizers"`
+	Finalizers []string `json:"finalizers,omitempty" patchStrategy:"merge" protobuf:"bytes,14,rep,name=finalizers"`
 }
 
 const (
@@ -273,6 +273,8 @@ type VolumeSource struct {
 	AzureFile *AzureFileVolumeSource `json:"azureFile,omitempty" protobuf:"bytes,18,opt,name=azureFile"`
 	// ConfigMap represents a configMap that should populate this volume
 	ConfigMap *ConfigMapVolumeSource `json:"configMap,omitempty" protobuf:"bytes,19,opt,name=configMap"`
+	// VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine
+	VsphereVolume *VsphereVirtualDiskVolumeSource `json:"vsphereVolume,omitempty" protobuf:"bytes,20,opt,name=vsphereVolume"`
 }
 
 // PersistentVolumeClaimVolumeSource references the user's PVC in the same namespace.
@@ -333,6 +335,8 @@ type PersistentVolumeSource struct {
 	FlexVolume *FlexVolumeSource `json:"flexVolume,omitempty" protobuf:"bytes,12,opt,name=flexVolume"`
 	// AzureFile represents an Azure File Service mount on the host and bind mount to the pod.
 	AzureFile *AzureFileVolumeSource `json:"azureFile,omitempty" protobuf:"bytes,13,opt,name=azureFile"`
+	// VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine
+	VsphereVolume *VsphereVirtualDiskVolumeSource `json:"vsphereVolume,omitempty" protobuf:"bytes,14,opt,name=vsphereVolume"`
 }
 
 // +genclient=true,nonNamespaced=true
@@ -506,6 +510,10 @@ const (
 	ClaimPending PersistentVolumeClaimPhase = "Pending"
 	// used for PersistentVolumeClaims that are bound
 	ClaimBound PersistentVolumeClaimPhase = "Bound"
+	// used for PersistentVolumeClaims that lost their underlying
+	// PersistentVolume. The claim was bound to a PersistentVolume and this
+	// volume does not exist any longer and all data on it was lost.
+	ClaimLost PersistentVolumeClaimPhase = "Lost"
 )
 
 // Represents a host path mapped into a pod.
@@ -749,6 +757,14 @@ type SecretVolumeSource struct {
 	// Name of the secret in the pod's namespace to use.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/volumes.md#secrets
 	SecretName string `json:"secretName,omitempty" protobuf:"bytes,1,opt,name=secretName"`
+	// If unspecified, each key-value pair in the Data field of the referenced
+	// Secret will be projected into the volume as a file whose name is the
+	// key and content is the value. If specified, the listed keys will be
+	// projected into the specified paths, and unlisted keys will not be
+	// present. If a key is specified which is not present in the Secret,
+	// the volume setup will error. Paths must be relative and may not contain
+	// the '..' path or start with '..'.
+	Items []KeyToPath `json:"items,omitempty" protobuf:"bytes,2,rep,name=items"`
 }
 
 // Represents an NFS mount that lasts the lifetime of a pod.
@@ -820,6 +836,16 @@ type AzureFileVolumeSource struct {
 	// Defaults to false (read/write). ReadOnly here will force
 	// the ReadOnly setting in VolumeMounts.
 	ReadOnly bool `json:"readOnly,omitempty" protobuf:"varint,3,opt,name=readOnly"`
+}
+
+// Represents a vSphere volume resource.
+type VsphereVirtualDiskVolumeSource struct {
+	// Path that identifies vSphere volume vmdk
+	VolumePath string `json:"volumePath" protobuf:"bytes,1,opt,name=volumePath"`
+	// Filesystem type to mount.
+	// Must be a filesystem type supported by the host operating system.
+	// Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+	FSType string `json:"fsType,omitempty" protobuf:"bytes,2,opt,name=fsType"`
 }
 
 // Adapts a ConfigMap into a volume.
@@ -1106,7 +1132,7 @@ type Container struct {
 	// Cannot be updated.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/persistent-volumes.md#resources
 	Resources ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,8,opt,name=resources"`
-	// Pod volumes to mount into the container's filesyste.
+	// Pod volumes to mount into the container's filesystem.
 	// Cannot be updated.
 	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,9,rep,name=volumeMounts"`
 	// Periodic probe of container liveness.
@@ -1541,11 +1567,103 @@ type PreferredSchedulingTerm struct {
 	Preference NodeSelectorTerm `json:"preference" protobuf:"bytes,2,opt,name=preference"`
 }
 
+// The node this Taint is attached to has the effect "effect" on
+// any pod that that does not tolerate the Taint.
+type Taint struct {
+	// Required. The taint key to be applied to a node.
+	Key string `json:"key" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,1,opt,name=key"`
+	// Required. The taint value corresponding to the taint key.
+	Value string `json:"value,omitempty" protobuf:"bytes,2,opt,name=value"`
+	// Required. The effect of the taint on pods
+	// that do not tolerate the taint.
+	// Valid effects are NoSchedule and PreferNoSchedule.
+	Effect TaintEffect `json:"effect" protobuf:"bytes,3,opt,name=effect,casttype=TaintEffect"`
+}
+
+type TaintEffect string
+
+const (
+	// Do not allow new pods to schedule onto the node unless they tolerate the taint,
+	// but allow all pods submitted to Kubelet without going through the scheduler
+	// to start, and allow all already-running pods to continue running.
+	// Enforced by the scheduler.
+	TaintEffectNoSchedule TaintEffect = "NoSchedule"
+	// Like TaintEffectNoSchedule, but the scheduler tries not to schedule
+	// new pods onto the node, rather than prohibiting new pods from scheduling
+	// onto the node entirely. Enforced by the scheduler.
+	TaintEffectPreferNoSchedule TaintEffect = "PreferNoSchedule"
+	// NOT YET IMPLEMENTED. TODO: Uncomment field once it is implemented.
+	// Do not allow new pods to schedule onto the node unless they tolerate the taint,
+	// do not allow pods to start on Kubelet unless they tolerate the taint,
+	// but allow all already-running pods to continue running.
+	// Enforced by the scheduler and Kubelet.
+	// TaintEffectNoScheduleNoAdmit TaintEffect = "NoScheduleNoAdmit"
+	// NOT YET IMPLEMENTED. TODO: Uncomment field once it is implemented.
+	// Do not allow new pods to schedule onto the node unless they tolerate the taint,
+	// do not allow pods to start on Kubelet unless they tolerate the taint,
+	// and evict any already-running pods that do not tolerate the taint.
+	// Enforced by the scheduler and Kubelet.
+	// TaintEffectNoScheduleNoAdmitNoExecute = "NoScheduleNoAdmitNoExecute"
+)
+
+// The pod this Toleration is attached to tolerates any taint that matches
+// the triple <key,value,effect> using the matching operator <operator>.
+type Toleration struct {
+	// Required. Key is the taint key that the toleration applies to.
+	Key string `json:"key,omitempty" patchStrategy:"merge" patchMergeKey:"key" protobuf:"bytes,1,opt,name=key"`
+	// operator represents a key's relationship to the value.
+	// Valid operators are Exists and Equal. Defaults to Equal.
+	// Exists is equivalent to wildcard for value, so that a pod can
+	// tolerate all taints of a particular category.
+	Operator TolerationOperator `json:"operator,omitempty" protobuf:"bytes,2,opt,name=operator,casttype=TolerationOperator"`
+	// Value is the taint value the toleration matches to.
+	// If the operator is Exists, the value should be empty, otherwise just a regular string.
+	Value string `json:"value,omitempty" protobuf:"bytes,3,opt,name=value"`
+	// Effect indicates the taint effect to match. Empty means match all taint effects.
+	// When specified, allowed values are NoSchedule and PreferNoSchedule.
+	Effect TaintEffect `json:"effect,omitempty" protobuf:"bytes,4,opt,name=effect,casttype=TaintEffect"`
+	// TODO: For forgiveness (#1574), we'd eventually add at least a grace period
+	// here, and possibly an occurrence threshold and period.
+}
+
+// A toleration operator is the set of operators that can be used in a toleration.
+type TolerationOperator string
+
+const (
+	TolerationOpExists TolerationOperator = "Exists"
+	TolerationOpEqual  TolerationOperator = "Equal"
+)
+
+const (
+	// This annotation key will be used to contain an array of v1 JSON encoded Containers
+	// for init containers. The annotation will be placed into the internal type and cleared.
+	PodInitContainersAnnotationKey = "pod.alpha.kubernetes.io/init-containers"
+	// This annotation key will be used to contain an array of v1 JSON encoded
+	// ContainerStatuses for init containers. The annotation will be placed into the internal
+	// type and cleared.
+	PodInitContainerStatusesAnnotationKey = "pod.alpha.kubernetes.io/init-container-statuses"
+)
+
 // PodSpec is a description of a pod.
 type PodSpec struct {
 	// List of volumes that can be mounted by containers belonging to the pod.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/volumes.md
 	Volumes []Volume `json:"volumes,omitempty" patchStrategy:"merge" patchMergeKey:"name" protobuf:"bytes,1,rep,name=volumes"`
+	// List of initialization containers belonging to the pod.
+	// Init containers are executed in order prior to containers being started. If any
+	// init container fails, the pod is considered to have failed and is handled according
+	// to its restartPolicy. The name for an init container or normal container must be
+	// unique among all containers.
+	// Init containers may not have Lifecycle actions, Readiness probes, or Liveness probes.
+	// The resourceRequirements of an init container are taken into account during scheduling
+	// by finding the highest request/limit for each resource type, and then using the max of
+	// of that value or the sum of the normal containers. Limits are applied to init containers
+	// in a similar fashion.
+	// Init containers cannot currently be added or removed.
+	// Init containers are in alpha state and may change without notice.
+	// Cannot be updated.
+	// More info: http://releases.k8s.io/HEAD/docs/user-guide/containers.md
+	InitContainers []Container `json:"-"  patchStrategy:"merge" patchMergeKey:"name"`
 	// List of containers belonging to the pod.
 	// Containers cannot currently be added or removed.
 	// There must be at least one container in a Pod.
@@ -1679,6 +1797,12 @@ type PodStatus struct {
 	// This is before the Kubelet pulled the container image(s) for the pod.
 	StartTime *unversioned.Time `json:"startTime,omitempty" protobuf:"bytes,7,opt,name=startTime"`
 
+	// The list has one entry per init container in the manifest. The most recent successful
+	// init container will have ready = true, the most recently started container will have
+	// startTime set.
+	// Init containers are in alpha state and may change without notice.
+	// More info: http://releases.k8s.io/HEAD/docs/user-guide/pod-states.md#container-statuses
+	InitContainerStatuses []ContainerStatus `json:"-"`
 	// The list has one entry per container in the manifest. Each entry is currently the output
 	// of `docker inspect`.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/pod-states.md#container-statuses
@@ -2208,6 +2332,10 @@ type NodeSystemInfo struct {
 	KubeletVersion string `json:"kubeletVersion" protobuf:"bytes,7,opt,name=kubeletVersion"`
 	// KubeProxy Version reported by the node.
 	KubeProxyVersion string `json:"kubeProxyVersion" protobuf:"bytes,8,opt,name=kubeProxyVersion"`
+	// The Operating System reported by the node
+	OperatingSystem string `json:"operatingSystem" protobuf:"bytes,9,opt,name=operatingSystem"`
+	// The Architecture reported by the node
+	Architecture string `json:"architecture" protobuf:"bytes,10,opt,name=architecture"`
 }
 
 // NodeStatus is information about the current status of a node.
@@ -2269,6 +2397,8 @@ const (
 	// NodeOutOfDisk means the kubelet will not accept new pods due to insufficient free disk
 	// space on the node.
 	NodeOutOfDisk NodeConditionType = "OutOfDisk"
+	// NodeMemoryPressure means the kubelet is under pressure due to insufficient available memory.
+	NodeMemoryPressure NodeConditionType = "MemoryPressure"
 )
 
 // NodeCondition contains condition infromation for a node.

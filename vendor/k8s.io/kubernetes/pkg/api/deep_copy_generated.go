@@ -175,9 +175,12 @@ func init() {
 		DeepCopy_api_ServiceSpec,
 		DeepCopy_api_ServiceStatus,
 		DeepCopy_api_TCPSocketAction,
+		DeepCopy_api_Taint,
+		DeepCopy_api_Toleration,
 		DeepCopy_api_Volume,
 		DeepCopy_api_VolumeMount,
 		DeepCopy_api_VolumeSource,
+		DeepCopy_api_VsphereVirtualDiskVolumeSource,
 		DeepCopy_api_WeightedPodAffinityTerm,
 	); err != nil {
 		// if one of the deep copy functions is malformed, detect it immediately.
@@ -1585,6 +1588,8 @@ func DeepCopy_api_NodeSystemInfo(in NodeSystemInfo, out *NodeSystemInfo, c *conv
 	out.ContainerRuntimeVersion = in.ContainerRuntimeVersion
 	out.KubeletVersion = in.KubeletVersion
 	out.KubeProxyVersion = in.KubeProxyVersion
+	out.OperatingSystem = in.OperatingSystem
+	out.Architecture = in.Architecture
 	return nil
 }
 
@@ -1921,6 +1926,15 @@ func DeepCopy_api_PersistentVolumeSource(in PersistentVolumeSource, out *Persist
 	} else {
 		out.AzureFile = nil
 	}
+	if in.VsphereVolume != nil {
+		in, out := in.VsphereVolume, &out.VsphereVolume
+		*out = new(VsphereVirtualDiskVolumeSource)
+		if err := DeepCopy_api_VsphereVirtualDiskVolumeSource(*in, *out, c); err != nil {
+			return err
+		}
+	} else {
+		out.VsphereVolume = nil
+	}
 	return nil
 }
 
@@ -2230,6 +2244,17 @@ func DeepCopy_api_PodSpec(in PodSpec, out *PodSpec, c *conversion.Cloner) error 
 	} else {
 		out.Volumes = nil
 	}
+	if in.InitContainers != nil {
+		in, out := in.InitContainers, &out.InitContainers
+		*out = make([]Container, len(in))
+		for i := range in {
+			if err := DeepCopy_api_Container(in[i], &(*out)[i], c); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.InitContainers = nil
+	}
 	if in.Containers != nil {
 		in, out := in.Containers, &out.Containers
 		*out = make([]Container, len(in))
@@ -2318,6 +2343,17 @@ func DeepCopy_api_PodStatus(in PodStatus, out *PodStatus, c *conversion.Cloner) 
 		}
 	} else {
 		out.StartTime = nil
+	}
+	if in.InitContainerStatuses != nil {
+		in, out := in.InitContainerStatuses, &out.InitContainerStatuses
+		*out = make([]ContainerStatus, len(in))
+		for i := range in {
+			if err := DeepCopy_api_ContainerStatus(in[i], &(*out)[i], c); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.InitContainerStatuses = nil
 	}
 	if in.ContainerStatuses != nil {
 		in, out := in.ContainerStatuses, &out.ContainerStatuses
@@ -2722,6 +2758,17 @@ func DeepCopy_api_SecretList(in SecretList, out *SecretList, c *conversion.Clone
 
 func DeepCopy_api_SecretVolumeSource(in SecretVolumeSource, out *SecretVolumeSource, c *conversion.Cloner) error {
 	out.SecretName = in.SecretName
+	if in.Items != nil {
+		in, out := in.Items, &out.Items
+		*out = make([]KeyToPath, len(in))
+		for i := range in {
+			if err := DeepCopy_api_KeyToPath(in[i], &(*out)[i], c); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -2943,6 +2990,21 @@ func DeepCopy_api_TCPSocketAction(in TCPSocketAction, out *TCPSocketAction, c *c
 	return nil
 }
 
+func DeepCopy_api_Taint(in Taint, out *Taint, c *conversion.Cloner) error {
+	out.Key = in.Key
+	out.Value = in.Value
+	out.Effect = in.Effect
+	return nil
+}
+
+func DeepCopy_api_Toleration(in Toleration, out *Toleration, c *conversion.Cloner) error {
+	out.Key = in.Key
+	out.Operator = in.Operator
+	out.Value = in.Value
+	out.Effect = in.Effect
+	return nil
+}
+
 func DeepCopy_api_Volume(in Volume, out *Volume, c *conversion.Cloner) error {
 	out.Name = in.Name
 	if err := DeepCopy_api_VolumeSource(in.VolumeSource, &out.VolumeSource, c); err != nil {
@@ -3131,6 +3193,21 @@ func DeepCopy_api_VolumeSource(in VolumeSource, out *VolumeSource, c *conversion
 	} else {
 		out.ConfigMap = nil
 	}
+	if in.VsphereVolume != nil {
+		in, out := in.VsphereVolume, &out.VsphereVolume
+		*out = new(VsphereVirtualDiskVolumeSource)
+		if err := DeepCopy_api_VsphereVirtualDiskVolumeSource(*in, *out, c); err != nil {
+			return err
+		}
+	} else {
+		out.VsphereVolume = nil
+	}
+	return nil
+}
+
+func DeepCopy_api_VsphereVirtualDiskVolumeSource(in VsphereVirtualDiskVolumeSource, out *VsphereVirtualDiskVolumeSource, c *conversion.Cloner) error {
+	out.VolumePath = in.VolumePath
+	out.FSType = in.FSType
 	return nil
 }
 

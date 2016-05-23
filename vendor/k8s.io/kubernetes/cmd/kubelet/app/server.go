@@ -19,6 +19,7 @@ package app
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net"
@@ -190,6 +191,7 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 	}
 	evictionConfig := eviction.Config{
 		PressureTransitionPeriod: s.EvictionPressureTransitionPeriod.Duration,
+		MaxPodGracePeriodSeconds: int64(s.EvictionMaxPodGracePeriod),
 		Thresholds:               thresholds,
 	}
 
@@ -289,10 +291,21 @@ func Run(s *options.KubeletServer, kcfg *KubeletConfig) error {
 }
 
 func run(s *options.KubeletServer, kcfg *KubeletConfig) (err error) {
+	if s.ExitOnLockContention && s.LockFilePath == "" {
+		return errors.New("cannot exit on lock file contention: no lock file specified")
+	}
+
+	done := make(chan struct{})
 	if s.LockFilePath != "" {
 		glog.Infof("aquiring lock on %q", s.LockFilePath)
 		if err := flock.Acquire(s.LockFilePath); err != nil {
 			return fmt.Errorf("unable to aquire file lock on %q: %v", s.LockFilePath, err)
+		}
+		if s.ExitOnLockContention {
+			glog.Infof("watching for inotify events for: %v", s.LockFilePath)
+			if err := watchForLockfileContention(s.LockFilePath, done); err != nil {
+				return err
+			}
 		}
 	}
 	if c, err := configz.New("componentconfig"); err == nil {
@@ -330,7 +343,7 @@ func run(s *options.KubeletServer, kcfg *KubeletConfig) (err error) {
 	}
 
 	if kcfg.CAdvisorInterface == nil {
-		kcfg.CAdvisorInterface, err = cadvisor.New(s.CAdvisorPort)
+		kcfg.CAdvisorInterface, err = cadvisor.New(s.CAdvisorPort, kcfg.ContainerRuntime)
 		if err != nil {
 			return err
 		}
@@ -383,8 +396,8 @@ func run(s *options.KubeletServer, kcfg *KubeletConfig) (err error) {
 		return nil
 	}
 
-	// run forever
-	select {}
+	<-done
+	return nil
 }
 
 // InitializeTLS checks for a configured TLSCertFile and TLSPrivateKeyFile: if unspecified a new self-signed
@@ -927,10 +940,10 @@ func parseResourceList(m utilconfig.ConfigurationMap) (api.ResourceList, error) 
 			if err != nil {
 				return nil, err
 			}
-			if q.Amount.Sign() == -1 {
+			if q.Sign() == -1 {
 				return nil, fmt.Errorf("resource quantity for %q cannot be negative: %v", k, v)
 			}
-			rl[api.ResourceName(k)] = *q
+			rl[api.ResourceName(k)] = q
 		default:
 			return nil, fmt.Errorf("cannot reserve %q resource", k)
 		}

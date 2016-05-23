@@ -311,12 +311,18 @@ func init() {
 		Convert_api_ServiceStatus_To_v1_ServiceStatus,
 		Convert_v1_TCPSocketAction_To_api_TCPSocketAction,
 		Convert_api_TCPSocketAction_To_v1_TCPSocketAction,
+		Convert_v1_Taint_To_api_Taint,
+		Convert_api_Taint_To_v1_Taint,
+		Convert_v1_Toleration_To_api_Toleration,
+		Convert_api_Toleration_To_v1_Toleration,
 		Convert_v1_Volume_To_api_Volume,
 		Convert_api_Volume_To_v1_Volume,
 		Convert_v1_VolumeMount_To_api_VolumeMount,
 		Convert_api_VolumeMount_To_v1_VolumeMount,
 		Convert_v1_VolumeSource_To_api_VolumeSource,
 		Convert_api_VolumeSource_To_v1_VolumeSource,
+		Convert_v1_VsphereVirtualDiskVolumeSource_To_api_VsphereVirtualDiskVolumeSource,
+		Convert_api_VsphereVirtualDiskVolumeSource_To_v1_VsphereVirtualDiskVolumeSource,
 		Convert_v1_WeightedPodAffinityTerm_To_api_WeightedPodAffinityTerm,
 		Convert_api_WeightedPodAffinityTerm_To_v1_WeightedPodAffinityTerm,
 	); err != nil {
@@ -3588,6 +3594,8 @@ func autoConvert_v1_NodeSystemInfo_To_api_NodeSystemInfo(in *NodeSystemInfo, out
 	out.ContainerRuntimeVersion = in.ContainerRuntimeVersion
 	out.KubeletVersion = in.KubeletVersion
 	out.KubeProxyVersion = in.KubeProxyVersion
+	out.OperatingSystem = in.OperatingSystem
+	out.Architecture = in.Architecture
 	return nil
 }
 
@@ -3604,6 +3612,8 @@ func autoConvert_api_NodeSystemInfo_To_v1_NodeSystemInfo(in *api.NodeSystemInfo,
 	out.ContainerRuntimeVersion = in.ContainerRuntimeVersion
 	out.KubeletVersion = in.KubeletVersion
 	out.KubeProxyVersion = in.KubeProxyVersion
+	out.OperatingSystem = in.OperatingSystem
+	out.Architecture = in.Architecture
 	return nil
 }
 
@@ -4240,6 +4250,15 @@ func autoConvert_v1_PersistentVolumeSource_To_api_PersistentVolumeSource(in *Per
 	} else {
 		out.AzureFile = nil
 	}
+	if in.VsphereVolume != nil {
+		in, out := &in.VsphereVolume, &out.VsphereVolume
+		*out = new(api.VsphereVirtualDiskVolumeSource)
+		if err := Convert_v1_VsphereVirtualDiskVolumeSource_To_api_VsphereVirtualDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.VsphereVolume = nil
+	}
 	return nil
 }
 
@@ -4364,6 +4383,15 @@ func autoConvert_api_PersistentVolumeSource_To_v1_PersistentVolumeSource(in *api
 		}
 	} else {
 		out.AzureFile = nil
+	}
+	if in.VsphereVolume != nil {
+		in, out := &in.VsphereVolume, &out.VsphereVolume
+		*out = new(VsphereVirtualDiskVolumeSource)
+		if err := Convert_api_VsphereVirtualDiskVolumeSource_To_v1_VsphereVirtualDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.VsphereVolume = nil
 	}
 	return nil
 }
@@ -5008,6 +5036,17 @@ func autoConvert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *PodSpec, s conv
 	} else {
 		out.Volumes = nil
 	}
+	if in.InitContainers != nil {
+		in, out := &in.InitContainers, &out.InitContainers
+		*out = make([]Container, len(*in))
+		for i := range *in {
+			if err := Convert_api_Container_To_v1_Container(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.InitContainers = nil
+	}
 	if in.Containers != nil {
 		in, out := &in.Containers, &out.Containers
 		*out = make([]Container, len(*in))
@@ -5097,6 +5136,17 @@ func autoConvert_v1_PodStatus_To_api_PodStatus(in *PodStatus, out *api.PodStatus
 	} else {
 		out.StartTime = nil
 	}
+	if in.InitContainerStatuses != nil {
+		in, out := &in.InitContainerStatuses, &out.InitContainerStatuses
+		*out = make([]api.ContainerStatus, len(*in))
+		for i := range *in {
+			if err := Convert_v1_ContainerStatus_To_api_ContainerStatus(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.InitContainerStatuses = nil
+	}
 	if in.ContainerStatuses != nil {
 		in, out := &in.ContainerStatuses, &out.ContainerStatuses
 		*out = make([]api.ContainerStatus, len(*in))
@@ -5141,6 +5191,17 @@ func autoConvert_api_PodStatus_To_v1_PodStatus(in *api.PodStatus, out *PodStatus
 	} else {
 		out.StartTime = nil
 	}
+	if in.InitContainerStatuses != nil {
+		in, out := &in.InitContainerStatuses, &out.InitContainerStatuses
+		*out = make([]ContainerStatus, len(*in))
+		for i := range *in {
+			if err := Convert_api_ContainerStatus_To_v1_ContainerStatus(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.InitContainerStatuses = nil
+	}
 	if in.ContainerStatuses != nil {
 		in, out := &in.ContainerStatuses, &out.ContainerStatuses
 		*out = make([]ContainerStatus, len(*in))
@@ -5172,10 +5233,6 @@ func autoConvert_v1_PodStatusResult_To_api_PodStatusResult(in *PodStatusResult, 
 	return nil
 }
 
-func Convert_v1_PodStatusResult_To_api_PodStatusResult(in *PodStatusResult, out *api.PodStatusResult, s conversion.Scope) error {
-	return autoConvert_v1_PodStatusResult_To_api_PodStatusResult(in, out, s)
-}
-
 func autoConvert_api_PodStatusResult_To_v1_PodStatusResult(in *api.PodStatusResult, out *PodStatusResult, s conversion.Scope) error {
 	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
 		return err
@@ -5187,10 +5244,6 @@ func autoConvert_api_PodStatusResult_To_v1_PodStatusResult(in *api.PodStatusResu
 		return err
 	}
 	return nil
-}
-
-func Convert_api_PodStatusResult_To_v1_PodStatusResult(in *api.PodStatusResult, out *PodStatusResult, s conversion.Scope) error {
-	return autoConvert_api_PodStatusResult_To_v1_PodStatusResult(in, out, s)
 }
 
 func autoConvert_v1_PodTemplate_To_api_PodTemplate(in *PodTemplate, out *api.PodTemplate, s conversion.Scope) error {
@@ -5287,10 +5340,6 @@ func autoConvert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in *PodTemplateSpec, 
 	return nil
 }
 
-func Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in *PodTemplateSpec, out *api.PodTemplateSpec, s conversion.Scope) error {
-	return autoConvert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in, out, s)
-}
-
 func autoConvert_api_PodTemplateSpec_To_v1_PodTemplateSpec(in *api.PodTemplateSpec, out *PodTemplateSpec, s conversion.Scope) error {
 	if err := Convert_api_ObjectMeta_To_v1_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
 		return err
@@ -5299,10 +5348,6 @@ func autoConvert_api_PodTemplateSpec_To_v1_PodTemplateSpec(in *api.PodTemplateSp
 		return err
 	}
 	return nil
-}
-
-func Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(in *api.PodTemplateSpec, out *PodTemplateSpec, s conversion.Scope) error {
-	return autoConvert_api_PodTemplateSpec_To_v1_PodTemplateSpec(in, out, s)
 }
 
 func autoConvert_v1_Preconditions_To_api_Preconditions(in *Preconditions, out *api.Preconditions, s conversion.Scope) error {
@@ -5994,6 +6039,17 @@ func Convert_api_SecretList_To_v1_SecretList(in *api.SecretList, out *SecretList
 
 func autoConvert_v1_SecretVolumeSource_To_api_SecretVolumeSource(in *SecretVolumeSource, out *api.SecretVolumeSource, s conversion.Scope) error {
 	out.SecretName = in.SecretName
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]api.KeyToPath, len(*in))
+		for i := range *in {
+			if err := Convert_v1_KeyToPath_To_api_KeyToPath(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -6003,6 +6059,17 @@ func Convert_v1_SecretVolumeSource_To_api_SecretVolumeSource(in *SecretVolumeSou
 
 func autoConvert_api_SecretVolumeSource_To_v1_SecretVolumeSource(in *api.SecretVolumeSource, out *SecretVolumeSource, s conversion.Scope) error {
 	out.SecretName = in.SecretName
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]KeyToPath, len(*in))
+		for i := range *in {
+			if err := Convert_api_KeyToPath_To_v1_KeyToPath(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -6527,6 +6594,52 @@ func Convert_api_TCPSocketAction_To_v1_TCPSocketAction(in *api.TCPSocketAction, 
 	return autoConvert_api_TCPSocketAction_To_v1_TCPSocketAction(in, out, s)
 }
 
+func autoConvert_v1_Taint_To_api_Taint(in *Taint, out *api.Taint, s conversion.Scope) error {
+	out.Key = in.Key
+	out.Value = in.Value
+	out.Effect = api.TaintEffect(in.Effect)
+	return nil
+}
+
+func Convert_v1_Taint_To_api_Taint(in *Taint, out *api.Taint, s conversion.Scope) error {
+	return autoConvert_v1_Taint_To_api_Taint(in, out, s)
+}
+
+func autoConvert_api_Taint_To_v1_Taint(in *api.Taint, out *Taint, s conversion.Scope) error {
+	out.Key = in.Key
+	out.Value = in.Value
+	out.Effect = TaintEffect(in.Effect)
+	return nil
+}
+
+func Convert_api_Taint_To_v1_Taint(in *api.Taint, out *Taint, s conversion.Scope) error {
+	return autoConvert_api_Taint_To_v1_Taint(in, out, s)
+}
+
+func autoConvert_v1_Toleration_To_api_Toleration(in *Toleration, out *api.Toleration, s conversion.Scope) error {
+	out.Key = in.Key
+	out.Operator = api.TolerationOperator(in.Operator)
+	out.Value = in.Value
+	out.Effect = api.TaintEffect(in.Effect)
+	return nil
+}
+
+func Convert_v1_Toleration_To_api_Toleration(in *Toleration, out *api.Toleration, s conversion.Scope) error {
+	return autoConvert_v1_Toleration_To_api_Toleration(in, out, s)
+}
+
+func autoConvert_api_Toleration_To_v1_Toleration(in *api.Toleration, out *Toleration, s conversion.Scope) error {
+	out.Key = in.Key
+	out.Operator = TolerationOperator(in.Operator)
+	out.Value = in.Value
+	out.Effect = TaintEffect(in.Effect)
+	return nil
+}
+
+func Convert_api_Toleration_To_v1_Toleration(in *api.Toleration, out *Toleration, s conversion.Scope) error {
+	return autoConvert_api_Toleration_To_v1_Toleration(in, out, s)
+}
+
 func autoConvert_v1_Volume_To_api_Volume(in *Volume, out *api.Volume, s conversion.Scope) error {
 	SetDefaults_Volume(in)
 	out.Name = in.Name
@@ -6748,6 +6861,15 @@ func autoConvert_v1_VolumeSource_To_api_VolumeSource(in *VolumeSource, out *api.
 	} else {
 		out.ConfigMap = nil
 	}
+	if in.VsphereVolume != nil {
+		in, out := &in.VsphereVolume, &out.VsphereVolume
+		*out = new(api.VsphereVirtualDiskVolumeSource)
+		if err := Convert_v1_VsphereVirtualDiskVolumeSource_To_api_VsphereVirtualDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.VsphereVolume = nil
+	}
 	return nil
 }
 
@@ -6927,11 +7049,40 @@ func autoConvert_api_VolumeSource_To_v1_VolumeSource(in *api.VolumeSource, out *
 	} else {
 		out.ConfigMap = nil
 	}
+	if in.VsphereVolume != nil {
+		in, out := &in.VsphereVolume, &out.VsphereVolume
+		*out = new(VsphereVirtualDiskVolumeSource)
+		if err := Convert_api_VsphereVirtualDiskVolumeSource_To_v1_VsphereVirtualDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.VsphereVolume = nil
+	}
 	return nil
 }
 
 func Convert_api_VolumeSource_To_v1_VolumeSource(in *api.VolumeSource, out *VolumeSource, s conversion.Scope) error {
 	return autoConvert_api_VolumeSource_To_v1_VolumeSource(in, out, s)
+}
+
+func autoConvert_v1_VsphereVirtualDiskVolumeSource_To_api_VsphereVirtualDiskVolumeSource(in *VsphereVirtualDiskVolumeSource, out *api.VsphereVirtualDiskVolumeSource, s conversion.Scope) error {
+	out.VolumePath = in.VolumePath
+	out.FSType = in.FSType
+	return nil
+}
+
+func Convert_v1_VsphereVirtualDiskVolumeSource_To_api_VsphereVirtualDiskVolumeSource(in *VsphereVirtualDiskVolumeSource, out *api.VsphereVirtualDiskVolumeSource, s conversion.Scope) error {
+	return autoConvert_v1_VsphereVirtualDiskVolumeSource_To_api_VsphereVirtualDiskVolumeSource(in, out, s)
+}
+
+func autoConvert_api_VsphereVirtualDiskVolumeSource_To_v1_VsphereVirtualDiskVolumeSource(in *api.VsphereVirtualDiskVolumeSource, out *VsphereVirtualDiskVolumeSource, s conversion.Scope) error {
+	out.VolumePath = in.VolumePath
+	out.FSType = in.FSType
+	return nil
+}
+
+func Convert_api_VsphereVirtualDiskVolumeSource_To_v1_VsphereVirtualDiskVolumeSource(in *api.VsphereVirtualDiskVolumeSource, out *VsphereVirtualDiskVolumeSource, s conversion.Scope) error {
+	return autoConvert_api_VsphereVirtualDiskVolumeSource_To_v1_VsphereVirtualDiskVolumeSource(in, out, s)
 }
 
 func autoConvert_v1_WeightedPodAffinityTerm_To_api_WeightedPodAffinityTerm(in *WeightedPodAffinityTerm, out *api.WeightedPodAffinityTerm, s conversion.Scope) error {

@@ -121,6 +121,7 @@ func RegisterCustomFitPredicate(policy schedulerapi.PredicatePolicy) string {
 	} else if predicateFactory, ok = fitPredicateMap[policy.Name]; ok {
 		// checking to see if a pre-defined predicate is requested
 		glog.V(2).Infof("Predicate type %s already registered, reusing.", policy.Name)
+		return policy.Name
 	}
 
 	if predicateFactory == nil {
@@ -290,7 +291,7 @@ func validatePredicateOrDie(predicate schedulerapi.PredicatePolicy) {
 			numArgs++
 		}
 		if numArgs != 1 {
-			glog.Fatalf("Exactly 1 predicate argument is required, numArgs: %v", numArgs)
+			glog.Fatalf("Exactly 1 predicate argument is required, numArgs: %v, Predicate: %s", numArgs, predicate.Name)
 		}
 	}
 }
@@ -305,7 +306,7 @@ func validatePriorityOrDie(priority schedulerapi.PriorityPolicy) {
 			numArgs++
 		}
 		if numArgs != 1 {
-			glog.Fatalf("Exactly 1 priority argument is required")
+			glog.Fatalf("Exactly 1 priority argument is required, numArgs: %v, Priority: %s", numArgs, priority.Name)
 		}
 	}
 }

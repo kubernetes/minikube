@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -186,7 +186,7 @@ var map_Container = map[string]string{
 	"ports":                  "List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational. Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default \"0.0.0.0\" address inside a container will be accessible from the network. Cannot be updated.",
 	"env":                    "List of environment variables to set in the container. Cannot be updated.",
 	"resources":              "Compute Resources required by this container. Cannot be updated. More info: http://releases.k8s.io/HEAD/docs/user-guide/persistent-volumes.md#resources",
-	"volumeMounts":           "Pod volumes to mount into the container's filesyste. Cannot be updated.",
+	"volumeMounts":           "Pod volumes to mount into the container's filesystem. Cannot be updated.",
 	"livenessProbe":          "Periodic probe of container liveness. Container will be restarted if the probe fails. Cannot be updated. More info: http://releases.k8s.io/HEAD/docs/user-guide/pod-states.md#container-probes",
 	"readinessProbe":         "Periodic probe of container service readiness. Container will be removed from service endpoints if the probe fails. Cannot be updated. More info: http://releases.k8s.io/HEAD/docs/user-guide/pod-states.md#container-probes",
 	"lifecycle":              "Actions that the management system should take in response to container lifecycle events. Cannot be updated.",
@@ -894,6 +894,8 @@ var map_NodeSystemInfo = map[string]string{
 	"containerRuntimeVersion": "ContainerRuntime Version reported by the node through runtime remote API (e.g. docker://1.5.0).",
 	"kubeletVersion":          "Kubelet Version reported by the node.",
 	"kubeProxyVersion":        "KubeProxy Version reported by the node.",
+	"operatingSystem":         "The Operating System reported by the node",
+	"architecture":            "The Architecture reported by the node",
 }
 
 func (NodeSystemInfo) SwaggerDoc() map[string]string {
@@ -1048,6 +1050,7 @@ var map_PersistentVolumeSource = map[string]string{
 	"flocker":              "Flocker represents a Flocker volume attached to a kubelet's host machine and exposed to the pod for its usage. This depends on the Flocker control service being running",
 	"flexVolume":           "FlexVolume represents a generic volume resource that is provisioned/attached using a exec based plugin. This is an alpha feature and may change in future.",
 	"azureFile":            "AzureFile represents an Azure File Service mount on the host and bind mount to the pod.",
+	"vsphereVolume":        "VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine",
 }
 
 func (PersistentVolumeSource) SwaggerDoc() map[string]string {
@@ -1487,6 +1490,7 @@ func (SecretList) SwaggerDoc() map[string]string {
 var map_SecretVolumeSource = map[string]string{
 	"":           "Adapts a Secret into a volume.\n\nThe contents of the target Secret's Data field will be presented in a volume as files using the keys in the Data field as the file names. Secret volumes support ownership management and SELinux relabeling.",
 	"secretName": "Name of the secret in the pod's namespace to use. More info: http://releases.k8s.io/HEAD/docs/user-guide/volumes.md#secrets",
+	"items":      "If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error. Paths must be relative and may not contain the '..' path or start with '..'.",
 }
 
 func (SecretVolumeSource) SwaggerDoc() map[string]string {
@@ -1614,6 +1618,29 @@ func (TCPSocketAction) SwaggerDoc() map[string]string {
 	return map_TCPSocketAction
 }
 
+var map_Taint = map[string]string{
+	"":       "The node this Taint is attached to has the effect \"effect\" on any pod that that does not tolerate the Taint.",
+	"key":    "Required. The taint key to be applied to a node.",
+	"value":  "Required. The taint value corresponding to the taint key.",
+	"effect": "Required. The effect of the taint on pods that do not tolerate the taint. Valid effects are NoSchedule and PreferNoSchedule.",
+}
+
+func (Taint) SwaggerDoc() map[string]string {
+	return map_Taint
+}
+
+var map_Toleration = map[string]string{
+	"":         "The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.",
+	"key":      "Required. Key is the taint key that the toleration applies to.",
+	"operator": "operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.",
+	"value":    "Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.",
+	"effect":   "Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule and PreferNoSchedule.",
+}
+
+func (Toleration) SwaggerDoc() map[string]string {
+	return map_Toleration
+}
+
 var map_Volume = map[string]string{
 	"":     "Volume represents a named volume in a pod that may be accessed by any container in the pod.",
 	"name": "Volume's name. Must be a DNS_LABEL and unique within the pod. More info: http://releases.k8s.io/HEAD/docs/user-guide/identifiers.md#names",
@@ -1647,19 +1674,30 @@ var map_VolumeSource = map[string]string{
 	"iscsi":                 "ISCSI represents an ISCSI Disk resource that is attached to a kubelet's host machine and then exposed to the pod. More info: http://releases.k8s.io/HEAD/examples/iscsi/README.md",
 	"glusterfs":             "Glusterfs represents a Glusterfs mount on the host that shares a pod's lifetime. More info: http://releases.k8s.io/HEAD/examples/glusterfs/README.md",
 	"persistentVolumeClaim": "PersistentVolumeClaimVolumeSource represents a reference to a PersistentVolumeClaim in the same namespace. More info: http://releases.k8s.io/HEAD/docs/user-guide/persistent-volumes.md#persistentvolumeclaims",
-	"rbd":         "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: http://releases.k8s.io/HEAD/examples/rbd/README.md",
-	"flexVolume":  "FlexVolume represents a generic volume resource that is provisioned/attached using a exec based plugin. This is an alpha feature and may change in future.",
-	"cinder":      "Cinder represents a cinder volume attached and mounted on kubelets host machine More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
-	"cephfs":      "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime",
-	"flocker":     "Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running",
-	"downwardAPI": "DownwardAPI represents downward API about the pod that should populate this volume",
-	"fc":          "FC represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.",
-	"azureFile":   "AzureFile represents an Azure File Service mount on the host and bind mount to the pod.",
-	"configMap":   "ConfigMap represents a configMap that should populate this volume",
+	"rbd":           "RBD represents a Rados Block Device mount on the host that shares a pod's lifetime. More info: http://releases.k8s.io/HEAD/examples/rbd/README.md",
+	"flexVolume":    "FlexVolume represents a generic volume resource that is provisioned/attached using a exec based plugin. This is an alpha feature and may change in future.",
+	"cinder":        "Cinder represents a cinder volume attached and mounted on kubelets host machine More info: http://releases.k8s.io/HEAD/examples/mysql-cinder-pd/README.md",
+	"cephfs":        "CephFS represents a Ceph FS mount on the host that shares a pod's lifetime",
+	"flocker":       "Flocker represents a Flocker volume attached to a kubelet's host machine. This depends on the Flocker control service being running",
+	"downwardAPI":   "DownwardAPI represents downward API about the pod that should populate this volume",
+	"fc":            "FC represents a Fibre Channel resource that is attached to a kubelet's host machine and then exposed to the pod.",
+	"azureFile":     "AzureFile represents an Azure File Service mount on the host and bind mount to the pod.",
+	"configMap":     "ConfigMap represents a configMap that should populate this volume",
+	"vsphereVolume": "VsphereVolume represents a vSphere volume attached and mounted on kubelets host machine",
 }
 
 func (VolumeSource) SwaggerDoc() map[string]string {
 	return map_VolumeSource
+}
+
+var map_VsphereVirtualDiskVolumeSource = map[string]string{
+	"":           "Represents a vSphere volume resource.",
+	"volumePath": "Path that identifies vSphere volume vmdk",
+	"fsType":     "Filesystem type to mount. Must be a filesystem type supported by the host operating system. Ex. \"ext4\", \"xfs\", \"ntfs\". Implicitly inferred to be \"ext4\" if unspecified.",
+}
+
+func (VsphereVirtualDiskVolumeSource) SwaggerDoc() map[string]string {
+	return map_VsphereVirtualDiskVolumeSource
 }
 
 var map_WeightedPodAffinityTerm = map[string]string{

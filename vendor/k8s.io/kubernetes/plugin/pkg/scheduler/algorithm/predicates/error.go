@@ -21,7 +21,7 @@ import "fmt"
 const (
 	podCountResourceName  string = "PodCount"
 	cpuResourceName       string = "CPU"
-	memoryResoureceName   string = "Memory"
+	memoryResourceName    string = "Memory"
 	nvidiaGpuResourceName string = "NvidiaGpu"
 )
 
@@ -32,11 +32,13 @@ var (
 	ErrVolumeZoneConflict        = newPredicateFailureError("NoVolumeZoneConflict")
 	ErrNodeSelectorNotMatch      = newPredicateFailureError("MatchNodeSelector")
 	ErrPodAffinityNotMatch       = newPredicateFailureError("MatchInterPodAffinity")
+	ErrTaintsTolerationsNotMatch = newPredicateFailureError("PodToleratesNodeTaints")
 	ErrPodNotMatchHostName       = newPredicateFailureError("HostName")
 	ErrPodNotFitsHostPorts       = newPredicateFailureError("PodFitsHostPorts")
 	ErrNodeLabelPresenceViolated = newPredicateFailureError("CheckNodeLabelPresence")
 	ErrServiceAffinityViolated   = newPredicateFailureError("CheckServiceAffinity")
 	ErrMaxVolumeCountExceeded    = newPredicateFailureError("MaxVolumeCount")
+	ErrNodeUnderMemoryPressure   = newPredicateFailureError("NodeUnderMemoryPressure")
 	// ErrFakePredicate is used for test only. The fake predicates returning false also returns error
 	// as ErrFakePredicate.
 	ErrFakePredicate = newPredicateFailureError("FakePredicateError")

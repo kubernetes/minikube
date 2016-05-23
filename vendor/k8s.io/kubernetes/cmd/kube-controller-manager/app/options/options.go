@@ -70,6 +70,7 @@ func NewCMServer() *CMServer {
 			NodeStartupGracePeriod:            unversioned.Duration{Duration: 60 * time.Second},
 			NodeMonitorPeriod:                 unversioned.Duration{Duration: 5 * time.Second},
 			ClusterName:                       "kubernetes",
+			NodeCIDRMaskSize:                  24,
 			TerminatedPodGCThreshold:          12500,
 			VolumeConfiguration: componentconfig.VolumeConfiguration{
 				EnableHostPathProvisioning: false,
@@ -81,6 +82,7 @@ func NewCMServer() *CMServer {
 					IncrementTimeoutHostPath: 30,
 				},
 			},
+			ContentType:             "application/vnd.kubernetes.protobuf",
 			KubeAPIQPS:              20.0,
 			KubeAPIBurst:            30,
 			LeaderElection:          leaderelection.DefaultLeaderElectionConfiguration(),
@@ -141,11 +143,13 @@ func (s *CMServer) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.EnableProfiling, "profiling", true, "Enable profiling via web interface host:port/debug/pprof/")
 	fs.StringVar(&s.ClusterName, "cluster-name", s.ClusterName, "The instance prefix for the cluster")
 	fs.StringVar(&s.ClusterCIDR, "cluster-cidr", s.ClusterCIDR, "CIDR Range for Pods in cluster.")
+	fs.StringVar(&s.ServiceCIDR, "service-cluster-ip-range", s.ServiceCIDR, "CIDR Range for Services in cluster.")
+	fs.Int32Var(&s.NodeCIDRMaskSize, "node-cidr-mask-size", s.NodeCIDRMaskSize, "Mask size for node cidr in cluster.")
 	fs.BoolVar(&s.AllocateNodeCIDRs, "allocate-node-cidrs", false, "Should CIDRs for Pods be allocated and set on the cloud provider.")
 	fs.StringVar(&s.Master, "master", s.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", s.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
 	fs.StringVar(&s.RootCAFile, "root-ca-file", s.RootCAFile, "If set, this root certificate authority will be included in service account's token secret. This must be a valid PEM-encoded CA bundle.")
-	fs.StringVar(&s.ContentType, "kube-api-content-type", s.ContentType, "ContentType of requests sent to apiserver. Passing application/vnd.kubernetes.protobuf is an experimental feature now.")
+	fs.StringVar(&s.ContentType, "kube-api-content-type", s.ContentType, "Content type of requests sent to apiserver.")
 	fs.Float32Var(&s.KubeAPIQPS, "kube-api-qps", s.KubeAPIQPS, "QPS to use while talking with kubernetes apiserver")
 	fs.Int32Var(&s.KubeAPIBurst, "kube-api-burst", s.KubeAPIBurst, "Burst to use while talking with kubernetes apiserver")
 	fs.DurationVar(&s.ControllerStartInterval.Duration, "controller-start-interval", s.ControllerStartInterval.Duration, "Interval between starting controller managers.")

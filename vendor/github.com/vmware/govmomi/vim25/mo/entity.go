@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright (c) 2016 VMware, Inc. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package persistent_claim contains the internal representation of persistent
-// volume claims.
-package persistent_claim
+package mo
+
+// Entity is the interface that is implemented by all managed objects
+// that extend ManagedEntity.
+type Entity interface {
+	Reference
+	Entity() *ManagedEntity
+}

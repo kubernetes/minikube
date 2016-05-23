@@ -14,29 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storagebackend
+package system
 
 import (
 	"strings"
 
-	"github.com/coreos/etcd/clientv3"
-	"golang.org/x/net/context"
-	"k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/storage/etcd3"
+	"k8s.io/kubernetes/pkg/api"
 )
 
-func newETCD3Storage(c Config) (storage.Interface, error) {
-	endpoints := c.ServerList
-	for i, s := range endpoints {
-		endpoints[i] = strings.TrimLeft(s, "http://")
-	}
-	cfg := clientv3.Config{
-		Endpoints: endpoints,
-	}
-	client, err := clientv3.New(cfg)
-	if err != nil {
-		return nil, err
-	}
-	etcd3.StartCompactor(context.Background(), client)
-	return etcd3.New(client, c.Codec, c.Prefix), nil
+// TODO: find a better way of figuring out if given node is a registered master.
+func IsMasterNode(node *api.Node) bool {
+	return strings.HasSuffix(node.Name, "master")
 }

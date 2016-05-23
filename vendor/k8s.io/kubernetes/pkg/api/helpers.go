@@ -58,16 +58,7 @@ var Semantic = conversion.EqualitiesOrDie(
 		// TODO: if we decide it's important, it should be safe to start comparing the format.
 		//
 		// Uninitialized quantities are equivalent to 0 quantities.
-		if a.Amount == nil && b.MilliValue() == 0 {
-			return true
-		}
-		if b.Amount == nil && a.MilliValue() == 0 {
-			return true
-		}
-		if a.Amount == nil || b.Amount == nil {
-			return false
-		}
-		return a.Amount.Cmp(b.Amount) == 0
+		return a.Cmp(b) == 0
 	},
 	func(a, b unversioned.Time) bool {
 		return a.UTC() == b.UTC()
@@ -411,9 +402,19 @@ func NodeSelectorRequirementsAsSelector(nsm []NodeSelectorRequirement) (labels.S
 	return selector, nil
 }
 
-// AffinityAnnotationKey represents the key of affinity data (json serialized)
-// in the Annotations of a Pod.
-const AffinityAnnotationKey string = "scheduler.alpha.kubernetes.io/affinity"
+const (
+	// AffinityAnnotationKey represents the key of affinity data (json serialized)
+	// in the Annotations of a Pod.
+	AffinityAnnotationKey string = "scheduler.alpha.kubernetes.io/affinity"
+
+	// TolerationsAnnotationKey represents the key of tolerations data (json serialized)
+	// in the Annotations of a Pod.
+	TolerationsAnnotationKey string = "scheduler.alpha.kubernetes.io/tolerations"
+
+	// TaintsAnnotationKey represents the key of taints data (json serialized)
+	// in the Annotations of a Node.
+	TaintsAnnotationKey string = "scheduler.alpha.kubernetes.io/taints"
+)
 
 // GetAffinityFromPod gets the json serialized affinity data from Pod.Annotations
 // and converts it to the Affinity type in api.
@@ -426,4 +427,62 @@ func GetAffinityFromPodAnnotations(annotations map[string]string) (Affinity, err
 		}
 	}
 	return affinity, nil
+}
+
+// GetTolerationsFromPodAnnotations gets the json serialized tolerations data from Pod.Annotations
+// and converts it to the []Toleration type in api.
+func GetTolerationsFromPodAnnotations(annotations map[string]string) ([]Toleration, error) {
+	var tolerations []Toleration
+	if len(annotations) > 0 && annotations[TolerationsAnnotationKey] != "" {
+		err := json.Unmarshal([]byte(annotations[TolerationsAnnotationKey]), &tolerations)
+		if err != nil {
+			return tolerations, err
+		}
+	}
+	return tolerations, nil
+}
+
+// GetTaintsFromNodeAnnotations gets the json serialized taints data from Pod.Annotations
+// and converts it to the []Taint type in api.
+func GetTaintsFromNodeAnnotations(annotations map[string]string) ([]Taint, error) {
+	var taints []Taint
+	if len(annotations) > 0 && annotations[TaintsAnnotationKey] != "" {
+		err := json.Unmarshal([]byte(annotations[TaintsAnnotationKey]), &taints)
+		if err != nil {
+			return []Taint{}, err
+		}
+	}
+	return taints, nil
+}
+
+// TolerationToleratesTaint checks if the toleration tolerates the taint.
+func TolerationToleratesTaint(toleration Toleration, taint Taint) bool {
+	if len(toleration.Effect) != 0 && toleration.Effect != taint.Effect {
+		return false
+	}
+
+	if toleration.Key != taint.Key {
+		return false
+	}
+	// TODO: Use proper defaulting when Toleration becomes a field of PodSpec
+	if (len(toleration.Operator) == 0 || toleration.Operator == TolerationOpEqual) && toleration.Value == taint.Value {
+		return true
+	}
+	if toleration.Operator == TolerationOpExists {
+		return true
+	}
+	return false
+
+}
+
+// TaintToleratedByTolerations checks if taint is tolerated by any of the tolerations.
+func TaintToleratedByTolerations(taint Taint, tolerations []Toleration) bool {
+	tolerated := false
+	for _, toleration := range tolerations {
+		if TolerationToleratesTaint(toleration, taint) {
+			tolerated = true
+			break
+		}
+	}
+	return tolerated
 }

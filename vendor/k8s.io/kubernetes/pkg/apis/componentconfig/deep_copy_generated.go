@@ -117,6 +117,8 @@ func DeepCopy_componentconfig_KubeControllerManagerConfiguration(in KubeControll
 	out.EnableProfiling = in.EnableProfiling
 	out.ClusterName = in.ClusterName
 	out.ClusterCIDR = in.ClusterCIDR
+	out.ServiceCIDR = in.ServiceCIDR
+	out.NodeCIDRMaskSize = in.NodeCIDRMaskSize
 	out.AllocateNodeCIDRs = in.AllocateNodeCIDRs
 	out.RootCAFile = in.RootCAFile
 	out.ContentType = in.ContentType
@@ -272,6 +274,7 @@ func DeepCopy_componentconfig_KubeletConfiguration(in KubeletConfiguration, out 
 	out.RktAPIEndpoint = in.RktAPIEndpoint
 	out.RktStage1Image = in.RktStage1Image
 	out.LockFilePath = in.LockFilePath
+	out.ExitOnLockContention = in.ExitOnLockContention
 	out.ConfigureCBR0 = in.ConfigureCBR0
 	out.HairpinMode = in.HairpinMode
 	out.BabysitDaemons = in.BabysitDaemons
@@ -311,6 +314,7 @@ func DeepCopy_componentconfig_KubeletConfiguration(in KubeletConfiguration, out 
 	if err := unversioned.DeepCopy_unversioned_Duration(in.EvictionPressureTransitionPeriod, &out.EvictionPressureTransitionPeriod, c); err != nil {
 		return err
 	}
+	out.EvictionMaxPodGracePeriod = in.EvictionMaxPodGracePeriod
 	return nil
 }
 
