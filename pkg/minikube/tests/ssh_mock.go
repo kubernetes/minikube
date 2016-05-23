@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"io"
+	"log"
 	"net"
 	"strconv"
 
@@ -31,7 +32,7 @@ import (
 type SSHServer struct {
 	Config *ssh.ServerConfig
 	// Commands stores the raw commands executed against the server.
-	Commands  []string
+	Commands  map[string]int
 	Connected bool
 	Transfers *bytes.Buffer
 }
@@ -43,6 +44,7 @@ func NewSSHServer() (*SSHServer, error) {
 	s.Config = &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
+	s.Commands = make(map[string]int)
 
 	private, err := rsa.GenerateKey(rand.Reader, 2014)
 	if err != nil {
@@ -54,6 +56,10 @@ func NewSSHServer() (*SSHServer, error) {
 	}
 	s.Config.AddHostKey(signer)
 	return s, nil
+}
+
+type execRequest struct {
+	Command string
 }
 
 // Start starts the mock SSH Server, and returns the port it's listening on.
@@ -88,7 +94,14 @@ func (s *SSHServer) Start() (int, error) {
 
 				req := <-requests
 				req.Reply(true, nil)
-				s.Commands = append(s.Commands, string(req.Payload))
+
+				//Note: string(req.Payload) adds additional characters to start of input, execRequest used to solve this issue
+				var cmd execRequest
+				if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
+					log.Println("Unmarshall encountered error: %s", err)
+					return
+				}
+				s.Commands[cmd.Command] = 1
 				channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
 
 				// Store anything that comes in over stdin.

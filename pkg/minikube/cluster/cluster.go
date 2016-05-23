@@ -243,19 +243,10 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	exists, err := api.Exists(constants.MachineName)
+	host, err := checkIfApiExistsAndLoad(api)
 	if err != nil {
 		return nil, err
 	}
-	if !exists {
-		return nil, fmt.Errorf("Machine does not exist")
-	}
-
-	host, err := api.Load(constants.MachineName)
-	if err != nil {
-		return nil, err
-	}
-
 	ip, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, err
@@ -271,4 +262,33 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 		"DOCKER_CERT_PATH":  constants.MakeMiniPath("certs"),
 	}
 	return envMap, nil
+}
+
+// GetHostLogs gets the localkube logs of the host VM.
+func GetHostLogs(api libmachine.API) (string, error) {
+	host, err := checkIfApiExistsAndLoad(api)
+	if err != nil {
+		return "", err
+	}
+	s, err := host.RunSSHCommand(logsCommand)
+	if err != nil {
+		return "", nil
+	}
+	return s, err
+}
+
+func checkIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
+	exists, err := api.Exists(constants.MachineName)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("Machine does not exist for api.Exists(%s)", constants.MachineName)
+	}
+
+	host, err := api.Load(constants.MachineName)
+	if err != nil {
+		return nil, err
+	}
+	return host, nil
 }
