@@ -64,6 +64,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	if err := cluster.SetupCerts(host.Driver); err != nil {
+		log.Println("Error configuring authentication: ", err)
+		os.Exit(1)
+	}
+
 	if err := cluster.StartCluster(host); err != nil {
 		log.Println("Error starting cluster: ", err)
 		os.Exit(1)
@@ -88,11 +93,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	} else if !active {
 		fmt.Println("Run this command to use the cluster: ")
 		fmt.Printf("kubectl config use-context %s\n", name)
-	}
-
-	if err := cluster.GetCreds(host); err != nil {
-		log.Println("Error configuring authentication: ", err)
-		os.Exit(1)
 	}
 }
 

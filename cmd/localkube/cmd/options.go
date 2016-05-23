@@ -22,6 +22,7 @@ import (
 	flag "github.com/spf13/pflag"
 
 	"k8s.io/minikube/pkg/localkube"
+	"k8s.io/minikube/pkg/util"
 )
 
 func NewLocalkubeServer() *localkube.LocalkubeServer {
@@ -31,14 +32,15 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 	return &localkube.LocalkubeServer{
 		Containerized:            false,
 		EnableDNS:                true,
-		DNSDomain:                "cluster.local",
+		DNSDomain:                util.DNSDomain,
 		DNSIP:                    net.ParseIP("10.0.0.10"),
-		LocalkubeDirectory:       "/var/lib/localkube",
+		LocalkubeDirectory:       util.LocalkubeDirectory,
 		ServiceClusterIPRange:    *defaultServiceClusterIPRange,
 		APIServerAddress:         net.ParseIP("0.0.0.0"),
 		APIServerPort:            443,
 		APIServerInsecureAddress: net.ParseIP("127.0.0.1"),
 		APIServerInsecurePort:    8080,
+		ShouldGenerateCerts:      true,
 	}
 }
 
@@ -54,6 +56,7 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.IntVar(&s.APIServerPort, "apiserver-port", s.APIServerPort, "The port the apiserver will listen securely on")
 	flag.IPVar(&s.APIServerInsecureAddress, "apiserver-insecure-address", s.APIServerInsecureAddress, "The address the apiserver will listen insecurely on")
 	flag.IntVar(&s.APIServerInsecurePort, "apiserver-insecure-port", s.APIServerInsecurePort, "The port the apiserver will listen insecurely on")
+	flag.BoolVar(&s.ShouldGenerateCerts, "generate-certs", s.ShouldGenerateCerts, "If localkube should generate it's own certificates")
 
 	// These two come from vendor/ packages that use flags. We should hide them
 	flag.CommandLine.MarkHidden("google-json-key")

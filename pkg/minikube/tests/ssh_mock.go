@@ -1,10 +1,10 @@
 package tests
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"io"
-	"io/ioutil"
 	"net"
 	"strconv"
 
@@ -17,11 +17,13 @@ type SSHServer struct {
 	// Commands stores the raw commands executed against the server.
 	Commands  []string
 	Connected bool
+	Transfers *bytes.Buffer
 }
 
 // NewSSHServer returns a NewSSHServer instance, ready for use.
 func NewSSHServer() (*SSHServer, error) {
 	s := &SSHServer{}
+	s.Transfers = &bytes.Buffer{}
 	s.Config = &ssh.ServerConfig{
 		NoClientAuth: true,
 	}
@@ -73,8 +75,8 @@ func (s *SSHServer) Start() (int, error) {
 				s.Commands = append(s.Commands, string(req.Payload))
 				channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
 
-				// Discard anything that comes in over stdin.
-				io.Copy(ioutil.Discard, channel)
+				// Store anything that comes in over stdin.
+				io.Copy(s.Transfers, channel)
 				channel.Close()
 			}
 		}

@@ -27,11 +27,11 @@ import (
 )
 
 func TestCluster(t *testing.T) {
-	kubectlRunner := util.NewKubectlRunner(t)
-
 	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
+	minikubeRunner.RunCommand("start", true)
 	minikubeRunner.CheckStatus("Running")
 
+	kubectlRunner := util.NewKubectlRunner(t)
 	cs := api.ComponentStatusList{}
 	kubectlRunner.RunCommand([]string{"get", "cs"}, &cs)
 

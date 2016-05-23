@@ -55,12 +55,12 @@ func init() {
 }
 
 func SetupServer(s *localkube.LocalkubeServer) {
-
-	if err := s.GenerateCerts(); err != nil {
-		fmt.Println("Failed to create certificates!")
-		panic(err)
+	if s.ShouldGenerateCerts {
+		if err := s.GenerateCerts(); err != nil {
+			fmt.Println("Failed to create certificates!")
+			panic(err)
+		}
 	}
-
 	// setup etcd
 	etcd, err := s.NewEtcd(localkube.KubeEtcdClientURLs, localkube.KubeEtcdPeerURLs, "kubeetcd", s.GetEtcdDataDirectory())
 	if err != nil {
