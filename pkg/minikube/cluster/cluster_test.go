@@ -285,7 +285,7 @@ func TestGetHostStatus(t *testing.T) {
 	checkState := func(expected string) {
 		s, err := GetHostStatus(api)
 		if err != nil {
-			t.Fatalf("Unexpected error getting status: %s", s)
+			t.Fatalf("Unexpected error getting status: %s", err)
 		}
 		if s != expected {
 			t.Fatalf("Expected status: %s, got %s", s, expected)
@@ -328,6 +328,36 @@ func TestSetupCerts(t *testing.T) {
 		transferred := s.Transfers.Bytes()
 		if !bytes.Contains(transferred, contents) {
 			t.Fatalf("Certificate not copied. Expected transfers to contain %s. It was: %s", contents, transferred)
+		}
+	}
+}
+
+func TestGetHostDockerEnv(t *testing.T) {
+	api := tests.NewMockAPI()
+	h, err := createHost(api, MachineConfig{})
+	if err != nil {
+		t.Fatalf("Error creating host: %v", err)
+	}
+	d := &tests.MockDriver{
+		BaseDriver: drivers.BaseDriver{
+			IPAddress: "127.0.0.1",
+		},
+	}
+	h.Driver = d
+
+	envMap, err := GetHostDockerEnv(api)
+	if err != nil {
+		t.Fatalf("Unexpected error getting env: %s", err)
+	}
+
+	dockerEnvKeys := [...]string{
+		"DOCKER_TLS_VERIFY",
+		"DOCKER_HOST",
+		"DOCKER_CERT_PATH",
+	}
+	for _, dockerEnvKey := range dockerEnvKeys {
+		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
+			t.Fatalf("Expected envMap[\"%s\"] key to be defined", dockerEnvKey)
 		}
 	}
 }
