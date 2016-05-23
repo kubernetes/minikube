@@ -240,3 +240,35 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	}
 	return h, nil
 }
+
+// GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
+func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
+	exists, err := api.Exists(constants.MachineName)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, fmt.Errorf("Machine does not exist")
+	}
+
+	host, err := api.Load(constants.MachineName)
+	if err != nil {
+		return nil, err
+	}
+
+	ip, err := host.Driver.GetIP()
+	if err != nil {
+		return nil, err
+	}
+
+	tcpPrefix := "tcp://"
+	portDelimiter := ":"
+	port := "2376"
+
+	envMap := map[string]string{
+		"DOCKER_TLS_VERIFY": "1",
+		"DOCKER_HOST":       tcpPrefix + ip + portDelimiter + port,
+		"DOCKER_CERT_PATH":  constants.MakeMiniPath("certs"),
+	}
+	return envMap, nil
+}
