@@ -55,6 +55,8 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.EnableWatchCache = true
 	config.MinRequestTimeout = 1800
 
+	config.AllowPrivileged = true
+
 	return func() error {
 		return apiserver.Run(config)
 	}
