@@ -38,6 +38,8 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	// Set containerized based on the flag
 	config.Containerized = lk.Containerized
 
+	config.AllowPrivileged = true
+
 	// Networking
 	config.ClusterDomain = lk.DNSDomain
 	config.ClusterDNS = lk.DNSIP.String()
