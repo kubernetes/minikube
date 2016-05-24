@@ -22,4 +22,4 @@ TESTS=$(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...)
 go test -v ${TESTS}
 
 # Check gofmt
-diff -u <(echo -n) <(gofmt -l -s . | grep -v "vendor\|\.gopath\|localkubecontents.go")
+diff -u <(echo -n) <(gofmt -l -s . | grep -v "vendor\|\_gopath\|localkubecontents.go")
