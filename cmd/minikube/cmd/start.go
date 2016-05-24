@@ -43,15 +43,25 @@ var (
 	minikubeISO string
 )
 
+func getConfig() cluster.MachineConfig {
+	if minikubeISO != "" {
+		return cluster.MachineConfig{MinikubeISO: minikubeISO}
+	}
+	isoURL, err := cluster.GetIsoUrl(constants.ISOMapURL, constants.ISOVersion)
+	if err != nil || isoURL == "" {
+		log.Println("Error retrieving ISO URL, using the default value: ", err)
+		return cluster.MachineConfig{MinikubeISO: constants.DefaultISOURL}
+	}
+	return cluster.MachineConfig{MinikubeISO: isoURL}
+}
+
 func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Starting local Kubernetes cluster...")
 	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 	defer api.Close()
 
-	config := cluster.MachineConfig{
-		MinikubeISO: minikubeISO,
-	}
+	config := getConfig()
 
 	host, err := cluster.StartHost(api, config)
 	if err != nil {
@@ -143,6 +153,6 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) (activeCont
 }
 
 func init() {
-	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", "https://storage.googleapis.com/tinykube/minikube.iso", "Location of the minikube iso")
+	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", "", "Location of the minikube iso")
 	RootCmd.AddCommand(startCmd)
 }
