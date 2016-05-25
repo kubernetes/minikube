@@ -22,8 +22,13 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+var (
+	// This is the internalIP the the API server and other components communicate on.
+	internalIP = net.ParseIP("10.0.0.1")
+)
+
 func GenerateCerts(pub, priv string, ip net.IP) error {
-	ips := []net.IP{ip}
+	ips := []net.IP{ip, internalIP}
 	if err := util.GenerateSelfSignedCert(pub, priv, ips, util.GetAlternateDNS(util.DNSDomain)); err != nil {
 		return err
 	}
