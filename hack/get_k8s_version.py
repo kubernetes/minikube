@@ -18,6 +18,7 @@
 
 import json
 import subprocess
+import sys
 
 K8S_PACKAGE = 'k8s.io/kubernetes/'
 X_ARG_BASE = '-X k8s.io/minikube/vendor/k8s.io/kubernetes/pkg/version.'
@@ -46,4 +47,4 @@ def main():
   return ' '.join([X_ARG_BASE + arg for arg in args])
 
 if __name__ == '__main__':
-  print main()
+  sys.exit(main())

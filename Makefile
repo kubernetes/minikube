@@ -12,9 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Use the native vendor/ dependency system
+export GO15VENDOREXPERIMENT=1
+
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
+REPOPATH ?= k8s.io/minikube
+BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.6.2-1
 
 ifeq ($(IN_DOCKER),1)
 	GOPATH := /go
@@ -22,11 +27,8 @@ else
 	GOPATH := $(shell pwd)/_gopath
 endif
 
-REPOPATH ?= k8s.io/minikube
-export GO15VENDOREXPERIMENT=1
-
-# Set the version information in kubernetes.
-LD_FLAGS = "-s -w $(shell python hack/get_k8s_version.py)"
+# Set the version information for the Kubernetes servers, and build localkube statically
+LD_FLAGS = "-s -extldflags '-static' -w $(shell docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python hack/get_k8s_version.py)"
 
 clean:
 	rm -rf $(GOPATH)
@@ -45,7 +47,7 @@ out/localkube: $(LOCALKUBEFILES)
 ifeq ($(GOOS),linux)
 	CGO_ENABLED=1 go build -ldflags=$(LD_FLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
-	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) golang:1.6 make out/localkube
+	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
 endif
 
 out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/localkubecontents.go
