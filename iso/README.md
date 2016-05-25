@@ -14,3 +14,9 @@ VBoxManage modifyvm foo --memory 1024 --vrde on --vrdeaddress 127.0.0.1 --vrdepo
 ```
 
 Then use the VirtualBox gui to start and open a session.
+
+## Release instructions
+ * Build an iso following the above build instructions.
+ * Test the iso with --iso-url=file:///$PATHTOISO.
+ * Push the new iso to GCS, with a new name (minikube-0x.iso) with a command like this: `gsutil cp $PATHTOISO gs://$BUCKET`
+ * Update the default URL in start.go.

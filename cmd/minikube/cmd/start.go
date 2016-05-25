@@ -143,6 +143,6 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) (activeCont
 }
 
 func init() {
-	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", "https://storage.googleapis.com/tinykube/minikube.iso", "Location of the minikube iso")
+	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", constants.DefaultIsoUrl, "Location of the minikube iso")
 	RootCmd.AddCommand(startCmd)
 }

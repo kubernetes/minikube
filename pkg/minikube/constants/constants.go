@@ -38,3 +38,5 @@ const MinikubeContext = "minikube"
 func MakeMiniPath(fileName string) string {
 	return filepath.Join(Minipath, fileName)
 }
+
+const DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.1.iso"
