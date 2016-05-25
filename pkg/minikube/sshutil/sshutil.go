@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sync"
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
@@ -74,7 +75,10 @@ func Transfer(data []byte, remotedir, filename string, perm string, c *ssh.Clien
 		return err
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		w, err := s.StdinPipe()
 		defer w.Close()
 		if err != nil {
@@ -86,7 +90,7 @@ func Transfer(data []byte, remotedir, filename string, perm string, c *ssh.Clien
 		io.Copy(w, reader)
 		fmt.Fprint(w, "\x00")
 	}()
-
+	wg.Wait()
 	scpcmd := fmt.Sprintf("sudo /usr/local/bin/scp -t %s", remotedir)
 	if err := s.Run(scpcmd); err != nil {
 		return err
