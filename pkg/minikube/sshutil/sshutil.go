@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"sync"
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
@@ -74,23 +75,28 @@ func Transfer(data []byte, remotedir, filename string, perm string, c *ssh.Clien
 		return err
 	}
 
+	w, err := s.StdinPipe()
+	if err != nil {
+		return err
+	}
+	// The scpcmd below *should not* return until all data is copied and the
+	// StdinPipe is closed. But let's use a WaitGroup to make it expicit.
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		w, err := s.StdinPipe()
+		defer wg.Done()
 		defer w.Close()
-		if err != nil {
-			return
-		}
 		header := fmt.Sprintf("C%s %d %s\n", perm, len(data), filename)
 		fmt.Fprint(w, header)
 		reader := bytes.NewReader(data)
 		io.Copy(w, reader)
 		fmt.Fprint(w, "\x00")
 	}()
-
 	scpcmd := fmt.Sprintf("sudo /usr/local/bin/scp -t %s", remotedir)
 	if err := s.Run(scpcmd); err != nil {
 		return err
 	}
+	wg.Wait()
 
 	return nil
 }
