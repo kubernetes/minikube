@@ -11,6 +11,18 @@ import (
 	"time"
 )
 
+type MultiError struct {
+	Errs []error
+}
+
+func (e MultiError) Error() string {
+	aggregate := ""
+	for _, err := range e.Errs {
+		aggregate += err.Error() + "\n"
+	}
+	return aggregate
+}
+
 // GetHomeDir returns the home directory
 // TODO: Having this here just strikes me as dangerous, but some of the drivers
 // depend on it ;_;
@@ -63,11 +75,7 @@ func CopyFile(src, dst string) error {
 		return err
 	}
 
-	if err := os.Chmod(dst, fi.Mode()); err != nil {
-		return err
-	}
-
-	return nil
+	return os.Chmod(dst, fi.Mode())
 }
 
 func WaitForSpecificOrError(f func() (bool, error), maxAttempts int, waitInterval time.Duration) error {
