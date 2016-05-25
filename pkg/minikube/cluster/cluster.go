@@ -148,7 +148,7 @@ type MachineConfig struct {
 
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble) error {
-	commands := []string{startCommand}
+	commands := []string{stopCommand, startCommand}
 
 	for _, cmd := range commands {
 		output, err := h.RunSSHCommand(cmd)
