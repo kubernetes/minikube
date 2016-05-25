@@ -24,7 +24,7 @@ _testmain.go
 *.prof
 
 /out
-/.gopath
+/_gopath
 
 /pkg/minikube/cluster/localkubecontents.go
 /minikube

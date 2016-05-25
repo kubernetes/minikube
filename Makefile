@@ -19,7 +19,7 @@ BUILD_DIR ?= ./out
 ifeq ($(IN_DOCKER),1)
 	GOPATH := /go
 else
-	GOPATH := $(shell pwd)/.gopath
+	GOPATH := $(shell pwd)/_gopath
 endif
 
 REPOPATH ?= k8s.io/minikube
