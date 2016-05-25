@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -37,7 +37,7 @@ var statusCmd = &cobra.Command{
 		defer api.Close()
 		s, err := cluster.GetHostStatus(api)
 		if err != nil {
-			log.Println("Error getting machine status:", err)
+			glog.Errorln("Error getting machine status:", err)
 			os.Exit(1)
 		}
 		fmt.Fprintln(os.Stdout, s)

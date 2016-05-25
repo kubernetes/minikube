@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api/latest"
 	"k8s.io/kubernetes/pkg/runtime"
@@ -61,7 +62,7 @@ func ReadConfigOrNew(filename string) (*api.Config, error) {
 // If the file exists, it's contents will be overwritten.
 func WriteConfig(config *api.Config, filename string) error {
 	if config == nil {
-		fmt.Errorf("could not write to '%s': config can't be nil", filename)
+		glog.Errorf("could not write to '%s': config can't be nil", filename)
 	}
 
 	// encode config to YAML

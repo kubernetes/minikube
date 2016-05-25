@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
@@ -45,7 +45,7 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	if exists, err := api.Exists(constants.MachineName); err != nil {
 		return nil, fmt.Errorf("Error checking if host exists: %s", err)
 	} else if exists {
-		log.Println("Machine exists!")
+		glog.Infoln("Machine exists!")
 		h, err := api.Load(constants.MachineName)
 		if err != nil {
 			return nil, fmt.Errorf("Error loading existing host: %s", err)
@@ -148,11 +148,11 @@ type MachineConfig struct {
 
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble) error {
-	commands := []string{stopCommand, startCommand}
+	commands := []string{stopCommand, GetStartCommand()}
 
 	for _, cmd := range commands {
 		output, err := h.RunSSHCommand(cmd)
-		log.Println(output)
+		glog.Infoln(output)
 		if err != nil {
 			return err
 		}
@@ -164,7 +164,7 @@ func StartCluster(h sshAble) error {
 func UpdateCluster(d drivers.Driver) error {
 	localkube, err := Asset("out/localkube")
 	if err != nil {
-		log.Println("Error loading localkube: ", err)
+		glog.Infoln("Error loading localkube: ", err)
 		return err
 	}
 

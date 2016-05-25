@@ -39,4 +39,14 @@ func MakeMiniPath(fileName string) string {
 	return filepath.Join(Minipath, fileName)
 }
 
+var LogFlags = [...]string{
+	"logtostderr",
+	"alsologtostderr",
+	"stderrthreshold",
+	"log_dir",
+	"log_backtrace_at",
+	"v",
+	"vmodule",
+}
+
 const DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.1.iso"
