@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright YEAR The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,20 +14,3 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tests
-
-import (
-	"io/ioutil"
-	"log"
-
-	"k8s.io/minikube/pkg/minikube/constants"
-)
-
-func MakeTempDir() string {
-	tempDir, err := ioutil.TempDir("", "minipath")
-	if err != nil {
-		log.Fatal(err)
-	}
-	constants.Minipath = tempDir
-	return tempDir
-}

@@ -1,8 +1,5 @@
 /*
-Modified by Redspread to allow external access. Original at:
-https://github.com/kubernetes/kubernetes/blob/a3c00aa/cluster/addons/dns/kube2sky/kube2sky.go
-
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +12,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+*/
+
+/*
+Modified by Redspread to allow external access. Original at:
+https://github.com/kubernetes/kubernetes/blob/a3c00aa/cluster/addons/dns/kube2sky/kube2sky.go
 */
 
 // kube2sky is a bridge between Kubernetes and SkyDNS. It watches the
