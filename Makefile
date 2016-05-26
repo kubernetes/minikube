@@ -28,7 +28,8 @@ else
 endif
 
 # Set the version information for the Kubernetes servers, and build localkube statically
-LD_FLAGS = "-s -extldflags '-static' -w $(shell docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python hack/get_k8s_version.py)"
+VERSION_LDFLAGS := $(shell docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python hack/get_k8s_version.py)
+LDFLAGS := "$(VERSION_LDFLAGS) -s -w -extldflags '-static'"
 
 clean:
 	rm -rf $(GOPATH)
@@ -45,7 +46,7 @@ out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 out/localkube: $(LOCALKUBEFILES)
 	$(MKGOPATH)
 ifeq ($(GOOS),linux)
-	CGO_ENABLED=1 go build -ldflags=$(LD_FLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=1 go build -ldflags=$(LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
 	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
 endif
