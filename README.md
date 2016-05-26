@@ -10,10 +10,59 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs
 a single-node Kubernetes cluster inside a VM on your laptop for users looking
 to try out Kubernetes or develop with it day-to-day.
 
+## Requirements For Running Minikube
+* VirtualBox installation
+* VT-x/AMD-v virtualization must be enabled in BIOS
+
+## Usage
+
+Here's a brief demo of minikube usage. We're using the code from this [Kubernetes tutorial](http://kubernetes.io/docs/hellonode/).
+Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
+
+```shell
+$ minikube start
+Starting local Kubernetes cluster...
+Running pre-create checks...
+Creating machine...
+Starting local Kubernetes cluster...
+Kubernetes is available at https://192.168.99.100:443.
+
+$ $(minikube docker-env)
+$ docker build -t helloworld .
+Successfully built d16fe85e1abe
+$ kubectl run hello-minikube --image=helloworld --hostport=8000 --port=8080 --generator=run-pod/v1
+pod "hello-minikube" created
+$ curl http://$(minikube ip):8000
+Hello World!
+$ minikube stop
+Stopping local Kubernetes cluster...
+Stopping "minikubeVM"...
+```
+
+## Features
+ * Minikube packages and configures a Linux VM, Docker and all Kubernetes components, optimized for local development.
+ * Minikube supports Kubernetes features such as:
+   * DNS
+   * NodePorts
+   * ConfigMaps and Secrets
+   * Dashboards
+
+## Known Issues
+ * Features that require a Cloud Provider will not work in Minikube. These include:
+  * LoadBalancers
+  * PersistentVolumes
+  * Ingress
+ * Features that require multiple nodes. These include:
+  * Advanced scheduling policies
+  * DaemonSets
+ * Alternate runtimes, like rkt.
+
+If you need these features, don't worry! We're planning to add these to minikube over time. Please leave a note in the
+issue tracker about how you'd like to use minikube!
+
 ## Design
 
-Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmachine) for provisioning VMs, and [localkube](https://github.com/redspread/localkube)
-for running the cluster.
+Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmachine) for provisioning VMs, and [localkube](https://github.com/kubernetes/minikube/tree/master/pkg/localkube) (originally written and donated to this project by [RedSpread](https://redspread.com/)) for running the cluster.
 
 For more information about minikube, see the [proposal](https://github.com/kubernetes/kubernetes/blob/master/docs/proposals/local-cluster-ux.md).
 
@@ -31,47 +80,28 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 * Simplifying kubernetes production deployment experience. Kube-deploy is attempting to tackle this problem.
 * Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
 
-## Build Requirements
+## Development Guide
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull requests.
+
+### Build Requirements
 
 * A recent Go distribution (>1.6)
 * If you're not on Linux, you'll need a Docker installation
 
-## Build Instructions
+### Build Instructions
 
 ```shell
 make out/minikube
 ```
 
-## Requirements For Running Minikube
-* VirtualBox installation
-* VT-x/AMD-v virtualization must be enabled in BIOS
+### Run Instructions
 
-## Run Instructions
-
-Start the cluster with:
-
-```console
-$ ./out/minikube start
-Starting local Kubernetes cluster...
-2016/04/19 11:41:26 Machine exists!
-2016/04/19 11:41:27 Kubernetes is available at http://192.168.99.100:8080.
-2016/04/19 11:41:27 Run this command to use the cluster: 
-2016/04/19 11:41:27 kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=http://192.168.99.100:8080
-```
-
-Access the cluster by adding `-s=http://192.168.x.x:8080` to every `kubectl` command, or run the commands below:
+Start the cluster using your built minikube with:
 
 ```shell
-kubectl config set-cluster minikube --insecure-skip-tls-verify=true --server=http://192.168.99.100:8080
-kubectl config set-context minikube --cluster=minikube
-kubectl config use-context minikube
+$ ./out/minikube start
 ```
-
-by running those commands, you may use `kubectl` normally
-
-## Development
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull requests.
 
 ### Running Tests
 
