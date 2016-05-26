@@ -27,14 +27,14 @@ import (
 
 func NewLocalkubeServer() *localkube.LocalkubeServer {
 	// net.ParseCIDR returns multiple values. Use the IPNet return value
-	_, defaultServiceClusterIPRange, _ := net.ParseCIDR("10.0.0.1/24")
+	_, defaultServiceClusterIPRange, _ := net.ParseCIDR(util.DefaultServiceClusterIP + "/24")
 
 	return &localkube.LocalkubeServer{
 		Containerized:            false,
 		EnableDNS:                true,
-		DNSDomain:                util.DNSDomain,
-		DNSIP:                    net.ParseIP("10.0.0.10"),
-		LocalkubeDirectory:       util.LocalkubeDirectory,
+		DNSDomain:                util.DefaultDNSDomain,
+		DNSIP:                    net.ParseIP(util.DefaultDNSIP),
+		LocalkubeDirectory:       util.DefaultLocalkubeDirectory,
 		ServiceClusterIPRange:    *defaultServiceClusterIPRange,
 		APIServerAddress:         net.ParseIP("0.0.0.0"),
 		APIServerPort:            443,

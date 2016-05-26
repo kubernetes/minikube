@@ -205,7 +205,7 @@ func SetupCerts(d drivers.Driver) error {
 		if err != nil {
 			return err
 		}
-		if err := sshutil.Transfer(data, util.CertPath, cert, "0644", client); err != nil {
+		if err := sshutil.Transfer(data, util.DefaultCertPath, cert, "0644", client); err != nil {
 			return err
 		}
 	}

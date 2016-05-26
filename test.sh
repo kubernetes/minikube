@@ -17,8 +17,10 @@
 set -e
 
 REPO_PATH="k8s.io/minikube"
+PYTHON=${PYTHON:-"docker run --rm -it -v $(pwd):/minikube -w /minikube python python"}
 
 # Run "go test" on packages that have test files.
+echo "Running go tests..."
 cd ${GOPATH}/src/${REPO_PATH}
 TESTS=$(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...)
 go test -v ${TESTS}
@@ -35,7 +37,7 @@ echo "Checking boilerplate..."
 BOILERPLATEDIR=./hack/boilerplate
 # Grep returns a non-zero exit code if we don't match anything, which is good in this case.
 set +e
-files=$(python ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
+files=$(${PYTHON} ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
 set -e
 if [ ! -z ${files} ]; then
 	echo "Boilerplate missing in: ${files}."

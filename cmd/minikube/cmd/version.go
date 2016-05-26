@@ -14,7 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package version
+package cmd
 
-// The current version of the minikube and localkube
-const Version = "0.0.1-developing"
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+
+	"k8s.io/minikube/pkg/version"
+)
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version of minikube.",
+	Long:  `Print the version of minikube.`,
+	Run: func(command *cobra.Command, args []string) {
+
+		fmt.Println("Version: ", version.Version)
+	},
+}
+
+func init() {
+	RootCmd.AddCommand(versionCmd)
+}

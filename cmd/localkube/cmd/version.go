@@ -24,7 +24,7 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
-var VersionCmd = &cobra.Command{
+var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of localkube.",
 	Long:  `Print the version of localkube.`,
@@ -35,5 +35,5 @@ var VersionCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(VersionCmd)
+	RootCmd.AddCommand(versionCmd)
 }
