@@ -91,3 +91,21 @@ To run them, build the binary and run the tests:
 ```shell
 make integration
 ```
+
+#### Conformance Tests
+
+These are kubernetes tests that run against an arbitrary cluster and exercise a wide range of kubernetes features.
+You can run these against minikube by following these steps:
+
+* Clone the kubernetes repo somewhere on your system.
+* Run `make quick-release` in the k8s repo.
+* Start up a minikube cluster with: `minikube start`.
+* Set these two environment variables:
+```shell
+export KUBECONFIG=$HOME/.kube/config
+export KUBERNETES_CONFORMANCE_TEST=y
+```
+* Run the tests (from the k8s repo):
+```shell
+go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check_version_skew=false --check_node_count=false
+```
