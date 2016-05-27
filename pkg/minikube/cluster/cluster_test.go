@@ -327,7 +327,7 @@ func TestSetupCerts(t *testing.T) {
 		contents, _ := ioutil.ReadFile(cert)
 		transferred := s.Transfers.Bytes()
 		if !bytes.Contains(transferred, contents) {
-			t.Fatalf("Certificate not copied. Expected transfers to contain %s. It was: %s", contents, transferred)
+			t.Fatalf("Certificate not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 		}
 	}
 }
@@ -359,5 +359,32 @@ func TestGetHostDockerEnv(t *testing.T) {
 		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
 			t.Fatalf("Expected envMap[\"%s\"] key to be defined", dockerEnvKey)
 		}
+	}
+}
+
+func TestHostGetLogs(t *testing.T) {
+	api := tests.NewMockAPI()
+
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
+	}
+
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+	}
+	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
+
+	if _, err := GetHostLogs(api); err != nil {
+		t.Fatalf("Error getting host logs: %s", err)
+	}
+
+	if _, ok := s.Commands[logsCommand]; !ok {
+		t.Fatalf("Expected command not run: %s", logsCommand)
 	}
 }

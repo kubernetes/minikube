@@ -17,7 +17,6 @@ limitations under the License.
 package sshutil
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -49,8 +48,8 @@ func TestNewSSHClient(t *testing.T) {
 		t.Fatalf("Error!")
 	}
 
-	if !strings.Contains(s.Commands[0], cmd) {
-		t.Fatalf("Expected command: %s, got %s", cmd, s.Commands[0])
+	if _, ok := s.Commands[cmd]; !ok {
+		t.Fatalf("Expected command: %s", cmd)
 	}
 }
 
