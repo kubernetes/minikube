@@ -39,6 +39,7 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	config.Containerized = lk.Containerized
 
 	config.AllowPrivileged = true
+	config.Config = "/etc/kubernetes/manifests"
 
 	// Networking
 	config.ClusterDomain = lk.DNSDomain
