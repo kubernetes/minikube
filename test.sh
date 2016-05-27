@@ -17,7 +17,13 @@
 set -e
 
 REPO_PATH="k8s.io/minikube"
-PYTHON=${PYTHON:-"docker run --rm -it -v $(pwd):/minikube -w /minikube python python"}
+
+# Check for python on host, and use it if possible, otherwise fall back on python dockerized
+if [[ -f $(which python 2>&1) ]]; then
+	PYTHON="python"
+else
+	PYTHON="docker run --rm -it -v $(pwd):/minikube -w /minikube python python"
+fi
 
 # Run "go test" on packages that have test files.
 echo "Running go tests..."
