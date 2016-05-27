@@ -17,11 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"log"
+	goflag "flag"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -38,7 +39,7 @@ var RootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
-				log.Panicf("Error creating minikube directory: %s", err)
+				glog.Exitf("Error creating minikube directory: %s", err)
 			}
 		}
 	},
@@ -48,12 +49,12 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
+		glog.Exitln(err)
 	}
 }
 
 func init() {
+	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	cobra.OnInitialize(initConfig)
 }
 

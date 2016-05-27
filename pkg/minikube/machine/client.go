@@ -17,12 +17,12 @@ limitations under the License.
 package machine
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/golang/glog"
 )
 
 // StartDriver starts the desired machine driver if necessary.
@@ -33,8 +33,7 @@ func StartDriver() {
 		case "virtualbox":
 			plugin.RegisterDriver(virtualbox.NewDriver("", ""))
 		default:
-			fmt.Fprintf(os.Stderr, "Unsupported driver: %s\n", driverName)
-			os.Exit(1)
+			glog.Exitf("Unsupported driver: %s\n", driverName)
 		}
 		return
 	}

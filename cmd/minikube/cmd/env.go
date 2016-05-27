@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -38,7 +38,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		envMap, err := cluster.GetHostDockerEnv(api)
 		if err != nil {
-			log.Println("Error setting machine env variable(s):", err)
+			glog.Errorln("Error setting machine env variable(s):", err)
 			os.Exit(1)
 		}
 		fmt.Fprintln(os.Stdout, buildDockerEnvShellOutput(envMap))

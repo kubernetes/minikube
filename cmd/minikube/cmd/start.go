@@ -18,16 +18,20 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cfg "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+)
+
+var (
+	minikubeISO string
 )
 
 // startCmd represents the start command
@@ -39,12 +43,7 @@ assumes you already have Virtualbox installed.`,
 	Run: runStart,
 }
 
-var (
-	minikubeISO string
-)
-
 func runStart(cmd *cobra.Command, args []string) {
-
 	fmt.Println("Starting local Kubernetes cluster...")
 	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 	defer api.Close()
@@ -54,29 +53,30 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	host, err := cluster.StartHost(api, config)
+
 	if err != nil {
-		log.Println("Error starting host: ", err)
+		glog.Errorln("Error starting host: ", err)
 		os.Exit(1)
 	}
 
 	if err := cluster.UpdateCluster(host.Driver); err != nil {
-		log.Println("Error updating cluster: ", err)
+		glog.Errorln("Error updating cluster: ", err)
 		os.Exit(1)
 	}
 
 	if err := cluster.SetupCerts(host.Driver); err != nil {
-		log.Println("Error configuring authentication: ", err)
+		glog.Errorln("Error configuring authentication: ", err)
 		os.Exit(1)
 	}
 
 	if err := cluster.StartCluster(host); err != nil {
-		log.Println("Error starting cluster: ", err)
+		glog.Errorln("Error starting cluster: ", err)
 		os.Exit(1)
 	}
 
 	kubeHost, err := host.Driver.GetURL()
 	if err != nil {
-		log.Println("Error connecting to cluster: ", err)
+		glog.Errorln("Error connecting to cluster: ", err)
 	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
 	kubeHost = strings.Replace(kubeHost, ":2376", ":443", -1)
@@ -88,7 +88,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	clientCert := constants.MakeMiniPath("apiserver.crt")
 	clientKey := constants.MakeMiniPath("apiserver.key")
 	if active, err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey); err != nil {
-		log.Println("Error setting up kubeconfig: ", err)
+		glog.Errorln("Error setting up kubeconfig: ", err)
 		os.Exit(1)
 	} else if !active {
 		fmt.Println("Run this command to use the cluster: ")
