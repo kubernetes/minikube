@@ -29,17 +29,12 @@ const (
 	remoteLocalKubeOutPath = "/var/log/localkube.out"
 )
 
-var startCommand = `
-# Run with nohup so it stays up. Redirect logs to useful places.
-PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start --generate-certs=false > /var/log/localkube.out 2> /var/log/localkube.err < /dev/null &
-`
-
 // Kill any running instances.
-var stopCommand = "killall localkube | true"
+var stopCommand = "sudo killall localkube | true"
 
 var startCommandFmtStr = `
 # Run with nohup so it stays up. Redirect logs to useful places.
-PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start %s--generate-certs=false > %s 2> %s < /dev/null &
+PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start %s --generate-certs=false > %s 2> %s < /dev/null &
 `
 
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", remoteLocalKubeErrPath, remoteLocalKubeOutPath)
@@ -47,7 +42,7 @@ var logsCommand = fmt.Sprintf("tail -n +1 %s %s", remoteLocalKubeErrPath, remote
 func GetStartCommand() string {
 	flagVals := make([]string, len(constants.LogFlags))
 	for _, logFlag := range constants.LogFlags {
-		if logVal := gflag.Lookup(logFlag); logVal != nil && logVal.Value.String() != "" {
+		if logVal := gflag.Lookup(logFlag); logVal != nil && logVal.Value.String() != logVal.DefValue {
 			flagVals = append(flagVals, fmt.Sprintf("--%s %s", logFlag, logVal.Value.String()))
 		}
 	}

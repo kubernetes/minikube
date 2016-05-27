@@ -17,7 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	goflag "flag"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var RootCmd = &cobra.Command{
@@ -27,6 +30,7 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
+	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	cobra.OnInitialize(initConfig)
 }
 

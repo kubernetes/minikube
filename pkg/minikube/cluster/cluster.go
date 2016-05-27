@@ -151,6 +151,7 @@ func StartCluster(h sshAble) error {
 	commands := []string{stopCommand, GetStartCommand()}
 
 	for _, cmd := range commands {
+		glog.Infoln(cmd)
 		output, err := h.RunSSHCommand(cmd)
 		glog.Infoln(output)
 		if err != nil {
