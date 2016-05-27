@@ -27,8 +27,11 @@ else
 	GOPATH := $(shell pwd)/_gopath
 endif
 
+
+# Use system python if it exists, otherwise use Docker.
+PYTHON := $(shell command -v python || docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python)
 # Set the version information for the Kubernetes servers, and build localkube statically
-VERSION_LDFLAGS := $(shell docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python hack/get_k8s_version.py)
+VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py)
 LDFLAGS := "$(VERSION_LDFLAGS) -s -w -extldflags '-static'"
 
 clean:
