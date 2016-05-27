@@ -23,6 +23,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"k8s.io/kubernetes/pkg/capabilities"
+	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/minikube/pkg/localkube"
 )
 
@@ -61,6 +63,19 @@ func SetupServer(s *localkube.LocalkubeServer) {
 			panic(err)
 		}
 	}
+
+	// Setup capabilities. This can only be done once per binary.
+	allSources, _ := types.GetValidatedSources([]string{types.AllSource})
+	c := capabilities.Capabilities{
+		AllowPrivileged: true,
+		PrivilegedSources: capabilities.PrivilegedSources{
+			HostNetworkSources: allSources,
+			HostIPCSources:     allSources,
+			HostPIDSources:     allSources,
+		},
+	}
+	capabilities.Initialize(c)
+
 	// setup etcd
 	etcd, err := s.NewEtcd(localkube.KubeEtcdClientURLs, localkube.KubeEtcdPeerURLs, "kubeetcd", s.GetEtcdDataDirectory())
 	if err != nil {
