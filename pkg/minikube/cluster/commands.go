@@ -29,6 +29,6 @@ PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube start --generate-
 `
 
 // Kill any running instances.
-var stopCommand = "killall localkube | true"
+var stopCommand = "sudo killall localkube | true"
 
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", remoteLocalKubeErrPath, remoteLocalKubeOutPath)
