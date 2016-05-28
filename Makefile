@@ -15,6 +15,7 @@
 # Use the native vendor/ dependency system
 export GO15VENDOREXPERIMENT=1
 
+VERSION ?= v0.0.1-development
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
@@ -31,7 +32,7 @@ endif
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python)
 # Set the version information for the Kubernetes servers, and build localkube statically
-VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py)
+VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 LDFLAGS := "$(VERSION_LDFLAGS) -s -w -extldflags '-static'"
 
 clean:
@@ -57,6 +58,12 @@ endif
 out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/localkubecontents.go
 	$(MKGOPATH)
 	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
+
+localkube-image: out/localkube
+	make -C deploy/docker VERSION=$(VERSION)
+
+iso:
+	cd deploy/iso && ./build.sh
 
 .PHONY: integration
 integration: out/minikube
