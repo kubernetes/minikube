@@ -17,4 +17,9 @@ limitations under the License.
 package version
 
 // The current version of the minikube and localkube
-const Version = "0.0.1-developing"
+// This is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.version=vX.Y.Z"
+var version = "v0.0.0-unset"
+
+func GetVersion() string {
+	return version
+}
