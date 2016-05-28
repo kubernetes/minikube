@@ -30,7 +30,7 @@ import (
 // The main instance of the current localkube server that is started
 var Server *localkube.LocalkubeServer
 
-func StartLocalkube(){
+func StartLocalkube() {
 
 	if Server.ShowVersion {
 		fmt.Println("localkube version:", version.GetVersion())
