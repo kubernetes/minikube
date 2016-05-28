@@ -30,7 +30,7 @@ var versionCmd = &cobra.Command{
 	Long:  `Print the version of minikube.`,
 	Run: func(command *cobra.Command, args []string) {
 
-		fmt.Println("Version: ", version.Version)
+		fmt.Println("minikube version:", version.GetVersion())
 	},
 }
 

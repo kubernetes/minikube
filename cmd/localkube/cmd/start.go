@@ -21,39 +21,34 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/spf13/cobra"
-
 	"k8s.io/kubernetes/pkg/capabilities"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/minikube/pkg/localkube"
+	"k8s.io/minikube/pkg/version"
 )
 
+// The main instance of the current localkube server that is started
 var Server *localkube.LocalkubeServer
 
-var StartCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Start the localkube server.",
-	Long:  `Start the localkube server.`,
-	Run: func(command *cobra.Command, args []string) {
+func StartLocalkube(){
 
-		// TODO: Require root
+	if Server.ShowVersion {
+		fmt.Println("localkube version:", version.GetVersion())
+		os.Exit(0)
+	}
 
-		SetupServer(Server)
-		Server.StartAll()
+	// TODO: Require root
 
-		defer Server.StopAll()
+	SetupServer(Server)
+	Server.StartAll()
 
-		interruptChan := make(chan os.Signal, 1)
-		signal.Notify(interruptChan, os.Interrupt)
+	defer Server.StopAll()
 
-		<-interruptChan
-		fmt.Println("Shutting down...")
-	},
-}
+	interruptChan := make(chan os.Signal, 1)
+	signal.Notify(interruptChan, os.Interrupt)
 
-func init() {
-	Server = NewLocalkubeServer()
-	RootCmd.AddCommand(StartCmd)
+	<-interruptChan
+	fmt.Println("Shutting down...")
 }
 
 func SetupServer(s *localkube.LocalkubeServer) {
