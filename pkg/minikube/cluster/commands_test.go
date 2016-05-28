@@ -23,32 +23,10 @@ import (
 	"testing"
 )
 
-func TestGetStartCommandDefaultValues(t *testing.T) {
-	// Stderr threshold is the only value that should be printed by default, because it's not set using the standard
-	// flag default value system in glog.go
-	flagMap := map[string]string{
-		"stderrthreshold": "2",
-	}
-	flagMapToSetFlags(flagMap)
-	startCommand := GetStartCommand()
-	for flag, val := range flagMap {
-		if val != "" {
-			if expectedFlag := getSingleFlagValue(flag, val); !strings.Contains(startCommand, getSingleFlagValue(flag, val)) {
-				t.Fatalf("Expected GetStartCommand to contain: %s. Command was: %s", expectedFlag, startCommand)
-			}
-		}
-	}
-}
-
 func TestGetStartCommandCustomValues(t *testing.T) {
 	flagMap := map[string]string{
-		"logtostderr":      "true",
-		"alsologtostderr":  "true",
-		"stderrthreshold":  "3",
-		"log_dir":          "/var/",
-		"log_backtrace_at": "cluster.go:123",
-		"v":                "10",
-		"vmodule":          "cluster*=5",
+		"v":       "10",
+		"vmodule": "cluster*=5",
 	}
 	flagMapToSetFlags(flagMap)
 	startCommand := GetStartCommand()
