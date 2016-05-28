@@ -48,6 +48,7 @@ type LocalkubeServer struct {
 	APIServerInsecureAddress net.IP
 	APIServerInsecurePort    int
 	ShouldGenerateCerts      bool
+	ShowVersion              bool
 }
 
 func (lk *LocalkubeServer) AddServer(server Server) {
