@@ -39,12 +39,8 @@ func MakeMiniPath(fileName string) string {
 	return filepath.Join(Minipath, fileName)
 }
 
+// Only pass along these flags to localkube.
 var LogFlags = [...]string{
-	"logtostderr",
-	"alsologtostderr",
-	"stderrthreshold",
-	"log_dir",
-	"log_backtrace_at",
 	"v",
 	"vmodule",
 }
