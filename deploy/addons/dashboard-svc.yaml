@@ -24,7 +24,6 @@ metadata:
 spec:
   ports:
   - port: 80
-    hostPort: 9090
     targetPort: 9090
   selector:
     app: kubernetes-dashboard
