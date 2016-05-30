@@ -33,6 +33,7 @@ endif
 
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python)
+BUILD_OS := $(shell uname -s)
 
 # Set the version information for the Kubernetes servers, and build localkube statically
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
@@ -53,7 +54,7 @@ out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 
 out/localkube: $(LOCALKUBEFILES)
 	$(MKGOPATH)
-ifeq ($(GOOS),linux)
+ifeq ($(BUILD_OS),Linux)
 	CGO_ENABLED=1 go build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
 	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
