@@ -27,7 +27,7 @@ Creating machine...
 Starting local Kubernetes cluster...
 Kubernetes is available at https://192.168.99.100:443.
 
-$ $(minikube docker-env)
+$ eval $(minikube docker-env)
 $ docker build -t helloworld .
 Successfully built d16fe85e1abe
 $ kubectl run hello-minikube --image=helloworld --hostport=8000 --port=8080 --generator=run-pod/v1
