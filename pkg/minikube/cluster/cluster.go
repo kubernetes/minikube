@@ -293,3 +293,25 @@ func checkIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
 	}
 	return host, nil
 }
+
+func CreateSSHShell(api libmachine.API, args []string) error {
+	host, err := checkIfApiExistsAndLoad(api)
+	if err != nil {
+		return err
+	}
+
+	currentState, err := host.Driver.GetState()
+	if err != nil {
+		return err
+	}
+
+	if currentState != state.Running {
+		return fmt.Errorf("Error: Cannot run ssh command: Host %q is not running", constants.MachineName)
+	}
+
+	client, err := host.CreateSSHClient()
+	if err != nil {
+		return err
+	}
+	return client.Shell(strings.Join(args, " "))
+}

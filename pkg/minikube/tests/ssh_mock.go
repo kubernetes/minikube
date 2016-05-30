@@ -21,10 +21,10 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"io"
-	"log"
 	"net"
 	"strconv"
 
+	"github.com/golang/glog"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -32,9 +32,10 @@ import (
 type SSHServer struct {
 	Config *ssh.ServerConfig
 	// Commands stores the raw commands executed against the server.
-	Commands  map[string]int
-	Connected bool
-	Transfers *bytes.Buffer
+	Commands             map[string]int
+	Connected            bool
+	Transfers            *bytes.Buffer
+	HadASessionRequested bool
 }
 
 // NewSSHServer returns a NewSSHServer instance, ready for use.
@@ -86,6 +87,9 @@ func (s *SSHServer) Start() (int, error) {
 
 			// Service the incoming Channel channel.
 			for newChannel := range chans {
+				if newChannel.ChannelType() == "session" {
+					s.HadASessionRequested = true
+				}
 				channel, requests, err := newChannel.Accept()
 				s.Connected = true
 				if err != nil {
@@ -98,7 +102,7 @@ func (s *SSHServer) Start() (int, error) {
 				//Note: string(req.Payload) adds additional characters to start of input, execRequest used to solve this issue
 				var cmd execRequest
 				if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
-					log.Println("Unmarshall encountered error: %s", err)
+					glog.Errorln("Unmarshall encountered error: %s", err)
 					return
 				}
 				s.Commands[cmd.Command] = 1
