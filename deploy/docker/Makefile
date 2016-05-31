@@ -24,7 +24,8 @@ ifndef VERSION
 endif
 
 	cp -r ./* $(TEMP_DIR)
-	cp -r ../addons ../static-pods $(TEMP_DIR)
+	cp -r ../addons $(TEMP_DIR)
+	cp -r ./static-pods $(TEMP_DIR)
 	cp ../../out/localkube $(TEMP_DIR)
 	chmod +x $(TEMP_DIR)/localkube
 
