@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/localkube/kube2sky"
 
 	"github.com/coreos/go-etcd/etcd"
+	"github.com/golang/glog"
 	backendetcd "github.com/skynetservices/skydns/backends/etcd"
 	skydns "github.com/skynetservices/skydns/server"
 	kube "k8s.io/kubernetes/pkg/api"
@@ -135,11 +136,11 @@ func (dns *DNSServer) Start() {
 			if _, err = client.Namespaces().Get(DNSServiceNamespace); notFoundErr(err) {
 				err = createKubeSystemIfNotPresent(client)
 				if err != nil {
-					fmt.Printf("Failed to create the kube-system namespace: %v\n", err)
+					glog.Infof("Failed to create the kube-system namespace: %v\n", err)
 					continue
 				}
 			} else if err != nil {
-				fmt.Printf("Failed to check for kube-system namespace existence: %v\n", err)
+				glog.Infof("Failed to check for kube-system namespace existence: %v\n", err)
 				continue
 			}
 
@@ -148,12 +149,12 @@ func (dns *DNSServer) Start() {
 				// create service if doesn't exist
 				err = createService(client, meta, dns.clusterIP, dns.dnsServerAddr.Port)
 				if err != nil {
-					fmt.Printf("Failed to create Service for DNS: %v\n", err)
+					glog.Infof("Failed to create Service for DNS: %v\n", err)
 					continue
 				}
 			} else if err != nil {
 				// error if cannot check for Service
-				fmt.Printf("Failed to check for DNS Service existence: %v\n", err)
+				glog.Infof("Failed to check for DNS Service existence: %v\n", err)
 				continue
 			}
 
@@ -162,16 +163,17 @@ func (dns *DNSServer) Start() {
 				// create endpoint if doesn't exist
 				err = createEndpoint(client, meta, dns.dnsServerAddr.IP.String(), int32(dns.dnsServerAddr.Port))
 				if err != nil {
-					fmt.Printf("Failed to create Endpoint for DNS: %v\n", err)
+					glog.Infof("Failed to create Endpoint for DNS: %v\n", err)
 					continue
 				}
 			} else if err != nil {
 				// error if cannot check for Endpoint
-				fmt.Printf("Failed to check for DNS Endpoint existence: %v\n", err)
+				glog.Infof("Failed to check for DNS Endpoint existence: %v\n", err)
 				continue
 			}
 
 			// setup successful
+			glog.Infof("DNS started succesfully.")
 			break
 		}
 	}()
