@@ -359,6 +359,14 @@ func extractFromOwnerReference(v reflect.Value, o *metatypes.OwnerReference) err
 	if err := runtime.Field(v, "UID", &o.UID); err != nil {
 		return err
 	}
+	var controllerPtr *bool
+	if err := runtime.Field(v, "Controller", &controllerPtr); err != nil {
+		return err
+	}
+	if controllerPtr != nil {
+		controller := *controllerPtr
+		o.Controller = &controller
+	}
 	return nil
 }
 
@@ -375,6 +383,12 @@ func setOwnerReference(v reflect.Value, o *metatypes.OwnerReference) error {
 	}
 	if err := runtime.SetField(o.UID, v, "UID"); err != nil {
 		return err
+	}
+	if o.Controller != nil {
+		controller := *(o.Controller)
+		if err := runtime.SetField(&controller, v, "Controller"); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -395,6 +409,7 @@ type genericAccessor struct {
 	labels            *map[string]string
 	annotations       *map[string]string
 	ownerReferences   reflect.Value
+	finalizers        *[]string
 }
 
 func (a genericAccessor) GetNamespace() string {
@@ -527,6 +542,17 @@ func (a genericAccessor) SetAnnotations(annotations map[string]string) {
 	*a.annotations = annotations
 }
 
+func (a genericAccessor) GetFinalizers() []string {
+	if a.finalizers == nil {
+		return nil
+	}
+	return *a.finalizers
+}
+
+func (a genericAccessor) SetFinalizers(finalizers []string) {
+	*a.finalizers = finalizers
+}
+
 func (a genericAccessor) GetOwnerReferences() []metatypes.OwnerReference {
 	var ret []metatypes.OwnerReference
 	s := a.ownerReferences
@@ -597,6 +623,9 @@ func extractFromObjectMeta(v reflect.Value, a *genericAccessor) error {
 		return err
 	}
 	if err := runtime.FieldPtr(v, "Annotations", &a.annotations); err != nil {
+		return err
+	}
+	if err := runtime.FieldPtr(v, "Finalizers", &a.finalizers); err != nil {
 		return err
 	}
 	ownerReferences := v.FieldByName("OwnerReferences")

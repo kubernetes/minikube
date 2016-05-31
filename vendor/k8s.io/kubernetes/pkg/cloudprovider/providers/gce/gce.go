@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/gcfg.v1"
+
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/service"
 	"k8s.io/kubernetes/pkg/api/unversioned"
@@ -47,7 +49,6 @@ import (
 	container "google.golang.org/api/container/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/cloud/compute/metadata"
-	"gopkg.in/gcfg.v1"
 )
 
 const (
@@ -252,7 +253,7 @@ func newGCECloud(config io.Reader) (*GCECloud, error) {
 			}
 		}
 		if cfg.Global.TokenURL != "" {
-			tokenSource = newAltTokenSource(cfg.Global.TokenURL, cfg.Global.TokenBody)
+			tokenSource = NewAltTokenSource(cfg.Global.TokenURL, cfg.Global.TokenBody)
 		}
 		nodeTags = cfg.Global.NodeTags
 		if cfg.Global.Multizone {
@@ -480,7 +481,7 @@ func isHTTPErrorCode(err error, code int) bool {
 // Due to an interesting series of design decisions, this handles both creating
 // new load balancers and updating existing load balancers, recognizing when
 // each is needed.
-func (gce *GCECloud) EnsureLoadBalancer(apiService *api.Service, hostNames []string, annotations map[string]string) (*api.LoadBalancerStatus, error) {
+func (gce *GCECloud) EnsureLoadBalancer(apiService *api.Service, hostNames []string) (*api.LoadBalancerStatus, error) {
 	if len(hostNames) == 0 {
 		return nil, fmt.Errorf("Cannot EnsureLoadBalancer() with no hosts")
 	}
@@ -501,7 +502,7 @@ func (gce *GCECloud) EnsureLoadBalancer(apiService *api.Service, hostNames []str
 	affinityType := apiService.Spec.SessionAffinity
 
 	serviceName := types.NamespacedName{Namespace: apiService.Namespace, Name: apiService.Name}
-	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", loadBalancerName, gce.region, loadBalancerIP, portStr, hosts, serviceName, annotations)
+	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)", loadBalancerName, gce.region, loadBalancerIP, portStr, hosts, serviceName, apiService.Annotations)
 
 	// Check if the forwarding rule exists, and if so, what its IP is.
 	fwdRuleExists, fwdRuleNeedsUpdate, fwdRuleIP, err := gce.forwardingRuleNeedsUpdate(loadBalancerName, gce.region, loadBalancerIP, ports)
@@ -611,7 +612,7 @@ func (gce *GCECloud) EnsureLoadBalancer(apiService *api.Service, hostNames []str
 	// is because the forwarding rule is used as the indicator that the load
 	// balancer is fully created - it's what getLoadBalancer checks for.
 	// Check if user specified the allow source range
-	sourceRanges, err := service.GetLoadBalancerSourceRanges(annotations)
+	sourceRanges, err := service.GetLoadBalancerSourceRanges(apiService)
 	if err != nil {
 		return nil, err
 	}

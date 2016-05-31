@@ -19,6 +19,7 @@ package options
 
 import (
 	_ "net/http/pprof"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -39,6 +40,7 @@ const (
 	defaultRootDir             = "/var/lib/kubelet"
 	experimentalFlannelOverlay = false
 
+	// When these values are updated, also update test/e2e/framework/util.go
 	defaultPodInfraContainerImageName    = "gcr.io/google_containers/pause"
 	defaultPodInfraContainerImageVersion = "3.0"
 )
@@ -132,6 +134,7 @@ func NewKubeletServer() *KubeletServer {
 			RootDirectory:                    defaultRootDir,
 			RuntimeCgroups:                   "",
 			SerializeImagePulls:              true,
+			SeccompProfileRoot:               filepath.Join(defaultRootDir, "seccomp"),
 			StreamingConnectionIdleTimeout:   unversioned.Duration{Duration: 4 * time.Hour},
 			SyncFrequency:                    unversioned.Duration{Duration: 1 * time.Minute},
 			SystemCgroups:                    "",
@@ -144,6 +147,7 @@ func NewKubeletServer() *KubeletServer {
 			HairpinMode:                      componentconfig.PromiscuousBridge,
 			BabysitDaemons:                   false,
 			EvictionPressureTransitionPeriod: unversioned.Duration{Duration: 5 * time.Minute},
+			PodsPerCore:                      0,
 		},
 	}
 }
@@ -171,6 +175,7 @@ func (s *KubeletServer) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.PodInfraContainerImage, "pod-infra-container-image", s.PodInfraContainerImage, "The image whose network/ipc namespaces containers in each pod will use.")
 	fs.StringVar(&s.DockerEndpoint, "docker-endpoint", s.DockerEndpoint, "If non-empty, use this for the docker endpoint to communicate with")
 	fs.StringVar(&s.RootDirectory, "root-dir", s.RootDirectory, "Directory path for managing kubelet files (volume mounts,etc).")
+	fs.StringVar(&s.SeccompProfileRoot, "seccomp-profile-root", s.SeccompProfileRoot, "Directory path for seccomp profiles.")
 	fs.BoolVar(&s.AllowPrivileged, "allow-privileged", s.AllowPrivileged, "If true, allow containers to request privileged mode. [default=false]")
 	fs.StringVar(&s.HostNetworkSources, "host-network-sources", s.HostNetworkSources, "Comma-separated list of sources from which the Kubelet allows pods to use of host network. [default=\"*\"]")
 	fs.StringVar(&s.HostPIDSources, "host-pid-sources", s.HostPIDSources, "Comma-separated list of sources from which the Kubelet allows pods to use the host pid namespace. [default=\"*\"]")
@@ -261,4 +266,5 @@ func (s *KubeletServer) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.EvictionSoftGracePeriod, "eviction-soft-grace-period", s.EvictionSoftGracePeriod, "A set of eviction grace periods (e.g. memory.available=1m30s) that correspond to how long a soft eviction threshold must hold before triggering a pod eviction.")
 	fs.DurationVar(&s.EvictionPressureTransitionPeriod.Duration, "eviction-pressure-transition-period", s.EvictionPressureTransitionPeriod.Duration, "Duration for which the kubelet has to wait before transitioning out of an eviction pressure condition.")
 	fs.Int32Var(&s.EvictionMaxPodGracePeriod, "eviction-max-pod-grace-period", s.EvictionMaxPodGracePeriod, "Maximum allowed grace period (in seconds) to use when terminating pods in response to a soft eviction threshold being met.  If negative, defer to pod specified value.")
+	fs.Int32Var(&s.PodsPerCore, "pods-per-core", s.PodsPerCore, "Number of Pods per core that can run on this Kubelet. The total number of Pods on this Kubelet cannot exceed max-pods, so max-pods will be used if this caulcation results in a larger number of Pods allowed on the Kubelet. A value of 0 disables this limit.")
 }

@@ -51,6 +51,7 @@ import (
 	endpointcontroller "k8s.io/kubernetes/pkg/controller/endpoint"
 	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/controller/framework/informers"
+	"k8s.io/kubernetes/pkg/controller/garbagecollector"
 	"k8s.io/kubernetes/pkg/controller/gc"
 	"k8s.io/kubernetes/pkg/controller/job"
 	namespacecontroller "k8s.io/kubernetes/pkg/controller/namespace"
@@ -197,9 +198,13 @@ func Run(s *options.CMServer) error {
 func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig *restclient.Config, stop <-chan struct{}) error {
 	podInformer := informers.CreateSharedPodIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "pod-informer")), ResyncPeriod(s)())
 	nodeInformer := informers.CreateSharedNodeIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "node-informer")), ResyncPeriod(s)())
+	pvcInformer := informers.CreateSharedPVCIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "pvc-informer")), ResyncPeriod(s)())
+	pvInformer := informers.CreateSharedPVIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "pv-informer")), ResyncPeriod(s)())
 	informers := map[reflect.Type]framework.SharedIndexInformer{}
 	informers[reflect.TypeOf(&api.Pod{})] = podInformer
 	informers[reflect.TypeOf(&api.Node{})] = nodeInformer
+	informers[reflect.TypeOf(&api.PersistentVolumeClaim{})] = pvcInformer
+	informers[reflect.TypeOf(&api.PersistentVolume{})] = pvInformer
 
 	go endpointcontroller.NewEndpointController(podInformer, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "endpoint-controller"))).
 		Run(int(s.ConcurrentEndpointSyncs), wait.NeverStop)
@@ -225,9 +230,14 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 		glog.Fatalf("Cloud provider could not be initialized: %v", err)
 	}
 
-	// this cidr has been validated already
-	_, clusterCIDR, _ := net.ParseCIDR(s.ClusterCIDR)
-	_, serviceCIDR, _ := net.ParseCIDR(s.ServiceCIDR)
+	_, clusterCIDR, err := net.ParseCIDR(s.ClusterCIDR)
+	if err != nil {
+		glog.Warningf("Unsuccessful parsing of cluster CIDR %v: %v", s.ClusterCIDR, err)
+	}
+	_, serviceCIDR, err := net.ParseCIDR(s.ServiceCIDR)
+	if err != nil {
+		glog.Warningf("Unsuccessful parsing of service CIDR %v: %v", s.ServiceCIDR, err)
+	}
 	nodeController := nodecontroller.NewNodeController(cloud, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "node-controller")),
 		s.PodEvictionTimeout.Duration, flowcontrol.NewTokenBucketRateLimiter(s.DeletingPodsQps, int(s.DeletingPodsBurst)),
 		flowcontrol.NewTokenBucketRateLimiter(s.DeletingPodsQps, int(s.DeletingPodsBurst)),
@@ -241,18 +251,20 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 	}
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
-	if s.AllocateNodeCIDRs {
+	if s.AllocateNodeCIDRs && s.ConfigureCloudRoutes {
 		if cloud == nil {
-			glog.Warning("allocate-node-cidrs is set, but no cloud provider specified. Will not manage routes.")
+			glog.Warning("configure-cloud-routes is set, but no cloud provider specified. Will not configure cloud provider routes.")
 		} else if routes, ok := cloud.Routes(); !ok {
-			glog.Warning("allocate-node-cidrs is set, but cloud provider does not support routes. Will not manage routes.")
+			glog.Warning("configure-cloud-routes is set, but cloud provider does not support routes. Will not configure cloud provider routes.")
 		} else {
 			routeController := routecontroller.New(routes, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "route-controller")), s.ClusterName, clusterCIDR)
 			routeController.Run(s.NodeSyncPeriod.Duration)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
-	} else {
-		glog.Infof("allocate-node-cidrs set to %v, node controller not creating routes", s.AllocateNodeCIDRs)
+	} else if s.ConfigureCloudRoutes && !s.AllocateNodeCIDRs {
+		glog.Warningf("allocate-node-cidrs set to %v, will not configure cloud provider routes.", s.AllocateNodeCIDRs)
+	} else if s.AllocateNodeCIDRs && !s.ConfigureCloudRoutes {
+		glog.Infof("configure-cloud-routes is set to %v, will not configure cloud provider routes.", s.ConfigureCloudRoutes)
 	}
 
 	resourceQuotaControllerClient := clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "resourcequota-controller"))
@@ -391,9 +403,21 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 	volumeController.Run()
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
-	go volume.NewAttachDetachController(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "attachdetach-controller")), podInformer, nodeInformer, ResyncPeriod(s)()).
-		Run(wait.NeverStop)
-	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+	attachDetachController, attachDetachControllerErr :=
+		volume.NewAttachDetachController(
+			clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "attachdetach-controller")),
+			podInformer,
+			nodeInformer,
+			pvcInformer,
+			pvInformer,
+			cloud,
+			ProbeAttachableVolumePlugins(s.VolumeConfiguration))
+	if attachDetachControllerErr != nil {
+		glog.Fatalf("Failed to start attach/detach controller: %v", attachDetachControllerErr)
+	} else {
+		go attachDetachController.Run(wait.NeverStop)
+		time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+	}
 
 	var rootCA []byte
 
@@ -430,6 +454,23 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 		serviceaccountcontroller.DefaultServiceAccountsControllerOptions(),
 	).Run()
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+
+	if s.EnableGarbageCollector {
+		gcClientset := clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "generic-garbage-collector"))
+		groupVersionResources, err := gcClientset.Discovery().ServerPreferredResources()
+		if err != nil {
+			glog.Fatalf("Failed to get supported resources from server: %v", err)
+		}
+		clientPool := dynamic.NewClientPool(restclient.AddUserAgent(kubeconfig, "generic-garbage-collector"), dynamic.LegacyAPIPathResolverFunc)
+		garbageCollector, err := garbagecollector.NewGarbageCollector(clientPool, groupVersionResources)
+		if err != nil {
+			glog.Errorf("Failed to start the generic garbage collector")
+		} else {
+			// TODO: make this a flag of kube-controller-manager
+			workers := 5
+			go garbageCollector.Run(workers, wait.NeverStop)
+		}
+	}
 
 	// run the shared informers
 	for _, informer := range informers {

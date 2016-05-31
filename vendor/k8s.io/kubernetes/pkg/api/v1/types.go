@@ -177,7 +177,9 @@ type ObjectMeta struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,12,rep,name=annotations"`
 
 	// List of objects depended by this object. If ALL objects in the list have
-	// been deleted, this object will be garbage collected.
+	// been deleted, this object will be garbage collected. If this object is managed by a controller,
+	// then an entry in this list will point to this controller, with the controller field set to true.
+	// There cannot be more than one managing controller.
 	OwnerReferences []OwnerReference `json:"ownerReferences,omitempty" patchStrategy:"merge" patchMergeKey:"uid" protobuf:"bytes,13,rep,name=ownerReferences"`
 
 	// Must be empty before the object is deleted from the registry. Each entry
@@ -456,6 +458,8 @@ type PersistentVolumeClaimSpec struct {
 	// AccessModes contains the desired access modes the volume should have.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/persistent-volumes.md#access-modes-1
 	AccessModes []PersistentVolumeAccessMode `json:"accessModes,omitempty" protobuf:"bytes,1,rep,name=accessModes,casttype=PersistentVolumeAccessMode"`
+	// A label query over volumes to consider for binding.
+	Selector *unversioned.LabelSelector `json:"selector,omitempty" protobuf:"bytes,4,opt,name=selector"`
 	// Resources represents the minimum resources the volume should have.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/persistent-volumes.md#resources
 	Resources ResourceRequirements `json:"resources,omitempty" protobuf:"bytes,2,opt,name=resources"`
@@ -938,10 +942,13 @@ type EnvVar struct {
 type EnvVarSource struct {
 	// Selects a field of the pod; only name and namespace are supported.
 	FieldRef *ObjectFieldSelector `json:"fieldRef,omitempty" protobuf:"bytes,1,opt,name=fieldRef"`
+	// Selects a resource of the container: only resources limits and requests
+	// (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+	ResourceFieldRef *ResourceFieldSelector `json:"resourceFieldRef,omitempty" protobuf:"bytes,2,opt,name=resourceFieldRef"`
 	// Selects a key of a ConfigMap.
-	ConfigMapKeyRef *ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,2,opt,name=configMapKeyRef"`
+	ConfigMapKeyRef *ConfigMapKeySelector `json:"configMapKeyRef,omitempty" protobuf:"bytes,3,opt,name=configMapKeyRef"`
 	// Selects a key of a secret in the pod's namespace
-	SecretKeyRef *SecretKeySelector `json:"secretKeyRef,omitempty" protobuf:"bytes,3,opt,name=secretKeyRef"`
+	SecretKeyRef *SecretKeySelector `json:"secretKeyRef,omitempty" protobuf:"bytes,4,opt,name=secretKeyRef"`
 }
 
 // ObjectFieldSelector selects an APIVersioned field of an object.
@@ -950,6 +957,16 @@ type ObjectFieldSelector struct {
 	APIVersion string `json:"apiVersion,omitempty" protobuf:"bytes,1,opt,name=apiVersion"`
 	// Path of the field to select in the specified API version.
 	FieldPath string `json:"fieldPath" protobuf:"bytes,2,opt,name=fieldPath"`
+}
+
+// ResourceFieldSelector represents container resources (cpu, memory) and their output format
+type ResourceFieldSelector struct {
+	// Container name: required for volumes, optional for env vars
+	ContainerName string `json:"containerName,omitempty" protobuf:"bytes,1,opt,name=containerName"`
+	// Required: resource to select
+	Resource string `json:"resource" protobuf:"bytes,2,opt,name=resource"`
+	// Specifies the output format of the exposed resources, defaults to "1"
+	Divisor resource.Quantity `json:"divisor,omitempty" protobuf:"bytes,3,opt,name=divisor"`
 }
 
 // Selects a key from a ConfigMap.
@@ -2079,6 +2096,12 @@ type ServiceSpec struct {
 	// the loadBalancerIP when a load balancer is created.
 	// This field will be ignored if the cloud-provider does not support the feature.
 	LoadBalancerIP string `json:"loadBalancerIP,omitempty" protobuf:"bytes,8,opt,name=loadBalancerIP"`
+
+	// If specified and supported by the platform, this will restrict traffic through the cloud-provider
+	// load-balancer will be restricted to the specified client IPs. This field will be ignored if the
+	// cloud-provider does not support the feature."
+	// More info: http://releases.k8s.io/HEAD/docs/user-guide/services-firewalls.md
+	LoadBalancerSourceRanges []string `json:"loadBalancerSourceRanges,omitempty" protobuf:"bytes,9,opt,name=loadBalancerSourceRanges"`
 }
 
 // ServicePort contains information on service's port.
@@ -2399,6 +2422,8 @@ const (
 	NodeOutOfDisk NodeConditionType = "OutOfDisk"
 	// NodeMemoryPressure means the kubelet is under pressure due to insufficient available memory.
 	NodeMemoryPressure NodeConditionType = "MemoryPressure"
+	// NodeNetworkUnavailable means that network for the node is not correctly configured.
+	NodeNetworkUnavailable NodeConditionType = "NetworkUnavailable"
 )
 
 // NodeCondition contains condition infromation for a node.
@@ -2754,6 +2779,8 @@ type OwnerReference struct {
 	// UID of the referent.
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/identifiers.md#uids
 	UID types.UID `json:"uid" protobuf:"bytes,4,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
+	// If true, this reference points to the managing controller.
+	Controller *bool `json:"controller,omitempty" protobuf:"varint,6,opt,name=controller"`
 }
 
 // ObjectReference contains enough information to let you inspect or modify the referred object.
@@ -3202,7 +3229,10 @@ type DownwardAPIVolumeFile struct {
 	// Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'
 	Path string `json:"path" protobuf:"bytes,1,opt,name=path"`
 	// Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
-	FieldRef ObjectFieldSelector `json:"fieldRef" protobuf:"bytes,2,opt,name=fieldRef"`
+	FieldRef *ObjectFieldSelector `json:"fieldRef,omitempty" protobuf:"bytes,2,opt,name=fieldRef"`
+	// Selects a resource of the container: only resources limits and requests
+	// (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+	ResourceFieldRef *ResourceFieldSelector `json:"resourceFieldRef,omitempty" protobuf:"bytes,3,opt,name=resourceFieldRef"`
 }
 
 // SecurityContext holds security configuration that will be applied to a container.

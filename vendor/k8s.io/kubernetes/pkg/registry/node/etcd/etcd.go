@@ -54,9 +54,14 @@ func (r *StatusREST) New() runtime.Object {
 	return &api.Node{}
 }
 
+// Get retrieves the object from the storage. It is required to support Patch.
+func (r *StatusREST) Get(ctx api.Context, name string) (runtime.Object, error) {
+	return r.store.Get(ctx, name)
+}
+
 // Update alters the status subset of an object.
-func (r *StatusREST) Update(ctx api.Context, obj runtime.Object) (runtime.Object, bool, error) {
-	return r.store.Update(ctx, obj)
+func (r *StatusREST) Update(ctx api.Context, name string, objInfo rest.UpdatedObjectInfo) (runtime.Object, bool, error) {
+	return r.store.Update(ctx, name, objInfo)
 }
 
 // NewREST returns a RESTStorage object that will work against nodes.

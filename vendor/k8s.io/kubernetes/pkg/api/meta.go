@@ -90,6 +90,8 @@ func (meta *ObjectMeta) GetLabels() map[string]string                 { return m
 func (meta *ObjectMeta) SetLabels(labels map[string]string)           { meta.Labels = labels }
 func (meta *ObjectMeta) GetAnnotations() map[string]string            { return meta.Annotations }
 func (meta *ObjectMeta) SetAnnotations(annotations map[string]string) { meta.Annotations = annotations }
+func (meta *ObjectMeta) GetFinalizers() []string                      { return meta.Finalizers }
+func (meta *ObjectMeta) SetFinalizers(finalizers []string)            { meta.Finalizers = finalizers }
 
 func (meta *ObjectMeta) GetOwnerReferences() []metatypes.OwnerReference {
 	ret := make([]metatypes.OwnerReference, len(meta.OwnerReferences))
@@ -98,6 +100,10 @@ func (meta *ObjectMeta) GetOwnerReferences() []metatypes.OwnerReference {
 		ret[i].Name = meta.OwnerReferences[i].Name
 		ret[i].UID = meta.OwnerReferences[i].UID
 		ret[i].APIVersion = meta.OwnerReferences[i].APIVersion
+		if meta.OwnerReferences[i].Controller != nil {
+			value := *meta.OwnerReferences[i].Controller
+			ret[i].Controller = &value
+		}
 	}
 	return ret
 }
@@ -109,6 +115,10 @@ func (meta *ObjectMeta) SetOwnerReferences(references []metatypes.OwnerReference
 		newReferences[i].Name = references[i].Name
 		newReferences[i].UID = references[i].UID
 		newReferences[i].APIVersion = references[i].APIVersion
+		if references[i].Controller != nil {
+			value := *references[i].Controller
+			newReferences[i].Controller = &value
+		}
 	}
 	meta.OwnerReferences = newReferences
 }

@@ -120,6 +120,7 @@ func DeepCopy_componentconfig_KubeControllerManagerConfiguration(in KubeControll
 	out.ServiceCIDR = in.ServiceCIDR
 	out.NodeCIDRMaskSize = in.NodeCIDRMaskSize
 	out.AllocateNodeCIDRs = in.AllocateNodeCIDRs
+	out.ConfigureCloudRoutes = in.ConfigureCloudRoutes
 	out.RootCAFile = in.RootCAFile
 	out.ContentType = in.ContentType
 	out.KubeAPIQPS = in.KubeAPIQPS
@@ -133,6 +134,7 @@ func DeepCopy_componentconfig_KubeControllerManagerConfiguration(in KubeControll
 	if err := unversioned.DeepCopy_unversioned_Duration(in.ControllerStartInterval, &out.ControllerStartInterval, c); err != nil {
 		return err
 	}
+	out.EnableGarbageCollector = in.EnableGarbageCollector
 	return nil
 }
 
@@ -223,6 +225,7 @@ func DeepCopy_componentconfig_KubeletConfiguration(in KubeletConfiguration, out 
 	out.PodInfraContainerImage = in.PodInfraContainerImage
 	out.DockerEndpoint = in.DockerEndpoint
 	out.RootDirectory = in.RootDirectory
+	out.SeccompProfileRoot = in.SeccompProfileRoot
 	out.AllowPrivileged = in.AllowPrivileged
 	out.HostNetworkSources = in.HostNetworkSources
 	out.HostPIDSources = in.HostPIDSources
@@ -315,6 +318,7 @@ func DeepCopy_componentconfig_KubeletConfiguration(in KubeletConfiguration, out 
 		return err
 	}
 	out.EvictionMaxPodGracePeriod = in.EvictionMaxPodGracePeriod
+	out.PodsPerCore = in.PodsPerCore
 	return nil
 }
 
@@ -359,5 +363,6 @@ func DeepCopy_componentconfig_VolumeConfiguration(in VolumeConfiguration, out *V
 	if err := DeepCopy_componentconfig_PersistentVolumeRecyclerConfiguration(in.PersistentVolumeRecyclerConfiguration, &out.PersistentVolumeRecyclerConfiguration, c); err != nil {
 		return err
 	}
+	out.FlexVolumePluginDir = in.FlexVolumePluginDir
 	return nil
 }
