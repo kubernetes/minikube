@@ -388,3 +388,32 @@ func TestHostGetLogs(t *testing.T) {
 		t.Fatalf("Expected command not run: %s", logsCommand)
 	}
 }
+
+func TestCreateSSHShell(t *testing.T) {
+	api := tests.NewMockAPI()
+
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
+	}
+
+	d := &tests.MockDriver{
+		Port:         port,
+		CurrentState: state.Running,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+	}
+	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
+
+	cliArgs := []string{"exit"}
+	if err := CreateSSHShell(api, cliArgs); err != nil {
+		t.Fatalf("Error running ssh command: %s", err)
+	}
+
+	if s.HadASessionRequested != true {
+		t.Fatalf("Expected ssh session to be run")
+	}
+}
