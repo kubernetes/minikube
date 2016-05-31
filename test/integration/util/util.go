@@ -21,6 +21,8 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -41,6 +43,22 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 		m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
 	}
 	return string(stdout)
+}
+
+func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
+	lines := strings.Split(dockerEnvVars, "\n")
+	var envKey, envVal string
+	seenEnvVar := false
+	for _, line := range lines {
+		if _, err := fmt.Sscanf(line, "export %s=%s", envKey, envVal); err != nil {
+			seenEnvVar = true
+			os.Setenv(envKey, envVal)
+		}
+	}
+	if seenEnvVar == false {
+		return fmt.Errorf("Error: No environment variables were found in docker-env command output: ", dockerEnvVars)
+	}
+	return nil
 }
 
 func (m *MinikubeRunner) GetStatus() string {
