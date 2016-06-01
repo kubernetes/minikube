@@ -35,12 +35,17 @@ type MinikubeRunner struct {
 }
 
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
+	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
-	cmd := exec.Command(path, command)
+	cmd := exec.Command(path, commandArr...)
 	stdout, err := cmd.Output()
 
 	if checkError && err != nil {
-		m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
+		if exitError, ok := err.(*exec.ExitError); ok {
+			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
+		} else {
+			m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
+		}
 	}
 	return string(stdout)
 }
