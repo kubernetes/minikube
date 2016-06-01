@@ -46,8 +46,9 @@ clean:
 	rm pkg/minikube/cluster/localkubecontents.go
 
 MKGOPATH := mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH)) && ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
-LOCALKUBEFILES := $(shell find pkg/localkube -name '*.go') $(shell find cmd/localkube -name '*.go') $(shell find vendor -name '*.go')
-MINIKUBEFILES := $(shell find pkg/minikube -name '*.go') $(shell find cmd/minikube -name '*.go') $(shell find vendor -name '*.go')
+
+LOCALKUBEFILES := $(shell go list  -f '{{join .Deps "\n"}}' $(REPOPATH)/cmd/localkube/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
+MINIKUBEFILES := $(shell go list  -f '{{join .Deps "\n"}}' $(REPOPATH)/cmd/minikube/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
 
 out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube
