@@ -24,11 +24,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-const (
-	remoteLocalKubeErrPath = "/var/log/localkube.err"
-	remoteLocalKubeOutPath = "/var/log/localkube.out"
-)
-
 // Kill any running instances.
 var stopCommand = "sudo killall localkube | true"
 
@@ -37,7 +32,7 @@ var startCommandFmtStr = `
 PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true > %s 2> %s < /dev/null &
 `
 
-var logsCommand = fmt.Sprintf("tail -n +1 %s %s", remoteLocalKubeErrPath, remoteLocalKubeOutPath)
+var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
 
 func GetStartCommand() string {
 	flagVals := make([]string, len(constants.LogFlags))
@@ -47,5 +42,5 @@ func GetStartCommand() string {
 		}
 	}
 	flags := strings.Join(flagVals, " ")
-	return fmt.Sprintf(startCommandFmtStr, flags, remoteLocalKubeErrPath, remoteLocalKubeOutPath)
+	return fmt.Sprintf(startCommandFmtStr, flags, constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
 }

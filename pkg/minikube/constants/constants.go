@@ -46,3 +46,8 @@ var LogFlags = [...]string{
 }
 
 const DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.1.iso"
+
+const (
+	RemoteLocalKubeErrPath = "/var/log/localkube.err"
+	RemoteLocalKubeOutPath = "/var/log/localkube.out"
+)
