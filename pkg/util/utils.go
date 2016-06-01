@@ -61,3 +61,13 @@ func CanReadFile(path string) bool {
 
 	return true
 }
+
+func Retry(attempts int, callback func() error) (err error) {
+	for i := 0; i < attempts; i++ {
+		err = callback()
+		if err == nil {
+			return nil
+		}
+	}
+	return err
+}

@@ -22,12 +22,14 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cfg "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -52,8 +54,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		MinikubeISO: minikubeISO,
 	}
 
-	host, err := cluster.StartHost(api, config)
-
+	var host *host.Host
+	start := func() (err error) {
+		host, err = cluster.StartHost(api, config)
+		return err
+	}
+	err := util.Retry(3, start)
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
 		os.Exit(1)
