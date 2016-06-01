@@ -19,33 +19,24 @@ limitations under the License.
 package integration
 
 import (
-	"fmt"
-	"testing"
-
-	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/test/integration/util"
+	"os/exec"
+	"testing"
 )
 
-func TestClusterStatus(t *testing.T) {
+func TestClusterEnv(t *testing.T) {
 	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
 	minikubeRunner.RunCommand("start", true)
 	minikubeRunner.CheckStatus("Running")
 
-	kubectlRunner := util.NewKubectlRunner(t)
-	cs := api.ComponentStatusList{}
-	kubectlRunner.RunCommand([]string{"get", "cs"}, &cs)
-
-	for _, i := range cs.Items {
-		status := api.ConditionFalse
-		for _, c := range i.Conditions {
-			if c.Type != api.ComponentHealthy {
-				continue
-			}
-			fmt.Printf("Component: %s, Healthy: %s.\n", i.GetName(), c.Status)
-			status = c.Status
-		}
-		if status != api.ConditionTrue {
-			t.Fatalf("Component %s is not Healthy! Status: %s", i.GetName(), status)
-		}
+	dockerEnvVars := minikubeRunner.RunCommand("docker-env", true)
+	if err := minikubeRunner.SetEnvFromEnvCmdOutput(dockerEnvVars); err != nil {
+		t.Fatalf("Error: No environment variables were found in docker-env command output: ", dockerEnvVars)
+	}
+	path, err := exec.LookPath("docker")
+	cmd := exec.Command(path, "ps")
+	stdout, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("Error running command: %s. Output: %s", "docker ps", err, stdout)
 	}
 }
