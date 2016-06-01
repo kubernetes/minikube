@@ -122,9 +122,8 @@ func (dns *DNSServer) Start() {
 			Name:      DNSServiceName,
 			Namespace: DNSServiceNamespace,
 			Labels: map[string]string{
-				"k8s-app":                       "kube-dns",
-				"kubernetes.io/cluster-service": "true",
-				"kubernetes.io/name":            "KubeDNS",
+				"k8s-app":            "kube-dns",
+				"kubernetes.io/name": "KubeDNS",
 			},
 		}
 
