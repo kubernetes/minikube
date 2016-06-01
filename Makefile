@@ -72,7 +72,7 @@ iso:
 
 .PHONY: integration
 integration: out/minikube
-	go test -v ./test/integration --tags=integration
+	go test -v $(REPOPATH)/test/integration --tags=integration
 
 .PHONY: test
 test: pkg/minikube/cluster/localkubecontents.go
