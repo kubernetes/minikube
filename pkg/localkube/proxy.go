@@ -38,8 +38,7 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 	// master details
 	config.Master = lk.GetAPIServerInsecureURL()
 
-	// TODO: investigate why IP tables is not working
-	config.Mode = componentconfig.ProxyModeUserspace
+	config.Mode = componentconfig.ProxyModeIPTables
 
 	// defaults
 	config.OOMScoreAdj = &OOMScoreAdj
