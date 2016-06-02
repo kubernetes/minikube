@@ -33,10 +33,15 @@ docker build -t socat -f Dockerfile.socat .
 docker run socat cat socat > $tmpdir/socat
 chmod +x $tmpdir/socat
 
-# Get ethotool
+# Get ethtool
 docker build -t ethtool -f Dockerfile.ethtool .
 docker run ethtool cat ethtool > $tmpdir/ethtool
 chmod +x $tmpdir/ethtool
+
+# Get conntrack
+docker build -t conntrack -f Dockerfile.conntrack .
+docker run conntrack cat conntrack > $tmpdir/conntrack
+chmod +x $tmpdir/conntrack
 
 # Do the build.
 docker build -t iso .

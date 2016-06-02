@@ -24,6 +24,7 @@ ENV DOCKER_SHA 8824f8a67fbe55d1e52dcbebc74219ba8090006e
 ADD nsenter $ROOTFS/usr/bin/
 ADD socat $ROOTFS/usr/bin
 ADD ethtool $ROOTFS/usr/bin
+ADD conntrack $ROOTFS/usr/bin
 
 # Add addons
 ADD addon-manager.yaml $ROOTFS/etc/kubernetes/manifests/
