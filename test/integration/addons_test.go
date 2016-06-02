@@ -42,7 +42,7 @@ func TestAddons(t *testing.T) {
 
 	checkAddon := func() error {
 		p := api.Pod{}
-		if err := kubectlRunner.RunCommand(addonManagerCmd, &p); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput(addonManagerCmd, &p); err != nil {
 			return err
 		}
 
@@ -65,7 +65,7 @@ func TestDashboard(t *testing.T) {
 
 	checkDashboard := func() error {
 		rc := api.ReplicationController{}
-		if err := kubectlRunner.RunCommand(dashboardCmd, &rc); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput(dashboardCmd, &rc); err != nil {
 			return err
 		}
 

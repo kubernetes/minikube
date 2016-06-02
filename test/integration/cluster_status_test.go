@@ -37,7 +37,7 @@ func TestClusterStatus(t *testing.T) {
 	cs := api.ComponentStatusList{}
 
 	healthy := func() error {
-		if err := kubectlRunner.RunCommand([]string{"get", "cs"}, &cs); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "cs"}, &cs); err != nil {
 			return err
 		}
 		for _, i := range cs.Items {

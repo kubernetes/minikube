@@ -22,11 +22,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 type MinikubeRunner struct {
@@ -48,6 +50,13 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 		}
 	}
 	return string(stdout)
+}
+
+func (m *MinikubeRunner) EnsureRunning() {
+	if m.GetStatus() != "Running" {
+		m.RunCommand("start", true)
+	}
+	m.CheckStatus("Running")
 }
 
 func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
@@ -91,10 +100,9 @@ func NewKubectlRunner(t *testing.T) *KubectlRunner {
 	return &KubectlRunner{BinaryPath: p, T: t}
 }
 
-func (k *KubectlRunner) RunCommand(args []string, outputObj interface{}) error {
+func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}) error {
 	args = append(args, "-o=json")
-	cmd := exec.Command(k.BinaryPath, args...)
-	output, err := cmd.CombinedOutput()
+	output, err := k.RunCommand(args)
 	if err != nil {
 		return err
 	}
@@ -103,4 +111,35 @@ func (k *KubectlRunner) RunCommand(args []string, outputObj interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func (k *KubectlRunner) RunCommand(args []string) ([]byte, error) {
+	cmd := exec.Command(k.BinaryPath, args...)
+	stdout, err := cmd.CombinedOutput()
+	if err != nil {
+		return make([]byte, 0), fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)
+	}
+	return stdout, nil
+}
+
+func (k *KubectlRunner) CreateRandomNamespace() string {
+	const strLen = 20
+	name := genRandString(strLen)
+	k.RunCommand([]string{"create", "namespace", name})
+	return name
+}
+
+func genRandString(strLen int) string {
+	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+	rand.Seed(time.Now().UTC().UnixNano())
+	result := make([]byte, strLen)
+	for i := 0; i < strLen; i++ {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result)
+}
+
+func (k *KubectlRunner) DeleteNamespace(namespace string) error {
+	_, err := k.RunCommand([]string{"delete", "namespace", namespace})
+	return err
 }
