@@ -35,8 +35,8 @@ func TestClusterEnv(t *testing.T) {
 	}
 	path, err := exec.LookPath("docker")
 	cmd := exec.Command(path, "ps")
-	stdout, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Error running command: %s. Output: %s", "docker ps", err, stdout)
+		t.Fatalf("Error running command: %s. Error: %s Output: %s", "docker ps", err, output)
 	}
 }
