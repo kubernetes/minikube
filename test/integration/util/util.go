@@ -91,15 +91,16 @@ func NewKubectlRunner(t *testing.T) *KubectlRunner {
 	return &KubectlRunner{BinaryPath: p, T: t}
 }
 
-func (k *KubectlRunner) RunCommand(args []string, outputObj interface{}) {
+func (k *KubectlRunner) RunCommand(args []string, outputObj interface{}) error {
 	args = append(args, "-o=json")
 	cmd := exec.Command(k.BinaryPath, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		k.T.Fatalf("Error running command: %s %s. Error: %s, Output: %s", k.BinaryPath, args, err, output)
+		return err
 	}
 	d := json.NewDecoder(bytes.NewReader(output))
 	if err := d.Decode(outputObj); err != nil {
-		k.T.Fatalf("Error parsing output: %s", err)
+		return err
 	}
+	return nil
 }
