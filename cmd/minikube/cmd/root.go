@@ -18,8 +18,10 @@ package cmd
 
 import (
 	goflag "flag"
+	"io/ioutil"
 	"os"
 
+	"github.com/docker/machine/libmachine/log"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -31,6 +33,10 @@ var dirs = [...]string{
 	constants.MakeMiniPath("certs"),
 	constants.MakeMiniPath("machines")}
 
+var (
+	showLibmachineLogs bool
+)
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "minikube",
@@ -41,6 +47,11 @@ var RootCmd = &cobra.Command{
 			if err := os.MkdirAll(path, 0777); err != nil {
 				glog.Exitf("Error creating minikube directory: %s", err)
 			}
+		}
+
+		if !showLibmachineLogs {
+			log.SetOutWriter(ioutil.Discard)
+			log.SetErrWriter(ioutil.Discard)
 		}
 	},
 }
@@ -54,6 +65,7 @@ func Execute() {
 }
 
 func init() {
+	RootCmd.PersistentFlags().BoolVarP(&showLibmachineLogs, "show-libmachine-logs", "", false, "Whether or not to show logs from libmachine.")
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	cobra.OnInitialize(initConfig)
 }
