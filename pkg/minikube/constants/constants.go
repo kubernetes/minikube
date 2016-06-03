@@ -45,7 +45,7 @@ var LogFlags = [...]string{
 	"vmodule",
 }
 
-const DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.1.iso"
+const DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.2.iso"
 
 const (
 	RemoteLocalKubeErrPath = "/var/log/localkube.err"
