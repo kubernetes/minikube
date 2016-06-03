@@ -24,15 +24,17 @@ K8S_PACKAGE = 'k8s.io/kubernetes/'
 X_ARG_BASE = '-X k8s.io/minikube/vendor/k8s.io/kubernetes/pkg/version.'
 
 def get_rev():
+  return 'gitCommit=%s' % get_from_godep('Rev')
+
+def get_version():
+    return 'gitVersion=%s' % get_from_godep('Comment')
+
+def get_from_godep(key):
   with open('./Godeps/Godeps.json') as f:
     contents = json.load(f)
     for dep in contents['Deps']:
       if dep['ImportPath'].startswith(K8S_PACKAGE):
-        return 'gitCommit=%s' % dep['Rev']
-
-def get_version():
-  # Update when vendor/k8s.io/kubernetes is updated.
-  return 'gitVersion=v1.3.0-alpha.3-838+ba170aa191f8c7'
+        return dep[key]
 
 def get_tree_state():
   git_status = subprocess.check_output(['git', 'status', '--porcelain'])
