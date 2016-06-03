@@ -12,21 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:jessie
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get -yy -q install \
-    iptables \
-    ethtool \
-    ca-certificates \
-    util-linux \
-    socat \
-    conntrack \
-    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get autoremove -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# Copy over important files
-COPY localkube /
-COPY static-pods /etc/kubernetes/manifests
-COPY addons /etc/kubernetes/addons
+FROM golang:1.6
+RUN apt-get -qq update && apt-get -qq install curl make pkg-config gcc flex bison bzip2
+ADD conntrack.sh /go/
+RUN /go/conntrack.sh

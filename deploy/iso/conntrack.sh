@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,21 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM debian:jessie
+set -e
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get -yy -q install \
-    iptables \
-    ethtool \
-    ca-certificates \
-    util-linux \
-    socat \
-    conntrack \
-    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get autoremove -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+PACKAGES="libmnl-1.0.3 libnfnetlink-1.0.1 libnetfilter_cttimeout-1.0.0 libnetfilter_cthelper-1.0.0 libnetfilter_queue-1.0.2 libnetfilter_conntrack-1.0.4"
+CONNTRACK=conntrack-tools-1.4.2
 
-# Copy over important files
-COPY localkube /
-COPY static-pods /etc/kubernetes/manifests
-COPY addons /etc/kubernetes/addons
+fetch() {
+    curl -s -S http://www.netfilter.org/projects/${1%-*}/files/$1.tar.bz2 | tar xj
+}
+
+for PACKAGE in $PACKAGES; do
+    fetch $PACKAGE
+    (cd $PACKAGE; ./configure && make LDFLAGS=-static install)
+done
+
+fetch $CONNTRACK
+(cd $CONNTRACK; ./configure && make LDFLAGS=-static && rm -f src/conntrack && make LDFLAGS=-all-static)
+cp $CONNTRACK/src/conntrack /go
