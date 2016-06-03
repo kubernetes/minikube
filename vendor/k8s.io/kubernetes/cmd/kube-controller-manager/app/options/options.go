@@ -60,7 +60,7 @@ func NewCMServer() *CMServer {
 			NodeSyncPeriod:                    unversioned.Duration{Duration: 10 * time.Second},
 			ResourceQuotaSyncPeriod:           unversioned.Duration{Duration: 5 * time.Minute},
 			NamespaceSyncPeriod:               unversioned.Duration{Duration: 5 * time.Minute},
-			PVClaimBinderSyncPeriod:           unversioned.Duration{Duration: 10 * time.Minute},
+			PVClaimBinderSyncPeriod:           unversioned.Duration{Duration: 15 * time.Second},
 			HorizontalPodAutoscalerSyncPeriod: unversioned.Duration{Duration: 30 * time.Second},
 			DeploymentControllerSyncPeriod:    unversioned.Duration{Duration: 30 * time.Second},
 			MinResyncPeriod:                   unversioned.Duration{Duration: 12 * time.Hour},
@@ -71,6 +71,7 @@ func NewCMServer() *CMServer {
 			NodeMonitorPeriod:                 unversioned.Duration{Duration: 5 * time.Second},
 			ClusterName:                       "kubernetes",
 			NodeCIDRMaskSize:                  24,
+			ConfigureCloudRoutes:              true,
 			TerminatedPodGCThreshold:          12500,
 			VolumeConfiguration: componentconfig.VolumeConfiguration{
 				EnableHostPathProvisioning: false,
@@ -81,12 +82,14 @@ func NewCMServer() *CMServer {
 					MinimumTimeoutHostPath:   60,
 					IncrementTimeoutHostPath: 30,
 				},
+				FlexVolumePluginDir: "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/",
 			},
 			ContentType:             "application/vnd.kubernetes.protobuf",
 			KubeAPIQPS:              20.0,
 			KubeAPIBurst:            30,
 			LeaderElection:          leaderelection.DefaultLeaderElectionConfiguration(),
 			ControllerStartInterval: unversioned.Duration{Duration: 0 * time.Second},
+			EnableGarbageCollector:  false,
 		},
 	}
 	return &s
@@ -122,6 +125,7 @@ func (s *CMServer) AddFlags(fs *pflag.FlagSet) {
 	fs.Int32Var(&s.VolumeConfiguration.PersistentVolumeRecyclerConfiguration.MinimumTimeoutHostPath, "pv-recycler-minimum-timeout-hostpath", s.VolumeConfiguration.PersistentVolumeRecyclerConfiguration.MinimumTimeoutHostPath, "The minimum ActiveDeadlineSeconds to use for a HostPath Recycler pod.  This is for development and testing only and will not work in a multi-node cluster.")
 	fs.Int32Var(&s.VolumeConfiguration.PersistentVolumeRecyclerConfiguration.IncrementTimeoutHostPath, "pv-recycler-timeout-increment-hostpath", s.VolumeConfiguration.PersistentVolumeRecyclerConfiguration.IncrementTimeoutHostPath, "the increment of time added per Gi to ActiveDeadlineSeconds for a HostPath scrubber pod.  This is for development and testing only and will not work in a multi-node cluster.")
 	fs.BoolVar(&s.VolumeConfiguration.EnableHostPathProvisioning, "enable-hostpath-provisioner", s.VolumeConfiguration.EnableHostPathProvisioning, "Enable HostPath PV provisioning when running without a cloud provider. This allows testing and development of provisioning features.  HostPath provisioning is not supported in any way, won't work in a multi-node cluster, and should not be used for anything other than testing or development.")
+	fs.StringVar(&s.VolumeConfiguration.FlexVolumePluginDir, "flex-volume-plugin-dir", s.VolumeConfiguration.FlexVolumePluginDir, "Full path of the directory in which the flex volume plugin should search for additional third party volume plugins.")
 	fs.Int32Var(&s.TerminatedPodGCThreshold, "terminated-pod-gc-threshold", s.TerminatedPodGCThreshold, "Number of terminated pods that can exist before the terminated pod garbage collector starts deleting terminated pods. If <= 0, the terminated pod garbage collector is disabled.")
 	fs.DurationVar(&s.HorizontalPodAutoscalerSyncPeriod.Duration, "horizontal-pod-autoscaler-sync-period", s.HorizontalPodAutoscalerSyncPeriod.Duration, "The period for syncing the number of pods in horizontal pod autoscaler.")
 	fs.DurationVar(&s.DeploymentControllerSyncPeriod.Duration, "deployment-controller-sync-period", s.DeploymentControllerSyncPeriod.Duration, "Period for syncing the deployments.")
@@ -146,6 +150,7 @@ func (s *CMServer) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.ServiceCIDR, "service-cluster-ip-range", s.ServiceCIDR, "CIDR Range for Services in cluster.")
 	fs.Int32Var(&s.NodeCIDRMaskSize, "node-cidr-mask-size", s.NodeCIDRMaskSize, "Mask size for node cidr in cluster.")
 	fs.BoolVar(&s.AllocateNodeCIDRs, "allocate-node-cidrs", false, "Should CIDRs for Pods be allocated and set on the cloud provider.")
+	fs.BoolVar(&s.ConfigureCloudRoutes, "configure-cloud-routes", true, "Should CIDRs allocated by allocate-node-cidrs be configured on the cloud provider.")
 	fs.StringVar(&s.Master, "master", s.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", s.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
 	fs.StringVar(&s.RootCAFile, "root-ca-file", s.RootCAFile, "If set, this root certificate authority will be included in service account's token secret. This must be a valid PEM-encoded CA bundle.")
@@ -153,5 +158,6 @@ func (s *CMServer) AddFlags(fs *pflag.FlagSet) {
 	fs.Float32Var(&s.KubeAPIQPS, "kube-api-qps", s.KubeAPIQPS, "QPS to use while talking with kubernetes apiserver")
 	fs.Int32Var(&s.KubeAPIBurst, "kube-api-burst", s.KubeAPIBurst, "Burst to use while talking with kubernetes apiserver")
 	fs.DurationVar(&s.ControllerStartInterval.Duration, "controller-start-interval", s.ControllerStartInterval.Duration, "Interval between starting controller managers.")
+	fs.BoolVar(&s.EnableGarbageCollector, "enable-garbage-collector", s.EnableGarbageCollector, "Enables the generic garbage collector. MUST be synced with the corresponding flag of the kube-apiserver. WARNING: the generic garbage collector is an alpha feature.")
 	leaderelection.BindFlags(&s.LeaderElection, fs)
 }

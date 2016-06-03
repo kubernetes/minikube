@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -177,6 +178,7 @@ func NewMainKubelet(
 	dockerClient dockertools.DockerInterface,
 	kubeClient clientset.Interface,
 	rootDirectory string,
+	seccompProfileRoot string,
 	podInfraContainerImage string,
 	resyncInterval time.Duration,
 	pullQPS float32,
@@ -215,6 +217,7 @@ func NewMainKubelet(
 	podCIDR string,
 	reconcileCIDR bool,
 	maxPods int,
+	podsPerCore int,
 	nvidiaGPUs int,
 	dockerExecHandler dockertools.ExecHandler,
 	resolverConfig string,
@@ -342,6 +345,7 @@ func NewMainKubelet(
 		nonMasqueradeCIDR:          nonMasqueradeCIDR,
 		reconcileCIDR:              reconcileCIDR,
 		maxPods:                    maxPods,
+		podsPerCore:                podsPerCore,
 		nvidiaGPUs:                 nvidiaGPUs,
 		syncLoopMonitor:            atomic.Value{},
 		resolverConfig:             resolverConfig,
@@ -349,7 +353,7 @@ func NewMainKubelet(
 		daemonEndpoints:            daemonEndpoints,
 		containerManager:           containerManager,
 		flannelExperimentalOverlay: flannelExperimentalOverlay,
-		flannelHelper:              NewFlannelHelper(),
+		flannelHelper:              nil,
 		nodeIP:                     nodeIP,
 		clock:                      util.RealClock{},
 		outOfDiskTransitionFrequency: outOfDiskTransitionFrequency,
@@ -359,6 +363,7 @@ func NewMainKubelet(
 	}
 
 	if klet.flannelExperimentalOverlay {
+		klet.flannelHelper = NewFlannelHelper()
 		glog.Infof("Flannel is in charge of podCIDR and overlay networking.")
 	}
 	if klet.nodeIP != nil {
@@ -423,6 +428,7 @@ func NewMainKubelet(
 			serializeImagePulls,
 			enableCustomMetrics,
 			klet.hairpinMode == componentconfig.HairpinVeth,
+			seccompProfileRoot,
 			containerRuntimeOptions...,
 		)
 	case "rkt":
@@ -440,7 +446,6 @@ func NewMainKubelet(
 			containerRefManager,
 			klet.podManager,
 			klet.livenessManager,
-			klet.volumeManager,
 			klet.httpClient,
 			klet.networkPlugin,
 			klet.hairpinMode == componentconfig.HairpinVeth,
@@ -815,6 +820,9 @@ type Kubelet struct {
 
 	// the list of handlers to call during pod sync.
 	lifecycle.PodSyncHandlers
+
+	// the number of allowed pods per core
+	podsPerCore int
 }
 
 // Validate given node IP belongs to the current host
@@ -920,7 +928,7 @@ func (kl *Kubelet) initializeModules() error {
 
 	// Step 3: If the container logs directory does not exist, create it.
 	if _, err := os.Stat(containerLogsDir); err != nil {
-		if err := kl.os.Mkdir(containerLogsDir, 0755); err != nil {
+		if err := kl.os.MkdirAll(containerLogsDir, 0755); err != nil {
 			glog.Errorf("Failed to create directory %q: %v", containerLogsDir, err)
 		}
 	}
@@ -1011,6 +1019,16 @@ func (kl *Kubelet) initialNodeStatus() (*api.Node, error) {
 			Unschedulable: !kl.registerSchedulable,
 		},
 	}
+	// Initially, set NodeNetworkUnavailable to true.
+	if kl.providerRequiresNetworkingConfiguration() {
+		node.Status.Conditions = append(node.Status.Conditions, api.NodeCondition{
+			Type:               api.NodeNetworkUnavailable,
+			Status:             api.ConditionTrue,
+			Reason:             "NoRouteCreated",
+			Message:            "Node created without a route",
+			LastTransitionTime: unversioned.NewTime(kl.clock.Now()),
+		})
+	}
 
 	// @question: should this be place after the call to the cloud provider? which also applies labels
 	for k, v := range kl.nodeLabels {
@@ -1069,11 +1087,24 @@ func (kl *Kubelet) initialNodeStatus() (*api.Node, error) {
 		}
 	} else {
 		node.Spec.ExternalID = kl.hostname
+		// If no cloud provider is defined - use the one detected by cadvisor
+		info, err := kl.GetCachedMachineInfo()
+		if err == nil {
+			kl.updateCloudProviderFromMachineInfo(node, info)
+		}
 	}
 	if err := kl.setNodeStatus(node); err != nil {
 		return nil, err
 	}
 	return node, nil
+}
+
+func (kl *Kubelet) providerRequiresNetworkingConfiguration() bool {
+	if kl.cloud == nil || kl.flannelExperimentalOverlay {
+		return false
+	}
+	_, supported := kl.cloud.Routes()
+	return supported
 }
 
 // registerWithApiserver registers the node with the cluster master. It is safe
@@ -1506,6 +1537,11 @@ func (kl *Kubelet) makeEnvironmentVariables(pod *api.Pod, container *api.Contain
 				if err != nil {
 					return result, err
 				}
+			case envVar.ValueFrom.ResourceFieldRef != nil:
+				runtimeVal, err = containerResourceRuntimeValue(envVar.ValueFrom.ResourceFieldRef, pod, container)
+				if err != nil {
+					return result, err
+				}
 			case envVar.ValueFrom.ConfigMapKeyRef != nil:
 				name := envVar.ValueFrom.ConfigMapKeyRef.Name
 				key := envVar.ValueFrom.ConfigMapKeyRef.Key
@@ -1561,6 +1597,16 @@ func (kl *Kubelet) podFieldSelectorRuntimeValue(fs *api.ObjectFieldSelector, pod
 		return podIP, nil
 	}
 	return fieldpath.ExtractFieldPathAsString(pod, internalFieldPath)
+}
+
+// containerResourceRuntimeValue returns the value of the provided container resource
+func containerResourceRuntimeValue(fs *api.ResourceFieldSelector, pod *api.Pod, container *api.Container) (string, error) {
+	containerName := fs.ContainerName
+	if len(containerName) == 0 {
+		return fieldpath.ExtractContainerResourceValue(fs, container)
+	} else {
+		return fieldpath.ExtractResourceValueByContainerName(fs, pod, containerName)
+	}
 }
 
 // GetClusterDNS returns a list of the DNS servers and a list of the DNS search
@@ -1693,13 +1739,13 @@ func (kl *Kubelet) killPod(pod *api.Pod, runningPod *kubecontainer.Pod, status *
 // makePodDataDirs creates the dirs for the pod datas.
 func (kl *Kubelet) makePodDataDirs(pod *api.Pod) error {
 	uid := pod.UID
-	if err := os.Mkdir(kl.getPodDir(uid), 0750); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(kl.getPodDir(uid), 0750); err != nil && !os.IsExist(err) {
 		return err
 	}
-	if err := os.Mkdir(kl.getPodVolumesDir(uid), 0750); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(kl.getPodVolumesDir(uid), 0750); err != nil && !os.IsExist(err) {
 		return err
 	}
-	if err := os.Mkdir(kl.getPodPluginsDir(uid), 0750); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(kl.getPodPluginsDir(uid), 0750); err != nil && !os.IsExist(err) {
 		return err
 	}
 	return nil
@@ -3013,6 +3059,18 @@ func (kl *Kubelet) setNodeAddress(node *api.Node) error {
 	return nil
 }
 
+func (kl *Kubelet) updateCloudProviderFromMachineInfo(node *api.Node, info *cadvisorapi.MachineInfo) {
+	if info.CloudProvider != cadvisorapi.UnknownProvider &&
+		info.CloudProvider != cadvisorapi.Baremetal {
+		// The cloud providers from pkg/cloudprovider/providers/* that update ProviderID
+		// will use the format of cloudprovider://project/availability_zone/instance_name
+		// here we only have the cloudprovider and the instance name so we leave project
+		// and availability zone empty for compatibility.
+		node.Spec.ProviderID = strings.ToLower(string(info.CloudProvider)) +
+			":////" + string(info.InstanceID)
+	}
+}
+
 func (kl *Kubelet) setNodeStatusMachineInfo(node *api.Node) {
 	// TODO: Post NotReady if we cannot get MachineInfo from cAdvisor. This needs to start
 	// cAdvisor locally, e.g. for test-cmd.sh, and in integration test.
@@ -3031,8 +3089,13 @@ func (kl *Kubelet) setNodeStatusMachineInfo(node *api.Node) {
 		node.Status.NodeInfo.MachineID = info.MachineID
 		node.Status.NodeInfo.SystemUUID = info.SystemUUID
 		node.Status.Capacity = cadvisor.CapacityFromMachineInfo(info)
-		node.Status.Capacity[api.ResourcePods] = *resource.NewQuantity(
-			int64(kl.maxPods), resource.DecimalSI)
+		if kl.podsPerCore > 0 {
+			node.Status.Capacity[api.ResourcePods] = *resource.NewQuantity(
+				int64(math.Min(float64(info.NumCores*kl.podsPerCore), float64(kl.maxPods))), resource.DecimalSI)
+		} else {
+			node.Status.Capacity[api.ResourcePods] = *resource.NewQuantity(
+				int64(kl.maxPods), resource.DecimalSI)
+		}
 		node.Status.Capacity[api.ResourceNvidiaGPU] = *resource.NewQuantity(
 			int64(kl.nvidiaGPUs), resource.DecimalSI)
 		if node.Status.NodeInfo.BootID != "" &&

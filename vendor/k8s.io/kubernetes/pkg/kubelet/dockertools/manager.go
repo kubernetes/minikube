@@ -18,6 +18,7 @@ package dockertools
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,12 +50,12 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/network/hairpin"
 	proberesults "k8s.io/kubernetes/pkg/kubelet/prober/results"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
-	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
+	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/cache"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/securitycontext"
-	"k8s.io/kubernetes/pkg/types"
+	kubetypes "k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/flowcontrol"
 	"k8s.io/kubernetes/pkg/util/oom"
 	"k8s.io/kubernetes/pkg/util/procfs"
@@ -102,8 +104,7 @@ var (
 	// TODO: make this a TTL based pull (if image older than X policy, pull)
 	podInfraContainerImagePullPolicy = api.PullIfNotPresent
 
-	// Default set of security options. Seccomp is disabled by default until
-	// github issue #20870 is resolved.
+	// Default set of security options.
 	defaultSecurityOpt = []string{"seccomp:unconfined"}
 )
 
@@ -172,11 +173,14 @@ type DockerManager struct {
 
 	// The version cache of docker daemon.
 	versionCache *cache.ObjectCache
+
+	// Directory to host local seccomp profiles.
+	seccompProfileRoot string
 }
 
 // A subset of the pod.Manager interface extracted for testing purposes.
 type podGetter interface {
-	GetPodByUID(types.UID) (*api.Pod, bool)
+	GetPodByUID(kubetypes.UID) (*api.Pod, bool)
 }
 
 func PodInfraContainerEnv(env map[string]string) kubecontainer.Option {
@@ -205,7 +209,7 @@ func NewDockerManager(
 	osInterface kubecontainer.OSInterface,
 	networkPlugin network.NetworkPlugin,
 	runtimeHelper kubecontainer.RuntimeHelper,
-	httpClient kubetypes.HttpGetter,
+	httpClient types.HttpGetter,
 	execHandler ExecHandler,
 	oomAdjuster *oom.OOMAdjuster,
 	procFs procfs.ProcFSInterface,
@@ -214,6 +218,7 @@ func NewDockerManager(
 	serializeImagePulls bool,
 	enableCustomMetrics bool,
 	hairpinMode bool,
+	seccompProfileRoot string,
 	options ...kubecontainer.Option) *DockerManager {
 	// Wrap the docker client with instrumentedDockerInterface
 	client = newInstrumentedDockerInterface(client)
@@ -249,7 +254,8 @@ func NewDockerManager(
 		cpuCFSQuota:            cpuCFSQuota,
 		enableCustomMetrics:    enableCustomMetrics,
 		configureHairpinMode:   hairpinMode,
-		imageStatsProvider:     &imageStatsProvider{client},
+		imageStatsProvider:     newImageStatsProvider(client),
+		seccompProfileRoot:     seccompProfileRoot,
 	}
 	dm.runner = lifecycle.NewHandlerRunner(httpClient, dm, dm)
 	if serializeImagePulls {
@@ -552,7 +558,7 @@ func (dm *DockerManager) runContainer(
 		ContainerName: container.Name,
 	}
 
-	securityOpts, err := dm.getDefaultSecurityOpt()
+	securityOpts, err := dm.getSecurityOpt(pod, container.Name)
 	if err != nil {
 		return kubecontainer.ContainerID{}, err
 	}
@@ -744,14 +750,14 @@ func getDockerContainerNameInfo(c *dockertypes.Container) (*KubeletContainerName
 }
 
 // Get pod UID, name, and namespace by examining the container names.
-func getPodInfoFromContainer(c *dockertypes.Container) (types.UID, string, string, error) {
+func getPodInfoFromContainer(c *dockertypes.Container) (kubetypes.UID, string, string, error) {
 	dockerName, _, err := getDockerContainerNameInfo(c)
 	if err != nil {
-		return types.UID(""), "", "", err
+		return kubetypes.UID(""), "", "", err
 	}
 	name, namespace, err := kubecontainer.ParsePodFullName(dockerName.PodFullName)
 	if err != nil {
-		return types.UID(""), "", "", fmt.Errorf("parse pod full name %q error: %v", dockerName.PodFullName, err)
+		return kubetypes.UID(""), "", "", fmt.Errorf("parse pod full name %q error: %v", dockerName.PodFullName, err)
 	}
 	return dockerName.PodUID, name, namespace, nil
 }
@@ -781,7 +787,7 @@ func (dm *DockerManager) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 	defer func() {
 		metrics.ContainerManagerLatency.WithLabelValues("GetPods").Observe(metrics.SinceInMicroseconds(start))
 	}()
-	pods := make(map[types.UID]*kubecontainer.Pod)
+	pods := make(map[kubetypes.UID]*kubecontainer.Pod)
 	var result []*kubecontainer.Pod
 
 	containers, err := GetKubeletDockerContainers(dm.client, all)
@@ -971,20 +977,57 @@ func (dm *DockerManager) checkVersionCompatibility() error {
 	return nil
 }
 
-func (dm *DockerManager) getDefaultSecurityOpt() ([]string, error) {
+func (dm *DockerManager) getSecurityOpt(pod *api.Pod, ctrName string) ([]string, error) {
 	version, err := dm.APIVersion()
 	if err != nil {
 		return nil, err
 	}
-	// seccomp is to be disabled on docker versions >= v1.10
+
+	// seccomp is only on docker versions >= v1.10
 	result, err := version.Compare(dockerV110APIVersion)
 	if err != nil {
 		return nil, err
 	}
-	if result >= 0 {
+	if result < 0 {
+		// return early for old versions
+		return nil, nil
+	}
+
+	profile, profileOK := pod.ObjectMeta.Annotations["security.alpha.kubernetes.io/seccomp/container/"+ctrName]
+	if !profileOK {
+		// try the pod profile
+		profile, profileOK = pod.ObjectMeta.Annotations["security.alpha.kubernetes.io/seccomp/pod"]
+		if !profileOK {
+			// return early the default
+			return defaultSecurityOpt, nil
+		}
+	}
+
+	if profile == "unconfined" {
+		// return early the default
 		return defaultSecurityOpt, nil
 	}
-	return nil, nil
+
+	if profile == "docker/default" {
+		// return nil so docker will load the default seccomp profile
+		return nil, nil
+	}
+
+	if !strings.HasPrefix(profile, "localhost") {
+		return nil, fmt.Errorf("unknown seccomp profile option: %s", profile)
+	}
+
+	file, err := ioutil.ReadFile(filepath.Join(dm.seccompProfileRoot, strings.TrimPrefix(profile, "localhost/")))
+	if err != nil {
+		return nil, err
+	}
+
+	b := bytes.NewBuffer(nil)
+	if err := json.Compact(b, file); err != nil {
+		return nil, err
+	}
+
+	return []string{fmt.Sprintf("seccomp=%s", b.Bytes())}, nil
 }
 
 type dockerExitError struct {
@@ -1315,8 +1358,9 @@ func (dm *DockerManager) killContainer(containerID kubecontainer.ContainerID, co
 		go func() {
 			defer close(done)
 			defer utilruntime.HandleCrash()
-			if err := dm.runner.Run(containerID, pod, container, container.Lifecycle.PreStop); err != nil {
+			if msg, err := dm.runner.Run(containerID, pod, container, container.Lifecycle.PreStop); err != nil {
 				glog.Errorf("preStop hook for container %q failed: %v", name, err)
+				dm.generateFailedContainerEvent(containerID, pod.Name, kubecontainer.FailedPreStopHook, msg)
 			}
 		}()
 		select {
@@ -1362,6 +1406,15 @@ func (dm *DockerManager) killContainer(containerID kubecontainer.ContainerID, co
 	return err
 }
 
+func (dm *DockerManager) generateFailedContainerEvent(containerID kubecontainer.ContainerID, podName, reason, message string) {
+	ref, ok := dm.containerRefManager.GetRef(containerID)
+	if !ok {
+		glog.Warningf("No ref for pod '%q'", podName)
+		return
+	}
+	dm.recorder.Event(ref, api.EventTypeWarning, reason, message)
+}
+
 var errNoPodOnContainer = fmt.Errorf("no pod information labels on Docker container")
 
 // containerAndPodFromLabels tries to load the appropriate container info off of a Docker container's labels
@@ -1375,7 +1428,7 @@ func containerAndPodFromLabels(inspect *dockertypes.ContainerJSON) (pod *api.Pod
 	if body, found := labels[kubernetesPodLabel]; found {
 		pod = &api.Pod{}
 		if err = runtime.DecodeInto(api.Codecs.UniversalDecoder(), []byte(body), pod); err == nil {
-			name := labels[kubernetesContainerNameLabel]
+			name := labels[types.KubernetesContainerNameLabel]
 			for ix := range pod.Spec.Containers {
 				if pod.Spec.Containers[ix].Name == name {
 					container = &pod.Spec.Containers[ix]
@@ -1477,28 +1530,29 @@ func (dm *DockerManager) runContainerInPod(pod *api.Pod, container *api.Containe
 	}
 
 	if container.Lifecycle != nil && container.Lifecycle.PostStart != nil {
-		handlerErr := dm.runner.Run(id, pod, container, container.Lifecycle.PostStart)
+		msg, handlerErr := dm.runner.Run(id, pod, container, container.Lifecycle.PostStart)
 		if handlerErr != nil {
 			err := fmt.Errorf("PostStart handler: %v", handlerErr)
+			dm.generateFailedContainerEvent(id, pod.Name, kubecontainer.FailedPostStartHook, msg)
 			dm.KillContainerInPod(id, container, pod, err.Error(), nil)
 			return kubecontainer.ContainerID{}, err
 		}
+	}
+
+	// Container information is used in adjusting OOM scores, adding ndots and getting the logPath.
+	containerInfo, err := dm.client.InspectContainer(id.ID)
+	if err != nil {
+		return kubecontainer.ContainerID{}, fmt.Errorf("InspectContainer: %v", err)
 	}
 
 	// Create a symbolic link to the Docker container log file using a name which captures the
 	// full pod name, the container name and the Docker container ID. Cluster level logging will
 	// capture these symbolic filenames which can be used for search terms in Elasticsearch or for
 	// labels for Cloud Logging.
-	containerLogFile := path.Join(dm.dockerRoot, "containers", id.ID, fmt.Sprintf("%s-json.log", id.ID))
+	containerLogFile := containerInfo.LogPath
 	symlinkFile := LogSymlink(dm.containerLogsDir, kubecontainer.GetPodFullName(pod), container.Name, id.ID)
 	if err = dm.os.Symlink(containerLogFile, symlinkFile); err != nil {
 		glog.Errorf("Failed to create symbolic link to the log file of pod %q container %q: %v", format.Pod(pod), container.Name, err)
-	}
-
-	// Container information is used in adjusting OOM scores and adding ndots.
-	containerInfo, err := dm.client.InspectContainer(id.ID)
-	if err != nil {
-		return kubecontainer.ContainerID{}, fmt.Errorf("InspectContainer: %v", err)
 	}
 
 	// Check if current docker version is higher than 1.10. Otherwise, we have to apply OOMScoreAdj instead of using docker API.
@@ -2095,7 +2149,7 @@ func (dm *DockerManager) tryContainerStart(container *api.Container, pod *api.Po
 // of outstanding init containers still present. This reduces load on the container garbage collector
 // by only preserving the most recent terminated init container.
 func (dm *DockerManager) pruneInitContainersBeforeStart(pod *api.Pod, podStatus *kubecontainer.PodStatus, initContainersToKeep map[kubecontainer.DockerID]int) {
-	// only the last execution of an init container should be preserved, and only preserve it if it is in the
+	// only the last execution of each init container should be preserved, and only preserve it if it is in the
 	// list of init containers to keep.
 	initContainerNames := sets.NewString()
 	for _, container := range pod.Spec.InitContainers {
@@ -2104,11 +2158,11 @@ func (dm *DockerManager) pruneInitContainersBeforeStart(pod *api.Pod, podStatus 
 	for name := range initContainerNames {
 		count := 0
 		for _, status := range podStatus.ContainerStatuses {
-			if !initContainerNames.Has(status.Name) || status.State != kubecontainer.ContainerStateExited {
+			if status.Name != name || !initContainerNames.Has(status.Name) || status.State != kubecontainer.ContainerStateExited {
 				continue
 			}
 			count++
-			// keep the first init container we see
+			// keep the first init container for this name
 			if count == 1 {
 				continue
 			}
@@ -2125,7 +2179,7 @@ func (dm *DockerManager) pruneInitContainersBeforeStart(pod *api.Pod, podStatus 
 					count--
 					continue
 				}
-				utilruntime.HandleError(fmt.Errorf("failed to remove pod init container %q: %v; Skipping pod %q", name, err, format.Pod(pod)))
+				utilruntime.HandleError(fmt.Errorf("failed to remove pod init container %q: %v; Skipping pod %q", status.Name, err, format.Pod(pod)))
 				// TODO: report serious errors
 				continue
 			}
@@ -2303,7 +2357,7 @@ func (dm *DockerManager) GarbageCollect(gcPolicy kubecontainer.ContainerGCPolicy
 	return dm.containerGC.GarbageCollect(gcPolicy)
 }
 
-func (dm *DockerManager) GetPodStatus(uid types.UID, name, namespace string) (*kubecontainer.PodStatus, error) {
+func (dm *DockerManager) GetPodStatus(uid kubetypes.UID, name, namespace string) (*kubecontainer.PodStatus, error) {
 	podStatus := &kubecontainer.PodStatus{ID: uid, Name: name, Namespace: namespace}
 	// Now we retain restart count of container as a docker label. Each time a container
 	// restarts, pod will read the restart count from the registered dead container, increment

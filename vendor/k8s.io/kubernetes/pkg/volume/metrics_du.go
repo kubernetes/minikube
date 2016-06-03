@@ -72,7 +72,7 @@ func (md *metricsDu) runDu(metrics *Metrics) error {
 
 // getFsInfo writes metrics.Capacity and metrics.Available from the filesystem info
 func (md *metricsDu) getFsInfo(metrics *Metrics) error {
-	available, capacity, err := util.FsInfo(md.path)
+	available, capacity, _, err := util.FsInfo(md.path)
 	if err != nil {
 		return fmt.Errorf("Failed to get FsInfo due to error %v", err)
 	}

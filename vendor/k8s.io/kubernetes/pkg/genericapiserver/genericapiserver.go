@@ -118,6 +118,8 @@ type Config struct {
 	Authorizer             authorizer.Authorizer
 	AdmissionControl       admission.Interface
 	MasterServiceNamespace string
+	// TODO(ericchiang): Determine if policy escalation checks should be an admission controller.
+	AuthorizerRBACSuperUser string
 
 	// Map requests to contexts. Exported so downstream consumers can provider their own mappers
 	RequestContextMapper api.RequestContextMapper
@@ -666,8 +668,10 @@ func (s *GenericAPIServer) Run(options *options.ServerRunOptions) {
 			Handler:        apiserver.MaxInFlightLimit(sem, longRunningRequestCheck, apiserver.RecoverPanics(handler)),
 			MaxHeaderBytes: 1 << 20,
 			TLSConfig: &tls.Config{
-				// Change default from SSLv3 to TLSv1.0 (because of POODLE vulnerability)
-				MinVersion: tls.VersionTLS10,
+				// Can't use SSLv3 because of POODLE and BEAST
+				// Can't use TLSv1.0 because of POODLE and BEAST using CBC cipher
+				// Can't use TLSv1.1 because of RC4 cipher usage
+				MinVersion: tls.VersionTLS12,
 			},
 		}
 
@@ -862,6 +866,7 @@ func (s *GenericAPIServer) getAPIGroupVersion(apiGroupInfo *APIGroupInfo, groupV
 	version.Serializer = apiGroupInfo.NegotiatedSerializer
 	version.Creater = apiGroupInfo.Scheme
 	version.Convertor = apiGroupInfo.Scheme
+	version.Copier = apiGroupInfo.Scheme
 	version.Typer = apiGroupInfo.Scheme
 	version.SubresourceGroupVersionKind = apiGroupInfo.SubresourceGroupVersionKind
 	return version, err

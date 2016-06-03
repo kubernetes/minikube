@@ -160,8 +160,17 @@ func validateOwnerReference(ownerReference api.OwnerReference, fldPath *field.Pa
 
 func ValidateOwnerReferences(ownerReferences []api.OwnerReference, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
+	controllerName := ""
 	for _, ref := range ownerReferences {
 		allErrs = append(allErrs, validateOwnerReference(ref, fldPath)...)
+		if ref.Controller != nil && *ref.Controller {
+			if controllerName != "" {
+				allErrs = append(allErrs, field.Invalid(fldPath, ownerReferences,
+					fmt.Sprintf("Only one reference can have Controller set to true. Found \"true\" in references for %v and %v", controllerName, ref.Name)))
+			} else {
+				controllerName = ref.Name
+			}
+		}
 	}
 	return allErrs
 }
@@ -323,7 +332,9 @@ func ValidateObjectMeta(meta *api.ObjectMeta, requiresNamespace bool, nameFn Val
 	allErrs = append(allErrs, unversionedvalidation.ValidateLabels(meta.Labels, fldPath.Child("labels"))...)
 	allErrs = append(allErrs, ValidateAnnotations(meta.Annotations, fldPath.Child("annotations"))...)
 	allErrs = append(allErrs, ValidateOwnerReferences(meta.OwnerReferences, fldPath.Child("ownerReferences"))...)
-
+	for _, finalizer := range meta.Finalizers {
+		allErrs = append(allErrs, validateFinalizerName(finalizer, fldPath.Child("finalizers"))...)
+	}
 	return allErrs
 }
 
@@ -373,7 +384,6 @@ func ValidateObjectMetaUpdate(newMeta, oldMeta *api.ObjectMeta, fldPath *field.P
 	allErrs = append(allErrs, ValidateImmutableField(newMeta.Namespace, oldMeta.Namespace, fldPath.Child("namespace"))...)
 	allErrs = append(allErrs, ValidateImmutableField(newMeta.UID, oldMeta.UID, fldPath.Child("uid"))...)
 	allErrs = append(allErrs, ValidateImmutableField(newMeta.CreationTimestamp, oldMeta.CreationTimestamp, fldPath.Child("creationTimestamp"))...)
-	allErrs = append(allErrs, ValidateImmutableField(newMeta.Finalizers, oldMeta.Finalizers, fldPath.Child("finalizers"))...)
 
 	allErrs = append(allErrs, unversionedvalidation.ValidateLabels(newMeta.Labels, fldPath.Child("labels"))...)
 	allErrs = append(allErrs, ValidateAnnotations(newMeta.Annotations, fldPath.Child("annotations"))...)
@@ -555,6 +565,14 @@ func validateVolumeSource(source *api.VolumeSource, fldPath *field.Path) field.E
 		numVolumes++
 		allErrs = append(allErrs, validateAzureFile(source.AzureFile, fldPath.Child("azureFile"))...)
 	}
+	if source.VsphereVolume != nil {
+		if numVolumes > 0 {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("vsphereVolume"), "may not specify more than 1 volume type"))
+		} else {
+			numVolumes++
+			allErrs = append(allErrs, validateVsphereVolumeSource(source.VsphereVolume, fldPath.Child("vsphereVolume"))...)
+		}
+	}
 	if numVolumes == 0 {
 		allErrs = append(allErrs, field.Required(fldPath, "must specify a volume type"))
 	}
@@ -702,7 +720,16 @@ func validateDownwardAPIVolumeSource(downwardAPIVolume *api.DownwardAPIVolumeSou
 			allErrs = append(allErrs, field.Required(fldPath.Child("path"), ""))
 		}
 		allErrs = append(allErrs, validateVolumeSourcePath(downwardAPIVolumeFile.Path, fldPath.Child("path"))...)
-		allErrs = append(allErrs, validateObjectFieldSelector(&downwardAPIVolumeFile.FieldRef, &validDownwardAPIFieldPathExpressions, fldPath.Child("fieldRef"))...)
+		if downwardAPIVolumeFile.FieldRef != nil {
+			allErrs = append(allErrs, validateObjectFieldSelector(downwardAPIVolumeFile.FieldRef, &validDownwardAPIFieldPathExpressions, fldPath.Child("fieldRef"))...)
+			if downwardAPIVolumeFile.ResourceFieldRef != nil {
+				allErrs = append(allErrs, field.Invalid(fldPath, "resource", "fieldRef and resourceFieldRef can not be specified simultaneously"))
+			}
+		} else if downwardAPIVolumeFile.ResourceFieldRef != nil {
+			allErrs = append(allErrs, validateContainerResourceFieldSelector(downwardAPIVolumeFile.ResourceFieldRef, &validContainerResourceFieldPathExpressions, fldPath.Child("resourceFieldRef"), true)...)
+		} else {
+			allErrs = append(allErrs, field.Required(fldPath, "one of fieldRef and resourceFieldRef is required"))
+		}
 	}
 	return allErrs
 }
@@ -794,6 +821,14 @@ func validateAzureFile(azure *api.AzureFileVolumeSource, fldPath *field.Path) fi
 	}
 	if azure.ShareName == "" {
 		allErrs = append(allErrs, field.Required(fldPath.Child("shareName"), ""))
+	}
+	return allErrs
+}
+
+func validateVsphereVolumeSource(cd *api.VsphereVirtualDiskVolumeSource, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if len(cd.VolumePath) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("volumePath"), ""))
 	}
 	return allErrs
 }
@@ -926,6 +961,14 @@ func ValidatePersistentVolume(pv *api.PersistentVolume) field.ErrorList {
 		numVolumes++
 		allErrs = append(allErrs, validateAzureFile(pv.Spec.AzureFile, specPath.Child("azureFile"))...)
 	}
+	if pv.Spec.VsphereVolume != nil {
+		if numVolumes > 0 {
+			allErrs = append(allErrs, field.Forbidden(specPath.Child("vsphereVolume"), "may not specify more than 1 volume type"))
+		} else {
+			numVolumes++
+			allErrs = append(allErrs, validateVsphereVolumeSource(pv.Spec.VsphereVolume, specPath.Child("vsphereVolume"))...)
+		}
+	}
 	if numVolumes == 0 {
 		allErrs = append(allErrs, field.Required(specPath, "must specify a volume type"))
 	}
@@ -957,6 +1000,9 @@ func ValidatePersistentVolumeClaim(pvc *api.PersistentVolumeClaim) field.ErrorLi
 	specPath := field.NewPath("spec")
 	if len(pvc.Spec.AccessModes) == 0 {
 		allErrs = append(allErrs, field.Required(specPath.Child("accessModes"), "at least 1 accessMode is required"))
+	}
+	if pvc.Spec.Selector != nil {
+		allErrs = append(allErrs, unversionedvalidation.ValidateLabelSelector(pvc.Spec.Selector, specPath.Child("selector"))...)
 	}
 	for _, mode := range pvc.Spec.AccessModes {
 		if mode != api.ReadWriteOnce && mode != api.ReadOnlyMany && mode != api.ReadWriteMany {
@@ -1048,6 +1094,7 @@ func validateEnv(vars []api.EnvVar, fldPath *field.Path) field.ErrorList {
 }
 
 var validFieldPathExpressionsEnv = sets.NewString("metadata.name", "metadata.namespace", "status.podIP")
+var validContainerResourceFieldPathExpressions = sets.NewString("limits.cpu", "limits.memory", "requests.cpu", "requests.memory")
 
 func validateEnvVarValueFrom(ev api.EnvVar, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
@@ -1061,6 +1108,10 @@ func validateEnvVarValueFrom(ev api.EnvVar, fldPath *field.Path) field.ErrorList
 	if ev.ValueFrom.FieldRef != nil {
 		numSources++
 		allErrs = append(allErrs, validateObjectFieldSelector(ev.ValueFrom.FieldRef, &validFieldPathExpressionsEnv, fldPath.Child("fieldRef"))...)
+	}
+	if ev.ValueFrom.ResourceFieldRef != nil {
+		numSources++
+		allErrs = append(allErrs, validateContainerResourceFieldSelector(ev.ValueFrom.ResourceFieldRef, &validContainerResourceFieldPathExpressions, fldPath.Child("resourceFieldRef"), false)...)
 	}
 	if ev.ValueFrom.ConfigMapKeyRef != nil {
 		numSources++
@@ -1098,6 +1149,42 @@ func validateObjectFieldSelector(fs *api.ObjectFieldSelector, expressions *sets.
 		}
 	}
 
+	return allErrs
+}
+
+func validateContainerResourceFieldSelector(fs *api.ResourceFieldSelector, expressions *sets.String, fldPath *field.Path, volume bool) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if volume && len(fs.ContainerName) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("containerName"), ""))
+	} else if len(fs.Resource) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("resource"), ""))
+	} else if !expressions.Has(fs.Resource) {
+		allErrs = append(allErrs, field.NotSupported(fldPath.Child("resource"), fs.Resource, expressions.List()))
+	}
+	allErrs = append(allErrs, validateContainerResourceDivisor(fs.Resource, fs.Divisor, fldPath)...)
+	return allErrs
+}
+
+var validContainerResourceDivisorForCPU = sets.NewString("1m", "1")
+var validContainerResourceDivisorForMemory = sets.NewString("1m", "1", "1k", "1M", "1G", "1T", "1P", "1E", "1Ki", "1Mi", "1Gi", "1Ti", "1Pi", "1Ei")
+
+func validateContainerResourceDivisor(rName string, divisor resource.Quantity, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	unsetDivisor := resource.Quantity{}
+	if unsetDivisor.Cmp(divisor) == 0 {
+		return allErrs
+	}
+	switch rName {
+	case "limits.cpu", "requests.cpu":
+		if !validContainerResourceDivisorForCPU.Has(divisor.String()) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("divisor"), rName, fmt.Sprintf("only divisor's values 1m and 1 are supported with the cpu resource")))
+		}
+	case "limits.memory", "requests.memory":
+		if !validContainerResourceDivisorForMemory.Has(divisor.String()) {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("divisor"), rName, fmt.Sprintf("only divisor's values 1m, 1, 1k, 1M, 1G, 1T, 1P, 1E, 1Ki, 1Mi, 1Gi, 1Ti, 1Pi, 1Ei are supported with the memory resource")))
+		}
+	}
 	return allErrs
 }
 
@@ -2005,12 +2092,26 @@ func ValidateService(service *api.Service) field.ErrorList {
 		nodePorts[key] = true
 	}
 
-	_, err := apiservice.GetLoadBalancerSourceRanges(service.Annotations)
-	if err != nil {
-		v := service.Annotations[apiservice.AnnotationLoadBalancerSourceRangesKey]
-		allErrs = append(allErrs, field.Invalid(field.NewPath("metadata", "annotations").Key(apiservice.AnnotationLoadBalancerSourceRangesKey), v, "must be a comma separated list of CIDRs e.g. 192.168.0.0/16,10.0.0.0/8"))
+	// Validate SourceRange field and annotation
+	_, ok := service.Annotations[apiservice.AnnotationLoadBalancerSourceRangesKey]
+	if len(service.Spec.LoadBalancerSourceRanges) > 0 || ok {
+		var fieldPath *field.Path
+		var val string
+		if len(service.Spec.LoadBalancerSourceRanges) > 0 {
+			fieldPath = specPath.Child("LoadBalancerSourceRanges")
+			val = fmt.Sprintf("%v", service.Spec.LoadBalancerSourceRanges)
+		} else {
+			fieldPath = field.NewPath("metadata", "annotations").Key(apiservice.AnnotationLoadBalancerSourceRangesKey)
+			val = service.Annotations[apiservice.AnnotationLoadBalancerSourceRangesKey]
+		}
+		if service.Spec.Type != api.ServiceTypeLoadBalancer {
+			allErrs = append(allErrs, field.Invalid(fieldPath, "", "may only be used when `type` is 'LoadBalancer'"))
+		}
+		_, err := apiservice.GetLoadBalancerSourceRanges(service)
+		if err != nil {
+			allErrs = append(allErrs, field.Invalid(fieldPath, val, "must be a list of IP ranges. For example, 10.240.0.0/24,10.250.0.0/24 "))
+		}
 	}
-
 	return allErrs
 }
 

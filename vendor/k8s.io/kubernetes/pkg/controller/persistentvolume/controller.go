@@ -106,10 +106,8 @@ const createProvisionedPVInterval = 10 * time.Second
 // framework.Controllers that watch PerstentVolume and PersistentVolumeClaim
 // changes.
 type PersistentVolumeController struct {
-	volumes                persistentVolumeOrderedIndex
 	volumeController       *framework.Controller
 	volumeControllerStopCh chan struct{}
-	claims                 cache.Store
 	claimController        *framework.Controller
 	claimControllerStopCh  chan struct{}
 	kubeClient             clientset.Interface
@@ -118,6 +116,14 @@ type PersistentVolumeController struct {
 	recyclePluginMgr       vol.VolumePluginMgr
 	provisioner            vol.ProvisionableVolumePlugin
 	clusterName            string
+
+	// Cache of the last known version of volumes and claims. This cache is
+	// thread safe as long as the volumes/claims there are not modified, they
+	// must be cloned before any modification. These caches get updated both by
+	// "xxx added/updated/deleted" events from etcd and by the controller when
+	// it saves newer version to etcd.
+	volumes persistentVolumeOrderedIndex
+	claims  cache.Store
 
 	// PersistentVolumeController keeps track of long running operations and
 	// makes sure it won't start the same operation twice in parallel.
@@ -507,6 +513,11 @@ func (ctrl *PersistentVolumeController) updateClaimPhase(claim *api.PersistentVo
 		glog.V(4).Infof("updating PersistentVolumeClaim[%s]: set phase %s failed: %v", claimToClaimKey(claim), phase, err)
 		return newClaim, err
 	}
+	_, err = storeObjectUpdate(ctrl.claims, newClaim, "claim")
+	if err != nil {
+		glog.V(4).Infof("updating PersistentVolumeClaim[%s]: cannot update internal cache: %v", claimToClaimKey(claim), err)
+		return newClaim, err
+	}
 	glog.V(2).Infof("claim %q entered phase %q", claimToClaimKey(claim), phase)
 	return newClaim, nil
 }
@@ -557,6 +568,11 @@ func (ctrl *PersistentVolumeController) updateVolumePhase(volume *api.Persistent
 	newVol, err := ctrl.kubeClient.Core().PersistentVolumes().UpdateStatus(volumeClone)
 	if err != nil {
 		glog.V(4).Infof("updating PersistentVolume[%s]: set phase %s failed: %v", volume.Name, phase, err)
+		return newVol, err
+	}
+	_, err = storeObjectUpdate(ctrl.volumes.store, newVol, "volume")
+	if err != nil {
+		glog.V(4).Infof("updating PersistentVolume[%s]: cannot update internal cache: %v", volume.Name, err)
 		return newVol, err
 	}
 	glog.V(2).Infof("volume %q entered phase %q", volume.Name, phase)
@@ -639,6 +655,11 @@ func (ctrl *PersistentVolumeController) bindVolumeToClaim(volume *api.Persistent
 			glog.V(4).Infof("updating PersistentVolume[%s]: binding to %q failed: %v", volume.Name, claimToClaimKey(claim), err)
 			return newVol, err
 		}
+		_, err = storeObjectUpdate(ctrl.volumes.store, newVol, "volume")
+		if err != nil {
+			glog.V(4).Infof("updating PersistentVolume[%s]: cannot update internal cache: %v", volume.Name, err)
+			return newVol, err
+		}
 		glog.V(4).Infof("updating PersistentVolume[%s]: bound to %q", newVol.Name, claimToClaimKey(claim))
 		return newVol, nil
 	}
@@ -694,6 +715,11 @@ func (ctrl *PersistentVolumeController) bindClaimToVolume(claim *api.PersistentV
 		newClaim, err := ctrl.kubeClient.Core().PersistentVolumeClaims(claim.Namespace).Update(claimClone)
 		if err != nil {
 			glog.V(4).Infof("updating PersistentVolumeClaim[%s]: binding to %q failed: %v", claimToClaimKey(claim), volume.Name, err)
+			return newClaim, err
+		}
+		_, err = storeObjectUpdate(ctrl.claims, newClaim, "claim")
+		if err != nil {
+			glog.V(4).Infof("updating PersistentVolumeClaim[%s]: cannot update internal cache: %v", claimToClaimKey(claim), err)
 			return newClaim, err
 		}
 		glog.V(4).Infof("updating PersistentVolumeClaim[%s]: bound to %q", claimToClaimKey(claim), volume.Name)
@@ -785,6 +811,11 @@ func (ctrl *PersistentVolumeController) unbindVolume(volume *api.PersistentVolum
 		glog.V(4).Infof("updating PersistentVolume[%s]: rollback failed: %v", volume.Name, err)
 		return err
 	}
+	_, err = storeObjectUpdate(ctrl.volumes.store, newVol, "volume")
+	if err != nil {
+		glog.V(4).Infof("updating PersistentVolume[%s]: cannot update internal cache: %v", volume.Name, err)
+		return err
+	}
 	glog.V(4).Infof("updating PersistentVolume[%s]: rolled back", newVol.Name)
 
 	// Update the status
@@ -802,11 +833,13 @@ func (ctrl *PersistentVolumeController) reclaimVolume(volume *api.PersistentVolu
 
 	case api.PersistentVolumeReclaimRecycle:
 		glog.V(4).Infof("reclaimVolume[%s]: policy is Recycle", volume.Name)
-		ctrl.scheduleOperation("recycle-"+string(volume.UID), ctrl.recycleVolumeOperation, volume)
+		opName := fmt.Sprintf("recycle-%s[%s]", volume.Name, string(volume.UID))
+		ctrl.scheduleOperation(opName, ctrl.recycleVolumeOperation, volume)
 
 	case api.PersistentVolumeReclaimDelete:
 		glog.V(4).Infof("reclaimVolume[%s]: policy is Delete", volume.Name)
-		ctrl.scheduleOperation("delete-"+string(volume.UID), ctrl.deleteVolumeOperation, volume)
+		opName := fmt.Sprintf("delete-%s[%s]", volume.Name, string(volume.UID))
+		ctrl.scheduleOperation(opName, ctrl.deleteVolumeOperation, volume)
 
 	default:
 		// Unknown PersistentVolumeReclaimPolicy
@@ -1032,7 +1065,8 @@ func (ctrl *PersistentVolumeController) doDeleteVolume(volume *api.PersistentVol
 // provisionClaim starts new asynchronous operation to provision a claim.
 func (ctrl *PersistentVolumeController) provisionClaim(claim *api.PersistentVolumeClaim) error {
 	glog.V(4).Infof("provisionClaim[%s]: started", claimToClaimKey(claim))
-	ctrl.scheduleOperation("provision-"+string(claim.UID), ctrl.provisionClaimOperation, claim)
+	opName := fmt.Sprintf("provision-%s[%s]", claimToClaimKey(claim), string(claim.UID))
+	ctrl.scheduleOperation(opName, ctrl.provisionClaimOperation, claim)
 	return nil
 }
 
@@ -1124,9 +1158,16 @@ func (ctrl *PersistentVolumeController) provisionClaimOperation(claimObj interfa
 	// Try to create the PV object several times
 	for i := 0; i < ctrl.createProvisionedPVRetryCount; i++ {
 		glog.V(4).Infof("provisionClaimOperation [%s]: trying to save volume %s", claimToClaimKey(claim), volume.Name)
-		if _, err = ctrl.kubeClient.Core().PersistentVolumes().Create(volume); err == nil {
+		var newVol *api.PersistentVolume
+		if newVol, err = ctrl.kubeClient.Core().PersistentVolumes().Create(volume); err == nil {
 			// Save succeeded.
 			glog.V(3).Infof("volume %q for claim %q saved", volume.Name, claimToClaimKey(claim))
+
+			_, err = storeObjectUpdate(ctrl.volumes.store, newVol, "volume")
+			if err != nil {
+				// We will get an "volume added" event soon, this is not a big error
+				glog.V(4).Infof("provisionClaimOperation [%s]: cannot update internal cache: %v", volume.Name, err)
+			}
 			break
 		}
 		// Save failed, try again after a while.
@@ -1150,7 +1191,7 @@ func (ctrl *PersistentVolumeController) provisionClaimOperation(claimObj interfa
 				break
 			}
 			// Delete failed, try again after a while.
-			glog.V(3).Infof("failed to delete volume %q: %v", volume.Name, i, err)
+			glog.V(3).Infof("failed to delete volume %q: %v", volume.Name, err)
 			time.Sleep(ctrl.createProvisionedPVInterval)
 		}
 

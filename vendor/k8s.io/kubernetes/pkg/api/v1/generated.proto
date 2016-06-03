@@ -504,6 +504,10 @@ message DownwardAPIVolumeFile {
 
   // Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
   optional ObjectFieldSelector fieldRef = 2;
+
+  // Selects a resource of the container: only resources limits and requests
+  // (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+  optional ResourceFieldSelector resourceFieldRef = 3;
 }
 
 // DownwardAPIVolumeSource represents a volume containing downward API info.
@@ -641,11 +645,15 @@ message EnvVarSource {
   // Selects a field of the pod; only name and namespace are supported.
   optional ObjectFieldSelector fieldRef = 1;
 
+  // Selects a resource of the container: only resources limits and requests
+  // (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+  optional ResourceFieldSelector resourceFieldRef = 2;
+
   // Selects a key of a ConfigMap.
-  optional ConfigMapKeySelector configMapKeyRef = 2;
+  optional ConfigMapKeySelector configMapKeyRef = 3;
 
   // Selects a key of a secret in the pod's namespace
-  optional SecretKeySelector secretKeyRef = 3;
+  optional SecretKeySelector secretKeyRef = 4;
 }
 
 // Event is a report of an event somewhere in the cluster.
@@ -1453,7 +1461,9 @@ message ObjectMeta {
   map<string, string> annotations = 12;
 
   // List of objects depended by this object. If ALL objects in the list have
-  // been deleted, this object will be garbage collected.
+  // been deleted, this object will be garbage collected. If this object is managed by a controller,
+  // then an entry in this list will point to this controller, with the controller field set to true.
+  // There cannot be more than one managing controller.
   repeated OwnerReference ownerReferences = 13;
 
   // Must be empty before the object is deleted from the registry. Each entry
@@ -1517,6 +1527,9 @@ message OwnerReference {
   // UID of the referent.
   // More info: http://releases.k8s.io/HEAD/docs/user-guide/identifiers.md#uids
   optional string uid = 4;
+
+  // If true, this reference points to the managing controller.
+  optional bool controller = 6;
 }
 
 // PersistentVolume (PV) is a storage resource provisioned by an administrator.
@@ -1572,6 +1585,9 @@ message PersistentVolumeClaimSpec {
   // AccessModes contains the desired access modes the volume should have.
   // More info: http://releases.k8s.io/HEAD/docs/user-guide/persistent-volumes.md#access-modes-1
   repeated string accessModes = 1;
+
+  // A label query over volumes to consider for binding.
+  optional k8s.io.kubernetes.pkg.api.unversioned.LabelSelector selector = 4;
 
   // Resources represents the minimum resources the volume should have.
   // More info: http://releases.k8s.io/HEAD/docs/user-guide/persistent-volumes.md#resources
@@ -2345,6 +2361,18 @@ message ReplicationControllerStatus {
   optional int64 observedGeneration = 3;
 }
 
+// ResourceFieldSelector represents container resources (cpu, memory) and their output format
+message ResourceFieldSelector {
+  // Container name: required for volumes, optional for env vars
+  optional string containerName = 1;
+
+  // Required: resource to select
+  optional string resource = 2;
+
+  // Specifies the output format of the exposed resources, defaults to "1"
+  optional k8s.io.kubernetes.pkg.api.resource.Quantity divisor = 3;
+}
+
 // ResourceQuota sets aggregate quota restrictions enforced per namespace
 message ResourceQuota {
   // Standard object's metadata.
@@ -2681,6 +2709,12 @@ message ServiceSpec {
   // the loadBalancerIP when a load balancer is created.
   // This field will be ignored if the cloud-provider does not support the feature.
   optional string loadBalancerIP = 8;
+
+  // If specified and supported by the platform, this will restrict traffic through the cloud-provider
+  // load-balancer will be restricted to the specified client IPs. This field will be ignored if the
+  // cloud-provider does not support the feature."
+  // More info: http://releases.k8s.io/HEAD/docs/user-guide/services-firewalls.md
+  repeated string loadBalancerSourceRanges = 9;
 }
 
 // ServiceStatus represents the current status of a service.
