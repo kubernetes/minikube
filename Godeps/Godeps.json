@@ -1,7 +1,7 @@
 {
 	"ImportPath": "k8s.io/minikube",
 	"GoVersion": "go1.6",
-	"GodepVersion": "v63",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -1339,6 +1339,10 @@
 		{
 			"ImportPath": "github.com/pborman/uuid",
 			"Rev": "ca53cad383cad2479bbba7f7a1a05797ec1386e4"
+		},
+		{
+			"ImportPath": "github.com/pkg/browser",
+			"Rev": "9302be274faad99162b9d48ec97b24306872ebb0"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",

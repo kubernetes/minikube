@@ -31,6 +31,9 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
@@ -314,4 +317,59 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 		return err
 	}
 	return client.Shell(strings.Join(args, " "))
+}
+
+func GetDashboardURL(api libmachine.API) (string, error) {
+	host, err := checkIfApiExistsAndLoad(api)
+	if err != nil {
+		return "", err
+	}
+
+	ip, err := host.Driver.GetIP()
+	if err != nil {
+		return "", err
+	}
+
+	port, err := getDashboardPort()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("http://%s:%d", ip, port), nil
+}
+
+type serviceGetter interface {
+	Get(name string) (*api.Service, error)
+}
+
+func getDashboardPort() (int, error) {
+	services, err := getKubernetesServicesWithNamespace("kube-system")
+	if err != nil {
+		return 0, err
+	}
+	return getDashboardPortFromServiceGetter(services)
+}
+
+func getDashboardPortFromServiceGetter(services serviceGetter) (int, error) {
+	dashboardService, err := services.Get("kubernetes-dashboard")
+	if err != nil {
+		return 0, fmt.Errorf("Error getting kubernetes-dashboard service: %s", err)
+	}
+	return int(dashboardService.Spec.Ports[0].NodePort), nil
+}
+
+func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+	}
+	client, err := unversioned.New(config)
+	if err != nil {
+		return nil, err
+	}
+	services := client.Services(namespace)
+	return services, nil
 }

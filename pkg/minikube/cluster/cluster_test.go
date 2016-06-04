@@ -27,6 +27,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -416,4 +417,45 @@ func TestCreateSSHShell(t *testing.T) {
 	if s.HadASessionRequested != true {
 		t.Fatalf("Expected ssh session to be run")
 	}
+}
+
+type MockServiceGetter struct {
+	services map[string]api.Service
+}
+
+func NewMockServiceGetter() *MockServiceGetter {
+	return &MockServiceGetter{
+		services: make(map[string]api.Service),
+	}
+}
+
+func (mockServiceGetter *MockServiceGetter) Get(name string) (*api.Service, error) {
+	service, ok := mockServiceGetter.services[name]
+	if !ok {
+		return nil, fmt.Errorf("Error getting %s service from mockServiceGetter", name)
+	}
+	return &service, nil
+}
+
+func TestGetDashboardURL(t *testing.T) {
+	mockServiceGetter := NewMockServiceGetter()
+	nodeport := api.ServicePort{
+		NodePort: 1234,
+	}
+	mockDashboardService := api.Service{
+		Spec: api.ServiceSpec{
+			Ports: []api.ServicePort{nodeport},
+		},
+	}
+	mockServiceGetter.services["kubernetes-dashboard"] = mockDashboardService
+
+	port, err := getDashboardPortFromServiceGetter(mockServiceGetter)
+	if err != nil {
+		t.Fatalf("Error getting dashboard port from api: Error: ", err)
+	}
+	expected := 1234
+	if port != expected {
+		t.Fatalf("Error getting dashboard port from api: Expected: %s, Got: %s", port, expected)
+	}
+
 }
