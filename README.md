@@ -96,6 +96,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull reque
 
 * A recent Go distribution (>1.6)
 * If you're not on Linux, you'll need a Docker installation
+* Minikube requires at least 4GB of RAM to compile, which can be problematic when using docker-machine
 
 ### Build Instructions
 
