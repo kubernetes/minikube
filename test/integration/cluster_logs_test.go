@@ -27,8 +27,7 @@ import (
 
 func TestClusterLogs(t *testing.T) {
 	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
-	minikubeRunner.RunCommand("start", true)
-	minikubeRunner.CheckStatus("Running")
+	minikubeRunner.EnsureRunning()
 
 	logsCmdOutput := minikubeRunner.RunCommand("logs", true)
 	//check for # of lines or check for strings
