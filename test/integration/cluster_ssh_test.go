@@ -26,8 +26,7 @@ import (
 
 func TestClusterSSH(t *testing.T) {
 	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
-	minikubeRunner.RunCommand("start", true)
-	minikubeRunner.CheckStatus("Running")
+	minikubeRunner.EnsureRunning()
 
 	expectedStr := "hello"
 	sshCmdOutput := minikubeRunner.RunCommand("ssh echo "+expectedStr, true)

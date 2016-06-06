@@ -30,8 +30,7 @@ import (
 
 func TestClusterStatus(t *testing.T) {
 	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
-	minikubeRunner.RunCommand("start", true)
-	minikubeRunner.CheckStatus("Running")
+	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	cs := api.ComponentStatusList{}
