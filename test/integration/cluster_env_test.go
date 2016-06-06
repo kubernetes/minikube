@@ -19,9 +19,12 @@ limitations under the License.
 package integration
 
 import (
-	"k8s.io/minikube/test/integration/util"
 	"os/exec"
 	"testing"
+	"time"
+
+	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/test/integration/util"
 )
 
 func TestClusterEnv(t *testing.T) {
@@ -34,9 +37,14 @@ func TestClusterEnv(t *testing.T) {
 		t.Fatalf("Error: No environment variables were found in docker-env command output: ", dockerEnvVars)
 	}
 	path, err := exec.LookPath("docker")
-	cmd := exec.Command(path, "ps")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
+
+	var output []byte
+	dockerPs := func() error {
+		cmd := exec.Command(path, "ps")
+		output, err = cmd.CombinedOutput()
+		return err
+	}
+	if err := commonutil.RetryAfter(5, dockerPs, 3*time.Second); err != nil {
 		t.Fatalf("Error running command: %s. Error: %s Output: %s", "docker ps", err, output)
 	}
 }
