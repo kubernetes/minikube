@@ -14,6 +14,9 @@ to try out Kubernetes or develop with it day-to-day.
 * VirtualBox installation
 * VT-x/AMD-v virtualization must be enabled in BIOS
 
+## Installation
+See the installation instructions for the [latest release](https://github.com/kubernetes/minikube/releases).
+
 ## Usage
 
 Here's a brief demo of minikube usage. We're using the code from this [Kubernetes tutorial](http://kubernetes.io/docs/hellonode/).
