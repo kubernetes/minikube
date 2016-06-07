@@ -18,6 +18,7 @@ package cluster
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -31,7 +32,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
+	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -42,6 +43,13 @@ import (
 var (
 	certs = []string{"apiserver.crt", "apiserver.key"}
 )
+
+//This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
+//INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
+//see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs.go#L32-34
+func init() {
+	flag.Set("logtostderr", "false")
+}
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
@@ -339,7 +347,7 @@ func GetDashboardURL(api libmachine.API) (string, error) {
 }
 
 type serviceGetter interface {
-	Get(name string) (*api.Service, error)
+	Get(name string) (*kubeApi.Service, error)
 }
 
 func getDashboardPort() (int, error) {
