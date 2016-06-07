@@ -49,3 +49,15 @@ if [ ! -z ${files} ]; then
 	echo "Boilerplate missing in: ${files}."
 	exit 1
 fi
+
+# Check that cobra docs are up to date
+# This is done by generating new docs and then seeing if they are different than the committed docs
+echo "Checking help documentation..."
+go run gen_help_text.go
+files=$(git diff)
+if [[ $files ]]; then
+  echo "Help text is out of date: $files \n Please run \"go run gen_help_text.go\"\n and make sure that those doc changes are committed"
+  exit 1
+else
+  echo "Help text is up to date"
+fi
