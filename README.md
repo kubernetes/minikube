@@ -41,6 +41,8 @@ $ minikube stop
 Stopping local Kubernetes cluster...
 Stopping "minikubeVM"...
 ```
+### Documentation
+For a list of minikube's available commands see: [minikube docs](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md)
 
 ### Dashboard
 
