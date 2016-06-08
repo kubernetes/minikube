@@ -22,5 +22,6 @@ import (
 )
 
 func main() {
+	cmd.RootCmd.DisableAutoGenTag = true
 	doc.GenMarkdownTree(cmd.RootCmd, "./docs")
 }
