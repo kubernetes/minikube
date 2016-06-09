@@ -26,11 +26,6 @@ ADD socat $ROOTFS/usr/bin
 ADD ethtool $ROOTFS/usr/bin
 ADD conntrack $ROOTFS/usr/bin
 
-# Add addons
-ADD addon-manager.yaml $ROOTFS/etc/kubernetes/manifests/
-ADD dashboard-rc.yaml $ROOTFS/etc/kubernetes/addons/
-ADD dashboard-svc.yaml $ROOTFS/etc/kubernetes/addons/
-
 # Get a specific version of Docker. This will overwrite the binary installed
 # in the base image.
 # The --strip-components=3 flag will have to change as we switch docker versions

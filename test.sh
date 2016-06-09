@@ -32,7 +32,7 @@ TESTS=$(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...)
 go test -v ${TESTS}
 
 # Ignore these paths in the following tests.
-ignore="vendor\|\_gopath\|localkubecontents.go"
+ignore="vendor\|\_gopath\|assets.go"
 
 # Check gofmt
 echo "Checking gofmt..."

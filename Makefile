@@ -43,7 +43,7 @@ LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldfla
 clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
-	rm pkg/minikube/cluster/localkubecontents.go
+	rm pkg/minikube/cluster/assets.go
 
 MKGOPATH := mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH)) && ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
 
@@ -61,7 +61,7 @@ else
 	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
 endif
 
-out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/localkubecontents.go
+out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
 	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
 
@@ -76,12 +76,12 @@ integration: out/minikube
 	go test -v $(REPOPATH)/test/integration --tags=integration
 
 .PHONY: test
-test: pkg/minikube/cluster/localkubecontents.go
+test: pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
 	./test.sh
 
-pkg/minikube/cluster/localkubecontents.go: out/localkube $(GOPATH)/bin/go-bindata
-	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/localkubecontents.go -pkg cluster ./out/localkube
+pkg/minikube/cluster/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
+	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/assets.go -pkg cluster ./out/localkube deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
 
 $(GOPATH)/bin/go-bindata:
 	$(MKGOPATH)

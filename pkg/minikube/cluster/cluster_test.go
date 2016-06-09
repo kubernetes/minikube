@@ -459,3 +459,31 @@ func TestGetDashboardURL(t *testing.T) {
 	}
 
 }
+
+func TestUpdate(t *testing.T) {
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
+	}
+
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+	}
+
+	if err := UpdateCluster(d); err != nil {
+		t.Fatalf("Error updating cluster: %s", err)
+	}
+	transferred := s.Transfers.Bytes()
+
+	for _, a := range assets {
+		contents, _ := Asset(a.AssetName)
+		if !bytes.Contains(transferred, contents) {
+			t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
+		}
+	}
+}
