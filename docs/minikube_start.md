@@ -16,6 +16,7 @@ minikube start
 
 ```
       --iso-url="https://storage.googleapis.com/minikube/minikube-0.3.iso": Location of the minikube iso
+      --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion]
 ```
 
 ### Options inherited from parent commands

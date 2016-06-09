@@ -11,7 +11,7 @@ a single-node Kubernetes cluster inside a VM on your laptop for users looking
 to try out Kubernetes or develop with it day-to-day.
 
 ## Requirements For Running Minikube
-* VirtualBox installation
+* [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion) installation
 * VT-x/AMD-v virtualization must be enabled in BIOS
 
 ## Installation
@@ -20,6 +20,8 @@ See the installation instructions for the [latest release](https://github.com/ku
 ## Usage
 
 Here's a brief demo of minikube usage. We're using the code from this [Kubernetes tutorial](http://kubernetes.io/docs/hellonode/).
+If you want to change the VM driver to VMware Fusion add the `--vm-driver=vmwarefusion` flag to `minikube start`.
+
 Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
 
 ```shell
