@@ -18,6 +18,7 @@ package cmd
 
 import (
 	goflag "flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -25,7 +26,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/notify"
 )
 
 var dirs = [...]string{
@@ -36,6 +39,11 @@ var dirs = [...]string{
 var (
 	showLibmachineLogs bool
 )
+
+//break this out into a package with config.UpdateNotification?
+const updateNotification = "updateNotification"
+
+var configFilePath = constants.Minipath + "/config"
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -52,6 +60,13 @@ var RootCmd = &cobra.Command{
 		if !showLibmachineLogs {
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
+		}
+		if viper.Get(updateNotification) == "true" {
+			if updateText, err := notify.GetUpdateText(); err != nil {
+				glog.Errorf("Error getting update text: %s", err)
+			} else if updateText != "" {
+				fmt.Println(updateText)
+			}
 		}
 	},
 }
@@ -72,4 +87,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	viper.SetConfigName("config")
+	viper.AddConfigPath(configFilePath)
+	viper.ReadInConfig()
+	viper.SetDefault(updateNotification, "true")
 }
