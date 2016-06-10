@@ -645,13 +645,13 @@ type RBDVolumeSource struct {
 	// TODO: how do we prevent errors in the filesystem from compromising the machine
 	FSType string `json:"fsType,omitempty"`
 	// Optional: RadosPool is the rados pool name,default is rbd
-	RBDPool string `json:"pool"`
+	RBDPool string `json:"pool,omitempty"`
 	// Optional: RBDUser is the rados user name, default is admin
-	RadosUser string `json:"user"`
+	RadosUser string `json:"user,omitempty"`
 	// Optional: Keyring is the path to key ring for RBDUser, default is /etc/ceph/keyring
-	Keyring string `json:"keyring"`
-	// Optional: SecretRef is name of the authentication secret for RBDUser, default is empty.
-	SecretRef *LocalObjectReference `json:"secretRef"`
+	Keyring string `json:"keyring,omitempty"`
+	// Optional: SecretRef is name of the authentication secret for RBDUser, default is nil.
+	SecretRef *LocalObjectReference `json:"secretRef,omitempty"`
 	// Optional: Defaults to false (read/write). ReadOnly here will force
 	// the ReadOnly setting in VolumeMounts.
 	ReadOnly bool `json:"readOnly,omitempty"`
@@ -1983,7 +1983,11 @@ type NodeStatus struct {
 	NodeInfo NodeSystemInfo `json:"nodeInfo,omitempty"`
 	// List of container images on this node
 	Images []ContainerImage `json:"images,omitempty"`
+	// List of attachable volume devices in use (mounted) by the node.
+	VolumesInUse []UniqueDeviceName `json:"volumesInUse,omitempty"`
 }
+
+type UniqueDeviceName string
 
 // Describe a container image
 type ContainerImage struct {

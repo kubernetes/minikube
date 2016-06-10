@@ -23,6 +23,8 @@ func Fit(m *dns.Msg, size int, tcp bool) (*dns.Msg, bool) {
 	// With TCP setting TC does not mean anything.
 	if !tcp {
 		m.Truncated = true
+		// fall through here, so we at least return a message that can
+		// fit the udp buffer.
 	}
 
 	// Additional section is gone, binary search until we have length that fits.

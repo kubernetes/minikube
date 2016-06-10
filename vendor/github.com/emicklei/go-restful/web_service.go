@@ -36,9 +36,6 @@ func (w *WebService) SetDynamicRoutes(enable bool) {
 
 // compilePathExpression ensures that the path is compiled into a RegEx for those routers that need it.
 func (w *WebService) compilePathExpression() {
-	if len(w.rootPath) == 0 {
-		w.Path("/") // lazy initialize path
-	}
 	compiled, err := newPathExpression(w.rootPath)
 	if err != nil {
 		log.Printf("[restful] invalid path:%s because:%v", w.rootPath, err)
@@ -60,6 +57,9 @@ func (w WebService) Version() string { return w.apiVersion }
 // All Routes will be relative to this path.
 func (w *WebService) Path(root string) *WebService {
 	w.rootPath = root
+	if len(w.rootPath) == 0 {
+		w.rootPath = "/"
+	}
 	w.compilePathExpression()
 	return w
 }
@@ -159,11 +159,16 @@ func (w *WebService) RemoveRoute(path, method string) error {
 	}
 	w.routesLock.Lock()
 	defer w.routesLock.Unlock()
+	newRoutes := make([]Route, (len(w.routes) - 1))
+	current := 0
 	for ix := range w.routes {
 		if w.routes[ix].Method == method && w.routes[ix].Path == path {
-			w.routes = append(w.routes[:ix], w.routes[ix+1:]...)
+			continue
 		}
+		newRoutes[current] = w.routes[ix]
+		current = current + 1
 	}
+	w.routes = newRoutes
 	return nil
 }
 

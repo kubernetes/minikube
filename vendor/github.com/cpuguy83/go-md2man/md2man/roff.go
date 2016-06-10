@@ -11,8 +11,6 @@ import (
 
 type roffRenderer struct{}
 
-var listCounter int
-
 func RoffRenderer(flags int) blackfriday.Renderer {
 	return &roffRenderer{}
 }
@@ -35,12 +33,8 @@ func (r *roffRenderer) TitleBlock(out *bytes.Buffer, text []byte) {
 		line = append(line, []byte("\" ")...)
 		out.Write(line)
 	}
-	out.WriteString("\n")
 
-	// disable hyphenation
-	out.WriteString(".nh\n")
-	// disable justification (adjust text to left margin only)
-	out.WriteString(".ad l\n")
+	out.WriteString(" \"\"\n")
 }
 
 func (r *roffRenderer) BlockCode(out *bytes.Buffer, text []byte, lang string) {
@@ -86,24 +80,23 @@ func (r *roffRenderer) HRule(out *bytes.Buffer) {
 
 func (r *roffRenderer) List(out *bytes.Buffer, text func() bool, flags int) {
 	marker := out.Len()
+	out.WriteString(".IP ")
 	if flags&blackfriday.LIST_TYPE_ORDERED != 0 {
-		listCounter = 1
+		out.WriteString("\\(bu 2")
+	} else {
+		out.WriteString("\\n+[step" + string(flags) + "]")
 	}
+	out.WriteString("\n")
 	if !text() {
 		out.Truncate(marker)
 		return
 	}
+
 }
 
 func (r *roffRenderer) ListItem(out *bytes.Buffer, text []byte, flags int) {
-	if flags&blackfriday.LIST_TYPE_ORDERED != 0 {
-		out.WriteString(fmt.Sprintf(".IP \"%3d.\" 5\n", listCounter))
-		listCounter += 1
-	} else {
-		out.WriteString(".IP \\(bu 2\n")
-	}
+	out.WriteString("\n\\item ")
 	out.Write(text)
-	out.WriteString("\n")
 }
 
 func (r *roffRenderer) Paragraph(out *bytes.Buffer, text func() bool) {
@@ -256,11 +249,6 @@ func needsBackslash(c byte) bool {
 
 func escapeSpecialChars(out *bytes.Buffer, text []byte) {
 	for i := 0; i < len(text); i++ {
-		// escape initial apostrophe or period
-		if len(text) >= 1 && (text[0] == '\'' || text[0] == '.') {
-			out.WriteString("\\&")
-		}
-
 		// directly copy normal characters
 		org := i
 

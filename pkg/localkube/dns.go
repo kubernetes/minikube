@@ -24,14 +24,16 @@ import (
 
 	"k8s.io/minikube/pkg/localkube/kube2sky"
 
-	"github.com/coreos/go-etcd/etcd"
+	etcd "github.com/coreos/etcd/client"
 	"github.com/golang/glog"
 	backendetcd "github.com/skynetservices/skydns/backends/etcd"
+	"github.com/skynetservices/skydns/metrics"
 	skydns "github.com/skynetservices/skydns/server"
 	kube "k8s.io/kubernetes/pkg/api"
 	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/util/intstr"
 
+	"golang.org/x/net/context"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -68,7 +70,16 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 	}
 
 	// setup skydns
-	etcdClient := etcd.NewClient(DNSEtcdURLs)
+	cfg := etcd.Config{
+		Endpoints: DNSEtcdURLs,
+		Transport: etcd.DefaultTransport,
+	}
+	etcdClient, err := etcd.New(cfg)
+	if err != nil {
+		return nil, err
+	}
+	keysApi := etcd.NewKeysAPI(etcdClient)
+
 	skyConfig := &skydns.Config{
 		DnsAddr: serverAddress,
 		Domain:  rootDomain,
@@ -81,14 +92,17 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 
 	skydns.SetDefaults(skyConfig)
 
-	backend := backendetcd.NewBackend(etcdClient, &backendetcd.Config{
-		Ttl:      skyConfig.Ttl,
-		Priority: skyConfig.Priority,
-	})
+	backend := backendetcd.NewBackend(
+		keysApi,
+		context.Background(),
+		&backendetcd.Config{
+			Ttl:      skyConfig.Ttl,
+			Priority: skyConfig.Priority,
+		})
 	skyServer := skydns.New(backend, skyConfig)
 
 	// setup so prometheus doesn't run into nil
-	skydns.Metrics()
+	metrics.Metrics()
 
 	// setup kube2sky
 	k2s := kube2sky.NewKube2Sky(rootDomain, DNSEtcdURLs[0], "", kubeAPIServer, 10*time.Second, 8081)
