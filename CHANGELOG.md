@@ -1,5 +1,12 @@
 # Minikube Release Notes
 
+## Version 0.3.0 - 6/20/2016
+ * Added a `minikube dashboard` command to open the Kubernetes Dashboard.
+ * Updated Docker to version 1.11.1.
+ * Updated Kubernetes components to v1.3.0-alpha.5-330-g760c563.
+ * Generated documentation for all commands. Documentation [is here](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md).
+
+
 ## Version 0.2.0 - 6/3/2016
  * conntrack is now bundled in the ISO.
  * DNS is now working.
