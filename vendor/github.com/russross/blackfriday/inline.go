@@ -167,17 +167,12 @@ func lineBreak(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 	out.Truncate(eol)
 
 	precededByTwoSpaces := offset >= 2 && data[offset-2] == ' ' && data[offset-1] == ' '
-	precededByBackslash := offset >= 1 && data[offset-1] == '\\' // see http://spec.commonmark.org/0.18/#example-527
-	precededByBackslash = precededByBackslash && p.flags&EXTENSION_BACKSLASH_LINE_BREAK != 0
 
 	// should there be a hard line break here?
-	if p.flags&EXTENSION_HARD_LINE_BREAK == 0 && !precededByTwoSpaces && !precededByBackslash {
+	if p.flags&EXTENSION_HARD_LINE_BREAK == 0 && !precededByTwoSpaces {
 		return 0
 	}
 
-	if precededByBackslash && eol > 0 {
-		out.Truncate(eol - 1)
-	}
 	p.r.LineBreak(out)
 	return 1
 }
@@ -191,13 +186,6 @@ const (
 	linkInlineFootnote
 )
 
-func isReferenceStyleLink(data []byte, pos int, t linkType) bool {
-	if t == linkDeferredFootnote {
-		return false
-	}
-	return pos < len(data)-1 && data[pos] == '[' && data[pos+1] != '^'
-}
-
 // '[': parse a link or an image or a footnote
 func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 	// no links allowed inside regular links, footnote, and deferred footnotes
@@ -205,42 +193,33 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 		return 0
 	}
 
-	var t linkType
-	switch {
-	// special case: ![^text] == deferred footnote (that follows something with
-	// an exclamation point)
-	case p.flags&EXTENSION_FOOTNOTES != 0 && len(data)-1 > offset && data[offset+1] == '^':
-		t = linkDeferredFootnote
+	// [text] == regular link
 	// ![alt] == image
-	case offset > 0 && data[offset-1] == '!':
-		t = linkImg
 	// ^[text] == inline footnote
 	// [^refId] == deferred footnote
-	case p.flags&EXTENSION_FOOTNOTES != 0:
+	var t linkType
+	if offset > 0 && data[offset-1] == '!' {
+		t = linkImg
+	} else if p.flags&EXTENSION_FOOTNOTES != 0 {
 		if offset > 0 && data[offset-1] == '^' {
 			t = linkInlineFootnote
 		} else if len(data)-1 > offset && data[offset+1] == '^' {
 			t = linkDeferredFootnote
 		}
-	// [text] == regular link
-	default:
-		t = linkNormal
 	}
 
 	data = data[offset:]
 
 	var (
-		i                       = 1
-		noteId                  int
-		title, link, altContent []byte
-		textHasNl               = false
+		i           = 1
+		noteId      int
+		title, link []byte
+		textHasNl   = false
 	)
 
 	if t == linkDeferredFootnote {
 		i++
 	}
-
-	brace := 0
 
 	// look for the matching closing bracket
 	for level := 1; level > 0 && i < len(data); i++ {
@@ -275,8 +254,8 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 		i++
 	}
 
-	switch {
 	// inline style link
+	switch {
 	case i < len(data) && data[i] == '(':
 		// skip initial whitespace
 		i++
@@ -287,27 +266,14 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 
 		linkB := i
 
-		// look for link end: ' " ), check for new opening braces and take this
-		// into account, this may lead for overshooting and probably will require
-		// some fine-tuning.
+		// look for link end: ' " )
 	findlinkend:
 		for i < len(data) {
 			switch {
 			case data[i] == '\\':
 				i += 2
 
-			case data[i] == '(':
-				brace++
-				i++
-
-			case data[i] == ')':
-				if brace <= 0 {
-					break findlinkend
-				}
-				brace--
-				i++
-
-			case data[i] == '\'' || data[i] == '"':
+			case data[i] == ')' || data[i] == '\'' || data[i] == '"':
 				break findlinkend
 
 			default:
@@ -382,9 +348,8 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 		i++
 
 	// reference style link
-	case isReferenceStyleLink(data, i, t):
+	case i < len(data) && data[i] == '[':
 		var id []byte
-		altContentConsidered := false
 
 		// look for the id
 		i++
@@ -414,24 +379,22 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 				id = b.Bytes()
 			} else {
 				id = data[1:txtE]
-				altContentConsidered = true
 			}
 		} else {
 			id = data[linkB:linkE]
 		}
 
-		// find the reference with matching id
-		lr, ok := p.getRef(string(id))
+		// find the reference with matching id (ids are case-insensitive)
+		key := string(bytes.ToLower(id))
+		lr, ok := p.refs[key]
 		if !ok {
 			return 0
+
 		}
 
 		// keep link and title from reference
 		link = lr.link
 		title = lr.title
-		if altContentConsidered {
-			altContent = lr.text
-		}
 		i++
 
 	// shortcut reference style link or reference or inline footnote
@@ -460,6 +423,7 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 			}
 		}
 
+		key := string(bytes.ToLower(id))
 		if t == linkInlineFootnote {
 			// create a new reference
 			noteId = len(p.notes) + 1
@@ -489,7 +453,7 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 			title = ref.title
 		} else {
 			// find the reference with matching id
-			lr, ok := p.getRef(string(id))
+			lr, ok := p.refs[key]
 			if !ok {
 				return 0
 			}
@@ -541,11 +505,7 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 	// call the relevant rendering function
 	switch t {
 	case linkNormal:
-		if len(altContent) > 0 {
-			p.r.Link(out, uLink, title, altContent)
-		} else {
-			p.r.Link(out, uLink, title, content.Bytes())
-		}
+		p.r.Link(out, uLink, title, content.Bytes())
 
 	case linkImg:
 		outSize := out.Len()
@@ -575,33 +535,12 @@ func link(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 	return i
 }
 
-func (p *parser) inlineHTMLComment(out *bytes.Buffer, data []byte) int {
-	if len(data) < 5 {
-		return 0
-	}
-	if data[0] != '<' || data[1] != '!' || data[2] != '-' || data[3] != '-' {
-		return 0
-	}
-	i := 5
-	// scan for an end-of-comment marker, across lines if necessary
-	for i < len(data) && !(data[i-2] == '-' && data[i-1] == '-' && data[i] == '>') {
-		i++
-	}
-	// no end-of-comment marker
-	if i >= len(data) {
-		return 0
-	}
-	return i + 1
-}
-
 // '<' when tags or autolinks are allowed
 func leftAngle(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 	data = data[offset:]
 	altype := LINK_TYPE_NOT_AUTOLINK
 	end := tagLength(data, &altype)
-	if size := p.inlineHTMLComment(out, data); size > 0 {
-		end = size
-	}
+
 	if end > 2 {
 		if altype != LINK_TYPE_NOT_AUTOLINK {
 			var uLink bytes.Buffer
@@ -683,7 +622,10 @@ func entity(p *parser, out *bytes.Buffer, data []byte, offset int) int {
 
 func linkEndsWithEntity(data []byte, linkEnd int) bool {
 	entityRanges := htmlEntity.FindAllIndex(data[:linkEnd], -1)
-	return entityRanges != nil && entityRanges[len(entityRanges)-1][1] == linkEnd
+	if entityRanges != nil && entityRanges[len(entityRanges)-1][1] == linkEnd {
+		return true
+	}
+	return false
 }
 
 func autoLink(p *parser, out *bytes.Buffer, data []byte, offset int) int {
@@ -815,20 +757,9 @@ func isEndOfLink(char byte) bool {
 	return isspace(char) || char == '<'
 }
 
-var validUris = [][]byte{[]byte("http://"), []byte("https://"), []byte("ftp://"), []byte("mailto://")}
-var validPaths = [][]byte{[]byte("/"), []byte("./"), []byte("../")}
+var validUris = [][]byte{[]byte("http://"), []byte("https://"), []byte("ftp://"), []byte("mailto://"), []byte("/")}
 
 func isSafeLink(link []byte) bool {
-	for _, path := range validPaths {
-		if len(link) >= len(path) && bytes.Equal(link[:len(path)], path) {
-			if len(link) == len(path) {
-				return true
-			} else if isalnum(link[len(path)]) {
-				return true
-			}
-		}
-	}
-
 	for _, prefix := range validUris {
 		// TODO: handle unicode here
 		// case-insensitive prefix test
@@ -938,7 +869,7 @@ func isMailtoAutoLink(data []byte) int {
 			nb++
 
 		case '-', '.', '_':
-			// Do nothing.
+			break
 
 		case '>':
 			if nb == 1 {
@@ -956,7 +887,7 @@ func isMailtoAutoLink(data []byte) int {
 
 // look for the next emph char, skipping other constructs
 func helperFindEmphChar(data []byte, c byte) int {
-	i := 0
+	i := 1
 
 	for i < len(data) {
 		for i < len(data) && data[i] != c && data[i] != '`' && data[i] != '[' {
@@ -965,13 +896,14 @@ func helperFindEmphChar(data []byte, c byte) int {
 		if i >= len(data) {
 			return 0
 		}
+		if data[i] == c {
+			return i
+		}
+
 		// do not count escaped chars
 		if i != 0 && data[i-1] == '\\' {
 			i++
 			continue
-		}
-		if data[i] == c {
-			return i
 		}
 
 		if data[i] == '`' {

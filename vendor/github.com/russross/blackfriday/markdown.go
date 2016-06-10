@@ -20,12 +20,10 @@ package blackfriday
 
 import (
 	"bytes"
-	"fmt"
-	"strings"
 	"unicode/utf8"
 )
 
-const VERSION = "1.5"
+const VERSION = "1.1"
 
 // These are the supported markdown parsing extensions.
 // OR these values together to select multiple extensions.
@@ -40,18 +38,15 @@ const (
 	EXTENSION_HARD_LINE_BREAK                        // translate newlines into line breaks
 	EXTENSION_TAB_SIZE_EIGHT                         // expand tabs to eight spaces instead of four
 	EXTENSION_FOOTNOTES                              // Pandoc-style footnotes
-	EXTENSION_NO_EMPTY_LINE_BEFORE_BLOCK             // No need to insert an empty line to start a (code, quote, ordered list, unordered list) block
+	EXTENSION_NO_EMPTY_LINE_BEFORE_BLOCK             // No need to insert an empty line to start a (code, quote, order list, unorder list)block
 	EXTENSION_HEADER_IDS                             // specify header IDs  with {#id}
 	EXTENSION_TITLEBLOCK                             // Titleblock ala pandoc
 	EXTENSION_AUTO_HEADER_IDS                        // Create the header ID from the text
-	EXTENSION_BACKSLASH_LINE_BREAK                   // translate trailing backslashes into line breaks
-	EXTENSION_DEFINITION_LISTS                       // render definition lists
 
 	commonHtmlFlags = 0 |
 		HTML_USE_XHTML |
 		HTML_USE_SMARTYPANTS |
 		HTML_SMARTYPANTS_FRACTIONS |
-		HTML_SMARTYPANTS_DASHES |
 		HTML_SMARTYPANTS_LATEX_DASHES
 
 	commonExtensions = 0 |
@@ -61,9 +56,7 @@ const (
 		EXTENSION_AUTOLINK |
 		EXTENSION_STRIKETHROUGH |
 		EXTENSION_SPACE_HEADERS |
-		EXTENSION_HEADER_IDS |
-		EXTENSION_BACKSLASH_LINE_BREAK |
-		EXTENSION_DEFINITION_LISTS
+		EXTENSION_HEADER_IDS
 )
 
 // These are the possible flag values for the link renderer.
@@ -80,8 +73,6 @@ const (
 // These are mostly of interest if you are writing a new output format.
 const (
 	LIST_TYPE_ORDERED = 1 << iota
-	LIST_TYPE_DEFINITION
-	LIST_TYPE_TERM
 	LIST_ITEM_CONTAINS_BLOCK
 	LIST_ITEM_BEGINNING_OF_LIST
 	LIST_ITEM_END_OF_LIST
@@ -102,49 +93,45 @@ const (
 	TAB_SIZE_EIGHT   = 8
 )
 
-// blockTags is a set of tags that are recognized as HTML block tags.
+// These are the tags that are recognized as HTML block tags.
 // Any of these can be included in markdown text without special escaping.
-var blockTags = map[string]struct{}{
-	"blockquote": {},
-	"del":        {},
-	"div":        {},
-	"dl":         {},
-	"fieldset":   {},
-	"form":       {},
-	"h1":         {},
-	"h2":         {},
-	"h3":         {},
-	"h4":         {},
-	"h5":         {},
-	"h6":         {},
-	"iframe":     {},
-	"ins":        {},
-	"math":       {},
-	"noscript":   {},
-	"ol":         {},
-	"pre":        {},
-	"p":          {},
-	"script":     {},
-	"style":      {},
-	"table":      {},
-	"ul":         {},
+var blockTags = map[string]bool{
+	"p":          true,
+	"dl":         true,
+	"h1":         true,
+	"h2":         true,
+	"h3":         true,
+	"h4":         true,
+	"h5":         true,
+	"h6":         true,
+	"ol":         true,
+	"ul":         true,
+	"del":        true,
+	"div":        true,
+	"ins":        true,
+	"pre":        true,
+	"form":       true,
+	"math":       true,
+	"table":      true,
+	"iframe":     true,
+	"script":     true,
+	"fieldset":   true,
+	"noscript":   true,
+	"blockquote": true,
 
 	// HTML5
-	"address":    {},
-	"article":    {},
-	"aside":      {},
-	"canvas":     {},
-	"figcaption": {},
-	"figure":     {},
-	"footer":     {},
-	"header":     {},
-	"hgroup":     {},
-	"main":       {},
-	"nav":        {},
-	"output":     {},
-	"progress":   {},
-	"section":    {},
-	"video":      {},
+	"video":      true,
+	"aside":      true,
+	"canvas":     true,
+	"figure":     true,
+	"footer":     true,
+	"header":     true,
+	"hgroup":     true,
+	"output":     true,
+	"article":    true,
+	"section":    true,
+	"progress":   true,
+	"figcaption": true,
 }
 
 // Renderer is the rendering interface.
@@ -209,7 +196,6 @@ type inlineParser func(p *parser, out *bytes.Buffer, data []byte, offset int) in
 // This is constructed by the Markdown function.
 type parser struct {
 	r              Renderer
-	refOverride    ReferenceOverrideFunc
 	refs           map[string]*reference
 	inlineCallback [256]inlineParser
 	flags          int
@@ -223,73 +209,11 @@ type parser struct {
 	notes []*reference
 }
 
-func (p *parser) getRef(refid string) (ref *reference, found bool) {
-	if p.refOverride != nil {
-		r, overridden := p.refOverride(refid)
-		if overridden {
-			if r == nil {
-				return nil, false
-			}
-			return &reference{
-				link:     []byte(r.Link),
-				title:    []byte(r.Title),
-				noteId:   0,
-				hasBlock: false,
-				text:     []byte(r.Text)}, true
-		}
-	}
-	// refs are case insensitive
-	ref, found = p.refs[strings.ToLower(refid)]
-	return ref, found
-}
-
 //
 //
 // Public interface
 //
 //
-
-// Reference represents the details of a link.
-// See the documentation in Options for more details on use-case.
-type Reference struct {
-	// Link is usually the URL the reference points to.
-	Link string
-	// Title is the alternate text describing the link in more detail.
-	Title string
-	// Text is the optional text to override the ref with if the syntax used was
-	// [refid][]
-	Text string
-}
-
-// ReferenceOverrideFunc is expected to be called with a reference string and
-// return either a valid Reference type that the reference string maps to or
-// nil. If overridden is false, the default reference logic will be executed.
-// See the documentation in Options for more details on use-case.
-type ReferenceOverrideFunc func(reference string) (ref *Reference, overridden bool)
-
-// Options represents configurable overrides and callbacks (in addition to the
-// extension flag set) for configuring a Markdown parse.
-type Options struct {
-	// Extensions is a flag set of bit-wise ORed extension bits. See the
-	// EXTENSION_* flags defined in this package.
-	Extensions int
-
-	// ReferenceOverride is an optional function callback that is called every
-	// time a reference is resolved.
-	//
-	// In Markdown, the link reference syntax can be made to resolve a link to
-	// a reference instead of an inline URL, in one of the following ways:
-	//
-	//  * [link text][refid]
-	//  * [refid][]
-	//
-	// Usually, the refid is defined at the bottom of the Markdown document. If
-	// this override function is provided, the refid is passed to the override
-	// function first, before consulting the defined refids at the bottom. If
-	// the override function indicates an override did not occur, the refids at
-	// the bottom will be used to fill in the link details.
-	ReferenceOverride ReferenceOverrideFunc
-}
 
 // MarkdownBasic is a convenience function for simple rendering.
 // It processes markdown input with no extensions enabled.
@@ -299,7 +223,9 @@ func MarkdownBasic(input []byte) []byte {
 	renderer := HtmlRenderer(htmlFlags, "", "")
 
 	// set up the parser
-	return MarkdownOptions(input, renderer, Options{Extensions: 0})
+	extensions := 0
+
+	return Markdown(input, renderer, extensions)
 }
 
 // Call Markdown with most useful extensions enabled
@@ -324,8 +250,7 @@ func MarkdownBasic(input []byte) []byte {
 func MarkdownCommon(input []byte) []byte {
 	// set up the HTML renderer
 	renderer := HtmlRenderer(commonHtmlFlags, "", "")
-	return MarkdownOptions(input, renderer, Options{
-		Extensions: commonExtensions})
+	return Markdown(input, renderer, commonExtensions)
 }
 
 // Markdown is the main rendering function.
@@ -336,25 +261,15 @@ func MarkdownCommon(input []byte) []byte {
 // To use the supplied Html or LaTeX renderers, see HtmlRenderer and
 // LatexRenderer, respectively.
 func Markdown(input []byte, renderer Renderer, extensions int) []byte {
-	return MarkdownOptions(input, renderer, Options{
-		Extensions: extensions})
-}
-
-// MarkdownOptions is just like Markdown but takes additional options through
-// the Options struct.
-func MarkdownOptions(input []byte, renderer Renderer, opts Options) []byte {
 	// no point in parsing if we can't render
 	if renderer == nil {
 		return nil
 	}
 
-	extensions := opts.Extensions
-
 	// fill in the render structure
 	p := new(parser)
 	p.r = renderer
 	p.flags = extensions
-	p.refOverride = opts.ReferenceOverride
 	p.refs = make(map[string]*reference)
 	p.maxNesting = 16
 	p.insideLink = false
@@ -390,6 +305,7 @@ func MarkdownOptions(input []byte, renderer Renderer, opts Options) []byte {
 // - expand tabs
 // - normalize newlines
 // - copy everything else
+// - add missing newlines before fenced code blocks
 func firstPass(p *parser, input []byte) []byte {
 	var out bytes.Buffer
 	tabSize := TAB_SIZE_DEFAULT
@@ -397,6 +313,7 @@ func firstPass(p *parser, input []byte) []byte {
 		tabSize = TAB_SIZE_EIGHT
 	}
 	beg, end := 0, 0
+	lastLineWasBlank := false
 	lastFencedCodeBlockEnd := 0
 	for beg < len(input) { // iterate over lines
 		if end = isReference(p, input[beg:], tabSize); end > 0 {
@@ -408,13 +325,16 @@ func firstPass(p *parser, input []byte) []byte {
 			}
 
 			if p.flags&EXTENSION_FENCED_CODE != 0 {
-				// track fenced code block boundaries to suppress tab expansion
-				// inside them:
+				// when last line was none blank and a fenced code block comes after
 				if beg >= lastFencedCodeBlockEnd {
 					if i := p.fencedCode(&out, input[beg:], false); i > 0 {
+						if !lastLineWasBlank {
+							out.WriteByte('\n') // need to inject additional linebreak
+						}
 						lastFencedCodeBlockEnd = beg + i
 					}
 				}
+				lastLineWasBlank = end == beg
 			}
 
 			// add the line body if present
@@ -456,8 +376,7 @@ func secondPass(p *parser, input []byte) []byte {
 	if p.flags&EXTENSION_FOOTNOTES != 0 && len(p.notes) > 0 {
 		p.r.Footnotes(&output, func() bool {
 			flags := LIST_ITEM_BEGINNING_OF_LIST
-			for i := 0; i < len(p.notes); i += 1 {
-				ref := p.notes[i]
+			for _, ref := range p.notes {
 				var buf bytes.Buffer
 				if ref.hasBlock {
 					flags |= LIST_ITEM_CONTAINS_BLOCK
@@ -517,12 +436,6 @@ type reference struct {
 	title    []byte
 	noteId   int // 0 if not a footnote ref
 	hasBlock bool
-	text     []byte
-}
-
-func (r *reference) String() string {
-	return fmt.Sprintf("{link: %q, title: %q, text: %q, noteId: %d, hasBlock: %v}",
-		r.link, r.title, r.text, r.noteId, r.hasBlock)
 }
 
 // Check whether or not data starts with a reference link.
@@ -548,7 +461,7 @@ func isReference(p *parser, data []byte, tabSize int) int {
 	}
 	i++
 	if p.flags&EXTENSION_FOOTNOTES != 0 {
-		if i < len(data) && data[i] == '^' {
+		if data[i] == '^' {
 			// we can set it to anything here because the proper noteIds will
 			// be assigned later during the second pass. It just has to be != 0
 			noteId = 1
@@ -635,9 +548,6 @@ func scanLinkRef(p *parser, data []byte, i int) (linkOffset, linkEnd, titleOffse
 		i++
 	}
 	linkOffset = i
-	if i == len(data) {
-		return
-	}
 	for i < len(data) && data[i] != ' ' && data[i] != '\t' && data[i] != '\n' && data[i] != '\r' {
 		i++
 	}
