@@ -949,7 +949,6 @@
 			"Rev": "bf97c77db7c945cbcdbf09d56c6f87a66f54537b"
 		},
 		{
->>>>>>> Have update notifier working, need to add tests
 			"ImportPath": "github.com/ghodss/yaml",
 			"Rev": "73d445a93680fa1a78ae23a5839bad48f32ba1ee"
 		},

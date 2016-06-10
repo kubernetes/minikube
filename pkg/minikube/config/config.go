@@ -17,6 +17,6 @@ limitations under the License.
 package config
 
 const (
-	UpdateNotification        = "UpdateNotification"
+	WantUpdateNotification    = "WantUpdateNotification"
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
 )

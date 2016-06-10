@@ -18,7 +18,6 @@ package cmd
 
 import (
 	goflag "flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -57,11 +56,7 @@ var RootCmd = &cobra.Command{
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
 		}
-		if viper.GetBool(config.UpdateNotification) {
-			if updateText := notify.GetUpdateText(); updateText != "" {
-				fmt.Println(updateText)
-			}
-		}
+		notify.MaybePrintUpdateTextFromGithub(os.Stdout)
 	},
 }
 
@@ -84,6 +79,6 @@ func initConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(constants.ConfigFilePath)
 	viper.ReadInConfig()
-	viper.SetDefault(config.UpdateNotification, true)
+	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
 }

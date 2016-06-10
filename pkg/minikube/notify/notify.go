@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -35,35 +36,46 @@ import (
 const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
 
 var (
-	timeLayout              = time.RFC1123
-	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
+	timeLayout                = time.RFC1123
+	lastUpdateCheckFilePath   = constants.MakeMiniPath("last_update_check")
+	githubMinikubeReleasesURL = "https://api.github.com/repos/kubernetes/minikube/releases"
 )
 
-func GetUpdateText() string {
-	latestUpdateTime := getTimeFromFileIfExists(lastUpdateCheckFilePath)
+func MaybePrintUpdateTextFromGithub(outputFile *os.File) {
+	MaybePrintUpdateText(outputFile, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
+}
+
+func MaybePrintUpdateText(outputFile *os.File, url string, lastUpdatePath string) {
+	if !shouldCheckURLVersion(lastUpdatePath) {
+		return
+	}
+	latestVersion, err := getLatestVersionFromURL(url)
+	if err != nil {
+		glog.Errorln(err)
+		return
+	}
 	localVersion, err := version.GetSemverVersion()
 	if err != nil {
 		glog.Errorln(err)
-		return ""
-	}
-	latestVersion, err := getLatestVersionFromGithub()
-	if err != nil {
-		glog.Errorln(err)
-		return ""
-	}
-	return checkUpdateTimeAndVersions(latestUpdateTime, localVersion, latestVersion)
-}
-
-func checkUpdateTimeAndVersions(lastUpdateTime time.Time, localVersion semver.Version, latestVersion semver.Version) string {
-	if time.Since(lastUpdateTime).Hours() < viper.GetFloat64(config.ReminderWaitPeriodInHours) {
-		return ""
+		return
 	}
 	if localVersion.Compare(latestVersion) < 0 {
-		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
-		return fmt.Sprintf("There is a newer version of minikube available (v%s).  Download it here:\n%s%s\n",
-			latestVersion, updateLinkPrefix, latestVersion)
+		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()) //Should the time be a parameter?
+		fmt.Fprintln(outputFile, fmt.Sprintf(
+			"There is a newer version of minikube available (v%s).  Download it here:\n%s%s\n",
+			latestVersion, updateLinkPrefix, latestVersion))
 	}
-	return ""
+}
+
+func shouldCheckURLVersion(filePath string) bool {
+	if !viper.GetBool(config.WantUpdateNotification) {
+		return false
+	}
+	lastUpdateTime := getTimeFromFileIfExists(filePath)
+	if time.Since(lastUpdateTime).Hours() < viper.GetFloat64(config.ReminderWaitPeriodInHours) {
+		return false
+	}
+	return true
 }
 
 type release struct {
@@ -82,9 +94,12 @@ func getJson(url string, target *releases) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
-func getLatestVersionFromGithub() (semver.Version, error) {
+func getLatestVersionFromURL(url string) (semver.Version, error) {
 	var releases releases
-	getJson("https://api.github.com/repos/kubernetes/minikube/releases", &releases)
+	getJson(url, &releases)
+	if len(releases) == 0 {
+		return semver.Version{}, fmt.Errorf("There were no json releases at the url specified: %s", url)
+	}
 	latestVersionString := releases[0].Name
 	return semver.Make(strings.TrimPrefix(latestVersionString, version.VersionPrefix))
 }
