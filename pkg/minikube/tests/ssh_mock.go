@@ -74,44 +74,46 @@ func (s *SSHServer) Start() (int, error) {
 	go func() {
 		for {
 			nConn, err := listener.Accept()
-			if err != nil {
-				return
-			}
-
-			_, chans, reqs, err := ssh.NewServerConn(nConn, s.Config)
-			if err != nil {
-				return
-			}
-			// The incoming Request channel must be serviced.
-			go ssh.DiscardRequests(reqs)
-
-			// Service the incoming Channel channel.
-			for newChannel := range chans {
-				if newChannel.ChannelType() == "session" {
-					s.HadASessionRequested = true
-				}
-				channel, requests, err := newChannel.Accept()
-				s.Connected = true
+			go func() {
 				if err != nil {
 					return
 				}
 
-				req := <-requests
-				req.Reply(true, nil)
-
-				//Note: string(req.Payload) adds additional characters to start of input, execRequest used to solve this issue
-				var cmd execRequest
-				if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
-					glog.Errorln("Unmarshall encountered error: %s", err)
+				_, chans, reqs, err := ssh.NewServerConn(nConn, s.Config)
+				if err != nil {
 					return
 				}
-				s.Commands[cmd.Command] = 1
-				channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+				// The incoming Request channel must be serviced.
+				go ssh.DiscardRequests(reqs)
 
-				// Store anything that comes in over stdin.
-				io.Copy(s.Transfers, channel)
-				channel.Close()
-			}
+				// Service the incoming Channel channel.
+				for newChannel := range chans {
+					if newChannel.ChannelType() == "session" {
+						s.HadASessionRequested = true
+					}
+					channel, requests, err := newChannel.Accept()
+					s.Connected = true
+					if err != nil {
+						return
+					}
+
+					req := <-requests
+					req.Reply(true, nil)
+
+					//Note: string(req.Payload) adds additional characters to start of input, execRequest used to solve this issue
+					var cmd execRequest
+					if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
+						glog.Errorln("Unmarshall encountered error: %s", err)
+						return
+					}
+					s.Commands[cmd.Command] = 1
+					channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+
+					// Store anything that comes in over stdin.
+					io.Copy(s.Transfers, channel)
+					channel.Close()
+				}
+			}()
 		}
 	}()
 

@@ -173,21 +173,57 @@ func StartCluster(h sshAble) error {
 	return nil
 }
 
-func UpdateCluster(d drivers.Driver) error {
-	localkube, err := Asset("out/localkube")
-	if err != nil {
-		glog.Infoln("Error loading localkube: ", err)
-		return err
-	}
+type fileToCopy struct {
+	AssetName   string
+	TargetDir   string
+	TargetName  string
+	Permissions string
+}
 
+var assets = []fileToCopy{
+	{
+		AssetName:   "out/localkube",
+		TargetDir:   "/usr/local/bin",
+		TargetName:  "localkube",
+		Permissions: "0777",
+	},
+	{
+		AssetName:   "deploy/iso/addon-manager.yaml",
+		TargetDir:   "/etc/kubernetes/manifests/",
+		TargetName:  "addon-manager.yaml",
+		Permissions: "0640",
+	},
+	{
+		AssetName:   "deploy/addons/dashboard-rc.yaml",
+		TargetDir:   "/etc/kubernetes/addons/",
+		TargetName:  "dashboard-rc.yaml",
+		Permissions: "0640",
+	},
+	{
+		AssetName:   "deploy/addons/dashboard-svc.yaml",
+		TargetDir:   "/etc/kubernetes/addons/",
+		TargetName:  "dashboard-svc.yaml",
+		Permissions: "0640",
+	},
+}
+
+func UpdateCluster(d drivers.Driver) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
 	}
-	if err := sshutil.Transfer(localkube, "/usr/local/bin/", "localkube", "0777", client); err != nil {
-		return err
-	}
 
+	for _, a := range assets {
+		contents, err := Asset(a.AssetName)
+		if err != nil {
+			glog.Infof("Error loading asset %s: %s", a.AssetName, err)
+			return err
+		}
+
+		if err := sshutil.Transfer(contents, a.TargetDir, a.TargetName, a.Permissions, client); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

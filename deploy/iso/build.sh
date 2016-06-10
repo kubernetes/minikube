@@ -20,8 +20,6 @@ ISO=minikube.iso
 tmpdir=$(mktemp -d)
 echo "Building in $tmpdir."
 cp -r . $tmpdir/
-# Copy in the addons
-cp ../addons/* $tmpdir/
 
 pushd $tmpdir
 
