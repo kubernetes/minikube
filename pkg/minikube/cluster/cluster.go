@@ -155,6 +155,7 @@ type sshAble interface {
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
 	MinikubeISO string
+	Memory      int
 	VMDriver    string
 }
 
@@ -268,6 +269,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	case "virtualbox":
 		d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
 		d.Boot2DockerURL = config.MinikubeISO
+		d.Memory = config.Memory
 		driver = d
 	case "vmwarefusion":
 		driver = createVMwareFusionHost(config)

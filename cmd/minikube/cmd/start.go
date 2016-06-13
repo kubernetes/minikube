@@ -34,6 +34,7 @@ import (
 
 var (
 	minikubeISO string
+	memory      int
 	vmDriver    string
 )
 
@@ -53,6 +54,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	config := cluster.MachineConfig{
 		MinikubeISO: minikubeISO,
+		Memory:      memory,
 		VMDriver:    vmDriver,
 	}
 
@@ -153,5 +155,6 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) (activeCont
 func init() {
 	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", constants.DefaultIsoUrl, "Location of the minikube iso")
 	startCmd.Flags().StringVarP(&vmDriver, "vm-driver", "", constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
+	startCmd.Flags().IntVarP(&memory, "memory", "", constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
 	RootCmd.AddCommand(startCmd)
 }

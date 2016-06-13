@@ -25,6 +25,7 @@ import (
 func createVMwareFusionHost(config MachineConfig) drivers.Driver {
 	d := vmwarefusion.NewDriver(constants.MachineName, constants.Minipath).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.MinikubeISO
+	d.Memory = config.Memory
 
 	// TODO(philips): push these defaults upstream to fixup this driver
 	d.CPU = 1
