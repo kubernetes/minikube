@@ -45,13 +45,16 @@ var LogFlags = [...]string{
 	"vmodule",
 }
 
-const DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.3.iso"
-const DefaultVMDriver = "virtualbox"
-
 var SupportedVMDrivers = [...]string{
 	"virtualbox",
 	"vmwarefusion",
 }
+
+const (
+	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.3.iso"
+	DefaultMemory   = 1024
+	DefaultVMDriver = "virtualbox"
+)
 
 const (
 	RemoteLocalKubeErrPath = "/var/log/localkube.err"
