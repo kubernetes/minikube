@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/docker/machine/drivers/virtualbox"
+	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/golang/glog"
@@ -32,6 +33,8 @@ func StartDriver() {
 		switch driverName {
 		case "virtualbox":
 			plugin.RegisterDriver(virtualbox.NewDriver("", ""))
+		case "vmwarefusion":
+			plugin.RegisterDriver(vmwarefusion.NewDriver("", ""))
 		default:
 			glog.Exitf("Unsupported driver: %s\n", driverName)
 		}

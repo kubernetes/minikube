@@ -155,6 +155,7 @@ type sshAble interface {
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
 	MinikubeISO string
+	VMDriver    string
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
@@ -261,15 +262,25 @@ func SetupCerts(d drivers.Driver) error {
 }
 
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	driver := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
-	driver.Boot2DockerURL = config.MinikubeISO
+	var driver drivers.Driver
+
+	switch config.VMDriver {
+	case "virtualbox":
+		d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
+		d.Boot2DockerURL = config.MinikubeISO
+		driver = d
+	case "vmwarefusion":
+		driver = createVMwareFusionHost(config)
+	default:
+		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
+	}
+
 	data, err := json.Marshal(driver)
 	if err != nil {
 		return nil, err
 	}
 
-	driverName := "virtualbox"
-	h, err := api.NewHost(driverName, data)
+	h, err := api.NewHost(config.VMDriver, data)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating new host: %s", err)
 	}
