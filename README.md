@@ -48,11 +48,10 @@ For a list of minikube's available commands see: [minikube docs](https://github.
 
 ### Dashboard
 
-To access the dashboard, run this command in a shell after starting minikube to get the address:
+To open the dashboard, run this command in a shell after starting minikube:
 ```shell
-echo $(minikube ip):$(kubectl get service kubernetes-dashboard --namespace=kube-system -o=jsonpath='{.spec.ports[0].nodePort}{"\n"}')
+minikube dashboard
 ```
-And then copy/paste that into your browser.
 
 ## Features
  * Minikube packages and configures a Linux VM, Docker and all Kubernetes components, optimized for local development.
