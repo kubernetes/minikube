@@ -103,6 +103,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	} else if !active {
 		fmt.Println("Run this command to use the cluster: ")
 		fmt.Printf("kubectl config use-context %s\n", name)
+	} else {
+		fmt.Println("Kubectl is now configured to use the cluster.")
 	}
 }
 
