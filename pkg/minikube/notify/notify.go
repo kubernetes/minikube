@@ -62,8 +62,10 @@ func MaybePrintUpdateText(outputFile *os.File, url string, lastUpdatePath string
 	if localVersion.Compare(latestVersion) < 0 {
 		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()) //Should the time be a parameter?
 		fmt.Fprintln(outputFile, fmt.Sprintf(
-			"There is a newer version of minikube available (v%s).  Download it here:\n%s%s\n",
-			latestVersion, updateLinkPrefix, latestVersion))
+			"There is a newer version of minikube available (v%s).  Download it here:\n%s%s\n"+
+				"To disable this notification, add WantUpdateNotification: False to the json config file at %s"+
+				"(you may have to create the file config.json in this folder if you have no previous configuration)\n",
+			latestVersion, updateLinkPrefix, latestVersion, constants.MakeMiniPath("config")))
 	}
 }
 
