@@ -49,6 +49,7 @@ For a list of minikube's available commands see: [minikube docs](https://github.
 ### Dashboard
 
 To open the dashboard, run this command in a shell after starting minikube:
+To access the [Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/), run this command in a shell after starting minikube to get the address:
 ```shell
 minikube dashboard
 ```
