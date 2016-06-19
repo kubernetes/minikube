@@ -46,6 +46,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/leaky"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/kubelet/network/hairpin"
@@ -554,13 +555,16 @@ func setApp(imgManifest *appcschema.ImageManifest, c *api.Container, opts *kubec
 
 	// If 'User' or 'Group' are still empty at this point,
 	// then apply the root UID and GID.
-	// TODO(yifan): Instead of using root GID, we should use
-	// the GID which the user is in.
+	// TODO(yifan): If only the GID is empty, rkt should be able to determine the GID
+	// using the /etc/passwd file in the image.
+	// See https://github.com/appc/docker2aci/issues/175.
+	// Maybe we can remove this check in the future.
 	if app.User == "" {
 		app.User = "0"
+		app.Group = "0"
 	}
 	if app.Group == "" {
-		app.Group = "0"
+		return fmt.Errorf("cannot determine the GID of the app %q", imgManifest.Name)
 	}
 
 	// Set working directory.
@@ -615,6 +619,7 @@ func (r *Runtime) makePodManifest(pod *api.Pod, podIP string, pullSecrets []api.
 	manifest.Annotations.Set(*appctypes.MustACIdentifier(types.KubernetesPodUIDLabel), string(pod.UID))
 	manifest.Annotations.Set(*appctypes.MustACIdentifier(types.KubernetesPodNameLabel), pod.Name)
 	manifest.Annotations.Set(*appctypes.MustACIdentifier(types.KubernetesPodNamespaceLabel), pod.Namespace)
+	manifest.Annotations.Set(*appctypes.MustACIdentifier(types.KubernetesContainerNameLabel), leaky.PodInfraContainerName)
 	manifest.Annotations.Set(*appctypes.MustACIdentifier(k8sRktRestartCountAnno), strconv.Itoa(restartCount))
 	if stage1Name, ok := pod.Annotations[k8sRktStage1NameAnno]; ok {
 		requiresPrivileged = true
