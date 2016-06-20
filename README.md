@@ -19,7 +19,7 @@ See the installation instructions for the [latest release](https://github.com/ku
 
 ## Usage
 
-Here's a brief demo of minikube usage. We're using the code from this [Kubernetes tutorial](http://kubernetes.io/docs/hellonode/).
+Here's a brief demo of minikube usage.
 If you want to change the VM driver to VMware Fusion add the `--vm-driver=vmwarefusion` flag to `minikube start`.
 
 Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
@@ -32,13 +32,14 @@ Creating machine...
 Starting local Kubernetes cluster...
 Kubernetes is available at https://192.168.99.100:443.
 
-$ eval $(minikube docker-env)
-$ docker build -t helloworld .
-Successfully built d16fe85e1abe
-$ kubectl run hello-minikube --image=helloworld --hostport=8000 --port=8080 --generator=run-pod/v1
-pod "hello-minikube" created
+$ kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --hostport=8000 --port=8080
+deployment "hello-minikube" created
 $ curl http://$(minikube ip):8000
-Hello World!
+CLIENT VALUES:
+client_address=192.168.99.1
+command=GET
+real path=/
+...
 $ minikube stop
 Stopping local Kubernetes cluster...
 Stopping "minikubeVM"...
