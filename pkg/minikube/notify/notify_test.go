@@ -17,9 +17,9 @@ limitations under the License.
 package notify
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,23 +35,33 @@ import (
 )
 
 func TestShouldCheckURL(t *testing.T) {
-	viper.Set(config.WantUpdateNotification, false)
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
+
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
+	// test that if users disable update notification in config, the URL version does not get checked
+	viper.Set(config.WantUpdateNotification, false)
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
 		t.Fatalf("Error: shouldCheckURLVersion returned true even though config had WantUpdateNotification: false")
 	}
-	viper.Set(config.WantUpdateNotification, true)
 
+	// test that if users want update notification, the URL version does get checked
+	viper.Set(config.WantUpdateNotification, true)
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) == false {
 		t.Fatalf("Error: shouldCheckURLVersion returned false even though there was no last_update_check file")
 	}
-	viper.Set(config.ReminderWaitPeriodInHours, 24)
 
-	writeTimeToFile(lastUpdateCheckFilePath, time.Time{})
+	// test that update notifications get triggered if it has been longer than 24 hours
+	viper.Set(config.ReminderWaitPeriodInHours, 24)
+	writeTimeToFile(lastUpdateCheckFilePath, time.Time{}) //time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) == false {
+		t.Fatalf("Error: shouldCheckURLVersion returned false even though longer than 24 hours since last update")
+	}
+
+	// test that update notifications do not get triggered if it has been less than 24 hours
+	writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
+	if shouldCheckURLVersion(lastUpdateCheckFilePath) == true {
 		t.Fatalf("Error: shouldCheckURLVersion returned false even though longer than 24 hours since last update")
 	}
 
@@ -72,6 +82,7 @@ func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestGetLatestVersionFromURLCorrect(t *testing.T) {
+	// test that the version is correctly parsed if returned if valid JSON is returned the url endpoint
 	latestVersionFromURL := "0.0.0-dev"
 	handler := &URLHandlerCorrect{
 		releases: []release{{Name: version.VersionPrefix + latestVersionFromURL}},
@@ -94,6 +105,7 @@ func (h *URLHandlerNone) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestGetLatestVersionFromURLNone(t *testing.T) {
+	// test that an error is returned if nothing is returned at the url endpoint
 	handler := &URLHandlerNone{}
 	server := httptest.NewServer(handler)
 
@@ -111,6 +123,7 @@ func (h *URLHandlerMalformed) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 func TestGetLatestVersionFromURLMalformed(t *testing.T) {
+	// test that an error is returned if malformed JSON is at the url endpoint
 	handler := &URLHandlerMalformed{}
 	server := httptest.NewServer(handler)
 
@@ -127,41 +140,32 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	viper.Set(config.WantUpdateNotification, true)
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 
-	outputFilePath := filepath.Join(tempDir, "maybePrintUpdateTestFileShouldOutput")
-	outputFile, _ := os.Create(outputFilePath) //Is there a better way to make a mock file?
-	//also is it okay to ignore the errors for things you're not testing to avoid repeated error checks?
+	var outputBuffer bytes.Buffer
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
-	latestVersionFromURL := "100.0.0-dev"
+	// test that no update text is printed if the latest version is lower/equal to the current version
+	latestVersionFromURL := "0.0.0-dev"
 	handler := &URLHandlerCorrect{
 		releases: []release{{Name: version.VersionPrefix + latestVersionFromURL}},
 	}
 	server := httptest.NewServer(handler)
 
-	MaybePrintUpdateText(outputFile, server.URL, lastUpdateCheckFilePath)
-	outputByteArr, _ := ioutil.ReadFile(outputFilePath)
-	outputString := string(outputByteArr)
-	fmt.Println(outputString)
-	if len(outputString) == 0 {
-		t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
-			version.GetVersion(), latestVersionFromURL, outputString)
+	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
+	if len(outputBuffer.String()) != 0 {
+		t.Fatalf("Expected MaybePrintUpdateText to not output text as the current version is %s and version %s was served from URL but output was [%s]",
+			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
 	}
 
-	outputFilePath = filepath.Join(tempDir, "maybePrintUpdateTestFileShouldNotOutput")
-	outputFile, _ = os.Create(outputFilePath) //Is there a better way to make a mock file?
-
-	latestVersionFromURL = "0.0.0-dev"
+	// test that update text is printed if the latest version is greater than the current version
+	latestVersionFromURL = "100.0.0-dev"
 	handler = &URLHandlerCorrect{
 		releases: []release{{Name: version.VersionPrefix + latestVersionFromURL}},
 	}
 	server = httptest.NewServer(handler)
 
-	MaybePrintUpdateText(outputFile, server.URL, lastUpdateCheckFilePath)
-	outputByteArr, _ = ioutil.ReadFile(outputFilePath)
-	outputString = string(outputByteArr)
-	fmt.Println(outputString)
-	if len(outputString) != 0 {
-		t.Fatalf("Expected MaybePrintUpdateText to not output text as the current version is %s and version %s was served from URL but output was [%s]",
-			version.GetVersion(), latestVersionFromURL, outputString)
+	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
+	if len(outputBuffer.String()) == 0 {
+		t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
+			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
 	}
 }

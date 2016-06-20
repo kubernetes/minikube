@@ -19,9 +19,9 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -41,11 +41,11 @@ var (
 	githubMinikubeReleasesURL = "https://api.github.com/repos/kubernetes/minikube/releases"
 )
 
-func MaybePrintUpdateTextFromGithub(outputFile *os.File) {
-	MaybePrintUpdateText(outputFile, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
+func MaybePrintUpdateTextFromGithub(output io.Writer) {
+	MaybePrintUpdateText(output, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
-func MaybePrintUpdateText(outputFile *os.File, url string, lastUpdatePath string) {
+func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
@@ -60,12 +60,12 @@ func MaybePrintUpdateText(outputFile *os.File, url string, lastUpdatePath string
 		return
 	}
 	if localVersion.Compare(latestVersion) < 0 {
-		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()) //Should the time be a parameter?
-		fmt.Fprintln(outputFile, fmt.Sprintf(
-			"There is a newer version of minikube available (v%s).  Download it here:\n%s%s\n"+
-				"To disable this notification, add WantUpdateNotification: False to the json config file at %s"+
-				"(you may have to create the file config.json in this folder if you have no previous configuration)\n",
-			latestVersion, updateLinkPrefix, latestVersion, constants.MakeMiniPath("config")))
+		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
+		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
+%s%s
+To disable this notification, add WantUpdateNotification: False to the json config file at %s
+(you may have to create the file config.json in this folder if you have no previous configuration)\n`,
+			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion, constants.MakeMiniPath("config"))
 	}
 }
 
@@ -98,7 +98,9 @@ func getJson(url string, target *releases) error {
 
 func getLatestVersionFromURL(url string) (semver.Version, error) {
 	var releases releases
-	getJson(url, &releases)
+	if err := getJson(url, &releases); err != nil {
+		return semver.Version{}, err
+	}
 	if len(releases) == 0 {
 		return semver.Version{}, fmt.Errorf("There were no json releases at the url specified: %s", url)
 	}
