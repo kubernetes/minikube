@@ -26,5 +26,6 @@ spec:
   ports:
   - port: 80
     targetPort: 9090
+    nodePort: 30000
   selector:
     app: kubernetes-dashboard
