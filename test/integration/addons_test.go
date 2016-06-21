@@ -31,7 +31,8 @@ import (
 
 var (
 	addonManagerCmd = []string{"get", "pod", "kube-addon-manager-127.0.0.1", "--namespace=kube-system"}
-	dashboardCmd    = []string{"get", "rc", "kubernetes-dashboard", "--namespace=kube-system"}
+	dashboardRcCmd  = []string{"get", "rc", "kubernetes-dashboard", "--namespace=kube-system"}
+	dashboardSvcCmd = []string{"get", "svc", "kubernetes-dashboard", "--namespace=kube-system"}
 )
 
 func TestAddons(t *testing.T) {
@@ -64,13 +65,23 @@ func TestDashboard(t *testing.T) {
 
 	checkDashboard := func() error {
 		rc := api.ReplicationController{}
-		if err := kubectlRunner.RunCommandParseOutput(dashboardCmd, &rc); err != nil {
+		svc := api.Service{}
+		if err := kubectlRunner.RunCommandParseOutput(dashboardRcCmd, &rc); err != nil {
+			return err
+		}
+
+		if err := kubectlRunner.RunCommandParseOutput(dashboardSvcCmd, &svc); err != nil {
 			return err
 		}
 
 		if rc.Status.Replicas != rc.Status.FullyLabeledReplicas {
 			return fmt.Errorf("Not enough pods running. Expected %s, got %s.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)
 		}
+
+		if svc.Spec.Ports[0].NodePort != 30000 {
+			return fmt.Errorf("Dashboard is not exposed on port {}", svc.Spec.Ports[0].NodePort)
+		}
+
 		return nil
 	}
 
