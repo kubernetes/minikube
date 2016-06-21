@@ -25,7 +25,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/notify"
 )
 
 var dirs = [...]string{
@@ -53,6 +56,7 @@ var RootCmd = &cobra.Command{
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
 		}
+		notify.MaybePrintUpdateTextFromGithub(os.Stdout)
 	},
 }
 
@@ -72,4 +76,9 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+	viper.SetConfigName("config")
+	viper.AddConfigPath(constants.ConfigFilePath)
+	viper.ReadInConfig()
+	viper.SetDefault(config.WantUpdateNotification, true)
+	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
 }

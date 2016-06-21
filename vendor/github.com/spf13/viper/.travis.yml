@@ -1,0 +1,18 @@
+language: go
+go:
+  - 1.4.3
+  - 1.5.4
+  - 1.6.2
+  - tip
+  
+os:
+  - linux
+  - osx
+
+matrix:
+  allow_failures:
+    - go: tip
+
+script:
+  - go test -v ./...
+sudo: false

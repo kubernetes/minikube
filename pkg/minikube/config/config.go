@@ -14,24 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package version
+package config
 
-import (
-	"strings"
-
-	"github.com/blang/semver"
+const (
+	WantUpdateNotification    = "WantUpdateNotification"
+	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
 )
-
-// The current version of the minikube and localkube
-// This is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.version=vX.Y.Z"
-const VersionPrefix = "v"
-
-var version = "v0.0.0-unset"
-
-func GetVersion() string {
-	return version
-}
-
-func GetSemverVersion() (semver.Version, error) {
-	return semver.Make(strings.TrimPrefix(GetVersion(), VersionPrefix))
-}
