@@ -1,23 +1,28 @@
-# Minikube
+## What is Minikube
 
-Run Kubernetes locally
+Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.
 
-[![Build Status](https://travis-ci.org/kubernetes/minikube.svg?branch=master)](https://travis-ci.org/kubernetes/minikube)
+### Features
 
-## Background
+* Minikube packages and configures a Linux VM, Docker and all Kubernetes components, optimized for local development.
+* Minikube supports Kubernetes features such as:
+  * DNS
+  * NodePorts
+  * ConfigMaps and Secrets
+  * Dashboards
 
-Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs
-a single-node Kubernetes cluster inside a VM on your laptop for users looking
-to try out Kubernetes or develop with it day-to-day.
+## Installation
 
-## Requirements For Running Minikube
+### Requirements
+
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion) installation
 * VT-x/AMD-v virtualization must be enabled in BIOS
 
-## Installation
+### Instructions
+
 See the installation instructions for the [latest release](https://github.com/kubernetes/minikube/releases).
 
-## Usage
+## Quickstart
 
 Here's a brief demo of minikube usage.
 If you want to change the VM driver to VMware Fusion add the `--vm-driver=vmwarefusion` flag to `minikube start`.
@@ -44,37 +49,69 @@ $ minikube stop
 Stopping local Kubernetes cluster...
 Stopping "minikubeVM"...
 ```
-### Documentation
-For a list of minikube's available commands see: [minikube docs](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md)
+
+## Managing your Cluster
+
+### Starting a Cluster
+
+The [minikube start](./docs/minikube_start.md) command can be used to start your cluster.
+This command creates and configures a virtual machine that runs a single-node Kubernetes cluster.
+This command also configures your [kubectl](http://kubernetes.io/docs/user-guide/kubectl-overview/) installation to communicate with this cluster.
+
+### Stopping a Cluster
+The [minikube stop](./docs/minikube_stop.md) command can be used to stop your cluster.
+This command shuts down the minikube virtual machine, but preserves all cluster state and data.
+Starting the cluster again will restore it to it's previous state.
+
+### Deleting a Cluster
+The [minikube delete](./docs/minikube_delete.md) command can be used to delete your cluster.
+This command shuts down and deletes the minikube virtual machine. No data or state is preserved.
+
+## Interacting With your Cluster
+
+### Kubectl
+
+The `minikube start` command creates a "[kubectl context](http://kubernetes.io/docs/user-guide/kubectl/kubectl_config_set-context/)" called "minikube".
+This context contains the configuration to communicate with your minikube cluster.
+
+Minikube sets this context to default automatically, but if you need to switch back to it in the future, run:
+
+`kubectl config set-context minikube`,
+
+or pass the context on each command like this: `kubectl get pods --context=minikube`.
 
 ### Dashboard
 
-To open the dashboard, run this command in a shell after starting minikube:
 To access the [Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/), run this command in a shell after starting minikube to get the address:
 ```shell
 minikube dashboard
 ```
 
-## Features
- * Minikube packages and configures a Linux VM, Docker and all Kubernetes components, optimized for local development.
- * Minikube supports Kubernetes features such as:
-   * DNS
-   * NodePorts
-   * ConfigMaps and Secrets
-   * Dashboards
+## Networking
+
+The minikube VM is exposed to the host system via a host-only IP address, that can be obtained with the `minikube ip` command.
+Any services of type `NodePort` can be accessed over that IP address, on the NodePort.
+
+To determine the NodePort for your service, you can use a `kubectl` command like this:
+
+`kubectl get service $SERVICE --output='jsonpath="{.spec.ports[0].NodePort}"'`
+
+## Persistent Volumes
+
+Minikube supports [PersistentVolumes](http://kubernetes.io/docs/user-guide/persistent-volumes/) of type `hostPath`.
+These PersistentVolumes are mapped to a directory inside the minikube VM.
+
+## Documentation
+For a list of minikube's available commands see the [full CLI docs](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md).
 
 ## Known Issues
- * Features that require a Cloud Provider will not work in Minikube. These include:
+* Features that require a Cloud Provider will not work in Minikube. These include:
   * LoadBalancers
   * PersistentVolumes
   * Ingress
- * Features that require multiple nodes. These include:
+* Features that require multiple nodes. These include:
   * Advanced scheduling policies
-  * DaemonSets
- * Alternate runtimes, like rkt.
-
-If you need these features, don't worry! We're planning to add these to minikube over time. Please leave a note in the
-issue tracker about how you'd like to use minikube!
+* Alternate runtimes, like rkt.
 
 ## Design
 
@@ -146,6 +183,6 @@ export KUBERNETES_CONFORMANCE_TEST=y
 go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check_version_skew=false --check_node_count=false
 ```
 
-### Community
+## Community
 
 Contributions, questions, and comments are all welcomed and encouraged! minkube developers hang out on [Slack](https://kubernetes.slack.com) in the #minikube channel (get an invitation [here](http://slack.kubernetes.io/)). We also have the [kubernetes-dev Google Groups mailing list](https://groups.google.com/forum/#!forum/kubernetes-dev). If you are posting to the list please prefix your subject with "minikube: ".
