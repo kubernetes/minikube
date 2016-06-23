@@ -32,7 +32,7 @@ endif
 
 
 # Use system python if it exists, otherwise use Docker.
-PYTHON := $(shell command -v python || docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python)
+PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
 # Set the version information for the Kubernetes servers, and build localkube statically
