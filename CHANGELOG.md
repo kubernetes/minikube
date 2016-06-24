@@ -1,6 +1,15 @@
 # Minikube Release Notes
 
-## Version 0.3.0 - 6/20/2016
+## Version 0.4.0 - 6/24/2016
+* Updated Kubernetes components to v1.3.0-beta.1
+* Added a check for updates to minikube.
+* Added a driver for VMWare Fusion on OSX.
+* Added a flag to customize the memory of the minikube VM.
+* Documentation updates
+* Fixed a bug in Docker certificate generation. Certificates will now be
+  regenerated whenever `minikube start` is run.
+
+## Version 0.3.0 - 6/10/2016
  * Added a `minikube dashboard` command to open the Kubernetes Dashboard.
  * Updated Docker to version 1.11.1.
  * Updated Kubernetes components to v1.3.0-alpha.5-330-g760c563.
