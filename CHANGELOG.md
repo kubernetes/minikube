@@ -1,7 +1,8 @@
 # Minikube Release Notes
 
-## Version 0.4.0 - 6/24/2016
+## Version 0.4.0 - 6/27/2016
 * Updated Kubernetes components to v1.3.0-beta.1
+* Updated the Kubernetes Dashboard to v1.1.0
 * Added a check for updates to minikube.
 * Added a driver for VMWare Fusion on OSX.
 * Added a flag to customize the memory of the minikube VM.
