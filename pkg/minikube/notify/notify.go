@@ -38,7 +38,7 @@ const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
 var (
 	timeLayout                = time.RFC1123
 	lastUpdateCheckFilePath   = constants.MakeMiniPath("last_update_check")
-	githubMinikubeReleasesURL = "https://api.github.com/repos/kubernetes/minikube/releases"
+	githubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 )
 
 func MaybePrintUpdateTextFromGithub(output io.Writer) {

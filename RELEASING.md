@@ -14,6 +14,33 @@ If you do this, bump the ISO URL to point to the new ISO, and send a PR.
 
 See [this PR](https://github.com/kubernetes/minikube/pull/165) for an example.
 
+## Add the version to the releases.json file
+
+Add an entry **to the top** of deploy/minikube/releases.json with the version, and send a PR.
+This file controls the auto update notifications in minikube.
+Only add entries to this file that should be released to all users (no pre-release, alpha or beta releases).
+The file must be uploaded to GCS before notifications will go out. That step comes at the end.
+
+The schema for this file is:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "name"
+    ]
+  }
+}
+```
+
 ## Run integration tests
 
 Run this command:
@@ -49,3 +76,12 @@ gsutil cp out/minikube-darwin-amd64  gs://minikube/releases/$RELEASE/
 Create a new release based on your tag, like [this one](https://github.com/kubernetes/minikube/releases/tag/v0.2.0).
 
 Upload the files, and calculate checksums.
+
+## Upload the releases.json file to GCS
+
+This step makes the new release trigger update notifications in old versions of Minikube.
+Use this command from a clean git repo:
+
+```shell
+gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
+```
