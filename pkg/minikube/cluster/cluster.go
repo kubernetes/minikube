@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -72,6 +73,9 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 			if err := api.Save(h); err != nil {
 				return nil, fmt.Errorf("Error saving started host: %s", err)
 			}
+		}
+		if err := h.ConfigureAuth(); err != nil {
+			return nil, fmt.Errorf("Error configuring auth on host: %s", err)
 		}
 		return h, nil
 	} else {
@@ -289,6 +293,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 	h.HostOptions.AuthOptions.CertDir = constants.Minipath
 	h.HostOptions.AuthOptions.StorePath = constants.Minipath
+	h.HostOptions.EngineOptions = &engine.Options{}
 
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client

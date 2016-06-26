@@ -26,6 +26,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -72,36 +73,8 @@ func TestCreateHost(t *testing.T) {
 	}
 }
 
-// Mock Host used for testing. When commands are run, the output from CommandOutput
-// is used, if present. Then the output from Error is used, if present. Finally,
-// "", nil is returned.
-type mockHost struct {
-	CommandOutput map[string]string
-	Error         string
-	Commands      map[string]int
-}
-
-func newMockHost() *mockHost {
-	return &mockHost{
-		CommandOutput: make(map[string]string),
-		Commands:      make(map[string]int),
-	}
-}
-
-func (m mockHost) RunSSHCommand(cmd string) (string, error) {
-	m.Commands[cmd] = 1
-	output, ok := m.CommandOutput[cmd]
-	if ok {
-		return output, nil
-	}
-	if m.Error != "" {
-		return "", fmt.Errorf(m.Error)
-	}
-	return "", nil
-}
-
 func TestStartCluster(t *testing.T) {
-	h := newMockHost()
+	h := tests.NewMockHost()
 	err := StartCluster(h)
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
@@ -115,7 +88,7 @@ func TestStartCluster(t *testing.T) {
 }
 
 func TestStartClusterError(t *testing.T) {
-	h := newMockHost()
+	h := tests.NewMockHost()
 	h.Error = "error"
 
 	err := StartCluster(h)
@@ -138,6 +111,9 @@ func TestStartHostExists(t *testing.T) {
 		t.Fatal("api.Create did not fail, but should have.")
 	}
 
+	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	provision.SetDetector(md)
+
 	// This should pass without calling Create because the host exists already.
 	h, err := StartHost(api, defaultMachineConfig)
 	if err != nil {
@@ -148,6 +124,9 @@ func TestStartHostExists(t *testing.T) {
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
+	}
+	if !md.Provisioner.Provisioned {
+		t.Fatalf("Expected provision to be called")
 	}
 }
 
@@ -162,6 +141,8 @@ func TestStartStoppedHost(t *testing.T) {
 	h.Driver = &d
 	d.CurrentState = state.Stopped
 
+	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	provision.SetDetector(md)
 	h, err = StartHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatal("Error starting host.")
@@ -177,10 +158,17 @@ func TestStartStoppedHost(t *testing.T) {
 	if !api.SaveCalled {
 		t.Fatalf("Machine must be saved after starting.")
 	}
+
+	if !md.Provisioner.Provisioned {
+		t.Fatalf("Expected provision to be called")
+	}
 }
 
 func TestStartHost(t *testing.T) {
 	api := tests.NewMockAPI()
+
+	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	provision.SetDetector(md)
 
 	h, err := StartHost(api, defaultMachineConfig)
 	if err != nil {
@@ -194,6 +182,12 @@ func TestStartHost(t *testing.T) {
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
+	}
+
+	// Provision regenerates Docker certs. This happens automatically during create,
+	// so we should only call it again if the host already exists.
+	if md.Provisioner.Provisioned {
+		t.Fatalf("Did not expect Provision to be called")
 	}
 }
 
