@@ -21,25 +21,9 @@ This file controls the auto update notifications in minikube.
 Only add entries to this file that should be released to all users (no pre-release, alpha or beta releases).
 The file must be uploaded to GCS before notifications will go out. That step comes at the end.
 
-The schema for this file is:
+The schema for this file can be found in deploy/minikube/schema.json.
 
-```json
-{
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "array",
-  "items": {
-    "type": "object",
-    "properties": {
-      "name": {
-        "type": "string"
-      }
-    },
-    "required": [
-      "name"
-    ]
-  }
-}
-```
+An automated test to verify the schema runs in Travis before each submit.
 
 ## Run integration tests
 

@@ -65,3 +65,6 @@ else
     echo "Help text is up to date"
   fi
 fi
+
+echo "Checking releases.json schema"
+go run deploy/minikube/schema_check.go
