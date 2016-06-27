@@ -15,7 +15,7 @@ minikube start
 ### Options
 
 ```
-      --iso-url="https://storage.googleapis.com/minikube/minikube-0.3.iso": Location of the minikube iso
+      --iso-url="https://storage.googleapis.com/minikube/minikube-0.4.iso": Location of the minikube iso
       --memory=1024: Amount of RAM allocated to the minikube VM
       --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion]
 ```
