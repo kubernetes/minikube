@@ -51,7 +51,7 @@ var SupportedVMDrivers = [...]string{
 }
 
 const (
-	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.3.iso"
+	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.4.iso"
 	DefaultMemory   = 1024
 	DefaultVMDriver = "virtualbox"
 )
