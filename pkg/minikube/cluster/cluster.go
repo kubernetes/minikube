@@ -160,6 +160,7 @@ type sshAble interface {
 type MachineConfig struct {
 	MinikubeISO string
 	Memory      int
+	CPUs        int
 	VMDriver    string
 }
 
@@ -274,6 +275,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
 		d.Boot2DockerURL = config.MinikubeISO
 		d.Memory = config.Memory
+		d.CPU = config.CPUs
 		driver = d
 	case "vmwarefusion":
 		driver = createVMwareFusionHost(config)
