@@ -54,6 +54,20 @@ Stopping local Kubernetes cluster...
 Stopping "minikubeVM"...
 ```
 
+### Reusing the Docker daemon
+
+If you wish to interact with the docker daemon in the VM (such as to build images which can be used directly by the single node cluster without having to push to a docker registry), type the following into your shell:
+
+```
+export DOCKER_HOST=tcp://192.168.99.100:2376
+export DOCKER_CERT_PATH=~/.minikube
+export DOCKER_TLS_VERIFY=1
+```
+you can now run commands line the following on your host mac/windows machine:
+```
+docker ps
+```
+
 ## Managing your Cluster
 
 ### Starting a Cluster
