@@ -67,7 +67,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		DockerEnv:        dockerEnv,
 		InsecureRegistry: insecureRegistry,
 	}
+	kubernetesConfig := cluster.KubernetesConfig{
+		KubernetesVersion: kubernetesVersion,
+	}
 
+	fmt.Println(config.DiskSize)
 	var host *host.Host
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)
@@ -79,7 +83,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if err := cluster.UpdateCluster(host.Driver); err != nil {
+	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		os.Exit(1)
 	}
@@ -163,8 +167,8 @@ func init() {
 	startCmd.Flags().IntVarP(&cpus, "cpus", "", constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	diskFlag := startCmd.Flags().VarPF(disk, "disk-size", "", "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	diskFlag.DefValue = constants.DefaultDiskSize
-
 	startCmd.Flags().StringSliceVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
+	startCmd.Flags().StringVarP(&kubernetesVersion, "kubernetes-version", "", constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will run")
 	RootCmd.AddCommand(startCmd)
 }

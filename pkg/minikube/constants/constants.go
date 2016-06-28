@@ -57,6 +57,8 @@ const (
 	DefaultCPUS     = 1
 	DefaultDiskSize = "20g"
 	DefaultVMDriver = "virtualbox"
+
+	DefaultKubernetesVersion = ""
 )
 
 const (

@@ -177,6 +177,11 @@ type MachineConfig struct {
 	InsecureRegistry []string
 }
 
+// MachineConfig contains the parameters used to start a cluster.
+type KubernetesConfig struct {
+	KubernetesVersion string
+}
+
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble) error {
 	commands := []string{stopCommand, GetStartCommand()}
@@ -202,12 +207,6 @@ type fileToCopy struct {
 
 var assets = []fileToCopy{
 	{
-		AssetName:   "out/localkube",
-		TargetDir:   "/usr/local/bin",
-		TargetName:  "localkube",
-		Permissions: "0777",
-	},
-	{
 		AssetName:   "deploy/iso/addon-manager.yaml",
 		TargetDir:   "/etc/kubernetes/manifests/",
 		TargetName:  "addon-manager.yaml",
@@ -227,12 +226,32 @@ var assets = []fileToCopy{
 	},
 }
 
-func UpdateCluster(d drivers.Driver) error {
+func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
+	//upgrade driver to a host
+	//change the tests
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
 	}
+	if localkubeURLWasSpecified(config) {
+		cmd := GetLocalkubeDownloadCommand(config.KubernetesVersion)
+		glog.Infoln(cmd)
+		output, err := h.RunSSHCommand(cmd)
+		glog.Infoln(output)
+		if err != nil {
+			return err
+		}
+	} else {
+		contents, err := Asset("out/localkube")
+		if err != nil {
+			glog.Infof("Error loading asset %s: %s", "out/localkube", err)
+			return err
+		}
 
+		if err := sshutil.Transfer(contents, "/usr/local/bin", "localkube", "0777", client); err != nil {
+			return err
+		}
+	}
 	for _, a := range assets {
 		contents, err := Asset(a.AssetName)
 		if err != nil {
@@ -244,7 +263,16 @@ func UpdateCluster(d drivers.Driver) error {
 			return err
 		}
 	}
+	//localkube seperate
 	return nil
+}
+
+func localkubeURLWasSpecified(config KubernetesConfig) bool {
+	//see if flag is different than default -> it was passed by user
+	if config.KubernetesVersion != constants.DefaultKubernetesVersion {
+		return true
+	}
+	return false
 }
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
