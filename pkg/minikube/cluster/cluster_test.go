@@ -511,8 +511,7 @@ func TestUpdateDefault(t *testing.T) {
 		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	h := newMockHost()
-
+	h := tests.NewMockHost()
 	d := &tests.MockDriver{
 		Port: port,
 		BaseDriver: drivers.BaseDriver{
@@ -560,8 +559,7 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	h := newMockHost()
-
+	h := tests.NewMockHost()
 	d := &tests.MockDriver{
 		Port: port,
 		BaseDriver: drivers.BaseDriver{
@@ -586,4 +584,5 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}
+
 }
