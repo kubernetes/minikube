@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -502,12 +504,14 @@ func TestGetServiceURLWithoutNodePort(t *testing.T) {
 	}
 }
 
-func TestUpdate(t *testing.T) {
+func TestUpdateDefault(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
 		t.Fatalf("Error starting ssh server: %s", err)
 	}
+
+	h := newMockHost()
 
 	d := &tests.MockDriver{
 		Port: port,
@@ -517,15 +521,69 @@ func TestUpdate(t *testing.T) {
 		},
 	}
 
-	if err := UpdateCluster(d); err != nil {
+	kubernetesConfig := KubernetesConfig{
+		KubernetesVersion: constants.DefaultKubernetesVersion,
+	}
+
+	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
 		t.Fatalf("Error updating cluster: %s", err)
 	}
 	transferred := s.Transfers.Bytes()
 
+	//test that kube-add on assets are transferred properly
 	for _, a := range assets {
 		contents, _ := Asset(a.AssetName)
 		if !bytes.Contains(transferred, contents) {
 			t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 		}
+	}
+
+	//test that localkube is transferred properly
+	contents, _ := Asset("out/localkube")
+	if !bytes.Contains(transferred, contents) {
+		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
+	}
+
+	//TODO: aprindle: add test for localkube versioning
+}
+
+type K8sVersionHandlerCorrect struct{}
+
+func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "test/test-localkube")
+}
+
+func TestUpdateKubernetesVersion(t *testing.T) {
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
+	}
+
+	h := newMockHost()
+
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+	}
+	handler := &K8sVersionHandlerCorrect{}
+	server := httptest.NewServer(handler)
+
+	kubernetesConfig := KubernetesConfig{
+		KubernetesVersion: server.URL,
+	}
+
+	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
+		t.Fatalf("Error updating cluster: %s", err)
+	}
+	transferred := s.Transfers.Bytes()
+
+	//test that localkube is transferred properly
+	contents, _ := Asset("test/test-localkube")
+	if !bytes.Contains(transferred, contents) {
+		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}
 }
