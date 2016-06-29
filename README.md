@@ -129,6 +129,12 @@ To determine the NodePort for your service, you can use a `kubectl` command like
 Minikube supports [PersistentVolumes](http://kubernetes.io/docs/user-guide/persistent-volumes/) of type `hostPath`.
 These PersistentVolumes are mapped to a directory inside the minikube VM.
 
+## Private Container Registries
+
+To access a private container registry, follow the steps on [this page](http://kubernetes.io/docs/user-guide/images/).
+
+We recommend you use ImagePullSecrets, but if you would like to configure access on the minikube VM you can place the `.dockercfg` in the `/home/docker` directory or the `config.json` in the `/home/docker/.docker` directory.
+
 ## Documentation
 For a list of minikube's available commands see the [full CLI docs](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md).
 
