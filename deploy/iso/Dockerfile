@@ -25,6 +25,8 @@ ADD nsenter $ROOTFS/usr/bin/
 ADD socat $ROOTFS/usr/bin
 ADD ethtool $ROOTFS/usr/bin
 ADD conntrack $ROOTFS/usr/bin
+ADD bootlocal.sh $ROOTFS/tmp/bootlocal.sh
+RUN cat $ROOTFS/tmp/bootlocal.sh >> $ROOTFS/etc/rc.d/automount
 
 # Get a specific version of Docker. This will overwrite the binary installed
 # in the base image.
