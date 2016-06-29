@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/coreos/pkg/capnslog"
 	"k8s.io/kubernetes/pkg/capabilities"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/minikube/pkg/localkube"
@@ -36,6 +37,11 @@ func StartLocalkube() {
 		fmt.Println("localkube version:", version.GetVersion())
 		os.Exit(0)
 	}
+
+	// Get the etcd logger for the api repo
+	apiRepoLogger := capnslog.MustRepoLogger("github.com/coreos/etcd/etcdserver/api")
+	// Set the logging level to NOTICE as there is an INFO lvl log statement that runs every few seconds -> log spam
+	apiRepoLogger.SetRepoLogLevel(capnslog.NOTICE)
 
 	// TODO: Require root
 
