@@ -31,7 +31,6 @@ import (
 )
 
 var (
-	addonManagerCmd = []string{"get", "pods", "--namespace=kube-system"}
 	dashboardRcCmd  = []string{"get", "rc", "kubernetes-dashboard", "--namespace=kube-system"}
 	dashboardSvcCmd = []string{"get", "svc", "kubernetes-dashboard", "--namespace=kube-system"}
 )
@@ -55,9 +54,8 @@ func TestAddons(t *testing.T) {
 			if strings.HasPrefix(p.ObjectMeta.Name, "kube-addon-manager-") {
 				if p.Status.Phase == "Running" {
 					return nil
-				} else {
-					return fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)
 				}
+				return fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)
 			}
 		}
 
