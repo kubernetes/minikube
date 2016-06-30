@@ -48,6 +48,7 @@ var LogFlags = [...]string{
 var SupportedVMDrivers = [...]string{
 	"virtualbox",
 	"vmwarefusion",
+	"kvm",
 }
 
 const (

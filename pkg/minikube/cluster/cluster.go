@@ -268,7 +268,7 @@ func SetupCerts(d drivers.Driver) error {
 }
 
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	var driver drivers.Driver
+	var driver interface{}
 
 	switch config.VMDriver {
 	case "virtualbox":
@@ -279,6 +279,8 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		driver = d
 	case "vmwarefusion":
 		driver = createVMwareFusionHost(config)
+	case "kvm":
+		driver = createKVMHost(config)
 	default:
 		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
 	}
