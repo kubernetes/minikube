@@ -34,6 +34,7 @@ import (
 type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
+	Args       string
 }
 
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
@@ -52,9 +53,13 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	return string(stdout)
 }
 
+func (m *MinikubeRunner) Start() {
+	m.RunCommand(fmt.Sprintf("start %s", m.Args), true)
+}
+
 func (m *MinikubeRunner) EnsureRunning() {
 	if m.GetStatus() != "Running" {
-		m.RunCommand("start", true)
+		m.Start()
 	}
 	m.CheckStatus("Running")
 }

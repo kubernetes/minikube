@@ -19,24 +19,23 @@ limitations under the License.
 package integration
 
 import (
-	"flag"
 	"net"
-	"os"
 	"strings"
 	"testing"
 
 	"k8s.io/minikube/test/integration/util"
 )
 
-var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
-
 func TestStartStop(t *testing.T) {
 
-	runner := util.MinikubeRunner{T: t, BinaryPath: *binaryPath}
+	runner := util.MinikubeRunner{
+		Args:       *args,
+		BinaryPath: *binaryPath,
+		T:          t}
 	runner.RunCommand("delete", false)
 	runner.CheckStatus("Does Not Exist")
 
-	runner.RunCommand("start", true)
+	runner.Start()
 	runner.CheckStatus("Running")
 
 	ip := runner.RunCommand("ip", true)
@@ -48,14 +47,9 @@ func TestStartStop(t *testing.T) {
 	runner.RunCommand("stop", true)
 	runner.CheckStatus("Stopped")
 
-	runner.RunCommand("start", true)
+	runner.Start()
 	runner.CheckStatus("Running")
 
 	runner.RunCommand("delete", true)
 	runner.CheckStatus("Does Not Exist")
-}
-
-func TestMain(m *testing.M) {
-	flag.Parse()
-	os.Exit(m.Run())
 }
