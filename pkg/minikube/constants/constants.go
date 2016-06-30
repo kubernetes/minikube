@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/kubernetes/pkg/util/homedir"
+	"k8s.io/kubernetes/pkg/version"
 )
 
 // MachineName is the name to use for the VM.
@@ -57,9 +58,9 @@ const (
 	DefaultCPUS     = 1
 	DefaultDiskSize = "20g"
 	DefaultVMDriver = "virtualbox"
-
-	DefaultKubernetesVersion = ""
 )
+
+var DefaultKubernetesVersion = version.Get().GitVersion
 
 const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"

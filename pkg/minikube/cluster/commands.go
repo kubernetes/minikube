@@ -32,9 +32,7 @@ var startCommandFmtStr = `
 sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true > %s 2> %s < /dev/null &'
 `
 
-var localkubeDownloadFmtStr = `
-curl -o /usr/local/bin/localkube %s
-`
+var localkubeDownloadFmtStr = `sudo curl -sSL --retry 5 -o /usr/local/bin/localkube %s && sudo chmod 0777 /usr/local/bin/localkube`
 
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
 
