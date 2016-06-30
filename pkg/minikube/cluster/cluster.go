@@ -281,6 +281,8 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		driver = createVMwareFusionHost(config)
 	case "kvm":
 		driver = createKVMHost(config)
+	case "xhyve":
+		driver = createXhyveHost(config)
 	default:
 		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
 	}
