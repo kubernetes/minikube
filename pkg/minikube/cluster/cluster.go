@@ -177,7 +177,7 @@ type MachineConfig struct {
 	InsecureRegistry []string
 }
 
-// MachineConfig contains the parameters used to start a cluster.
+// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
 	KubernetesVersion string
 }
@@ -227,8 +227,6 @@ var assets = []fileToCopy{
 }
 
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
-	//upgrade driver to a host
-	//change the tests
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
@@ -263,7 +261,6 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 			return err
 		}
 	}
-	//localkube seperate
 	return nil
 }
 
