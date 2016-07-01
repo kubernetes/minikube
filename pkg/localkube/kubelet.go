@@ -21,10 +21,6 @@ import (
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
 )
 
-const (
-	HostnameOverride = "127.0.0.1"
-)
-
 func (lk LocalkubeServer) NewKubeletServer() Server {
 	return NewSimpleServer("kubelet", serverInterval, StartKubeletServer(lk))
 }
@@ -44,7 +40,6 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	// Networking
 	config.ClusterDomain = lk.DNSDomain
 	config.ClusterDNS = lk.DNSIP.String()
-	config.HostnameOverride = HostnameOverride
 
 	// Use the host's resolver config
 	if lk.Containerized {
