@@ -237,6 +237,14 @@ export KUBERNETES_CONFORMANCE_TEST=y
 go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check_version_skew=false --check_node_count=false
 ```
 
+To run a specific Conformance Test, you can use the `ginkgo.focus` flag to filter the set using a regular expression.
+The hack/e2e.go wrapper and the e2e.sh wrappers have a little trouble with quoting spaces though, so use the `\s` regular expression character instead.
+For example, to run the test `should update annotations on modification [Conformance]`, use this command:
+
+```shell
+go run hack/e2e.go -v --test --test_args="--ginkgo.focus=should\supdate\sannotations\son\smodification" --check_version_skew=false --check_node_count=false
+```
+
 #### Adding a New Dependency
 
 Minikube uses `Godep` to manage vendored dependencies.
