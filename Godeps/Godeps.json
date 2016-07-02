@@ -213,6 +213,30 @@
 			"Rev": "ee4a0888a9abe7eefe5a0992ca4cb06864839873"
 		},
 		{
+			"ImportPath": "github.com/bugsnag/bugsnag-go",
+			"Comment": "v1.0.5",
+			"Rev": "9ee24c1db7e2c5b87e7228acb3e587a35124a041"
+		},
+		{
+			"ImportPath": "github.com/bugsnag/bugsnag-go/errors",
+			"Comment": "v1.0.5",
+			"Rev": "9ee24c1db7e2c5b87e7228acb3e587a35124a041"
+		},
+		{
+			"ImportPath": "github.com/bugsnag/osext",
+			"Rev": "0dd3f918b21bec95ace9dc86c7e70266cfc5c702"
+		},
+		{
+			"ImportPath": "github.com/bugsnag/panicwrap",
+			"Comment": "1.0.0-2-ge2c2850",
+			"Rev": "e2c28503fcd0675329da73bf48b33404db873782"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-219-ga294348",
+			"Rev": "a2943485b110df8842045ae0600047f88a3a56a1"
+		},
+		{
 			"ImportPath": "github.com/coreos/etcd/alarm",
 			"Comment": "v2.3.0-282-g8b320e7",
 			"Rev": "8b320e7c550067b1dfb37bd1682e8067023e0751"
@@ -696,6 +720,11 @@
 			"Rev": "0bbddae09c5a5419a8c6dcdd7ff90da3d450393b"
 		},
 		{
+			"ImportPath": "github.com/docker/machine/commands",
+			"Comment": "v0.7.0-62-g6002b41",
+			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
+		},
+		{
 			"ImportPath": "github.com/docker/machine/commands/mcndirs",
 			"Comment": "v0.7.0-62-g6002b41",
 			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
@@ -737,6 +766,11 @@
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/check",
+			"Comment": "v0.7.0-62-g6002b41",
+			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/crashreport",
 			"Comment": "v0.7.0-62-g6002b41",
 			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
 		},
@@ -812,6 +846,11 @@
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/provision/serviceaction",
+			"Comment": "v0.7.0-62-g6002b41",
+			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
+		},
+		{
+			"ImportPath": "github.com/docker/machine/libmachine/shell",
 			"Comment": "v0.7.0-62-g6002b41",
 			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
 		},
@@ -1582,6 +1621,10 @@
 		{
 			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
 			"Rev": "10ef21a441db47d8b13ebcc5fd2310f636973c77"
+		},
+		{
+			"ImportPath": "github.com/skarademir/naturalsort",
+			"Rev": "69a5d87bef620f77ee8508db30c846b3b84b111e"
 		},
 		{
 			"ImportPath": "github.com/skynetservices/skydns/backends/etcd",

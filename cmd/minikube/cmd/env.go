@@ -20,12 +20,20 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/docker/machine/commands"
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/shell"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
+
+type shellConfig struct {
+	commands.ShellConfig
+	comment       string
+	commandFormat string
+}
 
 // envCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
@@ -46,13 +54,69 @@ var dockerEnvCmd = &cobra.Command{
 }
 
 func buildDockerEnvShellOutput(envMap map[string]string) string {
-	output := ""
-	for env_name, env_val := range envMap {
-		output += fmt.Sprintf("export %s=%s\n", env_name, env_val)
+	shellConfig, err := getShellConfig()
+	if err != nil {
+		glog.Errorln("Error discovering user shell:", err)
+		os.Exit(1)
 	}
-	howToRun := "# Run this command to configure your shell: \n# eval $(minikube docker-env)"
-	output += howToRun
-	return output
+	output := ""
+	for envName, envVal := range envMap {
+		output += fmt.Sprintf("%s%s%s%s%s",
+			shellConfig.Prefix,
+			envName,
+			shellConfig.Delimiter,
+			envVal,
+			shellConfig.Suffix,
+		)
+	}
+	cmd := fmt.Sprintf(shellConfig.commandFormat, "minikube docker-env")
+	howToRun := fmt.Sprintf("%s Run this command to configure your shell: \n%s %s\n", shellConfig.comment, shellConfig.comment, cmd)
+	return output + howToRun
+}
+
+func getShellConfig() (shellConfig, error) {
+	shellConfig := shellConfig{comment: "#"}
+	userShell, err := shell.Detect()
+	if err != nil {
+		return shellConfig, err
+	}
+	switch userShell {
+	case "fish":
+		shellConfig.Prefix = "set -gx "
+		shellConfig.Suffix = "\";\n"
+		shellConfig.Delimiter = " \""
+		shellConfig.commandFormat = "eval (%s)"
+	case "powershell":
+		shellConfig.Prefix = "$Env:"
+		shellConfig.Suffix = "\"\n"
+		shellConfig.Delimiter = " = \""
+		shellConfig.commandFormat = "& %s | Invoke-Expression"
+	case "cmd":
+		shellConfig.Prefix = "SET "
+		shellConfig.Suffix = "\n"
+		shellConfig.Delimiter = "="
+		shellConfig.comment = "REM"
+		shellConfig.commandFormat = "\t@FOR /f \"tokens=*\" %%i IN ('%s') DO @%%i"
+	case "tcsh":
+		shellConfig.Prefix = "setenv "
+		shellConfig.Suffix = "\";\n"
+		shellConfig.Delimiter = " \""
+		shellConfig.Delimiter = "\" \""
+		shellConfig.comment = ":"
+		shellConfig.commandFormat = "eval `%s`"
+	case "emacs":
+		shellConfig.Prefix = "(setenv \""
+		shellConfig.Suffix = "\")\n"
+		shellConfig.Delimiter = "\" \""
+		shellConfig.comment = ";;"
+		shellConfig.commandFormat = "(with-temp-buffer (shell-command \"%s\" (current-buffer)) (eval-buffer))"
+	default:
+		shellConfig.Prefix = "export "
+		shellConfig.Suffix = "\"\n"
+		shellConfig.Delimiter = "=\""
+		shellConfig.commandFormat = "eval $(%s)"
+	}
+	return shellConfig, nil
 }
 
 func init() {
