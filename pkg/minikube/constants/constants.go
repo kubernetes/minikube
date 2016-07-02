@@ -17,19 +17,21 @@ limitations under the License.
 package constants
 
 import (
-	"os"
 	"path/filepath"
+
+	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
+	"k8s.io/kubernetes/pkg/util/homedir"
 )
 
 // MachineName is the name to use for the VM.
 const MachineName = "minikubeVM"
 
 // Fix for windows
-var Minipath = filepath.Join(os.Getenv("HOME"), ".minikube")
+var Minipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 // TODO: Fix for windows
 // KubeconfigPath is the path to the Kubernetes client config
-var KubeconfigPath = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+var KubeconfigPath = clientcmd.RecommendedHomeFile
 
 // MinikubeContext is the kubeconfig context name used for minikube
 const MinikubeContext = "minikube"
