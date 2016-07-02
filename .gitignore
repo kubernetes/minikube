@@ -28,3 +28,5 @@ _testmain.go
 
 /pkg/minikube/cluster/assets.go
 /minikube
+
+.DS_Store
