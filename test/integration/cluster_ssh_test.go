@@ -25,7 +25,10 @@ import (
 )
 
 func TestClusterSSH(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
+	minikubeRunner := util.MinikubeRunner{
+		Args:       *args,
+		BinaryPath: *binaryPath,
+		T:          t}
 	minikubeRunner.EnsureRunning()
 
 	expectedStr := "hello"

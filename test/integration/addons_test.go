@@ -36,7 +36,11 @@ var (
 )
 
 func TestAddons(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
+	minikubeRunner := util.MinikubeRunner{
+		BinaryPath: *binaryPath,
+		Args:       *args,
+		T:          t}
+
 	minikubeRunner.EnsureRunning()
 	kubectlRunner := util.NewKubectlRunner(t)
 
@@ -58,8 +62,11 @@ func TestAddons(t *testing.T) {
 }
 
 func TestDashboard(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
-	minikubeRunner.RunCommand("start", true)
+	minikubeRunner := util.MinikubeRunner{
+		BinaryPath: *binaryPath,
+		Args:       *args,
+		T:          t}
+	minikubeRunner.Start()
 	minikubeRunner.CheckStatus("Running")
 	kubectlRunner := util.NewKubectlRunner(t)
 
