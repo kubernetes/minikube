@@ -31,7 +31,10 @@ import (
 )
 
 func TestClusterDNS(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
+	minikubeRunner := util.MinikubeRunner{
+		BinaryPath: *binaryPath,
+		Args:       *args,
+		T:          t}
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)

@@ -19,25 +19,15 @@ limitations under the License.
 package integration
 
 import (
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/test/integration/util"
-	"strings"
+	"flag"
+	"os"
 	"testing"
 )
 
-func TestClusterLogs(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
-	minikubeRunner.EnsureRunning()
-
-	logsCmdOutput := minikubeRunner.RunCommand("logs", true)
-	//check for # of lines or check for strings
-	logFiles := []string{constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath}
-	for _, logFile := range logFiles {
-		if !strings.Contains(logsCmdOutput, logFile) {
-			t.Fatalf("Error in logsCmdOutput, expected to find: %s. Output: %s", logFile, logsCmdOutput)
-		}
-	}
+func TestMain(m *testing.M) {
+	flag.Parse()
+	os.Exit(m.Run())
 }
+
+var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
+var args = flag.String("minikube-args", "", "Arguments to pass to minikube")
