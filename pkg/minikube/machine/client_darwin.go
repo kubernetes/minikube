@@ -24,7 +24,15 @@ import (
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/golang/glog"
+	"github.com/zchee/docker-machine-driver-xhyve/xhyve"
 )
+
+func init() {
+	// As this is an array literal it needs to have the same lenth as the original
+	// declaration, 15, hence the empty strings padding out the array
+	localbinary.CoreDrivers = [...]string{"virtualbox", "vmwarefusion", "xhyve",
+		"", "", "", "", "", "", "", "", "", "", "", ""}
+}
 
 // StartDriver starts the desired machine driver if necessary.
 func StartDriver() {
@@ -35,6 +43,8 @@ func StartDriver() {
 			plugin.RegisterDriver(virtualbox.NewDriver("", ""))
 		case "vmwarefusion":
 			plugin.RegisterDriver(vmwarefusion.NewDriver("", ""))
+		case "xhyve":
+			plugin.RegisterDriver(xhyve.NewDriver("", ""))
 		default:
 			glog.Exitf("Unsupported driver: %s\n", driverName)
 		}

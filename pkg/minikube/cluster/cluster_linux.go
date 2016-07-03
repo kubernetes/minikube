@@ -20,40 +20,22 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/dhiltgen/docker-machine-kvm"
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-type kvmDriver struct {
-	*drivers.BaseDriver
-
-	Memory         int
-	DiskSize       int
-	CPU            int
-	Network        string
-	PrivateNetwork string
-	ISO            string
-	Boot2DockerURL string
-	DiskPath       string
-	CacheMode      string
-	IOMode         string
-}
-
-func createKVMHost(config MachineConfig) *kvmDriver {
-	return &kvmDriver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: constants.MachineName,
-			StorePath:   constants.Minipath,
-		},
-		Memory:         config.Memory,
-		CPU:            config.CPUs,
-		Network:        "default",
-		PrivateNetwork: "docker-machines",
-		Boot2DockerURL: config.MinikubeISO,
-		DiskSize:       20000,
-		DiskPath:       filepath.Join(constants.Minipath, "machines", constants.MachineName, fmt.Sprintf("%s.img", constants.MachineName)),
-		ISO:            filepath.Join(constants.Minipath, "machines", constants.MachineName, "boot2docker.iso"),
-		CacheMode:      "default",
-		IOMode:         "threads",
-	}
+func createKVMHost(config MachineConfig) drivers.Driver {
+	d := kvm.NewDriver(constants.MachineName, constants.Minipath).(*kvm.Driver)
+	d.Memory = config.Memory
+	d.CPU = config.CPUs
+	d.Network = "default"
+	d.PrivateNetwork = "docker-machines"
+	d.Boot2DockerURL = config.MinikubeISO
+	d.DiskSize = 20000
+	d.DiskPath = filepath.Join(constants.Minipath, "machines", constants.MachineName, fmt.Sprintf("%s.img", constants.MachineName))
+	d.ISO = filepath.Join(constants.Minipath, "machines", constants.MachineName, "boot2docker.iso")
+	d.CacheMode = "default"
+	d.IOMode = "threads"
+	return d
 }
