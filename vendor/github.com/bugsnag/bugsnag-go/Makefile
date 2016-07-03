@@ -1,0 +1,2 @@
+default:
+	go test
