@@ -69,7 +69,7 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatalf("Wrong driver name: %v. Should be virtualbox, vmwarefusion or kvm.", h.DriverName)
+		t.Fatalf("Wrong driver name: %v. Should be virtualbox, vmwarefusion, kvm or xhyve.", h.DriverName)
 	}
 }
 

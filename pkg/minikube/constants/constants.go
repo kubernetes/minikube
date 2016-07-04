@@ -51,6 +51,7 @@ var SupportedVMDrivers = [...]string{
 	"virtualbox",
 	"vmwarefusion",
 	"kvm",
+	"xhyve",
 }
 
 const (

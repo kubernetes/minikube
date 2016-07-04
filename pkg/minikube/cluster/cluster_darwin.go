@@ -33,3 +33,34 @@ func createVMwareFusionHost(config MachineConfig) drivers.Driver {
 	d.ISO = d.ResolveStorePath("boot2docker.iso")
 	return d
 }
+
+type xhyveDriver struct {
+	*drivers.BaseDriver
+	Boot2DockerURL string
+	BootCmd        string
+	CPU            int
+	CaCertPath     string
+	DiskSize       int64
+	MacAddr        string
+	Memory         int
+	PrivateKeyPath string
+	UUID           string
+	NFSShare       bool
+	DiskNumber     int
+	Virtio9p       bool
+	Virtio9pFolder string
+}
+
+func createXhyveHost(config MachineConfig) *xhyveDriver {
+	return &xhyveDriver{
+		BaseDriver: &drivers.BaseDriver{
+			MachineName: constants.MachineName,
+			StorePath:   constants.Minipath,
+		},
+		Memory:         config.Memory,
+		CPU:            config.CPUs,
+		Boot2DockerURL: config.MinikubeISO,
+		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=boot2docker",
+		DiskSize:       20000,
+	}
+}
