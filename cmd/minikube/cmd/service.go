@@ -21,7 +21,6 @@ import (
 	"os"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -29,32 +28,42 @@ import (
 )
 
 var (
-	dashboardURLMode bool
+	namespace      string
+	serviceURLMode bool
 )
 
-// dashboardCmd represents the dashboard command
-var dashboardCmd = &cobra.Command{
-	Use:   "dashboard",
-	Short: "Opens/displays the kubernetes dashboard URL for your local cluster",
-	Long:  `Opens/displays the kubernetes dashboard URL for your local cluster`,
+// serviceCmd represents the service command
+var serviceCmd = &cobra.Command{
+	Use:   "service [flags] SERVICE",
+	Short: "Gets the kubernetes URL for the specified service in your local cluster",
+	Long:  `Gets the kubernetes URL for the specified service in your local cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
-		defer api.Close()
-		url, err := cluster.GetServiceURL(api, "kube-system", "kubernetes-dashboard")
-		if err != nil {
-			glog.Errorln("Error accessing the kubernetes dashboard (is minikube running?): Error: ", err)
+		if len(args) == 0 || len(args) > 1 {
+			fmt.Fprintln(os.Stderr, "Please specify a service name.")
 			os.Exit(1)
 		}
-		if dashboardURLMode {
+
+		service := args[0]
+
+		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		defer api.Close()
+		url, err := cluster.GetServiceURL(api, namespace, service)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")
+			os.Exit(1)
+		}
+		if serviceURLMode {
 			fmt.Fprintln(os.Stdout, url)
 		} else {
-			fmt.Fprintln(os.Stdout, "Opening kubernetes dashboard in default browser...")
+			fmt.Fprintln(os.Stdout, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
 			browser.OpenURL(url)
 		}
 	},
 }
 
 func init() {
-	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display the kubernetes dashboard in the CLI instead of opening it in the default browser")
-	RootCmd.AddCommand(dashboardCmd)
+	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
+	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
+	RootCmd.AddCommand(serviceCmd)
 }

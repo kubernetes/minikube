@@ -453,7 +453,7 @@ func TestGetDashboardURL(t *testing.T) {
 	}
 	mockServiceGetter.services["kubernetes-dashboard"] = mockDashboardService
 
-	port, err := getDashboardPortFromServiceGetter(mockServiceGetter)
+	port, err := getServicePortFromServiceGetter(mockServiceGetter, "kubernetes-dashboard")
 	if err != nil {
 		t.Fatalf("Error getting dashboard port from api: Error: ", err)
 	}
