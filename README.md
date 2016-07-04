@@ -189,7 +189,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull reque
 ### Build Instructions
 
 ```shell
-make out/minikube
+make
 ```
 
 ### Run Instructions
