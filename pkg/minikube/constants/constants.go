@@ -47,18 +47,10 @@ var LogFlags = [...]string{
 	"vmodule",
 }
 
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"vmwarefusion",
-	"kvm",
-	"xhyve",
-}
-
 const (
-	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.4.iso"
-	DefaultMemory   = 1024
-	DefaultCPUS     = 1
-	DefaultVMDriver = "virtualbox"
+	DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.4.iso"
+	DefaultMemory = 1024
+	DefaultCPUS   = 1
 )
 
 const (
