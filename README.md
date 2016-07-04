@@ -37,7 +37,7 @@ the following drivers:
 
 * virtualbox
 * vmwarefusion
-* kvm ([driver installation](DRIVERS.md#kvm-driver))
+* kvm
 * xhyve ([driver installation](DRIVERS.md#xhyve-driver))
 
 Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
