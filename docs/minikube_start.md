@@ -18,7 +18,7 @@ minikube start
       --cpus=1: Number of CPUs allocated to the minikube VM
       --iso-url="https://storage.googleapis.com/minikube/minikube-0.4.iso": Location of the minikube iso
       --memory=1024: Amount of RAM allocated to the minikube VM
-      --vm-driver="kvm": VM driver is one of: [virtualbox kvm]
+      --vm-driver="virtualbox": VM driver is one of: [virtualbox kvm]
 ```
 
 ### Options inherited from parent commands
