@@ -40,11 +40,6 @@ K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION)
 LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldflags '-static'"
 
-clean:
-	rm -rf $(GOPATH)
-	rm -rf $(BUILD_DIR)
-	rm pkg/minikube/cluster/assets.go
-
 MKGOPATH := mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH)) && ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
 
 LOCALKUBEFILES := $(shell go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
@@ -86,3 +81,8 @@ pkg/minikube/cluster/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/is
 $(GOPATH)/bin/go-bindata:
 	$(MKGOPATH)
 	go get github.com/jteeuwen/go-bindata/...
+
+clean:
+	rm -rf $(GOPATH)
+	rm -rf $(BUILD_DIR)
+	rm pkg/minikube/cluster/assets.go
