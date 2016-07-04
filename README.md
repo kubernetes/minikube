@@ -135,6 +135,13 @@ To access the [Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/), 
 minikube dashboard
 ```
 
+### Services
+
+To access a service exposed via a node port, run this command in a shell after starting minikube to get the address:
+```shell
+minikube service [-n NAMESPACE] [--url] NAME
+```
+
 ## Networking
 
 The minikube VM is exposed to the host system via a host-only IP address, that can be obtained with the `minikube ip` command.
