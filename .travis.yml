@@ -1,7 +1,15 @@
+sudo: required
 language: go
 
+matrix:
+  include:
+    - os: linux
+      dist: trusty
+    - os: osx
+      osx_image: xcode7.3
+
 go:
-  - 1.6
+  - 1.6.2
 # We shouldn't need to install anything because we use vendoring.
 install:
 - echo "Don't run anything."
