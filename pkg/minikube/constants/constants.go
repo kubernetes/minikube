@@ -48,9 +48,10 @@ var LogFlags = [...]string{
 }
 
 const (
-	DefaultIsoUrl = "https://storage.googleapis.com/minikube/minikube-0.4.iso"
-	DefaultMemory = 1024
-	DefaultCPUS   = 1
+	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.4.iso"
+	DefaultMemory   = 1024
+	DefaultCPUS     = 1
+	DefaultVMDriver = "virtualbox"
 )
 
 const (
