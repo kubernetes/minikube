@@ -1236,10 +1236,6 @@
 			"Rev": "3433f3ea46d9f8019119e7dd41274e112a2359a9"
 		},
 		{
-			"ImportPath": "github.com/johanneswuerbach/nfsexports",
-			"Rev": "a9068f3f0daa39616953aec11c3eb1209ebc4086"
-		},
-		{
 			"ImportPath": "github.com/jonboulle/clockwork",
 			"Rev": "3f831b65b61282ba6bece21b91beea2edc4c887a"
 		},
@@ -1771,21 +1767,6 @@
 		{
 			"ImportPath": "github.com/xiang90/probing",
 			"Rev": "6a0cc1ae81b4cc11db5e491e030e4b98fba79c19"
-		},
-		{
-			"ImportPath": "github.com/zchee/docker-machine-driver-xhyve/b2d",
-			"Comment": "v0.2.2-30-gbab71ca",
-			"Rev": "bab71ca2c59b1dd70da88023caed5363d0a2cf8a"
-		},
-		{
-			"ImportPath": "github.com/zchee/docker-machine-driver-xhyve/vmnet",
-			"Comment": "v0.2.2-30-gbab71ca",
-			"Rev": "bab71ca2c59b1dd70da88023caed5363d0a2cf8a"
-		},
-		{
-			"ImportPath": "github.com/zchee/docker-machine-driver-xhyve/xhyve",
-			"Comment": "v0.2.2-30-gbab71ca",
-			"Rev": "bab71ca2c59b1dd70da88023caed5363d0a2cf8a"
 		},
 		{
 			"ImportPath": "go4.org/errorutil",
