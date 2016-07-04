@@ -19,8 +19,10 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
 
 ### Requirements
 
-* [VirtualBox](https://www.virtualbox.org/wiki/Downloads), [VMware Fusion](https://www.vmware.com/products/fusion)
-or [KVM](http://www.linux-kvm.org/) installation
+* OS X
+    * [xhyve driver](DRIVERS.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion) installation
+* Linux
+    * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](http://www.linux-kvm.org/) installation, 
 * VT-x/AMD-v virtualization must be enabled in BIOS
 
 ### Instructions
@@ -35,7 +37,8 @@ the following drivers:
 
 * virtualbox
 * vmwarefusion
-* kvm ([driver installation](#kvm-driver))
+* kvm ([driver installation](DRIVERS.md#kvm-driver))
+* xhyve ([driver installation](DRIVERS.md#xhyve-driver))
 
 Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
 
@@ -70,19 +73,10 @@ Stopping local Kubernetes cluster...
 Stopping "minikubeVM"...
 ```
 
-### Driver plugin installation
+### Driver plugins
 
-Minikube uses Docker Machine to manage the Kubernetes VM so it benefits from the
-driver plugin architecture that Docker Machine uses to provide a consistent way to
-manage various VM providers. Minikube embeds VirtualBox and VMware Fusion drivers
-so there are no additional steps to use them. However, other drivers require an
-extra binary to be present in the host PATH.
-
-#### KVM driver
-
-Download the `docker-machine-driver-kvm` binary from
-https://github.com/dhiltgen/docker-machine-kvm/releases and put it somewhere in
-your PATH. Minikube is currently tested against `docker-machine-driver-kvm` 0.7.0.
+See [DRIVERS](DRIVERS.md) for details on supported drivers and how to install
+plugins, if required.
 
 ### Reusing the Docker daemon
 
