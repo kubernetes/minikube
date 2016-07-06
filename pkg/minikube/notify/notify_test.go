@@ -43,26 +43,26 @@ func TestShouldCheckURL(t *testing.T) {
 	// test that if users disable update notification in config, the URL version does not get checked
 	viper.Set(config.WantUpdateNotification, false)
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
-		t.Fatalf("Error: shouldCheckURLVersion returned true even though config had WantUpdateNotification: false")
+		t.Fatalf("shouldCheckURLVersion returned true even though config had WantUpdateNotification: false")
 	}
 
 	// test that if users want update notification, the URL version does get checked
 	viper.Set(config.WantUpdateNotification, true)
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) == false {
-		t.Fatalf("Error: shouldCheckURLVersion returned false even though there was no last_update_check file")
+		t.Fatalf("shouldCheckURLVersion returned false even though there was no last_update_check file")
 	}
 
 	// test that update notifications get triggered if it has been longer than 24 hours
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 	writeTimeToFile(lastUpdateCheckFilePath, time.Time{}) //time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) == false {
-		t.Fatalf("Error: shouldCheckURLVersion returned false even though longer than 24 hours since last update")
+		t.Fatalf("shouldCheckURLVersion returned false even though longer than 24 hours since last update")
 	}
 
 	// test that update notifications do not get triggered if it has been less than 24 hours
 	writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) == true {
-		t.Fatalf("Error: shouldCheckURLVersion returned false even though longer than 24 hours since last update")
+		t.Fatalf("shouldCheckURLVersion returned false even though longer than 24 hours since last update")
 	}
 
 }
@@ -129,7 +129,7 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 
 	_, err := getLatestVersionFromURL(server.URL)
 	if err == nil {
-		t.Fatalf("Error: ")
+		t.Fatalf("Malformed version value was returned from URL but no error was thrown")
 	}
 }
 
