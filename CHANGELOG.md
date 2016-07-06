@@ -1,5 +1,13 @@
 # Minikube Release Notes
 
+## Version 0.5.0 - 7/6/2016
+* Updated Kubernetes components to v1.3.0
+* Added experimental support for KVM and XHyve based drivers. See the [drivers documentation](DRIVERS.md) for usage.
+* Fixed a bug causing cluster state to be deleted after a `minikube stop`.
+* Fixed a bug causing the minikube logs to fill up rapidly.
+* Added a new `minikube service` command, to open a browser to the URL for a given service.
+* Added a `--cpus` flag to `minikube start`.
+
 ## Version 0.4.0 - 6/27/2016
 * Updated Kubernetes components to v1.3.0-beta.1
 * Updated the Kubernetes Dashboard to v1.1.0
