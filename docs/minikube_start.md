@@ -16,7 +16,7 @@ minikube start
 
 ```
       --cpus=1: Number of CPUs allocated to the minikube VM
-      --iso-url="https://storage.googleapis.com/minikube/minikube-0.4.iso": Location of the minikube iso
+      --iso-url="https://storage.googleapis.com/minikube/minikube-0.5.iso": Location of the minikube iso
       --memory=1024: Amount of RAM allocated to the minikube VM
       --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion kvm xhyve]
 ```
