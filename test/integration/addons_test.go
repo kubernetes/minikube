@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	addonManagerCmd = []string{"get", "pod", "kube-addon-manager-127.0.0.1", "--namespace=kube-system"}
+	addonManagerCmd = []string{"get", "pod", "kube-addon-manager-minikubevm", "--namespace=kube-system"}
 	dashboardRcCmd  = []string{"get", "rc", "kubernetes-dashboard", "--namespace=kube-system"}
 	dashboardSvcCmd = []string{"get", "svc", "kubernetes-dashboard", "--namespace=kube-system"}
 )
