@@ -25,11 +25,17 @@ import (
 )
 
 func main() {
-	schemaPath, _ := filepath.Abs("deploy/minikube/schema.json")
+	validateSchema("deploy/minikube/schema.json", "deploy/minikube/releases.json")
+	validateSchema("deploy/minikube/k8s_schema.json", "deploy/minikube/k8s_releases.json")
+	os.Exit(0)
+}
+
+func validateSchema(schemaPathString string, docPathString string) {
+	schemaPath, _ := filepath.Abs(schemaPathString)
 	schemaUri := "file://" + schemaPath
 	schemaLoader := gojsonschema.NewReferenceLoader(schemaUri)
 
-	docPath, _ := filepath.Abs("deploy/minikube/releases.json")
+	docPath, _ := filepath.Abs(docPathString)
 	docUri := "file://" + docPath
 	docLoader := gojsonschema.NewReferenceLoader(docUri)
 
@@ -39,14 +45,12 @@ func main() {
 	}
 
 	if result.Valid() {
-		fmt.Printf("The document is valid\n")
-		os.Exit(0)
+		fmt.Printf("The document %s is valid\n", docPathString)
 	} else {
-		fmt.Printf("The document is not valid. see errors :\n")
+		fmt.Printf("The document %s is not valid. see errors :\n", docPathString)
 		for _, desc := range result.Errors() {
 			fmt.Printf("- %s\n", desc)
 		}
 		os.Exit(1)
 	}
-
 }

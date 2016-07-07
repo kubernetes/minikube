@@ -25,6 +25,7 @@ Minikube is a CLI tool that provisions and manages single-node Kubernetes cluste
 * [minikube dashboard](minikube_dashboard.md)	 - Opens/displays the kubernetes dashboard URL for your local cluster
 * [minikube delete](minikube_delete.md)	 - Deletes a local kubernetes cluster.
 * [minikube docker-env](minikube_docker-env.md)	 - sets up docker env variables; similar to '$(docker-machine env)'
+* [minikube get-k8s-versions](minikube_get-k8s-versions.md)	 - Gets the list of available kubernetes versions available for minikube.
 * [minikube ip](minikube_ip.md)	 - Retrieve the IP address of the running cluster.
 * [minikube logs](minikube_logs.md)	 - Gets the logs of the running localkube instance, used for debugging minikube, not user code.
 * [minikube service](minikube_service.md)	 - Gets the kubernetes URL for the specified service in your local cluster
