@@ -241,6 +241,7 @@ func SetupCerts(d drivers.Driver) error {
 	if err != nil {
 		return err
 	}
+	glog.Infoln("Setting up certificates for IP: %s", ipStr)
 
 	ip := net.ParseIP(ipStr)
 	publicPath := filepath.Join(localPath, "apiserver.crt")
