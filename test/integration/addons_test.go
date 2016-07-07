@@ -56,7 +56,7 @@ func TestAddons(t *testing.T) {
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(10, checkAddon, 5*time.Second); err != nil {
+	if err := commonutil.RetryAfter(20, checkAddon, 5*time.Second); err != nil {
 		t.Fatalf("Addon Manager pod is unhealthy: %s", err)
 	}
 }
