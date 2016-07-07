@@ -85,4 +85,4 @@ $(GOPATH)/bin/go-bindata:
 clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
-	rm pkg/minikube/cluster/assets.go
+	rm -f pkg/minikube/cluster/assets.go
