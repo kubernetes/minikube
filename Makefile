@@ -79,7 +79,7 @@ pkg/minikube/cluster/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/is
 
 $(GOPATH)/bin/go-bindata:
 	$(MKGOPATH)
-	go get github.com/jteeuwen/go-bindata/...
+	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: clean
 clean:
