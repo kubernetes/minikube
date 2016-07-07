@@ -30,7 +30,6 @@ else
 	GOPATH := $(shell pwd)/_gopath
 endif
 
-
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
@@ -80,7 +79,7 @@ pkg/minikube/cluster/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/is
 
 $(GOPATH)/bin/go-bindata:
 	$(MKGOPATH)
-	go get github.com/jteeuwen/go-bindata/...
+	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 clean:
 	rm -rf $(GOPATH)
