@@ -22,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/docker/go-units"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
@@ -37,6 +38,7 @@ var (
 	minikubeISO string
 	memory      int
 	cpus        int
+	disk        = newUnitValue(20 * units.GB)
 	vmDriver    string
 )
 
@@ -58,8 +60,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		MinikubeISO: minikubeISO,
 		Memory:      memory,
 		CPUs:        cpus,
+		DiskSize:    int(*disk / units.MB),
 		VMDriver:    vmDriver,
 	}
+
+	fmt.Println(config.DiskSize)
 
 	var host *host.Host
 	start := func() (err error) {
@@ -154,5 +159,7 @@ func init() {
 	startCmd.Flags().StringVarP(&vmDriver, "vm-driver", "", constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().IntVarP(&memory, "memory", "", constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
 	startCmd.Flags().IntVarP(&cpus, "cpus", "", constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
+	diskFlag := startCmd.Flags().VarPF(disk, "disk-size", "", "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
+	diskFlag.DefValue = constants.DefaultDiskSize
 	RootCmd.AddCommand(startCmd)
 }
