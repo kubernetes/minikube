@@ -86,3 +86,10 @@ clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
 	rm -f pkg/minikube/cluster/assets.go
+
+.PHONY: gendocs
+gendocs: docs/minikube.md
+
+docs/minikube.md: $(shell find cmd) pkg/minikube/cluster/assets.go
+	$(MKGOPATH)
+	cd $(GOPATH)/src/$(REPOPATH) && go run gen_help_text.go
