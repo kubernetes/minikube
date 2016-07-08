@@ -17,7 +17,6 @@ limitations under the License.
 package sshutil
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -60,7 +59,7 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 }
 
 // Transfer uses an SSH session to copy a file to the remote machine.
-func Transfer(data []byte, remotedir, filename string, perm string, c *ssh.Client) error {
+func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm string, c *ssh.Client) error {
 	// Delete the old file first. This makes sure permissions get reset.
 	deleteCmd := fmt.Sprintf("sudo rm -f %s", filepath.Join(remotedir, filename))
 	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", remotedir)
@@ -86,9 +85,8 @@ func Transfer(data []byte, remotedir, filename string, perm string, c *ssh.Clien
 	go func() {
 		defer wg.Done()
 		defer w.Close()
-		header := fmt.Sprintf("C%s %d %s\n", perm, len(data), filename)
+		header := fmt.Sprintf("C%s %d %s\n", perm, readerLen, filename)
 		fmt.Fprint(w, header)
-		reader := bytes.NewReader(data)
 		io.Copy(w, reader)
 		fmt.Fprint(w, "\x00")
 	}()

@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -232,24 +233,29 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 		return err
 	}
 	if localkubeURLWasSpecified(config) {
-		cmd := GetLocalkubeDownloadCommand(config.KubernetesVersion)
-		glog.Infoln(cmd)
-		output, err := h.RunSSHCommand(cmd)
-		glog.Infoln(output)
+		resp, err := http.Get(util.GetLocalkubeDownloadURL(config.KubernetesVersion,
+			constants.LocalkubeLinuxFilename))
 		if err != nil {
 			return err
 		}
-	} else {
-		contents, err := Asset("out/localkube")
-		if err != nil {
-			glog.Infof("Error loading asset %s: %s", "out/localkube", err)
+		if err := sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
+			"localkube", "0777",
+			client); err != nil {
 			return err
 		}
 
-		if err := sshutil.Transfer(contents, "/usr/local/bin", "localkube", "0777", client); err != nil {
+	} else {
+		contents, err := Asset("out/localkube")
+		if err != nil {
+			glog.Infof("Error loading asset out/localkube: %s", err)
+			return err
+		}
+		if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
+			"localkube", "0777", client); err != nil {
 			return err
 		}
 	}
+
 	for _, a := range assets {
 		contents, err := Asset(a.AssetName)
 		if err != nil {
@@ -257,7 +263,7 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 			return err
 		}
 
-		if err := sshutil.Transfer(contents, a.TargetDir, a.TargetName, a.Permissions, client); err != nil {
+		if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), a.TargetDir, a.TargetName, a.Permissions, client); err != nil {
 			return err
 		}
 	}
@@ -266,10 +272,7 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 
 func localkubeURLWasSpecified(config KubernetesConfig) bool {
 	//see if flag is different than default -> it was passed by user
-	if config.KubernetesVersion != constants.DefaultKubernetesVersion {
-		return true
-	}
-	return false
+	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
@@ -305,7 +308,7 @@ func SetupCerts(d drivers.Driver) error {
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		if err := sshutil.Transfer(data, util.DefaultCertPath, cert, perms, client); err != nil {
+		if err := sshutil.Transfer(bytes.NewReader(data), len(data), util.DefaultCertPath, cert, perms, client); err != nil {
 			return err
 		}
 	}
