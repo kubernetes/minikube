@@ -81,6 +81,13 @@ $(GOPATH)/bin/go-bindata:
 	$(MKGOPATH)
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
+.PHONY: cross
+cross: out/localkube
+	GOOS=linux GOARCH=amd64 make out/minikube-linux-amd64
+	GOOS=darwin GOARCH=amd64 make out/minikube-darwin-amd64
+	GOOS=windows GOARCH=amd64 make out/minikube-windows-amd64
+	mv out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+
 .PHONY: clean
 clean:
 	rm -rf $(GOPATH)
