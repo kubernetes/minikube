@@ -22,6 +22,7 @@ import (
 	flag "github.com/spf13/pflag"
 
 	"k8s.io/minikube/pkg/localkube"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -37,7 +38,7 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 		LocalkubeDirectory:       util.DefaultLocalkubeDirectory,
 		ServiceClusterIPRange:    *defaultServiceClusterIPRange,
 		APIServerAddress:         net.ParseIP("0.0.0.0"),
-		APIServerPort:            443,
+		APIServerPort:            constants.APIServerPort,
 		APIServerInsecureAddress: net.ParseIP("127.0.0.1"),
 		APIServerInsecurePort:    8080,
 		ShouldGenerateCerts:      true,
