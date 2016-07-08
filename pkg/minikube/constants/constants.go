@@ -47,13 +47,6 @@ var LogFlags = [...]string{
 	"vmodule",
 }
 
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"vmwarefusion",
-	"kvm",
-	"xhyve",
-}
-
 const (
 	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.5.iso"
 	DefaultMemory   = 1024

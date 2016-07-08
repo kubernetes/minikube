@@ -1,10 +1,17 @@
+sudo: required
+dist: trusty
+
 language: go
 
 go:
-  - 1.6
+- 1.6.2
+before_install:
+- sudo apt-get -qq update
+- sudo apt-get install -y libvirt-dev qemu-kvm libvirt-bin
+- sudo usermod -a -G libvirtd $USER
 # We shouldn't need to install anything because we use vendoring.
 install:
 - echo "Don't run anything."
 
 # Run unit tests and linters.
-script: make test
+script: sudo -E su $USER -c "env PATH=$PATH make test"

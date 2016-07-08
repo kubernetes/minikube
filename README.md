@@ -37,7 +37,7 @@ the following drivers:
 
 * virtualbox
 * vmwarefusion
-* kvm ([driver installation](DRIVERS.md#kvm-driver))
+* kvm
 * xhyve ([driver installation](DRIVERS.md#xhyve-driver))
 
 Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
@@ -186,6 +186,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull reque
 * A recent Go distribution (>1.6)
 * If you're not on Linux, you'll need a Docker installation
 * Minikube requires at least 4GB of RAM to compile, which can be problematic when using docker-machine
+* If you're on Linux, you'll need to have the following packages installed to build and run tests: libvirt-dev qemu-kvm libvirt-bin
 
 ### Build Instructions
 

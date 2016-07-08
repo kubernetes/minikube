@@ -26,6 +26,13 @@ import (
 	"github.com/golang/glog"
 )
 
+func init() {
+	// As this is an array literal it needs to have the same lenth as the original
+	// declaration, 15, hence the empty strings padding out the array
+	localbinary.CoreDrivers = [...]string{"virtualbox", "vmwarefusion",
+		"", "", "", "", "", "", "", "", "", "", "", "", ""}
+}
+
 // StartDriver starts the desired machine driver if necessary.
 func StartDriver() {
 	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {

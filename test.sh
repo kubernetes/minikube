@@ -29,7 +29,7 @@ fi
 echo "Running go tests..."
 cd ${GOPATH}/src/${REPO_PATH}
 TESTS=$(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...)
-go test -v ${TESTS}
+CGO_ENABLED=1 go test -v ${TESTS}
 
 # Ignore these paths in the following tests.
 ignore="vendor\|\_gopath\|assets.go"
@@ -56,7 +56,7 @@ echo "Checking help documentation..."
 if [[ $(git diff) ]]; then
   echo "Skipping help text check because the git state is dirty."
 else
-  go run gen_help_text.go
+  CGO_ENABLED=1 go run gen_help_text.go
   files=$(git diff)
   if [[ $files ]]; then
     echo "Help text is out of date: $files \n Please run \"go run gen_help_text.go\"\n and make sure that those doc changes are committed"
@@ -67,4 +67,4 @@ else
 fi
 
 echo "Checking releases.json schema"
-go run deploy/minikube/schema_check.go
+CGO_ENABLED=1 go run deploy/minikube/schema_check.go
