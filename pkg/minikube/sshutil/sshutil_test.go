@@ -17,6 +17,7 @@ limitations under the License.
 package sshutil
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -109,7 +110,8 @@ func TestTransfer(t *testing.T) {
 	}
 
 	dest := "bar"
-	if err := Transfer([]byte("testcontents"), "/tmp", dest, "0777", c); err != nil {
+	contents := []byte("testcontents")
+	if err := Transfer(bytes.NewReader(contents), len(contents), "/tmp", dest, "0777", c); err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 }

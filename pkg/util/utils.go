@@ -21,6 +21,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Until endlessly loops the provided function until a message is received on the done channel.
@@ -75,4 +77,11 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 		time.Sleep(d)
 	}
 	return err
+}
+
+func GetLocalkubeDownloadURL(version string, filename string) string {
+	if strings.HasPrefix(version, "http://") {
+		return version
+	}
+	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, version, filename)
 }

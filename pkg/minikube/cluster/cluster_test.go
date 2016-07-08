@@ -19,6 +19,7 @@ package cluster
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -542,14 +543,14 @@ func TestUpdateDefault(t *testing.T) {
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}
-
-	//TODO: aprindle: add test for localkube versioning
 }
+
+var test_localkube_binary = "hello"
 
 type K8sVersionHandlerCorrect struct{}
 
 func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "test/test-localkube")
+	io.WriteString(w, test_localkube_binary)
 }
 
 func TestUpdateKubernetesVersion(t *testing.T) {
@@ -580,9 +581,8 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 	transferred := s.Transfers.Bytes()
 
 	//test that localkube is transferred properly
-	contents, _ := Asset("test/test-localkube")
+	contents := []byte(test_localkube_binary)
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}
-
 }

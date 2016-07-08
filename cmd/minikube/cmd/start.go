@@ -71,7 +71,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		KubernetesVersion: kubernetesVersion,
 	}
 
-	fmt.Println(config.DiskSize)
 	var host *host.Host
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)

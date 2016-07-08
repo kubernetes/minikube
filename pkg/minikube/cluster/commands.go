@@ -31,9 +31,6 @@ var startCommandFmtStr = `
 # Run with nohup so it stays up. Redirect logs to useful places.
 sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true > %s 2> %s < /dev/null &'
 `
-
-var localkubeDownloadFmtStr = `sudo curl -sSL --retry 5 -o /usr/local/bin/localkube %s && sudo chmod 0777 /usr/local/bin/localkube`
-
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
 
 func GetStartCommand() string {
@@ -45,8 +42,4 @@ func GetStartCommand() string {
 	}
 	flags := strings.Join(flagVals, " ")
 	return fmt.Sprintf(startCommandFmtStr, flags, constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
-}
-
-func GetLocalkubeDownloadCommand(versionUrl string) string {
-	return fmt.Sprintf(localkubeDownloadFmtStr, versionUrl)
 }
