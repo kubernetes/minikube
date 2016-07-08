@@ -464,6 +464,17 @@ func TestGetDashboardURL(t *testing.T) {
 
 }
 
+func TestGetServiceURLWithoutNodePort(t *testing.T) {
+	mockServiceGetter := NewMockServiceGetter()
+	mockDashboardService := api.Service{}
+	mockServiceGetter.services["mock-service"] = mockDashboardService
+
+	_, err := getServicePortFromServiceGetter(mockServiceGetter, "mock-service")
+	if err == nil {
+		t.Fatalf("Expected error getting service with no node port")
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
