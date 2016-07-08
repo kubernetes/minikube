@@ -50,7 +50,7 @@ func createKVMHost(config MachineConfig) *kvmDriver {
 		Network:        "default",
 		PrivateNetwork: "docker-machines",
 		Boot2DockerURL: config.MinikubeISO,
-		DiskSize:       20000,
+		DiskSize:       config.DiskSize,
 		DiskPath:       filepath.Join(constants.Minipath, "machines", constants.MachineName, fmt.Sprintf("%s.img", constants.MachineName)),
 		ISO:            filepath.Join(constants.Minipath, "machines", constants.MachineName, "boot2docker.iso"),
 		CacheMode:      "default",
