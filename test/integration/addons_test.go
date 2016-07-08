@@ -20,6 +20,7 @@ package integration
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -30,7 +31,7 @@ import (
 )
 
 var (
-	addonManagerCmd = []string{"get", "pod", "kube-addon-manager-minikubevm", "--namespace=kube-system"}
+	addonManagerCmd = []string{"get", "pods", "--namespace=kube-system"}
 	dashboardRcCmd  = []string{"get", "rc", "kubernetes-dashboard", "--namespace=kube-system"}
 	dashboardSvcCmd = []string{"get", "svc", "kubernetes-dashboard", "--namespace=kube-system"}
 )
@@ -45,15 +46,22 @@ func TestAddons(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	checkAddon := func() error {
-		p := api.Pod{}
-		if err := kubectlRunner.RunCommandParseOutput(addonManagerCmd, &p); err != nil {
+		pods := api.PodList{}
+		if err := kubectlRunner.RunCommandParseOutput(addonManagerCmd, &pods); err != nil {
 			return err
 		}
 
-		if p.Status.Phase != "Running" {
-			return fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)
+		for _, p := range pods.Items {
+			if strings.HasPrefix(p.ObjectMeta.Name, "kube-addon-manager-") {
+				if p.Status.Phase == "Running" {
+					return nil
+				} else {
+					return fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)
+				}
+			}
 		}
-		return nil
+
+		return fmt.Errorf("Addon manager not found. Found pods: %s", pods)
 	}
 
 	if err := commonutil.RetryAfter(20, checkAddon, 5*time.Second); err != nil {
