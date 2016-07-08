@@ -62,8 +62,8 @@ const (
 )
 
 const (
-	RemoteLocalKubeErrPath = "/var/log/localkube.err"
-	RemoteLocalKubeOutPath = "/var/log/localkube.out"
+	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
+	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
 )
 
 var ConfigFilePath = MakeMiniPath("config")
