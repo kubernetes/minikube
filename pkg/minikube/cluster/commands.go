@@ -29,7 +29,7 @@ var stopCommand = "sudo killall localkube | true"
 
 var startCommandFmtStr = `
 # Run with nohup so it stays up. Redirect logs to useful places.
-PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true > %s 2> %s < /dev/null &
+sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup sudo /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true > %s 2> %s < /dev/null &'
 `
 
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
