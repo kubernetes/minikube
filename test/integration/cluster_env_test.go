@@ -36,7 +36,7 @@ func TestClusterEnv(t *testing.T) {
 
 	dockerEnvVars := minikubeRunner.RunCommand("docker-env", true)
 	if err := minikubeRunner.SetEnvFromEnvCmdOutput(dockerEnvVars); err != nil {
-		t.Fatalf("Error: No environment variables were found in docker-env command output: ", dockerEnvVars)
+		t.Fatalf("Error parsing output: %s", err)
 	}
 	path, err := exec.LookPath("docker")
 
