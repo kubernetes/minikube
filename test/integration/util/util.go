@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -65,17 +66,16 @@ func (m *MinikubeRunner) EnsureRunning() {
 }
 
 func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
-	lines := strings.Split(dockerEnvVars, "\n")
-	var envKey, envVal string
+	re := regexp.MustCompile("export (.+?)=(.+?)\n")
+	matches := re.FindAllStringSubmatch(dockerEnvVars, -1)
 	seenEnvVar := false
-	for _, line := range lines {
-		if _, err := fmt.Sscanf(line, "export %s=%s", envKey, envVal); err != nil {
-			seenEnvVar = true
-			os.Setenv(envKey, envVal)
-		}
+	for _, m := range matches {
+		seenEnvVar = true
+		key, val := m[1], m[2]
+		os.Setenv(key, val)
 	}
-	if seenEnvVar == false {
-		return fmt.Errorf("Error: No environment variables were found in docker-env command output: ", dockerEnvVars)
+	if !seenEnvVar {
+		return fmt.Errorf("Error: No environment variables were found in docker-env command output: %s", dockerEnvVars)
 	}
 	return nil
 }
