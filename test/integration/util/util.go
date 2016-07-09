@@ -29,6 +29,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/kubernetes/pkg/api"
 )
 
 type MinikubeRunner struct {
@@ -147,4 +149,12 @@ func genRandString(strLen int) string {
 func (k *KubectlRunner) DeleteNamespace(namespace string) error {
 	_, err := k.RunCommand([]string{"delete", "namespace", namespace})
 	return err
+}
+
+func (k *KubectlRunner) GetPod(name, namespace string) *api.Pod {
+	p := &api.Pod{}
+	if err := k.RunCommandParseOutput([]string{"get", "pod", name, "--namespace=" + namespace}, p); err != nil {
+		k.T.Fatalf("Error checking pod status: %s", err)
+	}
+	return p
 }

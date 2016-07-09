@@ -50,11 +50,9 @@ func TestClusterDNS(t *testing.T) {
 		}
 		defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath, "--namespace=" + podNamespace})
 
-		p := api.Pod{}
+		p := &api.Pod{}
 		for p.Status.Phase != "Running" {
-			if err := kubectlRunner.RunCommandParseOutput([]string{"get", "pod", podName, "--namespace=" + podNamespace}, &p); err != nil {
-				return err
-			}
+			p = kubectlRunner.GetPod(podName, podNamespace)
 		}
 
 		dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName, "--namespace=" + podNamespace,
