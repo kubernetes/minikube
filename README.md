@@ -24,6 +24,9 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
 * Linux
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](http://www.linux-kvm.org/) installation, 
 * VT-x/AMD-v virtualization must be enabled in BIOS
+* `kubectl` must be on your path. Minikube currently supports any version of `kubectl` greater than 1.0, but we recommend using the most recent version.
+  You can install kubectl with [these steps](http://kubernetes.io/docs/getting-started-guides/minikube/#download-kubectl).
+  
 
 ### Instructions
 
