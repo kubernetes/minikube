@@ -61,6 +61,7 @@ const (
 	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.5.iso"
 	DefaultMemory   = 1024
 	DefaultCPUS     = 1
+	DefaultDiskSize = "20g"
 	DefaultVMDriver = "virtualbox"
 )
 

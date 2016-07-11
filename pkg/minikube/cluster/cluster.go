@@ -161,6 +161,7 @@ type MachineConfig struct {
 	MinikubeISO string
 	Memory      int
 	CPUs        int
+	DiskSize    int
 	VMDriver    string
 }
 
@@ -277,6 +278,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		d.Boot2DockerURL = config.MinikubeISO
 		d.Memory = config.Memory
 		d.CPU = config.CPUs
+		d.DiskSize = int(config.DiskSize)
 		driver = d
 	case "vmwarefusion":
 		driver = createVMwareFusionHost(config)
