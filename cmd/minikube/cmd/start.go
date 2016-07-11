@@ -109,6 +109,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		os.Exit(1)
 	}
+
+	// We have to reset all secrets because we regenerated certs.
+	if err := cluster.ResetSecrets(); err != nil {
+		glog.Errorln("Error resetting secrets: ", err)
+		os.Exit(1)
+	}
 	fmt.Println("Kubectl is now configured to use the cluster.")
 }
 

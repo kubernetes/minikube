@@ -436,18 +436,57 @@ func getServicePortFromServiceGetter(services serviceGetter, service string) (in
 	return nodePort, nil
 }
 
-func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+func getKubeClient() (*unversioned.Client, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return nil, err
 	}
-	client, err := unversioned.New(config)
+	return unversioned.New(config)
+}
+
+func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+	client, err := getKubeClient()
 	if err != nil {
 		return nil, err
 	}
 	services := client.Services(namespace)
 	return services, nil
+}
+
+type secretClient interface {
+	List(kubeApi.ListOptions) (*kubeApi.SecretList, error)
+	Update(*kubeApi.Secret) (*kubeApi.Secret, error)
+}
+
+func ResetSecrets() error {
+	glog.Infoln("Resetting kube-system secrets.")
+	client, err := getKubeClient()
+	if err != nil {
+		return err
+	}
+	sc := client.Secrets("kube-system")
+	reset := func() error {
+		return doResets(sc)
+	}
+
+	// Keep trying in case the API server hasn't come up yet.
+	return util.RetryAfter(5, reset, 1)
+}
+
+func doResets(sc secretClient) error {
+	secrets, err := sc.List(kubeApi.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, s := range secrets.Items {
+		glog.Infoln("Resetting secret:", s.GetName())
+		delete(s.Data, "token")
+		if _, err := sc.Update(&s); err != nil {
+			return err
+		}
+	}
+	return nil
 }
