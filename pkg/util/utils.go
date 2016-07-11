@@ -21,6 +21,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 // Until endlessly loops the provided function until a message is received on the done channel.
@@ -72,6 +74,7 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 		if err == nil {
 			return nil
 		}
+		glog.Infoln("Error: %s. Retrying in %s.", err, d)
 		time.Sleep(d)
 	}
 	return err

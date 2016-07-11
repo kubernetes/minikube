@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/kubernetes/pkg/api"
+	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -500,5 +501,64 @@ func TestUpdate(t *testing.T) {
 		if !bytes.Contains(transferred, contents) {
 			t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 		}
+	}
+}
+
+type mockSecretClient struct {
+	secrets     []kubeApi.Secret
+	updateError bool
+}
+
+func (m *mockSecretClient) Update(s *kubeApi.Secret) (*kubeApi.Secret, error) {
+	if m.updateError {
+		return nil, fmt.Errorf("Error updating secret!")
+	}
+	for pos, secret := range m.secrets {
+		if s.GetName() == secret.GetName() {
+			m.secrets[pos] = *s
+			return s, nil
+		}
+	}
+	return nil, fmt.Errorf("Secret %s not found.", s.GetName())
+}
+
+func (m *mockSecretClient) List(o api.ListOptions) (*kubeApi.SecretList, error) {
+	l := kubeApi.SecretList{}
+	l.Items = m.secrets
+	return &l, nil
+}
+
+func (m *mockSecretClient) MakeSecrets() {
+	for i := 0; i < 5; i++ {
+		s := kubeApi.Secret{
+			Data: map[string][]byte{
+				"token": []byte("token"),
+			},
+		}
+		s.SetName(fmt.Sprintf("%d", i))
+		m.secrets = append(m.secrets, s)
+	}
+}
+
+func TesetResetSecrets(t *testing.T) {
+	sc := mockSecretClient{}
+	sc.MakeSecrets()
+	doResets(&sc)
+
+	for _, s := range sc.secrets {
+		token, ok := s.Data["token"]
+		if ok {
+			t.Fatalf("Secret not reset. Token is: %s", token)
+		}
+	}
+}
+
+func TesetResetSecretsError(t *testing.T) {
+	sc := mockSecretClient{
+		updateError: true,
+	}
+	sc.MakeSecrets()
+	if err := doResets(&sc); err != nil {
+		t.Fatal("Error expected calling doResets.")
 	}
 }
