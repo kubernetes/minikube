@@ -61,6 +61,6 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		CPU:            config.CPUs,
 		Boot2DockerURL: config.MinikubeISO,
 		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=boot2docker",
-		DiskSize:       20000,
+		DiskSize:       int64(config.DiskSize),
 	}
 }
