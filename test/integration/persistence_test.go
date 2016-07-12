@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -65,5 +66,31 @@ func TestPersistence(t *testing.T) {
 	}
 	if err := commonutil.RetryAfter(5, checkPod, 3*time.Second); err != nil {
 		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
+	}
+
+	// Now check the dashboard.
+	checkDashboard := func() error {
+		pods := api.PodList{}
+		cmd := []string{"get", "pods", "--namespace=kube-system", "--selector=app=kubernetes-dashboard"}
+		if err := kubectlRunner.RunCommandParseOutput(cmd, &pods); err != nil {
+			return err
+		}
+		if len(pods.Items) < 1 {
+			return fmt.Errorf("No pods found matching query: %v", cmd)
+		}
+		db := pods.Items[0]
+		for _, cond := range db.Status.Conditions {
+			if cond.Type == "Ready" {
+				if cond.Status == "True" {
+					return nil
+				}
+				return fmt.Errorf("Dashboard pod not healthy. Healthy: %s. Reason: %s", cond.Status, cond.Reason)
+			}
+		}
+		return fmt.Errorf("Unable to find healthy pod condition: %v", db.Status.Conditions)
+	}
+
+	if err := commonutil.RetryAfter(5, checkDashboard, 3*time.Second); err != nil {
+		t.Fatalf("Dashboard pod is not healthy: %s", err)
 	}
 }
