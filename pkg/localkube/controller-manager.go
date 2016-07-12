@@ -35,7 +35,7 @@ func StartControllerManagerServer(lk LocalkubeServer) func() error {
 	config.DeletingPodsBurst = 10
 	config.EnableProfiling = true
 	config.ServiceAccountKeyFile = lk.GetPrivateKeyCertPath()
-	config.RootCAFile = lk.GetPublicKeyCertPath()
+	config.RootCAFile = lk.GetCAPublicKeyCertPath()
 
 	return func() error {
 		return controllerManager.Run(config)

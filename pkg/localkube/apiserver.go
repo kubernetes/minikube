@@ -39,7 +39,7 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.InsecureBindAddress = lk.APIServerInsecureAddress
 	config.InsecurePort = lk.APIServerInsecurePort
 
-	config.ClientCAFile = lk.GetPublicKeyCertPath()
+	config.ClientCAFile = lk.GetCAPublicKeyCertPath()
 	config.TLSCertFile = lk.GetPublicKeyCertPath()
 	config.TLSPrivateKeyFile = lk.GetPrivateKeyCertPath()
 	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,ResourceQuota"
