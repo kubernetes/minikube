@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	certs = []string{"apiserver.crt", "apiserver.key"}
+	certs = []string{"ca.crt", "ca.key", "apiserver.crt", "apiserver.key"}
 )
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
@@ -245,9 +245,11 @@ func SetupCerts(d drivers.Driver) error {
 	glog.Infoln("Setting up certificates for IP: %s", ipStr)
 
 	ip := net.ParseIP(ipStr)
+	caCert := filepath.Join(localPath, "ca.crt")
+	caKey := filepath.Join(localPath, "ca.key")
 	publicPath := filepath.Join(localPath, "apiserver.crt")
 	privatePath := filepath.Join(localPath, "apiserver.key")
-	if err := GenerateCerts(publicPath, privatePath, ip); err != nil {
+	if err := GenerateCerts(caCert, caKey, publicPath, privatePath, ip); err != nil {
 		return err
 	}
 
@@ -262,7 +264,11 @@ func SetupCerts(d drivers.Driver) error {
 		if err != nil {
 			return err
 		}
-		if err := sshutil.Transfer(data, util.DefaultCertPath, cert, "0644", client); err != nil {
+		perms := "0644"
+		if strings.HasSuffix(cert, ".key") {
+			perms = "0600"
+		}
+		if err := sshutil.Transfer(data, util.DefaultCertPath, cert, perms, client); err != nil {
 			return err
 		}
 	}

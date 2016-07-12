@@ -72,6 +72,12 @@ func (lk LocalkubeServer) GetPrivateKeyCertPath() string {
 func (lk LocalkubeServer) GetPublicKeyCertPath() string {
 	return path.Join(lk.GetCertificateDirectory(), "apiserver.crt")
 }
+func (lk LocalkubeServer) GetCAPrivateKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "ca.key")
+}
+func (lk LocalkubeServer) GetCAPublicKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "ca.crt")
+}
 
 func (lk LocalkubeServer) GetAPIServerSecureURL() string {
 	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress.String(), lk.APIServerPort)
@@ -126,6 +132,22 @@ func (lk LocalkubeServer) shouldGenerateCerts(ips []net.IP) bool {
 	return false
 }
 
+func (lk LocalkubeServer) shouldGenerateCACerts() bool {
+	if !(util.CanReadFile(lk.GetCAPublicKeyCertPath()) &&
+		util.CanReadFile(lk.GetCAPrivateKeyCertPath())) {
+		fmt.Println("Regenerating CA certs because the files aren't readable")
+		return true
+	}
+
+	_, err := lk.loadCert(lk.GetCAPublicKeyCertPath())
+	if err != nil {
+		fmt.Println("Regenerating CA certs because there was an error loading the certificate: ", err)
+		return true
+	}
+
+	return false
+}
+
 func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
 	ips := []net.IP{lk.ServiceClusterIPRange.IP}
 	addrs, err := net.InterfaceAddrs()
@@ -144,6 +166,15 @@ func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
 }
 
 func (lk LocalkubeServer) GenerateCerts() error {
+	if !lk.shouldGenerateCACerts() {
+		fmt.Println("Using these existing CA certs: ", lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath())
+	} else {
+		fmt.Println("Creating CA cert")
+		if err := util.GenerateCACert(lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath()); err != nil {
+			fmt.Println("Failed to create CA certs: ", err)
+			return err
+		}
+	}
 
 	ips, err := lk.getAllIPs()
 	if err != nil {
@@ -156,7 +187,7 @@ func (lk LocalkubeServer) GenerateCerts() error {
 	}
 	fmt.Println("Creating cert with IPs: ", ips)
 
-	if err := util.GenerateSelfSignedCert(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, util.GetAlternateDNS(lk.DNSDomain)); err != nil {
+	if err := util.GenerateSignedCert(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, util.GetAlternateDNS(lk.DNSDomain), lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath()); err != nil {
 		fmt.Println("Failed to create certs: ", err)
 		return err
 	}
