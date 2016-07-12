@@ -55,6 +55,7 @@ Kubernetes is available at https://192.168.99.100:8443.
 
 $ kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --port=8080
 deployment "hello-minikube" created
+
 $ kubectl expose deployment hello-minikube --type=NodePort
 service "hello-minikube" exposed
 
@@ -65,9 +66,11 @@ $ kubectl get pod
 NAME                              READY     STATUS              RESTARTS   AGE
 hello-minikube-3383150820-vctvh   1/1       ContainerCreating   0          3s
 # We can see that the pod is still being created from the ContainerCreating status
+
 $ kubectl get pod
 NAME                              READY     STATUS    RESTARTS   AGE
 hello-minikube-3383150820-vctvh   1/1       Running   0          13s
+
 # We can see that the pod is now Running and we will now be able to curl it:
 $ curl $(minikube service hello-minikube --url)
 CLIENT VALUES:
