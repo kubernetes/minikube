@@ -64,8 +64,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		VMDriver:    vmDriver,
 	}
 
-	fmt.Println(config.DiskSize)
-
 	var host *host.Host
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)
@@ -102,7 +100,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// setup kubeconfig
 	name := constants.MinikubeContext
-	certAuth := constants.MakeMiniPath("apiserver.crt")
+	certAuth := constants.MakeMiniPath("ca.crt")
 	clientCert := constants.MakeMiniPath("apiserver.crt")
 	clientKey := constants.MakeMiniPath("apiserver.key")
 	if err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey); err != nil {
