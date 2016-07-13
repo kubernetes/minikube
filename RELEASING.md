@@ -69,3 +69,9 @@ Use this command from a clean git repo:
 ```shell
 gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
 ```
+
+## Mark the release as `latest` in GCS:
+
+```shell
+gsutil cp -r gs://minikube/releases/$RELEASE gs://minikube/releases/latest
+```
