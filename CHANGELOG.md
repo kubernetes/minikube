@@ -1,5 +1,12 @@
 # Minikube Release Notes
 
+## Version 0.6.0 - 7/13/2016
+* Added a `--disk-size` flag to `minikube start`.
+* Fixed a bug regarding auth tokens not being reconfigured properly after VM restart
+* Added a new `get-k8s-versions` command, to get the available kubernetes versions so that users know what versions are available when trying to selct the kubernetes version to use
+* Makefile Updates
+* Documentation Updates
+
 ## Version 0.5.0 - 7/6/2016
 * Updated Kubernetes components to v1.3.0
 * Added experimental support for KVM and XHyve based drivers. See the [drivers documentation](DRIVERS.md) for usage.
