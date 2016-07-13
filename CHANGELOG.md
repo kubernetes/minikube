@@ -3,7 +3,7 @@
 ## Version 0.6.0 - 7/13/2016
 * Added a `--disk-size` flag to `minikube start`.
 * Fixed a bug regarding auth tokens not being reconfigured properly after VM restart
-* Added a new `get-k8s-versions` command, to get the available kubernetes versions so that users know what versions are available when trying to selct the kubernetes version to use
+* Added a new `get-k8s-versions` command, to get the available kubernetes versions so that users know what versions are available when trying to select the kubernetes version to use
 * Makefile Updates
 * Documentation Updates
 
