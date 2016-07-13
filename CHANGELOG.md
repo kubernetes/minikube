@@ -1,5 +1,8 @@
 # Minikube Release Notes
 
+## Version 0.6.0 - 7/13/2016
+* Added...
+
 ## Version 0.5.0 - 7/6/2016
 * Updated Kubernetes components to v1.3.0
 * Added experimental support for KVM and XHyve based drivers. See the [drivers documentation](DRIVERS.md) for usage.
