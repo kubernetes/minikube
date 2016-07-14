@@ -54,33 +54,40 @@ func init() {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	if exists, err := api.Exists(constants.MachineName); err != nil {
+	exists, err := api.Exists(constants.MachineName)
+	if err != nil {
 		return nil, fmt.Errorf("Error checking if host exists: %s", err)
-	} else if exists {
-		glog.Infoln("Machine exists!")
-		h, err := api.Load(constants.MachineName)
-		if err != nil {
-			return nil, fmt.Errorf("Error loading existing host: %s", err)
-		}
-		s, err := h.Driver.GetState()
-		if err != nil {
-			return nil, fmt.Errorf("Error getting state for host: %s", err)
-		}
-		if s != state.Running {
-			if err := h.Driver.Start(); err != nil {
-				return nil, fmt.Errorf("Error starting stopped host: %s", err)
-			}
-			if err := api.Save(h); err != nil {
-				return nil, fmt.Errorf("Error saving started host: %s", err)
-			}
-		}
-		if err := h.ConfigureAuth(); err != nil {
-			return nil, fmt.Errorf("Error configuring auth on host: %s", err)
-		}
-		return h, nil
-	} else {
+	}
+	if !exists {
 		return createHost(api, config)
 	}
+
+	glog.Infoln("Machine exists!")
+	h, err := api.Load(constants.MachineName)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"Error loading existing host: %s. Please try running [minikube delete], then run [minikube start] again.", err)
+	}
+
+	s, err := h.Driver.GetState()
+	glog.Infoln("Machine state: ", s)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting state for host: %s", err)
+	}
+
+	if s != state.Running {
+		if err := h.Driver.Start(); err != nil {
+			return nil, fmt.Errorf("Error starting stopped host: %s", err)
+		}
+		if err := api.Save(h); err != nil {
+			return nil, fmt.Errorf("Error saving started host: %s", err)
+		}
+	}
+
+	if err := h.ConfigureAuth(); err != nil {
+		return nil, fmt.Errorf("Error configuring auth on host: %s", err)
+	}
+	return h, nil
 }
 
 // StopHost stops the host VM.
