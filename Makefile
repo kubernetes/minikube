@@ -36,7 +36,7 @@ BUILD_OS := $(shell uname -s)
 
 # Set the version information for the Kubernetes servers, and build localkube statically
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
-MINIKUBE_LDFLAGS := $(K8S_VERSION_LDFLAGS) -X k8s.io/minikube/pkg/version.version=$(VERSION)
+MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION)
 LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldflags '-static'"
 
 MKGOPATH := mkdir -p $(shell dirname $(GOPATH)/src/$(REPOPATH)) && ln -s -f $(shell pwd) $(GOPATH)/src/$(REPOPATH)
@@ -57,7 +57,7 @@ endif
 
 out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
-	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
+	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
 
 localkube-image: out/localkube
 	make -C deploy/docker VERSION=$(VERSION)
@@ -99,4 +99,4 @@ gendocs: docs/minikube.md
 
 docs/minikube.md: $(shell find cmd) pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
-	cd $(GOPATH)/src/$(REPOPATH) && go run gen_help_text.go
+	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" gen_help_text.go
