@@ -35,13 +35,14 @@ import (
 )
 
 var (
-	minikubeISO      string
-	memory           int
-	cpus             int
-	disk             = newUnitValue(20 * units.GB)
-	vmDriver         string
-	dockerEnv        []string
-	insecureRegistry []string
+	minikubeISO       string
+	memory            int
+	cpus              int
+	disk              = newUnitValue(20 * units.GB)
+	vmDriver          string
+	dockerEnv         []string
+	insecureRegistry  []string
+	kubernetesVersion string
 )
 
 // startCmd represents the start command

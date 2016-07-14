@@ -49,6 +49,8 @@ var (
 	certs = []string{"ca.crt", "ca.key", "apiserver.crt", "apiserver.key"}
 )
 
+var numRetries = 5
+
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs.go#L32-34
@@ -227,23 +229,34 @@ var assets = []fileToCopy{
 	},
 }
 
+// Returns a function that will return n errors, then return successfully forever.
+func localkubeDownloader(resp *http.Response, config KubernetesConfig) func() error {
+	return func() (err error) {
+		tmpResp, err := http.Get(util.GetLocalkubeDownloadURL(config.KubernetesVersion,
+			constants.LocalkubeLinuxFilename))
+		resp.Body = tmpResp.Body
+		resp.ContentLength = tmpResp.ContentLength
+		fmt.Println(int(resp.ContentLength))
+		return err
+	}
+}
+
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
 	}
 	if localkubeURLWasSpecified(config) {
-		resp, err := http.Get(util.GetLocalkubeDownloadURL(config.KubernetesVersion,
-			constants.LocalkubeLinuxFilename))
-		if err != nil {
+		resp := &http.Response{}
+		f := localkubeDownloader(resp, config)
+		if err := util.Retry(5, f); err != nil {
 			return err
 		}
+		fmt.Println(int(resp.ContentLength))
 		if err := sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
-			"localkube", "0777",
-			client); err != nil {
+			"localkube", "0777", client); err != nil {
 			return err
 		}
-
 	} else {
 		contents, err := Asset("out/localkube")
 		if err != nil {

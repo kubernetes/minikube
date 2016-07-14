@@ -17,9 +17,7 @@ limitations under the License.
 package constants
 
 import (
-	"fmt"
 	"path/filepath"
-	"strings"
 
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/kubernetes/pkg/util/homedir"
