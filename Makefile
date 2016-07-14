@@ -57,7 +57,7 @@ endif
 
 out/minikube-$(GOOS)-$(GOARCH): $(MINIKUBEFILES) pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
-	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
+	CGO_ENABLED=0 GOARCH=$(GOARCH) GOOS=$(GOOS) go build --installsuffix cgo -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) ./cmd/minikube
 
 localkube-image: out/localkube
 	make -C deploy/docker VERSION=$(VERSION)
@@ -99,4 +99,4 @@ gendocs: docs/minikube.md
 
 docs/minikube.md: $(shell find cmd) pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
-	cd $(GOPATH)/src/$(REPOPATH) && go run gen_help_text.go
+	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" gen_help_text.go
