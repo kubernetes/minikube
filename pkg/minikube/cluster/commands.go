@@ -25,7 +25,7 @@ import (
 )
 
 // Kill any running instances.
-var stopCommand = "sudo killall localkube | true"
+var stopCommand = "sudo killall localkube || true"
 
 var startCommandFmtStr = `
 # Run with nohup so it stays up. Redirect logs to useful places.
