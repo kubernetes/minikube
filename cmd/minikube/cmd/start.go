@@ -40,6 +40,7 @@ var (
 	cpus        int
 	disk        = newUnitValue(20 * units.GB)
 	vmDriver    string
+	dockerEnv   []string
 )
 
 // startCmd represents the start command
@@ -62,6 +63,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		CPUs:        cpus,
 		DiskSize:    int(*disk / units.MB),
 		VMDriver:    vmDriver,
+		DockerEnv:   dockerEnv,
 	}
 
 	var host *host.Host
@@ -159,5 +161,7 @@ func init() {
 	startCmd.Flags().IntVarP(&cpus, "cpus", "", constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	diskFlag := startCmd.Flags().VarPF(disk, "disk-size", "", "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	diskFlag.DefValue = constants.DefaultDiskSize
+
+	startCmd.Flags().StringSliceVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	RootCmd.AddCommand(startCmd)
 }
