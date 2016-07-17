@@ -170,6 +170,7 @@ type MachineConfig struct {
 	CPUs        int
 	DiskSize    int
 	VMDriver    string
+	DockerEnv   []string // Each entry is formatted as KEY=VALUE.
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
@@ -282,17 +283,29 @@ func SetupCerts(d drivers.Driver) error {
 	return nil
 }
 
+func engineOptions(config MachineConfig) *engine.Options {
+
+	o := engine.Options{
+		Env: config.DockerEnv,
+	}
+	return &o
+}
+
+func createVirtualboxHost(config MachineConfig) drivers.Driver {
+	d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
+	d.Boot2DockerURL = config.MinikubeISO
+	d.Memory = config.Memory
+	d.CPU = config.CPUs
+	d.DiskSize = int(config.DiskSize)
+	return d
+}
+
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	var driver interface{}
 
 	switch config.VMDriver {
 	case "virtualbox":
-		d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
-		d.Boot2DockerURL = config.MinikubeISO
-		d.Memory = config.Memory
-		d.CPU = config.CPUs
-		d.DiskSize = int(config.DiskSize)
-		driver = d
+		driver = createVirtualboxHost(config)
 	case "vmwarefusion":
 		driver = createVMwareFusionHost(config)
 	case "kvm":
@@ -315,7 +328,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 	h.HostOptions.AuthOptions.CertDir = constants.Minipath
 	h.HostOptions.AuthOptions.StorePath = constants.Minipath
-	h.HostOptions.EngineOptions = &engine.Options{}
+	h.HostOptions.EngineOptions = engineOptions(config)
 
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client
