@@ -64,7 +64,7 @@ out/minikube-linux-amd64: pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES
 	$(MKGOPATH)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-linux-amd64 ./cmd/minikube
 
-out/minikube-windows-amd64: pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
+out/minikube-windows-amd64.exe: pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
 	$(MKGOPATH)
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-windows-amd64.exe ./cmd/minikube
 
@@ -91,7 +91,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-darwin-amd64 out/minikube-windows-amd64
+cross: out/localkube out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
 
 .PHONY: clean
 clean:
