@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -41,6 +42,9 @@ var statusCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		fmt.Fprintln(os.Stdout, s)
+		if s != state.Running.String() {
+			os.Exit(1)
+		}
 	},
 }
 
