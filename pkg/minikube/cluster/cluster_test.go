@@ -191,6 +191,29 @@ func TestStartHost(t *testing.T) {
 	}
 }
 
+func TestStartHostConfig(t *testing.T) {
+	api := tests.NewMockAPI()
+
+	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	provision.SetDetector(md)
+
+	config := MachineConfig{
+		VMDriver:  constants.DefaultVMDriver,
+		DockerEnv: []string{"FOO=BAR"},
+	}
+
+	h, err := StartHost(api, config)
+	if err != nil {
+		t.Fatal("Error starting host.")
+	}
+
+	for i := range h.HostOptions.EngineOptions.Env {
+		if h.HostOptions.EngineOptions.Env[i] != config.DockerEnv[i] {
+			t.Fatal("Docker env variables were not set!")
+		}
+	}
+}
+
 func TestStopHostError(t *testing.T) {
 	api := tests.NewMockAPI()
 	if err := StopHost(api); err == nil {
