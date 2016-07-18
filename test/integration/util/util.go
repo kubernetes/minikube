@@ -31,13 +31,30 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/log"
+
 	"k8s.io/kubernetes/pkg/api"
+	commonutil "k8s.io/minikube/pkg/util"
 )
 
 type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
 	Args       string
+}
+
+func IsPodReady(p *api.Pod) bool {
+	for _, cond := range p.Status.Conditions {
+		if cond.Type == "Ready" {
+			if cond.Status == "True" {
+				return true
+			}
+			log.Debugf("Pod %s not ready. Ready: %s. Reason: %s", p.Name, cond.Status, cond.Reason)
+			return false /**/
+		}
+	}
+	log.Debugf("Unable to find ready pod condition: %v", p.Status.Conditions)
+	return false
 }
 
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
@@ -120,19 +137,27 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 	return nil
 }
 
-func (k *KubectlRunner) RunCommand(args []string) ([]byte, error) {
-	cmd := exec.Command(k.BinaryPath, args...)
-	stdout, err := cmd.CombinedOutput()
-	if err != nil {
-		return make([]byte, 0), fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)
+func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
+	inner := func() error {
+		cmd := exec.Command(k.BinaryPath, args...)
+		stdout, err = cmd.CombinedOutput()
+		if err != nil {
+			log.Errorf("Error %s running command %s. Return code: %s", stdout, args, err)
+			return fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)
+		}
+		return nil
 	}
-	return stdout, nil
+
+	err = commonutil.RetryAfter(3, inner, 2*time.Second)
+	return stdout, err
 }
 
 func (k *KubectlRunner) CreateRandomNamespace() string {
 	const strLen = 20
 	name := genRandString(strLen)
-	k.RunCommand([]string{"create", "namespace", name})
+	if _, err := k.RunCommand([]string{"create", "namespace", name}); err != nil {
+		k.T.Fatalf("Error creating namespace: %s", err)
+	}
 	return name
 }
 
