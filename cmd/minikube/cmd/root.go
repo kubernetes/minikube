@@ -34,7 +34,10 @@ import (
 var dirs = [...]string{
 	constants.Minipath,
 	constants.MakeMiniPath("certs"),
-	constants.MakeMiniPath("machines")}
+	constants.MakeMiniPath("machines"),
+	constants.MakeMiniPath("iso"),
+	constants.MakeMiniPath("localkube"),
+	constants.MakeMiniPath("config")}
 
 var (
 	showLibmachineLogs bool
@@ -77,7 +80,7 @@ func init() {
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	viper.SetConfigName("config")
-	viper.AddConfigPath(constants.ConfigFilePath)
+	viper.AddConfigPath(constants.MakeMiniPath("config"))
 	viper.ReadInConfig()
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
