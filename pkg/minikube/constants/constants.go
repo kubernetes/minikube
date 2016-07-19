@@ -69,5 +69,3 @@ const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
 )
-
-var ConfigFilePath = MakeMiniPath("config")
