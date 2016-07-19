@@ -379,6 +379,12 @@ git add --all
 git commit -m "Manual changes to update Kubernetes to foo"
 ```
 
+## Steps to Release Minikube
+The steps to release minikube can be found at [RELEASING.md](https://github.com/kubernetes/minikube/blob/master/RELEASING.md)
+
+## Steps to Release Localkube
+The steps to release localkube can be found at [LOCALKUBE_RELEASING.md](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
+
 ## Community
 
 Contributions, questions, and comments are all welcomed and encouraged! minkube developers hang out on [Slack](https://kubernetes.slack.com) in the #minikube channel (get an invitation [here](http://slack.kubernetes.io/)). We also have the [kubernetes-dev Google Groups mailing list](https://groups.google.com/forum/#!forum/kubernetes-dev). If you are posting to the list please prefix your subject with "minikube: ".
