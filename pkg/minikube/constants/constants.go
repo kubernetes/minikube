@@ -66,11 +66,8 @@ const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
 )
-<<<<<<< 77c0a09495682fa6ae6a74f0363053d2330e86be
-=======
 
 var ConfigFilePath = MakeMiniPath("config")
 
 var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sReleases/"
 var LocalkubeLinuxFilename = "localkube-linux-amd64"
->>>>>>> Changed kubernetes-version to take k8s version as input (as well as

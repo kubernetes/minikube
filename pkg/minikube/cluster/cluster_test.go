@@ -545,12 +545,12 @@ func TestUpdateDefault(t *testing.T) {
 	}
 }
 
-var test_localkube_binary = "hello"
+var testLocalkubeBin = "hello"
 
 type K8sVersionHandlerCorrect struct{}
 
 func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, test_localkube_binary)
+	io.WriteString(w, testLocalkubeBin)
 }
 
 func TestUpdateKubernetesVersion(t *testing.T) {
@@ -574,14 +574,13 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 	kubernetesConfig := KubernetesConfig{
 		KubernetesVersion: server.URL,
 	}
-
 	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
 		t.Fatalf("Error updating cluster: %s", err)
 	}
 	transferred := s.Transfers.Bytes()
 
 	//test that localkube is transferred properly
-	contents := []byte(test_localkube_binary)
+	contents := []byte(testLocalkubeBin)
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}

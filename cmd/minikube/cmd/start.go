@@ -161,14 +161,14 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
 }
 
 func init() {
-	startCmd.Flags().StringVarP(&minikubeISO, "iso-url", "", constants.DefaultIsoUrl, "Location of the minikube iso")
-	startCmd.Flags().StringVarP(&vmDriver, "vm-driver", "", constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
-	startCmd.Flags().IntVarP(&memory, "memory", "", constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
-	startCmd.Flags().IntVarP(&cpus, "cpus", "", constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
+	startCmd.Flags().StringVar(&minikubeISO, "iso-url", constants.DefaultIsoUrl, "Location of the minikube iso")
+	startCmd.Flags().StringVar(&vmDriver, "vm-driver", constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
+	startCmd.Flags().IntVar(&memory, "memory", constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
+	startCmd.Flags().IntVar(&cpus, "cpus", constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	diskFlag := startCmd.Flags().VarPF(disk, "disk-size", "", "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	diskFlag.DefValue = constants.DefaultDiskSize
 	startCmd.Flags().StringSliceVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
-	startCmd.Flags().StringVarP(&kubernetesVersion, "kubernetes-version", "", constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will run")
+	startCmd.Flags().StringVar(&kubernetesVersion, "kubernetes-version", constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will run")
 	RootCmd.AddCommand(startCmd)
 }
