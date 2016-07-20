@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -296,56 +297,52 @@ func engineOptions(config MachineConfig) *engine.Options {
 
 func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
-	d.Boot2DockerURL = config.MinikubeISO
+	d.Boot2DockerURL = config.GetISOCacheFileURI()
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = int(config.DiskSize)
 	return d
 }
 
-func isISONotCachedInMinikubeDir(isoFilePath string) bool {
-	if _, err := os.Stat(isoFilePath); os.IsNotExist(err) {
-		return true
-	}
-	return false
-}
-
-func getISOFilePathFromConfig(config MachineConfig) string {
-	split := strings.Split(config.MinikubeISO, "/")
-	isoFilename := split[len(split)-1]
-	return filepath.Join(constants.Minipath, "iso", isoFilename)
-}
-
-func modifyConfigForCachedIso(isoFilePath string, config *MachineConfig) error {
-	if isISONotCachedInMinikubeDir(isoFilePath) {
-		// download miniube-iso to .minikube dir
-		response, err := http.Get(config.MinikubeISO)
+func (m *MachineConfig) CacheMinikubeISO() error {
+	// store the miniube-iso inside the .minikube dir
+	response, err := http.Get(m.MinikubeISO)
+	if err != nil {
+		return err
+	} else {
+		out, err := os.Create(m.GetISOCacheFilepath())
 		if err != nil {
 			return err
-		} else {
-			out, err := os.Create(isoFilePath)
-			if err != nil {
-				return err
-			}
-			defer out.Close()
-			defer response.Body.Close()
-			_, err = io.Copy(out, response.Body)
-			if err != nil {
-				return err
-			}
+		}
+		defer out.Close()
+		defer response.Body.Close()
+		if _, err = io.Copy(out, response.Body); err != nil {
+			return err
 		}
 	}
-	config.MinikubeISO = "file://" + isoFilePath
 	return nil
+}
+
+func (m *MachineConfig) GetISOCacheFilepath() string {
+	return filepath.Join(constants.Minipath, "cache", "iso", filepath.Base(m.MinikubeISO))
+}
+
+func (m *MachineConfig) GetISOCacheFileURI() string {
+	return "file://" + path.Join(constants.Minipath, "cache", "iso", filepath.Base(m.MinikubeISO))
+}
+
+func (m *MachineConfig) IsMinikubeISOCached() bool {
+	if _, err := os.Stat(m.GetISOCacheFilepath()); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	var driver interface{}
 
-	//check cache for iso and change iso method appropriately
-	fmt.Println(config.MinikubeISO)
-	if config.MinikubeISO != "" { // "" is a test param
-		if err := modifyConfigForCachedIso(getISOFilePathFromConfig(config), &config); err != nil {
+	if !config.IsMinikubeISOCached() {
+		if err := config.CacheMinikubeISO(); err != nil {
 			return nil, err
 		}
 	}

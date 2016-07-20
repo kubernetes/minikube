@@ -33,7 +33,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-var defaultMachineConfig = MachineConfig{VMDriver: constants.DefaultVMDriver}
+var defaultMachineConfig = MachineConfig{VMDriver: constants.DefaultVMDriver,
+	MinikubeISO: constants.DefaultIsoUrl}
 
 func TestCreateHost(t *testing.T) {
 	api := tests.NewMockAPI()
@@ -361,6 +362,9 @@ func TestSetupCerts(t *testing.T) {
 }
 
 func TestGetHostDockerEnv(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
 	api := tests.NewMockAPI()
 	h, err := createHost(api, defaultMachineConfig)
 	if err != nil {

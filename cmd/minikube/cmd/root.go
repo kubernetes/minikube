@@ -35,8 +35,9 @@ var dirs = [...]string{
 	constants.Minipath,
 	constants.MakeMiniPath("certs"),
 	constants.MakeMiniPath("machines"),
-	constants.MakeMiniPath("iso"),
-	constants.MakeMiniPath("localkube"),
+	constants.MakeMiniPath("cache"),
+	constants.MakeMiniPath("cache", "iso"),
+	constants.MakeMiniPath("cache", "localkube"),
 	constants.MakeMiniPath("config")}
 
 var (
