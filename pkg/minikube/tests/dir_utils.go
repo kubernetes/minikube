@@ -19,12 +19,22 @@ package tests
 import (
 	"io/ioutil"
 	"log"
+	"os"
+	"path/filepath"
 
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func MakeTempDir() string {
 	tempDir, err := ioutil.TempDir("", "minipath")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll(filepath.Join(tempDir, "cache", "iso"), 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll(filepath.Join(tempDir, "cache", "localkube"), 0777)
 	if err != nil {
 		log.Fatal(err)
 	}
