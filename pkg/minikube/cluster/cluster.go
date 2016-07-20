@@ -236,7 +236,6 @@ func localkubeDownloader(resp *http.Response, config KubernetesConfig) func() er
 			constants.LocalkubeLinuxFilename))
 		resp.Body = tmpResp.Body
 		resp.ContentLength = tmpResp.ContentLength
-		fmt.Println(int(resp.ContentLength))
 		return err
 	}
 }
@@ -252,7 +251,6 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 		if err := util.Retry(5, f); err != nil {
 			return err
 		}
-		fmt.Println(int(resp.ContentLength))
 		if err := sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
 			"localkube", "0777", client); err != nil {
 			return err

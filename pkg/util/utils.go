@@ -19,6 +19,7 @@ package util
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -80,9 +81,15 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 	return err
 }
 
-func GetLocalkubeDownloadURL(version string, filename string) string {
-	if strings.HasPrefix(version, "http://") {
-		return version
+func GetLocalkubeDownloadURL(versionOrURL string, filename string) string {
+	if _, err := url.Parse(versionOrURL); err == nil {
+		//input was a fully qualified URL/file-URI to a localkube binary
+		return versionOrURL
 	}
-	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, version, filename)
+	//input was a version string for a localkube binary -- ex: v1.3.0 OR 1.3.0
+	if !strings.HasPrefix(versionOrURL, "v") {
+		//if the input version had no 'v' prefix, prepend it
+		versionOrURL = "v" + versionOrURL
+	}
+	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename)
 }
