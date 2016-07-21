@@ -24,6 +24,7 @@ import (
 	"net"
 	"path"
 
+	"k8s.io/kubernetes/pkg/util/config"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 
 	"k8s.io/minikube/pkg/util"
@@ -49,6 +50,7 @@ type LocalkubeServer struct {
 	APIServerInsecurePort    int
 	ShouldGenerateCerts      bool
 	ShowVersion              bool
+	RuntimeConfig            config.ConfigurationMap
 }
 
 func (lk *LocalkubeServer) AddServer(server Server) {
