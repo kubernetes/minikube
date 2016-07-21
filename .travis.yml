@@ -1,7 +1,9 @@
 language: go
 
 go:
-  - 1.6
+  - 1.6.3
+go_import_path: k8s.io/minikube
+
 # We shouldn't need to install anything because we use vendoring.
 install:
 - echo "Don't run anything."
