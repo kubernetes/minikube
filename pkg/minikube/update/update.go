@@ -14,38 +14,46 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notify
+package update
 
 import (
+	"crypto"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/bugsnag/osext"
 	"github.com/golang/glog"
+	update "github.com/inconshreveable/go-update"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/version"
 )
 
-const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
+const downloadLinkFormat = "https://github.com/kubernetes/minikube/releases/download/v%s/%s"
 
 var (
 	timeLayout                = time.RFC1123
 	lastUpdateCheckFilePath   = constants.MakeMiniPath("last_update_check")
 	githubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
+	downloadBinary            = "minikube-" + runtime.GOOS + "-" + runtime.GOARCH
 )
 
-func MaybePrintUpdateTextFromGithub(output io.Writer) {
-	MaybePrintUpdateText(output, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
+func MaybeUpdateFromGithub(output io.Writer) {
+	MaybeUpdate(output, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
-func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
+func MaybeUpdate(output io.Writer, url string, lastUpdatePath string) {
 	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
@@ -61,12 +69,20 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 	}
 	if localVersion.Compare(latestVersion) < 0 {
 		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
-		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
-%s%s
-To disable this notification, add WantUpdateNotification: False to the json config file at %s
-(you may have to create the file config.json in this folder if you have no previous configuration)
-`,
-			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion, constants.MakeMiniPath("config"))
+		fmt.Fprintf(output,
+			`There is a newer version of minikube available (%s%s). Do you want to automatically update? [y/N] `,
+			version.VersionPrefix, latestVersion)
+
+		var confirm string
+		fmt.Scanln(&confirm)
+
+		if strings.ToLower(confirm) == "y" {
+			fmt.Printf("Updating to version %s\n", latestVersion)
+			updateBinary(latestVersion)
+			return
+		}
+
+		fmt.Println("Skipping autoupdate")
 	}
 }
 
@@ -127,4 +143,63 @@ func getTimeFromFileIfExists(path string) time.Time {
 		return time.Time{}
 	}
 	return timeInFile
+}
+
+func updateBinary(v semver.Version) {
+	checksum, err := downloadChecksum(v)
+	if err != nil {
+		glog.Errorf("Cannot download checksum: %s", err)
+		os.Exit(1)
+	}
+	binary, err := http.Get(fmt.Sprintf(downloadLinkFormat, v, downloadBinary))
+	if err != nil {
+		glog.Errorf("Cannot download binary: %s", err)
+		os.Exit(1)
+	}
+	defer binary.Body.Close()
+	err = update.Apply(binary.Body, update.Options{
+		Hash:     crypto.SHA256,
+		Checksum: checksum,
+	})
+	if err != nil {
+		glog.Errorf("Cannot apply binary update: %s", err)
+		os.Exit(1)
+	}
+
+	env := os.Environ()
+	args := os.Args
+	currentBinary, err := osext.Executable()
+	if err != nil {
+		glog.Errorf("Cannot find current binary to exec: %s", err)
+		os.Exit(1)
+	}
+	err = syscall.Exec(currentBinary, args, env)
+	if err != nil {
+		glog.Errorf("Failed to exec updated binary: %s", err)
+		os.Exit(1)
+	}
+}
+
+func downloadChecksum(v semver.Version) ([]byte, error) {
+	u := fmt.Sprintf(downloadLinkFormat, v, downloadBinary+".sha256")
+	checksumResp, err := http.Get(u)
+	if err != nil {
+		return nil, err
+	}
+	defer checksumResp.Body.Close()
+
+	// If no checksum then return nil slice with no error - nothing will be checked
+	if checksumResp.StatusCode != 404 {
+		return nil, nil
+	}
+
+	if checksumResp.StatusCode != 200 {
+		return nil, fmt.Errorf("received %d", checksumResp.StatusCode)
+	}
+	b, err := ioutil.ReadAll(checksumResp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return hex.DecodeString(strings.TrimSpace(string(b)))
 }

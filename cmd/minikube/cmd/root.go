@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/notify"
+	"k8s.io/minikube/pkg/minikube/update"
 )
 
 var dirs = [...]string{
@@ -56,7 +56,7 @@ var RootCmd = &cobra.Command{
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
 		}
-		notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+		update.MaybeUpdateFromGithub(os.Stdout)
 	},
 }
 

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package notify
+package update
 
 import (
 	"bytes"
@@ -133,7 +133,7 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 	}
 }
 
-func TestMaybePrintUpdateText(t *testing.T) {
+func TestMaybeUpdate(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
@@ -150,9 +150,9 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	}
 	server := httptest.NewServer(handler)
 
-	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
+	MaybeUpdate(&outputBuffer, server.URL, lastUpdateCheckFilePath)
 	if len(outputBuffer.String()) != 0 {
-		t.Fatalf("Expected MaybePrintUpdateText to not output text as the current version is %s and version %s was served from URL but output was [%s]",
+		t.Fatalf("Expected MaybeUpdate to not output text as the current version is %s and version %s was served from URL but output was [%s]",
 			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
 	}
 
@@ -163,9 +163,9 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	}
 	server = httptest.NewServer(handler)
 
-	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
+	MaybeUpdate(&outputBuffer, server.URL, lastUpdateCheckFilePath)
 	if len(outputBuffer.String()) == 0 {
-		t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
+		t.Fatalf("Expected MaybeUpdate to output text as the current version is %s and version %s was served from URL but output was [%s]",
 			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
 	}
 }
