@@ -171,6 +171,7 @@ type MachineConfig struct {
 	DiskSize    int
 	VMDriver    string
 	DockerEnv   []string // Each entry is formatted as KEY=VALUE.
+	InsecureRegistry []string
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
@@ -287,6 +288,7 @@ func engineOptions(config MachineConfig) *engine.Options {
 
 	o := engine.Options{
 		Env: config.DockerEnv,
+		InsecureRegistry: config.InsecureRegistry,
 	}
 	return &o
 }

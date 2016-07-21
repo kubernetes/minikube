@@ -18,6 +18,7 @@ minikube start
       --cpus=1: Number of CPUs allocated to the minikube VM
       --disk-size=20g: Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)
       --docker-env=[]: Environment variables to pass to the Docker daemon. (format: key=value)
+      --insecure-registry=[]: Enable Docker insecure registry/-ies
       --iso-url="https://storage.googleapis.com/minikube/minikube-0.5.iso": Location of the minikube iso
       --memory=1024: Amount of RAM allocated to the minikube VM
       --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion kvm xhyve]

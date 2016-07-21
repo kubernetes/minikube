@@ -41,6 +41,7 @@ var (
 	disk        = newUnitValue(20 * units.GB)
 	vmDriver    string
 	dockerEnv   []string
+	insecureRegistry []string
 )
 
 // startCmd represents the start command
@@ -64,6 +65,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		DiskSize:    int(*disk / units.MB),
 		VMDriver:    vmDriver,
 		DockerEnv:   dockerEnv,
+		InsecureRegistry: insecureRegistry,
 	}
 
 	var host *host.Host
@@ -163,5 +165,6 @@ func init() {
 	diskFlag.DefValue = constants.DefaultDiskSize
 
 	startCmd.Flags().StringSliceVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
 	RootCmd.AddCommand(startCmd)
 }
