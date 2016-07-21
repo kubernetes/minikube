@@ -54,7 +54,7 @@ func TestPersistence(t *testing.T) {
 		return fmt.Errorf("Pod %s is not ready yet.", podName)
 	}
 
-	if err := commonutil.RetryAfter(10, checkPod, 6*time.Second); err != nil {
+	if err := commonutil.RetryAfter(20, checkPod, 6*time.Second); err != nil {
 		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
 	}
 
