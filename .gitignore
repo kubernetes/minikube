@@ -30,3 +30,5 @@ _testmain.go
 /minikube
 
 .DS_Store
+
+/.idea
