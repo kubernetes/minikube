@@ -40,8 +40,10 @@ var KubeconfigPath = clientcmd.RecommendedHomeFile
 const MinikubeContext = "minikube"
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.
-func MakeMiniPath(fileName string) string {
-	return filepath.Join(Minipath, fileName)
+func MakeMiniPath(fileName ...string) string {
+	args := []string{Minipath}
+	args = append(args, fileName...)
+	return filepath.Join(args...)
 }
 
 // Only pass along these flags to localkube.
@@ -69,5 +71,3 @@ const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
 )
-
-var ConfigFilePath = MakeMiniPath("config")
