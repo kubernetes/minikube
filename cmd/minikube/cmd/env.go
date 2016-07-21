@@ -27,12 +27,21 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+var (
+	isUnsetMode bool
+)
+
 // envCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
 	Short: "sets up docker env variables; similar to '$(docker-machine env)'",
 	Long:  `sets up docker env variables; similar to '$(docker-machine env)'`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if isUnsetMode {
+			fmt.Fprintln(os.Stdout, buildUnsetShellOutput())
+			return
+		}
+
 		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 		defer api.Close()
 
@@ -55,6 +64,19 @@ func buildDockerEnvShellOutput(envMap map[string]string) string {
 	return output
 }
 
+func buildUnsetShellOutput() string {
+	envArr := []string{"DOCKER_TLS_VERIFY", "DOCKER_HOST", "DOCKER_CERT_PATH"}
+	output := ""
+	for _, envName := range envArr {
+		output += fmt.Sprintf("unset %s\n", envName)
+	}
+	howToRun := "# Run this command to unset docker-env variables: \n# eval $(minikube docker-env --unset)"
+	output += howToRun
+	return output
+}
+
 func init() {
+	dockerEnvCmd.Flags().BoolVar(&isUnsetMode, "unset", false, "Specifies that `minikube docker-env` should return the commands to unset the docker environment variables")
+
 	RootCmd.AddCommand(dockerEnvCmd)
 }
