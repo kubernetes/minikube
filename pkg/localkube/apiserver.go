@@ -57,6 +57,8 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 
 	config.AllowPrivileged = true
 
+	config.RuntimeConfig = lk.RuntimeConfig
+
 	return func() error {
 		return apiserver.Run(config)
 	}

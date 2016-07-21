@@ -43,6 +43,7 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 		APIServerInsecurePort:    8080,
 		ShouldGenerateCerts:      true,
 		ShowVersion:              false,
+		RuntimeConfig:            map[string]string{"api/all": "true"},
 	}
 }
 
@@ -60,6 +61,7 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.IntVar(&s.APIServerInsecurePort, "apiserver-insecure-port", s.APIServerInsecurePort, "The port the apiserver will listen insecurely on")
 	flag.BoolVar(&s.ShouldGenerateCerts, "generate-certs", s.ShouldGenerateCerts, "If localkube should generate it's own certificates")
 	flag.BoolVar(&s.ShowVersion, "version", s.ShowVersion, "If localkube should just print the version and exit.")
+	flag.Var(&s.RuntimeConfig, "runtime-config", "A set of key=value pairs that describe runtime configuration that may be passed to apiserver. apis/<groupVersion> key can be used to turn on/off specific api versions. apis/<groupVersion>/<resource> can be used to turn on/off specific resources. api/all and api/legacy are special keys to control all and legacy api versions respectively.")
 
 	// These two come from vendor/ packages that use flags. We should hide them
 	flag.CommandLine.MarkHidden("google-json-key")
