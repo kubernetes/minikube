@@ -35,12 +35,12 @@ import (
 )
 
 var (
-	minikubeISO string
-	memory      int
-	cpus        int
-	disk        = newUnitValue(20 * units.GB)
-	vmDriver    string
-	dockerEnv   []string
+	minikubeISO      string
+	memory           int
+	cpus             int
+	disk             = newUnitValue(20 * units.GB)
+	vmDriver         string
+	dockerEnv        []string
 	insecureRegistry []string
 )
 
@@ -59,12 +59,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	defer api.Close()
 
 	config := cluster.MachineConfig{
-		MinikubeISO: minikubeISO,
-		Memory:      memory,
-		CPUs:        cpus,
-		DiskSize:    int(*disk / units.MB),
-		VMDriver:    vmDriver,
-		DockerEnv:   dockerEnv,
+		MinikubeISO:      minikubeISO,
+		Memory:           memory,
+		CPUs:             cpus,
+		DiskSize:         int(*disk / units.MB),
+		VMDriver:         vmDriver,
+		DockerEnv:        dockerEnv,
 		InsecureRegistry: insecureRegistry,
 	}
 

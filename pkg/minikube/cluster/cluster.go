@@ -165,12 +165,12 @@ type sshAble interface {
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
-	MinikubeISO string
-	Memory      int
-	CPUs        int
-	DiskSize    int
-	VMDriver    string
-	DockerEnv   []string // Each entry is formatted as KEY=VALUE.
+	MinikubeISO      string
+	Memory           int
+	CPUs             int
+	DiskSize         int
+	VMDriver         string
+	DockerEnv        []string // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry []string
 }
 
@@ -287,7 +287,7 @@ func SetupCerts(d drivers.Driver) error {
 func engineOptions(config MachineConfig) *engine.Options {
 
 	o := engine.Options{
-		Env: config.DockerEnv,
+		Env:              config.DockerEnv,
 		InsecureRegistry: config.InsecureRegistry,
 	}
 	return &o
