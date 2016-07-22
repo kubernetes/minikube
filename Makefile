@@ -91,7 +91,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
 
 .PHONY: clean
 clean:
