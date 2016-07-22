@@ -49,6 +49,8 @@ gsutil cp out/minikube-linux-amd64 gs://minikube/releases/$RELEASE/
 gsutil cp out/minikube-linux-amd64.sha256 gs://minikube/releases/$RELEASE/
 gsutil cp out/minikube-darwin-amd64 gs://minikube/releases/$RELEASE/
 gsutil cp out/minikube-darwin-amd64.sha256 gs://minikube/releases/$RELEASE/
+gsutil cp out/minikube-windows-amd64.exe gs://minikube/releases/$RELEASE/
+gsutil cp out/minikube-windows-amd64.exe.sha256 gs://minikube/releases/$RELEASE/
 ```
 
 ## Tag the Release
