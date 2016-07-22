@@ -6,6 +6,24 @@
     "properties": {
       "name": {
         "type": "string"
+      },
+      "checksums": {
+        "type": "object",
+        "properties": {
+          "windows": {
+            "type": "number",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "darwin": {
+            "type": "number",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "linux": {
+            "type": "number",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          }
+        },
+        "required": ["windows", "darwin", "linux"]
       }
     },
     "required": [

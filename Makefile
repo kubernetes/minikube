@@ -91,7 +91,15 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+
+.PHONE: checksum
+checksum:
+	for f in out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe ; do \
+		if [ -f "$${f}" ]; then \
+			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
+		fi ; \
+	done
 
 .PHONY: clean
 clean:
