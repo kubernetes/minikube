@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -298,9 +299,24 @@ func (s *ProxyServer) Run() error {
 
 	// Tune conntrack, if requested
 	if s.Conntracker != nil {
-		if s.Config.ConntrackMax > 0 {
-			if err := s.Conntracker.SetMax(int(s.Config.ConntrackMax)); err != nil {
-				return err
+		max, err := getConntrackMax(s.Config)
+		if err != nil {
+			return err
+		}
+		if max > 0 {
+			err := s.Conntracker.SetMax(max)
+			if err != nil {
+				if err != readOnlySysFSError {
+					return err
+				}
+				// readOnlySysFSError is caused by a known docker issue (https://github.com/docker/docker/issues/24000),
+				// the only remediation we know is to restart the docker daemon.
+				// Here we'll send an node event with specific reason and message, the
+				// administrator should decide whether and how to handle this issue,
+				// whether to drain the node and restart docker.
+				// TODO(random-liu): Remove this when the docker bug is fixed.
+				const message = "DOCKER RESTART NEEDED (docker issue #24000): /sys is read-only: can't raise conntrack limits, problems may arise later."
+				s.Recorder.Eventf(s.Config.NodeRef, api.EventTypeWarning, err.Error(), message)
 			}
 		}
 		if s.Config.ConntrackTCPEstablishedTimeout.Duration > 0 {
@@ -316,6 +332,18 @@ func (s *ProxyServer) Run() error {
 	// Just loop forever for now...
 	s.Proxier.SyncLoop()
 	return nil
+}
+
+func getConntrackMax(config *options.ProxyServerConfig) (int, error) {
+	if config.ConntrackMax > 0 && config.ConntrackMaxPerCore > 0 {
+		return -1, fmt.Errorf("invalid config: ConntrackMax and ConntrackMaxPerCore are mutually exclusive")
+	}
+	if config.ConntrackMax > 0 {
+		return int(config.ConntrackMax), nil
+	} else if config.ConntrackMaxPerCore > 0 {
+		return (int(config.ConntrackMaxPerCore) * runtime.NumCPU()), nil
+	}
+	return 0, nil
 }
 
 type nodeGetter interface {
