@@ -56,7 +56,7 @@ type DNSServer struct {
 func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer string) (*DNSServer, error) {
 	// setup backing etcd store
 	peerURLs := []string{"http://localhost:9256"}
-	DNSEtcdURLs := []string{"http://localhost:9090"}
+	DNSEtcdURLs := []string{"http://localhost:49090"}
 
 	publicIP, err := lk.GetHostIP()
 	if err != nil {
