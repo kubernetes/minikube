@@ -816,6 +816,11 @@
 			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
 		},
 		{
+			"ImportPath": "github.com/docker/machine/libmachine/shell",
+			"Comment": "v0.7.0-62-g6002b41",
+			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"
+		},
+		{
 			"ImportPath": "github.com/docker/machine/libmachine/ssh",
 			"Comment": "v0.7.0-62-g6002b41",
 			"Rev": "6002b411ce820eaf03ac972a7fb354bb56f7aa95"

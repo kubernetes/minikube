@@ -11,6 +11,14 @@ sets up docker env variables; similar to '$(docker-machine env)'
 minikube docker-env
 ```
 
+### Options
+
+```
+      --no-proxy[=false]: Add machine IP to NO_PROXY environment variable
+      --shell="": Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect
+  -u, --unset[=false]: Unset variables instead of setting them
+```
+
 ### Options inherited from parent commands
 
 ```
