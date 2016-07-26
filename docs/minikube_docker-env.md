@@ -11,6 +11,12 @@ sets up docker env variables; similar to '$(docker-machine env)'
 minikube docker-env
 ```
 
+### Options
+
+```
+      --unset[=false]: Specifies that `minikube docker-env` should return the commands to unset the docker environment variables
+```
+
 ### Options inherited from parent commands
 
 ```
