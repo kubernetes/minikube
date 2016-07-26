@@ -85,7 +85,7 @@ func (m *MinikubeRunner) EnsureRunning() {
 }
 
 func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
-	re := regexp.MustCompile("export (.+?)=(.+?)\n")
+	re := regexp.MustCompile(`export (.+?)="?(.+?)"?\n`)
 	matches := re.FindAllStringSubmatch(dockerEnvVars, -1)
 	seenEnvVar := false
 	for _, m := range matches {
