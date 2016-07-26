@@ -1,5 +1,16 @@
 # Minikube Release Notes
 
+## Version 0.7.0 - 7/26/2016
+* Added experimental support for Windows.
+* Changed the etc DNS port to avoid a conflict with deis/router.
+* Added a flag to `minikube start` to support insecure docker registries.
+* Updated Kubernetes components to 1.3.3.
+* Enabled all available (including alpha) Kubernetes APIs.
+* Added ISO caching.
+* Added a `--unset` flag to `minikube docker-env` to unset the environment variables.
+* Added a `--no-proxy` flag to `minikube docker-env` to add a machine IP to NO_PROXY environment variable.
+* Added additional supported shells for `minikube docker-env` (fish, cmd, powershell, tcsh, bash, zsh)
+
 ## Version 0.6.0 - 7/13/2016
 * Added a `--disk-size` flag to `minikube start`.
 * Fixed a bug regarding auth tokens not being reconfigured properly after VM restart

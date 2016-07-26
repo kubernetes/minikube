@@ -16,7 +16,7 @@
 export GO15VENDOREXPERIMENT=1
 
 # Bump this on release
-VERSION ?= v0.6.0
+VERSION ?= v0.7.0
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
