@@ -194,12 +194,7 @@ func shellCfgUnset(api libmachine.API) (*ShellConfig, error) {
 }
 
 func executeTemplateStdout(shellCfg *ShellConfig) error {
-	t := template.New("envConfig")
-	tmpl, err := t.Parse(envTmpl)
-	if err != nil {
-		return err
-	}
-
+	tmpl := template.Must(template.New("envConfig").Parse(envTmpl))
 	return tmpl.Execute(os.Stdout, shellCfg)
 }
 
