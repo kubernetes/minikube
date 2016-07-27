@@ -1,5 +1,3 @@
-// +build windows,!gendocs
-
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -16,9 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constants
+package cluster
 
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"hyperv",
+import (
+	"github.com/docker/machine/drivers/hyperv"
+	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/minikube/constants"
+)
+
+func createHypervHost(config MachineConfig) drivers.Driver {
+	d := hyperv.NewDriver(constants.MachineName, constants.Minipath)
+	d.Boot2DockerURL = config.GetISOFileURI()
+	d.MemSize = config.Memory
+	d.CPU = config.CPUs
+	d.DiskSize = int(config.DiskSize)
+	d.SSHUser = "docker"
+	return d
 }
