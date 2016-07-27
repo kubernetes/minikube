@@ -19,6 +19,7 @@ package machine
 import (
 	"os"
 
+	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers/plugin"
@@ -35,6 +36,8 @@ func StartDriver() {
 			plugin.RegisterDriver(virtualbox.NewDriver("", ""))
 		case "vmwarefusion":
 			plugin.RegisterDriver(vmwarefusion.NewDriver("", ""))
+		case "hyperv":
+			plugin.RegisterDriver(hyperv.NewDriver("", ""))
 		default:
 			glog.Exitf("Unsupported driver: %s\n", driverName)
 		}

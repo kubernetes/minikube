@@ -1,4 +1,4 @@
-// +build windows,!gendocs
+// +build !windows
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -16,9 +16,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constants
+package cluster
 
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"hyperv",
+import "github.com/docker/machine/libmachine/drivers"
+
+func createHypervHost(config MachineConfig) drivers.Driver {
+	panic("hyperv not supported")
 }
