@@ -107,7 +107,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Printf("Checking for Kubectl ...\n")
 	if _, err := exec.LookPath("kubectl") {
   		glog.Errorln("For more info on kubectl visit http://kubernetes.io/docs/getting-started-guides/minikube/#download-kubectl")
-  		os.Exit(1)
 	}
 	fmt.Printf("Kubectl is configured and installed.")
 	
