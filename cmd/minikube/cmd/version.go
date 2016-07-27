@@ -28,6 +28,10 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of minikube.",
 	Long:  `Print the version of minikube.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Empty func to override parent pre-run - don't want to perform
+		// check for new version.
+	},
 	Run: func(command *cobra.Command, args []string) {
 
 		fmt.Println("minikube version:", version.GetVersion())
