@@ -164,7 +164,24 @@ To access a private container registry, follow the steps on [this page](http://k
 We recommend you use ImagePullSecrets, but if you would like to configure access on the minikube VM you can place the `.dockercfg` in the `/home/docker` directory or the `config.json` in the `/home/docker/.docker` directory.
 
 ## Documentation
+
 For a list of minikube's available commands see the [full CLI docs](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md).
+
+## Using Minikube with an HTTP Proxy
+
+Minikube creates a Virtual Machine that includes Kubernetes and a Docker daemon.
+When Kubernetes attempts to schedule containers using Docker, the Docker daemon may require external network access to pull containers.
+
+If you are behind an HTTP proxy, you may need to supply Docker with the proxy settings.
+To do this, pass the required environment variables as flags during `minikube start`.
+
+For example:
+
+```shell
+$ minikube start --docker-env HTTP_PROXY=http://$YOURPROXY:PORT \
+                 --docker-env HTTPS_PROXY=https://$YOURPROXY:PORT
+```
+
 
 ## Known Issues
 * Features that require a Cloud Provider will not work in Minikube. These include:
