@@ -25,7 +25,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -330,7 +329,9 @@ func (m *MachineConfig) GetISOCacheFilepath() string {
 }
 
 func (m *MachineConfig) GetISOCacheFileURI() string {
-	return "file://" + path.Join(constants.Minipath, "cache", "iso", filepath.Base(m.MinikubeISO))
+	isoPath := filepath.Join(constants.Minipath, "cache", "iso", filepath.Base(m.MinikubeISO))
+	// As this is a file URL there should be no backslashes regardless of platform running on.
+	return "file://" + filepath.ToSlash(isoPath)
 }
 
 func (m *MachineConfig) IsMinikubeISOCached() bool {
