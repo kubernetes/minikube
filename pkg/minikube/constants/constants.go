@@ -29,11 +29,9 @@ const MachineName = "minikubeVM"
 // APIServerPort is the port that the API server should listen on.
 const APIServerPort = 8443
 
-// Fix for windows: the home dir contains forward slashes, which results
-// in an error when using url.Parse
-var Minipath = filepath.ToSlash(filepath.Join(homedir.HomeDir(), ".minikube"))
+// Minipath is the path to the user's minikube dir
+var Minipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
-// TODO: Fix for windows
 // KubeconfigPath is the path to the Kubernetes client config
 var KubeconfigPath = clientcmd.RecommendedHomeFile
 
