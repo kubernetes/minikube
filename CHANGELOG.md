@@ -1,5 +1,8 @@
 # Minikube Release Notes
 
+## Version 0.7.1 - 7/27/2016
+* Fixed a filepath issue which caused `minikube start` to not work properly on Windows
+
 ## Version 0.7.0 - 7/26/2016
 * Added experimental support for Windows.
 * Changed the etc DNS port to avoid a conflict with deis/router.
