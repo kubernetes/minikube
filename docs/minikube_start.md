@@ -20,7 +20,8 @@ minikube start
       --docker-env=[]: Environment variables to pass to the Docker daemon. (format: key=value)
       --insecure-registry=[]: Insecure Docker registries to pass to the Docker daemon
       --iso-url="https://storage.googleapis.com/minikube/minikube-0.5.iso": Location of the minikube iso
-      --kubernetes-version="v1.3.3": The kubernetes version that the minikube VM will run
+      --kubernetes-version="v1.3.3": The kubernetes version that the minikube VM will (ex: v1.2.3) 
+ OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)
       --memory=1024: Amount of RAM allocated to the minikube VM
       --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion kvm xhyve]
 ```
