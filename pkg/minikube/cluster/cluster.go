@@ -563,8 +563,12 @@ type serviceGetter interface {
 	Get(name string) (*kubeApi.Service, error)
 }
 
+type endpointGetter interface {
+	Get(name string) (*kubeApi.Endpoints, error)
+}
+
 func getServicePort(namespace, service string) (int, error) {
-	services, err := getKubernetesServicesWithNamespace(namespace)
+	services, err := GetKubernetesServicesWithNamespace(namespace)
 	if err != nil {
 		return 0, err
 	}
@@ -586,7 +590,7 @@ func getServicePortFromServiceGetter(services serviceGetter, service string) (in
 	return nodePort, nil
 }
 
-func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -600,4 +604,34 @@ func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error)
 	}
 	services := client.Services(namespace)
 	return services, nil
+}
+
+func GetKubernetesEndpointsWithNamespace(namespace string) (endpointGetter, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+	}
+	client, err := unversioned.New(config)
+	if err != nil {
+		return nil, err
+	}
+	endpoints := client.Endpoints(namespace)
+	return endpoints, nil
+}
+
+// EnsureMinikubeRunningOrExit checks that minikube has a status available and that
+// that the status is `Running`, otherwise it will exit
+func EnsureMinikubeRunningOrExit(api libmachine.API) {
+	s, err := GetHostStatus(api)
+	if err != nil {
+		glog.Errorln("Error getting machine status:", err)
+		os.Exit(1)
+	}
+	if s != state.Running.String() {
+		fmt.Fprintln(os.Stdout, "minikube is not currently running so the service cannot be accessed")
+		os.Exit(1)
+	}
 }
