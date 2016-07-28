@@ -110,6 +110,6 @@ clean:
 .PHONY: gendocs
 gendocs: docs/minikube.md
 
-docs/minikube.md: $(shell find cmd) pkg/minikube/cluster/assets.go
+docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
-	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" gen_help_text.go
+	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs gen_help_text.go
