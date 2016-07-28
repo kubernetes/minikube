@@ -81,15 +81,19 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 	return err
 }
 
-func GetLocalkubeDownloadURL(versionOrURL string, filename string) string {
-	if _, err := url.Parse(versionOrURL); err == nil {
-		//input was a fully qualified URL/file-URI to a localkube binary
-		return versionOrURL
+func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, error) {
+	urlObj, err := url.Parse(versionOrURL)
+	if err != nil {
+		return "", err
 	}
-	//input was a version string for a localkube binary -- ex: v1.3.0 OR 1.3.0
+	if urlObj.IsAbs() {
+		// scheme was specified in input, is a valid URI.
+		// http.Get will catch unsupported schemes
+		return versionOrURL, nil
+	}
 	if !strings.HasPrefix(versionOrURL, "v") {
-		//if the input version had no 'v' prefix, prepend it
+		// no 'v' prefix in input, need to prepend it to version
 		versionOrURL = "v" + versionOrURL
 	}
-	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename)
+	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
 }

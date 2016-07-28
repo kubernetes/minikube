@@ -19,6 +19,7 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -37,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"golang.org/x/crypto/ssh"
 	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
@@ -48,8 +50,6 @@ import (
 var (
 	certs = []string{"ca.crt", "ca.key", "apiserver.crt", "apiserver.key"}
 )
-
-var numRetries = 5
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
@@ -229,15 +229,40 @@ var assets = []fileToCopy{
 	},
 }
 
-// Returns a function that will return n errors, then return successfully forever.
-func localkubeDownloader(resp *http.Response, config KubernetesConfig) func() error {
-	return func() (err error) {
-		tmpResp, err := http.Get(util.GetLocalkubeDownloadURL(config.KubernetesVersion,
-			constants.LocalkubeLinuxFilename))
-		resp.Body = tmpResp.Body
-		resp.ContentLength = tmpResp.ContentLength
+func updateLocalkubeFromURL(config KubernetesConfig, client *ssh.Client) error {
+	resp := &http.Response{}
+	err := errors.New("")
+	downloader := func() (err error) {
+		url, err := util.GetLocalkubeDownloadURL(config.KubernetesVersion,
+			constants.LocalkubeLinuxFilename)
+		if err != nil {
+			return err
+		}
+		resp, err = http.Get(url)
 		return err
 	}
+
+	if err = util.Retry(5, downloader); err != nil {
+		return err
+	}
+	if err = sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
+		"localkube", "0777", client); err != nil {
+		return err
+	}
+	return nil
+}
+
+func updateLocalkubeFromAsset(client *ssh.Client) error {
+	contents, err := Asset("out/localkube")
+	if err != nil {
+		glog.Infof("Error loading asset out/localkube: %s", err)
+		return err
+	}
+	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
+		"localkube", "0777", client); err != nil {
+		return err
+	}
+	return nil
 }
 
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
@@ -246,23 +271,11 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 		return err
 	}
 	if localkubeURLWasSpecified(config) {
-		resp := &http.Response{}
-		f := localkubeDownloader(resp, config)
-		if err := util.Retry(5, f); err != nil {
-			return err
-		}
-		if err := sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
-			"localkube", "0777", client); err != nil {
+		if err = updateLocalkubeFromURL(config, client); err != nil {
 			return err
 		}
 	} else {
-		contents, err := Asset("out/localkube")
-		if err != nil {
-			glog.Infof("Error loading asset out/localkube: %s", err)
-			return err
-		}
-		if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-			"localkube", "0777", client); err != nil {
+		if err = updateLocalkubeFromAsset(client); err != nil {
 			return err
 		}
 	}
@@ -282,7 +295,7 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 }
 
 func localkubeURLWasSpecified(config KubernetesConfig) bool {
-	//see if flag is different than default -> it was passed by user
+	// see if flag is different than default -> it was passed by user
 	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }
 
