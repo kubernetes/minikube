@@ -39,7 +39,7 @@ spec:
       - name: kubernetes-dashboard
         # ARCH will be replaced with the architecture it's built for. Check out the Makefile for more details
         image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.1.0
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9090
           protocol: TCP
