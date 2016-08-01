@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/kubernetes/pkg/util/homedir"
+	"k8s.io/kubernetes/pkg/version"
 )
 
 // MachineName is the name to use for the VM.
@@ -59,7 +60,14 @@ const (
 	DefaultVMDriver = "virtualbox"
 )
 
+var DefaultKubernetesVersion = version.Get().GitVersion
+
 const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
 )
+
+var ConfigFilePath = MakeMiniPath("config")
+
+var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sReleases/"
+var LocalkubeLinuxFilename = "localkube-linux-amd64"

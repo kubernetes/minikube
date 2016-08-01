@@ -31,7 +31,6 @@ var startCommandFmtStr = `
 # Run with nohup so it stays up. Redirect logs to useful places.
 sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true > %s 2> %s < /dev/null &'
 `
-
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
 
 func GetStartCommand() string {
