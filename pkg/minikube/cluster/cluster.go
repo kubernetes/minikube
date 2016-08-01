@@ -17,7 +17,9 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -36,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"golang.org/x/crypto/ssh"
 	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
@@ -177,6 +180,11 @@ type MachineConfig struct {
 	InsecureRegistry []string
 }
 
+// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
+type KubernetesConfig struct {
+	KubernetesVersion string
+}
+
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble) error {
 	commands := []string{stopCommand, GetStartCommand()}
@@ -202,12 +210,6 @@ type fileToCopy struct {
 
 var assets = []fileToCopy{
 	{
-		AssetName:   "out/localkube",
-		TargetDir:   "/usr/local/bin",
-		TargetName:  "localkube",
-		Permissions: "0777",
-	},
-	{
 		AssetName:   "deploy/iso/addon-manager.yaml",
 		TargetDir:   "/etc/kubernetes/manifests/",
 		TargetName:  "addon-manager.yaml",
@@ -227,10 +229,55 @@ var assets = []fileToCopy{
 	},
 }
 
-func UpdateCluster(d drivers.Driver) error {
+func updateLocalkubeFromURL(config KubernetesConfig, client *ssh.Client) error {
+	resp := &http.Response{}
+	err := errors.New("")
+	downloader := func() (err error) {
+		url, err := util.GetLocalkubeDownloadURL(config.KubernetesVersion,
+			constants.LocalkubeLinuxFilename)
+		if err != nil {
+			return err
+		}
+		resp, err = http.Get(url)
+		return err
+	}
+
+	if err = util.Retry(5, downloader); err != nil {
+		return err
+	}
+	if err = sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
+		"localkube", "0777", client); err != nil {
+		return err
+	}
+	return nil
+}
+
+func updateLocalkubeFromAsset(client *ssh.Client) error {
+	contents, err := Asset("out/localkube")
+	if err != nil {
+		glog.Infof("Error loading asset out/localkube: %s", err)
+		return err
+	}
+	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
+		"localkube", "0777", client); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
+	}
+	if localkubeURLWasSpecified(config) {
+		if err = updateLocalkubeFromURL(config, client); err != nil {
+			return err
+		}
+	} else {
+		if err = updateLocalkubeFromAsset(client); err != nil {
+			return err
+		}
 	}
 
 	for _, a := range assets {
@@ -240,11 +287,16 @@ func UpdateCluster(d drivers.Driver) error {
 			return err
 		}
 
-		if err := sshutil.Transfer(contents, a.TargetDir, a.TargetName, a.Permissions, client); err != nil {
+		if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), a.TargetDir, a.TargetName, a.Permissions, client); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func localkubeURLWasSpecified(config KubernetesConfig) bool {
+	// see if flag is different than default -> it was passed by user
+	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
@@ -280,7 +332,7 @@ func SetupCerts(d drivers.Driver) error {
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		if err := sshutil.Transfer(data, util.DefaultCertPath, cert, perms, client); err != nil {
+		if err := sshutil.Transfer(bytes.NewReader(data), len(data), util.DefaultCertPath, cert, perms, client); err != nil {
 			return err
 		}
 	}

@@ -19,8 +19,12 @@ package util
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"os"
+	"strings"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Until endlessly loops the provided function until a message is received on the done channel.
@@ -75,4 +79,21 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 		time.Sleep(d)
 	}
 	return err
+}
+
+func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, error) {
+	urlObj, err := url.Parse(versionOrURL)
+	if err != nil {
+		return "", err
+	}
+	if urlObj.IsAbs() {
+		// scheme was specified in input, is a valid URI.
+		// http.Get will catch unsupported schemes
+		return versionOrURL, nil
+	}
+	if !strings.HasPrefix(versionOrURL, "v") {
+		// no 'v' prefix in input, need to prepend it to version
+		versionOrURL = "v" + versionOrURL
+	}
+	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
 }
