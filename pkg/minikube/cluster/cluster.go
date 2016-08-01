@@ -178,6 +178,7 @@ type MachineConfig struct {
 	VMDriver         string
 	DockerEnv        []string // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry []string
+	HostOnlyCIDR     string // Only used by the virtualbox driver
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
@@ -354,6 +355,7 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = int(config.DiskSize)
+	d.HostOnlyCIDR = config.HostOnlyCIDR
 	return d
 }
 
