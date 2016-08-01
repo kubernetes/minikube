@@ -24,7 +24,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Until endlessly loops the provided function until a message is received on the done channel.
@@ -94,6 +96,9 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 	if !strings.HasPrefix(versionOrURL, "v") {
 		// no 'v' prefix in input, need to prepend it to version
 		versionOrURL = "v" + versionOrURL
+	}
+	if _, err = semver.Make(strings.TrimPrefix(versionOrURL, version.VersionPrefix)); err != nil {
+		return "", err
 	}
 	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
 }
