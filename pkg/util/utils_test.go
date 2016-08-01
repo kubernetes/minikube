@@ -19,6 +19,8 @@ package util
 import (
 	"fmt"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Returns a function that will return n errors, then return successfully forever.
@@ -57,5 +59,33 @@ func TestRetry(t *testing.T) {
 	if err := Retry(4, f); err == nil {
 		t.Fatalf("Error should have been raised by retry.")
 	}
+}
 
+type getLocalkubeArgs struct {
+	input         string
+	expected      string
+	expectedError bool
+}
+
+func TestGetLocalkubeDownloadURL(t *testing.T) {
+	argsList := [...]getLocalkubeArgs{
+		{"v1.3.0",
+			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64", false},
+		{"v1.3.3",
+			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.3/localkube-linux-amd64", false},
+		{"http://www.example.com/my-localkube", "http://www.example.com/my-localkube", false},
+		{"abc", "", true},
+		{"1.2.3.4", "", true},
+	}
+	for _, args := range argsList {
+		url, err := GetLocalkubeDownloadURL(args.input, constants.LocalkubeLinuxFilename)
+		wasError := err != nil
+		if wasError != args.expectedError {
+			t.Errorf("GetLocalkubeDownloadURL Expected error was: %t, Actual Error was: %s",
+				args.expectedError, err)
+		}
+		if url != args.expected {
+			t.Errorf("GetLocalkubeDownloadURL: Expected %s, Actual: %s", args.expected, url)
+		}
+	}
 }
