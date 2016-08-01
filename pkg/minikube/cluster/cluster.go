@@ -211,11 +211,38 @@ var assets = []fileToCopy{
 	},
 }
 
-func updateLocalkubeFromURL(config KubernetesConfig, client *ssh.Client) error {
+func (k *KubernetesConfig) getLocalkubeCacheFilepath() string {
+	return filepath.Join(constants.Minipath, "cache", "localkube",
+		filepath.Base("localkube-"+util.GetMD5Hash(k.KubernetesVersion)))
+}
+
+func (k *KubernetesConfig) isLocalkubeCached() bool {
+	if _, err := os.Stat(k.getLocalkubeCacheFilepath()); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func (k *KubernetesConfig) cacheLocalkube(response *http.Response) error {
+	// store localkube inside the .minikube dir
+	out, err := os.Create(k.getLocalkubeCacheFilepath())
+	if err != nil {
+
+		return err
+	}
+	defer out.Close()
+	defer response.Body.Close()
+	if _, err = io.Copy(out, response.Body); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (k *KubernetesConfig) downloadAndCacheLocalkube() error {
 	resp := &http.Response{}
 	err := errors.New("")
 	downloader := func() (err error) {
-		url, err := util.GetLocalkubeDownloadURL(config.KubernetesVersion,
+		url, err := util.GetLocalkubeDownloadURL(k.KubernetesVersion,
 			constants.LocalkubeLinuxFilename)
 		if err != nil {
 			return err
@@ -227,7 +254,32 @@ func updateLocalkubeFromURL(config KubernetesConfig, client *ssh.Client) error {
 	if err = util.Retry(5, downloader); err != nil {
 		return err
 	}
-	if err = sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
+	if err = k.cacheLocalkube(resp); err != nil {
+		return err
+	}
+	return nil
+}
+
+func updateLocalkubeFromURL(config KubernetesConfig, client *ssh.Client) error {
+	if !config.isLocalkubeCached() {
+		if err := config.downloadAndCacheLocalkube(); err != nil {
+			return err
+		}
+	}
+	if err := config.transferCachedLocalkubeToVM(client); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (k *KubernetesConfig) transferCachedLocalkubeToVM(client *ssh.Client) error {
+	contents, err := ioutil.ReadFile(k.getLocalkubeCacheFilepath())
+	if err != nil {
+		glog.Infof("Error loading asset out/localkube: %s", err)
+		return err
+	}
+
+	if err = sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
 		"localkube", "0777", client); err != nil {
 		return err
 	}
@@ -342,11 +394,12 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 
 func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	// store the miniube-iso inside the .minikube dir
+	// TODO(aprindle) put this in a retry loop?
 	response, err := http.Get(m.MinikubeISO)
 	if err != nil {
 		return err
 	} else {
-		out, err := os.Create(m.GetISOCacheFilepath())
+		out, err := os.Create(m.getISOCacheFilepath())
 		if err != nil {
 			return err
 		}
@@ -391,6 +444,7 @@ func (m *MachineConfig) GetISOFileURI() string {
 	// As this is a file URL there should be no backslashes regardless of platform running on.
 	return "file://" + filepath.ToSlash(isoPath)
 }
+
 func (m *MachineConfig) IsMinikubeISOCached() bool {
 	if _, err := os.Stat(m.GetISOCacheFilepath()); os.IsNotExist(err) {
 		return false

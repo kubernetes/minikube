@@ -534,6 +534,9 @@ func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Requ
 }
 
 func TestUpdateKubernetesVersion(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
