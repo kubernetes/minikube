@@ -11,7 +11,7 @@ make out/localkube
 ## Upload to GCS:
 
 ```shell
-gsutil cp out/localkube  gs://minikube/releases/$K8S_RELEASE/localkube-linux-amd64
+gsutil cp out/localkube  gs://minikube/k8sReleases/$K8S_RELEASE/localkube-linux-amd64
 ```
 
 ## Add the version to the k8s_releases.json file
