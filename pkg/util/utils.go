@@ -17,6 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/url"
@@ -96,4 +98,9 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 		versionOrURL = "v" + versionOrURL
 	}
 	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
+}
+
+func GetMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
 }
