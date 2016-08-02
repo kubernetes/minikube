@@ -19,7 +19,6 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -39,7 +38,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"golang.org/x/crypto/ssh"
 	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
@@ -211,101 +209,14 @@ var assets = []fileToCopy{
 	},
 }
 
-func (k *KubernetesConfig) getLocalkubeCacheFilepath() string {
-	return filepath.Join(constants.Minipath, "cache", "localkube",
-		filepath.Base("localkube-"+util.GetMD5Hash(k.KubernetesVersion)))
-}
-
-func (k *KubernetesConfig) isLocalkubeCached() bool {
-	if _, err := os.Stat(k.getLocalkubeCacheFilepath()); os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
-func (k *KubernetesConfig) cacheLocalkube(response *http.Response) error {
-	// store localkube inside the .minikube dir
-	out, err := os.Create(k.getLocalkubeCacheFilepath())
-	if err != nil {
-
-		return err
-	}
-	defer out.Close()
-	defer response.Body.Close()
-	if _, err = io.Copy(out, response.Body); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (k *KubernetesConfig) downloadAndCacheLocalkube() error {
-	resp := &http.Response{}
-	err := errors.New("")
-	downloader := func() (err error) {
-		url, err := util.GetLocalkubeDownloadURL(k.KubernetesVersion,
-			constants.LocalkubeLinuxFilename)
-		if err != nil {
-			return err
-		}
-		resp, err = http.Get(url)
-		return err
-	}
-
-	if err = util.Retry(5, downloader); err != nil {
-		return err
-	}
-	if err = k.cacheLocalkube(resp); err != nil {
-		return err
-	}
-	return nil
-}
-
-func updateLocalkubeFromURL(config KubernetesConfig, client *ssh.Client) error {
-	if !config.isLocalkubeCached() {
-		if err := config.downloadAndCacheLocalkube(); err != nil {
-			return err
-		}
-	}
-	if err := config.transferCachedLocalkubeToVM(client); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (k *KubernetesConfig) transferCachedLocalkubeToVM(client *ssh.Client) error {
-	contents, err := ioutil.ReadFile(k.getLocalkubeCacheFilepath())
-	if err != nil {
-		glog.Infof("Error loading asset out/localkube: %s", err)
-		return err
-	}
-
-	if err = sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return err
-	}
-	return nil
-}
-
-func updateLocalkubeFromAsset(client *ssh.Client) error {
-	contents, err := Asset("out/localkube")
-	if err != nil {
-		glog.Infof("Error loading asset out/localkube: %s", err)
-		return err
-	}
-	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return err
-	}
-	return nil
-}
-
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
 	}
 	if localkubeURLWasSpecified(config) {
-		if err = updateLocalkubeFromURL(config, client); err != nil {
+		lCacher := localkubeCacher{config}
+		if err = updateLocalkubeFromURL(lCacher, client); err != nil {
 			return err
 		}
 	} else {
@@ -394,7 +305,6 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 
 func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	// store the miniube-iso inside the .minikube dir
-	// TODO(aprindle) put this in a retry loop?
 	response, err := http.Get(m.MinikubeISO)
 	if err != nil {
 		return err
