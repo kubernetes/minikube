@@ -77,5 +77,5 @@ gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
 ## Mark the release as `latest` in GCS:
 
 ```shell
-gsutil cp -r gs://minikube/releases/$RELEASE gs://minikube/releases/latest
+gsutil cp -r gs://minikube/releases/$RELEASE/* gs://minikube/releases/latest/
 ```
