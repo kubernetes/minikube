@@ -17,8 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"net/url"
@@ -107,7 +105,6 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
 }
 
-<<<<<<< 38d0f083510df2b7b91dc59fdbc8517b8d02fbd1
 type MultiError struct {
 	Errors []error
 }
