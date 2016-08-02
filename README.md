@@ -396,6 +396,8 @@ git add --all
 git commit -m "Manual changes to update Kubernetes to foo"
 ```
 
+As a final part of updating kubernetes, a new version of localkube should be uploaded to GCS so that users can select this version of kubernetes/localkube in later minikube/localkube builds.  For instructions on how to do this, see [LOCALKUBE_RELEASING.md](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
+
 ## Steps to Release Minikube
 The steps to release minikube can be found at [RELEASING.md](https://github.com/kubernetes/minikube/blob/master/RELEASING.md)
 
