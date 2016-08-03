@@ -71,7 +71,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 	"k8s.io/kubernetes/pkg/kubelet/util/queue"
-	kubeletvolume "k8s.io/kubernetes/pkg/kubelet/volume"
+	"k8s.io/kubernetes/pkg/kubelet/volumemanager"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/securitycontext"
 	"k8s.io/kubernetes/pkg/types"
@@ -501,9 +501,9 @@ func NewMainKubelet(
 		return nil, err
 	}
 
-	klet.volumeManager, err = kubeletvolume.NewVolumeManager(
+	klet.volumeManager, err = volumemanager.NewVolumeManager(
 		enableControllerAttachDetach,
-		hostname,
+		nodeName,
 		klet.podManager,
 		klet.kubeClient,
 		klet.volumePluginMgr,
@@ -687,7 +687,7 @@ type Kubelet struct {
 	// VolumeManager runs a set of asynchronous loops that figure out which
 	// volumes need to be attached/mounted/unmounted/detached based on the pods
 	// scheduled on this node and makes it so.
-	volumeManager kubeletvolume.VolumeManager
+	volumeManager volumemanager.VolumeManager
 
 	// Cloud provider interface.
 	cloud                   cloudprovider.Interface
@@ -977,7 +977,9 @@ func (kl *Kubelet) initializeModules() error {
 // initializeRuntimeDependentModules will initialize internal modules that require the container runtime to be up.
 func (kl *Kubelet) initializeRuntimeDependentModules() {
 	if err := kl.cadvisor.Start(); err != nil {
-		kl.runtimeState.setInternalError(fmt.Errorf("Failed to start cAdvisor %v", err))
+		// Fail kubelet and rely on the babysitter to retry starting kubelet.
+		// TODO(random-liu): Add backoff logic in the babysitter
+		glog.Fatalf("Failed to start cAdvisor %v", err)
 	}
 }
 

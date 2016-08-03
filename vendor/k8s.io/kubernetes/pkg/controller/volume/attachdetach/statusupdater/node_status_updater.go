@@ -27,7 +27,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/controller/framework"
-	"k8s.io/kubernetes/pkg/controller/volume/cache"
+	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/cache"
 	"k8s.io/kubernetes/pkg/util/strategicpatch"
 )
 
@@ -62,10 +62,12 @@ func (nsu *nodeStatusUpdater) UpdateNodeStatuses() error {
 	for nodeName, attachedVolumes := range nodesToUpdate {
 		nodeObj, exists, err := nsu.nodeInformer.GetStore().GetByKey(nodeName)
 		if nodeObj == nil || !exists || err != nil {
-			return fmt.Errorf(
-				"failed to find node %q in NodeInformer cache. %v",
+			// If node does not exist, its status cannot be updated, log error and move on.
+			glog.Warningf(
+				"Could not update node status. Failed to find node %q in NodeInformer cache. %v",
 				nodeName,
 				err)
+			return nil
 		}
 
 		node, ok := nodeObj.(*api.Node)
