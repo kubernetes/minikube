@@ -32,7 +32,7 @@ make cross checksum
 
 ## Add the version to the releases.json file
 
-Add an entry **to the top** of deploy/minikube/releases.json with the version and checksums.
+Add an entry **to the top** of deploy/minikube/releases.json with the **version** and **checksums**.
 Send a PR.
 This file controls the auto update notifications in minikube.
 Only add entries to this file that should be released to all users (no pre-release, alpha or beta releases).
