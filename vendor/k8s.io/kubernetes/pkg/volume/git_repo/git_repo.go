@@ -41,8 +41,10 @@ type gitRepoPlugin struct {
 
 var _ volume.VolumePlugin = &gitRepoPlugin{}
 
-var wrappedVolumeSpec = volume.Spec{
-	Volume: &api.Volume{VolumeSource: api.VolumeSource{EmptyDir: &api.EmptyDirVolumeSource{}}},
+func wrappedVolumeSpec() volume.Spec {
+	return volume.Spec{
+		Volume: &api.Volume{VolumeSource: api.VolumeSource{EmptyDir: &api.EmptyDirVolumeSource{}}},
+	}
 }
 
 const (
@@ -61,7 +63,7 @@ func (plugin *gitRepoPlugin) GetPluginName() string {
 func (plugin *gitRepoPlugin) GetVolumeName(spec *volume.Spec) (string, error) {
 	volumeSource, _ := getVolumeSource(spec)
 	if volumeSource == nil {
-		return "", fmt.Errorf("Spec does not reference a GCE volume type")
+		return "", fmt.Errorf("Spec does not reference a Git repo volume type")
 	}
 
 	return fmt.Sprintf(
@@ -155,7 +157,7 @@ func (b *gitRepoVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 	}
 
 	// Wrap EmptyDir, let it do the setup.
-	wrapped, err := b.plugin.host.NewWrapperMounter(b.volName, wrappedVolumeSpec, &b.pod, b.opts)
+	wrapped, err := b.plugin.host.NewWrapperMounter(b.volName, wrappedVolumeSpec(), &b.pod, b.opts)
 	if err != nil {
 		return err
 	}
@@ -237,7 +239,7 @@ func (c *gitRepoVolumeUnmounter) TearDown() error {
 func (c *gitRepoVolumeUnmounter) TearDownAt(dir string) error {
 
 	// Wrap EmptyDir, let it do the teardown.
-	wrapped, err := c.plugin.host.NewWrapperUnmounter(c.volName, wrappedVolumeSpec, c.podUID)
+	wrapped, err := c.plugin.host.NewWrapperUnmounter(c.volName, wrappedVolumeSpec(), c.podUID)
 	if err != nil {
 		return err
 	}

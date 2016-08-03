@@ -60,7 +60,10 @@ func (plugin *configMapPlugin) GetVolumeName(spec *volume.Spec) (string, error) 
 		return "", fmt.Errorf("Spec does not reference a ConfigMap volume type")
 	}
 
-	return volumeSource.Name, nil
+	return fmt.Sprintf(
+		"%v/%v",
+		spec.Name(),
+		volumeSource.Name), nil
 }
 
 func (plugin *configMapPlugin) CanSupport(spec *volume.Spec) bool {
@@ -118,12 +121,14 @@ func (sv *configMapVolume) GetAttributes() volume.Attributes {
 	}
 }
 
-// This is the spec for the volume that this plugin wraps.
-var wrappedVolumeSpec = volume.Spec{
-	// This should be on a tmpfs instead of the local disk; the problem is
-	// charging the memory for the tmpfs to the right cgroup.  We should make
-	// this a tmpfs when we can do the accounting correctly.
-	Volume: &api.Volume{VolumeSource: api.VolumeSource{EmptyDir: &api.EmptyDirVolumeSource{}}},
+func wrappedVolumeSpec() volume.Spec {
+	// This is the spec for the volume that this plugin wraps.
+	return volume.Spec{
+		// This should be on a tmpfs instead of the local disk; the problem is
+		// charging the memory for the tmpfs to the right cgroup.  We should make
+		// this a tmpfs when we can do the accounting correctly.
+		Volume: &api.Volume{VolumeSource: api.VolumeSource{EmptyDir: &api.EmptyDirVolumeSource{}}},
+	}
 }
 
 func (b *configMapVolumeMounter) SetUp(fsGroup *int64) error {
@@ -134,7 +139,7 @@ func (b *configMapVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 	glog.V(3).Infof("Setting up volume %v for pod %v at %v", b.volName, b.pod.UID, dir)
 
 	// Wrap EmptyDir, let it do the setup.
-	wrapped, err := b.plugin.host.NewWrapperMounter(b.volName, wrappedVolumeSpec, &b.pod, *b.opts)
+	wrapped, err := b.plugin.host.NewWrapperMounter(b.volName, wrappedVolumeSpec(), &b.pod, *b.opts)
 	if err != nil {
 		return err
 	}
@@ -233,7 +238,7 @@ func (c *configMapVolumeUnmounter) TearDownAt(dir string) error {
 	glog.V(3).Infof("Tearing down volume %v for pod %v at %v", c.volName, c.podUID, dir)
 
 	// Wrap EmptyDir, let it do the teardown.
-	wrapped, err := c.plugin.host.NewWrapperUnmounter(c.volName, wrappedVolumeSpec, c.podUID)
+	wrapped, err := c.plugin.host.NewWrapperUnmounter(c.volName, wrappedVolumeSpec(), c.podUID)
 	if err != nil {
 		return err
 	}
