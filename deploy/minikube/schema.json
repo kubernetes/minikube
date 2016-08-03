@@ -10,20 +10,20 @@
       "checksums": {
         "type": "object",
         "properties": {
-          "windows": {
-            "type": "number",
-            "pattern": "^[A-Fa-f0-9]{64}$"
-          },
           "darwin": {
-            "type": "number",
+            "type": "string",
             "pattern": "^[A-Fa-f0-9]{64}$"
           },
           "linux": {
-            "type": "number",
+            "type": "string",
+            "pattern": "^[A-Fa-f0-9]{64}$"
+          },
+          "windows": {
+            "type": "string",
             "pattern": "^[A-Fa-f0-9]{64}$"
           }
         },
-        "required": ["windows", "darwin", "linux"]
+        "required": ["darwin", "linux", "windows"]
       }
     },
     "required": [
