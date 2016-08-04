@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/go-units"
+	units "github.com/docker/go-units"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
@@ -75,6 +75,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	var host *host.Host
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)
+		if err != nil {
+			glog.Errorf("Error starting host: %s. Retrying.\n", err)
+		}
 		return err
 	}
 	err := util.Retry(3, start)
