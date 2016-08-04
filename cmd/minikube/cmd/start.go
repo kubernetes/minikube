@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -50,7 +51,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a local kubernetes cluster.",
 	Long: `Starts a local kubernetes cluster using Virtualbox. This command
-assumes you already have Virtualbox installed.`,
+assumes you already have Virtualbox & kubectl installed.`,
 	Run: runStart,
 }
 
@@ -106,6 +107,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(constants.APIServerPort), -1)
 	fmt.Printf("Kubernetes is available at %s.\n", kubeHost)
 
+	//Checking for kubectl
+	fmt.Printf("Checking for Kubectl ...\n")
+	if _, err := exec.LookPath("kubectl"); err != nil {
+  		glog.Errorln("For more info on kubectl visit http://kubernetes.io/docs/getting-started-guides/minikube/#download-kubectl")
+	}
+	fmt.Printf("Kubectl is configured and installed.")
+	
+	
 	// setup kubeconfig
 	name := constants.MinikubeContext
 	certAuth := constants.MakeMiniPath("ca.crt")
