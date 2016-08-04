@@ -157,6 +157,29 @@ To determine the NodePort for your service, you can use a `kubectl` command like
 Minikube supports [PersistentVolumes](http://kubernetes.io/docs/user-guide/persistent-volumes/) of type `hostPath`.
 These PersistentVolumes are mapped to a directory inside the minikube VM.
 
+The Minikube VM boots into a tmpfs, so most directories will not be persisted across reboots (`minikube stop`).
+However, Minikube is configured to persist files stored under the following host directories:
+
+* `/data`
+* `/var/lib/localkube`
+* `/var/lib/docker`
+
+Here is an example PersistentVolume config to persist data in the '/data' directory:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv0001
+spec:
+  accessModes:
+    - ReadWriteOnce  
+  capacity:
+    storage: 5Gi
+  hostPath:
+    path: /data/pv0001/
+```
+
 ## Private Container Registries
 
 To access a private container registry, follow the steps on [this page](http://kubernetes.io/docs/user-guide/images/).
