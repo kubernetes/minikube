@@ -24,7 +24,7 @@ import (
 
 func createVMwareFusionHost(config MachineConfig) drivers.Driver {
 	d := vmwarefusion.NewDriver(constants.MachineName, constants.Minipath).(*vmwarefusion.Driver)
-	d.Boot2DockerURL = config.GetISOCacheFileURI()
+	d.Boot2DockerURL = config.GetISOFileURI()
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 
@@ -59,7 +59,7 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
-		Boot2DockerURL: config.GetISOCacheFileURI(),
+		Boot2DockerURL: config.GetISOFileURI(),
 		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=boot2docker",
 		DiskSize:       int64(config.DiskSize),
 	}
