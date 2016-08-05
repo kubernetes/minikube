@@ -22,11 +22,11 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
 * OS X
     * [xhyve driver](DRIVERS.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion) installation
 * Linux
-    * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](http://www.linux-kvm.org/) installation, 
+    * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](http://www.linux-kvm.org/) installation,
 * VT-x/AMD-v virtualization must be enabled in BIOS
 * `kubectl` must be on your path. Minikube currently supports any version of `kubectl` greater than 1.0, but we recommend using the most recent version.
   You can install kubectl with [these steps](http://kubernetes.io/docs/getting-started-guides/minikube/#download-kubectl).
-  
+
 
 ### Instructions
 
@@ -173,7 +173,7 @@ metadata:
   name: pv0001
 spec:
   accessModes:
-    - ReadWriteOnce  
+    - ReadWriteOnce
   capacity:
     storage: 5Gi
   hostPath:
@@ -260,7 +260,7 @@ make test
 
 #### Integration Tests
 
-Integration tests are currently run manually. 
+Integration tests are currently run manually.
 To run them, build the binary and run the tests:
 
 ```shell
@@ -359,7 +359,7 @@ Make sure to also fetch tags, as Godep relies on these.
  cd $GOPATH/src/k8s.io/kubernetes
  git fetch --tags
  ```
- 
+
  Then list all available Kubernetes tags:
 
  ```shell
@@ -374,7 +374,7 @@ Make sure to also fetch tags, as Godep relies on these.
 ```
 
  Then checkout the correct one and update its dependencies with:
- 
+
  ```shell
  git checkout $DESIREDTAG
  godep restore ./...
