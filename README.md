@@ -125,7 +125,7 @@ This context contains the configuration to communicate with your minikube cluste
 
 Minikube sets this context to default automatically, but if you need to switch back to it in the future, run:
 
-`kubectl config set-context minikube`,
+`kubectl config use-context minikube`,
 
 or pass the context on each command like this: `kubectl get pods --context=minikube`.
 
