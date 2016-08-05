@@ -214,9 +214,9 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	if err != nil {
 		return err
 	}
-	if localkubeURLWasSpecified(config) {
+	if localkubeURIWasSpecified(config) {
 		lCacher := localkubeCacher{config}
-		if err = updateLocalkubeFromURL(lCacher, client); err != nil {
+		if err = updateLocalkubeFromURI(lCacher, client); err != nil {
 			return err
 		}
 	} else {
@@ -239,7 +239,7 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	return nil
 }
 
-func localkubeURLWasSpecified(config KubernetesConfig) bool {
+func localkubeURIWasSpecified(config KubernetesConfig) bool {
 	// see if flag is different than default -> it was passed by user
 	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }
@@ -309,7 +309,7 @@ func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	if err != nil {
 		return err
 	} else {
-		out, err := os.Create(m.getISOCacheFilepath())
+		out, err := os.Create(m.GetISOCacheFilepath())
 		if err != nil {
 			return err
 		}

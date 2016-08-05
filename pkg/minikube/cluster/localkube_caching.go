@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/glog"
 	"golang.org/x/crypto/ssh"
@@ -86,6 +87,18 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	return nil
 }
 
+func updateLocalkubeFromURI(lCacher localkubeCacher, client *ssh.Client) error {
+	urlObj, err := url.Parse(lCacher.k8sConf.KubernetesVersion)
+	if err != nil {
+		return err
+	}
+	if urlObj.Scheme == fileScheme {
+		return updateLocalkubeFromFile(lCacher, client)
+	} else {
+		return updateLocalkubeFromURL(lCacher, client)
+	}
+}
+
 func updateLocalkubeFromURL(lCacher localkubeCacher, client *ssh.Client) error {
 	if !lCacher.isLocalkubeCached() {
 		if err := lCacher.downloadAndCacheLocalkube(); err != nil {
@@ -116,6 +129,21 @@ func updateLocalkubeFromAsset(client *ssh.Client) error {
 	contents, err := Asset("out/localkube")
 	if err != nil {
 		glog.Infof("Error loading asset out/localkube: %s", err)
+		return err
+	}
+	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
+		"localkube", "0777", client); err != nil {
+		return err
+	}
+	return nil
+}
+
+func updateLocalkubeFromFile(lCacher localkubeCacher, client *ssh.Client) error {
+	path := strings.TrimPrefix(lCacher.k8sConf.KubernetesVersion, "file://")
+	path = filepath.FromSlash(path)
+	contents, err := ioutil.ReadFile(path)
+	if err != nil {
+		glog.Infof("Error loading file %s: %s", path, err)
 		return err
 	}
 	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
