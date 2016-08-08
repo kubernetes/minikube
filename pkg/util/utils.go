@@ -126,8 +126,3 @@ func (m MultiError) ToError() error {
 	}
 	return fmt.Errorf(strings.Join(errStrings, "\n"))
 }
-
-func GetMD5Hash(text string) string {
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
-}
