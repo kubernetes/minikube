@@ -82,7 +82,10 @@ func init() {
 func initConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(constants.MakeMiniPath("config"))
-	viper.ReadInConfig()
+	err := viper.ReadInConfig()
+	if err != nil {
+		glog.Warningf("Error reading config file: %s", err)
+	}
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
 }
