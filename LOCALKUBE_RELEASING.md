@@ -30,11 +30,5 @@ This step makes the new release trigger update notifications in old versions of 
 Use this command from a clean git repo:
 
 ```shell
-gsutil cp deploy/minikube/releases.json gs://minikube/k8s_releases.json
-```
-
-## Mark the release as `latest` in GCS:
-
-```shell
-gsutil cp -r gs://minikube/releases/$RELEASE gs://minikube/releases/latest
+gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
 ```
