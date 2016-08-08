@@ -18,6 +18,7 @@ minikube start
       --cpus=1: Number of CPUs allocated to the minikube VM
       --disk-size=20g: Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)
       --docker-env=[]: Environment variables to pass to the Docker daemon. (format: key=value)
+      --host-only-cidr="192.168.99.1/24": The CIDR to be used for the minikube VM (only supported with Virtualbox driver)
       --insecure-registry=[]: Insecure Docker registries to pass to the Docker daemon
       --iso-url="https://storage.googleapis.com/minikube/minikube-0.5.iso": Location of the minikube iso
       --kubernetes-version="v1.3.4": The kubernetes version that the minikube VM will (ex: v1.2.3) 
