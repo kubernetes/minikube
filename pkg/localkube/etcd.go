@@ -44,8 +44,8 @@ var (
 // Etcd is a Server which manages an Etcd cluster
 type EtcdServer struct {
 	*etcdserver.EtcdServer
-	config        *etcdserver.ServerConfig
-	clientListens []net.Listener
+	config          *etcdserver.ServerConfig
+	clientListeners []net.Listener
 }
 
 // NewEtcd creates a new default etcd Server using 'dataDir' for persistence. Panics if could not be configured.
@@ -95,14 +95,14 @@ func (e *EtcdServer) Start() {
 	}
 
 	// create client listeners
-	clientListeners := createListenersOrPanic(e.config.ClientURLs)
+	e.clientListeners = createListenersOrPanic(e.config.ClientURLs)
 
 	// start etcd
 	e.EtcdServer.Start()
 
 	// setup client listeners
 	ch := v2http.NewClientHandler(e.EtcdServer, e.requestTimeout())
-	for _, l := range clientListeners {
+	for _, l := range e.clientListeners {
 		go func(l net.Listener) {
 			srv := &http.Server{
 				Handler:     ch,
@@ -119,7 +119,7 @@ func (e *EtcdServer) Stop() {
 		e.EtcdServer.Stop()
 	}
 
-	for _, l := range e.clientListens {
+	for _, l := range e.clientListeners {
 		l.Close()
 	}
 }
