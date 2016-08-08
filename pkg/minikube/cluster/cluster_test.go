@@ -534,6 +534,9 @@ func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Requ
 }
 
 func TestUpdateKubernetesVersion(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
@@ -563,5 +566,50 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 	contents := []byte(testLocalkubeBin)
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
+	}
+}
+
+type nopCloser struct {
+	io.Reader
+}
+
+func (nopCloser) Close() error { return nil }
+
+func TestIsLocalkubeCached(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
+	inputArr := [...]string{
+		"v1.3.3",
+		"1.3.0",
+		"http://test-url.localkube.com/localkube-binary",
+		"file:///test/dir/to/localkube-binary",
+	}
+
+	readCloser := nopCloser{}
+
+	localkubeCacher := localkubeCacher{
+		k8sConf: KubernetesConfig{},
+	}
+
+	inner := func(input string) {
+		localkubeCacher.k8sConf = KubernetesConfig{
+			KubernetesVersion: input,
+		}
+		if localkubeCacher.isLocalkubeCached() {
+			t.Errorf("IsLocalKubeCached returned true even though %s was not cached",
+				localkubeCacher.getLocalkubeCacheFilepath())
+		}
+
+		readCloser = nopCloser{bytes.NewBufferString("test-localkube-binary-data")}
+		localkubeCacher.cacheLocalkube(readCloser)
+		if !localkubeCacher.isLocalkubeCached() {
+			t.Errorf("IsLocalKubeCached returned false even though %s was cached",
+				localkubeCacher.getLocalkubeCacheFilepath())
+		}
+
+	}
+	for _, input := range inputArr {
+		inner(input)
 	}
 }

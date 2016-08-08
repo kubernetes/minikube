@@ -19,7 +19,6 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -39,7 +38,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"golang.org/x/crypto/ssh"
 	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
@@ -211,49 +209,14 @@ var assets = []fileToCopy{
 	},
 }
 
-func updateLocalkubeFromURL(config KubernetesConfig, client *ssh.Client) error {
-	resp := &http.Response{}
-	err := errors.New("")
-	downloader := func() (err error) {
-		url, err := util.GetLocalkubeDownloadURL(config.KubernetesVersion,
-			constants.LocalkubeLinuxFilename)
-		if err != nil {
-			return err
-		}
-		resp, err = http.Get(url)
-		return err
-	}
-
-	if err = util.Retry(5, downloader); err != nil {
-		return err
-	}
-	if err = sshutil.Transfer(resp.Body, int(resp.ContentLength), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return err
-	}
-	return nil
-}
-
-func updateLocalkubeFromAsset(client *ssh.Client) error {
-	contents, err := Asset("out/localkube")
-	if err != nil {
-		glog.Infof("Error loading asset out/localkube: %s", err)
-		return err
-	}
-	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return err
-	}
-	return nil
-}
-
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
 	}
-	if localkubeURLWasSpecified(config) {
-		if err = updateLocalkubeFromURL(config, client); err != nil {
+	if localkubeURIWasSpecified(config) {
+		lCacher := localkubeCacher{config}
+		if err = lCacher.updateLocalkubeFromURI(client); err != nil {
 			return err
 		}
 	} else {
@@ -276,7 +239,7 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	return nil
 }
 
-func localkubeURLWasSpecified(config KubernetesConfig) bool {
+func localkubeURIWasSpecified(config KubernetesConfig) bool {
 	// see if flag is different than default -> it was passed by user
 	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }
@@ -391,6 +354,7 @@ func (m *MachineConfig) GetISOFileURI() string {
 	// As this is a file URL there should be no backslashes regardless of platform running on.
 	return "file://" + filepath.ToSlash(isoPath)
 }
+
 func (m *MachineConfig) IsMinikubeISOCached() bool {
 	if _, err := os.Stat(m.GetISOCacheFilepath()); os.IsNotExist(err) {
 		return false
