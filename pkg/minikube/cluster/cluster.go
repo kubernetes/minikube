@@ -111,35 +111,13 @@ func StopHost(api libmachine.API) error {
 	return nil
 }
 
-type multiError struct {
-	Errors []error
-}
-
-func (m *multiError) Collect(err error) {
-	if err != nil {
-		m.Errors = append(m.Errors, err)
-	}
-}
-
-func (m multiError) ToError() error {
-	if len(m.Errors) == 0 {
-		return nil
-	}
-
-	errStrings := []string{}
-	for _, err := range m.Errors {
-		errStrings = append(errStrings, err.Error())
-	}
-	return fmt.Errorf(strings.Join(errStrings, "\n"))
-}
-
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API) error {
 	host, err := api.Load(constants.MachineName)
 	if err != nil {
 		return err
 	}
-	m := multiError{}
+	m := util.MultiError{}
 	m.Collect(host.Driver.Remove())
 	m.Collect(api.Remove(constants.MachineName))
 	return m.ToError()

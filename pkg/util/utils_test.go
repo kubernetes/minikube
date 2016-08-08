@@ -89,3 +89,22 @@ func TestGetLocalkubeDownloadURL(t *testing.T) {
 		}
 	}
 }
+
+func TestMultiError(t *testing.T) {
+	m := MultiError{}
+
+	m.Collect(fmt.Errorf("Error 1"))
+	m.Collect(fmt.Errorf("Error 2"))
+
+	err := m.ToError()
+	expected := `Error 1
+Error 2`
+	if err.Error() != expected {
+		t.Fatalf("%s != %s", err, expected)
+	}
+
+	m = MultiError{}
+	if err := m.ToError(); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+}
