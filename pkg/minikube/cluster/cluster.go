@@ -216,7 +216,7 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	}
 	if localkubeURIWasSpecified(config) {
 		lCacher := localkubeCacher{config}
-		if err = updateLocalkubeFromURI(lCacher, client); err != nil {
+		if err = lCacher.updateLocalkubeFromURI(client); err != nil {
 			return err
 		}
 	} else {

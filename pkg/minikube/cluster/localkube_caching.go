@@ -34,6 +34,19 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+func updateLocalkubeFromAsset(client *ssh.Client) error {
+	contents, err := Asset("out/localkube")
+	if err != nil {
+		glog.Infof("Error loading asset out/localkube: %s", err)
+		return err
+	}
+	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
+		"localkube", "0777", client); err != nil {
+		return err
+	}
+	return nil
+}
+
 // localkubeCacher is a struct with methods designed for caching localkube
 type localkubeCacher struct {
 	k8sConf KubernetesConfig
@@ -87,25 +100,25 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	return nil
 }
 
-func updateLocalkubeFromURI(lCacher localkubeCacher, client *ssh.Client) error {
-	urlObj, err := url.Parse(lCacher.k8sConf.KubernetesVersion)
+func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
+	urlObj, err := url.Parse(l.k8sConf.KubernetesVersion)
 	if err != nil {
 		return err
 	}
 	if urlObj.Scheme == fileScheme {
-		return updateLocalkubeFromFile(lCacher, client)
+		return l.updateLocalkubeFromFile(client)
 	} else {
-		return updateLocalkubeFromURL(lCacher, client)
+		return l.updateLocalkubeFromURL(client)
 	}
 }
 
-func updateLocalkubeFromURL(lCacher localkubeCacher, client *ssh.Client) error {
-	if !lCacher.isLocalkubeCached() {
-		if err := lCacher.downloadAndCacheLocalkube(); err != nil {
+func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {
+	if !l.isLocalkubeCached() {
+		if err := l.downloadAndCacheLocalkube(); err != nil {
 			return err
 		}
 	}
-	if err := lCacher.transferCachedLocalkubeToVM(client); err != nil {
+	if err := l.transferCachedLocalkubeToVM(client); err != nil {
 		return err
 	}
 	return nil
@@ -125,21 +138,8 @@ func (l *localkubeCacher) transferCachedLocalkubeToVM(client *ssh.Client) error 
 	return nil
 }
 
-func updateLocalkubeFromAsset(client *ssh.Client) error {
-	contents, err := Asset("out/localkube")
-	if err != nil {
-		glog.Infof("Error loading asset out/localkube: %s", err)
-		return err
-	}
-	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return err
-	}
-	return nil
-}
-
-func updateLocalkubeFromFile(lCacher localkubeCacher, client *ssh.Client) error {
-	path := strings.TrimPrefix(lCacher.k8sConf.KubernetesVersion, "file://")
+func (l *localkubeCacher) updateLocalkubeFromFile(client *ssh.Client) error {
+	path := strings.TrimPrefix(l.k8sConf.KubernetesVersion, "file://")
 	path = filepath.FromSlash(path)
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
