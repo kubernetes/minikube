@@ -109,7 +109,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
 	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(constants.APIServerPort), -1)
-	fmt.Printf("Kubernetes is available at %s.\n", kubeHost)
 
 	// setup kubeconfig
 	name := constants.MinikubeContext
