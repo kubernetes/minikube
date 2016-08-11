@@ -19,12 +19,16 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+
+	commonutil "k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -44,9 +48,15 @@ var serviceCmd = &cobra.Command{
 		}
 
 		service := args[0]
-
 		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 		defer api.Close()
+
+		cluster.EnsureMinikubeRunningOrExit(api)
+		if err := commonutil.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
+			fmt.Fprintln(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s", service, err)
+			os.Exit(1)
+		}
+
 		url, err := cluster.GetServiceURL(api, namespace, service)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -66,4 +76,32 @@ func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
 	RootCmd.AddCommand(serviceCmd)
+}
+
+// CheckService waits for the specified service to be ready by returning an error until the service is up
+// The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
+func CheckService(namespace string, service string) error {
+	endpoints, err := cluster.GetKubernetesEndpointsWithNamespace(namespace)
+	if err != nil {
+		return err
+	}
+	endpoint, err := endpoints.Get(service)
+	if err != nil {
+		return err
+	}
+	return CheckEndpointReady(endpoint)
+}
+
+func CheckEndpointReady(endpoint *kubeApi.Endpoints) error {
+	if len(endpoint.Subsets) == 0 {
+		fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...\n")
+		return fmt.Errorf("Endpoint for service is not ready yet\n")
+	}
+	for _, subset := range endpoint.Subsets {
+		if len(subset.NotReadyAddresses) != 0 {
+			fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...\n")
+			return fmt.Errorf("Endpoint for service is not ready yet\n")
+		}
+	}
+	return nil
 }
