@@ -79,3 +79,13 @@ gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
 ```shell
 gsutil cp -r gs://minikube/releases/$RELEASE/* gs://minikube/releases/latest/
 ```
+
+## Package managers which include minikube
+
+These are downstream packages that are being maintained by others and how to upgrade them to make sure they have the latest versions
+
+Arch Linux AUR - "Flag as package out-of-date"
+https://aur.archlinux.org/packages/minikube/
+
+Brew Cask - Update Cask Formula
+https://github.com/caskroom/homebrew-cask/blob/master/Casks/minikube.rb
