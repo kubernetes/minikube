@@ -590,7 +590,7 @@ func getServicePortFromServiceGetter(services serviceGetter, service string) (in
 	return nodePort, nil
 }
 
-func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+func GetKubernetesClient() (*unversioned.Client, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -602,19 +602,20 @@ func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error)
 	if err != nil {
 		return nil, err
 	}
+	return client, nil
+}
+
+func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+	client, err := GetKubernetesClient()
+	if err != nil {
+		return nil, err
+	}
 	services := client.Services(namespace)
 	return services, nil
 }
 
 func GetKubernetesEndpointsWithNamespace(namespace string) (endpointGetter, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
-	}
-	client, err := unversioned.New(config)
+	client, err := GetKubernetesClient()
 	if err != nil {
 		return nil, err
 	}

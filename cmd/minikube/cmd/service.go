@@ -24,6 +24,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 
@@ -52,7 +53,7 @@ var serviceCmd = &cobra.Command{
 
 		cluster.EnsureMinikubeRunningOrExit(api)
 		if err := commonutil.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
-			fmt.Println("Could not find finalized endpoint being pointed to by %s: %s", service, err)
+			fmt.Fprintln(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s", service, err)
 			os.Exit(1)
 		}
 
@@ -88,14 +89,18 @@ func CheckService(namespace string, service string) error {
 	if err != nil {
 		return err
 	}
+	return CheckEndpointReady(endpoint)
+}
+
+func CheckEndpointReady(endpoint *kubeApi.Endpoints) error {
 	if len(endpoint.Subsets) == 0 {
-		fmt.Printf("Waiting, endpoint for service: %s is not ready yet...\n", service)
-		return fmt.Errorf("Endpoint for service: %s is not ready yet\n", service)
+		fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...\n")
+		return fmt.Errorf("Endpoint for service is not ready yet\n")
 	}
 	for _, subset := range endpoint.Subsets {
 		if len(subset.NotReadyAddresses) != 0 {
-			fmt.Printf("Waiting, endpoint for service: %s is not ready yet...\n", service)
-			return fmt.Errorf("Endpoint for service: %s is not ready yet\n", service)
+			fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...\n")
+			return fmt.Errorf("Endpoint for service is not ready yet\n")
 		}
 	}
 	return nil
