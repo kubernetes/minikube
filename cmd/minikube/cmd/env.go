@@ -34,19 +34,20 @@ import (
 )
 
 const (
-	envTmpl = `{{ .Prefix }}DOCKER_TLS_VERIFY{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}DOCKER_HOST{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}DOCKER_CERT_PATH{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}`
+	envTmpl = `{{ .Prefix }}DOCKER_TLS_VERIFY{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}DOCKER_HOST{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}DOCKER_CERT_PATH{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}DOCKER_API_VERSION{{ .Delimiter }}{{ .DockerAPIVersion }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}`
 )
 
 type ShellConfig struct {
-	Prefix          string
-	Delimiter       string
-	Suffix          string
-	DockerCertPath  string
-	DockerHost      string
-	DockerTLSVerify string
-	UsageHint       string
-	NoProxyVar      string
-	NoProxyValue    string
+	Prefix           string
+	Delimiter        string
+	Suffix           string
+	DockerCertPath   string
+	DockerHost       string
+	DockerTLSVerify  string
+	DockerAPIVersion string
+	UsageHint        string
+	NoProxyVar       string
+	NoProxyValue     string
 }
 
 var (
@@ -92,10 +93,11 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	shellCfg := &ShellConfig{
-		DockerCertPath:  envMap["DOCKER_CERT_PATH"],
-		DockerHost:      envMap["DOCKER_HOST"],
-		DockerTLSVerify: envMap["DOCKER_TLS_VERIFY"],
-		UsageHint:       generateUsageHint(userShell),
+		DockerCertPath:   envMap["DOCKER_CERT_PATH"],
+		DockerHost:       envMap["DOCKER_HOST"],
+		DockerTLSVerify:  envMap["DOCKER_TLS_VERIFY"],
+		DockerAPIVersion: constants.DockerAPIVersion,
+		UsageHint:        generateUsageHint(userShell),
 	}
 
 	if noProxy {

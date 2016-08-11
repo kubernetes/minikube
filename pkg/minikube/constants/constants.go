@@ -71,3 +71,6 @@ var ConfigFilePath = MakeMiniPath("config")
 
 var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sReleases/"
 var LocalkubeLinuxFilename = "localkube-linux-amd64"
+
+// DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
+const DockerAPIVersion = "1.23"
