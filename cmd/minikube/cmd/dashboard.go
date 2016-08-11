@@ -19,13 +19,15 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+
+	commonutil "k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -40,9 +42,20 @@ var dashboardCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 		defer api.Close()
-		url, err := cluster.GetServiceURL(api, "kube-system", "kubernetes-dashboard")
+
+		cluster.EnsureMinikubeRunningOrExit(api)
+		namespace := "kube-system"
+		service := "kubernetes-dashboard"
+
+		if err := commonutil.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
+			fmt.Fprintln(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s", service, err)
+			os.Exit(1)
+		}
+
+		url, err := cluster.GetServiceURL(api, namespace, service)
 		if err != nil {
-			glog.Errorln("Error accessing the kubernetes dashboard (is minikube running?): Error: ", err)
+			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, "Check that minikube is running.")
 			os.Exit(1)
 		}
 		if dashboardURLMode {
@@ -51,6 +64,7 @@ var dashboardCmd = &cobra.Command{
 			fmt.Fprintln(os.Stdout, "Opening kubernetes dashboard in default browser...")
 			browser.OpenURL(url)
 		}
+
 	},
 }
 

@@ -507,8 +507,12 @@ type serviceGetter interface {
 	Get(name string) (*kubeApi.Service, error)
 }
 
+type endpointGetter interface {
+	Get(name string) (*kubeApi.Endpoints, error)
+}
+
 func getServicePort(namespace, service string) (int, error) {
-	services, err := getKubernetesServicesWithNamespace(namespace)
+	services, err := GetKubernetesServicesWithNamespace(namespace)
 	if err != nil {
 		return 0, err
 	}
@@ -530,7 +534,7 @@ func getServicePortFromServiceGetter(services serviceGetter, service string) (in
 	return nodePort, nil
 }
 
-func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+func GetKubernetesClient() (*unversioned.Client, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -542,6 +546,37 @@ func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error)
 	if err != nil {
 		return nil, err
 	}
+	return client, nil
+}
+
+func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+	client, err := GetKubernetesClient()
+	if err != nil {
+		return nil, err
+	}
 	services := client.Services(namespace)
 	return services, nil
+}
+
+func GetKubernetesEndpointsWithNamespace(namespace string) (endpointGetter, error) {
+	client, err := GetKubernetesClient()
+	if err != nil {
+		return nil, err
+	}
+	endpoints := client.Endpoints(namespace)
+	return endpoints, nil
+}
+
+// EnsureMinikubeRunningOrExit checks that minikube has a status available and that
+// that the status is `Running`, otherwise it will exit
+func EnsureMinikubeRunningOrExit(api libmachine.API) {
+	s, err := GetHostStatus(api)
+	if err != nil {
+		glog.Errorln("Error getting machine status:", err)
+		os.Exit(1)
+	}
+	if s != state.Running.String() {
+		fmt.Fprintln(os.Stdout, "minikube is not currently running so the service cannot be accessed")
+		os.Exit(1)
+	}
 }
