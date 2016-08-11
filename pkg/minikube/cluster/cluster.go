@@ -41,6 +41,7 @@ import (
 	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
+	"k8s.io/kubernetes/pkg/watch"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
@@ -515,19 +516,23 @@ func getServicePort(namespace, service string) (int, error) {
 	return getServicePortFromServiceGetter(services, service)
 }
 
-func getServicePortFromServiceGetter(services serviceGetter, service string) (int, error) {
-	svc, err := services.Get(service)
-	if err != nil {
-		return 0, fmt.Errorf("Error getting %s service: %s", service, err)
-	}
+func GetServicePortFromService(svc *kubeApi.Service) (int, error) {
 	nodePort := 0
 	if len(svc.Spec.Ports) > 0 {
 		nodePort = int(svc.Spec.Ports[0].NodePort)
 	}
 	if nodePort == 0 {
-		return 0, fmt.Errorf("Service %s does not have a node port. To have one assigned automatically, the service type must be NodePort or LoadBalancer, but this service is of type %s.", service, svc.Spec.Type)
+		return 0, fmt.Errorf("Service does not have a node port. To have one assigned automatically, the service type must be NodePort or LoadBalancer, but this service is of type %s.", svc.Spec.Type)
 	}
 	return nodePort, nil
+}
+
+func getServicePortFromServiceGetter(services serviceGetter, service string) (int, error) {
+	svc, err := services.Get(service)
+	if err != nil {
+		return 0, fmt.Errorf("Error getting %s service: %s", service, err)
+	}
+	return GetServicePortFromService(svc)
 }
 
 func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
@@ -544,4 +549,21 @@ func getKubernetesServicesWithNamespace(namespace string) (serviceGetter, error)
 	}
 	services := client.Services(namespace)
 	return services, nil
+}
+
+func WatchKubernetesServicesWithNamespace(namespace string) (watch.Interface, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+	}
+	client, err := unversioned.New(config)
+	if err != nil {
+		return nil, err
+	}
+	watchInterface, err := client.Services(namespace).Watch(kubeApi.ListOptions{Watch: true})
+
+	return watchInterface, err
 }
