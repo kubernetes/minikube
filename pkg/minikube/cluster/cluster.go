@@ -308,16 +308,21 @@ func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	response, err := http.Get(m.MinikubeISO)
 	if err != nil {
 		return err
-	} else {
-		out, err := os.Create(m.GetISOCacheFilepath())
-		if err != nil {
-			return err
-		}
-		defer out.Close()
-		defer response.Body.Close()
-		if _, err = io.Copy(out, response.Body); err != nil {
-			return err
-		}
+	}
+
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("Received %d response from %s while trying to download minikube.iso", response.StatusCode, m.MinikubeISO)
+	}
+
+	out, err := os.Create(m.GetISOCacheFilepath())
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	if _, err = io.Copy(out, response.Body); err != nil {
+		return err
 	}
 	return nil
 }
