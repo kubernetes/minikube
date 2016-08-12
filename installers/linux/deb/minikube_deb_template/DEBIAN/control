@@ -1,0 +1,12 @@
+Package: minikube
+Version: --VERSION--
+Section: base
+Priority: optional
+Architecture: amd64
+Depends: virtualbox
+Maintainer: Aaron Prindle <aaprindle@gmail.com>
+Description: Minikube
+ Minikube is a tool that makes it easy to run Kubernetes locally.
+ Minikube runs a single-node Kubernetes cluster inside a VM on your
+ laptop for users looking to try out Kubernetes or develop with it 
+ day-to-day.
