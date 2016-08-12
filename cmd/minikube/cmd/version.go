@@ -20,7 +20,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -29,8 +31,10 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version of minikube.",
 	Long:  `Print the version of minikube.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Empty func to override parent pre-run - don't want to perform
-		// check for new version.
+		// Explicitly disable update checking for the version command
+		viper.Set(config.WantUpdateNotification, "false")
+
+		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(command *cobra.Command, args []string) {
 
