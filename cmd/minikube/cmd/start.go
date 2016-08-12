@@ -27,6 +27,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	cfg "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -34,17 +35,20 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+const (
+	isoURL                = "iso-url"
+	memory                = "memory"
+	cpus                  = "cpus"
+	humanReadableDiskSize = "disk-size"
+	vmDriver              = "vm-driver"
+	kubernetesVersion     = "kubernetes-version"
+	hostOnlyCIDR          = "host-only-cidr"
+)
+
 var (
-	minikubeISO       string
-	memory            int
-	cpus              int
-	disk              = newUnitValue(20 * units.GB)
-	vmDriver          string
-	dockerEnv         []string
-	insecureRegistry  []string
-	registryMirror    []string
-	kubernetesVersion string
-	hostOnlyCIDR      string
+	registryMirror   []string
+	dockerEnv        []string
+	insecureRegistry []string
 )
 
 // startCmd represents the start command
@@ -62,18 +66,18 @@ func runStart(cmd *cobra.Command, args []string) {
 	defer api.Close()
 
 	config := cluster.MachineConfig{
-		MinikubeISO:      minikubeISO,
-		Memory:           memory,
-		CPUs:             cpus,
-		DiskSize:         int(*disk / units.MB),
-		VMDriver:         vmDriver,
+		MinikubeISO:      viper.GetString(isoURL),
+		Memory:           viper.GetInt(memory),
+		CPUs:             viper.GetInt(cpus),
+		DiskSize:         calculateDiskSizeInMB(viper.GetString(humanReadableDiskSize)),
+		VMDriver:         viper.GetString(vmDriver),
 		DockerEnv:        dockerEnv,
 		InsecureRegistry: insecureRegistry,
 		RegistryMirror:   registryMirror,
-		HostOnlyCIDR:     hostOnlyCIDR,
+		HostOnlyCIDR:     viper.GetString(hostOnlyCIDR),
 	}
 	kubernetesConfig := cluster.KubernetesConfig{
-		KubernetesVersion: kubernetesVersion,
+		KubernetesVersion: viper.GetString(kubernetesVersion),
 	}
 
 	var host *host.Host
@@ -124,6 +128,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Kubectl is now configured to use the cluster.")
 }
 
+func calculateDiskSizeInMB(humanReadableDiskSize string) int {
+	diskSize, err := units.FromHumanSize(humanReadableDiskSize)
+	if err != nil {
+		glog.Errorf("Invalid disk size: %s", err)
+	}
+	return int(diskSize / units.MB)
+}
+
 // setupKubeconfig reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
@@ -167,16 +179,16 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
 }
 
 func init() {
-	startCmd.Flags().StringVar(&minikubeISO, "iso-url", constants.DefaultIsoUrl, "Location of the minikube iso")
-	startCmd.Flags().StringVar(&vmDriver, "vm-driver", constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
-	startCmd.Flags().IntVar(&memory, "memory", constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
-	startCmd.Flags().IntVar(&cpus, "cpus", constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
-	diskFlag := startCmd.Flags().VarPF(disk, "disk-size", "", "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
-	diskFlag.DefValue = constants.DefaultDiskSize
-	startCmd.Flags().StringVar(&hostOnlyCIDR, "host-only-cidr", "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
+	startCmd.Flags().String(isoURL, constants.DefaultIsoUrl, "Location of the minikube iso")
+	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
+	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
+	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
+	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
+	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
 	startCmd.Flags().StringSliceVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
-	startCmd.Flags().StringVar(&kubernetesVersion, "kubernetes-version", constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
+	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
+	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }
