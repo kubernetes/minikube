@@ -38,7 +38,9 @@ var dirs = [...]string{
 	constants.MakeMiniPath("cache"),
 	constants.MakeMiniPath("cache", "iso"),
 	constants.MakeMiniPath("cache", "localkube"),
-	constants.MakeMiniPath("config")}
+	constants.MakeMiniPath("config"),
+	constants.MakeMiniPath("addons"),
+}
 
 const (
 	showLibmachineLogs = "show-libmachine-logs"

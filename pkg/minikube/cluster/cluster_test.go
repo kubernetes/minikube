@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -512,9 +513,9 @@ func TestUpdateDefault(t *testing.T) {
 	}
 	transferred := s.Transfers.Bytes()
 
-	//test that kube-add on assets are transferred properly
-	for _, a := range assets {
-		contents, _ := Asset(a.AssetName)
+	//test that kube-add memoryAssets are transferred properly
+	for _, a := range memoryAssets {
+		contents, _ := Asset(a.GetAssetName())
 		if !bytes.Contains(transferred, contents) {
 			t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 		}
@@ -650,5 +651,59 @@ func TestIsIsoChecksumValid(t *testing.T) {
 		if valid != tc.expected {
 			t.Errorf("Expected isIsoChecksumValid to be %v, was %v", tc.expected, valid)
 		}
+	}
+}
+
+func TestUpdateCustomAddons(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	os.Mkdir(constants.MakeMiniPath("addons", "subdir"), 0777)
+	defer os.RemoveAll(tempDir)
+
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
+	}
+
+	h := tests.NewMockHost()
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+	}
+
+	//write a file into ~/.minikube/addons
+	path := filepath.Join(constants.MakeMiniPath("addons"), "dir-addon.yaml")
+	testContent1 := []byte("CUSTOM ADDON TEST STRING#1, In Addons Dir")
+	err = ioutil.WriteFile(path, testContent1, 0644)
+	if err != nil {
+		t.Fatalf("Error writing custom addon: %s", err)
+	}
+
+	path = filepath.Join(constants.MakeMiniPath("addons", "subdir"), "subdir-addon.yaml")
+	testContent2 := []byte("CUSTOM ADDON TEST STRING#2, In Addons SubDir")
+	err = ioutil.WriteFile(path, testContent2, 0644)
+	if err != nil {
+		t.Fatalf("Error writing custom addon: %s", err)
+	}
+
+	//run update
+	kubernetesConfig := KubernetesConfig{
+		KubernetesVersion: constants.DefaultKubernetesVersion,
+	}
+	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
+		t.Fatalf("Error updating cluster: %s", err)
+	}
+	transferred := s.Transfers.Bytes()
+
+	//test that custom addons are transferred properly
+	if !bytes.Contains(transferred, testContent1) {
+		t.Fatalf("Custom addon not copied. Expected transfers to contain custom addon with content: %s. It was: %s", testContent1, transferred)
+	}
+
+	if !bytes.Contains(transferred, testContent2) {
+		t.Fatalf("Custom addon not copied. Expected transfers to contain custom addon with content: %s. It was: %s", testContent2, transferred)
 	}
 }

@@ -30,6 +30,10 @@ func MakeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = os.MkdirAll(filepath.Join(tempDir, "addons"), 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = os.MkdirAll(filepath.Join(tempDir, "cache", "iso"), 0777)
 	if err != nil {
 		log.Fatal(err)
