@@ -99,6 +99,7 @@ func getJson(url string, target *releases) error {
 
 func getLatestVersionFromURL(url string) (semver.Version, error) {
 	var releases releases
+	glog.Infof("Checking for updates...")
 	if err := getJson(url, &releases); err != nil {
 		return semver.Version{}, err
 	}
