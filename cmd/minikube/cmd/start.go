@@ -42,6 +42,7 @@ var (
 	vmDriver          string
 	dockerEnv         []string
 	insecureRegistry  []string
+	registryMirror    []string
 	kubernetesVersion string
 	hostOnlyCIDR      string
 )
@@ -68,6 +69,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		VMDriver:         vmDriver,
 		DockerEnv:        dockerEnv,
 		InsecureRegistry: insecureRegistry,
+		RegistryMirror:   registryMirror,
 		HostOnlyCIDR:     hostOnlyCIDR,
 	}
 	kubernetesConfig := cluster.KubernetesConfig{
@@ -174,6 +176,7 @@ func init() {
 	startCmd.Flags().StringVar(&hostOnlyCIDR, "host-only-cidr", "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
 	startCmd.Flags().StringSliceVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
+	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().StringVar(&kubernetesVersion, "kubernetes-version", constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
 	RootCmd.AddCommand(startCmd)
 }
