@@ -39,6 +39,9 @@ var KubeconfigPath = clientcmd.RecommendedHomeFile
 // MinikubeContext is the kubeconfig context name used for minikube
 const MinikubeContext = "minikube"
 
+// MinikubeEnvPrefix is the prefix for the environmental variables
+const MinikubeEnvPrefix = "MINIKUBE"
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
 	args := []string{Minipath}
