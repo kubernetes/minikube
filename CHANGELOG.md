@@ -1,5 +1,17 @@
 # Minikube Release Notes
 
+## Version 0.8.0 - 8/17/2016
+* Added a --registry-mirror flag to `minikube start`.
+* Updated Kubernetes components to v1.3.5.
+* Changed the `dashboard` and `service` commands to wait for the underlying services to be ready.
+* Added the `DOCKER_API_VERSION` environment variable to `minikube docker-env`.
+* Updated the Kubernetes dashboard to v1.1.1.
+* Improved error messages during `minikube start`.
+* Added the ability to specify a CIDR for the virtualbox driver.
+* Configured the `/data` directory inside the Minikube VM to be persisted across reboots.
+* Added the ability for minikube to accept environment variables of the form `MINIKUBE_` in place of certain command line flags.
+* Minikube will now cache downloaded localkube versions.
+
 ## Version 0.7.1 - 7/27/2016
 * Fixed a filepath issue which caused `minikube start` to not work properly on Windows
 
