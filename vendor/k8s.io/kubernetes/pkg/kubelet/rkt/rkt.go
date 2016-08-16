@@ -508,9 +508,11 @@ func verifyNonRoot(app *appctypes.App, ctx *api.SecurityContext) error {
 	return nil
 }
 
-func setSupplementaryGIDs(app *appctypes.App, podCtx *api.PodSecurityContext) {
-	if podCtx != nil {
+func setSupplementalGIDs(app *appctypes.App, podCtx *api.PodSecurityContext, supplementalGids []int64) {
+	if podCtx != nil || len(supplementalGids) != 0 {
 		app.SupplementaryGIDs = app.SupplementaryGIDs[:0]
+	}
+	if podCtx != nil {
 		for _, v := range podCtx.SupplementalGroups {
 			app.SupplementaryGIDs = append(app.SupplementaryGIDs, int(v))
 		}
@@ -518,10 +520,13 @@ func setSupplementaryGIDs(app *appctypes.App, podCtx *api.PodSecurityContext) {
 			app.SupplementaryGIDs = append(app.SupplementaryGIDs, int(*podCtx.FSGroup))
 		}
 	}
+	for _, v := range supplementalGids {
+		app.SupplementaryGIDs = append(app.SupplementaryGIDs, int(v))
+	}
 }
 
 // setApp merges the container spec with the image's manifest.
-func setApp(imgManifest *appcschema.ImageManifest, c *api.Container, opts *kubecontainer.RunContainerOptions, ctx *api.SecurityContext, podCtx *api.PodSecurityContext) error {
+func setApp(imgManifest *appcschema.ImageManifest, c *api.Container, opts *kubecontainer.RunContainerOptions, ctx *api.SecurityContext, podCtx *api.PodSecurityContext, supplementalGids []int64) error {
 	app := imgManifest.App
 
 	// Set up Exec.
@@ -562,7 +567,7 @@ func setApp(imgManifest *appcschema.ImageManifest, c *api.Container, opts *kubec
 	if ctx != nil && ctx.RunAsUser != nil {
 		app.User = strconv.Itoa(int(*ctx.RunAsUser))
 	}
-	setSupplementaryGIDs(app, podCtx)
+	setSupplementalGIDs(app, podCtx, supplementalGids)
 
 	// If 'User' or 'Group' are still empty at this point,
 	// then apply the root UID and GID.
@@ -650,22 +655,38 @@ func (r *Runtime) makePodManifest(pod *api.Pod, podIP string, pullSecrets []api.
 	return manifest, nil
 }
 
+func copyfile(src, dst string) error {
+	data, err := ioutil.ReadFile(src)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(dst, data, 0640)
+}
+
 // TODO(yifan): Can make rkt handle this when '--net=host'. See https://github.com/coreos/rkt/issues/2430.
-func makeHostNetworkMount(opts *kubecontainer.RunContainerOptions) (*kubecontainer.Mount, *kubecontainer.Mount) {
+func makeHostNetworkMount(opts *kubecontainer.RunContainerOptions) (*kubecontainer.Mount, *kubecontainer.Mount, error) {
+	hostsPath := filepath.Join(opts.PodContainerDir, "etc-hosts")
+	resolvPath := filepath.Join(opts.PodContainerDir, "etc-resolv-conf")
+
+	if err := copyfile("/etc/hosts", hostsPath); err != nil {
+		return nil, nil, err
+	}
+	if err := copyfile("/etc/resolv.conf", resolvPath); err != nil {
+		return nil, nil, err
+	}
+
 	hostsMount := kubecontainer.Mount{
 		Name:          "kubernetes-hostnetwork-hosts-conf",
 		ContainerPath: "/etc/hosts",
-		HostPath:      "/etc/hosts",
-		ReadOnly:      true,
+		HostPath:      hostsPath,
 	}
 	resolvMount := kubecontainer.Mount{
 		Name:          "kubernetes-hostnetwork-resolv-conf",
 		ContainerPath: "/etc/resolv.conf",
-		HostPath:      "/etc/resolv.conf",
-		ReadOnly:      true,
+		HostPath:      resolvPath,
 	}
 	opts.Mounts = append(opts.Mounts, hostsMount, resolvMount)
-	return &hostsMount, &resolvMount
+	return &hostsMount, &resolvMount, nil
 }
 
 // podFinishedMarkerPath returns the path to a file which should be used to
@@ -768,11 +789,14 @@ func (r *Runtime) newAppcRuntimeApp(pod *api.Pod, podIP string, c api.Container,
 		return err
 	}
 
-	// If run in 'hostnetwork' mode, then mount the host's /etc/resolv.conf and /etc/hosts,
+	// If run in 'hostnetwork' mode, then copy and mount the host's /etc/resolv.conf and /etc/hosts,
 	// and add volumes.
 	var hostsMnt, resolvMnt *kubecontainer.Mount
 	if kubecontainer.IsHostNetworkPod(pod) {
-		hostsMnt, resolvMnt = makeHostNetworkMount(opts)
+		hostsMnt, resolvMnt, err = makeHostNetworkMount(opts)
+		if err != nil {
+			return err
+		}
 		manifest.Volumes = append(manifest.Volumes, appctypes.Volume{
 			Name:   convertToACName(hostsMnt.Name),
 			Kind:   "host",
@@ -785,8 +809,9 @@ func (r *Runtime) newAppcRuntimeApp(pod *api.Pod, podIP string, c api.Container,
 		})
 	}
 
+	supplementalGids := r.runtimeHelper.GetExtraSupplementalGroupsForPod(pod)
 	ctx := securitycontext.DetermineEffectiveSecurityContext(pod, &c)
-	if err := setApp(imgManifest, &c, opts, ctx, pod.Spec.SecurityContext); err != nil {
+	if err := setApp(imgManifest, &c, opts, ctx, pod.Spec.SecurityContext, supplementalGids); err != nil {
 		return err
 	}
 
