@@ -17,7 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -26,6 +28,76 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
+
+var yamlExampleConfig = []byte(`v: 999
+alsologtostderr: true
+log_dir: "/etc/hosts"
+log-flush-frequency: "3s"
+`)
+
+const configName = ".test_minikube_config.yml"
+
+type configTest struct {
+	Name          string
+	EnvValue      string
+	ConfigValue   string
+	FlagValue     string
+	ExpectedValue string
+}
+
+var configTests = []configTest{
+	{
+		Name:          "v",
+		ExpectedValue: "0",
+	},
+	{
+		Name:          "v",
+		ConfigValue:   "999",
+		ExpectedValue: "999",
+	},
+	{
+		Name:          "v",
+		FlagValue:     "0",
+		ExpectedValue: "0",
+	},
+	{
+		Name:          "v",
+		EnvValue:      "123",
+		ExpectedValue: "123",
+	},
+	{
+		Name:          "v",
+		FlagValue:     "3",
+		ExpectedValue: "3",
+	},
+	// Flag should override config and env
+	{
+		Name:          "v",
+		FlagValue:     "3",
+		ConfigValue:   "222",
+		EnvValue:      "888",
+		ExpectedValue: "3",
+	},
+	// Env should override config
+	{
+		Name:          "v",
+		EnvValue:      "2",
+		ConfigValue:   "999",
+		ExpectedValue: "2",
+	},
+	// Config should not override flags not on whitelist
+	{
+		Name:          "log-flush-frequency",
+		ConfigValue:   "6s",
+		ExpectedValue: "5s",
+	},
+	// Env should not override flags not on whitelist
+	{
+		Name:          "log_backtrace_at",
+		EnvValue:      ":2",
+		ExpectedValue: ":0",
+	},
+}
 
 func runCommand(f func(*cobra.Command, []string)) {
 	cmd := cobra.Command{}
@@ -48,55 +120,54 @@ func TestPreRunDirectories(t *testing.T) {
 	}
 }
 
+func initTestConfig(config string) {
+	viper.SetConfigType("yml")
+	r := bytes.NewReader([]byte(config))
+	viper.ReadConfig(r)
+}
+
+func TestViperConfig(t *testing.T) {
+	defer viper.Reset()
+	initTestConfig("v: 999")
+	if viper.GetString("v") != "999" {
+		t.Fatalf("Viper did not read test config file")
+	}
+}
+
 func getEnvVarName(name string) string {
-	return constants.MinikubeEnvPrefix + name
+	return constants.MinikubeEnvPrefix + "_" + strings.ToUpper(name)
 }
 
-func TestEnvVariable(t *testing.T) {
-	defer os.Unsetenv("WANTUPDATENOTIFICATION")
-	initConfig()
-	os.Setenv(getEnvVarName("WANTUPDATENOTIFICATION"), "true")
-	if !viper.GetBool("WantUpdateNotification") {
-		t.Fatalf("Viper did not respect environment variable")
+func setValues(tt configTest) {
+	if tt.FlagValue != "" {
+		pflag.Set(tt.Name, tt.FlagValue)
+	}
+	if tt.EnvValue != "" {
+		os.Setenv(getEnvVarName(tt.Name), tt.EnvValue)
+	}
+	if tt.ConfigValue != "" {
+		initTestConfig(tt.Name + ": " + tt.ConfigValue)
 	}
 }
 
-func cleanup() {
-	pflag.Set("v", "0")
-	pflag.Lookup("v").Changed = false
+func unsetValues(tt configTest) {
+	var f = pflag.Lookup(tt.Name)
+	f.Value.Set(f.DefValue)
+	f.Changed = false
+
+	os.Unsetenv(getEnvVarName(tt.Name))
+
+	viper.Reset()
 }
 
-func TestFlagShouldOverrideConfig(t *testing.T) {
-	defer cleanup()
-	viper.Set("v", "1337")
-	pflag.Set("v", "100")
-	setFlagsUsingViper()
-	if viper.GetInt("v") != 100 {
-		viper.Debug()
-		t.Fatal("Value from viper config overrode explicit flag value")
-	}
-}
-
-func TestConfigShouldOverrideDefault(t *testing.T) {
-	defer cleanup()
-	viper.Set("v", "1337")
-	setFlagsUsingViper()
-	if viper.GetInt("v") != 1337 {
-		viper.Debug()
-		t.Fatalf("Value from viper config did not override default flag value")
-	}
-}
-
-func TestFallbackToDefaultFlag(t *testing.T) {
-	setFlagsUsingViper()
-
-	if viper.GetInt("stderrthreshold") != 2 {
-		t.Logf("stderrthreshold %s", viper.GetInt("stderrthreshold"))
-		t.Fatalf("The default flag value was overwritten")
-	}
-
-	if viper.GetString("log-flush-frequency") != "5s" {
-		t.Logf("log flush frequency: %s", viper.GetString("log-flush-frequency"))
-		t.Fatalf("The default flag value was overwritten")
+func TestViperAndFlags(t *testing.T) {
+	for _, tt := range configTests {
+		setValues(tt)
+		setupViper()
+		var actual = pflag.Lookup(tt.Name).Value.String()
+		if actual != tt.ExpectedValue {
+			t.Errorf("pflag.Value(%s) => %s, wanted %s [%+v]", tt.Name, actual, tt.ExpectedValue, tt)
+		}
+		unsetValues(tt)
 	}
 }
