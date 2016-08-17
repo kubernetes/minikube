@@ -44,13 +44,18 @@ const (
 	showLibmachineLogs = "show-libmachine-logs"
 )
 
+var viperWhiteList = []string{
+	"v",
+	"alsologtostderr",
+	"log_dir",
+}
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "minikube",
 	Short: "Minikube is a tool for managing local Kubernetes clusters.",
 	Long:  `Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		setFlagsUsingViper()
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
 				glog.Exitf("Error creating minikube directory: %s", err)
@@ -77,7 +82,8 @@ func Execute() {
 // Handle config values for flags used in external packages (e.g. glog)
 // by setting them directly, using values from viper when not passed in as args
 func setFlagsUsingViper() {
-	setFlagValues := func(a *pflag.Flag) {
+	for _, config := range viperWhiteList {
+		var a = pflag.Lookup(config)
 		viper.SetDefault(a.Name, a.DefValue)
 		// If the flag is set, override viper value
 		if a.Changed {
@@ -87,8 +93,6 @@ func setFlagsUsingViper() {
 		// then to values from the config.yml
 		a.Value.Set(viper.GetString(a.Name))
 	}
-
-	pflag.VisitAll(setFlagValues)
 }
 
 func init() {
@@ -101,17 +105,20 @@ func init() {
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	configPath := constants.MakeMiniPath("config")
-
-	// Bind all viper values to env variables
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
-	viper.AutomaticEnv()
-
 	viper.SetConfigName("config")
 	viper.AddConfigPath(configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
 		glog.Warningf("Error reading config file at %s: %s", configPath, err)
 	}
+	setupViper()
+}
+
+func setupViper() {
+	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.AutomaticEnv()
+
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
+	setFlagsUsingViper()
 }
