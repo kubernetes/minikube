@@ -56,7 +56,7 @@ var LogFlags = [...]string{
 }
 
 const (
-	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.5.iso"
+	DefaultIsoUrl   = "https://storage.googleapis.com/minikube/minikube-0.6.iso"
 	DefaultMemory   = 1024
 	DefaultCPUS     = 1
 	DefaultDiskSize = "20g"
