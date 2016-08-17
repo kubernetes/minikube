@@ -1,6 +1,7 @@
 # Minikube
 
 [![Build Status](https://travis-ci.org/kubernetes/minikube.svg?branch=master)](https://travis-ci.org/kubernetes/minikube)
+[![codecov](https://codecov.io/gh/aaron-prindle/minikube/branch/master/graph/badge.svg)](https://codecov.io/gh/aaron-prindle/minikube)
 
 ## What is Minikube?
 

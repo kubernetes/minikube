@@ -1,12 +1,10 @@
 language: go
-
 go:
   - 1.6.3
 go_import_path: k8s.io/minikube
-
-# We shouldn't need to install anything because we use vendoring.
 install:
-- echo "Don't run anything."
-
-# Run unit tests and linters.
-script: make test
+  - echo "Don't run anything."
+script:
+  - make test
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
