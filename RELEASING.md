@@ -9,10 +9,14 @@ See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
 
 This step isn't always required. Check if there were changes in the deploy directory.
 If you do this, bump the ISO URL to point to the new ISO, and send a PR.
-
-## Bump the version in the Makefile
-
-See [this PR](https://github.com/kubernetes/minikube/pull/165) for an example.
+To do this, build the new iso by running:
+```shell
+deploy/iso/build.sh
+```
+This will generate a new iso at 'deploy/iso/minikube.iso'.  Then upload the iso using the following command:
+```shell
+gsutil cp deploy/iso/minikube.iso gs://minikube/minikube-<increment.version>.iso
+```
 
 ## Run integration tests
 
@@ -21,6 +25,16 @@ Run this command:
 make integration
 ```
 Investigate and fix any failures.
+
+## Bump the version in the Makefile and Update Docs to reflect this
+
+See [this PR](https://github.com/kubernetes/minikube/pull/165) for an example.
+Also run `make gendocs` once this change has been made
+
+
+##Send an initial commit with the Makefile change:
+
+Send a PR for the Makefile change and wait until it is merged.  Once the commit is merged, continue.
 
 ## Build the Release
 
