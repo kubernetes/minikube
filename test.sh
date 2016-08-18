@@ -25,11 +25,22 @@ else
 	PYTHON="docker run --rm -it -v $(pwd):/minikube -w /minikube python python"
 fi
 
-# Run "go test" on packages that have test files.
+
+COV_FILE=coverage.txt
+COV_TMP_FILE=coverage_tmp.txt
+
+# Run "go test" on packages that have test files.  Also create coverage profile
 echo "Running go tests..."
 cd ${GOPATH}/src/${REPO_PATH}
-TESTS=$(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...)
-go test -v ${TESTS}
+rm -f out/$COV_FILE
+echo "mode: count" > out/$COV_FILE
+for pkg in $(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...); do
+    go test -v $pkg -covermode=count -coverprofile=out/$COV_TMP_FILE 
+    # tail -n +2 skips the first line of the file
+    # for coverprofile the first line is the `mode: count` line which we only want once in our file
+    tail -n +2 out/$COV_TMP_FILE >> out/$COV_FILE || (echo "Unable to append coverage for $pkg" && exit 1)
+done
+rm out/$COV_TMP_FILE
 
 # Ignore these paths in the following tests.
 ignore="vendor\|\_gopath\|assets.go"
