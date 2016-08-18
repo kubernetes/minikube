@@ -35,8 +35,6 @@ log_dir: "/etc/hosts"
 log-flush-frequency: "3s"
 `)
 
-const configName = ".test_minikube_config.yml"
-
 type configTest struct {
 	Name          string
 	EnvValue      string

@@ -44,6 +44,10 @@ const (
 	showLibmachineLogs = "show-libmachine-logs"
 )
 
+var (
+	enableUpdateNotification = true
+)
+
 var viperWhiteList = []string{
 	"v",
 	"alsologtostderr",
@@ -62,12 +66,17 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		log.SetDebug(viper.Get(showLibmachineLogs))
-		if !viper.GetBool(showLibmachineLogs) {
+		shouldShowLibmachineLogs := viper.GetBool(showLibmachineLogs)
+
+		log.SetDebug(shouldShowLibmachineLogs)
+		if !shouldShowLibmachineLogs {
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
 		}
-		notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+
+		if enableUpdateNotification {
+			notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+		}
 	},
 }
 
