@@ -18,6 +18,8 @@ package cluster
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -611,5 +613,42 @@ func TestIsLocalkubeCached(t *testing.T) {
 	}
 	for _, input := range inputArr {
 		inner(input)
+	}
+}
+
+func TestIsIsoChecksumValid(t *testing.T) {
+	tests := []struct {
+		shouldMatch bool
+		httpError   int
+		expected    bool
+	}{
+		// SHA matches, no error.
+		{true, 0, true},
+		// SHA matches, HTTP error.
+		{true, http.StatusNotFound, false},
+		// SHA doesn't match.
+		{false, 0, false},
+		// SHA doesn't match, HTTP error.
+		{false, http.StatusNotFound, false},
+	}
+
+	isoData := []byte("myIsoData")
+	isoCheckSum := sha256.Sum256(isoData)
+	for _, tc := range tests {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if tc.httpError != 0 {
+				w.WriteHeader(tc.httpError)
+			}
+			if tc.shouldMatch {
+				io.WriteString(w, hex.EncodeToString(isoCheckSum[:]))
+			} else {
+				w.Write([]byte("badCheckSum"))
+			}
+		}))
+		defer ts.Close()
+		valid := isIsoChecksumValid(&isoData, ts.URL)
+		if valid != tc.expected {
+			t.Errorf("Expected isIsoChecksumValid to be %v, was %v", tc.expected, valid)
+		}
 	}
 }
