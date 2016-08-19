@@ -56,6 +56,7 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
+		log.SetDebug(showLibmachineLogs)
 		if !showLibmachineLogs {
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
