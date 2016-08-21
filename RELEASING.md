@@ -101,7 +101,4 @@ These are downstream packages that are being maintained by others and how to upg
 | Package Manager | URL | TODO |
 | --- | --- | --- |
 | Arch Linux AUR | https://aur.archlinux.org/packages/minikube/ | "Flag as package out-of-date"
-| Brew Cask | https://github.com/caskroom/homebrew-cask/blob/master/Casks/minikube.rb | Create a new PR in [caskroom/homebrew-cask](https://github.com/caskroom/homebrew-cask) with an updated version and appcast checkpoint
-
-#### [How to Generate an Appcast Checkpoint for Homebrew](https://github.com/caskroom/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/appcast.md)
-`curl --compressed --location --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36' "https://github.com/kubernetes/minikube/releases.atom" | sed 's|<pubDate>[^<]*</pubDate>||g' | shasum --algorithm 256`
+| [Homebrew Cask]((https://github.com/caskroom/homebrew-cask)) | https://github.com/caskroom/homebrew-cask/blob/master/Casks/minikube.rb | Use [`cask-repair` -v {{new_version}} minikube`](https://github.com/caskroom/homebrew-cask/blob/master/CONTRIBUTING.md) to submit a PR that updates the version
