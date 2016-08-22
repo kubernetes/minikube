@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ type Attributes struct {
 // It is useful in tests and when using kubernetes in an open manner.
 type alwaysAllowAuthorizer struct{}
 
-func (alwaysAllowAuthorizer) Authorize(a authorizer.Attributes) (err error) {
-	return nil
+func (alwaysAllowAuthorizer) Authorize(a authorizer.Attributes) (authorized bool, reason string, err error) {
+	return true, "", nil
 }
 
 func NewAlwaysAllowAuthorizer() authorizer.Authorizer {
@@ -55,12 +55,25 @@ func NewAlwaysAllowAuthorizer() authorizer.Authorizer {
 // It is useful in unit tests to force an operation to be forbidden.
 type alwaysDenyAuthorizer struct{}
 
-func (alwaysDenyAuthorizer) Authorize(a authorizer.Attributes) (err error) {
-	return errors.New("Everything is forbidden.")
+func (alwaysDenyAuthorizer) Authorize(a authorizer.Attributes) (authorized bool, reason string, err error) {
+	return false, "Everything is forbidden.", nil
 }
 
 func NewAlwaysDenyAuthorizer() authorizer.Authorizer {
 	return new(alwaysDenyAuthorizer)
+}
+
+// alwaysFailAuthorizer is an implementation of authorizer.Attributes
+// which always says no to an authorization request.
+// It is useful in unit tests to force an operation to fail with error.
+type alwaysFailAuthorizer struct{}
+
+func (alwaysFailAuthorizer) Authorize(a authorizer.Attributes) (authorized bool, reason string, err error) {
+	return false, "", errors.New("Authorization failure.")
+}
+
+func NewAlwaysFailAuthorizer() authorizer.Authorizer {
+	return new(alwaysFailAuthorizer)
 }
 
 const (

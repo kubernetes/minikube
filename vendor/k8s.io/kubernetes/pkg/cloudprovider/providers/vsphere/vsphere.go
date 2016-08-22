@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,12 +17,11 @@ limitations under the License.
 package vsphere
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -106,14 +105,12 @@ func init() {
 }
 
 func readInstanceID(cfg *VSphereConfig) (string, error) {
-	cmd := exec.Command("bash", "-c", `dmidecode -t 1 | grep UUID | tr -d ' ' | cut -f 2 -d ':'`)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return "", err
 	}
-	if out.Len() == 0 {
+
+	if len(addrs) == 0 {
 		return "", fmt.Errorf("unable to retrieve Instance ID")
 	}
 
@@ -140,7 +137,22 @@ func readInstanceID(cfg *VSphereConfig) (string, error) {
 
 	s := object.NewSearchIndex(c.Client)
 
-	svm, err := s.FindByUuid(ctx, dc, strings.ToLower(strings.TrimSpace(out.String())), true, nil)
+	var svm object.Reference
+	for _, v := range addrs {
+		ip, _, err := net.ParseCIDR(v.String())
+		if err != nil {
+			return "", fmt.Errorf("unable to parse cidr from ip")
+		}
+
+		svm, err = s.FindByIp(ctx, dc, ip.String(), true)
+		if err == nil && svm != nil {
+			break
+		}
+	}
+	if svm == nil {
+		return "", fmt.Errorf("unable to retrieve vm reference from vSphere")
+	}
+
 	var vm mo.VirtualMachine
 	err = s.Properties(ctx, svm.Reference(), []string{"name"}, &vm)
 	if err != nil {
@@ -299,7 +311,7 @@ func (i *Instances) List(filter string) ([]string, error) {
 		return nil, err
 	}
 
-	glog.V(3).Infof("Found %s instances matching %s: %s",
+	glog.V(3).Infof("Found %d instances matching %s: %s",
 		len(vmList), filter, vmList)
 
 	return vmList, nil
@@ -422,9 +434,9 @@ func (i *Instances) InstanceID(name string) (string, error) {
 	}
 
 	if mvm.Summary.Config.Template == false {
-		glog.Warning("VM %s, is not in %s state", name, ActivePowerState)
+		glog.Warningf("VM %s, is not in %s state", name, ActivePowerState)
 	} else {
-		glog.Warning("VM %s, is a template", name)
+		glog.Warningf("VM %s, is a template", name)
 	}
 
 	return "", cloudprovider.InstanceNotFound

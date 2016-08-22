@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,17 +25,17 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
-	qosutil "k8s.io/kubernetes/pkg/kubelet/qos/util"
+	"k8s.io/kubernetes/pkg/kubelet/qos"
 	"k8s.io/kubernetes/pkg/kubelet/server/stats"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/clock"
 	"k8s.io/kubernetes/pkg/util/wait"
 )
 
 // managerImpl implements NodeStabilityManager
 type managerImpl struct {
 	//  used to track time
-	clock util.Clock
+	clock clock.Clock
 	// config is how the manager is configured
 	config Config
 	// the function to invoke to kill a pod
@@ -54,6 +54,8 @@ type managerImpl struct {
 	summaryProvider stats.SummaryProvider
 	// records when a threshold was first observed
 	thresholdsFirstObservedAt thresholdsObservedAt
+	// resourceToRankFunc maps a resource to ranking function for that resource.
+	resourceToRankFunc map[api.ResourceName]rankFunc
 }
 
 // ensure it implements the required interface
@@ -66,7 +68,7 @@ func NewManager(
 	killPodFunc KillPodFunc,
 	recorder record.EventRecorder,
 	nodeRef *api.ObjectReference,
-	clock util.Clock) (Manager, lifecycle.PodAdmitHandler, error) {
+	clock clock.Clock) (Manager, lifecycle.PodAdmitHandler, error) {
 	manager := &managerImpl{
 		clock:           clock,
 		killPodFunc:     killPodFunc,
@@ -87,12 +89,17 @@ func (m *managerImpl) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAd
 	if len(m.nodeConditions) == 0 {
 		return lifecycle.PodAdmitResult{Admit: true}
 	}
-	notBestEffort := qosutil.BestEffort != qosutil.GetPodQos(attrs.Pod)
-	if notBestEffort {
-		return lifecycle.PodAdmitResult{Admit: true}
+
+	// the node has memory pressure, admit if not best-effort
+	if hasNodeCondition(m.nodeConditions, api.NodeMemoryPressure) {
+		notBestEffort := qos.BestEffort != qos.GetPodQOS(attrs.Pod)
+		if notBestEffort {
+			return lifecycle.PodAdmitResult{Admit: true}
+		}
 	}
+
+	// reject pods when under memory pressure (if pod is best effort), or if under disk pressure.
 	glog.Warningf("Failed to admit pod %v - %s", format.Pod(attrs.Pod), "node has conditions: %v", m.nodeConditions)
-	// we reject all best effort pods until we are stable.
 	return lifecycle.PodAdmitResult{
 		Admit:   false,
 		Reason:  reason,
@@ -101,8 +108,10 @@ func (m *managerImpl) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAd
 }
 
 // Start starts the control loop to observe and response to low compute resources.
-func (m *managerImpl) Start(podFunc ActivePodsFunc, monitoringInterval time.Duration) {
-	go wait.Until(func() { m.synchronize(podFunc) }, monitoringInterval, wait.NeverStop)
+func (m *managerImpl) Start(diskInfoProvider DiskInfoProvider, podFunc ActivePodsFunc, monitoringInterval time.Duration) error {
+	// start the eviction manager monitoring
+	go wait.Until(func() { m.synchronize(diskInfoProvider, podFunc) }, monitoringInterval, wait.NeverStop)
+	return nil
 }
 
 // IsUnderMemoryPressure returns true if the node is under memory pressure.
@@ -112,12 +121,30 @@ func (m *managerImpl) IsUnderMemoryPressure() bool {
 	return hasNodeCondition(m.nodeConditions, api.NodeMemoryPressure)
 }
 
+// IsUnderDiskPressure returns true if the node is under disk pressure.
+func (m *managerImpl) IsUnderDiskPressure() bool {
+	m.RLock()
+	defer m.RUnlock()
+	return hasNodeCondition(m.nodeConditions, api.NodeDiskPressure)
+}
+
 // synchronize is the main control loop that enforces eviction thresholds.
-func (m *managerImpl) synchronize(podFunc ActivePodsFunc) {
+func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc ActivePodsFunc) {
 	// if we have nothing to do, just return
 	thresholds := m.config.Thresholds
 	if len(thresholds) == 0 {
 		return
+	}
+
+	// build the ranking functions (if not yet known)
+	// TODO: have a function in cadvisor that lets us know if global housekeeping has completed
+	if len(m.resourceToRankFunc) == 0 {
+		// this may error if cadvisor has yet to complete housekeeping, so we will just try again in next pass.
+		hasDedicatedImageFs, err := diskInfoProvider.HasDedicatedImageFs()
+		if err != nil {
+			return
+		}
+		m.resourceToRankFunc = buildResourceToRankFunc(hasDedicatedImageFs)
 	}
 
 	// make observations and get a function to derive pod usage stats relative to those observations.
@@ -174,7 +201,7 @@ func (m *managerImpl) synchronize(podFunc ActivePodsFunc) {
 	m.recorder.Eventf(m.nodeRef, api.EventTypeWarning, "EvictionThresholdMet", "Attempting to reclaim %s", resourceToReclaim)
 
 	// rank the pods for eviction
-	rank, ok := resourceToRankFunc[resourceToReclaim]
+	rank, ok := m.resourceToRankFunc[resourceToReclaim]
 	if !ok {
 		glog.Errorf("eviction manager: no ranking function for resource %s", resourceToReclaim)
 		return

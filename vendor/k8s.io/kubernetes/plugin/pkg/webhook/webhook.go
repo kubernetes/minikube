@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ type GenericWebhook struct {
 	initialBackoff time.Duration
 }
 
-// New creates a new GenericWebhook from the provided kubeconfig file.
+// NewGenericWebhook creates a new GenericWebhook from the provided kubeconfig file.
 func NewGenericWebhook(kubeConfigFile string, groupVersions []unversioned.GroupVersion, initialBackoff time.Duration) (*GenericWebhook, error) {
 	for _, groupVersion := range groupVersions {
 		if !registered.IsEnabledVersion(groupVersion) {

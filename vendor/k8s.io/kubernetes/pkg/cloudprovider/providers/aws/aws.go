@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -300,6 +300,17 @@ type CloudConfig struct {
 		//has setup a rule that allows inbound traffic on kubelet ports from the
 		//local VPC subnet (so load balancers can access it). E.g. 10.82.0.0/16 30000-32000.
 		DisableSecurityGroupIngress bool
+
+		//During the instantiation of an new AWS cloud provider, the detected region
+		//is validated against a known set of regions.
+		//
+		//In a non-standard, AWS like environment (e.g. Eucalyptus), this check may
+		//be undesirable.  Setting this to true will disable the check and provide
+		//a warning that the check was skipped.  Please note that this is an
+		//experimental feature and work-in-progress for the moment.  If you find
+		//yourself in an non-AWS cloud and open an issue, please indicate that in the
+		//issue body.
+		DisableStrictZoneCheck bool
 	}
 }
 
@@ -664,9 +675,13 @@ func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
 		return nil, err
 	}
 
-	valid := isRegionValid(regionName)
-	if !valid {
-		return nil, fmt.Errorf("not a valid AWS zone (unknown region): %s", zone)
+	if !cfg.Global.DisableStrictZoneCheck {
+		valid := isRegionValid(regionName)
+		if !valid {
+			return nil, fmt.Errorf("not a valid AWS zone (unknown region): %s", zone)
+		}
+	} else {
+		glog.Warningf("Strict AWS zone checking is disabled.  Proceeding with zone: %s", zone)
 	}
 
 	ec2, err := awsServices.Compute(regionName)
@@ -1174,8 +1189,8 @@ func newAWSDisk(aws *Cloud, name string) (*awsDisk, error) {
 	// The original idea of the URL-style name was to put the AZ into the
 	// host, so we could find the AZ immediately from the name without
 	// querying the API.  But it turns out we don't actually need it for
-	// Ubernetes-Lite, as we put the AZ into the labels on the PV instead.
-	// However, if in future we want to support Ubernetes-Lite
+	// multi-AZ clusters, as we put the AZ into the labels on the PV instead.
+	// However, if in future we want to support multi-AZ cluster
 	// volume-awareness without using PersistentVolumes, we likely will
 	// want the AZ in the host.
 
@@ -1422,7 +1437,7 @@ func (c *Cloud) DetachDisk(diskName string, instanceName string) (string, error)
 	}
 
 	if !alreadyAttached {
-		glog.Warning("DetachDisk called on non-attached disk: ", diskName)
+		glog.Warningf("DetachDisk called on non-attached disk: %s", diskName)
 		// TODO: Continue?  Tolerate non-attached error in DetachVolume?
 	}
 
@@ -2282,10 +2297,10 @@ func buildListener(port api.ServicePort, annotations map[string]string, sslPorts
 }
 
 // EnsureLoadBalancer implements LoadBalancer.EnsureLoadBalancer
-func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*api.LoadBalancerStatus, error) {
+func (c *Cloud) EnsureLoadBalancer(clusterName string, apiService *api.Service, hosts []string) (*api.LoadBalancerStatus, error) {
 	annotations := apiService.Annotations
-	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)",
-		apiService.Namespace, apiService.Name, c.region, apiService.Spec.LoadBalancerIP, apiService.Spec.Ports, hosts, annotations)
+	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v, %v)",
+		clusterName, apiService.Namespace, apiService.Name, c.region, apiService.Spec.LoadBalancerIP, apiService.Spec.Ports, hosts, annotations)
 
 	if apiService.Spec.SessionAffinity != api.ServiceAffinityNone {
 		// ELB supports sticky sessions, but only when configured for HTTP/HTTPS
@@ -2457,7 +2472,7 @@ func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*ap
 }
 
 // GetLoadBalancer is an implementation of LoadBalancer.GetLoadBalancer
-func (c *Cloud) GetLoadBalancer(service *api.Service) (*api.LoadBalancerStatus, bool, error) {
+func (c *Cloud) GetLoadBalancer(clusterName string, service *api.Service) (*api.LoadBalancerStatus, bool, error) {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	lb, err := c.describeLoadBalancer(loadBalancerName)
 	if err != nil {
@@ -2673,7 +2688,7 @@ func (c *Cloud) updateInstanceSecurityGroupsForLoadBalancer(lb *elb.LoadBalancer
 }
 
 // EnsureLoadBalancerDeleted implements LoadBalancer.EnsureLoadBalancerDeleted.
-func (c *Cloud) EnsureLoadBalancerDeleted(service *api.Service) error {
+func (c *Cloud) EnsureLoadBalancerDeleted(clusterName string, service *api.Service) error {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	lb, err := c.describeLoadBalancer(loadBalancerName)
 	if err != nil {
@@ -2769,7 +2784,7 @@ func (c *Cloud) EnsureLoadBalancerDeleted(service *api.Service) error {
 }
 
 // UpdateLoadBalancer implements LoadBalancer.UpdateLoadBalancer
-func (c *Cloud) UpdateLoadBalancer(service *api.Service, hosts []string) error {
+func (c *Cloud) UpdateLoadBalancer(clusterName string, service *api.Service, hosts []string) error {
 	hostSet := sets.NewString(hosts...)
 	instances, err := c.getInstancesByNodeNamesCached(hostSet)
 	if err != nil {

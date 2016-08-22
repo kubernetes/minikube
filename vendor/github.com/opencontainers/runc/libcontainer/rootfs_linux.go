@@ -4,6 +4,7 @@ package libcontainer
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -19,18 +20,29 @@ import (
 	"github.com/opencontainers/runc/libcontainer/configs"
 	"github.com/opencontainers/runc/libcontainer/label"
 	"github.com/opencontainers/runc/libcontainer/system"
+	libcontainerUtils "github.com/opencontainers/runc/libcontainer/utils"
 )
 
 const defaultMountFlags = syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
 
+// setupDev returns true if /dev needs to be set up.
+func needsSetupDev(config *configs.Config) bool {
+	for _, m := range config.Mounts {
+		if m.Device == "bind" && (m.Destination == "/dev" || m.Destination == "/dev/") {
+			return false
+		}
+	}
+	return true
+}
+
 // setupRootfs sets up the devices, mount points, and filesystems for use inside a
 // new mount namespace.
-func setupRootfs(config *configs.Config, console *linuxConsole) (err error) {
+func setupRootfs(config *configs.Config, console *linuxConsole, pipe io.ReadWriter) (err error) {
 	if err := prepareRoot(config); err != nil {
 		return newSystemError(err)
 	}
 
-	setupDev := len(config.Devices) != 0
+	setupDev := needsSetupDev(config)
 	for _, m := range config.Mounts {
 		for _, precmd := range m.PremountCmds {
 			if err := mountCmd(precmd); err != nil {
@@ -58,6 +70,13 @@ func setupRootfs(config *configs.Config, console *linuxConsole) (err error) {
 			return newSystemError(err)
 		}
 	}
+	// Signal the parent to run the pre-start hooks.
+	// The hooks are run after the mounts are setup, but before we switch to the new
+	// root, so that the old root is still available in the hooks for any mount
+	// manipulations.
+	if err := syncParentHooks(pipe); err != nil {
+		return err
+	}
 	if err := syscall.Chdir(config.Rootfs); err != nil {
 		return newSystemError(err)
 	}
@@ -74,6 +93,18 @@ func setupRootfs(config *configs.Config, console *linuxConsole) (err error) {
 			return newSystemError(err)
 		}
 	}
+	// remount dev as ro if specifed
+	for _, m := range config.Mounts {
+		if m.Destination == "/dev" {
+			if m.Flags&syscall.MS_RDONLY != 0 {
+				if err := remountReadonly(m.Destination); err != nil {
+					return newSystemError(err)
+				}
+			}
+			break
+		}
+	}
+	// set rootfs ( / ) as readonly
 	if config.Readonlyfs {
 		if err := setReadonly(); err != nil {
 			return newSystemError(err)
@@ -119,8 +150,9 @@ func mountToRootfs(m *configs.Mount, rootfs, mountLabel string) error {
 			if err := mountPropagate(m, rootfs, ""); err != nil {
 				return err
 			}
+			return label.SetFileLabel(dest, mountLabel)
 		}
-		return label.SetFileLabel(dest, mountLabel)
+		return nil
 	case "tmpfs":
 		stat, err := os.Stat(dest)
 		if err != nil {
@@ -137,16 +169,6 @@ func mountToRootfs(m *configs.Mount, rootfs, mountLabel string) error {
 			}
 		}
 		return nil
-	case "devpts":
-		if err := os.MkdirAll(dest, 0755); err != nil {
-			return err
-		}
-		return mountPropagate(m, rootfs, mountLabel)
-	case "securityfs":
-		if err := os.MkdirAll(dest, 0755); err != nil {
-			return err
-		}
-		return mountPropagate(m, rootfs, mountLabel)
 	case "bind":
 		stat, err := os.Stat(m.Source)
 		if err != nil {
@@ -252,7 +274,10 @@ func mountToRootfs(m *configs.Mount, rootfs, mountLabel string) error {
 			}
 		}
 	default:
-		return fmt.Errorf("unknown mount device %q to %q", m.Device, m.Destination)
+		if err := os.MkdirAll(dest, 0755); err != nil {
+			return err
+		}
+		return mountPropagate(m, rootfs, mountLabel)
 	}
 	return nil
 }
@@ -294,7 +319,7 @@ func getCgroupMounts(m *configs.Mount) ([]*configs.Mount, error) {
 // checkMountDestination checks to ensure that the mount destination is not over the top of /proc.
 // dest is required to be an abs path and have any symlinks resolved before calling this function.
 func checkMountDestination(rootfs, dest string) error {
-	if filepath.Clean(rootfs) == filepath.Clean(dest) {
+	if libcontainerUtils.CleanPath(rootfs) == libcontainerUtils.CleanPath(dest) {
 		return fmt.Errorf("mounting into / is prohibited")
 	}
 	invalidDestinations := []string{
@@ -307,7 +332,8 @@ func checkMountDestination(rootfs, dest string) error {
 		"/proc/cpuinfo",
 		"/proc/diskstats",
 		"/proc/meminfo",
-		"/proc/stats",
+		"/proc/stat",
+		"/proc/net/dev",
 	}
 	for _, valid := range validDestinations {
 		path, err := filepath.Rel(filepath.Join(rootfs, valid), dest)
@@ -340,7 +366,7 @@ func setupDevSymlinks(rootfs string) error {
 	// kcore support can be toggled with CONFIG_PROC_KCORE; only create a symlink
 	// in /dev if it exists in /proc.
 	if _, err := os.Stat("/proc/kcore"); err == nil {
-		links = append(links, [2]string{"/proc/kcore", "/dev/kcore"})
+		links = append(links, [2]string{"/proc/kcore", "/dev/core"})
 	}
 	for _, link := range links {
 		var (
@@ -550,7 +576,7 @@ func setupPtmx(config *configs.Config, console *linuxConsole) error {
 	return nil
 }
 
-func pivotRoot(rootfs, pivotBaseDir string) error {
+func pivotRoot(rootfs, pivotBaseDir string) (err error) {
 	if pivotBaseDir == "" {
 		pivotBaseDir = "/"
 	}
@@ -562,6 +588,12 @@ func pivotRoot(rootfs, pivotBaseDir string) error {
 	if err != nil {
 		return fmt.Errorf("can't create pivot_root dir %s, error %v", pivotDir, err)
 	}
+	defer func() {
+		errVal := os.Remove(pivotDir)
+		if err == nil {
+			err = errVal
+		}
+	}()
 	if err := syscall.PivotRoot(rootfs, pivotDir); err != nil {
 		return fmt.Errorf("pivot_root %s", err)
 	}
@@ -580,7 +612,7 @@ func pivotRoot(rootfs, pivotBaseDir string) error {
 	if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
 		return fmt.Errorf("unmount pivot_root dir %s", err)
 	}
-	return os.Remove(pivotDir)
+	return nil
 }
 
 func msMoveRoot(rootfs string) error {
@@ -669,14 +701,18 @@ func remount(m *configs.Mount, rootfs string) error {
 // of propagation flags.
 func mountPropagate(m *configs.Mount, rootfs string, mountLabel string) error {
 	var (
-		dest = m.Destination
-		data = label.FormatMountLabel(m.Data, mountLabel)
+		dest  = m.Destination
+		data  = label.FormatMountLabel(m.Data, mountLabel)
+		flags = m.Flags
 	)
+	if dest == "/dev" {
+		flags &= ^syscall.MS_RDONLY
+	}
 	if !strings.HasPrefix(dest, rootfs) {
 		dest = filepath.Join(rootfs, dest)
 	}
 
-	if err := syscall.Mount(m.Source, dest, m.Device, uintptr(m.Flags), data); err != nil {
+	if err := syscall.Mount(m.Source, dest, m.Device, uintptr(flags), data); err != nil {
 		return err
 	}
 

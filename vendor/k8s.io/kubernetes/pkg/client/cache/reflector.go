@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -164,7 +164,7 @@ func hasPackage(file string, ignoredPackages []string) bool {
 	return false
 }
 
-// trimPackagePrefix reduces dulpicate values off the front of a package name.
+// trimPackagePrefix reduces duplicate values off the front of a package name.
 func trimPackagePrefix(file string) string {
 	if l := strings.LastIndex(file, "k8s.io/kubernetes/pkg/"); l >= 0 {
 		return file[l+len("k8s.io/kubernetes/"):]

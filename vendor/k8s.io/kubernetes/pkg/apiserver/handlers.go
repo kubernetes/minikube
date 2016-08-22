@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import (
 	"k8s.io/kubernetes/pkg/auth/user"
 	"k8s.io/kubernetes/pkg/httplog"
 	"k8s.io/kubernetes/pkg/serviceaccount"
+	"k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/sets"
 )
 
@@ -137,12 +138,10 @@ func tooManyRequests(req *http.Request, w http.ResponseWriter) {
 // RecoverPanics wraps an http Handler to recover and log panics.
 func RecoverPanics(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		defer func() {
-			if x := recover(); x != nil {
-				http.Error(w, "apis panic. Look in log for details.", http.StatusInternalServerError)
-				glog.Errorf("APIServer panic'd on %v %v: %v\n%s\n", req.Method, req.RequestURI, x, debug.Stack())
-			}
-		}()
+		defer runtime.HandleCrash(func(err interface{}) {
+			http.Error(w, "This request caused apisever to panic. Look in log for details.", http.StatusInternalServerError)
+			glog.Errorf("APIServer panic'd on %v %v: %v\n%s\n", req.Method, req.RequestURI, err, debug.Stack())
+		})
 		defer httplog.NewLogged(req, &w).StacktraceWhen(
 			httplog.StatusIsNot(
 				http.StatusOK,
@@ -447,8 +446,13 @@ func WithImpersonation(handler http.Handler, requestContextMapper api.RequestCon
 			actingAsAttributes.Name = name
 		}
 
-		err := a.Authorize(actingAsAttributes)
+		authorized, reason, err := a.Authorize(actingAsAttributes)
 		if err != nil {
+			internalError(w, req, err)
+			return
+		}
+		if !authorized {
+			glog.V(4).Infof("Forbidden: %#v, Reason: %s", req.RequestURI, reason)
 			forbidden(w, req)
 			return
 		}
@@ -481,12 +485,17 @@ func WithImpersonation(handler http.Handler, requestContextMapper api.RequestCon
 // WithAuthorizationCheck passes all authorized requests on to handler, and returns a forbidden error otherwise.
 func WithAuthorizationCheck(handler http.Handler, getAttribs RequestAttributeGetter, a authorizer.Authorizer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		err := a.Authorize(getAttribs.GetAttribs(req))
-		if err == nil {
-			handler.ServeHTTP(w, req)
+		authorized, reason, err := a.Authorize(getAttribs.GetAttribs(req))
+		if err != nil {
+			internalError(w, req, err)
 			return
 		}
-		forbidden(w, req)
+		if !authorized {
+			glog.V(4).Infof("Forbidden: %#v, Reason: %s", req.RequestURI, reason)
+			forbidden(w, req)
+			return
+		}
+		handler.ServeHTTP(w, req)
 	})
 }
 

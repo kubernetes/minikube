@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -384,7 +384,7 @@ func sum(inputs []api.ResourceList) api.ResourceList {
 	return result
 }
 
-// DefaultLimitRangerActions is the default implementatation of LimitRangerActions.
+// DefaultLimitRangerActions is the default implementation of LimitRangerActions.
 type DefaultLimitRangerActions struct{}
 
 // ensure DefaultLimitRangerActions implements the LimitRangerActions interface.
@@ -432,6 +432,24 @@ func PodLimitFunc(limitRange *api.LimitRange, pod *api.Pod) error {
 		if limitType == api.LimitTypeContainer {
 			for j := range pod.Spec.Containers {
 				container := &pod.Spec.Containers[j]
+				for k, v := range limit.Min {
+					if err := minConstraint(limitType, k, v, container.Resources.Requests, container.Resources.Limits); err != nil {
+						errs = append(errs, err)
+					}
+				}
+				for k, v := range limit.Max {
+					if err := maxConstraint(limitType, k, v, container.Resources.Requests, container.Resources.Limits); err != nil {
+						errs = append(errs, err)
+					}
+				}
+				for k, v := range limit.MaxLimitRequestRatio {
+					if err := limitRequestRatioConstraint(limitType, k, v, container.Resources.Requests, container.Resources.Limits); err != nil {
+						errs = append(errs, err)
+					}
+				}
+			}
+			for j := range pod.Spec.InitContainers {
+				container := &pod.Spec.InitContainers[j]
 				for k, v := range limit.Min {
 					if err := minConstraint(limitType, k, v, container.Resources.Requests, container.Resources.Limits); err != nil {
 						errs = append(errs, err)

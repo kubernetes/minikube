@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -59,6 +59,26 @@ func LessThanOrEqual(a api.ResourceList, b api.ResourceList) (bool, []api.Resour
 		}
 	}
 	return result, resourceNames
+}
+
+// Max returns the result of Max(a, b) for each named resource
+func Max(a api.ResourceList, b api.ResourceList) api.ResourceList {
+	result := api.ResourceList{}
+	for key, value := range a {
+		if other, found := b[key]; found {
+			if value.Cmp(other) <= 0 {
+				result[key] = *other.Copy()
+				continue
+			}
+		}
+		result[key] = *value.Copy()
+	}
+	for key, value := range b {
+		if _, found := result[key]; !found {
+			result[key] = *value.Copy()
+		}
+	}
+	return result
 }
 
 // Add returns the result of a + b for each named resource

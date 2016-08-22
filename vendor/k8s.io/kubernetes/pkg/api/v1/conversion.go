@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,10 +19,13 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 const (
@@ -31,6 +34,9 @@ const (
 
 	// Value used to identify mirror pods from pre-v1.1 kubelet.
 	mirrorAnnotationValue_1_0 = "mirror"
+
+	// annotation key prefix used to identify non-convertible json paths.
+	NonConvertibleAnnotationPrefix = "kubernetes.io/non-convertible"
 )
 
 func addConversionFuncs(scheme *runtime.Scheme) {
@@ -43,8 +49,15 @@ func addConversionFuncs(scheme *runtime.Scheme) {
 		Convert_v1_Pod_To_api_Pod,
 		Convert_v1_PodSpec_To_api_PodSpec,
 		Convert_v1_ReplicationControllerSpec_To_api_ReplicationControllerSpec,
+		Convert_v1_Secret_To_api_Secret,
 		Convert_v1_ServiceSpec_To_api_ServiceSpec,
 		Convert_v1_ResourceList_To_api_ResourceList,
+		Convert_v1_ReplicationController_to_extensions_ReplicaSet,
+		Convert_v1_ReplicationControllerSpec_to_extensions_ReplicaSetSpec,
+		Convert_v1_ReplicationControllerStatus_to_extensions_ReplicaSetStatus,
+		Convert_extensions_ReplicaSet_to_v1_ReplicationController,
+		Convert_extensions_ReplicaSetSpec_to_v1_ReplicationControllerSpec,
+		Convert_extensions_ReplicaSetStatus_to_v1_ReplicationControllerStatus,
 	)
 	if err != nil {
 		// If one of the conversion functions is malformed, detect it immediately.
@@ -198,17 +211,107 @@ func addConversionFuncs(scheme *runtime.Scheme) {
 	}
 }
 
+func Convert_v1_ReplicationController_to_extensions_ReplicaSet(in *ReplicationController, out *extensions.ReplicaSet, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*ReplicationController))(in)
+	}
+	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_v1_ObjectMeta_To_api_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_v1_ReplicationControllerSpec_to_extensions_ReplicaSetSpec(&in.Spec, &out.Spec, s); err != nil {
+		return err
+	}
+	if err := Convert_v1_ReplicationControllerStatus_to_extensions_ReplicaSetStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Convert_v1_ReplicationControllerSpec_to_extensions_ReplicaSetSpec(in *ReplicationControllerSpec, out *extensions.ReplicaSetSpec, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*ReplicationControllerSpec))(in)
+	}
+	out.Replicas = *in.Replicas
+	if in.Selector != nil {
+		api.Convert_map_to_unversioned_LabelSelector(&in.Selector, out.Selector, s)
+	}
+	if in.Template != nil {
+		if err := Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in.Template, &out.Template, s); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Convert_v1_ReplicationControllerStatus_to_extensions_ReplicaSetStatus(in *ReplicationControllerStatus, out *extensions.ReplicaSetStatus, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*ReplicationControllerStatus))(in)
+	}
+	out.Replicas = in.Replicas
+	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ObservedGeneration = in.ObservedGeneration
+	return nil
+}
+
+func Convert_extensions_ReplicaSet_to_v1_ReplicationController(in *extensions.ReplicaSet, out *ReplicationController, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*extensions.ReplicaSet))(in)
+	}
+	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_api_ObjectMeta_To_v1_ObjectMeta(&in.ObjectMeta, &out.ObjectMeta, s); err != nil {
+		return err
+	}
+	if err := Convert_extensions_ReplicaSetSpec_to_v1_ReplicationControllerSpec(&in.Spec, &out.Spec, s); err != nil {
+		fieldErr, ok := err.(*field.Error)
+		if !ok {
+			return err
+		}
+		if out.Annotations == nil {
+			out.Annotations = make(map[string]string)
+		}
+		out.Annotations[NonConvertibleAnnotationPrefix+"/"+fieldErr.Field] = reflect.ValueOf(fieldErr.BadValue).String()
+	}
+	if err := Convert_extensions_ReplicaSetStatus_to_v1_ReplicationControllerStatus(&in.Status, &out.Status, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Convert_extensions_ReplicaSetSpec_to_v1_ReplicationControllerSpec(in *extensions.ReplicaSetSpec, out *ReplicationControllerSpec, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*extensions.ReplicaSetSpec))(in)
+	}
+	out.Replicas = new(int32)
+	*out.Replicas = in.Replicas
+	var invalidErr error
+	if in.Selector != nil {
+		invalidErr = api.Convert_unversioned_LabelSelector_to_map(in.Selector, &out.Selector, s)
+	}
+	out.Template = new(PodTemplateSpec)
+	if err := Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(&in.Template, out.Template, s); err != nil {
+		return err
+	}
+	return invalidErr
+}
+
+func Convert_extensions_ReplicaSetStatus_to_v1_ReplicationControllerStatus(in *extensions.ReplicaSetStatus, out *ReplicationControllerStatus, s conversion.Scope) error {
+	if defaulting, found := s.DefaultingInterface(reflect.TypeOf(*in)); found {
+		defaulting.(func(*extensions.ReplicaSetStatus))(in)
+	}
+	out.Replicas = in.Replicas
+	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ObservedGeneration = in.ObservedGeneration
+	return nil
+}
+
 func Convert_api_ReplicationControllerSpec_To_v1_ReplicationControllerSpec(in *api.ReplicationControllerSpec, out *ReplicationControllerSpec, s conversion.Scope) error {
 	out.Replicas = &in.Replicas
 	out.Selector = in.Selector
-	//if in.TemplateRef != nil {
-	//	out.TemplateRef = new(ObjectReference)
-	//	if err := Convert_api_ObjectReference_To_v1_ObjectReference(in.TemplateRef, out.TemplateRef, s); err != nil {
-	//		return err
-	//	}
-	//} else {
-	//	out.TemplateRef = nil
-	//}
 	if in.Template != nil {
 		out.Template = new(PodTemplateSpec)
 		if err := Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(in.Template, out.Template, s); err != nil {
@@ -223,15 +326,6 @@ func Convert_api_ReplicationControllerSpec_To_v1_ReplicationControllerSpec(in *a
 func Convert_v1_ReplicationControllerSpec_To_api_ReplicationControllerSpec(in *ReplicationControllerSpec, out *api.ReplicationControllerSpec, s conversion.Scope) error {
 	out.Replicas = *in.Replicas
 	out.Selector = in.Selector
-
-	//if in.TemplateRef != nil {
-	//	out.TemplateRef = new(api.ObjectReference)
-	//	if err := Convert_v1_ObjectReference_To_api_ObjectReference(in.TemplateRef, out.TemplateRef, s); err != nil {
-	//		return err
-	//	}
-	//} else {
-	//	out.TemplateRef = nil
-	//}
 	if in.Template != nil {
 		out.Template = new(api.PodTemplateSpec)
 		if err := Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in.Template, out.Template, s); err != nil {
@@ -359,123 +453,33 @@ func Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(in *PodTemplateSpec, out 
 // The following two PodSpec conversions are done here to support ServiceAccount
 // as an alias for ServiceAccountName.
 func Convert_api_PodSpec_To_v1_PodSpec(in *api.PodSpec, out *PodSpec, s conversion.Scope) error {
-	if in.Volumes != nil {
-		out.Volumes = make([]Volume, len(in.Volumes))
-		for i := range in.Volumes {
-			if err := Convert_api_Volume_To_v1_Volume(&in.Volumes[i], &out.Volumes[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Volumes = nil
-	}
-	if in.InitContainers != nil {
-		out.InitContainers = make([]Container, len(in.InitContainers))
-		for i := range in.InitContainers {
-			if err := Convert_api_Container_To_v1_Container(&in.InitContainers[i], &out.InitContainers[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.InitContainers = nil
-	}
-	if in.Containers != nil {
-		out.Containers = make([]Container, len(in.Containers))
-		for i := range in.Containers {
-			if err := Convert_api_Container_To_v1_Container(&in.Containers[i], &out.Containers[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Containers = nil
+	if err := autoConvert_api_PodSpec_To_v1_PodSpec(in, out, s); err != nil {
+		return err
 	}
 
-	out.RestartPolicy = RestartPolicy(in.RestartPolicy)
-	out.TerminationGracePeriodSeconds = in.TerminationGracePeriodSeconds
-	out.ActiveDeadlineSeconds = in.ActiveDeadlineSeconds
-	out.DNSPolicy = DNSPolicy(in.DNSPolicy)
-	out.NodeSelector = in.NodeSelector
-
-	out.ServiceAccountName = in.ServiceAccountName
 	// DeprecatedServiceAccount is an alias for ServiceAccountName.
 	out.DeprecatedServiceAccount = in.ServiceAccountName
-	out.NodeName = in.NodeName
-	if in.SecurityContext != nil {
-		out.SecurityContext = new(PodSecurityContext)
-		if err := Convert_api_PodSecurityContext_To_v1_PodSecurityContext(in.SecurityContext, out.SecurityContext, s); err != nil {
-			return err
-		}
 
+	if in.SecurityContext != nil {
 		// the host namespace fields have to be handled here for backward compatibility
 		// with v1.0.0
 		out.HostPID = in.SecurityContext.HostPID
 		out.HostNetwork = in.SecurityContext.HostNetwork
 		out.HostIPC = in.SecurityContext.HostIPC
 	}
-	if in.ImagePullSecrets != nil {
-		out.ImagePullSecrets = make([]LocalObjectReference, len(in.ImagePullSecrets))
-		for i := range in.ImagePullSecrets {
-			if err := Convert_api_LocalObjectReference_To_v1_LocalObjectReference(&in.ImagePullSecrets[i], &out.ImagePullSecrets[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.ImagePullSecrets = nil
-	}
-	out.Hostname = in.Hostname
-	out.Subdomain = in.Subdomain
+
 	return nil
 }
 
 func Convert_v1_PodSpec_To_api_PodSpec(in *PodSpec, out *api.PodSpec, s conversion.Scope) error {
-	SetDefaults_PodSpec(in)
-	if in.Volumes != nil {
-		out.Volumes = make([]api.Volume, len(in.Volumes))
-		for i := range in.Volumes {
-			if err := Convert_v1_Volume_To_api_Volume(&in.Volumes[i], &out.Volumes[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Volumes = nil
+	if err := autoConvert_v1_PodSpec_To_api_PodSpec(in, out, s); err != nil {
+		return err
 	}
-	if in.InitContainers != nil {
-		out.InitContainers = make([]api.Container, len(in.InitContainers))
-		for i := range in.InitContainers {
-			if err := Convert_v1_Container_To_api_Container(&in.InitContainers[i], &out.InitContainers[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.InitContainers = nil
-	}
-	if in.Containers != nil {
-		out.Containers = make([]api.Container, len(in.Containers))
-		for i := range in.Containers {
-			if err := Convert_v1_Container_To_api_Container(&in.Containers[i], &out.Containers[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Containers = nil
-	}
-	out.RestartPolicy = api.RestartPolicy(in.RestartPolicy)
-	out.TerminationGracePeriodSeconds = in.TerminationGracePeriodSeconds
-	out.ActiveDeadlineSeconds = in.ActiveDeadlineSeconds
-	out.DNSPolicy = api.DNSPolicy(in.DNSPolicy)
-	out.NodeSelector = in.NodeSelector
+
 	// We support DeprecatedServiceAccount as an alias for ServiceAccountName.
 	// If both are specified, ServiceAccountName (the new field) wins.
-	out.ServiceAccountName = in.ServiceAccountName
 	if in.ServiceAccountName == "" {
 		out.ServiceAccountName = in.DeprecatedServiceAccount
-	}
-	out.NodeName = in.NodeName
-	if in.SecurityContext != nil {
-		out.SecurityContext = new(api.PodSecurityContext)
-		if err := Convert_v1_PodSecurityContext_To_api_PodSecurityContext(in.SecurityContext, out.SecurityContext, s); err != nil {
-			return err
-		}
 	}
 
 	// the host namespace fields have to be handled specially for backward compatibility
@@ -486,18 +490,7 @@ func Convert_v1_PodSpec_To_api_PodSpec(in *PodSpec, out *api.PodSpec, s conversi
 	out.SecurityContext.HostNetwork = in.HostNetwork
 	out.SecurityContext.HostPID = in.HostPID
 	out.SecurityContext.HostIPC = in.HostIPC
-	if in.ImagePullSecrets != nil {
-		out.ImagePullSecrets = make([]api.LocalObjectReference, len(in.ImagePullSecrets))
-		for i := range in.ImagePullSecrets {
-			if err := Convert_v1_LocalObjectReference_To_api_LocalObjectReference(&in.ImagePullSecrets[i], &out.ImagePullSecrets[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.ImagePullSecrets = nil
-	}
-	out.Hostname = in.Hostname
-	out.Subdomain = in.Subdomain
+
 	return nil
 }
 
@@ -595,6 +588,24 @@ func Convert_api_ServiceSpec_To_v1_ServiceSpec(in *api.ServiceSpec, out *Service
 	}
 	// Publish both externalIPs and deprecatedPublicIPs fields in v1.
 	out.DeprecatedPublicIPs = in.ExternalIPs
+	return nil
+}
+
+func Convert_v1_Secret_To_api_Secret(in *Secret, out *api.Secret, s conversion.Scope) error {
+	if err := autoConvert_v1_Secret_To_api_Secret(in, out, s); err != nil {
+		return err
+	}
+
+	// StringData overwrites Data
+	if len(in.StringData) > 0 {
+		if out.Data == nil {
+			out.Data = map[string][]byte{}
+		}
+		for k, v := range in.StringData {
+			out.Data[k] = []byte(v)
+		}
+	}
+
 	return nil
 }
 

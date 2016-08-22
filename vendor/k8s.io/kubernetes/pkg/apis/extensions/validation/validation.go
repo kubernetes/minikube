@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -147,18 +147,24 @@ var ValidateDeploymentName = apivalidation.NameIsDNSSubdomain
 
 func ValidatePositiveIntOrPercent(intOrPercent intstr.IntOrString, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-	if intOrPercent.Type == intstr.String {
-		if !validation.IsValidPercent(intOrPercent.StrVal) {
-			allErrs = append(allErrs, field.Invalid(fldPath, intOrPercent, "must be an integer or percentage (e.g '5%')"))
+	switch intOrPercent.Type {
+	case intstr.String:
+		for _, msg := range validation.IsValidPercent(intOrPercent.StrVal) {
+			allErrs = append(allErrs, field.Invalid(fldPath, intOrPercent, msg))
 		}
-	} else if intOrPercent.Type == intstr.Int {
+	case intstr.Int:
 		allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(intOrPercent.IntValue()), fldPath)...)
+	default:
+		allErrs = append(allErrs, field.Invalid(fldPath, intOrPercent, "must be an integer or percentage (e.g '5%%')"))
 	}
 	return allErrs
 }
 
 func getPercentValue(intOrStringValue intstr.IntOrString) (int, bool) {
-	if intOrStringValue.Type != intstr.String || !validation.IsValidPercent(intOrStringValue.StrVal) {
+	if intOrStringValue.Type != intstr.String {
+		return 0, false
+	}
+	if len(validation.IsValidPercent(intOrStringValue.StrVal)) != 0 {
 		return 0, false
 	}
 	value, _ := strconv.Atoi(intOrStringValue.StrVal[:len(intOrStringValue.StrVal)-1])
@@ -422,16 +428,7 @@ func validateIngressBackend(backend *extensions.IngressBackend, fldPath *field.P
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("serviceName"), backend.ServiceName, msg))
 		}
 	}
-	if backend.ServicePort.Type == intstr.String {
-		for _, msg := range validation.IsDNS1123Label(backend.ServicePort.StrVal) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("servicePort"), backend.ServicePort.StrVal, msg))
-		}
-		if !validation.IsValidPortName(backend.ServicePort.StrVal) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("servicePort"), backend.ServicePort.StrVal, apivalidation.PortNameErrorMsg))
-		}
-	} else if !validation.IsValidPortNum(backend.ServicePort.IntValue()) {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("servicePort"), backend.ServicePort, apivalidation.PortRangeErrorMsg))
-	}
+	allErrs = append(allErrs, apivalidation.ValidatePortNumOrName(backend.ServicePort, fldPath.Child("servicePort"))...)
 	return allErrs
 }
 
@@ -741,6 +738,68 @@ func ValidateNetworkPolicyUpdate(update, old *extensions.NetworkPolicy) field.Er
 	allErrs = append(allErrs, apivalidation.ValidateObjectMetaUpdate(&update.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))...)
 	if !reflect.DeepEqual(update.Spec, old.Spec) {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec"), "updates to networkpolicy spec are forbidden."))
+	}
+	return allErrs
+}
+
+// ValidateStorageClass validates a StorageClass.
+func ValidateStorageClass(storageClass *extensions.StorageClass) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMeta(&storageClass.ObjectMeta, false, apivalidation.NameIsDNSSubdomain, field.NewPath("metadata"))
+	allErrs = append(allErrs, validateProvisioner(storageClass.Provisioner, field.NewPath("provisioner"))...)
+	allErrs = append(allErrs, validateParameters(storageClass.Parameters, field.NewPath("parameters"))...)
+
+	return allErrs
+}
+
+// ValidateStorageClassUpdate tests if an update to StorageClass is valid.
+func ValidateStorageClassUpdate(storageClass, oldStorageClass *extensions.StorageClass) field.ErrorList {
+	allErrs := apivalidation.ValidateObjectMetaUpdate(&storageClass.ObjectMeta, &oldStorageClass.ObjectMeta, field.NewPath("metadata"))
+	if !reflect.DeepEqual(oldStorageClass.Parameters, storageClass.Parameters) {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("parameters"), "updates to parameters are forbidden."))
+	}
+
+	if strings.Compare(storageClass.Provisioner, oldStorageClass.Provisioner) != 0 {
+		allErrs = append(allErrs, field.Forbidden(field.NewPath("provisioner"), "updates to provisioner are forbidden."))
+	}
+	return allErrs
+}
+
+// validateProvisioner tests if provisioner is a valid qualified name.
+func validateProvisioner(provisioner string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if len(provisioner) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath, provisioner))
+	}
+	if len(provisioner) > 0 {
+		for _, msg := range validation.IsQualifiedName(strings.ToLower(provisioner)) {
+			allErrs = append(allErrs, field.Invalid(fldPath, provisioner, msg))
+		}
+	}
+	return allErrs
+}
+
+const maxProvisionerParameterSize = 256 * (1 << 10) // 256 kB
+const maxProvisionerParameterLen = 512
+
+// validateParameters tests that keys are qualified names and that provisionerParameter are < 256kB.
+func validateParameters(params map[string]string, fldPath *field.Path) field.ErrorList {
+	var totalSize int64
+	allErrs := field.ErrorList{}
+
+	if len(params) > maxProvisionerParameterLen {
+		allErrs = append(allErrs, field.TooLong(fldPath, "Provisioner Parameters exceeded max allowed", maxProvisionerParameterLen))
+		return allErrs
+	}
+
+	for k, v := range params {
+		if len(k) < 1 {
+			allErrs = append(allErrs, field.Invalid(fldPath, k, "field can not be empty."))
+		}
+		totalSize += (int64)(len(k)) + (int64)(len(v))
+	}
+
+	if totalSize > maxProvisionerParameterSize {
+		allErrs = append(allErrs, field.TooLong(fldPath, "", maxProvisionerParameterSize))
 	}
 	return allErrs
 }

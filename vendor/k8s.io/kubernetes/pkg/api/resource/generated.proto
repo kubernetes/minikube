@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -83,7 +83,6 @@ option go_package = "resource";
 // writing some sort of special handling code in the hopes that that will
 // cause implementors to also use a fixed point implementation.
 // 
-// +gencopy=false
 // +protobuf=true
 // +protobuf.embed=string
 // +protobuf.options.marshal=false

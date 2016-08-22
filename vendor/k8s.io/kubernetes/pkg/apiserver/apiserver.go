@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -166,7 +166,6 @@ func (g *APIGroupVersion) newInstaller() *APIInstaller {
 // TODO: document all handlers
 // InstallVersionHandler registers the APIServer's `/version` handler
 func InstallVersionHandler(mux Mux, container *restful.Container) {
-
 	// Set up a service to return the git code version.
 	versionWS := new(restful.WebService)
 	versionWS.Path("/version")

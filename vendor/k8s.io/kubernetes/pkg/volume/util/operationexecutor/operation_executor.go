@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
 	"k8s.io/kubernetes/pkg/volume/util/nestedpendingoperations"
 	volumetypes "k8s.io/kubernetes/pkg/volume/util/types"
@@ -85,7 +86,7 @@ type OperationExecutor interface {
 	// UnmountDevice unmounts the volumes global mount path from the device (for
 	// attachable volumes only, freeing it for detach. It then updates the
 	// actual state of the world to reflect that.
-	UnmountDevice(deviceToDetach AttachedVolume, actualStateOfWorld ActualStateOfWorldMounterUpdater) error
+	UnmountDevice(deviceToDetach AttachedVolume, actualStateOfWorld ActualStateOfWorldMounterUpdater, mounter mount.Interface) error
 
 	// VerifyControllerAttachedVolume checks if the specified volume is present
 	// in the specified nodes AttachedVolumes Status field. It uses kubeClient
@@ -214,6 +215,10 @@ type AttachedVolume struct {
 	// PluginIsAttachable indicates that the plugin for this volume implements
 	// the volume.Attacher interface
 	PluginIsAttachable bool
+
+	// DevicePath contains the path on the node where the volume is attached.
+	// For non-attachable volumes this is empty.
+	DevicePath string
 }
 
 // MountedVolume represents a volume that has successfully been mounted to a pod.
@@ -402,9 +407,10 @@ func (oe *operationExecutor) UnmountVolume(
 
 func (oe *operationExecutor) UnmountDevice(
 	deviceToDetach AttachedVolume,
-	actualStateOfWorld ActualStateOfWorldMounterUpdater) error {
+	actualStateOfWorld ActualStateOfWorldMounterUpdater,
+	mounter mount.Interface) error {
 	unmountDeviceFunc, err :=
-		oe.generateUnmountDeviceFunc(deviceToDetach, actualStateOfWorld)
+		oe.generateUnmountDeviceFunc(deviceToDetach, actualStateOfWorld, mounter)
 	if err != nil {
 		return err
 	}
@@ -831,7 +837,8 @@ func (oe *operationExecutor) generateUnmountVolumeFunc(
 
 func (oe *operationExecutor) generateUnmountDeviceFunc(
 	deviceToDetach AttachedVolume,
-	actualStateOfWorld ActualStateOfWorldMounterUpdater) (func() error, error) {
+	actualStateOfWorld ActualStateOfWorldMounterUpdater,
+	mounter mount.Interface) (func() error, error) {
 	// Get attacher plugin
 	attachableVolumePlugin, err :=
 		oe.volumePluginMgr.FindAttachablePluginBySpec(deviceToDetach.VolumeSpec)
@@ -882,6 +889,24 @@ func (oe *operationExecutor) generateUnmountDeviceFunc(
 				deviceToDetach.VolumeName,
 				deviceToDetach.VolumeSpec.Name(),
 				unmountDeviceErr)
+		}
+		// Before logging that UnmountDevice succeeded and moving on,
+		// use mounter.DeviceOpened to check if the device is in use anywhere
+		// else on the system. Retry if it returns true.
+		deviceOpened, deviceOpenedErr := mounter.DeviceOpened(deviceToDetach.DevicePath)
+		if deviceOpenedErr != nil {
+			return fmt.Errorf(
+				"UnmountDevice.DeviceOpened failed for volume %q (spec.Name: %q) with: %v",
+				deviceToDetach.VolumeName,
+				deviceToDetach.VolumeSpec.Name(),
+				deviceOpenedErr)
+		}
+		// The device is still in use elsewhere. Caller will log and retry.
+		if deviceOpened {
+			return fmt.Errorf(
+				"UnmountDevice failed for volume %q (spec.Name: %q) because the device is in use when it was no longer expected to be in use",
+				deviceToDetach.VolumeName,
+				deviceToDetach.VolumeSpec.Name())
 		}
 
 		glog.Infof(

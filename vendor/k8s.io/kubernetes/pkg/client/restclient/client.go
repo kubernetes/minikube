@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -221,8 +221,4 @@ func (c *RESTClient) Delete() *Request {
 // APIVersion returns the APIVersion this RESTClient is expected to use.
 func (c *RESTClient) APIVersion() unversioned.GroupVersion {
 	return *c.contentConfig.GroupVersion
-}
-
-func (c *RESTClient) Codec() runtime.Codec {
-	return c.contentConfig.Codec
 }

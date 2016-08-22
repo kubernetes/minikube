@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -57,7 +57,8 @@ func ServiceUsageFunc(object runtime.Object) api.ResourceList {
 		result[api.ResourceServices] = resource.MustParse("1")
 		switch service.Spec.Type {
 		case api.ServiceTypeNodePort:
-			result[api.ResourceServicesNodePorts] = resource.MustParse("1")
+			value := resource.NewQuantity(int64(len(service.Spec.Ports)), resource.DecimalSI)
+			result[api.ResourceServicesNodePorts] = *value
 		case api.ServiceTypeLoadBalancer:
 			result[api.ResourceServicesLoadBalancers] = resource.MustParse("1")
 		}

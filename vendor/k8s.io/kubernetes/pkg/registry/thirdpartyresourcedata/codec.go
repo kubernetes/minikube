@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -150,6 +150,27 @@ func (t *thirdPartyResourceDataMapper) RESTMapping(gk unversioned.GroupKind, ver
 	}
 	mapping.ObjectConvertor = &thirdPartyObjectConverter{mapping.ObjectConvertor}
 	return mapping, nil
+}
+
+func (t *thirdPartyResourceDataMapper) RESTMappings(gk unversioned.GroupKind) ([]*meta.RESTMapping, error) {
+	if gk.Group != t.group {
+		return nil, fmt.Errorf("unknown group %q expected %s", gk.Group, t.group)
+	}
+	if gk.Kind != "ThirdPartyResourceData" {
+		return nil, fmt.Errorf("unknown kind %s expected %s", gk.Kind, t.kind)
+	}
+
+	// TODO figure out why we're doing this rewriting
+	extensionGK := unversioned.GroupKind{Group: extensions.GroupName, Kind: "ThirdPartyResourceData"}
+
+	mappings, err := t.mapper.RESTMappings(extensionGK)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range mappings {
+		m.ObjectConvertor = &thirdPartyObjectConverter{m.ObjectConvertor}
+	}
+	return mappings, nil
 }
 
 func (t *thirdPartyResourceDataMapper) AliasesForResource(resource string) ([]string, bool) {
@@ -451,13 +472,6 @@ func (t *thirdPartyResourceDataDecoder) populateListResource(objIn *extensions.T
 	return nil
 }
 
-const template = `{
-  "kind": "%s",
-  "apiVersion": "%s",
-  "metadata": {},
-  "items": [ %s ]
-}`
-
 type thirdPartyResourceDataEncoder struct {
 	delegate runtime.Encoder
 	gvk      unversioned.GroupVersionKind
@@ -488,19 +502,37 @@ func (t *thirdPartyResourceDataEncoder) Encode(obj runtime.Object, stream io.Wri
 	case *extensions.ThirdPartyResourceData:
 		return encodeToJSON(obj, stream)
 	case *extensions.ThirdPartyResourceDataList:
-		// TODO: There must be a better way to do this...
-		dataStrings := make([]string, len(obj.Items))
+		// TODO: There are likely still better ways to do this...
+		listItems := make([]json.RawMessage, len(obj.Items))
+
 		for ix := range obj.Items {
 			buff := &bytes.Buffer{}
 			err := encodeToJSON(&obj.Items[ix], buff)
 			if err != nil {
 				return err
 			}
-			dataStrings[ix] = buff.String()
+			listItems[ix] = json.RawMessage(buff.Bytes())
 		}
-		gv := t.gvk.GroupVersion()
-		fmt.Fprintf(stream, template, t.gvk.Kind+"List", gv.String(), strings.Join(dataStrings, ","))
-		return nil
+
+		encMap := struct {
+			Kind       string               `json:"kind,omitempty"`
+			Items      []json.RawMessage    `json:"items"`
+			Metadata   unversioned.ListMeta `json:"metadata,omitempty"`
+			APIVersion string               `json:"apiVersion,omitempty"`
+		}{
+			Kind:       t.gvk.Kind + "List",
+			Items:      listItems,
+			Metadata:   obj.ListMeta,
+			APIVersion: t.gvk.GroupVersion().String(),
+		}
+
+		encBytes, err := json.Marshal(encMap)
+		if err != nil {
+			return err
+		}
+
+		_, err = stream.Write(encBytes)
+		return err
 	case *versioned.InternalEvent:
 		event := &versioned.Event{}
 		err := versioned.Convert_versioned_InternalEvent_to_versioned_Event(obj, event, nil)

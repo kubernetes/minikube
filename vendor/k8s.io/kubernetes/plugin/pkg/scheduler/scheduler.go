@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -140,6 +140,9 @@ func (s *Scheduler) scheduleOne() {
 		err := s.config.Binder.Bind(b)
 		if err != nil {
 			glog.V(1).Infof("Failed to bind pod: %v/%v", pod.Namespace, pod.Name)
+			if err := s.config.SchedulerCache.ForgetPod(&assumed); err != nil {
+				glog.Errorf("scheduler cache ForgetPod failed: %v", err)
+			}
 			s.config.Error(pod, err)
 			s.config.Recorder.Eventf(pod, api.EventTypeNormal, "FailedScheduling", "Binding rejected: %v", err)
 			s.config.PodConditionUpdater.Update(pod, &api.PodCondition{
