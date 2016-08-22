@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import (
 // accept a name or number.
 // TODO: Rename to Int32OrString
 //
-// +gencopy=true
 // +protobuf=true
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type IntOrString struct {
@@ -144,5 +143,5 @@ func getIntOrPercentValue(intOrStr *IntOrString) (int, bool, error) {
 		}
 		return int(v), true, nil
 	}
-	return 0, false, fmt.Errorf("invalid value: neither int nor percentage")
+	return 0, false, fmt.Errorf("invalid type: neither int nor percentage")
 }

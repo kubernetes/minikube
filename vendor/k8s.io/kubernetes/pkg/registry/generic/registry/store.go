@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -190,10 +190,10 @@ func (e *Store) List(ctx api.Context, options *api.ListOptions) (runtime.Object,
 // ListPredicate returns a list of all the items matching m.
 func (e *Store) ListPredicate(ctx api.Context, m generic.Matcher, options *api.ListOptions) (runtime.Object, error) {
 	list := e.NewListFunc()
-	filterFunc := e.filterAndDecorateFunction(m)
+	filter := e.createFilter(m)
 	if name, ok := m.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
-			err := e.Storage.GetToList(ctx, key, filterFunc, list)
+			err := e.Storage.GetToList(ctx, key, filter, list)
 			return list, storeerr.InterpretListError(err, e.QualifiedResource)
 		}
 		// if we cannot extract a key based on the current context, the optimization is skipped
@@ -202,7 +202,7 @@ func (e *Store) ListPredicate(ctx api.Context, m generic.Matcher, options *api.L
 	if options == nil {
 		options = &api.ListOptions{ResourceVersion: "0"}
 	}
-	err := e.Storage.List(ctx, e.KeyRootFunc(ctx), options.ResourceVersion, filterFunc, list)
+	err := e.Storage.List(ctx, e.KeyRootFunc(ctx), options.ResourceVersion, filter, list)
 	return list, storeerr.InterpretListError(err, e.QualifiedResource)
 }
 
@@ -479,6 +479,10 @@ func markAsDeleting(obj runtime.Object) (err error) {
 		return kerr
 	}
 	now := unversioned.NewTime(time.Now())
+	// This handles Generation bump for resources that don't support graceful deletion. For resources that support graceful deletion is handle in pkg/api/rest/delete.go
+	if objectMeta.DeletionTimestamp == nil && objectMeta.Generation > 0 {
+		objectMeta.Generation++
+	}
 	objectMeta.DeletionTimestamp = &now
 	var zero int64 = 0
 	objectMeta.DeletionGracePeriodSeconds = &zero
@@ -794,23 +798,23 @@ func (e *Store) Watch(ctx api.Context, options *api.ListOptions) (watch.Interfac
 
 // WatchPredicate starts a watch for the items that m matches.
 func (e *Store) WatchPredicate(ctx api.Context, m generic.Matcher, resourceVersion string) (watch.Interface, error) {
-	filterFunc := e.filterAndDecorateFunction(m)
+	filter := e.createFilter(m)
 
 	if name, ok := m.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
 			if err != nil {
 				return nil, err
 			}
-			return e.Storage.Watch(ctx, key, resourceVersion, filterFunc)
+			return e.Storage.Watch(ctx, key, resourceVersion, filter)
 		}
 		// if we cannot extract a key based on the current context, the optimization is skipped
 	}
 
-	return e.Storage.WatchList(ctx, e.KeyRootFunc(ctx), resourceVersion, filterFunc)
+	return e.Storage.WatchList(ctx, e.KeyRootFunc(ctx), resourceVersion, filter)
 }
 
-func (e *Store) filterAndDecorateFunction(m generic.Matcher) func(runtime.Object) bool {
-	return func(obj runtime.Object) bool {
+func (e *Store) createFilter(m generic.Matcher) storage.Filter {
+	filterFunc := func(obj runtime.Object) bool {
 		matches, err := m.Matches(obj)
 		if err != nil {
 			glog.Errorf("unable to match watch: %v", err)
@@ -824,6 +828,7 @@ func (e *Store) filterAndDecorateFunction(m generic.Matcher) func(runtime.Object
 		}
 		return matches
 	}
+	return storage.NewSimpleFilter(filterFunc, m.MatcherIndex)
 }
 
 // calculateTTL is a helper for retrieving the updated TTL for an object or returning an error

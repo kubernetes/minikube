@@ -1,7 +1,6 @@
 package libcontainer
 
 import (
-	"fmt"
 	"io"
 	"text/template"
 	"time"
@@ -14,8 +13,9 @@ type syncType uint8
 const (
 	procReady syncType = iota
 	procError
-	procStart
 	procRun
+	procHooks
+	procResume
 )
 
 type syncT struct {
@@ -75,7 +75,7 @@ type genericError struct {
 }
 
 func (e *genericError) Error() string {
-	return fmt.Sprintf("[%d] %s: %s", e.ECode, e.ECode, e.Message)
+	return e.Message
 }
 
 func (e *genericError) Code() ErrorCode {

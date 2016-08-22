@@ -36,7 +36,9 @@ type MemoryData struct {
 	Usage    uint64 `json:"usage,omitempty"`
 	MaxUsage uint64 `json:"max_usage,omitempty"`
 	Failcnt  uint64 `json:"failcnt"`
+	Limit    uint64 `json:"limit"`
 }
+
 type MemoryStats struct {
 	// memory used for cache
 	Cache uint64 `json:"cache,omitempty"`
@@ -44,14 +46,19 @@ type MemoryStats struct {
 	Usage MemoryData `json:"usage,omitempty"`
 	// usage of memory + swap
 	SwapUsage MemoryData `json:"swap_usage,omitempty"`
-	// usafe of kernel memory
-	KernelUsage MemoryData        `json:"kernel_usage,omitempty"`
-	Stats       map[string]uint64 `json:"stats,omitempty"`
+	// usage of kernel memory
+	KernelUsage MemoryData `json:"kernel_usage,omitempty"`
+	// usage of kernel TCP memory
+	KernelTCPUsage MemoryData `json:"kernel_tcp_usage,omitempty"`
+
+	Stats map[string]uint64 `json:"stats,omitempty"`
 }
 
 type PidsStats struct {
 	// number of pids in the cgroup
 	Current uint64 `json:"current,omitempty"`
+	// active pids hard limit
+	Limit uint64 `json:"limit,omitempty"`
 }
 
 type BlkioStatEntry struct {
@@ -78,7 +85,7 @@ type HugetlbStats struct {
 	Usage uint64 `json:"usage,omitempty"`
 	// maximum usage ever recorded.
 	MaxUsage uint64 `json:"max_usage,omitempty"`
-	// number of times htgetlb usage allocation failure.
+	// number of times hugetlb usage allocation failure.
 	Failcnt uint64 `json:"failcnt"`
 }
 

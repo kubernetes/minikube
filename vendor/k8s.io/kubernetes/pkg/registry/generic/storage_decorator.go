@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,7 +30,8 @@ type StorageDecorator func(
 	objectType runtime.Object,
 	resourcePrefix string,
 	scopeStrategy rest.NamespaceScopedStrategy,
-	newListFunc func() runtime.Object) storage.Interface
+	newListFunc func() runtime.Object,
+	trigger storage.TriggerPublisherFunc) storage.Interface
 
 // Returns given 'storageInterface' without any decoration.
 func UndecoratedStorage(
@@ -39,6 +40,7 @@ func UndecoratedStorage(
 	objectType runtime.Object,
 	resourcePrefix string,
 	scopeStrategy rest.NamespaceScopedStrategy,
-	newListFunc func() runtime.Object) storage.Interface {
+	newListFunc func() runtime.Object,
+	trigger storage.TriggerPublisherFunc) storage.Interface {
 	return storageInterface
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -87,7 +87,6 @@ import (
 // writing some sort of special handling code in the hopes that that will
 // cause implementors to also use a fixed point implementation.
 //
-// +gencopy=false
 // +protobuf=true
 // +protobuf.embed=string
 // +protobuf.options.marshal=false
@@ -384,6 +383,16 @@ func ParseQuantity(str string) (Quantity, error) {
 	}
 
 	return Quantity{d: infDecAmount{amount}, Format: format}, nil
+}
+
+// DeepCopy returns a deep-copy of the Quantity value.  Note that the method
+// receiver is a value, so we can mutate it in-place and return it.
+func (q Quantity) DeepCopy() Quantity {
+	if q.d.Dec != nil {
+		tmp := &inf.Dec{}
+		q.d.Dec = tmp.Set(q.d.Dec)
+	}
+	return q
 }
 
 // CanonicalizeBytes returns the canonical form of q and its suffix (see comment on Quantity).

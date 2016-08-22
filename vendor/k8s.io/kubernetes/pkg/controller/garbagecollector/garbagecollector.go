@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -279,6 +279,7 @@ func (gc *GarbageCollector) removeOrphanFinalizer(owner *node) error {
 		for _, f := range finalizers {
 			if f == api.FinalizerOrphan {
 				found = true
+				break
 			} else {
 				newFinalizers = append(newFinalizers, f)
 			}

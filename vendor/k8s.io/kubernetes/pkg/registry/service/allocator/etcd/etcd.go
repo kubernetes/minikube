@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -165,22 +165,6 @@ func (e *Etcd) tryUpdate(fn func() error) error {
 		}),
 	)
 	return storeerr.InterpretUpdateError(err, e.resource, "")
-}
-
-// Refresh reloads the RangeAllocation from etcd.
-func (e *Etcd) Refresh() (*api.RangeAllocation, error) {
-	e.lock.Lock()
-	defer e.lock.Unlock()
-
-	existing := &api.RangeAllocation{}
-	if err := e.storage.Get(context.TODO(), e.baseKey, existing, false); err != nil {
-		if storage.IsNotFound(err) {
-			return nil, nil
-		}
-		return nil, storeerr.InterpretGetError(err, e.resource, "")
-	}
-
-	return existing, nil
 }
 
 // Get returns an api.RangeAllocation that represents the current state in

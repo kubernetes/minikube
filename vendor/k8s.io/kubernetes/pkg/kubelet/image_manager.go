@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package kubelet
 
 import (
 	"fmt"
+	"math"
 	"sort"
 	"sync"
 	"time"
@@ -28,6 +29,8 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/kubernetes/pkg/kubelet/container"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/events"
+	"k8s.io/kubernetes/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/util/wait"
 )
@@ -44,6 +47,9 @@ type imageManager interface {
 	Start() error
 
 	GetImageList() ([]kubecontainer.Image, error)
+
+	// Delete all unused images and returns the number of bytes freed. The number of bytes freed is always returned.
+	DeleteUnusedImages() (int64, error)
 
 	// TODO(vmarmol): Have this subsume pulls as well.
 }
@@ -164,8 +170,8 @@ func (im *realImageManager) detectImages(detectTime time.Time) error {
 	imagesInUse := sets.NewString()
 	for _, pod := range pods {
 		for _, container := range pod.Containers {
-			glog.V(5).Infof("Pod %s/%s, container %s uses image %s", pod.Namespace, pod.Name, container.Name, container.Image)
-			imagesInUse.Insert(container.Image)
+			glog.V(5).Infof("Pod %s/%s, container %s uses image %s(%s)", pod.Namespace, pod.Name, container.Name, container.Image, container.ImageID)
+			imagesInUse.Insert(container.ImageID)
 		}
 	}
 
@@ -223,7 +229,7 @@ func (im *realImageManager) GarbageCollect() error {
 	// Check valid capacity.
 	if capacity == 0 {
 		err := fmt.Errorf("invalid capacity %d on device %q at mount point %q", capacity, fsInfo.Device, fsInfo.Mountpoint)
-		im.recorder.Eventf(im.nodeRef, api.EventTypeWarning, container.InvalidDiskCapacity, err.Error())
+		im.recorder.Eventf(im.nodeRef, api.EventTypeWarning, events.InvalidDiskCapacity, err.Error())
 		return err
 	}
 
@@ -239,12 +245,16 @@ func (im *realImageManager) GarbageCollect() error {
 
 		if freed < amountToFree {
 			err := fmt.Errorf("failed to garbage collect required amount of images. Wanted to free %d, but freed %d", amountToFree, freed)
-			im.recorder.Eventf(im.nodeRef, api.EventTypeWarning, container.FreeDiskSpaceFailed, err.Error())
+			im.recorder.Eventf(im.nodeRef, api.EventTypeWarning, events.FreeDiskSpaceFailed, err.Error())
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (im *realImageManager) DeleteUnusedImages() (int64, error) {
+	return im.freeSpace(math.MaxInt64, time.Now())
 }
 
 // Tries to free bytesToFree worth of images on the disk.
@@ -273,7 +283,7 @@ func (im *realImageManager) freeSpace(bytesToFree int64, freeTime time.Time) (in
 	sort.Sort(byLastUsedAndDetected(images))
 
 	// Delete unused images until we've freed up enough space.
-	var lastErr error
+	var deletionErrors []error
 	spaceFreed := int64(0)
 	for _, image := range images {
 		glog.V(5).Infof("Evaluating image ID %s for possible garbage collection", image.id)
@@ -295,7 +305,7 @@ func (im *realImageManager) freeSpace(bytesToFree int64, freeTime time.Time) (in
 		glog.Infof("[ImageManager]: Removing image %q to free %d bytes", image.id, image.size)
 		err := im.runtime.RemoveImage(container.ImageSpec{Image: image.id})
 		if err != nil {
-			lastErr = err
+			deletionErrors = append(deletionErrors, err)
 			continue
 		}
 		delete(im.imageRecords, image.id)
@@ -306,7 +316,10 @@ func (im *realImageManager) freeSpace(bytesToFree int64, freeTime time.Time) (in
 		}
 	}
 
-	return spaceFreed, lastErr
+	if len(deletionErrors) > 0 {
+		return spaceFreed, fmt.Errorf("wanted to free %d, but freed %d space with errors in image deletion: %v", bytesToFree, spaceFreed, errors.NewAggregate(deletionErrors))
+	}
+	return spaceFreed, nil
 }
 
 type evictionInfo struct {
@@ -328,14 +341,9 @@ func (ev byLastUsedAndDetected) Less(i, j int) bool {
 }
 
 func isImageUsed(image container.Image, imagesInUse sets.String) bool {
-	// Check the image ID and all the RepoTags and RepoDigests.
+	// Check the image ID.
 	if _, ok := imagesInUse[image.ID]; ok {
 		return true
-	}
-	for _, tag := range append(image.RepoTags, image.RepoDigests...) {
-		if _, ok := imagesInUse[tag]; ok {
-			return true
-		}
 	}
 	return false
 }

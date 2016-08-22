@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/resource"
 	statsapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/stats"
-	qosutil "k8s.io/kubernetes/pkg/kubelet/qos/util"
+	"k8s.io/kubernetes/pkg/kubelet/qos"
 	"k8s.io/kubernetes/pkg/kubelet/server/stats"
 	"k8s.io/kubernetes/pkg/quota/evaluator/core"
 	"k8s.io/kubernetes/pkg/util/sets"
@@ -41,21 +41,24 @@ const (
 	message = "The node was low on compute resources."
 	// disk, in bytes.  internal to this module, used to account for local disk usage.
 	resourceDisk api.ResourceName = "disk"
+	// imagefs, in bytes.  internal to this module, used to account for local image filesystem usage.
+	resourceImageFs api.ResourceName = "imagefs"
+	// nodefs, in bytes.  internal to this module, used to account for local node root filesystem usage.
+	resourceNodeFs api.ResourceName = "nodefs"
 )
-
-// resourceToRankFunc maps a resource to ranking function for that resource.
-var resourceToRankFunc = map[api.ResourceName]rankFunc{
-	api.ResourceMemory: rankMemoryPressure,
-}
 
 // signalToNodeCondition maps a signal to the node condition to report if threshold is met.
 var signalToNodeCondition = map[Signal]api.NodeConditionType{
-	SignalMemoryAvailable: api.NodeMemoryPressure,
+	SignalMemoryAvailable:  api.NodeMemoryPressure,
+	SignalImageFsAvailable: api.NodeDiskPressure,
+	SignalNodeFsAvailable:  api.NodeDiskPressure,
 }
 
 // signalToResource maps a Signal to its associated Resource.
 var signalToResource = map[Signal]api.ResourceName{
-	SignalMemoryAvailable: api.ResourceMemory,
+	SignalMemoryAvailable:  api.ResourceMemory,
+	SignalImageFsAvailable: resourceImageFs,
+	SignalNodeFsAvailable:  resourceNodeFs,
 }
 
 // validSignal returns true if the signal is supported.
@@ -65,7 +68,7 @@ func validSignal(signal Signal) bool {
 }
 
 // ParseThresholdConfig parses the flags for thresholds.
-func ParseThresholdConfig(evictionHard, evictionSoft, evictionSoftGracePeriod string) ([]Threshold, error) {
+func ParseThresholdConfig(evictionHard, evictionSoft, evictionSoftGracePeriod, evictionMinimumReclaim string) ([]Threshold, error) {
 	results := []Threshold{}
 
 	hardThresholds, err := parseThresholdStatements(evictionHard)
@@ -82,6 +85,10 @@ func ParseThresholdConfig(evictionHard, evictionSoft, evictionSoftGracePeriod st
 	if err != nil {
 		return nil, err
 	}
+	minReclaims, err := parseMinimumReclaims(evictionMinimumReclaim)
+	if err != nil {
+		return nil, err
+	}
 	for i := range softThresholds {
 		signal := softThresholds[i].Signal
 		period, found := gracePeriods[signal]
@@ -91,6 +98,14 @@ func ParseThresholdConfig(evictionHard, evictionSoft, evictionSoftGracePeriod st
 		softThresholds[i].GracePeriod = period
 	}
 	results = append(results, softThresholds...)
+	for i := range results {
+		for signal, minReclaim := range minReclaims {
+			if results[i].Signal == signal {
+				results[i].MinReclaim = &minReclaim
+				break
+			}
+		}
+	}
 	return results, nil
 }
 
@@ -145,6 +160,9 @@ func parseThresholdStatement(statement string) (Threshold, error) {
 	if err != nil {
 		return Threshold{}, err
 	}
+	if quantity.Sign() < 0 {
+		return Threshold{}, fmt.Errorf("eviction threshold %v cannot be negative: %s", signal, &quantity)
+	}
 	return Threshold{
 		Signal:   signal,
 		Operator: operator,
@@ -186,6 +204,38 @@ func parseGracePeriods(expr string) (map[Signal]time.Duration, error) {
 	return results, nil
 }
 
+// parseMinimumReclaims parses the minimum reclaim statements
+func parseMinimumReclaims(expr string) (map[Signal]resource.Quantity, error) {
+	if len(expr) == 0 {
+		return nil, nil
+	}
+	results := map[Signal]resource.Quantity{}
+	statements := strings.Split(expr, ",")
+	for _, statement := range statements {
+		parts := strings.Split(statement, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid eviction minimum reclaim syntax: %v, expected <signal>=<quantity>", statement)
+		}
+		signal := Signal(parts[0])
+		if !validSignal(signal) {
+			return nil, fmt.Errorf(unsupportedEvictionSignal, signal)
+		}
+		// check against duplicate statements
+		if _, found := results[signal]; found {
+			return nil, fmt.Errorf("duplicate eviction minimum reclaim specified for %v", signal)
+		}
+		quantity, err := resource.ParseQuantity(parts[1])
+		if quantity.Sign() < 0 {
+			return nil, fmt.Errorf("negative eviction minimum reclaim specified for %v", signal)
+		}
+		if err != nil {
+			return nil, err
+		}
+		results[signal] = quantity
+	}
+	return results, nil
+}
+
 // diskUsage converts used bytes into a resource quantity.
 func diskUsage(fsStats *statsapi.FsStats) *resource.Quantity {
 	if fsStats == nil || fsStats.UsedBytes == nil {
@@ -204,14 +254,54 @@ func memoryUsage(memStats *statsapi.MemoryStats) *resource.Quantity {
 	return resource.NewQuantity(usage, resource.BinarySI)
 }
 
-// podUsage aggregates usage of compute resources.
-// it supports the following memory and disk.
-func podUsage(podStats statsapi.PodStats) (api.ResourceList, error) {
+// localVolumeNames returns the set of volumes for the pod that are local
+// TODO: sumamry API should report what volumes consume local storage rather than hard-code here.
+func localVolumeNames(pod *api.Pod) []string {
+	result := []string{}
+	for _, volume := range pod.Spec.Volumes {
+		if volume.HostPath != nil ||
+			(volume.EmptyDir != nil && volume.EmptyDir.Medium != api.StorageMediumMemory) ||
+			volume.ConfigMap != nil ||
+			volume.GitRepo != nil {
+			result = append(result, volume.Name)
+		}
+	}
+	return result
+}
+
+// podDiskUsage aggregates pod disk usage for the specified stats to measure.
+func podDiskUsage(podStats statsapi.PodStats, pod *api.Pod, statsToMeasure []fsStatsType) (api.ResourceList, error) {
+	disk := resource.Quantity{Format: resource.BinarySI}
+	for _, container := range podStats.Containers {
+		if hasFsStatsType(statsToMeasure, fsStatsRoot) {
+			disk.Add(*diskUsage(container.Rootfs))
+		}
+		if hasFsStatsType(statsToMeasure, fsStatsLogs) {
+			disk.Add(*diskUsage(container.Logs))
+		}
+	}
+	if hasFsStatsType(statsToMeasure, fsStatsLocalVolumeSource) {
+		volumeNames := localVolumeNames(pod)
+		for _, volumeName := range volumeNames {
+			for _, volumeStats := range podStats.VolumeStats {
+				if volumeStats.Name == volumeName {
+					disk.Add(*diskUsage(&volumeStats.FsStats))
+					break
+				}
+			}
+		}
+	}
+	return api.ResourceList{
+		resourceDisk: disk,
+	}, nil
+}
+
+// podMemoryUsage aggregates pod memory usage.
+func podMemoryUsage(podStats statsapi.PodStats) (api.ResourceList, error) {
 	disk := resource.Quantity{Format: resource.BinarySI}
 	memory := resource.Quantity{Format: resource.BinarySI}
 	for _, container := range podStats.Containers {
 		// disk usage (if known)
-		// TODO: need to handle volumes
 		for _, fsStats := range []*statsapi.FsStats{container.Rootfs, container.Logs} {
 			disk.Add(*diskUsage(fsStats))
 		}
@@ -299,21 +389,21 @@ func (ms *multiSorter) Less(i, j int) bool {
 	return ms.cmp[k](p1, p2) < 0
 }
 
-// qos compares pods by QoS (BestEffort < Burstable < Guaranteed)
-func qos(p1, p2 *api.Pod) int {
-	qosP1 := qosutil.GetPodQos(p1)
-	qosP2 := qosutil.GetPodQos(p2)
+// qosComparator compares pods by QoS (BestEffort < Burstable < Guaranteed)
+func qosComparator(p1, p2 *api.Pod) int {
+	qosP1 := qos.GetPodQOS(p1)
+	qosP2 := qos.GetPodQOS(p2)
 	// its a tie
 	if qosP1 == qosP2 {
 		return 0
 	}
 	// if p1 is best effort, we know p2 is burstable or guaranteed
-	if qosP1 == qosutil.BestEffort {
+	if qosP1 == qos.BestEffort {
 		return -1
 	}
 	// we know p1 and p2 are not besteffort, so if p1 is burstable, p2 must be guaranteed
-	if qosP1 == qosutil.Burstable {
-		if qosP2 == qosutil.Guaranteed {
+	if qosP1 == qos.Burstable {
+		if qosP2 == qos.Guaranteed {
 			return -1
 		}
 		return 1
@@ -336,12 +426,12 @@ func memory(stats statsFunc) cmpFunc {
 			return 1
 		}
 		// if we cant get usage for p1 measured, we want p2 first
-		p1Usage, err := podUsage(p1Stats)
+		p1Usage, err := podMemoryUsage(p1Stats)
 		if err != nil {
 			return -1
 		}
 		// if we cant get usage for p2 measured, we want p1 first
-		p2Usage, err := podUsage(p2Stats)
+		p2Usage, err := podMemoryUsage(p2Stats)
 		if err != nil {
 			return 1
 		}
@@ -363,7 +453,7 @@ func memory(stats statsFunc) cmpFunc {
 }
 
 // disk compares pods by largest consumer of disk relative to request.
-func disk(stats statsFunc) cmpFunc {
+func disk(stats statsFunc, fsStatsToMeasure []fsStatsType) cmpFunc {
 	return func(p1, p2 *api.Pod) int {
 		p1Stats, found := stats(p1)
 		// if we have no usage stats for p1, we want p2 first
@@ -376,20 +466,20 @@ func disk(stats statsFunc) cmpFunc {
 			return 1
 		}
 		// if we cant get usage for p1 measured, we want p2 first
-		p1Usage, err := podUsage(p1Stats)
+		p1Usage, err := podDiskUsage(p1Stats, p1, fsStatsToMeasure)
 		if err != nil {
 			return -1
 		}
 		// if we cant get usage for p2 measured, we want p1 first
-		p2Usage, err := podUsage(p2Stats)
+		p2Usage, err := podDiskUsage(p2Stats, p2, fsStatsToMeasure)
 		if err != nil {
 			return 1
 		}
 
 		// disk is best effort, so we don't measure relative to a request.
 		// TODO: add disk as a guaranteed resource
-		p1Disk := p1Usage[api.ResourceStorage]
-		p2Disk := p2Usage[api.ResourceStorage]
+		p1Disk := p1Usage[resourceDisk]
+		p2Disk := p2Usage[resourceDisk]
 		// if p2 is using more than p1, we want p2 first
 		return p2Disk.Cmp(p1Disk)
 	}
@@ -397,12 +487,14 @@ func disk(stats statsFunc) cmpFunc {
 
 // rankMemoryPressure orders the input pods for eviction in response to memory pressure.
 func rankMemoryPressure(pods []*api.Pod, stats statsFunc) {
-	orderedBy(qos, memory(stats)).Sort(pods)
+	orderedBy(qosComparator, memory(stats)).Sort(pods)
 }
 
-// rankDiskPressure orders the input pods for eviction in response to disk pressure.
-func rankDiskPressure(pods []*api.Pod, stats statsFunc) {
-	orderedBy(qos, disk(stats)).Sort(pods)
+// rankDiskPressureFunc returns a rankFunc that measures the specified fs stats.
+func rankDiskPressureFunc(fsStatsToMeasure []fsStatsType) rankFunc {
+	return func(pods []*api.Pod, stats statsFunc) {
+		orderedBy(qosComparator, disk(stats, fsStatsToMeasure)).Sort(pods)
+	}
 }
 
 // byEvictionPriority implements sort.Interface for []api.ResourceName.
@@ -426,7 +518,18 @@ func makeSignalObservations(summaryProvider stats.SummaryProvider) (signalObserv
 	statsFunc := cachedStatsFunc(summary.Pods)
 	// build an evaluation context for current eviction signals
 	result := signalObservations{}
-	result[SignalMemoryAvailable] = resource.NewQuantity(int64(*summary.Node.Memory.AvailableBytes), resource.BinarySI)
+
+	if memory := summary.Node.Memory; memory != nil && memory.AvailableBytes != nil {
+		result[SignalMemoryAvailable] = resource.NewQuantity(int64(*memory.AvailableBytes), resource.BinarySI)
+	}
+	if nodeFs := summary.Node.Fs; nodeFs != nil && nodeFs.AvailableBytes != nil {
+		result[SignalNodeFsAvailable] = resource.NewQuantity(int64(*nodeFs.AvailableBytes), resource.BinarySI)
+	}
+	if summary.Node.Runtime != nil {
+		if imageFs := summary.Node.Runtime.ImageFs; imageFs != nil && imageFs.AvailableBytes != nil {
+			result[SignalImageFsAvailable] = resource.NewQuantity(int64(*imageFs.AvailableBytes), resource.BinarySI)
+		}
+	}
 	return result, statsFunc, nil
 }
 
@@ -521,6 +624,16 @@ func nodeConditionsObservedSince(observedAt nodeConditionsObservedAt, period tim
 	return results
 }
 
+// hasFsStatsType returns true if the fsStat is in the input list
+func hasFsStatsType(inputs []fsStatsType, item fsStatsType) bool {
+	for _, input := range inputs {
+		if input == item {
+			return true
+		}
+	}
+	return false
+}
+
 // hasNodeCondition returns true if the node condition is in the input list
 func hasNodeCondition(inputs []api.NodeConditionType, item api.NodeConditionType) bool {
 	for _, input := range inputs {
@@ -563,4 +676,22 @@ func isSoftEviction(thresholds []Threshold, starvedResource api.ResourceName) bo
 		}
 	}
 	return true
+}
+
+// buildResourceToRankFunc returns ranking functions associated with resources
+func buildResourceToRankFunc(withImageFs bool) map[api.ResourceName]rankFunc {
+	resourceToRankFunc := map[api.ResourceName]rankFunc{
+		api.ResourceMemory: rankMemoryPressure,
+	}
+	// usage of an imagefs is optional
+	if withImageFs {
+		// with an imagefs, nodefs pod rank func for eviction only includes logs and local volumes
+		resourceToRankFunc[resourceNodeFs] = rankDiskPressureFunc([]fsStatsType{fsStatsLogs, fsStatsLocalVolumeSource})
+		// with an imagefs, imagefs pod rank func for eviction only includes rootfs
+		resourceToRankFunc[resourceImageFs] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot})
+	} else {
+		// without an imagefs, nodefs pod rank func for eviction looks at all fs stats
+		resourceToRankFunc[resourceNodeFs] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot, fsStatsLogs, fsStatsLocalVolumeSource})
+	}
+	return resourceToRankFunc
 }

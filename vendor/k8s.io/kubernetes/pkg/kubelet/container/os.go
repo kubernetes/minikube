@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ type OSInterface interface {
 	ReadDir(dirname string) ([]os.FileInfo, error)
 }
 
-// RealOS is used to dispatch the real system level operaitons.
+// RealOS is used to dispatch the real system level operations.
 type RealOS struct{}
 
 // MkDir will will call os.Mkdir to create a directory.

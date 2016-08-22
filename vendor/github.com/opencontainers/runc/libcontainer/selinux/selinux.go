@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/docker/docker/pkg/mount"
@@ -35,6 +36,7 @@ const (
 var (
 	assignRegex           = regexp.MustCompile(`^([^=]+)=(.*)$`)
 	mcsList               = make(map[string]bool)
+	mcsLock               sync.Mutex
 	selinuxfs             = "unknown"
 	selinuxEnabled        = false // Stores whether selinux is currently enabled
 	selinuxEnabledChecked = false // Stores whether selinux enablement has been checked or established yet
@@ -158,12 +160,14 @@ func Setfilecon(path string, scon string) error {
 // Getfilecon returns the SELinux label for this path or returns an error.
 func Getfilecon(path string) (string, error) {
 	con, err := system.Lgetxattr(path, xattrNameSelinux)
-
+	if err != nil {
+		return "", err
+	}
 	// Trim the NUL byte at the end of the byte buffer, if present.
-	if con[len(con)-1] == '\x00' {
+	if len(con) > 0 && con[len(con)-1] == '\x00' {
 		con = con[:len(con)-1]
 	}
-	return string(con), err
+	return string(con), nil
 }
 
 func Setfscreatecon(scon string) error {
@@ -265,6 +269,8 @@ func SelinuxGetEnforceMode() int {
 }
 
 func mcsAdd(mcs string) error {
+	mcsLock.Lock()
+	defer mcsLock.Unlock()
 	if mcsList[mcs] {
 		return fmt.Errorf("MCS Label already exists")
 	}
@@ -273,7 +279,9 @@ func mcsAdd(mcs string) error {
 }
 
 func mcsDelete(mcs string) {
+	mcsLock.Lock()
 	mcsList[mcs] = false
+	mcsLock.Unlock()
 }
 
 func IntToMcs(id int, catRange uint32) string {

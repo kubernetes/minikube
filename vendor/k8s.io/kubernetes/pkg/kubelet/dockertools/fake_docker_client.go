@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -505,6 +505,20 @@ func (f *FakeDockerClient) updateContainerStatus(id, status string) {
 			f.RunningContainerList[i].Status = status
 		}
 	}
+}
+
+func (f *FakeDockerClient) ResizeExecTTY(id string, height, width int) error {
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, calledDetail{name: "resize_exec"})
+	return nil
+}
+
+func (f *FakeDockerClient) ResizeContainerTTY(id string, height, width int) error {
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, calledDetail{name: "resize_container"})
+	return nil
 }
 
 // FakeDockerPuller is a stub implementation of DockerPuller.

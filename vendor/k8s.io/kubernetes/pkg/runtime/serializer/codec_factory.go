@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -215,7 +215,7 @@ func (f CodecFactory) UniversalDecoder(versions ...unversioned.GroupVersion) run
 	return f.CodecForVersions(nil, f.universal, nil, versions)
 }
 
-// CodecFor creates a codec with the provided serializer. If an object is decoded and its group is not in the list,
+// CodecForVersions creates a codec with the provided serializer. If an object is decoded and its group is not in the list,
 // it will default to runtime.APIVersionInternal. If encode is not specified for an object's group, the object is not
 // converted. If encode or decode are nil, no conversion is performed.
 func (f CodecFactory) CodecForVersions(encoder runtime.Encoder, decoder runtime.Decoder, encode []unversioned.GroupVersion, decode []unversioned.GroupVersion) runtime.Codec {

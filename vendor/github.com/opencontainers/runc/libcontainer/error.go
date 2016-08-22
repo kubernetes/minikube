@@ -19,7 +19,7 @@ const (
 	ContainerNotPaused
 
 	// Process errors
-	ProcessNotExecuted
+	NoProcessOps
 
 	// Common errors
 	ConfigInvalid
@@ -49,6 +49,8 @@ func (c ErrorCode) String() string {
 		return "Console exists for process"
 	case ContainerNotPaused:
 		return "Container is not paused"
+	case NoProcessOps:
+		return "No process operations"
 	default:
 		return "Unknown error"
 	}

@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
+	kubeExternal "k8s.io/kubernetes/pkg/apis/componentconfig/v1alpha1"
 	"k8s.io/kubernetes/pkg/capabilities"
 	"k8s.io/kubernetes/pkg/client/chaosclient"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
@@ -122,17 +123,17 @@ HTTP server: The kubelet can also listen for HTTP and respond to a simple API
 // UnsecuredKubeletConfig returns a KubeletConfig suitable for being run, or an error if the server setup
 // is not valid.  It will not start any background processes, and does not include authentication/authorization
 func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
-	hostNetworkSources, err := kubetypes.GetValidatedSources(strings.Split(s.HostNetworkSources, ","))
+	hostNetworkSources, err := kubetypes.GetValidatedSources(s.HostNetworkSources)
 	if err != nil {
 		return nil, err
 	}
 
-	hostPIDSources, err := kubetypes.GetValidatedSources(strings.Split(s.HostPIDSources, ","))
+	hostPIDSources, err := kubetypes.GetValidatedSources(s.HostPIDSources)
 	if err != nil {
 		return nil, err
 	}
 
-	hostIPCSources, err := kubetypes.GetValidatedSources(strings.Split(s.HostIPCSources, ","))
+	hostIPCSources, err := kubetypes.GetValidatedSources(s.HostIPCSources)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		return nil, err
 	}
 
-	thresholds, err := eviction.ParseThresholdConfig(s.EvictionHard, s.EvictionSoft, s.EvictionSoftGracePeriod)
+	thresholds, err := eviction.ParseThresholdConfig(s.EvictionHard, s.EvictionSoft, s.EvictionSoftGracePeriod, s.EvictionMinimumReclaim)
 	if err != nil {
 		return nil, err
 	}
@@ -219,9 +220,10 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		EnableControllerAttachDetach: s.EnableControllerAttachDetach,
 		EnableCustomMetrics:          s.EnableCustomMetrics,
 		EnableDebuggingHandlers:      s.EnableDebuggingHandlers,
+		CgroupsPerQOS:                s.CgroupsPerQOS,
 		EnableServer:                 s.EnableServer,
 		EventBurst:                   int(s.EventBurst),
-		EventRecordQPS:               s.EventRecordQPS,
+		EventRecordQPS:               float32(s.EventRecordQPS),
 		FileCheckFrequency:           s.FileCheckFrequency.Duration,
 		HostnameOverride:             s.HostnameOverride,
 		HostNetworkSources:           hostNetworkSources,
@@ -234,7 +236,7 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		ManifestURLHeader:            manifestURLHeader,
 		MasterServiceNamespace:       s.MasterServiceNamespace,
 		MaxContainerCount:            int(s.MaxContainerCount),
-		MaxOpenFiles:                 s.MaxOpenFiles,
+		MaxOpenFiles:                 uint64(s.MaxOpenFiles),
 		MaxPerPodContainerCount:      int(s.MaxPerPodContainerCount),
 		MaxPods:                      int(s.MaxPods),
 		NvidiaGPUs:                   int(s.NvidiaGPUs),
@@ -250,12 +252,12 @@ func UnsecuredKubeletConfig(s *options.KubeletServer) (*KubeletConfig, error) {
 		PodCIDR:                      s.PodCIDR,
 		ReconcileCIDR:                s.ReconcileCIDR,
 		PodInfraContainerImage:       s.PodInfraContainerImage,
-		Port:                           s.Port,
-		ReadOnlyPort:                   s.ReadOnlyPort,
+		Port:                           uint(s.Port),
+		ReadOnlyPort:                   uint(s.ReadOnlyPort),
 		RegisterNode:                   s.RegisterNode,
 		RegisterSchedulable:            s.RegisterSchedulable,
 		RegistryBurst:                  int(s.RegistryBurst),
-		RegistryPullQPS:                s.RegistryPullQPS,
+		RegistryPullQPS:                float64(s.RegistryPullQPS),
 		ResolverConfig:                 s.ResolverConfig,
 		Reservation:                    *reservation,
 		KubeletCgroups:                 s.KubeletCgroups,
@@ -331,7 +333,7 @@ func run(s *options.KubeletServer, kcfg *KubeletConfig) (err error) {
 
 			// make a separate client for events
 			eventClientConfig := *clientConfig
-			eventClientConfig.QPS = s.EventRecordQPS
+			eventClientConfig.QPS = float32(s.EventRecordQPS)
 			eventClientConfig.Burst = int(s.EventBurst)
 			kcfg.EventClient, err = clientset.NewForConfig(&eventClientConfig)
 		}
@@ -339,20 +341,24 @@ func run(s *options.KubeletServer, kcfg *KubeletConfig) (err error) {
 			glog.Warningf("No API client: %v", err)
 		}
 
-		if s.CloudProvider == options.AutoDetectCloudProvider {
+		if s.CloudProvider == kubeExternal.AutoDetectCloudProvider {
 			kcfg.AutoDetectCloudProvider = true
 		} else {
 			cloud, err := cloudprovider.InitCloudProvider(s.CloudProvider, s.CloudConfigFile)
 			if err != nil {
 				return err
 			}
-			glog.V(2).Infof("Successfully initialized cloud provider: %q from the config file: %q\n", s.CloudProvider, s.CloudConfigFile)
-			kcfg.Cloud = cloud
+			if cloud == nil {
+				glog.V(2).Infof("No cloud provider specified: %q from the config file: %q\n", s.CloudProvider, s.CloudConfigFile)
+			} else {
+				glog.V(2).Infof("Successfully initialized cloud provider: %q from the config file: %q\n", s.CloudProvider, s.CloudConfigFile)
+				kcfg.Cloud = cloud
+			}
 		}
 	}
 
 	if kcfg.CAdvisorInterface == nil {
-		kcfg.CAdvisorInterface, err = cadvisor.New(s.CAdvisorPort, kcfg.ContainerRuntime)
+		kcfg.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), kcfg.ContainerRuntime)
 		if err != nil {
 			return err
 		}
@@ -362,12 +368,13 @@ func run(s *options.KubeletServer, kcfg *KubeletConfig) (err error) {
 		if kcfg.SystemCgroups != "" && kcfg.CgroupRoot == "" {
 			return fmt.Errorf("invalid configuration: system container was specified and cgroup root was not specified")
 		}
-
 		kcfg.ContainerManager, err = cm.NewContainerManager(kcfg.Mounter, kcfg.CAdvisorInterface, cm.NodeConfig{
 			RuntimeCgroupsName: kcfg.RuntimeCgroups,
 			SystemCgroupsName:  kcfg.SystemCgroups,
 			KubeletCgroupsName: kcfg.KubeletCgroups,
 			ContainerRuntime:   kcfg.ContainerRuntime,
+			CgroupsPerQOS:      kcfg.CgroupsPerQOS,
+			CgroupRoot:         kcfg.CgroupRoot,
 		})
 		if err != nil {
 			return err
@@ -376,10 +383,6 @@ func run(s *options.KubeletServer, kcfg *KubeletConfig) (err error) {
 
 	runtime.ReallyCrash = s.ReallyCrashForTesting
 	rand.Seed(time.Now().UTC().UnixNano())
-
-	credentialprovider.SetPreferredDockercfgPath(s.RootDirectory)
-
-	glog.V(2).Infof("Using root directory: %v", s.RootDirectory)
 
 	// TODO(vmarmol): Do this through container config.
 	oomAdjuster := kcfg.OOMAdjuster
@@ -510,7 +513,7 @@ func CreateAPIServerClientConfig(s *options.KubeletServer) (*restclient.Config, 
 
 	clientConfig.ContentType = s.ContentType
 	// Override kubeconfig qps/burst settings from flags
-	clientConfig.QPS = s.KubeAPIQPS
+	clientConfig.QPS = float32(s.KubeAPIQPS)
 	clientConfig.Burst = int(s.KubeAPIBurst)
 
 	addChaosToClientConfig(s, clientConfig)
@@ -557,6 +560,8 @@ func SimpleKubelet(client *clientset.Clientset,
 	evictionConfig := eviction.Config{
 		PressureTransitionPeriod: evictionPressureTransitionPeriod,
 	}
+
+	c := componentconfig.KubeletConfiguration{}
 	kcfg := KubeletConfig{
 		Address:                      net.ParseIP(address),
 		CAdvisorInterface:            cadvisorInterface,
@@ -576,6 +581,7 @@ func SimpleKubelet(client *clientset.Clientset,
 		EnableCustomMetrics:          false,
 		EnableDebuggingHandlers:      true,
 		EnableServer:                 true,
+		CgroupsPerQOS:                false,
 		FileCheckFrequency:           fileCheckFrequency,
 		// Since this kubelet runs with --configure-cbr0=false, it needs to use
 		// hairpin-veth to allow hairpin packets. Note that this deviates from
@@ -598,7 +604,7 @@ func SimpleKubelet(client *clientset.Clientset,
 		NodeStatusUpdateFrequency: nodeStatusUpdateFrequency,
 		OOMAdjuster:               oom.NewFakeOOMAdjuster(),
 		OSInterface:               osInterface,
-		PodInfraContainerImage:    options.GetDefaultPodInfraContainerImage(),
+		PodInfraContainerImage:    c.PodInfraContainerImage,
 		Port:                port,
 		ReadOnlyPort:        readOnlyPort,
 		RegisterNode:        true,
@@ -668,6 +674,7 @@ func RunKubelet(kcfg *KubeletConfig) error {
 	capabilities.Setup(kcfg.AllowPrivileged, privilegedSources, 0)
 
 	credentialprovider.SetPreferredDockercfgPath(kcfg.RootDirectory)
+	glog.V(2).Infof("Using root directory: %v", kcfg.RootDirectory)
 
 	builder := kcfg.Builder
 	if builder == nil {
@@ -798,6 +805,7 @@ type KubeletConfig struct {
 	EnableControllerAttachDetach   bool
 	EnableCustomMetrics            bool
 	EnableDebuggingHandlers        bool
+	CgroupsPerQOS                  bool
 	EnableServer                   bool
 	EventClient                    *clientset.Clientset
 	EventBurst                     int
@@ -929,6 +937,7 @@ func CreateAndInitKubelet(kc *KubeletConfig) (k KubeletBootstrap, pc *config.Pod
 		kc.NodeLabels,
 		kc.NodeStatusUpdateFrequency,
 		kc.OSInterface,
+		kc.CgroupsPerQOS,
 		kc.CgroupRoot,
 		kc.ContainerRuntime,
 		kc.RuntimeRequestTimeout,
