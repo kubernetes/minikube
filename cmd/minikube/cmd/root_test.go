@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -57,5 +58,45 @@ func TestEnvVariable(t *testing.T) {
 	os.Setenv(getEnvVarName("WANTUPDATENOTIFICATION"), "true")
 	if !viper.GetBool("WantUpdateNotification") {
 		t.Fatalf("Viper did not respect environment variable")
+	}
+}
+
+func cleanup() {
+	pflag.Set("v", "0")
+	pflag.Lookup("v").Changed = false
+}
+
+func TestFlagShouldOverrideConfig(t *testing.T) {
+	defer cleanup()
+	viper.Set("v", "1337")
+	pflag.Set("v", "100")
+	setFlagsUsingViper()
+	if viper.GetInt("v") != 100 {
+		viper.Debug()
+		t.Fatal("Value from viper config overrode explicit flag value")
+	}
+}
+
+func TestConfigShouldOverrideDefault(t *testing.T) {
+	defer cleanup()
+	viper.Set("v", "1337")
+	setFlagsUsingViper()
+	if viper.GetInt("v") != 1337 {
+		viper.Debug()
+		t.Fatalf("Value from viper config did not override default flag value")
+	}
+}
+
+func TestFallbackToDefaultFlag(t *testing.T) {
+	setFlagsUsingViper()
+
+	if viper.GetInt("stderrthreshold") != 2 {
+		t.Logf("stderrthreshold %s", viper.GetInt("stderrthreshold"))
+		t.Fatalf("The default flag value was overwritten")
+	}
+
+	if viper.GetString("log-flush-frequency") != "5s" {
+		t.Logf("log flush frequency: %s", viper.GetString("log-flush-frequency"))
+		t.Fatalf("The default flag value was overwritten")
 	}
 }
