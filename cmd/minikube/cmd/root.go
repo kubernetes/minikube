@@ -40,9 +40,19 @@ var dirs = [...]string{
 	constants.MakeMiniPath("cache", "localkube"),
 	constants.MakeMiniPath("config")}
 
-var (
-	showLibmachineLogs bool
+const (
+	showLibmachineLogs = "show-libmachine-logs"
 )
+
+var (
+	enableUpdateNotification = true
+)
+
+var viperWhiteList = []string{
+	"v",
+	"alsologtostderr",
+	"log_dir",
+}
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -56,12 +66,17 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		log.SetDebug(showLibmachineLogs)
-		if !showLibmachineLogs {
+		shouldShowLibmachineLogs := viper.GetBool(showLibmachineLogs)
+
+		log.SetDebug(shouldShowLibmachineLogs)
+		if !shouldShowLibmachineLogs {
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
 		}
-		notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+
+		if enableUpdateNotification {
+			notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+		}
 	},
 }
 
@@ -73,26 +88,46 @@ func Execute() {
 	}
 }
 
+// Handle config values for flags used in external packages (e.g. glog)
+// by setting them directly, using values from viper when not passed in as args
+func setFlagsUsingViper() {
+	for _, config := range viperWhiteList {
+		var a = pflag.Lookup(config)
+		viper.SetDefault(a.Name, a.DefValue)
+		// If the flag is set, override viper value
+		if a.Changed {
+			viper.Set(a.Name, a.Value.String())
+		}
+		// Viper will give precedence first to calls to the Set command,
+		// then to values from the config.yml
+		a.Value.Set(viper.GetString(a.Name))
+	}
+}
+
 func init() {
-	RootCmd.PersistentFlags().BoolVarP(&showLibmachineLogs, "show-libmachine-logs", "", false, "Whether or not to show logs from libmachine.")
+	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Whether or not to show logs from libmachine.")
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	viper.BindPFlags(RootCmd.PersistentFlags())
 	cobra.OnInitialize(initConfig)
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	configPath := constants.MakeMiniPath("config")
-
-	// Bind all viper values to env variables
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
-	viper.AutomaticEnv()
-
 	viper.SetConfigName("config")
 	viper.AddConfigPath(configPath)
 	err := viper.ReadInConfig()
 	if err != nil {
 		glog.Warningf("Error reading config file at %s: %s", configPath, err)
 	}
+	setupViper()
+}
+
+func setupViper() {
+	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.AutomaticEnv()
+
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
+	setFlagsUsingViper()
 }
