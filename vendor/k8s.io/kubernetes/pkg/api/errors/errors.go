@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -329,9 +329,9 @@ func NewGenericServerResponse(code int, verb string, qualifiedResource unversion
 		}
 	}
 	switch {
-	case !qualifiedResource.IsEmpty() && len(name) > 0:
+	case !qualifiedResource.Empty() && len(name) > 0:
 		message = fmt.Sprintf("%s (%s %s %s)", message, strings.ToLower(verb), qualifiedResource.String(), name)
-	case !qualifiedResource.IsEmpty():
+	case !qualifiedResource.Empty():
 		message = fmt.Sprintf("%s (%s %s)", message, strings.ToLower(verb), qualifiedResource.String())
 	}
 	var causes []unversioned.StatusCause

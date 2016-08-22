@@ -63,6 +63,7 @@ type containerMetric struct {
 	help        string
 	valueType   prometheus.ValueType
 	extraLabels []string
+	condition   func(s info.ContainerSpec) bool
 	getValues   func(s *info.ContainerStats) metricValues
 }
 
@@ -128,6 +129,30 @@ func NewPrometheusCollector(infoProvider infoProvider, f ContainerNameToLabelsFu
 					return values
 				},
 			}, {
+				name:      "container_cpu_cfs_periods_total",
+				help:      "Number of elapsed enforcement period intervals.",
+				valueType: prometheus.CounterValue,
+				condition: func(s info.ContainerSpec) bool { return s.Cpu.Quota != 0 },
+				getValues: func(s *info.ContainerStats) metricValues {
+					return metricValues{{value: float64(s.Cpu.CFS.Periods)}}
+				},
+			}, {
+				name:      "container_cpu_cfs_throttled_periods_total",
+				help:      "Number of throttled period intervals.",
+				valueType: prometheus.CounterValue,
+				condition: func(s info.ContainerSpec) bool { return s.Cpu.Quota != 0 },
+				getValues: func(s *info.ContainerStats) metricValues {
+					return metricValues{{value: float64(s.Cpu.CFS.ThrottledPeriods)}}
+				},
+			}, {
+				name:      "container_cpu_cfs_throttled_seconds_total",
+				help:      "Total time duration the container has been throttled.",
+				valueType: prometheus.CounterValue,
+				condition: func(s info.ContainerSpec) bool { return s.Cpu.Quota != 0 },
+				getValues: func(s *info.ContainerStats) metricValues {
+					return metricValues{{value: float64(s.Cpu.CFS.ThrottledTime) / float64(time.Second)}}
+				},
+			}, {
 				name:      "container_memory_cache",
 				help:      "Number of bytes of page cache memory.",
 				valueType: prometheus.GaugeValue,
@@ -140,6 +165,13 @@ func NewPrometheusCollector(infoProvider infoProvider, f ContainerNameToLabelsFu
 				valueType: prometheus.GaugeValue,
 				getValues: func(s *info.ContainerStats) metricValues {
 					return metricValues{{value: float64(s.Memory.RSS)}}
+				},
+			}, {
+				name:      "container_memory_swap",
+				help:      "Container swap usage in bytes.",
+				valueType: prometheus.GaugeValue,
+				getValues: func(s *info.ContainerStats) metricValues {
+					return metricValues{{value: float64(s.Memory.Swap)}}
 				},
 			}, {
 				name:      "container_memory_failcnt",
@@ -493,11 +525,17 @@ func (c *PrometheusCollector) Describe(ch chan<- *prometheus.Desc) {
 // Collect fetches the stats from all containers and delivers them as
 // Prometheus metrics. It implements prometheus.PrometheusCollector.
 func (c *PrometheusCollector) Collect(ch chan<- prometheus.Metric) {
+	c.errors.Set(0)
 	c.collectMachineInfo(ch)
 	c.collectVersionInfo(ch)
 	c.collectContainersInfo(ch)
 	c.errors.Collect(ch)
 }
+
+const (
+	containerLabelPrefix = "container_label_"
+	containerEnvPrefix   = "container_env_"
+)
 
 func (c *PrometheusCollector) collectContainersInfo(ch chan<- prometheus.Metric) {
 	containers, err := c.infoProvider.SubcontainersInfo("/", &info.ContainerInfoRequest{NumStats: 1})
@@ -529,11 +567,11 @@ func (c *PrometheusCollector) collectContainersInfo(ch chan<- prometheus.Metric)
 		}
 
 		for k, v := range container.Spec.Labels {
-			baseLabels = append(baseLabels, sanitizeLabelName(k))
+			baseLabels = append(baseLabels, sanitizeLabelName(containerLabelPrefix+k))
 			baseLabelValues = append(baseLabelValues, v)
 		}
 		for k, v := range container.Spec.Envs {
-			baseLabels = append(baseLabels, sanitizeLabelName(k))
+			baseLabels = append(baseLabels, sanitizeLabelName(containerEnvPrefix+k))
 			baseLabelValues = append(baseLabelValues, v)
 		}
 
@@ -562,6 +600,9 @@ func (c *PrometheusCollector) collectContainersInfo(ch chan<- prometheus.Metric)
 		// Now for the actual metrics
 		stats := container.Stats[0]
 		for _, cm := range c.containerMetrics {
+			if cm.condition != nil && !cm.condition(container.Spec) {
+				continue
+			}
 			desc := cm.desc(baseLabels)
 			for _, metricValue := range cm.getValues(stats) {
 				ch <- prometheus.MustNewConstMetric(desc, cm.valueType, float64(metricValue.value), append(baseLabelValues, metricValue.labels...)...)

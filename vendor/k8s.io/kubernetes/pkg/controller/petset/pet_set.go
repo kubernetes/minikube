@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -166,11 +166,13 @@ func (psc *PetSetController) addPod(obj interface{}) {
 // updatePod adds the petset for the current and old pods to the sync queue.
 // If the labels of the pod didn't change, this method enqueues a single petset.
 func (psc *PetSetController) updatePod(old, cur interface{}) {
-	if api.Semantic.DeepEqual(old, cur) {
-		return
-	}
 	curPod := cur.(*api.Pod)
 	oldPod := old.(*api.Pod)
+	if curPod.ResourceVersion == oldPod.ResourceVersion {
+		// Periodic resync will send update events for all known pods.
+		// Two different versions of the same pod will always have different RVs.
+		return
+	}
 	ps := psc.getPetSetForPod(curPod)
 	if ps == nil {
 		return
@@ -216,15 +218,16 @@ func (psc *PetSetController) getPodsForPetSet(ps *apps.PetSet) ([]*api.Pod, erro
 	if err != nil {
 		return []*api.Pod{}, err
 	}
-	petList, err := psc.podStore.Pods(ps.Namespace).List(sel)
+	pods, err := psc.podStore.Pods(ps.Namespace).List(sel)
 	if err != nil {
 		return []*api.Pod{}, err
 	}
-	pods := []*api.Pod{}
-	for _, p := range petList.Items {
-		pods = append(pods, &p)
+	// TODO: Do we need to copy?
+	result := make([]*api.Pod, 0, len(pods))
+	for i := range pods {
+		result = append(result, &(*pods[i]))
 	}
-	return pods, nil
+	return result, nil
 }
 
 // getPetSetForPod returns the pet set managing the given pod.

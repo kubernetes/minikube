@@ -1,7 +1,7 @@
 // +build cgo,linux
 
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/golang/glog"
@@ -79,7 +78,7 @@ func New(port uint, runtime string) (Interface, error) {
 	}
 
 	// Create and start the cAdvisor container manager.
-	m, err := manager.New(memory.New(statsCacheDuration, nil), sysFs, maxHousekeepingInterval, allowDynamicHousekeeping, cadvisorMetrics.MetricSet{cadvisorMetrics.NetworkTcpUsageMetrics: struct{}{}})
+	m, err := manager.New(memory.New(statsCacheDuration, nil), sysFs, maxHousekeepingInterval, allowDynamicHousekeeping, cadvisorMetrics.MetricSet{cadvisorMetrics.NetworkTcpUsageMetrics: struct{}{}}, http.DefaultClient)
 	if err != nil {
 		return nil, err
 	}
@@ -109,18 +108,7 @@ func (cc *cadvisorClient) exportHTTP(port uint) error {
 		return err
 	}
 
-	re := regexp.MustCompile(`^k8s_(?P<kubernetes_container_name>[^_\.]+)[^_]+_(?P<kubernetes_pod_name>[^_]+)_(?P<kubernetes_namespace>[^_]+)`)
-	reCaptureNames := re.SubexpNames()
-	cadvisorhttp.RegisterPrometheusHandler(mux, cc, "/metrics", func(name string) map[string]string {
-		extraLabels := map[string]string{}
-		matches := re.FindStringSubmatch(name)
-		for i, match := range matches {
-			if len(reCaptureNames[i]) > 0 {
-				extraLabels[re.SubexpNames()[i]] = match
-			}
-		}
-		return extraLabels
-	})
+	cadvisorhttp.RegisterPrometheusHandler(mux, cc, "/metrics", nil)
 
 	// Only start the http server if port > 0
 	if port > 0 {

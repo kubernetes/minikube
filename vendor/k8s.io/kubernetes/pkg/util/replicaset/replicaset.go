@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -66,7 +66,7 @@ func UpdateRSWithRetries(rsClient unversionedextensions.ReplicaSetInterface, rs 
 
 	// Handle returned error from wait poll
 	if err == wait.ErrWaitTimeout {
-		err = fmt.Errorf("timed out trying to update RS: %+v", oldRs)
+		err = fmt.Errorf("timed out trying to update RS: %#v", oldRs)
 	}
 	// Ignore the RS not found error, but the RS isn't updated.
 	if errors.IsNotFound(err) {
@@ -107,4 +107,26 @@ func MatchingPodsFunc(rs *extensions.ReplicaSet) (func(api.Pod) bool, error) {
 		podLabelsSelector := labels.Set(pod.ObjectMeta.Labels)
 		return selector.Matches(podLabelsSelector)
 	}, nil
+}
+
+// ReplicaSetIsInactive returns a condition that will be true when a replica set is inactive ie.
+// it has zero running replicas.
+func ReplicaSetIsInactive(c unversionedextensions.ExtensionsInterface, replicaSet *extensions.ReplicaSet) wait.ConditionFunc {
+
+	// If we're given a ReplicaSet where the status lags the spec, it either means that the
+	// ReplicaSet is stale, or that the ReplicaSet manager hasn't noticed the update yet.
+	// Polling status.Replicas is not safe in the latter case.
+	desiredGeneration := replicaSet.Generation
+
+	return func() (bool, error) {
+		rs, err := c.ReplicaSets(replicaSet.Namespace).Get(replicaSet.Name)
+		if err != nil {
+			return false, err
+		}
+
+		return rs.Status.ObservedGeneration >= desiredGeneration &&
+			rs.Spec.Replicas == 0 &&
+			rs.Status.Replicas == 0 &&
+			rs.Status.FullyLabeledReplicas == 0, nil
+	}
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -64,13 +64,19 @@ func (r *StatusREST) Update(ctx api.Context, name string, objInfo rest.UpdatedOb
 	return r.store.Update(ctx, name, objInfo)
 }
 
-// NewREST returns a RESTStorage object that will work against nodes.
+// NewStorage returns a NodeStorage object that will work against nodes.
 func NewStorage(opts generic.RESTOptions, connection client.ConnectionInfoGetter, proxyTransport http.RoundTripper) NodeStorage {
-	prefix := "/minions"
+	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &api.NodeList{} }
 	storageInterface := opts.Decorator(
-		opts.Storage, cachesize.GetWatchCacheSizeByResource(cachesize.Nodes), &api.Node{}, prefix, node.Strategy, newListFunc)
+		opts.StorageConfig,
+		cachesize.GetWatchCacheSizeByResource(cachesize.Nodes),
+		&api.Node{},
+		prefix,
+		node.Strategy,
+		newListFunc,
+		node.NodeNameTriggerFunc)
 
 	store := &registry.Store{
 		NewFunc:     func() runtime.Object { return &api.Node{} },

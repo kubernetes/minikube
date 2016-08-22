@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,15 +27,15 @@ import (
 type Job struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard object's metadata.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#metadata
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	api.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is a structure defining the expected behavior of a job.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#spec-and-status
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	Spec JobSpec `json:"spec,omitempty"`
 
 	// Status is a structure describing current status of a job.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#spec-and-status
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	Status JobStatus `json:"status,omitempty"`
 }
 
@@ -43,7 +43,7 @@ type Job struct {
 type JobList struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard list metadata
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#metadata
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	unversioned.ListMeta `json:"metadata,omitempty"`
 
 	// Items is the list of Job.
@@ -54,22 +54,22 @@ type JobList struct {
 type JobTemplate struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard object's metadata.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#metadata
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	api.ObjectMeta `json:"metadata,omitempty"`
 
 	// Template defines jobs that will be created from this template
-	// http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#spec-and-status
+	// http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	Template JobTemplateSpec `json:"template,omitempty"`
 }
 
 // JobTemplateSpec describes the data a Job should have when created from a template
 type JobTemplateSpec struct {
 	// Standard object's metadata of the jobs created from this template.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#metadata
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	api.ObjectMeta `json:"metadata,omitempty"`
 
 	// Specification of the desired behavior of the job.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#spec-and-status
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	Spec JobSpec `json:"spec,omitempty"`
 }
 
@@ -171,15 +171,15 @@ type JobCondition struct {
 type ScheduledJob struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard object's metadata.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#metadata
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	api.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is a structure defining the expected behavior of a job, including the schedule.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#spec-and-status
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	Spec ScheduledJobSpec `json:"spec,omitempty"`
 
 	// Status is a structure describing current status of a job.
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#spec-and-status
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	Status ScheduledJobStatus `json:"status,omitempty"`
 }
 
@@ -187,7 +187,7 @@ type ScheduledJob struct {
 type ScheduledJobList struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard list metadata
-	// More info: http://releases.k8s.io/release-1.3/docs/devel/api-conventions.md#metadata
+	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	unversioned.ListMeta `json:"metadata,omitempty"`
 
 	// Items is the list of ScheduledJob.
@@ -209,7 +209,7 @@ type ScheduledJobSpec struct {
 
 	// Suspend flag tells the controller to suspend subsequent executions, it does
 	// not apply to already started executions.  Defaults to false.
-	Suspend *bool `json:"suspend"`
+	Suspend *bool `json:"suspend,omitempty"`
 
 	// JobTemplate is the object that describes the job that will be created when
 	// executing a ScheduledJob.

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -167,6 +167,12 @@ func getUserIdentificationPartialConfig(configAuthInfo clientcmdapi.AuthInfo, fa
 	// blindly overwrite existing values based on precedence
 	if len(configAuthInfo.Token) > 0 {
 		mergedConfig.BearerToken = configAuthInfo.Token
+	} else if len(configAuthInfo.TokenFile) > 0 {
+		tokenBytes, err := ioutil.ReadFile(configAuthInfo.TokenFile)
+		if err != nil {
+			return nil, err
+		}
+		mergedConfig.BearerToken = string(tokenBytes)
 	}
 	if len(configAuthInfo.Impersonate) > 0 {
 		mergedConfig.Impersonate = configAuthInfo.Impersonate

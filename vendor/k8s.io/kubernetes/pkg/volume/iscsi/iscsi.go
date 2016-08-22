@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -144,6 +144,19 @@ func (plugin *iscsiPlugin) newUnmounterInternal(volName string, podUID types.UID
 func (plugin *iscsiPlugin) execCommand(command string, args []string) ([]byte, error) {
 	cmd := plugin.exe.Command(command, args...)
 	return cmd.CombinedOutput()
+}
+
+func (plugin *iscsiPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	iscsiVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			ISCSI: &api.ISCSIVolumeSource{
+				TargetPortal: volumeName,
+				IQN:          volumeName,
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(iscsiVolume), nil
 }
 
 type iscsiDisk struct {

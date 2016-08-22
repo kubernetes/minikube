@@ -94,6 +94,9 @@ type dockerContainerHandler struct {
 	// Filesystem handler.
 	fsHandler common.FsHandler
 
+	// The IP address of the container
+	ipAddress string
+
 	ignoreMetrics container.MetricSet
 
 	// thin pool watcher
@@ -222,6 +225,22 @@ func newDockerContainerHandler(
 	handler.networkMode = ctnr.HostConfig.NetworkMode
 	handler.deviceID = ctnr.GraphDriver.Data["DeviceId"]
 
+	// Obtain the IP address for the contianer.
+	// If the NetworkMode starts with 'container:' then we need to use the IP address of the container specified.
+	// This happens in cases such as kubernetes where the containers doesn't have an IP address itself and we need to use the pod's address
+	ipAddress := ctnr.NetworkSettings.IPAddress
+	networkMode := string(ctnr.HostConfig.NetworkMode)
+	if ipAddress == "" && strings.HasPrefix(networkMode, "container:") {
+		containerId := strings.TrimPrefix(networkMode, "container:")
+		c, err := client.ContainerInspect(context.Background(), containerId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to inspect container %q: %v", id, err)
+		}
+		ipAddress = c.NetworkSettings.IPAddress
+	}
+
+	handler.ipAddress = ipAddress
+
 	if !ignoreMetrics.Has(container.DiskUsageMetrics) {
 		handler.fsHandler = &dockerFsHandler{
 			fsHandler:       common.NewFsHandler(time.Minute, rootfsStorageDir, otherStorageDir, fsInfo),
@@ -275,7 +294,10 @@ func (h *dockerFsHandler) Usage() (uint64, uint64) {
 	if h.thinPoolWatcher != nil {
 		thinPoolUsage, err := h.thinPoolWatcher.GetUsage(h.deviceID)
 		if err != nil {
-			glog.Errorf("unable to get fs usage from thin pool for device %v: %v", h.deviceID, err)
+			// TODO: ideally we should keep track of how many times we failed to get the usage for this
+			// device vs how many refreshes of the cache there have been, and display an error e.g. if we've
+			// had at least 1 refresh and we still can't find the device.
+			glog.V(5).Infof("unable to get fs usage from thin pool for device %s: %v", h.deviceID, err)
 		} else {
 			baseUsage = thinPoolUsage
 			usage += thinPoolUsage
@@ -410,6 +432,10 @@ func (self *dockerContainerHandler) GetCgroupPath(resource string) (string, erro
 
 func (self *dockerContainerHandler) GetContainerLabels() map[string]string {
 	return self.labels
+}
+
+func (self *dockerContainerHandler) GetContainerIPAddress() string {
+	return self.ipAddress
 }
 
 func (self *dockerContainerHandler) ListProcesses(listType container.ListType) ([]int, error) {

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/runtime/serializer/recognizer"
 	"k8s.io/kubernetes/pkg/util/framer"
 	utilyaml "k8s.io/kubernetes/pkg/util/yaml"
 )
@@ -63,6 +64,7 @@ type Serializer struct {
 
 // Serializer implements Serializer
 var _ runtime.Serializer = &Serializer{}
+var _ recognizer.RecognizingDecoder = &Serializer{}
 
 // Decode attempts to convert the provided data into YAML or JSON, extract the stored schema kind, apply the provided default gvk, and then
 // load that data into an object matching the desired schema kind or the provided into. If into is *runtime.Unknown, the raw data will be

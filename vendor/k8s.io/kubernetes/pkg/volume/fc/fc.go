@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -139,6 +139,16 @@ func (plugin *fcPlugin) newUnmounterInternal(volName string, podUID types.UID, m
 func (plugin *fcPlugin) execCommand(command string, args []string) ([]byte, error) {
 	cmd := plugin.exe.Command(command, args...)
 	return cmd.CombinedOutput()
+}
+
+func (plugin *fcPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	fcVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			FC: &api.FCVolumeSource{},
+		},
+	}
+	return volume.NewSpecFromVolume(fcVolume), nil
 }
 
 type fcDisk struct {

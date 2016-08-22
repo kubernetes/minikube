@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -163,6 +163,18 @@ func (plugin *rbdPlugin) newUnmounterInternal(volName string, podUID types.UID, 
 			Mon: make([]string, 0),
 		},
 	}, nil
+}
+
+func (plugin *rbdPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	rbdVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			RBD: &api.RBDVolumeSource{
+				CephMonitors: []string{},
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(rbdVolume), nil
 }
 
 type rbd struct {

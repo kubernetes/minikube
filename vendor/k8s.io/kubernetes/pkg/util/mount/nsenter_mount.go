@@ -1,7 +1,7 @@
 // +build linux
 
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -201,6 +201,25 @@ func (n *NsenterMounter) IsLikelyNotMountPoint(file string) (bool, error) {
 	}
 	glog.V(5).Infof("IsLikelyNotMountPoint: %s is not a mount point", file)
 	return true, nil
+}
+
+// DeviceOpened checks if block device in use by calling Open with O_EXCL flag.
+// Returns true if open returns errno EBUSY, and false if errno is nil.
+// Returns an error if errno is any error other than EBUSY.
+// Returns with error if pathname is not a device.
+func (n *NsenterMounter) DeviceOpened(pathname string) (bool, error) {
+	return exclusiveOpenFailsOnDevice(pathname)
+}
+
+// PathIsDevice uses FileInfo returned from os.Stat to check if path refers
+// to a device.
+func (n *NsenterMounter) PathIsDevice(pathname string) (bool, error) {
+	return pathIsDevice(pathname)
+}
+
+//GetDeviceNameFromMount given a mount point, find the volume id from checking /proc/mounts
+func (n *NsenterMounter) GetDeviceNameFromMount(mountPath, pluginDir string) (string, error) {
+	return getDeviceNameFromMount(n, mountPath, pluginDir)
 }
 
 func (n *NsenterMounter) absHostPath(command string) string {

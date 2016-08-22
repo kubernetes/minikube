@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import (
 	"k8s.io/kubernetes/pkg/proxy/iptables"
 	"k8s.io/kubernetes/pkg/proxy/userspace"
 	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util"
 	"k8s.io/kubernetes/pkg/util/configz"
 	utildbus "k8s.io/kubernetes/pkg/util/dbus"
 	"k8s.io/kubernetes/pkg/util/exec"
@@ -47,6 +46,8 @@ import (
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 	nodeutil "k8s.io/kubernetes/pkg/util/node"
 	"k8s.io/kubernetes/pkg/util/oom"
+	"k8s.io/kubernetes/pkg/util/resourcecontainer"
+	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 	"k8s.io/kubernetes/pkg/util/wait"
 
 	"github.com/golang/glog"
@@ -158,7 +159,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 
 	if config.ResourceContainer != "" {
 		// Run in its own container.
-		if err := util.RunInResourceContainer(config.ResourceContainer); err != nil {
+		if err := resourcecontainer.RunInResourceContainer(config.ResourceContainer); err != nil {
 			glog.Warningf("Failed to start in resource-only container %q: %v", config.ResourceContainer, err)
 		} else {
 			glog.V(2).Infof("Running in resource-only container %q", config.ResourceContainer)
@@ -204,8 +205,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 			// IPTablesMasqueradeBit must be specified or defaulted.
 			return nil, fmt.Errorf("Unable to read IPTablesMasqueradeBit from config")
 		}
-
-		proxierIptables, err := iptables.NewProxier(iptInterface, execer, config.IPTablesSyncPeriod.Duration, config.MasqueradeAll, int(*config.IPTablesMasqueradeBit), config.ClusterCIDR)
+		proxierIptables, err := iptables.NewProxier(iptInterface, utilsysctl.New(), execer, config.IPTablesSyncPeriod.Duration, config.MasqueradeAll, int(*config.IPTablesMasqueradeBit), config.ClusterCIDR, hostname, getNodeIP(client, hostname))
 		if err != nil {
 			glog.Fatalf("Unable to create proxier: %v", err)
 		}
@@ -408,4 +408,19 @@ func tryIptablesProxy(iptver iptables.IptablesVersioner, kcompat iptables.Kernel
 
 func (s *ProxyServer) birthCry() {
 	s.Recorder.Eventf(s.Config.NodeRef, api.EventTypeNormal, "Starting", "Starting kube-proxy.")
+}
+
+func getNodeIP(client *kubeclient.Client, hostname string) net.IP {
+	var nodeIP net.IP
+	node, err := client.Nodes().Get(hostname)
+	if err != nil {
+		glog.Warningf("Failed to retrieve node info: %v", err)
+		return nil
+	}
+	nodeIP, err = nodeutil.GetNodeHostIP(node)
+	if err != nil {
+		glog.Warningf("Failed to retrieve node IP: %v", err)
+		return nil
+	}
+	return nodeIP
 }

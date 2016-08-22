@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/images"
 	"k8s.io/kubernetes/pkg/kubelet/leaky"
 	"k8s.io/kubernetes/pkg/types"
 	utilerrors "k8s.io/kubernetes/pkg/util/errors"
@@ -44,6 +45,7 @@ const (
 	PodInfraContainerName = leaky.PodInfraContainerName
 	DockerPrefix          = "docker://"
 	LogSuffix             = "log"
+	ext4MaxFileNameLen    = 255
 )
 
 const (
@@ -53,8 +55,8 @@ const (
 	milliCPUToCPU = 1000
 
 	// 100000 is equivalent to 100ms
-	quotaPeriod   = 100000
-	minQuotaPerod = 1000
+	quotaPeriod    = 100000
+	minQuotaPeriod = 1000
 )
 
 // DockerInterface is an abstract interface for testability.  It abstracts the interface of docker client.
@@ -77,6 +79,8 @@ type DockerInterface interface {
 	StartExec(string, dockertypes.ExecStartCheck, StreamOptions) error
 	InspectExec(id string) (*dockertypes.ContainerExecInspect, error)
 	AttachToContainer(string, dockertypes.ContainerAttachOptions, StreamOptions) error
+	ResizeContainerTTY(id string, height, width int) error
+	ResizeExecTTY(id string, height, width int) error
 }
 
 // KubeletContainerName encapsulates a pod name and a Kubernetes container name.
@@ -140,10 +144,52 @@ func filterHTTPError(err error, image string) error {
 		jerr.Code == http.StatusServiceUnavailable ||
 		jerr.Code == http.StatusGatewayTimeout) {
 		glog.V(2).Infof("Pulling image %q failed: %v", image, err)
-		return kubecontainer.RegistryUnavailable
+		return images.RegistryUnavailable
 	} else {
 		return err
 	}
+}
+
+// Check if the inspected image matches what we are looking for
+func matchImageTagOrSHA(inspected dockertypes.ImageInspect, image string) bool {
+
+	// The image string follows the grammar specified here
+	// https://github.com/docker/distribution/blob/master/reference/reference.go#L4
+	named, err := dockerref.ParseNamed(image)
+	if err != nil {
+		glog.V(4).Infof("couldn't parse image reference %q: %v", image, err)
+		return false
+	}
+	_, isTagged := named.(dockerref.Tagged)
+	digest, isDigested := named.(dockerref.Digested)
+	if !isTagged && !isDigested {
+		// No Tag or SHA specified, so just return what we have
+		return true
+	}
+
+	if isTagged {
+		// Check the RepoTags for a match.
+		for _, tag := range inspected.RepoTags {
+			// An image name (without the tag/digest) can be [hostname '/'] component ['/' component]*
+			// Because either the RepoTag or the name *may* contain the
+			// hostname or not, we only check for the suffix match.
+			if strings.HasSuffix(image, tag) || strings.HasSuffix(tag, image) {
+				return true
+			}
+		}
+	}
+
+	if isDigested {
+		algo := digest.Digest().Algorithm().String()
+		sha := digest.Digest().Hex()
+		// Look specifically for short and long sha(s)
+		if strings.Contains(inspected.ID, algo+":"+sha) {
+			// We found the short or long SHA requested
+			return true
+		}
+	}
+	glog.V(4).Infof("Inspected image (%q) does not match %s", inspected.ID, image)
+	return false
 }
 
 // applyDefaultImageTag parses a docker image string, if it doesn't contain any tag or digest,
@@ -246,7 +292,7 @@ func (p throttledDockerPuller) IsImagePresent(name string) (bool, error) {
 }
 
 // Creates a name which can be reversed to identify both full pod name and container name.
-// This function returns stable name, unique name and an unique id.
+// This function returns stable name, unique name and a unique id.
 // Although rand.Uint32() is not really unique, but it's enough for us because error will
 // only occur when instances of the same container in the same pod have the same UID. The
 // chance is really slim.
@@ -297,7 +343,13 @@ func ParseDockerName(name string) (dockerName *KubeletContainerName, hash uint64
 }
 
 func LogSymlink(containerLogsDir, podFullName, containerName, dockerId string) string {
-	return path.Join(containerLogsDir, fmt.Sprintf("%s_%s-%s.%s", podFullName, containerName, dockerId, LogSuffix))
+	suffix := fmt.Sprintf(".%s", LogSuffix)
+	logPath := fmt.Sprintf("%s_%s-%s", podFullName, containerName, dockerId)
+	// Length of a filename cannot exceed 255 characters in ext4 on Linux.
+	if len(logPath) > ext4MaxFileNameLen-len(suffix) {
+		logPath = logPath[:ext4MaxFileNameLen-len(suffix)]
+	}
+	return path.Join(containerLogsDir, logPath+suffix)
 }
 
 // Get a *dockerapi.Client, either using the endpoint passed in, or using
@@ -348,8 +400,8 @@ func milliCPUToQuota(milliCPU int64) (quota int64, period int64) {
 	quota = (milliCPU * quotaPeriod) / milliCPUToCPU
 
 	// quota needs to be a minimum of 1ms.
-	if quota < minQuotaPerod {
-		quota = minQuotaPerod
+	if quota < minQuotaPeriod {
+		quota = minQuotaPeriod
 	}
 
 	return
@@ -372,7 +424,6 @@ func milliCPUToShares(milliCPU int64) int64 {
 
 // GetKubeletDockerContainers lists all container or just the running ones.
 // Returns a list of docker containers that we manage
-// TODO: Move this function with dockerCache to DockerManager.
 func GetKubeletDockerContainers(client DockerInterface, allContainers bool) ([]*dockertypes.Container, error) {
 	result := []*dockertypes.Container{}
 	containers, err := client.ListContainers(dockertypes.ContainerListOptions{All: allContainers})
@@ -386,10 +437,8 @@ func GetKubeletDockerContainers(client DockerInterface, allContainers bool) ([]*
 		}
 		// Skip containers that we didn't create to allow users to manually
 		// spin up their own containers if they want.
-		// TODO(dchen1107): Remove the old separator "--" by end of Oct
-		if !strings.HasPrefix(container.Names[0], "/"+containerNamePrefix+"_") &&
-			!strings.HasPrefix(container.Names[0], "/"+containerNamePrefix+"--") {
-			glog.V(3).Infof("Docker Container: %s is not managed by kubelet.", container.Names[0])
+		if !strings.HasPrefix(container.Names[0], "/"+containerNamePrefix+"_") {
+			glog.V(5).Infof("Docker Container: %s is not managed by kubelet.", container.Names[0])
 			continue
 		}
 		result = append(result, container)

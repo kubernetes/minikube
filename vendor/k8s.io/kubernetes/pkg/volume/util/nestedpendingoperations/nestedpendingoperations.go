@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -58,6 +58,10 @@ type NestedPendingOperations interface {
 	// necessary during tests - the test should wait until all operations finish
 	// and evaluate results after that.
 	Wait()
+
+	// IsOperationPending returns true if an operation for the given volumeName and podName is pending,
+	// otherwise it returns false
+	IsOperationPending(volumeName api.UniqueVolumeName, podName types.UniquePodName) bool
 }
 
 // NewNestedPendingOperations returns a new instance of NestedPendingOperations.
@@ -65,9 +69,8 @@ func NewNestedPendingOperations(exponentialBackOffOnError bool) NestedPendingOpe
 	g := &nestedPendingOperations{
 		operations:                []operation{},
 		exponentialBackOffOnError: exponentialBackOffOnError,
-		lock: &sync.Mutex{},
 	}
-	g.cond = sync.NewCond(g.lock)
+	g.cond = sync.NewCond(&g.lock)
 	return g
 }
 
@@ -75,7 +78,7 @@ type nestedPendingOperations struct {
 	operations                []operation
 	exponentialBackOffOnError bool
 	cond                      *sync.Cond
-	lock                      *sync.Mutex
+	lock                      sync.RWMutex
 }
 
 type operation struct {
@@ -91,29 +94,9 @@ func (grm *nestedPendingOperations) Run(
 	operationFunc func() error) error {
 	grm.lock.Lock()
 	defer grm.lock.Unlock()
-
-	var previousOp operation
-	opExists := false
-	previousOpIndex := -1
-	for previousOpIndex, previousOp = range grm.operations {
-		if previousOp.volumeName != volumeName {
-			// No match, keep searching
-			continue
-		}
-
-		if previousOp.podName != emptyUniquePodName &&
-			podName != emptyUniquePodName &&
-			previousOp.podName != podName {
-			// No match, keep searching
-			continue
-		}
-
-		// Match
-		opExists = true
-		break
-	}
-
+	opExists, previousOpIndex := grm.isOperationExists(volumeName, podName)
 	if opExists {
+		previousOp := grm.operations[previousOpIndex]
 		// Operation already exists
 		if previousOp.operationPending {
 			// Operation is pending
@@ -152,6 +135,43 @@ func (grm *nestedPendingOperations) Run(
 	}()
 
 	return nil
+}
+
+func (grm *nestedPendingOperations) IsOperationPending(
+	volumeName api.UniqueVolumeName,
+	podName types.UniquePodName) bool {
+
+	grm.lock.RLock()
+	defer grm.lock.RUnlock()
+
+	exist, previousOpIndex := grm.isOperationExists(volumeName, podName)
+	if exist && grm.operations[previousOpIndex].operationPending {
+		return true
+	}
+	return false
+}
+
+func (grm *nestedPendingOperations) isOperationExists(
+	volumeName api.UniqueVolumeName,
+	podName types.UniquePodName) (bool, int) {
+
+	for previousOpIndex, previousOp := range grm.operations {
+		if previousOp.volumeName != volumeName {
+			// No match, keep searching
+			continue
+		}
+
+		if previousOp.podName != emptyUniquePodName &&
+			podName != emptyUniquePodName &&
+			previousOp.podName != podName {
+			// No match, keep searching
+			continue
+		}
+
+		// Match
+		return true, previousOpIndex
+	}
+	return false, -1
 }
 
 func (grm *nestedPendingOperations) getOperation(

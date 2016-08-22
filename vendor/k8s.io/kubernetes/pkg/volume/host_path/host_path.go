@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/uuid"
 	"k8s.io/kubernetes/pkg/volume"
 )
 
@@ -37,17 +37,6 @@ func ProbeVolumePlugins(volumeConfig volume.VolumeConfig) []volume.VolumePlugin 
 			host:               nil,
 			newRecyclerFunc:    newRecycler,
 			newDeleterFunc:     newDeleter,
-			newProvisionerFunc: newProvisioner,
-			config:             volumeConfig,
-		},
-	}
-}
-
-func ProbeRecyclableVolumePlugins(recyclerFunc func(pvName string, spec *volume.Spec, host volume.VolumeHost, volumeConfig volume.VolumeConfig) (volume.Recycler, error), volumeConfig volume.VolumeConfig) []volume.VolumePlugin {
-	return []volume.VolumePlugin{
-		&hostPathPlugin{
-			host:               nil,
-			newRecyclerFunc:    recyclerFunc,
 			newProvisionerFunc: newProvisioner,
 			config:             volumeConfig,
 		},
@@ -132,10 +121,25 @@ func (plugin *hostPathPlugin) NewDeleter(spec *volume.Spec) (volume.Deleter, err
 }
 
 func (plugin *hostPathPlugin) NewProvisioner(options volume.VolumeOptions) (volume.Provisioner, error) {
+	if !plugin.config.ProvisioningEnabled {
+		return nil, fmt.Errorf("Provisioning in volume plugin %q is disabled", plugin.GetPluginName())
+	}
 	if len(options.AccessModes) == 0 {
 		options.AccessModes = plugin.GetAccessModes()
 	}
 	return plugin.newProvisionerFunc(options, plugin.host)
+}
+
+func (plugin *hostPathPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	hostPathVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			HostPath: &api.HostPathVolumeSource{
+				Path: volumeName,
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(hostPathVolume), nil
 }
 
 func newRecycler(pvName string, spec *volume.Spec, host volume.VolumeHost, config volume.VolumeConfig) (volume.Recycler, error) {
@@ -262,7 +266,7 @@ type hostPathProvisioner struct {
 // Create for hostPath simply creates a local /tmp/hostpath_pv/%s directory as a new PersistentVolume.
 // This Provisioner is meant for development and testing only and WILL NOT WORK in a multi-node cluster.
 func (r *hostPathProvisioner) Provision() (*api.PersistentVolume, error) {
-	fullpath := fmt.Sprintf("/tmp/hostpath_pv/%s", util.NewUUID())
+	fullpath := fmt.Sprintf("/tmp/hostpath_pv/%s", uuid.NewUUID())
 
 	pv := &api.PersistentVolume{
 		ObjectMeta: api.ObjectMeta{

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ var _ ObjectConvertor = unsafeObjectConvertor{}
 
 // ConvertToVersion converts in to the provided outVersion without copying the input first, which
 // is only safe if the output object is not mutated or reused.
-func (c unsafeObjectConvertor) ConvertToVersion(in Object, outVersion unversioned.GroupVersion) (Object, error) {
+func (c unsafeObjectConvertor) ConvertToVersion(in Object, outVersion GroupVersioner) (Object, error) {
 	return c.Scheme.UnsafeConvertToVersion(in, outVersion)
 }
 
