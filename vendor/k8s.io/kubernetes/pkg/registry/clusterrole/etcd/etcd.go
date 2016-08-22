@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,13 +19,12 @@ package etcd
 import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/rbac"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/clusterrole"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/registry/generic/registry"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/storage"
 )
 
 // REST implements a RESTStorage for ClusterRole against etcd
@@ -35,16 +34,17 @@ type REST struct {
 
 // NewREST returns a RESTStorage object that will work against ClusterRole objects.
 func NewREST(opts generic.RESTOptions) *REST {
-	prefix := "/clusterroles"
+	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &rbac.ClusterRoleList{} }
 	storageInterface := opts.Decorator(
-		opts.Storage,
+		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.ClusterRoles),
 		&rbac.ClusterRole{},
 		prefix,
 		clusterrole.Strategy,
 		newListFunc,
+		storage.NoTriggerPublisher,
 	)
 
 	store := &registry.Store{
@@ -59,9 +59,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
 			return obj.(*rbac.ClusterRole).Name, nil
 		},
-		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
-			return clusterrole.Matcher(label, field)
-		},
+		PredicateFunc:           clusterrole.Matcher,
 		QualifiedResource:       rbac.Resource("clusterroles"),
 		DeleteCollectionWorkers: opts.DeleteCollectionWorkers,
 

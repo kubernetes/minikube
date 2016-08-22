@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/gcfg.v1"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -39,7 +41,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
 	"github.com/golang/glog"
-	"gopkg.in/gcfg.v1"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/service"
@@ -83,6 +84,38 @@ const ServiceAnnotationLoadBalancerInternal = "service.beta.kubernetes.io/aws-lo
 // certain backends.
 const ServiceAnnotationLoadBalancerProxyProtocol = "service.beta.kubernetes.io/aws-load-balancer-proxy-protocol"
 
+// ServiceAnnotationLoadBalancerAccessLogEmitInterval is the annotation used to
+// specify access log emit interval.
+const ServiceAnnotationLoadBalancerAccessLogEmitInterval = "service.beta.kubernetes.io/aws-load-balancer-access-log-emit-interval"
+
+// ServiceAnnotationLoadBalancerAccessLogEnabled is the annotation used on the
+// service to enable or disable access logs.
+const ServiceAnnotationLoadBalancerAccessLogEnabled = "service.beta.kubernetes.io/aws-load-balancer-access-log-enabled"
+
+// ServiceAnnotationLoadBalancerAccessLogS3BucketName is the annotation used to
+// specify access log s3 bucket name.
+const ServiceAnnotationLoadBalancerAccessLogS3BucketName = "service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-name"
+
+// ServiceAnnotationLoadBalancerAccessLogS3BucketPrefix is the annotation used
+// to specify access log s3 bucket prefix.
+const ServiceAnnotationLoadBalancerAccessLogS3BucketPrefix = "service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-prefix"
+
+// ServiceAnnotationLoadBalancerConnectionDrainingEnabled is the annnotation
+// used on the service to enable or disable connection draining.
+const ServiceAnnotationLoadBalancerConnectionDrainingEnabled = "service.beta.kubernetes.io/aws-load-balancer-connection-draining-enabled"
+
+// ServiceAnnotationLoadBalancerConnectionDrainingTimeout is the annotation
+// used on the service to specify a connection draining timeout.
+const ServiceAnnotationLoadBalancerConnectionDrainingTimeout = "service.beta.kubernetes.io/aws-load-balancer-connection-draining-timeout"
+
+// ServiceAnnotationLoadBalancerConnectionIdleTimeout is the annotation used
+// on the service to specify the idle connection timeout.
+const ServiceAnnotationLoadBalancerConnectionIdleTimeout = "service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout"
+
+// ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled is the annotation
+// used on the service to enable or disable cross-zone load balancing.
+const ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled = "service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled"
+
 // ServiceAnnotationLoadBalancerCertificate is the annotation used on the
 // service to request a secure listener. Value is a valid certificate ARN.
 // For more, see http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/elb-listener-config.html
@@ -95,11 +128,12 @@ const ServiceAnnotationLoadBalancerCertificate = "service.beta.kubernetes.io/aws
 const ServiceAnnotationLoadBalancerSSLPorts = "service.beta.kubernetes.io/aws-load-balancer-ssl-ports"
 
 // ServiceAnnotationLoadBalancerBEProtocol is the annotation used on the service
-// to specify the protocol spoken by the backend (pod) behind a secure listener.
-// Only inspected when `aws-load-balancer-ssl-cert` is used.
+// to specify the protocol spoken by the backend (pod) behind a listener.
 // If `http` (default) or `https`, an HTTPS listener that terminates the
 //  connection and parses headers is created.
 // If set to `ssl` or `tcp`, a "raw" SSL listener is used.
+// If set to `http` and `aws-load-balancer-ssl-cert` is not used then
+// a HTTP listener is used.
 const ServiceAnnotationLoadBalancerBEProtocol = "service.beta.kubernetes.io/aws-load-balancer-backend-protocol"
 
 // Maps from backend protocol to ELB protocol
@@ -193,6 +227,9 @@ type ELB interface {
 	ApplySecurityGroupsToLoadBalancer(*elb.ApplySecurityGroupsToLoadBalancerInput) (*elb.ApplySecurityGroupsToLoadBalancerOutput, error)
 
 	ConfigureHealthCheck(*elb.ConfigureHealthCheckInput) (*elb.ConfigureHealthCheckOutput, error)
+
+	DescribeLoadBalancerAttributes(*elb.DescribeLoadBalancerAttributesInput) (*elb.DescribeLoadBalancerAttributesOutput, error)
+	ModifyLoadBalancerAttributes(*elb.ModifyLoadBalancerAttributesInput) (*elb.ModifyLoadBalancerAttributesOutput, error)
 }
 
 // ASG is a simple pass-through of the Autoscaling client interface, which
@@ -208,11 +245,39 @@ type EC2Metadata interface {
 	GetMetadata(path string) (string, error)
 }
 
+// AWS volume types
+const (
+	// Provisioned IOPS SSD
+	VolumeTypeIO1 = "io1"
+	// General Purpose SSD
+	VolumeTypeGP2 = "gp2"
+	// Cold HDD (sc1)
+	VolumeTypeSC1 = "sc1"
+	// Throughput Optimized HDD
+	VolumeTypeST1 = "st1"
+)
+
+// AWS provisioning limits.
+// Source: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html
+const (
+	MinTotalIOPS = 100
+	MaxTotalIOPS = 20000
+)
+
 // VolumeOptions specifies capacity and tags for a volume.
 type VolumeOptions struct {
-	CapacityGB int
-	Tags       map[string]string
-	PVCName    string
+	CapacityGB       int
+	Tags             map[string]string
+	PVCName          string
+	VolumeType       string
+	AvailabilityZone string
+	// IOPSPerGB x CapacityGB will give total IOPS of the volume to create.
+	// Calculated total IOPS will be capped at MaxTotalIOPS.
+	IOPSPerGB int
+	Encrypted bool
+	// fully qualified resource name to the key to use for encryption.
+	// example: arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef
+	KmsKeyId string
 }
 
 // Volumes is an interface for managing cloud-provisioned volumes
@@ -300,6 +365,17 @@ type CloudConfig struct {
 		//has setup a rule that allows inbound traffic on kubelet ports from the
 		//local VPC subnet (so load balancers can access it). E.g. 10.82.0.0/16 30000-32000.
 		DisableSecurityGroupIngress bool
+
+		//During the instantiation of an new AWS cloud provider, the detected region
+		//is validated against a known set of regions.
+		//
+		//In a non-standard, AWS like environment (e.g. Eucalyptus), this check may
+		//be undesirable.  Setting this to true will disable the check and provide
+		//a warning that the check was skipped.  Please note that this is an
+		//experimental feature and work-in-progress for the moment.  If you find
+		//yourself in an non-AWS cloud and open an issue, please indicate that in the
+		//issue body.
+		DisableStrictZoneCheck bool
 	}
 }
 
@@ -664,9 +740,13 @@ func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
 		return nil, err
 	}
 
-	valid := isRegionValid(regionName)
-	if !valid {
-		return nil, fmt.Errorf("not a valid AWS zone (unknown region): %s", zone)
+	if !cfg.Global.DisableStrictZoneCheck {
+		valid := isRegionValid(regionName)
+		if !valid {
+			return nil, fmt.Errorf("not a valid AWS zone (unknown region): %s", zone)
+		}
+	} else {
+		glog.Warningf("Strict AWS zone checking is disabled.  Proceeding with zone: %s", zone)
 	}
 
 	ec2, err := awsServices.Compute(regionName)
@@ -718,7 +798,7 @@ func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
 	}
 
 	if filterTags[TagNameKubernetesCluster] == "" {
-		glog.Errorf("Tag %q not found; Kuberentes may behave unexpectedly.", TagNameKubernetesCluster)
+		glog.Errorf("Tag %q not found; Kubernetes may behave unexpectedly.", TagNameKubernetesCluster)
 	}
 
 	awsCloud.filterTags = filterTags
@@ -1174,8 +1254,8 @@ func newAWSDisk(aws *Cloud, name string) (*awsDisk, error) {
 	// The original idea of the URL-style name was to put the AZ into the
 	// host, so we could find the AZ immediately from the name without
 	// querying the API.  But it turns out we don't actually need it for
-	// Ubernetes-Lite, as we put the AZ into the labels on the PV instead.
-	// However, if in future we want to support Ubernetes-Lite
+	// multi-AZ clusters, as we put the AZ into the labels on the PV instead.
+	// However, if in future we want to support multi-AZ cluster
 	// volume-awareness without using PersistentVolumes, we likely will
 	// want the AZ in the host.
 
@@ -1422,7 +1502,7 @@ func (c *Cloud) DetachDisk(diskName string, instanceName string) (string, error)
 	}
 
 	if !alreadyAttached {
-		glog.Warning("DetachDisk called on non-attached disk: ", diskName)
+		glog.Warningf("DetachDisk called on non-attached disk: %s", diskName)
 		// TODO: Continue?  Tolerate non-attached error in DetachVolume?
 	}
 
@@ -1459,14 +1539,53 @@ func (c *Cloud) CreateDisk(volumeOptions *VolumeOptions) (string, error) {
 		return "", fmt.Errorf("error querying for all zones: %v", err)
 	}
 
-	createAZ := volume.ChooseZoneForVolume(allZones, volumeOptions.PVCName)
+	createAZ := volumeOptions.AvailabilityZone
+	if createAZ == "" {
+		createAZ = volume.ChooseZoneForVolume(allZones, volumeOptions.PVCName)
+	}
+
+	var createType string
+	var iops int64
+	switch volumeOptions.VolumeType {
+	case VolumeTypeGP2, VolumeTypeSC1, VolumeTypeST1:
+		createType = volumeOptions.VolumeType
+
+	case VolumeTypeIO1:
+		// See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateVolume.html
+		// for IOPS constraints. AWS will throw an error if IOPS per GB gets out
+		// of supported bounds, no need to check it here.
+		createType = volumeOptions.VolumeType
+		iops = int64(volumeOptions.CapacityGB * volumeOptions.IOPSPerGB)
+
+		// Cap at min/max total IOPS, AWS would throw an error if it gets too
+		// low/high.
+		if iops < MinTotalIOPS {
+			iops = MinTotalIOPS
+		}
+		if iops > MaxTotalIOPS {
+			iops = MaxTotalIOPS
+		}
+
+	case "":
+		createType = DefaultVolumeType
+
+	default:
+		return "", fmt.Errorf("invalid AWS VolumeType %q", volumeOptions.VolumeType)
+	}
 
 	// TODO: Should we tag this with the cluster id (so it gets deleted when the cluster does?)
 	request := &ec2.CreateVolumeInput{}
-	request.AvailabilityZone = &createAZ
-	volSize := int64(volumeOptions.CapacityGB)
-	request.Size = &volSize
-	request.VolumeType = aws.String(DefaultVolumeType)
+	request.AvailabilityZone = aws.String(createAZ)
+	request.Size = aws.Int64(int64(volumeOptions.CapacityGB))
+	request.VolumeType = aws.String(createType)
+	request.Encrypted = aws.Bool(volumeOptions.Encrypted)
+	if len(volumeOptions.KmsKeyId) > 0 {
+		request.KmsKeyId = aws.String(volumeOptions.KmsKeyId)
+		request.Encrypted = aws.Bool(true)
+	}
+	if iops > 0 {
+		request.Iops = aws.Int64(iops)
+	}
 	response, err := c.ec2.CreateVolume(request)
 	if err != nil {
 		return "", err
@@ -2274,7 +2393,11 @@ func buildListener(port api.ServicePort, annotations map[string]string, sslPorts
 			}
 		}
 		listener.SSLCertificateId = &certID
+	} else if annotationProtocol := annotations[ServiceAnnotationLoadBalancerBEProtocol]; annotationProtocol == "http" {
+		instanceProtocol = annotationProtocol
+		protocol = "http"
 	}
+
 	listener.Protocol = &protocol
 	listener.InstanceProtocol = &instanceProtocol
 
@@ -2282,10 +2405,10 @@ func buildListener(port api.ServicePort, annotations map[string]string, sslPorts
 }
 
 // EnsureLoadBalancer implements LoadBalancer.EnsureLoadBalancer
-func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*api.LoadBalancerStatus, error) {
+func (c *Cloud) EnsureLoadBalancer(clusterName string, apiService *api.Service, hosts []string) (*api.LoadBalancerStatus, error) {
 	annotations := apiService.Annotations
-	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)",
-		apiService.Namespace, apiService.Name, c.region, apiService.Spec.LoadBalancerIP, apiService.Spec.Ports, hosts, annotations)
+	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v, %v)",
+		clusterName, apiService.Namespace, apiService.Name, c.region, apiService.Spec.LoadBalancerIP, apiService.Spec.Ports, hosts, annotations)
 
 	if apiService.Spec.SessionAffinity != api.ServiceAffinityNone {
 		// ELB supports sticky sessions, but only when configured for HTTP/HTTPS
@@ -2351,6 +2474,104 @@ func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*ap
 			return nil, fmt.Errorf("annotation %q=%q detected, but the only value supported currently is '*'", ServiceAnnotationLoadBalancerProxyProtocol, proxyProtocolAnnotation)
 		}
 		proxyProtocol = true
+	}
+
+	// Some load balancer attributes are required, so defaults are set. These can be overridden by annotations.
+	loadBalancerAttributes := &elb.LoadBalancerAttributes{
+		AccessLog:              &elb.AccessLog{Enabled: aws.Bool(false)},
+		ConnectionDraining:     &elb.ConnectionDraining{Enabled: aws.Bool(false)},
+		ConnectionSettings:     &elb.ConnectionSettings{IdleTimeout: aws.Int64(60)},
+		CrossZoneLoadBalancing: &elb.CrossZoneLoadBalancing{Enabled: aws.Bool(false)},
+	}
+
+	// Determine if an access log emit interval has been specified
+	accessLogEmitIntervalAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogEmitInterval]
+	if accessLogEmitIntervalAnnotation != "" {
+		accessLogEmitInterval, err := strconv.ParseInt(accessLogEmitIntervalAnnotation, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerAccessLogEmitInterval,
+				accessLogEmitIntervalAnnotation,
+			)
+		}
+		loadBalancerAttributes.AccessLog.EmitInterval = &accessLogEmitInterval
+	}
+
+	// Determine if access log enabled/disabled has been specified
+	accessLogEnabledAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogEnabled]
+	if accessLogEnabledAnnotation != "" {
+		accessLogEnabled, err := strconv.ParseBool(accessLogEnabledAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerAccessLogEnabled,
+				accessLogEnabledAnnotation,
+			)
+		}
+		loadBalancerAttributes.AccessLog.Enabled = &accessLogEnabled
+	}
+
+	// Determine if access log s3 bucket name has been specified
+	accessLogS3BucketNameAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogS3BucketName]
+	if accessLogS3BucketNameAnnotation != "" {
+		loadBalancerAttributes.AccessLog.S3BucketName = &accessLogS3BucketNameAnnotation
+	}
+
+	// Determine if access log s3 bucket prefix has been specified
+	accessLogS3BucketPrefixAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogS3BucketPrefix]
+	if accessLogS3BucketPrefixAnnotation != "" {
+		loadBalancerAttributes.AccessLog.S3BucketPrefix = &accessLogS3BucketPrefixAnnotation
+	}
+
+	// Determine if connection draining enabled/disabled has been specified
+	connectionDrainingEnabledAnnotation := annotations[ServiceAnnotationLoadBalancerConnectionDrainingEnabled]
+	if connectionDrainingEnabledAnnotation != "" {
+		connectionDrainingEnabled, err := strconv.ParseBool(connectionDrainingEnabledAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerConnectionDrainingEnabled,
+				connectionDrainingEnabledAnnotation,
+			)
+		}
+		loadBalancerAttributes.ConnectionDraining.Enabled = &connectionDrainingEnabled
+	}
+
+	// Determine if connection draining timeout has been specified
+	connectionDrainingTimeoutAnnotation := annotations[ServiceAnnotationLoadBalancerConnectionDrainingTimeout]
+	if connectionDrainingTimeoutAnnotation != "" {
+		connectionDrainingTimeout, err := strconv.ParseInt(connectionDrainingTimeoutAnnotation, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerConnectionDrainingTimeout,
+				connectionDrainingTimeoutAnnotation,
+			)
+		}
+		loadBalancerAttributes.ConnectionDraining.Timeout = &connectionDrainingTimeout
+	}
+
+	// Determine if connection idle timeout has been specified
+	connectionIdleTimeoutAnnotation := annotations[ServiceAnnotationLoadBalancerConnectionIdleTimeout]
+	if connectionIdleTimeoutAnnotation != "" {
+		connectionIdleTimeout, err := strconv.ParseInt(connectionIdleTimeoutAnnotation, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerConnectionIdleTimeout,
+				connectionIdleTimeoutAnnotation,
+			)
+		}
+		loadBalancerAttributes.ConnectionSettings.IdleTimeout = &connectionIdleTimeout
+	}
+
+	// Determine if cross zone load balancing enabled/disabled has been specified
+	crossZoneLoadBalancingEnabledAnnotation := annotations[ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled]
+	if crossZoneLoadBalancingEnabledAnnotation != "" {
+		crossZoneLoadBalancingEnabled, err := strconv.ParseBool(crossZoneLoadBalancingEnabledAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled,
+				crossZoneLoadBalancingEnabledAnnotation,
+			)
+		}
+		loadBalancerAttributes.CrossZoneLoadBalancing.Enabled = &crossZoneLoadBalancingEnabled
 	}
 
 	// Find the subnets that the ELB will live in
@@ -2426,6 +2647,7 @@ func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*ap
 		securityGroupIDs,
 		internalELB,
 		proxyProtocol,
+		loadBalancerAttributes,
 	)
 	if err != nil {
 		return nil, err
@@ -2457,7 +2679,7 @@ func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*ap
 }
 
 // GetLoadBalancer is an implementation of LoadBalancer.GetLoadBalancer
-func (c *Cloud) GetLoadBalancer(service *api.Service) (*api.LoadBalancerStatus, bool, error) {
+func (c *Cloud) GetLoadBalancer(clusterName string, service *api.Service) (*api.LoadBalancerStatus, bool, error) {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	lb, err := c.describeLoadBalancer(loadBalancerName)
 	if err != nil {
@@ -2673,7 +2895,7 @@ func (c *Cloud) updateInstanceSecurityGroupsForLoadBalancer(lb *elb.LoadBalancer
 }
 
 // EnsureLoadBalancerDeleted implements LoadBalancer.EnsureLoadBalancerDeleted.
-func (c *Cloud) EnsureLoadBalancerDeleted(service *api.Service) error {
+func (c *Cloud) EnsureLoadBalancerDeleted(clusterName string, service *api.Service) error {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	lb, err := c.describeLoadBalancer(loadBalancerName)
 	if err != nil {
@@ -2769,7 +2991,7 @@ func (c *Cloud) EnsureLoadBalancerDeleted(service *api.Service) error {
 }
 
 // UpdateLoadBalancer implements LoadBalancer.UpdateLoadBalancer
-func (c *Cloud) UpdateLoadBalancer(service *api.Service, hosts []string) error {
+func (c *Cloud) UpdateLoadBalancer(clusterName string, service *api.Service, hosts []string) error {
 	hostSet := sets.NewString(hosts...)
 	instances, err := c.getInstancesByNodeNamesCached(hostSet)
 	if err != nil {

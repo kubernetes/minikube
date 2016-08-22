@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,8 +24,6 @@ import (
 	storageerr "k8s.io/kubernetes/pkg/api/errors/storage"
 	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/registry/generic/registry"
@@ -52,11 +50,18 @@ type FinalizeREST struct {
 
 // NewREST returns a RESTStorage object that will work against namespaces.
 func NewREST(opts generic.RESTOptions) (*REST, *StatusREST, *FinalizeREST) {
-	prefix := "/namespaces"
+	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &api.NamespaceList{} }
 	storageInterface := opts.Decorator(
-		opts.Storage, cachesize.GetWatchCacheSizeByResource(cachesize.Namespaces), &api.Namespace{}, prefix, namespace.Strategy, newListFunc)
+		opts.StorageConfig,
+		cachesize.GetWatchCacheSizeByResource(cachesize.Namespaces),
+		&api.Namespace{},
+		prefix,
+		namespace.Strategy,
+		newListFunc,
+		storage.NoTriggerPublisher,
+	)
 
 	store := &registry.Store{
 		NewFunc:     func() runtime.Object { return &api.Namespace{} },
@@ -70,9 +75,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST, *FinalizeREST) {
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
 			return obj.(*api.Namespace).Name, nil
 		},
-		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
-			return namespace.MatchNamespace(label, field)
-		},
+		PredicateFunc:           namespace.MatchNamespace,
 		QualifiedResource:       api.Resource("namespaces"),
 		DeleteCollectionWorkers: opts.DeleteCollectionWorkers,
 

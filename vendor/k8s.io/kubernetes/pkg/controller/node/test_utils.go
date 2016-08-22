@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,13 +18,20 @@ package node
 
 import (
 	"errors"
+	"fmt"
 	"sync"
+	"time"
 
 	"k8s.io/kubernetes/pkg/api"
 	apierrors "k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/resource"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/fake"
 	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
+	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/util/clock"
+	utilnode "k8s.io/kubernetes/pkg/util/node"
+	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
@@ -127,7 +134,7 @@ func (m *FakeNodeHandler) List(opts api.ListOptions) (*api.NodeList, error) {
 		}
 	}
 	for i := 0; i < len(m.CreatedNodes); i++ {
-		if !contains(m.Existing[i], m.DeletedNodes) && !contains(m.CreatedNodes[i], nodes) {
+		if !contains(m.CreatedNodes[i], m.DeletedNodes) && !contains(m.CreatedNodes[i], nodes) {
 			nodes = append(nodes, m.CreatedNodes[i])
 		}
 	}
@@ -186,8 +193,69 @@ func (m *FakeNodeHandler) Watch(opts api.ListOptions) (watch.Interface, error) {
 	return nil, nil
 }
 
-func (m *FakeNodeHandler) Patch(name string, pt api.PatchType, data []byte) (*api.Node, error) {
+func (m *FakeNodeHandler) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (*api.Node, error) {
 	return nil, nil
+}
+
+// FakeRecorder is used as a fake during testing.
+type FakeRecorder struct {
+	source api.EventSource
+	events []*api.Event
+	clock  clock.Clock
+}
+
+func (f *FakeRecorder) Event(obj runtime.Object, eventtype, reason, message string) {
+	f.generateEvent(obj, unversioned.Now(), eventtype, reason, message)
+}
+
+func (f *FakeRecorder) Eventf(obj runtime.Object, eventtype, reason, messageFmt string, args ...interface{}) {
+	f.Event(obj, eventtype, reason, fmt.Sprintf(messageFmt, args...))
+}
+
+func (f *FakeRecorder) PastEventf(obj runtime.Object, timestamp unversioned.Time, eventtype, reason, messageFmt string, args ...interface{}) {
+}
+
+func (f *FakeRecorder) generateEvent(obj runtime.Object, timestamp unversioned.Time, eventtype, reason, message string) {
+	ref, err := api.GetReference(obj)
+	if err != nil {
+		return
+	}
+	event := f.makeEvent(ref, eventtype, reason, message)
+	event.Source = f.source
+	if f.events != nil {
+		fmt.Println("write event")
+		f.events = append(f.events, event)
+	}
+}
+
+func (f *FakeRecorder) makeEvent(ref *api.ObjectReference, eventtype, reason, message string) *api.Event {
+	fmt.Println("make event")
+	t := unversioned.Time{Time: f.clock.Now()}
+	namespace := ref.Namespace
+	if namespace == "" {
+		namespace = api.NamespaceDefault
+	}
+	return &api.Event{
+		ObjectMeta: api.ObjectMeta{
+			Name:      fmt.Sprintf("%v.%x", ref.Name, t.UnixNano()),
+			Namespace: namespace,
+		},
+		InvolvedObject: *ref,
+		Reason:         reason,
+		Message:        message,
+		FirstTimestamp: t,
+		LastTimestamp:  t,
+		Count:          1,
+		Type:           eventtype,
+	}
+}
+
+func NewFakeRecorder() *FakeRecorder {
+	return &FakeRecorder{
+		source: api.EventSource{Component: "nodeControllerTest"},
+		events: []*api.Event{},
+		clock:  clock.NewFakeClock(time.Now()),
+	}
 }
 
 func newNode(name string) *api.Node {
@@ -234,4 +302,18 @@ func contains(node *api.Node, nodes []*api.Node) bool {
 		}
 	}
 	return false
+}
+
+// Returns list of zones for all Nodes stored in FakeNodeHandler
+func getZones(nodeHandler *FakeNodeHandler) []string {
+	nodes, _ := nodeHandler.List(api.ListOptions{})
+	zones := sets.NewString()
+	for _, node := range nodes.Items {
+		zones.Insert(utilnode.GetZoneKey(&node))
+	}
+	return zones.List()
+}
+
+func createZoneID(region, zone string) string {
+	return region + ":\x00:" + zone
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ package webhook
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
+
+	"github.com/golang/glog"
 
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/authorization/v1beta1"
@@ -126,13 +127,16 @@ func newWithBackoff(kubeConfigFile string, authorizedTTL, unauthorizedTTL, initi
 //       }
 //     }
 //
-func (w *WebhookAuthorizer) Authorize(attr authorizer.Attributes) (err error) {
-	r := &v1beta1.SubjectAccessReview{
-		Spec: v1beta1.SubjectAccessReviewSpec{
-			User:   attr.GetUserName(),
-			Groups: attr.GetGroups(),
-		},
+func (w *WebhookAuthorizer) Authorize(attr authorizer.Attributes) (authorized bool, reason string, err error) {
+	r := &v1beta1.SubjectAccessReview{}
+	if user := attr.GetUser(); user != nil {
+		r.Spec = v1beta1.SubjectAccessReviewSpec{
+			User:   user.GetName(),
+			Groups: user.GetGroups(),
+			Extra:  convertToSARExtra(user.GetExtra()),
+		}
 	}
+
 	if attr.IsResourceRequest() {
 		r.Spec.ResourceAttributes = &v1beta1.ResourceAttributes{
 			Namespace:   attr.GetNamespace(),
@@ -151,7 +155,7 @@ func (w *WebhookAuthorizer) Authorize(attr authorizer.Attributes) (err error) {
 	}
 	key, err := json.Marshal(r.Spec)
 	if err != nil {
-		return err
+		return false, "", err
 	}
 	if entry, ok := w.responseCache.Get(string(key)); ok {
 		r.Status = entry.(v1beta1.SubjectAccessReviewStatus)
@@ -160,14 +164,19 @@ func (w *WebhookAuthorizer) Authorize(attr authorizer.Attributes) (err error) {
 			return w.RestClient.Post().Body(r).Do()
 		})
 		if err := result.Error(); err != nil {
-			return err
+			// An error here indicates bad configuration or an outage. Log for debugging.
+			glog.Errorf("Failed to make webhook authorizer request: %v", err)
+			return false, "", err
 		}
 		var statusCode int
-		if result.StatusCode(&statusCode); statusCode < 200 || statusCode >= 300 {
-			return fmt.Errorf("Error contacting webhook: %d", statusCode)
+		result.StatusCode(&statusCode)
+		switch {
+		case statusCode < 200,
+			statusCode >= 300:
+			return false, "", fmt.Errorf("Error contacting webhook: %d", statusCode)
 		}
 		if err := result.Into(r); err != nil {
-			return err
+			return false, "", err
 		}
 		if r.Status.Allowed {
 			w.responseCache.Add(string(key), r.Status, w.authorizedTTL)
@@ -175,11 +184,17 @@ func (w *WebhookAuthorizer) Authorize(attr authorizer.Attributes) (err error) {
 			w.responseCache.Add(string(key), r.Status, w.unauthorizedTTL)
 		}
 	}
-	if r.Status.Allowed {
+	return r.Status.Allowed, r.Status.Reason, nil
+}
+
+func convertToSARExtra(extra map[string][]string) map[string]v1beta1.ExtraValue {
+	if extra == nil {
 		return nil
 	}
-	if r.Status.Reason != "" {
-		return errors.New(r.Status.Reason)
+	ret := map[string]v1beta1.ExtraValue{}
+	for k, v := range extra {
+		ret[k] = v1beta1.ExtraValue(v)
 	}
-	return errors.New("unauthorized")
+
+	return ret
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -36,11 +36,11 @@ const (
 	// that GoRoutineMap will refuse to allow another operation to start with
 	// the same operation name (if exponentialBackOffOnError is enabled). Each
 	// successive error results in a wait 2x times the previous.
-	initialDurationBeforeRetry time.Duration = 500 * time.Millisecond
+	initialDurationBeforeRetry = 500 * time.Millisecond
 
 	// maxDurationBeforeRetry is the maximum amount of time that
 	// durationBeforeRetry will grow to due to exponential backoff.
-	maxDurationBeforeRetry time.Duration = 2 * time.Minute
+	maxDurationBeforeRetry = 2 * time.Minute
 )
 
 // GoRoutineMap defines the supported set of operations.
@@ -58,6 +58,10 @@ type GoRoutineMap interface {
 	// necessary during tests - the test should wait until all operations finish
 	// and evaluate results after that.
 	Wait()
+
+	// IsOperationPending returns true if the operation is pending, otherwise
+	// returns false
+	IsOperationPending(operationName string) bool
 }
 
 // NewGoRoutineMap returns a new instance of GoRoutineMap.
@@ -65,10 +69,9 @@ func NewGoRoutineMap(exponentialBackOffOnError bool) GoRoutineMap {
 	g := &goRoutineMap{
 		operations:                make(map[string]operation),
 		exponentialBackOffOnError: exponentialBackOffOnError,
-		lock: &sync.Mutex{},
 	}
 
-	g.cond = sync.NewCond(g.lock)
+	g.cond = sync.NewCond(&g.lock)
 	return g
 }
 
@@ -76,7 +79,7 @@ type goRoutineMap struct {
 	operations                map[string]operation
 	exponentialBackOffOnError bool
 	cond                      *sync.Cond
-	lock                      *sync.Mutex
+	lock                      sync.RWMutex
 }
 
 type operation struct {
@@ -149,6 +152,16 @@ func (grm *goRoutineMap) operationComplete(
 		glog.Errorf("%v",
 			existingOp.expBackoff.GenerateNoRetriesPermittedMsg(operationName))
 	}
+}
+
+func (grm *goRoutineMap) IsOperationPending(operationName string) bool {
+	grm.lock.RLock()
+	defer grm.lock.RUnlock()
+	existingOp, exists := grm.operations[operationName]
+	if exists && existingOp.operationPending {
+		return true
+	}
+	return false
 }
 
 func (grm *goRoutineMap) Wait() {

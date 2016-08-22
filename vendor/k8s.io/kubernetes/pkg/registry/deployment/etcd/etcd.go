@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	extvalidation "k8s.io/kubernetes/pkg/apis/extensions/validation"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/deployment"
 	"k8s.io/kubernetes/pkg/registry/generic"
@@ -61,11 +59,18 @@ type REST struct {
 
 // NewREST returns a RESTStorage object that will work against deployments.
 func NewREST(opts generic.RESTOptions) (*REST, *StatusREST, *RollbackREST) {
-	prefix := "/deployments"
+	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &extensions.DeploymentList{} }
 	storageInterface := opts.Decorator(
-		opts.Storage, cachesize.GetWatchCacheSizeByResource(cachesize.Deployments), &extensions.Deployment{}, prefix, deployment.Strategy, newListFunc)
+		opts.StorageConfig,
+		cachesize.GetWatchCacheSizeByResource(cachesize.Deployments),
+		&extensions.Deployment{},
+		prefix,
+		deployment.Strategy,
+		newListFunc,
+		storage.NoTriggerPublisher,
+	)
 
 	store := &registry.Store{
 		NewFunc: func() runtime.Object { return &extensions.Deployment{} },
@@ -86,9 +91,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST, *RollbackREST) {
 			return obj.(*extensions.Deployment).Name, nil
 		},
 		// Used to match objects based on labels/fields for list.
-		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
-			return deployment.MatchDeployment(label, field)
-		},
+		PredicateFunc:           deployment.MatchDeployment,
 		QualifiedResource:       extensions.Resource("deployments"),
 		DeleteCollectionWorkers: opts.DeleteCollectionWorkers,
 

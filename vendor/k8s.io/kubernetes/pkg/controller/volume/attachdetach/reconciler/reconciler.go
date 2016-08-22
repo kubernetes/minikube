@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -127,7 +127,7 @@ func (rc *reconciler) reconciliationLoopFunc() func() {
 							err)
 					}
 				} else {
-					// If volume is not safe to detach (is mounted) wait a max amount of time before detaching any way.
+					// If volume is not safe to detach (is mounted) wait a max amount of time before detaching anyway.
 					if timeElapsed > rc.maxWaitForUnmountDuration {
 						glog.V(5).Infof("Attempting to start DetachVolume for volume %q from node %q. Volume is not safe to detach, but maxWaitForUnmountDuration expired.", attachedVolume.VolumeName, attachedVolume.NodeName)
 						err := rc.attacherDetacher.DetachVolume(attachedVolume.AttachedVolume, false /* verifySafeToDetach */, rc.actualStateOfWorld)

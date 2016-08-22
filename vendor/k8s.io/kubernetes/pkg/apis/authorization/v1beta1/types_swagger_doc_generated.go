@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -106,9 +106,10 @@ func (SubjectAccessReviewSpec) SwaggerDoc() map[string]string {
 }
 
 var map_SubjectAccessReviewStatus = map[string]string{
-	"":        "SubjectAccessReviewStatus",
-	"allowed": "Allowed is required.  True if the action would be allowed, false otherwise.",
-	"reason":  "Reason is optional.  It indicates why a request was allowed or denied.",
+	"":                "SubjectAccessReviewStatus",
+	"allowed":         "Allowed is required.  True if the action would be allowed, false otherwise.",
+	"reason":          "Reason is optional.  It indicates why a request was allowed or denied.",
+	"evaluationError": "EvaluationError is an indication that some error occurred during the authorization check. It is entirely possible to get an error and be able to continue determine authorization status in spite of it. For instance, RBAC can be missing a role, but enough roles are still present and bound to reason about the request.",
 }
 
 func (SubjectAccessReviewStatus) SwaggerDoc() map[string]string {

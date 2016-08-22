@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,13 +20,12 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/rest"
 	policyapi "k8s.io/kubernetes/pkg/apis/policy"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/registry/generic/registry"
 	"k8s.io/kubernetes/pkg/registry/poddisruptionbudget"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/storage"
 )
 
 // rest implements a RESTStorage for pod disruption budgets against etcd
@@ -36,11 +35,18 @@ type REST struct {
 
 // NewREST returns a RESTStorage object that will work against pod disruption budgets.
 func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
-	prefix := "/poddisruptionbudgets"
+	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &policyapi.PodDisruptionBudgetList{} }
 	storageInterface := opts.Decorator(
-		opts.Storage, cachesize.GetWatchCacheSizeByResource(cachesize.PodDisruptionBudget), &policyapi.PodDisruptionBudget{}, prefix, poddisruptionbudget.Strategy, newListFunc)
+		opts.StorageConfig,
+		cachesize.GetWatchCacheSizeByResource(cachesize.PodDisruptionBudget),
+		&policyapi.PodDisruptionBudget{},
+		prefix,
+		poddisruptionbudget.Strategy,
+		newListFunc,
+		storage.NoTriggerPublisher,
+	)
 
 	store := &registry.Store{
 		NewFunc: func() runtime.Object { return &policyapi.PodDisruptionBudget{} },
@@ -62,9 +68,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 			return obj.(*policyapi.PodDisruptionBudget).Name, nil
 		},
 		// Used to match objects based on labels/fields for list and watch
-		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
-			return poddisruptionbudget.MatchPodDisruptionBudget(label, field)
-		},
+		PredicateFunc:           poddisruptionbudget.MatchPodDisruptionBudget,
 		QualifiedResource:       policyapi.Resource("poddisruptionbudgets"),
 		DeleteCollectionWorkers: opts.DeleteCollectionWorkers,
 

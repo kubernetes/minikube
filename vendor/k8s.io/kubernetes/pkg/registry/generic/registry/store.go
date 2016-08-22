@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ type Store struct {
 	TTLFunc func(obj runtime.Object, existing uint64, update bool) (uint64, error)
 
 	// Returns a matcher corresponding to the provided labels and fields.
-	PredicateFunc func(label labels.Selector, field fields.Selector) generic.Matcher
+	PredicateFunc func(label labels.Selector, field fields.Selector) *generic.SelectionPredicate
 
 	// DeleteCollectionWorkers is the maximum number of workers in a single
 	// DeleteCollection call.
@@ -188,12 +188,12 @@ func (e *Store) List(ctx api.Context, options *api.ListOptions) (runtime.Object,
 }
 
 // ListPredicate returns a list of all the items matching m.
-func (e *Store) ListPredicate(ctx api.Context, m generic.Matcher, options *api.ListOptions) (runtime.Object, error) {
+func (e *Store) ListPredicate(ctx api.Context, m *generic.SelectionPredicate, options *api.ListOptions) (runtime.Object, error) {
 	list := e.NewListFunc()
-	filterFunc := e.filterAndDecorateFunction(m)
+	filter := e.createFilter(m)
 	if name, ok := m.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
-			err := e.Storage.GetToList(ctx, key, filterFunc, list)
+			err := e.Storage.GetToList(ctx, key, filter, list)
 			return list, storeerr.InterpretListError(err, e.QualifiedResource)
 		}
 		// if we cannot extract a key based on the current context, the optimization is skipped
@@ -202,7 +202,7 @@ func (e *Store) ListPredicate(ctx api.Context, m generic.Matcher, options *api.L
 	if options == nil {
 		options = &api.ListOptions{ResourceVersion: "0"}
 	}
-	err := e.Storage.List(ctx, e.KeyRootFunc(ctx), options.ResourceVersion, filterFunc, list)
+	err := e.Storage.List(ctx, e.KeyRootFunc(ctx), options.ResourceVersion, filter, list)
 	return list, storeerr.InterpretListError(err, e.QualifiedResource)
 }
 
@@ -445,29 +445,49 @@ var (
 	errEmptiedFinalizers = fmt.Errorf("emptied finalizers")
 )
 
-// return if we need to update the finalizers of the object, and the desired list of finalizers
-func shouldUpdateFinalizers(accessor meta.Object, options *api.DeleteOptions) (shouldUpdate bool, newFinalizers []string) {
-	if options == nil || options.OrphanDependents == nil {
-		return false, accessor.GetFinalizers()
+// shouldUpdateFinalizers returns if we need to update the finalizers of the
+// object, and the desired list of finalizers.
+// When deciding whether to add the OrphanDependent finalizer, factors in the
+// order of highest to lowest priority are: options.OrphanDependents, existing
+// finalizers of the object, e.DeleteStrategy.DefaultGarbageCollectionPolicy.
+func shouldUpdateFinalizers(e *Store, accessor meta.Object, options *api.DeleteOptions) (shouldUpdate bool, newFinalizers []string) {
+	shouldOrphan := false
+	// Get default orphan policy from this REST object type
+	if gcStrategy, ok := e.DeleteStrategy.(rest.GarbageCollectionDeleteStrategy); ok {
+		if gcStrategy.DefaultGarbageCollectionPolicy() == rest.OrphanDependents {
+			shouldOrphan = true
+		}
 	}
-	shouldOrphan := *options.OrphanDependents
-	alreadyOrphan := false
+	// If a finalizer is set in the object, it overrides the default
+	hasOrphanFinalizer := false
 	finalizers := accessor.GetFinalizers()
-	newFinalizers = make([]string, 0, len(finalizers))
 	for _, f := range finalizers {
 		if f == api.FinalizerOrphan {
-			alreadyOrphan = true
-			if !shouldOrphan {
+			shouldOrphan = true
+			hasOrphanFinalizer = true
+			break
+		}
+		// TODO: update this when we add a finalizer indicating a preference for the other behavior
+	}
+	// If an explicit policy was set at deletion time, that overrides both
+	if options != nil && options.OrphanDependents != nil {
+		shouldOrphan = *options.OrphanDependents
+	}
+	if shouldOrphan && !hasOrphanFinalizer {
+		finalizers = append(finalizers, api.FinalizerOrphan)
+		return true, finalizers
+	}
+	if !shouldOrphan && hasOrphanFinalizer {
+		var newFinalizers []string
+		for _, f := range finalizers {
+			if f == api.FinalizerOrphan {
 				continue
 			}
+			newFinalizers = append(newFinalizers, f)
 		}
-		newFinalizers = append(newFinalizers, f)
+		return true, newFinalizers
 	}
-	if shouldOrphan && !alreadyOrphan {
-		newFinalizers = append(newFinalizers, api.FinalizerOrphan)
-	}
-	shouldUpdate = shouldOrphan != alreadyOrphan
-	return shouldUpdate, newFinalizers
+	return false, finalizers
 }
 
 // markAsDeleting sets the obj's DeletionGracePeriodSeconds to 0, and sets the
@@ -479,6 +499,10 @@ func markAsDeleting(obj runtime.Object) (err error) {
 		return kerr
 	}
 	now := unversioned.NewTime(time.Now())
+	// This handles Generation bump for resources that don't support graceful deletion. For resources that support graceful deletion is handle in pkg/api/rest/delete.go
+	if objectMeta.DeletionTimestamp == nil && objectMeta.Generation > 0 {
+		objectMeta.Generation++
+	}
 	objectMeta.DeletionTimestamp = &now
 	var zero int64 = 0
 	objectMeta.DeletionGracePeriodSeconds = &zero
@@ -556,7 +580,7 @@ func (e *Store) updateForGracefulDeletionAndFinalizers(ctx api.Context, name, ke
 			if err != nil {
 				return nil, err
 			}
-			shouldUpdate, newFinalizers := shouldUpdateFinalizers(existingAccessor, options)
+			shouldUpdate, newFinalizers := shouldUpdateFinalizers(e, existingAccessor, options)
 			if shouldUpdate {
 				existingAccessor.SetFinalizers(newFinalizers)
 			}
@@ -650,7 +674,7 @@ func (e *Store) Delete(ctx api.Context, name string, options *api.DeleteOptions)
 			err, ignoreNotFound, deleteImmediately, out, lastExisting = e.updateForGracefulDeletion(ctx, name, key, options, preconditions, obj)
 		}
 	} else {
-		shouldUpdateFinalizers, _ := shouldUpdateFinalizers(accessor, options)
+		shouldUpdateFinalizers, _ := shouldUpdateFinalizers(e, accessor, options)
 		// TODO: remove the check, because we support no-op updates now.
 		if graceful || pendingFinalizers || shouldUpdateFinalizers {
 			err, ignoreNotFound, deleteImmediately, out, lastExisting = e.updateForGracefulDeletionAndFinalizers(ctx, name, key, options, preconditions, obj)
@@ -793,24 +817,24 @@ func (e *Store) Watch(ctx api.Context, options *api.ListOptions) (watch.Interfac
 }
 
 // WatchPredicate starts a watch for the items that m matches.
-func (e *Store) WatchPredicate(ctx api.Context, m generic.Matcher, resourceVersion string) (watch.Interface, error) {
-	filterFunc := e.filterAndDecorateFunction(m)
+func (e *Store) WatchPredicate(ctx api.Context, m *generic.SelectionPredicate, resourceVersion string) (watch.Interface, error) {
+	filter := e.createFilter(m)
 
 	if name, ok := m.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
 			if err != nil {
 				return nil, err
 			}
-			return e.Storage.Watch(ctx, key, resourceVersion, filterFunc)
+			return e.Storage.Watch(ctx, key, resourceVersion, filter)
 		}
 		// if we cannot extract a key based on the current context, the optimization is skipped
 	}
 
-	return e.Storage.WatchList(ctx, e.KeyRootFunc(ctx), resourceVersion, filterFunc)
+	return e.Storage.WatchList(ctx, e.KeyRootFunc(ctx), resourceVersion, filter)
 }
 
-func (e *Store) filterAndDecorateFunction(m generic.Matcher) func(runtime.Object) bool {
-	return func(obj runtime.Object) bool {
+func (e *Store) createFilter(m *generic.SelectionPredicate) storage.Filter {
+	filterFunc := func(obj runtime.Object) bool {
 		matches, err := m.Matches(obj)
 		if err != nil {
 			glog.Errorf("unable to match watch: %v", err)
@@ -824,6 +848,7 @@ func (e *Store) filterAndDecorateFunction(m generic.Matcher) func(runtime.Object
 		}
 		return matches
 	}
+	return storage.NewSimpleFilter(filterFunc, m.MatcherIndex)
 }
 
 // calculateTTL is a helper for retrieving the updated TTL for an object or returning an error
@@ -870,11 +895,11 @@ func (e *Store) Export(ctx api.Context, name string, opts unversioned.ExportOpti
 	}
 
 	if e.ExportStrategy != nil {
-		if err = e.ExportStrategy.Export(obj, opts.Exact); err != nil {
+		if err = e.ExportStrategy.Export(ctx, obj, opts.Exact); err != nil {
 			return nil, err
 		}
 	} else {
-		e.CreateStrategy.PrepareForCreate(obj)
+		e.CreateStrategy.PrepareForCreate(ctx, obj)
 	}
 	return obj, nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,13 +26,12 @@ import (
 	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	extvalidation "k8s.io/kubernetes/pkg/apis/extensions/validation"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/registry/generic/registry"
 	"k8s.io/kubernetes/pkg/registry/replicaset"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/storage"
 )
 
 // ReplicaSetStorage includes dummy storage for ReplicaSets and for Scale subresource.
@@ -59,11 +58,18 @@ type REST struct {
 
 // NewREST returns a RESTStorage object that will work against ReplicaSet.
 func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
-	prefix := "/replicasets"
+	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &extensions.ReplicaSetList{} }
 	storageInterface := opts.Decorator(
-		opts.Storage, cachesize.GetWatchCacheSizeByResource(cachesize.Replicasets), &extensions.ReplicaSet{}, prefix, replicaset.Strategy, newListFunc)
+		opts.StorageConfig,
+		cachesize.GetWatchCacheSizeByResource(cachesize.Replicasets),
+		&extensions.ReplicaSet{},
+		prefix,
+		replicaset.Strategy,
+		newListFunc,
+		storage.NoTriggerPublisher,
+	)
 
 	store := &registry.Store{
 		NewFunc: func() runtime.Object { return &extensions.ReplicaSet{} },
@@ -85,9 +91,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 			return obj.(*extensions.ReplicaSet).Name, nil
 		},
 		// Used to match objects based on labels/fields for list and watch
-		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
-			return replicaset.MatchReplicaSet(label, field)
-		},
+		PredicateFunc:           replicaset.MatchReplicaSet,
 		QualifiedResource:       api.Resource("replicasets"),
 		DeleteCollectionWorkers: opts.DeleteCollectionWorkers,
 

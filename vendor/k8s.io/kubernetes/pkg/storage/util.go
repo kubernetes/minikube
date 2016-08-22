@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -35,6 +35,41 @@ func SimpleUpdate(fn SimpleUpdateFunc) UpdateFunc {
 		out, err := fn(input)
 		return out, nil, err
 	}
+}
+
+// SimpleFilter implements Filter interface.
+type SimpleFilter struct {
+	filterFunc  func(runtime.Object) bool
+	triggerFunc func() []MatchValue
+}
+
+func (s *SimpleFilter) Filter(obj runtime.Object) bool {
+	return s.filterFunc(obj)
+}
+
+func (s *SimpleFilter) Trigger() []MatchValue {
+	return s.triggerFunc()
+}
+
+func NewSimpleFilter(
+	filterFunc func(runtime.Object) bool,
+	triggerFunc func() []MatchValue) Filter {
+	return &SimpleFilter{
+		filterFunc:  filterFunc,
+		triggerFunc: triggerFunc,
+	}
+}
+
+func EverythingFunc(runtime.Object) bool {
+	return true
+}
+
+func NoTriggerFunc() []MatchValue {
+	return nil
+}
+
+func NoTriggerPublisher(runtime.Object) []MatchValue {
+	return nil
 }
 
 // ParseWatchResourceVersion takes a resource version argument and converts it to

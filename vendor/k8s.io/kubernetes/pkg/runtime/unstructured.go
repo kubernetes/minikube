@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -95,6 +95,7 @@ func (s unstructuredJSONScheme) decode(data []byte) (Object, error) {
 	err := s.decodeToUnstructured(data, unstruct)
 	return unstruct, err
 }
+
 func (s unstructuredJSONScheme) decodeInto(data []byte, obj Object) error {
 	switch x := obj.(type) {
 	case *Unstructured:
@@ -102,10 +103,9 @@ func (s unstructuredJSONScheme) decodeInto(data []byte, obj Object) error {
 	case *UnstructuredList:
 		return s.decodeToList(data, x)
 	case *VersionedObjects:
-		u := new(Unstructured)
-		err := s.decodeToUnstructured(data, u)
+		o, err := s.decode(data)
 		if err == nil {
-			x.Objects = []Object{u}
+			x.Objects = []Object{o}
 		}
 		return err
 	default:
@@ -168,7 +168,7 @@ func (s unstructuredJSONScheme) decodeToList(data []byte, list *UnstructuredList
 // sane implementation for APIs that require an object converter.
 type UnstructuredObjectConverter struct{}
 
-func (UnstructuredObjectConverter) Convert(in, out interface{}) error {
+func (UnstructuredObjectConverter) Convert(in, out, context interface{}) error {
 	unstructIn, ok := in.(*Unstructured)
 	if !ok {
 		return fmt.Errorf("input type %T in not valid for unstructured conversion", in)
@@ -187,9 +187,14 @@ func (UnstructuredObjectConverter) Convert(in, out interface{}) error {
 	return nil
 }
 
-func (UnstructuredObjectConverter) ConvertToVersion(in Object, outVersion unversioned.GroupVersion) (Object, error) {
-	if gvk := in.GetObjectKind().GroupVersionKind(); gvk.GroupVersion() != outVersion {
-		return nil, errors.New("unstructured converter cannot convert versions")
+func (UnstructuredObjectConverter) ConvertToVersion(in Object, target GroupVersioner) (Object, error) {
+	if kind := in.GetObjectKind().GroupVersionKind(); !kind.Empty() {
+		gvk, ok := target.KindForGroupVersionKinds([]unversioned.GroupVersionKind{kind})
+		if !ok {
+			// TODO: should this be a typed error?
+			return nil, fmt.Errorf("%v is unstructured and is not suitable for converting to %q", kind, target)
+		}
+		in.GetObjectKind().SetGroupVersionKind(gvk)
 	}
 	return in, nil
 }

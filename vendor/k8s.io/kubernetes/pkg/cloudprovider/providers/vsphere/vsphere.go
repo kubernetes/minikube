@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,15 +17,18 @@ limitations under the License.
 package vsphere
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/url"
-	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
+	"gopkg.in/gcfg.v1"
+
+	"github.com/golang/glog"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
@@ -33,18 +36,25 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 	"golang.org/x/net/context"
-	"gopkg.in/gcfg.v1"
 
-	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/util/runtime"
 )
 
-const ProviderName = "vsphere"
-const ActivePowerState = "poweredOn"
-const DefaultDiskController = "scsi"
-const DefaultSCSIControllerType = "lsilogic-sas"
+const (
+	ProviderName              = "vsphere"
+	ActivePowerState          = "poweredOn"
+	SCSIControllerType        = "scsi"
+	LSILogicControllerType    = "lsilogic"
+	BusLogicControllerType    = "buslogic"
+	PVSCSIControllerType      = "pvscsi"
+	LSILogicSASControllerType = "lsilogic-sas"
+	SCSIControllerLimit       = 4
+	SCSIControllerDeviceLimit = 15
+	SCSIDeviceSlots           = 16
+	SCSIReservedSlot          = 7
+)
 
 // Controller types that are currently supported for hot attach of disks
 // lsilogic driver type is currently not supported because,when a device gets detached
@@ -56,6 +66,7 @@ var supportedSCSIControllerType = []string{"lsilogic-sas", "pvscsi"}
 var ErrNoDiskUUIDFound = errors.New("No disk UUID found")
 var ErrNoDiskIDFound = errors.New("No vSphere disk ID found")
 var ErrNoDevicesFound = errors.New("No devices found")
+var ErrNonSupportedControllerType = errors.New("Disk is attached to non-supported controller type")
 
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
@@ -66,24 +77,56 @@ type VSphere struct {
 
 type VSphereConfig struct {
 	Global struct {
-		User         string `gcfg:"user"`
-		Password     string `gcfg:"password"`
-		VCenterIP    string `gcfg:"server"`
-		VCenterPort  string `gcfg:"port"`
-		InsecureFlag bool   `gcfg:"insecure-flag"`
-		Datacenter   string `gcfg:"datacenter"`
-		Datastore    string `gcfg:"datastore"`
-		WorkingDir   string `gcfg:"working-dir"`
+		// vCenter username.
+		User string `gcfg:"user"`
+		// vCenter password in clear text.
+		Password string `gcfg:"password"`
+		// vCenter IP.
+		VCenterIP string `gcfg:"server"`
+		// vCenter port.
+		VCenterPort string `gcfg:"port"`
+		// True if vCenter uses self-signed cert.
+		InsecureFlag bool `gcfg:"insecure-flag"`
+		// Datacenter in which VMs are located.
+		Datacenter string `gcfg:"datacenter"`
+		// Datastore in which vmdks are stored.
+		Datastore string `gcfg:"datastore"`
+		// WorkingDir is path where VMs can be found.
+		WorkingDir string `gcfg:"working-dir"`
 	}
 
 	Network struct {
+		// PublicNetwork is name of the network the VMs are joined to.
 		PublicNetwork string `gcfg:"public-network"`
 	}
 	Disk struct {
+		// SCSIControllerType defines SCSI controller to be used.
 		SCSIControllerType string `dcfg:"scsicontrollertype"`
 	}
 }
 
+type Volumes interface {
+	// AttachDisk attaches given disk to given node. Current node
+	// is used when nodeName is empty string.
+	AttachDisk(vmDiskPath string, nodeName string) (diskID string, diskUUID string, err error)
+
+	// DetachDisk detaches given disk to given node. Current node
+	// is used when nodeName is empty string.
+	// Assumption: If node doesn't exist, disk is already detached from node.
+	DetachDisk(volPath string, nodeName string) error
+
+	// DiskIsAttached checks if a disk is attached to the given node.
+	// Assumption: If node doesn't exist, disk is not attached to the node.
+	DiskIsAttached(volPath, nodeName string) (bool, error)
+
+	// CreateVolume creates a new vmdk with specified parameters.
+	CreateVolume(name string, size int, tags *map[string]string) (volumePath string, err error)
+
+	// DeleteVolume deletes vmdk.
+	DeleteVolume(vmDiskPath string) error
+}
+
+// Parses vSphere cloud config file and stores it into VSphereConfig.
 func readConfig(config io.Reader) (VSphereConfig, error) {
 	if config == nil {
 		err := fmt.Errorf("no vSphere cloud provider config file given")
@@ -105,15 +148,16 @@ func init() {
 	})
 }
 
+// Returns the name of the VM on which this code is running.
+// This is done by searching for the name of virtual machine by current IP.
+// Prerequisite: this code assumes VMWare vmtools or open-vm-tools to be installed in the VM.
 func readInstanceID(cfg *VSphereConfig) (string, error) {
-	cmd := exec.Command("bash", "-c", `dmidecode -t 1 | grep UUID | tr -d ' ' | cut -f 2 -d ':'`)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return "", err
 	}
-	if out.Len() == 0 {
+
+	if len(addrs) == 0 {
 		return "", fmt.Errorf("unable to retrieve Instance ID")
 	}
 
@@ -140,7 +184,23 @@ func readInstanceID(cfg *VSphereConfig) (string, error) {
 
 	s := object.NewSearchIndex(c.Client)
 
-	svm, err := s.FindByUuid(ctx, dc, strings.ToLower(strings.TrimSpace(out.String())), true, nil)
+	var svm object.Reference
+	for _, v := range addrs {
+		ip, _, err := net.ParseCIDR(v.String())
+		if err != nil {
+			return "", fmt.Errorf("unable to parse cidr from ip")
+		}
+
+		// Finds a virtual machine or host by IP address.
+		svm, err = s.FindByIp(ctx, dc, ip.String(), true)
+		if err == nil && svm != nil {
+			break
+		}
+	}
+	if svm == nil {
+		return "", fmt.Errorf("unable to retrieve vm reference from vSphere")
+	}
+
 	var vm mo.VirtualMachine
 	err = s.Properties(ctx, svm.Reference(), []string{"name"}, &vm)
 	if err != nil {
@@ -156,7 +216,7 @@ func newVSphere(cfg VSphereConfig) (*VSphere, error) {
 	}
 
 	if cfg.Disk.SCSIControllerType == "" {
-		cfg.Disk.SCSIControllerType = DefaultSCSIControllerType
+		cfg.Disk.SCSIControllerType = LSILogicSASControllerType
 	} else if !checkControllerSupported(cfg.Disk.SCSIControllerType) {
 		glog.Errorf("%v is not a supported SCSI Controller type. Please configure 'lsilogic-sas' OR 'pvscsi'", cfg.Disk.SCSIControllerType)
 		return nil, errors.New("Controller type not supported. Please configure 'lsilogic-sas' OR 'pvscsi'")
@@ -171,6 +231,7 @@ func newVSphere(cfg VSphereConfig) (*VSphere, error) {
 	return &vs, nil
 }
 
+// Returns if the given controller type is supported by the plugin
 func checkControllerSupported(ctrlType string) bool {
 	for _, c := range supportedSCSIControllerType {
 		if ctrlType == c {
@@ -180,8 +241,9 @@ func checkControllerSupported(ctrlType string) bool {
 	return false
 }
 
+// Returns a client which communicates with vCenter.
+// This client can used to perform further vCenter operations.
 func vsphereLogin(cfg *VSphereConfig, ctx context.Context) (*govmomi.Client, error) {
-
 	// Parse URL from string
 	u, err := url.Parse(fmt.Sprintf("https://%s:%s/sdk", cfg.Global.VCenterIP, cfg.Global.VCenterPort))
 	if err != nil {
@@ -199,6 +261,7 @@ func vsphereLogin(cfg *VSphereConfig, ctx context.Context) (*govmomi.Client, err
 	return c, nil
 }
 
+// Returns vSphere object `virtual machine` by its name.
 func getVirtualMachineByName(cfg *VSphereConfig, ctx context.Context, c *govmomi.Client, name string) (*object.VirtualMachine, error) {
 	// Create a new finder
 	f := find.NewFinder(c.Client, true)
@@ -233,6 +296,7 @@ func getVirtualMachineManagedObjectReference(ctx context.Context, c *govmomi.Cli
 	return nil
 }
 
+// Returns names of running VMs inside VM folder.
 func getInstances(cfg *VSphereConfig, ctx context.Context, c *govmomi.Client, filter string) ([]string, error) {
 	f := find.NewFinder(c.Client, true)
 	dc, err := f.Datacenter(ctx, cfg.Global.Datacenter)
@@ -284,7 +348,7 @@ func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
 	return &Instances{vs.cfg, vs.localInstanceID}, true
 }
 
-// List is an implementation of Instances.List.
+// List returns names of VMs (inside vm folder) by applying filter and which are currently running.
 func (i *Instances) List(filter string) ([]string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -299,7 +363,7 @@ func (i *Instances) List(filter string) ([]string, error) {
 		return nil, err
 	}
 
-	glog.V(3).Infof("Found %s instances matching %s: %s",
+	glog.V(3).Infof("Found %d instances matching %s: %s",
 		len(vmList), filter, vmList)
 
 	return vmList, nil
@@ -422,9 +486,9 @@ func (i *Instances) InstanceID(name string) (string, error) {
 	}
 
 	if mvm.Summary.Config.Template == false {
-		glog.Warning("VM %s, is not in %s state", name, ActivePowerState)
+		glog.Warningf("VM %s, is not in %s state", name, ActivePowerState)
 	} else {
-		glog.Warning("VM %s, is a template", name)
+		glog.Warningf("VM %s, is a template", name)
 	}
 
 	return "", cloudprovider.InstanceNotFound
@@ -471,40 +535,40 @@ func (vs *VSphere) ScrubDNS(nameservers, searches []string) (nsOut, srchOut []st
 	return nameservers, searches
 }
 
-func getVirtualMachineDevices(cfg *VSphereConfig, ctx context.Context, c *govmomi.Client, name string) (*object.VirtualMachine, object.VirtualDeviceList, *object.Datastore, error) {
-
+// Returns vSphere objects virtual machine, virtual device list, datastore and datacenter.
+func getVirtualMachineDevices(cfg *VSphereConfig, ctx context.Context, c *govmomi.Client, name string) (*object.VirtualMachine, object.VirtualDeviceList, *object.Datastore, *object.Datacenter, error) {
 	// Create a new finder
 	f := find.NewFinder(c.Client, true)
 
 	// Fetch and set data center
 	dc, err := f.Datacenter(ctx, cfg.Global.Datacenter)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	f.SetDatacenter(dc)
 
 	// Find datastores
 	ds, err := f.Datastore(ctx, cfg.Global.Datastore)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	vmRegex := cfg.Global.WorkingDir + name
 
 	vm, err := f.VirtualMachine(ctx, vmRegex)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	// Get devices from VM
 	vmDevices, err := vm.Device(ctx)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
-	return vm, vmDevices, ds, nil
+	return vm, vmDevices, ds, dc, nil
 }
 
-//cleaning up the controller
+// Removes SCSI controller which is latest attached to VM.
 func cleanUpController(newSCSIController types.BaseVirtualDevice, vmDevices object.VirtualDeviceList, vm *object.VirtualMachine, ctx context.Context) error {
 	ctls := vmDevices.SelectByType(newSCSIController)
 	if len(ctls) < 1 {
@@ -540,19 +604,33 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string
 	}
 
 	// Get VM device list
-	vm, vmDevices, ds, err := getVirtualMachineDevices(vs.cfg, ctx, c, vSphereInstance)
+	vm, vmDevices, ds, dc, err := getVirtualMachineDevices(vs.cfg, ctx, c, vSphereInstance)
 	if err != nil {
 		return "", "", err
 	}
 
+	attached, _ := checkDiskAttached(vmDiskPath, vmDevices, dc, c)
+	if attached {
+		diskID, _ = getVirtualDiskID(vmDiskPath, vmDevices, dc, c)
+		diskUUID, _ = getVirtualDiskUUIDByPath(vmDiskPath, dc, c)
+		return diskID, diskUUID, nil
+	}
+
 	var diskControllerType = vs.cfg.Disk.SCSIControllerType
 	// find SCSI controller of particular type from VM devices
-	var diskController = getSCSIController(vmDevices, diskControllerType)
+	allSCSIControllers := getSCSIControllers(vmDevices)
+	scsiControllersOfRequiredType := getSCSIControllersOfType(vmDevices, diskControllerType)
+	scsiController := getAvailableSCSIController(scsiControllersOfRequiredType)
 
 	var newSCSICreated = false
 	var newSCSIController types.BaseVirtualDevice
+
 	// creating a scsi controller as there is none found of controller type defined
-	if diskController == nil {
+	if scsiController == nil {
+		if len(allSCSIControllers) >= SCSIControllerLimit {
+			// we reached the maximum number of controllers we can attach
+			return "", "", fmt.Errorf("SCSI Controller Limit of %d has been reached, cannot create another SCSI controller", SCSIControllerLimit)
+		}
 		glog.V(4).Infof("Creating a SCSI controller of %v type", diskControllerType)
 		newSCSIController, err := vmDevices.CreateSCSIController(diskControllerType)
 		if err != nil {
@@ -578,12 +656,12 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string
 		// verify scsi controller in virtual machine
 		vmDevices, err = vm.Device(ctx)
 		if err != nil {
-			//cannot cleanup if there is no device list
+			// cannot cleanup if there is no device list
 			return "", "", err
 		}
 
-		diskController = getSCSIController(vmDevices, vs.cfg.Disk.SCSIControllerType)
-		if diskController == nil {
+		scsiController = getSCSIController(vmDevices, vs.cfg.Disk.SCSIControllerType)
+		if scsiController == nil {
 			glog.Errorf("cannot find SCSI controller in VM - %v", err)
 			// attempt clean up of scsi controller
 			cleanUpController(newSCSIController, vmDevices, vm, ctx)
@@ -592,7 +670,14 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string
 		newSCSICreated = true
 	}
 
-	disk := vmDevices.CreateDisk(diskController, ds.Reference(), vmDiskPath)
+	disk := vmDevices.CreateDisk(scsiController, ds.Reference(), vmDiskPath)
+	unitNumber, err := getNextUnitNumber(vmDevices, scsiController)
+	if err != nil {
+		glog.Errorf("cannot attach disk to VM, limit reached - %v.", err)
+		return "", "", err
+	}
+	*disk.UnitNumber = unitNumber
+
 	backing := disk.Backing.(*types.VirtualDiskFlatVer2BackingInfo)
 	backing.DiskMode = string(types.VirtualDiskModeIndependent_persistent)
 
@@ -638,6 +723,28 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string
 	return deviceName, diskUUID, nil
 }
 
+func getNextUnitNumber(devices object.VirtualDeviceList, c types.BaseVirtualController) (int32, error) {
+	// get next available SCSI controller unit number
+	var takenUnitNumbers [SCSIDeviceSlots]bool
+	takenUnitNumbers[SCSIReservedSlot] = true
+	key := c.GetVirtualController().Key
+
+	for _, device := range devices {
+		d := device.GetVirtualDevice()
+		if d.ControllerKey == key {
+			if d.UnitNumber != nil {
+				takenUnitNumbers[*d.UnitNumber] = true
+			}
+		}
+	}
+	for unitNumber, takenUnitNumber := range takenUnitNumbers {
+		if !takenUnitNumber {
+			return int32(unitNumber), nil
+		}
+	}
+	return -1, fmt.Errorf("SCSI Controller with key=%d does not have any avaiable slots (LUN).", key)
+}
+
 func getSCSIController(vmDevices object.VirtualDeviceList, scsiType string) *types.VirtualController {
 	// get virtual scsi controller of passed argument type
 	for _, device := range vmDevices {
@@ -651,33 +758,217 @@ func getSCSIController(vmDevices object.VirtualDeviceList, scsiType string) *typ
 	return nil
 }
 
+func getSCSIControllersOfType(vmDevices object.VirtualDeviceList, scsiType string) []*types.VirtualController {
+	// get virtual scsi controllers of passed argument type
+	var scsiControllers []*types.VirtualController
+	for _, device := range vmDevices {
+		devType := vmDevices.Type(device)
+		if devType == scsiType {
+			if c, ok := device.(types.BaseVirtualController); ok {
+				scsiControllers = append(scsiControllers, c.GetVirtualController())
+			}
+		}
+	}
+	return scsiControllers
+}
+
+func getSCSIControllers(vmDevices object.VirtualDeviceList) []*types.VirtualController {
+	// get all virtual scsi controllers
+	var scsiControllers []*types.VirtualController
+	for _, device := range vmDevices {
+		devType := vmDevices.Type(device)
+		switch devType {
+		case SCSIControllerType, LSILogicControllerType, BusLogicControllerType, PVSCSIControllerType, LSILogicSASControllerType:
+			if c, ok := device.(types.BaseVirtualController); ok {
+				scsiControllers = append(scsiControllers, c.GetVirtualController())
+			}
+		}
+	}
+	return scsiControllers
+}
+
+func getAvailableSCSIController(scsiControllers []*types.VirtualController) *types.VirtualController {
+	// get SCSI controller which has space for adding more devices
+	for _, controller := range scsiControllers {
+		if len(controller.Device) < SCSIControllerDeviceLimit {
+			return controller
+		}
+	}
+	return nil
+}
+
+// DiskIsAttached returns if disk is attached to the VM using controllers supported by the plugin.
+func (vs *VSphere) DiskIsAttached(volPath string, nodeName string) (bool, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create vSphere client
+	c, err := vsphereLogin(vs.cfg, ctx)
+	if err != nil {
+		glog.Errorf("Failed to create vSphere client. err: %s", err)
+		return false, err
+	}
+	defer c.Logout(ctx)
+
+	// Find virtual machine to attach disk to
+	var vSphereInstance string
+	if nodeName == "" {
+		vSphereInstance = vs.localInstanceID
+	} else {
+		vSphereInstance = nodeName
+	}
+
+	nodeExist, err := vs.NodeExists(c, vSphereInstance)
+
+	if err != nil {
+		glog.Errorf("Failed to check whether node exist. err: %s.", err)
+		return false, err
+	}
+
+	if !nodeExist {
+		glog.Warningf(
+			"Node %q does not exist. DiskIsAttached will assume vmdk %q is not attached to it.",
+			vSphereInstance,
+			volPath)
+		return false, nil
+	}
+
+	// Get VM device list
+	_, vmDevices, _, dc, err := getVirtualMachineDevices(vs.cfg, ctx, c, vSphereInstance)
+	if err != nil {
+		glog.Errorf("Failed to get VM devices for VM %#q. err: %s", vSphereInstance, err)
+		return false, err
+	}
+
+	attached, err := checkDiskAttached(volPath, vmDevices, dc, c)
+	return attached, err
+}
+
+func checkDiskAttached(volPath string, vmdevices object.VirtualDeviceList, dc *object.Datacenter, client *govmomi.Client) (bool, error) {
+	virtualDiskControllerKey, err := getVirtualDiskControllerKey(volPath, vmdevices, dc, client)
+	if err != nil {
+		if err == ErrNoDevicesFound {
+			return false, nil
+		}
+		glog.Errorf("Failed to check whether disk is attached. err: %s", err)
+		return false, err
+	}
+	for _, controllerType := range supportedSCSIControllerType {
+		controllerkey, _ := getControllerKey(controllerType, vmdevices, dc, client)
+		if controllerkey == virtualDiskControllerKey {
+			return true, nil
+		}
+	}
+	return false, ErrNonSupportedControllerType
+
+}
+
+// Returns the object key that denotes the controller object to which vmdk is attached.
+func getVirtualDiskControllerKey(volPath string, vmDevices object.VirtualDeviceList, dc *object.Datacenter, client *govmomi.Client) (int32, error) {
+	volumeUUID, err := getVirtualDiskUUIDByPath(volPath, dc, client)
+
+	if err != nil {
+		glog.Errorf("disk uuid not found for %v. err: %s", volPath, err)
+		return -1, err
+	}
+
+	// filter vm devices to retrieve disk ID for the given vmdk file
+	for _, device := range vmDevices {
+		if vmDevices.TypeName(device) == "VirtualDisk" {
+			diskUUID, _ := getVirtualDiskUUID(device)
+			if diskUUID == volumeUUID {
+				return device.GetVirtualDevice().ControllerKey, nil
+			}
+		}
+	}
+	return -1, ErrNoDevicesFound
+}
+
+// Returns key of the controller.
+// Key is unique id that distinguishes one device from other devices in the same virtual machine.
+func getControllerKey(scsiType string, vmDevices object.VirtualDeviceList, dc *object.Datacenter, client *govmomi.Client) (int32, error) {
+	for _, device := range vmDevices {
+		devType := vmDevices.Type(device)
+		if devType == scsiType {
+			if c, ok := device.(types.BaseVirtualController); ok {
+				return c.GetVirtualController().Key, nil
+			}
+		}
+	}
+	return -1, ErrNoDevicesFound
+}
+
+// Returns formatted UUID for a virtual disk device.
 func getVirtualDiskUUID(newDevice types.BaseVirtualDevice) (string, error) {
 	vd := newDevice.GetVirtualDevice()
 
 	if b, ok := vd.Backing.(*types.VirtualDiskFlatVer2BackingInfo); ok {
-		uuidWithNoHypens := strings.Replace(b.Uuid, "-", "", -1)
-		return strings.ToLower(uuidWithNoHypens), nil
+		uuid := formatVirtualDiskUUID(b.Uuid)
+		return uuid, nil
 	}
 	return "", ErrNoDiskUUIDFound
 }
 
-func getVirtualDiskID(volPath string, vmDevices object.VirtualDeviceList) (string, error) {
+func formatVirtualDiskUUID(uuid string) string {
+	uuidwithNoSpace := strings.Replace(uuid, " ", "", -1)
+	uuidWithNoHypens := strings.Replace(uuidwithNoSpace, "-", "", -1)
+	return strings.ToLower(uuidWithNoHypens)
+}
+
+// Gets virtual disk UUID by datastore (namespace) path
+//
+// volPath can be namespace path (e.g. "[vsanDatastore] volumes/test.vmdk") or
+// uuid path (e.g. "[vsanDatastore] 59427457-6c5a-a917-7997-0200103eedbc/test.vmdk").
+// `volumes` in this case would be a symlink to
+// `59427457-6c5a-a917-7997-0200103eedbc`.
+//
+// We want users to use namespace path. It is good for attaching the disk,
+// but for detaching the API requires uuid path.  Hence, to detach the right
+// device we have to convert the namespace path to uuid path.
+func getVirtualDiskUUIDByPath(volPath string, dc *object.Datacenter, client *govmomi.Client) (string, error) {
+	if len(volPath) > 0 && filepath.Ext(volPath) != ".vmdk" {
+		volPath += ".vmdk"
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// VirtualDiskManager provides a way to manage and manipulate virtual disks on vmware datastores.
+	vdm := object.NewVirtualDiskManager(client.Client)
+	// Returns uuid of vmdk virtual disk
+	diskUUID, err := vdm.QueryVirtualDiskUuid(ctx, volPath, dc)
+
+	if err != nil {
+		return "", ErrNoDiskUUIDFound
+	}
+
+	diskUUID = formatVirtualDiskUUID(diskUUID)
+
+	return diskUUID, nil
+}
+
+// Returns a device id which is internal vSphere API identifier for the attached virtual disk.
+func getVirtualDiskID(volPath string, vmDevices object.VirtualDeviceList, dc *object.Datacenter, client *govmomi.Client) (string, error) {
+	volumeUUID, err := getVirtualDiskUUIDByPath(volPath, dc, client)
+
+	if err != nil {
+		glog.Warningf("disk uuid not found for %v ", volPath)
+		return "", err
+	}
+
 	// filter vm devices to retrieve disk ID for the given vmdk file
 	for _, device := range vmDevices {
 		if vmDevices.TypeName(device) == "VirtualDisk" {
-			d := device.GetVirtualDevice()
-			if b, ok := d.Backing.(types.BaseVirtualDeviceFileBackingInfo); ok {
-				fileName := b.GetVirtualDeviceFileBackingInfo().FileName
-				if fileName == volPath {
-					return vmDevices.Name(device), nil
-				}
+			diskUUID, _ := getVirtualDiskUUID(device)
+			if diskUUID == volumeUUID {
+				return vmDevices.Name(device), nil
 			}
 		}
 	}
 	return "", ErrNoDiskIDFound
 }
 
-// Detaches given virtual disk volume from the compute running kubelet.
+// DetachDisk detaches given virtual disk volume from the compute running kubelet.
 func (vs *VSphere) DetachDisk(volPath string, nodeName string) error {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -698,23 +989,39 @@ func (vs *VSphere) DetachDisk(volPath string, nodeName string) error {
 		vSphereInstance = nodeName
 	}
 
-	vm, vmDevices, _, err := getVirtualMachineDevices(vs.cfg, ctx, c, vSphereInstance)
+	nodeExist, err := vs.NodeExists(c, vSphereInstance)
+
+	if err != nil {
+		glog.Errorf("Failed to check whether node exist. err: %s.", err)
+		return err
+	}
+
+	if !nodeExist {
+		glog.Warningf(
+			"Node %q does not exist. DetachDisk will assume vmdk %q is not attached to it.",
+			vSphereInstance,
+			volPath)
+		return nil
+	}
+
+	vm, vmDevices, _, dc, err := getVirtualMachineDevices(vs.cfg, ctx, c, vSphereInstance)
 	if err != nil {
 		return err
 	}
 
-	diskID, err := getVirtualDiskID(volPath, vmDevices)
+	diskID, err := getVirtualDiskID(volPath, vmDevices, dc, c)
 	if err != nil {
 		glog.Warningf("disk ID not found for %v ", volPath)
 		return err
 	}
 
-	// Remove disk from VM
+	// Gets virtual disk device
 	device := vmDevices.Find(diskID)
 	if device == nil {
 		return fmt.Errorf("device '%s' not found", diskID)
 	}
 
+	// Detach disk from VM
 	err = vm.RemoveDevice(ctx, true, device)
 	if err != nil {
 		return err
@@ -723,7 +1030,7 @@ func (vs *VSphere) DetachDisk(volPath string, nodeName string) error {
 	return nil
 }
 
-// Create a volume of given size (in KiB).
+// CreateVolume creates a volume of given size (in KiB).
 func (vs *VSphere) CreateVolume(name string, size int, tags *map[string]string) (volumePath string, err error) {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -769,7 +1076,7 @@ func (vs *VSphere) CreateVolume(name string, size int, tags *map[string]string) 
 	return vmDiskPath, nil
 }
 
-// Deletes a volume given volume name.
+// DeleteVolume deletes a volume given volume name.
 func (vs *VSphere) DeleteVolume(vmDiskPath string) error {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -799,4 +1106,44 @@ func (vs *VSphere) DeleteVolume(vmDiskPath string) error {
 	}
 
 	return task.Wait(ctx)
+}
+
+// NodeExists checks if the node with given nodeName exist.
+// Returns false if VM doesn't exist or VM is in powerOff state.
+func (vs *VSphere) NodeExists(c *govmomi.Client, nodeName string) (bool, error) {
+
+	if nodeName == "" {
+		return false, nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	vm, err := getVirtualMachineByName(vs.cfg, ctx, c, nodeName)
+	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			return false, nil
+		}
+		glog.Errorf("Failed to get virtual machine object for node %+q. err %s", nodeName, err)
+		return false, err
+	}
+
+	var mvm mo.VirtualMachine
+	err = getVirtualMachineManagedObjectReference(ctx, c, vm, "summary", &mvm)
+	if err != nil {
+		glog.Errorf("Failed to get virtual machine object reference for node %+q. err %s", nodeName, err)
+		return false, err
+	}
+
+	if mvm.Summary.Runtime.PowerState == ActivePowerState {
+		return true, nil
+	}
+
+	if mvm.Summary.Config.Template == false {
+		glog.Warningf("VM %s, is not in %s state", nodeName, ActivePowerState)
+	} else {
+		glog.Warningf("VM %s, is a template", nodeName)
+	}
+
+	return false, nil
 }

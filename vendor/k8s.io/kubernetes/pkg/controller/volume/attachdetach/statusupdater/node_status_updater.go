@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,11 +63,11 @@ func (nsu *nodeStatusUpdater) UpdateNodeStatuses() error {
 		nodeObj, exists, err := nsu.nodeInformer.GetStore().GetByKey(nodeName)
 		if nodeObj == nil || !exists || err != nil {
 			// If node does not exist, its status cannot be updated, log error and move on.
-			glog.Warningf(
+			glog.V(5).Infof(
 				"Could not update node status. Failed to find node %q in NodeInformer cache. %v",
 				nodeName,
 				err)
-			return nil
+			continue
 		}
 
 		node, ok := nodeObj.(*api.Node)

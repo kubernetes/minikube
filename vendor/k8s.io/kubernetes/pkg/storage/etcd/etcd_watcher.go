@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ type etcdWatcher struct {
 	list    bool // If we're doing a recursive watch, should be true.
 	quorum  bool // If we enable quorum, shoule be true
 	include includeFunc
-	filter  storage.FilterFunc
+	filter  storage.Filter
 
 	etcdIncoming  chan *etcd.Response
 	etcdError     chan error
@@ -116,7 +116,7 @@ const watchWaitDuration = 100 * time.Millisecond
 // newEtcdWatcher returns a new etcdWatcher; if list is true, watch sub-nodes.
 // The versioner must be able to handle the objects that transform creates.
 func newEtcdWatcher(
-	list bool, quorum bool, include includeFunc, filter storage.FilterFunc,
+	list bool, quorum bool, include includeFunc, filter storage.Filter,
 	encoding runtime.Codec, versioner storage.Versioner, transform TransformFunc,
 	cache etcdCache) *etcdWatcher {
 	w := &etcdWatcher{
@@ -139,13 +139,15 @@ func newEtcdWatcher(
 		// monitor how much of this buffer is actually used.
 		etcdIncoming: make(chan *etcd.Response, 100),
 		etcdError:    make(chan error, 1),
-		outgoing:     make(chan watch.Event),
-		userStop:     make(chan struct{}),
-		stopped:      false,
-		wg:           sync.WaitGroup{},
-		cache:        cache,
-		ctx:          nil,
-		cancel:       nil,
+		// Similarly to etcdIncomming, we don't want to force context
+		// switch on every new incoming object.
+		outgoing: make(chan watch.Event, 100),
+		userStop: make(chan struct{}),
+		stopped:  false,
+		wg:       sync.WaitGroup{},
+		cache:    cache,
+		ctx:      nil,
+		cancel:   nil,
 	}
 	w.emit = func(e watch.Event) {
 		// Give up on user stop, without this we leak a lot of goroutines in tests.
@@ -364,7 +366,7 @@ func (w *etcdWatcher) sendAdd(res *etcd.Response) {
 		// the resourceVersion to resume will never be able to get past a bad value.
 		return
 	}
-	if !w.filter(obj) {
+	if !w.filter.Filter(obj) {
 		return
 	}
 	action := watch.Added
@@ -393,7 +395,7 @@ func (w *etcdWatcher) sendModify(res *etcd.Response) {
 		// the resourceVersion to resume will never be able to get past a bad value.
 		return
 	}
-	curObjPasses := w.filter(curObj)
+	curObjPasses := w.filter.Filter(curObj)
 	oldObjPasses := false
 	var oldObj runtime.Object
 	if res.PrevNode != nil && res.PrevNode.Value != "" {
@@ -402,7 +404,7 @@ func (w *etcdWatcher) sendModify(res *etcd.Response) {
 			if err := w.versioner.UpdateObject(oldObj, res.Node.ModifiedIndex); err != nil {
 				utilruntime.HandleError(fmt.Errorf("failure to version api object (%d) %#v: %v", res.Node.ModifiedIndex, oldObj, err))
 			}
-			oldObjPasses = w.filter(oldObj)
+			oldObjPasses = w.filter.Filter(oldObj)
 		}
 	}
 	// Some changes to an object may cause it to start or stop matching a filter.
@@ -451,7 +453,7 @@ func (w *etcdWatcher) sendDelete(res *etcd.Response) {
 		// the resourceVersion to resume will never be able to get past a bad value.
 		return
 	}
-	if !w.filter(obj) {
+	if !w.filter.Filter(obj) {
 		return
 	}
 	w.emit(watch.Event{

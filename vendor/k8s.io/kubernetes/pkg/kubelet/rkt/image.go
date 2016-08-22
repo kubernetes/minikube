@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -196,7 +196,7 @@ func (r *Runtime) getImageManifest(image string) (*appcschema.ImageManifest, err
 	return &manifest, json.Unmarshal(images[0].Manifest, &manifest)
 }
 
-// TODO(yifan): This is very racy, unefficient, and unsafe, we need to provide
+// TODO(yifan): This is very racy, inefficient, and unsafe, we need to provide
 // different namespaces. See: https://github.com/coreos/rkt/issues/836.
 func (r *Runtime) writeDockerAuthConfig(image string, credsSlice []credentialprovider.LazyAuthConfiguration, userConfigDir string) error {
 	if len(credsSlice) == 0 {

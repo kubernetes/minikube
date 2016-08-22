@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -117,6 +117,18 @@ func (p *flockerPlugin) NewUnmounter(datasetName string, podUID types.UID) (volu
 	return nil, nil
 }
 
+func (p *flockerPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	flockerVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			Flocker: &api.FlockerVolumeSource{
+				DatasetName: volumeName,
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(flockerVolume), nil
+}
+
 type flockerMounter struct {
 	*flocker
 	client   flockerclient.Clientable
@@ -223,8 +235,10 @@ func (b flockerMounter) updateDatasetPrimary(datasetID, primaryUUID string) erro
 		return err
 	}
 
-	timeoutChan := time.NewTimer(timeoutWaitingForVolume).C
-	tickChan := time.NewTicker(tickerWaitingForVolume).C
+	timeoutChan := time.NewTimer(timeoutWaitingForVolume)
+	defer timeoutChan.Stop()
+	tickChan := time.NewTicker(tickerWaitingForVolume)
+	defer tickChan.Stop()
 
 	for {
 		if s, err := b.client.GetDatasetState(datasetID); err == nil && s.Primary == primaryUUID {
@@ -232,12 +246,12 @@ func (b flockerMounter) updateDatasetPrimary(datasetID, primaryUUID string) erro
 		}
 
 		select {
-		case <-timeoutChan:
+		case <-timeoutChan.C:
 			return fmt.Errorf(
 				"Timed out waiting for the dataset_id: '%s' to be moved to the primary: '%s'\n%v",
 				datasetID, primaryUUID, err,
 			)
-		case <-tickChan:
+		case <-tickChan.C:
 			break
 		}
 	}

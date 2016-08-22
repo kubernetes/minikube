@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ func newOIDCAuthProvider(_ string, cfg map[string]string, persister restclient.A
 	}
 	hc := &http.Client{Transport: trans}
 
-	providerCfg, err := oidc.FetchProviderConfig(hc, strings.TrimSuffix(issuer, "/"))
+	providerCfg, err := oidc.FetchProviderConfig(hc, issuer)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching provider config: %v", err)
 	}

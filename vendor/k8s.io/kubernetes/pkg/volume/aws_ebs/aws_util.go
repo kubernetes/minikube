@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,14 +18,15 @@ package aws_ebs
 
 import (
 	"fmt"
-	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
-	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
+	volumeutil "k8s.io/kubernetes/pkg/volume/util"
 )
 
 const (
@@ -84,6 +85,35 @@ func (util *AWSDiskUtil) CreateVolume(c *awsElasticBlockStoreProvisioner) (strin
 		Tags:       tags,
 		PVCName:    c.options.PVCName,
 	}
+	// Apply Parameters (case-insensitive). We leave validation of
+	// the values to the cloud provider.
+	for k, v := range c.options.Parameters {
+		switch strings.ToLower(k) {
+		case "type":
+			volumeOptions.VolumeType = v
+		case "zone":
+			volumeOptions.AvailabilityZone = v
+		case "iopspergb":
+			volumeOptions.IOPSPerGB, err = strconv.Atoi(v)
+			if err != nil {
+				return "", 0, nil, fmt.Errorf("invalid iopsPerGB value %q, must be integer between 1 and 30: %v", v, err)
+			}
+		case "encrypted":
+			volumeOptions.Encrypted, err = strconv.ParseBool(v)
+			if err != nil {
+				return "", 0, nil, fmt.Errorf("invalid encrypted boolean value %q, must be true or false: %v", v, err)
+			}
+		case "kmskeyid":
+			volumeOptions.KmsKeyId = v
+		default:
+			return "", 0, nil, fmt.Errorf("invalid option %q for volume plugin %s", k, c.plugin.GetPluginName())
+		}
+	}
+
+	// TODO: implement c.options.ProvisionerSelector parsing
+	if c.options.Selector != nil {
+		return "", 0, nil, fmt.Errorf("claim.Spec.Selector is not supported for dynamic provisioning on AWS")
+	}
 
 	name, err := cloud.CreateDisk(volumeOptions)
 	if err != nil {
@@ -104,7 +134,7 @@ func (util *AWSDiskUtil) CreateVolume(c *awsElasticBlockStoreProvisioner) (strin
 // Returns the first path that exists, or empty string if none exist.
 func verifyDevicePath(devicePaths []string) (string, error) {
 	for _, path := range devicePaths {
-		if pathExists, err := pathExists(path); err != nil {
+		if pathExists, err := volumeutil.PathExists(path); err != nil {
 			return "", fmt.Errorf("Error checking if path exists: %v", err)
 		} else if pathExists {
 			return path, nil
@@ -114,18 +144,11 @@ func verifyDevicePath(devicePaths []string) (string, error) {
 	return "", nil
 }
 
-// Unmount the global mount path, which should be the only one, and delete it.
-func unmountPDAndRemoveGlobalPath(globalMountPath string, mounter mount.Interface) error {
-	err := mounter.Unmount(globalMountPath)
-	os.Remove(globalMountPath)
-	return err
-}
-
 // Returns the first path that exists, or empty string if none exist.
 func verifyAllPathsRemoved(devicePaths []string) (bool, error) {
 	allPathsRemoved := true
 	for _, path := range devicePaths {
-		if exists, err := pathExists(path); err != nil {
+		if exists, err := volumeutil.PathExists(path); err != nil {
 			return false, fmt.Errorf("Error checking if path exists: %v", err)
 		} else {
 			allPathsRemoved = allPathsRemoved && !exists
@@ -151,18 +174,6 @@ func getDiskByIdPaths(partition string, devicePath string) []string {
 	}
 
 	return devicePaths
-}
-
-// Checks if the specified path exists
-func pathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	} else if os.IsNotExist(err) {
-		return false, nil
-	} else {
-		return false, err
-	}
 }
 
 // Return cloud provider

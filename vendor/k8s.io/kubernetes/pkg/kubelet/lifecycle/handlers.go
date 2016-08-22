@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
+	"k8s.io/kubernetes/pkg/security/apparmor"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/intstr"
 )
@@ -60,7 +61,7 @@ func (hr *HandlerRunner) Run(containerID kubecontainer.ContainerID, pod *api.Pod
 			msg    string
 		)
 		output := ioutils.WriteCloserWrapper(&buffer)
-		err := hr.commandRunner.ExecInContainer(containerID, handler.Exec.Command, nil, output, output, false)
+		err := hr.commandRunner.ExecInContainer(containerID, handler.Exec.Command, nil, output, output, false, nil)
 		if err != nil {
 			msg := fmt.Sprintf("Exec lifecycle hook (%v) for Container %q in Pod %q failed - %q", handler.Exec.Command, container.Name, format.Pod(pod), buffer.String())
 			glog.V(1).Infof(msg)
@@ -81,7 +82,7 @@ func (hr *HandlerRunner) Run(containerID kubecontainer.ContainerID, pod *api.Pod
 	}
 }
 
-// resolvePort attempts to turn a IntOrString port reference into a concrete port number.
+// resolvePort attempts to turn an IntOrString port reference into a concrete port number.
 // If portReference has an int value, it is treated as a literal, and simply returns that value.
 // If portReference is a string, an attempt is first made to parse it as an integer.  If that fails,
 // an attempt is made to find a port with the same name in the container spec.
@@ -141,4 +142,26 @@ func getHttpRespBody(resp *http.Response) string {
 		return string(bytes)
 	}
 	return ""
+}
+
+func NewAppArmorAdmitHandler(runtime string) PodAdmitHandler {
+	return &appArmorAdmitHandler{
+		Validator: apparmor.NewValidator(runtime),
+	}
+}
+
+type appArmorAdmitHandler struct {
+	apparmor.Validator
+}
+
+func (a *appArmorAdmitHandler) Admit(attrs *PodAdmitAttributes) PodAdmitResult {
+	err := a.Validate(attrs.Pod)
+	if err == nil {
+		return PodAdmitResult{Admit: true}
+	}
+	return PodAdmitResult{
+		Admit:   false,
+		Reason:  "AppArmor",
+		Message: fmt.Sprintf("Cannot enforce AppArmor: %v", err),
+	}
 }
