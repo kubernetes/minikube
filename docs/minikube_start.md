@@ -15,6 +15,7 @@ minikube start
 ### Options
 
 ```
+      --container-runtime="": The container runtime to be used
       --cpus=1: Number of CPUs allocated to the minikube VM
       --disk-size="20g": Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)
       --docker-env=[]: Environment variables to pass to the Docker daemon. (format: key=value)
@@ -24,6 +25,7 @@ minikube start
       --kubernetes-version="v1.3.5": The kubernetes version that the minikube VM will (ex: v1.2.3) 
  OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)
       --memory=1024: Amount of RAM allocated to the minikube VM
+      --network-plugin="": The name of the network plugin
       --registry-mirror=[]: Registry mirrors to pass to the Docker daemon
       --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion kvm xhyve hyperv]
 ```
