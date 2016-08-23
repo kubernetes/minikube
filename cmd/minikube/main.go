@@ -19,6 +19,8 @@ package main
 import (
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/machine"
+
+	_ "k8s.io/minikube/pkg/provision"
 )
 
 func main() {
