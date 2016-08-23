@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ type ExtensionsInterface interface {
 	ThirdPartyResourceNamespacer
 	ReplicaSetsNamespacer
 	PodSecurityPoliciesInterface
+	StorageClassesInterface
 }
 
 // ExtensionsClient is used to interact with experimental Kubernetes features.
@@ -80,6 +81,10 @@ func (c *ExtensionsClient) ThirdPartyResources() ThirdPartyResourceInterface {
 
 func (c *ExtensionsClient) ReplicaSets(namespace string) ReplicaSetInterface {
 	return newReplicaSets(c, namespace)
+}
+
+func (c *ExtensionsClient) StorageClasses() StorageClassInterface {
+	return newStorageClasses(c)
 }
 
 // NewExtensions creates a new ExtensionsClient for the given config. This client
@@ -126,13 +131,6 @@ func setExtensionsDefaults(config *restclient.Config) error {
 	config.GroupVersion = &copyGroupVersion
 	//}
 
-	config.Codec = api.Codecs.LegacyCodec(*config.GroupVersion)
 	config.NegotiatedSerializer = api.Codecs
-	if config.QPS == 0 {
-		config.QPS = 5
-	}
-	if config.Burst == 0 {
-		config.Burst = 10
-	}
 	return nil
 }

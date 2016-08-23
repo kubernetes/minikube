@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ import (
 	"k8s.io/kubernetes/pkg/apis/batch"
 	batchapiv1 "k8s.io/kubernetes/pkg/apis/batch/v1"
 	batchapiv2alpha1 "k8s.io/kubernetes/pkg/apis/batch/v2alpha1"
+	"k8s.io/kubernetes/pkg/apis/certificates"
+	certificatesapiv1alpha1 "k8s.io/kubernetes/pkg/apis/certificates/v1alpha1"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	extensionsapiv1beta1 "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/apis/policy"
@@ -53,6 +55,7 @@ import (
 	"k8s.io/kubernetes/pkg/healthz"
 	kubeletclient "k8s.io/kubernetes/pkg/kubelet/client"
 	"k8s.io/kubernetes/pkg/master/ports"
+	certificateetcd "k8s.io/kubernetes/pkg/registry/certificates/etcd"
 	"k8s.io/kubernetes/pkg/registry/clusterrole"
 	clusterroleetcd "k8s.io/kubernetes/pkg/registry/clusterrole/etcd"
 	clusterrolepolicybased "k8s.io/kubernetes/pkg/registry/clusterrole/policybased"
@@ -97,6 +100,7 @@ import (
 	serviceetcd "k8s.io/kubernetes/pkg/registry/service/etcd"
 	ipallocator "k8s.io/kubernetes/pkg/registry/service/ipallocator"
 	serviceaccountetcd "k8s.io/kubernetes/pkg/registry/serviceaccount/etcd"
+	storageclassetcd "k8s.io/kubernetes/pkg/registry/storageclass/etcd"
 	thirdpartyresourceetcd "k8s.io/kubernetes/pkg/registry/thirdpartyresource/etcd"
 	"k8s.io/kubernetes/pkg/registry/thirdpartyresourcedata"
 	thirdpartyresourcedataetcd "k8s.io/kubernetes/pkg/registry/thirdpartyresourcedata/etcd"
@@ -104,6 +108,7 @@ import (
 	"k8s.io/kubernetes/pkg/storage"
 	etcdmetrics "k8s.io/kubernetes/pkg/storage/etcd/metrics"
 	etcdutil "k8s.io/kubernetes/pkg/storage/etcd/util"
+	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/util/wait"
 
 	daemonetcd "k8s.io/kubernetes/pkg/registry/daemonset/etcd"
@@ -115,17 +120,33 @@ import (
 	"k8s.io/kubernetes/pkg/registry/service/portallocator"
 )
 
+const (
+	// DefaultEndpointReconcilerInterval is the default amount of time for how often the endpoints for
+	// the kubernetes Service are reconciled.
+	DefaultEndpointReconcilerInterval = 10 * time.Second
+)
+
 type Config struct {
 	*genericapiserver.Config
 
-	EnableCoreControllers   bool
-	DeleteCollectionWorkers int
-	EventTTL                time.Duration
-	KubeletClient           kubeletclient.KubeletClient
+	EnableCoreControllers    bool
+	EndpointReconcilerConfig EndpointReconcilerConfig
+	DeleteCollectionWorkers  int
+	EventTTL                 time.Duration
+	KubeletClient            kubeletclient.KubeletClient
+	// RESTStorageProviders provides RESTStorage building methods keyed by groupName
+	RESTStorageProviders map[string]RESTStorageProvider
 	// Used to start and monitor tunneling
 	Tunneler genericapiserver.Tunneler
 
 	disableThirdPartyControllerForTesting bool
+}
+
+// EndpointReconcilerConfig holds the endpoint reconciler and endpoint reconciliation interval to be
+// used by the master.
+type EndpointReconcilerConfig struct {
+	Reconciler EndpointReconciler
+	Interval   time.Duration
 }
 
 // Master contains state for a Kubernetes cluster master/api server.
@@ -167,6 +188,9 @@ type thirdPartyEntry struct {
 	group   unversioned.APIGroup
 }
 
+type RESTOptionsGetter func(resource unversioned.GroupResource) generic.RESTOptions
+type RESTStorageProvider func(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool)
+
 // New returns a new instance of Master from the given config.
 // Certain config fields will be set to a default value if unset.
 // Certain config fields must be specified, including:
@@ -189,11 +213,22 @@ func New(c *Config) (*Master, error) {
 
 		disableThirdPartyControllerForTesting: c.disableThirdPartyControllerForTesting,
 	}
+
+	// Add some hardcoded storage for now.  Append to the map.
+	if c.RESTStorageProviders == nil {
+		c.RESTStorageProviders = map[string]RESTStorageProvider{}
+	}
+	c.RESTStorageProviders[autoscaling.GroupName] = buildAutoscalingResources
+	c.RESTStorageProviders[batch.GroupName] = buildBatchResources
+	c.RESTStorageProviders[policy.GroupName] = buildPolicyResources
+	c.RESTStorageProviders[appsapi.GroupName] = buildAppsResources
+	c.RESTStorageProviders[rbac.GroupName] = buildRBACResources(c.AuthorizerRBACSuperUser)
+	c.RESTStorageProviders[certificates.GroupName] = buildCertificateResources
 	m.InstallAPIs(c)
 
 	// TODO: Attempt clean shutdown?
 	if m.enableCoreControllers {
-		m.NewBootstrapController().Start()
+		m.NewBootstrapController(c.EndpointReconcilerConfig).Start()
 	}
 
 	return m, nil
@@ -255,9 +290,6 @@ func (m *Master) InstallAPIs(c *Config) {
 		m.MuxHelper.HandleFunc("/metrics", defaultMetricsHandler)
 	}
 
-	// allGroups records all supported groups at /apis
-	allGroups := []unversioned.APIGroup{}
-
 	// Install extensions unless disabled.
 	if c.APIResourceConfigSource.AnyResourcesForVersionEnabled(extensionsapiv1beta1.SchemeGroupVersion) {
 		var err error
@@ -281,183 +313,25 @@ func (m *Master) InstallAPIs(c *Config) {
 			NegotiatedSerializer:   api.Codecs,
 		}
 		apiGroupsInfo = append(apiGroupsInfo, apiGroupInfo)
-
-		extensionsGVForDiscovery := unversioned.GroupVersionForDiscovery{
-			GroupVersion: extensionsGroupMeta.GroupVersion.String(),
-			Version:      extensionsGroupMeta.GroupVersion.Version,
-		}
-		group := unversioned.APIGroup{
-			Name:             extensionsGroupMeta.GroupVersion.Group,
-			Versions:         []unversioned.GroupVersionForDiscovery{extensionsGVForDiscovery},
-			PreferredVersion: extensionsGVForDiscovery,
-		}
-		allGroups = append(allGroups, group)
 	}
 
-	// Install autoscaling unless disabled.
-	if c.APIResourceConfigSource.AnyResourcesForVersionEnabled(autoscalingapiv1.SchemeGroupVersion) {
-		autoscalingResources := m.getAutoscalingResources(c)
-		autoscalingGroupMeta := registered.GroupOrDie(autoscaling.GroupName)
-
-		// Hard code preferred group version to autoscaling/v1
-		autoscalingGroupMeta.GroupVersion = autoscalingapiv1.SchemeGroupVersion
-
-		apiGroupInfo := genericapiserver.APIGroupInfo{
-			GroupMeta: *autoscalingGroupMeta,
-			VersionedResourcesStorageMap: map[string]map[string]rest.Storage{
-				"v1": autoscalingResources,
-			},
-			OptionsExternalVersion: &registered.GroupOrDie(api.GroupName).GroupVersion,
-			Scheme:                 api.Scheme,
-			ParameterCodec:         api.ParameterCodec,
-			NegotiatedSerializer:   api.Codecs,
-		}
-		apiGroupsInfo = append(apiGroupsInfo, apiGroupInfo)
-
-		autoscalingGVForDiscovery := unversioned.GroupVersionForDiscovery{
-			GroupVersion: autoscalingGroupMeta.GroupVersion.String(),
-			Version:      autoscalingGroupMeta.GroupVersion.Version,
-		}
-		group := unversioned.APIGroup{
-			Name:             autoscalingGroupMeta.GroupVersion.Group,
-			Versions:         []unversioned.GroupVersionForDiscovery{autoscalingGVForDiscovery},
-			PreferredVersion: autoscalingGVForDiscovery,
-		}
-		allGroups = append(allGroups, group)
+	restOptionsGetter := func(resource unversioned.GroupResource) generic.RESTOptions {
+		return m.GetRESTOptionsOrDie(c, resource)
 	}
 
-	// Install batch unless disabled.
-	if c.APIResourceConfigSource.AnyResourcesForVersionEnabled(batchapiv1.SchemeGroupVersion) ||
-		c.APIResourceConfigSource.AnyResourcesForVersionEnabled(batchapiv2alpha1.SchemeGroupVersion) {
-		batchv1Resources := m.getBatchResources(c, batchapiv1.SchemeGroupVersion)
-		batchGroupMeta := registered.GroupOrDie(batch.GroupName)
-
-		// Hard code preferred group version to batch/v1
-		batchGroupMeta.GroupVersion = batchapiv1.SchemeGroupVersion
-
-		apiGroupInfo := genericapiserver.APIGroupInfo{
-			GroupMeta: *batchGroupMeta,
-			VersionedResourcesStorageMap: map[string]map[string]rest.Storage{
-				"v1": batchv1Resources,
-			},
-			OptionsExternalVersion: &registered.GroupOrDie(api.GroupName).GroupVersion,
-			Scheme:                 api.Scheme,
-			ParameterCodec:         api.ParameterCodec,
-			NegotiatedSerializer:   api.Codecs,
+	// stabilize order.
+	// TODO find a better way to configure priority of groups
+	for _, group := range sets.StringKeySet(c.RESTStorageProviders).List() {
+		if !c.APIResourceConfigSource.AnyResourcesForGroupEnabled(group) {
+			continue
 		}
-		if c.APIResourceConfigSource.AnyResourcesForVersionEnabled(batchapiv2alpha1.SchemeGroupVersion) {
-			batchv2alpha1Resources := m.getBatchResources(c, batchapiv2alpha1.SchemeGroupVersion)
-			apiGroupInfo.VersionedResourcesStorageMap["v2alpha1"] = batchv2alpha1Resources
+		restStorageBuilder := c.RESTStorageProviders[group]
+		apiGroupInfo, enabled := restStorageBuilder(c.APIResourceConfigSource, restOptionsGetter)
+		if !enabled {
+			continue
 		}
 
 		apiGroupsInfo = append(apiGroupsInfo, apiGroupInfo)
-
-		batchGVForDiscovery := unversioned.GroupVersionForDiscovery{
-			GroupVersion: batchGroupMeta.GroupVersion.String(),
-			Version:      batchGroupMeta.GroupVersion.Version,
-		}
-		group := unversioned.APIGroup{
-			Name:             batchGroupMeta.GroupVersion.Group,
-			Versions:         []unversioned.GroupVersionForDiscovery{batchGVForDiscovery},
-			PreferredVersion: batchGVForDiscovery,
-		}
-		allGroups = append(allGroups, group)
-	}
-
-	if c.APIResourceConfigSource.AnyResourcesForVersionEnabled(policyapiv1alpha1.SchemeGroupVersion) {
-		policyResources := m.getPolicyResources(c)
-		policyGroupMeta := registered.GroupOrDie(policy.GroupName)
-
-		// Hard code preferred group version to policy/v1alpha1
-		policyGroupMeta.GroupVersion = policyapiv1alpha1.SchemeGroupVersion
-
-		apiGroupInfo := genericapiserver.APIGroupInfo{
-			GroupMeta: *policyGroupMeta,
-			VersionedResourcesStorageMap: map[string]map[string]rest.Storage{
-				"v1alpha1": policyResources,
-			},
-			OptionsExternalVersion: &registered.GroupOrDie(api.GroupName).GroupVersion,
-			Scheme:                 api.Scheme,
-			ParameterCodec:         api.ParameterCodec,
-			NegotiatedSerializer:   api.Codecs,
-		}
-		apiGroupsInfo = append(apiGroupsInfo, apiGroupInfo)
-
-		policyGVForDiscovery := unversioned.GroupVersionForDiscovery{
-			GroupVersion: policyGroupMeta.GroupVersion.String(),
-			Version:      policyGroupMeta.GroupVersion.Version,
-		}
-		group := unversioned.APIGroup{
-			Name:             policyGroupMeta.GroupVersion.Group,
-			Versions:         []unversioned.GroupVersionForDiscovery{policyGVForDiscovery},
-			PreferredVersion: policyGVForDiscovery,
-		}
-		allGroups = append(allGroups, group)
-
-	}
-
-	if c.APIResourceConfigSource.AnyResourcesForVersionEnabled(appsapi.SchemeGroupVersion) {
-		appsResources := m.getAppsResources(c)
-		appsGroupMeta := registered.GroupOrDie(apps.GroupName)
-
-		// Hard code preferred group version to apps/v1alpha1
-		appsGroupMeta.GroupVersion = appsapi.SchemeGroupVersion
-
-		apiGroupInfo := genericapiserver.APIGroupInfo{
-			GroupMeta: *appsGroupMeta,
-			VersionedResourcesStorageMap: map[string]map[string]rest.Storage{
-				"v1alpha1": appsResources,
-			},
-			OptionsExternalVersion: &registered.GroupOrDie(api.GroupName).GroupVersion,
-			Scheme:                 api.Scheme,
-			ParameterCodec:         api.ParameterCodec,
-			NegotiatedSerializer:   api.Codecs,
-		}
-		apiGroupsInfo = append(apiGroupsInfo, apiGroupInfo)
-
-		appsGVForDiscovery := unversioned.GroupVersionForDiscovery{
-			GroupVersion: appsGroupMeta.GroupVersion.String(),
-			Version:      appsGroupMeta.GroupVersion.Version,
-		}
-		group := unversioned.APIGroup{
-			Name:             appsGroupMeta.GroupVersion.Group,
-			Versions:         []unversioned.GroupVersionForDiscovery{appsGVForDiscovery},
-			PreferredVersion: appsGVForDiscovery,
-		}
-		allGroups = append(allGroups, group)
-
-	}
-
-	if c.APIResourceConfigSource.AnyResourcesForVersionEnabled(rbacapi.SchemeGroupVersion) {
-		rbacResources := m.getRBACResources(c)
-		rbacGroupMeta := registered.GroupOrDie(rbac.GroupName)
-
-		// Hard code preferred group version to rbac/v1alpha1
-		rbacGroupMeta.GroupVersion = rbacapi.SchemeGroupVersion
-
-		apiGroupInfo := genericapiserver.APIGroupInfo{
-			GroupMeta: *rbacGroupMeta,
-			VersionedResourcesStorageMap: map[string]map[string]rest.Storage{
-				"v1alpha1": rbacResources,
-			},
-			OptionsExternalVersion: &registered.GroupOrDie(api.GroupName).GroupVersion,
-			Scheme:                 api.Scheme,
-			ParameterCodec:         api.ParameterCodec,
-			NegotiatedSerializer:   api.Codecs,
-		}
-		apiGroupsInfo = append(apiGroupsInfo, apiGroupInfo)
-
-		rbacGVForDiscovery := unversioned.GroupVersionForDiscovery{
-			GroupVersion: rbacGroupMeta.GroupVersion.String(),
-			Version:      rbacGroupMeta.GroupVersion.Version,
-		}
-		group := unversioned.APIGroup{
-			Name:             rbacGroupMeta.GroupVersion.Group,
-			Versions:         []unversioned.GroupVersionForDiscovery{rbacGVForDiscovery},
-			PreferredVersion: rbacGVForDiscovery,
-		}
-		allGroups = append(allGroups, group)
-
 	}
 
 	if err := m.InstallAPIGroups(apiGroupsInfo); err != nil {
@@ -585,14 +459,27 @@ func (m *Master) initV1ResourcesStorage(c *Config) {
 	}
 }
 
-// NewBootstrapController returns a controller for watching the core capabilities of the master.
-func (m *Master) NewBootstrapController() *Controller {
+// NewBootstrapController returns a controller for watching the core capabilities of the master.  If
+// endpointReconcilerConfig.Interval is 0, the default value of DefaultEndpointReconcilerInterval
+// will be used instead.  If endpointReconcilerConfig.Reconciler is nil, the default
+// MasterCountEndpointReconciler will be used.
+func (m *Master) NewBootstrapController(endpointReconcilerConfig EndpointReconcilerConfig) *Controller {
+	if endpointReconcilerConfig.Interval == 0 {
+		endpointReconcilerConfig.Interval = DefaultEndpointReconcilerInterval
+	}
+
+	if endpointReconcilerConfig.Reconciler == nil {
+		// use a default endpoint	reconciler if nothing is set
+		// m.endpointRegistry is set via m.InstallAPIs -> m.initV1ResourcesStorage
+		endpointReconcilerConfig.Reconciler = NewMasterCountEndpointReconciler(m.MasterCount, m.endpointRegistry)
+	}
+
 	return &Controller{
 		NamespaceRegistry: m.namespaceRegistry,
 		ServiceRegistry:   m.serviceRegistry,
 
-		EndpointReconciler: NewMasterCountEndpointReconciler(m.MasterCount, m.endpointRegistry),
-		EndpointInterval:   10 * time.Second,
+		EndpointReconciler: endpointReconcilerConfig.Reconciler,
+		EndpointInterval:   endpointReconcilerConfig.Interval,
 
 		SystemNamespaces:         []string{api.NamespaceSystem},
 		SystemNamespacesInterval: 1 * time.Minute,
@@ -730,6 +617,13 @@ func (m *Master) ListThirdPartyResources() []string {
 	return result
 }
 
+func (m *Master) hasThirdPartyResourceStorage(path string) bool {
+	m.thirdPartyResourcesLock.Lock()
+	defer m.thirdPartyResourcesLock.Unlock()
+	_, found := m.thirdPartyResources[path]
+	return found
+}
+
 func (m *Master) addThirdPartyResourceStorage(path string, storage *thirdpartyresourcedataetcd.REST, apiGroup unversioned.APIGroup) {
 	m.thirdPartyResourcesLock.Lock()
 	defer m.thirdPartyResourcesLock.Unlock()
@@ -754,12 +648,19 @@ func (m *Master) InstallThirdPartyResource(rsrc *extensions.ThirdPartyResource) 
 		Version: rsrc.Versions[0].Name,
 		Kind:    kind,
 	})
+	path := makeThirdPartyPath(group)
 
 	thirdparty := m.thirdpartyapi(group, kind, rsrc.Versions[0].Name, plural.Resource)
-	if err := thirdparty.InstallREST(m.HandlerContainer); err != nil {
-		glog.Fatalf("Unable to setup thirdparty api: %v", err)
+
+	// If storage exists, this group has already been added, just update
+	// the group with the new API
+	if m.hasThirdPartyResourceStorage(path) {
+		return thirdparty.UpdateREST(m.HandlerContainer)
 	}
-	path := makeThirdPartyPath(group)
+
+	if err := thirdparty.InstallREST(m.HandlerContainer); err != nil {
+		glog.Errorf("Unable to setup thirdparty api: %v", err)
+	}
 	groupVersion := unversioned.GroupVersionForDiscovery{
 		GroupVersion: group + "/" + rsrc.Versions[0].Name,
 		Version:      rsrc.Versions[0].Name,
@@ -831,6 +732,7 @@ func (m *Master) GetRESTOptionsOrDie(c *Config, resource unversioned.GroupResour
 		Storage:                 storage,
 		Decorator:               m.StorageDecorator(),
 		DeleteCollectionWorkers: m.deleteCollectionWorkers,
+		ResourcePrefix:          c.StorageFactory.ResourcePrefix(resource),
 	}
 }
 
@@ -906,98 +808,185 @@ func (m *Master) getExtensionResources(c *Config) map[string]rest.Storage {
 	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("networkpolicies")) {
 		storage["networkpolicies"] = networkPolicyStorage
 	}
+	storageClassStorage := storageclassetcd.NewREST(restOptions("storageclasses"))
+	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("storageclasses")) {
+		storage["storageclasses"] = storageClassStorage
+	}
 
 	return storage
 }
 
-// getAutoscalingResources returns the resources for autoscaling api
-func (m *Master) getAutoscalingResources(c *Config) map[string]rest.Storage {
-	// TODO update when we support more than one version of this group
-	version := autoscalingapiv1.SchemeGroupVersion
+// NewDefaultAPIGroupInfo returns a complete APIGroupInfo stubbed with "normal" values
+// exposed for easier composition from other packages
+func NewDefaultAPIGroupInfo(group string) genericapiserver.APIGroupInfo {
+	groupMeta := registered.GroupOrDie(group)
 
-	storage := map[string]rest.Storage{}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("horizontalpodautoscalers")) {
-		hpaStorage, hpaStatusStorage := horizontalpodautoscaleretcd.NewREST(m.GetRESTOptionsOrDie(c, autoscaling.Resource("horizontalpodautoscalers")))
-		storage["horizontalpodautoscalers"] = hpaStorage
-		storage["horizontalpodautoscalers/status"] = hpaStatusStorage
+	return genericapiserver.APIGroupInfo{
+		GroupMeta:                    *groupMeta,
+		VersionedResourcesStorageMap: map[string]map[string]rest.Storage{},
+		OptionsExternalVersion:       &registered.GroupOrDie(api.GroupName).GroupVersion,
+		Scheme:                       api.Scheme,
+		ParameterCodec:               api.ParameterCodec,
+		NegotiatedSerializer:         api.Codecs,
 	}
-	return storage
 }
 
-// getBatchResources returns the resources for batch api
-func (m *Master) getBatchResources(c *Config, version unversioned.GroupVersion) map[string]rest.Storage {
-	storage := map[string]rest.Storage{}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("jobs")) {
-		jobsStorage, jobsStatusStorage := jobetcd.NewREST(m.GetRESTOptionsOrDie(c, batch.Resource("jobs")))
-		storage["jobs"] = jobsStorage
-		storage["jobs/status"] = jobsStatusStorage
+func buildCertificateResources(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
+	apiGroupInfo := NewDefaultAPIGroupInfo(certificates.GroupName)
+
+	storageForVersion := func(version unversioned.GroupVersion) map[string]rest.Storage {
+		storage := map[string]rest.Storage{}
+		if apiResourceConfigSource.ResourceEnabled(version.WithResource("certificatesigningrequests")) {
+			csrStorage, csrStatusStorage, csrApprovalStorage := certificateetcd.NewREST(restOptionsGetter(certificates.Resource("certificatesigningrequests")))
+			storage["certificatesigningrequests"] = csrStorage
+			storage["certificatesigningrequests/status"] = csrStatusStorage
+			storage["certificatesigningrequests/approval"] = csrApprovalStorage
+		}
+		return storage
 	}
-	return storage
+
+	if apiResourceConfigSource.AnyResourcesForVersionEnabled(certificatesapiv1alpha1.SchemeGroupVersion) {
+		apiGroupInfo.VersionedResourcesStorageMap[certificatesapiv1alpha1.SchemeGroupVersion.Version] = storageForVersion(certificatesapiv1alpha1.SchemeGroupVersion)
+		apiGroupInfo.GroupMeta.GroupVersion = certificatesapiv1alpha1.SchemeGroupVersion
+	}
+
+	return apiGroupInfo, true
 }
 
-// getPolicyResources returns the resources for policy api
-func (m *Master) getPolicyResources(c *Config) map[string]rest.Storage {
-	// TODO update when we support more than one version of this group
-	version := policyapiv1alpha1.SchemeGroupVersion
+func buildAutoscalingResources(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
+	apiGroupInfo := NewDefaultAPIGroupInfo(autoscaling.GroupName)
 
-	storage := map[string]rest.Storage{}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("poddisruptionbudgets")) {
-		poddisruptionbudgetStorage, poddisruptionbudgetStatusStorage := poddisruptionbudgetetcd.NewREST(m.GetRESTOptionsOrDie(c, policy.Resource("poddisruptionbudgets")))
-		storage["poddisruptionbudgets"] = poddisruptionbudgetStorage
-		storage["poddisruptionbudgets/status"] = poddisruptionbudgetStatusStorage
+	storageForVersion := func(version unversioned.GroupVersion) map[string]rest.Storage {
+		storage := map[string]rest.Storage{}
+		if apiResourceConfigSource.ResourceEnabled(version.WithResource("horizontalpodautoscalers")) {
+			hpaStorage, hpaStatusStorage := horizontalpodautoscaleretcd.NewREST(restOptionsGetter(autoscaling.Resource("horizontalpodautoscalers")))
+			storage["horizontalpodautoscalers"] = hpaStorage
+			storage["horizontalpodautoscalers/status"] = hpaStatusStorage
+		}
+		return storage
 	}
-	return storage
+
+	if apiResourceConfigSource.AnyResourcesForVersionEnabled(autoscalingapiv1.SchemeGroupVersion) {
+		apiGroupInfo.VersionedResourcesStorageMap[autoscalingapiv1.SchemeGroupVersion.Version] = storageForVersion(autoscalingapiv1.SchemeGroupVersion)
+		apiGroupInfo.GroupMeta.GroupVersion = autoscalingapiv1.SchemeGroupVersion
+	}
+
+	return apiGroupInfo, true
 }
 
-// getAppsResources returns the resources for apps api
-func (m *Master) getAppsResources(c *Config) map[string]rest.Storage {
-	// TODO update when we support more than one version of this group
-	version := appsapi.SchemeGroupVersion
+func buildBatchResources(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
+	apiGroupInfo := NewDefaultAPIGroupInfo(batch.GroupName)
 
-	storage := map[string]rest.Storage{}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("petsets")) {
-		petsetStorage, petsetStatusStorage := petsetetcd.NewREST(m.GetRESTOptionsOrDie(c, apps.Resource("petsets")))
-		storage["petsets"] = petsetStorage
-		storage["petsets/status"] = petsetStatusStorage
+	storageForVersion := func(version unversioned.GroupVersion) map[string]rest.Storage {
+		storage := map[string]rest.Storage{}
+		if apiResourceConfigSource.ResourceEnabled(version.WithResource("jobs")) {
+			jobsStorage, jobsStatusStorage := jobetcd.NewREST(restOptionsGetter(batch.Resource("jobs")))
+			storage["jobs"] = jobsStorage
+			storage["jobs/status"] = jobsStatusStorage
+		}
+		return storage
 	}
-	return storage
+
+	if apiResourceConfigSource.AnyResourcesForVersionEnabled(batchapiv2alpha1.SchemeGroupVersion) {
+		apiGroupInfo.VersionedResourcesStorageMap[batchapiv2alpha1.SchemeGroupVersion.Version] = storageForVersion(batchapiv2alpha1.SchemeGroupVersion)
+		apiGroupInfo.GroupMeta.GroupVersion = batchapiv2alpha1.SchemeGroupVersion
+	}
+	if apiResourceConfigSource.AnyResourcesForVersionEnabled(batchapiv1.SchemeGroupVersion) {
+		apiGroupInfo.VersionedResourcesStorageMap[batchapiv1.SchemeGroupVersion.Version] = storageForVersion(batchapiv1.SchemeGroupVersion)
+		apiGroupInfo.GroupMeta.GroupVersion = batchapiv1.SchemeGroupVersion
+	}
+
+	return apiGroupInfo, true
 }
 
-func (m *Master) getRBACResources(c *Config) map[string]rest.Storage {
-	version := rbacapi.SchemeGroupVersion
+func buildPolicyResources(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
+	apiGroupInfo := NewDefaultAPIGroupInfo(policy.GroupName)
 
-	once := new(sync.Once)
-	var authorizationRuleResolver rbacvalidation.AuthorizationRuleResolver
-	newRuleValidator := func() rbacvalidation.AuthorizationRuleResolver {
-		once.Do(func() {
-			authorizationRuleResolver = rbacvalidation.NewDefaultRuleResolver(
-				role.NewRegistry(roleetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("roles")))),
-				rolebinding.NewRegistry(rolebindingetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("rolebindings")))),
-				clusterrole.NewRegistry(clusterroleetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("clusterroles")))),
-				clusterrolebinding.NewRegistry(clusterrolebindingetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("clusterrolebindings")))),
-			)
-		})
-		return authorizationRuleResolver
+	storageForVersion := func(version unversioned.GroupVersion) map[string]rest.Storage {
+		storage := map[string]rest.Storage{}
+		if apiResourceConfigSource.ResourceEnabled(version.WithResource("poddisruptionbudgets")) {
+			poddisruptionbudgetStorage, poddisruptionbudgetStatusStorage := poddisruptionbudgetetcd.NewREST(restOptionsGetter(policy.Resource("poddisruptionbudgets")))
+			storage["poddisruptionbudgets"] = poddisruptionbudgetStorage
+			storage["poddisruptionbudgets/status"] = poddisruptionbudgetStatusStorage
+		}
+		return storage
 	}
 
-	storage := map[string]rest.Storage{}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("roles")) {
-		rolesStorage := roleetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("roles")))
-		storage["roles"] = rolepolicybased.NewStorage(rolesStorage, newRuleValidator(), c.AuthorizerRBACSuperUser)
+	if apiResourceConfigSource.AnyResourcesForVersionEnabled(policyapiv1alpha1.SchemeGroupVersion) {
+		apiGroupInfo.VersionedResourcesStorageMap[policyapiv1alpha1.SchemeGroupVersion.Version] = storageForVersion(policyapiv1alpha1.SchemeGroupVersion)
+		apiGroupInfo.GroupMeta.GroupVersion = policyapiv1alpha1.SchemeGroupVersion
 	}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("rolebindings")) {
-		roleBindingsStorage := rolebindingetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("rolebindings")))
-		storage["rolebindings"] = rolebindingpolicybased.NewStorage(roleBindingsStorage, newRuleValidator(), c.AuthorizerRBACSuperUser)
+
+	return apiGroupInfo, true
+}
+
+func buildAppsResources(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
+	apiGroupInfo := NewDefaultAPIGroupInfo(appsapi.GroupName)
+
+	storageForVersion := func(version unversioned.GroupVersion) map[string]rest.Storage {
+		storage := map[string]rest.Storage{}
+		if apiResourceConfigSource.ResourceEnabled(version.WithResource("petsets")) {
+			petsetStorage, petsetStatusStorage := petsetetcd.NewREST(restOptionsGetter(apps.Resource("petsets")))
+			storage["petsets"] = petsetStorage
+			storage["petsets/status"] = petsetStatusStorage
+		}
+		return storage
 	}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("clusterroles")) {
-		clusterRolesStorage := clusterroleetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("clusterroles")))
-		storage["clusterroles"] = clusterrolepolicybased.NewStorage(clusterRolesStorage, newRuleValidator(), c.AuthorizerRBACSuperUser)
+
+	if apiResourceConfigSource.AnyResourcesForVersionEnabled(appsapi.SchemeGroupVersion) {
+		apiGroupInfo.VersionedResourcesStorageMap[appsapi.SchemeGroupVersion.Version] = storageForVersion(appsapi.SchemeGroupVersion)
+		apiGroupInfo.GroupMeta.GroupVersion = appsapi.SchemeGroupVersion
 	}
-	if c.APIResourceConfigSource.ResourceEnabled(version.WithResource("clusterrolebindings")) {
-		clusterRoleBindingsStorage := clusterrolebindingetcd.NewREST(m.GetRESTOptionsOrDie(c, rbac.Resource("clusterrolebindings")))
-		storage["clusterrolebindings"] = clusterrolebindingpolicybased.NewStorage(clusterRoleBindingsStorage, newRuleValidator(), c.AuthorizerRBACSuperUser)
+
+	return apiGroupInfo, true
+}
+
+func buildRBACResources(authorizerRBACSuperUser string) RESTStorageProvider {
+	return func(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
+		apiGroupInfo := NewDefaultAPIGroupInfo(rbac.GroupName)
+
+		storageForVersion := func(version unversioned.GroupVersion) map[string]rest.Storage {
+			once := new(sync.Once)
+			var authorizationRuleResolver rbacvalidation.AuthorizationRuleResolver
+			newRuleValidator := func() rbacvalidation.AuthorizationRuleResolver {
+				once.Do(func() {
+					authorizationRuleResolver = rbacvalidation.NewDefaultRuleResolver(
+						role.NewRegistry(roleetcd.NewREST(restOptionsGetter(rbac.Resource("roles")))),
+						rolebinding.NewRegistry(rolebindingetcd.NewREST(restOptionsGetter(rbac.Resource("rolebindings")))),
+						clusterrole.NewRegistry(clusterroleetcd.NewREST(restOptionsGetter(rbac.Resource("clusterroles")))),
+						clusterrolebinding.NewRegistry(clusterrolebindingetcd.NewREST(restOptionsGetter(rbac.Resource("clusterrolebindings")))),
+					)
+				})
+				return authorizationRuleResolver
+			}
+
+			storage := map[string]rest.Storage{}
+			if apiResourceConfigSource.ResourceEnabled(version.WithResource("roles")) {
+				rolesStorage := roleetcd.NewREST(restOptionsGetter(rbac.Resource("roles")))
+				storage["roles"] = rolepolicybased.NewStorage(rolesStorage, newRuleValidator(), authorizerRBACSuperUser)
+			}
+			if apiResourceConfigSource.ResourceEnabled(version.WithResource("rolebindings")) {
+				roleBindingsStorage := rolebindingetcd.NewREST(restOptionsGetter(rbac.Resource("rolebindings")))
+				storage["rolebindings"] = rolebindingpolicybased.NewStorage(roleBindingsStorage, newRuleValidator(), authorizerRBACSuperUser)
+			}
+			if apiResourceConfigSource.ResourceEnabled(version.WithResource("clusterroles")) {
+				clusterRolesStorage := clusterroleetcd.NewREST(restOptionsGetter(rbac.Resource("clusterroles")))
+				storage["clusterroles"] = clusterrolepolicybased.NewStorage(clusterRolesStorage, newRuleValidator(), authorizerRBACSuperUser)
+			}
+			if apiResourceConfigSource.ResourceEnabled(version.WithResource("clusterrolebindings")) {
+				clusterRoleBindingsStorage := clusterrolebindingetcd.NewREST(restOptionsGetter(rbac.Resource("clusterrolebindings")))
+				storage["clusterrolebindings"] = clusterrolebindingpolicybased.NewStorage(clusterRoleBindingsStorage, newRuleValidator(), authorizerRBACSuperUser)
+			}
+			return storage
+		}
+
+		if apiResourceConfigSource.AnyResourcesForVersionEnabled(rbacapi.SchemeGroupVersion) {
+			apiGroupInfo.VersionedResourcesStorageMap[rbacapi.SchemeGroupVersion.Version] = storageForVersion(rbacapi.SchemeGroupVersion)
+			apiGroupInfo.GroupMeta.GroupVersion = rbacapi.SchemeGroupVersion
+		}
+
+		return apiGroupInfo, true
 	}
-	return storage
 }
 
 // findExternalAddress returns ExternalIP of provided node with fallback to LegacyHostIP.
@@ -1052,7 +1041,16 @@ func (m *Master) IsTunnelSyncHealthy(req *http.Request) error {
 
 func DefaultAPIResourceConfigSource() *genericapiserver.ResourceConfig {
 	ret := genericapiserver.NewResourceConfig()
-	ret.EnableVersions(apiv1.SchemeGroupVersion, extensionsapiv1beta1.SchemeGroupVersion, batchapiv1.SchemeGroupVersion, autoscalingapiv1.SchemeGroupVersion, appsapi.SchemeGroupVersion, policyapiv1alpha1.SchemeGroupVersion, rbacapi.SchemeGroupVersion)
+	ret.EnableVersions(
+		apiv1.SchemeGroupVersion,
+		extensionsapiv1beta1.SchemeGroupVersion,
+		batchapiv1.SchemeGroupVersion,
+		autoscalingapiv1.SchemeGroupVersion,
+		appsapi.SchemeGroupVersion,
+		policyapiv1alpha1.SchemeGroupVersion,
+		rbacapi.SchemeGroupVersion,
+		certificatesapiv1alpha1.SchemeGroupVersion,
+	)
 
 	// all extensions resources except these are disabled by default
 	ret.EnableResources(
@@ -1064,6 +1062,7 @@ func DefaultAPIResourceConfigSource() *genericapiserver.ResourceConfig {
 		extensionsapiv1beta1.SchemeGroupVersion.WithResource("networkpolicies"),
 		extensionsapiv1beta1.SchemeGroupVersion.WithResource("replicasets"),
 		extensionsapiv1beta1.SchemeGroupVersion.WithResource("thirdpartyresources"),
+		extensionsapiv1beta1.SchemeGroupVersion.WithResource("storageclasses"),
 	)
 
 	return ret

@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import (
 
 func (c *FakeNodes) PatchStatus(nodeName string, data []byte) (*api.Node, error) {
 	obj, err := c.Fake.Invokes(
-		core.NewPatchSubresourceAction(nodesResource, "status"), &api.Node{})
+		core.NewRootPatchSubresourceAction(nodesResource, nodeName, data, "status"), &api.Node{})
 	if obj == nil {
 		return nil, err
 	}

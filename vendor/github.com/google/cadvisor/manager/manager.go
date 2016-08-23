@@ -232,12 +232,12 @@ type manager struct {
 func (self *manager) Start() error {
 	err := docker.Register(self, self.fsInfo, self.ignoreMetrics)
 	if err != nil {
-		glog.Errorf("Docker container factory registration failed: %v.", err)
+		glog.Warningf("Docker container factory registration failed: %v.", err)
 	}
 
 	err = rkt.Register(self, self.fsInfo, self.ignoreMetrics)
 	if err != nil {
-		glog.Errorf("Registration of the rkt container factory failed: %v", err)
+		glog.Warningf("Registration of the rkt container factory failed: %v", err)
 	} else {
 		watcher, err := rktwatcher.NewRktContainerWatcher()
 		if err != nil {
@@ -248,7 +248,7 @@ func (self *manager) Start() error {
 
 	err = systemd.Register(self, self.fsInfo, self.ignoreMetrics)
 	if err != nil {
-		glog.Errorf("Registration of the systemd container factory failed: %v", err)
+		glog.Warningf("Registration of the systemd container factory failed: %v", err)
 	}
 
 	err = raw.Register(self, self.fsInfo, self.ignoreMetrics)
@@ -687,6 +687,7 @@ func (self *manager) GetFsInfo(label string) ([]v2.FsInfo, error) {
 			Usage:      fs.Usage,
 			Available:  fs.Available,
 			Labels:     labels,
+			InodesFree: fs.InodesFree,
 		}
 		fsInfo = append(fsInfo, fi)
 	}
@@ -751,7 +752,7 @@ func (m *manager) registerCollectors(collectorConfigs map[string]string, cont *c
 		glog.V(3).Infof("Got config from %q: %q", v, configFile)
 
 		if strings.HasPrefix(k, "prometheus") || strings.HasPrefix(k, "Prometheus") {
-			newCollector, err := collector.NewPrometheusCollector(k, configFile, *applicationMetricsCountLimit)
+			newCollector, err := collector.NewPrometheusCollector(k, configFile, *applicationMetricsCountLimit, cont.handler)
 			if err != nil {
 				glog.Infof("failed to create collector for container %q, config %q: %v", cont.info.Name, k, err)
 				return err
@@ -762,7 +763,7 @@ func (m *manager) registerCollectors(collectorConfigs map[string]string, cont *c
 				return err
 			}
 		} else {
-			newCollector, err := collector.NewCollector(k, configFile, *applicationMetricsCountLimit)
+			newCollector, err := collector.NewCollector(k, configFile, *applicationMetricsCountLimit, cont.handler)
 			if err != nil {
 				glog.Infof("failed to create collector for container %q, config %q: %v", cont.info.Name, k, err)
 				return err

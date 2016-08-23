@@ -15,6 +15,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/golang/protobuf/proto"
@@ -22,6 +23,7 @@ import (
 	"github.com/opencontainers/runc/libcontainer/configs"
 	"github.com/opencontainers/runc/libcontainer/criurpc"
 	"github.com/opencontainers/runc/libcontainer/utils"
+	"github.com/syndtr/gocapability/capability"
 	"github.com/vishvananda/netlink/nl"
 )
 
@@ -39,6 +41,7 @@ type linuxContainer struct {
 	m             sync.Mutex
 	criuVersion   int
 	state         containerState
+	created       time.Time
 }
 
 // State represents a running container's state
@@ -75,7 +78,7 @@ type Container interface {
 	// Systemerror - System error.
 	Checkpoint(criuOpts *CriuOpts) error
 
-	// Restore restores the checkpointed container to a running state using the criu(8) utiity.
+	// Restore restores the checkpointed container to a running state using the criu(8) utility.
 	//
 	// errors:
 	// Systemerror - System error.
@@ -190,6 +193,9 @@ func (c *linuxContainer) Start(process *Process) error {
 		}
 		return newSystemError(err)
 	}
+	// generate a timestamp indicating when the container was started
+	c.created = time.Now().UTC()
+
 	c.state = &runningState{
 		c: c,
 	}
@@ -199,10 +205,11 @@ func (c *linuxContainer) Start(process *Process) error {
 		}
 		if c.config.Hooks != nil {
 			s := configs.HookState{
-				Version: c.config.Version,
-				ID:      c.id,
-				Pid:     parent.pid(),
-				Root:    c.config.Rootfs,
+				Version:    c.config.Version,
+				ID:         c.id,
+				Pid:        parent.pid(),
+				Root:       c.config.Rootfs,
+				BundlePath: utils.SearchLabels(c.config.Labels, "bundle"),
 			}
 			for _, hook := range c.config.Hooks.Poststart {
 				if err := hook.Run(s); err != nil {
@@ -263,37 +270,40 @@ func (c *linuxContainer) commandTemplate(p *Process, childPipe *os.File) (*exec.
 }
 
 func (c *linuxContainer) newInitProcess(p *Process, cmd *exec.Cmd, parentPipe, childPipe *os.File) (*initProcess, error) {
-	t := "_LIBCONTAINER_INITTYPE=" + string(initStandard)
-	cloneFlags := c.config.Namespaces.CloneFlags()
-	if cloneFlags&syscall.CLONE_NEWUSER != 0 {
-		if err := c.addUidGidMappings(cmd.SysProcAttr); err != nil {
-			// user mappings are not supported
-			return nil, err
-		}
-		enableSetgroups(cmd.SysProcAttr)
-		// Default to root user when user namespaces are enabled.
-		if cmd.SysProcAttr.Credential == nil {
-			cmd.SysProcAttr.Credential = &syscall.Credential{}
+	cmd.Env = append(cmd.Env, "_LIBCONTAINER_INITTYPE="+string(initStandard))
+	nsMaps := make(map[configs.NamespaceType]string)
+	for _, ns := range c.config.Namespaces {
+		if ns.Path != "" {
+			nsMaps[ns.Type] = ns.Path
 		}
 	}
-	cmd.Env = append(cmd.Env, t)
-	cmd.SysProcAttr.Cloneflags = cloneFlags
+	_, sharePidns := nsMaps[configs.NEWPID]
+	data, err := c.bootstrapData(c.config.Namespaces.CloneFlags(), nsMaps, "")
+	if err != nil {
+		return nil, err
+	}
 	return &initProcess{
-		cmd:        cmd,
-		childPipe:  childPipe,
-		parentPipe: parentPipe,
-		manager:    c.cgroupManager,
-		config:     c.newInitConfig(p),
-		container:  c,
-		process:    p,
+		cmd:           cmd,
+		childPipe:     childPipe,
+		parentPipe:    parentPipe,
+		manager:       c.cgroupManager,
+		config:        c.newInitConfig(p),
+		container:     c,
+		process:       p,
+		bootstrapData: data,
+		sharePidns:    sharePidns,
 	}, nil
 }
 
 func (c *linuxContainer) newSetnsProcess(p *Process, cmd *exec.Cmd, parentPipe, childPipe *os.File) (*setnsProcess, error) {
 	cmd.Env = append(cmd.Env, "_LIBCONTAINER_INITTYPE="+string(initSetns))
+	state, err := c.currentState()
+	if err != nil {
+		return nil, newSystemError(err)
+	}
 	// for setns process, we dont have to set cloneflags as the process namespaces
 	// will only be set via setns syscall
-	data, err := c.bootstrapData(0, c.initProcess.pid(), p.consolePath)
+	data, err := c.bootstrapData(0, state.NamespacePaths, p.consolePath)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +320,7 @@ func (c *linuxContainer) newSetnsProcess(p *Process, cmd *exec.Cmd, parentPipe, 
 }
 
 func (c *linuxContainer) newInitConfig(process *Process) *initConfig {
-	return &initConfig{
+	cfg := &initConfig{
 		Config:           c.config,
 		Args:             process.Args,
 		Env:              process.Env,
@@ -319,7 +329,25 @@ func (c *linuxContainer) newInitConfig(process *Process) *initConfig {
 		Console:          process.consolePath,
 		Capabilities:     process.Capabilities,
 		PassedFilesCount: len(process.ExtraFiles),
+		ContainerId:      c.ID(),
+		NoNewPrivileges:  c.config.NoNewPrivileges,
+		AppArmorProfile:  c.config.AppArmorProfile,
+		ProcessLabel:     c.config.ProcessLabel,
+		Rlimits:          c.config.Rlimits,
 	}
+	if process.NoNewPrivileges != nil {
+		cfg.NoNewPrivileges = *process.NoNewPrivileges
+	}
+	if process.AppArmorProfile != "" {
+		cfg.AppArmorProfile = process.AppArmorProfile
+	}
+	if process.Label != "" {
+		cfg.ProcessLabel = process.Label
+	}
+	if len(process.Rlimits) > 0 {
+		cfg.Rlimits = process.Rlimits
+	}
+	return cfg
 }
 
 func newPipe() (parent *os.File, child *os.File, err error) {
@@ -378,16 +406,6 @@ func (c *linuxContainer) NotifyOOM() (<-chan struct{}, error) {
 
 func (c *linuxContainer) NotifyMemoryPressure(level PressureLevel) (<-chan struct{}, error) {
 	return notifyMemoryPressure(c.cgroupManager.GetPaths(), level)
-}
-
-// XXX debug support, remove when debugging done.
-func addArgsFromEnv(evar string, args *[]string) {
-	if e := os.Getenv(evar); e != "" {
-		for _, f := range strings.Fields(e) {
-			*args = append(*args, f)
-		}
-	}
-	fmt.Printf(">>> criu %v\n", *args)
 }
 
 // check Criu version greater than or equal to min_version
@@ -514,6 +532,7 @@ func (c *linuxContainer) Checkpoint(criuOpts *CriuOpts) error {
 		TcpEstablished: proto.Bool(criuOpts.TcpEstablished),
 		ExtUnixSk:      proto.Bool(criuOpts.ExternalUnixConnections),
 		FileLocks:      proto.Bool(criuOpts.FileLocks),
+		EmptyNs:        proto.Uint32(criuOpts.EmptyNs),
 	}
 
 	// append optional criu opts, e.g., page-server and port
@@ -529,7 +548,8 @@ func (c *linuxContainer) Checkpoint(criuOpts *CriuOpts) error {
 		if err := c.checkCriuVersion("1.7"); err != nil {
 			return err
 		}
-		rpcOpts.ManageCgroupsMode = proto.Uint32(uint32(criuOpts.ManageCgroupsMode))
+		mode := criurpc.CriuCgMode(criuOpts.ManageCgroupsMode)
+		rpcOpts.ManageCgroupsMode = &mode
 	}
 
 	t := criurpc.CriuReqType_DUMP
@@ -650,6 +670,7 @@ func (c *linuxContainer) Restore(process *Process, criuOpts *CriuOpts) error {
 			ExtUnixSk:      proto.Bool(criuOpts.ExternalUnixConnections),
 			TcpEstablished: proto.Bool(criuOpts.TcpEstablished),
 			FileLocks:      proto.Bool(criuOpts.FileLocks),
+			EmptyNs:        proto.Uint32(criuOpts.EmptyNs),
 		},
 	}
 
@@ -693,7 +714,8 @@ func (c *linuxContainer) Restore(process *Process, criuOpts *CriuOpts) error {
 		if err := c.checkCriuVersion("1.7"); err != nil {
 			return err
 		}
-		req.Opts.ManageCgroupsMode = proto.Uint32(uint32(criuOpts.ManageCgroupsMode))
+		mode := criurpc.CriuCgMode(criuOpts.ManageCgroupsMode)
+		req.Opts.ManageCgroupsMode = &mode
 	}
 
 	var (
@@ -850,7 +872,7 @@ func (c *linuxContainer) criuSwrk(process *Process, req *criurpc.CriuReq, opts *
 			if err != nil {
 				return err
 			}
-			n, err = criuClient.Write(data)
+			_, err = criuClient.Write(data)
 			if err != nil {
 				return err
 			}
@@ -924,6 +946,20 @@ func (c *linuxContainer) criuNotifications(resp *criurpc.CriuResp, process *Proc
 	case notify.GetScript() == "network-lock":
 		if err := lockNetwork(c.config); err != nil {
 			return err
+		}
+	case notify.GetScript() == "setup-namespaces":
+		if c.config.Hooks != nil {
+			s := configs.HookState{
+				Version: c.config.Version,
+				ID:      c.id,
+				Pid:     int(notify.GetPid()),
+				Root:    c.config.Rootfs,
+			}
+			for _, hook := range c.config.Hooks.Prestart {
+				if err := hook.Run(s); err != nil {
+					return newSystemError(err)
+				}
+			}
 		}
 	case notify.GetScript() == "post-restore":
 		pid := notify.GetPid()
@@ -1043,6 +1079,7 @@ func (c *linuxContainer) currentState() (*State, error) {
 			Config:               *c.config,
 			InitProcessPid:       pid,
 			InitProcessStartTime: startTime,
+			Created:              c.created,
 		},
 		CgroupPaths:         c.cgroupManager.GetPaths(),
 		NamespacePaths:      make(map[configs.NamespaceType]string),
@@ -1053,6 +1090,9 @@ func (c *linuxContainer) currentState() (*State, error) {
 			state.NamespacePaths[ns.Type] = ns.GetPath(pid)
 		}
 		for _, nsType := range configs.NamespaceTypes() {
+			if !configs.IsNamespaceSupported(nsType) {
+				continue
+			}
 			if _, ok := state.NamespacePaths[nsType]; !ok {
 				ns := configs.Namespace{Type: nsType}
 				state.NamespacePaths[ns.Type] = ns.GetPath(pid)
@@ -1062,18 +1102,69 @@ func (c *linuxContainer) currentState() (*State, error) {
 	return state, nil
 }
 
-// bootstrapData encodes the necessary data in netlink binary format as a io.Reader.
-// Consumer can write the data to a bootstrap program such as one that uses
-// nsenter package to bootstrap the container's init process correctly, i.e. with
-// correct namespaces, uid/gid mapping etc.
-func (c *linuxContainer) bootstrapData(cloneFlags uintptr, pid int, consolePath string) (io.Reader, error) {
+// orderNamespacePaths sorts namespace paths into a list of paths that we
+// can setns in order.
+func (c *linuxContainer) orderNamespacePaths(namespaces map[configs.NamespaceType]string) ([]string, error) {
+	paths := []string{}
+	nsTypes := []configs.NamespaceType{
+		configs.NEWIPC,
+		configs.NEWUTS,
+		configs.NEWNET,
+		configs.NEWPID,
+		configs.NEWNS,
+	}
+	// join userns if the init process explicitly requires NEWUSER
+	if c.config.Namespaces.Contains(configs.NEWUSER) {
+		nsTypes = append(nsTypes, configs.NEWUSER)
+	}
+	for _, nsType := range nsTypes {
+		if p, ok := namespaces[nsType]; ok && p != "" {
+			// check if the requested namespace is supported
+			if !configs.IsNamespaceSupported(nsType) {
+				return nil, newSystemError(fmt.Errorf("namespace %s is not supported", nsType))
+			}
+			// only set to join this namespace if it exists
+			if _, err := os.Lstat(p); err != nil {
+				return nil, newSystemError(err)
+			}
+			// do not allow namespace path with comma as we use it to separate
+			// the namespace paths
+			if strings.ContainsRune(p, ',') {
+				return nil, newSystemError(fmt.Errorf("invalid path %s", p))
+			}
+			paths = append(paths, p)
+		}
+	}
+	return paths, nil
+}
+
+func encodeIDMapping(idMap []configs.IDMap) ([]byte, error) {
+	data := bytes.NewBuffer(nil)
+	for _, im := range idMap {
+		line := fmt.Sprintf("%d %d %d\n", im.ContainerID, im.HostID, im.Size)
+		if _, err := data.WriteString(line); err != nil {
+			return nil, err
+		}
+	}
+	return data.Bytes(), nil
+}
+
+// bootstrapData encodes the necessary data in netlink binary format
+// as a io.Reader.
+// Consumer can write the data to a bootstrap program
+// such as one that uses nsenter package to bootstrap the container's
+// init process correctly, i.e. with correct namespaces, uid/gid
+// mapping etc.
+func (c *linuxContainer) bootstrapData(cloneFlags uintptr, nsMaps map[configs.NamespaceType]string, consolePath string) (io.Reader, error) {
 	// create the netlink message
 	r := nl.NewNetlinkRequest(int(InitMsg), 0)
-	// write pid
+
+	// write cloneFlags
 	r.AddData(&Int32msg{
-		Type:  PidAttr,
-		Value: uint32(pid),
+		Type:  CloneFlagsAttr,
+		Value: uint32(cloneFlags),
 	})
+
 	// write console path
 	if consolePath != "" {
 		r.AddData(&Bytemsg{
@@ -1081,5 +1172,57 @@ func (c *linuxContainer) bootstrapData(cloneFlags uintptr, pid int, consolePath 
 			Value: []byte(consolePath),
 		})
 	}
+
+	// write custom namespace paths
+	if len(nsMaps) > 0 {
+		nsPaths, err := c.orderNamespacePaths(nsMaps)
+		if err != nil {
+			return nil, err
+		}
+		r.AddData(&Bytemsg{
+			Type:  NsPathsAttr,
+			Value: []byte(strings.Join(nsPaths, ",")),
+		})
+	}
+
+	// write namespace paths only when we are not joining an existing user ns
+	_, joinExistingUser := nsMaps[configs.NEWUSER]
+	if !joinExistingUser {
+		// write uid mappings
+		if len(c.config.UidMappings) > 0 {
+			b, err := encodeIDMapping(c.config.UidMappings)
+			if err != nil {
+				return nil, err
+			}
+			r.AddData(&Bytemsg{
+				Type:  UidmapAttr,
+				Value: b,
+			})
+		}
+
+		// write gid mappings
+		if len(c.config.GidMappings) > 0 {
+			b, err := encodeIDMapping(c.config.GidMappings)
+			if err != nil {
+				return nil, err
+			}
+			r.AddData(&Bytemsg{
+				Type:  GidmapAttr,
+				Value: b,
+			})
+			// check if we have CAP_SETGID to setgroup properly
+			pid, err := capability.NewPid(os.Getpid())
+			if err != nil {
+				return nil, err
+			}
+			if !pid.Get(capability.EFFECTIVE, capability.CAP_SETGID) {
+				r.AddData(&Boolmsg{
+					Type:  SetgroupAttr,
+					Value: true,
+				})
+			}
+		}
+	}
+
 	return bytes.NewReader(r.Serialize()), nil
 }

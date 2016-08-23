@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -230,14 +230,17 @@ func (rules *ClientConfigLoadingRules) Migrate() error {
 		if _, err := os.Stat(destination); err == nil {
 			// if the destination already exists, do nothing
 			continue
+		} else if os.IsPermission(err) {
+			// if we can't access the file, skip it
+			continue
 		} else if !os.IsNotExist(err) {
 			// if we had an error other than non-existence, fail
 			return err
 		}
 
 		if sourceInfo, err := os.Stat(source); err != nil {
-			if os.IsNotExist(err) {
-				// if the source file doesn't exist, there's no work to do.
+			if os.IsNotExist(err) || os.IsPermission(err) {
+				// if the source file doesn't exist or we can't access it, there's no work to do.
 				continue
 			}
 

@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import (
 	"k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/fake"
 	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
+	utilnode "k8s.io/kubernetes/pkg/util/node"
+	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
@@ -186,7 +188,7 @@ func (m *FakeNodeHandler) Watch(opts api.ListOptions) (watch.Interface, error) {
 	return nil, nil
 }
 
-func (m *FakeNodeHandler) Patch(name string, pt api.PatchType, data []byte) (*api.Node, error) {
+func (m *FakeNodeHandler) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (*api.Node, error) {
 	return nil, nil
 }
 
@@ -234,4 +236,14 @@ func contains(node *api.Node, nodes []*api.Node) bool {
 		}
 	}
 	return false
+}
+
+// Returns list of zones for all Nodes stored in FakeNodeHandler
+func getZones(nodeHandler *FakeNodeHandler) []string {
+	nodes, _ := nodeHandler.List(api.ListOptions{})
+	zones := sets.NewString()
+	for _, node := range nodes.Items {
+		zones.Insert(utilnode.GetZoneKey(&node))
+	}
+	return zones.List()
 }

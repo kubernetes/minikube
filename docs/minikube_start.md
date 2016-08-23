@@ -21,7 +21,7 @@ minikube start
       --host-only-cidr="192.168.99.1/24": The CIDR to be used for the minikube VM (only supported with Virtualbox driver)
       --insecure-registry=[]: Insecure Docker registries to pass to the Docker daemon
       --iso-url="https://storage.googleapis.com/minikube/minikube-0.6.iso": Location of the minikube iso
-      --kubernetes-version="v1.3.5": The kubernetes version that the minikube VM will (ex: v1.2.3) 
+      --kubernetes-version="v1.4.0-alpha.2": The kubernetes version that the minikube VM will (ex: v1.2.3) 
  OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)
       --memory=1024: Amount of RAM allocated to the minikube VM
       --registry-mirror=[]: Registry mirrors to pass to the Docker daemon

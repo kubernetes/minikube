@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ limitations under the License.
 		AWSElasticBlockStoreVolumeSource
 		Affinity
 		AttachedVolume
+		AvoidPods
 		AzureFileVolumeSource
 		Binding
 		Capabilities
@@ -130,6 +131,7 @@ limitations under the License.
 		PodLogOptions
 		PodProxyOptions
 		PodSecurityContext
+		PodSignature
 		PodSpec
 		PodStatus
 		PodStatusResult
@@ -137,6 +139,7 @@ limitations under the License.
 		PodTemplateList
 		PodTemplateSpec
 		Preconditions
+		PreferAvoidPodsEntry
 		PreferredSchedulingTerm
 		Probe
 		RBDVolumeSource
@@ -187,6 +190,10 @@ import k8s_io_kubernetes_pkg_runtime "k8s.io/kubernetes/pkg/runtime"
 
 import k8s_io_kubernetes_pkg_types "k8s.io/kubernetes/pkg/types"
 
+import strings "strings"
+import reflect "reflect"
+import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -194,606 +201,467 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-func (m *AWSElasticBlockStoreVolumeSource) Reset()         { *m = AWSElasticBlockStoreVolumeSource{} }
-func (m *AWSElasticBlockStoreVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*AWSElasticBlockStoreVolumeSource) ProtoMessage()    {}
-
-func (m *Affinity) Reset()         { *m = Affinity{} }
-func (m *Affinity) String() string { return proto.CompactTextString(m) }
-func (*Affinity) ProtoMessage()    {}
-
-func (m *AttachedVolume) Reset()         { *m = AttachedVolume{} }
-func (m *AttachedVolume) String() string { return proto.CompactTextString(m) }
-func (*AttachedVolume) ProtoMessage()    {}
-
-func (m *AzureFileVolumeSource) Reset()         { *m = AzureFileVolumeSource{} }
-func (m *AzureFileVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*AzureFileVolumeSource) ProtoMessage()    {}
-
-func (m *Binding) Reset()         { *m = Binding{} }
-func (m *Binding) String() string { return proto.CompactTextString(m) }
-func (*Binding) ProtoMessage()    {}
-
-func (m *Capabilities) Reset()         { *m = Capabilities{} }
-func (m *Capabilities) String() string { return proto.CompactTextString(m) }
-func (*Capabilities) ProtoMessage()    {}
-
-func (m *CephFSVolumeSource) Reset()         { *m = CephFSVolumeSource{} }
-func (m *CephFSVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*CephFSVolumeSource) ProtoMessage()    {}
-
-func (m *CinderVolumeSource) Reset()         { *m = CinderVolumeSource{} }
-func (m *CinderVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*CinderVolumeSource) ProtoMessage()    {}
-
-func (m *ComponentCondition) Reset()         { *m = ComponentCondition{} }
-func (m *ComponentCondition) String() string { return proto.CompactTextString(m) }
-func (*ComponentCondition) ProtoMessage()    {}
-
-func (m *ComponentStatus) Reset()         { *m = ComponentStatus{} }
-func (m *ComponentStatus) String() string { return proto.CompactTextString(m) }
-func (*ComponentStatus) ProtoMessage()    {}
-
-func (m *ComponentStatusList) Reset()         { *m = ComponentStatusList{} }
-func (m *ComponentStatusList) String() string { return proto.CompactTextString(m) }
-func (*ComponentStatusList) ProtoMessage()    {}
-
-func (m *ConfigMap) Reset()         { *m = ConfigMap{} }
-func (m *ConfigMap) String() string { return proto.CompactTextString(m) }
-func (*ConfigMap) ProtoMessage()    {}
-
-func (m *ConfigMapKeySelector) Reset()         { *m = ConfigMapKeySelector{} }
-func (m *ConfigMapKeySelector) String() string { return proto.CompactTextString(m) }
-func (*ConfigMapKeySelector) ProtoMessage()    {}
-
-func (m *ConfigMapList) Reset()         { *m = ConfigMapList{} }
-func (m *ConfigMapList) String() string { return proto.CompactTextString(m) }
-func (*ConfigMapList) ProtoMessage()    {}
-
-func (m *ConfigMapVolumeSource) Reset()         { *m = ConfigMapVolumeSource{} }
-func (m *ConfigMapVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*ConfigMapVolumeSource) ProtoMessage()    {}
-
-func (m *Container) Reset()         { *m = Container{} }
-func (m *Container) String() string { return proto.CompactTextString(m) }
-func (*Container) ProtoMessage()    {}
-
-func (m *ContainerImage) Reset()         { *m = ContainerImage{} }
-func (m *ContainerImage) String() string { return proto.CompactTextString(m) }
-func (*ContainerImage) ProtoMessage()    {}
-
-func (m *ContainerPort) Reset()         { *m = ContainerPort{} }
-func (m *ContainerPort) String() string { return proto.CompactTextString(m) }
-func (*ContainerPort) ProtoMessage()    {}
-
-func (m *ContainerState) Reset()         { *m = ContainerState{} }
-func (m *ContainerState) String() string { return proto.CompactTextString(m) }
-func (*ContainerState) ProtoMessage()    {}
-
-func (m *ContainerStateRunning) Reset()         { *m = ContainerStateRunning{} }
-func (m *ContainerStateRunning) String() string { return proto.CompactTextString(m) }
-func (*ContainerStateRunning) ProtoMessage()    {}
-
-func (m *ContainerStateTerminated) Reset()         { *m = ContainerStateTerminated{} }
-func (m *ContainerStateTerminated) String() string { return proto.CompactTextString(m) }
-func (*ContainerStateTerminated) ProtoMessage()    {}
-
-func (m *ContainerStateWaiting) Reset()         { *m = ContainerStateWaiting{} }
-func (m *ContainerStateWaiting) String() string { return proto.CompactTextString(m) }
-func (*ContainerStateWaiting) ProtoMessage()    {}
-
-func (m *ContainerStatus) Reset()         { *m = ContainerStatus{} }
-func (m *ContainerStatus) String() string { return proto.CompactTextString(m) }
-func (*ContainerStatus) ProtoMessage()    {}
-
-func (m *DaemonEndpoint) Reset()         { *m = DaemonEndpoint{} }
-func (m *DaemonEndpoint) String() string { return proto.CompactTextString(m) }
-func (*DaemonEndpoint) ProtoMessage()    {}
-
-func (m *DeleteOptions) Reset()         { *m = DeleteOptions{} }
-func (m *DeleteOptions) String() string { return proto.CompactTextString(m) }
-func (*DeleteOptions) ProtoMessage()    {}
-
-func (m *DownwardAPIVolumeFile) Reset()         { *m = DownwardAPIVolumeFile{} }
-func (m *DownwardAPIVolumeFile) String() string { return proto.CompactTextString(m) }
-func (*DownwardAPIVolumeFile) ProtoMessage()    {}
-
-func (m *DownwardAPIVolumeSource) Reset()         { *m = DownwardAPIVolumeSource{} }
-func (m *DownwardAPIVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*DownwardAPIVolumeSource) ProtoMessage()    {}
-
-func (m *EmptyDirVolumeSource) Reset()         { *m = EmptyDirVolumeSource{} }
-func (m *EmptyDirVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*EmptyDirVolumeSource) ProtoMessage()    {}
-
-func (m *EndpointAddress) Reset()         { *m = EndpointAddress{} }
-func (m *EndpointAddress) String() string { return proto.CompactTextString(m) }
-func (*EndpointAddress) ProtoMessage()    {}
-
-func (m *EndpointPort) Reset()         { *m = EndpointPort{} }
-func (m *EndpointPort) String() string { return proto.CompactTextString(m) }
-func (*EndpointPort) ProtoMessage()    {}
-
-func (m *EndpointSubset) Reset()         { *m = EndpointSubset{} }
-func (m *EndpointSubset) String() string { return proto.CompactTextString(m) }
-func (*EndpointSubset) ProtoMessage()    {}
-
-func (m *Endpoints) Reset()         { *m = Endpoints{} }
-func (m *Endpoints) String() string { return proto.CompactTextString(m) }
-func (*Endpoints) ProtoMessage()    {}
-
-func (m *EndpointsList) Reset()         { *m = EndpointsList{} }
-func (m *EndpointsList) String() string { return proto.CompactTextString(m) }
-func (*EndpointsList) ProtoMessage()    {}
-
-func (m *EnvVar) Reset()         { *m = EnvVar{} }
-func (m *EnvVar) String() string { return proto.CompactTextString(m) }
-func (*EnvVar) ProtoMessage()    {}
-
-func (m *EnvVarSource) Reset()         { *m = EnvVarSource{} }
-func (m *EnvVarSource) String() string { return proto.CompactTextString(m) }
-func (*EnvVarSource) ProtoMessage()    {}
-
-func (m *Event) Reset()         { *m = Event{} }
-func (m *Event) String() string { return proto.CompactTextString(m) }
-func (*Event) ProtoMessage()    {}
-
-func (m *EventList) Reset()         { *m = EventList{} }
-func (m *EventList) String() string { return proto.CompactTextString(m) }
-func (*EventList) ProtoMessage()    {}
-
-func (m *EventSource) Reset()         { *m = EventSource{} }
-func (m *EventSource) String() string { return proto.CompactTextString(m) }
-func (*EventSource) ProtoMessage()    {}
-
-func (m *ExecAction) Reset()         { *m = ExecAction{} }
-func (m *ExecAction) String() string { return proto.CompactTextString(m) }
-func (*ExecAction) ProtoMessage()    {}
-
-func (m *ExportOptions) Reset()         { *m = ExportOptions{} }
-func (m *ExportOptions) String() string { return proto.CompactTextString(m) }
-func (*ExportOptions) ProtoMessage()    {}
-
-func (m *FCVolumeSource) Reset()         { *m = FCVolumeSource{} }
-func (m *FCVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*FCVolumeSource) ProtoMessage()    {}
-
-func (m *FlexVolumeSource) Reset()         { *m = FlexVolumeSource{} }
-func (m *FlexVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*FlexVolumeSource) ProtoMessage()    {}
-
-func (m *FlockerVolumeSource) Reset()         { *m = FlockerVolumeSource{} }
-func (m *FlockerVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*FlockerVolumeSource) ProtoMessage()    {}
-
-func (m *GCEPersistentDiskVolumeSource) Reset()         { *m = GCEPersistentDiskVolumeSource{} }
-func (m *GCEPersistentDiskVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*GCEPersistentDiskVolumeSource) ProtoMessage()    {}
-
-func (m *GitRepoVolumeSource) Reset()         { *m = GitRepoVolumeSource{} }
-func (m *GitRepoVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*GitRepoVolumeSource) ProtoMessage()    {}
-
-func (m *GlusterfsVolumeSource) Reset()         { *m = GlusterfsVolumeSource{} }
-func (m *GlusterfsVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*GlusterfsVolumeSource) ProtoMessage()    {}
-
-func (m *HTTPGetAction) Reset()         { *m = HTTPGetAction{} }
-func (m *HTTPGetAction) String() string { return proto.CompactTextString(m) }
-func (*HTTPGetAction) ProtoMessage()    {}
-
-func (m *HTTPHeader) Reset()         { *m = HTTPHeader{} }
-func (m *HTTPHeader) String() string { return proto.CompactTextString(m) }
-func (*HTTPHeader) ProtoMessage()    {}
-
-func (m *Handler) Reset()         { *m = Handler{} }
-func (m *Handler) String() string { return proto.CompactTextString(m) }
-func (*Handler) ProtoMessage()    {}
-
-func (m *HostPathVolumeSource) Reset()         { *m = HostPathVolumeSource{} }
-func (m *HostPathVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*HostPathVolumeSource) ProtoMessage()    {}
-
-func (m *ISCSIVolumeSource) Reset()         { *m = ISCSIVolumeSource{} }
-func (m *ISCSIVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*ISCSIVolumeSource) ProtoMessage()    {}
-
-func (m *KeyToPath) Reset()         { *m = KeyToPath{} }
-func (m *KeyToPath) String() string { return proto.CompactTextString(m) }
-func (*KeyToPath) ProtoMessage()    {}
-
-func (m *Lifecycle) Reset()         { *m = Lifecycle{} }
-func (m *Lifecycle) String() string { return proto.CompactTextString(m) }
-func (*Lifecycle) ProtoMessage()    {}
-
-func (m *LimitRange) Reset()         { *m = LimitRange{} }
-func (m *LimitRange) String() string { return proto.CompactTextString(m) }
-func (*LimitRange) ProtoMessage()    {}
-
-func (m *LimitRangeItem) Reset()         { *m = LimitRangeItem{} }
-func (m *LimitRangeItem) String() string { return proto.CompactTextString(m) }
-func (*LimitRangeItem) ProtoMessage()    {}
-
-func (m *LimitRangeList) Reset()         { *m = LimitRangeList{} }
-func (m *LimitRangeList) String() string { return proto.CompactTextString(m) }
-func (*LimitRangeList) ProtoMessage()    {}
-
-func (m *LimitRangeSpec) Reset()         { *m = LimitRangeSpec{} }
-func (m *LimitRangeSpec) String() string { return proto.CompactTextString(m) }
-func (*LimitRangeSpec) ProtoMessage()    {}
-
-func (m *List) Reset()         { *m = List{} }
-func (m *List) String() string { return proto.CompactTextString(m) }
-func (*List) ProtoMessage()    {}
-
-func (m *ListOptions) Reset()         { *m = ListOptions{} }
-func (m *ListOptions) String() string { return proto.CompactTextString(m) }
-func (*ListOptions) ProtoMessage()    {}
-
-func (m *LoadBalancerIngress) Reset()         { *m = LoadBalancerIngress{} }
-func (m *LoadBalancerIngress) String() string { return proto.CompactTextString(m) }
-func (*LoadBalancerIngress) ProtoMessage()    {}
-
-func (m *LoadBalancerStatus) Reset()         { *m = LoadBalancerStatus{} }
-func (m *LoadBalancerStatus) String() string { return proto.CompactTextString(m) }
-func (*LoadBalancerStatus) ProtoMessage()    {}
-
-func (m *LocalObjectReference) Reset()         { *m = LocalObjectReference{} }
-func (m *LocalObjectReference) String() string { return proto.CompactTextString(m) }
-func (*LocalObjectReference) ProtoMessage()    {}
-
-func (m *NFSVolumeSource) Reset()         { *m = NFSVolumeSource{} }
-func (m *NFSVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*NFSVolumeSource) ProtoMessage()    {}
-
-func (m *Namespace) Reset()         { *m = Namespace{} }
-func (m *Namespace) String() string { return proto.CompactTextString(m) }
-func (*Namespace) ProtoMessage()    {}
-
-func (m *NamespaceList) Reset()         { *m = NamespaceList{} }
-func (m *NamespaceList) String() string { return proto.CompactTextString(m) }
-func (*NamespaceList) ProtoMessage()    {}
-
-func (m *NamespaceSpec) Reset()         { *m = NamespaceSpec{} }
-func (m *NamespaceSpec) String() string { return proto.CompactTextString(m) }
-func (*NamespaceSpec) ProtoMessage()    {}
-
-func (m *NamespaceStatus) Reset()         { *m = NamespaceStatus{} }
-func (m *NamespaceStatus) String() string { return proto.CompactTextString(m) }
-func (*NamespaceStatus) ProtoMessage()    {}
-
-func (m *Node) Reset()         { *m = Node{} }
-func (m *Node) String() string { return proto.CompactTextString(m) }
-func (*Node) ProtoMessage()    {}
-
-func (m *NodeAddress) Reset()         { *m = NodeAddress{} }
-func (m *NodeAddress) String() string { return proto.CompactTextString(m) }
-func (*NodeAddress) ProtoMessage()    {}
-
-func (m *NodeAffinity) Reset()         { *m = NodeAffinity{} }
-func (m *NodeAffinity) String() string { return proto.CompactTextString(m) }
-func (*NodeAffinity) ProtoMessage()    {}
-
-func (m *NodeCondition) Reset()         { *m = NodeCondition{} }
-func (m *NodeCondition) String() string { return proto.CompactTextString(m) }
-func (*NodeCondition) ProtoMessage()    {}
-
-func (m *NodeDaemonEndpoints) Reset()         { *m = NodeDaemonEndpoints{} }
-func (m *NodeDaemonEndpoints) String() string { return proto.CompactTextString(m) }
-func (*NodeDaemonEndpoints) ProtoMessage()    {}
-
-func (m *NodeList) Reset()         { *m = NodeList{} }
-func (m *NodeList) String() string { return proto.CompactTextString(m) }
-func (*NodeList) ProtoMessage()    {}
-
-func (m *NodeProxyOptions) Reset()         { *m = NodeProxyOptions{} }
-func (m *NodeProxyOptions) String() string { return proto.CompactTextString(m) }
-func (*NodeProxyOptions) ProtoMessage()    {}
-
-func (m *NodeSelector) Reset()         { *m = NodeSelector{} }
-func (m *NodeSelector) String() string { return proto.CompactTextString(m) }
-func (*NodeSelector) ProtoMessage()    {}
-
-func (m *NodeSelectorRequirement) Reset()         { *m = NodeSelectorRequirement{} }
-func (m *NodeSelectorRequirement) String() string { return proto.CompactTextString(m) }
-func (*NodeSelectorRequirement) ProtoMessage()    {}
-
-func (m *NodeSelectorTerm) Reset()         { *m = NodeSelectorTerm{} }
-func (m *NodeSelectorTerm) String() string { return proto.CompactTextString(m) }
-func (*NodeSelectorTerm) ProtoMessage()    {}
-
-func (m *NodeSpec) Reset()         { *m = NodeSpec{} }
-func (m *NodeSpec) String() string { return proto.CompactTextString(m) }
-func (*NodeSpec) ProtoMessage()    {}
-
-func (m *NodeStatus) Reset()         { *m = NodeStatus{} }
-func (m *NodeStatus) String() string { return proto.CompactTextString(m) }
-func (*NodeStatus) ProtoMessage()    {}
-
-func (m *NodeSystemInfo) Reset()         { *m = NodeSystemInfo{} }
-func (m *NodeSystemInfo) String() string { return proto.CompactTextString(m) }
-func (*NodeSystemInfo) ProtoMessage()    {}
-
-func (m *ObjectFieldSelector) Reset()         { *m = ObjectFieldSelector{} }
-func (m *ObjectFieldSelector) String() string { return proto.CompactTextString(m) }
-func (*ObjectFieldSelector) ProtoMessage()    {}
-
-func (m *ObjectMeta) Reset()         { *m = ObjectMeta{} }
-func (m *ObjectMeta) String() string { return proto.CompactTextString(m) }
-func (*ObjectMeta) ProtoMessage()    {}
-
-func (m *ObjectReference) Reset()         { *m = ObjectReference{} }
-func (m *ObjectReference) String() string { return proto.CompactTextString(m) }
-func (*ObjectReference) ProtoMessage()    {}
-
-func (m *OwnerReference) Reset()         { *m = OwnerReference{} }
-func (m *OwnerReference) String() string { return proto.CompactTextString(m) }
-func (*OwnerReference) ProtoMessage()    {}
-
-func (m *PersistentVolume) Reset()         { *m = PersistentVolume{} }
-func (m *PersistentVolume) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolume) ProtoMessage()    {}
-
-func (m *PersistentVolumeClaim) Reset()         { *m = PersistentVolumeClaim{} }
-func (m *PersistentVolumeClaim) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeClaim) ProtoMessage()    {}
-
-func (m *PersistentVolumeClaimList) Reset()         { *m = PersistentVolumeClaimList{} }
-func (m *PersistentVolumeClaimList) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeClaimList) ProtoMessage()    {}
-
-func (m *PersistentVolumeClaimSpec) Reset()         { *m = PersistentVolumeClaimSpec{} }
-func (m *PersistentVolumeClaimSpec) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeClaimSpec) ProtoMessage()    {}
-
-func (m *PersistentVolumeClaimStatus) Reset()         { *m = PersistentVolumeClaimStatus{} }
-func (m *PersistentVolumeClaimStatus) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeClaimStatus) ProtoMessage()    {}
-
-func (m *PersistentVolumeClaimVolumeSource) Reset()         { *m = PersistentVolumeClaimVolumeSource{} }
-func (m *PersistentVolumeClaimVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeClaimVolumeSource) ProtoMessage()    {}
-
-func (m *PersistentVolumeList) Reset()         { *m = PersistentVolumeList{} }
-func (m *PersistentVolumeList) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeList) ProtoMessage()    {}
-
-func (m *PersistentVolumeSource) Reset()         { *m = PersistentVolumeSource{} }
-func (m *PersistentVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeSource) ProtoMessage()    {}
-
-func (m *PersistentVolumeSpec) Reset()         { *m = PersistentVolumeSpec{} }
-func (m *PersistentVolumeSpec) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeSpec) ProtoMessage()    {}
-
-func (m *PersistentVolumeStatus) Reset()         { *m = PersistentVolumeStatus{} }
-func (m *PersistentVolumeStatus) String() string { return proto.CompactTextString(m) }
-func (*PersistentVolumeStatus) ProtoMessage()    {}
-
-func (m *Pod) Reset()         { *m = Pod{} }
-func (m *Pod) String() string { return proto.CompactTextString(m) }
-func (*Pod) ProtoMessage()    {}
-
-func (m *PodAffinity) Reset()         { *m = PodAffinity{} }
-func (m *PodAffinity) String() string { return proto.CompactTextString(m) }
-func (*PodAffinity) ProtoMessage()    {}
-
-func (m *PodAffinityTerm) Reset()         { *m = PodAffinityTerm{} }
-func (m *PodAffinityTerm) String() string { return proto.CompactTextString(m) }
-func (*PodAffinityTerm) ProtoMessage()    {}
-
-func (m *PodAntiAffinity) Reset()         { *m = PodAntiAffinity{} }
-func (m *PodAntiAffinity) String() string { return proto.CompactTextString(m) }
-func (*PodAntiAffinity) ProtoMessage()    {}
-
-func (m *PodAttachOptions) Reset()         { *m = PodAttachOptions{} }
-func (m *PodAttachOptions) String() string { return proto.CompactTextString(m) }
-func (*PodAttachOptions) ProtoMessage()    {}
-
-func (m *PodCondition) Reset()         { *m = PodCondition{} }
-func (m *PodCondition) String() string { return proto.CompactTextString(m) }
-func (*PodCondition) ProtoMessage()    {}
-
-func (m *PodExecOptions) Reset()         { *m = PodExecOptions{} }
-func (m *PodExecOptions) String() string { return proto.CompactTextString(m) }
-func (*PodExecOptions) ProtoMessage()    {}
-
-func (m *PodList) Reset()         { *m = PodList{} }
-func (m *PodList) String() string { return proto.CompactTextString(m) }
-func (*PodList) ProtoMessage()    {}
-
-func (m *PodLogOptions) Reset()         { *m = PodLogOptions{} }
-func (m *PodLogOptions) String() string { return proto.CompactTextString(m) }
-func (*PodLogOptions) ProtoMessage()    {}
-
-func (m *PodProxyOptions) Reset()         { *m = PodProxyOptions{} }
-func (m *PodProxyOptions) String() string { return proto.CompactTextString(m) }
-func (*PodProxyOptions) ProtoMessage()    {}
-
-func (m *PodSecurityContext) Reset()         { *m = PodSecurityContext{} }
-func (m *PodSecurityContext) String() string { return proto.CompactTextString(m) }
-func (*PodSecurityContext) ProtoMessage()    {}
-
-func (m *PodSpec) Reset()         { *m = PodSpec{} }
-func (m *PodSpec) String() string { return proto.CompactTextString(m) }
-func (*PodSpec) ProtoMessage()    {}
-
-func (m *PodStatus) Reset()         { *m = PodStatus{} }
-func (m *PodStatus) String() string { return proto.CompactTextString(m) }
-func (*PodStatus) ProtoMessage()    {}
-
-func (m *PodStatusResult) Reset()         { *m = PodStatusResult{} }
-func (m *PodStatusResult) String() string { return proto.CompactTextString(m) }
-func (*PodStatusResult) ProtoMessage()    {}
-
-func (m *PodTemplate) Reset()         { *m = PodTemplate{} }
-func (m *PodTemplate) String() string { return proto.CompactTextString(m) }
-func (*PodTemplate) ProtoMessage()    {}
-
-func (m *PodTemplateList) Reset()         { *m = PodTemplateList{} }
-func (m *PodTemplateList) String() string { return proto.CompactTextString(m) }
-func (*PodTemplateList) ProtoMessage()    {}
-
-func (m *PodTemplateSpec) Reset()         { *m = PodTemplateSpec{} }
-func (m *PodTemplateSpec) String() string { return proto.CompactTextString(m) }
-func (*PodTemplateSpec) ProtoMessage()    {}
-
-func (m *Preconditions) Reset()         { *m = Preconditions{} }
-func (m *Preconditions) String() string { return proto.CompactTextString(m) }
-func (*Preconditions) ProtoMessage()    {}
-
-func (m *PreferredSchedulingTerm) Reset()         { *m = PreferredSchedulingTerm{} }
-func (m *PreferredSchedulingTerm) String() string { return proto.CompactTextString(m) }
-func (*PreferredSchedulingTerm) ProtoMessage()    {}
-
-func (m *Probe) Reset()         { *m = Probe{} }
-func (m *Probe) String() string { return proto.CompactTextString(m) }
-func (*Probe) ProtoMessage()    {}
-
-func (m *RBDVolumeSource) Reset()         { *m = RBDVolumeSource{} }
-func (m *RBDVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*RBDVolumeSource) ProtoMessage()    {}
-
-func (m *RangeAllocation) Reset()         { *m = RangeAllocation{} }
-func (m *RangeAllocation) String() string { return proto.CompactTextString(m) }
-func (*RangeAllocation) ProtoMessage()    {}
-
-func (m *ReplicationController) Reset()         { *m = ReplicationController{} }
-func (m *ReplicationController) String() string { return proto.CompactTextString(m) }
-func (*ReplicationController) ProtoMessage()    {}
-
-func (m *ReplicationControllerList) Reset()         { *m = ReplicationControllerList{} }
-func (m *ReplicationControllerList) String() string { return proto.CompactTextString(m) }
-func (*ReplicationControllerList) ProtoMessage()    {}
-
-func (m *ReplicationControllerSpec) Reset()         { *m = ReplicationControllerSpec{} }
-func (m *ReplicationControllerSpec) String() string { return proto.CompactTextString(m) }
-func (*ReplicationControllerSpec) ProtoMessage()    {}
-
-func (m *ReplicationControllerStatus) Reset()         { *m = ReplicationControllerStatus{} }
-func (m *ReplicationControllerStatus) String() string { return proto.CompactTextString(m) }
-func (*ReplicationControllerStatus) ProtoMessage()    {}
-
-func (m *ResourceFieldSelector) Reset()         { *m = ResourceFieldSelector{} }
-func (m *ResourceFieldSelector) String() string { return proto.CompactTextString(m) }
-func (*ResourceFieldSelector) ProtoMessage()    {}
-
-func (m *ResourceQuota) Reset()         { *m = ResourceQuota{} }
-func (m *ResourceQuota) String() string { return proto.CompactTextString(m) }
-func (*ResourceQuota) ProtoMessage()    {}
-
-func (m *ResourceQuotaList) Reset()         { *m = ResourceQuotaList{} }
-func (m *ResourceQuotaList) String() string { return proto.CompactTextString(m) }
-func (*ResourceQuotaList) ProtoMessage()    {}
-
-func (m *ResourceQuotaSpec) Reset()         { *m = ResourceQuotaSpec{} }
-func (m *ResourceQuotaSpec) String() string { return proto.CompactTextString(m) }
-func (*ResourceQuotaSpec) ProtoMessage()    {}
-
-func (m *ResourceQuotaStatus) Reset()         { *m = ResourceQuotaStatus{} }
-func (m *ResourceQuotaStatus) String() string { return proto.CompactTextString(m) }
-func (*ResourceQuotaStatus) ProtoMessage()    {}
-
-func (m *ResourceRequirements) Reset()         { *m = ResourceRequirements{} }
-func (m *ResourceRequirements) String() string { return proto.CompactTextString(m) }
-func (*ResourceRequirements) ProtoMessage()    {}
-
-func (m *SELinuxOptions) Reset()         { *m = SELinuxOptions{} }
-func (m *SELinuxOptions) String() string { return proto.CompactTextString(m) }
-func (*SELinuxOptions) ProtoMessage()    {}
-
-func (m *Secret) Reset()         { *m = Secret{} }
-func (m *Secret) String() string { return proto.CompactTextString(m) }
-func (*Secret) ProtoMessage()    {}
-
-func (m *SecretKeySelector) Reset()         { *m = SecretKeySelector{} }
-func (m *SecretKeySelector) String() string { return proto.CompactTextString(m) }
-func (*SecretKeySelector) ProtoMessage()    {}
-
-func (m *SecretList) Reset()         { *m = SecretList{} }
-func (m *SecretList) String() string { return proto.CompactTextString(m) }
-func (*SecretList) ProtoMessage()    {}
-
-func (m *SecretVolumeSource) Reset()         { *m = SecretVolumeSource{} }
-func (m *SecretVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*SecretVolumeSource) ProtoMessage()    {}
-
-func (m *SecurityContext) Reset()         { *m = SecurityContext{} }
-func (m *SecurityContext) String() string { return proto.CompactTextString(m) }
-func (*SecurityContext) ProtoMessage()    {}
-
-func (m *SerializedReference) Reset()         { *m = SerializedReference{} }
-func (m *SerializedReference) String() string { return proto.CompactTextString(m) }
-func (*SerializedReference) ProtoMessage()    {}
-
-func (m *Service) Reset()         { *m = Service{} }
-func (m *Service) String() string { return proto.CompactTextString(m) }
-func (*Service) ProtoMessage()    {}
-
-func (m *ServiceAccount) Reset()         { *m = ServiceAccount{} }
-func (m *ServiceAccount) String() string { return proto.CompactTextString(m) }
-func (*ServiceAccount) ProtoMessage()    {}
-
-func (m *ServiceAccountList) Reset()         { *m = ServiceAccountList{} }
-func (m *ServiceAccountList) String() string { return proto.CompactTextString(m) }
-func (*ServiceAccountList) ProtoMessage()    {}
-
-func (m *ServiceList) Reset()         { *m = ServiceList{} }
-func (m *ServiceList) String() string { return proto.CompactTextString(m) }
-func (*ServiceList) ProtoMessage()    {}
-
-func (m *ServicePort) Reset()         { *m = ServicePort{} }
-func (m *ServicePort) String() string { return proto.CompactTextString(m) }
-func (*ServicePort) ProtoMessage()    {}
-
-func (m *ServiceProxyOptions) Reset()         { *m = ServiceProxyOptions{} }
-func (m *ServiceProxyOptions) String() string { return proto.CompactTextString(m) }
-func (*ServiceProxyOptions) ProtoMessage()    {}
-
-func (m *ServiceSpec) Reset()         { *m = ServiceSpec{} }
-func (m *ServiceSpec) String() string { return proto.CompactTextString(m) }
-func (*ServiceSpec) ProtoMessage()    {}
-
-func (m *ServiceStatus) Reset()         { *m = ServiceStatus{} }
-func (m *ServiceStatus) String() string { return proto.CompactTextString(m) }
-func (*ServiceStatus) ProtoMessage()    {}
-
-func (m *TCPSocketAction) Reset()         { *m = TCPSocketAction{} }
-func (m *TCPSocketAction) String() string { return proto.CompactTextString(m) }
-func (*TCPSocketAction) ProtoMessage()    {}
-
-func (m *Taint) Reset()         { *m = Taint{} }
-func (m *Taint) String() string { return proto.CompactTextString(m) }
-func (*Taint) ProtoMessage()    {}
-
-func (m *Toleration) Reset()         { *m = Toleration{} }
-func (m *Toleration) String() string { return proto.CompactTextString(m) }
-func (*Toleration) ProtoMessage()    {}
-
-func (m *Volume) Reset()         { *m = Volume{} }
-func (m *Volume) String() string { return proto.CompactTextString(m) }
-func (*Volume) ProtoMessage()    {}
-
-func (m *VolumeMount) Reset()         { *m = VolumeMount{} }
-func (m *VolumeMount) String() string { return proto.CompactTextString(m) }
-func (*VolumeMount) ProtoMessage()    {}
-
-func (m *VolumeSource) Reset()         { *m = VolumeSource{} }
-func (m *VolumeSource) String() string { return proto.CompactTextString(m) }
-func (*VolumeSource) ProtoMessage()    {}
-
-func (m *VsphereVirtualDiskVolumeSource) Reset()         { *m = VsphereVirtualDiskVolumeSource{} }
-func (m *VsphereVirtualDiskVolumeSource) String() string { return proto.CompactTextString(m) }
-func (*VsphereVirtualDiskVolumeSource) ProtoMessage()    {}
-
-func (m *WeightedPodAffinityTerm) Reset()         { *m = WeightedPodAffinityTerm{} }
-func (m *WeightedPodAffinityTerm) String() string { return proto.CompactTextString(m) }
-func (*WeightedPodAffinityTerm) ProtoMessage()    {}
+func (m *AWSElasticBlockStoreVolumeSource) Reset()      { *m = AWSElasticBlockStoreVolumeSource{} }
+func (*AWSElasticBlockStoreVolumeSource) ProtoMessage() {}
+
+func (m *Affinity) Reset()      { *m = Affinity{} }
+func (*Affinity) ProtoMessage() {}
+
+func (m *AttachedVolume) Reset()      { *m = AttachedVolume{} }
+func (*AttachedVolume) ProtoMessage() {}
+
+func (m *AvoidPods) Reset()      { *m = AvoidPods{} }
+func (*AvoidPods) ProtoMessage() {}
+
+func (m *AzureFileVolumeSource) Reset()      { *m = AzureFileVolumeSource{} }
+func (*AzureFileVolumeSource) ProtoMessage() {}
+
+func (m *Binding) Reset()      { *m = Binding{} }
+func (*Binding) ProtoMessage() {}
+
+func (m *Capabilities) Reset()      { *m = Capabilities{} }
+func (*Capabilities) ProtoMessage() {}
+
+func (m *CephFSVolumeSource) Reset()      { *m = CephFSVolumeSource{} }
+func (*CephFSVolumeSource) ProtoMessage() {}
+
+func (m *CinderVolumeSource) Reset()      { *m = CinderVolumeSource{} }
+func (*CinderVolumeSource) ProtoMessage() {}
+
+func (m *ComponentCondition) Reset()      { *m = ComponentCondition{} }
+func (*ComponentCondition) ProtoMessage() {}
+
+func (m *ComponentStatus) Reset()      { *m = ComponentStatus{} }
+func (*ComponentStatus) ProtoMessage() {}
+
+func (m *ComponentStatusList) Reset()      { *m = ComponentStatusList{} }
+func (*ComponentStatusList) ProtoMessage() {}
+
+func (m *ConfigMap) Reset()      { *m = ConfigMap{} }
+func (*ConfigMap) ProtoMessage() {}
+
+func (m *ConfigMapKeySelector) Reset()      { *m = ConfigMapKeySelector{} }
+func (*ConfigMapKeySelector) ProtoMessage() {}
+
+func (m *ConfigMapList) Reset()      { *m = ConfigMapList{} }
+func (*ConfigMapList) ProtoMessage() {}
+
+func (m *ConfigMapVolumeSource) Reset()      { *m = ConfigMapVolumeSource{} }
+func (*ConfigMapVolumeSource) ProtoMessage() {}
+
+func (m *Container) Reset()      { *m = Container{} }
+func (*Container) ProtoMessage() {}
+
+func (m *ContainerImage) Reset()      { *m = ContainerImage{} }
+func (*ContainerImage) ProtoMessage() {}
+
+func (m *ContainerPort) Reset()      { *m = ContainerPort{} }
+func (*ContainerPort) ProtoMessage() {}
+
+func (m *ContainerState) Reset()      { *m = ContainerState{} }
+func (*ContainerState) ProtoMessage() {}
+
+func (m *ContainerStateRunning) Reset()      { *m = ContainerStateRunning{} }
+func (*ContainerStateRunning) ProtoMessage() {}
+
+func (m *ContainerStateTerminated) Reset()      { *m = ContainerStateTerminated{} }
+func (*ContainerStateTerminated) ProtoMessage() {}
+
+func (m *ContainerStateWaiting) Reset()      { *m = ContainerStateWaiting{} }
+func (*ContainerStateWaiting) ProtoMessage() {}
+
+func (m *ContainerStatus) Reset()      { *m = ContainerStatus{} }
+func (*ContainerStatus) ProtoMessage() {}
+
+func (m *DaemonEndpoint) Reset()      { *m = DaemonEndpoint{} }
+func (*DaemonEndpoint) ProtoMessage() {}
+
+func (m *DeleteOptions) Reset()      { *m = DeleteOptions{} }
+func (*DeleteOptions) ProtoMessage() {}
+
+func (m *DownwardAPIVolumeFile) Reset()      { *m = DownwardAPIVolumeFile{} }
+func (*DownwardAPIVolumeFile) ProtoMessage() {}
+
+func (m *DownwardAPIVolumeSource) Reset()      { *m = DownwardAPIVolumeSource{} }
+func (*DownwardAPIVolumeSource) ProtoMessage() {}
+
+func (m *EmptyDirVolumeSource) Reset()      { *m = EmptyDirVolumeSource{} }
+func (*EmptyDirVolumeSource) ProtoMessage() {}
+
+func (m *EndpointAddress) Reset()      { *m = EndpointAddress{} }
+func (*EndpointAddress) ProtoMessage() {}
+
+func (m *EndpointPort) Reset()      { *m = EndpointPort{} }
+func (*EndpointPort) ProtoMessage() {}
+
+func (m *EndpointSubset) Reset()      { *m = EndpointSubset{} }
+func (*EndpointSubset) ProtoMessage() {}
+
+func (m *Endpoints) Reset()      { *m = Endpoints{} }
+func (*Endpoints) ProtoMessage() {}
+
+func (m *EndpointsList) Reset()      { *m = EndpointsList{} }
+func (*EndpointsList) ProtoMessage() {}
+
+func (m *EnvVar) Reset()      { *m = EnvVar{} }
+func (*EnvVar) ProtoMessage() {}
+
+func (m *EnvVarSource) Reset()      { *m = EnvVarSource{} }
+func (*EnvVarSource) ProtoMessage() {}
+
+func (m *Event) Reset()      { *m = Event{} }
+func (*Event) ProtoMessage() {}
+
+func (m *EventList) Reset()      { *m = EventList{} }
+func (*EventList) ProtoMessage() {}
+
+func (m *EventSource) Reset()      { *m = EventSource{} }
+func (*EventSource) ProtoMessage() {}
+
+func (m *ExecAction) Reset()      { *m = ExecAction{} }
+func (*ExecAction) ProtoMessage() {}
+
+func (m *ExportOptions) Reset()      { *m = ExportOptions{} }
+func (*ExportOptions) ProtoMessage() {}
+
+func (m *FCVolumeSource) Reset()      { *m = FCVolumeSource{} }
+func (*FCVolumeSource) ProtoMessage() {}
+
+func (m *FlexVolumeSource) Reset()      { *m = FlexVolumeSource{} }
+func (*FlexVolumeSource) ProtoMessage() {}
+
+func (m *FlockerVolumeSource) Reset()      { *m = FlockerVolumeSource{} }
+func (*FlockerVolumeSource) ProtoMessage() {}
+
+func (m *GCEPersistentDiskVolumeSource) Reset()      { *m = GCEPersistentDiskVolumeSource{} }
+func (*GCEPersistentDiskVolumeSource) ProtoMessage() {}
+
+func (m *GitRepoVolumeSource) Reset()      { *m = GitRepoVolumeSource{} }
+func (*GitRepoVolumeSource) ProtoMessage() {}
+
+func (m *GlusterfsVolumeSource) Reset()      { *m = GlusterfsVolumeSource{} }
+func (*GlusterfsVolumeSource) ProtoMessage() {}
+
+func (m *HTTPGetAction) Reset()      { *m = HTTPGetAction{} }
+func (*HTTPGetAction) ProtoMessage() {}
+
+func (m *HTTPHeader) Reset()      { *m = HTTPHeader{} }
+func (*HTTPHeader) ProtoMessage() {}
+
+func (m *Handler) Reset()      { *m = Handler{} }
+func (*Handler) ProtoMessage() {}
+
+func (m *HostPathVolumeSource) Reset()      { *m = HostPathVolumeSource{} }
+func (*HostPathVolumeSource) ProtoMessage() {}
+
+func (m *ISCSIVolumeSource) Reset()      { *m = ISCSIVolumeSource{} }
+func (*ISCSIVolumeSource) ProtoMessage() {}
+
+func (m *KeyToPath) Reset()      { *m = KeyToPath{} }
+func (*KeyToPath) ProtoMessage() {}
+
+func (m *Lifecycle) Reset()      { *m = Lifecycle{} }
+func (*Lifecycle) ProtoMessage() {}
+
+func (m *LimitRange) Reset()      { *m = LimitRange{} }
+func (*LimitRange) ProtoMessage() {}
+
+func (m *LimitRangeItem) Reset()      { *m = LimitRangeItem{} }
+func (*LimitRangeItem) ProtoMessage() {}
+
+func (m *LimitRangeList) Reset()      { *m = LimitRangeList{} }
+func (*LimitRangeList) ProtoMessage() {}
+
+func (m *LimitRangeSpec) Reset()      { *m = LimitRangeSpec{} }
+func (*LimitRangeSpec) ProtoMessage() {}
+
+func (m *List) Reset()      { *m = List{} }
+func (*List) ProtoMessage() {}
+
+func (m *ListOptions) Reset()      { *m = ListOptions{} }
+func (*ListOptions) ProtoMessage() {}
+
+func (m *LoadBalancerIngress) Reset()      { *m = LoadBalancerIngress{} }
+func (*LoadBalancerIngress) ProtoMessage() {}
+
+func (m *LoadBalancerStatus) Reset()      { *m = LoadBalancerStatus{} }
+func (*LoadBalancerStatus) ProtoMessage() {}
+
+func (m *LocalObjectReference) Reset()      { *m = LocalObjectReference{} }
+func (*LocalObjectReference) ProtoMessage() {}
+
+func (m *NFSVolumeSource) Reset()      { *m = NFSVolumeSource{} }
+func (*NFSVolumeSource) ProtoMessage() {}
+
+func (m *Namespace) Reset()      { *m = Namespace{} }
+func (*Namespace) ProtoMessage() {}
+
+func (m *NamespaceList) Reset()      { *m = NamespaceList{} }
+func (*NamespaceList) ProtoMessage() {}
+
+func (m *NamespaceSpec) Reset()      { *m = NamespaceSpec{} }
+func (*NamespaceSpec) ProtoMessage() {}
+
+func (m *NamespaceStatus) Reset()      { *m = NamespaceStatus{} }
+func (*NamespaceStatus) ProtoMessage() {}
+
+func (m *Node) Reset()      { *m = Node{} }
+func (*Node) ProtoMessage() {}
+
+func (m *NodeAddress) Reset()      { *m = NodeAddress{} }
+func (*NodeAddress) ProtoMessage() {}
+
+func (m *NodeAffinity) Reset()      { *m = NodeAffinity{} }
+func (*NodeAffinity) ProtoMessage() {}
+
+func (m *NodeCondition) Reset()      { *m = NodeCondition{} }
+func (*NodeCondition) ProtoMessage() {}
+
+func (m *NodeDaemonEndpoints) Reset()      { *m = NodeDaemonEndpoints{} }
+func (*NodeDaemonEndpoints) ProtoMessage() {}
+
+func (m *NodeList) Reset()      { *m = NodeList{} }
+func (*NodeList) ProtoMessage() {}
+
+func (m *NodeProxyOptions) Reset()      { *m = NodeProxyOptions{} }
+func (*NodeProxyOptions) ProtoMessage() {}
+
+func (m *NodeSelector) Reset()      { *m = NodeSelector{} }
+func (*NodeSelector) ProtoMessage() {}
+
+func (m *NodeSelectorRequirement) Reset()      { *m = NodeSelectorRequirement{} }
+func (*NodeSelectorRequirement) ProtoMessage() {}
+
+func (m *NodeSelectorTerm) Reset()      { *m = NodeSelectorTerm{} }
+func (*NodeSelectorTerm) ProtoMessage() {}
+
+func (m *NodeSpec) Reset()      { *m = NodeSpec{} }
+func (*NodeSpec) ProtoMessage() {}
+
+func (m *NodeStatus) Reset()      { *m = NodeStatus{} }
+func (*NodeStatus) ProtoMessage() {}
+
+func (m *NodeSystemInfo) Reset()      { *m = NodeSystemInfo{} }
+func (*NodeSystemInfo) ProtoMessage() {}
+
+func (m *ObjectFieldSelector) Reset()      { *m = ObjectFieldSelector{} }
+func (*ObjectFieldSelector) ProtoMessage() {}
+
+func (m *ObjectMeta) Reset()      { *m = ObjectMeta{} }
+func (*ObjectMeta) ProtoMessage() {}
+
+func (m *ObjectReference) Reset()      { *m = ObjectReference{} }
+func (*ObjectReference) ProtoMessage() {}
+
+func (m *OwnerReference) Reset()      { *m = OwnerReference{} }
+func (*OwnerReference) ProtoMessage() {}
+
+func (m *PersistentVolume) Reset()      { *m = PersistentVolume{} }
+func (*PersistentVolume) ProtoMessage() {}
+
+func (m *PersistentVolumeClaim) Reset()      { *m = PersistentVolumeClaim{} }
+func (*PersistentVolumeClaim) ProtoMessage() {}
+
+func (m *PersistentVolumeClaimList) Reset()      { *m = PersistentVolumeClaimList{} }
+func (*PersistentVolumeClaimList) ProtoMessage() {}
+
+func (m *PersistentVolumeClaimSpec) Reset()      { *m = PersistentVolumeClaimSpec{} }
+func (*PersistentVolumeClaimSpec) ProtoMessage() {}
+
+func (m *PersistentVolumeClaimStatus) Reset()      { *m = PersistentVolumeClaimStatus{} }
+func (*PersistentVolumeClaimStatus) ProtoMessage() {}
+
+func (m *PersistentVolumeClaimVolumeSource) Reset()      { *m = PersistentVolumeClaimVolumeSource{} }
+func (*PersistentVolumeClaimVolumeSource) ProtoMessage() {}
+
+func (m *PersistentVolumeList) Reset()      { *m = PersistentVolumeList{} }
+func (*PersistentVolumeList) ProtoMessage() {}
+
+func (m *PersistentVolumeSource) Reset()      { *m = PersistentVolumeSource{} }
+func (*PersistentVolumeSource) ProtoMessage() {}
+
+func (m *PersistentVolumeSpec) Reset()      { *m = PersistentVolumeSpec{} }
+func (*PersistentVolumeSpec) ProtoMessage() {}
+
+func (m *PersistentVolumeStatus) Reset()      { *m = PersistentVolumeStatus{} }
+func (*PersistentVolumeStatus) ProtoMessage() {}
+
+func (m *Pod) Reset()      { *m = Pod{} }
+func (*Pod) ProtoMessage() {}
+
+func (m *PodAffinity) Reset()      { *m = PodAffinity{} }
+func (*PodAffinity) ProtoMessage() {}
+
+func (m *PodAffinityTerm) Reset()      { *m = PodAffinityTerm{} }
+func (*PodAffinityTerm) ProtoMessage() {}
+
+func (m *PodAntiAffinity) Reset()      { *m = PodAntiAffinity{} }
+func (*PodAntiAffinity) ProtoMessage() {}
+
+func (m *PodAttachOptions) Reset()      { *m = PodAttachOptions{} }
+func (*PodAttachOptions) ProtoMessage() {}
+
+func (m *PodCondition) Reset()      { *m = PodCondition{} }
+func (*PodCondition) ProtoMessage() {}
+
+func (m *PodExecOptions) Reset()      { *m = PodExecOptions{} }
+func (*PodExecOptions) ProtoMessage() {}
+
+func (m *PodList) Reset()      { *m = PodList{} }
+func (*PodList) ProtoMessage() {}
+
+func (m *PodLogOptions) Reset()      { *m = PodLogOptions{} }
+func (*PodLogOptions) ProtoMessage() {}
+
+func (m *PodProxyOptions) Reset()      { *m = PodProxyOptions{} }
+func (*PodProxyOptions) ProtoMessage() {}
+
+func (m *PodSecurityContext) Reset()      { *m = PodSecurityContext{} }
+func (*PodSecurityContext) ProtoMessage() {}
+
+func (m *PodSignature) Reset()      { *m = PodSignature{} }
+func (*PodSignature) ProtoMessage() {}
+
+func (m *PodSpec) Reset()      { *m = PodSpec{} }
+func (*PodSpec) ProtoMessage() {}
+
+func (m *PodStatus) Reset()      { *m = PodStatus{} }
+func (*PodStatus) ProtoMessage() {}
+
+func (m *PodStatusResult) Reset()      { *m = PodStatusResult{} }
+func (*PodStatusResult) ProtoMessage() {}
+
+func (m *PodTemplate) Reset()      { *m = PodTemplate{} }
+func (*PodTemplate) ProtoMessage() {}
+
+func (m *PodTemplateList) Reset()      { *m = PodTemplateList{} }
+func (*PodTemplateList) ProtoMessage() {}
+
+func (m *PodTemplateSpec) Reset()      { *m = PodTemplateSpec{} }
+func (*PodTemplateSpec) ProtoMessage() {}
+
+func (m *Preconditions) Reset()      { *m = Preconditions{} }
+func (*Preconditions) ProtoMessage() {}
+
+func (m *PreferAvoidPodsEntry) Reset()      { *m = PreferAvoidPodsEntry{} }
+func (*PreferAvoidPodsEntry) ProtoMessage() {}
+
+func (m *PreferredSchedulingTerm) Reset()      { *m = PreferredSchedulingTerm{} }
+func (*PreferredSchedulingTerm) ProtoMessage() {}
+
+func (m *Probe) Reset()      { *m = Probe{} }
+func (*Probe) ProtoMessage() {}
+
+func (m *RBDVolumeSource) Reset()      { *m = RBDVolumeSource{} }
+func (*RBDVolumeSource) ProtoMessage() {}
+
+func (m *RangeAllocation) Reset()      { *m = RangeAllocation{} }
+func (*RangeAllocation) ProtoMessage() {}
+
+func (m *ReplicationController) Reset()      { *m = ReplicationController{} }
+func (*ReplicationController) ProtoMessage() {}
+
+func (m *ReplicationControllerList) Reset()      { *m = ReplicationControllerList{} }
+func (*ReplicationControllerList) ProtoMessage() {}
+
+func (m *ReplicationControllerSpec) Reset()      { *m = ReplicationControllerSpec{} }
+func (*ReplicationControllerSpec) ProtoMessage() {}
+
+func (m *ReplicationControllerStatus) Reset()      { *m = ReplicationControllerStatus{} }
+func (*ReplicationControllerStatus) ProtoMessage() {}
+
+func (m *ResourceFieldSelector) Reset()      { *m = ResourceFieldSelector{} }
+func (*ResourceFieldSelector) ProtoMessage() {}
+
+func (m *ResourceQuota) Reset()      { *m = ResourceQuota{} }
+func (*ResourceQuota) ProtoMessage() {}
+
+func (m *ResourceQuotaList) Reset()      { *m = ResourceQuotaList{} }
+func (*ResourceQuotaList) ProtoMessage() {}
+
+func (m *ResourceQuotaSpec) Reset()      { *m = ResourceQuotaSpec{} }
+func (*ResourceQuotaSpec) ProtoMessage() {}
+
+func (m *ResourceQuotaStatus) Reset()      { *m = ResourceQuotaStatus{} }
+func (*ResourceQuotaStatus) ProtoMessage() {}
+
+func (m *ResourceRequirements) Reset()      { *m = ResourceRequirements{} }
+func (*ResourceRequirements) ProtoMessage() {}
+
+func (m *SELinuxOptions) Reset()      { *m = SELinuxOptions{} }
+func (*SELinuxOptions) ProtoMessage() {}
+
+func (m *Secret) Reset()      { *m = Secret{} }
+func (*Secret) ProtoMessage() {}
+
+func (m *SecretKeySelector) Reset()      { *m = SecretKeySelector{} }
+func (*SecretKeySelector) ProtoMessage() {}
+
+func (m *SecretList) Reset()      { *m = SecretList{} }
+func (*SecretList) ProtoMessage() {}
+
+func (m *SecretVolumeSource) Reset()      { *m = SecretVolumeSource{} }
+func (*SecretVolumeSource) ProtoMessage() {}
+
+func (m *SecurityContext) Reset()      { *m = SecurityContext{} }
+func (*SecurityContext) ProtoMessage() {}
+
+func (m *SerializedReference) Reset()      { *m = SerializedReference{} }
+func (*SerializedReference) ProtoMessage() {}
+
+func (m *Service) Reset()      { *m = Service{} }
+func (*Service) ProtoMessage() {}
+
+func (m *ServiceAccount) Reset()      { *m = ServiceAccount{} }
+func (*ServiceAccount) ProtoMessage() {}
+
+func (m *ServiceAccountList) Reset()      { *m = ServiceAccountList{} }
+func (*ServiceAccountList) ProtoMessage() {}
+
+func (m *ServiceList) Reset()      { *m = ServiceList{} }
+func (*ServiceList) ProtoMessage() {}
+
+func (m *ServicePort) Reset()      { *m = ServicePort{} }
+func (*ServicePort) ProtoMessage() {}
+
+func (m *ServiceProxyOptions) Reset()      { *m = ServiceProxyOptions{} }
+func (*ServiceProxyOptions) ProtoMessage() {}
+
+func (m *ServiceSpec) Reset()      { *m = ServiceSpec{} }
+func (*ServiceSpec) ProtoMessage() {}
+
+func (m *ServiceStatus) Reset()      { *m = ServiceStatus{} }
+func (*ServiceStatus) ProtoMessage() {}
+
+func (m *TCPSocketAction) Reset()      { *m = TCPSocketAction{} }
+func (*TCPSocketAction) ProtoMessage() {}
+
+func (m *Taint) Reset()      { *m = Taint{} }
+func (*Taint) ProtoMessage() {}
+
+func (m *Toleration) Reset()      { *m = Toleration{} }
+func (*Toleration) ProtoMessage() {}
+
+func (m *Volume) Reset()      { *m = Volume{} }
+func (*Volume) ProtoMessage() {}
+
+func (m *VolumeMount) Reset()      { *m = VolumeMount{} }
+func (*VolumeMount) ProtoMessage() {}
+
+func (m *VolumeSource) Reset()      { *m = VolumeSource{} }
+func (*VolumeSource) ProtoMessage() {}
+
+func (m *VsphereVirtualDiskVolumeSource) Reset()      { *m = VsphereVirtualDiskVolumeSource{} }
+func (*VsphereVirtualDiskVolumeSource) ProtoMessage() {}
+
+func (m *WeightedPodAffinityTerm) Reset()      { *m = WeightedPodAffinityTerm{} }
+func (*WeightedPodAffinityTerm) ProtoMessage() {}
 
 func init() {
 	proto.RegisterType((*AWSElasticBlockStoreVolumeSource)(nil), "k8s.io.kubernetes.pkg.api.v1.AWSElasticBlockStoreVolumeSource")
 	proto.RegisterType((*Affinity)(nil), "k8s.io.kubernetes.pkg.api.v1.Affinity")
 	proto.RegisterType((*AttachedVolume)(nil), "k8s.io.kubernetes.pkg.api.v1.AttachedVolume")
+	proto.RegisterType((*AvoidPods)(nil), "k8s.io.kubernetes.pkg.api.v1.AvoidPods")
 	proto.RegisterType((*AzureFileVolumeSource)(nil), "k8s.io.kubernetes.pkg.api.v1.AzureFileVolumeSource")
 	proto.RegisterType((*Binding)(nil), "k8s.io.kubernetes.pkg.api.v1.Binding")
 	proto.RegisterType((*Capabilities)(nil), "k8s.io.kubernetes.pkg.api.v1.Capabilities")
@@ -896,6 +764,7 @@ func init() {
 	proto.RegisterType((*PodLogOptions)(nil), "k8s.io.kubernetes.pkg.api.v1.PodLogOptions")
 	proto.RegisterType((*PodProxyOptions)(nil), "k8s.io.kubernetes.pkg.api.v1.PodProxyOptions")
 	proto.RegisterType((*PodSecurityContext)(nil), "k8s.io.kubernetes.pkg.api.v1.PodSecurityContext")
+	proto.RegisterType((*PodSignature)(nil), "k8s.io.kubernetes.pkg.api.v1.PodSignature")
 	proto.RegisterType((*PodSpec)(nil), "k8s.io.kubernetes.pkg.api.v1.PodSpec")
 	proto.RegisterType((*PodStatus)(nil), "k8s.io.kubernetes.pkg.api.v1.PodStatus")
 	proto.RegisterType((*PodStatusResult)(nil), "k8s.io.kubernetes.pkg.api.v1.PodStatusResult")
@@ -903,6 +772,7 @@ func init() {
 	proto.RegisterType((*PodTemplateList)(nil), "k8s.io.kubernetes.pkg.api.v1.PodTemplateList")
 	proto.RegisterType((*PodTemplateSpec)(nil), "k8s.io.kubernetes.pkg.api.v1.PodTemplateSpec")
 	proto.RegisterType((*Preconditions)(nil), "k8s.io.kubernetes.pkg.api.v1.Preconditions")
+	proto.RegisterType((*PreferAvoidPodsEntry)(nil), "k8s.io.kubernetes.pkg.api.v1.PreferAvoidPodsEntry")
 	proto.RegisterType((*PreferredSchedulingTerm)(nil), "k8s.io.kubernetes.pkg.api.v1.PreferredSchedulingTerm")
 	proto.RegisterType((*Probe)(nil), "k8s.io.kubernetes.pkg.api.v1.Probe")
 	proto.RegisterType((*RBDVolumeSource)(nil), "k8s.io.kubernetes.pkg.api.v1.RBDVolumeSource")
@@ -1049,6 +919,36 @@ func (m *AttachedVolume) MarshalTo(data []byte) (int, error) {
 	i++
 	i = encodeVarintGenerated(data, i, uint64(len(m.DevicePath)))
 	i += copy(data[i:], m.DevicePath)
+	return i, nil
+}
+
+func (m *AvoidPods) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *AvoidPods) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.PreferAvoidPods) > 0 {
+		for _, msg := range m.PreferAvoidPods {
+			data[i] = 0xa
+			i++
+			i = encodeVarintGenerated(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
 	return i, nil
 }
 
@@ -5625,6 +5525,34 @@ func (m *PodSecurityContext) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *PodSignature) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PodSignature) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.PodController != nil {
+		data[i] = 0xa
+		i++
+		i = encodeVarintGenerated(data, i, uint64(m.PodController.Size()))
+		n114, err := m.PodController.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n114
+	}
+	return i, nil
+}
+
 func (m *PodSpec) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -5739,11 +5667,11 @@ func (m *PodSpec) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x72
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.SecurityContext.Size()))
-		n114, err := m.SecurityContext.MarshalTo(data[i:])
+		n115, err := m.SecurityContext.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n114
+		i += n115
 	}
 	if len(m.ImagePullSecrets) > 0 {
 		for _, msg := range m.ImagePullSecrets {
@@ -5823,11 +5751,11 @@ func (m *PodStatus) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x3a
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.StartTime.Size()))
-		n115, err := m.StartTime.MarshalTo(data[i:])
+		n116, err := m.StartTime.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n115
+		i += n116
 	}
 	if len(m.ContainerStatuses) > 0 {
 		for _, msg := range m.ContainerStatuses {
@@ -5862,19 +5790,19 @@ func (m *PodStatusResult) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n116, err := m.ObjectMeta.MarshalTo(data[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n116
-	data[i] = 0x12
-	i++
-	i = encodeVarintGenerated(data, i, uint64(m.Status.Size()))
-	n117, err := m.Status.MarshalTo(data[i:])
+	n117, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
 	i += n117
+	data[i] = 0x12
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.Status.Size()))
+	n118, err := m.Status.MarshalTo(data[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n118
 	return i, nil
 }
 
@@ -5896,19 +5824,19 @@ func (m *PodTemplate) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n118, err := m.ObjectMeta.MarshalTo(data[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n118
-	data[i] = 0x12
-	i++
-	i = encodeVarintGenerated(data, i, uint64(m.Template.Size()))
-	n119, err := m.Template.MarshalTo(data[i:])
+	n119, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
 	i += n119
+	data[i] = 0x12
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.Template.Size()))
+	n120, err := m.Template.MarshalTo(data[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n120
 	return i, nil
 }
 
@@ -5930,11 +5858,11 @@ func (m *PodTemplateList) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ListMeta.Size()))
-	n120, err := m.ListMeta.MarshalTo(data[i:])
+	n121, err := m.ListMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n120
+	i += n121
 	if len(m.Items) > 0 {
 		for _, msg := range m.Items {
 			data[i] = 0x12
@@ -5968,19 +5896,19 @@ func (m *PodTemplateSpec) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n121, err := m.ObjectMeta.MarshalTo(data[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n121
-	data[i] = 0x12
-	i++
-	i = encodeVarintGenerated(data, i, uint64(m.Spec.Size()))
-	n122, err := m.Spec.MarshalTo(data[i:])
+	n122, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
 	i += n122
+	data[i] = 0x12
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.Spec.Size()))
+	n123, err := m.Spec.MarshalTo(data[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n123
 	return i, nil
 }
 
@@ -6008,6 +5936,48 @@ func (m *Preconditions) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *PreferAvoidPodsEntry) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PreferAvoidPodsEntry) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	data[i] = 0xa
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.PodSignature.Size()))
+	n124, err := m.PodSignature.MarshalTo(data[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n124
+	data[i] = 0x12
+	i++
+	i = encodeVarintGenerated(data, i, uint64(m.EvictionTime.Size()))
+	n125, err := m.EvictionTime.MarshalTo(data[i:])
+	if err != nil {
+		return 0, err
+	}
+	i += n125
+	data[i] = 0x1a
+	i++
+	i = encodeVarintGenerated(data, i, uint64(len(m.Reason)))
+	i += copy(data[i:], m.Reason)
+	data[i] = 0x22
+	i++
+	i = encodeVarintGenerated(data, i, uint64(len(m.Message)))
+	i += copy(data[i:], m.Message)
+	return i, nil
+}
+
 func (m *PreferredSchedulingTerm) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -6029,11 +5999,11 @@ func (m *PreferredSchedulingTerm) MarshalTo(data []byte) (int, error) {
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Preference.Size()))
-	n123, err := m.Preference.MarshalTo(data[i:])
+	n126, err := m.Preference.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n123
+	i += n126
 	return i, nil
 }
 
@@ -6055,11 +6025,11 @@ func (m *Probe) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Handler.Size()))
-	n124, err := m.Handler.MarshalTo(data[i:])
+	n127, err := m.Handler.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n124
+	i += n127
 	data[i] = 0x10
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.InitialDelaySeconds))
@@ -6132,11 +6102,11 @@ func (m *RBDVolumeSource) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x3a
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.SecretRef.Size()))
-		n125, err := m.SecretRef.MarshalTo(data[i:])
+		n128, err := m.SecretRef.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n125
+		i += n128
 	}
 	data[i] = 0x40
 	i++
@@ -6167,11 +6137,11 @@ func (m *RangeAllocation) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n126, err := m.ObjectMeta.MarshalTo(data[i:])
+	n129, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n126
+	i += n129
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(len(m.Range)))
@@ -6203,27 +6173,27 @@ func (m *ReplicationController) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n127, err := m.ObjectMeta.MarshalTo(data[i:])
+	n130, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n127
+	i += n130
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Spec.Size()))
-	n128, err := m.Spec.MarshalTo(data[i:])
+	n131, err := m.Spec.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n128
+	i += n131
 	data[i] = 0x1a
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Status.Size()))
-	n129, err := m.Status.MarshalTo(data[i:])
+	n132, err := m.Status.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n129
+	i += n132
 	return i, nil
 }
 
@@ -6245,11 +6215,11 @@ func (m *ReplicationControllerList) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ListMeta.Size()))
-	n130, err := m.ListMeta.MarshalTo(data[i:])
+	n133, err := m.ListMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n130
+	i += n133
 	if len(m.Items) > 0 {
 		for _, msg := range m.Items {
 			data[i] = 0x12
@@ -6306,11 +6276,11 @@ func (m *ReplicationControllerSpec) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.Template.Size()))
-		n131, err := m.Template.MarshalTo(data[i:])
+		n134, err := m.Template.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n131
+		i += n134
 	}
 	return i, nil
 }
@@ -6368,11 +6338,11 @@ func (m *ResourceFieldSelector) MarshalTo(data []byte) (int, error) {
 	data[i] = 0x1a
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Divisor.Size()))
-	n132, err := m.Divisor.MarshalTo(data[i:])
+	n135, err := m.Divisor.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n132
+	i += n135
 	return i, nil
 }
 
@@ -6394,27 +6364,27 @@ func (m *ResourceQuota) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n133, err := m.ObjectMeta.MarshalTo(data[i:])
+	n136, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n133
+	i += n136
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Spec.Size()))
-	n134, err := m.Spec.MarshalTo(data[i:])
+	n137, err := m.Spec.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n134
+	i += n137
 	data[i] = 0x1a
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Status.Size()))
-	n135, err := m.Status.MarshalTo(data[i:])
+	n138, err := m.Status.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n135
+	i += n138
 	return i, nil
 }
 
@@ -6436,11 +6406,11 @@ func (m *ResourceQuotaList) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ListMeta.Size()))
-	n136, err := m.ListMeta.MarshalTo(data[i:])
+	n139, err := m.ListMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n136
+	i += n139
 	if len(m.Items) > 0 {
 		for _, msg := range m.Items {
 			data[i] = 0x12
@@ -6486,11 +6456,11 @@ func (m *ResourceQuotaSpec) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintGenerated(data, i, uint64((&v).Size()))
-			n137, err := (&v).MarshalTo(data[i:])
+			n140, err := (&v).MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n137
+			i += n140
 		}
 	}
 	if len(m.Scopes) > 0 {
@@ -6541,11 +6511,11 @@ func (m *ResourceQuotaStatus) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintGenerated(data, i, uint64((&v).Size()))
-			n138, err := (&v).MarshalTo(data[i:])
+			n141, err := (&v).MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n138
+			i += n141
 		}
 	}
 	if len(m.Used) > 0 {
@@ -6563,11 +6533,11 @@ func (m *ResourceQuotaStatus) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintGenerated(data, i, uint64((&v).Size()))
-			n139, err := (&v).MarshalTo(data[i:])
+			n142, err := (&v).MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n139
+			i += n142
 		}
 	}
 	return i, nil
@@ -6603,11 +6573,11 @@ func (m *ResourceRequirements) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintGenerated(data, i, uint64((&v).Size()))
-			n140, err := (&v).MarshalTo(data[i:])
+			n143, err := (&v).MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n140
+			i += n143
 		}
 	}
 	if len(m.Requests) > 0 {
@@ -6625,11 +6595,11 @@ func (m *ResourceRequirements) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x12
 			i++
 			i = encodeVarintGenerated(data, i, uint64((&v).Size()))
-			n141, err := (&v).MarshalTo(data[i:])
+			n144, err := (&v).MarshalTo(data[i:])
 			if err != nil {
 				return 0, err
 			}
-			i += n141
+			i += n144
 		}
 	}
 	return i, nil
@@ -6687,11 +6657,11 @@ func (m *Secret) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n142, err := m.ObjectMeta.MarshalTo(data[i:])
+	n145, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n142
+	i += n145
 	if len(m.Data) > 0 {
 		for k := range m.Data {
 			data[i] = 0x12
@@ -6713,6 +6683,23 @@ func (m *Secret) MarshalTo(data []byte) (int, error) {
 	i++
 	i = encodeVarintGenerated(data, i, uint64(len(m.Type)))
 	i += copy(data[i:], m.Type)
+	if len(m.StringData) > 0 {
+		for k := range m.StringData {
+			data[i] = 0x22
+			i++
+			v := m.StringData[k]
+			mapSize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + len(v) + sovGenerated(uint64(len(v)))
+			i = encodeVarintGenerated(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintGenerated(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintGenerated(data, i, uint64(len(v)))
+			i += copy(data[i:], v)
+		}
+	}
 	return i, nil
 }
 
@@ -6734,11 +6721,11 @@ func (m *SecretKeySelector) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.LocalObjectReference.Size()))
-	n143, err := m.LocalObjectReference.MarshalTo(data[i:])
+	n146, err := m.LocalObjectReference.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n143
+	i += n146
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(len(m.Key)))
@@ -6764,11 +6751,11 @@ func (m *SecretList) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ListMeta.Size()))
-	n144, err := m.ListMeta.MarshalTo(data[i:])
+	n147, err := m.ListMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n144
+	i += n147
 	if len(m.Items) > 0 {
 		for _, msg := range m.Items {
 			data[i] = 0x12
@@ -6837,11 +6824,11 @@ func (m *SecurityContext) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.Capabilities.Size()))
-		n145, err := m.Capabilities.MarshalTo(data[i:])
+		n148, err := m.Capabilities.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n145
+		i += n148
 	}
 	if m.Privileged != nil {
 		data[i] = 0x10
@@ -6857,11 +6844,11 @@ func (m *SecurityContext) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.SELinuxOptions.Size()))
-		n146, err := m.SELinuxOptions.MarshalTo(data[i:])
+		n149, err := m.SELinuxOptions.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n146
+		i += n149
 	}
 	if m.RunAsUser != nil {
 		data[i] = 0x20
@@ -6909,11 +6896,11 @@ func (m *SerializedReference) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Reference.Size()))
-	n147, err := m.Reference.MarshalTo(data[i:])
+	n150, err := m.Reference.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n147
+	i += n150
 	return i, nil
 }
 
@@ -6935,27 +6922,27 @@ func (m *Service) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n148, err := m.ObjectMeta.MarshalTo(data[i:])
+	n151, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n148
+	i += n151
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Spec.Size()))
-	n149, err := m.Spec.MarshalTo(data[i:])
+	n152, err := m.Spec.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n149
+	i += n152
 	data[i] = 0x1a
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Status.Size()))
-	n150, err := m.Status.MarshalTo(data[i:])
+	n153, err := m.Status.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n150
+	i += n153
 	return i, nil
 }
 
@@ -6977,11 +6964,11 @@ func (m *ServiceAccount) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ObjectMeta.Size()))
-	n151, err := m.ObjectMeta.MarshalTo(data[i:])
+	n154, err := m.ObjectMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n151
+	i += n154
 	if len(m.Secrets) > 0 {
 		for _, msg := range m.Secrets {
 			data[i] = 0x12
@@ -7027,11 +7014,11 @@ func (m *ServiceAccountList) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ListMeta.Size()))
-	n152, err := m.ListMeta.MarshalTo(data[i:])
+	n155, err := m.ListMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n152
+	i += n155
 	if len(m.Items) > 0 {
 		for _, msg := range m.Items {
 			data[i] = 0x12
@@ -7065,11 +7052,11 @@ func (m *ServiceList) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.ListMeta.Size()))
-	n153, err := m.ListMeta.MarshalTo(data[i:])
+	n156, err := m.ListMeta.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n153
+	i += n156
 	if len(m.Items) > 0 {
 		for _, msg := range m.Items {
 			data[i] = 0x12
@@ -7114,11 +7101,11 @@ func (m *ServicePort) MarshalTo(data []byte) (int, error) {
 	data[i] = 0x22
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.TargetPort.Size()))
-	n154, err := m.TargetPort.MarshalTo(data[i:])
+	n157, err := m.TargetPort.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n154
+	i += n157
 	data[i] = 0x28
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.NodePort))
@@ -7273,11 +7260,11 @@ func (m *ServiceStatus) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.LoadBalancer.Size()))
-	n155, err := m.LoadBalancer.MarshalTo(data[i:])
+	n158, err := m.LoadBalancer.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n155
+	i += n158
 	return i, nil
 }
 
@@ -7299,11 +7286,11 @@ func (m *TCPSocketAction) MarshalTo(data []byte) (int, error) {
 	data[i] = 0xa
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.Port.Size()))
-	n156, err := m.Port.MarshalTo(data[i:])
+	n159, err := m.Port.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n156
+	i += n159
 	return i, nil
 }
 
@@ -7393,11 +7380,11 @@ func (m *Volume) MarshalTo(data []byte) (int, error) {
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.VolumeSource.Size()))
-	n157, err := m.VolumeSource.MarshalTo(data[i:])
+	n160, err := m.VolumeSource.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n157
+	i += n160
 	return i, nil
 }
 
@@ -7458,151 +7445,151 @@ func (m *VolumeSource) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.HostPath.Size()))
-		n158, err := m.HostPath.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n158
-	}
-	if m.EmptyDir != nil {
-		data[i] = 0x12
-		i++
-		i = encodeVarintGenerated(data, i, uint64(m.EmptyDir.Size()))
-		n159, err := m.EmptyDir.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n159
-	}
-	if m.GCEPersistentDisk != nil {
-		data[i] = 0x1a
-		i++
-		i = encodeVarintGenerated(data, i, uint64(m.GCEPersistentDisk.Size()))
-		n160, err := m.GCEPersistentDisk.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n160
-	}
-	if m.AWSElasticBlockStore != nil {
-		data[i] = 0x22
-		i++
-		i = encodeVarintGenerated(data, i, uint64(m.AWSElasticBlockStore.Size()))
-		n161, err := m.AWSElasticBlockStore.MarshalTo(data[i:])
+		n161, err := m.HostPath.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n161
 	}
-	if m.GitRepo != nil {
-		data[i] = 0x2a
+	if m.EmptyDir != nil {
+		data[i] = 0x12
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.GitRepo.Size()))
-		n162, err := m.GitRepo.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.EmptyDir.Size()))
+		n162, err := m.EmptyDir.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n162
 	}
-	if m.Secret != nil {
-		data[i] = 0x32
+	if m.GCEPersistentDisk != nil {
+		data[i] = 0x1a
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.Secret.Size()))
-		n163, err := m.Secret.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.GCEPersistentDisk.Size()))
+		n163, err := m.GCEPersistentDisk.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n163
 	}
-	if m.NFS != nil {
-		data[i] = 0x3a
+	if m.AWSElasticBlockStore != nil {
+		data[i] = 0x22
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.NFS.Size()))
-		n164, err := m.NFS.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.AWSElasticBlockStore.Size()))
+		n164, err := m.AWSElasticBlockStore.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n164
 	}
-	if m.ISCSI != nil {
-		data[i] = 0x42
+	if m.GitRepo != nil {
+		data[i] = 0x2a
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.ISCSI.Size()))
-		n165, err := m.ISCSI.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.GitRepo.Size()))
+		n165, err := m.GitRepo.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n165
 	}
-	if m.Glusterfs != nil {
-		data[i] = 0x4a
+	if m.Secret != nil {
+		data[i] = 0x32
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.Glusterfs.Size()))
-		n166, err := m.Glusterfs.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.Secret.Size()))
+		n166, err := m.Secret.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n166
 	}
-	if m.PersistentVolumeClaim != nil {
-		data[i] = 0x52
+	if m.NFS != nil {
+		data[i] = 0x3a
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.PersistentVolumeClaim.Size()))
-		n167, err := m.PersistentVolumeClaim.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.NFS.Size()))
+		n167, err := m.NFS.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n167
 	}
-	if m.RBD != nil {
-		data[i] = 0x5a
+	if m.ISCSI != nil {
+		data[i] = 0x42
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.RBD.Size()))
-		n168, err := m.RBD.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.ISCSI.Size()))
+		n168, err := m.ISCSI.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n168
 	}
-	if m.FlexVolume != nil {
-		data[i] = 0x62
+	if m.Glusterfs != nil {
+		data[i] = 0x4a
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.FlexVolume.Size()))
-		n169, err := m.FlexVolume.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.Glusterfs.Size()))
+		n169, err := m.Glusterfs.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n169
 	}
-	if m.Cinder != nil {
-		data[i] = 0x6a
+	if m.PersistentVolumeClaim != nil {
+		data[i] = 0x52
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.Cinder.Size()))
-		n170, err := m.Cinder.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.PersistentVolumeClaim.Size()))
+		n170, err := m.PersistentVolumeClaim.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n170
 	}
-	if m.CephFS != nil {
-		data[i] = 0x72
+	if m.RBD != nil {
+		data[i] = 0x5a
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.CephFS.Size()))
-		n171, err := m.CephFS.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.RBD.Size()))
+		n171, err := m.RBD.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n171
 	}
-	if m.Flocker != nil {
-		data[i] = 0x7a
+	if m.FlexVolume != nil {
+		data[i] = 0x62
 		i++
-		i = encodeVarintGenerated(data, i, uint64(m.Flocker.Size()))
-		n172, err := m.Flocker.MarshalTo(data[i:])
+		i = encodeVarintGenerated(data, i, uint64(m.FlexVolume.Size()))
+		n172, err := m.FlexVolume.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n172
+	}
+	if m.Cinder != nil {
+		data[i] = 0x6a
+		i++
+		i = encodeVarintGenerated(data, i, uint64(m.Cinder.Size()))
+		n173, err := m.Cinder.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n173
+	}
+	if m.CephFS != nil {
+		data[i] = 0x72
+		i++
+		i = encodeVarintGenerated(data, i, uint64(m.CephFS.Size()))
+		n174, err := m.CephFS.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n174
+	}
+	if m.Flocker != nil {
+		data[i] = 0x7a
+		i++
+		i = encodeVarintGenerated(data, i, uint64(m.Flocker.Size()))
+		n175, err := m.Flocker.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n175
 	}
 	if m.DownwardAPI != nil {
 		data[i] = 0x82
@@ -7610,11 +7597,11 @@ func (m *VolumeSource) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.DownwardAPI.Size()))
-		n173, err := m.DownwardAPI.MarshalTo(data[i:])
+		n176, err := m.DownwardAPI.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n173
+		i += n176
 	}
 	if m.FC != nil {
 		data[i] = 0x8a
@@ -7622,11 +7609,11 @@ func (m *VolumeSource) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.FC.Size()))
-		n174, err := m.FC.MarshalTo(data[i:])
+		n177, err := m.FC.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n174
+		i += n177
 	}
 	if m.AzureFile != nil {
 		data[i] = 0x92
@@ -7634,11 +7621,11 @@ func (m *VolumeSource) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.AzureFile.Size()))
-		n175, err := m.AzureFile.MarshalTo(data[i:])
+		n178, err := m.AzureFile.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n175
+		i += n178
 	}
 	if m.ConfigMap != nil {
 		data[i] = 0x9a
@@ -7646,11 +7633,11 @@ func (m *VolumeSource) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.ConfigMap.Size()))
-		n176, err := m.ConfigMap.MarshalTo(data[i:])
+		n179, err := m.ConfigMap.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n176
+		i += n179
 	}
 	if m.VsphereVolume != nil {
 		data[i] = 0xa2
@@ -7658,11 +7645,11 @@ func (m *VolumeSource) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1
 		i++
 		i = encodeVarintGenerated(data, i, uint64(m.VsphereVolume.Size()))
-		n177, err := m.VsphereVolume.MarshalTo(data[i:])
+		n180, err := m.VsphereVolume.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n177
+		i += n180
 	}
 	return i, nil
 }
@@ -7714,11 +7701,11 @@ func (m *WeightedPodAffinityTerm) MarshalTo(data []byte) (int, error) {
 	data[i] = 0x12
 	i++
 	i = encodeVarintGenerated(data, i, uint64(m.PodAffinityTerm.Size()))
-	n178, err := m.PodAffinityTerm.MarshalTo(data[i:])
+	n181, err := m.PodAffinityTerm.MarshalTo(data[i:])
 	if err != nil {
 		return 0, err
 	}
-	i += n178
+	i += n181
 	return i, nil
 }
 
@@ -7786,6 +7773,18 @@ func (m *AttachedVolume) Size() (n int) {
 	n += 1 + l + sovGenerated(uint64(l))
 	l = len(m.DevicePath)
 	n += 1 + l + sovGenerated(uint64(l))
+	return n
+}
+
+func (m *AvoidPods) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.PreferAvoidPods) > 0 {
+		for _, e := range m.PreferAvoidPods {
+			l = e.Size()
+			n += 1 + l + sovGenerated(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -9470,6 +9469,16 @@ func (m *PodSecurityContext) Size() (n int) {
 	return n
 }
 
+func (m *PodSignature) Size() (n int) {
+	var l int
+	_ = l
+	if m.PodController != nil {
+		l = m.PodController.Size()
+		n += 1 + l + sovGenerated(uint64(l))
+	}
+	return n
+}
+
 func (m *PodSpec) Size() (n int) {
 	var l int
 	_ = l
@@ -9612,6 +9621,20 @@ func (m *Preconditions) Size() (n int) {
 		l = len(*m.UID)
 		n += 1 + l + sovGenerated(uint64(l))
 	}
+	return n
+}
+
+func (m *PreferAvoidPodsEntry) Size() (n int) {
+	var l int
+	_ = l
+	l = m.PodSignature.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = m.EvictionTime.Size()
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Reason)
+	n += 1 + l + sovGenerated(uint64(l))
+	l = len(m.Message)
+	n += 1 + l + sovGenerated(uint64(l))
 	return n
 }
 
@@ -9870,6 +9893,14 @@ func (m *Secret) Size() (n int) {
 	}
 	l = len(m.Type)
 	n += 1 + l + sovGenerated(uint64(l))
+	if len(m.StringData) > 0 {
+		for k, v := range m.StringData {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovGenerated(uint64(len(k))) + 1 + len(v) + sovGenerated(uint64(len(v)))
+			n += mapEntrySize + 1 + sovGenerated(uint64(mapEntrySize))
+		}
+	}
 	return n
 }
 
@@ -10256,6 +10287,2144 @@ func sovGenerated(x uint64) (n int) {
 func sozGenerated(x uint64) (n int) {
 	return sovGenerated(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (this *AWSElasticBlockStoreVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AWSElasticBlockStoreVolumeSource{`,
+		`VolumeID:` + fmt.Sprintf("%v", this.VolumeID) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`Partition:` + fmt.Sprintf("%v", this.Partition) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Affinity) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Affinity{`,
+		`NodeAffinity:` + strings.Replace(fmt.Sprintf("%v", this.NodeAffinity), "NodeAffinity", "NodeAffinity", 1) + `,`,
+		`PodAffinity:` + strings.Replace(fmt.Sprintf("%v", this.PodAffinity), "PodAffinity", "PodAffinity", 1) + `,`,
+		`PodAntiAffinity:` + strings.Replace(fmt.Sprintf("%v", this.PodAntiAffinity), "PodAntiAffinity", "PodAntiAffinity", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AttachedVolume) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AttachedVolume{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`DevicePath:` + fmt.Sprintf("%v", this.DevicePath) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AvoidPods) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AvoidPods{`,
+		`PreferAvoidPods:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.PreferAvoidPods), "PreferAvoidPodsEntry", "PreferAvoidPodsEntry", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AzureFileVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AzureFileVolumeSource{`,
+		`SecretName:` + fmt.Sprintf("%v", this.SecretName) + `,`,
+		`ShareName:` + fmt.Sprintf("%v", this.ShareName) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Binding) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Binding{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Target:` + strings.Replace(strings.Replace(this.Target.String(), "ObjectReference", "ObjectReference", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Capabilities) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Capabilities{`,
+		`Add:` + fmt.Sprintf("%v", this.Add) + `,`,
+		`Drop:` + fmt.Sprintf("%v", this.Drop) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CephFSVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CephFSVolumeSource{`,
+		`Monitors:` + fmt.Sprintf("%v", this.Monitors) + `,`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`User:` + fmt.Sprintf("%v", this.User) + `,`,
+		`SecretFile:` + fmt.Sprintf("%v", this.SecretFile) + `,`,
+		`SecretRef:` + strings.Replace(fmt.Sprintf("%v", this.SecretRef), "LocalObjectReference", "LocalObjectReference", 1) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CinderVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CinderVolumeSource{`,
+		`VolumeID:` + fmt.Sprintf("%v", this.VolumeID) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ComponentCondition) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ComponentCondition{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`Error:` + fmt.Sprintf("%v", this.Error) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ComponentStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ComponentStatus{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Conditions:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Conditions), "ComponentCondition", "ComponentCondition", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ComponentStatusList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ComponentStatusList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "ComponentStatus", "ComponentStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ConfigMap) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForData := make([]string, 0, len(this.Data))
+	for k := range this.Data {
+		keysForData = append(keysForData, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForData)
+	mapStringForData := "map[string]string{"
+	for _, k := range keysForData {
+		mapStringForData += fmt.Sprintf("%v: %v,", k, this.Data[k])
+	}
+	mapStringForData += "}"
+	s := strings.Join([]string{`&ConfigMap{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Data:` + mapStringForData + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ConfigMapKeySelector) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ConfigMapKeySelector{`,
+		`LocalObjectReference:` + strings.Replace(strings.Replace(this.LocalObjectReference.String(), "LocalObjectReference", "LocalObjectReference", 1), `&`, ``, 1) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ConfigMapList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ConfigMapList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "ConfigMap", "ConfigMap", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ConfigMapVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ConfigMapVolumeSource{`,
+		`LocalObjectReference:` + strings.Replace(strings.Replace(this.LocalObjectReference.String(), "LocalObjectReference", "LocalObjectReference", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "KeyToPath", "KeyToPath", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Container) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Container{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Image:` + fmt.Sprintf("%v", this.Image) + `,`,
+		`Command:` + fmt.Sprintf("%v", this.Command) + `,`,
+		`Args:` + fmt.Sprintf("%v", this.Args) + `,`,
+		`WorkingDir:` + fmt.Sprintf("%v", this.WorkingDir) + `,`,
+		`Ports:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Ports), "ContainerPort", "ContainerPort", 1), `&`, ``, 1) + `,`,
+		`Env:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Env), "EnvVar", "EnvVar", 1), `&`, ``, 1) + `,`,
+		`Resources:` + strings.Replace(strings.Replace(this.Resources.String(), "ResourceRequirements", "ResourceRequirements", 1), `&`, ``, 1) + `,`,
+		`VolumeMounts:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.VolumeMounts), "VolumeMount", "VolumeMount", 1), `&`, ``, 1) + `,`,
+		`LivenessProbe:` + strings.Replace(fmt.Sprintf("%v", this.LivenessProbe), "Probe", "Probe", 1) + `,`,
+		`ReadinessProbe:` + strings.Replace(fmt.Sprintf("%v", this.ReadinessProbe), "Probe", "Probe", 1) + `,`,
+		`Lifecycle:` + strings.Replace(fmt.Sprintf("%v", this.Lifecycle), "Lifecycle", "Lifecycle", 1) + `,`,
+		`TerminationMessagePath:` + fmt.Sprintf("%v", this.TerminationMessagePath) + `,`,
+		`ImagePullPolicy:` + fmt.Sprintf("%v", this.ImagePullPolicy) + `,`,
+		`SecurityContext:` + strings.Replace(fmt.Sprintf("%v", this.SecurityContext), "SecurityContext", "SecurityContext", 1) + `,`,
+		`Stdin:` + fmt.Sprintf("%v", this.Stdin) + `,`,
+		`StdinOnce:` + fmt.Sprintf("%v", this.StdinOnce) + `,`,
+		`TTY:` + fmt.Sprintf("%v", this.TTY) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContainerImage) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContainerImage{`,
+		`Names:` + fmt.Sprintf("%v", this.Names) + `,`,
+		`SizeBytes:` + fmt.Sprintf("%v", this.SizeBytes) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContainerPort) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContainerPort{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`HostPort:` + fmt.Sprintf("%v", this.HostPort) + `,`,
+		`ContainerPort:` + fmt.Sprintf("%v", this.ContainerPort) + `,`,
+		`Protocol:` + fmt.Sprintf("%v", this.Protocol) + `,`,
+		`HostIP:` + fmt.Sprintf("%v", this.HostIP) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContainerState) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContainerState{`,
+		`Waiting:` + strings.Replace(fmt.Sprintf("%v", this.Waiting), "ContainerStateWaiting", "ContainerStateWaiting", 1) + `,`,
+		`Running:` + strings.Replace(fmt.Sprintf("%v", this.Running), "ContainerStateRunning", "ContainerStateRunning", 1) + `,`,
+		`Terminated:` + strings.Replace(fmt.Sprintf("%v", this.Terminated), "ContainerStateTerminated", "ContainerStateTerminated", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContainerStateRunning) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContainerStateRunning{`,
+		`StartedAt:` + strings.Replace(strings.Replace(this.StartedAt.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContainerStateTerminated) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContainerStateTerminated{`,
+		`ExitCode:` + fmt.Sprintf("%v", this.ExitCode) + `,`,
+		`Signal:` + fmt.Sprintf("%v", this.Signal) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`StartedAt:` + strings.Replace(strings.Replace(this.StartedAt.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`FinishedAt:` + strings.Replace(strings.Replace(this.FinishedAt.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`ContainerID:` + fmt.Sprintf("%v", this.ContainerID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContainerStateWaiting) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContainerStateWaiting{`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ContainerStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ContainerStatus{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`State:` + strings.Replace(strings.Replace(this.State.String(), "ContainerState", "ContainerState", 1), `&`, ``, 1) + `,`,
+		`LastTerminationState:` + strings.Replace(strings.Replace(this.LastTerminationState.String(), "ContainerState", "ContainerState", 1), `&`, ``, 1) + `,`,
+		`Ready:` + fmt.Sprintf("%v", this.Ready) + `,`,
+		`RestartCount:` + fmt.Sprintf("%v", this.RestartCount) + `,`,
+		`Image:` + fmt.Sprintf("%v", this.Image) + `,`,
+		`ImageID:` + fmt.Sprintf("%v", this.ImageID) + `,`,
+		`ContainerID:` + fmt.Sprintf("%v", this.ContainerID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DaemonEndpoint) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DaemonEndpoint{`,
+		`Port:` + fmt.Sprintf("%v", this.Port) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeleteOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeleteOptions{`,
+		`GracePeriodSeconds:` + valueToStringGenerated(this.GracePeriodSeconds) + `,`,
+		`Preconditions:` + strings.Replace(fmt.Sprintf("%v", this.Preconditions), "Preconditions", "Preconditions", 1) + `,`,
+		`OrphanDependents:` + valueToStringGenerated(this.OrphanDependents) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DownwardAPIVolumeFile) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DownwardAPIVolumeFile{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`FieldRef:` + strings.Replace(fmt.Sprintf("%v", this.FieldRef), "ObjectFieldSelector", "ObjectFieldSelector", 1) + `,`,
+		`ResourceFieldRef:` + strings.Replace(fmt.Sprintf("%v", this.ResourceFieldRef), "ResourceFieldSelector", "ResourceFieldSelector", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DownwardAPIVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DownwardAPIVolumeSource{`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "DownwardAPIVolumeFile", "DownwardAPIVolumeFile", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EmptyDirVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EmptyDirVolumeSource{`,
+		`Medium:` + fmt.Sprintf("%v", this.Medium) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EndpointAddress) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EndpointAddress{`,
+		`IP:` + fmt.Sprintf("%v", this.IP) + `,`,
+		`TargetRef:` + strings.Replace(fmt.Sprintf("%v", this.TargetRef), "ObjectReference", "ObjectReference", 1) + `,`,
+		`Hostname:` + fmt.Sprintf("%v", this.Hostname) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EndpointPort) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EndpointPort{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Port:` + fmt.Sprintf("%v", this.Port) + `,`,
+		`Protocol:` + fmt.Sprintf("%v", this.Protocol) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EndpointSubset) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EndpointSubset{`,
+		`Addresses:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Addresses), "EndpointAddress", "EndpointAddress", 1), `&`, ``, 1) + `,`,
+		`NotReadyAddresses:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.NotReadyAddresses), "EndpointAddress", "EndpointAddress", 1), `&`, ``, 1) + `,`,
+		`Ports:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Ports), "EndpointPort", "EndpointPort", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Endpoints) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Endpoints{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Subsets:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Subsets), "EndpointSubset", "EndpointSubset", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EndpointsList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EndpointsList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "Endpoints", "Endpoints", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EnvVar) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EnvVar{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`ValueFrom:` + strings.Replace(fmt.Sprintf("%v", this.ValueFrom), "EnvVarSource", "EnvVarSource", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EnvVarSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EnvVarSource{`,
+		`FieldRef:` + strings.Replace(fmt.Sprintf("%v", this.FieldRef), "ObjectFieldSelector", "ObjectFieldSelector", 1) + `,`,
+		`ResourceFieldRef:` + strings.Replace(fmt.Sprintf("%v", this.ResourceFieldRef), "ResourceFieldSelector", "ResourceFieldSelector", 1) + `,`,
+		`ConfigMapKeyRef:` + strings.Replace(fmt.Sprintf("%v", this.ConfigMapKeyRef), "ConfigMapKeySelector", "ConfigMapKeySelector", 1) + `,`,
+		`SecretKeyRef:` + strings.Replace(fmt.Sprintf("%v", this.SecretKeyRef), "SecretKeySelector", "SecretKeySelector", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Event) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Event{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`InvolvedObject:` + strings.Replace(strings.Replace(this.InvolvedObject.String(), "ObjectReference", "ObjectReference", 1), `&`, ``, 1) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`Source:` + strings.Replace(strings.Replace(this.Source.String(), "EventSource", "EventSource", 1), `&`, ``, 1) + `,`,
+		`FirstTimestamp:` + strings.Replace(strings.Replace(this.FirstTimestamp.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`LastTimestamp:` + strings.Replace(strings.Replace(this.LastTimestamp.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`Count:` + fmt.Sprintf("%v", this.Count) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EventList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EventList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "Event", "Event", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EventSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EventSource{`,
+		`Component:` + fmt.Sprintf("%v", this.Component) + `,`,
+		`Host:` + fmt.Sprintf("%v", this.Host) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExecAction) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExecAction{`,
+		`Command:` + fmt.Sprintf("%v", this.Command) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExportOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExportOptions{`,
+		`Export:` + fmt.Sprintf("%v", this.Export) + `,`,
+		`Exact:` + fmt.Sprintf("%v", this.Exact) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *FCVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&FCVolumeSource{`,
+		`TargetWWNs:` + fmt.Sprintf("%v", this.TargetWWNs) + `,`,
+		`Lun:` + valueToStringGenerated(this.Lun) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *FlexVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForOptions := make([]string, 0, len(this.Options))
+	for k := range this.Options {
+		keysForOptions = append(keysForOptions, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForOptions)
+	mapStringForOptions := "map[string]string{"
+	for _, k := range keysForOptions {
+		mapStringForOptions += fmt.Sprintf("%v: %v,", k, this.Options[k])
+	}
+	mapStringForOptions += "}"
+	s := strings.Join([]string{`&FlexVolumeSource{`,
+		`Driver:` + fmt.Sprintf("%v", this.Driver) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`SecretRef:` + strings.Replace(fmt.Sprintf("%v", this.SecretRef), "LocalObjectReference", "LocalObjectReference", 1) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`Options:` + mapStringForOptions + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *FlockerVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&FlockerVolumeSource{`,
+		`DatasetName:` + fmt.Sprintf("%v", this.DatasetName) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GCEPersistentDiskVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GCEPersistentDiskVolumeSource{`,
+		`PDName:` + fmt.Sprintf("%v", this.PDName) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`Partition:` + fmt.Sprintf("%v", this.Partition) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GitRepoVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GitRepoVolumeSource{`,
+		`Repository:` + fmt.Sprintf("%v", this.Repository) + `,`,
+		`Revision:` + fmt.Sprintf("%v", this.Revision) + `,`,
+		`Directory:` + fmt.Sprintf("%v", this.Directory) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GlusterfsVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GlusterfsVolumeSource{`,
+		`EndpointsName:` + fmt.Sprintf("%v", this.EndpointsName) + `,`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HTTPGetAction) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HTTPGetAction{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`Port:` + strings.Replace(strings.Replace(this.Port.String(), "IntOrString", "k8s_io_kubernetes_pkg_util_intstr.IntOrString", 1), `&`, ``, 1) + `,`,
+		`Host:` + fmt.Sprintf("%v", this.Host) + `,`,
+		`Scheme:` + fmt.Sprintf("%v", this.Scheme) + `,`,
+		`HTTPHeaders:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.HTTPHeaders), "HTTPHeader", "HTTPHeader", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HTTPHeader) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HTTPHeader{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Handler) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Handler{`,
+		`Exec:` + strings.Replace(fmt.Sprintf("%v", this.Exec), "ExecAction", "ExecAction", 1) + `,`,
+		`HTTPGet:` + strings.Replace(fmt.Sprintf("%v", this.HTTPGet), "HTTPGetAction", "HTTPGetAction", 1) + `,`,
+		`TCPSocket:` + strings.Replace(fmt.Sprintf("%v", this.TCPSocket), "TCPSocketAction", "TCPSocketAction", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HostPathVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HostPathVolumeSource{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ISCSIVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ISCSIVolumeSource{`,
+		`TargetPortal:` + fmt.Sprintf("%v", this.TargetPortal) + `,`,
+		`IQN:` + fmt.Sprintf("%v", this.IQN) + `,`,
+		`Lun:` + fmt.Sprintf("%v", this.Lun) + `,`,
+		`ISCSIInterface:` + fmt.Sprintf("%v", this.ISCSIInterface) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *KeyToPath) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&KeyToPath{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Lifecycle) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Lifecycle{`,
+		`PostStart:` + strings.Replace(fmt.Sprintf("%v", this.PostStart), "Handler", "Handler", 1) + `,`,
+		`PreStop:` + strings.Replace(fmt.Sprintf("%v", this.PreStop), "Handler", "Handler", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LimitRange) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LimitRange{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "LimitRangeSpec", "LimitRangeSpec", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LimitRangeItem) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForMax := make([]string, 0, len(this.Max))
+	for k := range this.Max {
+		keysForMax = append(keysForMax, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForMax)
+	mapStringForMax := "ResourceList{"
+	for _, k := range keysForMax {
+		mapStringForMax += fmt.Sprintf("%v: %v,", k, this.Max[ResourceName(k)])
+	}
+	mapStringForMax += "}"
+	keysForMin := make([]string, 0, len(this.Min))
+	for k := range this.Min {
+		keysForMin = append(keysForMin, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForMin)
+	mapStringForMin := "ResourceList{"
+	for _, k := range keysForMin {
+		mapStringForMin += fmt.Sprintf("%v: %v,", k, this.Min[ResourceName(k)])
+	}
+	mapStringForMin += "}"
+	keysForDefault := make([]string, 0, len(this.Default))
+	for k := range this.Default {
+		keysForDefault = append(keysForDefault, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForDefault)
+	mapStringForDefault := "ResourceList{"
+	for _, k := range keysForDefault {
+		mapStringForDefault += fmt.Sprintf("%v: %v,", k, this.Default[ResourceName(k)])
+	}
+	mapStringForDefault += "}"
+	keysForDefaultRequest := make([]string, 0, len(this.DefaultRequest))
+	for k := range this.DefaultRequest {
+		keysForDefaultRequest = append(keysForDefaultRequest, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForDefaultRequest)
+	mapStringForDefaultRequest := "ResourceList{"
+	for _, k := range keysForDefaultRequest {
+		mapStringForDefaultRequest += fmt.Sprintf("%v: %v,", k, this.DefaultRequest[ResourceName(k)])
+	}
+	mapStringForDefaultRequest += "}"
+	keysForMaxLimitRequestRatio := make([]string, 0, len(this.MaxLimitRequestRatio))
+	for k := range this.MaxLimitRequestRatio {
+		keysForMaxLimitRequestRatio = append(keysForMaxLimitRequestRatio, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForMaxLimitRequestRatio)
+	mapStringForMaxLimitRequestRatio := "ResourceList{"
+	for _, k := range keysForMaxLimitRequestRatio {
+		mapStringForMaxLimitRequestRatio += fmt.Sprintf("%v: %v,", k, this.MaxLimitRequestRatio[ResourceName(k)])
+	}
+	mapStringForMaxLimitRequestRatio += "}"
+	s := strings.Join([]string{`&LimitRangeItem{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Max:` + mapStringForMax + `,`,
+		`Min:` + mapStringForMin + `,`,
+		`Default:` + mapStringForDefault + `,`,
+		`DefaultRequest:` + mapStringForDefaultRequest + `,`,
+		`MaxLimitRequestRatio:` + mapStringForMaxLimitRequestRatio + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LimitRangeList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LimitRangeList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "LimitRange", "LimitRange", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LimitRangeSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LimitRangeSpec{`,
+		`Limits:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Limits), "LimitRangeItem", "LimitRangeItem", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *List) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&List{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "RawExtension", "k8s_io_kubernetes_pkg_runtime.RawExtension", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ListOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ListOptions{`,
+		`LabelSelector:` + fmt.Sprintf("%v", this.LabelSelector) + `,`,
+		`FieldSelector:` + fmt.Sprintf("%v", this.FieldSelector) + `,`,
+		`Watch:` + fmt.Sprintf("%v", this.Watch) + `,`,
+		`ResourceVersion:` + fmt.Sprintf("%v", this.ResourceVersion) + `,`,
+		`TimeoutSeconds:` + valueToStringGenerated(this.TimeoutSeconds) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LoadBalancerIngress) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LoadBalancerIngress{`,
+		`IP:` + fmt.Sprintf("%v", this.IP) + `,`,
+		`Hostname:` + fmt.Sprintf("%v", this.Hostname) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LoadBalancerStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LoadBalancerStatus{`,
+		`Ingress:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Ingress), "LoadBalancerIngress", "LoadBalancerIngress", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LocalObjectReference) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LocalObjectReference{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NFSVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NFSVolumeSource{`,
+		`Server:` + fmt.Sprintf("%v", this.Server) + `,`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Namespace) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Namespace{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "NamespaceSpec", "NamespaceSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "NamespaceStatus", "NamespaceStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NamespaceList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NamespaceList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "Namespace", "Namespace", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NamespaceSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NamespaceSpec{`,
+		`Finalizers:` + fmt.Sprintf("%v", this.Finalizers) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NamespaceStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NamespaceStatus{`,
+		`Phase:` + fmt.Sprintf("%v", this.Phase) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Node) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Node{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "NodeSpec", "NodeSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "NodeStatus", "NodeStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeAddress) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeAddress{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Address:` + fmt.Sprintf("%v", this.Address) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeAffinity) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeAffinity{`,
+		`RequiredDuringSchedulingIgnoredDuringExecution:` + strings.Replace(fmt.Sprintf("%v", this.RequiredDuringSchedulingIgnoredDuringExecution), "NodeSelector", "NodeSelector", 1) + `,`,
+		`PreferredDuringSchedulingIgnoredDuringExecution:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.PreferredDuringSchedulingIgnoredDuringExecution), "PreferredSchedulingTerm", "PreferredSchedulingTerm", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeCondition) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeCondition{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`LastHeartbeatTime:` + strings.Replace(strings.Replace(this.LastHeartbeatTime.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`LastTransitionTime:` + strings.Replace(strings.Replace(this.LastTransitionTime.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeDaemonEndpoints) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeDaemonEndpoints{`,
+		`KubeletEndpoint:` + strings.Replace(strings.Replace(this.KubeletEndpoint.String(), "DaemonEndpoint", "DaemonEndpoint", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "Node", "Node", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeProxyOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeProxyOptions{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeSelector) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeSelector{`,
+		`NodeSelectorTerms:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.NodeSelectorTerms), "NodeSelectorTerm", "NodeSelectorTerm", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeSelectorRequirement) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeSelectorRequirement{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Operator:` + fmt.Sprintf("%v", this.Operator) + `,`,
+		`Values:` + fmt.Sprintf("%v", this.Values) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeSelectorTerm) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeSelectorTerm{`,
+		`MatchExpressions:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.MatchExpressions), "NodeSelectorRequirement", "NodeSelectorRequirement", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeSpec{`,
+		`PodCIDR:` + fmt.Sprintf("%v", this.PodCIDR) + `,`,
+		`ExternalID:` + fmt.Sprintf("%v", this.ExternalID) + `,`,
+		`ProviderID:` + fmt.Sprintf("%v", this.ProviderID) + `,`,
+		`Unschedulable:` + fmt.Sprintf("%v", this.Unschedulable) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForCapacity := make([]string, 0, len(this.Capacity))
+	for k := range this.Capacity {
+		keysForCapacity = append(keysForCapacity, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForCapacity)
+	mapStringForCapacity := "ResourceList{"
+	for _, k := range keysForCapacity {
+		mapStringForCapacity += fmt.Sprintf("%v: %v,", k, this.Capacity[ResourceName(k)])
+	}
+	mapStringForCapacity += "}"
+	keysForAllocatable := make([]string, 0, len(this.Allocatable))
+	for k := range this.Allocatable {
+		keysForAllocatable = append(keysForAllocatable, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForAllocatable)
+	mapStringForAllocatable := "ResourceList{"
+	for _, k := range keysForAllocatable {
+		mapStringForAllocatable += fmt.Sprintf("%v: %v,", k, this.Allocatable[ResourceName(k)])
+	}
+	mapStringForAllocatable += "}"
+	s := strings.Join([]string{`&NodeStatus{`,
+		`Capacity:` + mapStringForCapacity + `,`,
+		`Allocatable:` + mapStringForAllocatable + `,`,
+		`Phase:` + fmt.Sprintf("%v", this.Phase) + `,`,
+		`Conditions:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Conditions), "NodeCondition", "NodeCondition", 1), `&`, ``, 1) + `,`,
+		`Addresses:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Addresses), "NodeAddress", "NodeAddress", 1), `&`, ``, 1) + `,`,
+		`DaemonEndpoints:` + strings.Replace(strings.Replace(this.DaemonEndpoints.String(), "NodeDaemonEndpoints", "NodeDaemonEndpoints", 1), `&`, ``, 1) + `,`,
+		`NodeInfo:` + strings.Replace(strings.Replace(this.NodeInfo.String(), "NodeSystemInfo", "NodeSystemInfo", 1), `&`, ``, 1) + `,`,
+		`Images:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Images), "ContainerImage", "ContainerImage", 1), `&`, ``, 1) + `,`,
+		`VolumesInUse:` + fmt.Sprintf("%v", this.VolumesInUse) + `,`,
+		`VolumesAttached:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.VolumesAttached), "AttachedVolume", "AttachedVolume", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *NodeSystemInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&NodeSystemInfo{`,
+		`MachineID:` + fmt.Sprintf("%v", this.MachineID) + `,`,
+		`SystemUUID:` + fmt.Sprintf("%v", this.SystemUUID) + `,`,
+		`BootID:` + fmt.Sprintf("%v", this.BootID) + `,`,
+		`KernelVersion:` + fmt.Sprintf("%v", this.KernelVersion) + `,`,
+		`OSImage:` + fmt.Sprintf("%v", this.OSImage) + `,`,
+		`ContainerRuntimeVersion:` + fmt.Sprintf("%v", this.ContainerRuntimeVersion) + `,`,
+		`KubeletVersion:` + fmt.Sprintf("%v", this.KubeletVersion) + `,`,
+		`KubeProxyVersion:` + fmt.Sprintf("%v", this.KubeProxyVersion) + `,`,
+		`OperatingSystem:` + fmt.Sprintf("%v", this.OperatingSystem) + `,`,
+		`Architecture:` + fmt.Sprintf("%v", this.Architecture) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ObjectFieldSelector) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ObjectFieldSelector{`,
+		`APIVersion:` + fmt.Sprintf("%v", this.APIVersion) + `,`,
+		`FieldPath:` + fmt.Sprintf("%v", this.FieldPath) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ObjectMeta) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForLabels := make([]string, 0, len(this.Labels))
+	for k := range this.Labels {
+		keysForLabels = append(keysForLabels, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForLabels)
+	mapStringForLabels := "map[string]string{"
+	for _, k := range keysForLabels {
+		mapStringForLabels += fmt.Sprintf("%v: %v,", k, this.Labels[k])
+	}
+	mapStringForLabels += "}"
+	keysForAnnotations := make([]string, 0, len(this.Annotations))
+	for k := range this.Annotations {
+		keysForAnnotations = append(keysForAnnotations, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForAnnotations)
+	mapStringForAnnotations := "map[string]string{"
+	for _, k := range keysForAnnotations {
+		mapStringForAnnotations += fmt.Sprintf("%v: %v,", k, this.Annotations[k])
+	}
+	mapStringForAnnotations += "}"
+	s := strings.Join([]string{`&ObjectMeta{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`GenerateName:` + fmt.Sprintf("%v", this.GenerateName) + `,`,
+		`Namespace:` + fmt.Sprintf("%v", this.Namespace) + `,`,
+		`SelfLink:` + fmt.Sprintf("%v", this.SelfLink) + `,`,
+		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
+		`ResourceVersion:` + fmt.Sprintf("%v", this.ResourceVersion) + `,`,
+		`Generation:` + fmt.Sprintf("%v", this.Generation) + `,`,
+		`CreationTimestamp:` + strings.Replace(strings.Replace(this.CreationTimestamp.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`DeletionTimestamp:` + strings.Replace(fmt.Sprintf("%v", this.DeletionTimestamp), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1) + `,`,
+		`DeletionGracePeriodSeconds:` + valueToStringGenerated(this.DeletionGracePeriodSeconds) + `,`,
+		`Labels:` + mapStringForLabels + `,`,
+		`Annotations:` + mapStringForAnnotations + `,`,
+		`OwnerReferences:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.OwnerReferences), "OwnerReference", "OwnerReference", 1), `&`, ``, 1) + `,`,
+		`Finalizers:` + fmt.Sprintf("%v", this.Finalizers) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ObjectReference) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ObjectReference{`,
+		`Kind:` + fmt.Sprintf("%v", this.Kind) + `,`,
+		`Namespace:` + fmt.Sprintf("%v", this.Namespace) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
+		`APIVersion:` + fmt.Sprintf("%v", this.APIVersion) + `,`,
+		`ResourceVersion:` + fmt.Sprintf("%v", this.ResourceVersion) + `,`,
+		`FieldPath:` + fmt.Sprintf("%v", this.FieldPath) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *OwnerReference) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OwnerReference{`,
+		`Kind:` + fmt.Sprintf("%v", this.Kind) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`UID:` + fmt.Sprintf("%v", this.UID) + `,`,
+		`APIVersion:` + fmt.Sprintf("%v", this.APIVersion) + `,`,
+		`Controller:` + valueToStringGenerated(this.Controller) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolume) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolume{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "PersistentVolumeSpec", "PersistentVolumeSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "PersistentVolumeStatus", "PersistentVolumeStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeClaim) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolumeClaim{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "PersistentVolumeClaimSpec", "PersistentVolumeClaimSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "PersistentVolumeClaimStatus", "PersistentVolumeClaimStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeClaimList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolumeClaimList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "PersistentVolumeClaim", "PersistentVolumeClaim", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeClaimSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolumeClaimSpec{`,
+		`AccessModes:` + fmt.Sprintf("%v", this.AccessModes) + `,`,
+		`Resources:` + strings.Replace(strings.Replace(this.Resources.String(), "ResourceRequirements", "ResourceRequirements", 1), `&`, ``, 1) + `,`,
+		`VolumeName:` + fmt.Sprintf("%v", this.VolumeName) + `,`,
+		`Selector:` + strings.Replace(fmt.Sprintf("%v", this.Selector), "LabelSelector", "k8s_io_kubernetes_pkg_api_unversioned.LabelSelector", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeClaimStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForCapacity := make([]string, 0, len(this.Capacity))
+	for k := range this.Capacity {
+		keysForCapacity = append(keysForCapacity, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForCapacity)
+	mapStringForCapacity := "ResourceList{"
+	for _, k := range keysForCapacity {
+		mapStringForCapacity += fmt.Sprintf("%v: %v,", k, this.Capacity[ResourceName(k)])
+	}
+	mapStringForCapacity += "}"
+	s := strings.Join([]string{`&PersistentVolumeClaimStatus{`,
+		`Phase:` + fmt.Sprintf("%v", this.Phase) + `,`,
+		`AccessModes:` + fmt.Sprintf("%v", this.AccessModes) + `,`,
+		`Capacity:` + mapStringForCapacity + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeClaimVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolumeClaimVolumeSource{`,
+		`ClaimName:` + fmt.Sprintf("%v", this.ClaimName) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolumeList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "PersistentVolume", "PersistentVolume", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolumeSource{`,
+		`GCEPersistentDisk:` + strings.Replace(fmt.Sprintf("%v", this.GCEPersistentDisk), "GCEPersistentDiskVolumeSource", "GCEPersistentDiskVolumeSource", 1) + `,`,
+		`AWSElasticBlockStore:` + strings.Replace(fmt.Sprintf("%v", this.AWSElasticBlockStore), "AWSElasticBlockStoreVolumeSource", "AWSElasticBlockStoreVolumeSource", 1) + `,`,
+		`HostPath:` + strings.Replace(fmt.Sprintf("%v", this.HostPath), "HostPathVolumeSource", "HostPathVolumeSource", 1) + `,`,
+		`Glusterfs:` + strings.Replace(fmt.Sprintf("%v", this.Glusterfs), "GlusterfsVolumeSource", "GlusterfsVolumeSource", 1) + `,`,
+		`NFS:` + strings.Replace(fmt.Sprintf("%v", this.NFS), "NFSVolumeSource", "NFSVolumeSource", 1) + `,`,
+		`RBD:` + strings.Replace(fmt.Sprintf("%v", this.RBD), "RBDVolumeSource", "RBDVolumeSource", 1) + `,`,
+		`ISCSI:` + strings.Replace(fmt.Sprintf("%v", this.ISCSI), "ISCSIVolumeSource", "ISCSIVolumeSource", 1) + `,`,
+		`Cinder:` + strings.Replace(fmt.Sprintf("%v", this.Cinder), "CinderVolumeSource", "CinderVolumeSource", 1) + `,`,
+		`CephFS:` + strings.Replace(fmt.Sprintf("%v", this.CephFS), "CephFSVolumeSource", "CephFSVolumeSource", 1) + `,`,
+		`FC:` + strings.Replace(fmt.Sprintf("%v", this.FC), "FCVolumeSource", "FCVolumeSource", 1) + `,`,
+		`Flocker:` + strings.Replace(fmt.Sprintf("%v", this.Flocker), "FlockerVolumeSource", "FlockerVolumeSource", 1) + `,`,
+		`FlexVolume:` + strings.Replace(fmt.Sprintf("%v", this.FlexVolume), "FlexVolumeSource", "FlexVolumeSource", 1) + `,`,
+		`AzureFile:` + strings.Replace(fmt.Sprintf("%v", this.AzureFile), "AzureFileVolumeSource", "AzureFileVolumeSource", 1) + `,`,
+		`VsphereVolume:` + strings.Replace(fmt.Sprintf("%v", this.VsphereVolume), "VsphereVirtualDiskVolumeSource", "VsphereVirtualDiskVolumeSource", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForCapacity := make([]string, 0, len(this.Capacity))
+	for k := range this.Capacity {
+		keysForCapacity = append(keysForCapacity, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForCapacity)
+	mapStringForCapacity := "ResourceList{"
+	for _, k := range keysForCapacity {
+		mapStringForCapacity += fmt.Sprintf("%v: %v,", k, this.Capacity[ResourceName(k)])
+	}
+	mapStringForCapacity += "}"
+	s := strings.Join([]string{`&PersistentVolumeSpec{`,
+		`Capacity:` + mapStringForCapacity + `,`,
+		`PersistentVolumeSource:` + strings.Replace(strings.Replace(this.PersistentVolumeSource.String(), "PersistentVolumeSource", "PersistentVolumeSource", 1), `&`, ``, 1) + `,`,
+		`AccessModes:` + fmt.Sprintf("%v", this.AccessModes) + `,`,
+		`ClaimRef:` + strings.Replace(fmt.Sprintf("%v", this.ClaimRef), "ObjectReference", "ObjectReference", 1) + `,`,
+		`PersistentVolumeReclaimPolicy:` + fmt.Sprintf("%v", this.PersistentVolumeReclaimPolicy) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PersistentVolumeStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PersistentVolumeStatus{`,
+		`Phase:` + fmt.Sprintf("%v", this.Phase) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Pod) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Pod{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "PodSpec", "PodSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "PodStatus", "PodStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodAffinity) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodAffinity{`,
+		`RequiredDuringSchedulingIgnoredDuringExecution:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.RequiredDuringSchedulingIgnoredDuringExecution), "PodAffinityTerm", "PodAffinityTerm", 1), `&`, ``, 1) + `,`,
+		`PreferredDuringSchedulingIgnoredDuringExecution:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.PreferredDuringSchedulingIgnoredDuringExecution), "WeightedPodAffinityTerm", "WeightedPodAffinityTerm", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodAffinityTerm) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodAffinityTerm{`,
+		`LabelSelector:` + strings.Replace(fmt.Sprintf("%v", this.LabelSelector), "LabelSelector", "k8s_io_kubernetes_pkg_api_unversioned.LabelSelector", 1) + `,`,
+		`Namespaces:` + fmt.Sprintf("%v", this.Namespaces) + `,`,
+		`TopologyKey:` + fmt.Sprintf("%v", this.TopologyKey) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodAntiAffinity) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodAntiAffinity{`,
+		`RequiredDuringSchedulingIgnoredDuringExecution:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.RequiredDuringSchedulingIgnoredDuringExecution), "PodAffinityTerm", "PodAffinityTerm", 1), `&`, ``, 1) + `,`,
+		`PreferredDuringSchedulingIgnoredDuringExecution:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.PreferredDuringSchedulingIgnoredDuringExecution), "WeightedPodAffinityTerm", "WeightedPodAffinityTerm", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodAttachOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodAttachOptions{`,
+		`Stdin:` + fmt.Sprintf("%v", this.Stdin) + `,`,
+		`Stdout:` + fmt.Sprintf("%v", this.Stdout) + `,`,
+		`Stderr:` + fmt.Sprintf("%v", this.Stderr) + `,`,
+		`TTY:` + fmt.Sprintf("%v", this.TTY) + `,`,
+		`Container:` + fmt.Sprintf("%v", this.Container) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodCondition) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodCondition{`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Status:` + fmt.Sprintf("%v", this.Status) + `,`,
+		`LastProbeTime:` + strings.Replace(strings.Replace(this.LastProbeTime.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`LastTransitionTime:` + strings.Replace(strings.Replace(this.LastTransitionTime.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodExecOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodExecOptions{`,
+		`Stdin:` + fmt.Sprintf("%v", this.Stdin) + `,`,
+		`Stdout:` + fmt.Sprintf("%v", this.Stdout) + `,`,
+		`Stderr:` + fmt.Sprintf("%v", this.Stderr) + `,`,
+		`TTY:` + fmt.Sprintf("%v", this.TTY) + `,`,
+		`Container:` + fmt.Sprintf("%v", this.Container) + `,`,
+		`Command:` + fmt.Sprintf("%v", this.Command) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "Pod", "Pod", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodLogOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodLogOptions{`,
+		`Container:` + fmt.Sprintf("%v", this.Container) + `,`,
+		`Follow:` + fmt.Sprintf("%v", this.Follow) + `,`,
+		`Previous:` + fmt.Sprintf("%v", this.Previous) + `,`,
+		`SinceSeconds:` + valueToStringGenerated(this.SinceSeconds) + `,`,
+		`SinceTime:` + strings.Replace(fmt.Sprintf("%v", this.SinceTime), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1) + `,`,
+		`Timestamps:` + fmt.Sprintf("%v", this.Timestamps) + `,`,
+		`TailLines:` + valueToStringGenerated(this.TailLines) + `,`,
+		`LimitBytes:` + valueToStringGenerated(this.LimitBytes) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodProxyOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodProxyOptions{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodSecurityContext) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodSecurityContext{`,
+		`SELinuxOptions:` + strings.Replace(fmt.Sprintf("%v", this.SELinuxOptions), "SELinuxOptions", "SELinuxOptions", 1) + `,`,
+		`RunAsUser:` + valueToStringGenerated(this.RunAsUser) + `,`,
+		`RunAsNonRoot:` + valueToStringGenerated(this.RunAsNonRoot) + `,`,
+		`SupplementalGroups:` + fmt.Sprintf("%v", this.SupplementalGroups) + `,`,
+		`FSGroup:` + valueToStringGenerated(this.FSGroup) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodSignature) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodSignature{`,
+		`PodController:` + strings.Replace(fmt.Sprintf("%v", this.PodController), "OwnerReference", "OwnerReference", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForNodeSelector := make([]string, 0, len(this.NodeSelector))
+	for k := range this.NodeSelector {
+		keysForNodeSelector = append(keysForNodeSelector, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForNodeSelector)
+	mapStringForNodeSelector := "map[string]string{"
+	for _, k := range keysForNodeSelector {
+		mapStringForNodeSelector += fmt.Sprintf("%v: %v,", k, this.NodeSelector[k])
+	}
+	mapStringForNodeSelector += "}"
+	s := strings.Join([]string{`&PodSpec{`,
+		`Volumes:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Volumes), "Volume", "Volume", 1), `&`, ``, 1) + `,`,
+		`Containers:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Containers), "Container", "Container", 1), `&`, ``, 1) + `,`,
+		`RestartPolicy:` + fmt.Sprintf("%v", this.RestartPolicy) + `,`,
+		`TerminationGracePeriodSeconds:` + valueToStringGenerated(this.TerminationGracePeriodSeconds) + `,`,
+		`ActiveDeadlineSeconds:` + valueToStringGenerated(this.ActiveDeadlineSeconds) + `,`,
+		`DNSPolicy:` + fmt.Sprintf("%v", this.DNSPolicy) + `,`,
+		`NodeSelector:` + mapStringForNodeSelector + `,`,
+		`ServiceAccountName:` + fmt.Sprintf("%v", this.ServiceAccountName) + `,`,
+		`DeprecatedServiceAccount:` + fmt.Sprintf("%v", this.DeprecatedServiceAccount) + `,`,
+		`NodeName:` + fmt.Sprintf("%v", this.NodeName) + `,`,
+		`HostNetwork:` + fmt.Sprintf("%v", this.HostNetwork) + `,`,
+		`HostPID:` + fmt.Sprintf("%v", this.HostPID) + `,`,
+		`HostIPC:` + fmt.Sprintf("%v", this.HostIPC) + `,`,
+		`SecurityContext:` + strings.Replace(fmt.Sprintf("%v", this.SecurityContext), "PodSecurityContext", "PodSecurityContext", 1) + `,`,
+		`ImagePullSecrets:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ImagePullSecrets), "LocalObjectReference", "LocalObjectReference", 1), `&`, ``, 1) + `,`,
+		`Hostname:` + fmt.Sprintf("%v", this.Hostname) + `,`,
+		`Subdomain:` + fmt.Sprintf("%v", this.Subdomain) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodStatus{`,
+		`Phase:` + fmt.Sprintf("%v", this.Phase) + `,`,
+		`Conditions:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Conditions), "PodCondition", "PodCondition", 1), `&`, ``, 1) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`HostIP:` + fmt.Sprintf("%v", this.HostIP) + `,`,
+		`PodIP:` + fmt.Sprintf("%v", this.PodIP) + `,`,
+		`StartTime:` + strings.Replace(fmt.Sprintf("%v", this.StartTime), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1) + `,`,
+		`ContainerStatuses:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ContainerStatuses), "ContainerStatus", "ContainerStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodStatusResult) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodStatusResult{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "PodStatus", "PodStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodTemplate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodTemplate{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Template:` + strings.Replace(strings.Replace(this.Template.String(), "PodTemplateSpec", "PodTemplateSpec", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodTemplateList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodTemplateList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "PodTemplate", "PodTemplate", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PodTemplateSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PodTemplateSpec{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "PodSpec", "PodSpec", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Preconditions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Preconditions{`,
+		`UID:` + valueToStringGenerated(this.UID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PreferAvoidPodsEntry) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PreferAvoidPodsEntry{`,
+		`PodSignature:` + strings.Replace(strings.Replace(this.PodSignature.String(), "PodSignature", "PodSignature", 1), `&`, ``, 1) + `,`,
+		`EvictionTime:` + strings.Replace(strings.Replace(this.EvictionTime.String(), "Time", "k8s_io_kubernetes_pkg_api_unversioned.Time", 1), `&`, ``, 1) + `,`,
+		`Reason:` + fmt.Sprintf("%v", this.Reason) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *PreferredSchedulingTerm) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&PreferredSchedulingTerm{`,
+		`Weight:` + fmt.Sprintf("%v", this.Weight) + `,`,
+		`Preference:` + strings.Replace(strings.Replace(this.Preference.String(), "NodeSelectorTerm", "NodeSelectorTerm", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Probe) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Probe{`,
+		`Handler:` + strings.Replace(strings.Replace(this.Handler.String(), "Handler", "Handler", 1), `&`, ``, 1) + `,`,
+		`InitialDelaySeconds:` + fmt.Sprintf("%v", this.InitialDelaySeconds) + `,`,
+		`TimeoutSeconds:` + fmt.Sprintf("%v", this.TimeoutSeconds) + `,`,
+		`PeriodSeconds:` + fmt.Sprintf("%v", this.PeriodSeconds) + `,`,
+		`SuccessThreshold:` + fmt.Sprintf("%v", this.SuccessThreshold) + `,`,
+		`FailureThreshold:` + fmt.Sprintf("%v", this.FailureThreshold) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RBDVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RBDVolumeSource{`,
+		`CephMonitors:` + fmt.Sprintf("%v", this.CephMonitors) + `,`,
+		`RBDImage:` + fmt.Sprintf("%v", this.RBDImage) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`RBDPool:` + fmt.Sprintf("%v", this.RBDPool) + `,`,
+		`RadosUser:` + fmt.Sprintf("%v", this.RadosUser) + `,`,
+		`Keyring:` + fmt.Sprintf("%v", this.Keyring) + `,`,
+		`SecretRef:` + strings.Replace(fmt.Sprintf("%v", this.SecretRef), "LocalObjectReference", "LocalObjectReference", 1) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RangeAllocation) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RangeAllocation{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Range:` + fmt.Sprintf("%v", this.Range) + `,`,
+		`Data:` + valueToStringGenerated(this.Data) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ReplicationController) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ReplicationController{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "ReplicationControllerSpec", "ReplicationControllerSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "ReplicationControllerStatus", "ReplicationControllerStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ReplicationControllerList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ReplicationControllerList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "ReplicationController", "ReplicationController", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ReplicationControllerSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForSelector := make([]string, 0, len(this.Selector))
+	for k := range this.Selector {
+		keysForSelector = append(keysForSelector, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForSelector)
+	mapStringForSelector := "map[string]string{"
+	for _, k := range keysForSelector {
+		mapStringForSelector += fmt.Sprintf("%v: %v,", k, this.Selector[k])
+	}
+	mapStringForSelector += "}"
+	s := strings.Join([]string{`&ReplicationControllerSpec{`,
+		`Replicas:` + valueToStringGenerated(this.Replicas) + `,`,
+		`Selector:` + mapStringForSelector + `,`,
+		`Template:` + strings.Replace(fmt.Sprintf("%v", this.Template), "PodTemplateSpec", "PodTemplateSpec", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ReplicationControllerStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ReplicationControllerStatus{`,
+		`Replicas:` + fmt.Sprintf("%v", this.Replicas) + `,`,
+		`FullyLabeledReplicas:` + fmt.Sprintf("%v", this.FullyLabeledReplicas) + `,`,
+		`ObservedGeneration:` + fmt.Sprintf("%v", this.ObservedGeneration) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ResourceFieldSelector) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ResourceFieldSelector{`,
+		`ContainerName:` + fmt.Sprintf("%v", this.ContainerName) + `,`,
+		`Resource:` + fmt.Sprintf("%v", this.Resource) + `,`,
+		`Divisor:` + strings.Replace(strings.Replace(this.Divisor.String(), "Quantity", "k8s_io_kubernetes_pkg_api_resource.Quantity", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ResourceQuota) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ResourceQuota{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "ResourceQuotaSpec", "ResourceQuotaSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "ResourceQuotaStatus", "ResourceQuotaStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ResourceQuotaList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ResourceQuotaList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "ResourceQuota", "ResourceQuota", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ResourceQuotaSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForHard := make([]string, 0, len(this.Hard))
+	for k := range this.Hard {
+		keysForHard = append(keysForHard, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForHard)
+	mapStringForHard := "ResourceList{"
+	for _, k := range keysForHard {
+		mapStringForHard += fmt.Sprintf("%v: %v,", k, this.Hard[ResourceName(k)])
+	}
+	mapStringForHard += "}"
+	s := strings.Join([]string{`&ResourceQuotaSpec{`,
+		`Hard:` + mapStringForHard + `,`,
+		`Scopes:` + fmt.Sprintf("%v", this.Scopes) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ResourceQuotaStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForHard := make([]string, 0, len(this.Hard))
+	for k := range this.Hard {
+		keysForHard = append(keysForHard, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForHard)
+	mapStringForHard := "ResourceList{"
+	for _, k := range keysForHard {
+		mapStringForHard += fmt.Sprintf("%v: %v,", k, this.Hard[ResourceName(k)])
+	}
+	mapStringForHard += "}"
+	keysForUsed := make([]string, 0, len(this.Used))
+	for k := range this.Used {
+		keysForUsed = append(keysForUsed, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForUsed)
+	mapStringForUsed := "ResourceList{"
+	for _, k := range keysForUsed {
+		mapStringForUsed += fmt.Sprintf("%v: %v,", k, this.Used[ResourceName(k)])
+	}
+	mapStringForUsed += "}"
+	s := strings.Join([]string{`&ResourceQuotaStatus{`,
+		`Hard:` + mapStringForHard + `,`,
+		`Used:` + mapStringForUsed + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ResourceRequirements) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForLimits := make([]string, 0, len(this.Limits))
+	for k := range this.Limits {
+		keysForLimits = append(keysForLimits, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForLimits)
+	mapStringForLimits := "ResourceList{"
+	for _, k := range keysForLimits {
+		mapStringForLimits += fmt.Sprintf("%v: %v,", k, this.Limits[ResourceName(k)])
+	}
+	mapStringForLimits += "}"
+	keysForRequests := make([]string, 0, len(this.Requests))
+	for k := range this.Requests {
+		keysForRequests = append(keysForRequests, string(k))
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForRequests)
+	mapStringForRequests := "ResourceList{"
+	for _, k := range keysForRequests {
+		mapStringForRequests += fmt.Sprintf("%v: %v,", k, this.Requests[ResourceName(k)])
+	}
+	mapStringForRequests += "}"
+	s := strings.Join([]string{`&ResourceRequirements{`,
+		`Limits:` + mapStringForLimits + `,`,
+		`Requests:` + mapStringForRequests + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SELinuxOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SELinuxOptions{`,
+		`User:` + fmt.Sprintf("%v", this.User) + `,`,
+		`Role:` + fmt.Sprintf("%v", this.Role) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`Level:` + fmt.Sprintf("%v", this.Level) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Secret) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForData := make([]string, 0, len(this.Data))
+	for k := range this.Data {
+		keysForData = append(keysForData, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForData)
+	mapStringForData := "map[string][]byte{"
+	for _, k := range keysForData {
+		mapStringForData += fmt.Sprintf("%v: %v,", k, this.Data[k])
+	}
+	mapStringForData += "}"
+	keysForStringData := make([]string, 0, len(this.StringData))
+	for k := range this.StringData {
+		keysForStringData = append(keysForStringData, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForStringData)
+	mapStringForStringData := "map[string]string{"
+	for _, k := range keysForStringData {
+		mapStringForStringData += fmt.Sprintf("%v: %v,", k, this.StringData[k])
+	}
+	mapStringForStringData += "}"
+	s := strings.Join([]string{`&Secret{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Data:` + mapStringForData + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`StringData:` + mapStringForStringData + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SecretKeySelector) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SecretKeySelector{`,
+		`LocalObjectReference:` + strings.Replace(strings.Replace(this.LocalObjectReference.String(), "LocalObjectReference", "LocalObjectReference", 1), `&`, ``, 1) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SecretList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SecretList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "Secret", "Secret", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SecretVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SecretVolumeSource{`,
+		`SecretName:` + fmt.Sprintf("%v", this.SecretName) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "KeyToPath", "KeyToPath", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SecurityContext) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SecurityContext{`,
+		`Capabilities:` + strings.Replace(fmt.Sprintf("%v", this.Capabilities), "Capabilities", "Capabilities", 1) + `,`,
+		`Privileged:` + valueToStringGenerated(this.Privileged) + `,`,
+		`SELinuxOptions:` + strings.Replace(fmt.Sprintf("%v", this.SELinuxOptions), "SELinuxOptions", "SELinuxOptions", 1) + `,`,
+		`RunAsUser:` + valueToStringGenerated(this.RunAsUser) + `,`,
+		`RunAsNonRoot:` + valueToStringGenerated(this.RunAsNonRoot) + `,`,
+		`ReadOnlyRootFilesystem:` + valueToStringGenerated(this.ReadOnlyRootFilesystem) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SerializedReference) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SerializedReference{`,
+		`Reference:` + strings.Replace(strings.Replace(this.Reference.String(), "ObjectReference", "ObjectReference", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Service) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Service{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Spec:` + strings.Replace(strings.Replace(this.Spec.String(), "ServiceSpec", "ServiceSpec", 1), `&`, ``, 1) + `,`,
+		`Status:` + strings.Replace(strings.Replace(this.Status.String(), "ServiceStatus", "ServiceStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServiceAccount) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ServiceAccount{`,
+		`ObjectMeta:` + strings.Replace(strings.Replace(this.ObjectMeta.String(), "ObjectMeta", "ObjectMeta", 1), `&`, ``, 1) + `,`,
+		`Secrets:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Secrets), "ObjectReference", "ObjectReference", 1), `&`, ``, 1) + `,`,
+		`ImagePullSecrets:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.ImagePullSecrets), "LocalObjectReference", "LocalObjectReference", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServiceAccountList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ServiceAccountList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "ServiceAccount", "ServiceAccount", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServiceList) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ServiceList{`,
+		`ListMeta:` + strings.Replace(strings.Replace(this.ListMeta.String(), "ListMeta", "k8s_io_kubernetes_pkg_api_unversioned.ListMeta", 1), `&`, ``, 1) + `,`,
+		`Items:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Items), "Service", "Service", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServicePort) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ServicePort{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Protocol:` + fmt.Sprintf("%v", this.Protocol) + `,`,
+		`Port:` + fmt.Sprintf("%v", this.Port) + `,`,
+		`TargetPort:` + strings.Replace(strings.Replace(this.TargetPort.String(), "IntOrString", "k8s_io_kubernetes_pkg_util_intstr.IntOrString", 1), `&`, ``, 1) + `,`,
+		`NodePort:` + fmt.Sprintf("%v", this.NodePort) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServiceProxyOptions) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ServiceProxyOptions{`,
+		`Path:` + fmt.Sprintf("%v", this.Path) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServiceSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForSelector := make([]string, 0, len(this.Selector))
+	for k := range this.Selector {
+		keysForSelector = append(keysForSelector, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForSelector)
+	mapStringForSelector := "map[string]string{"
+	for _, k := range keysForSelector {
+		mapStringForSelector += fmt.Sprintf("%v: %v,", k, this.Selector[k])
+	}
+	mapStringForSelector += "}"
+	s := strings.Join([]string{`&ServiceSpec{`,
+		`Ports:` + strings.Replace(strings.Replace(fmt.Sprintf("%v", this.Ports), "ServicePort", "ServicePort", 1), `&`, ``, 1) + `,`,
+		`Selector:` + mapStringForSelector + `,`,
+		`ClusterIP:` + fmt.Sprintf("%v", this.ClusterIP) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
+		`ExternalIPs:` + fmt.Sprintf("%v", this.ExternalIPs) + `,`,
+		`DeprecatedPublicIPs:` + fmt.Sprintf("%v", this.DeprecatedPublicIPs) + `,`,
+		`SessionAffinity:` + fmt.Sprintf("%v", this.SessionAffinity) + `,`,
+		`LoadBalancerIP:` + fmt.Sprintf("%v", this.LoadBalancerIP) + `,`,
+		`LoadBalancerSourceRanges:` + fmt.Sprintf("%v", this.LoadBalancerSourceRanges) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ServiceStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ServiceStatus{`,
+		`LoadBalancer:` + strings.Replace(strings.Replace(this.LoadBalancer.String(), "LoadBalancerStatus", "LoadBalancerStatus", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TCPSocketAction) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TCPSocketAction{`,
+		`Port:` + strings.Replace(strings.Replace(this.Port.String(), "IntOrString", "k8s_io_kubernetes_pkg_util_intstr.IntOrString", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Taint) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Taint{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`Effect:` + fmt.Sprintf("%v", this.Effect) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Toleration) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Toleration{`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`Operator:` + fmt.Sprintf("%v", this.Operator) + `,`,
+		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
+		`Effect:` + fmt.Sprintf("%v", this.Effect) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Volume) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Volume{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`VolumeSource:` + strings.Replace(strings.Replace(this.VolumeSource.String(), "VolumeSource", "VolumeSource", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VolumeMount) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VolumeMount{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`ReadOnly:` + fmt.Sprintf("%v", this.ReadOnly) + `,`,
+		`MountPath:` + fmt.Sprintf("%v", this.MountPath) + `,`,
+		`SubPath:` + fmt.Sprintf("%v", this.SubPath) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VolumeSource{`,
+		`HostPath:` + strings.Replace(fmt.Sprintf("%v", this.HostPath), "HostPathVolumeSource", "HostPathVolumeSource", 1) + `,`,
+		`EmptyDir:` + strings.Replace(fmt.Sprintf("%v", this.EmptyDir), "EmptyDirVolumeSource", "EmptyDirVolumeSource", 1) + `,`,
+		`GCEPersistentDisk:` + strings.Replace(fmt.Sprintf("%v", this.GCEPersistentDisk), "GCEPersistentDiskVolumeSource", "GCEPersistentDiskVolumeSource", 1) + `,`,
+		`AWSElasticBlockStore:` + strings.Replace(fmt.Sprintf("%v", this.AWSElasticBlockStore), "AWSElasticBlockStoreVolumeSource", "AWSElasticBlockStoreVolumeSource", 1) + `,`,
+		`GitRepo:` + strings.Replace(fmt.Sprintf("%v", this.GitRepo), "GitRepoVolumeSource", "GitRepoVolumeSource", 1) + `,`,
+		`Secret:` + strings.Replace(fmt.Sprintf("%v", this.Secret), "SecretVolumeSource", "SecretVolumeSource", 1) + `,`,
+		`NFS:` + strings.Replace(fmt.Sprintf("%v", this.NFS), "NFSVolumeSource", "NFSVolumeSource", 1) + `,`,
+		`ISCSI:` + strings.Replace(fmt.Sprintf("%v", this.ISCSI), "ISCSIVolumeSource", "ISCSIVolumeSource", 1) + `,`,
+		`Glusterfs:` + strings.Replace(fmt.Sprintf("%v", this.Glusterfs), "GlusterfsVolumeSource", "GlusterfsVolumeSource", 1) + `,`,
+		`PersistentVolumeClaim:` + strings.Replace(fmt.Sprintf("%v", this.PersistentVolumeClaim), "PersistentVolumeClaimVolumeSource", "PersistentVolumeClaimVolumeSource", 1) + `,`,
+		`RBD:` + strings.Replace(fmt.Sprintf("%v", this.RBD), "RBDVolumeSource", "RBDVolumeSource", 1) + `,`,
+		`FlexVolume:` + strings.Replace(fmt.Sprintf("%v", this.FlexVolume), "FlexVolumeSource", "FlexVolumeSource", 1) + `,`,
+		`Cinder:` + strings.Replace(fmt.Sprintf("%v", this.Cinder), "CinderVolumeSource", "CinderVolumeSource", 1) + `,`,
+		`CephFS:` + strings.Replace(fmt.Sprintf("%v", this.CephFS), "CephFSVolumeSource", "CephFSVolumeSource", 1) + `,`,
+		`Flocker:` + strings.Replace(fmt.Sprintf("%v", this.Flocker), "FlockerVolumeSource", "FlockerVolumeSource", 1) + `,`,
+		`DownwardAPI:` + strings.Replace(fmt.Sprintf("%v", this.DownwardAPI), "DownwardAPIVolumeSource", "DownwardAPIVolumeSource", 1) + `,`,
+		`FC:` + strings.Replace(fmt.Sprintf("%v", this.FC), "FCVolumeSource", "FCVolumeSource", 1) + `,`,
+		`AzureFile:` + strings.Replace(fmt.Sprintf("%v", this.AzureFile), "AzureFileVolumeSource", "AzureFileVolumeSource", 1) + `,`,
+		`ConfigMap:` + strings.Replace(fmt.Sprintf("%v", this.ConfigMap), "ConfigMapVolumeSource", "ConfigMapVolumeSource", 1) + `,`,
+		`VsphereVolume:` + strings.Replace(fmt.Sprintf("%v", this.VsphereVolume), "VsphereVirtualDiskVolumeSource", "VsphereVirtualDiskVolumeSource", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VsphereVirtualDiskVolumeSource) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VsphereVirtualDiskVolumeSource{`,
+		`VolumePath:` + fmt.Sprintf("%v", this.VolumePath) + `,`,
+		`FSType:` + fmt.Sprintf("%v", this.FSType) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *WeightedPodAffinityTerm) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&WeightedPodAffinityTerm{`,
+		`Weight:` + fmt.Sprintf("%v", this.Weight) + `,`,
+		`PodAffinityTerm:` + strings.Replace(strings.Replace(this.PodAffinityTerm.String(), "PodAffinityTerm", "PodAffinityTerm", 1), `&`, ``, 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func valueToStringGenerated(v interface{}) string {
+	rv := reflect.ValueOf(v)
+	if rv.IsNil() {
+		return "nil"
+	}
+	pv := reflect.Indirect(rv).Interface()
+	return fmt.Sprintf("*%v", pv)
+}
 func (m *AWSElasticBlockStoreVolumeSource) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -10638,6 +12807,87 @@ func (m *AttachedVolume) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.DevicePath = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AvoidPods) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AvoidPods: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AvoidPods: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PreferAvoidPods", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PreferAvoidPods = append(m.PreferAvoidPods, PreferAvoidPodsEntry{})
+			if err := m.PreferAvoidPods[len(m.PreferAvoidPods)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -26947,6 +29197,89 @@ func (m *PodSecurityContext) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *PodSignature) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PodSignature: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PodSignature: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodController", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.PodController == nil {
+				m.PodController = &OwnerReference{}
+			}
+			if err := m.PodController.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *PodSpec) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -28326,6 +30659,174 @@ func (m *Preconditions) Unmarshal(data []byte) error {
 			}
 			s := k8s_io_kubernetes_pkg_types.UID(data[iNdEx:postIndex])
 			m.UID = &s
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipGenerated(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *PreferAvoidPodsEntry) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowGenerated
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PreferAvoidPodsEntry: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PreferAvoidPodsEntry: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PodSignature", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.PodSignature.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EvictionTime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.EvictionTime.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reason", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Reason = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Message = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -31124,6 +33625,117 @@ func (m *Secret) Unmarshal(data []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			m.Type = SecretType(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StringData", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowGenerated
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
+			if m.StringData == nil {
+				m.StringData = make(map[string]string)
+			}
+			m.StringData[mapkey] = mapvalue
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -197,11 +197,6 @@ func (pm *basicManager) GetPodsAndMirrorPods() ([]*api.Pod, []*api.Pod) {
 	pods := podsMapToPods(pm.podByUID)
 	mirrorPods := podsMapToPods(pm.mirrorPodByUID)
 	return pods, mirrorPods
-}
-
-// Returns all pods (including mirror pods).
-func (pm *basicManager) getAllPods() []*api.Pod {
-	return append(podsMapToPods(pm.podByUID), podsMapToPods(pm.mirrorPodByUID)...)
 }
 
 func (pm *basicManager) GetPodByUID(uid types.UID) (*api.Pod, bool) {

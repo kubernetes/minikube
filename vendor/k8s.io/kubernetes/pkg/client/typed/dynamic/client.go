@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ func NewClient(conf *restclient.Config) (*Client, error) {
 
 	// TODO: it's questionable that this should be using anything other than unstructured schema and JSON
 	conf.ContentType = runtime.ContentTypeJSON
+	conf.AcceptContentTypes = runtime.ContentTypeJSON
 	streamingInfo, _ := api.Codecs.StreamingSerializerForMediaType("application/json;stream=watch", nil)
 	conf.NegotiatedSerializer = serializer.NegotiatedSerializerWrapper(runtime.SerializerInfo{Serializer: codec}, streamingInfo)
 
@@ -67,13 +68,6 @@ func NewClient(conf *restclient.Config) (*Client, error) {
 
 	if len(conf.UserAgent) == 0 {
 		conf.UserAgent = restclient.DefaultKubernetesUserAgent()
-	}
-
-	if conf.QPS == 0.0 {
-		conf.QPS = 5.0
-	}
-	if conf.Burst == 0 {
-		conf.Burst = 10
 	}
 
 	cl, err := restclient.RESTClientFor(conf)
