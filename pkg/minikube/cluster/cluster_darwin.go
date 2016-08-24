@@ -22,6 +22,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// Ensures that we get assigned the same IP across deletes/starts
+const xhyveUUID = "57FD2012-FA4A-4FF7-AEFF-26E1A1D76847"
+
 func createVMwareFusionHost(config MachineConfig) drivers.Driver {
 	d := vmwarefusion.NewDriver(constants.MachineName, constants.Minipath).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.GetISOFileURI()
@@ -64,5 +67,6 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		DiskSize:       int64(config.DiskSize),
 		Virtio9p:       true,
 		Virtio9pFolder: "/Users",
+		UUID:           xhyveUUID,
 	}
 }
