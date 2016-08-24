@@ -13,9 +13,10 @@ To do this, build the new iso by running:
 ```shell
 deploy/iso/build.sh
 ```
-This will generate a new iso at 'deploy/iso/minikube.iso'.  Then upload the iso using the following command:
+This will generate a new iso at 'deploy/iso/minikube.iso'.  Then upload the iso and shasum using the following command:
 ```shell
 gsutil cp deploy/iso/minikube.iso gs://minikube/minikube-<increment.version>.iso
+gsutil cp deploy/iso/minikube.iso.sha256 gs://minikube/minikube-<increment.version>.iso.sha256
 ```
 
 ## Run integration tests
