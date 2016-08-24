@@ -1,0 +1,8 @@
+[Unit]
+Description=minikube automount
+Before=docker.service rkt-api.service rkt-metadata.service
+
+[Service]
+ExecStart=/usr/sbin/minikube-automount
+Type=oneshot
+RemainAfterExit=true

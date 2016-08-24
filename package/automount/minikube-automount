@@ -1,0 +1,159 @@
+#!/bin/bash
+
+set -x
+
+echo "automount ...";
+LABEL=boot2docker-data
+MAGIC="boot2docker, please format-me"
+
+# If there is a partition with `boot2docker-data` as its label, use it and be
+# very happy. Thus, you can come along if you feel like a room without a roof.
+BOOT2DOCKER_DATA=`blkid -o device -l -t LABEL=$LABEL`
+echo $BOOT2DOCKER_DATA
+if [ ! -n "$BOOT2DOCKER_DATA" ]; then
+    echo "Is the disk unpartitioned?, test for the 'boot2docker format-me' string"
+
+    # Is the disk unpartitioned?, test for the 'boot2docker format-me' string
+    UNPARTITIONED_HD="/dev/$(lsblk | grep disk | cut -f1 -d' ')"
+    parted --script "$UNPARTITIONED_HD" print | grep "Partition Table: unknown"
+
+    if [ $? -eq 0 ]; then
+        # Test for our magic string (it means that the disk was made by ./boot2docker init)
+        HEADER=`dd if=$UNPARTITIONED_HD bs=1 count=${#MAGIC} 2>/dev/null`
+
+        if [ "$HEADER" = "$MAGIC" ]; then
+            # save the preload userdata.tar file
+            dd if=$UNPARTITIONED_HD of=/userdata.tar bs=1 count=4096 2>/dev/null
+            # Create the partition, format it and then mount it
+            echo "NEW boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
+
+            # Add a swap partition (so Docker doesn't complain about it missing)
+            (echo n; echo p; echo 2; echo ; echo +1000M ; echo w) | fdisk $UNPARTITIONED_HD
+            # Let kernel re-read partition table
+            partprobe
+            (echo t; echo 82; echo w) | fdisk $UNPARTITIONED_HD
+            # Let kernel re-read partition table
+            partprobe
+            # wait for the partition to actually exist, timeout after about 5 seconds
+            local timer=0
+            while [ "$timer" -lt 10 -a ! -b "${UNPARTITIONED_HD}2" ]; do
+                timer=$((timer + 1))
+                sleep 0.5
+            done
+            mkswap "${UNPARTITIONED_HD}2"
+            # Add the data partition
+            (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
+            # Let kernel re-read partition table
+            partprobe
+            # wait for the partition to actually exist, timeout after about 5 seconds
+            timer=0
+            while [ "$timer" -lt 10 -a ! -b "${UNPARTITIONED_HD}1" ]; do
+                timer=$((timer + 1))
+                sleep 0.5
+            done
+            BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
+            mkfs.ext4 -i 8192 -L $LABEL $BOOT2DOCKER_DATA
+            swapon "${UNPARTITIONED_HD}2"
+        fi
+
+        DISK_VENDOR=$(cat /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/vendor /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/model | tr -d "\n")
+        # Test if disk is "VMware, VMware Virtual S" and empty.
+        if [ "$DISK_VENDOR" = "VMware, VMware Virtual S" ] || [ "$DISK_VENDOR" = "VMware  Virtual disk    " ]; then
+            # Check whether the disk has any known partitions on it
+            blkid -o device $UNPARTITIONED_HD
+            if [ $? == 2 ]; then
+                # As there are no partitions, let's make sure the disk is empty for real
+                dd if=$UNPARTITIONED_HD of=device_test_file bs=1k count=256 > /dev/null 2>&1
+                NON_NUL=$(<device_test_file tr -d '\0\n' | wc -c)
+                if [ $NON_NUL == 0 ]; then                    
+                    # Create the partition, format it and then mount it
+                    echo "NEW VMware boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
+
+                    # Add a swap partition (so Docker doesn't complain about it missing)
+                    (echo n; echo p; echo 2; echo ; echo +1000M ; echo w) | fdisk $UNPARTITIONED_HD
+                    (echo t; echo 82) | fdisk $UNPARTITIONED_HD
+                    mkswap "${UNPARTITIONED_HD}2"
+                    # Add the data partition
+                    (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
+                    BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
+                    mkfs.ext4 -i 8192 -L $LABEL $BOOT2DOCKER_DATA
+                    swapon "${UNPARTITIONED_HD}2"
+                else
+                    echo "Disk unpartitioned but something is there... not doing anything"
+                fi
+            else
+                echo "Partition table found on disk, not doing anything"
+            fi
+        fi
+    else
+        # Pick the first ext4 as a fallback
+        # TODO: mount all Linux partitions and look for a /var/lib/docker...
+        BOOT2DOCKER_DATA=`blkid | grep -e 'TYPE="btrfs"'  -e 'TYPE="ext4"' | head -n 1 | sed 's/:.*//'`
+    fi
+fi
+
+echo $BOOT2DOCKER_DATA
+
+if [ -n "$BOOT2DOCKER_DATA" ]; then
+    PARTNAME=`echo "$BOOT2DOCKER_DATA" | sed 's/.*\///'`
+    echo "mount p:$PARTNAME ..."
+    mkdir -p /mnt/$PARTNAME
+    if ! mount $BOOT2DOCKER_DATA /mnt/$PARTNAME 2>/dev/null; then
+        # for some reason, mount doesn't like to modprobe btrfs
+        BOOT2DOCKER_FSTYPE=`blkid -o export $BOOT2DOCKER_DATA | grep TYPE= | cut -d= -f2`
+        modprobe $BOOT2DOCKER_FSTYPE || true
+        umount -f /mnt/$PARTNAME || true
+        mount $BOOT2DOCKER_DATA /mnt/$PARTNAME
+    fi
+
+    # Just in case, the links will fail if not
+    umount -f /var/lib/docker || true
+    rm -rf /var/lib/docker /var/lib/boot2docker
+    mkdir -p /var/lib
+
+    mkdir -p /mnt/$PARTNAME/var/lib/boot2docker
+    ln -s /mnt/$PARTNAME/var/lib/boot2docker /var/lib/boot2docker
+
+    mkdir -p /mnt/$PARTNAME/var/lib/docker
+    ln -s /mnt/$PARTNAME/var/lib/docker /var/lib/docker
+
+    mkdir -p /mnt/$PARTNAME/var/lib/kubelet
+    ln -s /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
+
+    mkdir -p /mnt/$PARTNAME/var/lib/cni
+    ln -s /mnt/$PARTNAME/var/lib/cni /var/lib/cni
+
+    rm -rf /var/lib/rkt
+    if [ ! -d /mnt/$PARTNAME/var/lib/rkt ]; then
+        mkdir -p /mnt/$PARTNAME/var/lib/rkt
+        chown root:rkt /mnt/$PARTNAME/var/lib/rkt
+    fi
+    ln -s /mnt/$PARTNAME/var/lib/rkt /var/lib/rkt
+
+    if [ ! -d /mnt/$PARTNAME/var/lib/rkt-etc ]; then
+        mkdir -p /mnt/$PARTNAME/var/lib/rkt-etc
+        cp -rp /etc/rkt/* /mnt/$PARTNAME/var/lib/rkt-etc
+        chown root:rkt-admin /mnt/$PARTNAME/var/lib/rkt-etc
+        chmod ug+rw /mnt/$PARTNAME/var/lib/rkt-etc
+    fi
+    rm -rf /etc/rkt
+    ln -s /mnt/$PARTNAME/var/lib/rkt-etc /etc/rkt
+
+    if [ ! -d /var/lib/rkt/pods ]; then
+        systemd-tmpfiles --create rkt.conf
+    fi
+
+    if [ -e "/userdata.tar" ]; then
+        mv /userdata.tar /var/lib/boot2docker/
+    fi
+
+    tar xf /var/lib/boot2docker/userdata.tar -C /home/docker/
+    chown -R docker:docker /home/docker/.ssh
+    rm -f '/home/docker/boot2docker, please format-me'
+
+    mkdir -p /mnt/$PARTNAME/var/lib/localkube
+    ln -s /mnt/$PARTNAME/var/lib/localkube /var/lib/localkube
+fi
+
+# /etc dirs are initialised from /usr/local, to allow the user/admin to customise
+mkdir -p /var/lib/boot2docker/etc/
