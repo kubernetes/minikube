@@ -25,7 +25,7 @@ minikube start
  OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)
       --memory=1024: Amount of RAM allocated to the minikube VM
       --registry-mirror=[]: Registry mirrors to pass to the Docker daemon
-      --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion kvm xhyve]
+      --vm-driver="virtualbox": VM driver is one of: [virtualbox vmwarefusion kvm xhyve hyperv]
 ```
 
 ### Options inherited from parent commands

@@ -23,4 +23,5 @@ var SupportedVMDrivers = [...]string{
 	"vmwarefusion",
 	"kvm",
 	"xhyve",
+	"hyperv",
 }

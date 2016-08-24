@@ -387,6 +387,8 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		driver = createKVMHost(config)
 	case "xhyve":
 		driver = createXhyveHost(config)
+	case "hyperv":
+		driver = createHypervHost(config)
 	default:
 		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
 	}
