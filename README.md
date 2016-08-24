@@ -20,3 +20,5 @@ $ make
 ```
 
 The bootable ISO image will be available in `output/images/rootfs.iso9660`.
+
+**Note**: This is currently intended to be a stop-gap solution. In the middleterm this is meant to be replaced by a "slim" version of a bootable CoreOS image.
