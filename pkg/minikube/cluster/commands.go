@@ -29,7 +29,7 @@ var stopCommand = "sudo killall localkube || true"
 
 var startCommandFmtStr = `
 # Run with nohup so it stays up. Redirect logs to useful places.
-sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true --node-ip=%s > %s 2> %s < /dev/null &'
+sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true --node-ip=%s > %s 2> %s < /dev/null & echo $! > %s &'
 `
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
 
@@ -41,5 +41,13 @@ func GetStartCommand(kubernetesConfig KubernetesConfig) string {
 		}
 	}
 	flags := strings.Join(flagVals, " ")
-	return fmt.Sprintf(startCommandFmtStr, flags, kubernetesConfig.NodeIP, constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
+	return fmt.Sprintf(startCommandFmtStr, flags, kubernetesConfig.NodeIP, constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath, constants.LocalkubePIDPath)
 }
+
+var localkubeStatusCommand = fmt.Sprintf(`
+if ps $(cat %s) 2>&1 1>/dev/null; then
+  echo "Running"
+else
+  echo "Stopped"
+fi
+`, constants.LocalkubePIDPath)
