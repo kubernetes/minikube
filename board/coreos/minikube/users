@@ -1,0 +1,2 @@
+rkt    -1 rkt    -1 - /home/rkt    /bin/bash rkt-admin,wheel     -
+docker -1 docker -1 - /home/docker /bin/bash rkt,rkt-admin,wheel -

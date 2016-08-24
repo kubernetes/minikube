@@ -1,0 +1,6 @@
+menu "System tools"
+    source "$BR2_EXTERNAL/package/rkt-bin/Config.in"
+    source "$BR2_EXTERNAL/package/automount/Config.in"
+    source "$BR2_EXTERNAL/package/docker-bin/Config.in"
+    source "$BR2_EXTERNAL/package/cni-bin/Config.in"
+endmenu
