@@ -18,10 +18,11 @@ package cluster
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -305,6 +306,34 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	return d
 }
 
+func isIsoChecksumValid(isoData *[]byte, shaURL string) bool {
+	r, err := http.Get(shaURL)
+	if err != nil {
+		glog.Errorf("Error downloading ISO checksum: %s", err)
+		return false
+	} else if r.StatusCode != http.StatusOK {
+		glog.Errorf("Error downloading ISO checksum. Got HTTP Error: %s", r.Status)
+		return false
+	}
+
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		glog.Errorf("Error reading ISO checksum: %s", err)
+		return false
+	}
+
+	expectedSum := strings.Trim(string(body), "\n")
+
+	b := sha256.Sum256(*isoData)
+	actualSum := hex.EncodeToString(b[:])
+	if string(expectedSum) != actualSum {
+		glog.Errorf("Downloaded ISO checksum does not match expected value. Actual: %s. Expected: %s", actualSum, expectedSum)
+		return false
+	}
+	return true
+}
+
 func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	// store the miniube-iso inside the .minikube dir
 	response, err := http.Get(m.MinikubeISO)
@@ -313,6 +342,17 @@ func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	}
 
 	defer response.Body.Close()
+	isoData, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	// Validate the ISO if it was the default URL, before writing it to disk.
+	if m.MinikubeISO == constants.DefaultIsoUrl {
+		if !isIsoChecksumValid(&isoData, constants.DefaultIsoShaUrl) {
+			return fmt.Errorf("Error validating ISO checksum.")
+		}
+	}
 
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("Received %d response from %s while trying to download minikube.iso", response.StatusCode, m.MinikubeISO)
@@ -323,7 +363,8 @@ func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 		return err
 	}
 	defer out.Close()
-	if _, err = io.Copy(out, response.Body); err != nil {
+
+	if _, err = out.Write(isoData); err != nil {
 		return err
 	}
 	return nil

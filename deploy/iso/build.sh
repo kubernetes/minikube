@@ -52,5 +52,8 @@ mv $tmpdir/$ISO .
 
 # Clean up.
 rm -rf $tmpdir
+openssl sha256 "${ISO}" | awk '{print $2}' > "${ISO}.sha256"
 
 echo "Iso available at ./$ISO"
+echo "SHA sum available at ./$ISO.sha256"
+
