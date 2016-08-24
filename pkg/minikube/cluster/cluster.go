@@ -147,6 +147,29 @@ func GetHostStatus(api libmachine.API) (string, error) {
 	return s.String(), err
 }
 
+// GetLocalkubeStatus gets the status of localkube from the host VM.
+func GetLocalkubeStatus(api libmachine.API) (string, error) {
+	host, err := checkIfApiExistsAndLoad(api)
+	if err != nil {
+		return "", err
+	}
+	s, err := host.RunSSHCommand(localkubeStatusCommand)
+	if err != nil {
+		return "", err
+	}
+	if s == "" { // this is a test pass through, I am not sure what I should do here
+		return "N/A", nil
+	}
+	s = strings.TrimSpace(s)
+	if state.Running.String() == s {
+		return state.Running.String(), nil
+	} else if state.Stopped.String() == s {
+		return state.Stopped.String(), nil
+	} else {
+		return "", fmt.Errorf("Error: Unrecognize output from GetLocalkubeStatus: %s", s)
+	}
+}
+
 type sshAble interface {
 	RunSSHCommand(string) (string, error)
 }
@@ -600,7 +623,7 @@ func GetHostLogs(api libmachine.API) (string, error) {
 	}
 	s, err := host.RunSSHCommand(logsCommand)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	return s, err
 }
