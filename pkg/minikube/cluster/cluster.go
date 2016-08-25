@@ -79,6 +79,18 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	}
 
 	s, err := h.Driver.GetState()
+
+	// This is the name of the driver passed in
+	// through a flag, env, or config file (if any)
+	driverSpecified := config.VMDriver
+
+	// This is the name of the driver that is currently used with minikube
+	currentDriver := h.Driver.DriverName()
+
+	if driverSpecified != "" && driverSpecified != currentDriver {
+		return nil, fmt.Errorf("Error: Specified driver %s but there is already a machine configured with driver %s.  Please do a [minikube delete] then a [minikube start] to use these settings.", driverSpecified, currentDriver)
+	}
+
 	glog.Infoln("Machine state: ", s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting state for host")
