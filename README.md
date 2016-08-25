@@ -25,7 +25,7 @@ The bootable ISO image will be available in `output/images/rootfs.iso9660`.
 
 ## Quickstart
 
-To use this ISO image in minikube, use the `--iso-url` flag in minikube:
+To use this ISO image, use the `--iso-url` flag in minikube:
 
 ```
 $ minikube start --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.1/minikube-v0.0.1.iso
