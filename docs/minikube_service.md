@@ -14,6 +14,7 @@ minikube service [flags] SERVICE
 ### Options
 
 ```
+      --https[=false]: Open the service URL with https instead of http
   -n, --namespace="default": The service namespace
       --url[=false]: Display the kubernetes service URL in the CLI instead of opening it in the default browser
 ```
