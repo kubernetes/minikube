@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/util"
 )
 
 func TestGetStartCommandCustomValues(t *testing.T) {
@@ -29,12 +31,34 @@ func TestGetStartCommandCustomValues(t *testing.T) {
 		"vmodule": "cluster*=5",
 	}
 	flagMapToSetFlags(flagMap)
-	startCommand := GetStartCommand(KubernetesConfig{})
+	startCommand, err := GetStartCommand(KubernetesConfig{})
+	if err != nil {
+		t.Fatalf("Error generating start command: %s", err)
+	}
+
 	for flag, val := range flagMap {
 		if val != "" {
 			if expectedFlag := getSingleFlagValue(flag, val); !strings.Contains(startCommand, getSingleFlagValue(flag, val)) {
 				t.Fatalf("Expected GetStartCommand to contain: %s.", expectedFlag)
 			}
+		}
+	}
+}
+
+func TestGetStartCommandExtraOptions(t *testing.T) {
+	k := KubernetesConfig{
+		ExtraOptions: util.ExtraOptionSlice{
+			util.ExtraOption{Component: "a", Key: "b", Value: "c"},
+			util.ExtraOption{Component: "d", Key: "e.f", Value: "g"},
+		},
+	}
+	startCommand, err := GetStartCommand(k)
+	if err != nil {
+		t.Fatalf("Error generating start command: %s", err)
+	}
+	for _, arg := range []string{"--extra-config=a.b=c", "--extra-config=d.e.f=g"} {
+		if !strings.Contains(startCommand, arg) {
+			t.Fatalf("Error, expected to find argument: %s. Got: %s", arg, startCommand)
 		}
 	}
 }

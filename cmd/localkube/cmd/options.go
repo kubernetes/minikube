@@ -44,6 +44,7 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 		ShouldGenerateCerts:      true,
 		ShowVersion:              false,
 		RuntimeConfig:            map[string]string{"api/all": "true"},
+		ExtraConfig:              util.ExtraOptionSlice{},
 	}
 }
 
@@ -65,6 +66,7 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.IPVar(&s.NodeIP, "node-ip", s.NodeIP, "IP address of the node. If set, kubelet will use this IP address for the node.")
 	flag.StringVar(&s.ContainerRuntime, "container-runtime", "", "The container runtime to be used")
 	flag.StringVar(&s.NetworkPlugin, "network-plugin", "", "The name of the network plugin")
+	flag.Var(&s.ExtraConfig, "extra-config", "A set of key=value pairs that describe configuration that may be passed to different components. The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.")
 
 	// These two come from vendor/ packages that use flags. We should hide them
 	flag.CommandLine.MarkHidden("google-json-key")
