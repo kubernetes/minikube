@@ -59,6 +59,8 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 
 	config.RuntimeConfig = lk.RuntimeConfig
 
+	lk.SetExtraConfigForComponent("apiserver", &config)
+
 	return func() error {
 		return apiserver.Run(config)
 	}

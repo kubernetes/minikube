@@ -41,6 +41,8 @@ func StartControllerManagerServer(lk LocalkubeServer) func() error {
 	config.ServiceAccountKeyFile = lk.GetPrivateKeyCertPath()
 	config.RootCAFile = lk.GetCAPublicKeyCertPath()
 
+	lk.SetExtraConfigForComponent("controller-manager", &config)
+
 	return func() error {
 		return controllerManager.Run(config)
 	}

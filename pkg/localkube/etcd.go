@@ -80,6 +80,8 @@ func (lk LocalkubeServer) NewEtcd(clientURLStrs, peerURLStrs []string, name, dat
 		ElectionTicks: 10,
 	}
 
+	lk.SetExtraConfigForComponent(EtcdName, &config)
+
 	return &EtcdServer{
 		config: config,
 	}, nil
