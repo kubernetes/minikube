@@ -21,8 +21,10 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -183,32 +185,134 @@ func StartCluster(h sshAble) error {
 	return nil
 }
 
-type fileToCopy struct {
+type CopyableFile interface {
+	io.Reader
+	GetLength() int
+	GetAssetName() string
+	GetTargetDir() string
+	GetTargetName() string
+	GetPermissions() string
+}
+
+type BaseAsset struct {
+	data        []byte
+	reader      io.Reader
+	Length      int
 	AssetName   string
 	TargetDir   string
 	TargetName  string
 	Permissions string
 }
 
-var assets = []fileToCopy{
-	{
-		AssetName:   "deploy/iso/addon-manager.yaml",
-		TargetDir:   "/etc/kubernetes/manifests/",
-		TargetName:  "addon-manager.yaml",
-		Permissions: "0640",
-	},
-	{
-		AssetName:   "deploy/addons/dashboard-rc.yaml",
-		TargetDir:   "/etc/kubernetes/addons/",
-		TargetName:  "dashboard-rc.yaml",
-		Permissions: "0640",
-	},
-	{
-		AssetName:   "deploy/addons/dashboard-svc.yaml",
-		TargetDir:   "/etc/kubernetes/addons/",
-		TargetName:  "dashboard-svc.yaml",
-		Permissions: "0640",
-	},
+func (b *BaseAsset) GetAssetName() string {
+	return b.AssetName
+}
+
+func (b *BaseAsset) GetTargetDir() string {
+	return b.TargetDir
+}
+
+func (b *BaseAsset) GetTargetName() string {
+	return b.TargetName
+}
+
+func (b *BaseAsset) GetPermissions() string {
+	return b.Permissions
+}
+
+type FileAsset struct {
+	BaseAsset
+}
+
+func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAsset, error) {
+	f := &FileAsset{
+		BaseAsset{
+			AssetName:   assetName,
+			TargetDir:   targetDir,
+			TargetName:  targetName,
+			Permissions: permissions,
+		},
+	}
+	file, err := os.Open(f.AssetName)
+	if err != nil {
+		return nil, err
+	}
+	f.reader = file
+	return f, nil
+}
+
+func (f *FileAsset) GetLength() int {
+	file, err := os.Open(f.AssetName)
+	defer file.Close()
+	if err != nil {
+		return 0
+	}
+	fi, err := file.Stat()
+	if err != nil {
+		return 0
+	}
+	return int(fi.Size())
+}
+
+func (f *FileAsset) Read(p []byte) (int, error) {
+	if f.reader == nil {
+		return 0, errors.New("Error attempting FileAsset.Read, FileAsset.reader uninitialized")
+	}
+	return f.reader.Read(p)
+}
+
+type MemoryAsset struct {
+	BaseAsset
+}
+
+func NewMemoryAsset(assetName, targetDir, targetName, permissions string) *MemoryAsset {
+	m := &MemoryAsset{
+		BaseAsset{
+			AssetName:   assetName,
+			TargetDir:   targetDir,
+			TargetName:  targetName,
+			Permissions: permissions,
+		},
+	}
+	m.loadData()
+	return m
+}
+
+func (m *MemoryAsset) loadData() error {
+	contents, err := Asset(m.AssetName)
+	if err != nil {
+		return err
+	}
+	m.data = contents
+	m.Length = len(contents)
+	m.reader = bytes.NewReader(m.data)
+	return nil
+}
+
+func (m *MemoryAsset) GetLength() int {
+	return m.Length
+}
+
+func (m *MemoryAsset) Read(p []byte) (int, error) {
+	return m.reader.Read(p)
+}
+
+var memoryAssets = []CopyableFile{
+	NewMemoryAsset(
+		"deploy/iso/addon-manager.yaml",
+		"/etc/kubernetes/manifests/",
+		"addon-manager.yaml",
+		"0640"),
+	NewMemoryAsset(
+		"deploy/addons/dashboard-rc.yaml",
+		"/etc/kubernetes/addons/",
+		"dashboard-rc.yaml",
+		"0640"),
+	NewMemoryAsset(
+		"deploy/addons/dashboard-svc.yaml",
+		"/etc/kubernetes/addons/",
+		"dashboard-svc.yaml",
+		"0640"),
 }
 
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
@@ -216,6 +320,8 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	if err != nil {
 		return err
 	}
+
+	// transfer localkube from cache/asset to vm
 	if localkubeURIWasSpecified(config) {
 		lCacher := localkubeCacher{config}
 		if err = lCacher.updateLocalkubeFromURI(client); err != nil {
@@ -226,15 +332,17 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 			return err
 		}
 	}
-
-	for _, a := range assets {
-		contents, err := Asset(a.AssetName)
-		if err != nil {
-			glog.Infof("Error loading asset %s: %s", a.AssetName, err)
-			return err
-		}
-
-		if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), a.TargetDir, a.TargetName, a.Permissions, client); err != nil {
+	fileAssets := []CopyableFile{}
+	addMinikubeAddonsDirToAssets(&fileAssets)
+	// merge files to copy
+	var copyableFiles []CopyableFile
+	copyableFiles = append(copyableFiles, memoryAssets...)
+	copyableFiles = append(copyableFiles, fileAssets...)
+	// transfer files to vm
+	for _, copyableFile := range copyableFiles {
+		if err := sshutil.Transfer(copyableFile, copyableFile.GetLength(),
+			copyableFile.GetTargetDir(), copyableFile.GetTargetName(),
+			copyableFile.GetPermissions(), client); err != nil {
 			return err
 		}
 	}
@@ -628,5 +736,25 @@ func EnsureMinikubeRunningOrExit(api libmachine.API) {
 	if s != state.Running.String() {
 		fmt.Fprintln(os.Stdout, "minikube is not currently running so the service cannot be accessed")
 		os.Exit(1)
+	}
+}
+
+func addMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
+	// loop over .minikube/addons and add them to assets
+	searchDir := constants.MakeMiniPath("addons")
+	err := filepath.Walk(searchDir, func(addonFile string, f os.FileInfo, err error) error {
+		isDir, err := util.IsDirectory(addonFile)
+		if err == nil && !isDir {
+			f, err := NewFileAsset(addonFile, "/etc/kubernetes/addons", filepath.Base(addonFile), "0640")
+			if err == nil {
+				*assetList = append(*assetList, f)
+			}
+		} else if err != nil {
+			glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+		}
+		return nil
+	})
+	if err != nil {
+		glog.Infoln("Error encountered while walking .minikube/addons: ", err)
 	}
 }
