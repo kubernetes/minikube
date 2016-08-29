@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
 )
 
 // MockAPI is a struct used to mock out libmachine.API
@@ -51,7 +52,7 @@ func (api *MockAPI) Close() error {
 func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
 	var driver MockDriver
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error unmarshalling json")
 	}
 	h := &host.Host{
 		DriverName:  driverName,

@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/version"
 )
@@ -88,7 +89,7 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, error) {
 	urlObj, err := url.Parse(versionOrURL)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Error parsing localkube download url")
 	}
 	if urlObj.IsAbs() {
 		// scheme was specified in input, is a valid URI.
@@ -100,7 +101,7 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 		versionOrURL = "v" + versionOrURL
 	}
 	if _, err = semver.Make(strings.TrimPrefix(versionOrURL, version.VersionPrefix)); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "Error creating semver version from localkube version input string")
 	}
 	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
 }
@@ -124,13 +125,23 @@ func (m MultiError) ToError() error {
 	for _, err := range m.Errors {
 		errStrings = append(errStrings, err.Error())
 	}
-	return fmt.Errorf(strings.Join(errStrings, "\n"))
+	return errors.New(strings.Join(errStrings, "\n"))
+}
+
+type ServiceContext struct {
+	Service string `json:"service"`
+	Version string `json:"version"`
+}
+
+type Message struct {
+	Message        string `json:"message"`
+	ServiceContext `json:"serviceContext"`
 }
 
 func IsDirectory(path string) (bool, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return false, err
+		return false, errors.Wrapf(err, "Error calling os.Stat on file %s", path)
 	}
 	return fileInfo.IsDir(), nil
 }
