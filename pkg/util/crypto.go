@@ -23,19 +23,20 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 func GenerateCACert(certPath, keyPath string) error {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error generating rsa key")
 	}
 
 	template := x509.Certificate{
@@ -62,27 +63,27 @@ func GenerateCACert(certPath, keyPath string) error {
 func GenerateSignedCert(certPath, keyPath string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
 	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error reading file: signerCertPath")
 	}
 	decodedSignerCert, _ := pem.Decode(signerCertBytes)
 	if decodedSignerCert == nil {
-		return fmt.Errorf("Unable to decode certificate.")
+		return errors.New("Unable to decode certificate.")
 	}
 	signerCert, err := x509.ParseCertificate(decodedSignerCert.Bytes)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error parsing certificate: decodedSignerCert.Bytes")
 	}
 	signerKeyBytes, err := ioutil.ReadFile(signerKeyPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error reading file: signerKeyPath")
 	}
 	decodedSignerKey, _ := pem.Decode(signerKeyBytes)
 	if decodedSignerKey == nil {
-		return fmt.Errorf("Unable to decode key.")
+		return errors.New("Unable to decode key.")
 	}
 	signerKey, err := x509.ParsePKCS1PrivateKey(decodedSignerKey.Bytes)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error parsing prive key: decodedSignerKey.Bytes")
 	}
 
 	template := x509.Certificate{
@@ -103,7 +104,7 @@ func GenerateSignedCert(certPath, keyPath string, ips []net.IP, alternateDNS []s
 
 	priv, err := loadOrGeneratePrivateKey(keyPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error loading or generating private key: keyPath")
 	}
 
 	return writeCertsAndKeys(&template, certPath, priv, keyPath, signerCert, signerKey)
@@ -122,7 +123,7 @@ func loadOrGeneratePrivateKey(keyPath string) (*rsa.PrivateKey, error) {
 	}
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error generating RSA key")
 	}
 	return priv, nil
 }
@@ -130,31 +131,31 @@ func loadOrGeneratePrivateKey(keyPath string) (*rsa.PrivateKey, error) {
 func writeCertsAndKeys(template *x509.Certificate, certPath string, signeeKey *rsa.PrivateKey, keyPath string, parent *x509.Certificate, signingKey *rsa.PrivateKey) error {
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, parent, &signeeKey.PublicKey, signingKey)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error creating certificate")
 	}
 
 	certBuffer := bytes.Buffer{}
 	if err := pem.Encode(&certBuffer, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes}); err != nil {
-		return err
+		return errors.Wrap(err, "Error encoding certificate")
 	}
 
 	keyBuffer := bytes.Buffer{}
 	if err := pem.Encode(&keyBuffer, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(signeeKey)}); err != nil {
-		return err
+		return errors.Wrap(err, "Error encoding key")
 	}
 
 	if err := os.MkdirAll(filepath.Dir(certPath), os.FileMode(0755)); err != nil {
-		return err
+		return errors.Wrap(err, "Error creating certificate directory")
 	}
 	if err := ioutil.WriteFile(certPath, certBuffer.Bytes(), os.FileMode(0644)); err != nil {
-		return err
+		return errors.Wrap(err, "Error writing certificate to cert path")
 	}
 
 	if err := os.MkdirAll(filepath.Dir(keyPath), os.FileMode(0755)); err != nil {
-		return err
+		return errors.Wrap(err, "Error creating key directory")
 	}
 	if err := ioutil.WriteFile(keyPath, keyBuffer.Bytes(), os.FileMode(0600)); err != nil {
-		return err
+		return errors.Wrap(err, "Error writing key file")
 	}
 
 	return nil

@@ -27,6 +27,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -90,7 +91,7 @@ type releases []release
 func getJson(url string, target *releases) error {
 	r, err := http.Get(url)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error getting minikube version url via http")
 	}
 	defer r.Body.Close()
 
@@ -101,10 +102,10 @@ func getLatestVersionFromURL(url string) (semver.Version, error) {
 	var releases releases
 	glog.Infof("Checking for updates...")
 	if err := getJson(url, &releases); err != nil {
-		return semver.Version{}, err
+		return semver.Version{}, errors.Wrap(err, "Error getting json from minikube version url")
 	}
 	if len(releases) == 0 {
-		return semver.Version{}, fmt.Errorf("There were no json releases at the url specified: %s", url)
+		return semver.Version{}, errors.Errorf("There were no json releases at the url specified: %s", url)
 	}
 	latestVersionString := releases[0].Name
 	return semver.Make(strings.TrimPrefix(latestVersionString, version.VersionPrefix))
@@ -113,7 +114,7 @@ func getLatestVersionFromURL(url string) (semver.Version, error) {
 func writeTimeToFile(path string, inputTime time.Time) error {
 	err := ioutil.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
 	if err != nil {
-		return fmt.Errorf("Error writing current update time to file: %s", err)
+		return errors.Wrap(err, "Error writing current update time to file: ")
 	}
 	return nil
 }

@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -34,6 +33,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -498,7 +498,7 @@ func NewMockServiceGetter() *MockServiceGetter {
 func (mockServiceGetter *MockServiceGetter) Get(name string) (*api.Service, error) {
 	service, ok := mockServiceGetter.services[name]
 	if !ok {
-		return nil, fmt.Errorf("Error getting %s service from mockServiceGetter", name)
+		return nil, errors.Errorf("Error getting %s service from mockServiceGetter", name)
 	}
 	return &service, nil
 }

@@ -17,19 +17,19 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Returns a function that will return n errors, then return successfully forever.
 func errorGenerator(n int) func() error {
-	errors := 0
+	errorCount := 0
 	return func() (err error) {
-		if errors < n {
-			errors += 1
-			return fmt.Errorf("Error!")
+		if errorCount < n {
+			errorCount += 1
+			return errors.New("Error!")
 		}
 		return nil
 	}
@@ -93,8 +93,8 @@ func TestGetLocalkubeDownloadURL(t *testing.T) {
 func TestMultiError(t *testing.T) {
 	m := MultiError{}
 
-	m.Collect(fmt.Errorf("Error 1"))
-	m.Collect(fmt.Errorf("Error 2"))
+	m.Collect(errors.New("Error 1"))
+	m.Collect(errors.New("Error 2"))
 
 	err := m.ToError()
 	expected := `Error 1
