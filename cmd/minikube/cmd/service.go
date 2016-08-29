@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -33,6 +34,7 @@ import (
 
 var (
 	namespace      string
+	https          bool
 	serviceURLMode bool
 )
 
@@ -63,6 +65,9 @@ var serviceCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")
 			os.Exit(1)
 		}
+		if https {
+			url = strings.Replace(url, "http", "https", 1)
+		}
 		if serviceURLMode {
 			fmt.Fprintln(os.Stdout, url)
 		} else {
@@ -75,6 +80,7 @@ var serviceCmd = &cobra.Command{
 func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
+	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
 	RootCmd.AddCommand(serviceCmd)
 }
 
