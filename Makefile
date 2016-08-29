@@ -15,8 +15,9 @@
 # Use the native vendor/ dependency system
 export GO15VENDOREXPERIMENT=1
 
-# Bump this on release
+# Bump these on release
 VERSION ?= v0.8.0
+DEB_VERSION ?= 0.8-0
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -113,3 +114,11 @@ gendocs: docs/minikube.md
 docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/cluster/assets.go
 	$(MKGOPATH)
 	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs gen_help_text.go
+
+out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
+	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
+	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
+	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin
+	dpkg-deb --build out/minikube_$(DEB_VERSION)
+	rm -rf out/minikube_$(DEB_VERSION)
