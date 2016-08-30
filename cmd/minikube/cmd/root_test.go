@@ -97,6 +97,27 @@ func runCommand(f func(*cobra.Command, []string)) {
 	f(&cmd, args)
 }
 
+// Temporarily unsets the env variables for the test cases
+// returns a function to reset them to their initial values
+func hideEnv(t *testing.T) func(t *testing.T) {
+	envs := make(map[string]string)
+	for _, env := range os.Environ() {
+		if strings.HasPrefix(env, constants.MinikubeEnvPrefix) {
+			line := strings.Split(env, "=")
+			key, val := line[0], line[1]
+			envs[key] = val
+			t.Logf("TestConfig: Unsetting %s=%s for unit test!", key, val)
+			os.Unsetenv(key)
+		}
+	}
+	return func(t *testing.T) {
+		for key, val := range envs {
+			t.Logf("TestConfig: Finished test, Resetting Env %s=%s", key, val)
+			os.Setenv(key, val)
+		}
+	}
+}
+
 func TestPreRunDirectories(t *testing.T) {
 	// Make sure we create the required directories.
 	tempDir := tests.MakeTempDir()
@@ -135,7 +156,8 @@ func setValues(t *testing.T, tt configTest) {
 		pflag.Set(tt.Name, tt.FlagValue)
 	}
 	if tt.EnvValue != "" {
-		os.Setenv(getEnvVarName(tt.Name), tt.EnvValue)
+		s := strings.Replace(getEnvVarName(tt.Name), "-", "_", -1)
+		os.Setenv(s, tt.EnvValue)
 	}
 	if tt.ConfigValue != "" {
 		err := initTestConfig(tt.ConfigValue)
@@ -156,10 +178,16 @@ func unsetValues(tt configTest) {
 }
 
 func TestViperAndFlags(t *testing.T) {
+	restore := hideEnv(t)
+	defer restore(t)
 	for _, tt := range configTests {
 		setValues(t, tt)
 		setupViper()
-		var actual = pflag.Lookup(tt.Name).Value.String()
+		f := pflag.Lookup(tt.Name)
+		if f == nil {
+			t.Fatalf("Could not find flag for %s", tt.Name)
+		}
+		actual := f.Value.String()
 		if actual != tt.ExpectedValue {
 			t.Errorf("pflag.Value(%s) => %s, wanted %s [%+v]", tt.Name, actual, tt.ExpectedValue, tt)
 		}
