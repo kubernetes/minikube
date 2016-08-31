@@ -57,6 +57,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/util/cache"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/security/apparmor"
 	"k8s.io/kubernetes/pkg/securitycontext"
 	kubetypes "k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/flowcontrol"
@@ -72,12 +73,13 @@ const (
 	DockerType = "docker"
 
 	// https://docs.docker.com/engine/reference/api/docker_remote_api/
-	// docker verison should be at least 1.9.x
+	// docker version should be at least 1.9.x
 	minimumDockerAPIVersion = "1.21"
 
-	// Remote API version for docker daemon version v1.10
+	// Remote API version for docker daemon versions
 	// https://docs.docker.com/engine/reference/api/docker_remote_api/
 	dockerV110APIVersion = "1.22"
+	DockerV112APIVersion = "1.24"
 
 	// ndots specifies the minimum number of dots that a domain name must contain for the resolver to consider it as FQDN (fully-qualified)
 	// we want to able to consider SRV lookup names like _dns._udp.kube-dns.default.svc to be considered relative.
@@ -108,8 +110,8 @@ var (
 	// TODO: make this a TTL based pull (if image older than X policy, pull)
 	podInfraContainerImagePullPolicy = api.PullIfNotPresent
 
-	// Default security option, only seccomp for now
-	defaultSeccompProfile = "unconfined"
+	// Default set of seccomp security options.
+	defaultSeccompOpt = []dockerOpt{{"seccomp", "unconfined"}}
 )
 
 type DockerManager struct {
@@ -285,7 +287,13 @@ func NewDockerManager(
 // stream the log. Set 'follow' to false and specify the number of lines (e.g.
 // "100" or "all") to tail the log.
 // TODO: Make 'RawTerminal' option  flagable.
-func (dm *DockerManager) GetContainerLogs(pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) (err error) {
+func (dm *DockerManager) GetContainerLogs(pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error {
+	return GetContainerLogs(dm.client, pod, containerID, logOptions, stdout, stderr)
+}
+
+// Temporarily export this function to share with dockershim.
+// TODO: clean this up.
+func GetContainerLogs(client DockerInterface, pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error {
 	var since int64
 	if logOptions.SinceSeconds != nil {
 		t := unversioned.Now().Add(-time.Duration(*logOptions.SinceSeconds) * time.Second)
@@ -309,8 +317,7 @@ func (dm *DockerManager) GetContainerLogs(pod *api.Pod, containerID kubecontaine
 		ErrorStream:  stderr,
 		RawTerminal:  false,
 	}
-	err = dm.client.Logs(containerID.ID, opts, sopts)
-	return
+	return client.Logs(containerID.ID, opts, sopts)
 }
 
 var (
@@ -327,7 +334,7 @@ var (
 // determineContainerIP determines the IP address of the given container.  It is expected
 // that the container passed is the infrastructure container of a pod and the responsibility
 // of the caller to ensure that the correct container is passed.
-func (dm *DockerManager) determineContainerIP(podNamespace, podName string, container *dockertypes.ContainerJSON) string {
+func (dm *DockerManager) determineContainerIP(podNamespace, podName string, container *dockertypes.ContainerJSON) (string, error) {
 	result := ""
 
 	if container.NetworkSettings != nil {
@@ -339,16 +346,21 @@ func (dm *DockerManager) determineContainerIP(podNamespace, podName string, cont
 		}
 	}
 
-	if dm.networkPlugin.Name() != network.DefaultPluginName {
+	networkMode := getDockerNetworkMode(container)
+	isHostNetwork := networkMode == namespaceModeHost
+
+	// For host networking or default network plugin, GetPodNetworkStatus doesn't work
+	if !isHostNetwork && dm.networkPlugin.Name() != network.DefaultPluginName {
 		netStatus, err := dm.networkPlugin.GetPodNetworkStatus(podNamespace, podName, kubecontainer.DockerID(container.ID).ContainerID())
 		if err != nil {
 			glog.Errorf("NetworkPlugin %s failed on the status hook for pod '%s' - %v", dm.networkPlugin.Name(), podName, err)
+			return result, err
 		} else if netStatus != nil {
 			result = netStatus.IP.String()
 		}
 	}
 
-	return result
+	return result, nil
 }
 
 func (dm *DockerManager) inspectContainer(id string, podName, podNamespace string) (*kubecontainer.ContainerStatus, string, error) {
@@ -374,13 +386,13 @@ func (dm *DockerManager) inspectContainer(id string, podName, podNamespace strin
 		glog.Errorf("Failed to parse %q timestamp %q for container %q of pod %q", label, s, id, kubecontainer.BuildPodFullName(podName, podNamespace))
 	}
 	var createdAt, startedAt, finishedAt time.Time
-	if createdAt, err = parseDockerTimestamp(iResult.Created); err != nil {
+	if createdAt, err = ParseDockerTimestamp(iResult.Created); err != nil {
 		parseTimestampError("Created", iResult.Created)
 	}
-	if startedAt, err = parseDockerTimestamp(iResult.State.StartedAt); err != nil {
+	if startedAt, err = ParseDockerTimestamp(iResult.State.StartedAt); err != nil {
 		parseTimestampError("StartedAt", iResult.State.StartedAt)
 	}
-	if finishedAt, err = parseDockerTimestamp(iResult.State.FinishedAt); err != nil {
+	if finishedAt, err = ParseDockerTimestamp(iResult.State.FinishedAt); err != nil {
 		parseTimestampError("FinishedAt", iResult.State.FinishedAt)
 	}
 
@@ -399,7 +411,12 @@ func (dm *DockerManager) inspectContainer(id string, podName, podNamespace strin
 		status.State = kubecontainer.ContainerStateRunning
 		status.StartedAt = startedAt
 		if containerName == PodInfraContainerName {
-			ip = dm.determineContainerIP(podNamespace, podName, iResult)
+			ip, err = dm.determineContainerIP(podNamespace, podName, iResult)
+			// Kubelet doesn't handle the network error scenario
+			if err != nil {
+				status.State = kubecontainer.ContainerStateUnknown
+				status.Message = fmt.Sprintf("Network error: %#v", err)
+			}
 		}
 		return &status, ip, nil
 	}
@@ -599,9 +616,9 @@ func (dm *DockerManager) runContainer(
 		// Experimental. For now, we hardcode /dev/nvidia0 no matter what the user asks for
 		// (we only support one device per node).
 		devices = []dockercontainer.DeviceMapping{
-			{"/dev/nvidia0", "/dev/nvidia0", "mrw"},
-			{"/dev/nvidiactl", "/dev/nvidiactl", "mrw"},
-			{"/dev/nvidia-uvm", "/dev/nvidia-uvm", "mrw"},
+			{PathOnHost: "/dev/nvidia0", PathInContainer: "/dev/nvidia0", CgroupPermissions: "mrw"},
+			{PathOnHost: "/dev/nvidiactl", PathInContainer: "/dev/nvidiactl", CgroupPermissions: "mrw"},
+			{PathOnHost: "/dev/nvidia-uvm", PathInContainer: "/dev/nvidia-uvm", CgroupPermissions: "mrw"},
 		}
 	}
 	podHasSELinuxLabel := pod.Spec.SecurityContext != nil && pod.Spec.SecurityContext.SELinuxOptions != nil
@@ -614,12 +631,12 @@ func (dm *DockerManager) runContainer(
 	_, containerName, cid := BuildDockerName(dockerName, container)
 	if opts.PodContainerDir != "" && len(container.TerminationMessagePath) != 0 {
 		// Because the PodContainerDir contains pod uid and container name which is unique enough,
-		// here we just add an unique container id to make the path unique for different instances
+		// here we just add a unique container id to make the path unique for different instances
 		// of the same container.
 		containerLogPath := path.Join(opts.PodContainerDir, cid)
 		fs, err := os.Create(containerLogPath)
 		if err != nil {
-			// TODO: Clean up the previouly created dir? return the error?
+			// TODO: Clean up the previously created dir? return the error?
 			glog.Errorf("Error on creating termination-log file %q: %v", containerLogPath, err)
 		} else {
 			fs.Close() // Close immediately; we're just doing a `touch` here
@@ -642,6 +659,22 @@ func (dm *DockerManager) runContainer(
 			Devices:    devices,
 		},
 		SecurityOpt: securityOpts,
+	}
+
+	// Set sysctls if requested
+	sysctls, unsafeSysctls, err := api.SysctlsFromPodAnnotations(pod.Annotations)
+	if err != nil {
+		dm.recorder.Eventf(ref, api.EventTypeWarning, events.FailedToCreateContainer, "Failed to create docker container %q of pod %q with error: %v", container.Name, format.Pod(pod), err)
+		return kubecontainer.ContainerID{}, err
+	}
+	if len(sysctls)+len(unsafeSysctls) > 0 {
+		hc.Sysctls = make(map[string]string, len(sysctls)+len(unsafeSysctls))
+		for _, c := range sysctls {
+			hc.Sysctls[c.Name] = c.Value
+		}
+		for _, c := range unsafeSysctls {
+			hc.Sysctls[c.Name] = c.Value
+		}
 	}
 
 	// If current api version is newer than docker 1.10 requested, set OomScoreAdj to HostConfig
@@ -694,7 +727,7 @@ func (dm *DockerManager) runContainer(
 	securityContextProvider.ModifyHostConfig(pod, container, dockerOpts.HostConfig, supplementalGids)
 	createResp, err := dm.client.CreateContainer(dockerOpts)
 	if err != nil {
-		dm.recorder.Eventf(ref, api.EventTypeWarning, events.FailedToCreateContainer, "Failed to create docker container with error: %v", err)
+		dm.recorder.Eventf(ref, api.EventTypeWarning, events.FailedToCreateContainer, "Failed to create docker container %q of pod %q with error: %v", container.Name, format.Pod(pod), err)
 		return kubecontainer.ContainerID{}, err
 	}
 	if len(createResp.Warnings) != 0 {
@@ -775,7 +808,7 @@ func (dm *DockerManager) GetContainers(all bool) ([]*kubecontainer.Container, er
 	for _, c := range containers {
 		converted, err := toRuntimeContainer(c)
 		if err != nil {
-			glog.Errorf("Error examining the container: %v", err)
+			glog.Errorf("Error examining the container %v: %v", c.ID, err)
 			continue
 		}
 		result = append(result, converted)
@@ -800,13 +833,13 @@ func (dm *DockerManager) GetPods(all bool) ([]*kubecontainer.Pod, error) {
 	for _, c := range containers {
 		converted, err := toRuntimeContainer(c)
 		if err != nil {
-			glog.Errorf("Error examining the container: %v", err)
+			glog.Errorf("Error examining the container %v: %v", c.ID, err)
 			continue
 		}
 
 		podUID, podName, podNamespace, err := getPodInfoFromContainer(c)
 		if err != nil {
-			glog.Errorf("Error examining the container: %v", err)
+			glog.Errorf("Error examining the container %v: %v", c.ID, err)
 			continue
 		}
 
@@ -1029,22 +1062,52 @@ func (dm *DockerManager) getSecurityOpts(pod *api.Pod, ctrName string) ([]string
 		return nil, err
 	}
 
-	// seccomp is only on docker versions >= v1.10
-	result, err := version.Compare(dockerV110APIVersion)
-	if err != nil {
+	var securityOpts []dockerOpt
+	if seccompOpts, err := dm.getSeccompOpts(pod, ctrName, version); err != nil {
 		return nil, err
-	}
-	var optFmt string
-	switch {
-	case result < 0:
-		return nil, nil // return early for Docker < 1.10
-	case result == 0:
-		optFmt = "%s:%s" // use colon notation for Docker 1.10
-	case result > 0:
-		optFmt = "%s=%s" // use = notation for Docker >= 1.11
+	} else {
+		securityOpts = append(securityOpts, seccompOpts...)
 	}
 
-	defaultSecurityOpts := []string{fmt.Sprintf(optFmt, "seccomp", defaultSeccompProfile)}
+	if appArmorOpts, err := dm.getAppArmorOpts(pod, ctrName); err != nil {
+		return nil, err
+	} else {
+		securityOpts = append(securityOpts, appArmorOpts...)
+	}
+
+	const (
+		// Docker changed the API for specifying options in v1.11
+		optSeparatorChangeVersion = "1.23" // Corresponds to docker 1.11.x
+		optSeparatorOld           = ':'
+		optSeparatorNew           = '='
+	)
+
+	sep := optSeparatorNew
+	if result, err := version.Compare(optSeparatorChangeVersion); err != nil {
+		return nil, fmt.Errorf("error parsing docker API version: %v", err)
+	} else if result < 0 {
+		sep = optSeparatorOld
+	}
+
+	opts := make([]string, len(securityOpts))
+	for i, opt := range securityOpts {
+		opts[i] = fmt.Sprintf("%s%c%s", opt.key, sep, opt.value)
+	}
+	return opts, nil
+}
+
+type dockerOpt struct {
+	key, value string
+}
+
+// Get the docker security options for seccomp.
+func (dm *DockerManager) getSeccompOpts(pod *api.Pod, ctrName string, version kubecontainer.Version) ([]dockerOpt, error) {
+	// seccomp is only on docker versions >= v1.10
+	if result, err := version.Compare(dockerV110APIVersion); err != nil {
+		return nil, err
+	} else if result < 0 {
+		return nil, nil // return early for Docker < 1.10
+	}
 
 	profile, profileOK := pod.ObjectMeta.Annotations[api.SeccompContainerAnnotationKeyPrefix+ctrName]
 	if !profileOK {
@@ -1052,13 +1115,13 @@ func (dm *DockerManager) getSecurityOpts(pod *api.Pod, ctrName string) ([]string
 		profile, profileOK = pod.ObjectMeta.Annotations[api.SeccompPodAnnotationKey]
 		if !profileOK {
 			// return early the default
-			return defaultSecurityOpts, nil
+			return defaultSeccompOpt, nil
 		}
 	}
 
 	if profile == "unconfined" {
 		// return early the default
-		return defaultSecurityOpts, nil
+		return defaultSeccompOpt, nil
 	}
 
 	if profile == "docker/default" {
@@ -1082,7 +1145,20 @@ func (dm *DockerManager) getSecurityOpts(pod *api.Pod, ctrName string) ([]string
 		return nil, err
 	}
 
-	return []string{fmt.Sprintf(optFmt, "seccomp", b.Bytes())}, nil
+	return []dockerOpt{{"seccomp", b.String()}}, nil
+}
+
+// Get the docker security options for AppArmor.
+func (dm *DockerManager) getAppArmorOpts(pod *api.Pod, ctrName string) ([]dockerOpt, error) {
+	profile := apparmor.GetProfileName(pod, ctrName)
+	if profile == "" || profile == apparmor.ProfileRuntimeDefault {
+		// The docker applies the default profile by default.
+		return nil, nil
+	}
+
+	// Assume validation has already happened.
+	profileName := strings.TrimPrefix(profile, apparmor.ProfileNamePrefix)
+	return []dockerOpt{{"apparmor", profileName}}, nil
 }
 
 type dockerExitError struct {
@@ -1123,10 +1199,16 @@ func (dm *DockerManager) ExecInContainer(containerID kubecontainer.ContainerID, 
 }
 
 func (dm *DockerManager) AttachContainer(containerID kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
+	return AttachContainer(dm.client, containerID, stdin, stdout, stderr, tty, resize)
+}
+
+// Temporarily export this function to share with dockershim.
+// TODO: clean this up.
+func AttachContainer(client DockerInterface, containerID kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
 	// Have to start this before the call to client.AttachToContainer because client.AttachToContainer is a blocking
 	// call :-( Otherwise, resize events don't get processed and the terminal never resizes.
 	kubecontainer.HandleResizing(resize, func(size term.Size) {
-		dm.client.ResizeContainerTTY(containerID.ID, int(size.Height), int(size.Width))
+		client.ResizeContainerTTY(containerID.ID, int(size.Height), int(size.Width))
 	})
 
 	// TODO(random-liu): Do we really use the *Logs* field here?
@@ -1142,7 +1224,7 @@ func (dm *DockerManager) AttachContainer(containerID kubecontainer.ContainerID, 
 		ErrorStream:  stderr,
 		RawTerminal:  tty,
 	}
-	return dm.client.AttachToContainer(containerID.ID, opts, sopts)
+	return client.AttachToContainer(containerID.ID, opts, sopts)
 }
 
 func noPodInfraContainerError(podName, podNamespace string) error {
@@ -1276,7 +1358,7 @@ func (dm *DockerManager) killPodWithSyncResult(pod *api.Pod, runningPod kubecont
 			err := dm.KillContainerInPod(container.ID, containerSpec, pod, "Need to kill pod.", gracePeriodOverride)
 			if err != nil {
 				killContainerResult.Fail(kubecontainer.ErrKillContainer, err.Error())
-				glog.Errorf("Failed to delete container: %v; Skipping pod %q", err, runningPod.ID)
+				glog.Errorf("Failed to delete container %v: %v; Skipping pod %q", container.ID.ID, err, runningPod.ID)
 			}
 			containerResults <- killContainerResult
 		}(container)
@@ -1308,7 +1390,7 @@ func (dm *DockerManager) killPodWithSyncResult(pod *api.Pod, runningPod kubecont
 		result.AddSyncResult(killContainerResult)
 		if err := dm.KillContainerInPod(networkContainer.ID, networkSpec, pod, "Need to kill pod.", gracePeriodOverride); err != nil {
 			killContainerResult.Fail(kubecontainer.ErrKillContainer, err.Error())
-			glog.Errorf("Failed to delete container: %v; Skipping pod %q", err, runningPod.ID)
+			glog.Errorf("Failed to delete container %v: %v; Skipping pod %q", networkContainer.ID.ID, err, runningPod.ID)
 		}
 	}
 	return
@@ -1764,7 +1846,7 @@ func (dm *DockerManager) computePodContainerChanges(pod *api.Pod, podStatus *kub
 	defer func() {
 		metrics.ContainerManagerLatency.WithLabelValues("computePodContainerChanges").Observe(metrics.SinceInMicroseconds(start))
 	}()
-	glog.V(5).Infof("Syncing Pod %q: %+v", format.Pod(pod), pod)
+	glog.V(5).Infof("Syncing Pod %q: %#v", format.Pod(pod), pod)
 
 	containersToStart := make(map[int]string)
 	containersToKeep := make(map[kubecontainer.DockerID]int)
@@ -2038,7 +2120,12 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 			}
 
 			// Overwrite the podIP passed in the pod status, since we just started the infra container.
-			podIP = dm.determineContainerIP(pod.Namespace, pod.Name, podInfraContainer)
+			podIP, err = dm.determineContainerIP(pod.Namespace, pod.Name, podInfraContainer)
+			if err != nil {
+				glog.Errorf("Network error: %v; Skipping pod %q", err, format.Pod(pod))
+				result.Fail(err)
+				return
+			}
 			glog.V(4).Infof("Determined pod ip after infra change: %q: %q", format.Pod(pod), podIP)
 		}
 	}
@@ -2051,10 +2138,10 @@ func (dm *DockerManager) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubec
 			initContainerResult.Fail(kubecontainer.ErrRunInitContainer, fmt.Sprintf("init container %q exited with %d", status.Name, status.ExitCode))
 			result.AddSyncResult(initContainerResult)
 			if pod.Spec.RestartPolicy == api.RestartPolicyNever {
-				utilruntime.HandleError(fmt.Errorf("error running pod %q init container %q, restart=Never: %+v", format.Pod(pod), status.Name, status))
+				utilruntime.HandleError(fmt.Errorf("error running pod %q init container %q, restart=Never: %#v", format.Pod(pod), status.Name, status))
 				return
 			}
-			utilruntime.HandleError(fmt.Errorf("Error running pod %q init container %q, restarting: %+v", format.Pod(pod), status.Name, status))
+			utilruntime.HandleError(fmt.Errorf("Error running pod %q init container %q, restarting: %#v", format.Pod(pod), status.Name, status))
 		}
 	}
 
@@ -2293,7 +2380,7 @@ func (dm *DockerManager) isImageRoot(image string) (bool, error) {
 	return uid == 0, nil
 }
 
-// getUidFromUser splits the uid out of a uid:gid string.
+// getUidFromUser splits the uid out of an uid:gid string.
 func getUidFromUser(id string) string {
 	if id == "" {
 		return id

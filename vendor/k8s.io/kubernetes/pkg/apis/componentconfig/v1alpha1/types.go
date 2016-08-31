@@ -166,8 +166,9 @@ type LeaderElectionConfiguration struct {
 type KubeletConfiguration struct {
 	unversioned.TypeMeta
 
-	// config is the path to the config file or directory of files
-	Config string `json:"config"`
+	// podManifestPath is the path to the directory containing pod manifests to
+	// run, or the path to a single manifest file
+	PodManifestPath string `json:"podManifestPath"`
 	// syncFrequency is the max period between synchronizing running
 	// containers and config
 	SyncFrequency unversioned.Duration `json:"syncFrequency"`
@@ -309,6 +310,10 @@ type KubeletConfiguration struct {
 	// networkPluginDir is the full path of the directory in which to search
 	// for network plugins
 	NetworkPluginDir string `json:"networkPluginDir"`
+	// networkPluginMTU is the MTU to be passed to the network plugin,
+	// and overrides the default MTU for cases where it cannot be automatically
+	// computed (such as IPSEC).
+	NetworkPluginMTU int32 `json:"networkPluginMTU"`
 	// volumePluginDir is the full path of the directory in which to search
 	// for additional third party volume plugins
 	VolumePluginDir string `json:"volumePluginDir"`
@@ -333,6 +338,10 @@ type KubeletConfiguration struct {
 	CgroupsPerQOS *bool `json:"CgroupsPerQOS,omitempty"`
 	// containerRuntime is the container runtime to use.
 	ContainerRuntime string `json:"containerRuntime"`
+	// remoteRuntimeEndpoint is the endpoint of remote runtime service
+	RemoteRuntimeEndpoint string `json:"remoteRuntimeEndpoint"`
+	// remoteImageEndpoint is the endpoint of remote image service
+	RemoteImageEndpoint string `json:"remoteImageEndpoint"`
 	// runtimeRequestTimeout is the timeout for all runtime requests except long running
 	// requests - pull, logs, exec and attach.
 	RuntimeRequestTimeout unversioned.Duration `json:"runtimeRequestTimeout"`
@@ -451,4 +460,21 @@ type KubeletConfiguration struct {
 	// Currently only cpu and memory are supported. [default=none]
 	// See http://releases.k8s.io/HEAD/docs/user-guide/compute-resources.md for more detail.
 	KubeReserved map[string]string `json:"kubeReserved"`
+	// Default behaviour for kernel tuning
+	ProtectKernelDefaults bool `json:"protectKernelDefaults"`
+	// If true, Kubelet ensures a set of iptables rules are present on host.
+	// These rules will serve as utility rules for various components, e.g. KubeProxy.
+	// The rules will be created based on IPTablesMasqueradeBit and IPTablesDropBit.
+	MakeIPTablesUtilChains *bool `json:"makeIPTablesUtilChains"`
+	// iptablesMasqueradeBit is the bit of the iptables fwmark space to mark for SNAT
+	// Values must be within the range [0, 31]. Must be different from other mark bits.
+	// Warning: Please match the value of corresponding parameter in kube-proxy
+	// TODO: clean up IPTablesMasqueradeBit in kube-proxy
+	IPTablesMasqueradeBit *int32 `json:"iptablesMasqueradeBit"`
+	// iptablesDropBit is the bit of the iptables fwmark space to mark for dropping packets.
+	// Values must be within the range [0, 31]. Must be different from other mark bits.
+	IPTablesDropBit *int32 `json:"iptablesDropBit"`
+	// Whitelist of unsafe sysctls or sysctl patterns (ending in *). Use these at your own risk.
+	// Resource isolation might be lacking and pod might influence each other on the same node.
+	AllowedUnsafeSysctls []string `json:"allowedUnsafeSysctls,omitempty"`
 }

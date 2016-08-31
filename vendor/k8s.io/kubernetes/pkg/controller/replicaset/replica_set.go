@@ -184,7 +184,7 @@ func newReplicaSetController(eventRecorder record.EventRecorder, podInformer fra
 
 // NewReplicationManagerFromClient creates a new ReplicationManager that runs its own informer.
 func NewReplicaSetControllerFromClient(kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, burstReplicas int, lookupCacheSize int) *ReplicaSetController {
-	podInformer := informers.CreateSharedPodIndexInformer(kubeClient, resyncPeriod())
+	podInformer := informers.NewPodInformer(kubeClient, resyncPeriod())
 	garbageCollectorEnabled := false
 	rsc := NewReplicaSetController(podInformer, kubeClient, resyncPeriod, burstReplicas, lookupCacheSize, garbageCollectorEnabled)
 	rsc.internalPodInformer = podInformer
@@ -327,7 +327,7 @@ func isReplicaSetMatch(pod *api.Pod, rs *extensions.ReplicaSet) bool {
 // When a pod is created, enqueue the replica set that manages it and update it's expectations.
 func (rsc *ReplicaSetController) addPod(obj interface{}) {
 	pod := obj.(*api.Pod)
-	glog.V(4).Infof("Pod %s created: %+v.", pod.Name, pod)
+	glog.V(4).Infof("Pod %s created: %#v.", pod.Name, pod)
 
 	rs := rsc.getPodReplicaSet(pod)
 	if rs == nil {
@@ -352,12 +352,13 @@ func (rsc *ReplicaSetController) addPod(obj interface{}) {
 // up. If the labels of the pod have changed we need to awaken both the old
 // and new replica set. old and cur must be *api.Pod types.
 func (rsc *ReplicaSetController) updatePod(old, cur interface{}) {
-	if api.Semantic.DeepEqual(old, cur) {
-		// A periodic relist will send update events for all known pods.
-		return
-	}
 	curPod := cur.(*api.Pod)
 	oldPod := old.(*api.Pod)
+	if curPod.ResourceVersion == oldPod.ResourceVersion {
+		// Periodic resync will send update events for all known pods.
+		// Two different versions of the same pod will always have different RVs.
+		return
+	}
 	glog.V(4).Infof("Pod %s updated, objectMeta %+v -> %+v.", curPod.Name, oldPod.ObjectMeta, curPod.ObjectMeta)
 	labelChanged := !reflect.DeepEqual(curPod.Labels, oldPod.Labels)
 	if curPod.DeletionTimestamp != nil {
@@ -405,11 +406,11 @@ func (rsc *ReplicaSetController) deletePod(obj interface{}) {
 		}
 		pod, ok = tombstone.Obj.(*api.Pod)
 		if !ok {
-			glog.Errorf("Tombstone contained object that is not a pod %+v", obj)
+			glog.Errorf("Tombstone contained object that is not a pod %#v", obj)
 			return
 		}
 	}
-	glog.V(4).Infof("Pod %s/%s deleted through %v, timestamp %+v: %+v.", pod.Namespace, pod.Name, utilruntime.GetCaller(), pod.DeletionTimestamp, pod)
+	glog.V(4).Infof("Pod %s/%s deleted through %v, timestamp %+v: %#v.", pod.Namespace, pod.Name, utilruntime.GetCaller(), pod.DeletionTimestamp, pod)
 	if rs := rsc.getPodReplicaSet(pod); rs != nil {
 		rsKey, err := controller.KeyFunc(rs)
 		if err != nil {
@@ -457,6 +458,7 @@ func (rsc *ReplicaSetController) worker() {
 }
 
 // manageReplicas checks and updates replicas for the given ReplicaSet.
+// Does NOT modify <filteredPods>.
 func (rsc *ReplicaSetController) manageReplicas(filteredPods []*api.Pod, rs *extensions.ReplicaSet) {
 	diff := len(filteredPods) - int(rs.Spec.Replicas)
 	rsKey, err := controller.KeyFunc(rs)
@@ -592,19 +594,21 @@ func (rsc *ReplicaSetController) syncReplicaSet(key string) error {
 		return err
 	}
 
+	// NOTE: filteredPods are pointing to objects from cache - if you need to
+	// modify them, you need to copy it first.
 	// TODO: Do the List and Filter in a single pass, or use an index.
 	var filteredPods []*api.Pod
 	if rsc.garbageCollectorEnabled {
 		// list all pods to include the pods that don't match the rs`s selector
 		// anymore but has the stale controller ref.
-		podList, err := rsc.podStore.Pods(rs.Namespace).List(labels.Everything())
+		pods, err := rsc.podStore.Pods(rs.Namespace).List(labels.Everything())
 		if err != nil {
 			glog.Errorf("Error getting pods for rs %q: %v", key, err)
 			rsc.queue.Add(key)
 			return err
 		}
 		cm := controller.NewPodControllerRefManager(rsc.podControl, rs.ObjectMeta, selector, getRSKind())
-		matchesAndControlled, matchesNeedsController, controlledDoesNotMatch := cm.Classify(podList.Items)
+		matchesAndControlled, matchesNeedsController, controlledDoesNotMatch := cm.Classify(pods)
 		for _, pod := range matchesNeedsController {
 			err := cm.AdoptPod(pod)
 			// continue to next pod if adoption fails.
@@ -635,13 +639,13 @@ func (rsc *ReplicaSetController) syncReplicaSet(key string) error {
 			return aggregate
 		}
 	} else {
-		podList, err := rsc.podStore.Pods(rs.Namespace).List(selector)
+		pods, err := rsc.podStore.Pods(rs.Namespace).List(selector)
 		if err != nil {
 			glog.Errorf("Error getting pods for rs %q: %v", key, err)
 			rsc.queue.Add(key)
 			return err
 		}
-		filteredPods = controller.FilterActivePods(podList.Items)
+		filteredPods = controller.FilterActivePods(pods)
 	}
 
 	if rsNeedsSync && rs.DeletionTimestamp == nil {
@@ -654,15 +658,19 @@ func (rsc *ReplicaSetController) syncReplicaSet(key string) error {
 	// of the selector of the replicaset, so the possible matching pods must be
 	// part of the filteredPods.
 	fullyLabeledReplicasCount := 0
-	templateLabel := labels.Set(rs.Spec.Template.Labels).AsSelector()
+	readyReplicasCount := 0
+	templateLabel := labels.Set(rs.Spec.Template.Labels).AsSelectorPreValidated()
 	for _, pod := range filteredPods {
 		if templateLabel.Matches(labels.Set(pod.Labels)) {
 			fullyLabeledReplicasCount++
 		}
+		if api.IsPodReady(pod) {
+			readyReplicasCount++
+		}
 	}
 
 	// Always updates status as pods come up or die.
-	if err := updateReplicaCount(rsc.kubeClient.Extensions().ReplicaSets(rs.Namespace), rs, len(filteredPods), fullyLabeledReplicasCount); err != nil {
+	if err := updateReplicaCount(rsc.kubeClient.Extensions().ReplicaSets(rs.Namespace), rs, len(filteredPods), fullyLabeledReplicasCount, readyReplicasCount); err != nil {
 		// Multiple things could lead to this update failing. Requeuing the replica set ensures
 		// we retry with some fairness.
 		glog.V(2).Infof("Failed to update replica count for controller %v/%v; requeuing; error: %v", rs.Namespace, rs.Name, err)

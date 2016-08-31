@@ -65,6 +65,8 @@ type CacherConfig struct {
 	// NewList is a function that creates new empty object storing a list of
 	// objects of type Type.
 	NewListFunc func() runtime.Object
+
+	Codec runtime.Codec
 }
 
 type watchersMap map[int]*cacheWatcher
@@ -138,6 +140,9 @@ type Cacher struct {
 	// Underlying storage.Interface.
 	storage Interface
 
+	// Expected type of objects in the underlying cache.
+	objectType reflect.Type
+
 	// "sliding window" of recent changes of objects and the current state.
 	watchCache *watchCache
 	reflector  *cache.Reflector
@@ -173,7 +178,7 @@ func NewCacherFromConfig(config CacherConfig) *Cacher {
 	// Give this error when it is constructed rather than when you get the
 	// first watch item, because it's much easier to track down that way.
 	if obj, ok := config.Type.(runtime.Object); ok {
-		if err := runtime.CheckCodec(config.Storage.Codec(), obj); err != nil {
+		if err := runtime.CheckCodec(config.Codec, obj); err != nil {
 			panic("storage codec doesn't seem to match given type: " + err.Error())
 		}
 	}
@@ -181,6 +186,7 @@ func NewCacherFromConfig(config CacherConfig) *Cacher {
 	cacher := &Cacher{
 		ready:       newReady(),
 		storage:     config.Storage,
+		objectType:  reflect.TypeOf(config.Type),
 		watchCache:  watchCache,
 		reflector:   cache.NewReflector(listerWatcher, config.Type, watchCache, 0),
 		versioner:   config.Versioner,
@@ -241,11 +247,6 @@ func (c *Cacher) startCaching(stopChannel <-chan struct{}) {
 	if err := c.reflector.ListAndWatch(stopChannel); err != nil {
 		glog.Errorf("unexpected ListAndWatch error: %v", err)
 	}
-}
-
-// Implements storage.Interface.
-func (c *Cacher) Backends(ctx context.Context) []string {
-	return c.storage.Backends(ctx)
 }
 
 // Implements storage.Interface.
@@ -376,11 +377,6 @@ func (c *Cacher) GuaranteedUpdate(ctx context.Context, key string, ptrToType run
 	return c.storage.GuaranteedUpdate(ctx, key, ptrToType, ignoreNotFound, preconditions, tryUpdate)
 }
 
-// Implements storage.Interface.
-func (c *Cacher) Codec() runtime.Codec {
-	return c.storage.Codec()
-}
-
 func (c *Cacher) triggerValues(event *watchCacheEvent) ([]string, bool) {
 	// TODO: Currently we assume that in a given Cacher object, its <c.triggerFunc>
 	// is aware of exactly the same trigger (at most one). Thus calling:
@@ -440,6 +436,7 @@ func (c *Cacher) processEvent(event watchCacheEvent) {
 }
 
 func (c *Cacher) terminateAllWatchers() {
+	glog.Warningf("Terminating all watchers from cacher %v", c.objectType)
 	c.Lock()
 	defer c.Unlock()
 	c.watchers.terminateAll()

@@ -45,7 +45,9 @@ type Interface interface {
 	ComponentStatusesInterface
 	ConfigMapsNamespacer
 	Apps() AppsInterface
+	Authorization() AuthorizationInterface
 	Autoscaling() AutoscalingInterface
+	Authentication() AuthenticationInterface
 	Batch() BatchInterface
 	Extensions() ExtensionsInterface
 	Rbac() RbacInterface
@@ -119,7 +121,9 @@ func (c *Client) ConfigMaps(namespace string) ConfigMapsInterface {
 // Client is the implementation of a Kubernetes client.
 type Client struct {
 	*restclient.RESTClient
+	*AuthorizationClient
 	*AutoscalingClient
+	*AuthenticationClient
 	*BatchClient
 	*ExtensionsClient
 	*AppsClient
@@ -151,8 +155,16 @@ func IsTimeout(err error) bool {
 	return false
 }
 
+func (c *Client) Authorization() AuthorizationInterface {
+	return c.AuthorizationClient
+}
+
 func (c *Client) Autoscaling() AutoscalingInterface {
 	return c.AutoscalingClient
+}
+
+func (c *Client) Authentication() AuthenticationInterface {
+	return c.AuthenticationClient
 }
 
 func (c *Client) Batch() BatchInterface {
@@ -169,6 +181,10 @@ func (c *Client) Apps() AppsInterface {
 
 func (c *Client) Rbac() RbacInterface {
 	return c.RbacClient
+}
+
+func (c *Client) Policy() PolicyInterface {
+	return c.PolicyClient
 }
 
 func (c *Client) Discovery() discovery.DiscoveryInterface {

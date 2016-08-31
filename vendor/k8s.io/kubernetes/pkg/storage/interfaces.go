@@ -112,11 +112,6 @@ func NewUIDPreconditions(uid string) *Preconditions {
 // Interface offers a common interface for object marshaling/unmarshaling operations and
 // hides all the storage-related operations behind it.
 type Interface interface {
-	// Returns list of servers addresses of the underyling database.
-	// TODO: This method is used only in a single place. Consider refactoring and getting rid
-	// of this method from the interface.
-	Backends(ctx context.Context) []string
-
 	// Returns Versioner associated with this interface.
 	Versioner() Versioner
 
@@ -187,17 +182,4 @@ type Interface interface {
 	//    }
 	// })
 	GuaranteedUpdate(ctx context.Context, key string, ptrToType runtime.Object, ignoreNotFound bool, precondtions *Preconditions, tryUpdate UpdateFunc) error
-
-	// Codec provides access to the underlying codec being used by the implementation.
-	Codec() runtime.Codec
-}
-
-// Config interface allows storage tiers to generate the proper storage.interface
-// and reduce the dependencies to encapsulate storage.
-type Config interface {
-	// Creates the Interface base on ConfigObject
-	NewStorage() (Interface, error)
-
-	// This function is used to enforce membership, and return the underlying type
-	GetType() string
 }

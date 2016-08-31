@@ -59,13 +59,13 @@ func (nodeStrategy) AllowCreateOnUpdate() bool {
 }
 
 // PrepareForCreate clears fields that are not allowed to be set by end users on creation.
-func (nodeStrategy) PrepareForCreate(obj runtime.Object) {
+func (nodeStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
 	_ = obj.(*api.Node)
 	// Nodes allow *all* fields, including status, to be set on create.
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (nodeStrategy) PrepareForUpdate(obj, old runtime.Object) {
+func (nodeStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 	newNode := obj.(*api.Node)
 	oldNode := old.(*api.Node)
 	newNode.Status = oldNode.Status
@@ -91,13 +91,13 @@ func (nodeStrategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
-func (ns nodeStrategy) Export(obj runtime.Object, exact bool) error {
+func (ns nodeStrategy) Export(ctx api.Context, obj runtime.Object, exact bool) error {
 	n, ok := obj.(*api.Node)
 	if !ok {
 		// unexpected programmer error
 		return fmt.Errorf("unexpected object: %v", obj)
 	}
-	ns.PrepareForCreate(obj)
+	ns.PrepareForCreate(ctx, obj)
 	if exact {
 		return nil
 	}
@@ -113,12 +113,12 @@ type nodeStatusStrategy struct {
 
 var StatusStrategy = nodeStatusStrategy{Strategy}
 
-func (nodeStatusStrategy) PrepareForCreate(obj runtime.Object) {
+func (nodeStatusStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
 	_ = obj.(*api.Node)
 	// Nodes allow *all* fields, including status, to be set on create.
 }
 
-func (nodeStatusStrategy) PrepareForUpdate(obj, old runtime.Object) {
+func (nodeStatusStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 	newNode := obj.(*api.Node)
 	oldNode := old.(*api.Node)
 	newNode.Spec = oldNode.Spec
@@ -139,7 +139,7 @@ type ResourceGetter interface {
 
 // NodeToSelectableFields returns a field set that represents the object.
 func NodeToSelectableFields(node *api.Node) fields.Set {
-	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(node.ObjectMeta, false)
+	objectMetaFieldsSet := generic.ObjectMetaFieldsSet(&node.ObjectMeta, false)
 	specificFieldsSet := fields.Set{
 		"spec.unschedulable": fmt.Sprint(node.Spec.Unschedulable),
 	}
@@ -147,7 +147,7 @@ func NodeToSelectableFields(node *api.Node) fields.Set {
 }
 
 // MatchNode returns a generic matcher for a given label and field selector.
-func MatchNode(label labels.Selector, field fields.Selector) generic.Matcher {
+func MatchNode(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
 	return &generic.SelectionPredicate{
 		Label: label,
 		Field: field,

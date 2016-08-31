@@ -28,10 +28,17 @@ import (
 	batch "k8s.io/kubernetes/pkg/apis/batch"
 	extensions "k8s.io/kubernetes/pkg/apis/extensions"
 	conversion "k8s.io/kubernetes/pkg/conversion"
+	runtime "k8s.io/kubernetes/pkg/runtime"
 )
 
 func init() {
-	if err := api.Scheme.AddGeneratedConversionFuncs(
+	SchemeBuilder.Register(RegisterConversions)
+}
+
+// RegisterConversions adds conversion functions to the given scheme.
+// Public to allow building arbitrary schemes.
+func RegisterConversions(scheme *runtime.Scheme) error {
+	return scheme.AddGeneratedConversionFuncs(
 		Convert_v1beta1_APIVersion_To_extensions_APIVersion,
 		Convert_extensions_APIVersion_To_v1beta1_APIVersion,
 		Convert_v1beta1_CustomMetricCurrentStatus_To_extensions_CustomMetricCurrentStatus,
@@ -170,10 +177,7 @@ func init() {
 		Convert_extensions_ThirdPartyResourceDataList_To_v1beta1_ThirdPartyResourceDataList,
 		Convert_v1beta1_ThirdPartyResourceList_To_extensions_ThirdPartyResourceList,
 		Convert_extensions_ThirdPartyResourceList_To_v1beta1_ThirdPartyResourceList,
-	); err != nil {
-		// if one of the conversion functions is malformed, detect it immediately.
-		panic(err)
-	}
+	)
 }
 
 func autoConvert_v1beta1_APIVersion_To_extensions_APIVersion(in *APIVersion, out *extensions.APIVersion, s conversion.Scope) error {
@@ -2221,6 +2225,7 @@ func autoConvert_extensions_ReplicaSetSpec_To_v1beta1_ReplicaSetSpec(in *extensi
 func autoConvert_v1beta1_ReplicaSetStatus_To_extensions_ReplicaSetStatus(in *ReplicaSetStatus, out *extensions.ReplicaSetStatus, s conversion.Scope) error {
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ReadyReplicas = in.ReadyReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
@@ -2232,6 +2237,7 @@ func Convert_v1beta1_ReplicaSetStatus_To_extensions_ReplicaSetStatus(in *Replica
 func autoConvert_extensions_ReplicaSetStatus_To_v1beta1_ReplicaSetStatus(in *extensions.ReplicaSetStatus, out *ReplicaSetStatus, s conversion.Scope) error {
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ReadyReplicas = in.ReadyReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }

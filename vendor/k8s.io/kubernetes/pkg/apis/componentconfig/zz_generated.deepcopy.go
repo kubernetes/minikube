@@ -21,27 +21,30 @@ limitations under the License.
 package componentconfig
 
 import (
-	api "k8s.io/kubernetes/pkg/api"
 	conversion "k8s.io/kubernetes/pkg/conversion"
+	runtime "k8s.io/kubernetes/pkg/runtime"
 	config "k8s.io/kubernetes/pkg/util/config"
 	reflect "reflect"
 )
 
 func init() {
-	if err := api.Scheme.AddGeneratedDeepCopyFuncs(
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_IPVar, InType: reflect.TypeOf(func() *IPVar { var x *IPVar; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeControllerManagerConfiguration, InType: reflect.TypeOf(func() *KubeControllerManagerConfiguration { var x *KubeControllerManagerConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeProxyConfiguration, InType: reflect.TypeOf(func() *KubeProxyConfiguration { var x *KubeProxyConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeSchedulerConfiguration, InType: reflect.TypeOf(func() *KubeSchedulerConfiguration { var x *KubeSchedulerConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeletConfiguration, InType: reflect.TypeOf(func() *KubeletConfiguration { var x *KubeletConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_LeaderElectionConfiguration, InType: reflect.TypeOf(func() *LeaderElectionConfiguration { var x *LeaderElectionConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_PersistentVolumeRecyclerConfiguration, InType: reflect.TypeOf(func() *PersistentVolumeRecyclerConfiguration { var x *PersistentVolumeRecyclerConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_PortRangeVar, InType: reflect.TypeOf(func() *PortRangeVar { var x *PortRangeVar; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_VolumeConfiguration, InType: reflect.TypeOf(func() *VolumeConfiguration { var x *VolumeConfiguration; return x }())},
-	); err != nil {
-		// if one of the deep copy functions is malformed, detect it immediately.
-		panic(err)
-	}
+	SchemeBuilder.Register(RegisterDeepCopies)
+}
+
+// RegisterDeepCopies adds deep-copy functions to the given scheme. Public
+// to allow building arbitrary schemes.
+func RegisterDeepCopies(scheme *runtime.Scheme) error {
+	return scheme.AddGeneratedDeepCopyFuncs(
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_IPVar, InType: reflect.TypeOf(&IPVar{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeControllerManagerConfiguration, InType: reflect.TypeOf(&KubeControllerManagerConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeProxyConfiguration, InType: reflect.TypeOf(&KubeProxyConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeSchedulerConfiguration, InType: reflect.TypeOf(&KubeSchedulerConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_KubeletConfiguration, InType: reflect.TypeOf(&KubeletConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_LeaderElectionConfiguration, InType: reflect.TypeOf(&LeaderElectionConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_PersistentVolumeRecyclerConfiguration, InType: reflect.TypeOf(&PersistentVolumeRecyclerConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_PortRangeVar, InType: reflect.TypeOf(&PortRangeVar{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_componentconfig_VolumeConfiguration, InType: reflect.TypeOf(&VolumeConfiguration{})},
+	)
 }
 
 func DeepCopy_componentconfig_IPVar(in interface{}, out interface{}, c *conversion.Cloner) error {
@@ -71,6 +74,7 @@ func DeepCopy_componentconfig_KubeControllerManagerConfiguration(in interface{},
 		out.ConcurrentEndpointSyncs = in.ConcurrentEndpointSyncs
 		out.ConcurrentRSSyncs = in.ConcurrentRSSyncs
 		out.ConcurrentRCSyncs = in.ConcurrentRCSyncs
+		out.ConcurrentServiceSyncs = in.ConcurrentServiceSyncs
 		out.ConcurrentResourceQuotaSyncs = in.ConcurrentResourceQuotaSyncs
 		out.ConcurrentDeploymentSyncs = in.ConcurrentDeploymentSyncs
 		out.ConcurrentDaemonSetSyncs = in.ConcurrentDaemonSetSyncs
@@ -99,6 +103,7 @@ func DeepCopy_componentconfig_KubeControllerManagerConfiguration(in interface{},
 		out.ServiceAccountKeyFile = in.ServiceAccountKeyFile
 		out.ClusterSigningCertFile = in.ClusterSigningCertFile
 		out.ClusterSigningKeyFile = in.ClusterSigningKeyFile
+		out.ApproveAllKubeletCSRsForGroup = in.ApproveAllKubeletCSRsForGroup
 		out.EnableProfiling = in.EnableProfiling
 		out.ClusterName = in.ClusterName
 		out.ClusterCIDR = in.ClusterCIDR
@@ -115,6 +120,10 @@ func DeepCopy_componentconfig_KubeControllerManagerConfiguration(in interface{},
 		out.ControllerStartInterval = in.ControllerStartInterval
 		out.EnableGarbageCollector = in.EnableGarbageCollector
 		out.ConcurrentGCSyncs = in.ConcurrentGCSyncs
+		out.NodeEvictionRate = in.NodeEvictionRate
+		out.SecondaryNodeEvictionRate = in.SecondaryNodeEvictionRate
+		out.LargeClusterSizeThreshold = in.LargeClusterSizeThreshold
+		out.UnhealthyZoneThreshold = in.UnhealthyZoneThreshold
 		return nil
 	}
 }
@@ -184,7 +193,7 @@ func DeepCopy_componentconfig_KubeletConfiguration(in interface{}, out interface
 		in := in.(*KubeletConfiguration)
 		out := out.(*KubeletConfiguration)
 		out.TypeMeta = in.TypeMeta
-		out.Config = in.Config
+		out.PodManifestPath = in.PodManifestPath
 		out.SyncFrequency = in.SyncFrequency
 		out.FileCheckFrequency = in.FileCheckFrequency
 		out.HTTPCheckFrequency = in.HTTPCheckFrequency
@@ -248,6 +257,7 @@ func DeepCopy_componentconfig_KubeletConfiguration(in interface{}, out interface
 		out.LowDiskSpaceThresholdMB = in.LowDiskSpaceThresholdMB
 		out.VolumeStatsAggPeriod = in.VolumeStatsAggPeriod
 		out.NetworkPluginName = in.NetworkPluginName
+		out.NetworkPluginMTU = in.NetworkPluginMTU
 		out.NetworkPluginDir = in.NetworkPluginDir
 		out.VolumePluginDir = in.VolumePluginDir
 		out.CloudProvider = in.CloudProvider
@@ -258,6 +268,8 @@ func DeepCopy_componentconfig_KubeletConfiguration(in interface{}, out interface
 		out.SystemCgroups = in.SystemCgroups
 		out.CgroupRoot = in.CgroupRoot
 		out.ContainerRuntime = in.ContainerRuntime
+		out.RemoteRuntimeEndpoint = in.RemoteRuntimeEndpoint
+		out.RemoteImageEndpoint = in.RemoteImageEndpoint
 		out.RuntimeRequestTimeout = in.RuntimeRequestTimeout
 		out.RktPath = in.RktPath
 		out.RktAPIEndpoint = in.RktAPIEndpoint
@@ -320,6 +332,17 @@ func DeepCopy_componentconfig_KubeletConfiguration(in interface{}, out interface
 			}
 		} else {
 			out.KubeReserved = nil
+		}
+		out.ProtectKernelDefaults = in.ProtectKernelDefaults
+		out.MakeIPTablesUtilChains = in.MakeIPTablesUtilChains
+		out.IPTablesMasqueradeBit = in.IPTablesMasqueradeBit
+		out.IPTablesDropBit = in.IPTablesDropBit
+		if in.AllowedUnsafeSysctls != nil {
+			in, out := &in.AllowedUnsafeSysctls, &out.AllowedUnsafeSysctls
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		} else {
+			out.AllowedUnsafeSysctls = nil
 		}
 		return nil
 	}

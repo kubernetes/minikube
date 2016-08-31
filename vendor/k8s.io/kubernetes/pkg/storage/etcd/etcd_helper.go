@@ -85,28 +85,6 @@ func init() {
 	metrics.Register()
 }
 
-// Codec provides access to the underlying codec being used by the implementation.
-func (h *etcdHelper) Codec() runtime.Codec {
-	return h.codec
-}
-
-// Implements storage.Interface.
-func (h *etcdHelper) Backends(ctx context.Context) []string {
-	if ctx == nil {
-		glog.Errorf("Context is nil")
-	}
-	members, err := h.etcdMembersAPI.List(ctx)
-	if err != nil {
-		glog.Errorf("Error obtaining etcd members list: %q", err)
-		return nil
-	}
-	mlist := []string{}
-	for _, member := range members {
-		mlist = append(mlist, member.ClientURLs...)
-	}
-	return mlist
-}
-
 // Implements storage.Interface.
 func (h *etcdHelper) Versioner() storage.Versioner {
 	return h.versioner
