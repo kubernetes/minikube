@@ -138,5 +138,6 @@ func setupViper() {
 
 	viper.SetDefault(config.WantUpdateNotification, true)
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
+	viper.SetDefault(config.WantReportError, false)
 	setFlagsUsingViper()
 }

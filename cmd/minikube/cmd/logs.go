@@ -25,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 // logsCmd represents the logs command
@@ -38,7 +39,7 @@ var logsCmd = &cobra.Command{
 		s, err := cluster.GetHostLogs(api)
 		if err != nil {
 			log.Println("Error getting machine logs:", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 		fmt.Fprintln(os.Stdout, s)
 	},
