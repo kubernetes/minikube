@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 var statusFormat string
@@ -46,7 +47,7 @@ var statusCmd = &cobra.Command{
 		ms, err := cluster.GetHostStatus(api)
 		if err != nil {
 			glog.Errorln("Error getting machine status:", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 		ls := "N/A"
 		if ms == state.Running.String() {
@@ -54,19 +55,19 @@ var statusCmd = &cobra.Command{
 		}
 		if err != nil {
 			glog.Errorln("Error getting machine status:", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 		status := Status{ms, ls}
 
 		tmpl, err := template.New("status").Parse(statusFormat)
 		if err != nil {
 			glog.Errorln("Error creating status template:", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 		err = tmpl.Execute(os.Stdout, status)
 		if err != nil {
 			glog.Errorln("Error executing status template:", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 	},
 }

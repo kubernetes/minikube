@@ -18,13 +18,12 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/constants"
-
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 // ipCmd represents the ip command
@@ -38,12 +37,12 @@ var ipCmd = &cobra.Command{
 		host, err := api.Load(constants.MachineName)
 		if err != nil {
 			glog.Errorln("Error getting IP: ", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 		ip, err := host.Driver.GetIP()
 		if err != nil {
 			glog.Errorln("Error getting IP: ", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 		fmt.Println(ip)
 	},

@@ -17,13 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 // sshCmd represents the docker-ssh command
@@ -37,7 +36,7 @@ var sshCmd = &cobra.Command{
 		err := cluster.CreateSSHShell(api, args)
 		if err != nil {
 			glog.Errorln("Error attempting to ssh into machine: ", err)
-			os.Exit(1)
+			util.MaybeReportErrorAndExit(err)
 		}
 	},
 }
