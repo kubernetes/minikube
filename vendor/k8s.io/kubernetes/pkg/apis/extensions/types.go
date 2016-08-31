@@ -35,6 +35,13 @@ import (
 	"k8s.io/kubernetes/pkg/util/intstr"
 )
 
+const (
+	// SysctlsPodSecurityPolicyAnnotationKey represents the key of a whitelist of
+	// allowed safe and unsafe sysctls in a pod spec. It's a comma-separated list of plain sysctl
+	// names or sysctl patterns (which end in *). The string "*" matches all sysctls.
+	SysctlsPodSecurityPolicyAnnotationKey string = "security.alpha.kubernetes.io/sysctls"
+)
+
 // describes the attributes of a scale subresource
 type ScaleSpec struct {
 	// desired number of instances for the scaled object.
@@ -622,6 +629,9 @@ type ReplicaSetStatus struct {
 	// The number of pods that have labels matching the labels of the pod template of the replicaset.
 	FullyLabeledReplicas int32 `json:"fullyLabeledReplicas,omitempty"`
 
+	// The number of ready replicas for this replica set.
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+
 	// ObservedGeneration is the most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
@@ -714,6 +724,8 @@ var (
 	FC                    FSType = "fc"
 	ConfigMap             FSType = "configMap"
 	VsphereVolume         FSType = "vsphereVolume"
+	Quobyte               FSType = "quobyte"
+	AzureDisk             FSType = "azureDisk"
 	All                   FSType = "*"
 )
 

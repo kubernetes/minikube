@@ -27,7 +27,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	apiutil "k8s.io/kubernetes/pkg/api/util"
 	"k8s.io/kubernetes/pkg/apimachinery/registered"
-	"k8s.io/kubernetes/pkg/apiserver"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/restclient"
 	"k8s.io/kubernetes/pkg/storage/storagebackend"
@@ -39,12 +38,23 @@ import (
 )
 
 const (
-	DefaultEtcdPathPrefix           = "/registry"
 	DefaultDeserializationCacheSize = 50000
 
 	// TODO: This can be tightened up. It still matches objects named watch or proxy.
 	defaultLongRunningRequestRE = "(/|^)((watch|proxy)(/|$)|(logs?|portforward|exec|attach)/?$)"
 )
+
+var DefaultServiceNodePortRange = utilnet.PortRange{Base: 30000, Size: 2768}
+
+const (
+	ModeAlwaysAllow string = "AlwaysAllow"
+	ModeAlwaysDeny  string = "AlwaysDeny"
+	ModeABAC        string = "ABAC"
+	ModeWebhook     string = "Webhook"
+	ModeRBAC        string = "RBAC"
+)
+
+var AuthorizationModeChoices = []string{ModeAlwaysAllow, ModeAlwaysDeny, ModeABAC, ModeWebhook, ModeRBAC}
 
 // ServerRunOptions contains the options while running a generic api server.
 type ServerRunOptions struct {
@@ -53,19 +63,30 @@ type ServerRunOptions struct {
 	AdmissionControl           string
 	AdmissionControlConfigFile string
 	AdvertiseAddress           net.IP
-	AuthorizationConfig        apiserver.AuthorizationConfig
-	AuthorizationMode          string
-	BasicAuthFile              string
-	BindAddress                net.IP
-	CertDirectory              string
-	ClientCAFile               string
-	CloudConfigFile            string
-	CloudProvider              string
-	CorsAllowedOriginList      []string
-	DefaultStorageMediaType    string
-	DeleteCollectionWorkers    int
+
+	// Authorization mode and associated flags.
+	AuthorizationMode                        string
+	AuthorizationPolicyFile                  string
+	AuthorizationWebhookConfigFile           string
+	AuthorizationWebhookCacheAuthorizedTTL   time.Duration
+	AuthorizationWebhookCacheUnauthorizedTTL time.Duration
+	AuthorizationRBACSuperUser               string
+
+	BasicAuthFile           string
+	BindAddress             net.IP
+	CertDirectory           string
+	ClientCAFile            string
+	CloudConfigFile         string
+	CloudProvider           string
+	CorsAllowedOriginList   []string
+	DefaultStorageMediaType string
+	DeleteCollectionWorkers int
 	// Used to specify the storage version that should be used for the legacy v1 api group.
 	DeprecatedStorageVersion  string
+	AuditLogPath              string
+	AuditLogMaxAge            int
+	AuditLogMaxBackups        int
+	AuditLogMaxSize           int
 	EnableLogsSupport         bool
 	EnableProfiling           bool
 	EnableSwaggerUI           bool
@@ -96,6 +117,7 @@ type ServerRunOptions struct {
 	// these; you can change this if you want to change the defaults (e.g.,
 	// for testing). This is not actually exposed as a flag.
 	DefaultStorageVersions string
+	TargetRAMMB            int
 	TLSCertFile            string
 	TLSPrivateKeyFile      string
 	TokenAuthFile          string
@@ -104,38 +126,40 @@ type ServerRunOptions struct {
 
 func NewServerRunOptions() *ServerRunOptions {
 	return &ServerRunOptions{
-		APIGroupPrefix:    "/apis",
-		APIPrefix:         "/api",
-		AdmissionControl:  "AlwaysAdmit",
-		AuthorizationMode: "AlwaysAllow",
-		AuthorizationConfig: apiserver.AuthorizationConfig{
-			WebhookCacheAuthorizedTTL:   5 * time.Minute,
-			WebhookCacheUnauthorizedTTL: 30 * time.Second,
-		},
-		BindAddress:             net.ParseIP("0.0.0.0"),
-		CertDirectory:           "/var/run/kubernetes",
-		DefaultStorageMediaType: "application/json",
-		DefaultStorageVersions:  registered.AllPreferredGroupVersions(),
-		StorageConfig: storagebackend.Config{
-			Prefix: DefaultEtcdPathPrefix,
-			DeserializationCacheSize: DefaultDeserializationCacheSize,
-		},
-		DeleteCollectionWorkers: 1,
-		EnableLogsSupport:       true,
-		EnableProfiling:         true,
-		EnableWatchCache:        true,
-		InsecureBindAddress:     net.ParseIP("127.0.0.1"),
-		InsecurePort:            8080,
-		LongRunningRequestRE:    defaultLongRunningRequestRE,
-		MasterCount:             1,
-		MasterServiceNamespace:  api.NamespaceDefault,
-		MaxRequestsInFlight:     400,
-		MinRequestTimeout:       1800,
-		RuntimeConfig:           make(config.ConfigurationMap),
-		SecurePort:              6443,
-		ServiceNodePortRange:    utilnet.PortRange{Base: 30000, Size: 2768},
-		StorageVersions:         registered.AllPreferredGroupVersions(),
+		APIGroupPrefix:                           "/apis",
+		APIPrefix:                                "/api",
+		AdmissionControl:                         "AlwaysAdmit",
+		AuthorizationMode:                        "AlwaysAllow",
+		AuthorizationWebhookCacheAuthorizedTTL:   5 * time.Minute,
+		AuthorizationWebhookCacheUnauthorizedTTL: 30 * time.Second,
+		BindAddress:                              net.ParseIP("0.0.0.0"),
+		CertDirectory:                            "/var/run/kubernetes",
+		DefaultStorageMediaType:                  "application/json",
+		DefaultStorageVersions:                   registered.AllPreferredGroupVersions(),
+		DeleteCollectionWorkers:                  1,
+		EnableLogsSupport:                        true,
+		EnableProfiling:                          true,
+		EnableWatchCache:                         true,
+		InsecureBindAddress:                      net.ParseIP("127.0.0.1"),
+		InsecurePort:                             8080,
+		LongRunningRequestRE:                     defaultLongRunningRequestRE,
+		MasterCount:                              1,
+		MasterServiceNamespace:                   api.NamespaceDefault,
+		MaxRequestsInFlight:                      400,
+		MinRequestTimeout:                        1800,
+		RuntimeConfig:                            make(config.ConfigurationMap),
+		SecurePort:                               6443,
+		ServiceNodePortRange:                     DefaultServiceNodePortRange,
+		StorageVersions:                          registered.AllPreferredGroupVersions(),
 	}
+}
+
+func (o *ServerRunOptions) WithEtcdOptions() *ServerRunOptions {
+	o.StorageConfig = storagebackend.Config{
+		Prefix: DefaultEtcdPathPrefix,
+		DeserializationCacheSize: DefaultDeserializationCacheSize,
+	}
+	return o
 }
 
 // StorageGroupsToEncodingVersion returns a map from group name to group version,
@@ -209,7 +233,7 @@ func (s *ServerRunOptions) NewSelfClient() (clientset.Interface, error) {
 }
 
 // AddFlags adds flags for a specific APIServer to the specified FlagSet
-func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
+func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 	// Note: the weird ""+ in below lines seems to be the only way to get gofmt to
 	// arrange these text blocks sensibly. Grrr.
 
@@ -228,24 +252,24 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.AuthorizationMode, "authorization-mode", s.AuthorizationMode, ""+
 		"Ordered list of plug-ins to do authorization on secure port. Comma-delimited list of: "+
-		strings.Join(apiserver.AuthorizationModeChoices, ",")+".")
+		strings.Join(AuthorizationModeChoices, ",")+".")
 
-	fs.StringVar(&s.AuthorizationConfig.PolicyFile, "authorization-policy-file", s.AuthorizationConfig.PolicyFile, ""+
+	fs.StringVar(&s.AuthorizationPolicyFile, "authorization-policy-file", s.AuthorizationPolicyFile, ""+
 		"File with authorization policy in csv format, used with --authorization-mode=ABAC, on the secure port.")
 
-	fs.StringVar(&s.AuthorizationConfig.WebhookConfigFile, "authorization-webhook-config-file", s.AuthorizationConfig.WebhookConfigFile, ""+
+	fs.StringVar(&s.AuthorizationWebhookConfigFile, "authorization-webhook-config-file", s.AuthorizationWebhookConfigFile, ""+
 		"File with webhook configuration in kubeconfig format, used with --authorization-mode=Webhook. "+
 		"The API server will query the remote service to determine access on the API server's secure port.")
 
-	fs.DurationVar(&s.AuthorizationConfig.WebhookCacheAuthorizedTTL, "authorization-webhook-cache-authorized-ttl",
-		s.AuthorizationConfig.WebhookCacheAuthorizedTTL,
+	fs.DurationVar(&s.AuthorizationWebhookCacheAuthorizedTTL, "authorization-webhook-cache-authorized-ttl",
+		s.AuthorizationWebhookCacheAuthorizedTTL,
 		"The duration to cache 'authorized' responses from the webhook authorizer. Default is 5m.")
 
-	fs.DurationVar(&s.AuthorizationConfig.WebhookCacheUnauthorizedTTL,
-		"authorization-webhook-cache-unauthorized-ttl", s.AuthorizationConfig.WebhookCacheUnauthorizedTTL,
+	fs.DurationVar(&s.AuthorizationWebhookCacheUnauthorizedTTL,
+		"authorization-webhook-cache-unauthorized-ttl", s.AuthorizationWebhookCacheUnauthorizedTTL,
 		"The duration to cache 'unauthorized' responses from the webhook authorizer. Default is 30s.")
 
-	fs.StringVar(&s.AuthorizationConfig.RBACSuperUser, "authorization-rbac-super-user", s.AuthorizationConfig.RBACSuperUser, ""+
+	fs.StringVar(&s.AuthorizationRBACSuperUser, "authorization-rbac-super-user", s.AuthorizationRBACSuperUser, ""+
 		"If specified, a username which avoids RBAC authorization checks and role binding "+
 		"privilege escalation checks, to be used with --authorization-mode=RBAC.")
 
@@ -288,6 +312,15 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&s.DeleteCollectionWorkers, "delete-collection-workers", s.DeleteCollectionWorkers,
 		"Number of workers spawned for DeleteCollection call. These are used to speed up namespace cleanup.")
 
+	fs.StringVar(&s.AuditLogPath, "audit-log-path", s.AuditLogPath,
+		"If set, all requests coming to the apiserver will be logged to this file.")
+	fs.IntVar(&s.AuditLogMaxAge, "audit-log-maxage", s.AuditLogMaxBackups,
+		"The maximum number of days to retain old audit log files based on the timestamp encoded in their filename.")
+	fs.IntVar(&s.AuditLogMaxBackups, "audit-log-maxbackup", s.AuditLogMaxBackups,
+		"The maximum number of old audit log files to retain.")
+	fs.IntVar(&s.AuditLogMaxSize, "audit-log-maxsize", s.AuditLogMaxSize,
+		"The maximum size in megabytes of the audit log file before it gets rotated. Defaults to 100MB.")
+
 	fs.BoolVar(&s.EnableProfiling, "profiling", s.EnableProfiling,
 		"Enable profiling via web interface host:port/debug/pprof/")
 
@@ -298,9 +331,8 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.EnableWatchCache, "watch-cache", s.EnableWatchCache,
 		"Enable watch caching in the apiserver")
 
-	fs.StringSliceVar(&s.EtcdServersOverrides, "etcd-servers-overrides", s.EtcdServersOverrides, ""+
-		"Per-resource etcd servers overrides, comma separated. The individual override "+
-		"format: group/resource#servers, where servers are http://ip:port, semicolon separated.")
+	fs.IntVar(&s.TargetRAMMB, "target-ram-mb", s.TargetRAMMB,
+		"Memory limit for apiserver in MB (used to configure sizes of caches, etc.)")
 
 	fs.StringVar(&s.ExternalHost, "external-hostname", s.ExternalHost,
 		"The hostname to use when generating externalized URLs for this master (e.g. Swagger API Docs).")
@@ -399,24 +431,6 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.StorageConfig.Type, "storage-backend", s.StorageConfig.Type,
 		"The storage backend for persistence. Options: 'etcd2' (default), 'etcd3'.")
 
-	fs.StringSliceVar(&s.StorageConfig.ServerList, "etcd-servers", s.StorageConfig.ServerList,
-		"List of etcd servers to connect with (http://ip:port), comma separated.")
-
-	fs.StringVar(&s.StorageConfig.Prefix, "etcd-prefix", s.StorageConfig.Prefix,
-		"The prefix for all resource paths in etcd.")
-
-	fs.StringVar(&s.StorageConfig.KeyFile, "etcd-keyfile", s.StorageConfig.KeyFile,
-		"SSL key file used to secure etcd communication.")
-
-	fs.StringVar(&s.StorageConfig.CertFile, "etcd-certfile", s.StorageConfig.CertFile,
-		"SSL certification file used to secure etcd communication.")
-
-	fs.StringVar(&s.StorageConfig.CAFile, "etcd-cafile", s.StorageConfig.CAFile,
-		"SSL Certificate Authority file used to secure etcd communication.")
-
-	fs.BoolVar(&s.StorageConfig.Quorum, "etcd-quorum-read", s.StorageConfig.Quorum,
-		"If true, enable quorum read.")
-
 	fs.IntVar(&s.StorageConfig.DeserializationCacheSize, "deserialization-cache-size", s.StorageConfig.DeserializationCacheSize,
 		"Number of deserialized json objects to cache in memory.")
 
@@ -451,4 +465,6 @@ func (s *ServerRunOptions) AddFlags(fs *pflag.FlagSet) {
 		"List of watch cache sizes for every resource (pods, nodes, etc.), comma separated. "+
 		"The individual override format: resource#size, where size is a number. It takes effect "+
 		"when watch-cache is enabled.")
+
+	config.DefaultFeatureGate.AddFlag(fs)
 }

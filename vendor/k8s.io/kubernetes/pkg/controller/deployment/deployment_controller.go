@@ -229,12 +229,12 @@ func (dc *DeploymentController) deleteDeploymentNotification(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			glog.Errorf("Couldn't get object from tombstone %+v", obj)
+			glog.Errorf("Couldn't get object from tombstone %#v", obj)
 			return
 		}
 		d, ok = tombstone.Obj.(*extensions.Deployment)
 		if !ok {
-			glog.Errorf("Tombstone contained object that is not a Deployment %+v", obj)
+			glog.Errorf("Tombstone contained object that is not a Deployment %#v", obj)
 			return
 		}
 	}
@@ -272,19 +272,20 @@ func (dc *DeploymentController) getDeploymentForReplicaSet(rs *extensions.Replic
 // awaken both the old and new deployments. old and cur must be *extensions.ReplicaSet
 // types.
 func (dc *DeploymentController) updateReplicaSet(old, cur interface{}) {
-	if api.Semantic.DeepEqual(old, cur) {
-		// A periodic relist will send update events for all known controllers.
+	curRS := cur.(*extensions.ReplicaSet)
+	oldRS := old.(*extensions.ReplicaSet)
+	if curRS.ResourceVersion == oldRS.ResourceVersion {
+		// Periodic resync will send update events for all known replica sets.
+		// Two different versions of the same replica set will always have different RVs.
 		return
 	}
 	// TODO: Write a unittest for this case
-	curRS := cur.(*extensions.ReplicaSet)
 	glog.V(4).Infof("ReplicaSet %s updated.", curRS.Name)
 	if d := dc.getDeploymentForReplicaSet(curRS); d != nil {
 		dc.enqueueDeployment(d)
 	}
 	// A number of things could affect the old deployment: labels changing,
 	// pod template changing, etc.
-	oldRS := old.(*extensions.ReplicaSet)
 	if !api.Semantic.DeepEqual(oldRS, curRS) {
 		if oldD := dc.getDeploymentForReplicaSet(oldRS); oldD != nil {
 			dc.enqueueDeployment(oldD)
@@ -305,12 +306,12 @@ func (dc *DeploymentController) deleteReplicaSet(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			glog.Errorf("Couldn't get object from tombstone %+v, could take up to %v before a deployment recreates/updates replicasets", obj, FullDeploymentResyncPeriod)
+			glog.Errorf("Couldn't get object from tombstone %#v, could take up to %v before a deployment recreates/updates replicasets", obj, FullDeploymentResyncPeriod)
 			return
 		}
 		rs, ok = tombstone.Obj.(*extensions.ReplicaSet)
 		if !ok {
-			glog.Errorf("Tombstone contained object that is not a ReplicaSet %+v, could take up to %v before a deployment recreates/updates replicasets", obj, FullDeploymentResyncPeriod)
+			glog.Errorf("Tombstone contained object that is not a ReplicaSet %#v, could take up to %v before a deployment recreates/updates replicasets", obj, FullDeploymentResyncPeriod)
 			return
 		}
 	}
@@ -344,7 +345,7 @@ func (dc *DeploymentController) addPod(obj interface{}) {
 	if !ok {
 		return
 	}
-	glog.V(4).Infof("Pod %s created: %+v.", pod.Name, pod)
+	glog.V(4).Infof("Pod %s created: %#v.", pod.Name, pod)
 	if d := dc.getDeploymentForPod(pod); d != nil {
 		dc.enqueueDeployment(d)
 	}
@@ -354,11 +355,13 @@ func (dc *DeploymentController) addPod(obj interface{}) {
 // is updated and wake them up. If anything of the Pods have changed, we need to awaken both
 // the old and new deployments. old and cur must be *api.Pod types.
 func (dc *DeploymentController) updatePod(old, cur interface{}) {
-	if api.Semantic.DeepEqual(old, cur) {
-		return
-	}
 	curPod := cur.(*api.Pod)
 	oldPod := old.(*api.Pod)
+	if curPod.ResourceVersion == oldPod.ResourceVersion {
+		// Periodic resync will send update events for all known pods.
+		// Two different versions of the same pod will always have different RVs.
+		return
+	}
 	glog.V(4).Infof("Pod %s updated %#v -> %#v.", curPod.Name, oldPod, curPod)
 	if d := dc.getDeploymentForPod(curPod); d != nil {
 		dc.enqueueDeployment(d)
@@ -382,16 +385,16 @@ func (dc *DeploymentController) deletePod(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			glog.Errorf("Couldn't get object from tombstone %+v", obj)
+			glog.Errorf("Couldn't get object from tombstone %#v", obj)
 			return
 		}
 		pod, ok = tombstone.Obj.(*api.Pod)
 		if !ok {
-			glog.Errorf("Tombstone contained object that is not a pod %+v", obj)
+			glog.Errorf("Tombstone contained object that is not a pod %#v", obj)
 			return
 		}
 	}
-	glog.V(4).Infof("Pod %s deleted: %+v.", pod.Name, pod)
+	glog.V(4).Infof("Pod %s deleted: %#v.", pod.Name, pod)
 	if d := dc.getDeploymentForPod(pod); d != nil {
 		dc.enqueueDeployment(d)
 	}
@@ -400,7 +403,7 @@ func (dc *DeploymentController) deletePod(obj interface{}) {
 func (dc *DeploymentController) enqueueDeployment(deployment *extensions.Deployment) {
 	key, err := controller.KeyFunc(deployment)
 	if err != nil {
-		glog.Errorf("Couldn't get key for object %+v: %v", deployment, err)
+		glog.Errorf("Couldn't get key for object %#v: %v", deployment, err)
 		return
 	}
 

@@ -29,7 +29,13 @@ import (
 )
 
 func init() {
-	if err := api.Scheme.AddGeneratedConversionFuncs(
+	SchemeBuilder.Register(RegisterConversions)
+}
+
+// RegisterConversions adds conversion functions to the given scheme.
+// Public to allow building arbitrary schemes.
+func RegisterConversions(scheme *runtime.Scheme) error {
+	return scheme.AddGeneratedConversionFuncs(
 		Convert_v1_AWSElasticBlockStoreVolumeSource_To_api_AWSElasticBlockStoreVolumeSource,
 		Convert_api_AWSElasticBlockStoreVolumeSource_To_v1_AWSElasticBlockStoreVolumeSource,
 		Convert_v1_Affinity_To_api_Affinity,
@@ -38,6 +44,8 @@ func init() {
 		Convert_api_AttachedVolume_To_v1_AttachedVolume,
 		Convert_v1_AvoidPods_To_api_AvoidPods,
 		Convert_api_AvoidPods_To_v1_AvoidPods,
+		Convert_v1_AzureDiskVolumeSource_To_api_AzureDiskVolumeSource,
+		Convert_api_AzureDiskVolumeSource_To_v1_AzureDiskVolumeSource,
 		Convert_v1_AzureFileVolumeSource_To_api_AzureFileVolumeSource,
 		Convert_api_AzureFileVolumeSource_To_v1_AzureFileVolumeSource,
 		Convert_v1_Binding_To_api_Binding,
@@ -264,6 +272,8 @@ func init() {
 		Convert_api_PreferredSchedulingTerm_To_v1_PreferredSchedulingTerm,
 		Convert_v1_Probe_To_api_Probe,
 		Convert_api_Probe_To_v1_Probe,
+		Convert_v1_QuobyteVolumeSource_To_api_QuobyteVolumeSource,
+		Convert_api_QuobyteVolumeSource_To_v1_QuobyteVolumeSource,
 		Convert_v1_RBDVolumeSource_To_api_RBDVolumeSource,
 		Convert_api_RBDVolumeSource_To_v1_RBDVolumeSource,
 		Convert_v1_RangeAllocation_To_api_RangeAllocation,
@@ -334,10 +344,7 @@ func init() {
 		Convert_api_VsphereVirtualDiskVolumeSource_To_v1_VsphereVirtualDiskVolumeSource,
 		Convert_v1_WeightedPodAffinityTerm_To_api_WeightedPodAffinityTerm,
 		Convert_api_WeightedPodAffinityTerm_To_v1_WeightedPodAffinityTerm,
-	); err != nil {
-		// if one of the conversion functions is malformed, detect it immediately.
-		panic(err)
-	}
+	)
 }
 
 func autoConvert_v1_AWSElasticBlockStoreVolumeSource_To_api_AWSElasticBlockStoreVolumeSource(in *AWSElasticBlockStoreVolumeSource, out *api.AWSElasticBlockStoreVolumeSource, s conversion.Scope) error {
@@ -490,6 +497,45 @@ func autoConvert_api_AvoidPods_To_v1_AvoidPods(in *api.AvoidPods, out *AvoidPods
 
 func Convert_api_AvoidPods_To_v1_AvoidPods(in *api.AvoidPods, out *AvoidPods, s conversion.Scope) error {
 	return autoConvert_api_AvoidPods_To_v1_AvoidPods(in, out, s)
+}
+
+func autoConvert_v1_AzureDiskVolumeSource_To_api_AzureDiskVolumeSource(in *AzureDiskVolumeSource, out *api.AzureDiskVolumeSource, s conversion.Scope) error {
+	SetDefaults_AzureDiskVolumeSource(in)
+	out.DiskName = in.DiskName
+	out.DataDiskURI = in.DataDiskURI
+	if in.CachingMode != nil {
+		in, out := &in.CachingMode, &out.CachingMode
+		*out = new(api.AzureDataDiskCachingMode)
+		**out = api.AzureDataDiskCachingMode(**in)
+	} else {
+		out.CachingMode = nil
+	}
+	out.FSType = in.FSType
+	out.ReadOnly = in.ReadOnly
+	return nil
+}
+
+func Convert_v1_AzureDiskVolumeSource_To_api_AzureDiskVolumeSource(in *AzureDiskVolumeSource, out *api.AzureDiskVolumeSource, s conversion.Scope) error {
+	return autoConvert_v1_AzureDiskVolumeSource_To_api_AzureDiskVolumeSource(in, out, s)
+}
+
+func autoConvert_api_AzureDiskVolumeSource_To_v1_AzureDiskVolumeSource(in *api.AzureDiskVolumeSource, out *AzureDiskVolumeSource, s conversion.Scope) error {
+	out.DiskName = in.DiskName
+	out.DataDiskURI = in.DataDiskURI
+	if in.CachingMode != nil {
+		in, out := &in.CachingMode, &out.CachingMode
+		*out = new(AzureDataDiskCachingMode)
+		**out = AzureDataDiskCachingMode(**in)
+	} else {
+		out.CachingMode = nil
+	}
+	out.FSType = in.FSType
+	out.ReadOnly = in.ReadOnly
+	return nil
+}
+
+func Convert_api_AzureDiskVolumeSource_To_v1_AzureDiskVolumeSource(in *api.AzureDiskVolumeSource, out *AzureDiskVolumeSource, s conversion.Scope) error {
+	return autoConvert_api_AzureDiskVolumeSource_To_v1_AzureDiskVolumeSource(in, out, s)
 }
 
 func autoConvert_v1_AzureFileVolumeSource_To_api_AzureFileVolumeSource(in *AzureFileVolumeSource, out *api.AzureFileVolumeSource, s conversion.Scope) error {
@@ -896,6 +942,7 @@ func Convert_api_ConfigMapList_To_v1_ConfigMapList(in *api.ConfigMapList, out *C
 }
 
 func autoConvert_v1_ConfigMapVolumeSource_To_api_ConfigMapVolumeSource(in *ConfigMapVolumeSource, out *api.ConfigMapVolumeSource, s conversion.Scope) error {
+	SetDefaults_ConfigMapVolumeSource(in)
 	if err := Convert_v1_LocalObjectReference_To_api_LocalObjectReference(&in.LocalObjectReference, &out.LocalObjectReference, s); err != nil {
 		return err
 	}
@@ -910,6 +957,7 @@ func autoConvert_v1_ConfigMapVolumeSource_To_api_ConfigMapVolumeSource(in *Confi
 	} else {
 		out.Items = nil
 	}
+	out.DefaultMode = in.DefaultMode
 	return nil
 }
 
@@ -932,6 +980,7 @@ func autoConvert_api_ConfigMapVolumeSource_To_v1_ConfigMapVolumeSource(in *api.C
 	} else {
 		out.Items = nil
 	}
+	out.DefaultMode = in.DefaultMode
 	return nil
 }
 
@@ -1439,6 +1488,7 @@ func autoConvert_v1_DownwardAPIVolumeFile_To_api_DownwardAPIVolumeFile(in *Downw
 	} else {
 		out.ResourceFieldRef = nil
 	}
+	out.Mode = in.Mode
 	return nil
 }
 
@@ -1466,6 +1516,7 @@ func autoConvert_api_DownwardAPIVolumeFile_To_v1_DownwardAPIVolumeFile(in *api.D
 	} else {
 		out.ResourceFieldRef = nil
 	}
+	out.Mode = in.Mode
 	return nil
 }
 
@@ -1474,6 +1525,7 @@ func Convert_api_DownwardAPIVolumeFile_To_v1_DownwardAPIVolumeFile(in *api.Downw
 }
 
 func autoConvert_v1_DownwardAPIVolumeSource_To_api_DownwardAPIVolumeSource(in *DownwardAPIVolumeSource, out *api.DownwardAPIVolumeSource, s conversion.Scope) error {
+	SetDefaults_DownwardAPIVolumeSource(in)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]api.DownwardAPIVolumeFile, len(*in))
@@ -1485,6 +1537,7 @@ func autoConvert_v1_DownwardAPIVolumeSource_To_api_DownwardAPIVolumeSource(in *D
 	} else {
 		out.Items = nil
 	}
+	out.DefaultMode = in.DefaultMode
 	return nil
 }
 
@@ -1504,6 +1557,7 @@ func autoConvert_api_DownwardAPIVolumeSource_To_v1_DownwardAPIVolumeSource(in *a
 	} else {
 		out.Items = nil
 	}
+	out.DefaultMode = in.DefaultMode
 	return nil
 }
 
@@ -1532,6 +1586,7 @@ func Convert_api_EmptyDirVolumeSource_To_v1_EmptyDirVolumeSource(in *api.EmptyDi
 func autoConvert_v1_EndpointAddress_To_api_EndpointAddress(in *EndpointAddress, out *api.EndpointAddress, s conversion.Scope) error {
 	out.IP = in.IP
 	out.Hostname = in.Hostname
+	out.NodeName = in.NodeName
 	if in.TargetRef != nil {
 		in, out := &in.TargetRef, &out.TargetRef
 		*out = new(api.ObjectReference)
@@ -1551,6 +1606,7 @@ func Convert_v1_EndpointAddress_To_api_EndpointAddress(in *EndpointAddress, out 
 func autoConvert_api_EndpointAddress_To_v1_EndpointAddress(in *api.EndpointAddress, out *EndpointAddress, s conversion.Scope) error {
 	out.IP = in.IP
 	out.Hostname = in.Hostname
+	out.NodeName = in.NodeName
 	if in.TargetRef != nil {
 		in, out := &in.TargetRef, &out.TargetRef
 		*out = new(ObjectReference)
@@ -2415,6 +2471,7 @@ func Convert_api_ISCSIVolumeSource_To_v1_ISCSIVolumeSource(in *api.ISCSIVolumeSo
 func autoConvert_v1_KeyToPath_To_api_KeyToPath(in *KeyToPath, out *api.KeyToPath, s conversion.Scope) error {
 	out.Key = in.Key
 	out.Path = in.Path
+	out.Mode = in.Mode
 	return nil
 }
 
@@ -2425,6 +2482,7 @@ func Convert_v1_KeyToPath_To_api_KeyToPath(in *KeyToPath, out *api.KeyToPath, s 
 func autoConvert_api_KeyToPath_To_v1_KeyToPath(in *api.KeyToPath, out *KeyToPath, s conversion.Scope) error {
 	out.Key = in.Key
 	out.Path = in.Path
+	out.Mode = in.Mode
 	return nil
 }
 
@@ -3660,6 +3718,7 @@ func autoConvert_v1_ObjectMeta_To_api_ObjectMeta(in *ObjectMeta, out *api.Object
 		out.OwnerReferences = nil
 	}
 	out.Finalizers = in.Finalizers
+	out.ClusterName = in.ClusterName
 	return nil
 }
 
@@ -3694,6 +3753,7 @@ func autoConvert_api_ObjectMeta_To_v1_ObjectMeta(in *api.ObjectMeta, out *Object
 		out.OwnerReferences = nil
 	}
 	out.Finalizers = in.Finalizers
+	out.ClusterName = in.ClusterName
 	return nil
 }
 
@@ -4182,6 +4242,24 @@ func autoConvert_v1_PersistentVolumeSource_To_api_PersistentVolumeSource(in *Per
 	} else {
 		out.VsphereVolume = nil
 	}
+	if in.Quobyte != nil {
+		in, out := &in.Quobyte, &out.Quobyte
+		*out = new(api.QuobyteVolumeSource)
+		if err := Convert_v1_QuobyteVolumeSource_To_api_QuobyteVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Quobyte = nil
+	}
+	if in.AzureDisk != nil {
+		in, out := &in.AzureDisk, &out.AzureDisk
+		*out = new(api.AzureDiskVolumeSource)
+		if err := Convert_v1_AzureDiskVolumeSource_To_api_AzureDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureDisk = nil
+	}
 	return nil
 }
 
@@ -4243,6 +4321,15 @@ func autoConvert_api_PersistentVolumeSource_To_v1_PersistentVolumeSource(in *api
 		}
 	} else {
 		out.RBD = nil
+	}
+	if in.Quobyte != nil {
+		in, out := &in.Quobyte, &out.Quobyte
+		*out = new(QuobyteVolumeSource)
+		if err := Convert_api_QuobyteVolumeSource_To_v1_QuobyteVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Quobyte = nil
 	}
 	if in.ISCSI != nil {
 		in, out := &in.ISCSI, &out.ISCSI
@@ -4315,6 +4402,15 @@ func autoConvert_api_PersistentVolumeSource_To_v1_PersistentVolumeSource(in *api
 		}
 	} else {
 		out.VsphereVolume = nil
+	}
+	if in.AzureDisk != nil {
+		in, out := &in.AzureDisk, &out.AzureDisk
+		*out = new(AzureDiskVolumeSource)
+		if err := Convert_api_AzureDiskVolumeSource_To_v1_AzureDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureDisk = nil
 	}
 	return nil
 }
@@ -5344,6 +5440,32 @@ func Convert_api_Probe_To_v1_Probe(in *api.Probe, out *Probe, s conversion.Scope
 	return autoConvert_api_Probe_To_v1_Probe(in, out, s)
 }
 
+func autoConvert_v1_QuobyteVolumeSource_To_api_QuobyteVolumeSource(in *QuobyteVolumeSource, out *api.QuobyteVolumeSource, s conversion.Scope) error {
+	out.Registry = in.Registry
+	out.Volume = in.Volume
+	out.ReadOnly = in.ReadOnly
+	out.User = in.User
+	out.Group = in.Group
+	return nil
+}
+
+func Convert_v1_QuobyteVolumeSource_To_api_QuobyteVolumeSource(in *QuobyteVolumeSource, out *api.QuobyteVolumeSource, s conversion.Scope) error {
+	return autoConvert_v1_QuobyteVolumeSource_To_api_QuobyteVolumeSource(in, out, s)
+}
+
+func autoConvert_api_QuobyteVolumeSource_To_v1_QuobyteVolumeSource(in *api.QuobyteVolumeSource, out *QuobyteVolumeSource, s conversion.Scope) error {
+	out.Registry = in.Registry
+	out.Volume = in.Volume
+	out.ReadOnly = in.ReadOnly
+	out.User = in.User
+	out.Group = in.Group
+	return nil
+}
+
+func Convert_api_QuobyteVolumeSource_To_v1_QuobyteVolumeSource(in *api.QuobyteVolumeSource, out *QuobyteVolumeSource, s conversion.Scope) error {
+	return autoConvert_api_QuobyteVolumeSource_To_v1_QuobyteVolumeSource(in, out, s)
+}
+
 func autoConvert_v1_RBDVolumeSource_To_api_RBDVolumeSource(in *RBDVolumeSource, out *api.RBDVolumeSource, s conversion.Scope) error {
 	SetDefaults_RBDVolumeSource(in)
 	out.CephMonitors = in.CephMonitors
@@ -5557,6 +5679,7 @@ func autoConvert_api_ReplicationControllerSpec_To_v1_ReplicationControllerSpec(i
 func autoConvert_v1_ReplicationControllerStatus_To_api_ReplicationControllerStatus(in *ReplicationControllerStatus, out *api.ReplicationControllerStatus, s conversion.Scope) error {
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ReadyReplicas = in.ReadyReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
@@ -5568,6 +5691,7 @@ func Convert_v1_ReplicationControllerStatus_To_api_ReplicationControllerStatus(i
 func autoConvert_api_ReplicationControllerStatus_To_v1_ReplicationControllerStatus(in *api.ReplicationControllerStatus, out *ReplicationControllerStatus, s conversion.Scope) error {
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ReadyReplicas = in.ReadyReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
@@ -5966,6 +6090,7 @@ func Convert_api_SecretList_To_v1_SecretList(in *api.SecretList, out *SecretList
 }
 
 func autoConvert_v1_SecretVolumeSource_To_api_SecretVolumeSource(in *SecretVolumeSource, out *api.SecretVolumeSource, s conversion.Scope) error {
+	SetDefaults_SecretVolumeSource(in)
 	out.SecretName = in.SecretName
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
@@ -5978,6 +6103,7 @@ func autoConvert_v1_SecretVolumeSource_To_api_SecretVolumeSource(in *SecretVolum
 	} else {
 		out.Items = nil
 	}
+	out.DefaultMode = in.DefaultMode
 	return nil
 }
 
@@ -5998,6 +6124,7 @@ func autoConvert_api_SecretVolumeSource_To_v1_SecretVolumeSource(in *api.SecretV
 	} else {
 		out.Items = nil
 	}
+	out.DefaultMode = in.DefaultMode
 	return nil
 }
 
@@ -6379,6 +6506,7 @@ func autoConvert_v1_ServiceSpec_To_api_ServiceSpec(in *ServiceSpec, out *api.Ser
 	out.SessionAffinity = api.ServiceAffinity(in.SessionAffinity)
 	out.LoadBalancerIP = in.LoadBalancerIP
 	out.LoadBalancerSourceRanges = in.LoadBalancerSourceRanges
+	out.ExternalName = in.ExternalName
 	return nil
 }
 
@@ -6397,6 +6525,7 @@ func autoConvert_api_ServiceSpec_To_v1_ServiceSpec(in *api.ServiceSpec, out *Ser
 	}
 	out.Selector = in.Selector
 	out.ClusterIP = in.ClusterIP
+	out.ExternalName = in.ExternalName
 	out.ExternalIPs = in.ExternalIPs
 	out.LoadBalancerIP = in.LoadBalancerIP
 	out.SessionAffinity = ServiceAffinity(in.SessionAffinity)
@@ -6724,6 +6853,24 @@ func autoConvert_v1_VolumeSource_To_api_VolumeSource(in *VolumeSource, out *api.
 	} else {
 		out.VsphereVolume = nil
 	}
+	if in.Quobyte != nil {
+		in, out := &in.Quobyte, &out.Quobyte
+		*out = new(api.QuobyteVolumeSource)
+		if err := Convert_v1_QuobyteVolumeSource_To_api_QuobyteVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Quobyte = nil
+	}
+	if in.AzureDisk != nil {
+		in, out := &in.AzureDisk, &out.AzureDisk
+		*out = new(api.AzureDiskVolumeSource)
+		if err := Convert_v1_AzureDiskVolumeSource_To_api_AzureDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureDisk = nil
+	}
 	return nil
 }
 
@@ -6831,6 +6978,15 @@ func autoConvert_api_VolumeSource_To_v1_VolumeSource(in *api.VolumeSource, out *
 	} else {
 		out.RBD = nil
 	}
+	if in.Quobyte != nil {
+		in, out := &in.Quobyte, &out.Quobyte
+		*out = new(QuobyteVolumeSource)
+		if err := Convert_api_QuobyteVolumeSource_To_v1_QuobyteVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Quobyte = nil
+	}
 	if in.FlexVolume != nil {
 		in, out := &in.FlexVolume, &out.FlexVolume
 		*out = new(FlexVolumeSource)
@@ -6911,6 +7067,15 @@ func autoConvert_api_VolumeSource_To_v1_VolumeSource(in *api.VolumeSource, out *
 		}
 	} else {
 		out.VsphereVolume = nil
+	}
+	if in.AzureDisk != nil {
+		in, out := &in.AzureDisk, &out.AzureDisk
+		*out = new(AzureDiskVolumeSource)
+		if err := Convert_api_AzureDiskVolumeSource_To_v1_AzureDiskVolumeSource(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.AzureDisk = nil
 	}
 	return nil
 }

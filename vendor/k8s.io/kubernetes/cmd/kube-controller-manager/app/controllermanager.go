@@ -30,13 +30,13 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"reflect"
 	"strconv"
 	"time"
 
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/apis/batch"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/leaderelection"
 	"k8s.io/kubernetes/pkg/client/record"
@@ -49,10 +49,11 @@ import (
 	certcontroller "k8s.io/kubernetes/pkg/controller/certificates"
 	"k8s.io/kubernetes/pkg/controller/daemon"
 	"k8s.io/kubernetes/pkg/controller/deployment"
+	"k8s.io/kubernetes/pkg/controller/disruption"
 	endpointcontroller "k8s.io/kubernetes/pkg/controller/endpoint"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/controller/framework/informers"
 	"k8s.io/kubernetes/pkg/controller/garbagecollector"
+	"k8s.io/kubernetes/pkg/controller/garbagecollector/metaonly"
 	"k8s.io/kubernetes/pkg/controller/job"
 	namespacecontroller "k8s.io/kubernetes/pkg/controller/namespace"
 	nodecontroller "k8s.io/kubernetes/pkg/controller/node"
@@ -64,12 +65,14 @@ import (
 	replicationcontroller "k8s.io/kubernetes/pkg/controller/replication"
 	resourcequotacontroller "k8s.io/kubernetes/pkg/controller/resourcequota"
 	routecontroller "k8s.io/kubernetes/pkg/controller/route"
+	"k8s.io/kubernetes/pkg/controller/scheduledjob"
 	servicecontroller "k8s.io/kubernetes/pkg/controller/service"
 	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach"
 	persistentvolumecontroller "k8s.io/kubernetes/pkg/controller/volume/persistentvolume"
 	"k8s.io/kubernetes/pkg/healthz"
 	quotainstall "k8s.io/kubernetes/pkg/quota/install"
+	"k8s.io/kubernetes/pkg/runtime/serializer"
 	"k8s.io/kubernetes/pkg/serviceaccount"
 	"k8s.io/kubernetes/pkg/util/configz"
 	"k8s.io/kubernetes/pkg/util/crypto"
@@ -154,8 +157,13 @@ func Run(s *options.CMServer) error {
 		glog.Fatal(server.ListenAndServe())
 	}()
 
+	eventBroadcaster := record.NewBroadcaster()
+	eventBroadcaster.StartLogging(glog.Infof)
+	eventBroadcaster.StartRecordingToSink(kubeClient.Events(""))
+	recorder := eventBroadcaster.NewRecorder(api.EventSource{Component: "controller-manager"})
+
 	run := func(stop <-chan struct{}) {
-		err := StartControllers(s, kubeClient, kubeconfig, stop)
+		err := StartControllers(s, kubeClient, kubeconfig, stop, recorder)
 		glog.Fatalf("error running controllers: %v", err)
 		panic("unreachable")
 	}
@@ -164,11 +172,6 @@ func Run(s *options.CMServer) error {
 		run(nil)
 		panic("unreachable")
 	}
-
-	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(glog.Infof)
-	eventBroadcaster.StartRecordingToSink(kubeClient.Events(""))
-	recorder := eventBroadcaster.NewRecorder(api.EventSource{Component: "controller-manager"})
 
 	id, err := os.Hostname()
 	if err != nil {
@@ -196,23 +199,15 @@ func Run(s *options.CMServer) error {
 	panic("unreachable")
 }
 
-func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig *restclient.Config, stop <-chan struct{}) error {
-	podInformer := informers.CreateSharedPodIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "pod-informer")), ResyncPeriod(s)())
-	nodeInformer := informers.CreateSharedNodeIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "node-informer")), ResyncPeriod(s)())
-	pvcInformer := informers.CreateSharedPVCIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "pvc-informer")), ResyncPeriod(s)())
-	pvInformer := informers.CreateSharedPVIndexInformer(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "pv-informer")), ResyncPeriod(s)())
-	informers := map[reflect.Type]framework.SharedIndexInformer{}
-	informers[reflect.TypeOf(&api.Pod{})] = podInformer
-	informers[reflect.TypeOf(&api.Node{})] = nodeInformer
-	informers[reflect.TypeOf(&api.PersistentVolumeClaim{})] = pvcInformer
-	informers[reflect.TypeOf(&api.PersistentVolume{})] = pvInformer
+func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig *restclient.Config, stop <-chan struct{}, recorder record.EventRecorder) error {
+	sharedInformers := informers.NewSharedInformerFactory(clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "shared-informers")), ResyncPeriod(s)())
 
-	go endpointcontroller.NewEndpointController(podInformer, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "endpoint-controller"))).
+	go endpointcontroller.NewEndpointController(sharedInformers.Pods().Informer(), clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "endpoint-controller"))).
 		Run(int(s.ConcurrentEndpointSyncs), wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
 	go replicationcontroller.NewReplicationManager(
-		podInformer,
+		sharedInformers.Pods().Informer(),
 		clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "replication-controller")),
 		ResyncPeriod(s),
 		replicationcontroller.BurstReplicas,
@@ -240,8 +235,8 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 	if err != nil {
 		glog.Warningf("Unsuccessful parsing of service CIDR %v: %v", s.ServiceCIDR, err)
 	}
-	nodeController, err := nodecontroller.NewNodeController(cloud, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "node-controller")),
-		s.PodEvictionTimeout.Duration, s.DeletingPodsQps, s.NodeMonitorGracePeriod.Duration,
+	nodeController, err := nodecontroller.NewNodeController(sharedInformers.Pods().Informer(), cloud, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "node-controller")),
+		s.PodEvictionTimeout.Duration, s.NodeEvictionRate, s.SecondaryNodeEvictionRate, s.LargeClusterSizeThreshold, s.UnhealthyZoneThreshold, s.NodeMonitorGracePeriod.Duration,
 		s.NodeStartupGracePeriod.Duration, s.NodeMonitorPeriod.Duration, clusterCIDR, serviceCIDR,
 		int(s.NodeCIDRMaskSize), s.AllocateNodeCIDRs)
 	if err != nil {
@@ -250,9 +245,11 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 	nodeController.Run(s.NodeSyncPeriod.Duration)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
-	serviceController := servicecontroller.New(cloud, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "service-controller")), s.ClusterName)
-	if err := serviceController.Run(s.ServiceSyncPeriod.Duration, s.NodeSyncPeriod.Duration); err != nil {
+	serviceController, err := servicecontroller.New(cloud, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "service-controller")), s.ClusterName)
+	if err != nil {
 		glog.Errorf("Failed to start service controller: %v", err)
+	} else {
+		serviceController.Run(int(s.ConcurrentServiceSyncs))
 	}
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
@@ -284,7 +281,7 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 		KubeClient:                resourceQuotaControllerClient,
 		ResyncPeriod:              controller.StaticResyncPeriodFunc(s.ResourceQuotaSyncPeriod.Duration),
 		Registry:                  resourceQuotaRegistry,
-		ControllerFactory:         resourcequotacontroller.NewReplenishmentControllerFactory(podInformer, resourceQuotaControllerClient),
+		ControllerFactory:         resourcequotacontroller.NewReplenishmentControllerFactory(sharedInformers.Pods().Informer(), resourceQuotaControllerClient),
 		ReplenishmentResyncPeriod: ResyncPeriod(s),
 		GroupKindsToReplenish:     groupKindsToReplenish,
 	}
@@ -344,14 +341,14 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 
 		if containsResource(resources, "daemonsets") {
 			glog.Infof("Starting daemon set controller")
-			go daemon.NewDaemonSetsController(podInformer, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "daemon-set-controller")), ResyncPeriod(s), int(s.LookupCacheSizeForDaemonSet)).
+			go daemon.NewDaemonSetsController(sharedInformers.Pods().Informer(), clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "daemon-set-controller")), ResyncPeriod(s), int(s.LookupCacheSizeForDaemonSet)).
 				Run(int(s.ConcurrentDaemonSetSyncs), wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
 
 		if containsResource(resources, "jobs") {
 			glog.Infof("Starting job controller")
-			go job.NewJobController(podInformer, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "job-controller"))).
+			go job.NewJobController(sharedInformers.Pods().Informer(), clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "job-controller"))).
 				Run(int(s.ConcurrentJobSyncs), wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
@@ -365,8 +362,20 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 
 		if containsResource(resources, "replicasets") {
 			glog.Infof("Starting ReplicaSet controller")
-			go replicaset.NewReplicaSetController(podInformer, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "replicaset-controller")), ResyncPeriod(s), replicaset.BurstReplicas, int(s.LookupCacheSizeForRS), s.EnableGarbageCollector).
+			go replicaset.NewReplicaSetController(sharedInformers.Pods().Informer(), clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "replicaset-controller")), ResyncPeriod(s), replicaset.BurstReplicas, int(s.LookupCacheSizeForRS), s.EnableGarbageCollector).
 				Run(int(s.ConcurrentRSSyncs), wait.NeverStop)
+			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+		}
+	}
+
+	groupVersion = "policy/v1alpha1"
+	resources, found = resourceMap[groupVersion]
+	glog.Infof("Attempting to start disruption controller, full resource map %+v", resourceMap)
+	if containsVersion(versions, groupVersion) && found {
+		glog.Infof("Starting %s apis", groupVersion)
+		if containsResource(resources, "poddisruptionbudgets") {
+			glog.Infof("Starting disruption controller")
+			go disruption.NewDisruptionController(sharedInformers.Pods().Informer(), kubeClient).Run(wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
 	}
@@ -380,7 +389,7 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 			glog.Infof("Starting PetSet controller")
 			resyncPeriod := ResyncPeriod(s)()
 			go petset.NewPetSetController(
-				podInformer,
+				sharedInformers.Pods().Informer(),
 				// TODO: Switch to using clientset
 				kubeClient,
 				resyncPeriod,
@@ -389,33 +398,57 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 		}
 	}
 
-	provisioner, err := NewVolumeProvisioner(cloud, s.VolumeConfiguration)
-	if err != nil {
-		glog.Fatalf("A Provisioner could not be created: %v, but one was expected. Provisioning will not work. This functionality is considered an early Alpha version.", err)
+	groupVersion = "batch/v2alpha1"
+	resources, found = resourceMap[groupVersion]
+	if containsVersion(versions, groupVersion) && found {
+		glog.Infof("Starting %s apis", groupVersion)
+		if containsResource(resources, "scheduledjobs") {
+			glog.Infof("Starting scheduledjob controller")
+			// TODO: this is a temp fix for allowing kubeClient list v2alpha1 sj, should switch to using clientset
+			kubeconfig.ContentConfig.GroupVersion = &unversioned.GroupVersion{Group: batch.GroupName, Version: "v2alpha1"}
+			kubeClient, err := client.New(kubeconfig)
+			if err != nil {
+				glog.Fatalf("Invalid API configuration: %v", err)
+			}
+			go scheduledjob.NewScheduledJobController(kubeClient).
+				Run(wait.NeverStop)
+			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+		}
+	} else {
+		glog.Infof("Not starting %s apis", groupVersion)
 	}
 
+	alphaProvisioner, err := NewAlphaVolumeProvisioner(cloud, s.VolumeConfiguration)
+	if err != nil {
+		glog.Fatalf("An backward-compatible provisioner could not be created: %v, but one was expected. Provisioning will not work. This functionality is considered an early Alpha version.", err)
+	}
 	volumeController := persistentvolumecontroller.NewPersistentVolumeController(
 		clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "persistent-volume-binder")),
 		s.PVClaimBinderSyncPeriod.Duration,
-		provisioner,
-		ProbeRecyclableVolumePlugins(s.VolumeConfiguration),
+		alphaProvisioner,
+		ProbeControllerVolumePlugins(cloud, s.VolumeConfiguration),
 		cloud,
 		s.ClusterName,
-		nil, nil, nil,
+		nil, // volumeSource
+		nil, // claimSource
+		nil, // classSource
+		nil, // eventRecorder
 		s.VolumeConfiguration.EnableDynamicProvisioning,
 	)
-	volumeController.Run()
+	volumeController.Run(wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
 	attachDetachController, attachDetachControllerErr :=
 		attachdetach.NewAttachDetachController(
 			clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "attachdetach-controller")),
-			podInformer,
-			nodeInformer,
-			pvcInformer,
-			pvInformer,
+			sharedInformers.Pods().Informer(),
+			sharedInformers.Nodes().Informer(),
+			sharedInformers.PersistentVolumeClaims().Informer(),
+			sharedInformers.PersistentVolumes().Informer(),
 			cloud,
-			ProbeAttachableVolumePlugins(s.VolumeConfiguration))
+			ProbeAttachableVolumePlugins(s.VolumeConfiguration),
+			recorder)
 	if attachDetachControllerErr != nil {
 		glog.Fatalf("Failed to start attach/detach controller: %v", attachDetachControllerErr)
 	}
@@ -435,6 +468,7 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 				resyncPeriod,
 				s.ClusterSigningCertFile,
 				s.ClusterSigningKeyFile,
+				s.ApproveAllKubeletCSRsForGroup,
 			)
 			if err != nil {
 				glog.Errorf("Failed to start certificate controller: %v", err)
@@ -487,8 +521,12 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 		if err != nil {
 			glog.Fatalf("Failed to get supported resources from server: %v", err)
 		}
-		clientPool := dynamic.NewClientPool(restclient.AddUserAgent(kubeconfig, "generic-garbage-collector"), dynamic.LegacyAPIPathResolverFunc)
-		garbageCollector, err := garbagecollector.NewGarbageCollector(clientPool, groupVersionResources)
+		config := restclient.AddUserAgent(kubeconfig, "generic-garbage-collector")
+		config.ContentConfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: metaonly.NewMetadataCodecFactory()}
+		metaOnlyClientPool := dynamic.NewClientPool(config, dynamic.LegacyAPIPathResolverFunc)
+		config.ContentConfig.NegotiatedSerializer = nil
+		clientPool := dynamic.NewClientPool(config, dynamic.LegacyAPIPathResolverFunc)
+		garbageCollector, err := garbagecollector.NewGarbageCollector(metaOnlyClientPool, clientPool, groupVersionResources)
 		if err != nil {
 			glog.Errorf("Failed to start the generic garbage collector: %v", err)
 		} else {
@@ -497,10 +535,7 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 		}
 	}
 
-	// run the shared informers
-	for _, informer := range informers {
-		go informer.Run(wait.NeverStop)
-	}
+	sharedInformers.Start(stop)
 
 	select {}
 }

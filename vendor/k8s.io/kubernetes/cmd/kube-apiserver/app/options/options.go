@@ -47,7 +47,7 @@ type APIServer struct {
 // NewAPIServer creates a new APIServer object with default parameters
 func NewAPIServer() *APIServer {
 	s := APIServer{
-		ServerRunOptions: genericoptions.NewServerRunOptions(),
+		ServerRunOptions: genericoptions.NewServerRunOptions().WithEtcdOptions(),
 		EventTTL:         1 * time.Hour,
 		KubeletConfig: kubeletclient.KubeletClientConfig{
 			Port:        ports.KubeletPort,
@@ -62,7 +62,9 @@ func NewAPIServer() *APIServer {
 // AddFlags adds flags for a specific APIServer to the specified FlagSet
 func (s *APIServer) AddFlags(fs *pflag.FlagSet) {
 	// Add the generic flags.
-	s.ServerRunOptions.AddFlags(fs)
+	s.ServerRunOptions.AddUniversalFlags(fs)
+	//Add etcd specific flags.
+	s.ServerRunOptions.AddEtcdStorageFlags(fs)
 	// Note: the weird ""+ in below lines seems to be the only way to get gofmt to
 	// arrange these text blocks sensibly. Grrr.
 
@@ -122,7 +124,7 @@ func (s *APIServer) AddFlags(fs *pflag.FlagSet) {
 		"e.g., setting empty UID in update request to its existing value. This flag can be turned off "+
 		"after we fix all the clients that send malformed updates.")
 
-	fs.BoolVar(&registry.EnableGarbageCollector, "enable-garbage-collector", false, ""+
+	fs.BoolVar(&registry.EnableGarbageCollector, "enable-garbage-collector", true, ""+
 		"Enables the generic garbage collector. MUST be synced with the corresponding flag "+
 		"of the kube-controller-manager.")
 }

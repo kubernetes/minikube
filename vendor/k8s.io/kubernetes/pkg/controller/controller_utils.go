@@ -190,7 +190,7 @@ func (r *ControllerExpectations) LowerExpectations(controllerKey string, add, de
 	if exp, exists, err := r.GetExpectations(controllerKey); err == nil && exists {
 		exp.Add(int64(-add), int64(-del))
 		// The expectations might've been modified since the update on the previous line.
-		glog.V(4).Infof("Lowered expectations %+v", exp)
+		glog.V(4).Infof("Lowered expectations %#v", exp)
 	}
 }
 
@@ -199,7 +199,7 @@ func (r *ControllerExpectations) RaiseExpectations(controllerKey string, add, de
 	if exp, exists, err := r.GetExpectations(controllerKey); err == nil && exists {
 		exp.Add(int64(add), int64(del))
 		// The expectations might've been modified since the update on the previous line.
-		glog.V(4).Infof("Raised expectations %+v", exp)
+		glog.V(4).Infof("Raised expectations %#v", exp)
 	}
 }
 
@@ -458,7 +458,7 @@ func GetPodFromTemplate(template *api.PodTemplateSpec, parentObject runtime.Obje
 	if controllerRef != nil {
 		pod.OwnerReferences = append(pod.OwnerReferences, *controllerRef)
 	}
-	if err := api.Scheme.Convert(&template.Spec, &pod.Spec); err != nil {
+	if err := api.Scheme.Convert(&template.Spec, &pod.Spec, nil); err != nil {
 		return nil, fmt.Errorf("unable to convert pod template: %v", err)
 	}
 	return pod, nil
@@ -472,7 +472,7 @@ func (r RealPodControl) createPods(nodeName, namespace string, template *api.Pod
 	if len(nodeName) != 0 {
 		pod.Spec.NodeName = nodeName
 	}
-	if labels.Set(pod.Labels).AsSelector().Empty() {
+	if labels.Set(pod.Labels).AsSelectorPreValidated().Empty() {
 		return fmt.Errorf("unable to create pods, no labels")
 	}
 	if newPod, err := r.KubeClient.Core().Pods(namespace).Create(pod); err != nil {
@@ -683,12 +683,11 @@ func maxContainerRestarts(pod *api.Pod) int {
 }
 
 // FilterActivePods returns pods that have not terminated.
-func FilterActivePods(pods []api.Pod) []*api.Pod {
+func FilterActivePods(pods []*api.Pod) []*api.Pod {
 	var result []*api.Pod
-	for i := range pods {
-		p := pods[i]
+	for _, p := range pods {
 		if IsPodActive(p) {
-			result = append(result, &p)
+			result = append(result, p)
 		} else {
 			glog.V(4).Infof("Ignoring inactive pod %v/%v in state %v, deletion time %v",
 				p.Namespace, p.Name, p.Status.Phase, p.DeletionTimestamp)
@@ -697,7 +696,7 @@ func FilterActivePods(pods []api.Pod) []*api.Pod {
 	return result
 }
 
-func IsPodActive(p api.Pod) bool {
+func IsPodActive(p *api.Pod) bool {
 	return api.PodSucceeded != p.Status.Phase &&
 		api.PodFailed != p.Status.Phase &&
 		p.DeletionTimestamp == nil

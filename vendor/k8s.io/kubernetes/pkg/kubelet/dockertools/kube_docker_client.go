@@ -152,7 +152,7 @@ func (d *kubeDockerClient) StartContainer(id string) error {
 
 // Stopping an already stopped container will not cause an error in engine-api.
 func (d *kubeDockerClient) StopContainer(id string, timeout int) error {
-	ctx, cancel := d.getTimeoutContext()
+	ctx, cancel := d.getCustomTimeoutContext(time.Duration(timeout) * time.Second)
 	defer cancel()
 	err := d.client.ContainerStop(ctx, id, timeout)
 	if ctxErr := contextError(ctx); ctxErr != nil {
@@ -183,6 +183,9 @@ func (d *kubeDockerClient) InspectImage(image string) (*dockertypes.ImageInspect
 			err = imageNotFoundError{ID: image}
 		}
 		return nil, err
+	}
+	if !matchImageTagOrSHA(resp, image) {
+		return nil, imageNotFoundError{ID: image}
 	}
 	return &resp, nil
 }
@@ -531,8 +534,17 @@ func (d *kubeDockerClient) getTimeoutContext() (context.Context, context.CancelF
 	return context.WithTimeout(context.Background(), d.timeout)
 }
 
-// parseDockerTimestamp parses the timestamp returned by DockerInterface from string to time.Time
-func parseDockerTimestamp(s string) (time.Time, error) {
+// getCustomTimeoutContext returns a new context with a specific request timeout
+func (d *kubeDockerClient) getCustomTimeoutContext(timeout time.Duration) (context.Context, context.CancelFunc) {
+	// Pick the larger of the two
+	if d.timeout > timeout {
+		timeout = d.timeout
+	}
+	return context.WithTimeout(context.Background(), timeout)
+}
+
+// ParseDockerTimestamp parses the timestamp returned by DockerInterface from string to time.Time
+func ParseDockerTimestamp(s string) (time.Time, error) {
 	// Timestamp returned by Docker is in time.RFC3339Nano format.
 	return time.Parse(time.RFC3339Nano, s)
 }
