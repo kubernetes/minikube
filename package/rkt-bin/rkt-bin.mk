@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-RKT_BIN_VERSION = 1.13.0
+RKT_BIN_VERSION = 1.14.0
 RKT_BIN_SITE = https://github.com/coreos/rkt/releases/download/v$(RKT_BIN_VERSION)
 RKT_BIN_SOURCE = rkt-v$(RKT_BIN_VERSION).tar.gz
 
