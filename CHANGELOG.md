@@ -1,5 +1,13 @@
 # Minikube Release Notes
 
+## Version 0.9.0 - 9/1/2016
+* Added Hyper-V support for Windows
+* Added debug-level logging for show-libmachine-logs
+* Added ISO checksum validation for cached ISOs
+* New .minikube/addons directory where users can put addons to be initialized in minikube
+* --https flag on `minikube service` for services that run over ssl/tls
+* xhyve driver will now receive the same IP across starts/delete
+
 ## Version 0.8.0 - 8/17/2016
 * Added a --registry-mirror flag to `minikube start`.
 * Updated Kubernetes components to v1.3.5.
