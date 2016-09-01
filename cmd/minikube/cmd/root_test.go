@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -32,7 +33,6 @@ import (
 var yamlExampleConfig = []byte(`v: 999
 alsologtostderr: true
 log_dir: "/etc/hosts"
-log-flush-frequency: "3s"
 `)
 
 type configTest struct {
@@ -85,9 +85,9 @@ var configTests = []configTest{
 	},
 	// Config should not override flags not on whitelist
 	{
-		Name:          "log-flush-frequency",
-		ConfigValue:   "6s",
-		ExpectedValue: "5s",
+		Name:          "log_backtrace_at",
+		ConfigValue:   ":3",
+		ExpectedValue: ":0",
 	},
 	// Env should not override flags not on whitelist
 	{
@@ -160,6 +160,7 @@ func unsetValues(tt configTest) {
 
 func TestViperAndFlags(t *testing.T) {
 	for _, tt := range configTests {
+		fmt.Println(tt)
 		setValues(tt)
 		setupViper()
 		var actual = pflag.Lookup(tt.Name).Value.String()
