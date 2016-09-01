@@ -23,7 +23,7 @@ minikube start
       --insecure-registry stringSlice   Insecure Docker registries to pass to the Docker daemon
       --iso-url string                  Location of the minikube iso (default "https://storage.googleapis.com/minikube/minikube-0.7.iso")
       --kubernetes-version string       The kubernetes version that the minikube VM will (ex: v1.2.3) 
- OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.4.0-alpha.2")
+ OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.4.0-alpha.3")
       --memory int                      Amount of RAM allocated to the minikube VM (default 1024)
       --network-plugin string           The name of the network plugin
       --registry-mirror stringSlice     Registry mirrors to pass to the Docker daemon
@@ -34,7 +34,6 @@ minikube start
 
 ```
       --alsologtostderr                  log to standard error as well as files
-      --log-flush-frequency duration     Maximum number of seconds between log flushes (default 5s)
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
