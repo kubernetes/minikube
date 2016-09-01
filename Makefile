@@ -16,8 +16,8 @@
 export GO15VENDOREXPERIMENT=1
 
 # Bump these on release
-VERSION ?= v0.8.0
-DEB_VERSION ?= 0.8-0
+VERSION ?= v0.9.0
+DEB_VERSION ?= 0.9-0
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
