@@ -23,3 +23,6 @@ ln -s /mnt/$PARTNAME/var/lib/localkube /var/lib/localkube
 
 mkdir -p /mnt/$PARTNAME/data
 ln -s /mnt/$PARTNAME/data /data
+
+mkdir -p /mnt/$PARTNAME/var/lib/kubelet
+ln -s /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
