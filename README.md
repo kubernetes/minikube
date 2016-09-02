@@ -1,7 +1,7 @@
 # Minikube
 
 [![Build Status](https://travis-ci.org/kubernetes/minikube.svg?branch=master)](https://travis-ci.org/kubernetes/minikube)
-[![codecov](https://codecov.io/gh/aaron-prindle/minikube/branch/master/graph/badge.svg)](https://codecov.io/gh/aaron-prindle/minikube)
+[![codecov](https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg)](https://codecov.io/gh/aaron-prindle/minikube)
 
 ## What is Minikube?
 
@@ -229,204 +229,20 @@ For the goals and non-goals of the minikube project, please see our [roadmap](RO
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull requests.
 
-### Build Requirements
+## Building Minikube
+For instructions on how to build/test minikube from source, see the [build guide](BUILD_GUIDE.md)
 
-* A recent Go distribution (>1.6)
-* If you're not on Linux, you'll need a Docker installation
-* Minikube requires at least 4GB of RAM to compile, which can be problematic when using docker-machine
+## Adding a New Dependency
+For instructions on how to add a new dependency to minikube see the [adding dependencies guide](ADD_DEPENDENCY.md)
 
-### Build Instructions
-
-```shell
-make
-```
-
-### Run Instructions
-
-Start the cluster using your built minikube with:
-
-```shell
-$ ./out/minikube start
-```
-
-### Running Tests
-
-#### Unit Tests
-
-Unit tests are run on Travis before code is merged. To run as part of a development cycle:
-
-```shell
-make test
-```
-
-#### Integration Tests
-
-Integration tests are currently run manually.
-To run them, build the binary and run the tests:
-
-```shell
-make integration
-```
-
-#### Conformance Tests
-
-These are kubernetes tests that run against an arbitrary cluster and exercise a wide range of kubernetes features.
-You can run these against minikube by following these steps:
-
-* Clone the kubernetes repo somewhere on your system.
-* Run `make quick-release` in the k8s repo.
-* Start up a minikube cluster with: `minikube start`.
-* Set these two environment variables:
-```shell
-export KUBECONFIG=$HOME/.kube/config
-export KUBERNETES_CONFORMANCE_TEST=y
-```
-* Run the tests (from the k8s repo):
-```shell
-go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check_version_skew=false --check_node_count=false
-```
-
-To run a specific Conformance Test, you can use the `ginkgo.focus` flag to filter the set using a regular expression.
-The hack/e2e.go wrapper and the e2e.sh wrappers have a little trouble with quoting spaces though, so use the `\s` regular expression character instead.
-For example, to run the test `should update annotations on modification [Conformance]`, use this command:
-
-```shell
-go run hack/e2e.go -v --test --test_args="--ginkgo.focus=should\supdate\sannotations\son\smodification" --check_version_skew=false --check_node_count=false
-```
-
-#### Adding a New Dependency
-
-Minikube uses `Godep` to manage vendored dependencies.
-`Godep` can be a bit finnicky with a project with this many dependencies.
-Here is a rough set of steps that usually works to add a new dependency.
-
-1. Make a clean GOPATH, with minikube in it.
-This isn't strictly necessary, but it usually helps.
-
-```shell
-mkdir -p $HOME/newgopath/src/k8s.io
-export GOPATH=$HOME/newgopath
-cd $HOME/newgopath/src/k8s.io
-git clone https://github.com/kubernetes/minikube.git
-```
-
-2. `go get` your new dependency.
-```shell
-go get mynewdepenency
-```
-
-3. Use it in code, build and test.
-
-4. Import the dependency from GOPATH into vendor/
-```shell
-godep save ./...
-```
-
-If it is a large dependency, please commit the vendor/ directory changes separately.
-This makes review easier in Github.
-
-```shell
-git add vendor/
-git commit -m "Adding dependency foo"
-git add --all
-git commit -m "Adding cool feature"
-```
-
-#### Updating Kubernetes
-
-To update Kubernetes, follow these steps:
-
-1. Make a clean GOPATH, with minikube in it.
-This isn't strictly necessary, but it usually helps.
-
- ```shell
- mkdir -p $HOME/newgopath/src/k8s.io
- export GOPATH=$HOME/newgopath
- cd $HOME/newgopath/src/k8s.io
- git clone https://github.com/kubernetes/minikube.git
- ```
-
-2. Copy your vendor directory back out to the new GOPATH.
-
- ```shell
- cd minikube
- godep restore ./...
- ```
-
-3. Kubernetes should now be on your GOPATH. Check it out to the right version.
-Make sure to also fetch tags, as Godep relies on these.
-
- ```shell
- cd $GOPATH/src/k8s.io/kubernetes
- git fetch --tags
- ```
-
- Then list all available Kubernetes tags:
-
- ```shell
- git tag
- ...
- v1.2.4
- v1.2.4-beta.0
- v1.3.0-alpha.3
- v1.3.0-alpha.4
- v1.3.0-alpha.5
- ...
-```
-
- Then checkout the correct one and update its dependencies with:
-
- ```shell
- git checkout $DESIREDTAG
- godep restore ./...
- ```
-
-4. Build and test minikube, making any manual changes necessary to build.
-
-5. Update godeps
-
- ```shell
- cd $GOPATH/src/k8s.io/minikube
- rm -rf Godeps/ vendor/
- godep save ./...
- ```
-
- 6. Verify that the correct tag is marked in the Godeps.json file by running this script:
-
- ```shell
- python hack/get_k8s_version.py
- -X k8s.io/minikube/vendor/k8s.io/kubernetes/pkg/version.gitCommit=caf9a4d87700ba034a7b39cced19bd5628ca6aa3 -X k8s.io/minikube/vendor/k8s.io/kubernetes/pkg/version.gitVersion=v1.3.0-beta.2 -X k8s.io/minikube/vendor/k8s.io/kubernetes/pkg/version.gitTreeState=clean
-```
-
-The `-X k8s.io/minikube/vendor/k8s.io/kubernetes/pkg/version.gitVersion` flag should contain the right tag.
-
-Once you've build and started minikube, you can also run:
-
-```shell
-kubectl version
-Client Version: version.Info{Major:"1", Minor:"2", GitVersion:"v1.2.4", GitCommit:"3eed1e3be6848b877ff80a93da3785d9034d0a4f", GitTreeState:"clean"}
-Server Version: version.Info{Major:"1", Minor:"3+", GitVersion:"v1.3.0-beta.2", GitCommit:"caf9a4d87700ba034a7b39cced19bd5628ca6aa3", GitTreeState:"clean"}
-```
-
-The Server Version should contain the right tag in `version.Info.GitVersion`.
-
-If any manual changes were required, please commit the vendor changes separately.
-This makes the change easier to view in Github.
-
-```shell
-git add vendor/
-git commit -m "Updating Kubernetes to foo"
-git add --all
-git commit -m "Manual changes to update Kubernetes to foo"
-```
-
-As a final part of updating kubernetes, a new version of localkube should be uploaded to GCS so that users can select this version of kubernetes/localkube in later minikube/localkube builds.  For instructions on how to do this, see [LOCALKUBE_RELEASING.md](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
+## Updating Kubernetes
+For instructions on how to add a new dependency to minikube see the [updating kubernetes guide](UPDATE_KUBERNETES.md)
 
 ## Steps to Release Minikube
-The steps to release minikube can be found at [RELEASING.md](https://github.com/kubernetes/minikube/blob/master/RELEASING.md)
+For instructions on how to release a new version of minikube see the [release guide](https://github.com/kubernetes/minikube/blob/master/RELEASING.md)
 
 ## Steps to Release Localkube
-The steps to release localkube can be found at [LOCALKUBE_RELEASING.md](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
+For instructions on how to release a new version of localkube see the [localkube release guide](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
 
 ## Community
 
