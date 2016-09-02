@@ -63,7 +63,7 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
 		Boot2DockerURL: config.GetISOFileURI(),
-		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=minikubevm",
+		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=" + constants.MachineName,
 		DiskSize:       int64(config.DiskSize),
 		Virtio9p:       true,
 		Virtio9pFolder: "/Users",

@@ -25,7 +25,7 @@ import (
 )
 
 // MachineName is the name to use for the VM.
-const MachineName = "minikubeVM"
+const MachineName = "minikube"
 
 // APIServerPort is the port that the API server should listen on.
 const APIServerPort = 8443
