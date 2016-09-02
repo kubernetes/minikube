@@ -167,11 +167,12 @@ type MachineConfig struct {
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
 	KubernetesVersion string
+	NodeIP            string
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
-func StartCluster(h sshAble) error {
-	commands := []string{stopCommand, GetStartCommand()}
+func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
+	commands := []string{stopCommand, GetStartCommand(kubernetesConfig)}
 
 	for _, cmd := range commands {
 		glog.Infoln(cmd)

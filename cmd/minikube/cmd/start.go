@@ -76,9 +76,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		RegistryMirror:   registryMirror,
 		HostOnlyCIDR:     viper.GetString(hostOnlyCIDR),
 	}
-	kubernetesConfig := cluster.KubernetesConfig{
-		KubernetesVersion: viper.GetString(kubernetesVersion),
-	}
 
 	var host *host.Host
 	start := func() (err error) {
@@ -94,6 +91,15 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	ip, err := host.Driver.GetIP()
+	if err != nil {
+		glog.Errorln("Error starting host: ", err)
+		os.Exit(1)
+	}
+	kubernetesConfig := cluster.KubernetesConfig{
+		KubernetesVersion: viper.GetString(kubernetesVersion),
+		NodeIP:            ip,
+	}
 	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		os.Exit(1)
@@ -104,7 +110,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if err := cluster.StartCluster(host); err != nil {
+	if err := cluster.StartCluster(host, kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
 		os.Exit(1)
 	}

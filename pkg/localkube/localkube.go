@@ -51,6 +51,7 @@ type LocalkubeServer struct {
 	ShouldGenerateCerts      bool
 	ShowVersion              bool
 	RuntimeConfig            config.ConfigurationMap
+	NodeIP                   net.IP
 }
 
 func (lk *LocalkubeServer) AddServer(server Server) {
