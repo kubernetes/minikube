@@ -33,6 +33,8 @@ func StartControllerManagerServer(lk LocalkubeServer) func() error {
 	// defaults from command
 	config.DeletingPodsQps = 0.1
 	config.DeletingPodsBurst = 10
+	config.NodeEvictionRate = 0.1
+
 	config.EnableProfiling = true
 	config.ServiceAccountKeyFile = lk.GetPrivateKeyCertPath()
 	config.RootCAFile = lk.GetCAPublicKeyCertPath()
