@@ -16,7 +16,11 @@ limitations under the License.
 
 package tests
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/docker/machine/libmachine/drivers"
+)
 
 // MockHost used for testing. When commands are run, the output from CommandOutput
 // is used, if present. Then the output from Error is used, if present. Finally,
@@ -25,12 +29,14 @@ type MockHost struct {
 	CommandOutput map[string]string
 	Error         string
 	Commands      map[string]int
+	Driver        drivers.Driver
 }
 
 func NewMockHost() *MockHost {
 	return &MockHost{
 		CommandOutput: make(map[string]string),
 		Commands:      make(map[string]int),
+		Driver:        &MockDriver{},
 	}
 }
 

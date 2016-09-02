@@ -82,12 +82,17 @@ func TestCreateHost(t *testing.T) {
 
 func TestStartCluster(t *testing.T) {
 	h := tests.NewMockHost()
-	err := StartCluster(h)
+	ip, _ := h.Driver.GetIP()
+	kubernetesConfig := KubernetesConfig{
+		NodeIP: ip,
+	}
+
+	err := StartCluster(h, kubernetesConfig)
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
 
-	for _, cmd := range []string{stopCommand, GetStartCommand()} {
+	for _, cmd := range []string{stopCommand, GetStartCommand(kubernetesConfig)} {
 		if _, ok := h.Commands[cmd]; !ok {
 			t.Fatalf("Expected command not run: %s. Commands run: %s", cmd, h.Commands)
 		}
@@ -97,8 +102,12 @@ func TestStartCluster(t *testing.T) {
 func TestStartClusterError(t *testing.T) {
 	h := tests.NewMockHost()
 	h.Error = "error"
+	ip, _ := h.Driver.GetIP()
+	kubernetesConfig := KubernetesConfig{
+		NodeIP: ip,
+	}
 
-	err := StartCluster(h)
+	err := StartCluster(h, kubernetesConfig)
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
 	}
