@@ -29,11 +29,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-var yamlExampleConfig = []byte(`v: 999
-alsologtostderr: true
-log_dir: "/etc/hosts"
-log-flush-frequency: "3s"
-`)
+var jsonExampleConfig = []byte(`{
+    "v": "100",
+    "alsologtostderr": "true",
+    "log_dir": "/etc/hosts",
+}`)
 
 type configTest struct {
 	Name          string
@@ -50,7 +50,7 @@ var configTests = []configTest{
 	},
 	{
 		Name:          "v",
-		ConfigValue:   "999",
+		ConfigValue:   `{ "v":"999" }`,
 		ExpectedValue: "999",
 	},
 	{
@@ -72,7 +72,7 @@ var configTests = []configTest{
 	{
 		Name:          "v",
 		FlagValue:     "3",
-		ConfigValue:   "222",
+		ConfigValue:   `{ "v": "222" }`,
 		EnvValue:      "888",
 		ExpectedValue: "3",
 	},
@@ -80,14 +80,8 @@ var configTests = []configTest{
 	{
 		Name:          "v",
 		EnvValue:      "2",
-		ConfigValue:   "999",
+		ConfigValue:   `{ "v": "999" }`,
 		ExpectedValue: "2",
-	},
-	// Config should not override flags not on whitelist
-	{
-		Name:          "log-flush-frequency",
-		ConfigValue:   "6s",
-		ExpectedValue: "5s",
 	},
 	// Env should not override flags not on whitelist
 	{
@@ -118,17 +112,17 @@ func TestPreRunDirectories(t *testing.T) {
 	}
 }
 
-func initTestConfig(config string) {
-	viper.SetConfigType("yml")
+func initTestConfig(config string) error {
+	viper.SetConfigType("json")
 	r := bytes.NewReader([]byte(config))
-	viper.ReadConfig(r)
+	return viper.ReadConfig(r)
 }
 
 func TestViperConfig(t *testing.T) {
 	defer viper.Reset()
-	initTestConfig("v: 999")
-	if viper.GetString("v") != "999" {
-		t.Fatalf("Viper did not read test config file")
+	err := initTestConfig(`{ "v": "999" }`)
+	if viper.GetString("v") != "999" || err != nil {
+		t.Fatalf("Viper did not read test config file: %v", err)
 	}
 }
 
@@ -136,7 +130,7 @@ func getEnvVarName(name string) string {
 	return constants.MinikubeEnvPrefix + "_" + strings.ToUpper(name)
 }
 
-func setValues(tt configTest) {
+func setValues(t *testing.T, tt configTest) {
 	if tt.FlagValue != "" {
 		pflag.Set(tt.Name, tt.FlagValue)
 	}
@@ -144,7 +138,10 @@ func setValues(tt configTest) {
 		os.Setenv(getEnvVarName(tt.Name), tt.EnvValue)
 	}
 	if tt.ConfigValue != "" {
-		initTestConfig(tt.Name + ": " + tt.ConfigValue)
+		err := initTestConfig(tt.ConfigValue)
+		if err != nil {
+			t.Fatalf("Config %s not read correctly: %v", tt.ConfigValue, err)
+		}
 	}
 }
 
@@ -160,7 +157,7 @@ func unsetValues(tt configTest) {
 
 func TestViperAndFlags(t *testing.T) {
 	for _, tt := range configTests {
-		setValues(tt)
+		setValues(t, tt)
 		setupViper()
 		var actual = pflag.Lookup(tt.Name).Value.String()
 		if actual != tt.ExpectedValue {
