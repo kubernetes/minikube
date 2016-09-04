@@ -72,6 +72,7 @@ const (
 )
 
 var ConfigFilePath = MakeMiniPath("config")
+var ConfigFile = MakeMiniPath("config", "config.json")
 
 var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sReleases/"
 var LocalkubeLinuxFilename = "localkube-linux-amd64"

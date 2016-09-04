@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -108,6 +109,7 @@ func setFlagsUsingViper() {
 
 func init() {
 	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Whether or not to show logs from libmachine.")
+	RootCmd.AddCommand(configCmd.ConfigCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	viper.BindPFlags(RootCmd.PersistentFlags())
 	cobra.OnInitialize(initConfig)
@@ -115,9 +117,9 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	configPath := constants.MakeMiniPath("config")
-	viper.SetConfigName("config")
-	viper.AddConfigPath(configPath)
+	configPath := constants.ConfigFile
+	viper.SetConfigFile(configPath)
+	viper.SetConfigType("json")
 	err := viper.ReadInConfig()
 	if err != nil {
 		glog.Warningf("Error reading config file at %s: %s", configPath, err)
