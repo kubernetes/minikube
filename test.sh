@@ -56,7 +56,7 @@ BOILERPLATEDIR=./hack/boilerplate
 set +e
 files=$(${PYTHON} ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
 set -e
-if [ ! -z ${files} ]; then
+if [[ ! -z ${files} ]]; then
 	echo "Boilerplate missing in: ${files}."
 	exit 1
 fi
