@@ -100,6 +100,8 @@ you should now be able to use docker on the command line on your host mac/linux 
 docker ps
 ```
 
+Remember to turn off the imagePullPolicy:Always, as otherwise kubernetes won't use images you built locally.
+
 ## Managing your Cluster
 
 ### Starting a Cluster
