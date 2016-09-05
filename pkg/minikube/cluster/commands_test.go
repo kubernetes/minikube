@@ -29,7 +29,7 @@ func TestGetStartCommandCustomValues(t *testing.T) {
 		"vmodule": "cluster*=5",
 	}
 	flagMapToSetFlags(flagMap)
-	startCommand := GetStartCommand()
+	startCommand := GetStartCommand(KubernetesConfig{})
 	for flag, val := range flagMap {
 		if val != "" {
 			if expectedFlag := getSingleFlagValue(flag, val); !strings.Contains(startCommand, getSingleFlagValue(flag, val)) {
