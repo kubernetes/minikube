@@ -40,7 +40,7 @@ func (driver *MockDriver) Create() error {
 }
 
 func (driver *MockDriver) GetIP() (string, error) {
-	return driver.BaseDriver.GetIP()
+	return "127.0.0.1", nil
 }
 
 // GetCreateFlags returns the flags used to create a MockDriver

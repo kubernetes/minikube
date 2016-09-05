@@ -41,6 +41,8 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	config.ClusterDomain = lk.DNSDomain
 	config.ClusterDNS = lk.DNSIP.String()
 
+	config.NodeIP = lk.NodeIP.String()
+
 	// Use the host's resolver config
 	if lk.Containerized {
 		config.ResolverConfig = "/rootfs/etc/resolv.conf"
