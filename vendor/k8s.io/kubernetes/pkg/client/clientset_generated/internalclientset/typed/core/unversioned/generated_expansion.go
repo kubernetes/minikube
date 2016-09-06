@@ -18,6 +18,8 @@ package unversioned
 
 type ComponentStatusExpansion interface{}
 
+type ConfigMapExpansion interface{}
+
 type EndpointsExpansion interface{}
 
 type LimitRangeExpansion interface{}
@@ -35,5 +37,3 @@ type ResourceQuotaExpansion interface{}
 type SecretExpansion interface{}
 
 type ServiceAccountExpansion interface{}
-
-type ConfigMapExpansion interface{}
