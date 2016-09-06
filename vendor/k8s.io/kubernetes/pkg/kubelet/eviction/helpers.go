@@ -37,8 +37,8 @@ const (
 	unsupportedEvictionSignal = "unsupported eviction signal %v"
 	// the reason reported back in status.
 	reason = "Evicted"
-	// the message associated with the reason.
-	message = "The node was low on compute resources."
+	// the message format associated with the reason.
+	messageFmt = "The node was low on %s."
 	// disk, in bytes.  internal to this module, used to account for local disk usage.
 	resourceDisk api.ResourceName = "disk"
 	// inodes, number. internal to this module, used to account for local disk inode consumption.
@@ -834,9 +834,12 @@ func buildResourceToRankFunc(withImageFs bool) map[api.ResourceName]rankFunc {
 		resourceToRankFunc[resourceImageFs] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot}, resourceDisk)
 		resourceToRankFunc[resourceImageFsInodes] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot}, resourceInodes)
 	} else {
-		// without an imagefs, nodefs pod rank func for eviction looks at all fs stats
+		// without an imagefs, nodefs pod rank func for eviction looks at all fs stats.
+		// since imagefs and nodefs share a common device, they share common ranking functions.
 		resourceToRankFunc[resourceNodeFs] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot, fsStatsLogs, fsStatsLocalVolumeSource}, resourceDisk)
 		resourceToRankFunc[resourceNodeFsInodes] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot, fsStatsLogs, fsStatsLocalVolumeSource}, resourceInodes)
+		resourceToRankFunc[resourceImageFs] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot, fsStatsLogs, fsStatsLocalVolumeSource}, resourceDisk)
+		resourceToRankFunc[resourceImageFsInodes] = rankDiskPressureFunc([]fsStatsType{fsStatsRoot, fsStatsLogs, fsStatsLocalVolumeSource}, resourceInodes)
 	}
 	return resourceToRankFunc
 }
@@ -859,8 +862,11 @@ func buildResourceToNodeReclaimFuncs(imageGC ImageGC, withImageFs bool) map[api.
 		resourceToReclaimFunc[resourceImageFsInodes] = nodeReclaimFuncs{deleteImages(imageGC, false)}
 	} else {
 		// without an imagefs, nodefs pressure should delete logs, and unused images
+		// since imagefs and nodefs share a common device, they share common reclaim functions
 		resourceToReclaimFunc[resourceNodeFs] = nodeReclaimFuncs{deleteLogs(), deleteImages(imageGC, true)}
 		resourceToReclaimFunc[resourceNodeFsInodes] = nodeReclaimFuncs{deleteLogs(), deleteImages(imageGC, false)}
+		resourceToReclaimFunc[resourceImageFs] = nodeReclaimFuncs{deleteLogs(), deleteImages(imageGC, true)}
+		resourceToReclaimFunc[resourceImageFsInodes] = nodeReclaimFuncs{deleteLogs(), deleteImages(imageGC, false)}
 	}
 	return resourceToReclaimFunc
 }
@@ -887,4 +893,8 @@ func deleteImages(imageGC ImageGC, reportBytesFreed bool) nodeReclaimFunc {
 		}
 		return resource.NewQuantity(reclaimed, resource.BinarySI), nil
 	}
+}
+
+func getMessage(resource api.ResourceName) string {
+	return fmt.Sprintf(messageFmt, resource)
 }
