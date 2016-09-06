@@ -504,7 +504,6 @@ func (gc *GarbageCollector) monitorFor(resource unversioned.GroupVersionResource
 			},
 			UpdateFunc: func(oldObj, newObj interface{}) {
 				setObjectTypeMeta(newObj)
-				setObjectTypeMeta(oldObj)
 				event := &event{updateEvent, newObj, oldObj}
 				gc.propagator.eventQueue.Add(&workqueue.TimedWorkQueueItem{StartTime: gc.clock.Now(), Object: event})
 			},
@@ -582,6 +581,9 @@ func (gc *GarbageCollector) worker() {
 	err := gc.processItem(timedItem.Object.(*node))
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Error syncing item %#v: %v", timedItem.Object, err))
+		// retry if garbage collection of an object failed.
+		gc.dirtyQueue.Add(timedItem)
+		return
 	}
 	DirtyProcessingLatency.Observe(sinceInMicroseconds(gc.clock, timedItem.StartTime))
 }

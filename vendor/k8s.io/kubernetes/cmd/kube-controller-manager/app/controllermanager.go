@@ -242,7 +242,7 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 	if err != nil {
 		glog.Fatalf("Failed to initialize nodecontroller: %v", err)
 	}
-	nodeController.Run(s.NodeSyncPeriod.Duration)
+	nodeController.Run()
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
 	serviceController, err := servicecontroller.New(cloud, clientset.NewForConfigOrDie(restclient.AddUserAgent(kubeconfig, "service-controller")), s.ClusterName)
@@ -455,7 +455,7 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 	go attachDetachController.Run(wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
-	groupVersion = "certificates/v1alpha1"
+	groupVersion = "certificates.k8s.io/v1alpha1"
 	resources, found = resourceMap[groupVersion]
 	glog.Infof("Attempting to start certificates, full resource map %+v", resourceMap)
 	if containsVersion(versions, groupVersion) && found {

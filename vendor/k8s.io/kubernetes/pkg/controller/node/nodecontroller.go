@@ -46,8 +46,6 @@ import (
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/version"
 	"k8s.io/kubernetes/pkg/watch"
-
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 func init() {
@@ -73,6 +71,8 @@ const (
 	evictionRateLimiterBurst = 1
 	// The amount of time the nodecontroller polls on the list nodes endpoint.
 	apiserverStartupGracePeriod = 10 * time.Minute
+	// The amount of time the nodecontroller should sleep between retrying NodeStatus updates
+	retrySleepTime = 20 * time.Millisecond
 )
 
 type zoneState string
@@ -165,9 +165,6 @@ type NodeController struct {
 	// the controller using NewDaemonSetsController(passing SharedInformer), this
 	// will be null
 	internalPodInformer framework.SharedIndexInformer
-
-	evictions10Minutes *evictionData
-	evictions1Hour     *evictionData
 }
 
 // NewNodeController returns a new node controller to sync instances from cloudprovider.
@@ -239,8 +236,6 @@ func NewNodeController(
 		largeClusterThreshold:       largeClusterThreshold,
 		unhealthyZoneThreshold:      unhealthyZoneThreshold,
 		zoneStates:                  make(map[string]zoneState),
-		evictions10Minutes:          newEvictionData(10 * time.Minute),
-		evictions1Hour:              newEvictionData(time.Hour),
 	}
 	nc.enterPartialDisruptionFunc = nc.ReducedQPSFunc
 	nc.enterFullDisruptionFunc = nc.HealthyQPSFunc
@@ -383,12 +378,12 @@ func NewNodeControllerFromClient(
 }
 
 // Run starts an asynchronous loop that monitors the status of cluster nodes.
-func (nc *NodeController) Run(period time.Duration) {
+func (nc *NodeController) Run() {
 	go nc.nodeController.Run(wait.NeverStop)
 	go nc.podController.Run(wait.NeverStop)
 	go nc.daemonSetController.Run(wait.NeverStop)
 	if nc.internalPodInformer != nil {
-		nc.internalPodInformer.Run(wait.NeverStop)
+		go nc.internalPodInformer.Run(wait.NeverStop)
 	}
 
 	// Incorporate the results of node status pushed from kubelet to master.
@@ -415,7 +410,7 @@ func (nc *NodeController) Run(period time.Duration) {
 		defer nc.evictorLock.Unlock()
 		for k := range nc.zonePodEvictor {
 			nc.zonePodEvictor[k].Try(func(value TimedValue) (bool, time.Duration) {
-				obj, exists, err := nc.nodeStore.Get(value.Value)
+				obj, exists, err := nc.nodeStore.GetByKey(value.Value)
 				if err != nil {
 					glog.Warningf("Failed to get Node %v from the nodeStore: %v", value.Value, err)
 				} else if !exists {
@@ -423,8 +418,7 @@ func (nc *NodeController) Run(period time.Duration) {
 				} else {
 					node, _ := obj.(*api.Node)
 					zone := utilnode.GetZoneKey(node)
-					nc.evictions10Minutes.registerEviction(zone, value.Value)
-					nc.evictions1Hour.registerEviction(zone, value.Value)
+					EvictionsNumber.WithLabelValues(zone).Inc()
 				}
 
 				nodeUid, _ := value.UID.(string)
@@ -486,7 +480,10 @@ func (nc *NodeController) Run(period time.Duration) {
 // post "NodeReady==ConditionUnknown". It also evicts all pods if node is not ready or
 // not reachable for a long period of time.
 func (nc *NodeController) monitorNodeStatus() error {
-	nodes, err := nc.kubeClient.Core().Nodes().List(api.ListOptions{})
+	// It is enough to list Nodes from apiserver, since we can tolerate some small
+	// delays comparing to state from etcd and there is eventual consistency anyway.
+	// TODO: We should list them from local cache: nodeStore.
+	nodes, err := nc.kubeClient.Core().Nodes().List(api.ListOptions{ResourceVersion: "0"})
 	if err != nil {
 		return err
 	}
@@ -501,8 +498,9 @@ func (nc *NodeController) monitorNodeStatus() error {
 			nc.zonePodEvictor[zone] =
 				NewRateLimitedTimedQueue(
 					flowcontrol.NewTokenBucketRateLimiter(nc.evictionLimiterQPS, evictionRateLimiterBurst))
-			nc.evictions10Minutes.initZone(zone)
-			nc.evictions1Hour.initZone(zone)
+			// Init the metric for the new zone.
+			glog.Infof("Initilizing eviction metric for zone: %v", zone)
+			EvictionsNumber.WithLabelValues(zone).Add(0)
 		}
 		if _, found := nc.zoneTerminationEvictor[zone]; !found {
 			nc.zoneTerminationEvictor[zone] = NewRateLimitedTimedQueue(
@@ -535,6 +533,7 @@ func (nc *NodeController) monitorNodeStatus() error {
 				glog.Errorf("Failed while getting a Node to retry updating NodeStatus. Probably Node %s was deleted.", name)
 				break
 			}
+			time.Sleep(retrySleepTime)
 		}
 		if err != nil {
 			glog.Errorf("Update status  of Node %v from NodeController exceeds retry count."+
@@ -601,18 +600,8 @@ func (nc *NodeController) monitorNodeStatus() error {
 		}
 	}
 	nc.handleDisruption(zoneToNodeConditions, nodes)
-	nc.updateEvictionMetric(Evictions10Minutes, nc.evictions10Minutes)
-	nc.updateEvictionMetric(Evictions1Hour, nc.evictions1Hour)
 
 	return nil
-}
-
-func (nc *NodeController) updateEvictionMetric(metric *prometheus.GaugeVec, data *evictionData) {
-	data.slideWindow()
-	zones := data.getZones()
-	for _, z := range zones {
-		metric.WithLabelValues(z).Set(float64(data.countEvictions(z)))
-	}
 }
 
 func (nc *NodeController) handleDisruption(zoneToNodeConditions map[string][]*api.NodeCondition, nodes *api.NodeList) {
@@ -918,8 +907,6 @@ func (nc *NodeController) cancelPodEviction(node *api.Node) bool {
 	wasTerminating := nc.zoneTerminationEvictor[zone].Remove(node.Name)
 	if wasDeleting || wasTerminating {
 		glog.V(2).Infof("Cancelling pod Eviction on Node: %v", node.Name)
-		nc.evictions10Minutes.removeEviction(zone, node.Name)
-		nc.evictions1Hour.removeEviction(zone, node.Name)
 		return true
 	}
 	return false

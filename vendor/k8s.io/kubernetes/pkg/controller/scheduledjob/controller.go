@@ -127,11 +127,12 @@ func (jm *ScheduledJobController) SyncAll() {
 func SyncOne(sj batch.ScheduledJob, js []batch.Job, now time.Time, jc jobControlInterface, sjc sjControlInterface, pc podControlInterface, recorder record.EventRecorder) {
 	nameForLog := fmt.Sprintf("%s/%s", sj.Namespace, sj.Name)
 
-	for _, j := range js {
+	for i := range js {
+		j := js[i]
 		found := inActiveList(sj, j.ObjectMeta.UID)
-		if !found {
+		if !found && !job.IsJobFinished(&j) {
 			recorder.Eventf(&sj, api.EventTypeWarning, "UnexpectedJob", "Saw a job that the controller did not create or forgot: %v", j.Name)
-			// We found a job object that has us as the parent, but it is not in our Active list.
+			// We found an unfinished job that has us as the parent, but it is not in our Active list.
 			// This could happen if we crashed right after creating the Job and before updating the status,
 			// or if our jobs list is newer than our sj status after a relist, or if someone intentionally created
 			// a job that they wanted us to adopt.
@@ -141,18 +142,17 @@ func SyncOne(sj batch.ScheduledJob, js []batch.Job, now time.Time, jc jobControl
 			// user has permission to create a job within a namespace, then they have permission to make any scheduledJob
 			// in the same namespace "adopt" that job.  ReplicaSets and their Pods work the same way.
 			// TBS: how to update sj.Status.LastScheduleTime if the adopted job is newer than any we knew about?
-		} else {
-			if job.IsJobFinished(&j) {
-				deleteFromActiveList(&sj, j.ObjectMeta.UID)
-				// TODO: event to call out failure vs success.
-				recorder.Eventf(&sj, api.EventTypeNormal, "SawCompletedJob", "Saw completed job: %v", j.Name)
-			}
+		} else if found && job.IsJobFinished(&j) {
+			deleteFromActiveList(&sj, j.ObjectMeta.UID)
+			// TODO: event to call out failure vs success.
+			recorder.Eventf(&sj, api.EventTypeNormal, "SawCompletedJob", "Saw completed job: %v", j.Name)
 		}
 	}
-	err := sjc.UpdateStatus(&sj)
+	updatedSJ, err := sjc.UpdateStatus(&sj)
 	if err != nil {
-		glog.Errorf("Unable to update status for %s: %v", nameForLog, err)
+		glog.Errorf("Unable to update status for %s (rv = %s): %v", nameForLog, sj.ResourceVersion, err)
 	}
+	sj = *updatedSJ
 
 	if sj.Spec.Suspend != nil && *sj.Spec.Suspend {
 		glog.V(4).Infof("Not starting job for %s because it is suspended", nameForLog)
@@ -280,8 +280,8 @@ func SyncOne(sj batch.ScheduledJob, js []batch.Job, now time.Time, jc jobControl
 		sj.Status.Active = append(sj.Status.Active, *ref)
 	}
 	sj.Status.LastScheduleTime = &unversioned.Time{Time: scheduledTime}
-	if err := sjc.UpdateStatus(&sj); err != nil {
-		glog.Infof("Unable to update status for %s: %v", nameForLog, err)
+	if _, err := sjc.UpdateStatus(&sj); err != nil {
+		glog.Infof("Unable to update status for %s (rv = %s): %v", nameForLog, sj.ResourceVersion, err)
 	}
 
 	return
