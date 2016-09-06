@@ -27,6 +27,7 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/util"
+	utilconfig "k8s.io/kubernetes/pkg/util/config"
 )
 
 // Whether AppArmor should be disabled by default.
@@ -36,6 +37,7 @@ var isDisabledBuild bool
 // Interface for validating that a pod with with an AppArmor profile can be run by a Node.
 type Validator interface {
 	Validate(pod *api.Pod) error
+	ValidateHost() error
 }
 
 func NewValidator(runtime string) Validator {
@@ -63,7 +65,7 @@ func (v *validator) Validate(pod *api.Pod) error {
 		return nil
 	}
 
-	if v.validateHostErr != nil {
+	if v.ValidateHost() != nil {
 		return v.validateHostErr
 	}
 
@@ -86,11 +88,20 @@ func (v *validator) Validate(pod *api.Pod) error {
 	return nil
 }
 
+func (v *validator) ValidateHost() error {
+	return v.validateHostErr
+}
+
 // Verify that the host and runtime is capable of enforcing AppArmor profiles.
 func validateHost(runtime string) error {
+	// Check feature-gates
+	if !utilconfig.DefaultFeatureGate.AppArmor() {
+		return errors.New("AppArmor disabled by feature-gate")
+	}
+
 	// Check build support.
 	if isDisabledBuild {
-		return errors.New("Binary not compiled for linux.")
+		return errors.New("Binary not compiled for linux")
 	}
 
 	// Check kernel support.

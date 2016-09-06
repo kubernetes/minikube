@@ -39,9 +39,9 @@ const (
 	//   AllAlpha=true,NewFeature=false  will result in newFeature=false
 	allAlphaGate              = "AllAlpha"
 	externalTrafficLocalOnly  = "AllowExtTrafficLocalEndpoints"
+	appArmor                  = "AppArmor"
 	dynamicKubeletConfig      = "DynamicKubeletConfig"
 	dynamicVolumeProvisioning = "DynamicVolumeProvisioning"
-	// TODO: Define gate/accessor for AppArmor
 )
 
 var (
@@ -50,6 +50,7 @@ var (
 	knownFeatures = map[string]featureSpec{
 		allAlphaGate:              {false, alpha},
 		externalTrafficLocalOnly:  {false, alpha},
+		appArmor:                  {true, beta},
 		dynamicKubeletConfig:      {false, alpha},
 		dynamicVolumeProvisioning: {true, alpha},
 	}
@@ -90,6 +91,10 @@ type FeatureGate interface {
 	// // owner: @username
 	// // alpha: v1.4
 	// MyFeature() bool
+
+	// owner: @timstclair
+	// beta: v1.4
+	AppArmor() bool
 
 	// owner: @girishkalele
 	// alpha: v1.4
@@ -175,6 +180,11 @@ func (f *featureGate) ExternalTrafficLocalOnly() bool {
 	return f.lookup(externalTrafficLocalOnly)
 }
 
+// AppArmor returns the value for the AppArmor feature gate.
+func (f *featureGate) AppArmor() bool {
+	return f.lookup(appArmor)
+}
+
 // DynamicKubeletConfig returns value for dynamicKubeletConfig
 func (f *featureGate) DynamicKubeletConfig() bool {
 	return f.lookup(dynamicKubeletConfig)
@@ -206,6 +216,7 @@ func (f *featureGate) AddFlag(fs *pflag.FlagSet) {
 		}
 		known = append(known, fmt.Sprintf("%s=true|false (%sdefault=%t)", k, pre, v.enabled))
 	}
+	sort.Strings(known)
 	fs.Var(f, flagName, ""+
 		"A set of key=value pairs that describe feature gates for alpha/experimental features. "+
 		"Options are:\n"+strings.Join(known, "\n"))

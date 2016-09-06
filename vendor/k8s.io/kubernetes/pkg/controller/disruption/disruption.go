@@ -61,7 +61,7 @@ type DisruptionController struct {
 	rsController *framework.Controller
 	rsLister     cache.StoreToReplicaSetLister
 
-	dStore      cache.Store
+	dIndexer    cache.Indexer
 	dController *framework.Controller
 	dLister     cache.StoreToDeploymentLister
 
@@ -88,7 +88,7 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 	dc := &DisruptionController{
 		kubeClient:    kubeClient,
 		podController: podInformer.GetController(),
-		queue:         workqueue.New(),
+		queue:         workqueue.NewNamed("disruption"),
 		broadcaster:   record.NewBroadcaster(),
 	}
 	dc.recorder = dc.broadcaster.NewRecorder(api.EventSource{Component: "controllermanager"})
@@ -155,7 +155,7 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 
 	dc.rsLister.Store = dc.rsStore
 
-	dc.dStore, dc.dController = framework.NewInformer(
+	dc.dIndexer, dc.dController = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.kubeClient.Extensions().Deployments(api.NamespaceAll).List(options)
@@ -167,9 +167,10 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 		&extensions.Deployment{},
 		30*time.Second,
 		framework.ResourceEventHandlerFuncs{},
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
-	dc.dLister.Store = dc.dStore
+	dc.dLister.Indexer = dc.dIndexer
 
 	return dc
 }
@@ -357,7 +358,7 @@ func (dc *DisruptionController) getPdbForPod(pod *api.Pod) *policy.PodDisruption
 	// caller.
 	pdbs, err := dc.pdbLister.GetPodPodDisruptionBudgets(pod)
 	if err != nil {
-		glog.V(0).Infof("No PodDisruptionBudgets found for pod %v, PodDisruptionBudget controller will avoid syncing.", pod.Name)
+		glog.V(4).Infof("No PodDisruptionBudgets found for pod %v, PodDisruptionBudget controller will avoid syncing.", pod.Name)
 		return nil
 	}
 
@@ -564,7 +565,7 @@ func (dc *DisruptionController) updatePdbSpec(pdb *policy.PodDisruptionBudget, c
 	// pods are in a safe state when their first pods appear but this controller
 	// has not updated their status yet.  This isn't the only race, but it's a
 	// common one that's easy to detect.
-	disruptionAllowed := currentHealthy >= desiredHealthy && expectedCount > 0
+	disruptionAllowed := currentHealthy-1 >= desiredHealthy && expectedCount > 0
 
 	if pdb.Status.CurrentHealthy == currentHealthy && pdb.Status.DesiredHealthy == desiredHealthy && pdb.Status.ExpectedPods == expectedCount && pdb.Status.PodDisruptionAllowed == disruptionAllowed {
 		return nil
