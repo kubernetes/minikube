@@ -94,7 +94,7 @@ func TestStartCluster(t *testing.T) {
 
 	for _, cmd := range []string{stopCommand, GetStartCommand(kubernetesConfig)} {
 		if _, ok := h.Commands[cmd]; !ok {
-			t.Fatalf("Expected command not run: %s. Commands run: %s", cmd, h.Commands)
+			t.Fatalf("Expected command not run: %s. Commands run: %v", cmd, h.Commands)
 		}
 	}
 }
@@ -298,7 +298,7 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 	expectedErrors := []string{"Error removing " + constants.MachineName, "Error deleting machine"}
 	for _, expectedError := range expectedErrors {
 		if !strings.Contains(err.Error(), expectedError) {
-			t.Fatalf("Error %s expected to contain: %s. ", err)
+			t.Fatalf("Error %s expected to contain: %s.", err, expectedError)
 		}
 	}
 }
@@ -477,11 +477,11 @@ func TestGetDashboardURL(t *testing.T) {
 
 	port, err := getServicePortFromServiceGetter(mockServiceGetter, "kubernetes-dashboard")
 	if err != nil {
-		t.Fatalf("Error getting dashboard port from api: Error: ", err)
+		t.Fatalf("Error getting dashboard port from api: Error: %s", err)
 	}
 	expected := 1234
 	if port != expected {
-		t.Fatalf("Error getting dashboard port from api: Expected: %s, Got: %s", port, expected)
+		t.Fatalf("Error getting dashboard port from api: Expected: %d, Got: %d", port, expected)
 	}
 
 }

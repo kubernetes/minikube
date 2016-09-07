@@ -104,7 +104,7 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 
 		host, err := api.Load(constants.MachineName)
 		if err != nil {
-			return nil, fmt.Errorf("Error getting IP: ", err)
+			return nil, fmt.Errorf("Error getting IP: %s", err)
 		}
 
 		ip, err := host.Driver.GetIP()
