@@ -52,7 +52,7 @@ func Until(fn func() error, w io.Writer, name string, sleep time.Duration, done 
 }
 
 func Pad(str string) string {
-	return fmt.Sprint("\n%s\n", str)
+	return fmt.Sprintf("\n%s\n", str)
 }
 
 // If the file represented by path exists and

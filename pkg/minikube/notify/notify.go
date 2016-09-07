@@ -113,7 +113,7 @@ func getLatestVersionFromURL(url string) (semver.Version, error) {
 func writeTimeToFile(path string, inputTime time.Time) error {
 	err := ioutil.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
 	if err != nil {
-		return fmt.Errorf("Error writing current update time to file: ", err)
+		return fmt.Errorf("Error writing current update time to file: %s", err)
 	}
 	return nil
 }
