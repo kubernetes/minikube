@@ -22,6 +22,7 @@ Minikube is a CLI tool that provisions and manages single-node Kubernetes cluste
 ```
 
 ### SEE ALSO
+* [minikube config](minikube_config.md)	 - Modify minikube config
 * [minikube dashboard](minikube_dashboard.md)	 - Opens/displays the kubernetes dashboard URL for your local cluster
 * [minikube delete](minikube_delete.md)	 - Deletes a local kubernetes cluster.
 * [minikube docker-env](minikube_docker-env.md)	 - sets up docker env variables; similar to '$(docker-machine env)'
