@@ -157,9 +157,6 @@ func GetLocalkubeStatus(api libmachine.API) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if s == "" { // this is a test pass through, I am not sure what I should do here
-		return "N/A", nil
-	}
 	s = strings.TrimSpace(s)
 	if state.Running.String() == s {
 		return state.Running.String(), nil

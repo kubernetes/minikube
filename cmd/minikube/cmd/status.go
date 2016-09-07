@@ -72,6 +72,8 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-	statusCmd.Flags().StringVar(&statusFormat, "format", constants.DefaultStatusFormat, "Go template format string for the status output.  Go templates format can be found here: https://golang.org/pkg/text/template/\nFor the list accessible variables for the template, see the struct values here:https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status")
+	statusCmd.Flags().StringVar(&statusFormat, "format", constants.DefaultStatusFormat,
+		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
+For the list accessible variables for the template, see the struct values here:https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
 	RootCmd.AddCommand(statusCmd)
 }

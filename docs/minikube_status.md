@@ -14,7 +14,7 @@ minikube status
 ### Options
 
 ```
-      --format="minikubeVM: {{.MinikubeStatus}}\nlocalkube: {{.LocalkubeStatus}}\n": Go template format string for the status output.  Go templates format can be found here: https://golang.org/pkg/text/template/
+      --format="minikubeVM: {{.MinikubeStatus}}\nlocalkube: {{.LocalkubeStatus}}\n": Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list accessible variables for the template, see the struct values here:https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status
 ```
 
