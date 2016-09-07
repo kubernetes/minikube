@@ -32,9 +32,8 @@ func run(name string, value string, fns []setFn) error {
 	}
 	if len(errors) > 0 {
 		return fmt.Errorf("%v", errors)
-	} else {
-		return nil
 	}
+	return nil
 }
 
 func findSetting(name string) (Setting, error) {
