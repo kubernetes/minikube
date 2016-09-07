@@ -54,7 +54,7 @@ func TestGetK8sVersionsFromURLCorrect(t *testing.T) {
 	}
 	if len(k8sVersions) != 2 { // TODO(aprindle) change to len(handler....)
 		//Check values here as well?  Write eq method?
-		t.Fatalf("Expected two kubernetes versions from URL to be %s, it was instead %s", 2, len(k8sVersions))
+		t.Fatalf("Expected %d kubernetes versions from URL. Instead there were: %d", 2, len(k8sVersions))
 	}
 }
 
@@ -115,7 +115,7 @@ func TestPrintKubernetesVersions(t *testing.T) {
 
 	PrintKubernetesVersions(&outputBuffer, server.URL)
 	if len(outputBuffer.String()) == 0 {
-		t.Fatalf("Expected PrintKubernetesVersion to output text as %s versions were served from URL but output was [%s]",
+		t.Fatalf("Expected PrintKubernetesVersion to output text as %d versions were served from URL but output was [%s]",
 			2, outputBuffer.String()) //TODO(aprindle) change the 2
 	}
 }

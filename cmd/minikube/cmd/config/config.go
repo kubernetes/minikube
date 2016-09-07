@@ -43,7 +43,7 @@ type Setting struct {
 
 // These are all the settings that are configurable
 // and their validation and callback fn run on Set
-var settings []Setting = []Setting{
+var settings = []Setting{
 	{
 		name:        "vm-driver",
 		set:         SetString,
@@ -102,7 +102,7 @@ var ConfigCmd = &cobra.Command{
 	},
 }
 
-// Reads in the JSON minikube config
+// ReadConfig reads in the JSON minikube config
 func ReadConfig() (MinikubeConfig, error) {
 	f, err := os.Open(constants.ConfigFile)
 	if err != nil {
@@ -111,8 +111,7 @@ func ReadConfig() (MinikubeConfig, error) {
 		}
 		return nil, fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
 	}
-	var m MinikubeConfig
-	m, err = decode(f)
+	m, err := decode(f)
 	if err != nil {
 		return nil, fmt.Errorf("Could not decode config %s: %s", constants.ConfigFile, err)
 	}
@@ -120,7 +119,7 @@ func ReadConfig() (MinikubeConfig, error) {
 	return m, nil
 }
 
-// Writes a minikube config to the JSON file
+// WriteConfig writes a minikube config to the JSON file
 func WriteConfig(m MinikubeConfig) error {
 	f, err := os.Create(constants.ConfigFile)
 	if err != nil {
