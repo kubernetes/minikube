@@ -343,12 +343,25 @@ func TestGetLocalkubeStatus(t *testing.T) {
 	}
 	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
 
+	s.CommandToOutput = map[string]string{
+		localkubeStatusCommand: state.Running.String(),
+	}
 	if _, err := GetLocalkubeStatus(api); err != nil {
 		t.Fatalf("Error getting localkube status: %s", err)
 	}
 
-	if _, ok := s.Commands[localkubeStatusCommand]; !ok {
-		t.Fatalf("Expected command not run: %s", logsCommand)
+	s.CommandToOutput = map[string]string{
+		localkubeStatusCommand: state.Stopped.String(),
+	}
+	if _, err := GetLocalkubeStatus(api); err != nil {
+		t.Fatalf("Error getting localkube status: %s", err)
+	}
+
+	s.CommandToOutput = map[string]string{
+		localkubeStatusCommand: "Bad Output",
+	}
+	if _, err := GetLocalkubeStatus(api); err == nil {
+		t.Fatalf("Expected error in getting localkube status as ssh returned bad output")
 	}
 }
 

@@ -36,6 +36,7 @@ type SSHServer struct {
 	Connected            bool
 	Transfers            *bytes.Buffer
 	HadASessionRequested bool
+	CommandToOutput      map[string]string
 }
 
 // NewSSHServer returns a NewSSHServer instance, ready for use.
@@ -107,6 +108,11 @@ func (s *SSHServer) Start() (int, error) {
 						return
 					}
 					s.Commands[cmd.Command] = 1
+
+					// Write specified command output as mocked ssh output
+					if val, ok := s.CommandToOutput[cmd.Command]; ok {
+						channel.Write([]byte(val))
+					}
 					channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
 
 					// Store anything that comes in over stdin.
