@@ -12,7 +12,8 @@ It includes:
 To use this ISO image, use the `--iso-url` flag in minikube:
 
 ```
-$ minikube start --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.1/minikube-v0.0.1.iso
+$ minikube start \
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
 ```
 
 To test the minikube rkt container runtime support, make sure you have a locally built version of minikube including https://github.com/kubernetes/minikube/pull/511, and execute:
@@ -21,9 +22,12 @@ To test the minikube rkt container runtime support, make sure you have a locally
 $ cd $HOME/src/minikube/src/k8s.io/minikube
 $ ./out/mininikube start \
     --container-runtime=rkt \
+    --network-plugin=cni \
     --kubernetes-version=file://$HOME/minikube/src/k8s.io/minikube/out/localkube \
-    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.1/minikube-v0.0.1.iso
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.1/minikube-v0.0.3.iso
 ```
+
+Note that the above statement includes `--network-plugin=cni` which is the recommended way of starting rtk+Kubernetes.
 
 ## Hacking
 
