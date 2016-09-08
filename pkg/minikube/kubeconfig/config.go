@@ -17,12 +17,12 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api/latest"
 	"k8s.io/kubernetes/pkg/runtime"
@@ -35,13 +35,13 @@ func ReadConfigOrNew(filename string) (*api.Config, error) {
 	if os.IsNotExist(err) {
 		return api.NewConfig(), nil
 	} else if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Error reading file", filename)
 	}
 
 	// decode config, empty if no bytes
 	config, err := decode(data)
 	if err != nil {
-		return nil, fmt.Errorf("could not read config: %v", err)
+		return nil, errors.Errorf("could not read config: %v", err)
 	}
 
 	// initialize nil maps
@@ -68,20 +68,20 @@ func WriteConfig(config *api.Config, filename string) error {
 	// encode config to YAML
 	data, err := runtime.Encode(latest.Codec, config)
 	if err != nil {
-		return fmt.Errorf("could not write to '%s': failed to encode config: %v", filename, err)
+		return errors.Errorf("could not write to '%s': failed to encode config: %v", filename, err)
 	}
 
 	// create parent dir if doesn't exist
 	dir := filepath.Dir(filename)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err = os.MkdirAll(dir, 0755); err != nil {
-			return err
+			return errors.Wrapf(err, "Error creating directory: %s", dir)
 		}
 	}
 
 	// write with restricted permissions
 	if err := ioutil.WriteFile(filename, data, 0600); err != nil {
-		return err
+		return errors.Wrapf(err, "Error writing file %s", filename)
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func decode(data []byte) (*api.Config, error) {
 
 	config, _, err := latest.Codec.Decode(data, nil, nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Error decoding config from data: %s", string(data))
 	}
 
 	return config.(*api.Config), nil

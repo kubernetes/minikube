@@ -24,6 +24,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -100,13 +101,13 @@ func CheckService(namespace string, service string) error {
 
 func CheckEndpointReady(endpoint *kubeApi.Endpoints) error {
 	if len(endpoint.Subsets) == 0 {
-		fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...\n")
-		return fmt.Errorf("Endpoint for service is not ready yet\n")
+		fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...")
+		return errors.New("Endpoint for service is not ready yet")
 	}
 	for _, subset := range endpoint.Subsets {
 		if len(subset.NotReadyAddresses) != 0 {
-			fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...\n")
-			return fmt.Errorf("Endpoint for service is not ready yet\n")
+			fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...")
+			return errors.New("Endpoint for service is not ready yet")
 		}
 	}
 	return nil

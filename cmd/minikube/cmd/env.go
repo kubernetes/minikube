@@ -28,6 +28,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/shell"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -104,12 +105,12 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 
 		host, err := api.Load(constants.MachineName)
 		if err != nil {
-			return nil, fmt.Errorf("Error getting IP: %s", err)
+			return nil, errors.Wrap(err, "Error getting IP: ")
 		}
 
 		ip, err := host.Driver.GetIP()
 		if err != nil {
-			return nil, fmt.Errorf("Error getting host IP: %s", err)
+			return nil, errors.Wrap(err, "Error getting host IP: %s")
 		}
 
 		noProxyVar, noProxyValue := findNoProxyFromEnv()

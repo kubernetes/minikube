@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 const kubernetesVersionGCSURL = "https://storage.googleapis.com/minikube/k8s_releases.json"
@@ -53,7 +54,7 @@ type k8sReleases []k8sRelease
 func getJson(url string, target *k8sReleases) error {
 	r, err := http.Get(url)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Error getting json from url: %s via http", url)
 	}
 	defer r.Body.Close()
 
@@ -63,10 +64,10 @@ func getJson(url string, target *k8sReleases) error {
 func getK8sVersionsFromURL(url string) (k8sReleases, error) {
 	var k8sVersions k8sReleases
 	if err := getJson(url, &k8sVersions); err != nil {
-		return k8sReleases{}, err
+		return k8sReleases{}, errors.Wrapf(err, "Error getting json via http with url: %s", url)
 	}
 	if len(k8sVersions) == 0 {
-		return k8sReleases{}, fmt.Errorf("There were no json k8s Releases at the url specified: %s", url)
+		return k8sReleases{}, errors.Errorf("There were no json k8s Releases at the url specified: %s", url)
 	}
 	return k8sVersions, nil
 }
