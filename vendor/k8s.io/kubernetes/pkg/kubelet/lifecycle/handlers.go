@@ -30,6 +30,7 @@ import (
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
+	"k8s.io/kubernetes/pkg/security/apparmor"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/intstr"
 )
@@ -81,7 +82,7 @@ func (hr *HandlerRunner) Run(containerID kubecontainer.ContainerID, pod *api.Pod
 	}
 }
 
-// resolvePort attempts to turn a IntOrString port reference into a concrete port number.
+// resolvePort attempts to turn an IntOrString port reference into a concrete port number.
 // If portReference has an int value, it is treated as a literal, and simply returns that value.
 // If portReference is a string, an attempt is first made to parse it as an integer.  If that fails,
 // an attempt is made to find a port with the same name in the container spec.
@@ -141,4 +142,26 @@ func getHttpRespBody(resp *http.Response) string {
 		return string(bytes)
 	}
 	return ""
+}
+
+func NewAppArmorAdmitHandler(validator apparmor.Validator) PodAdmitHandler {
+	return &appArmorAdmitHandler{
+		Validator: validator,
+	}
+}
+
+type appArmorAdmitHandler struct {
+	apparmor.Validator
+}
+
+func (a *appArmorAdmitHandler) Admit(attrs *PodAdmitAttributes) PodAdmitResult {
+	err := a.Validate(attrs.Pod)
+	if err == nil {
+		return PodAdmitResult{Admit: true}
+	}
+	return PodAdmitResult{
+		Admit:   false,
+		Reason:  "AppArmor",
+		Message: fmt.Sprintf("Cannot enforce AppArmor: %v", err),
+	}
 }

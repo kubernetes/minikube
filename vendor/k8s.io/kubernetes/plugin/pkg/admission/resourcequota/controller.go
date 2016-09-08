@@ -105,7 +105,7 @@ func NewQuotaEvaluator(quotaAccessor QuotaAccessor, registry quota.Registry, loc
 
 		registry: registry,
 
-		queue:      workqueue.New(),
+		queue:      workqueue.NewNamed("admission_quota_controller"),
 		work:       map[string][]*admissionWaiter{},
 		dirtyWork:  map[string][]*admissionWaiter{},
 		inProgress: sets.String{},
@@ -194,8 +194,11 @@ func (e *quotaEvaluator) checkAttributes(ns string, admissionAttributes []*admis
 //    documents for these waiters have already been evaluated.  Step 1, will mark all the ones that should already have succeeded.
 func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttributes []*admissionWaiter, remainingRetries int) {
 	// yet another copy to compare against originals to see if we actually have deltas
-	originalQuotas := make([]api.ResourceQuota, len(quotas), len(quotas))
-	copy(originalQuotas, quotas)
+	originalQuotas, err := copyQuotas(quotas)
+	if err != nil {
+		utilruntime.HandleError(err)
+		return
+	}
 
 	atLeastOneChanged := false
 	for i := range admissionAttributes {
@@ -210,7 +213,7 @@ func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttrib
 		// that means that no quota docs applied, so it can get a pass
 		atLeastOneChangeForThisWaiter := false
 		for j := range newQuotas {
-			if !quota.Equals(originalQuotas[j].Status.Used, newQuotas[j].Status.Used) {
+			if !quota.Equals(quotas[j].Status.Used, newQuotas[j].Status.Used) {
 				atLeastOneChanged = true
 				atLeastOneChangeForThisWaiter = true
 				break
@@ -220,6 +223,7 @@ func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttrib
 		if !atLeastOneChangeForThisWaiter {
 			admissionAttribute.result = nil
 		}
+
 		quotas = newQuotas
 	}
 
@@ -236,6 +240,7 @@ func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttrib
 	var lastErr error
 	for i := range quotas {
 		newQuota := quotas[i]
+
 		// if this quota didn't have its status changed, skip it
 		if quota.Equals(originalQuotas[i].Status.Used, newQuota.Status.Used) {
 			continue
@@ -297,6 +302,19 @@ func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttrib
 	e.checkQuotas(quotasToCheck, admissionAttributes, remainingRetries-1)
 }
 
+func copyQuotas(in []api.ResourceQuota) ([]api.ResourceQuota, error) {
+	out := make([]api.ResourceQuota, 0, len(in))
+	for _, quota := range in {
+		copied, err := api.Scheme.Copy(&quota)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *copied.(*api.ResourceQuota))
+	}
+
+	return out, nil
+}
+
 // checkRequest verifies that the request does not exceed any quota constraint. it returns back a copy of quotas not yet persisted
 // that capture what the usage would be if the request succeeded.  It return an error if the is insufficient quota to satisfy the request
 func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.Attributes) ([]api.ResourceQuota, error) {
@@ -329,12 +347,11 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 		hardResources := quota.ResourceNames(resourceQuota.Status.Hard)
 		evaluatorResources := evaluator.MatchesResources()
 		requiredResources := quota.Intersection(hardResources, evaluatorResources)
-		err := evaluator.Constraints(requiredResources, inputObject)
-		if err != nil {
-			return nil, admission.NewForbidden(a, fmt.Errorf("Failed quota: %s: %v", resourceQuota.Name, err))
+		if err := evaluator.Constraints(requiredResources, inputObject); err != nil {
+			return nil, admission.NewForbidden(a, fmt.Errorf("failed quota: %s: %v", resourceQuota.Name, err))
 		}
 		if !hasUsageStats(&resourceQuota) {
-			return nil, admission.NewForbidden(a, fmt.Errorf("Status unknown for quota: %s", resourceQuota.Name))
+			return nil, admission.NewForbidden(a, fmt.Errorf("status unknown for quota: %s", resourceQuota.Name))
 		}
 
 		interestingQuotaIndexes = append(interestingQuotaIndexes, i)
@@ -358,30 +375,49 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 	// on updates, we need to subtract the previous measured usage
 	// if usage shows no change, just return since it has no impact on quota
 	deltaUsage := evaluator.Usage(inputObject)
+
+	// ensure that usage for input object is never negative (this would mean a resource made a negative resource requirement)
+	if negativeUsage := quota.IsNegative(deltaUsage); len(negativeUsage) > 0 {
+		return nil, admission.NewForbidden(a, fmt.Errorf("quota usage is negative for resource(s): %s", prettyPrintResourceNames(negativeUsage)))
+	}
+
 	if admission.Update == op {
 		prevItem := a.GetOldObject()
 		if prevItem == nil {
-			return nil, admission.NewForbidden(a, fmt.Errorf("Unable to get previous usage since prior version of object was not found"))
+			return nil, admission.NewForbidden(a, fmt.Errorf("unable to get previous usage since prior version of object was not found"))
 		}
-		prevUsage := evaluator.Usage(prevItem)
-		deltaUsage = quota.Subtract(deltaUsage, prevUsage)
+
+		// if we can definitively determine that this is not a case of "create on update",
+		// then charge based on the delta.  Otherwise, bill the maximum
+		metadata, err := meta.Accessor(prevItem)
+		if err == nil && len(metadata.GetResourceVersion()) > 0 {
+			prevUsage := evaluator.Usage(prevItem)
+			deltaUsage = quota.Subtract(deltaUsage, prevUsage)
+		}
 	}
 	if quota.IsZero(deltaUsage) {
 		return quotas, nil
 	}
 
+	outQuotas, err := copyQuotas(quotas)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, index := range interestingQuotaIndexes {
-		resourceQuota := quotas[index]
+		resourceQuota := outQuotas[index]
 
 		hardResources := quota.ResourceNames(resourceQuota.Status.Hard)
 		requestedUsage := quota.Mask(deltaUsage, hardResources)
 		newUsage := quota.Add(resourceQuota.Status.Used, requestedUsage)
-		if allowed, exceeded := quota.LessThanOrEqual(newUsage, resourceQuota.Status.Hard); !allowed {
+		maskedNewUsage := quota.Mask(newUsage, quota.ResourceNames(requestedUsage))
+
+		if allowed, exceeded := quota.LessThanOrEqual(maskedNewUsage, resourceQuota.Status.Hard); !allowed {
 			failedRequestedUsage := quota.Mask(requestedUsage, exceeded)
 			failedUsed := quota.Mask(resourceQuota.Status.Used, exceeded)
 			failedHard := quota.Mask(resourceQuota.Status.Hard, exceeded)
 			return nil, admission.NewForbidden(a,
-				fmt.Errorf("Exceeded quota: %s, requested: %s, used: %s, limited: %s",
+				fmt.Errorf("exceeded quota: %s, requested: %s, used: %s, limited: %s",
 					resourceQuota.Name,
 					prettyPrint(failedRequestedUsage),
 					prettyPrint(failedUsed),
@@ -389,10 +425,10 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 		}
 
 		// update to the new usage number
-		quotas[index].Status.Used = newUsage
+		outQuotas[index].Status.Used = newUsage
 	}
 
-	return quotas, nil
+	return outQuotas, nil
 }
 
 func (e *quotaEvaluator) Evaluate(a admission.Attributes) error {
@@ -497,6 +533,15 @@ func prettyPrint(item api.ResourceList) string {
 		parts = append(parts, constraint)
 	}
 	return strings.Join(parts, ",")
+}
+
+func prettyPrintResourceNames(a []api.ResourceName) string {
+	values := []string{}
+	for _, value := range a {
+		values = append(values, string(value))
+	}
+	sort.Strings(values)
+	return strings.Join(values, ",")
 }
 
 // hasUsageStats returns true if for each hard constraint there is a value for its current usage

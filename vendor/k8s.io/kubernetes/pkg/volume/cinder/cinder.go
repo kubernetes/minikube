@@ -45,7 +45,7 @@ type CinderProvider interface {
 	AttachDisk(instanceID string, diskName string) (string, error)
 	DetachDisk(instanceID string, partialDiskId string) error
 	DeleteVolume(volumeName string) error
-	CreateVolume(name string, size int, tags *map[string]string) (volumeName string, err error)
+	CreateVolume(name string, size int, vtype, availability string, tags *map[string]string) (volumeName string, err error)
 	GetDevicePath(diskId string) string
 	InstanceID() (string, error)
 	GetAttachmentDiskPath(instanceID string, diskName string) (string, error)
@@ -202,6 +202,25 @@ func (plugin *cinderPlugin) getCloudProvider() (CinderProvider, error) {
 	default:
 		return nil, errors.New("Invalid cloud provider: expected OpenStack or Rackspace.")
 	}
+}
+
+func (plugin *cinderPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	mounter := plugin.host.GetMounter()
+	pluginDir := plugin.host.GetPluginDir(plugin.GetPluginName())
+	sourceName, err := mounter.GetDeviceNameFromMount(mountPath, pluginDir)
+	if err != nil {
+		return nil, err
+	}
+	glog.V(4).Infof("Found volume %s mounted to %s", sourceName, mountPath)
+	cinderVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			Cinder: &api.CinderVolumeSource{
+				VolumeID: sourceName,
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(cinderVolume), nil
 }
 
 // Abstract interface to PD operations.

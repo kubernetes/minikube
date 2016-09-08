@@ -110,7 +110,7 @@ type Runtime interface {
 	// by all containers in the pod.
 	GetNetNS(containerID ContainerID) (string, error)
 	// Returns the container ID that represents the Pod, as passed to network
-	// plugins. For example if the runtime uses an infra container, returns
+	// plugins. For example, if the runtime uses an infra container, returns
 	// the infra container's ContainerID.
 	// TODO: Change ContainerID to a Pod ID, see GetNetNS()
 	GetPodContainerID(*Pod) (ContainerID, error)
@@ -342,6 +342,8 @@ type EnvVar struct {
 
 type Mount struct {
 	// Name of the volume mount.
+	// TODO(yifan): Remove this field, as this is not representing the unique name of the mount,
+	// but the volume name only.
 	Name string
 	// Path of the mount within the container.
 	ContainerPath string

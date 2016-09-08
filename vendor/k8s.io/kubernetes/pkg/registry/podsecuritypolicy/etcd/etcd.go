@@ -19,6 +19,7 @@ package etcd
 import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/registry/generic/registry"
 	"k8s.io/kubernetes/pkg/registry/podsecuritypolicy"
@@ -36,9 +37,9 @@ func NewREST(opts generic.RESTOptions) *REST {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &extensions.PodSecurityPolicyList{} }
-	storageInterface := opts.Decorator(
-		opts.Storage,
-		100,
+	storageInterface, _ := opts.Decorator(
+		opts.StorageConfig,
+		cachesize.GetWatchCacheSizeByResource(cachesize.PodSecurityPolicies),
 		&extensions.PodSecurityPolicy{},
 		prefix,
 		podsecuritypolicy.Strategy,

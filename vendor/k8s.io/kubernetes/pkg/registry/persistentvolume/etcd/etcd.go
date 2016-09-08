@@ -36,8 +36,8 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &api.PersistentVolumeList{} }
-	storageInterface := opts.Decorator(
-		opts.Storage,
+	storageInterface, _ := opts.Decorator(
+		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.PersistentVolumes),
 		&api.PersistentVolume{},
 		prefix,

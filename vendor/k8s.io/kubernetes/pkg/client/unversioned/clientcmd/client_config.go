@@ -167,6 +167,12 @@ func getUserIdentificationPartialConfig(configAuthInfo clientcmdapi.AuthInfo, fa
 	// blindly overwrite existing values based on precedence
 	if len(configAuthInfo.Token) > 0 {
 		mergedConfig.BearerToken = configAuthInfo.Token
+	} else if len(configAuthInfo.TokenFile) > 0 {
+		tokenBytes, err := ioutil.ReadFile(configAuthInfo.TokenFile)
+		if err != nil {
+			return nil, err
+		}
+		mergedConfig.BearerToken = string(tokenBytes)
 	}
 	if len(configAuthInfo.Impersonate) > 0 {
 		mergedConfig.Impersonate = configAuthInfo.Impersonate
@@ -323,7 +329,7 @@ func (config *DirectClientConfig) getCluster() clientcmdapi.Cluster {
 	clusterInfoName := config.getClusterName()
 
 	var mergedClusterInfo clientcmdapi.Cluster
-	mergo.Merge(&mergedClusterInfo, DefaultCluster)
+	mergo.Merge(&mergedClusterInfo, config.overrides.ClusterDefaults)
 	mergo.Merge(&mergedClusterInfo, EnvVarCluster)
 	if configClusterInfo, exists := clusterInfos[clusterInfoName]; exists {
 		mergo.Merge(&mergedClusterInfo, configClusterInfo)

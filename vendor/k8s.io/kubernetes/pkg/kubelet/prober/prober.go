@@ -19,6 +19,7 @@ package prober
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -131,7 +132,7 @@ func (pb *prober) runProbeWithRetries(p *api.Probe, pod *api.Pod, status api.Pod
 }
 
 // buildHeaderMap takes a list of HTTPHeader <name, value> string
-// pairs and returns a a populated string->[]string http.Header map.
+// pairs and returns a populated string->[]string http.Header map.
 func buildHeader(headerList []api.HTTPHeader) http.Header {
 	headers := make(http.Header)
 	for _, header := range headerList {
@@ -222,6 +223,8 @@ func formatURL(scheme string, host string, port int, path string) *url.URL {
 }
 
 type execInContainer struct {
+	// run executes a command in a container. Combined stdout and stderr output is always returned. An
+	// error is returned if one occurred.
 	run func() ([]byte, error)
 }
 
@@ -230,11 +233,10 @@ func (p *prober) newExecInContainer(container api.Container, containerID kubecon
 		var buffer bytes.Buffer
 		output := ioutils.WriteCloserWrapper(&buffer)
 		err := p.runner.ExecInContainer(containerID, cmd, nil, output, output, false, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		return buffer.Bytes(), nil
+		// Even if err is non-nil, there still may be output (e.g. the exec wrote to stdout or stderr but
+		// the command returned a nonzero exit code). Therefore, always return the output along with the
+		// error.
+		return buffer.Bytes(), err
 	}}
 }
 
@@ -247,5 +249,13 @@ func (eic execInContainer) Output() ([]byte, error) {
 }
 
 func (eic execInContainer) SetDir(dir string) {
+	//unimplemented
+}
+
+func (eic execInContainer) SetStdin(in io.Reader) {
+	//unimplemented
+}
+
+func (eic execInContainer) SetStdout(out io.Writer) {
 	//unimplemented
 }

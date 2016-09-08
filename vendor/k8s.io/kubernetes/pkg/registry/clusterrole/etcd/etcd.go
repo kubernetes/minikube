@@ -37,8 +37,8 @@ func NewREST(opts generic.RESTOptions) *REST {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &rbac.ClusterRoleList{} }
-	storageInterface := opts.Decorator(
-		opts.Storage,
+	storageInterface, _ := opts.Decorator(
+		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.ClusterRoles),
 		&rbac.ClusterRole{},
 		prefix,

@@ -21,21 +21,24 @@ limitations under the License.
 package v1alpha1
 
 import (
-	api "k8s.io/kubernetes/pkg/api"
 	conversion "k8s.io/kubernetes/pkg/conversion"
+	runtime "k8s.io/kubernetes/pkg/runtime"
 	reflect "reflect"
 )
 
 func init() {
-	if err := api.Scheme.AddGeneratedDeepCopyFuncs(
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_KubeProxyConfiguration, InType: reflect.TypeOf(func() *KubeProxyConfiguration { var x *KubeProxyConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_KubeSchedulerConfiguration, InType: reflect.TypeOf(func() *KubeSchedulerConfiguration { var x *KubeSchedulerConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_KubeletConfiguration, InType: reflect.TypeOf(func() *KubeletConfiguration { var x *KubeletConfiguration; return x }())},
-		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_LeaderElectionConfiguration, InType: reflect.TypeOf(func() *LeaderElectionConfiguration { var x *LeaderElectionConfiguration; return x }())},
-	); err != nil {
-		// if one of the deep copy functions is malformed, detect it immediately.
-		panic(err)
-	}
+	SchemeBuilder.Register(RegisterDeepCopies)
+}
+
+// RegisterDeepCopies adds deep-copy functions to the given scheme. Public
+// to allow building arbitrary schemes.
+func RegisterDeepCopies(scheme *runtime.Scheme) error {
+	return scheme.AddGeneratedDeepCopyFuncs(
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_KubeProxyConfiguration, InType: reflect.TypeOf(&KubeProxyConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_KubeSchedulerConfiguration, InType: reflect.TypeOf(&KubeSchedulerConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_KubeletConfiguration, InType: reflect.TypeOf(&KubeletConfiguration{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1alpha1_LeaderElectionConfiguration, InType: reflect.TypeOf(&LeaderElectionConfiguration{})},
+	)
 }
 
 func DeepCopy_v1alpha1_KubeProxyConfiguration(in interface{}, out interface{}, c *conversion.Cloner) error {
@@ -111,7 +114,7 @@ func DeepCopy_v1alpha1_KubeletConfiguration(in interface{}, out interface{}, c *
 		in := in.(*KubeletConfiguration)
 		out := out.(*KubeletConfiguration)
 		out.TypeMeta = in.TypeMeta
-		out.Config = in.Config
+		out.PodManifestPath = in.PodManifestPath
 		out.SyncFrequency = in.SyncFrequency
 		out.FileCheckFrequency = in.FileCheckFrequency
 		out.HTTPCheckFrequency = in.HTTPCheckFrequency
@@ -236,6 +239,7 @@ func DeepCopy_v1alpha1_KubeletConfiguration(in interface{}, out interface{}, c *
 		out.VolumeStatsAggPeriod = in.VolumeStatsAggPeriod
 		out.NetworkPluginName = in.NetworkPluginName
 		out.NetworkPluginDir = in.NetworkPluginDir
+		out.NetworkPluginMTU = in.NetworkPluginMTU
 		out.VolumePluginDir = in.VolumePluginDir
 		out.CloudProvider = in.CloudProvider
 		out.CloudConfigFile = in.CloudConfigFile
@@ -251,6 +255,8 @@ func DeepCopy_v1alpha1_KubeletConfiguration(in interface{}, out interface{}, c *
 			out.CgroupsPerQOS = nil
 		}
 		out.ContainerRuntime = in.ContainerRuntime
+		out.RemoteRuntimeEndpoint = in.RemoteRuntimeEndpoint
+		out.RemoteImageEndpoint = in.RemoteImageEndpoint
 		out.RuntimeRequestTimeout = in.RuntimeRequestTimeout
 		out.RktPath = in.RktPath
 		out.RktAPIEndpoint = in.RktAPIEndpoint
@@ -373,6 +379,35 @@ func DeepCopy_v1alpha1_KubeletConfiguration(in interface{}, out interface{}, c *
 			}
 		} else {
 			out.KubeReserved = nil
+		}
+		out.ProtectKernelDefaults = in.ProtectKernelDefaults
+		if in.MakeIPTablesUtilChains != nil {
+			in, out := &in.MakeIPTablesUtilChains, &out.MakeIPTablesUtilChains
+			*out = new(bool)
+			**out = **in
+		} else {
+			out.MakeIPTablesUtilChains = nil
+		}
+		if in.IPTablesMasqueradeBit != nil {
+			in, out := &in.IPTablesMasqueradeBit, &out.IPTablesMasqueradeBit
+			*out = new(int32)
+			**out = **in
+		} else {
+			out.IPTablesMasqueradeBit = nil
+		}
+		if in.IPTablesDropBit != nil {
+			in, out := &in.IPTablesDropBit, &out.IPTablesDropBit
+			*out = new(int32)
+			**out = **in
+		} else {
+			out.IPTablesDropBit = nil
+		}
+		if in.AllowedUnsafeSysctls != nil {
+			in, out := &in.AllowedUnsafeSysctls, &out.AllowedUnsafeSysctls
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		} else {
+			out.AllowedUnsafeSysctls = nil
 		}
 		return nil
 	}

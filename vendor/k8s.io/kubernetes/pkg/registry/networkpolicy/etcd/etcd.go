@@ -37,8 +37,8 @@ func NewREST(opts generic.RESTOptions) *REST {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &extensionsapi.NetworkPolicyList{} }
-	storageInterface := opts.Decorator(
-		opts.Storage,
+	storageInterface, _ := opts.Decorator(
+		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.NetworkPolicys),
 		&extensionsapi.NetworkPolicy{},
 		prefix,

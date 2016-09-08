@@ -44,7 +44,7 @@ func (storageClassStrategy) NamespaceScoped() bool {
 }
 
 // ResetBeforeCreate clears the Status field which is not allowed to be set by end users on creation.
-func (storageClassStrategy) PrepareForCreate(obj runtime.Object) {
+func (storageClassStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
 	_ = obj.(*extensions.StorageClass)
 }
 
@@ -62,7 +62,7 @@ func (storageClassStrategy) AllowCreateOnUpdate() bool {
 }
 
 // PrepareForUpdate sets the Status fields which is not allowed to be set by an end user updating a PV
-func (storageClassStrategy) PrepareForUpdate(obj, old runtime.Object) {
+func (storageClassStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 	_ = obj.(*extensions.StorageClass)
 	_ = old.(*extensions.StorageClass)
 }
@@ -77,7 +77,7 @@ func (storageClassStrategy) AllowUnconditionalUpdate() bool {
 }
 
 // MatchStorageClass returns a generic matcher for a given label and field selector.
-func MatchStorageClasses(label labels.Selector, field fields.Selector) generic.Matcher {
+func MatchStorageClasses(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
 	return &generic.SelectionPredicate{
 		Label: label,
 		Field: field,
@@ -94,5 +94,5 @@ func MatchStorageClasses(label labels.Selector, field fields.Selector) generic.M
 
 // StorageClassToSelectableFields returns a label set that represents the object
 func StorageClassToSelectableFields(storageClass *extensions.StorageClass) fields.Set {
-	return generic.ObjectMetaFieldsSet(storageClass.ObjectMeta, false)
+	return generic.ObjectMetaFieldsSet(&storageClass.ObjectMeta, false)
 }

@@ -27,10 +27,12 @@ import (
 // ConfigOverrides holds values that should override whatever information is pulled from the actual Config object.  You can't
 // simply use an actual Config object, because Configs hold maps, but overrides are restricted to "at most one"
 type ConfigOverrides struct {
-	AuthInfo       clientcmdapi.AuthInfo
-	ClusterInfo    clientcmdapi.Cluster
-	Context        clientcmdapi.Context
-	CurrentContext string
+	AuthInfo clientcmdapi.AuthInfo
+	// ClusterDefaults are applied before the configured cluster info is loaded.
+	ClusterDefaults clientcmdapi.Cluster
+	ClusterInfo     clientcmdapi.Cluster
+	Context         clientcmdapi.Context
+	CurrentContext  string
 }
 
 // ConfigOverrideFlags holds the flag names to be used for binding command line flags.  Notice that this structure tightly
@@ -158,7 +160,7 @@ func RecommendedContextOverrideFlags(prefix string) ContextOverrideFlags {
 	return ContextOverrideFlags{
 		ClusterName:  FlagInfo{prefix + FlagClusterName, "", "", "The name of the kubeconfig cluster to use"},
 		AuthInfoName: FlagInfo{prefix + FlagAuthInfoName, "", "", "The name of the kubeconfig user to use"},
-		Namespace:    FlagInfo{prefix + FlagNamespace, "", "", "If present, the namespace scope for this CLI request"},
+		Namespace:    FlagInfo{prefix + FlagNamespace, "n", "", "If present, the namespace scope for this CLI request"},
 	}
 }
 

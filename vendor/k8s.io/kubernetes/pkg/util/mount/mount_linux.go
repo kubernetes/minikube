@@ -54,8 +54,6 @@ const (
 // kubelet is running in the host's root mount namespace.
 type Mounter struct{}
 
-var _ = Interface(&Mounter{})
-
 // Mount mounts source to target as fstype with given options. 'source' and 'fstype' must
 // be an emtpy string in case it's not required, e.g. for remount, or for auto filesystem
 // type, where kernel handles fs type for you. The mount 'options' is a list of options,
@@ -220,6 +218,11 @@ func pathIsDevice(pathname string) (bool, error) {
 	}
 	// path does not refer to device
 	return false, nil
+}
+
+//GetDeviceNameFromMount: given a mount point, find the device name from its global mount point
+func (mounter *Mounter) GetDeviceNameFromMount(mountPath, pluginDir string) (string, error) {
+	return getDeviceNameFromMount(mounter, mountPath, pluginDir)
 }
 
 func listProcMounts(mountFilePath string) ([]MountPoint, error) {

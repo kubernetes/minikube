@@ -21,14 +21,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/util/flowcontrol"
 	"k8s.io/kubernetes/pkg/util/sets"
+
+	"github.com/golang/glog"
 )
 
 // TimedValue is a value that should be processed at a designated time.
 type TimedValue struct {
-	Value     string
+	Value string
+	// UID could be anything that helps identify the value
+	UID       interface{}
 	AddedAt   time.Time
 	ProcessAt time.Time
 }
@@ -179,7 +182,7 @@ func (q *RateLimitedTimedQueue) Try(fn ActionFunc) {
 	for ok {
 		// rate limit the queue checking
 		if !q.limiter.TryAccept() {
-			glog.V(10).Info("Try rate limited...")
+			glog.V(10).Infof("Try rate limited for value: %v", val)
 			// Try again later
 			break
 		}
@@ -199,12 +202,13 @@ func (q *RateLimitedTimedQueue) Try(fn ActionFunc) {
 	}
 }
 
-// Adds value to the queue to be processed. Won't add the same value a second time if it was already
-// added and not removed.
-func (q *RateLimitedTimedQueue) Add(value string) bool {
+// Adds value to the queue to be processed. Won't add the same value(comparsion by value) a second time
+// if it was already added and not removed.
+func (q *RateLimitedTimedQueue) Add(value string, uid interface{}) bool {
 	now := now()
 	return q.queue.Add(TimedValue{
 		Value:     value,
+		UID:       uid,
 		AddedAt:   now,
 		ProcessAt: now,
 	})

@@ -37,11 +37,11 @@ type REST struct {
 
 // NewREST returns a registry which will store CertificateSigningRequest in the given helper
 func NewREST(opts generic.RESTOptions) (*REST, *StatusREST, *ApprovalREST) {
-	prefix := "/certificatesigningrequests"
+	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &certificates.CertificateSigningRequestList{} }
-	storageInterface := opts.Decorator(
-		opts.Storage,
+	storageInterface, _ := opts.Decorator(
+		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.CertificateSigningRequests),
 		&certificates.CertificateSigningRequest{},
 		prefix,
@@ -62,7 +62,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST, *ApprovalREST) {
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
 			return obj.(*certificates.CertificateSigningRequest).Name, nil
 		},
-		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
+		PredicateFunc: func(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
 			return csrregistry.Matcher(label, field)
 		},
 		QualifiedResource:       certificates.Resource("certificatesigningrequests"),
@@ -70,6 +70,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST, *ApprovalREST) {
 
 		CreateStrategy: csrregistry.Strategy,
 		UpdateStrategy: csrregistry.Strategy,
+		DeleteStrategy: csrregistry.Strategy,
 
 		Storage: storageInterface,
 	}

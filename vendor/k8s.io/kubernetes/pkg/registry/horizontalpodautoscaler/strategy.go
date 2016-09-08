@@ -45,7 +45,7 @@ func (autoscalerStrategy) NamespaceScoped() bool {
 }
 
 // PrepareForCreate clears fields that are not allowed to be set by end users on creation.
-func (autoscalerStrategy) PrepareForCreate(obj runtime.Object) {
+func (autoscalerStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
 	newHPA := obj.(*autoscaling.HorizontalPodAutoscaler)
 
 	// create cannot set status
@@ -68,7 +68,7 @@ func (autoscalerStrategy) AllowCreateOnUpdate() bool {
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (autoscalerStrategy) PrepareForUpdate(obj, old runtime.Object) {
+func (autoscalerStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 	newHPA := obj.(*autoscaling.HorizontalPodAutoscaler)
 	oldHPA := old.(*autoscaling.HorizontalPodAutoscaler)
 	// Update is not allowed to set status
@@ -85,10 +85,10 @@ func (autoscalerStrategy) AllowUnconditionalUpdate() bool {
 }
 
 func AutoscalerToSelectableFields(hpa *autoscaling.HorizontalPodAutoscaler) fields.Set {
-	return fields.Set{}
+	return nil
 }
 
-func MatchAutoscaler(label labels.Selector, field fields.Selector) generic.Matcher {
+func MatchAutoscaler(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
 	return &generic.SelectionPredicate{
 		Label: label,
 		Field: field,
@@ -108,7 +108,7 @@ type autoscalerStatusStrategy struct {
 
 var StatusStrategy = autoscalerStatusStrategy{Strategy}
 
-func (autoscalerStatusStrategy) PrepareForUpdate(obj, old runtime.Object) {
+func (autoscalerStatusStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 	newAutoscaler := obj.(*autoscaling.HorizontalPodAutoscaler)
 	oldAutoscaler := old.(*autoscaling.HorizontalPodAutoscaler)
 	// status changes are not allowed to update spec

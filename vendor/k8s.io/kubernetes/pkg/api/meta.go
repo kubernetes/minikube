@@ -23,7 +23,7 @@ import (
 	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/uuid"
 )
 
 // FillObjectMetaSystemFields populates fields that are managed by the system on ObjectMeta.
@@ -33,7 +33,7 @@ func FillObjectMetaSystemFields(ctx Context, meta *ObjectMeta) {
 	// to support tracking resources pending creation.
 	uid, found := UIDFrom(ctx)
 	if !found {
-		uid = util.NewUUID()
+		uid = uuid.NewUUID()
 	}
 	meta.UID = uid
 	meta.SelfLink = ""
@@ -130,4 +130,11 @@ func (meta *ObjectMeta) SetOwnerReferences(references []metatypes.OwnerReference
 		}
 	}
 	meta.OwnerReferences = newReferences
+}
+
+func (meta *ObjectMeta) GetClusterName() string {
+	return meta.ClusterName
+}
+func (meta *ObjectMeta) SetClusterName(clusterName string) {
+	meta.ClusterName = clusterName
 }

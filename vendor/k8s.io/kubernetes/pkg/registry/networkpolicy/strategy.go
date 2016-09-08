@@ -45,13 +45,13 @@ func (networkPolicyStrategy) NamespaceScoped() bool {
 }
 
 // PrepareForCreate clears the status of an NetworkPolicy before creation.
-func (networkPolicyStrategy) PrepareForCreate(obj runtime.Object) {
+func (networkPolicyStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
 	networkPolicy := obj.(*extensions.NetworkPolicy)
 	networkPolicy.Generation = 1
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (networkPolicyStrategy) PrepareForUpdate(obj, old runtime.Object) {
+func (networkPolicyStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 	newNetworkPolicy := obj.(*extensions.NetworkPolicy)
 	oldNetworkPolicy := old.(*extensions.NetworkPolicy)
 
@@ -92,12 +92,12 @@ func (networkPolicyStrategy) AllowUnconditionalUpdate() bool {
 
 // NetworkPolicyToSelectableFields returns a field set that represents the object.
 func NetworkPolicyToSelectableFields(networkPolicy *extensions.NetworkPolicy) fields.Set {
-	return generic.ObjectMetaFieldsSet(networkPolicy.ObjectMeta, true)
+	return generic.ObjectMetaFieldsSet(&networkPolicy.ObjectMeta, true)
 }
 
 // MatchNetworkPolicy is the filter used by the generic etcd backend to watch events
 // from etcd to clients of the apiserver only interested in specific labels/fields.
-func MatchNetworkPolicy(label labels.Selector, field fields.Selector) generic.Matcher {
+func MatchNetworkPolicy(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
 	return &generic.SelectionPredicate{
 		Label: label,
 		Field: field,

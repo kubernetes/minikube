@@ -125,7 +125,7 @@ func NewDaemonSetsController(podInformer framework.SharedIndexInformer, kubeClie
 		},
 		burstReplicas: BurstReplicas,
 		expectations:  controller.NewControllerExpectations(),
-		queue:         workqueue.New(),
+		queue:         workqueue.NewNamed("daemonset"),
 	}
 	// Manage addition/update of daemon sets.
 	dsc.dsStore.Store, dsc.dsController = framework.NewInformer(
@@ -205,7 +205,7 @@ func NewDaemonSetsController(podInformer framework.SharedIndexInformer, kubeClie
 }
 
 func NewDaemonSetsControllerFromClient(kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, lookupCacheSize int) *DaemonSetsController {
-	podInformer := informers.CreateSharedPodIndexInformer(kubeClient, resyncPeriod())
+	podInformer := informers.NewPodInformer(kubeClient, resyncPeriod())
 	dsc := NewDaemonSetsController(podInformer, kubeClient, resyncPeriod, lookupCacheSize)
 	dsc.internalPodInformer = podInformer
 
@@ -217,12 +217,12 @@ func (dsc *DaemonSetsController) deleteDaemonset(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			glog.Errorf("Couldn't get object from tombstone %+v", obj)
+			glog.Errorf("Couldn't get object from tombstone %#v", obj)
 			return
 		}
 		ds, ok = tombstone.Obj.(*extensions.DaemonSet)
 		if !ok {
-			glog.Errorf("Tombstone contained object that is not a DaemonSet %+v", obj)
+			glog.Errorf("Tombstone contained object that is not a DaemonSet %#v", obj)
 			return
 		}
 	}
@@ -267,7 +267,7 @@ func (dsc *DaemonSetsController) runWorker() {
 func (dsc *DaemonSetsController) enqueueDaemonSet(ds *extensions.DaemonSet) {
 	key, err := controller.KeyFunc(ds)
 	if err != nil {
-		glog.Errorf("Couldn't get key for object %+v: %v", ds, err)
+		glog.Errorf("Couldn't get key for object %#v: %v", ds, err)
 		return
 	}
 
@@ -342,7 +342,7 @@ func (dsc *DaemonSetsController) addPod(obj interface{}) {
 	if ds := dsc.getPodDaemonSet(pod); ds != nil {
 		dsKey, err := controller.KeyFunc(ds)
 		if err != nil {
-			glog.Errorf("Couldn't get key for object %+v: %v", ds, err)
+			glog.Errorf("Couldn't get key for object %#v: %v", ds, err)
 			return
 		}
 		dsc.expectations.CreationObserved(dsKey)
@@ -354,16 +354,17 @@ func (dsc *DaemonSetsController) addPod(obj interface{}) {
 // up. If the labels of the pod have changed we need to awaken both the old
 // and new set. old and cur must be *api.Pod types.
 func (dsc *DaemonSetsController) updatePod(old, cur interface{}) {
-	if api.Semantic.DeepEqual(old, cur) {
-		// A periodic relist will send update events for all known pods.
+	curPod := cur.(*api.Pod)
+	oldPod := old.(*api.Pod)
+	if curPod.ResourceVersion == oldPod.ResourceVersion {
+		// Periodic resync will send update events for all known pods.
+		// Two different versions of the same pod will always have different RVs.
 		return
 	}
-	curPod := cur.(*api.Pod)
 	glog.V(4).Infof("Pod %s updated.", curPod.Name)
 	if curDS := dsc.getPodDaemonSet(curPod); curDS != nil {
 		dsc.enqueueDaemonSet(curDS)
 	}
-	oldPod := old.(*api.Pod)
 	// If the labels have not changed, then the daemon set responsible for
 	// the pod is the same as it was before. In that case we have enqueued the daemon
 	// set above, and do not have to enqueue the set again.
@@ -386,12 +387,12 @@ func (dsc *DaemonSetsController) deletePod(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			glog.Errorf("Couldn't get object from tombstone %+v", obj)
+			glog.Errorf("Couldn't get object from tombstone %#v", obj)
 			return
 		}
 		pod, ok = tombstone.Obj.(*api.Pod)
 		if !ok {
-			glog.Errorf("Tombstone contained object that is not a pod %+v", obj)
+			glog.Errorf("Tombstone contained object that is not a pod %#v", obj)
 			return
 		}
 	}
@@ -399,7 +400,7 @@ func (dsc *DaemonSetsController) deletePod(obj interface{}) {
 	if ds := dsc.getPodDaemonSet(pod); ds != nil {
 		dsKey, err := controller.KeyFunc(ds)
 		if err != nil {
-			glog.Errorf("Couldn't get key for object %+v: %v", ds, err)
+			glog.Errorf("Couldn't get key for object %#v: %v", ds, err)
 			return
 		}
 		dsc.expectations.DeletionObserved(dsKey)
@@ -427,8 +428,8 @@ func (dsc *DaemonSetsController) addNode(obj interface{}) {
 func (dsc *DaemonSetsController) updateNode(old, cur interface{}) {
 	oldNode := old.(*api.Node)
 	curNode := cur.(*api.Node)
-	if api.Semantic.DeepEqual(oldNode.Name, curNode.Name) && api.Semantic.DeepEqual(oldNode.Namespace, curNode.Namespace) && api.Semantic.DeepEqual(oldNode.Labels, curNode.Labels) {
-		// A periodic relist will send update events for all known pods.
+	if reflect.DeepEqual(oldNode.Labels, curNode.Labels) {
+		// If node labels didn't change, we can ignore this update.
 		return
 	}
 	dsList, err := dsc.dsStore.List()
@@ -457,9 +458,11 @@ func (dsc *DaemonSetsController) getNodesToDaemonPods(ds *extensions.DaemonSet) 
 	if err != nil {
 		return nodeToDaemonPods, err
 	}
-	for i := range daemonPods.Items {
-		nodeName := daemonPods.Items[i].Spec.NodeName
-		nodeToDaemonPods[nodeName] = append(nodeToDaemonPods[nodeName], &daemonPods.Items[i])
+	for i := range daemonPods {
+		// TODO: Do we need to copy here?
+		daemonPod := &(*daemonPods[i])
+		nodeName := daemonPod.Spec.NodeName
+		nodeToDaemonPods[nodeName] = append(nodeToDaemonPods[nodeName], daemonPod)
 	}
 	return nodeToDaemonPods, nil
 }
@@ -468,14 +471,14 @@ func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) {
 	// Find out which nodes are running the daemon pods selected by ds.
 	nodeToDaemonPods, err := dsc.getNodesToDaemonPods(ds)
 	if err != nil {
-		glog.Errorf("Error getting node to daemon pod mapping for daemon set %+v: %v", ds, err)
+		glog.Errorf("Error getting node to daemon pod mapping for daemon set %#v: %v", ds, err)
 	}
 
 	// For each node, if the node is running the daemon pod but isn't supposed to, kill the daemon
 	// pod. If the node is supposed to run the daemon pod, but isn't, create the daemon pod on the node.
 	nodeList, err := dsc.nodeStore.List()
 	if err != nil {
-		glog.Errorf("Couldn't get list of nodes when syncing daemon set %+v: %v", ds, err)
+		glog.Errorf("Couldn't get list of nodes when syncing daemon set %#v: %v", ds, err)
 	}
 	var nodesNeedingDaemonPods, podsToDelete []string
 	for _, node := range nodeList.Items {
@@ -505,7 +508,7 @@ func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) {
 	// We need to set expectations before creating/deleting pods to avoid race conditions.
 	dsKey, err := controller.KeyFunc(ds)
 	if err != nil {
-		glog.Errorf("Couldn't get key for object %+v: %v", ds, err)
+		glog.Errorf("Couldn't get key for object %#v: %v", ds, err)
 		return
 	}
 
@@ -583,13 +586,13 @@ func (dsc *DaemonSetsController) updateDaemonSetStatus(ds *extensions.DaemonSet)
 	glog.V(4).Infof("Updating daemon set status")
 	nodeToDaemonPods, err := dsc.getNodesToDaemonPods(ds)
 	if err != nil {
-		glog.Errorf("Error getting node to daemon pod mapping for daemon set %+v: %v", ds, err)
+		glog.Errorf("Error getting node to daemon pod mapping for daemon set %#v: %v", ds, err)
 		return
 	}
 
 	nodeList, err := dsc.nodeStore.List()
 	if err != nil {
-		glog.Errorf("Couldn't get list of nodes when updating daemon set %+v: %v", ds, err)
+		glog.Errorf("Couldn't get list of nodes when updating daemon set %#v: %v", ds, err)
 		return
 	}
 
@@ -613,7 +616,7 @@ func (dsc *DaemonSetsController) updateDaemonSetStatus(ds *extensions.DaemonSet)
 
 	err = storeDaemonSetStatus(dsc.kubeClient.Extensions().DaemonSets(ds.Namespace), ds, desiredNumberScheduled, currentNumberScheduled, numberMisscheduled)
 	if err != nil {
-		glog.Errorf("Error storing status for daemon set %+v: %v", ds, err)
+		glog.Errorf("Error storing status for daemon set %#v: %v", ds, err)
 	}
 }
 
@@ -655,7 +658,7 @@ func (dsc *DaemonSetsController) syncDaemonSet(key string) error {
 	// then we do not want to call manage on foo until the daemon pods have been created.
 	dsKey, err := controller.KeyFunc(ds)
 	if err != nil {
-		glog.Errorf("Couldn't get key for object %+v: %v", ds, err)
+		glog.Errorf("Couldn't get key for object %#v: %v", ds, err)
 		return err
 	}
 	dsNeedsSync := dsc.expectations.SatisfiedExpectations(dsKey)
@@ -693,7 +696,7 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *api.Node, ds *exte
 		if pod.Status.Phase == api.PodSucceeded || pod.Status.Phase == api.PodFailed {
 			continue
 		}
-		// ignore pods that belong to the daemonset when taking into account wheter
+		// ignore pods that belong to the daemonset when taking into account whether
 		// a daemonset should bind to a node.
 		if pds := dsc.getPodDaemonSet(pod); pds != nil && ds.Name == pds.Name {
 			continue
@@ -703,18 +706,22 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *api.Node, ds *exte
 
 	nodeInfo := schedulercache.NewNodeInfo(pods...)
 	nodeInfo.SetNode(node)
-	fit, err := predicates.GeneralPredicates(newPod, nil, nodeInfo)
+	fit, reasons, err := predicates.GeneralPredicates(newPod, nil, nodeInfo)
 	if err != nil {
-		if re, ok := err.(*predicates.PredicateFailureError); ok {
-			message := re.Error()
-			glog.V(2).Infof("Predicate failed on Pod: %s, for reason: %v", newPod.Name, message)
-		}
-		if re, ok := err.(*predicates.InsufficientResourceError); ok {
-			message := re.Error()
-			glog.V(2).Infof("Predicate failed on Pod: %s, for reason: %v", newPod.Name, message)
-		}
-		message := fmt.Sprintf("GeneralPredicates failed due to %v.", err)
-		glog.Warningf("Predicate failed on Pod %s - %s", newPod.Name, message)
+		glog.Warningf("GeneralPredicates failed on pod %s due to unexpected error: %v", newPod.Name, err)
+	}
+	for _, r := range reasons {
+		glog.V(2).Infof("GeneralPredicates failed on pod %s for reason: %v", newPod.Name, r.GetReason())
+	}
+	if !fit {
+		return false
+	}
+	fit, reasons, err = predicates.PodToleratesNodeTaints(newPod, predicates.PredicateMetadata(newPod, nil), nodeInfo)
+	if err != nil {
+		glog.Warningf("PodToleratesNodeTaints failed on pod %s due to unexpected error: %v", newPod.Name, err)
+	}
+	for _, r := range reasons {
+		glog.V(2).Infof("PodToleratesNodeTaints failed on pod %s for reason: %v", newPod.Name, r.GetReason())
 	}
 	return fit
 }

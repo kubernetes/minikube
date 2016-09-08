@@ -73,7 +73,7 @@ type PetSetController struct {
 	blockingPetStore *unhealthyPetTracker
 
 	// Controllers that need to be synced.
-	queue *workqueue.Type
+	queue workqueue.RateLimitingInterface
 
 	// syncHandler handles sync events for petsets.
 	// Abstracted as a func to allow injection for testing.
@@ -94,7 +94,7 @@ func NewPetSetController(podInformer framework.SharedIndexInformer, kubeClient *
 		newSyncer: func(blockingPet *pcb) *petSyncer {
 			return &petSyncer{pc, blockingPet}
 		},
-		queue: workqueue.New(),
+		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "petset"),
 	}
 
 	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
@@ -166,11 +166,13 @@ func (psc *PetSetController) addPod(obj interface{}) {
 // updatePod adds the petset for the current and old pods to the sync queue.
 // If the labels of the pod didn't change, this method enqueues a single petset.
 func (psc *PetSetController) updatePod(old, cur interface{}) {
-	if api.Semantic.DeepEqual(old, cur) {
-		return
-	}
 	curPod := cur.(*api.Pod)
 	oldPod := old.(*api.Pod)
+	if curPod.ResourceVersion == oldPod.ResourceVersion {
+		// Periodic resync will send update events for all known pods.
+		// Two different versions of the same pod will always have different RVs.
+		return
+	}
 	ps := psc.getPetSetForPod(curPod)
 	if ps == nil {
 		return
@@ -216,15 +218,16 @@ func (psc *PetSetController) getPodsForPetSet(ps *apps.PetSet) ([]*api.Pod, erro
 	if err != nil {
 		return []*api.Pod{}, err
 	}
-	petList, err := psc.podStore.Pods(ps.Namespace).List(sel)
+	pods, err := psc.podStore.Pods(ps.Namespace).List(sel)
 	if err != nil {
 		return []*api.Pod{}, err
 	}
-	pods := []*api.Pod{}
-	for _, p := range petList.Items {
-		pods = append(pods, &p)
+	// TODO: Do we need to copy?
+	result := make([]*api.Pod, 0, len(pods))
+	for i := range pods {
+		result = append(result, &(*pods[i]))
 	}
-	return pods, nil
+	return result, nil
 }
 
 // getPetSetForPod returns the pet set managing the given pod.
@@ -265,7 +268,9 @@ func (psc *PetSetController) worker() {
 			defer psc.queue.Done(key)
 			if errs := psc.syncHandler(key.(string)); len(errs) != 0 {
 				glog.Errorf("Error syncing PetSet %v, requeuing: %v", key.(string), errs)
-				psc.queue.Add(key)
+				psc.queue.AddRateLimited(key)
+			} else {
+				psc.queue.Forget(key)
 			}
 		}()
 	}
