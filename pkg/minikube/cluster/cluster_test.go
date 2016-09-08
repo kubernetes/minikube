@@ -325,6 +325,46 @@ func TestGetHostStatus(t *testing.T) {
 	checkState(state.Stopped.String())
 }
 
+func TestGetLocalkubeStatus(t *testing.T) {
+	api := tests.NewMockAPI()
+
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
+	}
+
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+	}
+	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
+
+	s.CommandToOutput = map[string]string{
+		localkubeStatusCommand: state.Running.String(),
+	}
+	if _, err := GetLocalkubeStatus(api); err != nil {
+		t.Fatalf("Error getting localkube status: %s", err)
+	}
+
+	s.CommandToOutput = map[string]string{
+		localkubeStatusCommand: state.Stopped.String(),
+	}
+	if _, err := GetLocalkubeStatus(api); err != nil {
+		t.Fatalf("Error getting localkube status: %s", err)
+	}
+
+	s.CommandToOutput = map[string]string{
+		localkubeStatusCommand: "Bad Output",
+	}
+	if _, err := GetLocalkubeStatus(api); err == nil {
+		t.Fatalf("Expected error in getting localkube status as ssh returned bad output")
+	}
+}
+
 func TestSetupCerts(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()

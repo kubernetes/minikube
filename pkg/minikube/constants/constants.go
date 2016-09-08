@@ -56,12 +56,14 @@ var LogFlags = [...]string{
 }
 
 const (
-	DefaultIsoUrl    = "https://storage.googleapis.com/minikube/minikube-0.6.iso"
-	DefaultIsoShaUrl = "https://storage.googleapis.com/minikube/minikube-0.6.iso.sha256"
-	DefaultMemory    = 1024
-	DefaultCPUS      = 1
-	DefaultDiskSize  = "20g"
-	DefaultVMDriver  = "virtualbox"
+	DefaultIsoUrl       = "https://storage.googleapis.com/minikube/minikube-0.6.iso"
+	DefaultIsoShaUrl    = "https://storage.googleapis.com/minikube/minikube-0.6.iso.sha256"
+	DefaultMemory       = 1024
+	DefaultCPUS         = 1
+	DefaultDiskSize     = "20g"
+	DefaultVMDriver     = "virtualbox"
+	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
+		"localkube: {{.LocalkubeStatus}}\n"
 )
 
 var DefaultKubernetesVersion = version.Get().GitVersion
@@ -69,6 +71,7 @@ var DefaultKubernetesVersion = version.Get().GitVersion
 const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
+	LocalkubePIDPath       = "/var/run/localkube.pid"
 )
 
 var ConfigFilePath = MakeMiniPath("config")
