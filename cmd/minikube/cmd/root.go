@@ -71,8 +71,9 @@ var RootCmd = &cobra.Command{
 		}
 
 		shouldShowLibmachineLogs := viper.GetBool(showLibmachineLogs)
-
-		log.SetDebug(shouldShowLibmachineLogs)
+		if glog.V(3) {
+			log.SetDebug(true)
+		}
 		if !shouldShowLibmachineLogs {
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
