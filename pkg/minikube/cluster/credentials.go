@@ -19,6 +19,7 @@ package cluster
 import (
 	"net"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -30,13 +31,13 @@ var (
 func GenerateCerts(caCert, caKey, pub, priv string, ip net.IP) error {
 	if !(util.CanReadFile(caCert) && util.CanReadFile(caKey)) {
 		if err := util.GenerateCACert(caCert, caKey); err != nil {
-			return err
+			return errors.Wrap(err, "Error generating certificate")
 		}
 	}
 
 	ips := []net.IP{ip, internalIP}
 	if err := util.GenerateSignedCert(pub, priv, ips, util.GetAlternateDNS(util.DefaultDNSDomain), caCert, caKey); err != nil {
-		return err
+		return errors.Wrap(err, "Error generating signed cert")
 	}
 	return nil
 }

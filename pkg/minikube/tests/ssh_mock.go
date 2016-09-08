@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -50,11 +51,11 @@ func NewSSHServer() (*SSHServer, error) {
 
 	private, err := rsa.GenerateKey(rand.Reader, 2014)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error generating RSA key")
 	}
 	signer, err := ssh.NewSignerFromKey(private)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error creating signer from key")
 	}
 	s.Config.AddHostKey(signer)
 	return s, nil
@@ -68,7 +69,7 @@ type execRequest struct {
 func (s *SSHServer) Start() (int, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Error creating tcp listener for ssh server")
 	}
 
 	// Main loop, listen for connections and store the commands.
@@ -126,11 +127,11 @@ func (s *SSHServer) Start() (int, error) {
 	// Parse and return the port.
 	_, p, err := net.SplitHostPort(listener.Addr().String())
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Error splitting host port")
 	}
 	port, err := strconv.Atoi(p)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "Error converting port string to integer")
 	}
 	return port, nil
 }

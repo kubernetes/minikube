@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -27,7 +26,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -37,12 +36,11 @@ import (
 func updateLocalkubeFromAsset(client *ssh.Client) error {
 	contents, err := Asset("out/localkube")
 	if err != nil {
-		glog.Infof("Error loading asset out/localkube: %s", err)
-		return err
+		return errors.Wrap(err, "Error loading asset out/localkube")
 	}
 	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
 		"localkube", "0777", client); err != nil {
-		return err
+		return errors.Wrap(err, "Error transferring localkube via ssh")
 	}
 	return nil
 }
@@ -68,12 +66,12 @@ func (l *localkubeCacher) cacheLocalkube(body io.ReadCloser) error {
 	// store localkube inside the .minikube dir
 	out, err := os.Create(l.getLocalkubeCacheFilepath())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error creating localkube local file")
 	}
 	defer out.Close()
 	defer body.Close()
 	if _, err = io.Copy(out, body); err != nil {
-		return err
+		return errors.Wrap(err, "Error writing localkube to file")
 	}
 	return nil
 }
@@ -85,17 +83,19 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 		url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion,
 			constants.LocalkubeLinuxFilename)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Error getting localkube download url")
 		}
 		resp, err = http.Get(url)
-		return err
+		if err != nil {
+			return errors.Wrap(err, "Error downloading localkube via http")
+		}
+		return nil
 	}
-
 	if err = util.Retry(5, downloader); err != nil {
-		return err
+		return errors.Wrap(err, "Max error attempts retrying localkube downloader")
 	}
 	if err = l.cacheLocalkube(resp.Body); err != nil {
-		return err
+		return errors.Wrap(err, "Error caching localkube to local directory")
 	}
 	return nil
 }
@@ -103,7 +103,7 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
 	urlObj, err := url.Parse(l.k8sConf.KubernetesVersion)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error parsing --kubernetes-version url")
 	}
 	if urlObj.Scheme == fileScheme {
 		return l.updateLocalkubeFromFile(client)
@@ -115,11 +115,11 @@ func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
 func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {
 	if !l.isLocalkubeCached() {
 		if err := l.downloadAndCacheLocalkube(); err != nil {
-			return err
+			return errors.Wrap(err, "Error attempting to download and cache localkube")
 		}
 	}
 	if err := l.transferCachedLocalkubeToVM(client); err != nil {
-		return err
+		return errors.Wrap(err, "Error transferring cached localkube to VM")
 	}
 	return nil
 }
@@ -127,13 +127,12 @@ func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {
 func (l *localkubeCacher) transferCachedLocalkubeToVM(client *ssh.Client) error {
 	contents, err := ioutil.ReadFile(l.getLocalkubeCacheFilepath())
 	if err != nil {
-		glog.Infof("Error loading asset out/localkube: %s", err)
-		return err
+		return errors.Wrap(err, "Error reading file: localkube cache filepath")
 	}
 
 	if err = sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
 		"localkube", "0777", client); err != nil {
-		return err
+		return errors.Wrap(err, "Error transferring cached localkube to VM via ssh")
 	}
 	return nil
 }
@@ -143,12 +142,11 @@ func (l *localkubeCacher) updateLocalkubeFromFile(client *ssh.Client) error {
 	path = filepath.FromSlash(path)
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
-		glog.Infof("Error loading file %s: %s", path, err)
-		return err
+		return errors.Wrapf(err, "Error reading localkube file at %s", path)
 	}
 	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
 		"localkube", "0777", client); err != nil {
-		return err
+		return errors.Wrapf(err, "Error transferring specified localkube file at %s to VM via ssh", path)
 	}
 	return nil
 }

@@ -24,6 +24,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -39,7 +40,7 @@ type SSHSession interface {
 func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 	h, err := newSSHHost(d)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error creating new ssh host from driver")
 
 	}
 	auth := &machinessh.Auth{}
@@ -48,12 +49,12 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 	}
 	config, err := machinessh.NewNativeConfig(h.Username, auth)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Error creating new native config from ssh using: %s, %s", h.Username, auth)
 	}
 
 	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", h.IP, h.Port), &config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error dialing tcp via ssh client")
 	}
 	return client, nil
 }
@@ -65,18 +66,18 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", remotedir)
 	for _, cmd := range []string{deleteCmd, mkdirCmd} {
 		if err := RunCommand(c, cmd); err != nil {
-			return err
+			return errors.Wrapf(err, "Error running command: %s", cmd)
 		}
 	}
 
 	s, err := c.NewSession()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error creating new session via ssh client")
 	}
 
 	w, err := s.StdinPipe()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error accessing StdinPipe via ssh session")
 	}
 	// The scpcmd below *should not* return until all data is copied and the
 	// StdinPipe is closed. But let's use a WaitGroup to make it expicit.
@@ -92,7 +93,7 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 	}()
 	scpcmd := fmt.Sprintf("sudo /usr/local/bin/scp -t %s", remotedir)
 	if err := s.Run(scpcmd); err != nil {
-		return err
+		return errors.Wrap(err, "Error running scp command")
 	}
 	wg.Wait()
 
@@ -103,7 +104,7 @@ func RunCommand(c *ssh.Client, cmd string) error {
 	s, err := c.NewSession()
 	defer s.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error creating new session for ssh client")
 	}
 
 	return s.Run(cmd)
@@ -120,11 +121,11 @@ func newSSHHost(d drivers.Driver) (*sshHost, error) {
 
 	ip, err := d.GetSSHHostname()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error getting ssh host name for driver")
 	}
 	port, err := d.GetSSHPort()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Error getting ssh port for driver")
 	}
 	return &sshHost{
 		IP:         ip,
