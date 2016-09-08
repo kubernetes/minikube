@@ -1,7 +1,7 @@
 # Minikube
 
 [![Build Status](https://travis-ci.org/kubernetes/minikube.svg?branch=master)](https://travis-ci.org/kubernetes/minikube)
-[![codecov](https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg)](https://codecov.io/gh/aaron-prindle/minikube)
+[![codecov](https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg)](https://codecov.io/gh/kubernetes/minikube)
 
 ## What is Minikube?
 
@@ -189,6 +189,10 @@ To access a private container registry, follow the steps on [this page](http://k
 
 We recommend you use ImagePullSecrets, but if you would like to configure access on the minikube VM you can place the `.dockercfg` in the `/home/docker` directory or the `config.json` in the `/home/docker/.docker` directory.
 
+## Add-ons
+
+In order to have minikube properly start/restart custom addons, place the addon(s) you wish to be launched with minikube in the `.minikube/addons` directory.  Addons in this folder will be moved to the minikubeVM and launched each time minikube is started/restarted.
+
 ## Documentation
 
 For a list of minikube's available commands see the [full CLI docs](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md).
@@ -224,27 +228,14 @@ Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmach
 
 For more information about minikube, see the [proposal](https://github.com/kubernetes/kubernetes/blob/master/docs/proposals/local-cluster-ux.md).
 
-## Goals and Non-Goals
-For the goals and non-goals of the minikube project, please see our [roadmap](ROADMAP.md).
-
-## Development Guide
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull requests.
-
-## Building Minikube
-For instructions on how to build/test minikube from source, see the [build guide](BUILD_GUIDE.md)
-
-## Adding a New Dependency
-For instructions on how to add a new dependency to minikube see the [adding dependencies guide](ADD_DEPENDENCY.md)
-
-## Updating Kubernetes
-For instructions on how to add a new dependency to minikube see the [updating kubernetes guide](UPDATE_KUBERNETES.md)
-
-## Steps to Release Minikube
-For instructions on how to release a new version of minikube see the [release guide](https://github.com/kubernetes/minikube/blob/master/RELEASING.md)
-
-## Steps to Release Localkube
-For instructions on how to release a new version of localkube see the [localkube release guide](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
+## Additional Links:
+* **Goals and Non-Goals**: For the goals and non-goals of the minikube project, please see our [roadmap](ROADMAP.md).
+* **Development Guide**: See [CONTRIBUTING.md](CONTRIBUTING.md) for an overview of how to send pull requests.
+* **Building Minikube**: For instructions on how to build/test minikube from source, see the [build guide](BUILD_GUIDE.md)
+* **Adding a New Dependency**: For instructions on how to add a new dependency to minikube see the [adding dependencies guide](ADD_DEPENDENCY.md)
+* **Updating Kubernetes**: For instructions on how to add a new dependency to minikube see the [updating kubernetes guide](UPDATE_KUBERNETES.md)
+* **Steps to Release Minikube**: For instructions on how to release a new version of minikube see the [release guide](https://github.com/kubernetes/minikube/blob/master/RELEASING.md)
+* **Steps to Release Localkube**: For instructions on how to release a new version of localkube see the [localkube release guide](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
 
 ## Community
 
