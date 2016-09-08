@@ -20,6 +20,7 @@ import (
 	goflag "flag"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/docker/machine/libmachine/log"
 	"github.com/golang/glog"
@@ -129,6 +130,9 @@ func initConfig() {
 
 func setupViper() {
 	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	// Replaces '-' in flags with '_' in env variables
+	// e.g. show-libmachine-logs => $ENVPREFIX_SHOW_LIBMACHINE_LOGS
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
 	viper.SetDefault(config.WantUpdateNotification, true)
