@@ -40,8 +40,25 @@ func GetStartCommand(kubernetesConfig KubernetesConfig) string {
 			flagVals = append(flagVals, fmt.Sprintf("--%s %s", logFlag, logVal.Value.String()))
 		}
 	}
+
+	if kubernetesConfig.ContainerRuntime != "" {
+		flagVals = append(flagVals, "--container-runtime="+kubernetesConfig.ContainerRuntime)
+	}
+
+	if kubernetesConfig.NetworkPlugin != "" {
+		flagVals = append(flagVals, "--network-plugin="+kubernetesConfig.NetworkPlugin)
+	}
+
 	flags := strings.Join(flagVals, " ")
-	return fmt.Sprintf(startCommandFmtStr, flags, kubernetesConfig.NodeIP, constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath, constants.LocalkubePIDPath)
+
+	return fmt.Sprintf(
+		startCommandFmtStr,
+		flags,
+		kubernetesConfig.NodeIP,
+		constants.RemoteLocalKubeErrPath,
+		constants.RemoteLocalKubeOutPath,
+		constants.LocalkubePIDPath,
+	)
 }
 
 var localkubeStatusCommand = fmt.Sprintf(`

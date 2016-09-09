@@ -52,6 +52,8 @@ type LocalkubeServer struct {
 	ShowVersion              bool
 	RuntimeConfig            config.ConfigurationMap
 	NodeIP                   net.IP
+	ContainerRuntime         string
+	NetworkPlugin            string
 }
 
 func (lk *LocalkubeServer) AddServer(server Server) {

@@ -63,6 +63,8 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.BoolVar(&s.ShowVersion, "version", s.ShowVersion, "If localkube should just print the version and exit.")
 	flag.Var(&s.RuntimeConfig, "runtime-config", "A set of key=value pairs that describe runtime configuration that may be passed to apiserver. apis/<groupVersion> key can be used to turn on/off specific api versions. apis/<groupVersion>/<resource> can be used to turn on/off specific resources. api/all and api/legacy are special keys to control all and legacy api versions respectively.")
 	flag.IPVar(&s.NodeIP, "node-ip", s.NodeIP, "IP address of the node. If set, kubelet will use this IP address for the node.")
+	flag.StringVar(&s.ContainerRuntime, "container-runtime", "", "The container runtime to be used")
+	flag.StringVar(&s.NetworkPlugin, "network-plugin", "", "The name of the network plugin")
 
 	// These two come from vendor/ packages that use flags. We should hide them
 	flag.CommandLine.MarkHidden("google-json-key")
