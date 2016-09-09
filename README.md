@@ -7,6 +7,9 @@ It includes:
 - rkt
 - docker
 
+**Note**: This is currently intended to be a stop-gap solution. In the middleterm this is meant to be replaced by a "slim" version of a bootable CoreOS image.
+
+
 ## Quickstart
 
 To use this ISO image, use the `--iso-url` flag in minikube:
@@ -16,7 +19,7 @@ $ minikube start \
     --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
 ```
 
-To test the minikube rkt container runtime support, make sure you have a locally built version of minikube including https://github.com/kubernetes/minikube/pull/511, and execute:
+To test the minikube rkt container runtime support, make sure you have a locally built version of the minikube master branch, and execute:
 
 ```
 $ cd $HOME/src/minikube/src/k8s.io/minikube
@@ -43,8 +46,6 @@ $ make
 ```
 
 The bootable ISO image will be available in `output/images/rootfs.iso9660`.
-
-**Note**: This is currently intended to be a stop-gap solution. In the middleterm this is meant to be replaced by a "slim" version of a bootable CoreOS image.
 
 ### Buildroot configuration
 
