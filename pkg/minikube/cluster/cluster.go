@@ -190,6 +190,8 @@ type MachineConfig struct {
 type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
+	ContainerRuntime  string
+	NetworkPlugin     string
 }
 
 // StartCluster starts a k8s cluster on the specified Host.

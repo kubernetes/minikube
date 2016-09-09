@@ -91,7 +91,8 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 		io.Copy(w, reader)
 		fmt.Fprint(w, "\x00")
 	}()
-	scpcmd := fmt.Sprintf("sudo /usr/local/bin/scp -t %s", remotedir)
+
+	scpcmd := fmt.Sprintf("sudo scp -t %s", remotedir)
 	if err := s.Run(scpcmd); err != nil {
 		return errors.Wrap(err, "Error running scp command")
 	}

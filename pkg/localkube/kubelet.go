@@ -43,6 +43,15 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 
 	config.NodeIP = lk.NodeIP.String()
 
+	if lk.NetworkPlugin != "" {
+		config.NetworkPluginName = lk.NetworkPlugin
+	}
+
+	// Runtime
+	if lk.ContainerRuntime != "" {
+		config.ContainerRuntime = lk.ContainerRuntime
+	}
+
 	// Use the host's resolver config
 	if lk.Containerized {
 		config.ResolverConfig = "/rootfs/etc/resolv.conf"
