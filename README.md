@@ -9,12 +9,14 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
 
 ### Features
 
-* Minikube packages and configures a Linux VM, Docker and all Kubernetes components, optimized for local development.
+* Minikube packages and configures a Linux VM, the container runtime, and all Kubernetes components, optimized for local development.
 * Minikube supports Kubernetes features such as:
   * DNS
   * NodePorts
   * ConfigMaps and Secrets
   * Dashboards
+  * Container Runtime: Docker, and [rkt](https://github.com/coreos/rkt)
+  * Enabling CNI (Container Network Interface)
 
 ## Installation
 
@@ -80,6 +82,17 @@ $ minikube stop
 Stopping local Kubernetes cluster...
 Stopping "minikube"...
 ```
+
+To use [rkt](https://github.com/coreos/rkt) as the container runtime, execute:
+
+```shell
+$ minikube start \
+    --network-plugin=cni \
+    --container-runtime=rkt \
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
+```
+
+This will use an alternative minikube ISO image containing both rkt, and Docker, and enable CNI networking.
 
 ### Driver plugins
 
@@ -156,7 +169,6 @@ To determine the NodePort for your service, you can use a `kubectl` command like
 `kubectl get service $SERVICE --output='jsonpath="{.spec.ports[0].NodePort}"'`
 
 ## Persistent Volumes
-
 Minikube supports [PersistentVolumes](http://kubernetes.io/docs/user-guide/persistent-volumes/) of type `hostPath`.
 These PersistentVolumes are mapped to a directory inside the minikube VM.
 
