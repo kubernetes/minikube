@@ -19,4 +19,5 @@ package config
 const (
 	WantUpdateNotification    = "WantUpdateNotification"
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
+	WantReportError           = "WantReportError"
 )

@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -90,13 +89,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	err := util.Retry(3, start)
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
-		os.Exit(1)
+		util.MaybeReportErrorAndExit(err)
 	}
 
 	ip, err := host.Driver.GetIP()
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
-		os.Exit(1)
+		util.MaybeReportErrorAndExit(err)
 	}
 	kubernetesConfig := cluster.KubernetesConfig{
 		KubernetesVersion: viper.GetString(kubernetesVersion),
@@ -106,17 +105,17 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
-		os.Exit(1)
+		util.MaybeReportErrorAndExit(err)
 	}
 
 	if err := cluster.SetupCerts(host.Driver); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
-		os.Exit(1)
+		util.MaybeReportErrorAndExit(err)
 	}
 
 	if err := cluster.StartCluster(host, kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
-		os.Exit(1)
+		util.MaybeReportErrorAndExit(err)
 	}
 
 	kubeHost, err := host.Driver.GetURL()
@@ -133,7 +132,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	clientKey := constants.MakeMiniPath("apiserver.key")
 	if err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
-		os.Exit(1)
+		util.MaybeReportErrorAndExit(err)
 	}
 	fmt.Println("Kubectl is now configured to use the cluster.")
 }
