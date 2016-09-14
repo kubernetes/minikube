@@ -17,6 +17,9 @@ Configurable fields:
  * show-libmachine-logs
  * log_dir
  * kubernetes-version
+ * WantUpdateNotification
+ * ReminderWaitPeriodInHours
+ * WantReportError
 
 ```
 minikube config SUBCOMMAND [flags]

@@ -20,4 +20,5 @@ const (
 	WantUpdateNotification    = "WantUpdateNotification"
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
 	WantReportError           = "WantReportError"
+	WantReportErrorPrompt     = "WantReportErrorPrompt"
 )

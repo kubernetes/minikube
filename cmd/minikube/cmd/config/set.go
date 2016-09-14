@@ -33,7 +33,7 @@ var configSetCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, "usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
 			os.Exit(1)
 		}
-		err := set(args[0], args[1])
+		err := Set(args[0], args[1])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -45,7 +45,7 @@ func init() {
 	ConfigCmd.AddCommand(configSetCmd)
 }
 
-func set(name string, value string) error {
+func Set(name string, value string) error {
 	s, err := findSetting(name)
 	if err != nil {
 		return err

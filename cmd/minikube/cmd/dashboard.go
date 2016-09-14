@@ -24,9 +24,9 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
 
 	commonutil "k8s.io/minikube/pkg/util"
 )
@@ -50,14 +50,14 @@ var dashboardCmd = &cobra.Command{
 
 		if err := commonutil.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
 			fmt.Fprintln(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s", service, err)
-			util.MaybeReportErrorAndExit(err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 
 		url, err := cluster.GetServiceURL(api, namespace, service)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running.")
-			util.MaybeReportErrorAndExit(err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 		if dashboardURLMode {
 			fmt.Fprintln(os.Stdout, url)
