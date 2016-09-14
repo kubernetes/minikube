@@ -17,10 +17,14 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Returns a function that will return n errors, then return successfully forever.
@@ -106,5 +110,60 @@ Error 2`
 	m = MultiError{}
 	if err := m.ToError(); err != nil {
 		t.Fatalf("Unexpected error: %s", err)
+	}
+}
+
+func TestFormatError(t *testing.T) {
+	var testErr error
+	if _, err := FormatError(testErr); err == nil {
+		t.Fatalf("FormatError should have errored with a nil error input")
+	}
+	testErr = fmt.Errorf("Not a valid error to format as there is no stacktrace")
+
+	if out, err := FormatError(testErr); err == nil {
+		t.Fatalf("FormatError should have errored with a non pkg/errors error (no stacktrace info): %s", out)
+	}
+
+	testErr = errors.New("TestFormatError 1")
+	errors.Wrap(testErr, "TestFormatError 2")
+	errors.Wrap(testErr, "TestFormatError 3")
+
+	_, err := FormatError(testErr)
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+}
+
+func TestMarshallError(t *testing.T) {
+	testErr := errors.New("TestMarshallError 1")
+	errors.Wrap(testErr, "TestMarshallError 2")
+	errors.Wrap(testErr, "TestMarshallError 3")
+
+	errMsg, _ := FormatError(testErr)
+	if _, err := MarshallError(errMsg, "default", version.GetVersion()); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+}
+
+func TestUploadError(t *testing.T) {
+	testErr := errors.New("TestUploadError 1")
+	errors.Wrap(testErr, "TestUploadError 2")
+	errors.Wrap(testErr, "TestUploadError 3")
+	errMsg, _ := FormatError(testErr)
+	jsonErrMsg, _ := MarshallError(errMsg, "default", version.GetVersion())
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, world!")
+	}))
+
+	if err := UploadError(jsonErrMsg, server.URL); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "failed to write report", 400)
+	}))
+	if err := UploadError(jsonErrMsg, server.URL); err == nil {
+		t.Fatalf("UploadError should have errored from a 400 response")
 	}
 }
