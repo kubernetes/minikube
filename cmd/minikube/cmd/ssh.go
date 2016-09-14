@@ -19,10 +19,11 @@ package cmd
 import (
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
 )
 
 // sshCmd represents the docker-ssh command
@@ -34,9 +35,10 @@ var sshCmd = &cobra.Command{
 		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 		defer api.Close()
 		err := cluster.CreateSSHShell(api, args)
+		err = errors.Wrap(err, "Error attempting to ssh/run-ssh-command")
 		if err != nil {
-			glog.Errorln("Error attempting to ssh into machine: ", err)
-			util.MaybeReportErrorAndExit(err)
+			glog.Errorln(err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 	},
 }
