@@ -25,6 +25,7 @@ BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
 BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.6.2-1
+IS_EXE ?=
 
 ifeq ($(IN_DOCKER),1)
 	GOPATH := /go
@@ -46,8 +47,11 @@ MKGOPATH := if [ ! -e $(GOPATH)/src/$(ORG) ]; then mkdir -p $(GOPATH)/src/$(ORG)
 LOCALKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
-out/minikube: out/minikube-$(GOOS)-$(GOARCH)
-	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube
+ifeq ($(GOOS),windows)
+	IS_EXE = ".exe"
+endif
+out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
+	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH)$(IS_EXE) $(BUILD_DIR)/minikube$(IS_EXE)
 
 out/localkube: $(shell $(LOCALKUBEFILES))
 	$(MKGOPATH)
