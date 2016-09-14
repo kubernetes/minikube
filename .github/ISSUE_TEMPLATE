@@ -21,7 +21,7 @@ explain why.
 
 **Environment**:
 - **OS** (e.g. from /etc/os-release):
-- **VM Driver** (e.g. `cat ~/.minikube/machines/minikubeVM/config.json | grep DriverName`):
+- **VM Driver** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep DriverName`):
 - **Docker version** (e.g. `docker -v`):
 - **Install tools**:
 - **Others**:
