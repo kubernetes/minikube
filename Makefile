@@ -48,6 +48,7 @@ MINIKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io
 
 out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube
+	ln -s $(BUILD_DIR)/minikube $(GOPATH)/bin/minikube
 
 out/localkube: $(shell $(LOCALKUBEFILES))
 	$(MKGOPATH)
