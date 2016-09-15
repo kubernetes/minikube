@@ -52,7 +52,7 @@ out/minikube: out/minikube-$(GOOS)-$(GOARCH)
 out/localkube: $(shell $(LOCALKUBEFILES))
 	$(MKGOPATH)
 ifeq ($(BUILD_OS),Linux)
-	CGO_ENABLED=1 go build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=0 go build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
 	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
 endif
