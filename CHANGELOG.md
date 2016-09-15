@@ -1,5 +1,14 @@
 # Minikube Release Notes
 
+## Version 0.10.0 - 9/15/2016
+* Updated the Kubernetes dashboard to v1.4.0
+* Added experimental rkt support
+* Enabled DynamicProvisioning of volumes
+* Improved the output of the `minikube status` command
+* Added `minikube config get` and `minikube config set` commands
+* Fixed a bug ensuring that the node IP is routable
+* Renamed the created VM from minikubeVM to minikube
+
 ## Version 0.9.0 - 9/1/2016
 * Added Hyper-V support for Windows
 * Added debug-level logging for show-libmachine-logs
