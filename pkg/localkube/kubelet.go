@@ -41,7 +41,9 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	config.ClusterDomain = lk.DNSDomain
 	config.ClusterDNS = lk.DNSIP.String()
 
-	config.NodeIP = lk.NodeIP.String()
+	if lk.NodeIP.String() != "" {
+		config.NodeIP = lk.NodeIP.String()
+	}
 
 	if lk.NetworkPlugin != "" {
 		config.NetworkPluginName = lk.NetworkPlugin

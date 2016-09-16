@@ -44,6 +44,7 @@ const (
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
 	networkPlugin         = "network-plugin"
+	nodeIP                = "node-ip"
 )
 
 var (
@@ -92,14 +93,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		util.MaybeReportErrorAndExit(err)
 	}
 
-	ip, err := host.Driver.GetIP()
-	if err != nil {
-		glog.Errorln("Error starting host: ", err)
-		util.MaybeReportErrorAndExit(err)
-	}
 	kubernetesConfig := cluster.KubernetesConfig{
 		KubernetesVersion: viper.GetString(kubernetesVersion),
-		NodeIP:            ip,
+		NodeIP:            viper.GetString(nodeIP),
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
 	}
