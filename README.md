@@ -23,7 +23,7 @@ To test the minikube rkt container runtime support, make sure you have a locally
 
 ```
 $ cd $HOME/src/minikube/src/k8s.io/minikube
-$ ./out/mininikube start \
+$ ./out/minikube start \
     --container-runtime=rkt \
     --network-plugin=cni \
     --kubernetes-version=file://$HOME/minikube/src/k8s.io/minikube/out/localkube \
