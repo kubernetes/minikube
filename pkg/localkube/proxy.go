@@ -28,11 +28,11 @@ var (
 	OOMScoreAdj   = int32(qos.KubeProxyOOMScoreAdj)
 )
 
-func (lk LocalkubeServer) NewProxyServer() Server {
+func (lk Server) NewProxyServer() Server {
 	return NewSimpleServer("proxy", serverInterval, StartProxyServer(lk))
 }
 
-func StartProxyServer(lk LocalkubeServer) func() error {
+func StartProxyServer(lk Server) func() error {
 	config := options.NewProxyConfig()
 
 	// master details

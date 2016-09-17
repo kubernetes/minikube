@@ -34,10 +34,10 @@ const (
 )
 
 var (
-	// EtcdClientURLs have listeners created and handle etcd API traffic
+	// KubeEtcdClientURLs have listeners created and handle etcd API traffic
 	KubeEtcdClientURLs = []string{"http://localhost:2379"}
 
-	// EtcdPeerURLs don't have listeners created for them, they are used to pass Etcd validation
+	// KubeEtcdPeerURLs don't have listeners created for them, they are used to pass Etcd validation
 	KubeEtcdPeerURLs = []string{"http://localhost:2380"}
 )
 
@@ -49,7 +49,7 @@ type EtcdServer struct {
 }
 
 // NewEtcd creates a new default etcd Server using 'dataDir' for persistence. Panics if could not be configured.
-func (lk LocalkubeServer) NewEtcd(clientURLStrs, peerURLStrs []string, name, dataDirectory string) (*EtcdServer, error) {
+func (lk Server) NewEtcd(clientURLStrs, peerURLStrs []string, name, dataDirectory string) (*EtcdServer, error) {
 	clientURLs, err := types.NewURLs(clientURLStrs)
 	if err != nil {
 		return nil, err

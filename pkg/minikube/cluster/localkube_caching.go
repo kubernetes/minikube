@@ -107,9 +107,8 @@ func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
 	}
 	if urlObj.Scheme == fileScheme {
 		return l.updateLocalkubeFromFile(client)
-	} else {
-		return l.updateLocalkubeFromURL(client)
 	}
+	return l.updateLocalkubeFromURL(client)
 }
 
 func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {

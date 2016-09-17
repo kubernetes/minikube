@@ -40,7 +40,7 @@ import (
 )
 
 var defaultMachineConfig = MachineConfig{VMDriver: constants.DefaultVMDriver,
-	MinikubeISO: constants.DefaultIsoUrl}
+	MinikubeISO: constants.DefaultIsoURL}
 
 func TestCreateHost(t *testing.T) {
 	api := tests.NewMockAPI()

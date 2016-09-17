@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes_versions
+package kubernetesversions
 
 import (
 	"encoding/json"
@@ -51,7 +51,7 @@ type k8sRelease struct {
 
 type k8sReleases []k8sRelease
 
-func getJson(url string, target *k8sReleases) error {
+func getJSON(url string, target *k8sReleases) error {
 	r, err := http.Get(url)
 	if err != nil {
 		return errors.Wrapf(err, "Error getting json from url: %s via http", url)
@@ -63,7 +63,7 @@ func getJson(url string, target *k8sReleases) error {
 
 func getK8sVersionsFromURL(url string) (k8sReleases, error) {
 	var k8sVersions k8sReleases
-	if err := getJson(url, &k8sVersions); err != nil {
+	if err := getJSON(url, &k8sVersions); err != nil {
 		return k8sReleases{}, errors.Wrapf(err, "Error getting json via http with url: %s", url)
 	}
 	if len(k8sVersions) == 0 {

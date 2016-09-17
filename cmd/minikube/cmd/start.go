@@ -188,7 +188,7 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
 }
 
 func init() {
-	startCmd.Flags().String(isoURL, constants.DefaultIsoUrl, "Location of the minikube iso")
+	startCmd.Flags().String(isoURL, constants.DefaultIsoURL, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")

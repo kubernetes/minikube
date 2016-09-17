@@ -32,8 +32,8 @@ import (
 
 const serverInterval = 200
 
-// LocalkubeServer provides a fully functional Kubernetes cluster running entirely through goroutines
-type LocalkubeServer struct {
+// Server provides a fully functional Kubernetes cluster running entirely through goroutines
+type Server struct {
 	// Inherits Servers
 	Servers
 
@@ -56,48 +56,48 @@ type LocalkubeServer struct {
 	NetworkPlugin            string
 }
 
-func (lk *LocalkubeServer) AddServer(server Server) {
+func (lk *Server) AddServer(server Server) {
 	lk.Servers = append(lk.Servers, server)
 }
 
-func (lk LocalkubeServer) GetEtcdDataDirectory() string {
+func (lk Server) GetEtcdDataDirectory() string {
 	return path.Join(lk.LocalkubeDirectory, "etcd")
 }
 
-func (lk LocalkubeServer) GetDNSDataDirectory() string {
+func (lk Server) GetDNSDataDirectory() string {
 	return path.Join(lk.LocalkubeDirectory, "dns")
 }
 
-func (lk LocalkubeServer) GetCertificateDirectory() string {
+func (lk Server) GetCertificateDirectory() string {
 	return path.Join(lk.LocalkubeDirectory, "certs")
 }
-func (lk LocalkubeServer) GetPrivateKeyCertPath() string {
+func (lk Server) GetPrivateKeyCertPath() string {
 	return path.Join(lk.GetCertificateDirectory(), "apiserver.key")
 }
-func (lk LocalkubeServer) GetPublicKeyCertPath() string {
+func (lk Server) GetPublicKeyCertPath() string {
 	return path.Join(lk.GetCertificateDirectory(), "apiserver.crt")
 }
-func (lk LocalkubeServer) GetCAPrivateKeyCertPath() string {
+func (lk Server) GetCAPrivateKeyCertPath() string {
 	return path.Join(lk.GetCertificateDirectory(), "ca.key")
 }
-func (lk LocalkubeServer) GetCAPublicKeyCertPath() string {
+func (lk Server) GetCAPublicKeyCertPath() string {
 	return path.Join(lk.GetCertificateDirectory(), "ca.crt")
 }
 
-func (lk LocalkubeServer) GetAPIServerSecureURL() string {
+func (lk Server) GetAPIServerSecureURL() string {
 	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress.String(), lk.APIServerPort)
 }
 
-func (lk LocalkubeServer) GetAPIServerInsecureURL() string {
+func (lk Server) GetAPIServerInsecureURL() string {
 	return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress.String(), lk.APIServerInsecurePort)
 }
 
 // Get the host's public IP address
-func (lk LocalkubeServer) GetHostIP() (net.IP, error) {
+func (lk Server) GetHostIP() (net.IP, error) {
 	return utilnet.ChooseBindAddress(net.ParseIP("0.0.0.0"))
 }
 
-func (lk LocalkubeServer) loadCert(path string) (*x509.Certificate, error) {
+func (lk Server) loadCert(path string) (*x509.Certificate, error) {
 	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (lk LocalkubeServer) loadCert(path string) (*x509.Certificate, error) {
 	return x509.ParseCertificate(decoded.Bytes)
 }
 
-func (lk LocalkubeServer) shouldGenerateCerts(ips []net.IP) bool {
+func (lk Server) shouldGenerateCerts(ips []net.IP) bool {
 	if !(util.CanReadFile(lk.GetPublicKeyCertPath()) &&
 		util.CanReadFile(lk.GetPrivateKeyCertPath())) {
 		fmt.Println("Regenerating certs because the files aren't readable")
@@ -137,7 +137,7 @@ func (lk LocalkubeServer) shouldGenerateCerts(ips []net.IP) bool {
 	return false
 }
 
-func (lk LocalkubeServer) shouldGenerateCACerts() bool {
+func (lk Server) shouldGenerateCACerts() bool {
 	if !(util.CanReadFile(lk.GetCAPublicKeyCertPath()) &&
 		util.CanReadFile(lk.GetCAPrivateKeyCertPath())) {
 		fmt.Println("Regenerating CA certs because the files aren't readable")
@@ -153,7 +153,7 @@ func (lk LocalkubeServer) shouldGenerateCACerts() bool {
 	return false
 }
 
-func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
+func (lk Server) getAllIPs() ([]net.IP, error) {
 	ips := []net.IP{lk.ServiceClusterIPRange.IP}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
@@ -170,7 +170,7 @@ func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
 	return ips, nil
 }
 
-func (lk LocalkubeServer) GenerateCerts() error {
+func (lk Server) GenerateCerts() error {
 	if !lk.shouldGenerateCACerts() {
 		fmt.Println("Using these existing CA certs: ", lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath())
 	} else {

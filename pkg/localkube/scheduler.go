@@ -21,11 +21,11 @@ import (
 	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
 )
 
-func (lk LocalkubeServer) NewSchedulerServer() Server {
+func (lk Server) NewSchedulerServer() Server {
 	return NewSimpleServer("scheduler", serverInterval, StartSchedulerServer(lk))
 }
 
-func StartSchedulerServer(lk LocalkubeServer) func() error {
+func StartSchedulerServer(lk Server) func() error {
 	config := options.NewSchedulerServer()
 
 	// master details

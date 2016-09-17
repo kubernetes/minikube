@@ -26,7 +26,7 @@ import (
 func main() {
 
 	// Create the localkube server and parse the flags
-	cmd.Server = cmd.NewLocalkubeServer()
+	cmd.Server = cmd.NewServer()
 	cmd.AddFlags(cmd.Server)
 
 	if err := cmd.RootCmd.Execute(); err != nil {

@@ -21,11 +21,11 @@ import (
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
 )
 
-func (lk LocalkubeServer) NewKubeletServer() Server {
+func (lk Server) NewKubeletServer() Server {
 	return NewSimpleServer("kubelet", serverInterval, StartKubeletServer(lk))
 }
 
-func StartKubeletServer(lk LocalkubeServer) func() error {
+func StartKubeletServer(lk Server) func() error {
 	config := options.NewKubeletServer()
 
 	// Master details

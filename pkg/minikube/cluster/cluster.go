@@ -151,7 +151,7 @@ func GetHostStatus(api libmachine.API) (string, error) {
 
 // GetLocalkubeStatus gets the status of localkube from the host VM.
 func GetLocalkubeStatus(api libmachine.API) (string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := checkIfAPIExistsAndLoad(api)
 	if err != nil {
 		return "", err
 	}
@@ -481,8 +481,8 @@ func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	}
 
 	// Validate the ISO if it was the default URL, before writing it to disk.
-	if m.MinikubeISO == constants.DefaultIsoUrl {
-		if !isIsoChecksumValid(&isoData, constants.DefaultIsoShaUrl) {
+	if m.MinikubeISO == constants.DefaultIsoURL {
+		if !isIsoChecksumValid(&isoData, constants.DefaultIsoShaURL) {
 			return errors.New("Error validating ISO checksum.")
 		}
 	}
@@ -595,7 +595,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := checkIfAPIExistsAndLoad(api)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -618,7 +618,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 
 // GetHostLogs gets the localkube logs of the host VM.
 func GetHostLogs(api libmachine.API) (string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := checkIfAPIExistsAndLoad(api)
 	if err != nil {
 		return "", errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -629,7 +629,7 @@ func GetHostLogs(api libmachine.API) (string, error) {
 	return s, nil
 }
 
-func checkIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
+func checkIfAPIExistsAndLoad(api libmachine.API) (*host.Host, error) {
 	exists, err := api.Exists(constants.MachineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking that api exists for: ", constants.MachineName)
@@ -646,7 +646,7 @@ func checkIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
 }
 
 func CreateSSHShell(api libmachine.API, args []string) error {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := checkIfAPIExistsAndLoad(api)
 	if err != nil {
 		return errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -668,7 +668,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 }
 
 func GetServiceURL(api libmachine.API, namespace, service string) (string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := checkIfAPIExistsAndLoad(api)
 	if err != nil {
 		return "", errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -686,11 +686,11 @@ func GetServiceURL(api libmachine.API, namespace, service string) (string, error
 	return fmt.Sprintf("http://%s:%d", ip, port), nil
 }
 
-type serviceGetter interface {
+type ServiceGetter interface {
 	Get(name string) (*kubeApi.Service, error)
 }
 
-type endpointGetter interface {
+type EndpointGetter interface {
 	Get(name string) (*kubeApi.Endpoints, error)
 }
 
@@ -702,7 +702,7 @@ func getServicePort(namespace, service string) (int, error) {
 	return getServicePortFromServiceGetter(services, service)
 }
 
-func getServicePortFromServiceGetter(services serviceGetter, service string) (int, error) {
+func getServicePortFromServiceGetter(services ServiceGetter, service string) (int, error) {
 	svc, err := services.Get(service)
 	if err != nil {
 		return 0, errors.Wrapf(err, "Error getting %s service: %s", service)
@@ -732,7 +732,7 @@ func GetKubernetesClient() (*unversioned.Client, error) {
 	return client, nil
 }
 
-func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
+func GetKubernetesServicesWithNamespace(namespace string) (ServicfeGetter, error) {
 	client, err := GetKubernetesClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting kubernetes client")
@@ -741,7 +741,7 @@ func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error)
 	return services, nil
 }
 
-func GetKubernetesEndpointsWithNamespace(namespace string) (endpointGetter, error) {
+func GetKubernetesEndpointsWithNamespace(namespace string) (EndpointGetter, error) {
 	client, err := GetKubernetesClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting kubernetes client")

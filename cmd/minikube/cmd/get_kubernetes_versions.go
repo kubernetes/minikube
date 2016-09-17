@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
+	"k8s.io/minikube/pkg/minikube/kubernetesversions"
 )
 
 // getK8sVersionsCmd represents the ip command
@@ -29,7 +29,7 @@ var getK8sVersionsCmd = &cobra.Command{
 	Short: "Gets the list of available kubernetes versions available for minikube.",
 	Long:  `Gets the list of available kubernetes versions available for minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		kubernetes_versions.PrintKubernetesVersionsFromGCS(os.Stdout)
+		kubernetesversions.PrintKubernetesVersionsFromGCS(os.Stdout)
 	},
 }
 

@@ -88,7 +88,7 @@ type release struct {
 
 type releases []release
 
-func getJson(url string, target *releases) error {
+func getJSON(url string, target *releases) error {
 	r, err := http.Get(url)
 	if err != nil {
 		return errors.Wrap(err, "Error getting minikube version url via http")
@@ -101,7 +101,7 @@ func getJson(url string, target *releases) error {
 func getLatestVersionFromURL(url string) (semver.Version, error) {
 	var releases releases
 	glog.Infof("Checking for updates...")
-	if err := getJson(url, &releases); err != nil {
+	if err := getJSON(url, &releases); err != nil {
 		return semver.Version{}, errors.Wrap(err, "Error getting json from minikube version url")
 	}
 	if len(releases) == 0 {
