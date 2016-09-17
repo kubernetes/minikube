@@ -19,7 +19,20 @@ $ minikube start \
     --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
 ```
 
-To test the minikube rkt container runtime support, make sure you have a locally built version of the minikube master branch, and execute:
+To test the minikube rkt container runtime support, make sure you have minikube v0.10 or later, and execute:
+
+```
+$ minikube start \
+    --container-runtime=rkt \
+    --network-plugin=cni \
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
+```
+
+Note that the above statement includes `--network-plugin=cni` which is the recommended way of starting rtk+Kubernetes.
+
+## Hacking
+
+To test a locally-built version of the minikube master branch, include a `kubernetes-version` flag with a path to the `localkube` output from your source build directory:
 
 ```
 $ cd $HOME/src/minikube/src/k8s.io/minikube
@@ -27,12 +40,8 @@ $ ./out/minikube start \
     --container-runtime=rkt \
     --network-plugin=cni \
     --kubernetes-version=file://$HOME/minikube/src/k8s.io/minikube/out/localkube \
-    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.1/minikube-v0.0.3.iso
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
 ```
-
-Note that the above statement includes `--network-plugin=cni` which is the recommended way of starting rtk+Kubernetes.
-
-## Hacking
 
 ### Build instructions
 ```
