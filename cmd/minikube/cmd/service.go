@@ -99,14 +99,16 @@ func CheckService(namespace string, service string) error {
 	return CheckEndpointReady(endpoint)
 }
 
+const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
+
 func CheckEndpointReady(endpoint *kubeApi.Endpoints) error {
 	if len(endpoint.Subsets) == 0 {
-		fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...")
+		fmt.Fprintf(os.Stderr, notReadyMsg)
 		return errors.New("Endpoint for service is not ready yet")
 	}
 	for _, subset := range endpoint.Subsets {
 		if len(subset.NotReadyAddresses) != 0 {
-			fmt.Fprintf(os.Stderr, "Waiting, endpoint for service is not ready yet...")
+			fmt.Fprintf(os.Stderr, notReadyMsg)
 			return errors.New("Endpoint for service is not ready yet")
 		}
 	}
