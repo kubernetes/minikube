@@ -49,7 +49,7 @@ $ cd $HOME
 $ git clone https://github.com/coreos/minikube-iso
 $ git clone https://github.com/buildroot/buildroot
 $ cd buildroot
-$ git checkout 2016.08-rc3
+$ git checkout 2016.08
 $ make BR2_EXTERNAL=../minikube-iso minikube_defconfig
 $ make
 ```
