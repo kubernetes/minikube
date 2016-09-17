@@ -21,11 +21,11 @@ import (
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
 )
 
-func (lk LocalkubeServer) NewControllerManagerServer() Server {
+func (lk Server) NewControllerManagerServer() Server {
 	return NewSimpleServer("controller-manager", serverInterval, StartControllerManagerServer(lk))
 }
 
-func StartControllerManagerServer(lk LocalkubeServer) func() error {
+func StartControllerManagerServer(lk Server) func() error {
 	config := options.NewCMServer()
 
 	config.Master = lk.GetAPIServerInsecureURL()

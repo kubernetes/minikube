@@ -32,7 +32,7 @@ func errorGenerator(n int) func() error {
 	errorCount := 0
 	return func() (err error) {
 		if errorCount < n {
-			errorCount += 1
+			errorCount++
 			return errors.New("Error!")
 		}
 		return nil

@@ -29,7 +29,7 @@ import (
 )
 
 // The main instance of the current localkube server that is started
-var Server *localkube.LocalkubeServer
+var Server *localkube.Server
 
 func StartLocalkube() {
 
@@ -57,7 +57,7 @@ func StartLocalkube() {
 	fmt.Println("Shutting down...")
 }
 
-func SetupServer(s *localkube.LocalkubeServer) {
+func SetupServer(s *localkube.Server) {
 	if s.ShouldGenerateCerts {
 		if err := s.GenerateCerts(); err != nil {
 			fmt.Println("Failed to create certificates!")

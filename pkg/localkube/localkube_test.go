@@ -34,7 +34,7 @@ func TestGenerateCerts(t *testing.T) {
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 
 	_, ipRange, _ := net.ParseCIDR("10.0.0.0/24")
-	lk := LocalkubeServer{
+	lk := Server{
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
 	}
@@ -57,7 +57,7 @@ func TestGenerateCerts(t *testing.T) {
 }
 
 func TestShouldGenerateCertsNoFiles(t *testing.T) {
-	lk := LocalkubeServer{LocalkubeDirectory: "baddir"}
+	lk := Server{LocalkubeDirectory: "baddir"}
 	if !lk.shouldGenerateCerts(testIPs) {
 		t.Fatalf("No certs exist, we should generate.")
 	}
@@ -68,7 +68,7 @@ func TestShouldGenerateCertsOneFile(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 	ioutil.WriteFile(filepath.Join(tempDir, "certs", "apiserver.crt"), []byte(""), 0644)
-	lk := LocalkubeServer{LocalkubeDirectory: tempDir}
+	lk := Server{LocalkubeDirectory: tempDir}
 	if !lk.shouldGenerateCerts(testIPs) {
 		t.Fatalf("Not all certs exist, we should generate.")
 	}
@@ -81,7 +81,7 @@ func TestShouldGenerateCertsBadFiles(t *testing.T) {
 	for _, f := range []string{"apiserver.crt", "apiserver.key"} {
 		ioutil.WriteFile(filepath.Join(tempDir, "certs", f), []byte(""), 0644)
 	}
-	lk := LocalkubeServer{LocalkubeDirectory: tempDir}
+	lk := Server{LocalkubeDirectory: tempDir}
 	if !lk.shouldGenerateCerts(testIPs) {
 		t.Fatalf("Certs are badly formatted, we should generate.")
 	}
@@ -93,7 +93,7 @@ func TestShouldGenerateCertsMismatchedIP(t *testing.T) {
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 
 	_, ipRange, _ := net.ParseCIDR("10.0.0.0/24")
-	lk := LocalkubeServer{
+	lk := Server{
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
 	}
@@ -111,7 +111,7 @@ func TestShouldNotGenerateCerts(t *testing.T) {
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 
 	_, ipRange, _ := net.ParseCIDR("10.0.0.0/24")
-	lk := LocalkubeServer{
+	lk := Server{
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
 	}

@@ -53,7 +53,7 @@ type DNSServer struct {
 	done          chan struct{}
 }
 
-func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer string) (*DNSServer, error) {
+func (lk Server) NewDNSServer(rootDomain, clusterIP, kubeAPIServer string) (*DNSServer, error) {
 	// setup backing etcd store
 	peerURLs := []string{"http://localhost:9256"}
 	DNSEtcdURLs := []string{"http://localhost:49090"}
@@ -78,7 +78,7 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 	if err != nil {
 		return nil, err
 	}
-	keysApi := etcd.NewKeysAPI(etcdClient)
+	keysAPI := etcd.NewKeysAPI(etcdClient)
 
 	skyConfig := &skydns.Config{
 		DnsAddr: serverAddress,
@@ -93,7 +93,7 @@ func (lk LocalkubeServer) NewDNSServer(rootDomain, clusterIP, kubeAPIServer stri
 	skydns.SetDefaults(skyConfig)
 
 	backend := backendetcd.NewBackend(
-		keysApi,
+		keysAPI,
 		context.Background(),
 		&backendetcd.Config{
 			Ttl:      skyConfig.Ttl,

@@ -26,11 +26,11 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-func NewLocalkubeServer() *localkube.LocalkubeServer {
+func NewServer() *localkube.Server {
 	// net.ParseCIDR returns multiple values. Use the IPNet return value
 	_, defaultServiceClusterIPRange, _ := net.ParseCIDR(util.DefaultServiceClusterIP + "/24")
 
-	return &localkube.LocalkubeServer{
+	return &localkube.Server{
 		Containerized:            false,
 		EnableDNS:                true,
 		DNSDomain:                util.DefaultDNSDomain,
@@ -47,8 +47,8 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 	}
 }
 
-// AddFlags adds flags for a specific LocalkubeServer
-func AddFlags(s *localkube.LocalkubeServer) {
+// AddFlags adds flags for a specific Server
+func AddFlags(s *localkube.Server) {
 	flag.BoolVar(&s.Containerized, "containerized", s.Containerized, "If kubelet should run in containerized mode")
 	flag.BoolVar(&s.EnableDNS, "enable-dns", s.EnableDNS, "If dns should be enabled")
 	flag.StringVar(&s.DNSDomain, "dns-domain", s.DNSDomain, "The cluster dns domain")

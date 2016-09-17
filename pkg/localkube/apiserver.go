@@ -27,11 +27,11 @@ import (
 	"k8s.io/kubernetes/pkg/storage/storagebackend"
 )
 
-func (lk LocalkubeServer) NewAPIServer() Server {
+func (lk Server) NewAPIServer() Server {
 	return NewSimpleServer("apiserver", serverInterval, StartAPIServer(lk))
 }
 
-func StartAPIServer(lk LocalkubeServer) func() error {
+func StartAPIServer(lk Server) func() error {
 	config := options.NewAPIServer()
 
 	config.BindAddress = lk.APIServerAddress
