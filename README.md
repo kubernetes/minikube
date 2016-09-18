@@ -44,8 +44,8 @@ The following configurations have been tested:
 The following configurations are known to have issues currently:
 
 * OSX
-  * xhyve (https://github.com/kubernetes/minikube/issues/603)
-  * vmwarefusion (https://github.com/kubernetes/minikube/issues/571)
+  * xhyve (https://github.com/coreos/minikube-iso/issues/17)
+  * vmwarefusion (https://github.com/coreos/minikube-iso/issues/18)
 
 ## Hacking
 
