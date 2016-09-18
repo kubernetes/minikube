@@ -30,6 +30,23 @@ $ minikube start \
 
 Note that the above statement includes `--network-plugin=cni` which is the recommended way of starting rtk+Kubernetes.
 
+## Configurations
+
+The following configurations have been tested:
+
+* OSX
+  * Virtualbox
+
+* Linux
+  * Virtualbox
+  * KVM
+
+The following configurations are known to have issues currently:
+
+* OSX
+  * xhyve (https://github.com/kubernetes/minikube/issues/603)
+  * vmwarefusion (https://github.com/kubernetes/minikube/issues/571)
+
 ## Hacking
 
 To test a locally-built version of the minikube master branch, include a `kubernetes-version` flag with a path to the `localkube` output from your source build directory:
