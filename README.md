@@ -16,7 +16,7 @@ To use this ISO image, use the `--iso-url` flag in minikube:
 
 ```
 $ minikube start \
-    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.4/minikube-v0.0.4.iso
 ```
 
 To test the minikube rkt container runtime support, make sure you have minikube v0.10 or later, and execute:
@@ -25,7 +25,7 @@ To test the minikube rkt container runtime support, make sure you have minikube 
 $ minikube start \
     --container-runtime=rkt \
     --network-plugin=cni \
-    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.4/minikube-v0.0.4.iso
 ```
 
 Note that the above statement includes `--network-plugin=cni` which is the recommended way of starting rtk+Kubernetes.
@@ -36,6 +36,7 @@ The following configurations have been tested:
 
 * OSX
   * Virtualbox
+  * VMware Fusion
 
 * Linux
   * Virtualbox
@@ -45,7 +46,6 @@ The following configurations are known to have issues currently:
 
 * OSX
   * xhyve (https://github.com/coreos/minikube-iso/issues/17)
-  * vmwarefusion (https://github.com/coreos/minikube-iso/issues/18)
 
 ## Hacking
 
