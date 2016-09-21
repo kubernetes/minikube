@@ -24,7 +24,7 @@ define RKT_BIN_BUILD_CMDS
 		--trusted-key $(shell gpg2 --with-colons --keyid-format LONG -k security@coreos.com | egrep ^pub | cut -d ':' -f5) \
 		--verify-files $(BR2_DL_DIR)/rkt-v$(RKT_BIN_VERSION).tar.gz.asc
 
-	mkdir -p $(GO_ROOT)/var/lib/rkt
+	mkdir -p $(TARGET_DIR)/var/lib/rkt
 endef
 
 define RKT_BIN_INSTALL_TARGET_CMDS
