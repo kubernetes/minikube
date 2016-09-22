@@ -47,7 +47,13 @@ ignore="vendor\|\_gopath\|assets.go"
 
 # Check gofmt
 echo "Checking gofmt..."
-diff -u <(echo -n) <(gofmt -l -s . | grep -v ${ignore})
+set +e
+files=$(gofmt -l -s . | grep -v ${ignore})
+set -e
+if [[ $files ]]; then
+  echo "Gofmt errors in files: $files"
+  exit 1
+fi
 
 # Check boilerplate
 echo "Checking boilerplate..."
