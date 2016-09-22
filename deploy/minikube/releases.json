@@ -27,7 +27,7 @@
     "name": "v0.7.0",
       "checksums": {
           "darwin": "67af90d31c02e26bdb5a1af96a67b00feb288f20f96b4a67f7c4f1a40b382e99",
-          "linux": "f13b9263813299e6501ced376436ef86b20553a7f5bca19eaf53fad6fbd5729f",
+          "linux": "374c813dcfc23a49cf48a73361088251aa6f85e8cd06b42c9e6d43c1dfb4def4",
           "windows": "83d5b8c67d6535b6c156feb0e3b3485b54114436f6338dbdc86b4f92c8cecf43"
       }
   },
