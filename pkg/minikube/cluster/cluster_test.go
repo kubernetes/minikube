@@ -18,8 +18,6 @@ package cluster
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -577,12 +575,18 @@ func TestUpdateDefault(t *testing.T) {
 	}
 }
 
-var testLocalkubeBin = "hello"
+var testLocalkubeBin = "millikube"
+var testLocalkubeSha = "0121c7af3b5d0f4ead1d3d218b1d8f52a11eb8ce5be5772e2a6b58b9ed15adbe"
 
 type K8sVersionHandlerCorrect struct{}
 
 func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, testLocalkubeBin)
+	if strings.HasSuffix(r.URL.Path, ".sha256") {
+		io.WriteString(w, testLocalkubeSha)
+	}
+	if strings.HasSuffix(r.URL.Path, "localkube-linux-amd64") {
+		io.WriteString(w, testLocalkubeBin)
+	}
 }
 
 func TestUpdateKubernetesVersion(t *testing.T) {
@@ -605,9 +609,10 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 	}
 	handler := &K8sVersionHandlerCorrect{}
 	server := httptest.NewServer(handler)
+	defer server.Close()
 
 	kubernetesConfig := KubernetesConfig{
-		KubernetesVersion: server.URL,
+		KubernetesVersion: server.URL + "/localkube-linux-amd64",
 	}
 	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
 		t.Fatalf("Error updating cluster: %s", err)
@@ -618,88 +623,6 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 	contents := []byte(testLocalkubeBin)
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
-	}
-}
-
-type nopCloser struct {
-	io.Reader
-}
-
-func (nopCloser) Close() error { return nil }
-
-func TestIsLocalkubeCached(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	inputArr := [...]string{
-		"v1.3.3",
-		"1.3.0",
-		"http://test-url.localkube.com/localkube-binary",
-		"file:///test/dir/to/localkube-binary",
-	}
-
-	readCloser := nopCloser{}
-
-	localkubeCacher := localkubeCacher{
-		k8sConf: KubernetesConfig{},
-	}
-
-	inner := func(input string) {
-		localkubeCacher.k8sConf = KubernetesConfig{
-			KubernetesVersion: input,
-		}
-		if localkubeCacher.isLocalkubeCached() {
-			t.Errorf("IsLocalKubeCached returned true even though %s was not cached",
-				localkubeCacher.getLocalkubeCacheFilepath())
-		}
-
-		readCloser = nopCloser{bytes.NewBufferString("test-localkube-binary-data")}
-		localkubeCacher.cacheLocalkube(readCloser)
-		if !localkubeCacher.isLocalkubeCached() {
-			t.Errorf("IsLocalKubeCached returned false even though %s was cached",
-				localkubeCacher.getLocalkubeCacheFilepath())
-		}
-
-	}
-	for _, input := range inputArr {
-		inner(input)
-	}
-}
-
-func TestIsIsoChecksumValid(t *testing.T) {
-	tests := []struct {
-		shouldMatch bool
-		httpError   int
-		expected    bool
-	}{
-		// SHA matches, no error.
-		{true, 0, true},
-		// SHA matches, HTTP error.
-		{true, http.StatusNotFound, false},
-		// SHA doesn't match.
-		{false, 0, false},
-		// SHA doesn't match, HTTP error.
-		{false, http.StatusNotFound, false},
-	}
-
-	isoData := []byte("myIsoData")
-	isoCheckSum := sha256.Sum256(isoData)
-	for _, tc := range tests {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if tc.httpError != 0 {
-				w.WriteHeader(tc.httpError)
-			}
-			if tc.shouldMatch {
-				io.WriteString(w, hex.EncodeToString(isoCheckSum[:]))
-			} else {
-				w.Write([]byte("badCheckSum"))
-			}
-		}))
-		defer ts.Close()
-		valid := isIsoChecksumValid(&isoData, ts.URL)
-		if valid != tc.expected {
-			t.Errorf("Expected isIsoChecksumValid to be %v, was %v", tc.expected, valid)
-		}
 	}
 }
 
