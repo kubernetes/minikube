@@ -719,7 +719,7 @@ func getServicePortFromServiceGetter(services serviceGetter, service string) (in
 
 func GetKubernetesClient() (*unversioned.Client, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
+	configOverrides := &clientcmd.ConfigOverrides{CurrentContext: constants.MinikubeContext}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
