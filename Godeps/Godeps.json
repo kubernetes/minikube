@@ -1244,6 +1244,10 @@
 			"Rev": "77ed1c8a01217656d2080ad51981f6e99adaa177"
 		},
 		{
+			"ImportPath": "github.com/kr/fs",
+			"Rev": "2788f0dbd16903de03cb8186e5c7d97b69ad387b"
+		},
+		{
 			"ImportPath": "github.com/kr/pty",
 			"Comment": "release.r56-29-gf7ee69f",
 			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
@@ -1379,6 +1383,15 @@
 			"Rev": "ca53cad383cad2479bbba7f7a1a05797ec1386e4"
 		},
 		{
+			"ImportPath": "github.com/pelletier/go-buffruneio",
+			"Rev": "df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d"
+		},
+		{
+			"ImportPath": "github.com/pelletier/go-toml",
+			"Comment": "v0.3.5-16-g45932ad",
+			"Rev": "45932ad32dfdd20826f5671da37a5f3ce9f26a8d"
+		},
+		{
 			"ImportPath": "github.com/pkg/browser",
 			"Rev": "9302be274faad99162b9d48ec97b24306872ebb0"
 		},
@@ -1386,6 +1399,10 @@
 			"ImportPath": "github.com/pkg/errors",
 			"Comment": "v0.7.1",
 			"Rev": "17b591df37844cde689f4d5813e5cea0927d8dd2"
+		},
+		{
+			"ImportPath": "github.com/pkg/sftp",
+			"Rev": "8197a2e580736b78d704be0fc47b2324c0591a32"
 		},
 		{
 			"ImportPath": "github.com/pmezard/go-difflib/difflib",
@@ -1629,6 +1646,18 @@
 			"Rev": "f7b6fb74bcfab300b4e7e0e27b1fe6c0ed555f78"
 		},
 		{
+			"ImportPath": "github.com/spf13/afero",
+			"Rev": "52e4a6cfac46163658bd4f123c49b6ee7dc75f78"
+		},
+		{
+			"ImportPath": "github.com/spf13/afero/mem",
+			"Rev": "52e4a6cfac46163658bd4f123c49b6ee7dc75f78"
+		},
+		{
+			"ImportPath": "github.com/spf13/afero/sftp",
+			"Rev": "52e4a6cfac46163658bd4f123c49b6ee7dc75f78"
+		},
+		{
 			"ImportPath": "github.com/spf13/cast",
 			"Rev": "27b586b42e29bec072fe7379259cc719e1289da6"
 		},
@@ -1650,7 +1679,7 @@
 		},
 		{
 			"ImportPath": "github.com/spf13/viper",
-			"Rev": "c1ccc378a054ea8d4e38d8c67f6938d4760b53dd"
+			"Rev": "ed0a9674c6ef3646e218d8bb70708d250e94354b"
 		},
 		{
 			"ImportPath": "github.com/stretchr/objx",
@@ -1868,6 +1897,14 @@
 		{
 			"ImportPath": "golang.org/x/sys/windows/registry",
 			"Rev": "833a04a10549a95dc34458c195cbad61bbb6cb4d"
+		},
+		{
+			"ImportPath": "golang.org/x/text/transform",
+			"Rev": "a7c023693a94aedd6b6df43ae7526bfe9d2b7d22"
+		},
+		{
+			"ImportPath": "golang.org/x/text/unicode/norm",
+			"Rev": "a7c023693a94aedd6b6df43ae7526bfe9d2b7d22"
 		},
 		{
 			"ImportPath": "google.golang.org/api/cloudmonitoring/v2beta2",
