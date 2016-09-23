@@ -37,13 +37,12 @@ import (
 const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
 
 var (
-	timeLayout                = time.RFC1123
-	lastUpdateCheckFilePath   = constants.MakeMiniPath("last_update_check")
-	githubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
+	timeLayout              = time.RFC1123
+	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
 )
 
 func MaybePrintUpdateTextFromGithub(output io.Writer) {
-	MaybePrintUpdateText(output, githubMinikubeReleasesURL, lastUpdateCheckFilePath)
+	MaybePrintUpdateText(output, constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
 func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
@@ -82,13 +81,14 @@ func shouldCheckURLVersion(filePath string) bool {
 	return true
 }
 
-type release struct {
-	Name string
+type Release struct {
+	Name      string
+	Checksums map[string]string
 }
 
-type releases []release
+type Releases []Release
 
-func getJson(url string, target *releases) error {
+func getJson(url string, target *Releases) error {
 	r, err := http.Get(url)
 	if err != nil {
 		return errors.Wrap(err, "Error getting minikube version url via http")
@@ -99,16 +99,23 @@ func getJson(url string, target *releases) error {
 }
 
 func getLatestVersionFromURL(url string) (semver.Version, error) {
-	var releases releases
+	r, err := GetAllVersionsFromURL(url)
+	if err != nil {
+		return semver.Version{}, err
+	}
+	return semver.Make(strings.TrimPrefix(r[0].Name, version.VersionPrefix))
+}
+
+func GetAllVersionsFromURL(url string) (Releases, error) {
+	var releases Releases
 	glog.Infof("Checking for updates...")
 	if err := getJson(url, &releases); err != nil {
-		return semver.Version{}, errors.Wrap(err, "Error getting json from minikube version url")
+		return releases, errors.Wrap(err, "Error getting json from minikube version url")
 	}
 	if len(releases) == 0 {
-		return semver.Version{}, errors.Errorf("There were no json releases at the url specified: %s", url)
+		return releases, errors.Errorf("There were no json releases at the url specified: %s", url)
 	}
-	latestVersionString := releases[0].Name
-	return semver.Make(strings.TrimPrefix(latestVersionString, version.VersionPrefix))
+	return releases, nil
 }
 
 func writeTimeToFile(path string, inputTime time.Time) error {

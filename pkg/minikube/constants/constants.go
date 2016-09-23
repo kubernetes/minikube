@@ -64,6 +64,7 @@ const (
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
 		"localkube: {{.LocalkubeStatus}}\n"
+	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 )
 
 var DefaultKubernetesVersion = version.Get().GitVersion
