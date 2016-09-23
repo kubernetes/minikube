@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.6.3
+  - 1.7.1
 go_import_path: k8s.io/minikube
 install:
   - echo "Don't run anything."
