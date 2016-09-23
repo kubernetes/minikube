@@ -106,3 +106,8 @@ These are downstream packages that are being maintained by others and how to upg
 
 #### [How to Generate an Appcast Checkpoint for Homebrew](https://github.com/caskroom/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/appcast.md)
 `curl --compressed --location --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36' "https://github.com/kubernetes/minikube/releases.atom" | sed 's|<pubDate>[^<]*</pubDate>||g' | shasum --algorithm 256`
+
+## Release Verification
+
+After you've finished the release, run this command from the release commit to verify the release was done correctly:
+`make check-release`.

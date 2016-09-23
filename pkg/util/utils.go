@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -110,6 +111,23 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 		return "", errors.Wrap(err, "Error creating semver version from localkube version input string")
 	}
 	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
+}
+
+func ParseSHAFromURL(url string) (string, error) {
+	r, err := http.Get(url)
+	if err != nil {
+		return "", errors.Wrap(err, "Error downloading checksum.")
+	} else if r.StatusCode != http.StatusOK {
+		return "", errors.Errorf("Error downloading checksum. Got HTTP Error: %s", r.Status)
+	}
+
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return "", errors.Wrap(err, "Error reading checksum.")
+	}
+
+	return strings.Trim(string(body), "\n"), nil
 }
 
 type MultiError struct {

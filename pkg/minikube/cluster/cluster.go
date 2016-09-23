@@ -440,23 +440,11 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 }
 
 func isIsoChecksumValid(isoData *[]byte, shaURL string) bool {
-	r, err := http.Get(shaURL)
+	expectedSum, err := util.ParseSHAFromURL(shaURL)
 	if err != nil {
-		glog.Errorf("Error downloading ISO checksum: %s", err)
-		return false
-	} else if r.StatusCode != http.StatusOK {
-		glog.Errorf("Error downloading ISO checksum. Got HTTP Error: %s", r.Status)
+		glog.Errorf("Error retrieving SHA from URL: %s. Error: %s.", shaURL, err)
 		return false
 	}
-
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		glog.Errorf("Error reading ISO checksum: %s", err)
-		return false
-	}
-
-	expectedSum := strings.Trim(string(body), "\n")
 
 	b := sha256.Sum256(*isoData)
 	actualSum := hex.EncodeToString(b[:])

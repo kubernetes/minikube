@@ -22,18 +22,18 @@ import (
 	"io"
 	"net/http"
 
+	"k8s.io/minikube/pkg/minikube/constants"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
-const kubernetesVersionGCSURL = "https://storage.googleapis.com/minikube/k8s_releases.json"
-
 func PrintKubernetesVersionsFromGCS(output io.Writer) {
-	PrintKubernetesVersions(output, kubernetesVersionGCSURL)
+	PrintKubernetesVersions(output, constants.KubernetesVersionGCSURL)
 }
 
 func PrintKubernetesVersions(output io.Writer, url string) {
-	k8sVersions, err := getK8sVersionsFromURL(url)
+	k8sVersions, err := GetK8sVersionsFromURL(url)
 	if err != nil {
 		glog.Errorln(err)
 		return
@@ -45,13 +45,13 @@ func PrintKubernetesVersions(output io.Writer, url string) {
 	}
 }
 
-type k8sRelease struct {
+type K8sRelease struct {
 	Version string
 }
 
-type k8sReleases []k8sRelease
+type K8sReleases []K8sRelease
 
-func getJson(url string, target *k8sReleases) error {
+func getJson(url string, target *K8sReleases) error {
 	r, err := http.Get(url)
 	if err != nil {
 		return errors.Wrapf(err, "Error getting json from url: %s via http", url)
@@ -61,13 +61,13 @@ func getJson(url string, target *k8sReleases) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
-func getK8sVersionsFromURL(url string) (k8sReleases, error) {
-	var k8sVersions k8sReleases
+func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
+	var k8sVersions K8sReleases
 	if err := getJson(url, &k8sVersions); err != nil {
-		return k8sReleases{}, errors.Wrapf(err, "Error getting json via http with url: %s", url)
+		return K8sReleases{}, errors.Wrapf(err, "Error getting json via http with url: %s", url)
 	}
 	if len(k8sVersions) == 0 {
-		return k8sReleases{}, errors.Errorf("There were no json k8s Releases at the url specified: %s", url)
+		return K8sReleases{}, errors.Errorf("There were no json k8s Releases at the url specified: %s", url)
 	}
 	return k8sVersions, nil
 }
