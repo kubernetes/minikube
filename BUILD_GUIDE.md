@@ -1,5 +1,5 @@
 ### Build Requirements
-* A recent Go distribution (>1.6)
+* A recent Go distribution (>1.7)
 * If you're not on Linux, you'll need a Docker installation
 * Minikube requires at least 4GB of RAM to compile, which can be problematic when using docker-machine
 

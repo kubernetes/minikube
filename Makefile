@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use the native vendor/ dependency system
-export GO15VENDOREXPERIMENT=1
-
 # Bump these on release
 VERSION ?= v0.10.0
 DEB_VERSION ?= 0.10-0
@@ -24,7 +21,7 @@ GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
-BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.6.2-1
+BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.7.1-0
 IS_EXE ?=
 
 ifeq ($(IN_DOCKER),1)
