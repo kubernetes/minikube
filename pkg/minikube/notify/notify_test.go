@@ -68,7 +68,7 @@ func TestShouldCheckURL(t *testing.T) {
 }
 
 type URLHandlerCorrect struct {
-	releases releases
+	releases Releases
 }
 
 func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +85,7 @@ func TestGetLatestVersionFromURLCorrect(t *testing.T) {
 	// test that the version is correctly parsed if returned if valid JSON is returned the url endpoint
 	latestVersionFromURL := "0.0.0-dev"
 	handler := &URLHandlerCorrect{
-		releases: []release{{Name: version.VersionPrefix + latestVersionFromURL}},
+		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
 	}
 	server := httptest.NewServer(handler)
 
@@ -146,9 +146,10 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	// test that no update text is printed if the latest version is lower/equal to the current version
 	latestVersionFromURL := "0.0.0-dev"
 	handler := &URLHandlerCorrect{
-		releases: []release{{Name: version.VersionPrefix + latestVersionFromURL}},
+		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
 	}
 	server := httptest.NewServer(handler)
+	defer server.Close()
 
 	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
 	if len(outputBuffer.String()) != 0 {
@@ -159,9 +160,10 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	// test that update text is printed if the latest version is greater than the current version
 	latestVersionFromURL = "100.0.0-dev"
 	handler = &URLHandlerCorrect{
-		releases: []release{{Name: version.VersionPrefix + latestVersionFromURL}},
+		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
 	}
 	server = httptest.NewServer(handler)
+	defer server.Close()
 
 	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
 	if len(outputBuffer.String()) == 0 {
