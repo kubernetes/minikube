@@ -2,7 +2,7 @@
 # Maintainer: 
 
 pkgname=minikube
-pkgver=0.9.0
+pkgver=0.10.0
 pkgrel=1
 pkgdesc="Minikube is a tool that makes it easy to run Kubernetes locally"
 url="https://github.com/kubernetes/minikube"
@@ -10,6 +10,7 @@ license=('Apache')
 arch=('x86_64')
 depends=(
   'virtualbox'
+  'net-tools'
 )
 optdepends=(
   'kubectl-bin: to manage the cluster'
@@ -17,7 +18,7 @@ optdepends=(
 makedepends=()
 
 source=(minikube_$pkgver::https://storage.googleapis.com/minikube/releases/v$pkgver/minikube-linux-amd64)
-sha512sums=('64f3cdb666dad72f1939497b3b0a3fb9943c54a185a76d5db2858fd935a15c634dbf31c90bdc55ab00b70cec33b83fd88c139e4b2645533a774ae56e01d24c19')
+sha512sums=('2fbc83930ca8dc08a200e33b1724a642058d4a7211780bf31f63d9b48e4ffcce0d5783984bf6913d3273dc5ff68bca99363d96cce55066d19dd5ded20b2be8a7')
 
 package() {
   cd "$srcdir"
