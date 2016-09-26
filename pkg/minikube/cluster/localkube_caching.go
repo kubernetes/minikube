@@ -18,11 +18,8 @@ package cluster
 
 import (
 	"bytes"
-	"io"
 	"io/ioutil"
-	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -55,51 +52,6 @@ func (l *localkubeCacher) getLocalkubeCacheFilepath() string {
 		filepath.Base(url.QueryEscape("localkube-"+l.k8sConf.KubernetesVersion)))
 }
 
-func (l *localkubeCacher) isLocalkubeCached() bool {
-	if _, err := os.Stat(l.getLocalkubeCacheFilepath()); os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
-func (l *localkubeCacher) cacheLocalkube(body io.ReadCloser) error {
-	// store localkube inside the .minikube dir
-	out, err := os.Create(l.getLocalkubeCacheFilepath())
-	if err != nil {
-		return errors.Wrap(err, "Error creating localkube local file")
-	}
-	defer out.Close()
-	defer body.Close()
-	if _, err = io.Copy(out, body); err != nil {
-		return errors.Wrap(err, "Error writing localkube to file")
-	}
-	return nil
-}
-
-func (l *localkubeCacher) downloadAndCacheLocalkube() error {
-	resp := &http.Response{}
-	err := errors.New("")
-	downloader := func() (err error) {
-		url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion,
-			constants.LocalkubeLinuxFilename)
-		if err != nil {
-			return errors.Wrap(err, "Error getting localkube download url")
-		}
-		resp, err = http.Get(url)
-		if err != nil {
-			return errors.Wrap(err, "Error downloading localkube via http")
-		}
-		return nil
-	}
-	if err = util.Retry(5, downloader); err != nil {
-		return errors.Wrap(err, "Max error attempts retrying localkube downloader")
-	}
-	if err = l.cacheLocalkube(resp.Body); err != nil {
-		return errors.Wrap(err, "Error caching localkube to local directory")
-	}
-	return nil
-}
-
 func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
 	urlObj, err := url.Parse(l.k8sConf.KubernetesVersion)
 	if err != nil {
@@ -113,12 +65,23 @@ func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
 }
 
 func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {
-	if !l.isLocalkubeCached() {
-		if err := l.downloadAndCacheLocalkube(); err != nil {
-			return errors.Wrap(err, "Error attempting to download and cache localkube")
-		}
+	url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion, constants.LocalkubeLinuxFilename)
+	if err != nil {
+		return errors.Wrap(err, "Error parsing localkube download url:")
 	}
-	if err := l.transferCachedLocalkubeToVM(client); err != nil {
+
+	var cache util.DiskCache
+	localkubeCache := util.CacheItem{
+		FilePath: l.getLocalkubeCacheFilepath(),
+		URL:      url,
+		ShaURL:   url + ".sha256",
+	}
+	f, err := cache.GetFile(localkubeCache)
+	if err != nil {
+		return errors.Wrap(err, "Error getting localkube from file")
+	}
+	defer f.Close()
+	if err = l.transferCachedLocalkubeToVM(client); err != nil {
 		return errors.Wrap(err, "Error transferring cached localkube to VM")
 	}
 	return nil

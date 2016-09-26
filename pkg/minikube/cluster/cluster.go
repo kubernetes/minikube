@@ -18,15 +18,12 @@ package cluster
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -439,86 +436,6 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	return d
 }
 
-func isIsoChecksumValid(isoData *[]byte, shaURL string) bool {
-	r, err := http.Get(shaURL)
-	if err != nil {
-		glog.Errorf("Error downloading ISO checksum: %s", err)
-		return false
-	} else if r.StatusCode != http.StatusOK {
-		glog.Errorf("Error downloading ISO checksum. Got HTTP Error: %s", r.Status)
-		return false
-	}
-
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		glog.Errorf("Error reading ISO checksum: %s", err)
-		return false
-	}
-
-	expectedSum := strings.Trim(string(body), "\n")
-
-	b := sha256.Sum256(*isoData)
-	actualSum := hex.EncodeToString(b[:])
-	if string(expectedSum) != actualSum {
-		glog.Errorf("Downloaded ISO checksum does not match expected value. Actual: %s. Expected: %s", actualSum, expectedSum)
-		return false
-	}
-	return true
-}
-
-func (m *MachineConfig) CacheMinikubeISOFromURL() error {
-	// store the miniube-iso inside the .minikube dir
-	response, err := http.Get(m.MinikubeISO)
-	if err != nil {
-		return errors.Wrapf(err, "Error getting minikube iso at %s via http", m.MinikubeISO)
-	}
-
-	defer response.Body.Close()
-	isoData, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return errors.Wrap(err, "Error reading minikubeISO url response")
-	}
-
-	// Validate the ISO if it was the default URL, before writing it to disk.
-	if m.MinikubeISO == constants.DefaultIsoUrl {
-		if !isIsoChecksumValid(&isoData, constants.DefaultIsoShaUrl) {
-			return errors.New("Error validating ISO checksum.")
-		}
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("Received %d response from %s while trying to download minikube.iso", response.StatusCode, m.MinikubeISO)
-	}
-
-	out, err := os.Create(m.GetISOCacheFilepath())
-	if err != nil {
-		return errors.Wrap(err, "Error creating minikube iso cache filepath")
-	}
-	defer out.Close()
-
-	if _, err = out.Write(isoData); err != nil {
-		return errors.Wrap(err, "Error writing iso data to file")
-	}
-	return nil
-}
-
-func (m *MachineConfig) ShouldCacheMinikubeISO() bool {
-	// store the miniube-iso inside the .minikube dir
-
-	urlObj, err := url.Parse(m.MinikubeISO)
-	if err != nil {
-		return false
-	}
-	if urlObj.Scheme == fileScheme {
-		return false
-	}
-	if m.IsMinikubeISOCached() {
-		return false
-	}
-	return true
-}
-
 func (m *MachineConfig) GetISOCacheFilepath() string {
 	return filepath.Join(constants.Minipath, "cache", "iso", filepath.Base(m.MinikubeISO))
 }
@@ -536,20 +453,18 @@ func (m *MachineConfig) GetISOFileURI() string {
 	return "file://" + filepath.ToSlash(isoPath)
 }
 
-func (m *MachineConfig) IsMinikubeISOCached() bool {
-	if _, err := os.Stat(m.GetISOCacheFilepath()); os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	var driver interface{}
 
-	if config.ShouldCacheMinikubeISO() {
-		if err := config.CacheMinikubeISOFromURL(); err != nil {
-			return nil, errors.Wrap(err, "Error attempting to cache minikube iso from url")
-		}
+	var cache util.DiskCache
+	minikubeISO := util.CacheItem{
+		FilePath: config.GetISOCacheFilepath(),
+		URL:      config.MinikubeISO,
+		ShaURL:   constants.DefaultIsoShaUrl,
+	}
+	_, err := cache.GetFile(minikubeISO)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error caching ISO")
 	}
 
 	switch config.VMDriver {
