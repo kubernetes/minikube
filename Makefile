@@ -13,8 +13,12 @@
 # limitations under the License.
 
 # Bump these on release
-VERSION ?= v0.10.0
-DEB_VERSION ?= 0.10-0
+VERSION_MAJOR ?= 0
+VERSION_MINOR ?= 10
+VERSION_BUILD ?= 0
+VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
+INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -123,3 +127,17 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin
 	dpkg-deb --build out/minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
+
+out/minikube-installer.exe: out/minikube-windows-amd64.exe
+	rm -rf out/windows_tmp
+	cp -r installers/windows/ out/windows_tmp
+	cp -r LICENSE out/windows_tmp/LICENSE
+	awk 'sub("$$", "\r")' out/windows_tmp/LICENSE > out/windows_tmp/LICENSE.txt
+	sed -E -i 's/--VERSION_MAJOR--/'$(VERSION_MAJOR)'/g' out/windows_tmp/minikube.nsi
+	sed -E -i 's/--VERSION_MINOR--/'$(VERSION_MINOR)'/g' out/windows_tmp/minikube.nsi
+	sed -E -i 's/--VERSION_BUILD--/'$(VERSION_BUILD)'/g' out/windows_tmp/minikube.nsi
+	sed -E -i 's/--INSTALL_SIZE--/'$(INSTALL_SIZE)'/g' out/windows_tmp/minikube.nsi
+	cp out/minikube-windows-amd64.exe out/windows_tmp/minikube.exe
+	makensis out/windows_tmp/minikube.nsi
+	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
+	rm -rf out/windows_tmp
