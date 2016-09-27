@@ -1782,6 +1782,18 @@
 			"Rev": "9051bd6b44125d9472e0c148b5965692ab283d4a"
 		},
 		{
+			"ImportPath": "github.com/xeipuuv/gojsonpointer",
+			"Rev": "e0fe6f68307607d540ed8eac07a342c33fa1b54a"
+		},
+		{
+			"ImportPath": "github.com/xeipuuv/gojsonreference",
+			"Rev": "e02fc20de94c78484cd5ffb007f8af96be030a45"
+		},
+		{
+			"ImportPath": "github.com/xeipuuv/gojsonschema",
+			"Rev": "c539bca196be50ccdd1f0bcd9076de95f9081831"
+		},
+		{
 			"ImportPath": "github.com/xiang90/probing",
 			"Rev": "6a0cc1ae81b4cc11db5e491e030e4b98fba79c19"
 		},
