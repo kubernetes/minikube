@@ -20,6 +20,8 @@ type OsRelease struct {
 	AnsiColor    string `osr:"ANSI_COLOR"`
 	Name         string `osr:"NAME"`
 	Version      string `osr:"VERSION"`
+	Variant      string `osr:"VARIANT"`
+	VariantID    string `osr:"VARIANT_ID"`
 	ID           string `osr:"ID"`
 	IDLike       string `osr:"ID_LIKE"`
 	PrettyName   string `osr:"PRETTY_NAME"`
