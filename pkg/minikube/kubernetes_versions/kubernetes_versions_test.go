@@ -26,7 +26,7 @@ import (
 )
 
 type URLHandlerCorrect struct {
-	K8sReleases k8sReleases
+	K8sReleases K8sReleases
 }
 
 func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,11 +44,11 @@ func TestGetK8sVersionsFromURLCorrect(t *testing.T) {
 	version0 := "0.0.0"
 	version1 := "1.0.0"
 	handler := &URLHandlerCorrect{
-		K8sReleases: []k8sRelease{{Version: version0}, {Version: version1}},
+		K8sReleases: []K8sRelease{{Version: version0}, {Version: version1}},
 	}
 	server := httptest.NewServer(handler)
 
-	k8sVersions, err := getK8sVersionsFromURL(server.URL)
+	k8sVersions, err := GetK8sVersionsFromURL(server.URL)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -68,7 +68,7 @@ func TestGetK8sVersionsFromURLNone(t *testing.T) {
 	handler := &URLHandlerNone{}
 	server := httptest.NewServer(handler)
 
-	_, err := getK8sVersionsFromURL(server.URL)
+	_, err := GetK8sVersionsFromURL(server.URL)
 	if err == nil {
 		t.Fatalf("No kubernetes versions were returned from URL but no error was thrown")
 	}
@@ -86,7 +86,7 @@ func TestGetK8sVersionsFromURLMalformed(t *testing.T) {
 	handler := &URLHandlerMalformed{}
 	server := httptest.NewServer(handler)
 
-	_, err := getK8sVersionsFromURL(server.URL)
+	_, err := GetK8sVersionsFromURL(server.URL)
 	if err == nil {
 		t.Fatalf("Malformed version value was returned from URL but no error was thrown")
 	}
@@ -109,7 +109,7 @@ func TestPrintKubernetesVersions(t *testing.T) {
 	version0 := "0.0.0"
 	version1 := "1.0.0"
 	handlerCorrect := &URLHandlerCorrect{
-		K8sReleases: []k8sRelease{{Version: version0}, {Version: version1}},
+		K8sReleases: []K8sRelease{{Version: version0}, {Version: version1}},
 	}
 	server = httptest.NewServer(handlerCorrect)
 

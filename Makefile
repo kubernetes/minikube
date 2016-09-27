@@ -141,3 +141,7 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	makensis out/windows_tmp/minikube.nsi
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
+
+.PHONY: check-release
+check-release:
+	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
