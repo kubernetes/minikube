@@ -22,9 +22,5 @@ func Detect() (string, error) {
 		return "", ErrUnknownShell
 	}
 
-	if os.Getenv("__fish_bin_dir") != "" {
-		return "fish", nil
-	}
-
 	return filepath.Base(shell), nil
 }
