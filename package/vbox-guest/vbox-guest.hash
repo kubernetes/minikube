@@ -2,3 +2,4 @@
 md5 8c2331a718cfc038963c1214c2ba9811  VirtualBox-5.1.6.tar.bz2
 # From http://download.virtualbox.org/virtualbox/5.1.6/SHA256SUMS
 sha256 2e0112b0d85841587b8f212e6ba8f6c35b31e1cce6b6999497dc917cd37e6911  VirtualBox-5.1.6.tar.bz2
+sha256 cbcf9b9b1000e09911b3d20e1efe529aef8a945cf130f6abffc14a39522cc1ed VBoxGuestAdditions_5.1.6.iso

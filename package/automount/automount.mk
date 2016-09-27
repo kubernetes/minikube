@@ -14,7 +14,7 @@ define AUTOMOUNT_INSTALL_INIT_SYSTEMD
 endef
 
 define AUTOMOUNT_INSTALL_TARGET_CMDS
-	install -Dm755 \
+	$(INSTALL) -Dm755 \
 		$(BR2_EXTERNAL)/package/automount/minikube-automount \
 		$(TARGET_DIR)/usr/sbin/minikube-automount
 endef
