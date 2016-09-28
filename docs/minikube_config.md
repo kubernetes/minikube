@@ -5,7 +5,18 @@ Modify minikube config
 ### Synopsis
 
 
-config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"
+config modifies minikube config files using subcommands like "minikube config set vm-driver kvm" 
+Configurable fields: 
+
+ * vm-driver
+ * v
+ * cpus
+ * disk-size
+ * host-only-cidr
+ * memory
+ * show-libmachine-logs
+ * log_dir
+ * kubernetes-version
 
 ```
 minikube config SUBCOMMAND [flags]
