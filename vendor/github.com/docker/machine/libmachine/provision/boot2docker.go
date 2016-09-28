@@ -128,6 +128,10 @@ func (provisioner *Boot2DockerProvisioner) GetAuthOptions() auth.Options {
 	return provisioner.AuthOptions
 }
 
+func (provisioner *Boot2DockerProvisioner) GetSwarmOptions() swarm.Options {
+	return provisioner.SwarmOptions
+}
+
 func (provisioner *Boot2DockerProvisioner) GenerateDockerOptions(dockerPort int) (*DockerOptions, error) {
 	var (
 		engineCfg bytes.Buffer

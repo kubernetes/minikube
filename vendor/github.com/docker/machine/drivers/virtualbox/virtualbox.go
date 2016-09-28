@@ -28,6 +28,8 @@ const (
 	defaultHostOnlyCIDR        = "192.168.99.1/24"
 	defaultHostOnlyNictype     = "82540EM"
 	defaultHostOnlyPromiscMode = "deny"
+	defaultUIType              = "headless"
+	defaultHostOnlyNoDHCP      = false
 	defaultDiskSize            = 20000
 	defaultDNSProxy            = true
 	defaultDNSResolver         = false
@@ -62,6 +64,8 @@ type Driver struct {
 	HostOnlyCIDR        string
 	HostOnlyNicType     string
 	HostOnlyPromiscMode string
+	UIType              string
+	HostOnlyNoDHCP      bool
 	NoShare             bool
 	DNSProxy            bool
 	NoVTXCheck          bool
@@ -86,6 +90,8 @@ func NewDriver(hostName, storePath string) *Driver {
 		HostOnlyCIDR:        defaultHostOnlyCIDR,
 		HostOnlyNicType:     defaultHostOnlyNictype,
 		HostOnlyPromiscMode: defaultHostOnlyPromiscMode,
+		UIType:              defaultUIType,
+		HostOnlyNoDHCP:      defaultHostOnlyNoDHCP,
 		DNSProxy:            defaultDNSProxy,
 		HostDNSResolver:     defaultDNSResolver,
 		BaseDriver: &drivers.BaseDriver{
@@ -158,6 +164,17 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  defaultHostOnlyPromiscMode,
 			EnvVar: "VIRTUALBOX_HOSTONLY_NIC_PROMISC",
 		},
+		mcnflag.StringFlag{
+			Name:   "virtualbox-ui-type",
+			Usage:  "Specify the UI Type: (gui|sdl|headless|separate)",
+			Value:  defaultUIType,
+			EnvVar: "VIRTUALBOX_UI_TYPE",
+		},
+		mcnflag.BoolFlag{
+			Name:   "virtualbox-hostonly-no-dhcp",
+			Usage:  "Disable the Host Only DHCP Server",
+			EnvVar: "VIRTUALBOX_HOSTONLY_NO_DHCP",
+		},
 		mcnflag.BoolFlag{
 			Name:   "virtualbox-no-share",
 			Usage:  "Disable the mount of your home directory",
@@ -220,6 +237,8 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.HostOnlyCIDR = flags.String("virtualbox-hostonly-cidr")
 	d.HostOnlyNicType = flags.String("virtualbox-hostonly-nictype")
 	d.HostOnlyPromiscMode = flags.String("virtualbox-hostonly-nicpromisc")
+	d.UIType = flags.String("virtualbox-ui-type")
+	d.HostOnlyNoDHCP = flags.Bool("virtualbox-hostonly-no-dhcp")
 	d.NoShare = flags.Bool("virtualbox-no-share")
 	d.DNSProxy = !flags.Bool("virtualbox-no-dns-proxy")
 	d.NoVTXCheck = flags.Bool("virtualbox-no-vtx-check")
@@ -493,14 +512,14 @@ func (d *Driver) Start() error {
 			return err
 		}
 
-		if err := d.vbm("startvm", d.MachineName, "--type", "headless"); err != nil {
+		if err := d.vbm("startvm", d.MachineName, "--type", d.UIType); err != nil {
 			if lines, readErr := d.readVBoxLog(); readErr == nil && len(lines) > 0 {
 				return fmt.Errorf("Unable to start the VM: %s\nDetails: %s", err, lines[len(lines)-1])
 			}
 			return fmt.Errorf("Unable to start the VM: %s", err)
 		}
 	case state.Paused:
-		if err := d.vbm("controlvm", d.MachineName, "resume", "--type", "headless"); err != nil {
+		if err := d.vbm("controlvm", d.MachineName, "resume", "--type", d.UIType); err != nil {
 			return err
 		}
 		log.Infof("Resuming VM ...")
@@ -569,7 +588,7 @@ func (d *Driver) Start() error {
 	// We have to be sure the adapter is updated before starting the VM
 	d.sleeper.Sleep(5 * time.Second)
 
-	if err := d.vbm("startvm", d.MachineName, "--type", "headless"); err != nil {
+	if err := d.vbm("startvm", d.MachineName, "--type", d.UIType); err != nil {
 		return fmt.Errorf("Unable to start the VM: %s", err)
 	}
 
@@ -584,7 +603,7 @@ func (d *Driver) Stop() error {
 	}
 
 	if currentState == state.Paused {
-		if err := d.vbm("controlvm", d.MachineName, "resume"); err != nil { // , "--type", "headless"
+		if err := d.vbm("controlvm", d.MachineName, "resume"); err != nil { // , "--type", d.UIType
 			return err
 		}
 		log.Infof("Resuming VM ...")
@@ -822,7 +841,7 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 	dhcp.IPv4.Mask = network.Mask
 	dhcp.LowerIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(100))
 	dhcp.UpperIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(254))
-	dhcp.Enabled = true
+	dhcp.Enabled = !d.HostOnlyNoDHCP
 	if err := addHostOnlyDHCPServer(hostOnlyAdapter.Name, dhcp, d.VBoxManager); err != nil {
 		return nil, err
 	}

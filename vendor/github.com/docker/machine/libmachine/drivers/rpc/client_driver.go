@@ -177,7 +177,10 @@ func (f *DefaultRPCClientDriverFactory) NewRPCClientDriver(driverName string, ra
 				return
 			case <-time.After(heartbeatInterval):
 				if err := c.Client.Call(HeartbeatMethod, struct{}{}, nil); err != nil {
-					log.Warnf("Error attempting heartbeat call to plugin server: %s", err)
+					log.Warnf("Wrapper Docker Machine process exiting due to closed plugin server (%s)", err)
+					if err := c.close(); err != nil {
+						log.Warn(err)
+					}
 				}
 			}
 		}

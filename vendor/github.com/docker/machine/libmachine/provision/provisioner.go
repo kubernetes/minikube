@@ -46,6 +46,9 @@ type Provisioner interface {
 	// Return the auth options used to configure remote connection for the daemon.
 	GetAuthOptions() auth.Options
 
+	// Get the swarm options associated with this host.
+	GetSwarmOptions() swarm.Options
+
 	// Run a package action e.g. install
 	Package(name string, action pkgaction.PackageAction) error
 

@@ -29,7 +29,7 @@ type ErrCertInvalid struct {
 func (e ErrCertInvalid) Error() string {
 	return fmt.Sprintf(`There was an error validating certificates for host %q: %s
 You can attempt to regenerate them using 'docker-machine regenerate-certs [name]'.
-Be advised that this will trigger a Docker daemon restart which will stop running containers.
+Be advised that this will trigger a Docker daemon restart which might stop running containers.
 `, e.hostURL, e.wrappedErr)
 }
 
