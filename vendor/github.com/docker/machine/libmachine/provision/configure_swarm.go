@@ -86,7 +86,7 @@ func configureSwarm(p Provisioner, swarmOptions swarm.Options, authOptions auth.
 			},
 			Binds: []string{hostBind},
 			PortBindings: map[string][]dockerclient.PortBinding{
-				"3376/tcp": {
+				fmt.Sprintf("%s/tcp", port): {
 					{
 						HostIp:   "0.0.0.0",
 						HostPort: port,
@@ -99,8 +99,8 @@ func configureSwarm(p Provisioner, swarmOptions swarm.Options, authOptions auth.
 			Image: swarmOptions.Image,
 			Env:   swarmOptions.Env,
 			ExposedPorts: map[string]struct{}{
-				"2375/tcp": {},
-				"3376/tcp": {},
+				"2375/tcp":                  {},
+				fmt.Sprintf("%s/tcp", port): {},
 			},
 			Cmd:        cmdMaster,
 			HostConfig: masterHostConfig,

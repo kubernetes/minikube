@@ -66,7 +66,19 @@ func BootstrapCertificates(authOptions *auth.Options) error {
 			return errors.New("The client key already exists.  Please remove it or specify a different key/cert.")
 		}
 
-		if err := GenerateCert([]string{""}, clientCertPath, clientKeyPath, caCertPath, caPrivateKeyPath, org, bits); err != nil {
+		// Used to generate the client certificate.
+		certOptions := &Options{
+			Hosts:       []string{""},
+			CertFile:    clientCertPath,
+			KeyFile:     clientKeyPath,
+			CAFile:      caCertPath,
+			CAKeyFile:   caPrivateKeyPath,
+			Org:         org,
+			Bits:        bits,
+			SwarmMaster: false,
+		}
+
+		if err := GenerateCert(certOptions); err != nil {
 			return fmt.Errorf("Generating client certificate failed: %s", err)
 		}
 	}

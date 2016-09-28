@@ -10,7 +10,7 @@ Many Go projects are built using Viper including:
 * [Nanobox](https://github.com/nanobox-io/nanobox)/[Nanopack](https://github.com/nanopack)
 * [Docker Notary](https://github.com/docker/Notary)
 * [BloomApi](https://www.bloomapi.com/)
-* [DOIt](https://github.com/bryanl/doit)
+* [doctl](https://github.com/digitalocean/doctl)
 
  [![Build Status](https://travis-ci.org/spf13/viper.svg)](https://travis-ci.org/spf13/viper) [![Join the chat at https://gitter.im/spf13/viper](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/spf13/viper?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -110,7 +110,7 @@ Gone are the days of needing to restart a server to have a config take effect,
 viper powered applications can read an update to a config file while running and
 not miss a beat.
 
-Simply tell the viper instance to watchConfig. 
+Simply tell the viper instance to watchConfig.
 Optionally you can provide a function for Viper to run each time a change occurs.
 
 **Make sure you add all of the configPaths prior to calling `WatchConfig()`**
@@ -298,7 +298,7 @@ type myFlagSet struct {
 
 func (f myFlagSet) VisitAll(fn func(FlagValue)) {
 	for _, flag := range flags {
-		fn(flag)	
+		fn(flag)
 	}
 }
 ```
