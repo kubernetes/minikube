@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	"os"
 
@@ -96,10 +97,19 @@ var settings = []Setting{
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
 	Short: "Modify minikube config",
-	Long:  `config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"`,
+	Long: `config modifies minikube config files using subcommands like "minikube config set vm-driver kvm" 
+Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
+}
+
+func configurableFields() string {
+	var fields []string
+	for _, s := range settings {
+		fields = append(fields, " * "+s.name)
+	}
+	return strings.Join(fields, "\n")
 }
 
 // ReadConfig reads in the JSON minikube config
