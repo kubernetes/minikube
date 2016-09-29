@@ -16,9 +16,13 @@ limitations under the License.
 
 package config
 
-import "testing"
+import (
+	"testing"
 
-var minikubeConfig = MinikubeConfig{
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+)
+
+var minikubeConfig = pkgConfig.MinikubeConfig{
 	"vm-driver":            "kvm",
 	"cpus":                 12,
 	"show-libmachine-logs": true,

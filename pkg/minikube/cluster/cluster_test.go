@@ -35,6 +35,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -568,16 +569,21 @@ func TestUpdateDefault(t *testing.T) {
 	}
 	transferred := s.Transfers.Bytes()
 
-	//test that kube-add memoryAssets are transferred properly
-	for _, a := range memoryAssets {
-		contents, _ := Asset(a.GetAssetName())
-		if !bytes.Contains(transferred, contents) {
-			t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
+	for _, addonBundle := range assets.Addons {
+		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
+			for _, addon := range addonBundle.Assets {
+				contents, _ := assets.Asset(addon.GetAssetName())
+				if !bytes.Contains(transferred, contents) {
+					t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
+				}
+			}
+		} else if err != nil {
+			t.Fatalf("File not copied. Unexpected error while attempting to check transferred addons: %s", err)
 		}
 	}
 
 	//test that localkube is transferred properly
-	contents, _ := Asset("out/localkube")
+	contents, _ := assets.Asset("out/localkube")
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}

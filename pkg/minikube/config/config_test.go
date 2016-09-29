@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 )
 
@@ -57,16 +58,12 @@ var configTestCases = []configTestCase{
 	},
 }
 
-func TestWriteConfig(t *testing.T) {
-	var b bytes.Buffer
+func TestReadConfig(t *testing.T) {
 	for _, tt := range configTestCases {
-		err := encode(&b, tt.config)
-		if err != nil {
-			t.Errorf("Error encoding: %s", err)
+		r := bytes.NewBufferString(tt.data)
+		config, err := decode(r)
+		if reflect.DeepEqual(config, tt.config) || err != nil {
+			t.Errorf("Did not read config correctly,\n\n wanted %+v, \n\n got %+v", tt.config, config)
 		}
-		if b.String() != tt.data {
-			t.Errorf("Did not write config correctly, \n\n expected:\n %+v \n\n actual:\n %+v", tt.data, b.String())
-		}
-		b.Reset()
 	}
 }
