@@ -55,7 +55,7 @@ var serviceCmd = &cobra.Command{
 		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 		defer api.Close()
 
-		cluster.EnsureMinikubeRunningOrExit(api)
+		cluster.EnsureMinikubeRunningOrExit(api, 1)
 		if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
 			fmt.Fprintln(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s", service, err)
 			cmdUtil.MaybeReportErrorAndExit(err)

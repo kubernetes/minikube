@@ -23,6 +23,8 @@ import (
 	"strconv"
 
 	units "github.com/docker/go-units"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -73,4 +75,11 @@ func IsValidPath(name string, path string) error {
 		return fmt.Errorf("%s path is not valid: %v", name, err)
 	}
 	return nil
+}
+
+func IsValidAddon(name string, val string) error {
+	if _, ok := assets.Addons[name]; ok {
+		return nil
+	}
+	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
 }

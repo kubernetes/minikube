@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -44,6 +43,7 @@ import (
 	kubeApi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
@@ -151,7 +151,7 @@ func GetHostStatus(api libmachine.API) (string, error) {
 
 // GetLocalkubeStatus gets the status of localkube from the host VM.
 func GetLocalkubeStatus(api libmachine.API) (string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return "", err
 	}
@@ -215,136 +215,6 @@ func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
 	return nil
 }
 
-type CopyableFile interface {
-	io.Reader
-	GetLength() int
-	GetAssetName() string
-	GetTargetDir() string
-	GetTargetName() string
-	GetPermissions() string
-}
-
-type BaseAsset struct {
-	data        []byte
-	reader      io.Reader
-	Length      int
-	AssetName   string
-	TargetDir   string
-	TargetName  string
-	Permissions string
-}
-
-func (b *BaseAsset) GetAssetName() string {
-	return b.AssetName
-}
-
-func (b *BaseAsset) GetTargetDir() string {
-	return b.TargetDir
-}
-
-func (b *BaseAsset) GetTargetName() string {
-	return b.TargetName
-}
-
-func (b *BaseAsset) GetPermissions() string {
-	return b.Permissions
-}
-
-type FileAsset struct {
-	BaseAsset
-}
-
-func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAsset, error) {
-	f := &FileAsset{
-		BaseAsset{
-			AssetName:   assetName,
-			TargetDir:   targetDir,
-			TargetName:  targetName,
-			Permissions: permissions,
-		},
-	}
-	file, err := os.Open(f.AssetName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error opening file asset: %s", f.AssetName)
-	}
-	f.reader = file
-	return f, nil
-}
-
-func (f *FileAsset) GetLength() int {
-	file, err := os.Open(f.AssetName)
-	defer file.Close()
-	if err != nil {
-		return 0
-	}
-	fi, err := file.Stat()
-	if err != nil {
-		return 0
-	}
-	return int(fi.Size())
-}
-
-func (f *FileAsset) Read(p []byte) (int, error) {
-	if f.reader == nil {
-		return 0, errors.New("Error attempting FileAsset.Read, FileAsset.reader uninitialized")
-	}
-	return f.reader.Read(p)
-}
-
-type MemoryAsset struct {
-	BaseAsset
-}
-
-func NewMemoryAsset(assetName, targetDir, targetName, permissions string) *MemoryAsset {
-	m := &MemoryAsset{
-		BaseAsset{
-			AssetName:   assetName,
-			TargetDir:   targetDir,
-			TargetName:  targetName,
-			Permissions: permissions,
-		},
-	}
-	m.loadData()
-	return m
-}
-
-func (m *MemoryAsset) loadData() error {
-	contents, err := Asset(m.AssetName)
-	if err != nil {
-		return err
-	}
-	m.data = contents
-	m.Length = len(contents)
-	m.reader = bytes.NewReader(m.data)
-	return nil
-}
-
-func (m *MemoryAsset) GetLength() int {
-	return m.Length
-}
-
-func (m *MemoryAsset) Read(p []byte) (int, error) {
-	return m.reader.Read(p)
-}
-
-var memoryAssets = []CopyableFile{
-	NewMemoryAsset(
-		"deploy/iso/addon-manager.yaml",
-		"/etc/kubernetes/manifests/",
-		"addon-manager.yaml",
-		"0640"),
-	NewMemoryAsset(
-		"deploy/addons/dashboard-rc.yaml",
-		"/etc/kubernetes/addons/",
-		"dashboard-rc.yaml",
-		"0640"),
-	NewMemoryAsset(
-		"deploy/addons/dashboard-svc.yaml",
-		"/etc/kubernetes/addons/",
-		"dashboard-svc.yaml",
-		"0640"),
-}
-
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
@@ -362,17 +232,23 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 			return errors.Wrap(err, "Error updating localkube from asset")
 		}
 	}
-	fileAssets := []CopyableFile{}
-	addMinikubeAddonsDirToAssets(&fileAssets)
+	fileAssets := []assets.CopyableFile{}
+	assets.AddMinikubeAddonsDirToAssets(&fileAssets)
 	// merge files to copy
-	var copyableFiles []CopyableFile
-	copyableFiles = append(copyableFiles, memoryAssets...)
+	var copyableFiles []assets.CopyableFile
+	for _, addonBundle := range assets.Addons {
+		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
+			for _, addon := range addonBundle.Assets {
+				copyableFiles = append(copyableFiles, addon)
+			}
+		} else if err != nil {
+			return err
+		}
+	}
 	copyableFiles = append(copyableFiles, fileAssets...)
 	// transfer files to vm
 	for _, copyableFile := range copyableFiles {
-		if err := sshutil.Transfer(copyableFile, copyableFile.GetLength(),
-			copyableFile.GetTargetDir(), copyableFile.GetTargetName(),
-			copyableFile.GetPermissions(), client); err != nil {
+		if err := sshutil.TransferFile(copyableFile, client); err != nil {
 			return err
 		}
 	}
@@ -588,7 +464,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -611,7 +487,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 
 // GetHostLogs gets the localkube logs of the host VM.
 func GetHostLogs(api libmachine.API) (string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return "", errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -622,7 +498,7 @@ func GetHostLogs(api libmachine.API) (string, error) {
 	return s, nil
 }
 
-func checkIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
+func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
 	exists, err := api.Exists(constants.MachineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking that api exists for: ", constants.MachineName)
@@ -639,7 +515,7 @@ func checkIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
 }
 
 func CreateSSHShell(api libmachine.API, args []string) error {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -661,7 +537,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 }
 
 func GetServiceURL(api libmachine.API, namespace, service string) (string, error) {
-	host, err := checkIfApiExistsAndLoad(api)
+	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return "", errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -745,7 +621,7 @@ func GetKubernetesEndpointsWithNamespace(namespace string) (endpointGetter, erro
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
 // that the status is `Running`, otherwise it will exit
-func EnsureMinikubeRunningOrExit(api libmachine.API) {
+func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	s, err := GetHostStatus(api)
 	if err != nil {
 		glog.Errorln("Error getting machine status:", err)
@@ -753,26 +629,6 @@ func EnsureMinikubeRunningOrExit(api libmachine.API) {
 	}
 	if s != state.Running.String() {
 		fmt.Fprintln(os.Stdout, "minikube is not currently running so the service cannot be accessed")
-		os.Exit(1)
-	}
-}
-
-func addMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
-	// loop over .minikube/addons and add them to assets
-	searchDir := constants.MakeMiniPath("addons")
-	err := filepath.Walk(searchDir, func(addonFile string, f os.FileInfo, err error) error {
-		isDir, err := util.IsDirectory(addonFile)
-		if err == nil && !isDir {
-			f, err := NewFileAsset(addonFile, "/etc/kubernetes/addons", filepath.Base(addonFile), "0640")
-			if err == nil {
-				*assetList = append(*assetList, f)
-			}
-		} else if err != nil {
-			glog.Infoln("Error encountered while walking .minikube/addons: ", err)
-		}
-		return nil
-	})
-	if err != nil {
-		glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+		os.Exit(exitStatus)
 	}
 }

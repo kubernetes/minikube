@@ -59,13 +59,13 @@ else
 	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
 endif
 
-out/minikube-darwin-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
+out/minikube-darwin-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-darwin-amd64 ./cmd/minikube
 
-out/minikube-linux-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
+out/minikube-linux-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-linux-amd64 ./cmd/minikube
 
-out/minikube-windows-amd64.exe: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
+out/minikube-windows-amd64.exe: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-windows-amd64.exe ./cmd/minikube
 
 localkube-image: out/localkube
@@ -79,11 +79,11 @@ integration: out/minikube
 	go test -v $(REPOPATH)/test/integration --tags=integration
 
 .PHONY: test
-test: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go
+test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
 	./test.sh
 
-pkg/minikube/cluster/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
-	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/assets.go -pkg cluster ./out/localkube deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
+pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
+	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
 
 $(GOPATH)/bin/go-bindata: $(GOPATH)/src/$(ORG)
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
@@ -103,12 +103,12 @@ checksum:
 clean:
 	rm -rf $(GOPATH)
 	rm -rf $(BUILD_DIR)
-	rm -f pkg/minikube/cluster/assets.go
+	rm -f pkg/minikube/assets/assets.go
 
 .PHONY: gendocs
 gendocs: docs/minikube.md
 
-docs/minikube.md: $(GOPATH)/src/$(ORG) $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/cluster/assets.go
+docs/minikube.md: $(GOPATH)/src/$(ORG) $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
 	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64

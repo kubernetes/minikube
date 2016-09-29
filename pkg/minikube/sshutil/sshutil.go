@@ -28,6 +28,7 @@ import (
 	machinessh "github.com/docker/machine/libmachine/ssh"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 // SSHSession provides methods for running commands on a host.
@@ -59,6 +60,42 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 		return nil, errors.Wrap(err, "Error dialing tcp via ssh client")
 	}
 	return client, nil
+}
+
+func DeleteAddon(a *assets.Addon, client *ssh.Client) error {
+	var err error
+	if enabled, err := a.IsEnabled(); err != nil {
+		return errors.Wrapf(err, "error attempting to transfer addon")
+	} else if enabled {
+		return errors.Errorf("Error, attempted to removed enabled addon")
+	}
+	for _, f := range a.Assets {
+		if err := DeleteFile(f, client); err != nil {
+			err = errors.Wrap(err, "")
+		}
+	}
+	return err
+}
+
+func TransferAddon(a *assets.Addon, client *ssh.Client) error {
+	var err error
+	if enabled, err := a.IsEnabled(); err != nil {
+		return errors.Wrapf(err, "error attempting to transfer addon")
+	} else if !enabled {
+		return errors.Errorf("Error, attempted to transfer disabled addon")
+	}
+	for _, f := range a.Assets {
+		if err := TransferFile(f, client); err != nil {
+			errors.Wrap(err, "")
+		}
+	}
+	return err
+}
+
+func TransferFile(f assets.CopyableFile, client *ssh.Client) error {
+	return Transfer(f, f.GetLength(),
+		f.GetTargetDir(), f.GetTargetName(),
+		f.GetPermissions(), client)
 }
 
 // Transfer uses an SSH session to copy a file to the remote machine.
@@ -136,4 +173,12 @@ func newSSHHost(d drivers.Driver) (*sshHost, error) {
 		SSHKeyPath: d.GetSSHKeyPath(),
 		Username:   d.GetSSHUsername(),
 	}, nil
+}
+
+func DeleteFile(f assets.CopyableFile, client *ssh.Client) error {
+	return RunCommand(client, GetDeleteFileCommand(f))
+}
+
+func GetDeleteFileCommand(f assets.CopyableFile) string {
+	return fmt.Sprintf("sudo rm %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
 }

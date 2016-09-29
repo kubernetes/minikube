@@ -19,6 +19,15 @@ package config
 import (
 	"fmt"
 	"strconv"
+
+	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 // Runs all the validation or callback functions and collects errors
@@ -47,12 +56,12 @@ func findSetting(name string) (Setting, error) {
 
 // Set Functions
 
-func SetString(m MinikubeConfig, name string, val string) error {
+func SetString(m config.MinikubeConfig, name string, val string) error {
 	m[name] = val
 	return nil
 }
 
-func SetInt(m MinikubeConfig, name string, val string) error {
+func SetInt(m config.MinikubeConfig, name string, val string) error {
 	i, err := strconv.Atoi(val)
 	if err != nil {
 		return err
@@ -61,11 +70,59 @@ func SetInt(m MinikubeConfig, name string, val string) error {
 	return nil
 }
 
-func SetBool(m MinikubeConfig, name string, val string) error {
+func SetBool(m config.MinikubeConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
 		return err
 	}
 	m[name] = b
+	return nil
+}
+
+func EnableOrDisableAddon(name string, val string) error {
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
+	}
+	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+	defer api.Close()
+	cluster.EnsureMinikubeRunningOrExit(api, 0)
+
+	addon, _ := assets.Addons[name] // validation done prior
+	if err != nil {
+		return err
+	}
+	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	if enable {
+		if err = transferAddonViaDriver(addon, host.Driver); err != nil {
+			return errors.Wrapf(err, "Error transferring addon %s to VM", name)
+		}
+	} else {
+		if err = deleteAddonViaDriver(addon, host.Driver); err != nil {
+			return errors.Wrapf(err, "Error deleteing addon %s from VM", name)
+		}
+	}
+	return nil
+}
+
+func deleteAddonViaDriver(addon *assets.Addon, d drivers.Driver) error {
+	client, err := sshutil.NewSSHClient(d)
+	if err != nil {
+		return err
+	}
+	if err := sshutil.DeleteAddon(addon, client); err != nil {
+		return err
+	}
+	return nil
+}
+
+func transferAddonViaDriver(addon *assets.Addon, d drivers.Driver) error {
+	client, err := sshutil.NewSSHClient(d)
+	if err != nil {
+		return err
+	}
+	if err := sshutil.TransferAddon(addon, client); err != nil {
+		return err
+	}
 	return nil
 }

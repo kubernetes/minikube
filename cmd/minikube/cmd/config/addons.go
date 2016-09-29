@@ -17,34 +17,14 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
-	"os"
-
-	"k8s.io/minikube/pkg/minikube/config"
-
 	"github.com/spf13/cobra"
 )
 
-var configGetCmd = &cobra.Command{
-	Use:   "get PROPERTY_NAME",
-	Short: "Gets the value of PROPERTY_NAME from the minikube config file",
-	Long:  "Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.",
+var AddonsCmd = &cobra.Command{
+	Use:   "addons SUBCOMMAND [flags]",
+	Short: "Modify minikube's kubernetes addons",
+	Long:  `addons modifies minikube addons files using subcommands like "minikube addons enable heapster"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
-			fmt.Fprintln(os.Stderr, "usage: minikube config get PROPERTY_NAME")
-			os.Exit(1)
-		}
-
-		val, err := config.Get(args[0])
-		if err != nil {
-			fmt.Fprintln(os.Stdout, err)
-		}
-		if val != "" {
-			fmt.Fprintln(os.Stdout, val)
-		}
+		cmd.Help()
 	},
-}
-
-func init() {
-	ConfigCmd.AddCommand(configGetCmd)
 }

@@ -65,6 +65,7 @@ const (
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
 		"localkube: {{.LocalkubeStatus}}\n"
+	DefaultListFormat         = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
 )
@@ -87,3 +88,5 @@ var LocalkubeLinuxFilename = "localkube-linux-amd64"
 const DockerAPIVersion = "1.23"
 
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
+
+const AddonsPath = "/etc/kubernetes/addons"

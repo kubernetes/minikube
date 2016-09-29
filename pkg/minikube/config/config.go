@@ -16,9 +16,68 @@ limitations under the License.
 
 package config
 
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+
+	"k8s.io/minikube/pkg/minikube/constants"
+)
+
 const (
 	WantUpdateNotification    = "WantUpdateNotification"
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
 	WantReportError           = "WantReportError"
 	WantReportErrorPrompt     = "WantReportErrorPrompt"
 )
+
+type configFile interface {
+	io.ReadWriter
+}
+
+type setFn func(string, string) error
+type MinikubeConfig map[string]interface{}
+
+type Setting struct {
+	name        string
+	set         func(MinikubeConfig, string, string) error
+	validations []setFn
+	callbacks   []setFn
+}
+
+func Get(name string) (string, error) {
+	m, err := ReadConfig()
+	if err != nil {
+		return "", err
+	}
+	if val, ok := m[name]; ok {
+		return fmt.Sprintf("%v", val), nil
+	} else {
+		return "", errors.New("specified key could not be found in config")
+	}
+}
+
+// ReadConfig reads in the JSON minikube config
+func ReadConfig() (MinikubeConfig, error) {
+	f, err := os.Open(constants.ConfigFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return make(map[string]interface{}), nil
+		}
+		return nil, fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
+	}
+	m, err := decode(f)
+	if err != nil {
+		return nil, fmt.Errorf("Could not decode config %s: %s", constants.ConfigFile, err)
+	}
+
+	return m, nil
+}
+
+func decode(r io.Reader) (MinikubeConfig, error) {
+	var data MinikubeConfig
+	err := json.NewDecoder(r).Decode(&data)
+	return data, err
+}

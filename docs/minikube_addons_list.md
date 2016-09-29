@@ -1,21 +1,14 @@
-## minikube status
+## minikube addons list
 
-Gets the status of a local kubernetes cluster.
+Lists all available minikube addons as well as there current status (enabled/disabled)
 
 ### Synopsis
 
 
-Gets the status of a local kubernetes cluster.
+Lists all available minikube addons as well as there current status (enabled/disabled)
 
 ```
-minikube status
-```
-
-### Options
-
-```
-      --format string   Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status (default "minikubeVM: {{.MinikubeStatus}}\nlocalkube: {{.LocalkubeStatus}}\n")
+minikube addons list
 ```
 
 ### Options inherited from parent commands
@@ -32,5 +25,5 @@ For the list accessible variables for the template, see the struct values here: 
 ```
 
 ### SEE ALSO
-* [minikube](minikube.md)	 - Minikube is a tool for managing local Kubernetes clusters.
+* [minikube addons](minikube_addons.md)	 - Modify minikube's kubernetes addons
 
