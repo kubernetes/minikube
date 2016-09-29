@@ -35,6 +35,14 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
 
 See the installation instructions for the [latest release](https://github.com/kubernetes/minikube/releases).
 
+### CI Builds
+
+We publish CI builds of minikube, built at every Pull Request. Builds are available at:
+https://storage.googleapis.com/minikube-builds/<PR>/minikube-darwin-amd64
+https://storage.googleapis.com/minikube-builds/<PR>/minikube-linux-amd64
+https://storage.googleapis.com/minikube-builds/<PR>/minikube-windows-amd64.exe
+
+
 ## Quickstart
 
 Here's a brief demo of minikube usage.
