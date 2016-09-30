@@ -34,6 +34,8 @@ func StartSchedulerServer(lk LocalkubeServer) func() error {
 	// defaults from command
 	config.EnableProfiling = true
 
+	lk.SetExtraConfigForComponent("scheduler", &config)
+
 	return func() error {
 		return scheduler.Run(config)
 	}

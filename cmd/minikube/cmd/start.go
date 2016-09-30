@@ -50,6 +50,7 @@ var (
 	registryMirror   []string
 	dockerEnv        []string
 	insecureRegistry []string
+	extraOptions     util.ExtraOptionSlice
 )
 
 // startCmd represents the start command
@@ -102,6 +103,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		NodeIP:            ip,
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
+		ExtraOptions:      extraOptions,
 	}
 	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
@@ -200,6 +202,10 @@ func init() {
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
+	startCmd.Flags().Var(&extraOptions, "extra-config",
+		`A set of key=value pairs that describe configuration that may be passed to different components.
+		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
+		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }

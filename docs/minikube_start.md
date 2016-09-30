@@ -19,6 +19,9 @@ minikube start
       --cpus int                        Number of CPUs allocated to the minikube VM (default 1)
       --disk-size string                Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g) (default "20g")
       --docker-env stringSlice          Environment variables to pass to the Docker daemon. (format: key=value)
+      --extra-config ExtraOption        A set of key=value pairs that describe configuration that may be passed to different components.
+		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
+		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.
       --host-only-cidr string           The CIDR to be used for the minikube VM (only supported with Virtualbox driver) (default "192.168.99.1/24")
       --insecure-registry stringSlice   Insecure Docker registries to pass to the Docker daemon
       --iso-url string                  Location of the minikube iso (default "https://storage.googleapis.com/minikube/minikube-0.7.iso")
