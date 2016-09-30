@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -93,7 +93,7 @@ func GetPodReadyCondition(status PodStatus) *PodCondition {
 }
 
 // GetPodCondition extracts the provided condition from the given status and returns that.
-// Returns nil and -1 if the condition is not present, and the the index of the located condition.
+// Returns nil and -1 if the condition is not present, and the index of the located condition.
 func GetPodCondition(status *PodStatus, conditionType PodConditionType) (int, *PodCondition) {
 	if status == nil {
 		return -1, nil
@@ -107,7 +107,7 @@ func GetPodCondition(status *PodStatus, conditionType PodConditionType) (int, *P
 }
 
 // GetNodeCondition extracts the provided condition from the given status and returns that.
-// Returns nil and -1 if the condition is not present, and the the index of the located condition.
+// Returns nil and -1 if the condition is not present, and the index of the located condition.
 func GetNodeCondition(status *NodeStatus, conditionType NodeConditionType) (int, *NodeCondition) {
 	if status == nil {
 		return -1, nil

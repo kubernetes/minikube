@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -134,6 +134,18 @@ func (plugin *nfsPlugin) newUnmounterInternal(volName string, podUID types.UID, 
 
 func (plugin *nfsPlugin) NewRecycler(pvName string, spec *volume.Spec) (volume.Recycler, error) {
 	return plugin.newRecyclerFunc(pvName, spec, plugin.host, plugin.config)
+}
+
+func (plugin *nfsPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	nfsVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			NFS: &api.NFSVolumeSource{
+				Path: volumeName,
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(nfsVolume), nil
 }
 
 // NFS volumes represent a bare host file or directory mount of an NFS export.

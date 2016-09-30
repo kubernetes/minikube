@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -145,7 +145,7 @@ func objectReflectDiff(path *field.Path, a, b reflect.Value) []diff {
 			}
 		}
 		return changes
-	case reflect.Ptr:
+	case reflect.Ptr, reflect.Interface:
 		if a.IsNil() || b.IsNil() {
 			switch {
 			case a.IsNil() && b.IsNil():
@@ -177,10 +177,10 @@ func objectReflectDiff(path *field.Path, a, b reflect.Value) []diff {
 			}
 		}
 		var diffs []diff
-		for i := l; l < lA; i++ {
+		for i := l; i < lA; i++ {
 			diffs = append(diffs, diff{path: path.Index(i), a: a.Index(i), b: nil})
 		}
-		for i := l; l < lB; i++ {
+		for i := l; i < lB; i++ {
 			diffs = append(diffs, diff{path: path.Index(i), a: nil, b: b.Index(i)})
 		}
 		return diffs
@@ -199,7 +199,7 @@ func objectReflectDiff(path *field.Path, a, b reflect.Value) []diff {
 				if reflect.DeepEqual(a.MapIndex(key).Interface(), b.MapIndex(key).Interface()) {
 					continue
 				}
-				missing = append(missing, diff{path: path.Key(fmt.Sprintf("%s", key.Interface())), a: a.MapIndex(key).Interface(), b: b.MapIndex(key).Interface()})
+				missing = append(missing, objectReflectDiff(path.Key(fmt.Sprintf("%s", key.Interface())), a.MapIndex(key), b.MapIndex(key))...)
 				continue
 			}
 			missing = append(missing, diff{path: path.Key(fmt.Sprintf("%s", key.Interface())), a: nil, b: b.MapIndex(key).Interface()})

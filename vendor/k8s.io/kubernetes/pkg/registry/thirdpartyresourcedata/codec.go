@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ type thirdPartyObjectConverter struct {
 	converter runtime.ObjectConvertor
 }
 
-func (t *thirdPartyObjectConverter) ConvertToVersion(in runtime.Object, outVersion unversioned.GroupVersion) (out runtime.Object, err error) {
+func (t *thirdPartyObjectConverter) ConvertToVersion(in runtime.Object, outVersion runtime.GroupVersioner) (out runtime.Object, err error) {
 	switch in.(type) {
 	// This seems weird, but in this case the ThirdPartyResourceData is really just a wrapper on the raw 3rd party data.
 	// The actual thing printed/sent to server is the actual raw third party resource data, which only has one version.
@@ -53,8 +53,8 @@ func (t *thirdPartyObjectConverter) ConvertToVersion(in runtime.Object, outVersi
 	}
 }
 
-func (t *thirdPartyObjectConverter) Convert(in, out interface{}) error {
-	return t.converter.Convert(in, out)
+func (t *thirdPartyObjectConverter) Convert(in, out, context interface{}) error {
+	return t.converter.Convert(in, out, context)
 }
 
 func (t *thirdPartyObjectConverter) ConvertFieldLabel(version, kind, label, value string) (string, string, error) {
@@ -152,6 +152,27 @@ func (t *thirdPartyResourceDataMapper) RESTMapping(gk unversioned.GroupKind, ver
 	return mapping, nil
 }
 
+func (t *thirdPartyResourceDataMapper) RESTMappings(gk unversioned.GroupKind) ([]*meta.RESTMapping, error) {
+	if gk.Group != t.group {
+		return nil, fmt.Errorf("unknown group %q expected %s", gk.Group, t.group)
+	}
+	if gk.Kind != "ThirdPartyResourceData" {
+		return nil, fmt.Errorf("unknown kind %s expected %s", gk.Kind, t.kind)
+	}
+
+	// TODO figure out why we're doing this rewriting
+	extensionGK := unversioned.GroupKind{Group: extensions.GroupName, Kind: "ThirdPartyResourceData"}
+
+	mappings, err := t.mapper.RESTMappings(extensionGK)
+	if err != nil {
+		return nil, err
+	}
+	for _, m := range mappings {
+		m.ObjectConvertor = &thirdPartyObjectConverter{m.ObjectConvertor}
+	}
+	return mappings, nil
+}
+
 func (t *thirdPartyResourceDataMapper) AliasesForResource(resource string) ([]string, bool) {
 	return t.mapper.AliasesForResource(resource)
 }
@@ -213,11 +234,11 @@ func (t *thirdPartyResourceDataCodecFactory) StreamingSerializerForMediaType(med
 	}
 }
 
-func (t *thirdPartyResourceDataCodecFactory) EncoderForVersion(s runtime.Encoder, gv unversioned.GroupVersion) runtime.Encoder {
-	return &thirdPartyResourceDataEncoder{delegate: t.delegate.EncoderForVersion(s, gv), gvk: gv.WithKind(t.kind)}
+func (t *thirdPartyResourceDataCodecFactory) EncoderForVersion(s runtime.Encoder, gv runtime.GroupVersioner) runtime.Encoder {
+	return &thirdPartyResourceDataEncoder{delegate: t.delegate.EncoderForVersion(s, gv), gvk: t.encodeGV.WithKind(t.kind)}
 }
 
-func (t *thirdPartyResourceDataCodecFactory) DecoderToVersion(s runtime.Decoder, gv unversioned.GroupVersion) runtime.Decoder {
+func (t *thirdPartyResourceDataCodecFactory) DecoderToVersion(s runtime.Decoder, gv runtime.GroupVersioner) runtime.Decoder {
 	return NewDecoder(t.delegate.DecoderToVersion(s, gv), t.kind)
 }
 
@@ -248,35 +269,42 @@ func parseObject(data []byte) (map[string]interface{}, error) {
 	return mapObj, nil
 }
 
-func (t *thirdPartyResourceDataDecoder) populate(data []byte) (runtime.Object, error) {
+func (t *thirdPartyResourceDataDecoder) populate(data []byte) (runtime.Object, *unversioned.GroupVersionKind, error) {
 	mapObj, err := parseObject(data)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	return t.populateFromObject(mapObj, data)
 }
 
-func (t *thirdPartyResourceDataDecoder) populateFromObject(mapObj map[string]interface{}, data []byte) (runtime.Object, error) {
+func (t *thirdPartyResourceDataDecoder) populateFromObject(mapObj map[string]interface{}, data []byte) (runtime.Object, *unversioned.GroupVersionKind, error) {
 	typeMeta := unversioned.TypeMeta{}
 	if err := json.Unmarshal(data, &typeMeta); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	gv, err := unversioned.ParseGroupVersion(typeMeta.APIVersion)
+	if err != nil {
+		return nil, nil, err
+	}
+	gvk := gv.WithKind(typeMeta.Kind)
+
 	isList := strings.HasSuffix(typeMeta.Kind, "List")
 	switch {
 	case !isList && (len(t.kind) == 0 || typeMeta.Kind == t.kind):
 		result := &extensions.ThirdPartyResourceData{}
 		if err := t.populateResource(result, mapObj, data); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return result, nil
+		return result, &gvk, nil
 	case isList && (len(t.kind) == 0 || typeMeta.Kind == t.kind+"List"):
 		list := &extensions.ThirdPartyResourceDataList{}
 		if err := t.populateListResource(list, mapObj); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return list, nil
+		return list, &gvk, nil
 	default:
-		return nil, fmt.Errorf("unexpected kind: %s, expected %s", typeMeta.Kind, t.kind)
+		return nil, nil, fmt.Errorf("unexpected kind: %s, expected %s", typeMeta.Kind, t.kind)
 	}
 }
 
@@ -338,11 +366,7 @@ func (t *thirdPartyResourceDataDecoder) Decode(data []byte, gvk *unversioned.Gro
 				return t.delegate.Decode(data, gvk, into)
 			}
 		}
-		obj, err := t.populate(data)
-		if err != nil {
-			return nil, nil, err
-		}
-		return obj, gvk, nil
+		return t.populate(data)
 	}
 	switch o := into.(type) {
 	case *extensions.ThirdPartyResourceData:
@@ -356,14 +380,14 @@ func (t *thirdPartyResourceDataDecoder) Decode(data []byte, gvk *unversioned.Gro
 				return t.delegate.Decode(data, gvk, into)
 			}
 		}
-		obj, err := t.populate(data)
+		obj, outGVK, err := t.populate(data)
 		if err != nil {
 			return nil, nil, err
 		}
 		o.Objects = []runtime.Object{
 			obj,
 		}
-		return o, gvk, nil
+		return o, outGVK, nil
 	default:
 		return t.delegate.Decode(data, gvk, into)
 	}
@@ -451,13 +475,6 @@ func (t *thirdPartyResourceDataDecoder) populateListResource(objIn *extensions.T
 	return nil
 }
 
-const template = `{
-  "kind": "%s",
-  "apiVersion": "%s",
-  "metadata": {},
-  "items": [ %s ]
-}`
-
 type thirdPartyResourceDataEncoder struct {
 	delegate runtime.Encoder
 	gvk      unversioned.GroupVersionKind
@@ -488,19 +505,41 @@ func (t *thirdPartyResourceDataEncoder) Encode(obj runtime.Object, stream io.Wri
 	case *extensions.ThirdPartyResourceData:
 		return encodeToJSON(obj, stream)
 	case *extensions.ThirdPartyResourceDataList:
-		// TODO: There must be a better way to do this...
-		dataStrings := make([]string, len(obj.Items))
+		// TODO: There are likely still better ways to do this...
+		listItems := make([]json.RawMessage, len(obj.Items))
+
 		for ix := range obj.Items {
 			buff := &bytes.Buffer{}
 			err := encodeToJSON(&obj.Items[ix], buff)
 			if err != nil {
 				return err
 			}
-			dataStrings[ix] = buff.String()
+			listItems[ix] = json.RawMessage(buff.Bytes())
 		}
-		gv := t.gvk.GroupVersion()
-		fmt.Fprintf(stream, template, t.gvk.Kind+"List", gv.String(), strings.Join(dataStrings, ","))
-		return nil
+
+		if t.gvk.Empty() {
+			return fmt.Errorf("thirdPartyResourceDataEncoder was not given a target version")
+		}
+
+		encMap := struct {
+			Kind       string               `json:"kind,omitempty"`
+			Items      []json.RawMessage    `json:"items"`
+			Metadata   unversioned.ListMeta `json:"metadata,omitempty"`
+			APIVersion string               `json:"apiVersion,omitempty"`
+		}{
+			Kind:       t.gvk.Kind + "List",
+			Items:      listItems,
+			Metadata:   obj.ListMeta,
+			APIVersion: t.gvk.GroupVersion().String(),
+		}
+
+		encBytes, err := json.Marshal(encMap)
+		if err != nil {
+			return err
+		}
+
+		_, err = stream.Write(encBytes)
+		return err
 	case *versioned.InternalEvent:
 		event := &versioned.Event{}
 		err := versioned.Convert_versioned_InternalEvent_to_versioned_Event(obj, event, nil)

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -100,15 +100,4 @@ func (s *storage) ExportService(ctx api.Context, name string, options unversione
 		return nil, err
 	}
 	return obj.(*api.Service), nil
-}
-
-// TODO: Move to a general location (as other components may need allocation in future; it's not service specific)
-// RangeRegistry is a registry that can retrieve or persist a RangeAllocation object.
-type RangeRegistry interface {
-	// Get returns the latest allocation, an empty object if no allocation has been made,
-	// or an error if the allocation could not be retrieved.
-	Get() (*api.RangeAllocation, error)
-	// CreateOrUpdate should create or update the provide allocation, unless a conflict
-	// has occurred since the item was last created.
-	CreateOrUpdate(*api.RangeAllocation) error
 }

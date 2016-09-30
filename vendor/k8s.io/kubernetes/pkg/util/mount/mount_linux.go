@@ -1,7 +1,7 @@
 // +build linux
 
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -53,8 +53,6 @@ const (
 // for the linux platform.  This implementation assumes that the
 // kubelet is running in the host's root mount namespace.
 type Mounter struct{}
-
-var _ = Interface(&Mounter{})
 
 // Mount mounts source to target as fstype with given options. 'source' and 'fstype' must
 // be an emtpy string in case it's not required, e.g. for remount, or for auto filesystem
@@ -170,6 +168,61 @@ func (mounter *Mounter) IsLikelyNotMountPoint(file string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// DeviceOpened checks if block device in use by calling Open with O_EXCL flag.
+// Returns true if open returns errno EBUSY, and false if errno is nil.
+// Returns an error if errno is any error other than EBUSY.
+// Returns with error if pathname is not a device.
+func (mounter *Mounter) DeviceOpened(pathname string) (bool, error) {
+	return exclusiveOpenFailsOnDevice(pathname)
+}
+
+// PathIsDevice uses FileInfo returned from os.Stat to check if path refers
+// to a device.
+func (mounter *Mounter) PathIsDevice(pathname string) (bool, error) {
+	return pathIsDevice(pathname)
+}
+
+func exclusiveOpenFailsOnDevice(pathname string) (bool, error) {
+	if isDevice, err := pathIsDevice(pathname); !isDevice {
+		return false, fmt.Errorf(
+			"PathIsDevice failed for path %q: %v",
+			pathname,
+			err)
+	}
+	fd, errno := syscall.Open(pathname, syscall.O_RDONLY|syscall.O_EXCL, 0)
+	// If the device is in use, open will return an invalid fd.
+	// When this happens, it is expected that Close will fail and throw an error.
+	defer syscall.Close(fd)
+	if errno == nil {
+		// device not in use
+		return false, nil
+	} else if errno == syscall.EBUSY {
+		// device is in use
+		return true, nil
+	}
+	// error during call to Open
+	return false, errno
+}
+
+func pathIsDevice(pathname string) (bool, error) {
+	finfo, err := os.Stat(pathname)
+	// err in call to os.Stat
+	if err != nil {
+		return false, err
+	}
+	// path refers to a device
+	if finfo.Mode()&os.ModeDevice != 0 {
+		return true, nil
+	}
+	// path does not refer to device
+	return false, nil
+}
+
+//GetDeviceNameFromMount: given a mount point, find the device name from its global mount point
+func (mounter *Mounter) GetDeviceNameFromMount(mountPath, pluginDir string) (string, error) {
+	return getDeviceNameFromMount(mounter, mountPath, pluginDir)
 }
 
 func listProcMounts(mountFilePath string) ([]MountPoint, error) {

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -162,7 +162,7 @@ func writeLine(buf *bytes.Buffer, words ...string) {
 //hostportChainName takes containerPort for a pod and returns associated iptables chain.
 // This is computed by hashing (sha256)
 // then encoding to base32 and truncating with the prefix "KUBE-SVC-".  We do
-// this because Iptables Chain Names must be <= 28 chars long, and the longer
+// this because IPTables Chain Names must be <= 28 chars long, and the longer
 // they are the harder they are to read.
 func hostportChainName(cp api.ContainerPort, podFullName string) utiliptables.Chain {
 	hash := sha256.Sum256([]byte(string(cp.HostPort) + string(cp.Protocol) + podFullName))
@@ -251,14 +251,6 @@ func (h *handler) SyncHostports(natInterfaceName string, runningPods []*RunningP
 	} else {
 		writeLine(natChains, utiliptables.MakeChainLine(kubeHostportsChain))
 	}
-	// Assuming the node is running kube-proxy in iptables mode
-	// Reusing kube-proxy's KubeMarkMasqChain for SNAT
-	// TODO: let kubelet manage KubeMarkMasqChain. Other components should just be able to use it
-	if chain, ok := existingNATChains[iptablesproxy.KubeMarkMasqChain]; ok {
-		writeLine(natChains, chain)
-	} else {
-		writeLine(natChains, utiliptables.MakeChainLine(iptablesproxy.KubeMarkMasqChain))
-	}
 
 	// Accumulate NAT chains to keep.
 	activeNATChains := map[utiliptables.Chain]bool{} // use a map as a set
@@ -284,6 +276,7 @@ func (h *handler) SyncHostports(natInterfaceName string, runningPods []*RunningP
 		}
 		writeLine(natRules, args...)
 
+		// Assuming kubelet is syncing iptables KUBE-MARK-MASQ chain
 		// If the request comes from the pod that is serving the hostport, then SNAT
 		args = []string{
 			"-A", string(hostportChain),
@@ -293,7 +286,7 @@ func (h *handler) SyncHostports(natInterfaceName string, runningPods []*RunningP
 		writeLine(natRules, args...)
 
 		// Create hostport chain to DNAT traffic to final destination
-		// Iptables will maintained the stats for this chain
+		// IPTables will maintained the stats for this chain
 		args = []string{
 			"-A", string(hostportChain),
 			"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, target.podFullName, containerPort.HostPort),

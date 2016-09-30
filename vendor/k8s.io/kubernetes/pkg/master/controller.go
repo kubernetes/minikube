@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,10 +28,11 @@ import (
 	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/registry/endpoint"
 	"k8s.io/kubernetes/pkg/registry/namespace"
+	"k8s.io/kubernetes/pkg/registry/rangeallocation"
 	"k8s.io/kubernetes/pkg/registry/service"
 	servicecontroller "k8s.io/kubernetes/pkg/registry/service/ipallocator/controller"
 	portallocatorcontroller "k8s.io/kubernetes/pkg/registry/service/portallocator/controller"
-	"k8s.io/kubernetes/pkg/util"
+	"k8s.io/kubernetes/pkg/util/async"
 	"k8s.io/kubernetes/pkg/util/intstr"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 	"k8s.io/kubernetes/pkg/util/runtime"
@@ -45,11 +46,11 @@ type Controller struct {
 	NamespaceRegistry namespace.Registry
 	ServiceRegistry   service.Registry
 
-	ServiceClusterIPRegistry service.RangeRegistry
+	ServiceClusterIPRegistry rangeallocation.RangeRegistry
 	ServiceClusterIPInterval time.Duration
 	ServiceClusterIPRange    *net.IPNet
 
-	ServiceNodePortRegistry service.RangeRegistry
+	ServiceNodePortRegistry rangeallocation.RangeRegistry
 	ServiceNodePortInterval time.Duration
 	ServiceNodePortRange    utilnet.PortRange
 
@@ -68,7 +69,7 @@ type Controller struct {
 	PublicServicePort         int
 	KubernetesServiceNodePort int
 
-	runner *util.Runner
+	runner *async.Runner
 }
 
 // Start begins the core controller loops that must exist for bootstrapping
@@ -95,7 +96,7 @@ func (c *Controller) Start() {
 		glog.Errorf("Unable to perform initial Kubernetes service initialization: %v", err)
 	}
 
-	c.runner = util.NewRunner(c.RunKubernetesNamespaces, c.RunKubernetesService, repairClusterIPs.RunUntil, repairNodePorts.RunUntil)
+	c.runner = async.NewRunner(c.RunKubernetesNamespaces, c.RunKubernetesService, repairClusterIPs.RunUntil, repairNodePorts.RunUntil)
 	c.runner.Start()
 }
 
@@ -294,6 +295,14 @@ func (r *masterCountEndpointReconciler) ReconcileEndpoints(serviceName string, i
 			},
 		}
 	}
+	if errors.IsNotFound(err) {
+		// Simply create non-existing endpoints for the service.
+		e.Subsets = []api.EndpointSubset{{
+			Addresses: []api.EndpointAddress{{IP: ip.String()}},
+			Ports:     endpointPorts,
+		}}
+		return r.endpointRegistry.UpdateEndpoints(ctx, e)
+	}
 
 	// First, determine if the endpoint is in the format we expect (one
 	// subset, ports matching endpointPorts, N IP addresses).
@@ -304,7 +313,7 @@ func (r *masterCountEndpointReconciler) ReconcileEndpoints(serviceName string, i
 			Addresses: []api.EndpointAddress{{IP: ip.String()}},
 			Ports:     endpointPorts,
 		}}
-		glog.Warningf("Resetting endpoints for master service %q to %v", serviceName, e)
+		glog.Warningf("Resetting endpoints for master service %q to %#v", serviceName, e)
 		return r.endpointRegistry.UpdateEndpoints(ctx, e)
 	}
 	if ipCorrect && portsCorrect {

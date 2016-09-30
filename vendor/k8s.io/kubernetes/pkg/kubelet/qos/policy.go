@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,12 +18,12 @@ package qos
 
 import (
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/kubelet/qos/util"
 )
 
 const (
-	PodInfraOOMAdj        int = -999
+	PodInfraOOMAdj        int = -998
 	KubeletOOMScoreAdj    int = -999
+	DockerOOMScoreAdj     int = -999
 	KubeProxyOOMScoreAdj  int = -999
 	guaranteedOOMScoreAdj int = -998
 	besteffortOOMScoreAdj int = 1000
@@ -36,11 +36,11 @@ const (
 // and 1000. Containers with higher OOM scores are killed if the system runs out of memory.
 // See https://lwn.net/Articles/391222/ for more information.
 func GetContainerOOMScoreAdjust(pod *api.Pod, container *api.Container, memoryCapacity int64) int {
-	switch util.GetPodQos(pod) {
-	case util.Guaranteed:
+	switch GetPodQOS(pod) {
+	case Guaranteed:
 		// Guaranteed containers should be the last to get killed.
 		return guaranteedOOMScoreAdj
-	case util.BestEffort:
+	case BestEffort:
 		return besteffortOOMScoreAdj
 	}
 
@@ -54,10 +54,10 @@ func GetContainerOOMScoreAdjust(pod *api.Pod, container *api.Container, memoryCa
 	// Note that this is a heuristic, it won't work if a container has many small processes.
 	memoryRequest := container.Resources.Requests.Memory().Value()
 	oomScoreAdjust := 1000 - (1000*memoryRequest)/memoryCapacity
-	// A guaranteed pod using 100% of memory can have an OOM score of 1. Ensure
+	// A guaranteed pod using 100% of memory can have an OOM score of 10. Ensure
 	// that burstable pods have a higher OOM score adjustment.
-	if oomScoreAdjust < 2 {
-		return 2
+	if int(oomScoreAdjust) < (1000 + guaranteedOOMScoreAdj) {
+		return (1000 + guaranteedOOMScoreAdj)
 	}
 	// Give burstable pods a higher chance of survival over besteffort pods.
 	if int(oomScoreAdjust) == besteffortOOMScoreAdj {

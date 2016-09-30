@@ -16,7 +16,6 @@ minikube config set PROPERTY_NAME PROPERTY_VALUE
 
 ```
       --alsologtostderr                  log to standard error as well as files
-      --log-flush-frequency duration     Maximum number of seconds between log flushes (default 5s)
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files

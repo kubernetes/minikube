@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ func NewDiscoveryRESTMapper(resources []*unversioned.APIResourceList, versionFun
 	return rm, nil
 }
 
-// ObjectTyper provides an ObjectTyper implmentation for
+// ObjectTyper provides an ObjectTyper implementation for
 // runtime.Unstructured object based on discovery information.
 type ObjectTyper struct {
 	registered map[unversioned.GroupVersionKind]bool

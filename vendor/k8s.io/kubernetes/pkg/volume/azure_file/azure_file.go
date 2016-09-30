@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -122,6 +122,19 @@ func (plugin *azureFilePlugin) newUnmounterInternal(volName string, podUID types
 		plugin:          plugin,
 		MetricsProvider: volume.NewMetricsStatFS(getPath(podUID, volName, plugin.host)),
 	}}, nil
+}
+
+func (plugin *azureFilePlugin) ConstructVolumeSpec(volName, mountPath string) (*volume.Spec, error) {
+	azureVolume := &api.Volume{
+		Name: volName,
+		VolumeSource: api.VolumeSource{
+			AzureFile: &api.AzureFileVolumeSource{
+				SecretName: volName,
+				ShareName:  volName,
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(azureVolume), nil
 }
 
 // azureFile volumes represent mount of an AzureFile share.
