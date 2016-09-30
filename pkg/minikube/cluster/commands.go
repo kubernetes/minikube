@@ -17,9 +17,12 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	gflag "flag"
 	"fmt"
 	"strings"
+
+	"text/template"
 
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -27,13 +30,16 @@ import (
 // Kill any running instances.
 var stopCommand = "sudo killall localkube || true"
 
-var startCommandFmtStr = `
+var startCommandTemplate = `
 # Run with nohup so it stays up. Redirect logs to useful places.
-sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube %s --generate-certs=false --logtostderr=true --node-ip=%s > %s 2> %s < /dev/null & echo $! > %s &'
+sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube {{.Flags}} \
+--generate-certs=false --logtostderr=true --node-ip={{.NodeIP}} > {{.Stdout}} 2> {{.Stderr}} < /dev/null & echo $! > {{.Pidfile}} &'
 `
+
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
 
-func GetStartCommand(kubernetesConfig KubernetesConfig) string {
+func GetStartCommand(kubernetesConfig KubernetesConfig) (string, error) {
+
 	flagVals := make([]string, len(constants.LogFlags))
 	for _, logFlag := range constants.LogFlags {
 		if logVal := gflag.Lookup(logFlag); logVal != nil && logVal.Value.String() != logVal.DefValue {
@@ -49,16 +55,31 @@ func GetStartCommand(kubernetesConfig KubernetesConfig) string {
 		flagVals = append(flagVals, "--network-plugin="+kubernetesConfig.NetworkPlugin)
 	}
 
+	for _, e := range kubernetesConfig.ExtraOptions {
+		flagVals = append(flagVals, fmt.Sprintf("--extra-config=%s", e.String()))
+	}
+
 	flags := strings.Join(flagVals, " ")
 
-	return fmt.Sprintf(
-		startCommandFmtStr,
-		flags,
-		kubernetesConfig.NodeIP,
-		constants.RemoteLocalKubeErrPath,
-		constants.RemoteLocalKubeOutPath,
-		constants.LocalkubePIDPath,
-	)
+	t := template.Must(template.New("startCommand").Parse(startCommandTemplate))
+	buf := bytes.Buffer{}
+	data := struct {
+		Flags   string
+		NodeIP  string
+		Stdout  string
+		Stderr  string
+		Pidfile string
+	}{
+		Flags:   flags,
+		NodeIP:  kubernetesConfig.NodeIP,
+		Stdout:  constants.RemoteLocalKubeOutPath,
+		Stderr:  constants.RemoteLocalKubeErrPath,
+		Pidfile: constants.LocalkubePIDPath,
+	}
+	if err := t.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 var localkubeStatusCommand = fmt.Sprintf(`

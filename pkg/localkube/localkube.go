@@ -24,6 +24,8 @@ import (
 	"net"
 	"path"
 
+	"github.com/golang/glog"
+
 	"k8s.io/kubernetes/pkg/util/config"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 
@@ -54,6 +56,7 @@ type LocalkubeServer struct {
 	NodeIP                   net.IP
 	ContainerRuntime         string
 	NetworkPlugin            string
+	ExtraConfig              util.ExtraOptionSlice
 }
 
 func (lk *LocalkubeServer) AddServer(server Server) {
@@ -95,6 +98,26 @@ func (lk LocalkubeServer) GetAPIServerInsecureURL() string {
 // Get the host's public IP address
 func (lk LocalkubeServer) GetHostIP() (net.IP, error) {
 	return utilnet.ChooseBindAddress(net.ParseIP("0.0.0.0"))
+}
+
+func (lk LocalkubeServer) getExtraConfigForComponent(component string) []util.ExtraOption {
+	e := []util.ExtraOption{}
+	for _, c := range lk.ExtraConfig {
+		if c.Component == component {
+			e = append(e, c)
+		}
+	}
+	return e
+}
+
+func (lk LocalkubeServer) SetExtraConfigForComponent(component string, config interface{}) {
+	extra := lk.getExtraConfigForComponent(component)
+	for _, e := range extra {
+		glog.Infof("Setting %s to %s on %s.\n", e.Key, e.Value, component)
+		if err := util.FindAndSet(e.Key, config, e.Value); err != nil {
+			glog.Warningf("Unable to set %s to %s. Error: %s", e.Key, e.Value, err)
+		}
+	}
 }
 
 func (lk LocalkubeServer) loadCert(path string) (*x509.Certificate, error) {

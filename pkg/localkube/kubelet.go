@@ -51,6 +51,7 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	if lk.ContainerRuntime != "" {
 		config.ContainerRuntime = lk.ContainerRuntime
 	}
+	lk.SetExtraConfigForComponent("kubelet", &config)
 
 	// Use the host's resolver config
 	if lk.Containerized {

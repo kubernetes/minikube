@@ -44,6 +44,8 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 	config.OOMScoreAdj = &OOMScoreAdj
 	config.IPTablesMasqueradeBit = &MasqueradeBit
 
+	lk.SetExtraConfigForComponent("proxy", &config)
+
 	server, err := kubeproxy.NewProxyServerDefault(config)
 	if err != nil {
 		panic(err)

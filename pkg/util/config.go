@@ -1,0 +1,81 @@
+/*
+Copyright 2016 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package util
+
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+)
+
+// findNestedElement uses reflection to find the element corresponding to the dot-separated string parameter.
+func findNestedElement(s string, c interface{}) (reflect.Value, error) {
+	fields := strings.Split(s, ".")
+
+	// Take the ValueOf to get a pointer, so we can actually mutate the element.
+	e := reflect.Indirect(reflect.ValueOf(c).Elem())
+
+	for _, field := range fields {
+		e = reflect.Indirect(e.FieldByName(field))
+
+		// FieldByName returns the zero value if the field does not exist.
+		if e == (reflect.Value{}) {
+			return e, fmt.Errorf("Unable to find field by name: %s", field)
+		}
+		// Start the loop again, on the next level.
+	}
+	return e, nil
+}
+
+// setElement sets the supplied element to the value in the supplied string. The string will be coerced to the correct type.
+func setElement(e reflect.Value, v string) error {
+	switch t := e.Interface().(type) {
+	case int, int32, int64:
+		i, err := strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("Error converting input %s to an integer: %s", v, err)
+		}
+		e.SetInt(int64(i))
+	case string:
+		e.SetString(v)
+	case float32, float64:
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return fmt.Errorf("Error converting input %s to a float: %s", v, err)
+		}
+		e.SetFloat(f)
+	case bool:
+		b, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("Error converting input %s to a bool: %s", b, err)
+		}
+		e.SetBool(b)
+	default:
+		return fmt.Errorf("Unable to set type %s.", t)
+	}
+	return nil
+}
+
+// FindAndSet sets the nested value.
+func FindAndSet(path string, c interface{}, value string) error {
+	elem, err := findNestedElement(path, c)
+	if err != nil {
+		return err
+	}
+	return setElement(elem, value)
+}

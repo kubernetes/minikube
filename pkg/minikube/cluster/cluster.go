@@ -192,11 +192,16 @@ type KubernetesConfig struct {
 	NodeIP            string
 	ContainerRuntime  string
 	NetworkPlugin     string
+	ExtraOptions      util.ExtraOptionSlice
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
-	commands := []string{stopCommand, GetStartCommand(kubernetesConfig)}
+	startCommand, err := GetStartCommand(kubernetesConfig)
+	if err != nil {
+		return errors.Wrapf(err, "Error generating start command: %s", err)
+	}
+	commands := []string{stopCommand, startCommand}
 
 	for _, cmd := range commands {
 		glog.Infoln(cmd)

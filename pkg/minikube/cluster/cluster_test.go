@@ -88,11 +88,16 @@ func TestStartCluster(t *testing.T) {
 	}
 
 	err := StartCluster(h, kubernetesConfig)
+
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
 
-	for _, cmd := range []string{stopCommand, GetStartCommand(kubernetesConfig)} {
+	startCommand, err := GetStartCommand(kubernetesConfig)
+	if err != nil {
+		t.Fatalf("Error getting start command: %s", err)
+	}
+	for _, cmd := range []string{stopCommand, startCommand} {
 		if _, ok := h.Commands[cmd]; !ok {
 			t.Fatalf("Expected command not run: %s. Commands run: %v", cmd, h.Commands)
 		}
@@ -108,6 +113,7 @@ func TestStartClusterError(t *testing.T) {
 	}
 
 	err := StartCluster(h, kubernetesConfig)
+
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
 	}
