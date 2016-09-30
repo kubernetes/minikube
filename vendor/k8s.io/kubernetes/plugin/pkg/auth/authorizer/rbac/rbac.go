@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import (
 	"k8s.io/kubernetes/pkg/apis/rbac"
 	"k8s.io/kubernetes/pkg/apis/rbac/validation"
 	"k8s.io/kubernetes/pkg/auth/authorizer"
-	"k8s.io/kubernetes/pkg/auth/user"
 	"k8s.io/kubernetes/pkg/registry/clusterrole"
 	"k8s.io/kubernetes/pkg/registry/clusterrolebinding"
 	"k8s.io/kubernetes/pkg/registry/role"
@@ -35,17 +34,12 @@ type RBACAuthorizer struct {
 	authorizationRuleResolver validation.AuthorizationRuleResolver
 }
 
-func (r *RBACAuthorizer) Authorize(attr authorizer.Attributes) error {
-	if r.superUser != "" && attr.GetUserName() == r.superUser {
-		return nil
+func (r *RBACAuthorizer) Authorize(attr authorizer.Attributes) (bool, string, error) {
+	if r.superUser != "" && attr.GetUser() != nil && attr.GetUser().GetName() == r.superUser {
+		return true, "", nil
 	}
 
-	userInfo := &user.DefaultInfo{
-		Name:   attr.GetUserName(),
-		Groups: attr.GetGroups(),
-	}
-
-	ctx := api.WithNamespace(api.WithUser(api.NewContext(), userInfo), attr.GetNamespace())
+	ctx := api.WithNamespace(api.WithUser(api.NewContext(), attr.GetUser()), attr.GetNamespace())
 
 	// Frame the authorization request as a privilege escalation check.
 	var requestedRule rbac.PolicyRule
@@ -62,11 +56,18 @@ func (r *RBACAuthorizer) Authorize(attr authorizer.Attributes) error {
 		}
 	} else {
 		requestedRule = rbac.PolicyRule{
+			Verbs:           []string{attr.GetVerb()},
 			NonResourceURLs: []string{attr.GetPath()},
 		}
 	}
 
-	return validation.ConfirmNoEscalation(ctx, r.authorizationRuleResolver, []rbac.PolicyRule{requestedRule})
+	// TODO(nhlfr): Try to find more lightweight way to check attributes than escalation checks.
+	err := validation.ConfirmNoEscalation(ctx, r.authorizationRuleResolver, []rbac.PolicyRule{requestedRule})
+	if err != nil {
+		return false, err.Error(), nil
+	}
+
+	return true, "", nil
 }
 
 func New(roleRegistry role.Registry, roleBindingRegistry rolebinding.Registry, clusterRoleRegistry clusterrole.Registry, clusterRoleBindingRegistry clusterrolebinding.Registry, superUser string) *RBACAuthorizer {

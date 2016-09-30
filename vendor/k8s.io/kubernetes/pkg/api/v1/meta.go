@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -82,4 +82,11 @@ func (meta *ObjectMeta) SetOwnerReferences(references []metatypes.OwnerReference
 		}
 	}
 	meta.OwnerReferences = newReferences
+}
+
+func (meta *ObjectMeta) GetClusterName() string {
+	return meta.ClusterName
+}
+func (meta *ObjectMeta) SetClusterName(clusterName string) {
+	meta.ClusterName = clusterName
 }

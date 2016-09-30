@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -88,20 +88,20 @@ func (r *Runtime) getConfig(cfg *Config) (*Config, error) {
 
 	flags := resp.Info.GlobalFlags
 
-	if cfg.Dir == "" {
+	if flags.Dir != "" {
 		cfg.Dir = flags.Dir
 	}
-	if cfg.InsecureOptions == "" {
-		cfg.InsecureOptions = flags.InsecureFlags
-	}
-	if cfg.LocalConfigDir == "" {
+	if flags.LocalConfigDir != "" {
 		cfg.LocalConfigDir = flags.LocalConfigDir
 	}
-	if cfg.UserConfigDir == "" {
+	if flags.UserConfigDir != "" {
 		cfg.UserConfigDir = flags.UserConfigDir
 	}
-	if cfg.SystemConfigDir == "" {
+	if flags.SystemConfigDir != "" {
 		cfg.SystemConfigDir = flags.SystemConfigDir
+	}
+	if flags.InsecureFlags != "" {
+		cfg.InsecureOptions = fmt.Sprintf("%s,%s", cfg.InsecureOptions, flags.InsecureFlags)
 	}
 
 	return cfg, nil

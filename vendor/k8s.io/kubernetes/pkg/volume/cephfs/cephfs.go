@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -152,6 +152,19 @@ func (plugin *cephfsPlugin) newUnmounterInternal(volName string, podUID types.UI
 			mounter: mounter,
 			plugin:  plugin},
 	}, nil
+}
+
+func (plugin *cephfsPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	cephfsVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			CephFS: &api.CephFSVolumeSource{
+				Monitors: []string{},
+				Path:     volumeName,
+			},
+		},
+	}
+	return volume.NewSpecFromVolume(cephfsVolume), nil
 }
 
 // CephFS volumes represent a bare host file or directory mount of an CephFS export.

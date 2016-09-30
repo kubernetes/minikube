@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/v1"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/labels"
+	"k8s.io/kubernetes/pkg/util/sets"
 
 	heapster "k8s.io/heapster/metrics/api/v1/types"
 	metrics_api "k8s.io/heapster/metrics/apis/metrics/v1alpha1"
@@ -165,18 +166,32 @@ func (h *HeapsterMetricsClient) getCpuUtilizationForPods(namespace string, selec
 
 	glog.V(4).Infof("Heapster metrics result: %s", string(resultRaw))
 
-	metrics := make([]metrics_api.PodMetrics, 0)
+	metrics := metrics_api.PodMetricsList{}
 	err = json.Unmarshal(resultRaw, &metrics)
 	if err != nil {
 		return 0, time.Time{}, fmt.Errorf("failed to unmarshall heapster response: %v", err)
 	}
 
-	if len(metrics) != len(podNames) {
-		return 0, time.Time{}, fmt.Errorf("metrics obtained for %d/%d of pods", len(metrics), len(podNames))
+	if len(metrics.Items) != len(podNames) {
+		present := sets.NewString()
+		for _, m := range metrics.Items {
+			present.Insert(m.Name)
+		}
+		missing := make([]string, 0)
+		for expected := range podNames {
+			if !present.Has(expected) {
+				missing = append(missing, expected)
+			}
+		}
+		hint := ""
+		if len(missing) > 0 {
+			hint = fmt.Sprintf(" (sample missing pod: %s/%s)", namespace, missing[0])
+		}
+		return 0, time.Time{}, fmt.Errorf("metrics obtained for %d/%d of pods%s", len(metrics.Items), len(podNames), hint)
 	}
 
 	sum := int64(0)
-	for _, m := range metrics {
+	for _, m := range metrics.Items {
 		if _, found := podNames[m.Name]; found {
 			for _, c := range m.Containers {
 				cpu, found := c.Usage[v1.ResourceCPU]
@@ -190,7 +205,7 @@ func (h *HeapsterMetricsClient) getCpuUtilizationForPods(namespace string, selec
 		}
 	}
 
-	return sum / int64(len(metrics)), metrics[0].Timestamp.Time, nil
+	return sum / int64(len(metrics.Items)), metrics.Items[0].Timestamp.Time, nil
 }
 
 // GetCustomMetric returns the average value of the given custom metric from the
@@ -250,7 +265,17 @@ func (h *HeapsterMetricsClient) getCustomMetricForPods(metricSpec metricDefiniti
 
 	sum, count, timestamp := metricSpec.aggregator(metrics)
 	if count != len(podNames) {
-		return nil, time.Time{}, fmt.Errorf("metrics obtained for %d/%d of pods", count, len(podNames))
+		missing := make([]string, 0)
+		for i, expected := range podNames {
+			if len(metrics.Items) > i && len(metrics.Items[i].Metrics) == 0 {
+				missing = append(missing, expected)
+			}
+		}
+		hint := ""
+		if len(missing) > 0 {
+			hint = fmt.Sprintf(" (sample missing pod: %s/%s)", namespace, missing[0])
+		}
+		return nil, time.Time{}, fmt.Errorf("metrics obtained for %d/%d of pods%s", count, len(podNames), hint)
 	}
 
 	return &sum, timestamp, nil

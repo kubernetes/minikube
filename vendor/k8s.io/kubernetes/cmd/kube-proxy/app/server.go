@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,7 +39,6 @@ import (
 	"k8s.io/kubernetes/pkg/proxy/iptables"
 	"k8s.io/kubernetes/pkg/proxy/userspace"
 	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util"
 	"k8s.io/kubernetes/pkg/util/configz"
 	utildbus "k8s.io/kubernetes/pkg/util/dbus"
 	"k8s.io/kubernetes/pkg/util/exec"
@@ -47,6 +46,8 @@ import (
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 	nodeutil "k8s.io/kubernetes/pkg/util/node"
 	"k8s.io/kubernetes/pkg/util/oom"
+	"k8s.io/kubernetes/pkg/util/resourcecontainer"
+	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 	"k8s.io/kubernetes/pkg/util/wait"
 
 	"github.com/golang/glog"
@@ -67,14 +68,14 @@ type ProxyServer struct {
 
 const (
 	proxyModeUserspace              = "userspace"
-	proxyModeIptables               = "iptables"
+	proxyModeIPTables               = "iptables"
 	experimentalProxyModeAnnotation = options.ExperimentalProxyModeAnnotation
 	betaProxyModeAnnotation         = "net.beta.kubernetes.io/proxy-mode"
 )
 
 func checkKnownProxyMode(proxyMode string) bool {
 	switch proxyMode {
-	case "", proxyModeUserspace, proxyModeIptables:
+	case "", proxyModeUserspace, proxyModeIPTables:
 		return true
 	}
 	return false
@@ -158,7 +159,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 
 	if config.ResourceContainer != "" {
 		// Run in its own container.
-		if err := util.RunInResourceContainer(config.ResourceContainer); err != nil {
+		if err := resourcecontainer.RunInResourceContainer(config.ResourceContainer); err != nil {
 			glog.Warningf("Failed to start in resource-only container %q: %v", config.ResourceContainer, err)
 		} else {
 			glog.V(2).Infof("Running in resource-only container %q", config.ResourceContainer)
@@ -198,19 +199,18 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
 
 	proxyMode := getProxyMode(string(config.Mode), client.Nodes(), hostname, iptInterface, iptables.LinuxKernelCompatTester{})
-	if proxyMode == proxyModeIptables {
+	if proxyMode == proxyModeIPTables {
 		glog.V(0).Info("Using iptables Proxier.")
 		if config.IPTablesMasqueradeBit == nil {
 			// IPTablesMasqueradeBit must be specified or defaulted.
 			return nil, fmt.Errorf("Unable to read IPTablesMasqueradeBit from config")
 		}
-
-		proxierIptables, err := iptables.NewProxier(iptInterface, execer, config.IPTablesSyncPeriod.Duration, config.MasqueradeAll, int(*config.IPTablesMasqueradeBit), config.ClusterCIDR)
+		proxierIPTables, err := iptables.NewProxier(iptInterface, utilsysctl.New(), execer, config.IPTablesSyncPeriod.Duration, config.MasqueradeAll, int(*config.IPTablesMasqueradeBit), config.ClusterCIDR, hostname, getNodeIP(client, hostname))
 		if err != nil {
 			glog.Fatalf("Unable to create proxier: %v", err)
 		}
-		proxier = proxierIptables
-		endpointsHandler = proxierIptables
+		proxier = proxierIPTables
+		endpointsHandler = proxierIPTables
 		// No turning back. Remove artifacts that might still exist from the userspace Proxier.
 		glog.V(0).Info("Tearing down userspace rules.")
 		userspace.CleanupLeftovers(iptInterface)
@@ -350,28 +350,28 @@ type nodeGetter interface {
 	Get(hostname string) (*api.Node, error)
 }
 
-func getProxyMode(proxyMode string, client nodeGetter, hostname string, iptver iptables.IptablesVersioner, kcompat iptables.KernelCompatTester) string {
+func getProxyMode(proxyMode string, client nodeGetter, hostname string, iptver iptables.IPTablesVersioner, kcompat iptables.KernelCompatTester) string {
 	if proxyMode == proxyModeUserspace {
 		return proxyModeUserspace
-	} else if proxyMode == proxyModeIptables {
-		return tryIptablesProxy(iptver, kcompat)
+	} else if proxyMode == proxyModeIPTables {
+		return tryIPTablesProxy(iptver, kcompat)
 	} else if proxyMode != "" {
-		glog.V(1).Infof("Flag proxy-mode=%q unknown, assuming iptables proxy", proxyMode)
-		return tryIptablesProxy(iptver, kcompat)
+		glog.Warningf("Flag proxy-mode=%q unknown, assuming iptables proxy", proxyMode)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	// proxyMode == "" - choose the best option.
 	if client == nil {
 		glog.Errorf("nodeGetter is nil: assuming iptables proxy")
-		return tryIptablesProxy(iptver, kcompat)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	node, err := client.Get(hostname)
 	if err != nil {
 		glog.Errorf("Can't get Node %q, assuming iptables proxy, err: %v", hostname, err)
-		return tryIptablesProxy(iptver, kcompat)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	if node == nil {
 		glog.Errorf("Got nil Node %q, assuming iptables proxy", hostname)
-		return tryIptablesProxy(iptver, kcompat)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	proxyMode, found := node.Annotations[betaProxyModeAnnotation]
 	if found {
@@ -387,19 +387,19 @@ func getProxyMode(proxyMode string, client nodeGetter, hostname string, iptver i
 		glog.V(1).Infof("Annotation demands userspace proxy")
 		return proxyModeUserspace
 	}
-	return tryIptablesProxy(iptver, kcompat)
+	return tryIPTablesProxy(iptver, kcompat)
 }
 
-func tryIptablesProxy(iptver iptables.IptablesVersioner, kcompat iptables.KernelCompatTester) string {
+func tryIPTablesProxy(iptver iptables.IPTablesVersioner, kcompat iptables.KernelCompatTester) string {
 	var err error
 	// guaranteed false on error, error only necessary for debugging
-	useIptablesProxy, err := iptables.CanUseIptablesProxier(iptver, kcompat)
+	useIPTablesProxy, err := iptables.CanUseIPTablesProxier(iptver, kcompat)
 	if err != nil {
 		glog.Errorf("Can't determine whether to use iptables proxy, using userspace proxier: %v", err)
 		return proxyModeUserspace
 	}
-	if useIptablesProxy {
-		return proxyModeIptables
+	if useIPTablesProxy {
+		return proxyModeIPTables
 	}
 	// Fallback.
 	glog.V(1).Infof("Can't use iptables proxy, using userspace proxier: %v", err)
@@ -408,4 +408,19 @@ func tryIptablesProxy(iptver iptables.IptablesVersioner, kcompat iptables.Kernel
 
 func (s *ProxyServer) birthCry() {
 	s.Recorder.Eventf(s.Config.NodeRef, api.EventTypeNormal, "Starting", "Starting kube-proxy.")
+}
+
+func getNodeIP(client *kubeclient.Client, hostname string) net.IP {
+	var nodeIP net.IP
+	node, err := client.Nodes().Get(hostname)
+	if err != nil {
+		glog.Warningf("Failed to retrieve node info: %v", err)
+		return nil
+	}
+	nodeIP, err = nodeutil.GetNodeHostIP(node)
+	if err != nil {
+		glog.Warningf("Failed to retrieve node IP: %v", err)
+		return nil
+	}
+	return nodeIP
 }

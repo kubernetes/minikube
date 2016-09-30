@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ var (
 	// scripts consuming the kubectl version output - but most of
 	// these should be looking at gitVersion already anyways.)
 	gitMajor string = "1" // major version, always numeric
-	gitMinor string = "3" // minor version, numeric possibly followed by "+"
+	gitMinor string = "4" // minor version, numeric possibly followed by "+"
 
-	// semantic version, dervied by build scripts (see
+	// semantic version, derived by build scripts (see
 	// https://github.com/kubernetes/kubernetes/blob/master/docs/design/versioning.md
 	// for a detailed discussion of this field)
 	//
@@ -51,7 +51,7 @@ var (
 	// semantic version is a git hash, but the version itself is no
 	// longer the direct output of "git describe", but a slight
 	// translation to be semver compliant.
-	gitVersion   string = "v1.3.5+$Format:%h$"
+	gitVersion   string = "v1.4.0+$Format:%h$"
 	gitCommit    string = "$Format:%H$"    // sha1 from git, output of $(git rev-parse HEAD)
 	gitTreeState string = "not a git tree" // state of git tree, either "clean" or "dirty"
 

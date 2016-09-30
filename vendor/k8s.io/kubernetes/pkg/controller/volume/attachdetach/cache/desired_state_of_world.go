@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -322,13 +322,24 @@ func (dsw *desiredStateOfWorld) GetVolumesToAttach() []VolumeToAttach {
 			volumesToAttach = append(volumesToAttach,
 				VolumeToAttach{
 					VolumeToAttach: operationexecutor.VolumeToAttach{
-						VolumeName: volumeName,
-						VolumeSpec: volumeObj.spec,
-						NodeName:   nodeName}})
+						VolumeName:    volumeName,
+						VolumeSpec:    volumeObj.spec,
+						NodeName:      nodeName,
+						ScheduledPods: getPodsFromMap(volumeObj.scheduledPods),
+					}})
 		}
 	}
 
 	return volumesToAttach
+}
+
+// Construct a list of api.Pod objects from the given pod map
+func getPodsFromMap(podMap map[types.UniquePodName]pod) []*api.Pod {
+	pods := make([]*api.Pod, 0, len(podMap))
+	for _, pod := range podMap {
+		pods = append(pods, pod.podObj)
+	}
+	return pods
 }
 
 func (dsw *desiredStateOfWorld) GetPodToAdd() map[types.UniquePodName]PodToAdd {

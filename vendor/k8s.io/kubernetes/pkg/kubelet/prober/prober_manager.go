@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -234,8 +234,8 @@ func (m *manager) removeWorker(podUID types.UID, containerName string, probeType
 
 // workerCount returns the total number of probe workers. For testing.
 func (m *manager) workerCount() int {
-	m.workerLock.Lock()
-	defer m.workerLock.Unlock()
+	m.workerLock.RLock()
+	defer m.workerLock.RUnlock()
 	return len(m.workers)
 }
 

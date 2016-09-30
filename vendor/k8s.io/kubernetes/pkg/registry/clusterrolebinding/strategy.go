@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -58,12 +58,12 @@ func (strategy) AllowCreateOnUpdate() bool {
 
 // PrepareForCreate clears fields that are not allowed to be set by end users
 // on creation.
-func (strategy) PrepareForCreate(obj runtime.Object) {
+func (strategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
 	_ = obj.(*rbac.ClusterRoleBinding)
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (strategy) PrepareForUpdate(obj, old runtime.Object) {
+func (strategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 	newClusterRoleBinding := obj.(*rbac.ClusterRoleBinding)
 	oldClusterRoleBinding := old.(*rbac.ClusterRoleBinding)
 
@@ -97,23 +97,26 @@ func (strategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
-func (s strategy) Export(obj runtime.Object, exact bool) error {
+func (s strategy) Export(ctx api.Context, obj runtime.Object, exact bool) error {
 	return nil
 }
 
 // Matcher returns a generic matcher for a given label and field selector.
-func Matcher(label labels.Selector, field fields.Selector) generic.Matcher {
-	return generic.MatcherFunc(func(obj runtime.Object) (bool, error) {
-		sa, ok := obj.(*rbac.ClusterRoleBinding)
-		if !ok {
-			return false, fmt.Errorf("not a ClusterRoleBinding")
-		}
-		fields := SelectableFields(sa)
-		return label.Matches(labels.Set(sa.Labels)) && field.Matches(fields), nil
-	})
+func Matcher(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
+	return &generic.SelectionPredicate{
+		Label: label,
+		Field: field,
+		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {
+			roleBinding, ok := obj.(*rbac.ClusterRoleBinding)
+			if !ok {
+				return nil, nil, fmt.Errorf("not a ClusterRoleBinding")
+			}
+			return labels.Set(roleBinding.Labels), SelectableFields(roleBinding), nil
+		},
+	}
 }
 
-// SelectableFields returns a label set that can be used for filter selection
-func SelectableFields(obj *rbac.ClusterRoleBinding) labels.Set {
-	return labels.Set{}
+// SelectableFields returns a field set that can be used for filter selection
+func SelectableFields(obj *rbac.ClusterRoleBinding) fields.Set {
+	return nil
 }

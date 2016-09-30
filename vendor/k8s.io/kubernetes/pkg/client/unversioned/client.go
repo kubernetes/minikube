@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,11 +44,16 @@ type Interface interface {
 	PersistentVolumeClaimsNamespacer
 	ComponentStatusesInterface
 	ConfigMapsNamespacer
+	Apps() AppsInterface
+	Authorization() AuthorizationInterface
 	Autoscaling() AutoscalingInterface
+	Authentication() AuthenticationInterface
 	Batch() BatchInterface
 	Extensions() ExtensionsInterface
 	Rbac() RbacInterface
 	Discovery() discovery.DiscoveryInterface
+	Certificates() CertificatesInterface
+	Storage() StorageInterface
 }
 
 func (c *Client) ReplicationControllers(namespace string) ReplicationControllerInterface {
@@ -117,13 +122,17 @@ func (c *Client) ConfigMaps(namespace string) ConfigMapsInterface {
 // Client is the implementation of a Kubernetes client.
 type Client struct {
 	*restclient.RESTClient
+	*AuthorizationClient
 	*AutoscalingClient
+	*AuthenticationClient
 	*BatchClient
 	*ExtensionsClient
 	*AppsClient
 	*PolicyClient
 	*RbacClient
 	*discovery.DiscoveryClient
+	*CertificatesClient
+	*StorageClient
 }
 
 // IsTimeout tests if this is a timeout error in the underlying transport.
@@ -148,8 +157,16 @@ func IsTimeout(err error) bool {
 	return false
 }
 
+func (c *Client) Authorization() AuthorizationInterface {
+	return c.AuthorizationClient
+}
+
 func (c *Client) Autoscaling() AutoscalingInterface {
 	return c.AutoscalingClient
+}
+
+func (c *Client) Authentication() AuthenticationInterface {
+	return c.AuthenticationClient
 }
 
 func (c *Client) Batch() BatchInterface {
@@ -168,6 +185,18 @@ func (c *Client) Rbac() RbacInterface {
 	return c.RbacClient
 }
 
+func (c *Client) Policy() PolicyInterface {
+	return c.PolicyClient
+}
+
 func (c *Client) Discovery() discovery.DiscoveryInterface {
 	return c.DiscoveryClient
+}
+
+func (c *Client) Certificates() CertificatesInterface {
+	return c.CertificatesClient
+}
+
+func (c *Client) Storage() StorageInterface {
+	return c.StorageClient
 }

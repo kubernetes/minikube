@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/apis/apps"
 	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/util/wait"
@@ -69,6 +70,17 @@ func ReplicaSetHasDesiredReplicas(c ExtensionsInterface, replicaSet *extensions.
 		// ReplicaSets, but till then concurrent stop operations on the same ReplicaSet might have
 		// unintended side effects.
 		return rs.Status.ObservedGeneration >= desiredGeneration && rs.Status.Replicas == rs.Spec.Replicas, nil
+	}
+}
+
+func PetSetHasDesiredPets(c AppsInterface, petset *apps.PetSet) wait.ConditionFunc {
+	// TODO: Differentiate between 0 pets and a really quick scale down using generation.
+	return func() (bool, error) {
+		ps, err := c.PetSets(petset.Namespace).Get(petset.Name)
+		if err != nil {
+			return false, err
+		}
+		return ps.Status.Replicas == ps.Spec.Replicas, nil
 	}
 }
 
@@ -120,6 +132,10 @@ func DeploymentHasDesiredReplicas(c ExtensionsInterface, deployment *extensions.
 // ErrPodCompleted is returned by PodRunning or PodContainerRunning to indicate that
 // the pod has already reached completed state.
 var ErrPodCompleted = fmt.Errorf("pod ran to completion")
+
+// ErrContainerTerminated is returned by PodContainerRunning in the intermediate
+// state where the pod indicates it's still running, but its container is already terminated
+var ErrContainerTerminated = fmt.Errorf("container terminated")
 
 // PodRunning returns true if the pod is running, false if the pod has not yet reached running state,
 // returns ErrPodCompleted if the pod has run to completion, or an error in any other case.
@@ -216,6 +232,9 @@ func PodContainerRunning(containerName string) watch.ConditionFunc {
 			for _, s := range t.Status.ContainerStatuses {
 				if s.Name != containerName {
 					continue
+				}
+				if s.State.Terminated != nil {
+					return false, ErrContainerTerminated
 				}
 				return s.State.Running != nil, nil
 			}

@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import (
 	"sync"
 	"time"
 
+	"gopkg.in/gcfg.v1"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -39,7 +41,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
 	"github.com/golang/glog"
-	"gopkg.in/gcfg.v1"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/service"
@@ -83,6 +84,38 @@ const ServiceAnnotationLoadBalancerInternal = "service.beta.kubernetes.io/aws-lo
 // certain backends.
 const ServiceAnnotationLoadBalancerProxyProtocol = "service.beta.kubernetes.io/aws-load-balancer-proxy-protocol"
 
+// ServiceAnnotationLoadBalancerAccessLogEmitInterval is the annotation used to
+// specify access log emit interval.
+const ServiceAnnotationLoadBalancerAccessLogEmitInterval = "service.beta.kubernetes.io/aws-load-balancer-access-log-emit-interval"
+
+// ServiceAnnotationLoadBalancerAccessLogEnabled is the annotation used on the
+// service to enable or disable access logs.
+const ServiceAnnotationLoadBalancerAccessLogEnabled = "service.beta.kubernetes.io/aws-load-balancer-access-log-enabled"
+
+// ServiceAnnotationLoadBalancerAccessLogS3BucketName is the annotation used to
+// specify access log s3 bucket name.
+const ServiceAnnotationLoadBalancerAccessLogS3BucketName = "service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-name"
+
+// ServiceAnnotationLoadBalancerAccessLogS3BucketPrefix is the annotation used
+// to specify access log s3 bucket prefix.
+const ServiceAnnotationLoadBalancerAccessLogS3BucketPrefix = "service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-prefix"
+
+// ServiceAnnotationLoadBalancerConnectionDrainingEnabled is the annnotation
+// used on the service to enable or disable connection draining.
+const ServiceAnnotationLoadBalancerConnectionDrainingEnabled = "service.beta.kubernetes.io/aws-load-balancer-connection-draining-enabled"
+
+// ServiceAnnotationLoadBalancerConnectionDrainingTimeout is the annotation
+// used on the service to specify a connection draining timeout.
+const ServiceAnnotationLoadBalancerConnectionDrainingTimeout = "service.beta.kubernetes.io/aws-load-balancer-connection-draining-timeout"
+
+// ServiceAnnotationLoadBalancerConnectionIdleTimeout is the annotation used
+// on the service to specify the idle connection timeout.
+const ServiceAnnotationLoadBalancerConnectionIdleTimeout = "service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout"
+
+// ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled is the annotation
+// used on the service to enable or disable cross-zone load balancing.
+const ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled = "service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled"
+
 // ServiceAnnotationLoadBalancerCertificate is the annotation used on the
 // service to request a secure listener. Value is a valid certificate ARN.
 // For more, see http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/elb-listener-config.html
@@ -95,12 +128,26 @@ const ServiceAnnotationLoadBalancerCertificate = "service.beta.kubernetes.io/aws
 const ServiceAnnotationLoadBalancerSSLPorts = "service.beta.kubernetes.io/aws-load-balancer-ssl-ports"
 
 // ServiceAnnotationLoadBalancerBEProtocol is the annotation used on the service
-// to specify the protocol spoken by the backend (pod) behind a secure listener.
-// Only inspected when `aws-load-balancer-ssl-cert` is used.
+// to specify the protocol spoken by the backend (pod) behind a listener.
 // If `http` (default) or `https`, an HTTPS listener that terminates the
 //  connection and parses headers is created.
 // If set to `ssl` or `tcp`, a "raw" SSL listener is used.
+// If set to `http` and `aws-load-balancer-ssl-cert` is not used then
+// a HTTP listener is used.
 const ServiceAnnotationLoadBalancerBEProtocol = "service.beta.kubernetes.io/aws-load-balancer-backend-protocol"
+
+const (
+	// volumeAttachmentStatusTimeout is the maximum time to wait for a volume attach/detach to complete
+	volumeAttachmentStatusTimeout = 30 * time.Minute
+	// volumeAttachmentConsecutiveErrorLimit is the number of consecutive errors we will ignore when waiting for a volume to attach/detach
+	volumeAttachmentStatusConsecutiveErrorLimit = 10
+	// volumeAttachmentErrorDelay is the amount of time we wait before retrying after encountering an error,
+	// while waiting for a volume attach/detach to complete
+	volumeAttachmentStatusErrorDelay = 20 * time.Second
+	// volumeAttachmentStatusPollInterval is the interval at which we poll the volume,
+	// while waiting for a volume attach/detach to complete
+	volumeAttachmentStatusPollInterval = 10 * time.Second
+)
 
 // Maps from backend protocol to ELB protocol
 var backendProtocolMapping = map[string]string{
@@ -193,6 +240,9 @@ type ELB interface {
 	ApplySecurityGroupsToLoadBalancer(*elb.ApplySecurityGroupsToLoadBalancerInput) (*elb.ApplySecurityGroupsToLoadBalancerOutput, error)
 
 	ConfigureHealthCheck(*elb.ConfigureHealthCheckInput) (*elb.ConfigureHealthCheckOutput, error)
+
+	DescribeLoadBalancerAttributes(*elb.DescribeLoadBalancerAttributesInput) (*elb.DescribeLoadBalancerAttributesOutput, error)
+	ModifyLoadBalancerAttributes(*elb.ModifyLoadBalancerAttributesInput) (*elb.ModifyLoadBalancerAttributesOutput, error)
 }
 
 // ASG is a simple pass-through of the Autoscaling client interface, which
@@ -208,11 +258,39 @@ type EC2Metadata interface {
 	GetMetadata(path string) (string, error)
 }
 
+// AWS volume types
+const (
+	// Provisioned IOPS SSD
+	VolumeTypeIO1 = "io1"
+	// General Purpose SSD
+	VolumeTypeGP2 = "gp2"
+	// Cold HDD (sc1)
+	VolumeTypeSC1 = "sc1"
+	// Throughput Optimized HDD
+	VolumeTypeST1 = "st1"
+)
+
+// AWS provisioning limits.
+// Source: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html
+const (
+	MinTotalIOPS = 100
+	MaxTotalIOPS = 20000
+)
+
 // VolumeOptions specifies capacity and tags for a volume.
 type VolumeOptions struct {
-	CapacityGB int
-	Tags       map[string]string
-	PVCName    string
+	CapacityGB       int
+	Tags             map[string]string
+	PVCName          string
+	VolumeType       string
+	AvailabilityZone string
+	// IOPSPerGB x CapacityGB will give total IOPS of the volume to create.
+	// Calculated total IOPS will be capped at MaxTotalIOPS.
+	IOPSPerGB int
+	Encrypted bool
+	// fully qualified resource name to the key to use for encryption.
+	// example: arn:aws:kms:us-east-1:012345678910:key/abcd1234-a123-456a-a12b-a123b4cd56ef
+	KmsKeyId string
 }
 
 // Volumes is an interface for managing cloud-provisioned volumes
@@ -279,6 +357,12 @@ type Cloud struct {
 	mutex                    sync.Mutex
 	lastNodeNames            sets.String
 	lastInstancesByNodeNames []*ec2.Instance
+
+	// We keep an active list of devices we have assigned but not yet
+	// attached, to avoid a race condition where we assign a device mapping
+	// and then get a second request before we attach the volume
+	attachingMutex sync.Mutex
+	attaching      map[ /*nodeName*/ string]map[mountDevice]string
 }
 
 var _ Volumes = &Cloud{}
@@ -300,6 +384,17 @@ type CloudConfig struct {
 		//has setup a rule that allows inbound traffic on kubelet ports from the
 		//local VPC subnet (so load balancers can access it). E.g. 10.82.0.0/16 30000-32000.
 		DisableSecurityGroupIngress bool
+
+		//During the instantiation of an new AWS cloud provider, the detected region
+		//is validated against a known set of regions.
+		//
+		//In a non-standard, AWS like environment (e.g. Eucalyptus), this check may
+		//be undesirable.  Setting this to true will disable the check and provide
+		//a warning that the check was skipped.  Please note that this is an
+		//experimental feature and work-in-progress for the moment.  If you find
+		//yourself in an non-AWS cloud and open an issue, please indicate that in the
+		//issue body.
+		DisableStrictZoneCheck bool
 	}
 }
 
@@ -645,6 +740,10 @@ func azToRegion(az string) (string, error) {
 // newAWSCloud creates a new instance of AWSCloud.
 // AWSProvider and instanceId are primarily for tests
 func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
+	// We have some state in the Cloud object - in particular the attaching map
+	// Log so that if we are building multiple Cloud objects, it is obvious!
+	glog.Infof("Building AWS cloudprovider")
+
 	metadata, err := awsServices.Metadata()
 	if err != nil {
 		return nil, fmt.Errorf("error creating AWS metadata client: %v", err)
@@ -664,9 +763,13 @@ func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
 		return nil, err
 	}
 
-	valid := isRegionValid(regionName)
-	if !valid {
-		return nil, fmt.Errorf("not a valid AWS zone (unknown region): %s", zone)
+	if !cfg.Global.DisableStrictZoneCheck {
+		valid := isRegionValid(regionName)
+		if !valid {
+			return nil, fmt.Errorf("not a valid AWS zone (unknown region): %s", zone)
+		}
+	} else {
+		glog.Warningf("Strict AWS zone checking is disabled.  Proceeding with zone: %s", zone)
 	}
 
 	ec2, err := awsServices.Compute(regionName)
@@ -691,6 +794,8 @@ func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
 		metadata: metadata,
 		cfg:      cfg,
 		region:   regionName,
+
+		attaching: make(map[string]map[mountDevice]string),
 	}
 
 	selfAWSInstance, err := awsCloud.buildSelfAWSInstance()
@@ -718,7 +823,7 @@ func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
 	}
 
 	if filterTags[TagNameKubernetesCluster] == "" {
-		glog.Errorf("Tag %q not found; Kuberentes may behave unexpectedly.", TagNameKubernetesCluster)
+		glog.Errorf("Tag %q not found; Kubernetes may behave unexpectedly.", TagNameKubernetesCluster)
 	}
 
 	awsCloud.filterTags = filterTags
@@ -934,7 +1039,7 @@ func (c *Cloud) List(filter string) ([]string, error) {
 // It currently involves querying all instances
 func (c *Cloud) getAllZones() (sets.String, error) {
 	// We don't currently cache this; it is currently used only in volume
-	// creation which is expected to be a comparatively rare occurence.
+	// creation which is expected to be a comparatively rare occurrence.
 
 	// TODO: Caching / expose api.Nodes to the cloud provider?
 	// TODO: We could also query for subnets, I think
@@ -1010,13 +1115,6 @@ type awsInstance struct {
 
 	// instance type
 	instanceType string
-
-	mutex sync.Mutex
-
-	// We keep an active list of devices we have assigned but not yet
-	// attached, to avoid a race condition where we assign a device mapping
-	// and then get a second request before we attach the volume
-	attaching map[mountDevice]string
 }
 
 // newAWSInstance creates a new awsInstance object
@@ -1034,8 +1132,6 @@ func newAWSInstance(ec2Service EC2, instance *ec2.Instance) *awsInstance {
 		vpcID:            aws.StringValue(instance.VpcId),
 		subnetID:         aws.StringValue(instance.SubnetId),
 	}
-
-	self.attaching = make(map[mountDevice]string)
 
 	return self
 }
@@ -1070,17 +1166,11 @@ func (i *awsInstance) describeInstance() (*ec2.Instance, error) {
 // Gets the mountDevice already assigned to the volume, or assigns an unused mountDevice.
 // If the volume is already assigned, this will return the existing mountDevice with alreadyAttached=true.
 // Otherwise the mountDevice is assigned by finding the first available mountDevice, and it is returned with alreadyAttached=false.
-func (i *awsInstance) getMountDevice(volumeID string, assign bool) (assigned mountDevice, alreadyAttached bool, err error) {
+func (c *Cloud) getMountDevice(i *awsInstance, volumeID string, assign bool) (assigned mountDevice, alreadyAttached bool, err error) {
 	instanceType := i.getInstanceType()
 	if instanceType == nil {
 		return "", false, fmt.Errorf("could not get instance type for instance: %s", i.awsID)
 	}
-
-	// We lock to prevent concurrent mounts from conflicting
-	// We may still conflict if someone calls the API concurrently,
-	// but the AWS API will then fail one of the two attach operations
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
 
 	info, err := i.describeInstance()
 	if err != nil {
@@ -1101,7 +1191,13 @@ func (i *awsInstance) getMountDevice(volumeID string, assign bool) (assigned mou
 		deviceMappings[mountDevice(name)] = aws.StringValue(blockDevice.Ebs.VolumeId)
 	}
 
-	for mountDevice, volume := range i.attaching {
+	// We lock to prevent concurrent mounts from conflicting
+	// We may still conflict if someone calls the API concurrently,
+	// but the AWS API will then fail one of the two attach operations
+	c.attachingMutex.Lock()
+	defer c.attachingMutex.Unlock()
+
+	for mountDevice, volume := range c.attaching[i.nodeName] {
 		deviceMappings[mountDevice] = volume
 	}
 
@@ -1136,27 +1232,34 @@ func (i *awsInstance) getMountDevice(volumeID string, assign bool) (assigned mou
 		return "", false, fmt.Errorf("Too many EBS volumes attached to node %s.", i.nodeName)
 	}
 
-	i.attaching[chosen] = volumeID
+	attaching := c.attaching[i.nodeName]
+	if attaching == nil {
+		attaching = make(map[mountDevice]string)
+		c.attaching[i.nodeName] = attaching
+	}
+	attaching[chosen] = volumeID
 	glog.V(2).Infof("Assigned mount device %s -> volume %s", chosen, volumeID)
 
 	return chosen, false, nil
 }
 
-func (i *awsInstance) endAttaching(volumeID string, mountDevice mountDevice) {
-	i.mutex.Lock()
-	defer i.mutex.Unlock()
+// endAttaching removes the entry from the "attachments in progress" map
+// It returns true if it was found (and removed), false otherwise
+func (c *Cloud) endAttaching(i *awsInstance, volumeID string, mountDevice mountDevice) bool {
+	c.attachingMutex.Lock()
+	defer c.attachingMutex.Unlock()
 
-	existingVolumeID, found := i.attaching[mountDevice]
+	existingVolumeID, found := c.attaching[i.nodeName][mountDevice]
 	if !found {
-		glog.Errorf("endAttaching on non-allocated device")
-		return
+		return false
 	}
 	if volumeID != existingVolumeID {
 		glog.Errorf("endAttaching on device assigned to different volume")
-		return
+		return false
 	}
-	glog.V(2).Infof("Releasing mount device mapping: %s -> volume %s", mountDevice, volumeID)
-	delete(i.attaching, mountDevice)
+	glog.V(2).Infof("Releasing in-process attachment entry: %s -> volume %s", mountDevice, volumeID)
+	delete(c.attaching[i.nodeName], mountDevice)
+	return true
 }
 
 type awsDisk struct {
@@ -1174,8 +1277,8 @@ func newAWSDisk(aws *Cloud, name string) (*awsDisk, error) {
 	// The original idea of the URL-style name was to put the AZ into the
 	// host, so we could find the AZ immediately from the name without
 	// querying the API.  But it turns out we don't actually need it for
-	// Ubernetes-Lite, as we put the AZ into the labels on the PV instead.
-	// However, if in future we want to support Ubernetes-Lite
+	// multi-AZ clusters, as we put the AZ into the labels on the PV instead.
+	// However, if in future we want to support multi-AZ cluster
 	// volume-awareness without using PersistentVolumes, we likely will
 	// want the AZ in the host.
 
@@ -1227,48 +1330,65 @@ func (d *awsDisk) describeVolume() (*ec2.Volume, error) {
 }
 
 // waitForAttachmentStatus polls until the attachment status is the expected value
-// TODO(justinsb): return (bool, error)
-func (d *awsDisk) waitForAttachmentStatus(status string) error {
-	// TODO: There may be a faster way to get this when we're attaching locally
-	attempt := 0
-	maxAttempts := 60
+// On success, it returns the last attachment state.
+func (d *awsDisk) waitForAttachmentStatus(status string) (*ec2.VolumeAttachment, error) {
+	// We wait up to 30 minutes for the attachment to complete.
+	// This mirrors the GCE timeout.
+	timeoutAt := time.Now().UTC().Add(volumeAttachmentStatusTimeout).Unix()
+
+	// Because of rate limiting, we often see errors from describeVolume
+	// So we tolerate a limited number of failures.
+	// But once we see more than 10 errors in a row, we return the error
+	describeErrorCount := 0
 
 	for {
 		info, err := d.describeVolume()
 		if err != nil {
-			return err
+			describeErrorCount++
+			if describeErrorCount > volumeAttachmentStatusConsecutiveErrorLimit {
+				return nil, err
+			} else {
+				glog.Warningf("Ignoring error from describe volume; will retry: %q", err)
+				time.Sleep(volumeAttachmentStatusErrorDelay)
+				continue
+			}
+		} else {
+			describeErrorCount = 0
 		}
 		if len(info.Attachments) > 1 {
+			// Shouldn't happen; log so we know if it is
 			glog.Warningf("Found multiple attachments for volume: %v", info)
 		}
+		var attachment *ec2.VolumeAttachment
 		attachmentStatus := ""
-		for _, attachment := range info.Attachments {
+		for _, a := range info.Attachments {
 			if attachmentStatus != "" {
-				glog.Warning("Found multiple attachments: ", info)
+				// Shouldn't happen; log so we know if it is
+				glog.Warningf("Found multiple attachments: %v", info)
 			}
-			if attachment.State != nil {
-				attachmentStatus = *attachment.State
+			if a.State != nil {
+				attachment = a
+				attachmentStatus = *a.State
 			} else {
-				// Shouldn't happen, but don't panic...
-				glog.Warning("Ignoring nil attachment state: ", attachment)
+				// Shouldn't happen; log so we know if it is
+				glog.Warningf("Ignoring nil attachment state: %v", a)
 			}
 		}
 		if attachmentStatus == "" {
 			attachmentStatus = "detached"
 		}
 		if attachmentStatus == status {
-			return nil
+			return attachment, nil
+		}
+
+		if time.Now().Unix() > timeoutAt {
+			glog.Warningf("Timeout waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
+			return nil, fmt.Errorf("Timeout waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
 		}
 
 		glog.V(2).Infof("Waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
 
-		attempt++
-		if attempt > maxAttempts {
-			glog.Warningf("Timeout waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
-			return errors.New("Timeout waiting for volume state")
-		}
-
-		time.Sleep(1 * time.Second)
+		time.Sleep(volumeAttachmentStatusPollInterval)
 	}
 }
 
@@ -1348,7 +1468,23 @@ func (c *Cloud) AttachDisk(diskName string, instanceName string, readOnly bool) 
 		return "", errors.New("AWS volumes cannot be mounted read-only")
 	}
 
-	mountDevice, alreadyAttached, err := awsInstance.getMountDevice(disk.awsID, true)
+	// mountDevice will hold the device where we should try to attach the disk
+	var mountDevice mountDevice
+	// alreadyAttached is true if we have already called AttachVolume on this disk
+	var alreadyAttached bool
+
+	// attachEnded is set to true if the attach operation completed
+	// (successfully or not), and is thus no longer in progress
+	attachEnded := false
+	defer func() {
+		if attachEnded {
+			if !c.endAttaching(awsInstance, disk.awsID, mountDevice) {
+				glog.Errorf("endAttaching called when attach not in progress")
+			}
+		}
+	}()
+
+	mountDevice, alreadyAttached, err = c.getMountDevice(awsInstance, disk.awsID, true)
 	if err != nil {
 		return "", err
 	}
@@ -1358,15 +1494,6 @@ func (c *Cloud) AttachDisk(diskName string, instanceName string, readOnly bool) 
 	// We are using xvd names (so we are HVM only)
 	// See http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html
 	ec2Device := "/dev/xvd" + string(mountDevice)
-
-	// attachEnded is set to true if the attach operation completed
-	// (successfully or not)
-	attachEnded := false
-	defer func() {
-		if attachEnded {
-			awsInstance.endAttaching(disk.awsID, mountDevice)
-		}
-	}()
 
 	if !alreadyAttached {
 		request := &ec2.AttachVolumeInput{
@@ -1385,12 +1512,27 @@ func (c *Cloud) AttachDisk(diskName string, instanceName string, readOnly bool) 
 		glog.V(2).Infof("AttachVolume request returned %v", attachResponse)
 	}
 
-	err = disk.waitForAttachmentStatus("attached")
+	attachment, err := disk.waitForAttachmentStatus("attached")
 	if err != nil {
 		return "", err
 	}
 
+	// The attach operation has finished
 	attachEnded = true
+
+	// Double check the attachment to be 100% sure we attached the correct volume at the correct mountpoint
+	// It could happen otherwise that we see the volume attached from a previous/separate AttachVolume call,
+	// which could theoretically be against a different device (or even instance).
+	if attachment == nil {
+		// Impossible?
+		return "", fmt.Errorf("unexpected state: attachment nil after attached %q to %q", diskName, instanceName)
+	}
+	if ec2Device != aws.StringValue(attachment.Device) {
+		return "", fmt.Errorf("disk attachment of %q to %q failed: requested device %q but found %q", diskName, instanceName, ec2Device, aws.StringValue(attachment.Device))
+	}
+	if awsInstance.awsID != aws.StringValue(attachment.InstanceId) {
+		return "", fmt.Errorf("disk attachment of %q to %q failed: requested instance %q but found %q", diskName, instanceName, awsInstance.awsID, aws.StringValue(attachment.InstanceId))
+	}
 
 	return hostDevice, nil
 }
@@ -1416,14 +1558,14 @@ func (c *Cloud) DetachDisk(diskName string, instanceName string) (string, error)
 		return "", err
 	}
 
-	mountDevice, alreadyAttached, err := awsInstance.getMountDevice(disk.awsID, false)
+	mountDevice, alreadyAttached, err := c.getMountDevice(awsInstance, disk.awsID, false)
 	if err != nil {
 		return "", err
 	}
 
 	if !alreadyAttached {
-		glog.Warning("DetachDisk called on non-attached disk: ", diskName)
-		// TODO: Continue?  Tolerate non-attached error in DetachVolume?
+		glog.Warningf("DetachDisk called on non-attached disk: %s", diskName)
+		// TODO: Continue?  Tolerate non-attached error from the AWS DetachVolume call?
 	}
 
 	request := ec2.DetachVolumeInput{
@@ -1439,13 +1581,19 @@ func (c *Cloud) DetachDisk(diskName string, instanceName string) (string, error)
 		return "", errors.New("no response from DetachVolume")
 	}
 
-	err = disk.waitForAttachmentStatus("detached")
+	attachment, err := disk.waitForAttachmentStatus("detached")
 	if err != nil {
 		return "", err
 	}
+	if attachment != nil {
+		// We expect it to be nil, it is (maybe) interesting if it is not
+		glog.V(2).Infof("waitForAttachmentStatus returned non-nil attachment with state=detached: %v", attachment)
+	}
 
 	if mountDevice != "" {
-		awsInstance.endAttaching(disk.awsID, mountDevice)
+		c.endAttaching(awsInstance, disk.awsID, mountDevice)
+		// We don't check the return value - we don't really expect the attachment to have been
+		// in progress, though it might have been
 	}
 
 	hostDevicePath := "/dev/xvd" + string(mountDevice)
@@ -1459,14 +1607,53 @@ func (c *Cloud) CreateDisk(volumeOptions *VolumeOptions) (string, error) {
 		return "", fmt.Errorf("error querying for all zones: %v", err)
 	}
 
-	createAZ := volume.ChooseZoneForVolume(allZones, volumeOptions.PVCName)
+	createAZ := volumeOptions.AvailabilityZone
+	if createAZ == "" {
+		createAZ = volume.ChooseZoneForVolume(allZones, volumeOptions.PVCName)
+	}
+
+	var createType string
+	var iops int64
+	switch volumeOptions.VolumeType {
+	case VolumeTypeGP2, VolumeTypeSC1, VolumeTypeST1:
+		createType = volumeOptions.VolumeType
+
+	case VolumeTypeIO1:
+		// See http://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_CreateVolume.html
+		// for IOPS constraints. AWS will throw an error if IOPS per GB gets out
+		// of supported bounds, no need to check it here.
+		createType = volumeOptions.VolumeType
+		iops = int64(volumeOptions.CapacityGB * volumeOptions.IOPSPerGB)
+
+		// Cap at min/max total IOPS, AWS would throw an error if it gets too
+		// low/high.
+		if iops < MinTotalIOPS {
+			iops = MinTotalIOPS
+		}
+		if iops > MaxTotalIOPS {
+			iops = MaxTotalIOPS
+		}
+
+	case "":
+		createType = DefaultVolumeType
+
+	default:
+		return "", fmt.Errorf("invalid AWS VolumeType %q", volumeOptions.VolumeType)
+	}
 
 	// TODO: Should we tag this with the cluster id (so it gets deleted when the cluster does?)
 	request := &ec2.CreateVolumeInput{}
-	request.AvailabilityZone = &createAZ
-	volSize := int64(volumeOptions.CapacityGB)
-	request.Size = &volSize
-	request.VolumeType = aws.String(DefaultVolumeType)
+	request.AvailabilityZone = aws.String(createAZ)
+	request.Size = aws.Int64(int64(volumeOptions.CapacityGB))
+	request.VolumeType = aws.String(createType)
+	request.Encrypted = aws.Bool(volumeOptions.Encrypted)
+	if len(volumeOptions.KmsKeyId) > 0 {
+		request.KmsKeyId = aws.String(volumeOptions.KmsKeyId)
+		request.Encrypted = aws.Bool(true)
+	}
+	if iops > 0 {
+		request.Iops = aws.Int64(iops)
+	}
 	response, err := c.ec2.CreateVolume(request)
 	if err != nil {
 		return "", err
@@ -2274,7 +2461,11 @@ func buildListener(port api.ServicePort, annotations map[string]string, sslPorts
 			}
 		}
 		listener.SSLCertificateId = &certID
+	} else if annotationProtocol := annotations[ServiceAnnotationLoadBalancerBEProtocol]; annotationProtocol == "http" {
+		instanceProtocol = annotationProtocol
+		protocol = "http"
 	}
+
 	listener.Protocol = &protocol
 	listener.InstanceProtocol = &instanceProtocol
 
@@ -2282,10 +2473,10 @@ func buildListener(port api.ServicePort, annotations map[string]string, sslPorts
 }
 
 // EnsureLoadBalancer implements LoadBalancer.EnsureLoadBalancer
-func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*api.LoadBalancerStatus, error) {
+func (c *Cloud) EnsureLoadBalancer(clusterName string, apiService *api.Service, hosts []string) (*api.LoadBalancerStatus, error) {
 	annotations := apiService.Annotations
-	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v)",
-		apiService.Namespace, apiService.Name, c.region, apiService.Spec.LoadBalancerIP, apiService.Spec.Ports, hosts, annotations)
+	glog.V(2).Infof("EnsureLoadBalancer(%v, %v, %v, %v, %v, %v, %v, %v)",
+		clusterName, apiService.Namespace, apiService.Name, c.region, apiService.Spec.LoadBalancerIP, apiService.Spec.Ports, hosts, annotations)
 
 	if apiService.Spec.SessionAffinity != api.ServiceAffinityNone {
 		// ELB supports sticky sessions, but only when configured for HTTP/HTTPS
@@ -2351,6 +2542,104 @@ func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*ap
 			return nil, fmt.Errorf("annotation %q=%q detected, but the only value supported currently is '*'", ServiceAnnotationLoadBalancerProxyProtocol, proxyProtocolAnnotation)
 		}
 		proxyProtocol = true
+	}
+
+	// Some load balancer attributes are required, so defaults are set. These can be overridden by annotations.
+	loadBalancerAttributes := &elb.LoadBalancerAttributes{
+		AccessLog:              &elb.AccessLog{Enabled: aws.Bool(false)},
+		ConnectionDraining:     &elb.ConnectionDraining{Enabled: aws.Bool(false)},
+		ConnectionSettings:     &elb.ConnectionSettings{IdleTimeout: aws.Int64(60)},
+		CrossZoneLoadBalancing: &elb.CrossZoneLoadBalancing{Enabled: aws.Bool(false)},
+	}
+
+	// Determine if an access log emit interval has been specified
+	accessLogEmitIntervalAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogEmitInterval]
+	if accessLogEmitIntervalAnnotation != "" {
+		accessLogEmitInterval, err := strconv.ParseInt(accessLogEmitIntervalAnnotation, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerAccessLogEmitInterval,
+				accessLogEmitIntervalAnnotation,
+			)
+		}
+		loadBalancerAttributes.AccessLog.EmitInterval = &accessLogEmitInterval
+	}
+
+	// Determine if access log enabled/disabled has been specified
+	accessLogEnabledAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogEnabled]
+	if accessLogEnabledAnnotation != "" {
+		accessLogEnabled, err := strconv.ParseBool(accessLogEnabledAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerAccessLogEnabled,
+				accessLogEnabledAnnotation,
+			)
+		}
+		loadBalancerAttributes.AccessLog.Enabled = &accessLogEnabled
+	}
+
+	// Determine if access log s3 bucket name has been specified
+	accessLogS3BucketNameAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogS3BucketName]
+	if accessLogS3BucketNameAnnotation != "" {
+		loadBalancerAttributes.AccessLog.S3BucketName = &accessLogS3BucketNameAnnotation
+	}
+
+	// Determine if access log s3 bucket prefix has been specified
+	accessLogS3BucketPrefixAnnotation := annotations[ServiceAnnotationLoadBalancerAccessLogS3BucketPrefix]
+	if accessLogS3BucketPrefixAnnotation != "" {
+		loadBalancerAttributes.AccessLog.S3BucketPrefix = &accessLogS3BucketPrefixAnnotation
+	}
+
+	// Determine if connection draining enabled/disabled has been specified
+	connectionDrainingEnabledAnnotation := annotations[ServiceAnnotationLoadBalancerConnectionDrainingEnabled]
+	if connectionDrainingEnabledAnnotation != "" {
+		connectionDrainingEnabled, err := strconv.ParseBool(connectionDrainingEnabledAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerConnectionDrainingEnabled,
+				connectionDrainingEnabledAnnotation,
+			)
+		}
+		loadBalancerAttributes.ConnectionDraining.Enabled = &connectionDrainingEnabled
+	}
+
+	// Determine if connection draining timeout has been specified
+	connectionDrainingTimeoutAnnotation := annotations[ServiceAnnotationLoadBalancerConnectionDrainingTimeout]
+	if connectionDrainingTimeoutAnnotation != "" {
+		connectionDrainingTimeout, err := strconv.ParseInt(connectionDrainingTimeoutAnnotation, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerConnectionDrainingTimeout,
+				connectionDrainingTimeoutAnnotation,
+			)
+		}
+		loadBalancerAttributes.ConnectionDraining.Timeout = &connectionDrainingTimeout
+	}
+
+	// Determine if connection idle timeout has been specified
+	connectionIdleTimeoutAnnotation := annotations[ServiceAnnotationLoadBalancerConnectionIdleTimeout]
+	if connectionIdleTimeoutAnnotation != "" {
+		connectionIdleTimeout, err := strconv.ParseInt(connectionIdleTimeoutAnnotation, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerConnectionIdleTimeout,
+				connectionIdleTimeoutAnnotation,
+			)
+		}
+		loadBalancerAttributes.ConnectionSettings.IdleTimeout = &connectionIdleTimeout
+	}
+
+	// Determine if cross zone load balancing enabled/disabled has been specified
+	crossZoneLoadBalancingEnabledAnnotation := annotations[ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled]
+	if crossZoneLoadBalancingEnabledAnnotation != "" {
+		crossZoneLoadBalancingEnabled, err := strconv.ParseBool(crossZoneLoadBalancingEnabledAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing service annotation: %s=%s",
+				ServiceAnnotationLoadBalancerCrossZoneLoadBalancingEnabled,
+				crossZoneLoadBalancingEnabledAnnotation,
+			)
+		}
+		loadBalancerAttributes.CrossZoneLoadBalancing.Enabled = &crossZoneLoadBalancingEnabled
 	}
 
 	// Find the subnets that the ELB will live in
@@ -2426,6 +2715,7 @@ func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*ap
 		securityGroupIDs,
 		internalELB,
 		proxyProtocol,
+		loadBalancerAttributes,
 	)
 	if err != nil {
 		return nil, err
@@ -2457,7 +2747,7 @@ func (c *Cloud) EnsureLoadBalancer(apiService *api.Service, hosts []string) (*ap
 }
 
 // GetLoadBalancer is an implementation of LoadBalancer.GetLoadBalancer
-func (c *Cloud) GetLoadBalancer(service *api.Service) (*api.LoadBalancerStatus, bool, error) {
+func (c *Cloud) GetLoadBalancer(clusterName string, service *api.Service) (*api.LoadBalancerStatus, bool, error) {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	lb, err := c.describeLoadBalancer(loadBalancerName)
 	if err != nil {
@@ -2673,7 +2963,7 @@ func (c *Cloud) updateInstanceSecurityGroupsForLoadBalancer(lb *elb.LoadBalancer
 }
 
 // EnsureLoadBalancerDeleted implements LoadBalancer.EnsureLoadBalancerDeleted.
-func (c *Cloud) EnsureLoadBalancerDeleted(service *api.Service) error {
+func (c *Cloud) EnsureLoadBalancerDeleted(clusterName string, service *api.Service) error {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	lb, err := c.describeLoadBalancer(loadBalancerName)
 	if err != nil {
@@ -2769,7 +3059,7 @@ func (c *Cloud) EnsureLoadBalancerDeleted(service *api.Service) error {
 }
 
 // UpdateLoadBalancer implements LoadBalancer.UpdateLoadBalancer
-func (c *Cloud) UpdateLoadBalancer(service *api.Service, hosts []string) error {
+func (c *Cloud) UpdateLoadBalancer(clusterName string, service *api.Service, hosts []string) error {
 	hostSet := sets.NewString(hosts...)
 	instances, err := c.getInstancesByNodeNamesCached(hostSet)
 	if err != nil {

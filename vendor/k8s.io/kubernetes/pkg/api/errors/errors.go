@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -325,13 +325,13 @@ func NewGenericServerResponse(code int, verb string, qualifiedResource unversion
 	default:
 		if code >= 500 {
 			reason = unversioned.StatusReasonInternalError
-			message = "an error on the server has prevented the request from succeeding"
+			message = fmt.Sprintf("an error on the server (%q) has prevented the request from succeeding", serverMessage)
 		}
 	}
 	switch {
-	case !qualifiedResource.IsEmpty() && len(name) > 0:
+	case !qualifiedResource.Empty() && len(name) > 0:
 		message = fmt.Sprintf("%s (%s %s %s)", message, strings.ToLower(verb), qualifiedResource.String(), name)
-	case !qualifiedResource.IsEmpty():
+	case !qualifiedResource.Empty():
 		message = fmt.Sprintf("%s (%s %s)", message, strings.ToLower(verb), qualifiedResource.String())
 	}
 	var causes []unversioned.StatusCause

@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Kubernetes Authors All rights reserved.
+Copyright 2015 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -31,11 +31,23 @@ type Aggregate interface {
 // NewAggregate converts a slice of errors into an Aggregate interface, which
 // is itself an implementation of the error interface.  If the slice is empty,
 // this returns nil.
+// It will check if any of the element of input error list is nil, to avoid
+// nil pointer panic when call Error().
 func NewAggregate(errlist []error) Aggregate {
 	if len(errlist) == 0 {
 		return nil
 	}
-	return aggregate(errlist)
+	// In case of input error list contains nil
+	var errs []error
+	for _, e := range errlist {
+		if e != nil {
+			errs = append(errs, e)
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return aggregate(errs)
 }
 
 // This helper implements the error and Errors interfaces.  Keeping it private

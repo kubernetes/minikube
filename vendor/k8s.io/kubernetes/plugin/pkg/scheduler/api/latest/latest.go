@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ func init() {
 		api.Scheme,
 		jsonSerializer,
 		jsonSerializer,
-		[]unversioned.GroupVersion{{Version: Version}},
-		[]unversioned.GroupVersion{{Version: runtime.APIVersionInternal}},
+		unversioned.GroupVersion{Version: Version},
+		runtime.InternalGroupVersioner,
 	)
 }

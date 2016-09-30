@@ -1,7 +1,7 @@
 // +build linux
 
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/appc/cni/libcni"
-	cnitypes "github.com/appc/cni/pkg/types"
+	"github.com/containernetworking/cni/libcni"
+	cnitypes "github.com/containernetworking/cni/pkg/types"
 	"github.com/golang/glog"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netlink/nl"
@@ -37,6 +37,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/util/bandwidth"
 	utildbus "k8s.io/kubernetes/pkg/util/dbus"
+	utilebtables "k8s.io/kubernetes/pkg/util/ebtables"
 	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
 	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
@@ -45,6 +46,7 @@ import (
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 
 	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
+	"strconv"
 )
 
 const (
@@ -52,8 +54,23 @@ const (
 	BridgeName        = "cbr0"
 	DefaultCNIDir     = "/opt/cni/bin"
 
-	sysctlBridgeCallIptables = "net/bridge/bridge-nf-call-iptables"
+	sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
+
+	// fallbackMTU is used if an MTU is not specified, and we cannot determine the MTU
+	fallbackMTU = 1460
+
+	// private mac prefix safe to use
+	// Universally administered and locally administered addresses are distinguished by setting the second-least-significant
+	// bit of the first octet of the address. If it is 1, the address is locally administered. For example, for address 0a:00:00:00:00:00,
+	// the first cotet is 0a(hex), the binary form of which is 00001010, where the second-least-significant bit is 1.
+	privateMACPrefix = "0a:58"
+
+	// ebtables Chain to store dedup rules
+	dedupChain = utilebtables.Chain("KUBE-DEDUP")
 )
+
+// CNI plugins required by kubenet in /opt/cni/bin or vendor directory
+var requiredCNIPlugins = [...]string{"bridge", "host-local", "loopback"}
 
 type kubenetNetworkPlugin struct {
 	network.NoopNetworkPlugin
@@ -65,35 +82,40 @@ type kubenetNetworkPlugin struct {
 	bandwidthShaper bandwidth.BandwidthShaper
 	mu              sync.Mutex //Mutex for protecting podIPs map, netConfig, and shaper initialization
 	podIPs          map[kubecontainer.ContainerID]string
-	MTU             int
+	mtu             int
 	execer          utilexec.Interface
 	nsenterPath     string
 	hairpinMode     componentconfig.HairpinMode
 	hostportHandler hostport.HostportHandler
 	iptables        utiliptables.Interface
+	sysctl          utilsysctl.Interface
+	ebtables        utilebtables.Interface
 	// vendorDir is passed by kubelet network-plugin-dir parameter.
 	// kubenet will search for cni binaries in DefaultCNIDir first, then continue to vendorDir.
 	vendorDir         string
 	nonMasqueradeCIDR string
+	podCidr           string
+	gateway           net.IP
 }
 
 func NewPlugin(networkPluginDir string) network.NetworkPlugin {
 	protocol := utiliptables.ProtocolIpv4
 	execer := utilexec.New()
 	dbus := utildbus.New()
+	sysctl := utilsysctl.New()
 	iptInterface := utiliptables.New(execer, dbus, protocol)
 	return &kubenetNetworkPlugin{
 		podIPs:            make(map[kubecontainer.ContainerID]string),
-		MTU:               1460, //TODO: don't hardcode this
 		execer:            utilexec.New(),
 		iptables:          iptInterface,
+		sysctl:            sysctl,
 		vendorDir:         networkPluginDir,
 		hostportHandler:   hostport.NewHostportHandler(),
 		nonMasqueradeCIDR: "10.0.0.0/8",
 	}
 }
 
-func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componentconfig.HairpinMode, nonMasqueradeCIDR string) error {
+func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componentconfig.HairpinMode, nonMasqueradeCIDR string, mtu int) error {
 	plugin.host = host
 	plugin.hairpinMode = hairpinMode
 	plugin.nonMasqueradeCIDR = nonMasqueradeCIDR
@@ -101,11 +123,16 @@ func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componen
 		Path: []string{DefaultCNIDir, plugin.vendorDir},
 	}
 
-	if link, err := findMinMTU(); err == nil {
-		plugin.MTU = link.MTU
-		glog.V(5).Infof("Using interface %s MTU %d as bridge MTU", link.Name, link.MTU)
+	if mtu == network.UseDefaultMTU {
+		if link, err := findMinMTU(); err == nil {
+			plugin.mtu = link.MTU
+			glog.V(5).Infof("Using interface %s MTU %d as bridge MTU", link.Name, link.MTU)
+		} else {
+			plugin.mtu = fallbackMTU
+			glog.Warningf("Failed to find default bridge MTU, using %d: %v", fallbackMTU, err)
+		}
 	} else {
-		glog.Warningf("Failed to find default bridge MTU: %v", err)
+		plugin.mtu = mtu
 	}
 
 	// Since this plugin uses a Linux bridge, set bridge-nf-call-iptables=1
@@ -115,9 +142,9 @@ func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componen
 	// was built-in, we simply ignore the error here. A better thing to do is
 	// to check the kernel version in the future.
 	plugin.execer.Command("modprobe", "br-netfilter").CombinedOutput()
-	err := utilsysctl.SetSysctl(sysctlBridgeCallIptables, 1)
+	err := plugin.sysctl.SetSysctl(sysctlBridgeCallIPTables, 1)
 	if err != nil {
-		glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIptables, err)
+		glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIPTables, err)
 	}
 
 	plugin.loConfig, err = libcni.ConfFromBytes([]byte(`{
@@ -186,6 +213,7 @@ const NET_CONFIG_TEMPLATE = `{
   "addIf": "%s",
   "isGateway": true,
   "ipMasq": false,
+  "hairpinMode": %t,
   "ipam": {
     "type": "host-local",
     "subnet": "%s",
@@ -218,10 +246,11 @@ func (plugin *kubenetNetworkPlugin) Event(name string, details map[string]interf
 	glog.V(5).Infof("PodCIDR is set to %q", podCIDR)
 	_, cidr, err := net.ParseCIDR(podCIDR)
 	if err == nil {
+		setHairpin := plugin.hairpinMode == componentconfig.HairpinVeth
 		// Set bridge address to first address in IPNet
 		cidr.IP.To4()[3] += 1
 
-		json := fmt.Sprintf(NET_CONFIG_TEMPLATE, BridgeName, plugin.MTU, network.DefaultInterfaceName, podCIDR, cidr.IP.String())
+		json := fmt.Sprintf(NET_CONFIG_TEMPLATE, BridgeName, plugin.mtu, network.DefaultInterfaceName, setHairpin, podCIDR, cidr.IP.String())
 		glog.V(2).Infof("CNI network config set to %v", json)
 		plugin.netConfig, err = libcni.ConfFromBytes([]byte(json))
 		if err == nil {
@@ -231,6 +260,8 @@ func (plugin *kubenetNetworkPlugin) Event(name string, details map[string]interf
 			// plugin will bail out if the bridge has an unexpected one
 			plugin.clearBridgeAddressesExcept(cidr)
 		}
+		plugin.podCidr = podCIDR
+		plugin.gateway = cidr.IP
 	}
 
 	if err != nil {
@@ -315,6 +346,22 @@ func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kube
 		return fmt.Errorf("CNI plugin reported an invalid IPv4 address for container %v: %+v.", id, res.IP4)
 	}
 
+	// Explicitly assign mac address to cbr0. If bridge mac address is not explicitly set will adopt the lowest MAC address of the attached veths.
+	// TODO: Remove this once upstream cni bridge plugin handles this
+	link, err := netlink.LinkByName(BridgeName)
+	if err != nil {
+		return fmt.Errorf("failed to lookup %q: %v", BridgeName, err)
+	}
+	macAddr, err := generateHardwareAddr(plugin.gateway)
+	if err != nil {
+		return err
+	}
+	glog.V(3).Infof("Configure %q mac address to %v", BridgeName, macAddr)
+	err = netlink.LinkSetHardwareAddr(link, macAddr)
+	if err != nil {
+		return fmt.Errorf("Failed to configure %q mac address to %q: %v", BridgeName, macAddr, err)
+	}
+
 	// Put the container bridge into promiscuous mode to force it to accept hairpin packets.
 	// TODO: Remove this once the kernel bug (#20096) is fixed.
 	// TODO: check and set promiscuous mode with netlink once vishvananda/netlink supports it
@@ -326,6 +373,8 @@ func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kube
 				return fmt.Errorf("Error setting promiscuous mode on %s: %v", BridgeName, err)
 			}
 		}
+		// configure the ebtables rules to eliminate duplicate packets by best effort
+		plugin.syncEbtablesDedupRules(macAddr)
 	}
 
 	// The first SetUpPod call creates the bridge; get a shaper for the sake of
@@ -485,7 +534,41 @@ func (plugin *kubenetNetworkPlugin) Status() error {
 	if plugin.netConfig == nil {
 		return fmt.Errorf("Kubenet does not have netConfig. This is most likely due to lack of PodCIDR")
 	}
+
+	if !plugin.checkCNIPlugin() {
+		return fmt.Errorf("could not locate kubenet required CNI plugins %v at %q or %q", requiredCNIPlugins, DefaultCNIDir, plugin.vendorDir)
+	}
 	return nil
+}
+
+// checkCNIPlugin returns if all kubenet required cni plugins can be found at /opt/cni/bin or user specifed NetworkPluginDir.
+func (plugin *kubenetNetworkPlugin) checkCNIPlugin() bool {
+	if plugin.checkCNIPluginInDir(DefaultCNIDir) || plugin.checkCNIPluginInDir(plugin.vendorDir) {
+		return true
+	}
+	return false
+}
+
+// checkCNIPluginInDir returns if all required cni plugins are placed in dir
+func (plugin *kubenetNetworkPlugin) checkCNIPluginInDir(dir string) bool {
+	output, err := plugin.execer.Command("ls", dir).CombinedOutput()
+	if err != nil {
+		return false
+	}
+	fields := strings.Fields(string(output))
+	for _, cniPlugin := range requiredCNIPlugins {
+		found := false
+		for _, file := range fields {
+			if strings.TrimSpace(file) == cniPlugin {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 // Returns a list of pods running on this node and each pod's IP address.  Assumes
@@ -570,4 +653,64 @@ func (plugin *kubenetNetworkPlugin) shaper() bandwidth.BandwidthShaper {
 		plugin.bandwidthShaper.ReconcileInterface()
 	}
 	return plugin.bandwidthShaper
+}
+
+//TODO: make this into a goroutine and rectify the dedup rules periodically
+func (plugin *kubenetNetworkPlugin) syncEbtablesDedupRules(macAddr net.HardwareAddr) {
+	if plugin.ebtables == nil {
+		plugin.ebtables = utilebtables.New(plugin.execer)
+		glog.V(3).Infof("Flushing dedup chain")
+		if err := plugin.ebtables.FlushChain(utilebtables.TableFilter, dedupChain); err != nil {
+			glog.Errorf("Failed to flush dedup chain: %v", err)
+		}
+	}
+	_, err := plugin.ebtables.GetVersion()
+	if err != nil {
+		glog.Warningf("Failed to get ebtables version. Skip syncing ebtables dedup rules: %v", err)
+		return
+	}
+
+	glog.V(3).Infof("Filtering packets with ebtables on mac address: %v, gateway: %v, pod CIDR: %v", macAddr.String(), plugin.gateway.String(), plugin.podCidr)
+	_, err = plugin.ebtables.EnsureChain(utilebtables.TableFilter, dedupChain)
+	if err != nil {
+		glog.Errorf("Failed to ensure %v chain %v", utilebtables.TableFilter, dedupChain)
+		return
+	}
+
+	_, err = plugin.ebtables.EnsureRule(utilebtables.Append, utilebtables.TableFilter, utilebtables.ChainOutput, "-j", string(dedupChain))
+	if err != nil {
+		glog.Errorf("Failed to ensure %v chain %v jump to %v chain: %v", utilebtables.TableFilter, utilebtables.ChainOutput, dedupChain, err)
+		return
+	}
+
+	commonArgs := []string{"-p", "IPv4", "-s", macAddr.String(), "-o", "veth+"}
+	_, err = plugin.ebtables.EnsureRule(utilebtables.Prepend, utilebtables.TableFilter, dedupChain, append(commonArgs, "--ip-src", plugin.gateway.String(), "-j", "ACCEPT")...)
+	if err != nil {
+		glog.Errorf("Failed to ensure packets from cbr0 gateway to be accepted")
+		return
+
+	}
+	_, err = plugin.ebtables.EnsureRule(utilebtables.Append, utilebtables.TableFilter, dedupChain, append(commonArgs, "--ip-src", plugin.podCidr, "-j", "DROP")...)
+	if err != nil {
+		glog.Errorf("Failed to ensure packets from podCidr but has mac address of cbr0 to get dropped.")
+		return
+	}
+}
+
+// generateHardwareAddr generates 48 bit virtual mac addresses based on the IP input.
+func generateHardwareAddr(ip net.IP) (net.HardwareAddr, error) {
+	if ip.To4() == nil {
+		return nil, fmt.Errorf("generateHardwareAddr only support valid ipv4 address as input")
+	}
+	mac := privateMACPrefix
+	sections := strings.Split(ip.String(), ".")
+	for _, s := range sections {
+		i, _ := strconv.Atoi(s)
+		mac = mac + ":" + fmt.Sprintf("%02x", i)
+	}
+	hwAddr, err := net.ParseMAC(mac)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to parse mac address %s generated based on ip %s due to: %v", mac, ip, err)
+	}
+	return hwAddr, nil
 }

@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,8 +54,10 @@ func GetUniqueVolumeName(pluginName, volumeName string) api.UniqueVolumeName {
 
 // GetUniqueVolumeNameForNonAttachableVolume returns the unique volume name
 // for a non-attachable volume.
-func GetUniqueVolumeNameForNonAttachableVolume(podName types.UniquePodName, volumePlugin volume.VolumePlugin, podSpecName string) api.UniqueVolumeName {
-	return api.UniqueVolumeName(fmt.Sprintf("%s/%v-%s", volumePlugin.GetPluginName(), podName, podSpecName))
+func GetUniqueVolumeNameForNonAttachableVolume(
+	podName types.UniquePodName, volumePlugin volume.VolumePlugin, volumeSpec *volume.Spec) api.UniqueVolumeName {
+	return api.UniqueVolumeName(
+		fmt.Sprintf("%s/%v-%s", volumePlugin.GetPluginName(), podName, volumeSpec.Name()))
 }
 
 // GetUniqueVolumeNameFromSpec uses the given VolumePlugin to generate a unique

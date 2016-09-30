@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors All rights reserved.
+Copyright 2014 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -105,6 +105,16 @@ func (plugin *gitRepoPlugin) NewUnmounter(volName string, podUID types.UID) (vol
 			plugin:  plugin,
 		},
 	}, nil
+}
+
+func (plugin *gitRepoPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
+	gitVolume := &api.Volume{
+		Name: volumeName,
+		VolumeSource: api.VolumeSource{
+			GitRepo: &api.GitRepoVolumeSource{},
+		},
+	}
+	return volume.NewSpecFromVolume(gitVolume), nil
 }
 
 // gitRepo volumes are directories which are pre-filled from a git repository.
