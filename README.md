@@ -130,6 +130,34 @@ The [minikube start](./docs/minikube_start.md) command can be used to start your
 This command creates and configures a virtual machine that runs a single-node Kubernetes cluster.
 This command also configures your [kubectl](http://kubernetes.io/docs/user-guide/kubectl-overview/) installation to communicate with this cluster.
 
+### Configuring Kubernetes
+
+Minikube has a "configurator" feature that allows users to configure the Kubernetes components with arbitrary values.
+To use this feature, you can use the `--extra-config` flag on the `minikube start` command.
+
+This flag is repeated, so you can pass it several times with several different values to set multiple options.
+
+This flag takes a string of the form `component.key=value`, where `component` is one of the strings from the above list, `key` is a value on the
+configuration struct and `value` is the value to set.
+
+Valid `key`s can be found by examining the documentation for the Kubernetes `componentconfigs` for each component. 
+Here is the documentation for each supported configuration:
+
+* [kubelet](https://godoc.org/k8s.io/kubernetes/pkg/apis/componentconfig#KubeletConfiguration)
+* [apiserver](https://godoc.org/k8s.io/kubernetes/cmd/kube-apiserver/app/options#APIServer)
+* [proxy](https://godoc.org/k8s.io/kubernetes/pkg/apis/componentconfig#KubeProxyConfiguration)
+* [controller-manager](https://godoc.org/k8s.io/kubernetes/pkg/apis/componentconfig#KubeControllerManagerConfiguration)
+* [etcd](https://godoc.org/github.com/coreos/etcd/etcdserver#ServerConfig)
+* [scheduler](https://godoc.org/k8s.io/kubernetes/pkg/apis/componentconfig#KubeSchedulerConfiguration)
+
+#### Examples
+
+To change the `MaxPods` setting to 5 on the Kubelet, pass this flag: `--extra-config=kubelet.MaxPods=5`.
+
+This feature also supports nested structs. To change the `LeaderElection.LeaderElect` setting to `true` on the scheduler, pass this flag: `--extra-config=scheduler.LeaderElection.LeaderElect=true`.
+
+To set the `AuthorizationPolicy` mode on the `apiserver` to `RBAC`, you can use: `--extra-config=apiserver.AuthorizationPolicy=RBAC`. 
+
 ### Stopping a Cluster
 The [minikube stop](./docs/minikube_stop.md) command can be used to stop your cluster.
 This command shuts down the minikube virtual machine, but preserves all cluster state and data.
