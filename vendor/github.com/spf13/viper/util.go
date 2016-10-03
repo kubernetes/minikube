@@ -21,20 +21,20 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/BurntSushi/toml"
 	"github.com/hashicorp/hcl"
 	"github.com/magiconair/properties"
+	toml "github.com/pelletier/go-toml"
 	"github.com/spf13/cast"
 	jww "github.com/spf13/jwalterweatherman"
 	"gopkg.in/yaml.v2"
 )
 
-// Denotes failing to parse configuration file.
+// ConfigParseError denotes failing to parse configuration file.
 type ConfigParseError struct {
 	err error
 }
 
-// Returns the formatted configuration error.
+// Error returns the formatted configuration error.
 func (pe ConfigParseError) Error() string {
 	return fmt.Sprintf("While parsing config: %s", pe.err.Error())
 }
@@ -68,16 +68,16 @@ func absPathify(inPath string) string {
 	p, err := filepath.Abs(inPath)
 	if err == nil {
 		return filepath.Clean(p)
-	} else {
-		jww.ERROR.Println("Couldn't discover absolute path")
-		jww.ERROR.Println(err)
 	}
+
+	jww.ERROR.Println("Couldn't discover absolute path")
+	jww.ERROR.Println(err)
 	return ""
 }
 
 // Check if File / Directory Exists
 func exists(path string) (bool, error) {
-	_, err := os.Stat(path)
+	_, err := v.fs.Stat(path)
 	if err == nil {
 		return true, nil
 	}
@@ -107,29 +107,6 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-func findCWD() (string, error) {
-	serverFile, err := filepath.Abs(os.Args[0])
-
-	if err != nil {
-		return "", fmt.Errorf("Can't get absolute path for executable: %v", err)
-	}
-
-	path := filepath.Dir(serverFile)
-	realFile, err := filepath.EvalSymlinks(serverFile)
-
-	if err != nil {
-		if _, err = os.Stat(serverFile + ".exe"); err == nil {
-			realFile = filepath.Clean(serverFile + ".exe")
-		}
-	}
-
-	if err == nil && realFile != serverFile {
-		path = filepath.Dir(realFile)
-	}
-
-	return path, nil
-}
-
 func unmarshallConfigReader(in io.Reader, c map[string]interface{}, configType string) error {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(in)
@@ -155,8 +132,13 @@ func unmarshallConfigReader(in io.Reader, c map[string]interface{}, configType s
 		}
 
 	case "toml":
-		if _, err := toml.Decode(buf.String(), &c); err != nil {
+		tree, err := toml.LoadReader(buf)
+		if err != nil {
 			return ConfigParseError{err}
+		}
+		tmap := tree.ToMap()
+		for k, v := range tmap {
+			c[k] = v
 		}
 
 	case "properties", "props", "prop":
