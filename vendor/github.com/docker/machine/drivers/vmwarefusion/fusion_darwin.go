@@ -44,6 +44,7 @@ type Driver struct {
 	CPU            int
 	ISO            string
 	Boot2DockerURL string
+	CPUS           int
 
 	SSHPassword    string
 	ConfigDriveISO string
@@ -55,7 +56,7 @@ const (
 	defaultSSHUser  = B2DUser
 	defaultSSHPass  = B2DPass
 	defaultDiskSize = 20000
-	defaultCPU      = 1
+	defaultCpus     = 1
 	defaultMemory   = 1024
 )
 
@@ -79,7 +80,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			EnvVar: "FUSION_CPU_COUNT",
 			Name:   "vmwarefusion-cpu-count",
 			Usage:  "number of CPUs for the machine (-1 to use the number of CPUs available)",
-			Value:  defaultCPU,
+			Value:  defaultCpus,
 		},
 		mcnflag.IntFlag{
 			EnvVar: "FUSION_MEMORY_SIZE",
@@ -115,7 +116,7 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 
 func NewDriver(hostName, storePath string) drivers.Driver {
 	return &Driver{
-		CPU:         defaultCPU,
+		CPUS:        defaultCpus,
 		Memory:      defaultMemory,
 		DiskSize:    defaultDiskSize,
 		SSHPassword: defaultSSHPass,

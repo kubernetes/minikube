@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/exec"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"github.com/docker/docker/pkg/term"
@@ -156,7 +154,7 @@ func NewNativeConfig(user string, auth *Auth) (ssh.ClientConfig, error) {
 }
 
 func (client *NativeClient) dialSuccess() bool {
-	if _, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config); err != nil {
+	if _, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", client.Hostname, client.Port), &client.Config); err != nil {
 		log.Debugf("Error dialing TCP: %s", err)
 		return false
 	}
@@ -168,7 +166,7 @@ func (client *NativeClient) session(command string) (*ssh.Session, error) {
 		return nil, fmt.Errorf("Error attempting SSH client dial: %s", err)
 	}
 
-	conn, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config)
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", client.Hostname, client.Port), &client.Config)
 	if err != nil {
 		return nil, fmt.Errorf("Mysterious error dialing TCP for SSH (we already succeeded at least once) : %s", err)
 	}
@@ -252,7 +250,7 @@ func (client *NativeClient) Shell(args ...string) error {
 	var (
 		termWidth, termHeight int
 	)
-	conn, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config)
+	conn, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", client.Hostname, client.Port), &client.Config)
 	if err != nil {
 		return err
 	}

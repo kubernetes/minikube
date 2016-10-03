@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -32,7 +33,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/mitchellh/mapstructure"
-	"github.com/spf13/afero"
 	"github.com/spf13/cast"
 	jww "github.com/spf13/jwalterweatherman"
 	"github.com/spf13/pflag"
@@ -52,40 +52,40 @@ type remoteConfigFactory interface {
 // RemoteConfig is optional, see the remote package
 var RemoteConfig remoteConfigFactory
 
-// UnsupportedConfigError denotes encountering an unsupported
+// Denotes encountering an unsupported
 // configuration filetype.
 type UnsupportedConfigError string
 
-// Error returns the formatted configuration error.
+// Returns the formatted configuration error.
 func (str UnsupportedConfigError) Error() string {
 	return fmt.Sprintf("Unsupported Config Type %q", string(str))
 }
 
-// UnsupportedRemoteProviderError denotes encountering an unsupported remote
+// Denotes encountering an unsupported remote
 // provider. Currently only etcd and Consul are
 // supported.
 type UnsupportedRemoteProviderError string
 
-// Error returns the formatted remote provider error.
+// Returns the formatted remote provider error.
 func (str UnsupportedRemoteProviderError) Error() string {
 	return fmt.Sprintf("Unsupported Remote Provider Type %q", string(str))
 }
 
-// RemoteConfigError denotes encountering an error while trying to
+// Denotes encountering an error while trying to
 // pull the configuration from the remote provider.
 type RemoteConfigError string
 
-// Error returns the formatted remote provider error
+// Returns the formatted remote provider error
 func (rce RemoteConfigError) Error() string {
 	return fmt.Sprintf("Remote Configurations Error: %s", string(rce))
 }
 
-// ConfigFileNotFoundError denotes failing to find configuration file.
+// Denotes failing to find configuration file.
 type ConfigFileNotFoundError struct {
 	name, locations string
 }
 
-// Error returns the formatted configuration error.
+// Returns the formatted configuration error.
 func (fnfe ConfigFileNotFoundError) Error() string {
 	return fmt.Sprintf("Config File %q Not Found in %q", fnfe.name, fnfe.locations)
 }
@@ -132,9 +132,6 @@ type Viper struct {
 	// A set of paths to look for the config file in
 	configPaths []string
 
-	// The filesystem to read config from.
-	fs afero.Fs
-
 	// A set of remote providers to search for the configuration
 	remoteProviders []*defaultRemoteProvider
 
@@ -159,12 +156,11 @@ type Viper struct {
 	onConfigChange func(fsnotify.Event)
 }
 
-// New returns an initialized Viper instance.
+// Returns an initialized Viper instance.
 func New() *Viper {
 	v := new(Viper)
 	v.keyDelim = "."
 	v.configName = "config"
-	v.fs = afero.NewOsFs()
 	v.config = make(map[string]interface{})
 	v.override = make(map[string]interface{})
 	v.defaults = make(map[string]interface{})
@@ -220,11 +216,11 @@ type RemoteProvider interface {
 	SecretKeyring() string
 }
 
-// SupportedExts are universally supported extensions.
-var SupportedExts = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl"}
+// Universally supported extensions.
+var SupportedExts []string = []string{"json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl"}
 
-// SupportedRemoteProviders are universally supported remote providers.
-var SupportedRemoteProviders = []string{"etcd", "consul"}
+// Universally supported remote providers.
+var SupportedRemoteProviders []string = []string{"etcd", "consul"}
 
 func OnConfigChange(run func(in fsnotify.Event)) { v.OnConfigChange(run) }
 func (v *Viper) OnConfigChange(run func(in fsnotify.Event)) {
@@ -270,7 +266,7 @@ func (v *Viper) WatchConfig() {
 	}()
 }
 
-// SetConfigFile explicitly defines the path, name and extension of the config file
+// Explicitly define the path, name and extension of the config file
 // Viper will use this and not check any of the config paths
 func SetConfigFile(in string) { v.SetConfigFile(in) }
 func (v *Viper) SetConfigFile(in string) {
@@ -279,7 +275,7 @@ func (v *Viper) SetConfigFile(in string) {
 	}
 }
 
-// SetEnvPrefix defines a prefix that ENVIRONMENT variables will use.
+// Define a prefix that ENVIRONMENT variables will use.
 // E.g. if your prefix is "spf", the env registry
 // will look for env. variables that start with "SPF_"
 func SetEnvPrefix(in string) { v.SetEnvPrefix(in) }
@@ -301,7 +297,7 @@ func (v *Viper) mergeWithEnvPrefix(in string) string {
 // rewriting keys many things, Ex: Get('someKey') -> some_key
 // (cammel case to snake case for JSON keys perhaps)
 
-// getEnv is a wrapper around os.Getenv which replaces characters in the original
+// getEnv s a wrapper around os.Getenv which replaces characters in the original
 // key. This allows env vars which have different keys then the config object
 // keys
 func (v *Viper) getEnv(key string) string {
@@ -311,11 +307,11 @@ func (v *Viper) getEnv(key string) string {
 	return os.Getenv(key)
 }
 
-// ConfigFileUsed returns the file used to populate the config registry
+// Return the file used to populate the config registry
 func ConfigFileUsed() string            { return v.ConfigFileUsed() }
 func (v *Viper) ConfigFileUsed() string { return v.configFile }
 
-// AddConfigPath adds a path for Viper to search for the config file in.
+// Add a path for Viper to search for the config file in.
 // Can be called multiple times to define multiple search paths.
 func AddConfigPath(in string) { v.AddConfigPath(in) }
 func (v *Viper) AddConfigPath(in string) {
@@ -450,12 +446,8 @@ func (v *Viper) SetTypeByDefaultValue(enable bool) {
 	v.typeByDefValue = enable
 }
 
-// GetViper gets the global Viper instance.
-func GetViper() *Viper {
-	return v
-}
-
-// Get can retrieve any value given the key to use.
+// Viper is essentially repository for configurations
+// Get can retrieve any value given the key to use
 // Get has the behavior of returning the value associated with the first
 // place from where it is set. Viper will check in the following order:
 // override, flag, env, config file, key/value store, default
@@ -528,7 +520,7 @@ func (v *Viper) Get(key string) interface{} {
 	return val
 }
 
-// Sub returns new Viper instance representing a sub tree of this instance.
+// Returns new Viper instance representing a sub tree of this instance
 func Sub(key string) *Viper { return v.Sub(key) }
 func (v *Viper) Sub(key string) *Viper {
 	subv := New()
@@ -536,77 +528,72 @@ func (v *Viper) Sub(key string) *Viper {
 	if reflect.TypeOf(data).Kind() == reflect.Map {
 		subv.config = cast.ToStringMap(data)
 		return subv
+	} else {
+		return nil
 	}
-	return nil
 }
 
-// GetString returns the value associated with the key as a string.
+// Returns the value associated with the key as a string
 func GetString(key string) string { return v.GetString(key) }
 func (v *Viper) GetString(key string) string {
 	return cast.ToString(v.Get(key))
 }
 
-// GetBool returns the value associated with the key as a boolean.
+// Returns the value associated with the key as a boolean
 func GetBool(key string) bool { return v.GetBool(key) }
 func (v *Viper) GetBool(key string) bool {
 	return cast.ToBool(v.Get(key))
 }
 
-// GetInt returns the value associated with the key as an integer.
+// Returns the value associated with the key as an integer
 func GetInt(key string) int { return v.GetInt(key) }
 func (v *Viper) GetInt(key string) int {
 	return cast.ToInt(v.Get(key))
 }
 
-// GetInt64 returns the value associated with the key as an integer.
-func GetInt64(key string) int64 { return v.GetInt64(key) }
-func (v *Viper) GetInt64(key string) int64 {
-	return cast.ToInt64(v.Get(key))
-}
-
-// GetFloat64 returns the value associated with the key as a float64.
+// Returns the value associated with the key as a float64
 func GetFloat64(key string) float64 { return v.GetFloat64(key) }
 func (v *Viper) GetFloat64(key string) float64 {
 	return cast.ToFloat64(v.Get(key))
 }
 
-// GetTime returns the value associated with the key as time.
+// Returns the value associated with the key as time
 func GetTime(key string) time.Time { return v.GetTime(key) }
 func (v *Viper) GetTime(key string) time.Time {
 	return cast.ToTime(v.Get(key))
 }
 
-// GetDuration returns the value associated with the key as a duration.
+// Returns the value associated with the key as a duration
 func GetDuration(key string) time.Duration { return v.GetDuration(key) }
 func (v *Viper) GetDuration(key string) time.Duration {
 	return cast.ToDuration(v.Get(key))
 }
 
-// GetStringSlice returns the value associated with the key as a slice of strings.
+// Returns the value associated with the key as a slice of strings
 func GetStringSlice(key string) []string { return v.GetStringSlice(key) }
 func (v *Viper) GetStringSlice(key string) []string {
 	return cast.ToStringSlice(v.Get(key))
 }
 
-// GetStringMap returns the value associated with the key as a map of interfaces.
+// Returns the value associated with the key as a map of interfaces
 func GetStringMap(key string) map[string]interface{} { return v.GetStringMap(key) }
 func (v *Viper) GetStringMap(key string) map[string]interface{} {
 	return cast.ToStringMap(v.Get(key))
 }
 
-// GetStringMapString returns the value associated with the key as a map of strings.
+// Returns the value associated with the key as a map of strings
 func GetStringMapString(key string) map[string]string { return v.GetStringMapString(key) }
 func (v *Viper) GetStringMapString(key string) map[string]string {
 	return cast.ToStringMapString(v.Get(key))
 }
 
-// GetStringMapStringSlice returns the value associated with the key as a map to a slice of strings.
+// Returns the value associated with the key as a map to a slice of strings.
 func GetStringMapStringSlice(key string) map[string][]string { return v.GetStringMapStringSlice(key) }
 func (v *Viper) GetStringMapStringSlice(key string) map[string][]string {
 	return cast.ToStringMapStringSlice(v.Get(key))
 }
 
-// GetSizeInBytes returns the size of the value associated with the given key
+// Returns the size of the value associated with the given key
 // in bytes.
 func GetSizeInBytes(key string) uint { return v.GetSizeInBytes(key) }
 func (v *Viper) GetSizeInBytes(key string) uint {
@@ -614,13 +601,13 @@ func (v *Viper) GetSizeInBytes(key string) uint {
 	return parseSizeInBytes(sizeStr)
 }
 
-// UnmarshalKey takes a single key and unmarshals it into a Struct.
+// Takes a single key and unmarshals it into a Struct
 func UnmarshalKey(key string, rawVal interface{}) error { return v.UnmarshalKey(key, rawVal) }
 func (v *Viper) UnmarshalKey(key string, rawVal interface{}) error {
 	return mapstructure.Decode(v.Get(key), rawVal)
 }
 
-// Unmarshal unmarshals the config into a Struct. Make sure that the tags
+// Unmarshals the config into a Struct. Make sure that the tags
 // on the fields of the structure are properly set.
 func Unmarshal(rawVal interface{}) error { return v.Unmarshal(rawVal) }
 func (v *Viper) Unmarshal(rawVal interface{}) error {
@@ -636,7 +623,7 @@ func (v *Viper) Unmarshal(rawVal interface{}) error {
 }
 
 // A wrapper around mapstructure.Decode that mimics the WeakDecode functionality
-// while erroring on non existing vals in the destination struct.
+// while erroring on non existing vals in the destination struct
 func weakDecodeExact(input, output interface{}) error {
 	config := &mapstructure.DecoderConfig{
 		ErrorUnused:      true,
@@ -652,8 +639,8 @@ func weakDecodeExact(input, output interface{}) error {
 	return decoder.Decode(input)
 }
 
-// UnmarshalExact unmarshals the config into a Struct, erroring if a field is nonexistent
-// in the destination struct.
+// Unmarshals the config into a Struct, erroring if a field is non-existant
+// in the destination struct
 func (v *Viper) UnmarshalExact(rawVal interface{}) error {
 	err := weakDecodeExact(v.AllSettings(), rawVal)
 
@@ -666,27 +653,27 @@ func (v *Viper) UnmarshalExact(rawVal interface{}) error {
 	return nil
 }
 
-// BindPFlags binds a full flag set to the configuration, using each flag's long
+// Bind a full flag set to the configuration, using each flag's long
 // name as the config key.
-func BindPFlags(flags *pflag.FlagSet) error { return v.BindPFlags(flags) }
-func (v *Viper) BindPFlags(flags *pflag.FlagSet) error {
+func BindPFlags(flags *pflag.FlagSet) (err error) { return v.BindPFlags(flags) }
+func (v *Viper) BindPFlags(flags *pflag.FlagSet) (err error) {
 	return v.BindFlagValues(pflagValueSet{flags})
 }
 
-// BindPFlag binds a specific key to a pflag (as used by cobra).
-// Example (where serverCmd is a Cobra instance):
+// Bind a specific key to a pflag (as used by cobra)
+// Example(where serverCmd is a Cobra instance):
 //
 //	 serverCmd.Flags().Int("port", 1138, "Port to run Application server on")
 //	 Viper.BindPFlag("port", serverCmd.Flags().Lookup("port"))
 //
-func BindPFlag(key string, flag *pflag.Flag) error { return v.BindPFlag(key, flag) }
-func (v *Viper) BindPFlag(key string, flag *pflag.Flag) error {
+func BindPFlag(key string, flag *pflag.Flag) (err error) { return v.BindPFlag(key, flag) }
+func (v *Viper) BindPFlag(key string, flag *pflag.Flag) (err error) {
 	return v.BindFlagValue(key, pflagValue{flag})
 }
 
-// BindFlagValues binds a full FlagValue set to the configuration, using each flag's long
+// Bind a full FlagValue set to the configuration, using each flag's long
 // name as the config key.
-func BindFlagValues(flags FlagValueSet) error { return v.BindFlagValues(flags) }
+func BindFlagValues(flags FlagValueSet) (err error) { return v.BindFlagValues(flags) }
 func (v *Viper) BindFlagValues(flags FlagValueSet) (err error) {
 	flags.VisitAll(func(flag FlagValue) {
 		if err = v.BindFlagValue(flag.Name(), flag); err != nil {
@@ -696,14 +683,14 @@ func (v *Viper) BindFlagValues(flags FlagValueSet) (err error) {
 	return nil
 }
 
-// BindFlagValue binds a specific key to a FlagValue.
+// Bind a specific key to a FlagValue.
 // Example(where serverCmd is a Cobra instance):
 //
 //	 serverCmd.Flags().Int("port", 1138, "Port to run Application server on")
 //	 Viper.BindFlagValue("port", serverCmd.Flags().Lookup("port"))
 //
-func BindFlagValue(key string, flag FlagValue) error { return v.BindFlagValue(key, flag) }
-func (v *Viper) BindFlagValue(key string, flag FlagValue) error {
+func BindFlagValue(key string, flag FlagValue) (err error) { return v.BindFlagValue(key, flag) }
+func (v *Viper) BindFlagValue(key string, flag FlagValue) (err error) {
 	if flag == nil {
 		return fmt.Errorf("flag for %q is nil", key)
 	}
@@ -711,12 +698,12 @@ func (v *Viper) BindFlagValue(key string, flag FlagValue) error {
 	return nil
 }
 
-// BindEnv binds a Viper key to a ENV variable.
-// ENV variables are case sensitive.
+// Binds a Viper key to a ENV variable
+// ENV variables are case sensitive
 // If only a key is provided, it will use the env key matching the key, uppercased.
 // EnvPrefix will be used when set when env name is not provided.
-func BindEnv(input ...string) error { return v.BindEnv(input...) }
-func (v *Viper) BindEnv(input ...string) error {
+func BindEnv(input ...string) (err error) { return v.BindEnv(input...) }
+func (v *Viper) BindEnv(input ...string) (err error) {
 	var key, envkey string
 	if len(input) == 0 {
 		return fmt.Errorf("BindEnv missing key to bind to")
@@ -735,10 +722,10 @@ func (v *Viper) BindEnv(input ...string) error {
 	return nil
 }
 
-// Given a key, find the value.
+// Given a key, find the value
 // Viper will check in the following order:
-// flag, env, config file, key/value store, default.
-// Viper will check to see if an alias exists first.
+// flag, env, config file, key/value store, default
+// Viper will check to see if an alias exists first
 func (v *Viper) find(key string) interface{} {
 	var val interface{}
 	var exists bool
@@ -749,15 +736,12 @@ func (v *Viper) find(key string) interface{} {
 	// PFlag Override first
 	flag, exists := v.pflags[key]
 	if exists && flag.HasChanged() {
-		jww.TRACE.Printf("%q found in pflag override (%s): %s", key, flag.ValueType(), flag.ValueString())
+		jww.TRACE.Println(key, "found in override (via pflag):", flag.ValueString())
 		switch flag.ValueType() {
 		case "int", "int8", "int16", "int32", "int64":
 			return cast.ToInt(flag.ValueString())
 		case "bool":
 			return cast.ToBool(flag.ValueString())
-		case "stringSlice":
-			s := strings.TrimPrefix(flag.ValueString(), "[")
-			return strings.TrimSuffix(s, "]")
 		default:
 			return flag.ValueString()
 		}
@@ -765,7 +749,7 @@ func (v *Viper) find(key string) interface{} {
 
 	val, exists = v.override[key]
 	if exists {
-		jww.TRACE.Printf("%q found in override: %s", key, val)
+		jww.TRACE.Println(key, "found in override:", val)
 		return val
 	}
 
@@ -773,24 +757,25 @@ func (v *Viper) find(key string) interface{} {
 		// even if it hasn't been registered, if automaticEnv is used,
 		// check any Get request
 		if val = v.getEnv(v.mergeWithEnvPrefix(key)); val != "" {
-			jww.TRACE.Printf("%q found in environment: %s", key, val)
+			jww.TRACE.Println(key, "found in environment with val:", val)
 			return val
 		}
 	}
 
 	envkey, exists := v.env[key]
 	if exists {
-		jww.TRACE.Printf("%q registered as env var %q", key, envkey)
+		jww.TRACE.Println(key, "registered as env var", envkey)
 		if val = v.getEnv(envkey); val != "" {
-			jww.TRACE.Printf("%q found in environment: %s", envkey, val)
+			jww.TRACE.Println(envkey, "found in environment with val:", val)
 			return val
+		} else {
+			jww.TRACE.Println(envkey, "env value unset:")
 		}
-		jww.TRACE.Printf("%q env value unset", envkey)
 	}
 
 	val, exists = v.config[key]
 	if exists {
-		jww.TRACE.Printf("%q found in config (%T): %s", key, val, val)
+		jww.TRACE.Println(key, "found in config:", val)
 		return val
 	}
 
@@ -802,30 +787,28 @@ func (v *Viper) find(key string) interface{} {
 		if source != nil {
 			if reflect.TypeOf(source).Kind() == reflect.Map {
 				val := v.searchMap(cast.ToStringMap(source), path[1:])
-				if val != nil {
-					jww.TRACE.Printf("%q found in nested config: %s", key, val)
-					return val
-				}
+				jww.TRACE.Println(key, "found in nested config:", val)
+				return val
 			}
 		}
 	}
 
 	val, exists = v.kvstore[key]
 	if exists {
-		jww.TRACE.Printf("%q found in key/value store: %s", key, val)
+		jww.TRACE.Println(key, "found in key/value store:", val)
 		return val
 	}
 
 	val, exists = v.defaults[key]
 	if exists {
-		jww.TRACE.Printf("%q found in defaults: ", key, val)
+		jww.TRACE.Println(key, "found in defaults:", val)
 		return val
 	}
 
 	return nil
 }
 
-// IsSet checks to see if the key has been set in any of the data locations.
+// Check to see if the key has been set in any of the data locations
 func IsSet(key string) bool { return v.IsSet(key) }
 func (v *Viper) IsSet(key string) bool {
 	path := strings.Split(key, v.keyDelim)
@@ -845,7 +828,7 @@ func (v *Viper) IsSet(key string) bool {
 	return val != nil
 }
 
-// AutomaticEnv has Viper check ENV variables for all.
+// Have Viper check ENV variables for all
 // keys set in config, default & flags
 func AutomaticEnv() { v.AutomaticEnv() }
 func (v *Viper) AutomaticEnv() {
@@ -904,11 +887,12 @@ func (v *Viper) realKey(key string) string {
 	if exists {
 		jww.DEBUG.Println("Alias", key, "to", newkey)
 		return v.realKey(newkey)
+	} else {
+		return key
 	}
-	return key
 }
 
-// InConfig checks to see if the given key (or an alias) is in the config file.
+// Check to see if the given key (or an alias) is in the config file
 func InConfig(key string) bool { return v.InConfig(key) }
 func (v *Viper) InConfig(key string) bool {
 	// if the requested key is an alias, then return the proper key
@@ -918,7 +902,7 @@ func (v *Viper) InConfig(key string) bool {
 	return exists
 }
 
-// SetDefault sets the default value for this key.
+// Set the default value for this key.
 // Default only used when no value is provided by the user via flag, config or ENV.
 func SetDefault(key string, value interface{}) { v.SetDefault(key, value) }
 func (v *Viper) SetDefault(key string, value interface{}) {
@@ -927,9 +911,9 @@ func (v *Viper) SetDefault(key string, value interface{}) {
 	v.defaults[key] = value
 }
 
-// Set sets the value for the key in the override regiser.
+// Sets the value for the key in the override regiser.
 // Will be used instead of values obtained via
-// flags, config file, ENV, default, or key/value store.
+// flags, config file, ENV, default, or key/value store
 func Set(key string, value interface{}) { v.Set(key, value) }
 func (v *Viper) Set(key string, value interface{}) {
 	// If alias passed in, then set the proper override
@@ -937,7 +921,7 @@ func (v *Viper) Set(key string, value interface{}) {
 	v.override[key] = value
 }
 
-// ReadInConfig will discover and load the configuration file from disk
+// Viper will discover and load the configuration file from disk
 // and key/value stores, searching in one of the defined paths.
 func ReadInConfig() error { return v.ReadInConfig() }
 func (v *Viper) ReadInConfig() error {
@@ -946,7 +930,7 @@ func (v *Viper) ReadInConfig() error {
 		return UnsupportedConfigError(v.getConfigType())
 	}
 
-	file, err := afero.ReadFile(v.fs, v.getConfigFile())
+	file, err := ioutil.ReadFile(v.getConfigFile())
 	if err != nil {
 		return err
 	}
@@ -964,7 +948,7 @@ func (v *Viper) MergeInConfig() error {
 		return UnsupportedConfigError(v.getConfigType())
 	}
 
-	file, err := afero.ReadFile(v.fs, v.getConfigFile())
+	file, err := ioutil.ReadFile(v.getConfigFile())
 	if err != nil {
 		return err
 	}
@@ -972,7 +956,7 @@ func (v *Viper) MergeInConfig() error {
 	return v.MergeConfig(bytes.NewReader(file))
 }
 
-// ReadConfig will read a configuration file, setting existing keys to nil if the
+// Viper will read a configuration file, setting existing keys to nil if the
 // key does not exist in the file.
 func ReadConfig(in io.Reader) error { return v.ReadConfig(in) }
 func (v *Viper) ReadConfig(in io.Reader) error {
@@ -1074,20 +1058,34 @@ func mergeMaps(
 	}
 }
 
-// ReadRemoteConfig attempts to get configuration from a remote source
+// func ReadBufConfig(buf *bytes.Buffer) error { return v.ReadBufConfig(buf) }
+// func (v *Viper) ReadBufConfig(buf *bytes.Buffer) error {
+// 	v.config = make(map[string]interface{})
+// 	return v.unmarshalReader(buf, v.config)
+// }
+
+// Attempts to get configuration from a remote source
 // and read it in the remote configuration registry.
 func ReadRemoteConfig() error { return v.ReadRemoteConfig() }
 func (v *Viper) ReadRemoteConfig() error {
-	return v.getKeyValueConfig()
+	err := v.getKeyValueConfig()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func WatchRemoteConfig() error { return v.WatchRemoteConfig() }
 func (v *Viper) WatchRemoteConfig() error {
-	return v.watchKeyValueConfig()
+	err := v.watchKeyValueConfig()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-// Unmarshall a Reader into a map.
-// Should probably be an unexported function.
+// Unmarshall a Reader into a map
+// Should probably be an unexported function
 func unmarshalReader(in io.Reader, c map[string]interface{}) error {
 	return v.unmarshalReader(in, c)
 }
@@ -1103,7 +1101,7 @@ func (v *Viper) insensitiviseMaps() {
 	insensitiviseMap(v.kvstore)
 }
 
-// Retrieve the first found remote configuration.
+// retrieve the first found remote configuration
 func (v *Viper) getKeyValueConfig() error {
 	if RemoteConfig == nil {
 		return RemoteConfigError("Enable the remote features by doing a blank import of the viper/remote package: '_ github.com/spf13/viper/remote'")
@@ -1120,7 +1118,8 @@ func (v *Viper) getKeyValueConfig() error {
 	return RemoteConfigError("No Files Found")
 }
 
-func (v *Viper) getRemoteConfig(provider RemoteProvider) (map[string]interface{}, error) {
+func (v *Viper) getRemoteConfig(provider *defaultRemoteProvider) (map[string]interface{}, error) {
+
 	reader, err := RemoteConfig.Get(provider)
 	if err != nil {
 		return nil, err
@@ -1129,7 +1128,7 @@ func (v *Viper) getRemoteConfig(provider RemoteProvider) (map[string]interface{}
 	return v.kvstore, err
 }
 
-// Retrieve the first found remote configuration.
+// retrieve the first found remote configuration
 func (v *Viper) watchKeyValueConfig() error {
 	for _, rp := range v.remoteProviders {
 		val, err := v.watchRemoteConfig(rp)
@@ -1142,7 +1141,7 @@ func (v *Viper) watchKeyValueConfig() error {
 	return RemoteConfigError("No Files Found")
 }
 
-func (v *Viper) watchRemoteConfig(provider RemoteProvider) (map[string]interface{}, error) {
+func (v *Viper) watchRemoteConfig(provider *defaultRemoteProvider) (map[string]interface{}, error) {
 	reader, err := RemoteConfig.Watch(provider)
 	if err != nil {
 		return nil, err
@@ -1151,48 +1150,48 @@ func (v *Viper) watchRemoteConfig(provider RemoteProvider) (map[string]interface
 	return v.kvstore, err
 }
 
-// AllKeys returns all keys regardless where they are set.
+// Return all keys regardless where they are set
 func AllKeys() []string { return v.AllKeys() }
 func (v *Viper) AllKeys() []string {
 	m := map[string]struct{}{}
 
-	for key := range v.defaults {
+	for key, _ := range v.defaults {
 		m[strings.ToLower(key)] = struct{}{}
 	}
 
-	for key := range v.pflags {
+	for key, _ := range v.pflags {
 		m[strings.ToLower(key)] = struct{}{}
 	}
 
-	for key := range v.env {
+	for key, _ := range v.env {
 		m[strings.ToLower(key)] = struct{}{}
 	}
 
-	for key := range v.config {
+	for key, _ := range v.config {
 		m[strings.ToLower(key)] = struct{}{}
 	}
 
-	for key := range v.kvstore {
+	for key, _ := range v.kvstore {
 		m[strings.ToLower(key)] = struct{}{}
 	}
 
-	for key := range v.override {
+	for key, _ := range v.override {
 		m[strings.ToLower(key)] = struct{}{}
 	}
 
-	for key := range v.aliases {
+	for key, _ := range v.aliases {
 		m[strings.ToLower(key)] = struct{}{}
 	}
 
 	a := []string{}
-	for x := range m {
+	for x, _ := range m {
 		a = append(a, x)
 	}
 
 	return a
 }
 
-// AllSettings returns all settings as a map[string]interface{}.
+// Return all settings as a map[string]interface{}
 func AllSettings() map[string]interface{} { return v.AllSettings() }
 func (v *Viper) AllSettings() map[string]interface{} {
 	m := map[string]interface{}{}
@@ -1203,23 +1202,16 @@ func (v *Viper) AllSettings() map[string]interface{} {
 	return m
 }
 
-// SetFs sets the filesystem to use to read configuration.
-func SetFs(fs afero.Fs) { v.SetFs(fs) }
-func (v *Viper) SetFs(fs afero.Fs) {
-	v.fs = fs
-}
-
-// SetConfigName sets name for the config file.
+// Name for the config file.
 // Does not include extension.
 func SetConfigName(in string) { v.SetConfigName(in) }
 func (v *Viper) SetConfigName(in string) {
 	if in != "" {
 		v.configName = in
-		v.configFile = ""
 	}
 }
 
-// SetConfigType sets the type of the configuration returned by the
+// Sets the type of the configuration returned by the
 // remote source, e.g. "json".
 func SetConfigType(in string) { v.SetConfigType(in) }
 func (v *Viper) SetConfigType(in string) {
@@ -1238,9 +1230,9 @@ func (v *Viper) getConfigType() string {
 
 	if len(ext) > 1 {
 		return ext[1:]
+	} else {
+		return ""
 	}
-
-	return ""
 }
 
 func (v *Viper) getConfigFile() string {
@@ -1271,8 +1263,8 @@ func (v *Viper) searchInPath(in string) (filename string) {
 	return ""
 }
 
-// Search all configPaths for any config file.
-// Returns the first path that exists (and is a config file).
+// search all configPaths for any config file.
+// Returns the first path that exists (and is a config file)
 func (v *Viper) findConfigFile() (string, error) {
 
 	jww.INFO.Println("Searching for config in ", v.configPaths)
@@ -1286,7 +1278,7 @@ func (v *Viper) findConfigFile() (string, error) {
 	return "", ConfigFileNotFoundError{v.configName, fmt.Sprintf("%s", v.configPaths)}
 }
 
-// Debug prints all configuration registries for debugging
+// Prints all configuration registries for debugging
 // purposes.
 func Debug() { v.Debug() }
 func (v *Viper) Debug() {

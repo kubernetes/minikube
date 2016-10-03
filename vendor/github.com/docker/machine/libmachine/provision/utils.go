@@ -64,7 +64,6 @@ func ConfigureAuth(p Provisioner) error {
 	driver := p.GetDriver()
 	machineName := driver.GetMachineName()
 	authOptions := p.GetAuthOptions()
-	swarmOptions := p.GetSwarmOptions()
 	org := mcnutils.GetUsername() + "." + machineName
 	bits := 2048
 
@@ -99,16 +98,15 @@ func ConfigureAuth(p Provisioner) error {
 
 	// TODO: Switch to passing just authOptions to this func
 	// instead of all these individual fields
-	err = cert.GenerateCert(&cert.Options{
-		Hosts:       hosts,
-		CertFile:    authOptions.ServerCertPath,
-		KeyFile:     authOptions.ServerKeyPath,
-		CAFile:      authOptions.CaCertPath,
-		CAKeyFile:   authOptions.CaPrivateKeyPath,
-		Org:         org,
-		Bits:        bits,
-		SwarmMaster: swarmOptions.Master,
-	})
+	err = cert.GenerateCert(
+		hosts,
+		authOptions.ServerCertPath,
+		authOptions.ServerKeyPath,
+		authOptions.CaCertPath,
+		authOptions.CaPrivateKeyPath,
+		org,
+		bits,
+	)
 
 	if err != nil {
 		return fmt.Errorf("error generating server cert: %s", err)

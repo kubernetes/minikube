@@ -43,10 +43,6 @@ func (fp *FakeProvisioner) GetAuthOptions() auth.Options {
 	return auth.Options{}
 }
 
-func (fp *FakeProvisioner) GetSwarmOptions() swarm.Options {
-	return swarm.Options{}
-}
-
 func (fp *FakeProvisioner) Package(name string, action pkgaction.PackageAction) error {
 	return nil
 }
