@@ -87,10 +87,21 @@ func newKubeDockerClient(dockerClient *dockerapi.Client, requestTimeout time.Dur
 	if requestTimeout == 0 {
 		requestTimeout = defaultTimeout
 	}
-	return &kubeDockerClient{
+
+	k := &kubeDockerClient{
 		client:  dockerClient,
 		timeout: requestTimeout,
 	}
+	// Notice that this assumes that docker is running before kubelet is started.
+	v, err := k.Version()
+	if err != nil {
+		glog.Errorf("failed to retrieve docker version: %v", err)
+		glog.Warningf("Using empty version for docker client, this may sometimes cause compatibility issue.")
+	} else {
+		// Update client version with real api version.
+		dockerClient.UpdateClientVersion(v.APIVersion)
+	}
+	return k
 }
 
 func (d *kubeDockerClient) ListContainers(options dockertypes.ContainerListOptions) ([]dockertypes.Container, error) {
@@ -171,23 +182,45 @@ func (d *kubeDockerClient) RemoveContainer(id string, opts dockertypes.Container
 	return err
 }
 
-func (d *kubeDockerClient) InspectImage(image string) (*dockertypes.ImageInspect, error) {
+func (d *kubeDockerClient) inspectImageRaw(ref string) (*dockertypes.ImageInspect, error) {
 	ctx, cancel := d.getTimeoutContext()
 	defer cancel()
-	resp, _, err := d.client.ImageInspectWithRaw(ctx, image, true)
+	resp, _, err := d.client.ImageInspectWithRaw(ctx, ref, true)
 	if ctxErr := contextError(ctx); ctxErr != nil {
 		return nil, ctxErr
 	}
 	if err != nil {
 		if dockerapi.IsErrImageNotFound(err) {
-			err = imageNotFoundError{ID: image}
+			err = imageNotFoundError{ID: ref}
 		}
 		return nil, err
 	}
-	if !matchImageTagOrSHA(resp, image) {
-		return nil, imageNotFoundError{ID: image}
-	}
+
 	return &resp, nil
+}
+
+func (d *kubeDockerClient) InspectImageByID(imageID string) (*dockertypes.ImageInspect, error) {
+	resp, err := d.inspectImageRaw(imageID)
+	if err != nil {
+		return nil, err
+	}
+
+	if !matchImageIDOnly(*resp, imageID) {
+		return nil, imageNotFoundError{ID: imageID}
+	}
+	return resp, nil
+}
+
+func (d *kubeDockerClient) InspectImageByRef(imageRef string) (*dockertypes.ImageInspect, error) {
+	resp, err := d.inspectImageRaw(imageRef)
+	if err != nil {
+		return nil, err
+	}
+
+	if !matchImageTagOrSHA(*resp, imageRef) {
+		return nil, imageNotFoundError{ID: imageRef}
+	}
+	return resp, nil
 }
 
 func (d *kubeDockerClient) ImageHistory(id string) ([]dockertypes.ImageHistory, error) {
@@ -592,4 +625,11 @@ type imageNotFoundError struct {
 
 func (e imageNotFoundError) Error() string {
 	return fmt.Sprintf("no such image: %q", e.ID)
+}
+
+// IsImageNotFoundError checks whether the error is image not found error. This is exposed
+// to share with dockershim.
+func IsImageNotFoundError(err error) bool {
+	_, ok := err.(imageNotFoundError)
+	return ok
 }

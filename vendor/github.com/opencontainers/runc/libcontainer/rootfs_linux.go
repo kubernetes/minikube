@@ -306,9 +306,6 @@ func getCgroupMounts(m *configs.Mount) ([]*configs.Mount, error) {
 // checkMountDestination checks to ensure that the mount destination is not over the top of /proc.
 // dest is required to be an abs path and have any symlinks resolved before calling this function.
 func checkMountDestination(rootfs, dest string) error {
-	if libcontainerUtils.CleanPath(rootfs) == libcontainerUtils.CleanPath(dest) {
-		return fmt.Errorf("mounting into / is prohibited")
-	}
 	invalidDestinations := []string{
 		"/proc",
 	}
@@ -665,10 +662,16 @@ func remountReadonly(path string) error {
 	return fmt.Errorf("unable to mount %s as readonly max retries reached", path)
 }
 
-// maskFile bind mounts /dev/null over the top of the specified path inside a container
-// to avoid security issues from processes reading information from non-namespace aware mounts ( proc/kcore ).
-func maskFile(path string) error {
+// maskPath masks the top of the specified path inside a container to avoid
+// security issues from processes reading information from non-namespace aware
+// mounts ( proc/kcore ).
+// For files, maskPath bind mounts /dev/null over the top of the specified path.
+// For directories, maskPath mounts read-only tmpfs over the top of the specified path.
+func maskPath(path string) error {
 	if err := syscall.Mount("/dev/null", path, "", syscall.MS_BIND, ""); err != nil && !os.IsNotExist(err) {
+		if err == syscall.ENOTDIR {
+			return syscall.Mount("tmpfs", path, "tmpfs", syscall.MS_RDONLY, "")
+		}
 		return err
 	}
 	return nil

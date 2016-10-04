@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	gcecloud "k8s.io/kubernetes/pkg/cloudprovider/providers/gce"
 	"k8s.io/kubernetes/pkg/util/exec"
@@ -60,6 +61,8 @@ func (util *GCEDiskUtil) DeleteVolume(d *gcePersistentDiskDeleter) error {
 
 	if err = cloud.DeleteDisk(d.pdName); err != nil {
 		glog.V(2).Infof("Error deleting GCE PD volume %s: %v", d.pdName, err)
+		// GCE cloud provider returns volume.deletedVolumeInUseError when
+		// necessary, no handling needed here.
 		return err
 	}
 	glog.V(2).Infof("Successfully deleted GCE PD volume %s", d.pdName)
@@ -75,7 +78,8 @@ func (gceutil *GCEDiskUtil) CreateVolume(c *gcePersistentDiskProvisioner) (strin
 	}
 
 	name := volume.GenerateVolumeName(c.options.ClusterName, c.options.PVName, 63) // GCE PD name can have up to 63 characters
-	requestBytes := c.options.Capacity.Value()
+	capacity := c.options.PVC.Spec.Resources.Requests[api.ResourceName(api.ResourceStorage)]
+	requestBytes := capacity.Value()
 	// GCE works with gigabytes, convert to GiB with rounding up
 	requestGB := volume.RoundUpSize(requestBytes, 1024*1024*1024)
 
@@ -94,8 +98,8 @@ func (gceutil *GCEDiskUtil) CreateVolume(c *gcePersistentDiskProvisioner) (strin
 		}
 	}
 
-	// TODO: implement c.options.ProvisionerSelector parsing
-	if c.options.Selector != nil {
+	// TODO: implement PVC.Selector parsing
+	if c.options.PVC.Spec.Selector != nil {
 		return "", 0, nil, fmt.Errorf("claim.Spec.Selector is not supported for dynamic provisioning on GCE")
 	}
 
@@ -107,7 +111,7 @@ func (gceutil *GCEDiskUtil) CreateVolume(c *gcePersistentDiskProvisioner) (strin
 			glog.V(2).Infof("error getting zone information from GCE: %v", err)
 			return "", 0, nil, err
 		}
-		zone = volume.ChooseZoneForVolume(zones, c.options.PVCName)
+		zone = volume.ChooseZoneForVolume(zones, c.options.PVC.Name)
 	}
 
 	err = cloud.CreateDisk(name, diskType, zone, int64(requestGB), *c.options.CloudTags)
@@ -216,7 +220,7 @@ func udevadmChangeToNewDrives(sdBeforeSet sets.String) error {
 }
 
 // Calls "udevadm trigger --action=change" on the specified drive.
-// drivePath must be the the block device path to trigger on, in the format "/dev/sd*", or a symlink to it.
+// drivePath must be the block device path to trigger on, in the format "/dev/sd*", or a symlink to it.
 // This is workaround for Issue #7972. Once the underlying issue has been resolved, this may be removed.
 func udevadmChangeToDrive(drivePath string) error {
 	glog.V(5).Infof("udevadmChangeToDrive: drive=%q", drivePath)

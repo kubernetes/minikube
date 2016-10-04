@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
 	"k8s.io/kubernetes/pkg/volume"
@@ -49,6 +50,8 @@ func (util *AWSDiskUtil) DeleteVolume(d *awsElasticBlockStoreDeleter) error {
 
 	deleted, err := cloud.DeleteDisk(d.volumeID)
 	if err != nil {
+		// AWS cloud provider returns volume.deletedVolumeInUseError when
+		// necessary, no handling needed here.
 		glog.V(2).Infof("Error deleting EBS Disk volume %s: %v", d.volumeID, err)
 		return err
 	}
@@ -77,13 +80,14 @@ func (util *AWSDiskUtil) CreateVolume(c *awsElasticBlockStoreProvisioner) (aws.K
 	}
 	tags["Name"] = volume.GenerateVolumeName(c.options.ClusterName, c.options.PVName, 255) // AWS tags can have 255 characters
 
-	requestBytes := c.options.Capacity.Value()
+	capacity := c.options.PVC.Spec.Resources.Requests[api.ResourceName(api.ResourceStorage)]
+	requestBytes := capacity.Value()
 	// AWS works with gigabytes, convert to GiB with rounding up
 	requestGB := int(volume.RoundUpSize(requestBytes, 1024*1024*1024))
 	volumeOptions := &aws.VolumeOptions{
 		CapacityGB: requestGB,
 		Tags:       tags,
-		PVCName:    c.options.PVCName,
+		PVCName:    c.options.PVC.Name,
 	}
 	// Apply Parameters (case-insensitive). We leave validation of
 	// the values to the cloud provider.
@@ -110,8 +114,8 @@ func (util *AWSDiskUtil) CreateVolume(c *awsElasticBlockStoreProvisioner) (aws.K
 		}
 	}
 
-	// TODO: implement c.options.ProvisionerSelector parsing
-	if c.options.Selector != nil {
+	// TODO: implement PVC.Selector parsing
+	if c.options.PVC.Spec.Selector != nil {
 		return "", 0, nil, fmt.Errorf("claim.Spec.Selector is not supported for dynamic provisioning on AWS")
 	}
 

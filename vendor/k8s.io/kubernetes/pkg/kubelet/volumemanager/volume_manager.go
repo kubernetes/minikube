@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/volumemanager/cache"
 	"k8s.io/kubernetes/pkg/kubelet/volumemanager/populator"
 	"k8s.io/kubernetes/pkg/kubelet/volumemanager/reconciler"
+	k8stypes "k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/sets"
@@ -148,24 +149,26 @@ type VolumeManager interface {
 //   Must be pre-initialized.
 func NewVolumeManager(
 	controllerAttachDetachEnabled bool,
-	hostName string,
+	nodeName k8stypes.NodeName,
 	podManager pod.Manager,
 	kubeClient internalclientset.Interface,
 	volumePluginMgr *volume.VolumePluginMgr,
 	kubeContainerRuntime kubecontainer.Runtime,
 	mounter mount.Interface,
 	kubeletPodsDir string,
-	recorder record.EventRecorder) (VolumeManager, error) {
+	recorder record.EventRecorder,
+	checkNodeCapabilitiesBeforeMount bool) (VolumeManager, error) {
 
 	vm := &volumeManager{
 		kubeClient:          kubeClient,
 		volumePluginMgr:     volumePluginMgr,
 		desiredStateOfWorld: cache.NewDesiredStateOfWorld(volumePluginMgr),
-		actualStateOfWorld:  cache.NewActualStateOfWorld(hostName, volumePluginMgr),
+		actualStateOfWorld:  cache.NewActualStateOfWorld(nodeName, volumePluginMgr),
 		operationExecutor: operationexecutor.NewOperationExecutor(
 			kubeClient,
 			volumePluginMgr,
-			recorder),
+			recorder,
+			checkNodeCapabilitiesBeforeMount),
 	}
 
 	vm.reconciler = reconciler.NewReconciler(
@@ -174,7 +177,7 @@ func NewVolumeManager(
 		reconcilerLoopSleepPeriod,
 		reconcilerSyncStatesSleepPeriod,
 		waitForAttachTimeout,
-		hostName,
+		nodeName,
 		vm.desiredStateOfWorld,
 		vm.actualStateOfWorld,
 		vm.operationExecutor,

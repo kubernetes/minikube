@@ -196,6 +196,13 @@ func (b *iscsiDiskMounter) GetAttributes() volume.Attributes {
 	}
 }
 
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *iscsiDiskMounter) CanMount() error {
+	return nil
+}
+
 func (b *iscsiDiskMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }
@@ -241,5 +248,5 @@ func getVolumeSource(spec *volume.Spec) (*api.ISCSIVolumeSource, bool, error) {
 		return spec.PersistentVolume.Spec.ISCSI, spec.ReadOnly, nil
 	}
 
-	return nil, false, fmt.Errorf("Spec does not reference a ISCSI volume type")
+	return nil, false, fmt.Errorf("Spec does not reference an ISCSI volume type")
 }

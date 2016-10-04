@@ -5,7 +5,6 @@
 package properties
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -36,14 +35,14 @@ func LoadString(s string) (*Properties, error) {
 
 // LoadFile reads a file into a Properties struct.
 func LoadFile(filename string, enc Encoding) (*Properties, error) {
-	return loadFiles([]string{filename}, enc, false)
+	return loadAll([]string{filename}, enc, false)
 }
 
 // LoadFiles reads multiple files in the given order into
 // a Properties struct. If 'ignoreMissing' is true then
 // non-existent files will not be reported as error.
 func LoadFiles(filenames []string, enc Encoding, ignoreMissing bool) (*Properties, error) {
-	return loadFiles(filenames, enc, ignoreMissing)
+	return loadAll(filenames, enc, ignoreMissing)
 }
 
 // LoadURL reads the content of the URL into a Properties struct.
@@ -55,7 +54,7 @@ func LoadFiles(filenames []string, enc Encoding, ignoreMissing bool) (*Propertie
 // encoding is set to UTF-8. A missing content type header is
 // interpreted as 'text/plain; charset=utf-8'.
 func LoadURL(url string) (*Properties, error) {
-	return loadURLs([]string{url}, false)
+	return loadAll([]string{url}, UTF8, false)
 }
 
 // LoadURLs reads the content of multiple URLs in the given order into a
@@ -63,7 +62,15 @@ func LoadURL(url string) (*Properties, error) {
 // not be reported as error. See LoadURL for the Content-Type header
 // and the encoding.
 func LoadURLs(urls []string, ignoreMissing bool) (*Properties, error) {
-	return loadURLs(urls, ignoreMissing)
+	return loadAll(urls, UTF8, ignoreMissing)
+}
+
+// LoadAll reads the content of multiple URLs or files in the given order into a
+// Properties struct. If 'ignoreMissing' is true then a 404 status code or missing file will
+// not be reported as error. Encoding sets the encoding for files. For the URLs please see
+// LoadURL for the Content-Type header and the encoding.
+func LoadAll(names []string, enc Encoding, ignoreMissing bool) (*Properties, error) {
+	return loadAll(names, enc, ignoreMissing)
 }
 
 // MustLoadString reads an UTF8 string into a Properties struct and
@@ -98,6 +105,14 @@ func MustLoadURLs(urls []string, ignoreMissing bool) *Properties {
 	return must(LoadURLs(urls, ignoreMissing))
 }
 
+// MustLoadAll reads the content of multiple URLs or files in the given order into a
+// Properties struct. If 'ignoreMissing' is true then a 404 status code or missing file will
+// not be reported as error. Encoding sets the encoding for files. For the URLs please see
+// LoadURL for the Content-Type header and the encoding. It panics on error.
+func MustLoadAll(names []string, enc Encoding, ignoreMissing bool) *Properties {
+	return must(LoadAll(names, enc, ignoreMissing))
+}
+
 func loadBuf(buf []byte, enc Encoding) (*Properties, error) {
 	p, err := parse(convert(buf, enc))
 	if err != nil {
@@ -106,66 +121,78 @@ func loadBuf(buf []byte, enc Encoding) (*Properties, error) {
 	return p, p.check()
 }
 
-func loadFiles(filenames []string, enc Encoding, ignoreMissing bool) (*Properties, error) {
-	var buf bytes.Buffer
-	for _, filename := range filenames {
-		f, err := expandFilename(filename)
+func loadAll(names []string, enc Encoding, ignoreMissing bool) (*Properties, error) {
+	result := NewProperties()
+	for _, name := range names {
+		n, err := expandName(name)
 		if err != nil {
 			return nil, err
 		}
-
-		data, err := ioutil.ReadFile(f)
+		var p *Properties
+		if strings.HasPrefix(n, "http://") || strings.HasPrefix(n, "https://") {
+			p, err = loadURL(n, ignoreMissing)
+		} else {
+			p, err = loadFile(n, enc, ignoreMissing)
+		}
 		if err != nil {
-			if ignoreMissing && os.IsNotExist(err) {
-				LogPrintf("properties: %s not found. skipping", filename)
-				continue
-			}
 			return nil, err
 		}
+		result.Merge(p)
 
-		// concatenate the buffers and add a new line in case
-		// the previous file didn't end with a new line
-		buf.Write(data)
-		buf.WriteRune('\n')
 	}
-	return loadBuf(buf.Bytes(), enc)
+	return result, result.check()
 }
 
-func loadURLs(urls []string, ignoreMissing bool) (*Properties, error) {
-	var buf bytes.Buffer
-	for _, u := range urls {
-		resp, err := http.Get(u)
-		if err != nil {
-			return nil, fmt.Errorf("properties: error fetching %q. %s", u, err)
+func loadFile(filename string, enc Encoding, ignoreMissing bool) (*Properties, error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		if ignoreMissing && os.IsNotExist(err) {
+			LogPrintf("properties: %s not found. skipping", filename)
+			return NewProperties(), nil
 		}
-		if resp.StatusCode == 404 && ignoreMissing {
-			LogPrintf("properties: %s returned %d. skipping", u, resp.StatusCode)
-			continue
-		}
-		if resp.StatusCode != 200 {
-			return nil, fmt.Errorf("properties: %s returned %d", u, resp.StatusCode)
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return nil, fmt.Errorf("properties: %s error reading response. %s", u, err)
-		}
-
-		ct := resp.Header.Get("Content-Type")
-		var enc Encoding
-		switch strings.ToLower(ct) {
-		case "text/plain", "text/plain; charset=iso-8859-1", "text/plain; charset=latin1":
-			enc = ISO_8859_1
-		case "", "text/plain; charset=utf-8":
-			enc = UTF8
-		default:
-			return nil, fmt.Errorf("properties: invalid content type %s", ct)
-		}
-
-		buf.WriteString(convert(body, enc))
-		buf.WriteRune('\n')
+		return nil, err
 	}
-	return loadBuf(buf.Bytes(), UTF8)
+	p, err := parse(convert(data, enc))
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func loadURL(url string, ignoreMissing bool) (*Properties, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("properties: error fetching %q. %s", url, err)
+	}
+	if resp.StatusCode == 404 && ignoreMissing {
+		LogPrintf("properties: %s returned %d. skipping", url, resp.StatusCode)
+		return NewProperties(), nil
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("properties: %s returned %d", url, resp.StatusCode)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		return nil, fmt.Errorf("properties: %s error reading response. %s", url, err)
+	}
+
+	ct := resp.Header.Get("Content-Type")
+	var enc Encoding
+	switch strings.ToLower(ct) {
+	case "text/plain", "text/plain; charset=iso-8859-1", "text/plain; charset=latin1":
+		enc = ISO_8859_1
+	case "", "text/plain; charset=utf-8":
+		enc = UTF8
+	default:
+		return nil, fmt.Errorf("properties: invalid content type %s", ct)
+	}
+
+	p, err := parse(convert(body, enc))
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 func must(p *Properties, err error) *Properties {
@@ -175,12 +202,12 @@ func must(p *Properties, err error) *Properties {
 	return p
 }
 
-// expandFilename expands ${ENV_VAR} expressions in a filename.
+// expandName expands ${ENV_VAR} expressions in a name.
 // If the environment variable does not exist then it will be replaced
 // with an empty string. Malformed expressions like "${ENV_VAR" will
 // be reported as error.
-func expandFilename(filename string) (string, error) {
-	return expand(filename, make(map[string]bool), "${", "}", make(map[string]string))
+func expandName(name string) (string, error) {
+	return expand(name, make(map[string]bool), "${", "}", make(map[string]string))
 }
 
 // Interprets a byte buffer either as an ISO-8859-1 or UTF-8 encoded string.

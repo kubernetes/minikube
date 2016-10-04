@@ -17,7 +17,6 @@ limitations under the License.
 package prober
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net"
@@ -33,7 +32,6 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/prober/results"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
-	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 	"k8s.io/kubernetes/pkg/probe"
 	execprobe "k8s.io/kubernetes/pkg/probe/exec"
 	httprobe "k8s.io/kubernetes/pkg/probe/http"
@@ -145,7 +143,7 @@ func (pb *prober) runProbe(p *api.Probe, pod *api.Pod, status api.PodStatus, con
 	timeout := time.Duration(p.TimeoutSeconds) * time.Second
 	if p.Exec != nil {
 		glog.V(4).Infof("Exec-Probe Pod: %v, Container: %v, Command: %v", pod, container, p.Exec.Command)
-		return pb.exec.Probe(pb.newExecInContainer(container, containerID, p.Exec.Command))
+		return pb.exec.Probe(pb.newExecInContainer(container, containerID, p.Exec.Command, timeout))
 	}
 	if p.HTTPGet != nil {
 		scheme := strings.ToLower(string(p.HTTPGet.Scheme))
@@ -228,15 +226,9 @@ type execInContainer struct {
 	run func() ([]byte, error)
 }
 
-func (p *prober) newExecInContainer(container api.Container, containerID kubecontainer.ContainerID, cmd []string) exec.Cmd {
+func (pb *prober) newExecInContainer(container api.Container, containerID kubecontainer.ContainerID, cmd []string, timeout time.Duration) exec.Cmd {
 	return execInContainer{func() ([]byte, error) {
-		var buffer bytes.Buffer
-		output := ioutils.WriteCloserWrapper(&buffer)
-		err := p.runner.ExecInContainer(containerID, cmd, nil, output, output, false, nil)
-		// Even if err is non-nil, there still may be output (e.g. the exec wrote to stdout or stderr but
-		// the command returned a nonzero exit code). Therefore, always return the output along with the
-		// error.
-		return buffer.Bytes(), err
+		return pb.runner.RunInContainer(containerID, cmd, timeout)
 	}}
 }
 

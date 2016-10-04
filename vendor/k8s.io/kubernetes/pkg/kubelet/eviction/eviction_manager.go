@@ -17,6 +17,7 @@ limitations under the License.
 package eviction
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -62,6 +63,8 @@ type managerImpl struct {
 	resourceToRankFunc map[api.ResourceName]rankFunc
 	// resourceToNodeReclaimFuncs maps a resource to an ordered list of functions that know how to reclaim that resource.
 	resourceToNodeReclaimFuncs map[api.ResourceName]nodeReclaimFuncs
+	// last observations from synchronize
+	lastObservations signalObservations
 }
 
 // ensure it implements the required interface
@@ -111,7 +114,7 @@ func (m *managerImpl) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAd
 	return lifecycle.PodAdmitResult{
 		Admit:   false,
 		Reason:  reason,
-		Message: message,
+		Message: fmt.Sprintf(message, m.nodeConditions),
 	}
 }
 
@@ -175,6 +178,9 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 		thresholds = mergeThresholds(thresholds, thresholdsNotYetResolved)
 	}
 
+	// determine the set of thresholds whose stats have been updated since the last sync
+	thresholds = thresholdsUpdatedStats(thresholds, observations, m.lastObservations)
+
 	// track when a threshold was first observed
 	thresholdsFirstObservedAt := thresholdsFirstObservedAt(thresholds, m.thresholdsFirstObservedAt, now)
 
@@ -196,6 +202,7 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 	m.thresholdsFirstObservedAt = thresholdsFirstObservedAt
 	m.nodeConditionsLastObservedAt = nodeConditionsLastObservedAt
 	m.thresholdsMet = thresholds
+	m.lastObservations = observations
 	m.Unlock()
 
 	// determine the set of resources under starvation
@@ -248,11 +255,11 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 		pod := activePods[i]
 		status := api.PodStatus{
 			Phase:   api.PodFailed,
-			Message: message,
+			Message: fmt.Sprintf(message, resourceToReclaim),
 			Reason:  reason,
 		}
 		// record that we are evicting the pod
-		m.recorder.Eventf(pod, api.EventTypeWarning, reason, message)
+		m.recorder.Eventf(pod, api.EventTypeWarning, reason, fmt.Sprintf(message, resourceToReclaim))
 		gracePeriodOverride := int64(0)
 		if softEviction {
 			gracePeriodOverride = m.config.MaxPodGracePeriodSeconds

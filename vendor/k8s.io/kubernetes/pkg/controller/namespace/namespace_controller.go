@@ -50,7 +50,7 @@ type NamespaceController struct {
 	// list of preferred group versions and their corresponding resource set for namespace deletion
 	groupVersionResources []unversioned.GroupVersionResource
 	// opCache is a cache to remember if a particular operation is not supported to aid dynamic client.
-	opCache operationNotSupportedCache
+	opCache *operationNotSupportedCache
 	// finalizerToken is the finalizer token managed by this controller
 	finalizerToken api.FinalizerName
 }
@@ -70,13 +70,15 @@ func NewNamespaceController(
 	// we found in practice though that some auth engines when encountering paths they don't know about may return a 50x.
 	// until we have verbs, we pre-populate resources that do not support list or delete for well-known apis rather than
 	// probing the server once in order to be told no.
-	opCache := operationNotSupportedCache{}
+	opCache := &operationNotSupportedCache{
+		m: make(map[operationKey]bool),
+	}
 	ignoredGroupVersionResources := []unversioned.GroupVersionResource{
 		{Group: "", Version: "v1", Resource: "bindings"},
 	}
 	for _, ignoredGroupVersionResource := range ignoredGroupVersionResources {
-		opCache[operationKey{op: operationDeleteCollection, gvr: ignoredGroupVersionResource}] = true
-		opCache[operationKey{op: operationList, gvr: ignoredGroupVersionResource}] = true
+		opCache.setNotSupported(operationKey{op: operationDeleteCollection, gvr: ignoredGroupVersionResource})
+		opCache.setNotSupported(operationKey{op: operationList, gvr: ignoredGroupVersionResource})
 	}
 
 	// create the controller so we can inject the enqueue function
@@ -89,8 +91,8 @@ func NewNamespaceController(
 		finalizerToken:        finalizerToken,
 	}
 
-	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("namespace_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	if kubeClient != nil && kubeClient.Core().RESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("namespace_controller", kubeClient.Core().RESTClient().GetRateLimiter())
 	}
 
 	// configure the backing store/controller
@@ -184,7 +186,7 @@ func (nm *NamespaceController) syncNamespaceFromKey(key string) (err error) {
 		return nil
 	}
 	if err != nil {
-		glog.Infof("Unable to retrieve namespace %v from store: %v", key, err)
+		glog.Errorf("Unable to retrieve namespace %v from store: %v", key, err)
 		nm.queue.Add(key)
 		return err
 	}

@@ -29,12 +29,12 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// ConfigParseError denotes failing to parse configuration file.
+// Denotes failing to parse configuration file.
 type ConfigParseError struct {
 	err error
 }
 
-// Error returns the formatted configuration error.
+// Returns the formatted configuration error.
 func (pe ConfigParseError) Error() string {
 	return fmt.Sprintf("While parsing config: %s", pe.err.Error())
 }
@@ -68,10 +68,10 @@ func absPathify(inPath string) string {
 	p, err := filepath.Abs(inPath)
 	if err == nil {
 		return filepath.Clean(p)
+	} else {
+		jww.ERROR.Println("Couldn't discover absolute path")
+		jww.ERROR.Println(err)
 	}
-
-	jww.ERROR.Println("Couldn't discover absolute path")
-	jww.ERROR.Println(err)
 	return ""
 }
 
@@ -105,6 +105,29 @@ func userHomeDir() string {
 		return home
 	}
 	return os.Getenv("HOME")
+}
+
+func findCWD() (string, error) {
+	serverFile, err := filepath.Abs(os.Args[0])
+
+	if err != nil {
+		return "", fmt.Errorf("Can't get absolute path for executable: %v", err)
+	}
+
+	path := filepath.Dir(serverFile)
+	realFile, err := filepath.EvalSymlinks(serverFile)
+
+	if err != nil {
+		if _, err = os.Stat(serverFile + ".exe"); err == nil {
+			realFile = filepath.Clean(serverFile + ".exe")
+		}
+	}
+
+	if err == nil && realFile != serverFile {
+		path = filepath.Dir(realFile)
+	}
+
+	return path, nil
 }
 
 func unmarshallConfigReader(in io.Reader, c map[string]interface{}, configType string) error {

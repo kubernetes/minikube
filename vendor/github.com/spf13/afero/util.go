@@ -295,10 +295,10 @@ func IsEmpty(fs Fs, path string) (bool, error) {
 	}
 	if fi.IsDir() {
 		f, err := fs.Open(path)
+		defer f.Close()
 		if err != nil {
 			return false, err
 		}
-		defer f.Close()
 		list, err := f.Readdir(-1)
 		return len(list) == 0, nil
 	}

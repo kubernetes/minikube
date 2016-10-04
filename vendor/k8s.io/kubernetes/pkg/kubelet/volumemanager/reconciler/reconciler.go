@@ -32,6 +32,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/config"
 	"k8s.io/kubernetes/pkg/kubelet/volumemanager/cache"
 	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/kubernetes/pkg/util"
 	"k8s.io/kubernetes/pkg/util/goroutinemap/exponentialbackoff"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
@@ -75,7 +76,7 @@ type Reconciler interface {
 //   successive executions
 // waitForAttachTimeout - the amount of time the Mount function will wait for
 //   the volume to be attached
-// hostName - the hostname for this node, used by Attach and Detach methods
+// nodeName - the Name for this node, used by Attach and Detach methods
 // desiredStateOfWorld - cache containing the desired state of the world
 // actualStateOfWorld - cache containing the actual state of the world
 // operationExecutor - used to trigger attach/detach/mount/unmount operations
@@ -89,7 +90,7 @@ func NewReconciler(
 	loopSleepDuration time.Duration,
 	syncDuration time.Duration,
 	waitForAttachTimeout time.Duration,
-	hostName string,
+	nodeName types.NodeName,
 	desiredStateOfWorld cache.DesiredStateOfWorld,
 	actualStateOfWorld cache.ActualStateOfWorld,
 	operationExecutor operationexecutor.OperationExecutor,
@@ -102,7 +103,7 @@ func NewReconciler(
 		loopSleepDuration:             loopSleepDuration,
 		syncDuration:                  syncDuration,
 		waitForAttachTimeout:          waitForAttachTimeout,
-		hostName:                      hostName,
+		nodeName:                      nodeName,
 		desiredStateOfWorld:           desiredStateOfWorld,
 		actualStateOfWorld:            actualStateOfWorld,
 		operationExecutor:             operationExecutor,
@@ -119,7 +120,7 @@ type reconciler struct {
 	loopSleepDuration             time.Duration
 	syncDuration                  time.Duration
 	waitForAttachTimeout          time.Duration
-	hostName                      string
+	nodeName                      types.NodeName
 	desiredStateOfWorld           cache.DesiredStateOfWorld
 	actualStateOfWorld            cache.ActualStateOfWorld
 	operationExecutor             operationexecutor.OperationExecutor
@@ -205,7 +206,7 @@ func (rc *reconciler) reconcile() {
 					volumeToMount.Pod.UID)
 				err := rc.operationExecutor.VerifyControllerAttachedVolume(
 					volumeToMount.VolumeToMount,
-					rc.hostName,
+					rc.nodeName,
 					rc.actualStateOfWorld)
 				if err != nil &&
 					!nestedpendingoperations.IsAlreadyExists(err) &&
@@ -234,7 +235,7 @@ func (rc *reconciler) reconcile() {
 				volumeToAttach := operationexecutor.VolumeToAttach{
 					VolumeName: volumeToMount.VolumeName,
 					VolumeSpec: volumeToMount.VolumeSpec,
-					NodeName:   rc.hostName,
+					NodeName:   rc.nodeName,
 				}
 				glog.V(12).Infof("Attempting to start AttachVolume for volume %q (spec.Name: %q)  pod %q (UID: %q)",
 					volumeToMount.VolumeName,
@@ -343,7 +344,7 @@ func (rc *reconciler) reconcile() {
 					// Kubelet not responsible for detaching or this volume has a non-attachable volume plugin,
 					// so just remove it to actualStateOfWorld without attach.
 					rc.actualStateOfWorld.MarkVolumeAsDetached(
-						attachedVolume.VolumeName, rc.hostName)
+						attachedVolume.VolumeName, rc.nodeName)
 				} else {
 					// Only detach if kubelet detach is enabled
 					glog.V(12).Infof("Attempting to start DetachVolume for volume %q (spec.Name: %q)",
@@ -547,7 +548,7 @@ func (rc *reconciler) reconstructVolume(volume podVolume) (*reconstructedVolume,
 
 func (rc *reconciler) updateStates(volumesNeedUpdate map[api.UniqueVolumeName]*reconstructedVolume) error {
 	// Get the node status to retrieve volume device path information.
-	node, fetchErr := rc.kubeClient.Core().Nodes().Get(rc.hostName)
+	node, fetchErr := rc.kubeClient.Core().Nodes().Get(string(rc.nodeName))
 	if fetchErr != nil {
 		glog.Errorf("updateStates in reconciler: could not get node status with error %v", fetchErr)
 	} else {
@@ -634,24 +635,21 @@ func getVolumesFromPodDir(podDir string) ([]podVolume, error) {
 			pluginName := volumeDir.Name()
 			volumePluginPath := path.Join(volumesDir, pluginName)
 
-			volumePluginDirs, err := ioutil.ReadDir(volumePluginPath)
+			volumePluginDirs, err := util.ReadDirNoStat(volumePluginPath)
 			if err != nil {
 				glog.Errorf("Could not read volume plugin directory %q: %v", volumePluginPath, err)
 				continue
 			}
 
 			unescapePluginName := strings.UnescapeQualifiedNameForDisk(pluginName)
-			for _, volumeNameDir := range volumePluginDirs {
-				if volumeNameDir != nil {
-					volumeName := volumeNameDir.Name()
-					mountPath := path.Join(volumePluginPath, volumeName)
-					volumes = append(volumes, podVolume{
-						podName:        volumetypes.UniquePodName(podName),
-						volumeSpecName: volumeName,
-						mountPath:      mountPath,
-						pluginName:     unescapePluginName,
-					})
-				}
+			for _, volumeName := range volumePluginDirs {
+				mountPath := path.Join(volumePluginPath, volumeName)
+				volumes = append(volumes, podVolume{
+					podName:        volumetypes.UniquePodName(podName),
+					volumeSpecName: volumeName,
+					mountPath:      mountPath,
+					pluginName:     unescapePluginName,
+				})
 			}
 
 		}
