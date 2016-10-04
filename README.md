@@ -37,10 +37,10 @@ See the installation instructions for the [latest release](https://github.com/ku
 
 ### CI Builds
 
-We publish CI builds of minikube, built at every Pull Request. Builds are available at:
-https://storage.googleapis.com/minikube-builds/<PR>/minikube-darwin-amd64
-https://storage.googleapis.com/minikube-builds/<PR>/minikube-linux-amd64
-https://storage.googleapis.com/minikube-builds/<PR>/minikube-windows-amd64.exe
+We publish CI builds of minikube, built at every Pull Request. Builds are available at (substitute in the relevant PR number):
+- https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-darwin-amd64
+- https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-linux-amd64
+- https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-windows-amd64.exe
 
 
 ## Quickstart
