@@ -286,7 +286,7 @@ func addHostOnlyDHCPServer(ifname string, d dhcpServer, vbox VBoxManager) error 
 	command := "add"
 	if dhcp, ok := dhcps[name]; ok {
 		command = "modify"
-		if (dhcp.IPv4.IP.Equal(d.IPv4.IP)) && (dhcp.IPv4.Mask.String() == d.IPv4.Mask.String()) && (dhcp.LowerIP.Equal(d.LowerIP)) && (dhcp.UpperIP.Equal(d.UpperIP)) && dhcp.Enabled {
+		if (dhcp.IPv4.IP.Equal(d.IPv4.IP)) && (dhcp.IPv4.Mask.String() == d.IPv4.Mask.String()) && (dhcp.LowerIP.Equal(d.LowerIP)) && (dhcp.UpperIP.Equal(d.UpperIP)) && (dhcp.Enabled == d.Enabled) {
 			// dhcp is up to date
 			return nil
 		}
@@ -363,15 +363,30 @@ func listHostInterfaces(hif HostInterfaces, excludeNets map[string]*hostOnlyNetw
 		if err != nil {
 			return nil, err
 		}
+
+		// Check if an address of the interface is in the list of excluded addresses
+		ifaceExcluded := false
 		for _, a := range addrs {
 			switch ipnet := a.(type) {
 			case *net.IPNet:
-				_, hostOnly := excludeNets[ipnet.String()]
-				if !hostOnly && iface.Flags&net.FlagUp != 0 && iface.Flags&net.FlagLoopback == 0 {
-					m[ipnet.String()] = ipnet
+				_, excluded := excludeNets[ipnet.String()]
+				if excluded {
+					ifaceExcluded = true
+					break
 				}
-			default:
+			}
+		}
 
+		// If excluded, or not up, or a loopback interface, skip the interface
+		if ifaceExcluded || iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		// This is a host interface, so add all its addresses to the map
+		for _, a := range addrs {
+			switch ipnet := a.(type) {
+			case *net.IPNet:
+				m[ipnet.String()] = ipnet
 			}
 		}
 	}

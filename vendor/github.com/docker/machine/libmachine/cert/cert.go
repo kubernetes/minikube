@@ -21,9 +21,16 @@ import (
 
 var defaultGenerator = NewX509CertGenerator()
 
+type Options struct {
+	Hosts                                     []string
+	CertFile, KeyFile, CAFile, CAKeyFile, Org string
+	Bits                                      int
+	SwarmMaster                               bool
+}
+
 type Generator interface {
 	GenerateCACertificate(certFile, keyFile, org string, bits int) error
-	GenerateCert(hosts []string, certFile, keyFile, caFile, caKeyFile, org string, bits int) error
+	GenerateCert(opts *Options) error
 	ReadTLSConfig(addr string, authOptions *auth.Options) (*tls.Config, error)
 	ValidateCertificate(addr string, authOptions *auth.Options) (bool, error)
 }
@@ -38,8 +45,8 @@ func GenerateCACertificate(certFile, keyFile, org string, bits int) error {
 	return defaultGenerator.GenerateCACertificate(certFile, keyFile, org, bits)
 }
 
-func GenerateCert(hosts []string, certFile, keyFile, caFile, caKeyFile, org string, bits int) error {
-	return defaultGenerator.GenerateCert(hosts, certFile, keyFile, caFile, caKeyFile, org, bits)
+func GenerateCert(opts *Options) error {
+	return defaultGenerator.GenerateCert(opts)
 }
 
 func ValidateCertificate(addr string, authOptions *auth.Options) (bool, error) {
@@ -150,18 +157,24 @@ func (xcg *X509CertGenerator) GenerateCACertificate(certFile, keyFile, org strin
 // certificate authority files and stores the result in the certificate
 // file and key provided.  The provided host names are set to the
 // appropriate certificate fields.
-func (xcg *X509CertGenerator) GenerateCert(hosts []string, certFile, keyFile, caFile, caKeyFile, org string, bits int) error {
-	template, err := xcg.newCertificate(org)
+func (xcg *X509CertGenerator) GenerateCert(opts *Options) error {
+	template, err := xcg.newCertificate(opts.Org)
 	if err != nil {
 		return err
 	}
 	// client
-	if len(hosts) == 1 && hosts[0] == "" {
+	if len(opts.Hosts) == 1 && opts.Hosts[0] == "" {
 		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
 		template.KeyUsage = x509.KeyUsageDigitalSignature
 	} else { // server
-		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth}
-		for _, h := range hosts {
+		template.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+		if opts.SwarmMaster {
+			// Extend the Swarm master's server certificate
+			// permissions to also be able to connect to downstream
+			// nodes as a client.
+			template.ExtKeyUsage = append(template.ExtKeyUsage, x509.ExtKeyUsageClientAuth)
+		}
+		for _, h := range opts.Hosts {
 			if ip := net.ParseIP(h); ip != nil {
 				template.IPAddresses = append(template.IPAddresses, ip)
 			} else {
@@ -170,12 +183,12 @@ func (xcg *X509CertGenerator) GenerateCert(hosts []string, certFile, keyFile, ca
 		}
 	}
 
-	tlsCert, err := tls.LoadX509KeyPair(caFile, caKeyFile)
+	tlsCert, err := tls.LoadX509KeyPair(opts.CAFile, opts.CAKeyFile)
 	if err != nil {
 		return err
 	}
 
-	priv, err := rsa.GenerateKey(rand.Reader, bits)
+	priv, err := rsa.GenerateKey(rand.Reader, opts.Bits)
 	if err != nil {
 		return err
 	}
@@ -190,7 +203,7 @@ func (xcg *X509CertGenerator) GenerateCert(hosts []string, certFile, keyFile, ca
 		return err
 	}
 
-	certOut, err := os.Create(certFile)
+	certOut, err := os.Create(opts.CertFile)
 	if err != nil {
 		return err
 	}
@@ -198,7 +211,7 @@ func (xcg *X509CertGenerator) GenerateCert(hosts []string, certFile, keyFile, ca
 	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	certOut.Close()
 
-	keyOut, err := os.OpenFile(keyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	keyOut, err := os.OpenFile(opts.KeyFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -212,8 +225,8 @@ func (xcg *X509CertGenerator) GenerateCert(hosts []string, certFile, keyFile, ca
 // ReadTLSConfig reads the tls config for a machine.
 func (xcg *X509CertGenerator) ReadTLSConfig(addr string, authOptions *auth.Options) (*tls.Config, error) {
 	caCertPath := authOptions.CaCertPath
-	serverCertPath := authOptions.ServerCertPath
-	serverKeyPath := authOptions.ServerKeyPath
+	clientCertPath := authOptions.ClientCertPath
+	clientKeyPath := authOptions.ClientKeyPath
 
 	log.Debugf("Reading CA certificate from %s", caCertPath)
 	caCert, err := ioutil.ReadFile(caCertPath)
@@ -221,19 +234,19 @@ func (xcg *X509CertGenerator) ReadTLSConfig(addr string, authOptions *auth.Optio
 		return nil, err
 	}
 
-	log.Debugf("Reading server certificate from %s", serverCertPath)
-	serverCert, err := ioutil.ReadFile(serverCertPath)
+	log.Debugf("Reading client certificate from %s", clientCertPath)
+	clientCert, err := ioutil.ReadFile(clientCertPath)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Debugf("Reading server key from %s", serverKeyPath)
-	serverKey, err := ioutil.ReadFile(serverKeyPath)
+	log.Debugf("Reading client key from %s", clientKeyPath)
+	clientKey, err := ioutil.ReadFile(clientKeyPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return xcg.getTLSConfig(caCert, serverCert, serverKey, false)
+	return xcg.getTLSConfig(caCert, clientCert, clientKey, false)
 }
 
 // ValidateCertificate validate the certificate installed on the vm.
