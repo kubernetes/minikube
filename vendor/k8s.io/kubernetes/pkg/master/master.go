@@ -49,8 +49,6 @@ import (
 	policyapiv1alpha1 "k8s.io/kubernetes/pkg/apis/policy/v1alpha1"
 	"k8s.io/kubernetes/pkg/apis/rbac"
 	rbacapi "k8s.io/kubernetes/pkg/apis/rbac/v1alpha1"
-	"k8s.io/kubernetes/pkg/apis/storage"
-	storageapiv1beta1 "k8s.io/kubernetes/pkg/apis/storage/v1beta1"
 	"k8s.io/kubernetes/pkg/apiserver"
 	apiservermetrics "k8s.io/kubernetes/pkg/apiserver/metrics"
 	"k8s.io/kubernetes/pkg/genericapiserver"
@@ -207,7 +205,6 @@ func New(c *Config) (*Master, error) {
 	}
 	c.RESTStorageProviders[policy.GroupName] = PolicyRESTStorageProvider{}
 	c.RESTStorageProviders[rbac.GroupName] = RBACRESTStorageProvider{AuthorizerRBACSuperUser: c.AuthorizerRBACSuperUser}
-	c.RESTStorageProviders[storage.GroupName] = StorageRESTStorageProvider{}
 	c.RESTStorageProviders[authenticationv1beta1.GroupName] = AuthenticationRESTStorageProvider{Authenticator: c.Authenticator}
 	c.RESTStorageProviders[authorization.GroupName] = AuthorizationRESTStorageProvider{Authorizer: c.Authorizer}
 	m.InstallAPIs(c)
@@ -297,16 +294,13 @@ func (m *Master) InstallAPIs(c *Config) {
 	// TODO find a better way to configure priority of groups
 	for _, group := range sets.StringKeySet(c.RESTStorageProviders).List() {
 		if !c.APIResourceConfigSource.AnyResourcesForGroupEnabled(group) {
-			glog.V(1).Infof("Skipping disabled API group %q.", group)
 			continue
 		}
 		restStorageBuilder := c.RESTStorageProviders[group]
 		apiGroupInfo, enabled := restStorageBuilder.NewRESTStorage(c.APIResourceConfigSource, restOptionsGetter)
 		if !enabled {
-			glog.Warningf("Problem initializing API group %q, skipping.", group)
 			continue
 		}
-		glog.V(1).Infof("Enabling API group %q.", group)
 
 		// This is here so that, if the policy group is present, the eviction
 		// subresource handler wil be able to find poddisruptionbudgets
@@ -846,7 +840,6 @@ func DefaultAPIResourceConfigSource() *genericapiserver.ResourceConfig {
 		appsapi.SchemeGroupVersion,
 		policyapiv1alpha1.SchemeGroupVersion,
 		rbacapi.SchemeGroupVersion,
-		storageapiv1beta1.SchemeGroupVersion,
 		certificatesapiv1alpha1.SchemeGroupVersion,
 		authorizationapiv1beta1.SchemeGroupVersion,
 	)
@@ -861,6 +854,7 @@ func DefaultAPIResourceConfigSource() *genericapiserver.ResourceConfig {
 		extensionsapiv1beta1.SchemeGroupVersion.WithResource("networkpolicies"),
 		extensionsapiv1beta1.SchemeGroupVersion.WithResource("replicasets"),
 		extensionsapiv1beta1.SchemeGroupVersion.WithResource("thirdpartyresources"),
+		extensionsapiv1beta1.SchemeGroupVersion.WithResource("storageclasses"),
 	)
 
 	return ret

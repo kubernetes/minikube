@@ -139,7 +139,7 @@ func UnsecuredKubeletDeps(s *options.KubeletServer) (*kubelet.KubeletDeps, error
 		DockerClient:      dockerClient,
 		KubeClient:        nil,
 		Mounter:           mounter,
-		NetworkPlugins:    ProbeNetworkPlugins(s.NetworkPluginDir, s.CNIConfDir, s.CNIBinDir),
+		NetworkPlugins:    ProbeNetworkPlugins(s.NetworkPluginDir),
 		OOMAdjuster:       oom.NewOOMAdjuster(),
 		OSInterface:       kubecontainer.RealOS{},
 		Writer:            writer,
@@ -298,7 +298,7 @@ func initConfigz(kc *componentconfig.KubeletConfiguration) (*configz.Config, err
 
 func run(s *options.KubeletServer, kubeDeps *kubelet.KubeletDeps) (err error) {
 	// TODO: this should be replaced by a --standalone flag
-	standaloneMode := (len(s.APIServerList) == 0 && !s.RequireKubeConfig)
+	standaloneMode := (len(s.APIServerList) == 0)
 
 	if s.ExitOnLockContention && s.LockFilePath == "" {
 		return errors.New("cannot exit on lock file contention: no lock file specified")
@@ -395,7 +395,7 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.KubeletDeps) (err error) {
 	}
 
 	if kubeDeps.CAdvisorInterface == nil {
-		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), s.ContainerRuntime, s.RootDirectory)
+		kubeDeps.CAdvisorInterface, err = cadvisor.New(uint(s.CAdvisorPort), s.ContainerRuntime)
 		if err != nil {
 			return err
 		}

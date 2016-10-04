@@ -37,7 +37,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &rbac.RoleBindingList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.RoleBindings),
 		&rbac.RoleBinding{},
@@ -67,8 +67,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 		UpdateStrategy: rolebinding.Strategy,
 		DeleteStrategy: rolebinding.Strategy,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 
 	return &REST{store}

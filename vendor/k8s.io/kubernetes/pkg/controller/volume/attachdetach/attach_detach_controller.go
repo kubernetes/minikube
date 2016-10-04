@@ -25,10 +25,10 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
-	kcache "k8s.io/kubernetes/pkg/client/cache"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/cache"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/populator"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/reconciler"
@@ -66,10 +66,10 @@ type AttachDetachController interface {
 // NewAttachDetachController returns a new instance of AttachDetachController.
 func NewAttachDetachController(
 	kubeClient internalclientset.Interface,
-	podInformer kcache.SharedInformer,
-	nodeInformer kcache.SharedInformer,
-	pvcInformer kcache.SharedInformer,
-	pvInformer kcache.SharedInformer,
+	podInformer framework.SharedInformer,
+	nodeInformer framework.SharedInformer,
+	pvcInformer framework.SharedInformer,
+	pvInformer framework.SharedInformer,
 	cloud cloudprovider.Interface,
 	plugins []volume.VolumePlugin,
 	recorder record.EventRecorder) (AttachDetachController, error) {
@@ -94,13 +94,13 @@ func NewAttachDetachController(
 		cloud:       cloud,
 	}
 
-	podInformer.AddEventHandler(kcache.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
 		AddFunc:    adc.podAdd,
 		UpdateFunc: adc.podUpdate,
 		DeleteFunc: adc.podDelete,
 	})
 
-	nodeInformer.AddEventHandler(kcache.ResourceEventHandlerFuncs{
+	nodeInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
 		AddFunc:    adc.nodeAdd,
 		UpdateFunc: adc.nodeUpdate,
 		DeleteFunc: adc.nodeDelete,
@@ -143,12 +143,12 @@ type attachDetachController struct {
 	// pvcInformer is the shared PVC informer used to fetch and store PVC
 	// objects from the API server. It is shared with other controllers and
 	// therefore the PVC objects in its store should be treated as immutable.
-	pvcInformer kcache.SharedInformer
+	pvcInformer framework.SharedInformer
 
 	// pvInformer is the shared PV informer used to fetch and store PV objects
 	// from the API server. It is shared with other controllers and therefore
 	// the PV objects in its store should be treated as immutable.
-	pvInformer kcache.SharedInformer
+	pvInformer framework.SharedInformer
 
 	// cloud provider used by volume host
 	cloud cloudprovider.Interface
@@ -517,7 +517,6 @@ func (adc *attachDetachController) getPVSpecFromCache(
 // mounted.
 func (adc *attachDetachController) processVolumesInUse(
 	nodeName string, volumesInUse []api.UniqueVolumeName) {
-	glog.V(4).Infof("processVolumesInUse for node %q", nodeName)
 	for _, attachedVolume := range adc.actualStateOfWorld.GetAttachedVolumesForNode(nodeName) {
 		mounted := false
 		for _, volumeInUse := range volumesInUse {

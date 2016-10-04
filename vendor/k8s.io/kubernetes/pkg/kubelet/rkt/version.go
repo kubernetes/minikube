@@ -22,6 +22,7 @@ import (
 
 	"github.com/coreos/go-semver/semver"
 	rktapi "github.com/coreos/rkt/api/v1alpha"
+	"github.com/golang/glog"
 	"golang.org/x/net/context"
 )
 
@@ -97,7 +98,7 @@ func (r *Runtime) getVersions() error {
 
 // checkVersion tests whether the rkt/systemd/rkt-api-service that meet the version requirement.
 // If all version requirements are met, it returns nil.
-func (r *Runtime) checkVersion(minimumRktBinVersion, minimumRktApiVersion, minimumSystemdVersion string) error {
+func (r *Runtime) checkVersion(minimumRktBinVersion, recommendedRktBinVersion, minimumRktApiVersion, minimumSystemdVersion string) error {
 	if err := r.getVersions(); err != nil {
 		return err
 	}
@@ -121,6 +122,14 @@ func (r *Runtime) checkVersion(minimumRktBinVersion, minimumRktApiVersion, minim
 	}
 	if result < 0 {
 		return fmt.Errorf("rkt: binary version is too old(%v), requires at least %v", r.versions.binVersion, minimumRktBinVersion)
+	}
+	result, err = r.versions.binVersion.Compare(recommendedRktBinVersion)
+	if err != nil {
+		return err
+	}
+	if result != 0 {
+		// TODO(yifan): Record an event to expose the information.
+		glog.Warningf("rkt: current binary version %q is not recommended (recommended version %q)", r.versions.binVersion, recommendedRktBinVersion)
 	}
 
 	// Check rkt API version.

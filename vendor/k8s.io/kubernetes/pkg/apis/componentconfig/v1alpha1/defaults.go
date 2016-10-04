@@ -89,9 +89,6 @@ func SetDefaults_KubeProxyConfiguration(obj *KubeProxyConfiguration) {
 		if obj.ConntrackMaxPerCore == 0 {
 			obj.ConntrackMaxPerCore = 32 * 1024
 		}
-		if obj.ConntrackMin == 0 {
-			obj.ConntrackMin = 128 * 1024
-		}
 	}
 	if obj.IPTablesMasqueradeBit == nil {
 		temp := int32(14)
@@ -251,6 +248,9 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	}
 	if obj.MinimumGCAge == zeroDuration {
 		obj.MinimumGCAge = unversioned.Duration{Duration: 0}
+	}
+	if obj.NetworkPluginDir == "" {
+		obj.NetworkPluginDir = "/usr/libexec/kubernetes/kubelet-plugins/net/exec/"
 	}
 	if obj.NonMasqueradeCIDR == "" {
 		obj.NonMasqueradeCIDR = "10.0.0.0/8"

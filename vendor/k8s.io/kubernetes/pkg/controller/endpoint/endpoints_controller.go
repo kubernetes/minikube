@@ -34,7 +34,8 @@ import (
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/informers"
+	"k8s.io/kubernetes/pkg/controller/framework"
+	"k8s.io/kubernetes/pkg/controller/framework/informers"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/metrics"
@@ -65,11 +66,11 @@ const (
 )
 
 var (
-	keyFunc = cache.DeletionHandlingMetaNamespaceKeyFunc
+	keyFunc = framework.DeletionHandlingMetaNamespaceKeyFunc
 )
 
 // NewEndpointController returns a new *EndpointController.
-func NewEndpointController(podInformer cache.SharedIndexInformer, client *clientset.Clientset) *EndpointController {
+func NewEndpointController(podInformer framework.SharedIndexInformer, client *clientset.Clientset) *EndpointController {
 	if client != nil && client.Core().GetRESTClient().GetRateLimiter() != nil {
 		metrics.RegisterMetricAndTrackRateLimiterUsage("endpoint_controller", client.Core().GetRESTClient().GetRateLimiter())
 	}
@@ -78,7 +79,7 @@ func NewEndpointController(podInformer cache.SharedIndexInformer, client *client
 		queue:  workqueue.NewNamed("endpoint"),
 	}
 
-	e.serviceStore.Store, e.serviceController = cache.NewInformer(
+	e.serviceStore.Store, e.serviceController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return e.client.Core().Services(api.NamespaceAll).List(options)
@@ -90,7 +91,7 @@ func NewEndpointController(podInformer cache.SharedIndexInformer, client *client
 		&api.Service{},
 		// TODO: Can we have much longer period here?
 		FullServiceResyncPeriod,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc: e.enqueueService,
 			UpdateFunc: func(old, cur interface{}) {
 				e.enqueueService(cur)
@@ -99,7 +100,7 @@ func NewEndpointController(podInformer cache.SharedIndexInformer, client *client
 		},
 	)
 
-	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
 		AddFunc:    e.addPod,
 		UpdateFunc: e.updatePod,
 		DeleteFunc: e.deletePod,
@@ -132,7 +133,7 @@ type EndpointController struct {
 	// we have a personal informer, we must start it ourselves.   If you start
 	// the controller using NewEndpointController(passing SharedInformer), this
 	// will be null
-	internalPodInformer cache.SharedIndexInformer
+	internalPodInformer framework.SharedIndexInformer
 
 	// Services that need to be updated. A channel is inappropriate here,
 	// because it allows services with lots of pods to be serviced much
@@ -143,8 +144,8 @@ type EndpointController struct {
 
 	// Since we join two objects, we'll watch both of them with
 	// controllers.
-	serviceController *cache.Controller
-	podController     cache.ControllerInterface
+	serviceController *framework.Controller
+	podController     framework.ControllerInterface
 	// podStoreSynced returns true if the pod store has been synced at least once.
 	// Added as a member to the struct to allow injection for testing.
 	podStoreSynced func() bool
@@ -379,8 +380,6 @@ func (e *EndpointController) syncService(key string) {
 		}
 	}
 
-	readyEps := 0
-	notReadyEps := 0
 	for i := range pods {
 		// TODO: Do we need to copy here?
 		pod := &(*pods[i])
@@ -433,14 +432,12 @@ func (e *EndpointController) syncService(key string) {
 					Addresses: []api.EndpointAddress{epa},
 					Ports:     []api.EndpointPort{epp},
 				})
-				readyEps++
 			} else {
 				glog.V(5).Infof("Pod is out of service: %v/%v", pod.Namespace, pod.Name)
 				subsets = append(subsets, api.EndpointSubset{
 					NotReadyAddresses: []api.EndpointAddress{epa},
 					Ports:             []api.EndpointPort{epp},
 				})
-				notReadyEps++
 			}
 		}
 	}
@@ -493,7 +490,6 @@ func (e *EndpointController) syncService(key string) {
 		newEndpoints.Annotations[endpoints.PodHostnamesAnnotation] = serializedPodHostNames
 	}
 
-	glog.V(4).Infof("Update endpoints for %v/%v, ready: %d not ready: %d", service.Namespace, service.Name, readyEps, notReadyEps)
 	createEndpoints := len(currentEndpoints.ResourceVersion) == 0
 	if createEndpoints {
 		// No previous endpoints, create them

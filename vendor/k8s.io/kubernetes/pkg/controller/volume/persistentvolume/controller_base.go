@@ -24,12 +24,13 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/meta"
-	"k8s.io/kubernetes/pkg/apis/storage"
+	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	unversioned_core "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/goroutinemap"
@@ -64,7 +65,7 @@ func NewPersistentVolumeController(
 
 	controller := &PersistentVolumeController{
 		volumes:           newPersistentVolumeOrderedIndex(),
-		claims:            cache.NewStore(cache.DeletionHandlingMetaNamespaceKeyFunc),
+		claims:            cache.NewStore(framework.DeletionHandlingMetaNamespaceKeyFunc),
 		kubeClient:        kubeClient,
 		eventRecorder:     eventRecorder,
 		runningOperations: goroutinemap.NewGoRoutineMap(false /* exponentialBackOffOnError */),
@@ -110,31 +111,31 @@ func NewPersistentVolumeController(
 	if classSource == nil {
 		classSource = &cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return kubeClient.Storage().StorageClasses().List(options)
+				return kubeClient.Extensions().StorageClasses().List(options)
 			},
 			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return kubeClient.Storage().StorageClasses().Watch(options)
+				return kubeClient.Extensions().StorageClasses().Watch(options)
 			},
 		}
 	}
 	controller.classSource = classSource
 
-	_, controller.volumeController = cache.NewIndexerInformer(
+	_, controller.volumeController = framework.NewIndexerInformer(
 		volumeSource,
 		&api.PersistentVolume{},
 		syncPeriod,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    controller.addVolume,
 			UpdateFunc: controller.updateVolume,
 			DeleteFunc: controller.deleteVolume,
 		},
 		cache.Indexers{"accessmodes": accessModesIndexFunc},
 	)
-	_, controller.claimController = cache.NewInformer(
+	_, controller.claimController = framework.NewInformer(
 		claimSource,
 		&api.PersistentVolumeClaim{},
 		syncPeriod,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    controller.addClaim,
 			UpdateFunc: controller.updateClaim,
 			DeleteFunc: controller.deleteClaim,
@@ -143,10 +144,10 @@ func NewPersistentVolumeController(
 
 	// This is just a cache of StorageClass instances, no special actions are
 	// needed when a class is created/deleted/updated.
-	controller.classes = cache.NewStore(cache.DeletionHandlingMetaNamespaceKeyFunc)
+	controller.classes = cache.NewStore(framework.DeletionHandlingMetaNamespaceKeyFunc)
 	controller.classReflector = cache.NewReflector(
 		classSource,
-		&storage.StorageClass{},
+		&extensions.StorageClass{},
 		controller.classes,
 		syncPeriod,
 	)
@@ -211,7 +212,7 @@ func (ctrl *PersistentVolumeController) storeClaimUpdate(claim *api.PersistentVo
 	return storeObjectUpdate(ctrl.claims, claim, "claim")
 }
 
-// addVolume is callback from cache.Controller watching PersistentVolume
+// addVolume is callback from framework.Controller watching PersistentVolume
 // events.
 func (ctrl *PersistentVolumeController) addVolume(obj interface{}) {
 	pv, ok := obj.(*api.PersistentVolume)
@@ -246,7 +247,7 @@ func (ctrl *PersistentVolumeController) addVolume(obj interface{}) {
 	}
 }
 
-// updateVolume is callback from cache.Controller watching PersistentVolume
+// updateVolume is callback from framework.Controller watching PersistentVolume
 // events.
 func (ctrl *PersistentVolumeController) updateVolume(oldObj, newObj interface{}) {
 	newVolume, ok := newObj.(*api.PersistentVolume)
@@ -281,7 +282,7 @@ func (ctrl *PersistentVolumeController) updateVolume(oldObj, newObj interface{})
 	}
 }
 
-// deleteVolume is callback from cache.Controller watching PersistentVolume
+// deleteVolume is callback from framework.Controller watching PersistentVolume
 // events.
 func (ctrl *PersistentVolumeController) deleteVolume(obj interface{}) {
 	_ = ctrl.volumes.store.Delete(obj)
@@ -329,7 +330,7 @@ func (ctrl *PersistentVolumeController) deleteVolume(obj interface{}) {
 	}
 }
 
-// addClaim is callback from cache.Controller watching PersistentVolumeClaim
+// addClaim is callback from framework.Controller watching PersistentVolumeClaim
 // events.
 func (ctrl *PersistentVolumeController) addClaim(obj interface{}) {
 	// Store the new claim version in the cache and do not process it if this is
@@ -359,7 +360,7 @@ func (ctrl *PersistentVolumeController) addClaim(obj interface{}) {
 	}
 }
 
-// updateClaim is callback from cache.Controller watching PersistentVolumeClaim
+// updateClaim is callback from framework.Controller watching PersistentVolumeClaim
 // events.
 func (ctrl *PersistentVolumeController) updateClaim(oldObj, newObj interface{}) {
 	// Store the new claim version in the cache and do not process it if this is
@@ -389,7 +390,7 @@ func (ctrl *PersistentVolumeController) updateClaim(oldObj, newObj interface{}) 
 	}
 }
 
-// deleteClaim is callback from cache.Controller watching PersistentVolumeClaim
+// deleteClaim is callback from framework.Controller watching PersistentVolumeClaim
 // events.
 func (ctrl *PersistentVolumeController) deleteClaim(obj interface{}) {
 	_ = ctrl.claims.Delete(obj)
@@ -412,7 +413,7 @@ func (ctrl *PersistentVolumeController) deleteClaim(obj interface{}) {
 		}
 	}
 
-	if claim == nil {
+	if !ok || claim == nil {
 		return
 	}
 	glog.V(4).Infof("claim %q deleted", claimToClaimKey(claim))

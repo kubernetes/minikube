@@ -490,13 +490,18 @@ func (c *Client) Join(elem ...string) string { return path.Join(elem...) }
 // is not empty.
 func (c *Client) Remove(path string) error {
 	err := c.removeFile(path)
-	if err, ok := err.(*StatusError); ok {
+	switch err := err.(type) {
+	case *StatusError:
 		switch err.Code {
 		// some servers, *cough* osx *cough*, return EPERM, not ENODIR.
 		// serv-u returns ssh_FX_FILE_IS_A_DIRECTORY
 		case ssh_FX_PERMISSION_DENIED, ssh_FX_FAILURE, ssh_FX_FILE_IS_A_DIRECTORY:
 			return c.removeDirectory(path)
+		default:
+			return err
 		}
+	default:
+		return err
 	}
 	return err
 }

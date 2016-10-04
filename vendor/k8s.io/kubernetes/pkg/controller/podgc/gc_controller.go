@@ -25,6 +25,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/controller"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
@@ -43,7 +44,7 @@ const (
 type PodGCController struct {
 	kubeClient     clientset.Interface
 	podStore       cache.StoreToPodLister
-	podStoreSyncer *cache.Controller
+	podStoreSyncer *framework.Controller
 	deletePod      func(namespace, name string) error
 	threshold      int
 }
@@ -62,7 +63,7 @@ func New(kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFun
 
 	terminatedSelector := fields.ParseSelectorOrDie("status.phase!=" + string(api.PodPending) + ",status.phase!=" + string(api.PodRunning) + ",status.phase!=" + string(api.PodUnknown))
 
-	gcc.podStore.Indexer, gcc.podStoreSyncer = cache.NewIndexerInformer(
+	gcc.podStore.Indexer, gcc.podStoreSyncer = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				options.FieldSelector = terminatedSelector
@@ -75,7 +76,7 @@ func New(kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFun
 		},
 		&api.Pod{},
 		resyncPeriod(),
-		cache.ResourceEventHandlerFuncs{},
+		framework.ResourceEventHandlerFuncs{},
 		// We don't need to build a index for podStore here actually, but build one for consistency.
 		// It will ensure that if people start making use of the podStore in more specific ways,
 		// they'll get the benefits they expect. It will also reserve the name for future refactorings.

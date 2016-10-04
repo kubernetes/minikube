@@ -35,7 +35,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &api.ServiceAccountList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.ServiceAccounts),
 		&api.ServiceAccount{},
@@ -66,8 +66,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 		DeleteStrategy:      serviceaccount.Strategy,
 		ReturnDeletedObject: true,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 	return &REST{store}
 }

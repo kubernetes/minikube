@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
-
 	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/validation"
 	"k8s.io/kubernetes/pkg/runtime"
@@ -39,16 +37,26 @@ func SimpleUpdate(fn SimpleUpdateFunc) UpdateFunc {
 	}
 }
 
-// SimpleFilter converts a selection predicate into a FilterFunc.
-// It ignores any error from Matches().
-func SimpleFilter(p SelectionPredicate) FilterFunc {
-	return func(obj runtime.Object) bool {
-		matches, err := p.Matches(obj)
-		if err != nil {
-			glog.Errorf("invalid object for matching. Obj: %v. Err: %v", obj, err)
-			return false
-		}
-		return matches
+// SimpleFilter implements Filter interface.
+type SimpleFilter struct {
+	filterFunc  func(runtime.Object) bool
+	triggerFunc func() []MatchValue
+}
+
+func (s *SimpleFilter) Filter(obj runtime.Object) bool {
+	return s.filterFunc(obj)
+}
+
+func (s *SimpleFilter) Trigger() []MatchValue {
+	return s.triggerFunc()
+}
+
+func NewSimpleFilter(
+	filterFunc func(runtime.Object) bool,
+	triggerFunc func() []MatchValue) Filter {
+	return &SimpleFilter{
+		filterFunc:  filterFunc,
+		triggerFunc: triggerFunc,
 	}
 }
 

@@ -36,6 +36,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/deployment/util"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/metrics"
@@ -69,15 +70,15 @@ type DeploymentController struct {
 	// A store of deployments, populated by the dController
 	dStore cache.StoreToDeploymentLister
 	// Watches changes to all deployments
-	dController *cache.Controller
+	dController *framework.Controller
 	// A store of ReplicaSets, populated by the rsController
 	rsStore cache.StoreToReplicaSetLister
 	// Watches changes to all ReplicaSets
-	rsController *cache.Controller
+	rsController *framework.Controller
 	// A store of pods, populated by the podController
 	podStore cache.StoreToPodLister
 	// Watches changes to all pods
-	podController *cache.Controller
+	podController *framework.Controller
 
 	// dStoreSynced returns true if the Deployment store has been synced at least once.
 	// Added as a member to the struct to allow injection for testing.
@@ -109,7 +110,7 @@ func NewDeploymentController(client clientset.Interface, resyncPeriod controller
 		queue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "deployment"),
 	}
 
-	dc.dStore.Indexer, dc.dController = cache.NewIndexerInformer(
+	dc.dStore.Indexer, dc.dController = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.client.Extensions().Deployments(api.NamespaceAll).List(options)
@@ -120,7 +121,7 @@ func NewDeploymentController(client clientset.Interface, resyncPeriod controller
 		},
 		&extensions.Deployment{},
 		FullDeploymentResyncPeriod,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    dc.addDeploymentNotification,
 			UpdateFunc: dc.updateDeploymentNotification,
 			// This will enter the sync loop and no-op, because the deployment has been deleted from the store.
@@ -129,7 +130,7 @@ func NewDeploymentController(client clientset.Interface, resyncPeriod controller
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
-	dc.rsStore.Store, dc.rsController = cache.NewInformer(
+	dc.rsStore.Store, dc.rsController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.client.Extensions().ReplicaSets(api.NamespaceAll).List(options)
@@ -140,14 +141,14 @@ func NewDeploymentController(client clientset.Interface, resyncPeriod controller
 		},
 		&extensions.ReplicaSet{},
 		resyncPeriod(),
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    dc.addReplicaSet,
 			UpdateFunc: dc.updateReplicaSet,
 			DeleteFunc: dc.deleteReplicaSet,
 		},
 	)
 
-	dc.podStore.Indexer, dc.podController = cache.NewIndexerInformer(
+	dc.podStore.Indexer, dc.podController = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.client.Core().Pods(api.NamespaceAll).List(options)
@@ -158,7 +159,7 @@ func NewDeploymentController(client clientset.Interface, resyncPeriod controller
 		},
 		&api.Pod{},
 		resyncPeriod(),
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    dc.addPod,
 			UpdateFunc: dc.updatePod,
 			DeleteFunc: dc.deletePod,

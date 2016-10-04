@@ -32,6 +32,7 @@ import (
 	"k8s.io/kubernetes/pkg/apimachinery/registered"
 	"k8s.io/kubernetes/pkg/client/cache"
 	"k8s.io/kubernetes/pkg/client/typed/dynamic"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/controller/garbagecollector/metaonly"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
@@ -48,7 +49,7 @@ const ResourceResyncTime time.Duration = 0
 
 type monitor struct {
 	store      cache.Store
-	controller *cache.Controller
+	controller *framework.Controller
 }
 
 type objectReference struct {
@@ -487,11 +488,11 @@ func (gc *GarbageCollector) monitorFor(resource unversioned.GroupVersionResource
 		}
 		runtimeObject.GetObjectKind().SetGroupVersionKind(kind)
 	}
-	monitor.store, monitor.controller = cache.NewInformer(
+	monitor.store, monitor.controller = framework.NewInformer(
 		gcListWatcher(client, resource),
 		nil,
 		ResourceResyncTime,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			// add the event to the propagator's eventQueue.
 			AddFunc: func(obj interface{}) {
 				setObjectTypeMeta(obj)
@@ -580,9 +581,6 @@ func (gc *GarbageCollector) worker() {
 	err := gc.processItem(timedItem.Object.(*node))
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Error syncing item %#v: %v", timedItem.Object, err))
-		// retry if garbage collection of an object failed.
-		gc.dirtyQueue.Add(timedItem)
-		return
 	}
 	DirtyProcessingLatency.Observe(sinceInMicroseconds(gc.clock, timedItem.StartTime))
 }

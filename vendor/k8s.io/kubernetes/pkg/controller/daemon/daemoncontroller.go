@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/glog"
+
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/extensions"
@@ -32,7 +34,8 @@ import (
 	unversionedextensions "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/extensions/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/informers"
+	"k8s.io/kubernetes/pkg/controller/framework"
+	"k8s.io/kubernetes/pkg/controller/framework/informers"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/metrics"
@@ -42,8 +45,6 @@ import (
 	"k8s.io/kubernetes/pkg/watch"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
-
-	"github.com/golang/glog"
 )
 
 const (
@@ -74,7 +75,7 @@ type DaemonSetsController struct {
 	// we have a personal informer, we must start it ourselves.   If you start
 	// the controller using NewDaemonSetsController(passing SharedInformer), this
 	// will be null
-	internalPodInformer cache.SharedInformer
+	internalPodInformer framework.SharedInformer
 
 	// An dsc is temporarily suspended after creating/deleting these many replicas.
 	// It resumes normal action after observing the watch events for them.
@@ -91,11 +92,11 @@ type DaemonSetsController struct {
 	// A store of nodes
 	nodeStore cache.StoreToNodeLister
 	// Watches changes to all daemon sets.
-	dsController *cache.Controller
+	dsController *framework.Controller
 	// Watches changes to all pods
-	podController cache.ControllerInterface
+	podController framework.ControllerInterface
 	// Watches changes to all nodes.
-	nodeController *cache.Controller
+	nodeController *framework.Controller
 	// podStoreSynced returns true if the pod store has been synced at least once.
 	// Added as a member to the struct to allow injection for testing.
 	podStoreSynced func() bool
@@ -106,7 +107,7 @@ type DaemonSetsController struct {
 	queue *workqueue.Type
 }
 
-func NewDaemonSetsController(podInformer cache.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, lookupCacheSize int) *DaemonSetsController {
+func NewDaemonSetsController(podInformer framework.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, lookupCacheSize int) *DaemonSetsController {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
 	// TODO: remove the wrapper when every clients have moved to use the clientset.
@@ -127,7 +128,7 @@ func NewDaemonSetsController(podInformer cache.SharedIndexInformer, kubeClient c
 		queue:         workqueue.NewNamed("daemonset"),
 	}
 	// Manage addition/update of daemon sets.
-	dsc.dsStore.Store, dsc.dsController = cache.NewInformer(
+	dsc.dsStore.Store, dsc.dsController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dsc.kubeClient.Extensions().DaemonSets(api.NamespaceAll).List(options)
@@ -139,7 +140,7 @@ func NewDaemonSetsController(podInformer cache.SharedIndexInformer, kubeClient c
 		&extensions.DaemonSet{},
 		// TODO: Can we have much longer period here?
 		FullDaemonSetResyncPeriod,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				ds := obj.(*extensions.DaemonSet)
 				glog.V(4).Infof("Adding daemon set %s", ds.Name)
@@ -172,7 +173,7 @@ func NewDaemonSetsController(podInformer cache.SharedIndexInformer, kubeClient c
 
 	// Watch for creation/deletion of pods. The reason we watch is that we don't want a daemon set to create/delete
 	// more pods until all the effects (expectations) of a daemon set's create/delete have been observed.
-	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
 		AddFunc:    dsc.addPod,
 		UpdateFunc: dsc.updatePod,
 		DeleteFunc: dsc.deletePod,
@@ -182,7 +183,7 @@ func NewDaemonSetsController(podInformer cache.SharedIndexInformer, kubeClient c
 	dsc.podStoreSynced = podInformer.HasSynced
 
 	// Watch for new nodes or updates to nodes - daemon pods are launched on new nodes, and possibly when labels on nodes change,
-	dsc.nodeStore.Store, dsc.nodeController = cache.NewInformer(
+	dsc.nodeStore.Store, dsc.nodeController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dsc.kubeClient.Core().Nodes().List(options)
@@ -193,7 +194,7 @@ func NewDaemonSetsController(podInformer cache.SharedIndexInformer, kubeClient c
 		},
 		&api.Node{},
 		resyncPeriod(),
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    dsc.addNode,
 			UpdateFunc: dsc.updateNode,
 		},
@@ -707,10 +708,20 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *api.Node, ds *exte
 	nodeInfo.SetNode(node)
 	fit, reasons, err := predicates.GeneralPredicates(newPod, nil, nodeInfo)
 	if err != nil {
-		glog.Warningf("GeneralPredicates failed on ds '%s/%s' due to unexpected error: %v", ds.ObjectMeta.Namespace, ds.ObjectMeta.Name, err)
+		glog.Warningf("GeneralPredicates failed on pod %s due to unexpected error: %v", newPod.Name, err)
 	}
 	for _, r := range reasons {
-		glog.V(4).Infof("GeneralPredicates failed on ds '%s/%s' for reason: %v", ds.ObjectMeta.Namespace, ds.ObjectMeta.Name, r.GetReason())
+		glog.V(2).Infof("GeneralPredicates failed on pod %s for reason: %v", newPod.Name, r.GetReason())
+	}
+	if !fit {
+		return false
+	}
+	fit, reasons, err = predicates.PodToleratesNodeTaints(newPod, predicates.PredicateMetadata(newPod, nil), nodeInfo)
+	if err != nil {
+		glog.Warningf("PodToleratesNodeTaints failed on pod %s due to unexpected error: %v", newPod.Name, err)
+	}
+	for _, r := range reasons {
+		glog.V(2).Infof("PodToleratesNodeTaints failed on pod %s for reason: %v", newPod.Name, r.GetReason())
 	}
 	return fit
 }

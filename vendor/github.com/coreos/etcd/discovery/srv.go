@@ -53,8 +53,8 @@ func SRVGetCluster(name, dns string, defaultToken string, apurls types.URLs) (st
 			return err
 		}
 		for _, srv := range addrs {
-			port := fmt.Sprintf("%d", srv.Port)
-			host := net.JoinHostPort(srv.Target, port)
+			target := strings.TrimSuffix(srv.Target, ".")
+			host := net.JoinHostPort(target, fmt.Sprintf("%d", srv.Port))
 			tcpAddr, err := resolveTCPAddr("tcp", host)
 			if err != nil {
 				plog.Warningf("couldn't resolve host %s during SRV discovery", host)
@@ -70,11 +70,8 @@ func SRVGetCluster(name, dns string, defaultToken string, apurls types.URLs) (st
 				n = fmt.Sprintf("%d", tempName)
 				tempName += 1
 			}
-			// SRV records have a trailing dot but URL shouldn't.
-			shortHost := strings.TrimSuffix(srv.Target, ".")
-			urlHost := net.JoinHostPort(shortHost, port)
-			stringParts = append(stringParts, fmt.Sprintf("%s=%s%s", n, prefix, urlHost))
-			plog.Noticef("got bootstrap from DNS for %s at %s%s", service, prefix, urlHost)
+			stringParts = append(stringParts, fmt.Sprintf("%s=%s%s", n, prefix, host))
+			plog.Noticef("got bootstrap from DNS for %s at %s%s", service, prefix, host)
 		}
 		return nil
 	}

@@ -158,6 +158,9 @@ const (
 	// Period for performing image garbage collection.
 	ImageGCPeriod = 5 * time.Minute
 
+	// maxImagesInStatus is the number of max images we store in image status.
+	maxImagesInNodeStatus = 50
+
 	// Minimum number of dead containers to keep in a pod
 	minDeadContainerInPod = 1
 )
@@ -698,7 +701,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	klet.setNodeStatusFuncs = klet.defaultNodeStatusFuncs()
 
 	// setup eviction manager
-	evictionManager, evictionAdmitHandler, err := eviction.NewManager(klet.resourceAnalyzer, evictionConfig, killPodNow(klet.podWorkers, kubeDeps.Recorder), klet.imageManager, kubeDeps.Recorder, nodeRef, klet.clock)
+	evictionManager, evictionAdmitHandler, err := eviction.NewManager(klet.resourceAnalyzer, evictionConfig, killPodNow(klet.podWorkers), klet.imageManager, kubeDeps.Recorder, nodeRef, klet.clock)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize eviction manager: %v", err)

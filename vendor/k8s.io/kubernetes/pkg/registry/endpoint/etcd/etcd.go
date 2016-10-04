@@ -35,7 +35,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &api.EndpointsList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.Endpoints),
 		&api.Endpoints{},
@@ -65,8 +65,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 		UpdateStrategy: endpoint.Strategy,
 		DeleteStrategy: endpoint.Strategy,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 	return &REST{store}
 }

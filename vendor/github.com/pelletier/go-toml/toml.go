@@ -222,6 +222,9 @@ func (t *TomlTree) SetPath(keys []string, value interface{}) {
 func (t *TomlTree) createSubTree(keys []string, pos Position) error {
 	subtree := t
 	for _, intermediateKey := range keys {
+		if intermediateKey == "" {
+			return fmt.Errorf("empty intermediate table")
+		}
 		nextTree, exists := subtree.values[intermediateKey]
 		if !exists {
 			tree := newTomlTree()

@@ -24,10 +24,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pborman/uuid"
 
-	"k8s.io/kubernetes/pkg/apiserver"
+	"k8s.io/kubernetes/pkg/api"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
@@ -40,11 +39,7 @@ type auditResponseWriter struct {
 }
 
 func (a *auditResponseWriter) WriteHeader(code int) {
-	line := fmt.Sprintf("%s AUDIT: id=%q response=\"%d\"\n", time.Now().Format(time.RFC3339Nano), a.id, code)
-	if _, err := fmt.Fprint(a.out, line); err != nil {
-		glog.Errorf("Unable to write audit log: %s, the error is: %v", line, err)
-	}
-
+	fmt.Fprintf(a.out, "%s AUDIT: id=%q response=\"%d\"\n", time.Now().Format(time.RFC3339Nano), a.id, code)
 	a.ResponseWriter.WriteHeader(code)
 }
 
@@ -84,24 +79,22 @@ var _ http.Hijacker = &fancyResponseWriterDelegator{}
 // 2. the response line containing:
 //    - the unique id from 1
 //    - response code
-func WithAudit(handler http.Handler, attributeGetter apiserver.RequestAttributeGetter, out io.Writer) http.Handler {
+func WithAudit(handler http.Handler, requestContextMapper api.RequestContextMapper, out io.Writer) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		attribs := attributeGetter.GetAttribs(req)
+		ctx, _ := requestContextMapper.Get(req)
+		user, _ := api.UserFrom(ctx)
 		asuser := req.Header.Get("Impersonate-User")
 		if len(asuser) == 0 {
 			asuser = "<self>"
 		}
-		namespace := attribs.GetNamespace()
+		namespace := api.NamespaceValue(ctx)
 		if len(namespace) == 0 {
 			namespace = "<none>"
 		}
 		id := uuid.NewRandom().String()
 
-		line := fmt.Sprintf("%s AUDIT: id=%q ip=%q method=%q user=%q as=%q namespace=%q uri=%q\n",
-			time.Now().Format(time.RFC3339Nano), id, utilnet.GetClientIP(req), req.Method, attribs.GetUser().GetName(), asuser, namespace, req.URL)
-		if _, err := fmt.Fprint(out, line); err != nil {
-			glog.Errorf("Unable to write audit log: %s, the error is: %v", line, err)
-		}
+		fmt.Fprintf(out, "%s AUDIT: id=%q ip=%q method=%q user=%q as=%q namespace=%q uri=%q\n",
+			time.Now().Format(time.RFC3339Nano), id, utilnet.GetClientIP(req), req.Method, user.GetName(), asuser, namespace, req.URL)
 		respWriter := decorateResponseWriter(w, out, id)
 		handler.ServeHTTP(respWriter, req)
 	})

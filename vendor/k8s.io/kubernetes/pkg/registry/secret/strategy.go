@@ -27,7 +27,6 @@ import (
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/runtime"
-	apistorage "k8s.io/kubernetes/pkg/storage"
 	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
@@ -95,8 +94,8 @@ func (s strategy) Export(ctx api.Context, obj runtime.Object, exact bool) error 
 }
 
 // Matcher returns a generic matcher for a given label and field selector.
-func Matcher(label labels.Selector, field fields.Selector) apistorage.SelectionPredicate {
-	return apistorage.SelectionPredicate{
+func Matcher(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
+	return &generic.SelectionPredicate{
 		Label: label,
 		Field: field,
 		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {

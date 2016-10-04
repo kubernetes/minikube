@@ -38,7 +38,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &batch.JobList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.Jobs),
 		&batch.Job{},
@@ -79,8 +79,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 		UpdateStrategy: job.Strategy,
 		DeleteStrategy: job.Strategy,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 
 	statusStore := *store

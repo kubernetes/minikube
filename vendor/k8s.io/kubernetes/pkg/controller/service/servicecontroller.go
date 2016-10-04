@@ -33,6 +33,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/fields"
 	pkg_runtime "k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/metrics"
@@ -87,7 +88,7 @@ type ServiceController struct {
 	// A store of services, populated by the serviceController
 	serviceStore cache.StoreToServiceLister
 	// Watches changes to all services
-	serviceController *cache.Controller
+	serviceController *framework.Controller
 	eventBroadcaster  record.EventBroadcaster
 	eventRecorder     record.EventRecorder
 	nodeLister        cache.StoreToNodeLister
@@ -119,7 +120,7 @@ func New(cloud cloudprovider.Interface, kubeClient clientset.Interface, clusterN
 		},
 		workingQueue: workqueue.NewDelayingQueue(),
 	}
-	s.serviceStore.Store, s.serviceController = cache.NewInformer(
+	s.serviceStore.Store, s.serviceController = framework.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (pkg_runtime.Object, error) {
 				return s.kubeClient.Core().Services(api.NamespaceAll).List(options)
@@ -130,7 +131,7 @@ func New(cloud cloudprovider.Interface, kubeClient clientset.Interface, clusterN
 		},
 		&api.Service{},
 		serviceSyncPeriod,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc: s.enqueueService,
 			UpdateFunc: func(old, cur interface{}) {
 				oldSvc, ok1 := old.(*api.Service)

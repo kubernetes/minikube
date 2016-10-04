@@ -19,7 +19,7 @@ import (
 // ToTimeE casts an empty interface to time.Time.
 func ToTimeE(i interface{}) (tim time.Time, err error) {
 	i = indirect(i)
-	jww.DEBUG.Println("ToTimeE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToTimeE called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
 	case time.Time:
@@ -38,7 +38,7 @@ func ToTimeE(i interface{}) (tim time.Time, err error) {
 // ToDurationE casts an empty interface to time.Duration.
 func ToDurationE(i interface{}) (d time.Duration, err error) {
 	i = indirect(i)
-	jww.DEBUG.Println("ToDurationE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToDurationE called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
 	case time.Duration:
@@ -61,7 +61,7 @@ func ToDurationE(i interface{}) (d time.Duration, err error) {
 // ToBoolE casts an empty interface to a bool.
 func ToBoolE(i interface{}) (bool, error) {
 	i = indirect(i)
-	jww.DEBUG.Println("ToBoolE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToBoolE called on type:", reflect.TypeOf(i))
 
 	switch b := i.(type) {
 	case bool:
@@ -83,7 +83,7 @@ func ToBoolE(i interface{}) (bool, error) {
 // ToFloat64E casts an empty interface to a float64.
 func ToFloat64E(i interface{}) (float64, error) {
 	i = indirect(i)
-	jww.DEBUG.Println("ToFloat64E called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToFloat64E called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
 	case float64:
@@ -114,7 +114,7 @@ func ToFloat64E(i interface{}) (float64, error) {
 // ToInt64E casts an empty interface to an int64.
 func ToInt64E(i interface{}) (int64, error) {
 	i = indirect(i)
-	jww.DEBUG.Println("ToInt64E called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToInt64E called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
 	case int64:
@@ -150,7 +150,7 @@ func ToInt64E(i interface{}) (int64, error) {
 // ToIntE casts an empty interface to an int.
 func ToIntE(i interface{}) (int, error) {
 	i = indirect(i)
-	jww.DEBUG.Println("ToIntE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToIntE called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
 	case int:
@@ -225,7 +225,7 @@ func indirectToStringerOrError(a interface{}) interface{} {
 // ToStringE casts an empty interface to a string.
 func ToStringE(i interface{}) (string, error) {
 	i = indirectToStringerOrError(i)
-	jww.DEBUG.Println("ToStringE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToStringE called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
 	case string:
@@ -263,7 +263,7 @@ func ToStringE(i interface{}) (string, error) {
 
 // ToStringMapStringE casts an empty interface to a map[string]string.
 func ToStringMapStringE(i interface{}) (map[string]string, error) {
-	jww.DEBUG.Println("ToStringMapStringE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToStringMapStringE called on type:", reflect.TypeOf(i))
 
 	var m = map[string]string{}
 
@@ -292,7 +292,7 @@ func ToStringMapStringE(i interface{}) (map[string]string, error) {
 
 // ToStringMapStringSliceE casts an empty interface to a map[string][]string.
 func ToStringMapStringSliceE(i interface{}) (map[string][]string, error) {
-	jww.DEBUG.Println("ToStringMapStringSliceE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToStringMapStringSliceE called on type:", reflect.TypeOf(i))
 
 	var m = map[string][]string{}
 
@@ -348,7 +348,7 @@ func ToStringMapStringSliceE(i interface{}) (map[string][]string, error) {
 
 // ToStringMapBoolE casts an empty interface to a map[string]bool.
 func ToStringMapBoolE(i interface{}) (map[string]bool, error) {
-	jww.DEBUG.Println("ToStringMapBoolE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToStringMapBoolE called on type:", reflect.TypeOf(i))
 
 	var m = map[string]bool{}
 
@@ -372,7 +372,7 @@ func ToStringMapBoolE(i interface{}) (map[string]bool, error) {
 
 // ToStringMapE casts an empty interface to a map[string]interface{}.
 func ToStringMapE(i interface{}) (map[string]interface{}, error) {
-	jww.DEBUG.Println("ToStringMapE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToStringMapE called on type:", reflect.TypeOf(i))
 
 	var m = map[string]interface{}{}
 
@@ -391,7 +391,7 @@ func ToStringMapE(i interface{}) (map[string]interface{}, error) {
 
 // ToSliceE casts an empty interface to a []interface{}.
 func ToSliceE(i interface{}) ([]interface{}, error) {
-	jww.DEBUG.Println("ToSliceE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToSliceE called on type:", reflect.TypeOf(i))
 
 	var s []interface{}
 
@@ -413,7 +413,7 @@ func ToSliceE(i interface{}) ([]interface{}, error) {
 
 // ToStringSliceE casts an empty interface to a []string.
 func ToStringSliceE(i interface{}) ([]string, error) {
-	jww.DEBUG.Println("ToStringSliceE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToStringSliceE called on type:", reflect.TypeOf(i))
 
 	var a []string
 
@@ -440,7 +440,7 @@ func ToStringSliceE(i interface{}) ([]string, error) {
 
 // ToIntSliceE casts an empty interface to a []int.
 func ToIntSliceE(i interface{}) ([]int, error) {
-	jww.DEBUG.Println("ToIntSliceE called on type:", reflect.TypeOf(i))
+	jww.TRACE.Println("ToIntSliceE called on type:", reflect.TypeOf(i))
 
 	if i == nil {
 		return []int{}, fmt.Errorf("Unable to Cast %#v to []int", i)

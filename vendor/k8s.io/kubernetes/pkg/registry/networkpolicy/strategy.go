@@ -27,7 +27,6 @@ import (
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/storage"
 	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
@@ -98,8 +97,8 @@ func NetworkPolicyToSelectableFields(networkPolicy *extensions.NetworkPolicy) fi
 
 // MatchNetworkPolicy is the filter used by the generic etcd backend to watch events
 // from etcd to clients of the apiserver only interested in specific labels/fields.
-func MatchNetworkPolicy(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
-	return storage.SelectionPredicate{
+func MatchNetworkPolicy(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
+	return &generic.SelectionPredicate{
 		Label: label,
 		Field: field,
 		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {

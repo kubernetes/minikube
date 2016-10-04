@@ -28,7 +28,6 @@ import (
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/storage"
 	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
@@ -167,8 +166,8 @@ func JobToSelectableFields(job *batch.Job) fields.Set {
 // MatchJob is the filter used by the generic etcd backend to route
 // watch events from etcd to clients of the apiserver only interested in specific
 // labels/fields.
-func MatchJob(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
-	return storage.SelectionPredicate{
+func MatchJob(label labels.Selector, field fields.Selector) *generic.SelectionPredicate {
+	return &generic.SelectionPredicate{
 		Label: label,
 		Field: field,
 		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {

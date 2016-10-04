@@ -22,10 +22,7 @@ import (
 	"github.com/coreos/etcd/mvcc/backend"
 )
 
-// isSubset returns true if a is a subset of b.
-// If a is a prefix of b, then a is a subset of b.
-// Given intervals [a1,a2) and [b1,b2), is
-// the a interval a subset of b?
+// isSubset returns true if a is a subset of b
 func isSubset(a, b *rangePerm) bool {
 	switch {
 	case len(a.end) == 0 && len(b.end) == 0:
@@ -35,11 +32,9 @@ func isSubset(a, b *rangePerm) bool {
 		// b is a key, a is a range
 		return false
 	case len(a.end) == 0:
-		// a is a key, b is a range. need b1 <= a1 and a1 < b2
-		return bytes.Compare(b.begin, a.begin) <= 0 && bytes.Compare(a.begin, b.end) < 0
+		return 0 <= bytes.Compare(a.begin, b.begin) && bytes.Compare(a.begin, b.end) <= 0
 	default:
-		// both are ranges. need b1 <= a1 and a2 <= b2
-		return bytes.Compare(b.begin, a.begin) <= 0 && bytes.Compare(a.end, b.end) <= 0
+		return 0 <= bytes.Compare(a.begin, b.begin) && bytes.Compare(a.end, b.end) <= 0
 	}
 }
 
@@ -93,18 +88,12 @@ func mergeRangePerms(perms []*rangePerm) []*rangePerm {
 	i := 0
 	for i < len(perms) {
 		begin, next := i, i
-		for next+1 < len(perms) && bytes.Compare(perms[next].end, perms[next+1].begin) >= 0 {
+		for next+1 < len(perms) && bytes.Compare(perms[next].end, perms[next+1].begin) != -1 {
 			next++
 		}
-		// don't merge ["a", "b") with ["b", ""), because perms[next+1].end is empty.
-		if next != begin && len(perms[next].end) > 0 {
-			merged = append(merged, &rangePerm{begin: perms[begin].begin, end: perms[next].end})
-		} else {
-			merged = append(merged, perms[begin])
-			if next != begin {
-				merged = append(merged, perms[next])
-			}
-		}
+
+		merged = append(merged, &rangePerm{begin: perms[begin].begin, end: perms[next].end})
+
 		i = next + 1
 	}
 

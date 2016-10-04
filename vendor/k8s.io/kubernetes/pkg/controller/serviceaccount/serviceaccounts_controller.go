@@ -26,6 +26,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/metrics"
@@ -79,7 +80,7 @@ func NewServiceAccountsController(cl clientset.Interface, options ServiceAccount
 		// If we're maintaining a single account, we can scope the accounts we watch to just that name
 		accountSelector = fields.SelectorFromSet(map[string]string{api.ObjectNameField: options.ServiceAccounts[0].Name})
 	}
-	e.serviceAccounts, e.serviceAccountController = cache.NewIndexerInformer(
+	e.serviceAccounts, e.serviceAccountController = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				options.FieldSelector = accountSelector
@@ -92,13 +93,13 @@ func NewServiceAccountsController(cl clientset.Interface, options ServiceAccount
 		},
 		&api.ServiceAccount{},
 		options.ServiceAccountResync,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			DeleteFunc: e.serviceAccountDeleted,
 		},
 		cache.Indexers{"namespace": cache.MetaNamespaceIndexFunc},
 	)
 
-	e.namespaces, e.namespaceController = cache.NewIndexerInformer(
+	e.namespaces, e.namespaceController = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return e.client.Core().Namespaces().List(options)
@@ -109,7 +110,7 @@ func NewServiceAccountsController(cl clientset.Interface, options ServiceAccount
 		},
 		&api.Namespace{},
 		options.NamespaceResync,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    e.namespaceAdded,
 			UpdateFunc: e.namespaceUpdated,
 		},
@@ -130,8 +131,8 @@ type ServiceAccountsController struct {
 	namespaces      cache.Indexer
 
 	// Since we join two objects, we'll watch both of them with controllers.
-	serviceAccountController *cache.Controller
-	namespaceController      *cache.Controller
+	serviceAccountController *framework.Controller
+	namespaceController      *framework.Controller
 }
 
 // Runs controller loops and returns immediately

@@ -85,15 +85,10 @@ const (
 	setUpCmd    = "setup"
 	tearDownCmd = "teardown"
 	statusCmd   = "status"
-	defaultDir  = "/usr/libexec/kubernetes/kubelet-plugins/net/exec/"
 )
 
 func ProbeNetworkPlugins(pluginDir string) []network.NetworkPlugin {
 	execPlugins := []network.NetworkPlugin{}
-
-	if pluginDir == "" {
-		pluginDir = defaultDir
-	}
 
 	files, _ := ioutil.ReadDir(pluginDir)
 	for _, f := range files {

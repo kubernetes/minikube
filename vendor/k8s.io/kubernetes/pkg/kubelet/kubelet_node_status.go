@@ -39,15 +39,6 @@ import (
 	"k8s.io/kubernetes/pkg/volume/util/volumehelper"
 )
 
-const (
-	// maxImagesInNodeStatus is the number of max images we store in image status.
-	maxImagesInNodeStatus = 50
-
-	// maxNamesPerImageInNodeStatus is max number of names per image stored in
-	// the node status.
-	maxNamesPerImageInNodeStatus = 5
-)
-
 // registerWithApiServer registers the node with the cluster master. It is safe
 // to call multiple times, but not concurrently (kl.registrationCompleted is
 // not locked).
@@ -116,7 +107,7 @@ func (kl *Kubelet) tryRegisterWithApiServer(node *api.Node) bool {
 		// annotation.
 		requiresUpdate := kl.reconcileCMADAnnotationWithExistingNode(node, existingNode)
 		if requiresUpdate {
-			if _, err := kl.kubeClient.Core().Nodes().UpdateStatus(existingNode); err != nil {
+			if _, err := kl.kubeClient.Core().Nodes().Update(existingNode); err != nil {
 				glog.Errorf("Unable to reconcile node %q with API server: error updating node: %v", kl.nodeName, err)
 				return false
 			}
@@ -341,8 +332,6 @@ func (kl *Kubelet) tryUpdateNodeStatus() error {
 	}
 	// Update the current status on the API server
 	updatedNode, err := kl.kubeClient.Core().Nodes().UpdateStatus(node)
-	// If update finishes sucessfully, mark the volumeInUse as reportedInUse to indicate
-	// those volumes are already updated in the node's status
 	if err == nil {
 		kl.volumeManager.MarkVolumesAsReportedInUse(
 			updatedNode.Status.VolumesInUse)
@@ -512,13 +501,8 @@ func (kl *Kubelet) setNodeStatusImages(node *api.Node) {
 		}
 
 		for _, image := range containerImages {
-			names := append(image.RepoDigests, image.RepoTags...)
-			// Report up to maxNamesPerImageInNodeStatus names per image.
-			if len(names) > maxNamesPerImageInNodeStatus {
-				names = names[0:maxNamesPerImageInNodeStatus]
-			}
 			imagesOnNode = append(imagesOnNode, api.ContainerImage{
-				Names:     names,
+				Names:     append(image.RepoTags, image.RepoDigests...),
 				SizeBytes: image.Size,
 			})
 		}
@@ -803,13 +787,9 @@ func (kl *Kubelet) recordNodeSchedulableEvent(node *api.Node) {
 	}
 }
 
-// Update VolumesInUse field in Node Status only after states are synced up at least once
-// in volume reconciler.
+// Update VolumesInUse field in Node Status
 func (kl *Kubelet) setNodeVolumesInUseStatus(node *api.Node) {
-	// Make sure to only update node status after reconciler starts syncing up states
-	if kl.volumeManager.ReconcilerStatesHasBeenSynced() {
-		node.Status.VolumesInUse = kl.volumeManager.GetVolumesInUse()
-	}
+	node.Status.VolumesInUse = kl.volumeManager.GetVolumesInUse()
 }
 
 // setNodeStatus fills in the Status fields of the given Node, overwriting

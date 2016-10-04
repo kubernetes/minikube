@@ -38,7 +38,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &extensions.DaemonSetList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.Daemonsets),
 		&extensions.DaemonSet{},
@@ -79,8 +79,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 		UpdateStrategy: daemonset.Strategy,
 		DeleteStrategy: daemonset.Strategy,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 	statusStore := *store
 	statusStore.UpdateStrategy = daemonset.StatusStrategy

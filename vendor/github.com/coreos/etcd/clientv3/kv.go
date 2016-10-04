@@ -157,14 +157,14 @@ func (kv *kv) do(ctx context.Context, op Op) (OpResponse, error) {
 		}
 	case tPut:
 		var resp *pb.PutResponse
-		r := &pb.PutRequest{Key: op.key, Value: op.val, Lease: int64(op.leaseID), PrevKv: op.prevKV}
+		r := &pb.PutRequest{Key: op.key, Value: op.val, Lease: int64(op.leaseID)}
 		resp, err = kv.remote.Put(ctx, r)
 		if err == nil {
 			return OpResponse{put: (*PutResponse)(resp)}, nil
 		}
 	case tDeleteRange:
 		var resp *pb.DeleteRangeResponse
-		r := &pb.DeleteRangeRequest{Key: op.key, RangeEnd: op.end, PrevKv: op.prevKV}
+		r := &pb.DeleteRangeRequest{Key: op.key, RangeEnd: op.end}
 		resp, err = kv.remote.DeleteRange(ctx, r)
 		if err == nil {
 			return OpResponse{del: (*DeleteResponse)(resp)}, nil

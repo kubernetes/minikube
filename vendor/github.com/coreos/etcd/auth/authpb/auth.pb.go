@@ -21,9 +21,9 @@ import (
 	proto "github.com/golang/protobuf/proto"
 
 	math "math"
-
-	io "io"
 )
+
+import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal

@@ -63,7 +63,7 @@ func NewStorage(opts generic.RESTOptions, k client.ConnectionInfoGetter, proxyTr
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &api.PodList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.Pods),
 		&api.Pod{},
@@ -94,8 +94,7 @@ func NewStorage(opts generic.RESTOptions, k client.ConnectionInfoGetter, proxyTr
 		DeleteStrategy:      pod.Strategy,
 		ReturnDeletedObject: true,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 
 	statusStore := *store
@@ -161,7 +160,7 @@ func (r *EvictionREST) Create(ctx api.Context, obj runtime.Object) (runtime.Obje
 		// Try to verify-and-decrement
 
 		// If it was false already, or if it becomes false during the course of our retries,
-		// raise an error marked as a 429.
+		// raise an error marked as a ... 429 maybe?
 		ok, err := r.checkAndDecrement(ctx, pdb)
 		if err != nil {
 			return nil, err

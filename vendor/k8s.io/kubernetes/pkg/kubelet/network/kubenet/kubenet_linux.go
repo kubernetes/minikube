@@ -20,9 +20,7 @@ package kubenet
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -47,9 +45,8 @@ import (
 	utilsets "k8s.io/kubernetes/pkg/util/sets"
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 
-	"strconv"
-
 	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
+	"strconv"
 )
 
 const (
@@ -57,7 +54,7 @@ const (
 	BridgeName        = "cbr0"
 	DefaultCNIDir     = "/opt/cni/bin"
 
-	sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
+	sysctlBridgeCallIptables = "net/bridge/bridge-nf-call-iptables"
 
 	// fallbackMTU is used if an MTU is not specified, and we cannot determine the MTU
 	fallbackMTU = 1460
@@ -70,14 +67,7 @@ const (
 
 	// ebtables Chain to store dedup rules
 	dedupChain = utilebtables.Chain("KUBE-DEDUP")
-
-	// defaultIPAMDir is the default location for the checkpoint files stored by host-local ipam
-	// https://github.com/containernetworking/cni/tree/master/plugins/ipam/host-local#backends
-	defaultIPAMDir = "/var/lib/cni/networks"
 )
-
-// CNI plugins required by kubenet in /opt/cni/bin or vendor directory
-var requiredCNIPlugins = [...]string{"bridge", "host-local", "loopback"}
 
 type kubenetNetworkPlugin struct {
 	network.NoopNetworkPlugin
@@ -149,9 +139,9 @@ func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componen
 	// was built-in, we simply ignore the error here. A better thing to do is
 	// to check the kernel version in the future.
 	plugin.execer.Command("modprobe", "br-netfilter").CombinedOutput()
-	err := plugin.sysctl.SetSysctl(sysctlBridgeCallIPTables, 1)
+	err := plugin.sysctl.SetSysctl(sysctlBridgeCallIptables, 1)
 	if err != nil {
-		glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIPTables, err)
+		glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIptables, err)
 	}
 
 	plugin.loConfig, err = libcni.ConfFromBytes([]byte(`{
@@ -220,7 +210,7 @@ const NET_CONFIG_TEMPLATE = `{
   "addIf": "%s",
   "isGateway": true,
   "ipMasq": false,
-  "hairpinMode": %t,
+  "hairpin": "%t",
   "ipam": {
     "type": "host-local",
     "subnet": "%s",
@@ -401,13 +391,13 @@ func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kube
 	plugin.podIPs[id] = ip4.String()
 
 	// Open any hostports the pod's containers want
-	activePods, err := plugin.getActivePods()
+	runningPods, err := plugin.getRunningPods()
 	if err != nil {
 		return err
 	}
 
-	newPod := &hostport.ActivePod{Pod: pod, IP: ip4}
-	if err := plugin.hostportHandler.OpenPodHostportsAndSync(newPod, BridgeName, activePods); err != nil {
+	newPod := &hostport.RunningPod{Pod: pod, IP: ip4}
+	if err := plugin.hostportHandler.OpenPodHostportsAndSync(newPod, BridgeName, runningPods); err != nil {
 		return err
 	}
 
@@ -439,16 +429,6 @@ func (plugin *kubenetNetworkPlugin) SetUpPod(namespace string, name string, id k
 			// Not a hard error or warning
 			glog.V(4).Infof("Failed to clean up %s/%s after SetUpPod failure: %v", namespace, name, err)
 		}
-
-		// TODO: Remove this hack once we've figured out how to retrieve the netns
-		// of an exited container. Currently, restarting docker will leak a bunch of
-		// ips. This will exhaust available ip space unless we cleanup old ips. At the
-		// same time we don't want to try GC'ing them periodically as that could lead
-		// to a performance regression in starting pods. So on each setup failure, try
-		// GC on the assumption that the kubelet is going to retry pod creation, and
-		// when it does, there will be ips.
-		plugin.ipamGarbageCollection()
-
 		return err
 	}
 
@@ -485,9 +465,9 @@ func (plugin *kubenetNetworkPlugin) teardown(namespace string, name string, id k
 		}
 	}
 
-	activePods, err := plugin.getActivePods()
+	runningPods, err := plugin.getRunningPods()
 	if err == nil {
-		err = plugin.hostportHandler.SyncHostports(BridgeName, activePods)
+		err = plugin.hostportHandler.SyncHostports(BridgeName, runningPods)
 	}
 	if err != nil {
 		errList = append(errList, err)
@@ -551,68 +531,18 @@ func (plugin *kubenetNetworkPlugin) Status() error {
 	if plugin.netConfig == nil {
 		return fmt.Errorf("Kubenet does not have netConfig. This is most likely due to lack of PodCIDR")
 	}
-
-	if !plugin.checkCNIPlugin() {
-		return fmt.Errorf("could not locate kubenet required CNI plugins %v at %q or %q", requiredCNIPlugins, DefaultCNIDir, plugin.vendorDir)
-	}
 	return nil
 }
 
-// checkCNIPlugin returns if all kubenet required cni plugins can be found at /opt/cni/bin or user specifed NetworkPluginDir.
-func (plugin *kubenetNetworkPlugin) checkCNIPlugin() bool {
-	if plugin.checkCNIPluginInDir(DefaultCNIDir) || plugin.checkCNIPluginInDir(plugin.vendorDir) {
-		return true
-	}
-	return false
-}
-
-// checkCNIPluginInDir returns if all required cni plugins are placed in dir
-func (plugin *kubenetNetworkPlugin) checkCNIPluginInDir(dir string) bool {
-	output, err := plugin.execer.Command("ls", dir).CombinedOutput()
-	if err != nil {
-		return false
-	}
-	fields := strings.Fields(string(output))
-	for _, cniPlugin := range requiredCNIPlugins {
-		found := false
-		for _, file := range fields {
-			if strings.TrimSpace(file) == cniPlugin {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
-}
-
-// getNonExitedPods returns a list of pods that have at least one running container.
-func (plugin *kubenetNetworkPlugin) getNonExitedPods() ([]*kubecontainer.Pod, error) {
-	ret := []*kubecontainer.Pod{}
-	pods, err := plugin.host.GetRuntime().GetPods(true)
+// Returns a list of pods running on this node and each pod's IP address.  Assumes
+// PodSpecs retrieved from the runtime include the name and ID of containers in
+// each pod.
+func (plugin *kubenetNetworkPlugin) getRunningPods() ([]*hostport.RunningPod, error) {
+	pods, err := plugin.host.GetRuntime().GetPods(false)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve pods from runtime: %v", err)
 	}
-	for _, p := range pods {
-		if podIsExited(p) {
-			continue
-		}
-		ret = append(ret, p)
-	}
-	return ret, nil
-}
-
-// Returns a list of pods running or ready to run on this node and each pod's IP address.
-// Assumes PodSpecs retrieved from the runtime include the name and ID of containers in
-// each pod.
-func (plugin *kubenetNetworkPlugin) getActivePods() ([]*hostport.ActivePod, error) {
-	pods, err := plugin.getNonExitedPods()
-	if err != nil {
-		return nil, err
-	}
-	activePods := make([]*hostport.ActivePod, 0)
+	runningPods := make([]*hostport.RunningPod, 0)
 	for _, p := range pods {
 		containerID, err := plugin.host.GetRuntime().GetPodContainerID(p)
 		if err != nil {
@@ -627,94 +557,13 @@ func (plugin *kubenetNetworkPlugin) getActivePods() ([]*hostport.ActivePod, erro
 			continue
 		}
 		if pod, ok := plugin.host.GetPodByName(p.Namespace, p.Name); ok {
-			activePods = append(activePods, &hostport.ActivePod{
+			runningPods = append(runningPods, &hostport.RunningPod{
 				Pod: pod,
 				IP:  podIP,
 			})
 		}
 	}
-	return activePods, nil
-}
-
-// ipamGarbageCollection will release unused IP.
-// kubenet uses the CNI bridge plugin, which stores allocated ips on file. Each
-// file created under defaultIPAMDir has the format: ip/container-hash. So this
-// routine looks for hashes that are not reported by the currently running docker,
-// and invokes DelNetwork on each one. Note that this will only work for the
-// current CNI bridge plugin, because we have no way of finding the NetNs.
-func (plugin *kubenetNetworkPlugin) ipamGarbageCollection() {
-	glog.V(2).Infof("Starting IP garbage collection")
-
-	ipamDir := filepath.Join(defaultIPAMDir, KubenetPluginName)
-	files, err := ioutil.ReadDir(ipamDir)
-	if err != nil {
-		glog.Errorf("Failed to list files in %q: %v", ipamDir, err)
-		return
-	}
-
-	// gather containerIDs for allocated ips
-	ipContainerIdMap := make(map[string]string)
-	for _, file := range files {
-		// skip non checkpoint file
-		if ip := net.ParseIP(file.Name()); ip == nil {
-			continue
-		}
-
-		content, err := ioutil.ReadFile(filepath.Join(ipamDir, file.Name()))
-		if err != nil {
-			glog.Errorf("Failed to read file %v: %v", file, err)
-		}
-		ipContainerIdMap[file.Name()] = strings.TrimSpace(string(content))
-	}
-
-	// gather infra container IDs of current running Pods
-	runningContainerIDs := utilsets.String{}
-	pods, err := plugin.getNonExitedPods()
-	if err != nil {
-		glog.Errorf("Failed to get pods: %v", err)
-		return
-	}
-	for _, pod := range pods {
-		containerID, err := plugin.host.GetRuntime().GetPodContainerID(pod)
-		if err != nil {
-			glog.Warningf("Failed to get infra containerID of %q/%q: %v", pod.Namespace, pod.Name, err)
-			continue
-		}
-
-		runningContainerIDs.Insert(strings.TrimSpace(containerID.ID))
-	}
-
-	// release leaked ips
-	for ip, containerID := range ipContainerIdMap {
-		// if the container is not running, release IP
-		if runningContainerIDs.Has(containerID) {
-			continue
-		}
-		// CNI requires all config to be presented, although only containerID is needed in this case
-		rt := &libcni.RuntimeConf{
-			ContainerID: containerID,
-			IfName:      network.DefaultInterfaceName,
-			// TODO: How do we find the NetNs of an exited container? docker inspect
-			// doesn't show us the pid, so we probably need to checkpoint
-			NetNS: "",
-		}
-
-		glog.V(2).Infof("Releasing IP %q allocated to %q.", ip, containerID)
-		// CNI bridge plugin should try to release IP and then return
-		if err := plugin.cniConfig.DelNetwork(plugin.netConfig, rt); err != nil {
-			glog.Errorf("Error while releasing IP: %v", err)
-		}
-	}
-}
-
-// podIsExited returns true if the pod is exited (all containers inside are exited).
-func podIsExited(p *kubecontainer.Pod) bool {
-	for _, c := range p.Containers {
-		if c.State != kubecontainer.ContainerStateExited {
-			return false
-		}
-	}
-	return true
+	return runningPods, nil
 }
 
 func (plugin *kubenetNetworkPlugin) buildCNIRuntimeConf(ifName string, id kubecontainer.ContainerID) (*libcni.RuntimeConf, error) {

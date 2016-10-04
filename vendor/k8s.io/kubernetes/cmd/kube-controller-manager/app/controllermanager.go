@@ -51,9 +51,9 @@ import (
 	"k8s.io/kubernetes/pkg/controller/deployment"
 	"k8s.io/kubernetes/pkg/controller/disruption"
 	endpointcontroller "k8s.io/kubernetes/pkg/controller/endpoint"
+	"k8s.io/kubernetes/pkg/controller/framework/informers"
 	"k8s.io/kubernetes/pkg/controller/garbagecollector"
 	"k8s.io/kubernetes/pkg/controller/garbagecollector/metaonly"
-	"k8s.io/kubernetes/pkg/controller/informers"
 	"k8s.io/kubernetes/pkg/controller/job"
 	namespacecontroller "k8s.io/kubernetes/pkg/controller/namespace"
 	nodecontroller "k8s.io/kubernetes/pkg/controller/node"
@@ -455,7 +455,7 @@ func StartControllers(s *options.CMServer, kubeClient *client.Client, kubeconfig
 	go attachDetachController.Run(wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
-	groupVersion = "certificates.k8s.io/v1alpha1"
+	groupVersion = "certificates/v1alpha1"
 	resources, found = resourceMap[groupVersion]
 	glog.Infof("Attempting to start certificates, full resource map %+v", resourceMap)
 	if containsVersion(versions, groupVersion) && found {

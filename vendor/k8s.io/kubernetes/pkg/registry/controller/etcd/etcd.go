@@ -62,7 +62,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &api.ReplicationControllerList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.Controllers),
 		&api.ReplicationController{},
@@ -104,8 +104,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 		UpdateStrategy: controller.Strategy,
 		DeleteStrategy: controller.Strategy,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 	statusStore := *store
 	statusStore.UpdateStrategy = controller.StatusStrategy

@@ -34,7 +34,8 @@ import (
 	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/informers"
+	"k8s.io/kubernetes/pkg/controller/framework"
+	"k8s.io/kubernetes/pkg/controller/framework/informers"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util"
@@ -85,7 +86,7 @@ type ReplicationManager struct {
 	// we have a personal informer, we must start it ourselves.   If you start
 	// the controller using NewReplicationManager(passing SharedInformer), this
 	// will be null
-	internalPodInformer cache.SharedIndexInformer
+	internalPodInformer framework.SharedIndexInformer
 
 	// An rc is temporarily suspended after creating/deleting these many replicas.
 	// It resumes normal action after observing the watch events for them.
@@ -99,11 +100,11 @@ type ReplicationManager struct {
 	// A store of replication controllers, populated by the rcController
 	rcStore cache.StoreToReplicationControllerLister
 	// Watches changes to all replication controllers
-	rcController *cache.Controller
+	rcController *framework.Controller
 	// A store of pods, populated by the podController
 	podStore cache.StoreToPodLister
 	// Watches changes to all pods
-	podController cache.ControllerInterface
+	podController framework.ControllerInterface
 	// podStoreSynced returns true if the pod store has been synced at least once.
 	// Added as a member to the struct to allow injection for testing.
 	podStoreSynced func() bool
@@ -119,7 +120,7 @@ type ReplicationManager struct {
 }
 
 // NewReplicationManager creates a replication manager
-func NewReplicationManager(podInformer cache.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, burstReplicas int, lookupCacheSize int, garbageCollectorEnabled bool) *ReplicationManager {
+func NewReplicationManager(podInformer framework.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, burstReplicas int, lookupCacheSize int, garbageCollectorEnabled bool) *ReplicationManager {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
 	eventBroadcaster.StartRecordingToSink(&unversionedcore.EventSinkImpl{Interface: kubeClient.Core().Events("")})
@@ -129,7 +130,7 @@ func NewReplicationManager(podInformer cache.SharedIndexInformer, kubeClient cli
 }
 
 // newReplicationManager configures a replication manager with the specified event recorder
-func newReplicationManager(eventRecorder record.EventRecorder, podInformer cache.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, burstReplicas int, lookupCacheSize int, garbageCollectorEnabled bool) *ReplicationManager {
+func newReplicationManager(eventRecorder record.EventRecorder, podInformer framework.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, burstReplicas int, lookupCacheSize int, garbageCollectorEnabled bool) *ReplicationManager {
 	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
 		metrics.RegisterMetricAndTrackRateLimiterUsage("replication_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
 	}
@@ -146,7 +147,7 @@ func newReplicationManager(eventRecorder record.EventRecorder, podInformer cache
 		garbageCollectorEnabled: garbageCollectorEnabled,
 	}
 
-	rm.rcStore.Indexer, rm.rcController = cache.NewIndexerInformer(
+	rm.rcStore.Indexer, rm.rcController = framework.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return rm.kubeClient.Core().ReplicationControllers(api.NamespaceAll).List(options)
@@ -158,7 +159,7 @@ func newReplicationManager(eventRecorder record.EventRecorder, podInformer cache
 		&api.ReplicationController{},
 		// TODO: Can we have much longer period here?
 		FullControllerResyncPeriod,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    rm.enqueueController,
 			UpdateFunc: rm.updateRC,
 			// This will enter the sync loop and no-op, because the controller has been deleted from the store.
@@ -169,7 +170,7 @@ func newReplicationManager(eventRecorder record.EventRecorder, podInformer cache
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
-	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
 		AddFunc: rm.addPod,
 		// This invokes the rc for every pod change, eg: host assignment. Though this might seem like overkill
 		// the most frequent pod update is status, and the associated rc will only list from local storage, so
@@ -318,8 +319,6 @@ func (rm *ReplicationManager) updateRC(old, cur interface{}) {
 	if !reflect.DeepEqual(oldRC.Spec.Selector, curRC.Spec.Selector) {
 		rm.lookupCache.InvalidateAll()
 	}
-	// TODO: Remove when #31981 is resolved!
-	glog.Infof("Observed updated replication controller %v. Desired pod count change: %d->%d", curRC.Name, oldRC.Spec.Replicas, curRC.Spec.Replicas)
 
 	// You might imagine that we only really need to enqueue the
 	// controller when Spec changes, but it is safer to sync any
@@ -334,7 +333,6 @@ func (rm *ReplicationManager) updateRC(old, cur interface{}) {
 	// that bad as rcs that haven't met expectations yet won't
 	// sync, and all the listing is done using local stores.
 	if oldRC.Status.Replicas != curRC.Status.Replicas {
-		// TODO: Should we log status or spec?
 		glog.V(4).Infof("Observed updated replica count for rc: %v, %d->%d", curRC.Name, oldRC.Status.Replicas, curRC.Status.Replicas)
 	}
 	rm.enqueueController(cur)

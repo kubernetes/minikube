@@ -14,7 +14,6 @@ type Status interface {
 	Total() int64
 	Loss() int64
 	Health() bool
-	Err() error
 	// Estimated smoothed round trip time
 	SRTT() time.Duration
 	// Estimated clock difference
@@ -28,7 +27,6 @@ type status struct {
 	total     int64
 	loss      int64
 	health    bool
-	err       error
 	clockdiff time.Duration
 	stopC     chan struct{}
 }
@@ -58,12 +56,6 @@ func (s *status) Health() bool {
 	return s.health
 }
 
-func (s *status) Err() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.err
-}
-
 func (s *status) ClockDiff() time.Duration {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -82,17 +74,15 @@ func (s *status) record(rtt time.Duration, when time.Time) {
 	s.health = true
 	s.srtt = time.Duration((1-α)*float64(s.srtt) + α*float64(rtt))
 	s.clockdiff = time.Now().Sub(when) - s.srtt/2
-	s.err = nil
 }
 
-func (s *status) recordFailure(err error) {
+func (s *status) recordFailure() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.total++
 	s.health = false
 	s.loss += 1
-	s.err = err
 }
 
 func (s *status) reset() {
@@ -101,8 +91,6 @@ func (s *status) reset() {
 
 	s.srtt = 0
 	s.total = 0
-	s.loss = 0
 	s.health = false
 	s.clockdiff = 0
-	s.err = nil
 }

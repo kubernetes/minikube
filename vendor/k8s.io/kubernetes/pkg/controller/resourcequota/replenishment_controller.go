@@ -27,7 +27,8 @@ import (
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/informers"
+	"k8s.io/kubernetes/pkg/controller/framework"
+	"k8s.io/kubernetes/pkg/controller/framework/informers"
 	"k8s.io/kubernetes/pkg/quota/evaluator/core"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/metrics"
@@ -89,18 +90,18 @@ func ObjectReplenishmentDeleteFunc(options *ReplenishmentControllerOptions) func
 type ReplenishmentControllerFactory interface {
 	// NewController returns a controller configured with the specified options.
 	// This method is NOT thread-safe.
-	NewController(options *ReplenishmentControllerOptions) (cache.ControllerInterface, error)
+	NewController(options *ReplenishmentControllerOptions) (framework.ControllerInterface, error)
 }
 
 // replenishmentControllerFactory implements ReplenishmentControllerFactory
 type replenishmentControllerFactory struct {
 	kubeClient  clientset.Interface
-	podInformer cache.SharedInformer
+	podInformer framework.SharedInformer
 }
 
 // NewReplenishmentControllerFactory returns a factory that knows how to build controllers
 // to replenish resources when updated or deleted
-func NewReplenishmentControllerFactory(podInformer cache.SharedInformer, kubeClient clientset.Interface) ReplenishmentControllerFactory {
+func NewReplenishmentControllerFactory(podInformer framework.SharedInformer, kubeClient clientset.Interface) ReplenishmentControllerFactory {
 	return &replenishmentControllerFactory{
 		kubeClient:  kubeClient,
 		podInformer: podInformer,
@@ -111,8 +112,8 @@ func NewReplenishmentControllerFactoryFromClient(kubeClient clientset.Interface)
 	return NewReplenishmentControllerFactory(nil, kubeClient)
 }
 
-func (r *replenishmentControllerFactory) NewController(options *ReplenishmentControllerOptions) (cache.ControllerInterface, error) {
-	var result cache.ControllerInterface
+func (r *replenishmentControllerFactory) NewController(options *ReplenishmentControllerOptions) (framework.ControllerInterface, error) {
+	var result framework.ControllerInterface
 	if r.kubeClient != nil && r.kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
 		metrics.RegisterMetricAndTrackRateLimiterUsage("replenishment_controller", r.kubeClient.Core().GetRESTClient().GetRateLimiter())
 	}
@@ -120,7 +121,7 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 	switch options.GroupKind {
 	case api.Kind("Pod"):
 		if r.podInformer != nil {
-			r.podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			r.podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
 				UpdateFunc: PodReplenishmentUpdateFunc(options),
 				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
 			})
@@ -132,7 +133,7 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 		result = r.podInformer
 
 	case api.Kind("Service"):
-		_, result = cache.NewInformer(
+		_, result = framework.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 					return r.kubeClient.Core().Services(api.NamespaceAll).List(options)
@@ -143,13 +144,13 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 			&api.Service{},
 			options.ResyncPeriod(),
-			cache.ResourceEventHandlerFuncs{
+			framework.ResourceEventHandlerFuncs{
 				UpdateFunc: ServiceReplenishmentUpdateFunc(options),
 				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
 			},
 		)
 	case api.Kind("ReplicationController"):
-		_, result = cache.NewInformer(
+		_, result = framework.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 					return r.kubeClient.Core().ReplicationControllers(api.NamespaceAll).List(options)
@@ -160,12 +161,12 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 			&api.ReplicationController{},
 			options.ResyncPeriod(),
-			cache.ResourceEventHandlerFuncs{
+			framework.ResourceEventHandlerFuncs{
 				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
 			},
 		)
 	case api.Kind("PersistentVolumeClaim"):
-		_, result = cache.NewInformer(
+		_, result = framework.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 					return r.kubeClient.Core().PersistentVolumeClaims(api.NamespaceAll).List(options)
@@ -176,12 +177,12 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 			&api.PersistentVolumeClaim{},
 			options.ResyncPeriod(),
-			cache.ResourceEventHandlerFuncs{
+			framework.ResourceEventHandlerFuncs{
 				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
 			},
 		)
 	case api.Kind("Secret"):
-		_, result = cache.NewInformer(
+		_, result = framework.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 					return r.kubeClient.Core().Secrets(api.NamespaceAll).List(options)
@@ -192,12 +193,12 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 			&api.Secret{},
 			options.ResyncPeriod(),
-			cache.ResourceEventHandlerFuncs{
+			framework.ResourceEventHandlerFuncs{
 				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
 			},
 		)
 	case api.Kind("ConfigMap"):
-		_, result = cache.NewInformer(
+		_, result = framework.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 					return r.kubeClient.Core().ConfigMaps(api.NamespaceAll).List(options)
@@ -208,7 +209,7 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 			&api.ConfigMap{},
 			options.ResyncPeriod(),
-			cache.ResourceEventHandlerFuncs{
+			framework.ResourceEventHandlerFuncs{
 				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
 			},
 		)
@@ -253,7 +254,7 @@ func IsUnhandledGroupKindError(err error) bool {
 // returning the first success or failure it hits.  If there are no hits either way, it return an UnhandledGroupKind error
 type UnionReplenishmentControllerFactory []ReplenishmentControllerFactory
 
-func (f UnionReplenishmentControllerFactory) NewController(options *ReplenishmentControllerOptions) (cache.ControllerInterface, error) {
+func (f UnionReplenishmentControllerFactory) NewController(options *ReplenishmentControllerOptions) (framework.ControllerInterface, error) {
 	for _, factory := range f {
 		controller, err := factory.NewController(options)
 		if !IsUnhandledGroupKindError(err) {

@@ -19,7 +19,6 @@ package exists
 import (
 	"io"
 
-	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
 	"fmt"
@@ -27,7 +26,8 @@ import (
 	"k8s.io/kubernetes/pkg/admission"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/errors"
-	"k8s.io/kubernetes/pkg/controller/informers"
+	"k8s.io/kubernetes/pkg/controller/framework"
+	"k8s.io/kubernetes/pkg/controller/framework/informers"
 )
 
 func init() {
@@ -42,7 +42,7 @@ func init() {
 type exists struct {
 	*admission.Handler
 	client            clientset.Interface
-	namespaceInformer cache.SharedIndexInformer
+	namespaceInformer framework.SharedIndexInformer
 }
 
 var _ = admission.WantsInformerFactory(&exists{})

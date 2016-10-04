@@ -24,7 +24,7 @@ import (
 )
 
 // GroupName is the group name use in this package
-const GroupName = "certificates.k8s.io"
+const GroupName = "certificates"
 
 // SchemeGroupVersion is group version used to register these objects
 var SchemeGroupVersion = unversioned.GroupVersion{Group: GroupName, Version: "v1alpha1"}

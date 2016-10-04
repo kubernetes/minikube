@@ -244,12 +244,12 @@ func (cache *schedulerCache) RemovePod(pod *api.Pod) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	cachedstate, ok := cache.podStates[key]
+	_, ok := cache.podStates[key]
 	switch {
 	// An assumed pod won't have Delete/Remove event. It needs to have Add event
 	// before Remove event, in which case the state would change from Assumed to Added.
 	case ok && !cache.assumedPods[key]:
-		err := cache.removePod(cachedstate.pod)
+		err := cache.removePod(pod)
 		if err != nil {
 			return err
 		}

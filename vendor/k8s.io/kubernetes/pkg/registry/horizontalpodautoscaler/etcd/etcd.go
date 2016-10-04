@@ -37,7 +37,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &autoscaling.HorizontalPodAutoscalerList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.HorizontalPodAutoscalers),
 		&autoscaling.HorizontalPodAutoscaler{},
@@ -77,8 +77,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 		UpdateStrategy: horizontalpodautoscaler.Strategy,
 		DeleteStrategy: horizontalpodautoscaler.Strategy,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 	statusStore := *store
 	statusStore.UpdateStrategy = horizontalpodautoscaler.StatusStrategy

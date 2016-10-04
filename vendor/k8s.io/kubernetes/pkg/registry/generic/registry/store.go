@@ -32,11 +32,11 @@ import (
 	"k8s.io/kubernetes/pkg/api/validation"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/labels"
+	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/storage"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/validation/field"
-	"k8s.io/kubernetes/pkg/version"
 	"k8s.io/kubernetes/pkg/watch"
 
 	"github.com/golang/glog"
@@ -88,20 +88,17 @@ type Store struct {
 	TTLFunc func(obj runtime.Object, existing uint64, update bool) (uint64, error)
 
 	// Returns a matcher corresponding to the provided labels and fields.
-	PredicateFunc func(label labels.Selector, field fields.Selector) storage.SelectionPredicate
-
-	// Called to cleanup storage clients.
-	DestroyFunc func()
+	PredicateFunc func(label labels.Selector, field fields.Selector) *generic.SelectionPredicate
 
 	// DeleteCollectionWorkers is the maximum number of workers in a single
 	// DeleteCollection call.
 	DeleteCollectionWorkers int
 
-	// Decorator is called as exit hook on object returned from the underlying storage.
-	// The returned object could be individual object (e.g. Pod) or the list type (e.g. PodList).
-	// Decorator is intended for integrations that are above storage and
-	// should only be used for specific cases where storage of the value is
-	// not appropriate, since they cannot be watched.
+	// Called on all objects returned from the underlying store, after
+	// the exit hooks are invoked. Decorators are intended for integrations
+	// that are above storage and should only be used for specific cases where
+	// storage of the value is not appropriate, since they cannot
+	// be watched.
 	Decorator rest.ObjectFunc
 	// Allows extended behavior during creation, required
 	CreateStrategy rest.RESTCreateStrategy
@@ -187,24 +184,16 @@ func (e *Store) List(ctx api.Context, options *api.ListOptions) (runtime.Object,
 	if options != nil && options.FieldSelector != nil {
 		field = options.FieldSelector
 	}
-	out, err := e.ListPredicate(ctx, e.PredicateFunc(label, field), options)
-	if err != nil {
-		return nil, err
-	}
-	if e.Decorator != nil {
-		if err := e.Decorator(out); err != nil {
-			return nil, err
-		}
-	}
-	return out, nil
+	return e.ListPredicate(ctx, e.PredicateFunc(label, field), options)
 }
 
 // ListPredicate returns a list of all the items matching m.
-func (e *Store) ListPredicate(ctx api.Context, p storage.SelectionPredicate, options *api.ListOptions) (runtime.Object, error) {
+func (e *Store) ListPredicate(ctx api.Context, m *generic.SelectionPredicate, options *api.ListOptions) (runtime.Object, error) {
 	list := e.NewListFunc()
-	if name, ok := p.MatchesSingle(); ok {
+	filter := e.createFilter(m)
+	if name, ok := m.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
-			err := e.Storage.GetToList(ctx, key, p, list)
+			err := e.Storage.GetToList(ctx, key, filter, list)
 			return list, storeerr.InterpretListError(err, e.QualifiedResource)
 		}
 		// if we cannot extract a key based on the current context, the optimization is skipped
@@ -213,27 +202,8 @@ func (e *Store) ListPredicate(ctx api.Context, p storage.SelectionPredicate, opt
 	if options == nil {
 		options = &api.ListOptions{ResourceVersion: "0"}
 	}
-	err := e.Storage.List(ctx, e.KeyRootFunc(ctx), options.ResourceVersion, p, list)
+	err := e.Storage.List(ctx, e.KeyRootFunc(ctx), options.ResourceVersion, filter, list)
 	return list, storeerr.InterpretListError(err, e.QualifiedResource)
-}
-
-// TODO: remove this function after 1.6
-// returns if the user agent is is kubectl older than v1.4.0
-func isOldKubectl(userAgent string) bool {
-	// example userAgent string: kubectl-1.3/v1.3.8 (linux/amd64) kubernetes/e328d5b
-	if !strings.Contains(userAgent, "kubectl") {
-		return false
-	}
-	userAgent = strings.Split(userAgent, " ")[0]
-	subs := strings.Split(userAgent, "/")
-	if len(subs) != 2 {
-		return false
-	}
-	kubectlVersion, versionErr := version.Parse(subs[1])
-	if versionErr != nil {
-		return false
-	}
-	return kubectlVersion.LT(version.MustParse("v1.4.0"))
 }
 
 // Create inserts a new item according to the unique key from the object.
@@ -257,29 +227,6 @@ func (e *Store) Create(ctx api.Context, obj runtime.Object) (runtime.Object, err
 	if err := e.Storage.Create(ctx, key, obj, out, ttl); err != nil {
 		err = storeerr.InterpretCreateError(err, e.QualifiedResource, name)
 		err = rest.CheckGeneratedNameError(e.CreateStrategy, err, obj)
-		if !kubeerr.IsAlreadyExists(err) {
-			return nil, err
-		}
-		if errGet := e.Storage.Get(ctx, key, out, false); errGet != nil {
-			return nil, err
-		}
-		accessor, errGetAcc := meta.Accessor(out)
-		if errGetAcc != nil {
-			return nil, err
-		}
-		if accessor.GetDeletionTimestamp() != nil {
-			msg := &err.(*kubeerr.StatusError).ErrStatus.Message
-			*msg = fmt.Sprintf("object is being deleted: %s", *msg)
-			// TODO: remove this block after 1.6
-			userAgent, _ := api.UserAgentFrom(ctx)
-			if !isOldKubectl(userAgent) {
-				return nil, err
-			}
-			if e.QualifiedResource.Resource != "replicationcontrollers" {
-				return nil, err
-			}
-			*msg = fmt.Sprintf("%s: if you're using \"kubectl rolling-update\" with kubectl version older than v1.4.0, your rolling update has failed, though the pods are correctly updated. Please see https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md#kubectl-rolling-update for a workaround", *msg)
-		}
 		return nil, err
 	}
 	if e.AfterCreate != nil {
@@ -638,9 +585,9 @@ func (e *Store) updateForGracefulDeletionAndFinalizers(ctx api.Context, name, ke
 				existingAccessor.SetFinalizers(newFinalizers)
 			}
 
-			pendingFinalizers = len(existingAccessor.GetFinalizers()) != 0
 			if !graceful {
 				// set the DeleteGracePeriods to 0 if the object has pendingFinalizers but not supporting graceful deletion
+				pendingFinalizers = len(existingAccessor.GetFinalizers()) != 0
 				if pendingFinalizers {
 					glog.V(6).Infof("update the DeletionTimestamp to \"now\" and GracePeriodSeconds to 0 for object %s, because it has pending finalizers", name)
 					err = markAsDeleting(existing)
@@ -851,7 +798,7 @@ func (e *Store) finalizeDelete(obj runtime.Object, runHooks bool) (runtime.Objec
 
 // Watch makes a matcher for the given label and field, and calls
 // WatchPredicate. If possible, you should customize PredicateFunc to produre a
-// matcher that matches by key. SelectionPredicate does this for you
+// matcher that matches by key. generic.SelectionPredicate does this for you
 // automatically.
 func (e *Store) Watch(ctx api.Context, options *api.ListOptions) (watch.Interface, error) {
 	label := labels.Everything()
@@ -870,32 +817,38 @@ func (e *Store) Watch(ctx api.Context, options *api.ListOptions) (watch.Interfac
 }
 
 // WatchPredicate starts a watch for the items that m matches.
-func (e *Store) WatchPredicate(ctx api.Context, p storage.SelectionPredicate, resourceVersion string) (watch.Interface, error) {
-	if name, ok := p.MatchesSingle(); ok {
+func (e *Store) WatchPredicate(ctx api.Context, m *generic.SelectionPredicate, resourceVersion string) (watch.Interface, error) {
+	filter := e.createFilter(m)
+
+	if name, ok := m.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
 			if err != nil {
 				return nil, err
 			}
-			w, err := e.Storage.Watch(ctx, key, resourceVersion, p)
-			if err != nil {
-				return nil, err
-			}
-			if e.Decorator != nil {
-				return newDecoratedWatcher(w, e.Decorator), nil
-			}
-			return w, nil
+			return e.Storage.Watch(ctx, key, resourceVersion, filter)
 		}
 		// if we cannot extract a key based on the current context, the optimization is skipped
 	}
 
-	w, err := e.Storage.WatchList(ctx, e.KeyRootFunc(ctx), resourceVersion, p)
-	if err != nil {
-		return nil, err
+	return e.Storage.WatchList(ctx, e.KeyRootFunc(ctx), resourceVersion, filter)
+}
+
+func (e *Store) createFilter(m *generic.SelectionPredicate) storage.Filter {
+	filterFunc := func(obj runtime.Object) bool {
+		matches, err := m.Matches(obj)
+		if err != nil {
+			glog.Errorf("unable to match watch: %v", err)
+			return false
+		}
+		if matches && e.Decorator != nil {
+			if err := e.Decorator(obj); err != nil {
+				glog.Errorf("unable to decorate watch: %v", err)
+				return false
+			}
+		}
+		return matches
 	}
-	if e.Decorator != nil {
-		return newDecoratedWatcher(w, e.Decorator), nil
-	}
-	return w, nil
+	return storage.NewSimpleFilter(filterFunc, m.MatcherIndex)
 }
 
 // calculateTTL is a helper for retrieving the updated TTL for an object or returning an error

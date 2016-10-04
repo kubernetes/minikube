@@ -29,6 +29,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/client/cache"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/runtime"
@@ -76,8 +77,8 @@ type ConfigFactory struct {
 	// Close this to stop all reflectors
 	StopEverything chan struct{}
 
-	scheduledPodPopulator *cache.Controller
-	nodePopulator         *cache.Controller
+	scheduledPodPopulator *framework.Controller
+	nodePopulator         *framework.Controller
 
 	schedulerCache schedulercache.Cache
 
@@ -124,11 +125,11 @@ func NewConfigFactory(client *client.Client, schedulerName string, hardPodAffini
 	// We construct this here instead of in CreateFromKeys because
 	// ScheduledPodLister is something we provide to plug in functions that
 	// they may need to call.
-	c.ScheduledPodLister.Indexer, c.scheduledPodPopulator = cache.NewIndexerInformer(
+	c.ScheduledPodLister.Indexer, c.scheduledPodPopulator = framework.NewIndexerInformer(
 		c.createAssignedNonTerminatedPodLW(),
 		&api.Pod{},
 		0,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    c.addPodToCache,
 			UpdateFunc: c.updatePodInCache,
 			DeleteFunc: c.deletePodFromCache,
@@ -136,11 +137,11 @@ func NewConfigFactory(client *client.Client, schedulerName string, hardPodAffini
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
-	c.NodeLister.Store, c.nodePopulator = cache.NewInformer(
+	c.NodeLister.Store, c.nodePopulator = framework.NewInformer(
 		c.createNodeLW(),
 		&api.Node{},
 		0,
-		cache.ResourceEventHandlerFuncs{
+		framework.ResourceEventHandlerFuncs{
 			AddFunc:    c.addNodeToCache,
 			UpdateFunc: c.updateNodeInCache,
 			DeleteFunc: c.deleteNodeFromCache,

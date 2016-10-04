@@ -61,7 +61,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 	prefix := "/" + opts.ResourcePrefix
 
 	newListFunc := func() runtime.Object { return &extensions.ReplicaSetList{} }
-	storageInterface, dFunc := opts.Decorator(
+	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.Replicasets),
 		&extensions.ReplicaSet{},
@@ -102,8 +102,7 @@ func NewREST(opts generic.RESTOptions) (*REST, *StatusREST) {
 		UpdateStrategy: replicaset.Strategy,
 		DeleteStrategy: replicaset.Strategy,
 
-		Storage:     storageInterface,
-		DestroyFunc: dFunc,
+		Storage: storageInterface,
 	}
 	statusStore := *store
 	statusStore.UpdateStrategy = replicaset.StatusStrategy

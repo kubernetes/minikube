@@ -75,7 +75,6 @@ func DeepCopy_v1alpha1_KubeProxyConfiguration(in interface{}, out interface{}, c
 		out.UDPIdleTimeout = in.UDPIdleTimeout
 		out.ConntrackMax = in.ConntrackMax
 		out.ConntrackMaxPerCore = in.ConntrackMaxPerCore
-		out.ConntrackMin = in.ConntrackMin
 		out.ConntrackTCPEstablishedTimeout = in.ConntrackTCPEstablishedTimeout
 		return nil
 	}
@@ -240,8 +239,6 @@ func DeepCopy_v1alpha1_KubeletConfiguration(in interface{}, out interface{}, c *
 		out.VolumeStatsAggPeriod = in.VolumeStatsAggPeriod
 		out.NetworkPluginName = in.NetworkPluginName
 		out.NetworkPluginDir = in.NetworkPluginDir
-		out.CNIConfDir = in.CNIConfDir
-		out.CNIBinDir = in.CNIBinDir
 		out.NetworkPluginMTU = in.NetworkPluginMTU
 		out.VolumePluginDir = in.VolumePluginDir
 		out.CloudProvider = in.CloudProvider
