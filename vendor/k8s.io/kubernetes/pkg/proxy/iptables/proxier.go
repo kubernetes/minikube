@@ -74,8 +74,8 @@ const (
 	KubeMarkDropChain utiliptables.Chain = "KUBE-MARK-DROP"
 )
 
-// IPTablesVersioner can query the current iptables version.
-type IPTablesVersioner interface {
+// IptablesVersioner can query the current iptables version.
+type IptablesVersioner interface {
 	// returns "X.Y.Z"
 	GetVersion() (string, error)
 }
@@ -86,12 +86,12 @@ type KernelCompatTester interface {
 	IsCompatible() error
 }
 
-// CanUseIPTablesProxier returns true if we should use the iptables Proxier
+// CanUseIptablesProxier returns true if we should use the iptables Proxier
 // instead of the "classic" userspace Proxier.  This is determined by checking
 // the iptables version and for the existence of kernel features. It may return
 // an error if it fails to get the iptables version without error, in which
 // case it will also return false.
-func CanUseIPTablesProxier(iptver IPTablesVersioner, kcompat KernelCompatTester) (bool, error) {
+func CanUseIptablesProxier(iptver IptablesVersioner, kcompat KernelCompatTester) (bool, error) {
 	minVersion, err := semver.NewVersion(iptablesMinVersion)
 	if err != nil {
 		return false, err
@@ -127,7 +127,7 @@ func (lkct LinuxKernelCompatTester) IsCompatible() error {
 }
 
 const sysctlRouteLocalnet = "net/ipv4/conf/all/route_localnet"
-const sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
+const sysctlBridgeCallIptables = "net/bridge/bridge-nf-call-iptables"
 
 // internal struct for string service information
 type serviceInfo struct {
@@ -211,7 +211,7 @@ func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec ut
 	// Proxy needs br_netfilter and bridge-nf-call-iptables=1 when containers
 	// are connected to a Linux bridge (but not SDN bridges).  Until most
 	// plugins handle this, log when config is missing
-	if val, err := sysctl.GetSysctl(sysctlBridgeCallIPTables); err == nil && val != 1 {
+	if val, err := sysctl.GetSysctl(sysctlBridgeCallIptables); err == nil && val != 1 {
 		glog.Infof("missing br-netfilter module or unset sysctl br-nf-call-iptables; proxy may not work as intended")
 	}
 
@@ -346,10 +346,6 @@ func (proxier *Proxier) sameConfig(info *serviceInfo, service *api.Service, port
 	if info.sessionAffinityType != service.Spec.SessionAffinity {
 		return false
 	}
-	onlyNodeLocalEndpoints := apiservice.NeedsHealthCheck(service) && featuregate.DefaultFeatureGate.ExternalTrafficLocalOnly()
-	if info.onlyNodeLocalEndpoints != onlyNodeLocalEndpoints {
-		return false
-	}
 	return true
 }
 
@@ -450,9 +446,6 @@ func (proxier *Proxier) OnServiceUpdate(allServices []api.Service) {
 					// Turn on healthcheck responder to listen on the health check nodePort
 					healthcheck.AddServiceListener(serviceName.NamespacedName, info.healthCheckNodePort)
 				}
-			} else {
-				// Delete healthcheck responders, if any, previously listening for this service
-				healthcheck.DeleteServiceListener(serviceName.NamespacedName, 0)
 			}
 			proxier.serviceMap[serviceName] = info
 
@@ -646,7 +639,7 @@ func flattenValidEndpoints(endpoints []hostPortInfo) []string {
 
 // portProtoHash takes the ServicePortName and protocol for a service
 // returns the associated 16 character hash. This is computed by hashing (sha256)
-// then encoding to base32 and truncating to 16 chars. We do this because IPTables
+// then encoding to base32 and truncating to 16 chars. We do this because Iptables
 // Chain Names must be <= 28 chars long, and the longer they are the harder they are to read.
 func portProtoHash(s proxy.ServicePortName, protocol string) string {
 	hash := sha256.Sum256([]byte(s.String() + protocol))
@@ -671,7 +664,7 @@ func serviceFirewallChainName(s proxy.ServicePortName, protocol string) utilipta
 // serviceLBPortChainName takes the ServicePortName for a service and
 // returns the associated iptables chain.  This is computed by hashing (sha256)
 // then encoding to base32 and truncating with the prefix "KUBE-XLB-".  We do
-// this because IPTables Chain Names must be <= 28 chars long, and the longer
+// this because Iptables Chain Names must be <= 28 chars long, and the longer
 // they are the harder they are to read.
 func serviceLBChainName(s proxy.ServicePortName, protocol string) utiliptables.Chain {
 	return utiliptables.Chain("KUBE-XLB-" + portProtoHash(s, protocol))
@@ -902,9 +895,6 @@ func (proxier *Proxier) syncProxyRules() {
 				writeLine(natChains, utiliptables.MakeChainLine(svcXlbChain))
 			}
 			activeNATChains[svcXlbChain] = true
-		} else if activeNATChains[svcXlbChain] {
-			// Cleanup the previously created XLB chain for this service
-			delete(activeNATChains, svcXlbChain)
 		}
 
 		// Capture the clusterIP.

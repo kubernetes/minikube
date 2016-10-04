@@ -18,7 +18,7 @@ package unversioned
 
 import (
 	api "k8s.io/kubernetes/pkg/api"
-	storage "k8s.io/kubernetes/pkg/apis/storage"
+	extensions "k8s.io/kubernetes/pkg/apis/extensions"
 	watch "k8s.io/kubernetes/pkg/watch"
 )
 
@@ -30,32 +30,32 @@ type StorageClassesGetter interface {
 
 // StorageClassInterface has methods to work with StorageClass resources.
 type StorageClassInterface interface {
-	Create(*storage.StorageClass) (*storage.StorageClass, error)
-	Update(*storage.StorageClass) (*storage.StorageClass, error)
+	Create(*extensions.StorageClass) (*extensions.StorageClass, error)
+	Update(*extensions.StorageClass) (*extensions.StorageClass, error)
 	Delete(name string, options *api.DeleteOptions) error
 	DeleteCollection(options *api.DeleteOptions, listOptions api.ListOptions) error
-	Get(name string) (*storage.StorageClass, error)
-	List(opts api.ListOptions) (*storage.StorageClassList, error)
+	Get(name string) (*extensions.StorageClass, error)
+	List(opts api.ListOptions) (*extensions.StorageClassList, error)
 	Watch(opts api.ListOptions) (watch.Interface, error)
-	Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *storage.StorageClass, err error)
+	Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *extensions.StorageClass, err error)
 	StorageClassExpansion
 }
 
 // storageClasses implements StorageClassInterface
 type storageClasses struct {
-	client *StorageClient
+	client *ExtensionsClient
 }
 
 // newStorageClasses returns a StorageClasses
-func newStorageClasses(c *StorageClient) *storageClasses {
+func newStorageClasses(c *ExtensionsClient) *storageClasses {
 	return &storageClasses{
 		client: c,
 	}
 }
 
 // Create takes the representation of a storageClass and creates it.  Returns the server's representation of the storageClass, and an error, if there is any.
-func (c *storageClasses) Create(storageClass *storage.StorageClass) (result *storage.StorageClass, err error) {
-	result = &storage.StorageClass{}
+func (c *storageClasses) Create(storageClass *extensions.StorageClass) (result *extensions.StorageClass, err error) {
+	result = &extensions.StorageClass{}
 	err = c.client.Post().
 		Resource("storageclasses").
 		Body(storageClass).
@@ -65,8 +65,8 @@ func (c *storageClasses) Create(storageClass *storage.StorageClass) (result *sto
 }
 
 // Update takes the representation of a storageClass and updates it. Returns the server's representation of the storageClass, and an error, if there is any.
-func (c *storageClasses) Update(storageClass *storage.StorageClass) (result *storage.StorageClass, err error) {
-	result = &storage.StorageClass{}
+func (c *storageClasses) Update(storageClass *extensions.StorageClass) (result *extensions.StorageClass, err error) {
+	result = &extensions.StorageClass{}
 	err = c.client.Put().
 		Resource("storageclasses").
 		Name(storageClass.Name).
@@ -97,8 +97,8 @@ func (c *storageClasses) DeleteCollection(options *api.DeleteOptions, listOption
 }
 
 // Get takes name of the storageClass, and returns the corresponding storageClass object, and an error if there is any.
-func (c *storageClasses) Get(name string) (result *storage.StorageClass, err error) {
-	result = &storage.StorageClass{}
+func (c *storageClasses) Get(name string) (result *extensions.StorageClass, err error) {
+	result = &extensions.StorageClass{}
 	err = c.client.Get().
 		Resource("storageclasses").
 		Name(name).
@@ -108,8 +108,8 @@ func (c *storageClasses) Get(name string) (result *storage.StorageClass, err err
 }
 
 // List takes label and field selectors, and returns the list of StorageClasses that match those selectors.
-func (c *storageClasses) List(opts api.ListOptions) (result *storage.StorageClassList, err error) {
-	result = &storage.StorageClassList{}
+func (c *storageClasses) List(opts api.ListOptions) (result *extensions.StorageClassList, err error) {
+	result = &extensions.StorageClassList{}
 	err = c.client.Get().
 		Resource("storageclasses").
 		VersionedParams(&opts, api.ParameterCodec).
@@ -128,8 +128,8 @@ func (c *storageClasses) Watch(opts api.ListOptions) (watch.Interface, error) {
 }
 
 // Patch applies the patch and returns the patched storageClass.
-func (c *storageClasses) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *storage.StorageClass, err error) {
-	result = &storage.StorageClass{}
+func (c *storageClasses) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *extensions.StorageClass, err error) {
+	result = &extensions.StorageClass{}
 	err = c.client.Patch(pt).
 		Resource("storageclasses").
 		SubResource(subresources...).

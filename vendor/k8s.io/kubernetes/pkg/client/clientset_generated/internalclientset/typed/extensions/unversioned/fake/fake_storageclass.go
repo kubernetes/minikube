@@ -19,7 +19,7 @@ package fake
 import (
 	api "k8s.io/kubernetes/pkg/api"
 	unversioned "k8s.io/kubernetes/pkg/api/unversioned"
-	storage "k8s.io/kubernetes/pkg/apis/storage"
+	extensions "k8s.io/kubernetes/pkg/apis/extensions"
 	core "k8s.io/kubernetes/pkg/client/testing/core"
 	labels "k8s.io/kubernetes/pkg/labels"
 	watch "k8s.io/kubernetes/pkg/watch"
@@ -27,54 +27,54 @@ import (
 
 // FakeStorageClasses implements StorageClassInterface
 type FakeStorageClasses struct {
-	Fake *FakeStorage
+	Fake *FakeExtensions
 }
 
-var storageclassesResource = unversioned.GroupVersionResource{Group: "storage.k8s.io", Version: "", Resource: "storageclasses"}
+var storageclassesResource = unversioned.GroupVersionResource{Group: "extensions", Version: "", Resource: "storageclasses"}
 
-func (c *FakeStorageClasses) Create(storageClass *storage.StorageClass) (result *storage.StorageClass, err error) {
+func (c *FakeStorageClasses) Create(storageClass *extensions.StorageClass) (result *extensions.StorageClass, err error) {
 	obj, err := c.Fake.
-		Invokes(core.NewRootCreateAction(storageclassesResource, storageClass), &storage.StorageClass{})
+		Invokes(core.NewRootCreateAction(storageclassesResource, storageClass), &extensions.StorageClass{})
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*storage.StorageClass), err
+	return obj.(*extensions.StorageClass), err
 }
 
-func (c *FakeStorageClasses) Update(storageClass *storage.StorageClass) (result *storage.StorageClass, err error) {
+func (c *FakeStorageClasses) Update(storageClass *extensions.StorageClass) (result *extensions.StorageClass, err error) {
 	obj, err := c.Fake.
-		Invokes(core.NewRootUpdateAction(storageclassesResource, storageClass), &storage.StorageClass{})
+		Invokes(core.NewRootUpdateAction(storageclassesResource, storageClass), &extensions.StorageClass{})
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*storage.StorageClass), err
+	return obj.(*extensions.StorageClass), err
 }
 
 func (c *FakeStorageClasses) Delete(name string, options *api.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(core.NewRootDeleteAction(storageclassesResource, name), &storage.StorageClass{})
+		Invokes(core.NewRootDeleteAction(storageclassesResource, name), &extensions.StorageClass{})
 	return err
 }
 
 func (c *FakeStorageClasses) DeleteCollection(options *api.DeleteOptions, listOptions api.ListOptions) error {
 	action := core.NewRootDeleteCollectionAction(storageclassesResource, listOptions)
 
-	_, err := c.Fake.Invokes(action, &storage.StorageClassList{})
+	_, err := c.Fake.Invokes(action, &extensions.StorageClassList{})
 	return err
 }
 
-func (c *FakeStorageClasses) Get(name string) (result *storage.StorageClass, err error) {
+func (c *FakeStorageClasses) Get(name string) (result *extensions.StorageClass, err error) {
 	obj, err := c.Fake.
-		Invokes(core.NewRootGetAction(storageclassesResource, name), &storage.StorageClass{})
+		Invokes(core.NewRootGetAction(storageclassesResource, name), &extensions.StorageClass{})
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*storage.StorageClass), err
+	return obj.(*extensions.StorageClass), err
 }
 
-func (c *FakeStorageClasses) List(opts api.ListOptions) (result *storage.StorageClassList, err error) {
+func (c *FakeStorageClasses) List(opts api.ListOptions) (result *extensions.StorageClassList, err error) {
 	obj, err := c.Fake.
-		Invokes(core.NewRootListAction(storageclassesResource, opts), &storage.StorageClassList{})
+		Invokes(core.NewRootListAction(storageclassesResource, opts), &extensions.StorageClassList{})
 	if obj == nil {
 		return nil, err
 	}
@@ -83,8 +83,8 @@ func (c *FakeStorageClasses) List(opts api.ListOptions) (result *storage.Storage
 	if label == nil {
 		label = labels.Everything()
 	}
-	list := &storage.StorageClassList{}
-	for _, item := range obj.(*storage.StorageClassList).Items {
+	list := &extensions.StorageClassList{}
+	for _, item := range obj.(*extensions.StorageClassList).Items {
 		if label.Matches(labels.Set(item.Labels)) {
 			list.Items = append(list.Items, item)
 		}
@@ -99,11 +99,11 @@ func (c *FakeStorageClasses) Watch(opts api.ListOptions) (watch.Interface, error
 }
 
 // Patch applies the patch and returns the patched storageClass.
-func (c *FakeStorageClasses) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *storage.StorageClass, err error) {
+func (c *FakeStorageClasses) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *extensions.StorageClass, err error) {
 	obj, err := c.Fake.
-		Invokes(core.NewRootPatchSubresourceAction(storageclassesResource, name, data, subresources...), &storage.StorageClass{})
+		Invokes(core.NewRootPatchSubresourceAction(storageclassesResource, name, data, subresources...), &extensions.StorageClass{})
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*storage.StorageClass), err
+	return obj.(*extensions.StorageClass), err
 }

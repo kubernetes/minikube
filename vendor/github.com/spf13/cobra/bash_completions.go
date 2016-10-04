@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	BashCompFilenameExt     = "cobra_annotation_bash_completion_filename_extensions"
+	BashCompFilenameExt     = "cobra_annotation_bash_completion_filename_extentions"
 	BashCompCustom          = "cobra_annotation_bash_completion_custom"
 	BashCompOneRequiredFlag = "cobra_annotation_bash_completion_one_required_flag"
 	BashCompSubdirsInDir    = "cobra_annotation_bash_completion_subdirs_in_dir"
@@ -401,8 +401,10 @@ func writeLocalNonPersistentFlag(flag *pflag.Flag, w io.Writer) error {
 		format += "="
 	}
 	format += "\")\n"
-	_, err := fmt.Fprintf(w, format, name)
-	return err
+	if _, err := fmt.Fprintf(w, format, name); err != nil {
+		return err
+	}
+	return nil
 }
 
 func writeFlags(cmd *Command, w io.Writer) error {
@@ -419,9 +421,6 @@ func writeFlags(cmd *Command, w io.Writer) error {
 	localNonPersistentFlags := cmd.LocalNonPersistentFlags()
 	var visitErr error
 	cmd.NonInheritedFlags().VisitAll(func(flag *pflag.Flag) {
-		if nonCompletableFlag(flag) {
-			return
-		}
 		if err := writeFlag(flag, w); err != nil {
 			visitErr = err
 			return
@@ -443,9 +442,6 @@ func writeFlags(cmd *Command, w io.Writer) error {
 		return visitErr
 	}
 	cmd.InheritedFlags().VisitAll(func(flag *pflag.Flag) {
-		if nonCompletableFlag(flag) {
-			return
-		}
 		if err := writeFlag(flag, w); err != nil {
 			visitErr = err
 			return
@@ -472,9 +468,6 @@ func writeRequiredFlag(cmd *Command, w io.Writer) error {
 	flags := cmd.NonInheritedFlags()
 	var visitErr error
 	flags.VisitAll(func(flag *pflag.Flag) {
-		if nonCompletableFlag(flag) {
-			return
-		}
 		for key := range flag.Annotations {
 			switch key {
 			case BashCompOneRequiredFlag:
@@ -579,10 +572,6 @@ func (cmd *Command) GenBashCompletion(w io.Writer) error {
 		return err
 	}
 	return postscript(w, cmd.Name())
-}
-
-func nonCompletableFlag(flag *pflag.Flag) bool {
-	return flag.Hidden || len(flag.Deprecated) > 0
 }
 
 func (cmd *Command) GenBashCompletionFile(filename string) error {

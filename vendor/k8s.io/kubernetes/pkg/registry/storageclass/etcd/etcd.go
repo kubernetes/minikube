@@ -18,7 +18,7 @@ package etcd
 
 import (
 	"k8s.io/kubernetes/pkg/api"
-	storageapi "k8s.io/kubernetes/pkg/apis/storage"
+	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/generic"
 	"k8s.io/kubernetes/pkg/registry/generic/registry"
@@ -35,11 +35,11 @@ type REST struct {
 func NewREST(opts generic.RESTOptions) *REST {
 	prefix := "/" + opts.ResourcePrefix
 
-	newListFunc := func() runtime.Object { return &storageapi.StorageClassList{} }
+	newListFunc := func() runtime.Object { return &extensions.StorageClassList{} }
 	storageInterface, _ := opts.Decorator(
 		opts.StorageConfig,
 		cachesize.GetWatchCacheSizeByResource(cachesize.StorageClasses),
-		&storageapi.StorageClass{},
+		&extensions.StorageClass{},
 		prefix,
 		storageclass.Strategy,
 		newListFunc,
@@ -47,7 +47,7 @@ func NewREST(opts generic.RESTOptions) *REST {
 	)
 
 	store := &registry.Store{
-		NewFunc:     func() runtime.Object { return &storageapi.StorageClass{} },
+		NewFunc:     func() runtime.Object { return &extensions.StorageClass{} },
 		NewListFunc: newListFunc,
 		KeyRootFunc: func(ctx api.Context) string {
 			return prefix
@@ -56,10 +56,10 @@ func NewREST(opts generic.RESTOptions) *REST {
 			return registry.NoNamespaceKeyFunc(ctx, prefix, name)
 		},
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
-			return obj.(*storageapi.StorageClass).Name, nil
+			return obj.(*extensions.StorageClass).Name, nil
 		},
 		PredicateFunc:           storageclass.MatchStorageClasses,
-		QualifiedResource:       storageapi.Resource("storageclasses"),
+		QualifiedResource:       api.Resource("storageclasses"),
 		DeleteCollectionWorkers: opts.DeleteCollectionWorkers,
 
 		CreateStrategy:      storageclass.Strategy,
