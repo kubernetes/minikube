@@ -12,7 +12,6 @@ func parseKey(key string) ([]string, error) {
 	groups := []string{}
 	var buffer bytes.Buffer
 	inQuotes := false
-	wasInQuotes := false
 	escapeNext := false
 	ignoreSpace := true
 	expectDot := false
@@ -34,27 +33,16 @@ func parseKey(key string) ([]string, error) {
 			escapeNext = true
 			continue
 		case '"':
-			if inQuotes {
-				groups = append(groups, buffer.String())
-				buffer.Reset()
-				wasInQuotes = true
-			}
 			inQuotes = !inQuotes
 			expectDot = false
 		case '.':
 			if inQuotes {
 				buffer.WriteRune(char)
 			} else {
-				if !wasInQuotes {
-					if buffer.Len() == 0 {
-						return nil, fmt.Errorf("empty key group")
-					}
-					groups = append(groups, buffer.String())
-					buffer.Reset()
-				}
+				groups = append(groups, buffer.String())
+				buffer.Reset()
 				ignoreSpace = true
 				expectDot = false
-				wasInQuotes = false
 			}
 		case ' ':
 			if inQuotes {

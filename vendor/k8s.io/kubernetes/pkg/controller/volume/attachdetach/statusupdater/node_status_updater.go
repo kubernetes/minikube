@@ -59,9 +59,13 @@ type nodeStatusUpdater struct {
 }
 
 func (nsu *nodeStatusUpdater) UpdateNodeStatuses() error {
+	smPatchVersion, err := strategicpatch.GetServerSupportedSMPatchVersion(nsu.kubeClient.Discovery())
+	if err != nil {
+		return err
+	}
 	nodesToUpdate := nsu.actualStateOfWorld.GetVolumesToReportAttached()
 	for nodeName, attachedVolumes := range nodesToUpdate {
-		nodeObj, exists, err := nsu.nodeInformer.GetStore().GetByKey(nodeName)
+		nodeObj, exists, err := nsu.nodeInformer.GetStore().GetByKey(string(nodeName))
 		if nodeObj == nil || !exists || err != nil {
 			// If node does not exist, its status cannot be updated, log error and
 			// reset flag statusUpdateNeeded back to true to indicate this node status
@@ -108,7 +112,7 @@ func (nsu *nodeStatusUpdater) UpdateNodeStatuses() error {
 		}
 
 		patchBytes, err :=
-			strategicpatch.CreateStrategicMergePatch(oldData, newData, node)
+			strategicpatch.CreateStrategicMergePatch(oldData, newData, node, smPatchVersion)
 		if err != nil {
 			return fmt.Errorf(
 				"failed to CreateStrategicMergePatch for node %q. %v",
@@ -116,7 +120,7 @@ func (nsu *nodeStatusUpdater) UpdateNodeStatuses() error {
 				err)
 		}
 
-		_, err = nsu.kubeClient.Core().Nodes().PatchStatus(nodeName, patchBytes)
+		_, err = nsu.kubeClient.Core().Nodes().PatchStatus(string(nodeName), patchBytes)
 		if err != nil {
 			// If update node status fails, reset flag statusUpdateNeeded back to true
 			// to indicate this node status needs to be udpated again

@@ -177,6 +177,13 @@ func (b *vsphereVolumeMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }
 
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *vsphereVolumeMounter) CanMount() error {
+	return nil
+}
+
 // SetUp attaches the disk and bind mounts to the volume path.
 func (b *vsphereVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 	glog.V(5).Infof("vSphere volume setup %s to %s", b.volPath, dir)
@@ -321,9 +328,6 @@ type vsphereVolumeProvisioner struct {
 var _ volume.Provisioner = &vsphereVolumeProvisioner{}
 
 func (plugin *vsphereVolumePlugin) NewProvisioner(options volume.VolumeOptions) (volume.Provisioner, error) {
-	if len(options.AccessModes) == 0 {
-		options.AccessModes = plugin.GetAccessModes()
-	}
 	return plugin.newProvisionerInternal(options, &VsphereDiskUtil{})
 }
 
@@ -353,7 +357,7 @@ func (v *vsphereVolumeProvisioner) Provision() (*api.PersistentVolume, error) {
 		},
 		Spec: api.PersistentVolumeSpec{
 			PersistentVolumeReclaimPolicy: v.options.PersistentVolumeReclaimPolicy,
-			AccessModes:                   v.options.AccessModes,
+			AccessModes:                   v.options.PVC.Spec.AccessModes,
 			Capacity: api.ResourceList{
 				api.ResourceName(api.ResourceStorage): resource.MustParse(fmt.Sprintf("%dKi", sizeKB)),
 			},
@@ -365,6 +369,10 @@ func (v *vsphereVolumeProvisioner) Provision() (*api.PersistentVolume, error) {
 			},
 		},
 	}
+	if len(v.options.PVC.Spec.AccessModes) == 0 {
+		pv.Spec.AccessModes = v.plugin.GetAccessModes()
+	}
+
 	return pv, nil
 }
 

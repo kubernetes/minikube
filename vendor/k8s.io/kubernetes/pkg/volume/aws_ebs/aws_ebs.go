@@ -161,9 +161,6 @@ func (plugin *awsElasticBlockStorePlugin) newDeleterInternal(spec *volume.Spec, 
 }
 
 func (plugin *awsElasticBlockStorePlugin) NewProvisioner(options volume.VolumeOptions) (volume.Provisioner, error) {
-	if len(options.AccessModes) == 0 {
-		options.AccessModes = plugin.GetAccessModes()
-	}
 	return plugin.newProvisionerInternal(options, &AWSDiskUtil{})
 }
 
@@ -249,6 +246,13 @@ func (b *awsElasticBlockStoreMounter) GetAttributes() volume.Attributes {
 		Managed:         !b.readOnly,
 		SupportsSELinux: true,
 	}
+}
+
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *awsElasticBlockStoreMounter) CanMount() error {
+	return nil
 }
 
 // SetUp attaches the disk and bind mounts to the volume path.
@@ -430,7 +434,7 @@ func (c *awsElasticBlockStoreProvisioner) Provision() (*api.PersistentVolume, er
 		},
 		Spec: api.PersistentVolumeSpec{
 			PersistentVolumeReclaimPolicy: c.options.PersistentVolumeReclaimPolicy,
-			AccessModes:                   c.options.AccessModes,
+			AccessModes:                   c.options.PVC.Spec.AccessModes,
 			Capacity: api.ResourceList{
 				api.ResourceName(api.ResourceStorage): resource.MustParse(fmt.Sprintf("%dGi", sizeGB)),
 			},
@@ -443,6 +447,10 @@ func (c *awsElasticBlockStoreProvisioner) Provision() (*api.PersistentVolume, er
 				},
 			},
 		},
+	}
+
+	if len(c.options.PVC.Spec.AccessModes) == 0 {
+		pv.Spec.AccessModes = c.plugin.GetAccessModes()
 	}
 
 	if len(labels) != 0 {

@@ -50,17 +50,21 @@ type azureDataDiskPlugin struct {
 // azure cloud provider should implement it
 type azureCloudProvider interface {
 	// Attaches the disk to the host machine.
-	AttachDisk(diskName, diskUri, vmName string, lun int32, cachingMode compute.CachingTypes) error
+	AttachDisk(diskName, diskUri string, nodeName types.NodeName, lun int32, cachingMode compute.CachingTypes) error
 	// Detaches the disk, identified by disk name or uri, from the host machine.
-	DetachDiskByName(diskName, diskUri string, nodeName string) error
+	DetachDiskByName(diskName, diskUri string, nodeName types.NodeName) error
 	// Check if a list of volumes are attached to the node with the specified NodeName
-	DisksAreAttached(diskNames []string, nodeName string) (map[string]bool, error)
+	DisksAreAttached(diskNames []string, nodeName types.NodeName) (map[string]bool, error)
 	// Get the LUN number of the disk that is attached to the host
-	GetDiskLun(diskName, diskUri, vmName string) (int32, error)
+	GetDiskLun(diskName, diskUri string, nodeName types.NodeName) (int32, error)
 	// Get the next available LUN number to attach a new VHD
-	GetNextDiskLun(vmName string) (int32, error)
+	GetNextDiskLun(nodeName types.NodeName) (int32, error)
 	// InstanceID returns the cloud provider ID of the specified instance.
-	InstanceID(name string) (string, error)
+	InstanceID(nodeName types.NodeName) (string, error)
+	// Create a VHD blob
+	CreateVolume(name, storageAccount, storageType, location string, requestGB int) (string, string, int, error)
+	// Delete a VHD blob
+	DeleteVolume(name, uri string) error
 }
 
 var _ volume.VolumePlugin = &azureDataDiskPlugin{}
@@ -115,11 +119,20 @@ func (plugin *azureDataDiskPlugin) newMounterInternal(spec *volume.Spec, podUID 
 	if err != nil {
 		return nil, err
 	}
-
-	fsType := *azure.FSType
+	fsType := "ext4"
+	if azure.FSType != nil {
+		fsType = *azure.FSType
+	}
+	cachingMode := api.AzureDataDiskCachingNone
+	if azure.CachingMode != nil {
+		cachingMode = *azure.CachingMode
+	}
+	readOnly := false
+	if azure.ReadOnly != nil {
+		readOnly = *azure.ReadOnly
+	}
 	diskName := azure.DiskName
 	diskUri := azure.DataDiskURI
-	cachingMode := *azure.CachingMode
 	return &azureDiskMounter{
 		azureDisk: &azureDisk{
 			podUID:      podUID,
@@ -131,7 +144,7 @@ func (plugin *azureDataDiskPlugin) newMounterInternal(spec *volume.Spec, podUID 
 			plugin:      plugin,
 		},
 		fsType:      fsType,
-		readOnly:    *azure.ReadOnly,
+		readOnly:    readOnly,
 		diskMounter: &mount.SafeFormatAndMount{Interface: plugin.host.GetMounter(), Runner: exec.New()}}, nil
 }
 
@@ -202,6 +215,13 @@ func (b *azureDiskMounter) GetAttributes() volume.Attributes {
 		Managed:         !b.readOnly,
 		SupportsSELinux: true,
 	}
+}
+
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *azureDiskMounter) CanMount() error {
+	return nil
 }
 
 // SetUp attaches the disk and bind mounts to the volume path.

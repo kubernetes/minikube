@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	"k8s.io/kubernetes/pkg/types"
 )
 
 const (
@@ -31,8 +32,8 @@ const (
 
 // AttachDisk attaches a vhd to vm
 // the vhd must exist, can be identified by diskName, diskURI, and lun.
-func (az *Cloud) AttachDisk(diskName, diskURI, vmName string, lun int32, cachingMode compute.CachingTypes) error {
-	vm, exists, err := az.getVirtualMachine(vmName)
+func (az *Cloud) AttachDisk(diskName, diskURI string, nodeName types.NodeName, lun int32, cachingMode compute.CachingTypes) error {
+	vm, exists, err := az.getVirtualMachine(nodeName)
 	if err != nil {
 		return err
 	} else if !exists {
@@ -58,6 +59,7 @@ func (az *Cloud) AttachDisk(diskName, diskURI, vmName string, lun int32, caching
 			},
 		},
 	}
+	vmName := mapNodeNameToVMName(nodeName)
 	_, err = az.VirtualMachinesClient.CreateOrUpdate(az.ResourceGroup, vmName, newVM, nil)
 	if err != nil {
 		glog.Errorf("azure attach failed, err: %v", err)
@@ -65,7 +67,7 @@ func (az *Cloud) AttachDisk(diskName, diskURI, vmName string, lun int32, caching
 		if strings.Contains(detail, "Code=\"AcquireDiskLeaseFailed\"") {
 			// if lease cannot be acquired, immediately detach the disk and return the original error
 			glog.Infof("failed to acquire disk lease, try detach")
-			az.DetachDiskByName(diskName, diskURI, vmName)
+			az.DetachDiskByName(diskName, diskURI, nodeName)
 		}
 	} else {
 		glog.V(4).Infof("azure attach succeeded")
@@ -74,7 +76,7 @@ func (az *Cloud) AttachDisk(diskName, diskURI, vmName string, lun int32, caching
 }
 
 // DisksAreAttached checks if a list of volumes are attached to the node with the specified NodeName
-func (az *Cloud) DisksAreAttached(diskNames []string, nodeName string) (map[string]bool, error) {
+func (az *Cloud) DisksAreAttached(diskNames []string, nodeName types.NodeName) (map[string]bool, error) {
 	attached := make(map[string]bool)
 	for _, diskName := range diskNames {
 		attached[diskName] = false
@@ -103,11 +105,11 @@ func (az *Cloud) DisksAreAttached(diskNames []string, nodeName string) (map[stri
 
 // DetachDiskByName detaches a vhd from host
 // the vhd can be identified by diskName or diskURI
-func (az *Cloud) DetachDiskByName(diskName, diskURI, vmName string) error {
-	vm, exists, err := az.getVirtualMachine(vmName)
+func (az *Cloud) DetachDiskByName(diskName, diskURI string, nodeName types.NodeName) error {
+	vm, exists, err := az.getVirtualMachine(nodeName)
 	if err != nil || !exists {
 		// if host doesn't exist, no need to detach
-		glog.Warningf("cannot find node %s, skip detaching disk %s", vmName, diskName)
+		glog.Warningf("cannot find node %s, skip detaching disk %s", nodeName, diskName)
 		return nil
 	}
 
@@ -128,6 +130,7 @@ func (az *Cloud) DetachDiskByName(diskName, diskURI, vmName string) error {
 			},
 		},
 	}
+	vmName := mapNodeNameToVMName(nodeName)
 	_, err = az.VirtualMachinesClient.CreateOrUpdate(az.ResourceGroup, vmName, newVM, nil)
 	if err != nil {
 		glog.Errorf("azure disk detach failed, err: %v", err)
@@ -138,8 +141,8 @@ func (az *Cloud) DetachDiskByName(diskName, diskURI, vmName string) error {
 }
 
 // GetDiskLun finds the lun on the host that the vhd is attached to, given a vhd's diskName and diskURI
-func (az *Cloud) GetDiskLun(diskName, diskURI, vmName string) (int32, error) {
-	vm, exists, err := az.getVirtualMachine(vmName)
+func (az *Cloud) GetDiskLun(diskName, diskURI string, nodeName types.NodeName) (int32, error) {
+	vm, exists, err := az.getVirtualMachine(nodeName)
 	if err != nil {
 		return -1, err
 	} else if !exists {
@@ -158,8 +161,8 @@ func (az *Cloud) GetDiskLun(diskName, diskURI, vmName string) (int32, error) {
 
 // GetNextDiskLun searches all vhd attachment on the host and find unused lun
 // return -1 if all luns are used
-func (az *Cloud) GetNextDiskLun(vmName string) (int32, error) {
-	vm, exists, err := az.getVirtualMachine(vmName)
+func (az *Cloud) GetNextDiskLun(nodeName types.NodeName) (int32, error) {
+	vm, exists, err := az.getVirtualMachine(nodeName)
 	if err != nil {
 		return -1, err
 	} else if !exists {
@@ -178,4 +181,63 @@ func (az *Cloud) GetNextDiskLun(vmName string) (int32, error) {
 		}
 	}
 	return -1, fmt.Errorf("All Luns are used")
+}
+
+// CreateVolume creates a VHD blob in a storage account that has storageType and location using the given storage account.
+// If no storage account is given, search all the storage accounts associated with the resource group and pick one that
+// fits storage type and location.
+func (az *Cloud) CreateVolume(name, storageAccount, storageType, location string, requestGB int) (string, string, int, error) {
+	var err error
+	accounts := []accountWithLocation{}
+	if len(storageAccount) > 0 {
+		accounts = append(accounts, accountWithLocation{Name: storageAccount})
+	} else {
+		// find a storage account
+		accounts, err = az.getStorageAccounts()
+		if err != nil {
+			// TODO: create a storage account and container
+			return "", "", 0, err
+		}
+	}
+	for _, account := range accounts {
+		glog.V(4).Infof("account %s type %s location %s", account.Name, account.StorageType, account.Location)
+		if ((storageType == "" || account.StorageType == storageType) && (location == "" || account.Location == location)) || len(storageAccount) > 0 {
+			// find the access key with this account
+			key, err := az.getStorageAccesskey(account.Name)
+			if err != nil {
+				glog.V(2).Infof("no key found for storage account %s", account.Name)
+				continue
+			}
+
+			// create a page blob in this account's vhd container
+			name, uri, err := az.createVhdBlob(account.Name, key, name, int64(requestGB), nil)
+			if err != nil {
+				glog.V(2).Infof("failed to create vhd in account %s: %v", account.Name, err)
+				continue
+			}
+			glog.V(4).Infof("created vhd blob uri: %s", uri)
+			return name, uri, requestGB, err
+		}
+	}
+	return "", "", 0, fmt.Errorf("failed to find a matching storage account")
+}
+
+// DeleteVolume deletes a VHD blob
+func (az *Cloud) DeleteVolume(name, uri string) error {
+	accountName, blob, err := az.getBlobNameAndAccountFromURI(uri)
+	if err != nil {
+		return fmt.Errorf("failed to parse vhd URI %v", err)
+	}
+	key, err := az.getStorageAccesskey(accountName)
+	if err != nil {
+		return fmt.Errorf("no key for storage account %s, err %v", accountName, err)
+	}
+	err = az.deleteVhdBlob(accountName, key, blob)
+	if err != nil {
+		glog.Warningf("failed to delete blob %s err: %v", uri, err)
+		return fmt.Errorf("failed to delete vhd %v, account %s, blob %s, err: %v", uri, accountName, blob, err)
+	}
+	glog.V(4).Infof("blob %s deleted", uri)
+	return nil
+
 }
