@@ -96,7 +96,7 @@ To use [rkt](https://github.com/coreos/rkt) as the container runtime, execute:
 $ minikube start \
     --network-plugin=cni \
     --container-runtime=rkt \
-    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.3/minikube-v0.0.3.iso
+    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.5/minikube-v0.0.5.iso
 ```
 
 This will use an alternative minikube ISO image containing both rkt, and Docker, and enable CNI networking.
