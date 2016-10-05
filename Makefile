@@ -43,8 +43,6 @@ K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION)
 LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldflags '-static'"
 
-MKGOPATH := if [ ! -e $(GOPATH)/src/$(ORG) ]; then mkdir -p $(GOPATH)/src/$(ORG) && ln -s -f $(shell pwd) $(GOPATH)/src/$(ORG); fi
-
 LOCALKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBEFILES := go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
@@ -54,24 +52,20 @@ endif
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH)$(IS_EXE) $(BUILD_DIR)/minikube$(IS_EXE)
 
-out/localkube: $(shell $(LOCALKUBEFILES))
-	$(MKGOPATH)
+out/localkube: $(GOPATH)/src/$(ORG) $(shell $(LOCALKUBEFILES))
 ifeq ($(BUILD_OS),Linux)
 	CGO_ENABLED=1 go build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 else
 	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
 endif
 
-out/minikube-darwin-amd64: pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
-	$(MKGOPATH)
+out/minikube-darwin-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-darwin-amd64 ./cmd/minikube
 
-out/minikube-linux-amd64: pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
-	$(MKGOPATH)
+out/minikube-linux-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-linux-amd64 ./cmd/minikube
 
-out/minikube-windows-amd64.exe: pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
-	$(MKGOPATH)
+out/minikube-windows-amd64.exe: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-windows-amd64.exe ./cmd/minikube
 
 localkube-image: out/localkube
@@ -85,15 +79,13 @@ integration: out/minikube
 	go test -v $(REPOPATH)/test/integration --tags=integration
 
 .PHONY: test
-test: pkg/minikube/cluster/assets.go
-	$(MKGOPATH)
+test: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go
 	./test.sh
 
 pkg/minikube/cluster/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/cluster/assets.go -pkg cluster ./out/localkube deploy/iso/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
 
-$(GOPATH)/bin/go-bindata:
-	$(MKGOPATH)
+$(GOPATH)/bin/go-bindata: $(GOPATH)/src/$(ORG)
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
@@ -116,8 +108,7 @@ clean:
 .PHONY: gendocs
 gendocs: docs/minikube.md
 
-docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/cluster/assets.go
-	$(MKGOPATH)
+docs/minikube.md: $(GOPATH)/src/$(ORG) $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/cluster/assets.go
 	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
@@ -142,6 +133,13 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	makensis out/windows_tmp/minikube.nsi
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
+
+.PHONY: gopath
+gopath: $(GOPATH)/src/$(ORG)
+
+$(GOPATH)/src/$(ORG):
+	mkdir -p $(GOPATH)/src/$(ORG)
+	ln -s -f $(shell pwd) $(GOPATH)/src/$(ORG)
 
 .PHONY: check-release
 check-release:
