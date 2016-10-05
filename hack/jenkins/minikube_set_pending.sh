@@ -22,12 +22,12 @@
 # The script expects the following env variabls:
 # ghprbPullId: The pull request ID, injected from the ghpbr plugin.
 # ghprbActualCommit: The commit hash, injected from the ghpbr plugin.
-# access_token: The Github API access tokenm injected by the Jenkins credential provider. 
+# access_token: The Github API access token. Injected by the Jenkins credential provider. 
 
 set -e
 set +x
 
-for job in "OSX-Virtualbox" "OSX-XHyve"; do
+for job in "OSX-Virtualbox" "OSX-XHyve" "Windows-hyperv"; do
   target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${job}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
     -H "Content-Type: application/json" \
