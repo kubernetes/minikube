@@ -1,5 +1,12 @@
 # Minikube Release Notes
 
+## Version 0.11.0 - 10/6/2016
+* Added a "configurator" allowing users to configure the Kubernetes components with arbitrary values.  
+* Made Kubernetes v1.4.0 the default version in minikube
+* Pre-built binaries are now built with go 1.7.1
+* Added opt-in error reporting
+* Bug fixes
+
 ## Version 0.10.0 - 9/15/2016
 * Updated the Kubernetes dashboard to v1.4.0
 * Added experimental rkt support
