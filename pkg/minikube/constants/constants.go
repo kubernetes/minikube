@@ -85,3 +85,5 @@ var LocalkubeLinuxFilename = "localkube-linux-amd64"
 
 // DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
 const DockerAPIVersion = "1.23"
+
+const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"

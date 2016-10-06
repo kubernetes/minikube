@@ -21,9 +21,9 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
 )
 
 // stopCmd represents the stop command
@@ -39,7 +39,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 
 		if err := cluster.StopHost(api); err != nil {
 			fmt.Println("Error stopping machine: ", err)
-			util.MaybeReportErrorAndExit(err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 		fmt.Println("Machine stopped.")
 	},

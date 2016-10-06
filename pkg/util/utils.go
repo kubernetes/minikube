@@ -17,22 +17,17 @@ limitations under the License.
 package util
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/version"
 )
@@ -158,89 +153,4 @@ func IsDirectory(path string) (bool, error) {
 		return false, errors.Wrapf(err, "Error calling os.Stat on file %s", path)
 	}
 	return fileInfo.IsDir(), nil
-}
-
-type ServiceContext struct {
-	Service string `json:"service"`
-	Version string `json:"version"`
-}
-
-type Message struct {
-	Message        string `json:"message"`
-	ServiceContext `json:"serviceContext"`
-}
-
-func ReportError(err error, url string) error {
-	errMsg, err := FormatError(err)
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	jsonErrorMsg, err := MarshallError(errMsg, "default", version.GetVersion())
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	err = UploadError(jsonErrorMsg, url)
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	return nil
-}
-
-func FormatError(err error) (string, error) {
-	if err == nil {
-		return "", errors.New("Error: ReportError was called with nil error value")
-	}
-	// Extract the stacktrace from the error messages in their orig format
-	errMsg := fmt.Sprintf("%+v\n", err)
-
-	errArray := strings.Split(errMsg, "\n")
-	errOutput := []string{}
-
-	//Error message must have at least 1 message w/ 1 stack trace(2 lines) -> 3 lines, 2 index
-	if len(errArray) <= 2 {
-		return "", errors.New("Error msg with no stack trace cannot be reported")
-	}
-	// This code is to format the error stacktraces so that StackDriver will accept them
-	errOutput = append(errOutput, errArray[0])
-	for i := 1; i < len(errArray)-1; i += 2 {
-		errOutput = append(errOutput, fmt.Sprintf("\tat %s (%s)", errArray[i],
-			filepath.Base(errArray[i+1])))
-	}
-	return strings.Join(errOutput, "\n") + "\n", nil
-}
-
-func MarshallError(errMsg, service, version string) ([]byte, error) {
-	m := Message{errMsg, ServiceContext{service, version}}
-	b, err := json.Marshal(m)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-	return b, nil
-}
-
-func UploadError(b []byte, url string) error {
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "")
-	} else if resp.StatusCode != 200 {
-		return errors.Errorf("Error sending error report to %s, got response code %s", url, resp.StatusCode)
-	}
-	return nil
-}
-
-func MaybeReportErrorAndExit(err error) {
-	if viper.GetBool(config.WantReportError) {
-		ReportError(err, reportingURL)
-	}
-	os.Exit(1)
 }

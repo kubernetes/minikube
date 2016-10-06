@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	kubeApi "k8s.io/kubernetes/pkg/api"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
@@ -47,7 +48,7 @@ var serviceCmd = &cobra.Command{
 		if len(args) == 0 || len(args) > 1 {
 			errText := "Please specify a service name."
 			fmt.Fprintln(os.Stderr, errText)
-			util.MaybeReportErrorAndExit(errors.New(errText))
+			cmdUtil.MaybeReportErrorAndExit(errors.New(errText))
 		}
 
 		service := args[0]
@@ -57,14 +58,14 @@ var serviceCmd = &cobra.Command{
 		cluster.EnsureMinikubeRunningOrExit(api)
 		if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
 			fmt.Fprintln(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s", service, err)
-			util.MaybeReportErrorAndExit(err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 
 		url, err := cluster.GetServiceURL(api, namespace, service)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")
-			util.MaybeReportErrorAndExit(err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 		if https {
 			url = strings.Replace(url, "http", "https", 1)
