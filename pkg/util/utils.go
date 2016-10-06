@@ -29,6 +29,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -101,6 +102,20 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 	if !strings.HasPrefix(versionOrURL, "v") {
 		// no 'v' prefix in input, need to prepend it to version
 		versionOrURL = "v" + versionOrURL
+	}
+	if k8sReleases, err := kubernetes_versions.GetK8sVersionsFromURL(constants.KubernetesVersionGCSURL); err != nil {
+		return "", errors.Wrap(err, "Error validating the localkube version")
+	} else {
+		isValidVersion := false
+		for _, version := range k8sReleases {
+			if version.Version == versionOrURL {
+				isValidVersion = true
+				break
+			}
+		}
+		if !isValidVersion {
+			return "", errors.New("Invalid localkube version")
+		}
 	}
 	if _, err = semver.Make(strings.TrimPrefix(versionOrURL, version.VersionPrefix)); err != nil {
 		return "", errors.Wrap(err, "Error creating semver version from localkube version input string")
