@@ -105,6 +105,10 @@ var settings = []Setting{
 		name: config.WantReportError,
 		set:  SetBool,
 	},
+	{
+		name: config.WantReportErrorPrompt,
+		set:  SetBool,
+	},
 }
 
 var ConfigCmd = &cobra.Command{

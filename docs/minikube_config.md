@@ -20,6 +20,7 @@ Configurable fields:
  * WantUpdateNotification
  * ReminderWaitPeriodInHours
  * WantReportError
+ * WantReportErrorPrompt
 
 ```
 minikube config SUBCOMMAND [flags]
