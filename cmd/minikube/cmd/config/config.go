@@ -25,6 +25,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -91,6 +92,18 @@ var settings = []Setting{
 	{
 		name: "kubernetes-version",
 		set:  SetString,
+	},
+	{
+		name: config.WantUpdateNotification,
+		set:  SetBool,
+	},
+	{
+		name: config.ReminderWaitPeriodInHours,
+		set:  SetInt,
+	},
+	{
+		name: config.WantReportError,
+		set:  SetBool,
 	},
 }
 

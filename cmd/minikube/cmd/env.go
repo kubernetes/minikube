@@ -30,9 +30,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -241,13 +241,13 @@ var dockerEnvCmd = &cobra.Command{
 			shellCfg, err = shellCfgUnset(api)
 			if err != nil {
 				glog.Errorln("Error setting machine env variable(s):", err)
-				util.MaybeReportErrorAndExit(err)
+				cmdUtil.MaybeReportErrorAndExit(err)
 			}
 		} else {
 			shellCfg, err = shellCfgSet(api)
 			if err != nil {
 				glog.Errorln("Error setting machine env variable(s):", err)
-				util.MaybeReportErrorAndExit(err)
+				cmdUtil.MaybeReportErrorAndExit(err)
 			}
 		}
 

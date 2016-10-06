@@ -21,9 +21,9 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
 )
 
 // deleteCmd represents the delete command
@@ -39,7 +39,7 @@ associated files.`,
 
 		if err := cluster.DeleteHost(api); err != nil {
 			fmt.Println("Errors occurred deleting machine: ", err)
-			util.MaybeReportErrorAndExit(err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 		fmt.Println("Machine deleted.")
 	},
