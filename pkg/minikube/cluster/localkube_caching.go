@@ -79,15 +79,18 @@ func (l *localkubeCacher) cacheLocalkube(body io.ReadCloser) error {
 func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	resp := &http.Response{}
 	err := errors.New("")
+	url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion,
+		constants.LocalkubeLinuxFilename)
+	if err != nil {
+		return errors.Wrap(err, "Error getting localkube download url")
+	}
 	downloader := func() (err error) {
-		url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion,
-			constants.LocalkubeLinuxFilename)
-		if err != nil {
-			return errors.Wrap(err, "Error getting localkube download url")
-		}
 		resp, err = http.Get(url)
 		if err != nil {
 			return errors.Wrap(err, "Error downloading localkube via http")
+		}
+		if resp.StatusCode != http.StatusOK {
+			return errors.New("Remote server error in downloading localkube via http")
 		}
 		return nil
 	}
