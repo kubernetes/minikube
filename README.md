@@ -90,7 +90,9 @@ Stopping local Kubernetes cluster...
 Stopping "minikube"...
 ```
 
-To use [rkt](https://github.com/coreos/rkt) as the container runtime, execute:
+### Using rkt container engine
+
+To use [rkt](https://github.com/coreos/rkt) as the container runtime run:
 
 ```shell
 $ minikube start \
