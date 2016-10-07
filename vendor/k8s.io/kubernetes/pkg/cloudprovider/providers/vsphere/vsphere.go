@@ -73,8 +73,6 @@ type VSphere struct {
 	cfg *VSphereConfig
 	// InstanceID of the server where this VSphere object is instantiated.
 	localInstanceID string
-	// Cluster that VirtualMachine belongs to
-	clusterName string
 }
 
 type VSphereConfig struct {
@@ -150,17 +148,17 @@ func init() {
 	})
 }
 
-// Returns the name of the VM and its Cluster on which this code is running.
+// Returns the name of the VM on which this code is running.
 // This is done by searching for the name of virtual machine by current IP.
 // Prerequisite: this code assumes VMWare vmtools or open-vm-tools to be installed in the VM.
-func readInstance(cfg *VSphereConfig) (string, string, error) {
+func readInstanceID(cfg *VSphereConfig) (string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	if len(addrs) == 0 {
-		return "", "", fmt.Errorf("unable to retrieve Instance ID")
+		return "", fmt.Errorf("unable to retrieve Instance ID")
 	}
 
 	// Create context
@@ -170,7 +168,7 @@ func readInstance(cfg *VSphereConfig) (string, string, error) {
 	// Create vSphere client
 	c, err := vsphereLogin(cfg, ctx)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	defer c.Logout(ctx)
 
@@ -180,7 +178,7 @@ func readInstance(cfg *VSphereConfig) (string, string, error) {
 	// Fetch and set data center
 	dc, err := f.Datacenter(ctx, cfg.Global.Datacenter)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	f.SetDatacenter(dc)
 
@@ -190,7 +188,7 @@ func readInstance(cfg *VSphereConfig) (string, string, error) {
 	for _, v := range addrs {
 		ip, _, err := net.ParseCIDR(v.String())
 		if err != nil {
-			return "", "", fmt.Errorf("unable to parse cidr from ip")
+			return "", fmt.Errorf("unable to parse cidr from ip")
 		}
 
 		// Finds a virtual machine or host by IP address.
@@ -200,37 +198,19 @@ func readInstance(cfg *VSphereConfig) (string, string, error) {
 		}
 	}
 	if svm == nil {
-		return "", "", fmt.Errorf("unable to retrieve vm reference from vSphere")
+		return "", fmt.Errorf("unable to retrieve vm reference from vSphere")
 	}
 
 	var vm mo.VirtualMachine
-	err = s.Properties(ctx, svm.Reference(), []string{"name", "resourcePool"}, &vm)
+	err = s.Properties(ctx, svm.Reference(), []string{"name"}, &vm)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-
-	var cluster string
-	if vm.ResourcePool != nil {
-		// Extract the Cluster Name if VM belongs to a ResourcePool
-		var rp mo.ResourcePool
-		err = s.Properties(ctx, *vm.ResourcePool, []string{"parent"}, &rp)
-		if err == nil {
-			var ccr mo.ClusterComputeResource
-			err = s.Properties(ctx, *rp.Parent, []string{"name"}, &ccr)
-			if err == nil {
-				cluster = ccr.Name
-			} else {
-				glog.Warningf("VM %s, does not belong to a vSphere Cluster, will not have FailureDomain label", vm.Name)
-			}
-		} else {
-			glog.Warningf("VM %s, does not belong to a vSphere Cluster, will not have FailureDomain label", vm.Name)
-		}
-	}
-	return vm.Name, cluster, nil
+	return vm.Name, nil
 }
 
 func newVSphere(cfg VSphereConfig) (*VSphere, error) {
-	id, cluster, err := readInstance(&cfg)
+	id, err := readInstanceID(&cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -247,7 +227,6 @@ func newVSphere(cfg VSphereConfig) (*VSphere, error) {
 	vs := VSphere{
 		cfg:             &cfg,
 		localInstanceID: id,
-		clusterName:     cluster,
 	}
 	return &vs, nil
 }
@@ -541,14 +520,9 @@ func (vs *VSphere) Zones() (cloudprovider.Zones, bool) {
 }
 
 func (vs *VSphere) GetZone() (cloudprovider.Zone, error) {
-	glog.V(4).Infof("Current datacenter is %v, cluster is %v", vs.cfg.Global.Datacenter, vs.clusterName)
+	glog.V(4).Infof("Current zone is %v", vs.cfg.Global.Datacenter)
 
-	// The clusterName is determined from the VirtualMachine ManagedObjectReference during init
-	// If the VM is not created within a Cluster, this will return empty-string
-	return cloudprovider.Zone{
-		Region:        vs.cfg.Global.Datacenter,
-		FailureDomain: vs.clusterName,
-	}, nil
+	return cloudprovider.Zone{Region: vs.cfg.Global.Datacenter}, nil
 }
 
 // Routes returns a false since the interface is not supported for vSphere.
@@ -768,7 +742,7 @@ func getNextUnitNumber(devices object.VirtualDeviceList, c types.BaseVirtualCont
 			return int32(unitNumber), nil
 		}
 	}
-	return -1, fmt.Errorf("SCSI Controller with key=%d does not have any available slots (LUN).", key)
+	return -1, fmt.Errorf("SCSI Controller with key=%d does not have any avaiable slots (LUN).", key)
 }
 
 func getSCSIController(vmDevices object.VirtualDeviceList, scsiType string) *types.VirtualController {

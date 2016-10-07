@@ -517,7 +517,6 @@ func (adc *attachDetachController) getPVSpecFromCache(
 // mounted.
 func (adc *attachDetachController) processVolumesInUse(
 	nodeName string, volumesInUse []api.UniqueVolumeName) {
-	glog.V(4).Infof("processVolumesInUse for node %q", nodeName)
 	for _, attachedVolume := range adc.actualStateOfWorld.GetAttachedVolumesForNode(nodeName) {
 		mounted := false
 		for _, volumeInUse := range volumesInUse {

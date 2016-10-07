@@ -34,24 +34,15 @@ import (
 )
 
 var (
-	// ClusterDefaults has the same behavior as the old EnvVar and DefaultCluster fields
-	// DEPRECATED will be replaced
-	ClusterDefaults = clientcmdapi.Cluster{Server: getDefaultServer()}
-	// DefaultClientConfig represents the legacy behavior of this package for defaulting
-	// DEPRECATED will be replace
-	DefaultClientConfig = DirectClientConfig{*clientcmdapi.NewConfig(), "", &ConfigOverrides{
-		ClusterDefaults: ClusterDefaults,
-	}, nil, NewDefaultClientConfigLoadingRules()}
-)
+	// DefaultCluster is the cluster config used when no other config is specified
+	// TODO: eventually apiserver should start on 443 and be secure by default
+	DefaultCluster = clientcmdapi.Cluster{Server: "http://localhost:8080"}
 
-// getDefaultServer returns a default setting for DefaultClientConfig
-// DEPRECATED
-func getDefaultServer() string {
-	if server := os.Getenv("KUBERNETES_MASTER"); len(server) > 0 {
-		return server
-	}
-	return "http://localhost:8080"
-}
+	// EnvVarCluster allows overriding the DefaultCluster using an envvar for the server name
+	EnvVarCluster = clientcmdapi.Cluster{Server: os.Getenv("KUBERNETES_MASTER")}
+
+	DefaultClientConfig = DirectClientConfig{*clientcmdapi.NewConfig(), "", &ConfigOverrides{}, nil, NewDefaultClientConfigLoadingRules()}
+)
 
 // ClientConfig is used to make it easy to get an api server client
 type ClientConfig interface {
@@ -339,6 +330,7 @@ func (config *DirectClientConfig) getCluster() clientcmdapi.Cluster {
 
 	var mergedClusterInfo clientcmdapi.Cluster
 	mergo.Merge(&mergedClusterInfo, config.overrides.ClusterDefaults)
+	mergo.Merge(&mergedClusterInfo, EnvVarCluster)
 	if configClusterInfo, exists := clusterInfos[clusterInfoName]; exists {
 		mergo.Merge(&mergedClusterInfo, configClusterInfo)
 	}
@@ -358,8 +350,6 @@ func (config *DirectClientConfig) getCluster() clientcmdapi.Cluster {
 // inClusterClientConfig makes a config that will work from within a kubernetes cluster container environment.
 type inClusterClientConfig struct{}
 
-var _ ClientConfig = inClusterClientConfig{}
-
 func (inClusterClientConfig) RawConfig() (clientcmdapi.Config, error) {
 	return clientcmdapi.Config{}, fmt.Errorf("inCluster environment config doesn't support multiple clusters")
 }
@@ -368,21 +358,21 @@ func (inClusterClientConfig) ClientConfig() (*restclient.Config, error) {
 	return restclient.InClusterConfig()
 }
 
-func (inClusterClientConfig) Namespace() (string, bool, error) {
+func (inClusterClientConfig) Namespace() (string, error) {
 	// This way assumes you've set the POD_NAMESPACE environment variable using the downward API.
 	// This check has to be done first for backwards compatibility with the way InClusterConfig was originally set up
 	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
-		return ns, true, nil
+		return ns, nil
 	}
 
 	// Fall back to the namespace associated with the service account token, if available
 	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
 		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			return ns, true, nil
+			return ns, nil
 		}
 	}
 
-	return "default", false, nil
+	return "default", nil
 }
 
 func (inClusterClientConfig) ConfigAccess() ConfigAccess {

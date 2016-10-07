@@ -52,7 +52,6 @@ type cniNetworkPlugin struct {
 	execer             utilexec.Interface
 	nsenterPath        string
 	pluginDir          string
-	binDir             string
 	vendorCNIDirPrefix string
 }
 
@@ -62,16 +61,12 @@ type cniNetwork struct {
 	CNIConfig     libcni.CNI
 }
 
-func probeNetworkPluginsWithVendorCNIDirPrefix(pluginDir, binDir, vendorCNIDirPrefix string) []network.NetworkPlugin {
-	if binDir == "" {
-		binDir = DefaultCNIDir
-	}
+func probeNetworkPluginsWithVendorCNIDirPrefix(pluginDir, vendorCNIDirPrefix string) []network.NetworkPlugin {
 	plugin := &cniNetworkPlugin{
 		defaultNetwork:     nil,
-		loNetwork:          getLoNetwork(binDir, vendorCNIDirPrefix),
+		loNetwork:          getLoNetwork(vendorCNIDirPrefix),
 		execer:             utilexec.New(),
 		pluginDir:          pluginDir,
-		binDir:             binDir,
 		vendorCNIDirPrefix: vendorCNIDirPrefix,
 	}
 
@@ -80,11 +75,11 @@ func probeNetworkPluginsWithVendorCNIDirPrefix(pluginDir, binDir, vendorCNIDirPr
 	return []network.NetworkPlugin{plugin}
 }
 
-func ProbeNetworkPlugins(pluginDir, binDir string) []network.NetworkPlugin {
-	return probeNetworkPluginsWithVendorCNIDirPrefix(pluginDir, binDir, "")
+func ProbeNetworkPlugins(pluginDir string) []network.NetworkPlugin {
+	return probeNetworkPluginsWithVendorCNIDirPrefix(pluginDir, "")
 }
 
-func getDefaultCNINetwork(pluginDir, binDir, vendorCNIDirPrefix string) (*cniNetwork, error) {
+func getDefaultCNINetwork(pluginDir, vendorCNIDirPrefix string) (*cniNetwork, error) {
 	if pluginDir == "" {
 		pluginDir = DefaultNetDir
 	}
@@ -106,7 +101,7 @@ func getDefaultCNINetwork(pluginDir, binDir, vendorCNIDirPrefix string) (*cniNet
 		// Search for vendor-specific plugins as well as default plugins in the CNI codebase.
 		vendorDir := vendorCNIDir(vendorCNIDirPrefix, conf.Network.Type)
 		cninet := &libcni.CNIConfig{
-			Path: []string{binDir, vendorDir},
+			Path: []string{DefaultCNIDir, vendorDir},
 		}
 		network := &cniNetwork{name: conf.Network.Name, NetworkConfig: conf, CNIConfig: cninet}
 		return network, nil
@@ -118,7 +113,7 @@ func vendorCNIDir(prefix, pluginType string) string {
 	return fmt.Sprintf(VendorCNIDirTemplate, prefix, pluginType)
 }
 
-func getLoNetwork(binDir, vendorDirPrefix string) *cniNetwork {
+func getLoNetwork(vendorDirPrefix string) *cniNetwork {
 	loConfig, err := libcni.ConfFromBytes([]byte(`{
   "cniVersion": "0.1.0",
   "name": "cni-loopback",
@@ -130,7 +125,7 @@ func getLoNetwork(binDir, vendorDirPrefix string) *cniNetwork {
 		panic(err)
 	}
 	cninet := &libcni.CNIConfig{
-		Path: []string{vendorCNIDir(vendorDirPrefix, loConfig.Network.Type), binDir},
+		Path: []string{vendorCNIDir(vendorDirPrefix, loConfig.Network.Type), DefaultCNIDir},
 	}
 	loNetwork := &cniNetwork{
 		name:          "lo",
@@ -158,7 +153,7 @@ func (plugin *cniNetworkPlugin) Init(host network.Host, hairpinMode componentcon
 }
 
 func (plugin *cniNetworkPlugin) syncNetworkConfig() {
-	network, err := getDefaultCNINetwork(plugin.pluginDir, plugin.binDir, plugin.vendorCNIDirPrefix)
+	network, err := getDefaultCNINetwork(plugin.pluginDir, plugin.vendorCNIDirPrefix)
 	if err != nil {
 		glog.Errorf("error updating cni config: %s", err)
 		return

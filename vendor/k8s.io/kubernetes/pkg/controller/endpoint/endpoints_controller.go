@@ -380,8 +380,6 @@ func (e *EndpointController) syncService(key string) {
 		}
 	}
 
-	readyEps := 0
-	notReadyEps := 0
 	for i := range pods {
 		// TODO: Do we need to copy here?
 		pod := &(*pods[i])
@@ -434,14 +432,12 @@ func (e *EndpointController) syncService(key string) {
 					Addresses: []api.EndpointAddress{epa},
 					Ports:     []api.EndpointPort{epp},
 				})
-				readyEps++
 			} else {
 				glog.V(5).Infof("Pod is out of service: %v/%v", pod.Namespace, pod.Name)
 				subsets = append(subsets, api.EndpointSubset{
 					NotReadyAddresses: []api.EndpointAddress{epa},
 					Ports:             []api.EndpointPort{epp},
 				})
-				notReadyEps++
 			}
 		}
 	}
@@ -494,7 +490,6 @@ func (e *EndpointController) syncService(key string) {
 		newEndpoints.Annotations[endpoints.PodHostnamesAnnotation] = serializedPodHostNames
 	}
 
-	glog.V(4).Infof("Update endpoints for %v/%v, ready: %d not ready: %d", service.Namespace, service.Name, readyEps, notReadyEps)
 	createEndpoints := len(currentEndpoints.ResourceVersion) == 0
 	if createEndpoints {
 		// No previous endpoints, create them

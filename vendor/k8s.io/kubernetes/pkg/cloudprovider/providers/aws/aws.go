@@ -136,19 +136,6 @@ const ServiceAnnotationLoadBalancerSSLPorts = "service.beta.kubernetes.io/aws-lo
 // a HTTP listener is used.
 const ServiceAnnotationLoadBalancerBEProtocol = "service.beta.kubernetes.io/aws-load-balancer-backend-protocol"
 
-const (
-	// volumeAttachmentStatusTimeout is the maximum time to wait for a volume attach/detach to complete
-	volumeAttachmentStatusTimeout = 30 * time.Minute
-	// volumeAttachmentConsecutiveErrorLimit is the number of consecutive errors we will ignore when waiting for a volume to attach/detach
-	volumeAttachmentStatusConsecutiveErrorLimit = 10
-	// volumeAttachmentErrorDelay is the amount of time we wait before retrying after encountering an error,
-	// while waiting for a volume attach/detach to complete
-	volumeAttachmentStatusErrorDelay = 20 * time.Second
-	// volumeAttachmentStatusPollInterval is the interval at which we poll the volume,
-	// while waiting for a volume attach/detach to complete
-	volumeAttachmentStatusPollInterval = 10 * time.Second
-)
-
 // Maps from backend protocol to ELB protocol
 var backendProtocolMapping = map[string]string{
 	"https": "https",
@@ -357,12 +344,6 @@ type Cloud struct {
 	mutex                    sync.Mutex
 	lastNodeNames            sets.String
 	lastInstancesByNodeNames []*ec2.Instance
-
-	// We keep an active list of devices we have assigned but not yet
-	// attached, to avoid a race condition where we assign a device mapping
-	// and then get a second request before we attach the volume
-	attachingMutex sync.Mutex
-	attaching      map[ /*nodeName*/ string]map[mountDevice]string
 }
 
 var _ Volumes = &Cloud{}
@@ -740,10 +721,6 @@ func azToRegion(az string) (string, error) {
 // newAWSCloud creates a new instance of AWSCloud.
 // AWSProvider and instanceId are primarily for tests
 func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
-	// We have some state in the Cloud object - in particular the attaching map
-	// Log so that if we are building multiple Cloud objects, it is obvious!
-	glog.Infof("Building AWS cloudprovider")
-
 	metadata, err := awsServices.Metadata()
 	if err != nil {
 		return nil, fmt.Errorf("error creating AWS metadata client: %v", err)
@@ -794,8 +771,6 @@ func newAWSCloud(config io.Reader, awsServices Services) (*Cloud, error) {
 		metadata: metadata,
 		cfg:      cfg,
 		region:   regionName,
-
-		attaching: make(map[string]map[mountDevice]string),
 	}
 
 	selfAWSInstance, err := awsCloud.buildSelfAWSInstance()
@@ -1039,7 +1014,7 @@ func (c *Cloud) List(filter string) ([]string, error) {
 // It currently involves querying all instances
 func (c *Cloud) getAllZones() (sets.String, error) {
 	// We don't currently cache this; it is currently used only in volume
-	// creation which is expected to be a comparatively rare occurrence.
+	// creation which is expected to be a comparatively rare occurence.
 
 	// TODO: Caching / expose api.Nodes to the cloud provider?
 	// TODO: We could also query for subnets, I think
@@ -1115,6 +1090,13 @@ type awsInstance struct {
 
 	// instance type
 	instanceType string
+
+	mutex sync.Mutex
+
+	// We keep an active list of devices we have assigned but not yet
+	// attached, to avoid a race condition where we assign a device mapping
+	// and then get a second request before we attach the volume
+	attaching map[mountDevice]string
 }
 
 // newAWSInstance creates a new awsInstance object
@@ -1132,6 +1114,8 @@ func newAWSInstance(ec2Service EC2, instance *ec2.Instance) *awsInstance {
 		vpcID:            aws.StringValue(instance.VpcId),
 		subnetID:         aws.StringValue(instance.SubnetId),
 	}
+
+	self.attaching = make(map[mountDevice]string)
 
 	return self
 }
@@ -1166,11 +1150,17 @@ func (i *awsInstance) describeInstance() (*ec2.Instance, error) {
 // Gets the mountDevice already assigned to the volume, or assigns an unused mountDevice.
 // If the volume is already assigned, this will return the existing mountDevice with alreadyAttached=true.
 // Otherwise the mountDevice is assigned by finding the first available mountDevice, and it is returned with alreadyAttached=false.
-func (c *Cloud) getMountDevice(i *awsInstance, volumeID string, assign bool) (assigned mountDevice, alreadyAttached bool, err error) {
+func (i *awsInstance) getMountDevice(volumeID string, assign bool) (assigned mountDevice, alreadyAttached bool, err error) {
 	instanceType := i.getInstanceType()
 	if instanceType == nil {
 		return "", false, fmt.Errorf("could not get instance type for instance: %s", i.awsID)
 	}
+
+	// We lock to prevent concurrent mounts from conflicting
+	// We may still conflict if someone calls the API concurrently,
+	// but the AWS API will then fail one of the two attach operations
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
 
 	info, err := i.describeInstance()
 	if err != nil {
@@ -1191,13 +1181,7 @@ func (c *Cloud) getMountDevice(i *awsInstance, volumeID string, assign bool) (as
 		deviceMappings[mountDevice(name)] = aws.StringValue(blockDevice.Ebs.VolumeId)
 	}
 
-	// We lock to prevent concurrent mounts from conflicting
-	// We may still conflict if someone calls the API concurrently,
-	// but the AWS API will then fail one of the two attach operations
-	c.attachingMutex.Lock()
-	defer c.attachingMutex.Unlock()
-
-	for mountDevice, volume := range c.attaching[i.nodeName] {
+	for mountDevice, volume := range i.attaching {
 		deviceMappings[mountDevice] = volume
 	}
 
@@ -1232,34 +1216,27 @@ func (c *Cloud) getMountDevice(i *awsInstance, volumeID string, assign bool) (as
 		return "", false, fmt.Errorf("Too many EBS volumes attached to node %s.", i.nodeName)
 	}
 
-	attaching := c.attaching[i.nodeName]
-	if attaching == nil {
-		attaching = make(map[mountDevice]string)
-		c.attaching[i.nodeName] = attaching
-	}
-	attaching[chosen] = volumeID
+	i.attaching[chosen] = volumeID
 	glog.V(2).Infof("Assigned mount device %s -> volume %s", chosen, volumeID)
 
 	return chosen, false, nil
 }
 
-// endAttaching removes the entry from the "attachments in progress" map
-// It returns true if it was found (and removed), false otherwise
-func (c *Cloud) endAttaching(i *awsInstance, volumeID string, mountDevice mountDevice) bool {
-	c.attachingMutex.Lock()
-	defer c.attachingMutex.Unlock()
+func (i *awsInstance) endAttaching(volumeID string, mountDevice mountDevice) {
+	i.mutex.Lock()
+	defer i.mutex.Unlock()
 
-	existingVolumeID, found := c.attaching[i.nodeName][mountDevice]
+	existingVolumeID, found := i.attaching[mountDevice]
 	if !found {
-		return false
+		glog.Errorf("endAttaching on non-allocated device")
+		return
 	}
 	if volumeID != existingVolumeID {
 		glog.Errorf("endAttaching on device assigned to different volume")
-		return false
+		return
 	}
-	glog.V(2).Infof("Releasing in-process attachment entry: %s -> volume %s", mountDevice, volumeID)
-	delete(c.attaching[i.nodeName], mountDevice)
-	return true
+	glog.V(2).Infof("Releasing mount device mapping: %s -> volume %s", mountDevice, volumeID)
+	delete(i.attaching, mountDevice)
 }
 
 type awsDisk struct {
@@ -1330,65 +1307,48 @@ func (d *awsDisk) describeVolume() (*ec2.Volume, error) {
 }
 
 // waitForAttachmentStatus polls until the attachment status is the expected value
-// On success, it returns the last attachment state.
-func (d *awsDisk) waitForAttachmentStatus(status string) (*ec2.VolumeAttachment, error) {
-	// We wait up to 30 minutes for the attachment to complete.
-	// This mirrors the GCE timeout.
-	timeoutAt := time.Now().UTC().Add(volumeAttachmentStatusTimeout).Unix()
-
-	// Because of rate limiting, we often see errors from describeVolume
-	// So we tolerate a limited number of failures.
-	// But once we see more than 10 errors in a row, we return the error
-	describeErrorCount := 0
+// TODO(justinsb): return (bool, error)
+func (d *awsDisk) waitForAttachmentStatus(status string) error {
+	// TODO: There may be a faster way to get this when we're attaching locally
+	attempt := 0
+	maxAttempts := 60
 
 	for {
 		info, err := d.describeVolume()
 		if err != nil {
-			describeErrorCount++
-			if describeErrorCount > volumeAttachmentStatusConsecutiveErrorLimit {
-				return nil, err
-			} else {
-				glog.Warningf("Ignoring error from describe volume; will retry: %q", err)
-				time.Sleep(volumeAttachmentStatusErrorDelay)
-				continue
-			}
-		} else {
-			describeErrorCount = 0
+			return err
 		}
 		if len(info.Attachments) > 1 {
-			// Shouldn't happen; log so we know if it is
 			glog.Warningf("Found multiple attachments for volume: %v", info)
 		}
-		var attachment *ec2.VolumeAttachment
 		attachmentStatus := ""
-		for _, a := range info.Attachments {
+		for _, attachment := range info.Attachments {
 			if attachmentStatus != "" {
-				// Shouldn't happen; log so we know if it is
-				glog.Warningf("Found multiple attachments: %v", info)
+				glog.Warning("Found multiple attachments: ", info)
 			}
-			if a.State != nil {
-				attachment = a
-				attachmentStatus = *a.State
+			if attachment.State != nil {
+				attachmentStatus = *attachment.State
 			} else {
-				// Shouldn't happen; log so we know if it is
-				glog.Warningf("Ignoring nil attachment state: %v", a)
+				// Shouldn't happen, but don't panic...
+				glog.Warning("Ignoring nil attachment state: ", attachment)
 			}
 		}
 		if attachmentStatus == "" {
 			attachmentStatus = "detached"
 		}
 		if attachmentStatus == status {
-			return attachment, nil
-		}
-
-		if time.Now().Unix() > timeoutAt {
-			glog.Warningf("Timeout waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
-			return nil, fmt.Errorf("Timeout waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
+			return nil
 		}
 
 		glog.V(2).Infof("Waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
 
-		time.Sleep(volumeAttachmentStatusPollInterval)
+		attempt++
+		if attempt > maxAttempts {
+			glog.Warningf("Timeout waiting for volume state: actual=%s, desired=%s", attachmentStatus, status)
+			return errors.New("Timeout waiting for volume state")
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -1468,23 +1428,7 @@ func (c *Cloud) AttachDisk(diskName string, instanceName string, readOnly bool) 
 		return "", errors.New("AWS volumes cannot be mounted read-only")
 	}
 
-	// mountDevice will hold the device where we should try to attach the disk
-	var mountDevice mountDevice
-	// alreadyAttached is true if we have already called AttachVolume on this disk
-	var alreadyAttached bool
-
-	// attachEnded is set to true if the attach operation completed
-	// (successfully or not), and is thus no longer in progress
-	attachEnded := false
-	defer func() {
-		if attachEnded {
-			if !c.endAttaching(awsInstance, disk.awsID, mountDevice) {
-				glog.Errorf("endAttaching called when attach not in progress")
-			}
-		}
-	}()
-
-	mountDevice, alreadyAttached, err = c.getMountDevice(awsInstance, disk.awsID, true)
+	mountDevice, alreadyAttached, err := awsInstance.getMountDevice(disk.awsID, true)
 	if err != nil {
 		return "", err
 	}
@@ -1494,6 +1438,15 @@ func (c *Cloud) AttachDisk(diskName string, instanceName string, readOnly bool) 
 	// We are using xvd names (so we are HVM only)
 	// See http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/device_naming.html
 	ec2Device := "/dev/xvd" + string(mountDevice)
+
+	// attachEnded is set to true if the attach operation completed
+	// (successfully or not)
+	attachEnded := false
+	defer func() {
+		if attachEnded {
+			awsInstance.endAttaching(disk.awsID, mountDevice)
+		}
+	}()
 
 	if !alreadyAttached {
 		request := &ec2.AttachVolumeInput{
@@ -1512,27 +1465,12 @@ func (c *Cloud) AttachDisk(diskName string, instanceName string, readOnly bool) 
 		glog.V(2).Infof("AttachVolume request returned %v", attachResponse)
 	}
 
-	attachment, err := disk.waitForAttachmentStatus("attached")
+	err = disk.waitForAttachmentStatus("attached")
 	if err != nil {
 		return "", err
 	}
 
-	// The attach operation has finished
 	attachEnded = true
-
-	// Double check the attachment to be 100% sure we attached the correct volume at the correct mountpoint
-	// It could happen otherwise that we see the volume attached from a previous/separate AttachVolume call,
-	// which could theoretically be against a different device (or even instance).
-	if attachment == nil {
-		// Impossible?
-		return "", fmt.Errorf("unexpected state: attachment nil after attached %q to %q", diskName, instanceName)
-	}
-	if ec2Device != aws.StringValue(attachment.Device) {
-		return "", fmt.Errorf("disk attachment of %q to %q failed: requested device %q but found %q", diskName, instanceName, ec2Device, aws.StringValue(attachment.Device))
-	}
-	if awsInstance.awsID != aws.StringValue(attachment.InstanceId) {
-		return "", fmt.Errorf("disk attachment of %q to %q failed: requested instance %q but found %q", diskName, instanceName, awsInstance.awsID, aws.StringValue(attachment.InstanceId))
-	}
 
 	return hostDevice, nil
 }
@@ -1558,14 +1496,14 @@ func (c *Cloud) DetachDisk(diskName string, instanceName string) (string, error)
 		return "", err
 	}
 
-	mountDevice, alreadyAttached, err := c.getMountDevice(awsInstance, disk.awsID, false)
+	mountDevice, alreadyAttached, err := awsInstance.getMountDevice(disk.awsID, false)
 	if err != nil {
 		return "", err
 	}
 
 	if !alreadyAttached {
 		glog.Warningf("DetachDisk called on non-attached disk: %s", diskName)
-		// TODO: Continue?  Tolerate non-attached error from the AWS DetachVolume call?
+		// TODO: Continue?  Tolerate non-attached error in DetachVolume?
 	}
 
 	request := ec2.DetachVolumeInput{
@@ -1581,19 +1519,13 @@ func (c *Cloud) DetachDisk(diskName string, instanceName string) (string, error)
 		return "", errors.New("no response from DetachVolume")
 	}
 
-	attachment, err := disk.waitForAttachmentStatus("detached")
+	err = disk.waitForAttachmentStatus("detached")
 	if err != nil {
 		return "", err
 	}
-	if attachment != nil {
-		// We expect it to be nil, it is (maybe) interesting if it is not
-		glog.V(2).Infof("waitForAttachmentStatus returned non-nil attachment with state=detached: %v", attachment)
-	}
 
 	if mountDevice != "" {
-		c.endAttaching(awsInstance, disk.awsID, mountDevice)
-		// We don't check the return value - we don't really expect the attachment to have been
-		// in progress, though it might have been
+		awsInstance.endAttaching(disk.awsID, mountDevice)
 	}
 
 	hostDevicePath := "/dev/xvd" + string(mountDevice)

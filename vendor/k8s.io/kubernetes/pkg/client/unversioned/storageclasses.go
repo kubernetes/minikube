@@ -18,7 +18,7 @@ package unversioned
 
 import (
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/storage"
+	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
@@ -28,25 +28,25 @@ type StorageClassesInterface interface {
 
 // StorageClassInterface has methods to work with StorageClass resources.
 type StorageClassInterface interface {
-	List(opts api.ListOptions) (*storage.StorageClassList, error)
-	Get(name string) (*storage.StorageClass, error)
-	Create(storageClass *storage.StorageClass) (*storage.StorageClass, error)
-	Update(storageClass *storage.StorageClass) (*storage.StorageClass, error)
+	List(opts api.ListOptions) (*extensions.StorageClassList, error)
+	Get(name string) (*extensions.StorageClass, error)
+	Create(storageClass *extensions.StorageClass) (*extensions.StorageClass, error)
+	Update(storageClass *extensions.StorageClass) (*extensions.StorageClass, error)
 	Delete(name string) error
 	Watch(opts api.ListOptions) (watch.Interface, error)
 }
 
 // storageClasses implements StorageClassInterface
 type storageClasses struct {
-	client *StorageClient
+	client *ExtensionsClient
 }
 
-func newStorageClasses(c *StorageClient) *storageClasses {
+func newStorageClasses(c *ExtensionsClient) *storageClasses {
 	return &storageClasses{c}
 }
 
-func (c *storageClasses) List(opts api.ListOptions) (result *storage.StorageClassList, err error) {
-	result = &storage.StorageClassList{}
+func (c *storageClasses) List(opts api.ListOptions) (result *extensions.StorageClassList, err error) {
+	result = &extensions.StorageClassList{}
 	err = c.client.Get().
 		Resource("storageclasses").
 		VersionedParams(&opts, api.ParameterCodec).
@@ -56,20 +56,20 @@ func (c *storageClasses) List(opts api.ListOptions) (result *storage.StorageClas
 	return result, err
 }
 
-func (c *storageClasses) Get(name string) (result *storage.StorageClass, err error) {
-	result = &storage.StorageClass{}
+func (c *storageClasses) Get(name string) (result *extensions.StorageClass, err error) {
+	result = &extensions.StorageClass{}
 	err = c.client.Get().Resource("storageClasses").Name(name).Do().Into(result)
 	return
 }
 
-func (c *storageClasses) Create(storageClass *storage.StorageClass) (result *storage.StorageClass, err error) {
-	result = &storage.StorageClass{}
+func (c *storageClasses) Create(storageClass *extensions.StorageClass) (result *extensions.StorageClass, err error) {
+	result = &extensions.StorageClass{}
 	err = c.client.Post().Resource("storageClasses").Body(storageClass).Do().Into(result)
 	return
 }
 
-func (c *storageClasses) Update(storageClass *storage.StorageClass) (result *storage.StorageClass, err error) {
-	result = &storage.StorageClass{}
+func (c *storageClasses) Update(storageClass *extensions.StorageClass) (result *extensions.StorageClass, err error) {
+	result = &extensions.StorageClass{}
 	err = c.client.Put().Resource("storageClasses").Name(storageClass.Name).Body(storageClass).Do().Into(result)
 	return
 }
