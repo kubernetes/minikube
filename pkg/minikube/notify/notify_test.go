@@ -17,7 +17,6 @@ limitations under the License.
 package notify
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -140,7 +139,6 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	viper.Set(config.WantUpdateNotification, true)
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 
-	var outputBuffer bytes.Buffer
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
 	// test that no update text is printed if the latest version is lower/equal to the current version
@@ -151,10 +149,10 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	server := httptest.NewServer(handler)
 	defer server.Close()
 
-	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
-	if len(outputBuffer.String()) != 0 {
+	text := GetUpdateText(server.URL, lastUpdateCheckFilePath)
+	if len(text) != 0 {
 		t.Fatalf("Expected MaybePrintUpdateText to not output text as the current version is %s and version %s was served from URL but output was [%s]",
-			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
+			version.GetVersion(), latestVersionFromURL, t)
 	}
 
 	// test that update text is printed if the latest version is greater than the current version
@@ -165,9 +163,9 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	server = httptest.NewServer(handler)
 	defer server.Close()
 
-	MaybePrintUpdateText(&outputBuffer, server.URL, lastUpdateCheckFilePath)
-	if len(outputBuffer.String()) == 0 {
+	text = GetUpdateText(server.URL, lastUpdateCheckFilePath)
+	if len(text) == 0 {
 		t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
-			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
+			version.GetVersion(), latestVersionFromURL, text)
 	}
 }
