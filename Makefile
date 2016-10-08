@@ -60,13 +60,13 @@ else
 endif
 
 out/minikube-darwin-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-darwin-amd64 ./cmd/minikube
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-darwin-amd64 ./cmd/minikube
 
 out/minikube-linux-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-linux-amd64 ./cmd/minikube
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-linux-amd64 ./cmd/minikube
 
 out/minikube-windows-amd64.exe: $(GOPATH)/src/$(ORG) pkg/minikube/cluster/assets.go $(shell $(MINIKUBEFILES))
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-windows-amd64.exe ./cmd/minikube
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-windows-amd64.exe ./cmd/minikube
 
 localkube-image: out/localkube
 	make -C deploy/docker VERSION=$(VERSION)
