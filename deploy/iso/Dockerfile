@@ -17,8 +17,8 @@
 FROM boot2docker/boot2docker
 
 # Set the version of Docker and the expected sha.
-RUN echo "1.11.1" > $ROOTFS/etc/version
-ENV DOCKER_SHA b7d6025beb6440341741ea9324655a267fba83f7
+RUN echo "1.12.0" > $ROOTFS/etc/version
+ENV DOCKER_SHA 92839410a37ed1940b7a93dcd21fd9aa85d673a1 
 
 # Add other dependencies here to $ROOTFS/
 ADD nsenter $ROOTFS/usr/bin/
