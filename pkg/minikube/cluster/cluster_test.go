@@ -52,7 +52,7 @@ func TestCreateHost(t *testing.T) {
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
-	_, err := createHost(api, defaultMachineConfig)
+	_, err := CreateHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestStartClusterError(t *testing.T) {
 func TestStartHostExists(t *testing.T) {
 	api := tests.NewMockAPI()
 	// Create an initial host.
-	_, err := createHost(api, defaultMachineConfig)
+	_, err := CreateHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -158,7 +158,7 @@ func TestStartHostExists(t *testing.T) {
 func TestStartStoppedHost(t *testing.T) {
 	api := tests.NewMockAPI()
 	// Create an initial host.
-	h, err := createHost(api, defaultMachineConfig)
+	h, err := CreateHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -189,13 +189,13 @@ func TestStartStoppedHost(t *testing.T) {
 	}
 }
 
-func TestStartHost(t *testing.T) {
+func TestCreateHostProvision(t *testing.T) {
 	api := tests.NewMockAPI()
 
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	h, err := StartHost(api, defaultMachineConfig)
+	h, err := CreateHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -216,7 +216,7 @@ func TestStartHost(t *testing.T) {
 	}
 }
 
-func TestStartHostConfig(t *testing.T) {
+func TestCreateHostConfig(t *testing.T) {
 	api := tests.NewMockAPI()
 
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
@@ -227,7 +227,7 @@ func TestStartHostConfig(t *testing.T) {
 		DockerEnv: []string{"FOO=BAR"},
 	}
 
-	h, err := StartHost(api, config)
+	h, err := CreateHost(api, config)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -248,7 +248,7 @@ func TestStopHostError(t *testing.T) {
 
 func TestStopHost(t *testing.T) {
 	api := tests.NewMockAPI()
-	h, _ := createHost(api, defaultMachineConfig)
+	h, _ := CreateHost(api, defaultMachineConfig)
 	if err := StopHost(api); err != nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
@@ -259,7 +259,7 @@ func TestStopHost(t *testing.T) {
 
 func TestDeleteHost(t *testing.T) {
 	api := tests.NewMockAPI()
-	createHost(api, defaultMachineConfig)
+	CreateHost(api, defaultMachineConfig)
 
 	if err := DeleteHost(api); err != nil {
 		t.Fatalf("Unexpected error deleting host: %s", err)
@@ -268,7 +268,7 @@ func TestDeleteHost(t *testing.T) {
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	api := tests.NewMockAPI()
-	h, _ := createHost(api, defaultMachineConfig)
+	h, _ := CreateHost(api, defaultMachineConfig)
 
 	d := &tests.MockDriver{RemoveError: true}
 
@@ -282,7 +282,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	api := tests.NewMockAPI()
 	api.RemoveError = true
-	createHost(api, defaultMachineConfig)
+	CreateHost(api, defaultMachineConfig)
 
 	if err := DeleteHost(api); err == nil {
 		t.Fatal("Expected error deleting host.")
@@ -292,7 +292,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 func TestDeleteHostMultipleErrors(t *testing.T) {
 	api := tests.NewMockAPI()
 	api.RemoveError = true
-	h, _ := createHost(api, defaultMachineConfig)
+	h, _ := CreateHost(api, defaultMachineConfig)
 
 	d := &tests.MockDriver{RemoveError: true}
 
@@ -327,7 +327,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState("Does Not Exist")
 
-	createHost(api, defaultMachineConfig)
+	CreateHost(api, defaultMachineConfig)
 	checkState(state.Running.String())
 
 	StopHost(api)
@@ -410,7 +410,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	api := tests.NewMockAPI()
-	h, err := createHost(api, defaultMachineConfig)
+	h, err := CreateHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -443,7 +443,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	api := tests.NewMockAPI()
-	h, err := createHost(api, defaultMachineConfig)
+	h, err := CreateHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}

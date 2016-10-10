@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cfg "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
+	"k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -71,7 +72,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 	defer api.Close()
 
-	config := cluster.MachineConfig{
+	machineConfig := cluster.MachineConfig{
 		MinikubeISO:         viper.GetString(isoURL),
 		Memory:              viper.GetInt(memory),
 		CPUs:                viper.GetInt(cpus),
@@ -86,17 +87,35 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	var host *host.Host
-	start := func() (err error) {
-		host, err = cluster.StartHost(api, config)
-		if err != nil {
-			glog.Errorf("Error starting host: %s. Retrying.\n", err)
-		}
-		return err
-	}
-	err := util.Retry(3, start)
+
+	exists, err := cluster.HostExists(api)
 	if err != nil {
-		glog.Errorln("Error starting host: ", err)
+		glog.Errorf("Error checking if host exists: %s", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
+	}
+
+	if !exists {
+		fmt.Println("Creating new minikube VM ...")
+		host, err = cluster.CreateHost(api, machineConfig)
+		if err != nil {
+			glog.Errorf("Error creating host: %v", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+		// Save the machine settings for the new machine
+		config.WriteConfig(viper.AllSettings())
+	} else {
+		fmt.Println("Using existing minikube VM ...")
+		err := util.Retry(3, func() (err error) {
+			host, err = cluster.StartHost(api, machineConfig)
+			if err != nil {
+				glog.Errorf("Error starting host: %s. Retrying.\n", err)
+			}
+			return err
+		})
+		if err != nil {
+			glog.Errorf("Error starting existing host: %v", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 
 	ip, err := host.Driver.GetIP()
@@ -111,10 +130,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
 	}
+	fmt.Println("Using Kubernetes Version:", kubernetesConfig.KubernetesVersion)
 	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
+
+	config.SaveKubernetesConfig(kubernetesConfig)
 
 	if err := cluster.SetupCerts(host.Driver); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)

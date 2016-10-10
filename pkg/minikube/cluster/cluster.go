@@ -61,22 +61,13 @@ const fileScheme = "file"
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
-//see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs.go#L32-34
+//see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs/logs.go#L32-34
 func init() {
 	flag.Set("logtostderr", "false")
 }
 
-// StartHost starts a host VM.
+// StartHost starts an existing host VM.
 func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	exists, err := api.Exists(constants.MachineName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking if host exists: %s", constants.MachineName)
-	}
-	if !exists {
-		return createHost(api, config)
-	}
-
-	glog.Infoln("Machine exists!")
 	h, err := api.Load(constants.MachineName)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
@@ -89,6 +80,7 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	}
 
 	if s != state.Running {
+		glog.Infoln("Attempting to start stopped host...")
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrapf(err, "Error starting stopped host")
 		}
@@ -125,6 +117,11 @@ func DeleteHost(api libmachine.API) error {
 	m.Collect(host.Driver.Remove())
 	m.Collect(api.Remove(constants.MachineName))
 	return m.ToError()
+}
+
+// Returns whether or not the default machine exists
+func HostExists(api libmachine.API) (bool, error) {
+	return api.Exists(constants.MachineName)
 }
 
 // GetHostStatus gets the status of the host VM.
@@ -426,9 +423,9 @@ func (m *MachineConfig) IsMinikubeISOCached() bool {
 	return true
 }
 
-func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
+func CreateHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	var driver interface{}
-
+	glog.Infof("Creating Host with config %+v", config)
 	if config.ShouldCacheMinikubeISO() {
 		if err := config.CacheMinikubeISOFromURL(); err != nil {
 			return nil, errors.Wrap(err, "Error attempting to cache minikube iso from url")
