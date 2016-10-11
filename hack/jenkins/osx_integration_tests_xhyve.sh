@@ -24,8 +24,6 @@
 
 
 set -e
-mkdir -p out
-gsutil -m cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/* out/
 chmod +x out/e2e-darwin-amd64
 chmod +x out/minikube-darwin-amd64
 cp -r out/testdata ./
