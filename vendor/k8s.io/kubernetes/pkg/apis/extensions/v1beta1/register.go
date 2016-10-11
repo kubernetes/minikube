@@ -62,6 +62,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&PodSecurityPolicyList{},
 		&NetworkPolicy{},
 		&NetworkPolicyList{},
+		&StorageClass{},
+		&StorageClassList{},
 	)
 	// Add the watch version that applies
 	versionedwatch.AddToGroupVersion(scheme, SchemeGroupVersion)

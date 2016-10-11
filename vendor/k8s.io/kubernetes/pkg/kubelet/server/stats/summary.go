@@ -134,7 +134,7 @@ func (sb *summaryBuilder) build() (*stats.Summary, error) {
 				CapacityBytes:  &sb.imageFsInfo.Capacity,
 				UsedBytes:      &sb.imageStats.TotalStorageBytes,
 				InodesFree:     sb.imageFsInfo.InodesFree,
-				Inodes:         sb.imageFsInfo.Inodes,
+				Inodes:         sb.rootFsInfo.Inodes,
 			},
 		},
 	}
@@ -349,7 +349,7 @@ func (sb *summaryBuilder) containerInfoV2ToNetworkStats(name string, info *cadvi
 			}
 		}
 	}
-	glog.V(4).Infof("Missing default interface %q for %s", network.DefaultInterfaceName, name)
+	glog.Warningf("Missing default interface %q for %s", network.DefaultInterfaceName, name)
 	return nil
 }
 

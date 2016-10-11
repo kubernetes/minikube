@@ -37,7 +37,6 @@ import (
 	"k8s.io/kubernetes/pkg/storage"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/validation/field"
-	"k8s.io/kubernetes/pkg/version"
 	"k8s.io/kubernetes/pkg/watch"
 
 	"github.com/golang/glog"
@@ -207,25 +206,6 @@ func (e *Store) ListPredicate(ctx api.Context, m *generic.SelectionPredicate, op
 	return list, storeerr.InterpretListError(err, e.QualifiedResource)
 }
 
-// TODO: remove this function after 1.6
-// returns if the user agent is is kubectl older than v1.4.0
-func isOldKubectl(userAgent string) bool {
-	// example userAgent string: kubectl-1.3/v1.3.8 (linux/amd64) kubernetes/e328d5b
-	if !strings.Contains(userAgent, "kubectl") {
-		return false
-	}
-	userAgent = strings.Split(userAgent, " ")[0]
-	subs := strings.Split(userAgent, "/")
-	if len(subs) != 2 {
-		return false
-	}
-	kubectlVersion, versionErr := version.Parse(subs[1])
-	if versionErr != nil {
-		return false
-	}
-	return kubectlVersion.LT(version.MustParse("v1.4.0"))
-}
-
 // Create inserts a new item according to the unique key from the object.
 func (e *Store) Create(ctx api.Context, obj runtime.Object) (runtime.Object, error) {
 	if err := rest.BeforeCreate(e.CreateStrategy, ctx, obj); err != nil {
@@ -247,29 +227,6 @@ func (e *Store) Create(ctx api.Context, obj runtime.Object) (runtime.Object, err
 	if err := e.Storage.Create(ctx, key, obj, out, ttl); err != nil {
 		err = storeerr.InterpretCreateError(err, e.QualifiedResource, name)
 		err = rest.CheckGeneratedNameError(e.CreateStrategy, err, obj)
-		if !kubeerr.IsAlreadyExists(err) {
-			return nil, err
-		}
-		if errGet := e.Storage.Get(ctx, key, out, false); errGet != nil {
-			return nil, err
-		}
-		accessor, errGetAcc := meta.Accessor(out)
-		if errGetAcc != nil {
-			return nil, err
-		}
-		if accessor.GetDeletionTimestamp() != nil {
-			msg := &err.(*kubeerr.StatusError).ErrStatus.Message
-			*msg = fmt.Sprintf("object is being deleted: %s", *msg)
-			// TODO: remove this block after 1.6
-			userAgent, _ := api.UserAgentFrom(ctx)
-			if !isOldKubectl(userAgent) {
-				return nil, err
-			}
-			if e.QualifiedResource.Resource != "replicationcontrollers" {
-				return nil, err
-			}
-			*msg = fmt.Sprintf("%s: if you're using \"kubectl rolling-update\" with kubectl version older than v1.4.0, your rolling update has failed, though the pods are correctly updated. Please see https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md#kubectl-rolling-update for a workaround", *msg)
-		}
 		return nil, err
 	}
 	if e.AfterCreate != nil {
@@ -628,9 +585,9 @@ func (e *Store) updateForGracefulDeletionAndFinalizers(ctx api.Context, name, ke
 				existingAccessor.SetFinalizers(newFinalizers)
 			}
 
-			pendingFinalizers = len(existingAccessor.GetFinalizers()) != 0
 			if !graceful {
 				// set the DeleteGracePeriods to 0 if the object has pendingFinalizers but not supporting graceful deletion
+				pendingFinalizers = len(existingAccessor.GetFinalizers()) != 0
 				if pendingFinalizers {
 					glog.V(6).Infof("update the DeletionTimestamp to \"now\" and GracePeriodSeconds to 0 for object %s, because it has pending finalizers", name)
 					err = markAsDeleting(existing)
