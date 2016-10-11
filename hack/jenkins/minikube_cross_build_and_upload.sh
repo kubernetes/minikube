@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script builds the minikube binary for all 3 platforms and uploads them.
+# This is to done as part of the CI tests for Github PRs
+
 # The script expects the following env variabls:
 # ghprbPullId: The pull request ID, injected from the ghpbr plugin.
 # ghprbActualCommit: The commit hash, injected from the ghpbr plugin.
@@ -28,6 +31,7 @@ make cross
 # This makes it easier to provision slaves, since they don't need to have a go toolchain.'
 GOPATH=$(pwd)/_gopath GOOS=darwin GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-darwin-amd64
 GOPATH=$(pwd)/_gopath GOOS=linux GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-linux-amd64
+GOPATH=$(pwd)/_gopath GOOS=windows GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-windows-amd64.exe
 cp -r test/integration/testdata out/
 
 # Upload everything we built to Cloud Storage.
