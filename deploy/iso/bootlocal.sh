@@ -21,8 +21,9 @@ PARTNAME=`echo "$BOOT2DOCKER_DATA" | sed 's/.*\///'`
 mkdir -p /mnt/$PARTNAME/var/lib/localkube
 ln -s /mnt/$PARTNAME/var/lib/localkube /var/lib/localkube
 
-mkdir -p /mnt/$PARTNAME/data
+mkdir -p /mnt/$PARTNAME/data/hostpath_pv
 ln -s /mnt/$PARTNAME/data /data
+ln -s /mnt/$PARTNAME/data/hostpath_pv /tmp/hostpath_pv
 
 mkdir -p /mnt/$PARTNAME/var/lib/kubelet
 ln -s /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
