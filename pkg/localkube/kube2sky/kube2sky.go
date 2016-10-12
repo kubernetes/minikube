@@ -45,7 +45,6 @@ import (
 	"k8s.io/kubernetes/pkg/client/restclient"
 	kclient "k8s.io/kubernetes/pkg/client/unversioned"
 	kclientcmd "k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
-	kframework "k8s.io/kubernetes/pkg/controller/framework"
 	kselector "k8s.io/kubernetes/pkg/fields"
 	etcdutil "k8s.io/kubernetes/pkg/storage/etcd/util"
 	"k8s.io/kubernetes/pkg/util/validation"
@@ -556,11 +555,11 @@ func newKubeClient() (*kclient.Client, error) {
 }
 
 func watchForServices(kubeClient *kclient.Client, ks *kube2sky) kcache.Store {
-	serviceStore, serviceController := kframework.NewInformer(
+	serviceStore, serviceController := kcache.NewInformer(
 		createServiceLW(kubeClient),
 		&kapi.Service{},
 		resyncPeriod,
-		kframework.ResourceEventHandlerFuncs{
+		kcache.ResourceEventHandlerFuncs{
 			AddFunc:    ks.newService,
 			DeleteFunc: ks.removeService,
 			UpdateFunc: ks.updateService,
@@ -571,11 +570,11 @@ func watchForServices(kubeClient *kclient.Client, ks *kube2sky) kcache.Store {
 }
 
 func watchEndpoints(kubeClient *kclient.Client, ks *kube2sky) kcache.Store {
-	eStore, eController := kframework.NewInformer(
+	eStore, eController := kcache.NewInformer(
 		createEndpointsLW(kubeClient),
 		&kapi.Endpoints{},
 		resyncPeriod,
-		kframework.ResourceEventHandlerFuncs{
+		kcache.ResourceEventHandlerFuncs{
 			AddFunc: ks.handleEndpointAdd,
 			UpdateFunc: func(oldObj, newObj interface{}) {
 				// TODO: Avoid unwanted updates.
@@ -589,11 +588,11 @@ func watchEndpoints(kubeClient *kclient.Client, ks *kube2sky) kcache.Store {
 }
 
 func watchPods(kubeClient *kclient.Client, ks *kube2sky) kcache.Store {
-	eStore, eController := kframework.NewInformer(
+	eStore, eController := kcache.NewInformer(
 		createEndpointsPodLW(kubeClient),
 		&kapi.Pod{},
 		resyncPeriod,
-		kframework.ResourceEventHandlerFuncs{
+		kcache.ResourceEventHandlerFuncs{
 			AddFunc: ks.handlePodCreate,
 			UpdateFunc: func(oldObj, newObj interface{}) {
 				ks.handlePodUpdate(oldObj, newObj)
