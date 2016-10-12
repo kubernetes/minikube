@@ -25,8 +25,8 @@ import (
 	"github.com/golang/glog"
 
 	"k8s.io/kubernetes/pkg/api"
+	kcache "k8s.io/kubernetes/pkg/client/cache"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/cache"
 	"k8s.io/kubernetes/pkg/util/strategicpatch"
 )
@@ -42,7 +42,7 @@ type NodeStatusUpdater interface {
 // NewNodeStatusUpdater returns a new instance of NodeStatusUpdater.
 func NewNodeStatusUpdater(
 	kubeClient internalclientset.Interface,
-	nodeInformer framework.SharedInformer,
+	nodeInformer kcache.SharedInformer,
 	actualStateOfWorld cache.ActualStateOfWorld) NodeStatusUpdater {
 	return &nodeStatusUpdater{
 		actualStateOfWorld: actualStateOfWorld,
@@ -53,7 +53,7 @@ func NewNodeStatusUpdater(
 
 type nodeStatusUpdater struct {
 	kubeClient         internalclientset.Interface
-	nodeInformer       framework.SharedInformer
+	nodeInformer       kcache.SharedInformer
 	actualStateOfWorld cache.ActualStateOfWorld
 }
 
@@ -107,16 +107,11 @@ func (nsu *nodeStatusUpdater) UpdateNodeStatuses() error {
 
 		_, err = nsu.kubeClient.Core().Nodes().PatchStatus(nodeName, patchBytes)
 		if err != nil {
+			// If update node status fails, reset flag statusUpdateNeeded back to true
+			// to indicate this node status needs to be udpated again
+			nsu.actualStateOfWorld.SetNodeStatusUpdateNeeded(nodeName)
 			return fmt.Errorf(
 				"failed to kubeClient.Core().Nodes().Patch for node %q. %v",
-				nodeName,
-				err)
-		}
-
-		err = nsu.actualStateOfWorld.ResetNodeStatusUpdateNeeded(nodeName)
-		if err != nil {
-			return fmt.Errorf(
-				"failed to ResetNodeStatusUpdateNeeded for node %q. %v",
 				nodeName,
 				err)
 		}
