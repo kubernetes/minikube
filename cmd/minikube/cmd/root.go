@@ -112,6 +112,7 @@ func setFlagsUsingViper() {
 func init() {
 	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Whether or not to show logs from libmachine.")
 	RootCmd.AddCommand(configCmd.ConfigCmd)
+	RootCmd.AddCommand(configCmd.AddonsCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	viper.BindPFlags(RootCmd.PersistentFlags())
 	cobra.OnInitialize(initConfig)

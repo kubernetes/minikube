@@ -34,11 +34,10 @@ type configFile interface {
 }
 
 type setFn func(string, string) error
-type MinikubeConfig map[string]interface{}
 
 type Setting struct {
 	name        string
-	set         func(MinikubeConfig, string, string) error
+	set         func(config.MinikubeConfig, string, string) error
 	validations []setFn
 	callbacks   []setFn
 }
@@ -109,6 +108,18 @@ var settings = []Setting{
 		name: config.WantReportErrorPrompt,
 		set:  SetBool,
 	},
+	{
+		name:        "dashboard",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:        "addon-manager",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
 }
 
 var ConfigCmd = &cobra.Command{
@@ -129,25 +140,8 @@ func configurableFields() string {
 	return strings.Join(fields, "\n")
 }
 
-// ReadConfig reads in the JSON minikube config
-func ReadConfig() (MinikubeConfig, error) {
-	f, err := os.Open(constants.ConfigFile)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return make(map[string]interface{}), nil
-		}
-		return nil, fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
-	}
-	m, err := decode(f)
-	if err != nil {
-		return nil, fmt.Errorf("Could not decode config %s: %s", constants.ConfigFile, err)
-	}
-
-	return m, nil
-}
-
 // WriteConfig writes a minikube config to the JSON file
-func WriteConfig(m MinikubeConfig) error {
+func WriteConfig(m config.MinikubeConfig) error {
 	f, err := os.Create(constants.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
@@ -160,13 +154,7 @@ func WriteConfig(m MinikubeConfig) error {
 	return nil
 }
 
-func decode(r io.Reader) (MinikubeConfig, error) {
-	var data MinikubeConfig
-	err := json.NewDecoder(r).Decode(&data)
-	return data, err
-}
-
-func encode(w io.Writer, m MinikubeConfig) error {
+func encode(w io.Writer, m config.MinikubeConfig) error {
 	b, err := json.MarshalIndent(m, "", "    ")
 	if err != nil {
 		return err

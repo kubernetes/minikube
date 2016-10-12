@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+
 	"github.com/spf13/cobra"
 )
 
@@ -44,7 +46,7 @@ func init() {
 }
 
 func unset(name string) error {
-	m, err := ReadConfig()
+	m, err := pkgConfig.ReadConfig()
 	if err != nil {
 		return err
 	}

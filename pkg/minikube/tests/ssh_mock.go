@@ -37,7 +37,8 @@ type SSHServer struct {
 	Connected            bool
 	Transfers            *bytes.Buffer
 	HadASessionRequested bool
-	CommandToOutput      map[string]string
+	// CommandsToOutput can be used to mock what the SSHServer returns for a given command
+	CommandToOutput map[string]string
 }
 
 // NewSSHServer returns a NewSSHServer instance, ready for use.

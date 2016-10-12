@@ -44,7 +44,7 @@ var dashboardCmd = &cobra.Command{
 		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 		defer api.Close()
 
-		cluster.EnsureMinikubeRunningOrExit(api)
+		cluster.EnsureMinikubeRunningOrExit(api, 1)
 		namespace := "kube-system"
 		service := "kubernetes-dashboard"
 
