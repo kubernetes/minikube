@@ -122,6 +122,22 @@ you should now be able to use docker on the command line on your host mac/linux 
 docker ps
 ```
 
+On Centos 7, docker may report the following error:
+
+```
+Could not read CA certificate "/etc/docker/ca.pem": open /etc/docker/ca.pem: no such file or directory
+```
+
+The fix is to update /etc/sysconfig/docker to ensure that minikube's environment changes are respected:
+
+```
+< DOCKER_CERT_PATH=/etc/docker
+---
+> if [ -z "${DOCKER_CERT_PATH}" ]; then
+>   DOCKER_CERT_PATH=/etc/docker
+> fi
+```
+
 Remember to turn off the imagePullPolicy:Always, as otherwise kubernetes won't use images you built locally.
 
 ## Managing your Cluster
