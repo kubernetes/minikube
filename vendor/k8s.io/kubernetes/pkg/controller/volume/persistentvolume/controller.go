@@ -28,7 +28,6 @@ import (
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/util/goroutinemap"
 	vol "k8s.io/kubernetes/pkg/volume"
@@ -150,12 +149,12 @@ const createProvisionedPVInterval = 10 * time.Second
 
 // PersistentVolumeController is a controller that synchronizes
 // PersistentVolumeClaims and PersistentVolumes. It starts two
-// framework.Controllers that watch PersistentVolume and PersistentVolumeClaim
+// cache.Controllers that watch PersistentVolume and PersistentVolumeClaim
 // changes.
 type PersistentVolumeController struct {
-	volumeController          *framework.Controller
+	volumeController          *cache.Controller
 	volumeSource              cache.ListerWatcher
-	claimController           *framework.Controller
+	claimController           *cache.Controller
 	claimSource               cache.ListerWatcher
 	classReflector            *cache.Reflector
 	classSource               cache.ListerWatcher
@@ -191,7 +190,7 @@ type PersistentVolumeController struct {
 }
 
 // syncClaim is the main controller method to decide what to do with a claim.
-// It's invoked by appropriate framework.Controller callbacks when a claim is
+// It's invoked by appropriate cache.Controller callbacks when a claim is
 // created, updated or periodically synced. We do not differentiate between
 // these events.
 // For easier readability, it was split into syncUnboundClaim and syncBoundClaim
@@ -381,7 +380,7 @@ func (ctrl *PersistentVolumeController) syncBoundClaim(claim *api.PersistentVolu
 }
 
 // syncVolume is the main controller method to decide what to do with a volume.
-// It's invoked by appropriate framework.Controller callbacks when a volume is
+// It's invoked by appropriate cache.Controller callbacks when a volume is
 // created, updated or periodically synced. We do not differentiate between
 // these events.
 func (ctrl *PersistentVolumeController) syncVolume(volume *api.PersistentVolume) error {
@@ -913,7 +912,6 @@ func (ctrl *PersistentVolumeController) unbindVolume(volume *api.PersistentVolum
 	// Update the status
 	_, err = ctrl.updateVolumePhase(newVol, api.VolumeAvailable, "")
 	return err
-
 }
 
 // reclaimVolume implements volume.Spec.PersistentVolumeReclaimPolicy and
@@ -996,7 +994,8 @@ func (ctrl *PersistentVolumeController) recycleVolumeOperation(arg interface{}) 
 	}
 
 	// Plugin found
-	recycler, err := plugin.NewRecycler(volume.Name, spec)
+	recorder := ctrl.newRecyclerEventRecorder(volume)
+	recycler, err := plugin.NewRecycler(volume.Name, spec, recorder)
 	if err != nil {
 		// Cannot create recycler
 		strerr := fmt.Sprintf("Failed to create recycler: %v", err)
@@ -1024,6 +1023,8 @@ func (ctrl *PersistentVolumeController) recycleVolumeOperation(arg interface{}) 
 	}
 
 	glog.V(2).Infof("volume %q recycled", volume.Name)
+	// Send an event
+	ctrl.eventRecorder.Event(volume, api.EventTypeNormal, "VolumeRecycled", "Volume recycled")
 	// Make the volume available again
 	if err = ctrl.unbindVolume(volume); err != nil {
 		// Oops, could not save the volume and therefore the controller will
@@ -1366,6 +1367,17 @@ func (ctrl *PersistentVolumeController) scheduleOperation(operationName string, 
 	}
 }
 
+// newRecyclerEventRecorder returns a RecycleEventRecorder that sends all events
+// to given volume.
+func (ctrl *PersistentVolumeController) newRecyclerEventRecorder(volume *api.PersistentVolume) vol.RecycleEventRecorder {
+	return func(eventtype, message string) {
+		ctrl.eventRecorder.Eventf(volume, eventtype, "RecyclerPod", "Recycler pod: %s", message)
+	}
+}
+
+// findProvisionablePlugin finds a provisioner plugin for a given claim.
+// It returns either the provisioning plugin or nil when an external
+// provisioner is requested.
 func (ctrl *PersistentVolumeController) findProvisionablePlugin(claim *api.PersistentVolumeClaim) (vol.ProvisionableVolumePlugin, *storage.StorageClass, error) {
 	// TODO: remove this alpha behavior in 1.5
 	alpha := hasAnnotation(claim.ObjectMeta, annAlphaClass)
