@@ -28,13 +28,14 @@ import (
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
 
 func updateLocalkubeFromAsset(client *ssh.Client) error {
-	contents, err := Asset("out/localkube")
+	contents, err := assets.Asset("out/localkube")
 	if err != nil {
 		return errors.Wrap(err, "Error loading asset out/localkube")
 	}

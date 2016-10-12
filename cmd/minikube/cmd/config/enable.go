@@ -20,31 +20,28 @@ import (
 	"fmt"
 	"os"
 
-	"k8s.io/minikube/pkg/minikube/config"
-
 	"github.com/spf13/cobra"
 )
 
-var configGetCmd = &cobra.Command{
-	Use:   "get PROPERTY_NAME",
-	Short: "Gets the value of PROPERTY_NAME from the minikube config file",
-	Long:  "Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.",
+var addonsEnableCmd = &cobra.Command{
+	Use:   "enable ADDON_NAME",
+	Short: "Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list ",
+	Long:  "Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list ",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			fmt.Fprintln(os.Stderr, "usage: minikube config get PROPERTY_NAME")
+			fmt.Fprintln(os.Stderr, "usage: minikube addons enable ADDON_NAME")
 			os.Exit(1)
 		}
 
-		val, err := config.Get(args[0])
+		addon := args[0]
+		err := Set(addon, "true")
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
 		}
-		if val != "" {
-			fmt.Fprintln(os.Stdout, val)
-		}
+		fmt.Fprintln(os.Stdout, fmt.Sprintf("%s was successfully enabled", addon))
 	},
 }
 
 func init() {
-	ConfigCmd.AddCommand(configGetCmd)
+	AddonsCmd.AddCommand(addonsEnableCmd)
 }

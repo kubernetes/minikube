@@ -21,6 +21,8 @@ Configurable fields:
  * ReminderWaitPeriodInHours
  * WantReportError
  * WantReportErrorPrompt
+ * dashboard
+ * addon-manager
 
 ```
 minikube config SUBCOMMAND [flags]
