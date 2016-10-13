@@ -16,7 +16,7 @@ minikube start
 
 ```
       --container-runtime string    The container runtime to be used
-      --cpus int                    Number of CPUs allocated to the minikube VM (default 1)
+      --cpus int                    Number of CPUs allocated to the minikube VM (default 2)
       --disk-size string            Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g) (default "20g")
       --docker-env value            Environment variables to pass to the Docker daemon. (format: key=value) (default [])
       --extra-config value          A set of key=value pairs that describe configuration that may be passed to different components.
@@ -27,7 +27,7 @@ minikube start
       --iso-url string              Location of the minikube iso (default "https://storage.googleapis.com/minikube/minikube-0.7.iso")
       --kubernetes-version string   The kubernetes version that the minikube VM will (ex: v1.2.3) 
  OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.4.1")
-      --memory int                  Amount of RAM allocated to the minikube VM (default 1024)
+      --memory int                  Amount of RAM allocated to the minikube VM (default 2048)
       --network-plugin string       The name of the network plugin
       --registry-mirror value       Registry mirrors to pass to the Docker daemon (default [])
       --vm-driver string            VM driver is one of: [virtualbox vmwarefusion kvm xhyve hyperv] (default "virtualbox")

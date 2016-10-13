@@ -59,8 +59,8 @@ const (
 	DefaultIsoUrl       = "https://storage.googleapis.com/minikube/minikube-0.7.iso"
 	ShaSuffix           = ".sha256"
 	DefaultIsoShaUrl    = DefaultIsoUrl + ShaSuffix
-	DefaultMemory       = 1024
-	DefaultCPUS         = 1
+	DefaultMemory       = 2048
+	DefaultCPUS         = 2
 	DefaultDiskSize     = "20g"
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
