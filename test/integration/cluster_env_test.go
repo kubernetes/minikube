@@ -44,7 +44,10 @@ func TestClusterEnv(t *testing.T) {
 	dockerPs := func() error {
 		cmd := exec.Command(path, "ps")
 		output, err = cmd.CombinedOutput()
-		return err
+		if err != nil {
+			return &commonutil.RetriableError{Err: err}
+		}
+		return nil
 	}
 	if err := commonutil.RetryAfter(5, dockerPs, 3*time.Second); err != nil {
 		t.Fatalf("Error running command: %s. Error: %s Output: %s", "docker ps", err, output)

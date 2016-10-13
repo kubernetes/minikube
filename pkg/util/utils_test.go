@@ -24,20 +24,27 @@ import (
 )
 
 // Returns a function that will return n errors, then return successfully forever.
-func errorGenerator(n int) func() error {
+func errorGenerator(n int, retryable bool) func() error {
 	errorCount := 0
 	return func() (err error) {
 		if errorCount < n {
 			errorCount += 1
-			return errors.New("Error!")
+			e := errors.New("Error!")
+			if retryable {
+				return &RetriableError{Err: e}
+			} else {
+				return e
+			}
+
 		}
+
 		return nil
 	}
 }
 
 func TestErrorGenerator(t *testing.T) {
 	errors := 3
-	f := errorGenerator(errors)
+	f := errorGenerator(errors, false)
 	for i := 0; i < errors-1; i++ {
 		if err := f(); err == nil {
 			t.Fatalf("Error should have been thrown at iteration %v", i)
@@ -49,15 +56,30 @@ func TestErrorGenerator(t *testing.T) {
 }
 
 func TestRetry(t *testing.T) {
-
-	f := errorGenerator(4)
+	f := errorGenerator(4, true)
 	if err := Retry(5, f); err != nil {
 		t.Fatalf("Error should not have been raised by retry.")
 	}
 
-	f = errorGenerator(5)
+	f = errorGenerator(5, true)
 	if err := Retry(4, f); err == nil {
 		t.Fatalf("Error should have been raised by retry.")
+	}
+}
+
+func TestRetryNotRetriableError(t *testing.T) {
+	f := errorGenerator(4, false)
+	if err := Retry(5, f); err == nil {
+		t.Fatalf("Error should have been raised by retry.")
+	}
+
+	f = errorGenerator(5, false)
+	if err := Retry(4, f); err == nil {
+		t.Fatalf("Error should have been raised by retry.")
+	}
+	f = errorGenerator(0, false)
+	if err := Retry(5, f); err != nil {
+		t.Fatalf("Error should not have been raised by retry.")
 	}
 }
 

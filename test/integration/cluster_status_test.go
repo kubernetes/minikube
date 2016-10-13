@@ -52,7 +52,7 @@ func TestClusterStatus(t *testing.T) {
 				status = c.Status
 			}
 			if status != api.ConditionTrue {
-				return fmt.Errorf("Component %s is not Healthy! Status: %s", i.GetName(), status)
+				return &commonutil.RetriableError{Err: fmt.Errorf("Component %s is not Healthy! Status: %s", i.GetName(), status)}
 			}
 		}
 		return nil
