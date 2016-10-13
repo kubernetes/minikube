@@ -142,7 +142,7 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
 			log.Errorf("Error %s running command %s. Return code: %s", stdout, args, err)
-			return fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)
+			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)}
 		}
 		return nil
 	}

@@ -51,7 +51,7 @@ func TestPersistence(t *testing.T) {
 		if util.IsPodReady(p) {
 			return nil
 		}
-		return fmt.Errorf("Pod %s is not ready yet.", podName)
+		return &commonutil.RetriableError{Err: fmt.Errorf("Pod %s is not ready yet.", podName)}
 	}
 
 	if err := commonutil.RetryAfter(20, checkPod, 6*time.Second); err != nil {
@@ -65,13 +65,13 @@ func TestPersistence(t *testing.T) {
 			return err
 		}
 		if len(pods.Items) < 1 {
-			return fmt.Errorf("No pods found matching query: %v", cmd)
+			return &commonutil.RetriableError{Err: fmt.Errorf("No pods found matching query: %v", cmd)}
 		}
 		db := pods.Items[0]
 		if util.IsPodReady(&db) {
 			return nil
 		}
-		return fmt.Errorf("Dashboard pod is not ready yet.")
+		return &commonutil.RetriableError{Err: fmt.Errorf("Dashboard pod is not ready yet.")}
 	}
 
 	// Make sure the dashboard is running before we stop the VM.

@@ -33,6 +33,12 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
+type RetriableError struct {
+	Err error
+}
+
+func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
+
 // Until endlessly loops the provided function until a message is received on the done channel.
 // The function will wait the duration provided in sleep between function calls. Errors will be sent on provider Writer.
 func Until(fn func() error, w io.Writer, name string, sleep time.Duration, done <-chan struct{}) {
@@ -84,6 +90,9 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 			return nil
 		}
 		m.Collect(err)
+		if _, ok := err.(*RetriableError); !ok {
+			return m.ToError()
+		}
 		time.Sleep(d)
 	}
 	return m.ToError()
