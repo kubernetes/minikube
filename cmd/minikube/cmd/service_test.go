@@ -30,14 +30,14 @@ func TestCheckEndpointReady(t *testing.T) {
 
 	endpointNotReady := &kubeApi.Endpoints{
 		Subsets: []kubeApi.EndpointSubset{
-			{Addresses: []kubeApi.EndpointAddress{
-				{IP: "1.1.1.1"},
-				{IP: "2.2.2.2"}},
+			{Addresses: []kubeApi.EndpointAddress{},
 				NotReadyAddresses: []kubeApi.EndpointAddress{
+					{IP: "1.1.1.1"},
+					{IP: "2.2.2.2"},
 					{IP: "3.3.3.3"},
 				}}}}
 	if err := CheckEndpointReady(endpointNotReady); err == nil {
-		t.Fatalf("Endpoint had NotReadyAddresses but CheckEndpointReady did not return an error")
+		t.Fatalf("Endpoint had no Addresses but CheckEndpointReady did not return an error")
 	}
 
 	endpointReady := &kubeApi.Endpoints{
@@ -50,6 +50,6 @@ func TestCheckEndpointReady(t *testing.T) {
 			}},
 	}
 	if err := CheckEndpointReady(endpointReady); err != nil {
-		t.Fatalf("Endpoint was ready with no NotReadyAddresses but CheckEndpointReady returned an error")
+		t.Fatalf("Endpoint was ready with at least one Address, but CheckEndpointReady returned an error")
 	}
 }

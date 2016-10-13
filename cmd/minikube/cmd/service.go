@@ -108,9 +108,9 @@ func CheckEndpointReady(endpoint *kubeApi.Endpoints) error {
 		return errors.New("Endpoint for service is not ready yet")
 	}
 	for _, subset := range endpoint.Subsets {
-		if len(subset.NotReadyAddresses) != 0 {
+		if len(subset.Addresses) == 0 {
 			fmt.Fprintf(os.Stderr, notReadyMsg)
-			return errors.New("Endpoint for service is not ready yet")
+			return errors.New("No endpoints for service are ready yet")
 		}
 	}
 	return nil
