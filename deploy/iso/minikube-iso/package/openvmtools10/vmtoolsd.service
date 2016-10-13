@@ -1,0 +1,14 @@
+[Unit]
+Description=vmtoolsd for openvmtools
+After=syslog.target network.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/vmtoolsd.pid
+ExecStart=/usr/bin/vmtoolsd -b /var/run/vmtoolsd.pid
+Restart=on-failure
+KillMode=process
+KillSignal=SIGKILL
+
+[Install]
+WantedBy=multi-user.target
