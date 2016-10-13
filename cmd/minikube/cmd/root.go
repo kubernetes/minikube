@@ -42,6 +42,7 @@ var dirs = [...]string{
 	constants.MakeMiniPath("cache", "localkube"),
 	constants.MakeMiniPath("config"),
 	constants.MakeMiniPath("addons"),
+	constants.MakeMiniPath("logs"),
 }
 
 const (
@@ -106,6 +107,7 @@ func setFlagsUsingViper() {
 		// Viper will give precedence first to calls to the Set command,
 		// then to values from the config.yml
 		a.Value.Set(viper.GetString(a.Name))
+		a.Changed = true
 	}
 }
 
@@ -114,6 +116,10 @@ func init() {
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	logDir := pflag.Lookup("log_dir")
+	if !logDir.Changed {
+		logDir.Value.Set(constants.MakeMiniPath("logs"))
+	}
 	viper.BindPFlags(RootCmd.PersistentFlags())
 	cobra.OnInitialize(initConfig)
 }
