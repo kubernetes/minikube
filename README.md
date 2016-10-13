@@ -10,12 +10,11 @@ It includes:
 ### Build instructions
 ```
 $ cd $HOME
-$ git clone https://github.com/s-urbaniak/rktminikube
-$ cd ..
+$ git clone https://github.com/coreos/minikube-iso
 $ git clone https://github.com/buildroot/buildroot
 $ cd buildroot
-$ git checkout 2016.08-rc2
-$ make BR2_EXTERNAL=../rktminikube minikube_defconfig
+$ git checkout 2016.08-rc3
+$ make BR2_EXTERNAL=../minikube-iso minikube_defconfig
 $ make
 ```
 
