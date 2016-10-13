@@ -56,11 +56,11 @@ func TestAddons(t *testing.T) {
 				if p.Status.Phase == "Running" {
 					return nil
 				}
-				return fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)
+				return &commonutil.RetriableError{Err: fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)}
 			}
 		}
 
-		return fmt.Errorf("Addon manager not found. Found pods: %s", pods)
+		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %s", pods)}
 	}
 
 	if err := commonutil.RetryAfter(20, checkAddon, 5*time.Second); err != nil {
@@ -89,7 +89,7 @@ func TestDashboard(t *testing.T) {
 		}
 
 		if rc.Status.Replicas != rc.Status.FullyLabeledReplicas {
-			return fmt.Errorf("Not enough pods running. Expected %s, got %s.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)
+			return &commonutil.RetriableError{Err: fmt.Errorf("Not enough pods running. Expected %s, got %s.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)}
 		}
 
 		if svc.Spec.Ports[0].NodePort != 30000 {

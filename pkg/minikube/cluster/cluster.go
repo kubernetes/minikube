@@ -94,7 +94,7 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	}
 
 	if err := h.ConfigureAuth(); err != nil {
-		return nil, errors.Wrap(err, "Error configuring auth on host: %s")
+		return nil, errors.Wrap(&util.RetriableError{Err: err}, "Error configuring auth on host: %s")
 	}
 	return h, nil
 }
