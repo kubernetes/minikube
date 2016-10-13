@@ -27,9 +27,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-var listFormat string
+var addonListFormat string
 
-type ListTemplate struct {
+type AddonListTemplate struct {
 	AddonName   string
 	AddonStatus string
 }
@@ -43,7 +43,7 @@ var addonsListCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, "usage: minikube addons list")
 			os.Exit(1)
 		}
-		err := list()
+		err := addonList()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -52,9 +52,9 @@ var addonsListCmd = &cobra.Command{
 }
 
 func init() {
-	AddonsCmd.Flags().StringVar(&listFormat, "format", constants.DefaultListFormat,
+	AddonsCmd.Flags().StringVar(&addonListFormat, "format", constants.DefaultAddonListFormat,
 		`Go template format string for the addon list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/addon#ListTemplate`)
+For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#AddonListTemplate`)
 	AddonsCmd.AddCommand(addonsListCmd)
 }
 
@@ -65,18 +65,18 @@ func stringFromStatus(addonStatus bool) string {
 	return "disabled"
 }
 
-func list() error {
+func addonList() error {
 	for addonName, addonBundle := range assets.Addons {
 		addonStatus, err := addonBundle.IsEnabled()
 		if err != nil {
 			return err
 		}
-		tmpl, err := template.New("list").Parse(listFormat)
+		tmpl, err := template.New("list").Parse(addonListFormat)
 		if err != nil {
 			glog.Errorln("Error creating list template:", err)
 			os.Exit(1)
 		}
-		listTmplt := ListTemplate{addonName, stringFromStatus(addonStatus)}
+		listTmplt := AddonListTemplate{addonName, stringFromStatus(addonStatus)}
 		err = tmpl.Execute(os.Stdout, listTmplt)
 		if err != nil {
 			glog.Errorln("Error executing list template:", err)
