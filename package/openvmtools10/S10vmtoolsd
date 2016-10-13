@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# Starts vmtoolsd for openvmtools
+#
+
+EXEC="/usr/bin/vmtoolsd"
+ARGS="-b"
+PID="/var/run/vmtoolsd.pid"
+
+case "$1" in
+  start)
+    printf "Starting vmtoolsd: "
+    start-stop-daemon -S -q -x $EXEC -- $ARGS $PID
+    if [ $? != 0 ]; then
+      echo "FAILED"
+      exit 1
+    else
+      echo "OK"
+    fi
+  ;;
+  stop)
+    printf "Stopping vmtoolsd: "
+    start-stop-daemon -K -q -p $PID
+    echo "OK"
+  ;;
+  restart|reload)
+    $0 stop
+    $0 start
+  ;;
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+esac
