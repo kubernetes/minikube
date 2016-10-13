@@ -59,7 +59,7 @@ func TestClusterDNS(t *testing.T) {
 			"nslookup", "kubernetes.default"})
 		dnsOutput := string(dnsByteArr)
 		if err != nil {
-			return err
+			return &commonutil.RetriableError{Err: err}
 		}
 
 		if !strings.Contains(dnsOutput, "10.0.0.1") || !strings.Contains(dnsOutput, "10.0.0.10") {

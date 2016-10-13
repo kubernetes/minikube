@@ -88,7 +88,7 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	downloader := func() (err error) {
 		resp, err = http.Get(url)
 		if err != nil {
-			return errors.Wrap(err, "Error downloading localkube via http")
+			return &util.RetriableError{Err: errors.Wrap(err, "Error downloading localkube via http")}
 		}
 		if resp.StatusCode != http.StatusOK {
 			return errors.New("Remote server error in downloading localkube via http")
