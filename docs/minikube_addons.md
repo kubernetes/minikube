@@ -15,7 +15,7 @@ minikube addons SUBCOMMAND [flags]
 
 ```
       --format string   Go template format string for the addon list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/addon#ListTemplate (default "- {{.AddonName}}: {{.AddonStatus}}\n")
+For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#AddonListTemplate (default "- {{.AddonName}}: {{.AddonStatus}}\n")
 ```
 
 ### Options inherited from parent commands

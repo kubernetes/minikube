@@ -65,7 +65,8 @@ const (
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
 		"localkube: {{.LocalkubeStatus}}\n"
-	DefaultListFormat         = "- {{.AddonName}}: {{.AddonStatus}}\n"
+	DefaultAddonListFormat    = "- {{.AddonName}}: {{.AddonStatus}}\n"
+	DefaultConfigViewFormat   = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
 )

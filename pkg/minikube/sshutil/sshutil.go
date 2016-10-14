@@ -67,7 +67,7 @@ func DeleteAddon(a *assets.Addon, client *ssh.Client) error {
 	if enabled, err := a.IsEnabled(); err != nil {
 		return errors.Wrapf(err, "error attempting to transfer addon")
 	} else if enabled {
-		return errors.Errorf("Error, attempted to removed enabled addon")
+		return errors.Errorf("Error, attempted to remove enabled addon")
 	}
 	for _, f := range a.Assets {
 		if err := DeleteFile(f, client); err != nil {

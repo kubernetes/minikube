@@ -99,7 +99,7 @@ func EnableOrDisableAddon(name string, val string) error {
 		}
 	} else {
 		if err = deleteAddonViaDriver(addon, host.Driver); err != nil {
-			return errors.Wrapf(err, "Error deleteing addon %s from VM", name)
+			return errors.Wrapf(err, "Error deleting addon %s from VM", name)
 		}
 	}
 	return nil
