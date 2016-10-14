@@ -695,7 +695,7 @@ func TestIsIsoChecksumValid(t *testing.T) {
 	}
 
 	isoData := []byte("myIsoData")
-	isoCheckSum := sha256.Sum256(isoData)
+	isoCheckSum := sha256.New().Sum(isoData)
 	for _, tc := range tests {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if tc.httpError != 0 {
@@ -708,7 +708,7 @@ func TestIsIsoChecksumValid(t *testing.T) {
 			}
 		}))
 		defer ts.Close()
-		valid := isIsoChecksumValid(&isoData, ts.URL)
+		valid := isIsoChecksumValid(isoCheckSum, ts.URL)
 		if valid != tc.expected {
 			t.Errorf("Expected isIsoChecksumValid to be %v, was %v", tc.expected, valid)
 		}
