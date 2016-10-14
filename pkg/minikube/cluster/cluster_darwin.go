@@ -30,6 +30,7 @@ func createVMwareFusionHost(config MachineConfig) drivers.Driver {
 	d.Boot2DockerURL = config.GetISOFileURI()
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
+	d.DiskSize = config.DiskSize
 
 	// TODO(philips): push these defaults upstream to fixup this driver
 	d.SSHPort = 22
