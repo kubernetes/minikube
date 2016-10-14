@@ -46,4 +46,5 @@ minikube config SUBCOMMAND [flags]
 * [minikube config get](minikube_config_get.md)	 - Gets the value of PROPERTY_NAME from the minikube config file
 * [minikube config set](minikube_config_set.md)	 - Sets an individual value in a minikube config file
 * [minikube config unset](minikube_config_unset.md)	 - unsets an individual value in a minikube config file
+* [minikube config view](minikube_config_view.md)	 - Display values currently set in the minikube config file
 
