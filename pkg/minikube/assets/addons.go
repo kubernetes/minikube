@@ -74,6 +74,13 @@ var Addons = map[string]*Addon{
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
+	"hostpath-storageclass": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/hostpath-storageclass.yaml",
+			constants.AddonsPath,
+			"hostpath-storageclass.yaml",
+			"0640"),
+	}, true, "hostpath-storageclass"),
 }
 
 func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
