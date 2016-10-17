@@ -474,12 +474,11 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	}
 
 	tcpPrefix := "tcp://"
-	portDelimiter := ":"
 	port := "2376"
 
 	envMap := map[string]string{
 		"DOCKER_TLS_VERIFY": "1",
-		"DOCKER_HOST":       tcpPrefix + ip + portDelimiter + port,
+		"DOCKER_HOST":       tcpPrefix + net.JoinHostPort(ip, port),
 		"DOCKER_CERT_PATH":  constants.MakeMiniPath("certs"),
 	}
 	return envMap, nil
