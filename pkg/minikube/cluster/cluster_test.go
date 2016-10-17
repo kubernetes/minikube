@@ -40,8 +40,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-var defaultMachineConfig = MachineConfig{VMDriver: constants.DefaultVMDriver,
-	MinikubeISO: constants.DefaultIsoUrl}
+var defaultMachineConfig = MachineConfig{
+	VMDriver:    constants.DefaultVMDriver,
+	MinikubeISO: constants.DefaultIsoUrl,
+}
 
 func TestCreateHost(t *testing.T) {
 	api := tests.NewMockAPI()
@@ -433,6 +435,34 @@ func TestGetHostDockerEnv(t *testing.T) {
 		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
 			t.Fatalf("Expected envMap[\"%s\"] key to be defined", dockerEnvKey)
 		}
+	}
+}
+
+func TestGetHostDockerEnvIPv6(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
+	api := tests.NewMockAPI()
+	h, err := createHost(api, defaultMachineConfig)
+	if err != nil {
+		t.Fatalf("Error creating host: %v", err)
+	}
+	d := &tests.MockDriver{
+		BaseDriver: drivers.BaseDriver{
+			IPAddress: "fe80::215:5dff:fe00:a903",
+		},
+	}
+	h.Driver = d
+
+	envMap, err := GetHostDockerEnv(api)
+	if err != nil {
+		t.Fatalf("Unexpected error getting env: %s", err)
+	}
+
+	expected := "tcp://[fe80::215:5dff:fe00:a903]:2376"
+	v := envMap["DOCKER_HOST"]
+	if v != expected {
+		t.Fatalf("Expected DOCKER_HOST to be defined as %s but was %s", expected, v)
 	}
 }
 
