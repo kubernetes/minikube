@@ -19,8 +19,8 @@ package provision
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"path"
+	"text/template"
 
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
