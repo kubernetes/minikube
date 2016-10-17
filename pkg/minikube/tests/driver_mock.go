@@ -40,6 +40,9 @@ func (driver *MockDriver) Create() error {
 }
 
 func (driver *MockDriver) GetIP() (string, error) {
+	if driver.BaseDriver.IPAddress != "" {
+		return driver.BaseDriver.IPAddress, nil
+	}
 	return "127.0.0.1", nil
 }
 
