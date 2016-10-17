@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This file should be kept in sync with cluster/addons/dashboard/dashboard-controller.yaml
 apiVersion: v1
 kind: ReplicationController
 metadata:
@@ -37,7 +36,6 @@ spec:
     spec:
       containers:
       - name: kubernetes-dashboard
-        # ARCH will be replaced with the architecture it's built for. Check out the Makefile for more details
         image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.0
         imagePullPolicy: IfNotPresent
         ports:
