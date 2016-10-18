@@ -57,7 +57,7 @@ func (a *Addon) IsEnabled() (bool, error) {
 var Addons = map[string]*Addon{
 	"addon-manager": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
-			"deploy/iso/addon-manager.yaml",
+			"deploy/addons/addon-manager.yaml",
 			"/etc/kubernetes/manifests/",
 			"addon-manager.yaml",
 			"0640"),
