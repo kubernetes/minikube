@@ -63,16 +63,25 @@ func (l *localkubeCacher) isLocalkubeCached() bool {
 	return true
 }
 
+// cacheLocalKube downloads the stream to a temporary file & then atomically
+// renames the file to the destination file name. This is to gracefully handle
+// any errors in downloading the file.
 func (l *localkubeCacher) cacheLocalkube(body io.ReadCloser) error {
 	// store localkube inside the .minikube dir
-	out, err := os.Create(l.getLocalkubeCacheFilepath())
+	dir := filepath.Dir(l.getLocalkubeCacheFilepath())
+	filename := filepath.Base(l.getLocalkubeCacheFilepath())
+	out, err := ioutil.TempFile(dir, ".tmp-"+filename)
 	if err != nil {
-		return errors.Wrap(err, "Error creating localkube local file")
+		os.Remove(out.Name())
+		return errors.Wrap(err, "Error creating temporary localkube local file")
 	}
-	defer out.Close()
-	defer body.Close()
 	if _, err = io.Copy(out, body); err != nil {
+		os.Remove(out.Name())
 		return errors.Wrap(err, "Error writing localkube to file")
+	}
+	if err := os.Rename(out.Name(), l.getLocalkubeCacheFilepath()); err != nil {
+		os.Remove(out.Name())
+		return errors.Wrap(err, "Error renaming temporary localkube to destination")
 	}
 	return nil
 }
@@ -98,6 +107,7 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	if err = util.Retry(5, downloader); err != nil {
 		return errors.Wrap(err, "Max error attempts retrying localkube downloader")
 	}
+	defer resp.Body.Close()
 	if err = l.cacheLocalkube(resp.Body); err != nil {
 		return errors.Wrap(err, "Error caching localkube to local directory")
 	}
