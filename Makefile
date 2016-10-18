@@ -72,7 +72,17 @@ localkube-image: out/localkube
 	make -C deploy/docker VERSION=$(VERSION)
 
 iso:
-	cd deploy/iso && ./build.sh
+	cd deploy/iso/boot2docker && ./build.sh
+
+minikube-iso:
+	[ ! -e $(BUILD_DIR)/buildroot ] && \
+		mkdir -p $(BUILD_DIR) && \
+		git clone https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot && \
+		cd $(BUILD_DIR)/buildroot && \
+		git checkout 2016.08 && \
+		make BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig && \
+		cd ../..
+	cd $(BUILD_DIR)/buildroot && make
 
 .PHONY: integration
 integration: out/minikube

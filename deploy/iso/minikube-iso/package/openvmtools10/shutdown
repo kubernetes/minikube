@@ -1,0 +1,7 @@
+#!/bin/sh
+#compatibility script for openvmtools
+if [ "$1" == "-r" ]; then
+/sbin/reboot
+else
+/sbin/poweroff
+fi
