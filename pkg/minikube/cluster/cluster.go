@@ -563,7 +563,7 @@ func GetServiceURL(api libmachine.API, namespace, service string, t *template.Te
 		return "", errors.Wrap(err, "Error getting ip from host")
 	}
 
-	client, err := getKubernetesClient()
+	client, err := GetKubernetesClient()
 	if err != nil {
 		return "", err
 	}
@@ -604,7 +604,7 @@ type endpointGetter interface {
 }
 
 func getServicePort(client *unversioned.Client, namespace, service string) (int, error) {
-	services := getKubernetesServicesWithNamespace(client, namespace)
+	services := client.Services(namespace)
 	return getServicePortFromServiceGetter(services, service)
 }
 
@@ -639,7 +639,7 @@ func getServicePortFromServiceGetter(services serviceGetter, service string) (in
 	return nodePort, nil
 }
 
-func getKubernetesClient() (*unversioned.Client, error) {
+func GetKubernetesClient() (*unversioned.Client, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -652,19 +652,6 @@ func getKubernetesClient() (*unversioned.Client, error) {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
 	return client, nil
-}
-
-func getKubernetesServicesWithNamespace(client *unversioned.Client, namespace string) serviceGetter {
-	return client.Services(namespace)
-}
-
-func GetKubernetesEndpointsWithNamespace(namespace string) (endpointGetter, error) {
-	client, err := getKubernetesClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error getting kubernetes client")
-	}
-	endpoints := client.Endpoints(namespace)
-	return endpoints, nil
 }
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that

@@ -67,6 +67,11 @@ var serviceCmd = &cobra.Command{
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
+		if err := validateService(namespace, service); err != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("service '%s' could not be found running in namespace '%s' within kubernetes",
+				service, namespace))
+			os.Exit(1)
+		}
 		if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", service, err)
 			cmdutil.MaybeReportErrorAndExit(err)
@@ -100,12 +105,28 @@ func init() {
 	RootCmd.AddCommand(serviceCmd)
 }
 
+func validateService(namespace string, service string) error {
+	client, err := cluster.GetKubernetesClient()
+	if err != nil {
+		return errors.Wrap(err, "error validating input service name")
+	}
+	services := client.Services(namespace)
+	if _, err = services.Get(service); err != nil {
+		return errors.Wrapf(err, "service '%s' could not be found running in namespace '%s' within kubernetes", service, namespace)
+	}
+	return nil
+}
+
 // CheckService waits for the specified service to be ready by returning an error until the service is up
 // The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
 func CheckService(namespace string, service string) error {
-	endpoints, err := cluster.GetKubernetesEndpointsWithNamespace(namespace)
+	client, err := cluster.GetKubernetesClient()
 	if err != nil {
-		return err
+		return &util.RetriableError{Err: err}
+	}
+	endpoints := client.Endpoints(namespace)
+	if err != nil {
+		return &util.RetriableError{Err: err}
 	}
 	endpoint, err := endpoints.Get(service)
 	if err != nil {
