@@ -33,7 +33,9 @@ func TestDockerEnv(t *testing.T) {
 		T:          t}
 
 	minikubeRunner.RunCommand("delete", true)
-	minikubeRunner.RunCommand("start --docker-env=FOO=BAR --docker-env=BAZ=BAT", true)
+
+	startCmd := fmt.Sprintf("start %s %s", minikubeRunner.Args, "--docker-env=FOO=BAR --docker-env=BAZ=BAT")
+	minikubeRunner.RunCommand(startCmd, true)
 	minikubeRunner.EnsureRunning()
 
 	profileContents := minikubeRunner.RunCommand("ssh cat /var/lib/boot2docker/profile", true)
