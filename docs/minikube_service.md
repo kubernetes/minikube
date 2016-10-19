@@ -14,6 +14,7 @@ minikube service [flags] SERVICE
 ### Options
 
 ```
+      --format string      Format to output service URL in (default "http://{{.IP}}:{{.Port}}")
       --https              Open the service URL with https instead of http
   -n, --namespace string   The service namespace (default "default")
       --url                Display the kubernetes service URL in the CLI instead of opening it in the default browser
