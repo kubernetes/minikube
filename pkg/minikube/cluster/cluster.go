@@ -179,15 +179,16 @@ type sshAble interface {
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
-	MinikubeISO      string
-	Memory           int
-	CPUs             int
-	DiskSize         int
-	VMDriver         string
-	DockerEnv        []string // Each entry is formatted as KEY=VALUE.
-	InsecureRegistry []string
-	RegistryMirror   []string
-	HostOnlyCIDR     string // Only used by the virtualbox driver
+	MinikubeISO         string
+	Memory              int
+	CPUs                int
+	DiskSize            int
+	VMDriver            string
+	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
+	InsecureRegistry    []string
+	RegistryMirror      []string
+	HostOnlyCIDR        string // Only used by the virtualbox driver
+	HypervVirtualSwitch string
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
