@@ -20,23 +20,26 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	kubeApi "k8s.io/kubernetes/pkg/api"
-	cmdUtil "k8s.io/minikube/cmd/util"
+	kubeapi "k8s.io/kubernetes/pkg/api"
+	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
 var (
-	namespace      string
-	https          bool
-	serviceURLMode bool
+	namespace          string
+	https              bool
+	serviceURLMode     bool
+	serviceURLFormat   string
+	serviceURLTemplate *template.Template
 )
 
 // serviceCmd represents the service command
@@ -44,11 +47,19 @@ var serviceCmd = &cobra.Command{
 	Use:   "service [flags] SERVICE",
 	Short: "Gets the kubernetes URL for the specified service in your local cluster",
 	Long:  `Gets the kubernetes URL for the specified service in your local cluster`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		t, err := template.New("serviceURL").Parse(serviceURLFormat)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "The value passed to --format is invalid:\n\n", err)
+			os.Exit(1)
+		}
+		serviceURLTemplate = t
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 || len(args) > 1 {
 			errText := "Please specify a service name."
 			fmt.Fprintln(os.Stderr, errText)
-			cmdUtil.MaybeReportErrorAndExit(errors.New(errText))
+			cmdutil.MaybeReportErrorAndExit(errors.New(errText))
 		}
 
 		service := args[0]
@@ -57,15 +68,15 @@ var serviceCmd = &cobra.Command{
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 		if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
-			fmt.Fprintln(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s", service, err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", service, err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 
-		url, err := cluster.GetServiceURL(api, namespace, service)
+		url, err := cluster.GetServiceURL(api, namespace, service, serviceURLTemplate)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")
-			cmdUtil.MaybeReportErrorAndExit(err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 		if https {
 			url = strings.Replace(url, "http", "https", 1)
@@ -83,6 +94,9 @@ func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
+
+	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", "http://{{.IP}}:{{.Port}}", "Format to output service URL in")
+
 	RootCmd.AddCommand(serviceCmd)
 }
 
@@ -102,7 +116,7 @@ func CheckService(namespace string, service string) error {
 
 const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
 
-func CheckEndpointReady(endpoint *kubeApi.Endpoints) error {
+func CheckEndpointReady(endpoint *kubeapi.Endpoints) error {
 	if len(endpoint.Subsets) == 0 {
 		fmt.Fprintf(os.Stderr, notReadyMsg)
 		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
