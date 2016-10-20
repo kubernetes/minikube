@@ -30,7 +30,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
@@ -41,7 +43,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	kubeApi "k8s.io/kubernetes/pkg/api"
+	kubeapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 
@@ -545,7 +547,12 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	return client.Shell(strings.Join(args, " "))
 }
 
-func GetServiceURL(api libmachine.API, namespace, service string) (string, error) {
+type ipPort struct {
+	IP   string
+	Port int
+}
+
+func GetServiceURL(api libmachine.API, namespace, service string, t *template.Template) (string, error) {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return "", errors.Wrap(err, "Error checking if api exist and loading it")
@@ -556,52 +563,89 @@ func GetServiceURL(api libmachine.API, namespace, service string) (string, error
 		return "", errors.Wrap(err, "Error getting ip from host")
 	}
 
-	port, err := getServicePort(namespace, service)
+	client, err := getKubernetesClient()
 	if err != nil {
-		return "", errors.Wrapf(err, "Error getting service port from %s, %s", namespace, service)
+		return "", err
 	}
 
-	return fmt.Sprintf("http://%s:%d", ip, port), nil
+	return getServiceURLWithClient(client, ip, namespace, service, t)
+}
+
+func getServiceURLWithClient(client *unversioned.Client, ip, namespace, service string, t *template.Template) (string, error) {
+	port, err := getServicePort(client, namespace, service)
+	if err != nil {
+		return "", err
+	}
+
+	if t == nil {
+		return fmt.Sprintf("http://%s", net.JoinHostPort(ip, strconv.Itoa(port))), nil
+	}
+
+	var doc bytes.Buffer
+	err = t.Execute(&doc, ipPort{ip, port})
+	if err != nil {
+		return "", err
+	}
+
+	u, err := url.Parse(doc.String())
+	if err != nil {
+		return "", err
+	}
+
+	return u.String(), nil
 }
 
 type serviceGetter interface {
-	Get(name string) (*kubeApi.Service, error)
+	Get(name string) (*kubeapi.Service, error)
 }
 
 type endpointGetter interface {
-	Get(name string) (*kubeApi.Endpoints, error)
+	Get(name string) (*kubeapi.Endpoints, error)
 }
 
-func getServicePort(namespace, service string) (int, error) {
-	services, err := GetKubernetesServicesWithNamespace(namespace)
-	if err != nil {
-		return 0, errors.Wrapf(err, "Error getting kubernetes service with namespace", namespace)
-	}
+func getServicePort(client *unversioned.Client, namespace, service string) (int, error) {
+	services := getKubernetesServicesWithNamespace(client, namespace)
 	return getServicePortFromServiceGetter(services, service)
 }
 
-func getServicePortFromServiceGetter(services serviceGetter, service string) (int, error) {
+type MissingNodePortError struct {
+	service *kubeapi.Service
+}
+
+func (e MissingNodePortError) Error() string {
+	return fmt.Sprintf("Service %s/%s does not have a node port. To have one assigned automatically, the service type must be NodePort or LoadBalancer, but this service is of type %s.", e.service.Namespace, e.service.Name, e.service.Spec.Type)
+}
+
+func getServiceFromServiceGetter(services serviceGetter, service string) (*kubeapi.Service, error) {
 	svc, err := services.Get(service)
 	if err != nil {
-		return 0, errors.Wrapf(err, "Error getting %s service: %s", service)
+		return nil, fmt.Errorf("Error getting %s service: %s", service, err)
+	}
+	return svc, nil
+}
+
+func getServicePortFromServiceGetter(services serviceGetter, service string) (int, error) {
+	svc, err := getServiceFromServiceGetter(services, service)
+	if err != nil {
+		return 0, err
 	}
 	nodePort := 0
 	if len(svc.Spec.Ports) > 0 {
 		nodePort = int(svc.Spec.Ports[0].NodePort)
 	}
 	if nodePort == 0 {
-		return 0, errors.Errorf("Service %s does not have a node port. To have one assigned automatically, the service type must be NodePort or LoadBalancer, but this service is of type %s.", service, svc.Spec.Type)
+		return 0, MissingNodePortError{svc}
 	}
 	return nodePort, nil
 }
 
-func GetKubernetesClient() (*unversioned.Client, error) {
+func getKubernetesClient() (*unversioned.Client, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{CurrentContext: constants.MinikubeContext}
+	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating kubeConfig: %s")
+		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
 	}
 	client, err := unversioned.New(config)
 	if err != nil {
@@ -610,17 +654,12 @@ func GetKubernetesClient() (*unversioned.Client, error) {
 	return client, nil
 }
 
-func GetKubernetesServicesWithNamespace(namespace string) (serviceGetter, error) {
-	client, err := GetKubernetesClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error getting kubernetes client")
-	}
-	services := client.Services(namespace)
-	return services, nil
+func getKubernetesServicesWithNamespace(client *unversioned.Client, namespace string) serviceGetter {
+	return client.Services(namespace)
 }
 
 func GetKubernetesEndpointsWithNamespace(namespace string) (endpointGetter, error) {
-	client, err := GetKubernetesClient()
+	client, err := getKubernetesClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting kubernetes client")
 	}
