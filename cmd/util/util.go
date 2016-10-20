@@ -116,10 +116,13 @@ func MaybeReportErrorAndExit(errToReport error) {
 	if viper.GetBool(config.WantReportError) {
 		err = ReportError(errToReport, constants.ReportingURL)
 	} else if viper.GetBool(config.WantReportErrorPrompt) {
-		fmt.Println("========================================" +
-			"An error has occurred.  Would you like to opt in to sending anonymized crash information to minikube to help prevent future errors?" +
-			"(To opt out of these messages, run the command)\n\tminikube config set WantReportErrorPrompt false" +
-			"========================================")
+		fmt.Println(
+			`================================================================================
+An error has occurred. Would you like to opt in to sending anonymized crash
+information to minikube to help prevent future errors?
+To opt out of these messages, run the command:
+	minikube config set WantReportErrorPrompt false
+================================================================================`)
 		if PromptUserForAccept(os.Stdin) {
 			minikubeConfig.Set(config.WantReportError, "true")
 			err = ReportError(errToReport, constants.ReportingURL)
