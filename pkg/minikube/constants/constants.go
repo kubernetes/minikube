@@ -36,6 +36,9 @@ var Minipath = filepath.Join(homedir.HomeDir(), ".minikube")
 // KubeconfigPath is the path to the Kubernetes client config
 var KubeconfigPath = clientcmd.RecommendedHomeFile
 
+// KubeconfigEnvVar is the env var to check for the Kubernetes client config
+var KubeconfigEnvVar = clientcmd.RecommendedConfigPathEnvVar
+
 // MinikubeContext is the kubeconfig context name used for minikube
 const MinikubeContext = "minikube"
 
