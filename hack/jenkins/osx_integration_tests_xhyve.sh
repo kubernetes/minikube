@@ -31,10 +31,11 @@ cp -r out/testdata ./
 
 
 ./out/minikube-darwin-amd64 delete || true
+rm -rf $HOME/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
-out/e2e-darwin-amd64 -minikube-args="--vm-driver=xhyve --cpus=4 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-darwin-amd64
+out/e2e-darwin-amd64 -minikube-args="--vm-driver=xhyve --cpus=4 --show-libmachine-logs --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-darwin-amd64
 result=$?
 set -e
 
