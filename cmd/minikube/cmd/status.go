@@ -62,12 +62,12 @@ var statusCmd = &cobra.Command{
 		tmpl, err := template.New("status").Parse(statusFormat)
 		if err != nil {
 			glog.Errorln("Error creating status template:", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			os.Exit(1)
 		}
 		err = tmpl.Execute(os.Stdout, status)
 		if err != nil {
 			glog.Errorln("Error executing status template:", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			os.Exit(1)
 		}
 	},
 }
