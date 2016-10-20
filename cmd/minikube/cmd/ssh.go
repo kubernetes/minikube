@@ -17,11 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -38,7 +39,7 @@ var sshCmd = &cobra.Command{
 		err = errors.Wrap(err, "Error attempting to ssh/run-ssh-command")
 		if err != nil {
 			glog.Errorln(err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			os.Exit(1)
 		}
 	},
 }
