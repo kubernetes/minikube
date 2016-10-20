@@ -27,7 +27,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -513,50 +512,54 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 
 type ipPort struct {
 	IP   string
-	Port int
+	Port int32
 }
 
-func GetServiceURL(api libmachine.API, namespace, service string, t *template.Template) (string, error) {
+func GetServiceURLs(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
-		return "", errors.Wrap(err, "Error checking if api exist and loading it")
+		return nil, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
 
 	ip, err := host.Driver.GetIP()
 	if err != nil {
-		return "", errors.Wrap(err, "Error getting ip from host")
+		return nil, errors.Wrap(err, "Error getting ip from host")
 	}
 
 	client, err := GetKubernetesClient()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return getServiceURLWithClient(client, ip, namespace, service, t)
+	return getServiceURLsWithClient(client, ip, namespace, service, t)
 }
 
-func getServiceURLWithClient(client *unversioned.Client, ip, namespace, service string, t *template.Template) (string, error) {
-	port, err := getServicePort(client, namespace, service)
-	if err != nil {
-		return "", err
-	}
-
+func getServiceURLsWithClient(client *unversioned.Client, ip, namespace, service string, t *template.Template) ([]string, error) {
 	if t == nil {
-		return fmt.Sprintf("http://%s", net.JoinHostPort(ip, strconv.Itoa(port))), nil
+		return nil, errors.New("Error, attempted to generate service url with nil --format template")
 	}
 
-	var doc bytes.Buffer
-	err = t.Execute(&doc, ipPort{ip, port})
+	ports, err := getServicePorts(client, namespace, service)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	urls := []string{}
+	for _, port := range ports {
 
-	u, err := url.Parse(doc.String())
-	if err != nil {
-		return "", err
+		var doc bytes.Buffer
+		err = t.Execute(&doc, ipPort{ip, port})
+		if err != nil {
+			return nil, err
+		}
+
+		u, err := url.Parse(doc.String())
+		if err != nil {
+			return nil, err
+		}
+
+		urls = append(urls, u.String())
 	}
-
-	return u.String(), nil
+	return urls, nil
 }
 
 type serviceGetter interface {
@@ -568,9 +571,9 @@ type endpointGetter interface {
 	Get(name string) (*kubeapi.Endpoints, error)
 }
 
-func getServicePort(client *unversioned.Client, namespace, service string) (int, error) {
+func getServicePorts(client *unversioned.Client, namespace, service string) ([]int32, error) {
 	services := client.Services(namespace)
-	return getServicePortFromServiceGetter(services, service)
+	return getServicePortsFromServiceGetter(services, service)
 }
 
 type MissingNodePortError struct {
@@ -589,19 +592,21 @@ func getServiceFromServiceGetter(services serviceGetter, service string) (*kubea
 	return svc, nil
 }
 
-func getServicePortFromServiceGetter(services serviceGetter, service string) (int, error) {
+func getServicePortsFromServiceGetter(services serviceGetter, service string) ([]int32, error) {
 	svc, err := getServiceFromServiceGetter(services, service)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	nodePort := 0
+	var nodePorts []int32
 	if len(svc.Spec.Ports) > 0 {
-		nodePort = int(svc.Spec.Ports[0].NodePort)
+		for _, port := range svc.Spec.Ports {
+			nodePorts = append(nodePorts, port.NodePort)
+		}
 	}
-	if nodePort == 0 {
-		return 0, MissingNodePortError{svc}
+	if len(nodePorts) == 0 {
+		return nil, MissingNodePortError{svc}
 	}
-	return nodePort, nil
+	return nodePorts, nil
 }
 
 func GetKubernetesClient() (*unversioned.Client, error) {

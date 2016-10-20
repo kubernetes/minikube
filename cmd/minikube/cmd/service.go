@@ -44,8 +44,8 @@ var (
 // serviceCmd represents the service command
 var serviceCmd = &cobra.Command{
 	Use:   "service [flags] SERVICE",
-	Short: "Gets the kubernetes URL for the specified service in your local cluster",
-	Long:  `Gets the kubernetes URL for the specified service in your local cluster`,
+	Short: "Gets the kubernetes URL(s) for the specified service in your local cluster",
+	Long:  `Gets the kubernetes URL(s) for the specified service in your local cluster.  In the case of multiple URLs they will be printed one at a time`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("serviceURL").Parse(serviceURLFormat)
 		if err != nil {
@@ -76,20 +76,22 @@ var serviceCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		url, err := cluster.GetServiceURL(api, namespace, service, serviceURLTemplate)
+		urls, err := cluster.GetServiceURLs(api, namespace, service, serviceURLTemplate)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")
 			os.Exit(1)
 		}
-		if https {
-			url = strings.Replace(url, "http", "https", 1)
-		}
-		if serviceURLMode {
-			fmt.Fprintln(os.Stdout, url)
-		} else {
-			fmt.Fprintln(os.Stdout, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
-			browser.OpenURL(url)
+		for _, url := range urls {
+			if https {
+				url = strings.Replace(url, "http", "https", 1)
+			}
+			if serviceURLMode || !strings.HasPrefix(url, "http") {
+				fmt.Fprintln(os.Stdout, url)
+			} else {
+				fmt.Fprintln(os.Stdout, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
+				browser.OpenURL(url)
+			}
 		}
 	},
 }
@@ -99,7 +101,7 @@ func init() {
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
 
-	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", "http://{{.IP}}:{{.Port}}", "Format to output service URL in")
+	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", "http://{{.IP}}:{{.Port}}", "Format to output service URL in.  This format will be applied to each url individually and they will be printed one at a time.")
 
 	RootCmd.AddCommand(serviceCmd)
 }
