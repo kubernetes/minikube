@@ -599,6 +599,7 @@ func getServiceURLWithClient(client *unversioned.Client, ip, namespace, service 
 
 type serviceGetter interface {
 	Get(name string) (*kubeapi.Service, error)
+	List(kubeapi.ListOptions) (*kubeapi.ServiceList, error)
 }
 
 type endpointGetter interface {
@@ -668,4 +669,52 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 		fmt.Fprintln(os.Stdout, "minikube is not currently running so the service cannot be accessed")
 		os.Exit(exitStatus)
 	}
+}
+
+type ServiceURL struct {
+	Namespace string
+	Name      string
+	URL       string
+}
+
+type ServiceURLs []ServiceURL
+
+func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (ServiceURLs, error) {
+	host, err := CheckIfApiExistsAndLoad(api)
+	if err != nil {
+		return nil, err
+	}
+
+	ip, err := host.Driver.GetIP()
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := GetKubernetesClient()
+	if err != nil {
+		return nil, err
+	}
+
+	getter := client.Services(namespace)
+
+	svcs, err := getter.List(kubeapi.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var serviceURLs []ServiceURL
+
+	for _, svc := range svcs.Items {
+		url, err := getServiceURLWithClient(client, ip, svc.Namespace, svc.Name, t)
+		if err != nil {
+			if _, ok := err.(MissingNodePortError); ok {
+				serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URL: "No node port"})
+				continue
+			}
+			return nil, err
+		}
+		serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URL: url})
+	}
+
+	return serviceURLs, nil
 }
