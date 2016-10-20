@@ -35,6 +35,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -538,6 +539,18 @@ func (mockServiceGetter *MockServiceGetter) Get(name string) (*api.Service, erro
 		return nil, errors.Errorf("Error getting %s service from mockServiceGetter", name)
 	}
 	return &service, nil
+}
+
+func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*api.ServiceList, error) {
+	services := api.ServiceList{
+		TypeMeta: unversioned.TypeMeta{Kind: "ServiceList", APIVersion: "v1"},
+		ListMeta: unversioned.ListMeta{},
+	}
+
+	for _, svc := range mockServiceGetter.services {
+		services.Items = append(services.Items, svc)
+	}
+	return &services, nil
 }
 
 func TestGetDashboardURL(t *testing.T) {
