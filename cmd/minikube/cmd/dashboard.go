@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -52,19 +53,23 @@ var dashboardCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		url, err := cluster.GetServiceURL(api, namespace, service, nil)
+		urls, err := cluster.GetServiceURLs(api, namespace, service, nil)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running.")
 			os.Exit(1)
 		}
+		if len(urls) == 0 {
+			errMsg := "There appears to be no url associated with dashboard, this is not expected, exiting"
+			glog.Infoln(errMsg)
+			os.Exit(1)
+		}
 		if dashboardURLMode {
-			fmt.Fprintln(os.Stdout, url)
+			fmt.Fprintln(os.Stdout, urls[0])
 		} else {
 			fmt.Fprintln(os.Stdout, "Opening kubernetes dashboard in default browser...")
-			browser.OpenURL(url)
+			browser.OpenURL(urls[0])
 		}
-
 	},
 }
 
