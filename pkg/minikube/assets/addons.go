@@ -74,6 +74,18 @@ var Addons = map[string]*Addon{
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
+	"kube-dns": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-rc.yaml",
+			constants.AddonsPath,
+			"kube-dns-rc.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-svc.yaml",
+			constants.AddonsPath,
+			"kube-dns-svc.yaml",
+			"0640"),
+	}, true, "kube-dns"),
 }
 
 func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {

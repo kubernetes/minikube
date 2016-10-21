@@ -33,7 +33,7 @@ var stopCommand = "sudo killall localkube || true"
 var startCommandTemplate = `
 # Run with nohup so it stays up. Redirect logs to useful places.
 sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup /usr/local/bin/localkube {{.Flags}} \
---generate-certs=false --logtostderr=true --node-ip={{.NodeIP}} > {{.Stdout}} 2> {{.Stderr}} < /dev/null & echo $! > {{.Pidfile}} &'
+--generate-certs=false --logtostderr=true --enable-dns=false --node-ip={{.NodeIP}} > {{.Stdout}} 2> {{.Stderr}} < /dev/null & echo $! > {{.Pidfile}} &'
 `
 
 var logsCommand = fmt.Sprintf("tail -n +1 %s %s", constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
