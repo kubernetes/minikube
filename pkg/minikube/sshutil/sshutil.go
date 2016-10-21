@@ -64,11 +64,6 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 
 func DeleteAddon(a *assets.Addon, client *ssh.Client) error {
 	var err error
-	if enabled, err := a.IsEnabled(); err != nil {
-		return errors.Wrapf(err, "error attempting to transfer addon")
-	} else if enabled {
-		return errors.Errorf("Error, attempted to remove enabled addon")
-	}
 	for _, f := range a.Assets {
 		if err := DeleteFile(f, client); err != nil {
 			err = errors.Wrap(err, "")
@@ -79,11 +74,6 @@ func DeleteAddon(a *assets.Addon, client *ssh.Client) error {
 
 func TransferAddon(a *assets.Addon, client *ssh.Client) error {
 	var err error
-	if enabled, err := a.IsEnabled(); err != nil {
-		return errors.Wrapf(err, "error attempting to transfer addon")
-	} else if !enabled {
-		return errors.Errorf("Error, attempted to transfer disabled addon")
-	}
 	for _, f := range a.Assets {
 		if err := TransferFile(f, client); err != nil {
 			errors.Wrap(err, "")
