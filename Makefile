@@ -92,8 +92,8 @@ integration: out/minikube
 test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
 	./test.sh
 
-pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/addons/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
-	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/addons/addon-manager.yaml deploy/addons/dashboard-rc.yaml deploy/addons/dashboard-svc.yaml
+pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/addons
+	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/addons
 
 $(GOPATH)/bin/go-bindata: $(GOPATH)/src/$(ORG)
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
