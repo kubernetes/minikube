@@ -46,6 +46,7 @@ const (
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
 	networkPlugin         = "network-plugin"
+	hypervVirtualSwitch   = "hyperv-virtual-switch"
 )
 
 var (
@@ -70,15 +71,16 @@ func runStart(cmd *cobra.Command, args []string) {
 	defer api.Close()
 
 	config := cluster.MachineConfig{
-		MinikubeISO:      viper.GetString(isoURL),
-		Memory:           viper.GetInt(memory),
-		CPUs:             viper.GetInt(cpus),
-		DiskSize:         calculateDiskSizeInMB(viper.GetString(humanReadableDiskSize)),
-		VMDriver:         viper.GetString(vmDriver),
-		DockerEnv:        dockerEnv,
-		InsecureRegistry: insecureRegistry,
-		RegistryMirror:   registryMirror,
-		HostOnlyCIDR:     viper.GetString(hostOnlyCIDR),
+		MinikubeISO:         viper.GetString(isoURL),
+		Memory:              viper.GetInt(memory),
+		CPUs:                viper.GetInt(cpus),
+		DiskSize:            calculateDiskSizeInMB(viper.GetString(humanReadableDiskSize)),
+		VMDriver:            viper.GetString(vmDriver),
+		DockerEnv:           dockerEnv,
+		InsecureRegistry:    insecureRegistry,
+		RegistryMirror:      registryMirror,
+		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
+		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
 	}
 
 	var host *host.Host
@@ -204,6 +206,7 @@ func init() {
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
+	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with  driver)")
 	startCmd.Flags().StringSliceVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
