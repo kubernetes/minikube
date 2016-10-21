@@ -1,5 +1,17 @@
 # Minikube Release Notes
 
+## Version 0.12.0 - 10/21/2016
+* Added support for the KUBECONFIG env var during 'minikube start'
+* Updated default k8s version to v1.4.3
+* Updated addon-manager to v5.1
+* Added `config view` subcommand
+* Increased memory default to 2048 and cpus default to 2
+* Set default `log_dir` to `~/.minikube/logs`
+* Added `minikube addons` command to enable or disable cluster addons
+* Added format flag to service command
+* Added flag Hyper-v Virtual Switch
+* Added support for IPv6 addresses in docker env
+
 ## Version 0.11.0 - 10/6/2016
 * Added a "configurator" allowing users to configure the Kubernetes components with arbitrary values.  
 * Made Kubernetes v1.4.0 the default version in minikube
