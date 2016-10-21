@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -152,7 +153,13 @@ func calculateDiskSizeInMB(humanReadableDiskSize string) int {
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
 func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
-	configFile := constants.KubeconfigPath
+
+	configFile := os.Getenv(constants.KubeconfigEnvVar)
+	if configFile == "" {
+		configFile = constants.KubeconfigPath
+	}
+
+	glog.Infoln("Using kubeconfig: ", configFile)
 
 	// read existing config or create new if does not exist
 	config, err := kubeconfig.ReadConfigOrNew(configFile)
