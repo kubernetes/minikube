@@ -111,3 +111,7 @@ These are downstream packages that are being maintained by others and how to upg
 
 After you've finished the release, run this command from the release commit to verify the release was done correctly:
 `make check-release`.
+
+## Update kubernetes.io docs
+
+If there are major changes, please send a PR upstream for this file https://github.com/kubernetes/kubernetes.github.io/blob/master/docs/getting-started-guides/minikube.md in order to keep the getting started guide up to date.
