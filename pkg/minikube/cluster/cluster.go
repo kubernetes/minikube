@@ -189,6 +189,7 @@ type MachineConfig struct {
 	RegistryMirror      []string
 	HostOnlyCIDR        string // Only used by the virtualbox driver
 	HypervVirtualSwitch string
+	KvmNetwork          string // Only used by the KVM driver
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

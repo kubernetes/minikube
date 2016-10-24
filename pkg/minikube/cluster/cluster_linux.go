@@ -47,7 +47,7 @@ func createKVMHost(config MachineConfig) *kvmDriver {
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
-		Network:        "default",
+		Network:        config.KvmNetwork,
 		PrivateNetwork: "docker-machines",
 		Boot2DockerURL: config.GetISOFileURI(),
 		DiskSize:       config.DiskSize,
