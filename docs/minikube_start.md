@@ -23,11 +23,12 @@ minikube start
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.
       --host-only-cidr string          The CIDR to be used for the minikube VM (only supported with Virtualbox driver) (default "192.168.99.1/24")
-      --hyperv-virtual-switch string   The hyperv virtual switch name. Defaults to first found. (only supported with  driver)
+      --hyperv-virtual-switch string   The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)
       --insecure-registry value        Insecure Docker registries to pass to the Docker daemon (default [])
       --iso-url string                 Location of the minikube iso (default "https://storage.googleapis.com/minikube/minikube-0.7.iso")
       --kubernetes-version string      The kubernetes version that the minikube VM will (ex: v1.2.3) 
  OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.4.3")
+      --kvm-network string             The KVM network name. (only supported with KVM driver) (default "default")
       --memory int                     Amount of RAM allocated to the minikube VM (default 2048)
       --network-plugin string          The name of the network plugin
       --registry-mirror value          Registry mirrors to pass to the Docker daemon (default [])
