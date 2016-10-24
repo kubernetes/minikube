@@ -17,6 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra/doc"
 	"k8s.io/minikube/cmd/minikube/cmd"
 )
@@ -24,4 +27,16 @@ import (
 func main() {
 	cmd.RootCmd.DisableAutoGenTag = true
 	doc.GenMarkdownTree(cmd.RootCmd, "./docs")
+
+	f, err := os.Create("./docs/bash-completion")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer f.Close()
+	err = cmd.GenerateBashCompletion(f, cmd.RootCmd)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
