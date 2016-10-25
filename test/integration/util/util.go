@@ -31,8 +31,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/machine/libmachine/log"
-
 	"k8s.io/kubernetes/pkg/api"
 	commonutil "k8s.io/minikube/pkg/util"
 )
@@ -43,17 +41,17 @@ type MinikubeRunner struct {
 	Args       string
 }
 
-func IsPodReady(p *api.Pod) bool {
+func (k *KubectlRunner) IsPodReady(p *api.Pod) bool {
 	for _, cond := range p.Status.Conditions {
 		if cond.Type == "Ready" {
 			if cond.Status == "True" {
 				return true
 			}
-			log.Debugf("Pod %s not ready. Ready: %s. Reason: %s", p.Name, cond.Status, cond.Reason)
+			k.T.Logf("Pod %s not ready. Ready: %s. Reason: %s", p.Name, cond.Status, cond.Reason)
 			return false /**/
 		}
 	}
-	log.Debugf("Unable to find ready pod condition: %v", p.Status.Conditions)
+	k.T.Logf("Unable to find ready pod condition: %v", p.Status.Conditions)
 	return false
 }
 
@@ -141,7 +139,7 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			log.Errorf("Error %s running command %s. Return code: %s", stdout, args, err)
+			k.T.Logf("Error %s running command %s. Return code: %s", stdout, args, err)
 			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)}
 		}
 		return nil
