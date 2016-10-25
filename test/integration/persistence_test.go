@@ -48,7 +48,7 @@ func TestPersistence(t *testing.T) {
 
 	checkPod := func() error {
 		p := kubectlRunner.GetPod(podName, podNamespace)
-		if util.IsPodReady(p) {
+		if kubectlRunner.IsPodReady(p) {
 			return nil
 		}
 		return &commonutil.RetriableError{Err: fmt.Errorf("Pod %s is not ready yet.", podName)}
@@ -68,7 +68,7 @@ func TestPersistence(t *testing.T) {
 			return &commonutil.RetriableError{Err: fmt.Errorf("No pods found matching query: %v", cmd)}
 		}
 		db := pods.Items[0]
-		if util.IsPodReady(&db) {
+		if kubectlRunner.IsPodReady(&db) {
 			return nil
 		}
 		return &commonutil.RetriableError{Err: fmt.Errorf("Dashboard pod is not ready yet.")}
@@ -76,7 +76,7 @@ func TestPersistence(t *testing.T) {
 
 	// Make sure the dashboard is running before we stop the VM.
 	// On slow networks it can take several minutes to pull the addon-manager then the dashboard image.
-	if err := commonutil.RetryAfter(20, checkDashboard, 6*time.Second); err != nil {
+	if err := commonutil.RetryAfter(30, checkDashboard, 6*time.Second); err != nil {
 		t.Fatalf("Dashboard pod is not healthy: %s", err)
 	}
 
