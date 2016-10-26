@@ -53,6 +53,7 @@ the following drivers:
 * vmwarefusion
 * kvm ([driver installation](./DRIVERS.md#kvm-driver))
 * xhyve ([driver installation](./DRIVERS.md#xhyve-driver))
+* hyperv
 
 Note that the IP below is dynamic and can change. It can be retrieved with `minikube ip`.
 
