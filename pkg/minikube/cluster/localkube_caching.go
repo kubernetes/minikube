@@ -69,7 +69,15 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	if err != nil {
 		return errors.Wrap(err, "Error getting localkube download url")
 	}
-	return download.ToFile(url, l.getLocalkubeCacheFilepath(), download.FileOptions{Mkdirs: download.MkdirAll})
+	opts := download.FileOptions{
+		Mkdirs: download.MkdirAll,
+		Options: download.Options{
+			ProgressBars: &download.ProgressBarOptions{
+				MaxWidth: 80,
+			},
+		},
+	}
+	return download.ToFile(url, l.getLocalkubeCacheFilepath(), opts)
 }
 
 func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {

@@ -327,6 +327,11 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 func (m *MachineConfig) CacheMinikubeISOFromURL() error {
 	options := download.FileOptions{
 		Mkdirs: download.MkdirAll,
+		Options: download.Options{
+			ProgressBars: &download.ProgressBarOptions{
+				MaxWidth: 80,
+			},
+		},
 	}
 
 	// Validate the ISO if it was the default URL, before writing it to disk.
