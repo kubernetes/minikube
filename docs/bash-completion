@@ -673,10 +673,41 @@ _minikube_logs()
     noun_aliases=()
 }
 
+_minikube_service_list()
+{
+    last_command="minikube_service_list"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--namespace=")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--namespace=")
+    flags+=("--alsologtostderr")
+    flags+=("--format=")
+    flags+=("--log_backtrace_at=")
+    flags+=("--log_dir=")
+    flags+=("--logtostderr")
+    flags+=("--show-libmachine-logs")
+    flags+=("--stderrthreshold=")
+    flags+=("--v=")
+    two_word_flags+=("-v")
+    flags+=("--vmodule=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _minikube_service()
 {
     last_command="minikube_service"
     commands=()
+    commands+=("list")
 
     flags=()
     two_word_flags=()
