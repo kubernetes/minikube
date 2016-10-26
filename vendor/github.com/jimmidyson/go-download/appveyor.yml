@@ -1,0 +1,23 @@
+version: 1.0.{build}
+pull_requests:
+  do_not_increment_build_number: true
+platform: x64
+branches:
+  only:
+  - master
+
+clone_folder: c:\gopath\src\github.com\jimmidyson\go-download
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - echo %PATH%
+  - echo %GOPATH%
+  - set PATH=%GOPATH%\bin;c:\go\bin;%PATH%
+  - go version
+  - go env
+
+build_script:
+  - go get -t -v ./...
+  - go test -v -race ./...
