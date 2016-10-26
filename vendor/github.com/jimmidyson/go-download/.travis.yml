@@ -1,0 +1,21 @@
+language: go
+
+branches:
+  only:
+    - master
+
+go:
+  - 1.6.3
+  - 1.7.1
+
+before_install:
+  - go get -t -v ./...
+
+before_install:
+  - go get github.com/mattn/goveralls
+
+script:
+  - ./test.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

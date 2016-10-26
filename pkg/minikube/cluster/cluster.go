@@ -18,15 +18,12 @@ package cluster
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
+	"crypto"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -42,6 +39,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	kubeapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
@@ -326,61 +324,25 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	return d
 }
 
-func isIsoChecksumValid(actualSum []byte, shaURL string) bool {
-	expectedSum, err := util.ParseSHAFromURL(shaURL)
-	if err != nil {
-		glog.Errorf("Error retrieving SHA from URL: %s. Error: %s.", shaURL, err)
-		return false
-	}
-
-	if string(expectedSum) != hex.EncodeToString(actualSum) {
-		glog.Errorf("Downloaded ISO checksum does not match expected value. Actual: %s. Expected: %s", actualSum, expectedSum)
-		return false
-	}
-	return true
-}
-
 func (m *MachineConfig) CacheMinikubeISOFromURL() error {
-	// store the miniube-iso inside the .minikube dir
-	response, err := http.Get(m.MinikubeISO)
-	if err != nil {
-		return errors.Wrapf(err, "Error getting minikube iso at %s via http", m.MinikubeISO)
-	}
-
-	defer response.Body.Close()
-
-	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("Received %d response from %s while trying to download minikube.iso", response.StatusCode, m.MinikubeISO)
-	}
-
-	hasher := sha256.New()
-	r := io.TeeReader(response.Body, hasher)
-
-	destDir := filepath.Dir(m.GetISOCacheFilepath())
-	destFilename := filepath.Base(m.GetISOCacheFilepath())
-	tempFile, err := ioutil.TempFile(destDir, ".tmp-"+destFilename)
-	if err != nil {
-		os.Remove(tempFile.Name())
-		return errors.Wrap(err, "Failed to create temp cache ISO file")
-	}
-
-	_, err = io.Copy(tempFile, r)
-	if err != nil {
-		os.Remove(tempFile.Name())
-		return errors.Wrap(err, "Failed to write to temp cache ISO file")
+	options := download.FileOptions{
+		Mkdirs: download.MkdirAll,
+		Options: download.Options{
+			ProgressBars: &download.ProgressBarOptions{
+				MaxWidth: 80,
+			},
+		},
 	}
 
 	// Validate the ISO if it was the default URL, before writing it to disk.
 	if m.MinikubeISO == constants.DefaultIsoUrl {
-		if !isIsoChecksumValid(hasher.Sum(nil), constants.DefaultIsoShaUrl) {
-			os.Remove(tempFile.Name())
-			return errors.New("Error validating ISO checksum.")
-		}
+		options.Checksum = constants.DefaultIsoShaUrl
+		options.ChecksumHash = crypto.SHA256
 	}
 
-	if err = os.Rename(tempFile.Name(), m.GetISOCacheFilepath()); err != nil {
-		os.Remove(tempFile.Name())
-		return errors.Wrap(err, "Error copying temp iso file to destination")
+	fmt.Println("Downloading Minikube ISO")
+	if err := download.ToFile(m.MinikubeISO, m.GetISOCacheFilepath(), options); err != nil {
+		return errors.Wrap(err, "Error downloading Minikube ISO")
 	}
 
 	return nil
