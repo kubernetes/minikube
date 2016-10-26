@@ -18,6 +18,7 @@ package cluster
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -77,6 +78,7 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 			},
 		},
 	}
+	fmt.Println("Downloading localkube binary")
 	return download.ToFile(url, l.getLocalkubeCacheFilepath(), opts)
 }
 
@@ -87,9 +89,8 @@ func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
 	}
 	if urlObj.Scheme == fileScheme {
 		return l.updateLocalkubeFromFile(client)
-	} else {
-		return l.updateLocalkubeFromURL(client)
 	}
+	return l.updateLocalkubeFromURL(client)
 }
 
 func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {
