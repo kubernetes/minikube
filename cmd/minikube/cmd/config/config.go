@@ -120,6 +120,12 @@ var settings = []Setting{
 		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
+	{
+		name:        "kube-dns",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
 }
 
 var ConfigCmd = &cobra.Command{

@@ -23,6 +23,7 @@ Configurable fields:
  * WantReportErrorPrompt
  * dashboard
  * addon-manager
+ * kube-dns
 
 ```
 minikube config SUBCOMMAND [flags]
