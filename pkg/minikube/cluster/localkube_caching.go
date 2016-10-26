@@ -18,16 +18,17 @@ package cluster
 
 import (
 	"bytes"
-	"io"
+	"fmt"
 	"io/ioutil"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
+	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -63,55 +64,22 @@ func (l *localkubeCacher) isLocalkubeCached() bool {
 	return true
 }
 
-// cacheLocalKube downloads the stream to a temporary file & then atomically
-// renames the file to the destination file name. This is to gracefully handle
-// any errors in downloading the file.
-func (l *localkubeCacher) cacheLocalkube(body io.ReadCloser) error {
-	// store localkube inside the .minikube dir
-	dir := filepath.Dir(l.getLocalkubeCacheFilepath())
-	filename := filepath.Base(l.getLocalkubeCacheFilepath())
-	out, err := ioutil.TempFile(dir, ".tmp-"+filename)
-	if err != nil {
-		os.Remove(out.Name())
-		return errors.Wrap(err, "Error creating temporary localkube local file")
-	}
-	if _, err = io.Copy(out, body); err != nil {
-		os.Remove(out.Name())
-		return errors.Wrap(err, "Error writing localkube to file")
-	}
-	if err := os.Rename(out.Name(), l.getLocalkubeCacheFilepath()); err != nil {
-		os.Remove(out.Name())
-		return errors.Wrap(err, "Error renaming temporary localkube to destination")
-	}
-	return nil
-}
-
 func (l *localkubeCacher) downloadAndCacheLocalkube() error {
-	resp := &http.Response{}
 	err := errors.New("")
-	url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion,
-		constants.LocalkubeLinuxFilename)
+	url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion, constants.LocalkubeLinuxFilename)
 	if err != nil {
 		return errors.Wrap(err, "Error getting localkube download url")
 	}
-	downloader := func() (err error) {
-		resp, err = http.Get(url)
-		if err != nil {
-			return &util.RetriableError{Err: errors.Wrap(err, "Error downloading localkube via http")}
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New("Remote server error in downloading localkube via http")
-		}
-		return nil
+	opts := download.FileOptions{
+		Mkdirs: download.MkdirAll,
+		Options: download.Options{
+			ProgressBars: &download.ProgressBarOptions{
+				MaxWidth: 80,
+			},
+		},
 	}
-	if err = util.Retry(5, downloader); err != nil {
-		return errors.Wrap(err, "Max error attempts retrying localkube downloader")
-	}
-	defer resp.Body.Close()
-	if err = l.cacheLocalkube(resp.Body); err != nil {
-		return errors.Wrap(err, "Error caching localkube to local directory")
-	}
-	return nil
+	fmt.Println("Downloading localkube binary")
+	return download.ToFile(url, l.getLocalkubeCacheFilepath(), opts)
 }
 
 func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
@@ -121,9 +89,8 @@ func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
 	}
 	if urlObj.Scheme == fileScheme {
 		return l.updateLocalkubeFromFile(client)
-	} else {
-		return l.updateLocalkubeFromURL(client)
 	}
+	return l.updateLocalkubeFromURL(client)
 }
 
 func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {
