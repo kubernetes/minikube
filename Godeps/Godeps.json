@@ -1318,6 +1318,14 @@
 			"Rev": "f52d055dc48aec25854ed7d31862f78913cf17d1"
 		},
 		{
+			"ImportPath": "github.com/hashicorp/errwrap",
+			"Rev": "7554cd9344cec97297fa6649b055a8c98c2a1e55"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/go-multierror",
+			"Rev": "8c5f0ad9360406a3807ce7de6bc73269a91a6e51"
+		},
+		{
 			"ImportPath": "github.com/hashicorp/golang-lru",
 			"Rev": "a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4"
 		},
@@ -1404,6 +1412,10 @@
 			"ImportPath": "github.com/influxdata/influxdb/pkg/escape",
 			"Comment": "v0.12.2",
 			"Rev": "383332daed5595926c235f250b11433f67229c35"
+		},
+		{
+			"ImportPath": "github.com/jimmidyson/go-download",
+			"Rev": "6d947fd89f9687feda39ec0cc2d62f6143b3e208"
 		},
 		{
 			"ImportPath": "github.com/jmespath/go-jmespath",
@@ -2224,6 +2236,11 @@
 			"ImportPath": "google.golang.org/grpc/transport",
 			"Comment": "v1.0.0-6-g02fca89",
 			"Rev": "02fca896ff5f50c6bbbee0860345a49344b37a03"
+		},
+		{
+			"ImportPath": "gopkg.in/cheggaaa/pb.v1",
+			"Comment": "v1.0.5",
+			"Rev": "9453b2db37f4d8bc63751daca63bbe7049eb5e74"
 		},
 		{
 			"ImportPath": "gopkg.in/gcfg.v1",
