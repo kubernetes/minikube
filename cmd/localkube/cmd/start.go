@@ -103,14 +103,4 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	// setup proxy
 	proxy := s.NewProxyServer()
 	s.AddServer(proxy)
-
-	// setup dns if we should
-	if s.EnableDNS {
-
-		dns, err := s.NewDNSServer(s.DNSDomain, s.DNSIP.String(), s.GetAPIServerInsecureURL())
-		if err != nil {
-			panic(err)
-		}
-		s.AddServer(dns)
-	}
 }
