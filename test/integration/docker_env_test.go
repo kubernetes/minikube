@@ -41,7 +41,8 @@ func TestDockerEnv(t *testing.T) {
 	filename := "/var/lib/boot2docker/profile"
 	// Figure out if it's b2d or buildroot
 	osContents := minikubeRunner.RunCommand("ssh cat /etc/os-release", true)
-	if strings.Contains(osContents, "Name=Buildroot") {
+	t.Logf("os-release: %s", osContents)
+	if strings.Contains(osContents, "NAME=Buildroot") {
 		filename = "/etc/systemd/system/docker.service"
 	}
 
