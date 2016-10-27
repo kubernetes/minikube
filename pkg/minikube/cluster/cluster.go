@@ -567,10 +567,6 @@ type serviceGetter interface {
 	List(kubeapi.ListOptions) (*kubeapi.ServiceList, error)
 }
 
-type endpointGetter interface {
-	Get(name string) (*kubeapi.Endpoints, error)
-}
-
 func getServicePorts(client *unversioned.Client, namespace, service string) ([]int32, error) {
 	services := client.Services(namespace)
 	return getServicePortsFromServiceGetter(services, service)
