@@ -76,7 +76,7 @@ var serviceCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		urls, err := cluster.GetServiceURLs(api, namespace, service, serviceURLTemplate)
+		urls, err := cluster.GetServiceURLsForService(api, namespace, service, serviceURLTemplate)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")

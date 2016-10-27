@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/olekukonko/tablewriter"
@@ -48,7 +49,12 @@ var serviceListCmd = &cobra.Command{
 
 		var data [][]string
 		for _, serviceURL := range serviceURLs {
-			data = append(data, []string{serviceURL.Namespace, serviceURL.Name, serviceURL.URL})
+			if len(serviceURL.URLs) == 0 {
+				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, "No node port"})
+			} else {
+				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, strings.Join(serviceURL.URLs, "\n")})
+			}
+
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
