@@ -1,11 +1,11 @@
 ## minikube service
 
-Gets the kubernetes URL for the specified service in your local cluster
+Gets the kubernetes URL(s) for the specified service in your local cluster
 
 ### Synopsis
 
 
-Gets the kubernetes URL for the specified service in your local cluster
+Gets the kubernetes URL(s) for the specified service in your local cluster.  In the case of multiple URLs they will be printed one at a time
 
 ```
 minikube service [flags] SERVICE
@@ -14,7 +14,7 @@ minikube service [flags] SERVICE
 ### Options
 
 ```
-      --format string      Format to output service URL in (default "http://{{.IP}}:{{.Port}}")
+      --format string      Format to output service URL in.  This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --https              Open the service URL with https instead of http
   -n, --namespace string   The service namespace (default "default")
       --url                Display the kubernetes service URL in the CLI instead of opening it in the default browser

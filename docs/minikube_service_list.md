@@ -21,7 +21,7 @@ minikube service list [flags]
 
 ```
       --alsologtostderr value    log to standard error as well as files
-      --format string            Format to output service URL in (default "http://{{.IP}}:{{.Port}}")
+      --format string            Format to output service URL in.  This format will be applied to each url individually and they will be printed one at a time. (default "http://{{.IP}}:{{.Port}}")
       --log_backtrace_at value   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir value            If non-empty, write log files in this directory
       --logtostderr value        log to standard error instead of files
@@ -32,5 +32,5 @@ minikube service list [flags]
 ```
 
 ### SEE ALSO
-* [minikube service](minikube_service.md)	 - Gets the kubernetes URL for the specified service in your local cluster
+* [minikube service](minikube_service.md)	 - Gets the kubernetes URL(s) for the specified service in your local cluster
 
