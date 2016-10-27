@@ -515,7 +515,7 @@ type ipPort struct {
 	Port int32
 }
 
-func GetServiceURLs(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
+func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking if api exist and loading it")
@@ -596,7 +596,9 @@ func getServicePortsFromServiceGetter(services serviceGetter, service string) ([
 	var nodePorts []int32
 	if len(svc.Spec.Ports) > 0 {
 		for _, port := range svc.Spec.Ports {
-			nodePorts = append(nodePorts, port.NodePort)
+			if port.NodePort > 0 {
+				nodePorts = append(nodePorts, port.NodePort)
+			}
 		}
 	}
 	if len(nodePorts) == 0 {
@@ -637,7 +639,7 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 type ServiceURL struct {
 	Namespace string
 	Name      string
-	URL       string
+	URLs      []string
 }
 
 type ServiceURLs []ServiceURL
@@ -668,15 +670,15 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 	var serviceURLs []ServiceURL
 
 	for _, svc := range svcs.Items {
-		url, err := getServiceURLWithClient(client, ip, svc.Namespace, svc.Name, t)
+		urls, err := getServiceURLsWithClient(client, ip, svc.Namespace, svc.Name, t)
 		if err != nil {
 			if _, ok := err.(MissingNodePortError); ok {
-				serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URL: "No node port"})
+				serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name})
 				continue
 			}
 			return nil, err
 		}
-		serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URL: url})
+		serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls})
 	}
 
 	return serviceURLs, nil

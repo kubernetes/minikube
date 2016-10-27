@@ -53,7 +53,7 @@ var dashboardCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		urls, err := cluster.GetServiceURLs(api, namespace, service, nil)
+		urls, err := cluster.GetServiceURLsForService(api, namespace, service, nil)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running.")
