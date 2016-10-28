@@ -1,5 +1,15 @@
 # Minikube Release Notes
 
+## Version 0.12.1 - 10/28/2016
+* Added docker-env support to the buildroot provisioner
+* `minikube service` command now supports multiple ports
+* Added `minikube service list` command
+* Added `minikube completion bash` command to generate bash completion
+* Add progress bars for downloading, switch to go-download
+* Run kube-dns as addon instead of vendored in kube2sky
+* Remove static UUID for xhyve driver
+* Add option to specify network name for KVM
+
 ## Version 0.12.0 - 10/21/2016
 * Added support for the KUBECONFIG env var during 'minikube start'
 * Updated default k8s version to v1.4.3
