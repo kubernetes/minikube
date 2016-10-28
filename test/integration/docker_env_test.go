@@ -38,10 +38,17 @@ func TestDockerEnv(t *testing.T) {
 	minikubeRunner.RunCommand(startCmd, true)
 	minikubeRunner.EnsureRunning()
 
-	profileContents := minikubeRunner.RunCommand("ssh cat /var/lib/boot2docker/profile", true)
+	filename := "/var/lib/boot2docker/profile"
+	// Figure out if it's b2d or buildroot
+	osContents := minikubeRunner.RunCommand("ssh cat /etc/os-release", true)
+	if strings.Contains(osContents, "Name=Buildroot") {
+		filename = "/etc/systemd/system/docker.service"
+	}
+
+	profileContents := minikubeRunner.RunCommand(fmt.Sprintf("ssh sudo cat %s", filename), true)
 	fmt.Println(profileContents)
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
-		if !strings.Contains(profileContents, fmt.Sprintf("export \"%s\"", envVar)) {
+		if !strings.Contains(profileContents, envVar) {
 			t.Fatalf("Env var %s missing from file: %s.", envVar, profileContents)
 		}
 	}
