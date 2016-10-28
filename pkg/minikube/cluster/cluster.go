@@ -95,7 +95,7 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	}
 
 	if err := h.ConfigureAuth(); err != nil {
-		return nil, errors.Wrap(&util.RetriableError{Err: err}, "Error configuring auth on host: %s")
+		return nil, errors.Wrap(&util.RetriableError{Err: err}, "Error configuring auth on host")
 	}
 	return h, nil
 }
@@ -418,7 +418,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 	h, err := api.NewHost(config.VMDriver, data)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new host: %s")
+		return nil, errors.Wrap(err, "Error creating new host")
 	}
 
 	h.HostOptions.AuthOptions.CertDir = constants.Minipath
