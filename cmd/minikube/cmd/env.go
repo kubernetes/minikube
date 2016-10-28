@@ -106,12 +106,12 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 
 		host, err := api.Load(constants.MachineName)
 		if err != nil {
-			return nil, errors.Wrap(err, "Error getting IP: ")
+			return nil, errors.Wrap(err, "Error getting IP")
 		}
 
 		ip, err := host.Driver.GetIP()
 		if err != nil {
-			return nil, errors.Wrap(err, "Error getting host IP: %s")
+			return nil, errors.Wrap(err, "Error getting host IP")
 		}
 
 		noProxyVar, noProxyValue := findNoProxyFromEnv()
