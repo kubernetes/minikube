@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 	"strconv"
 	"strings"
@@ -65,6 +66,12 @@ func setElement(e reflect.Value, v string) error {
 			return fmt.Errorf("Error converting input %s to a bool: %s", b, err)
 		}
 		e.SetBool(b)
+	case net.IP:
+		ip := net.ParseIP(v)
+		if ip == nil {
+			return fmt.Errorf("Error converting input %s to an IP.", v)
+		}
+		e.Set(reflect.ValueOf(ip))
 	default:
 		return fmt.Errorf("Unable to set type %s.", t)
 	}

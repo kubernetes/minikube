@@ -18,6 +18,7 @@ package util
 
 import (
 	"math"
+	"net"
 	"testing"
 )
 
@@ -47,6 +48,7 @@ type subConfig3 struct {
 	N int
 	O float32
 	P bool
+	Q net.IP
 }
 
 func buildConfig() testConfig {
@@ -62,6 +64,8 @@ func buildConfig() testConfig {
 				M: "baz",
 				N: 3,
 				O: 3.3,
+				P: false,
+				Q: net.ParseIP("12.34.56.78"),
 			},
 		},
 		E: &subConfig2{
@@ -159,6 +163,7 @@ func TestSetElement(t *testing.T) {
 		{"E.L", "1.234", func(t testConfig) bool { return checkFloats(float64(t.E.L), 1.234) }},
 		{"D.I.P", "true", func(t testConfig) bool { return bool(t.D.I.P) == true }},
 		{"D.I.P", "false", func(t testConfig) bool { return bool(t.D.I.P) == false }},
+		{"D.I.Q", "11.22.33.44", func(t testConfig) bool { return t.D.I.Q.Equal(net.ParseIP("11.22.33.44")) }},
 	} {
 		a := buildConfig()
 		if err := FindAndSet(tc.path, &a, tc.newval); err != nil {
