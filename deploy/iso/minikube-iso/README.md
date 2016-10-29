@@ -22,7 +22,7 @@ The following configurations have been tested:
 The following configurations are known to have issues currently:
 
 * OSX
-  * xhyve (https://github.com/coreos/minikube-iso/issues/17)
+  * xhyve (https://github.com/zchee/docker-machine-driver-xhyve/issues/135)
 
 ## Hacking
 
@@ -45,27 +45,18 @@ $ cd minikube
 $ ./out/minikube start \
     --container-runtime=rkt \
     --network-plugin=cni \
-    --kubernetes-version=file://$HOME/minikube/src/k8s.io/minikube/out/localkube \
-    --iso-url=https://github.com/coreos/minikube-iso/releases/download/v0.0.5/minikube-v0.0.5.iso
+    --iso-url=http://storage.googleapis.com/minikube/iso/buildroot/minikube-v0.0.6.iso
 ```
 
 ### Testing local minikube-iso changes
 
-To test a local build of minikube-iso, start a web server (i.e. Caddy) to serve the ISO image, and start `minikube` with an `--iso-url` pointing to localhost:
-
 ```
-$ cd $HOME/src/minikube/src/k8s.io/minikube
-$ cd ./out/buildroot/output/images
-$ caddy browse "log stdout"
-Activating privacy features... done.
-http://:2015
+$ ./out/minikube start \
+    --container-runtime=rkt \
+    --network-plugin=cni \
+    --iso-url=file:///$GOPATH/k8s.io/minikube/out/buildroot/output/images/rootfs.iso9660
 ```
 
-In another terminal:
-
-```
-$ minikube start --iso-url=http://localhost:2015/rootfs.iso9660
-```
 
 ### Buildroot configuration
 
