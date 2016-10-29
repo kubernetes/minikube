@@ -20,6 +20,8 @@ package integration
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -101,5 +103,21 @@ func TestDashboard(t *testing.T) {
 
 	if err := commonutil.RetryAfter(10, checkDashboard, 5*time.Second); err != nil {
 		t.Fatalf("Dashboard is unhealthy: %s", err)
+	}
+
+	dashboardURL := minikubeRunner.RunCommand("dashboard --url", true)
+	u, err := url.Parse(strings.TrimSpace(dashboardURL))
+	if err != nil {
+		t.Fatalf("failed to parse dashboard URL %s: %v", dashboardURL, err)
+	}
+	if u.Scheme != "http" {
+		t.Fatalf("wrong scheme in dashboard URL, expected http, actual %s", u.Scheme)
+	}
+	_, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		t.Fatalf("failed to split dashboard host %s: %v", u.Host, err)
+	}
+	if port != "30000" {
+		t.Fatalf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
 	}
 }
