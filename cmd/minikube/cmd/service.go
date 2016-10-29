@@ -96,12 +96,14 @@ var serviceCmd = &cobra.Command{
 	},
 }
 
+const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
+
 func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
 
-	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", "http://{{.IP}}:{{.Port}}", "Format to output service URL in.  This format will be applied to each url individually and they will be printed one at a time.")
+	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in.  This format will be applied to each url individually and they will be printed one at a time.")
 
 	RootCmd.AddCommand(serviceCmd)
 }
