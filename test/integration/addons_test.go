@@ -20,6 +20,8 @@ package integration
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -60,7 +62,7 @@ func TestAddons(t *testing.T) {
 			}
 		}
 
-		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %s", pods)}
+		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %v", pods)}
 	}
 
 	if err := commonutil.RetryAfter(20, checkAddon, 5*time.Second); err != nil {
@@ -89,11 +91,11 @@ func TestDashboard(t *testing.T) {
 		}
 
 		if rc.Status.Replicas != rc.Status.FullyLabeledReplicas {
-			return &commonutil.RetriableError{Err: fmt.Errorf("Not enough pods running. Expected %s, got %s.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)}
+			return &commonutil.RetriableError{Err: fmt.Errorf("Not enough pods running. Expected %d, got %d.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)}
 		}
 
 		if svc.Spec.Ports[0].NodePort != 30000 {
-			return fmt.Errorf("Dashboard is not exposed on port {}", svc.Spec.Ports[0].NodePort)
+			return fmt.Errorf("Dashboard is exposed on wrong port, expected 30000, actual %d", svc.Spec.Ports[0].NodePort)
 		}
 
 		return nil
@@ -101,5 +103,21 @@ func TestDashboard(t *testing.T) {
 
 	if err := commonutil.RetryAfter(10, checkDashboard, 5*time.Second); err != nil {
 		t.Fatalf("Dashboard is unhealthy: %s", err)
+	}
+
+	dashboardURL := minikubeRunner.RunCommand("dashboard --url", true)
+	u, err := url.Parse(strings.TrimSpace(dashboardURL))
+	if err != nil {
+		t.Fatalf("failed to parse dashboard URL %s: %v", dashboardURL, err)
+	}
+	if u.Scheme != "http" {
+		t.Fatalf("wrong scheme in dashboard URL, expected http, actual %s", u.Scheme)
+	}
+	_, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		t.Fatalf("failed to split dashboard host %s: %v", u.Host, err)
+	}
+	if port != "30000" {
+		t.Fatalf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
 	}
 }
