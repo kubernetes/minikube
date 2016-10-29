@@ -60,7 +60,7 @@ func TestAddons(t *testing.T) {
 			}
 		}
 
-		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %s", pods)}
+		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %v", pods)}
 	}
 
 	if err := commonutil.RetryAfter(20, checkAddon, 5*time.Second); err != nil {
@@ -89,11 +89,11 @@ func TestDashboard(t *testing.T) {
 		}
 
 		if rc.Status.Replicas != rc.Status.FullyLabeledReplicas {
-			return &commonutil.RetriableError{Err: fmt.Errorf("Not enough pods running. Expected %s, got %s.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)}
+			return &commonutil.RetriableError{Err: fmt.Errorf("Not enough pods running. Expected %d, got %d.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)}
 		}
 
 		if svc.Spec.Ports[0].NodePort != 30000 {
-			return fmt.Errorf("Dashboard is not exposed on port {}", svc.Spec.Ports[0].NodePort)
+			return fmt.Errorf("Dashboard is not exposed on port %d", svc.Spec.Ports[0].NodePort)
 		}
 
 		return nil
