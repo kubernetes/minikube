@@ -95,7 +95,7 @@ func TestDashboard(t *testing.T) {
 		}
 
 		if svc.Spec.Ports[0].NodePort != 30000 {
-			return fmt.Errorf("Dashboard is not exposed on port %d", svc.Spec.Ports[0].NodePort)
+			return fmt.Errorf("Dashboard is exposed on wrong port, expected 30000, actual %d", svc.Spec.Ports[0].NodePort)
 		}
 
 		return nil
