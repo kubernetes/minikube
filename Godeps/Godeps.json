@@ -1452,6 +1452,11 @@
 			"Rev": "d5b7844b561a7bc640052f1b935f7b800330d7e0"
 		},
 		{
+			"ImportPath": "github.com/mattn/go-runewidth",
+			"Comment": "v0.0.1-10-g737072b",
+			"Rev": "737072b4e32b7a5018b4a7125da8d12de90e8045"
+		},
+		{
 			"ImportPath": "github.com/matttproud/golang_protobuf_extensions/pbutil",
 			"Rev": "fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a"
 		},
@@ -1496,6 +1501,10 @@
 		{
 			"ImportPath": "github.com/mxk/go-flowrate/flowrate",
 			"Rev": "cca7078d478f8520f85629ad7c68962d31ed7682"
+		},
+		{
+			"ImportPath": "github.com/olekukonko/tablewriter",
+			"Rev": "bdcc175572fd7abece6c831e643891b9331bc9e7"
 		},
 		{
 			"ImportPath": "github.com/opencontainers/runc/libcontainer",
