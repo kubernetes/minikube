@@ -36,7 +36,6 @@ Icon "logo.ico"
 OutFile "minikube-installer.exe"
 
 !include "LogicLib.nsh"
-!include "EnvVarUpdate.nsh"
 !include "MUI2.nsh"       ; Modern UI
 
 !define MUI_ICON "logo.ico"
@@ -125,6 +124,7 @@ Section "Install"
 	# Files added here should be removed by the uninstaller (see section "uninstall")
 	File "minikube.exe"
 	File "logo.ico"
+    File "update_path.bat"
 	# Add any other files for the install directory (license files, app data, etc) here
 
 	# Uninstaller - See function un.onInit and section "uninstall" for configuration
@@ -154,7 +154,10 @@ Section "Install"
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "EstimatedSize" ${INSTALLSIZE}
 
 	# Add installed executable to PATH
-	${EnvVarUpdate} $0 "PATH" "A" "HKLM" "$INSTDIR" ; appends to the system path
+    # Cannot uset EnvVarUpdate since the path can be too long
+    # this is explicitly warned in the documentation page
+    # http://nsis.sourceforge.net/Environmental_Variables:_append,_prepend,_and_remove_entries
+    nsExec::Exec '"$INSTDIR\update_path.bat" add $INSTDIR'
 SectionEnd
 
 Section "Uninstall"
@@ -164,9 +167,13 @@ Section "Uninstall"
 	# Try to remove the Start Menu folder - this will only happen if it is empty
 	RmDir /REBOOTOK "$SMPROGRAMS\${COMPANYNAME}"
 
+	# Remove uninstalled executable from PATH
+    nsExec::Exec '"$INSTDIR\update_path.bat" remove $INSTDIR' ; appends to the system path
+
 	# Remove files
 	Delete /REBOOTOK $INSTDIR\minikube.exe
 	Delete /REBOOTOK $INSTDIR\logo.ico
+	Delete /REBOOTOK $INSTDIR\update_path.bat
 
 	# Always delete uninstaller as the last action
 	Delete /REBOOTOK $INSTDIR\uninstall.exe
@@ -177,6 +184,4 @@ Section "Uninstall"
 	# Remove uninstaller information from the registry
 	DeleteRegKey HKLM "${UNINSTALLDIR}"
 
-	# Remove uninstalled executable from PATH
-	${un.EnvVarUpdate} $0 "PATH" "R" "HKLM" "$INSTDIR" ; removes from the system path
 SectionEnd
