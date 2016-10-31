@@ -19,24 +19,24 @@ metadata:
   namespace: kube-system
   labels:
     app: kubernetes-dashboard
-    version: v1.4.0
+    version: v1.4.2
     kubernetes.io/cluster-service: "true"
 spec:
   replicas: 1
   selector:
     app: kubernetes-dashboard
-    version: v1.4.0
+    version: v1.4.2
     kubernetes.io/cluster-service: "true"
   template:
     metadata:
       labels:
         app: kubernetes-dashboard
-        version: v1.4.0
+        version: v1.4.2
         kubernetes.io/cluster-service: "true"
     spec:
       containers:
       - name: kubernetes-dashboard
-        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.0
+        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.4.2
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9090
