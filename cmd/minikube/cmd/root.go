@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -51,6 +52,7 @@ const (
 
 var (
 	enableUpdateNotification = true
+	enableKubectlDownloadMsg = true
 )
 
 var viperWhiteList = []string{
@@ -82,6 +84,9 @@ var RootCmd = &cobra.Command{
 
 		if enableUpdateNotification {
 			notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+		}
+		if enableKubectlDownloadMsg {
+			util.MaybePrintKubectlDownloadMsg()
 		}
 	},
 }
@@ -147,5 +152,6 @@ func setupViper() {
 	viper.SetDefault(config.ReminderWaitPeriodInHours, 24)
 	viper.SetDefault(config.WantReportError, false)
 	viper.SetDefault(config.WantReportErrorPrompt, true)
+	viper.SetDefault(config.WantKubectlDownloadMsg, true)
 	setFlagsUsingViper()
 }
