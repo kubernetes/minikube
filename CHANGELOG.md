@@ -1,5 +1,10 @@
 # Minikube Release Notes
 
+## Version 0.12.2 - 10/31/2016
+* Fixed dashboard command
+* Added support for net.IP to the configurator
+* Updated dashboard version to 1.4.2
+
 ## Version 0.12.1 - 10/28/2016
 * Added docker-env support to the buildroot provisioner
 * `minikube service` command now supports multiple ports
