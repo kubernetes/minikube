@@ -12,7 +12,7 @@
 !define COMPANYNAME "Kubernetes"
 !define DESCRIPTION "A Local Kubernetes Development Environment"
 # These three must be integers
-!define VERSIONMAJOR --VERSION_MAJOR/--
+!define VERSIONMAJOR --VERSION_MAJOR--
 !define VERSIONMINOR --VERSION_MINOR--
 !define VERSIONBUILD --VERSION_BUILD--
 # These will be displayed by the "Click here for support information" link in "Add/Remove Programs"
