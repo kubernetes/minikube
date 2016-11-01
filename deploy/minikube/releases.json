@@ -1,5 +1,13 @@
 [
     {
+      "name": "${TAGNAME}",
+      "checksums": {
+          "darwin": "${DARWIN_SHA256}",
+          "linux": "${LINUX_SHA256}",
+          "windows": "${WINDOWS_SHA256}"
+      }
+  },
+  {
       "name": "v0.12.2",
       "checksums": {
           "darwin": "5f818be5235d606ec5241ac1eea0dc92e6328d56841617c51e4595a0abc4300c",
