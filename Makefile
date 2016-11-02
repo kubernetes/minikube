@@ -89,7 +89,7 @@ minikube-iso:
 
 .PHONY: integration
 integration: out/minikube
-	go test -v $(REPOPATH)/test/integration --tags=integration
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)"
 
 .PHONY: test
 test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
