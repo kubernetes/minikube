@@ -65,7 +65,7 @@ func TestAddons(t *testing.T) {
 		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %v", pods)}
 	}
 
-	if err := commonutil.RetryAfter(20, checkAddon, 5*time.Second); err != nil {
+	if err := commonutil.RetryAfter(25, checkAddon, 20*time.Second); err != nil {
 		t.Fatalf("Addon Manager pod is unhealthy: %s", err)
 	}
 }
