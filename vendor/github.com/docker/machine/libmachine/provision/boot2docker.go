@@ -197,7 +197,7 @@ func (provisioner *Boot2DockerProvisioner) AttemptIPContact(dockerPort int) {
 		return
 	}
 
-	if conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, dockerPort), 5*time.Second); err != nil {
+	if conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", ip, dockerPort), 20*time.Second); err != nil {
 		log.Warnf(`
 This machine has been allocated an IP address, but Docker Machine could not
 reach it successfully.
