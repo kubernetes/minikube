@@ -81,8 +81,11 @@ var RootCmd = &cobra.Command{
 		}
 
 		if enableUpdateNotification {
-			notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+			go notify.GetUpdateTextFromGithub()
 		}
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		notify.PrintUpdateText(os.Stdout)
 	},
 }
 

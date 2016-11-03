@@ -39,35 +39,46 @@ const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
 var (
 	timeLayout              = time.RFC1123
 	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
+	updateTextChan          chan string
 )
 
-func MaybePrintUpdateTextFromGithub(output io.Writer) {
-	MaybePrintUpdateText(output, constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+func GetUpdateTextFromGithub() {
+	updateTextChan <- GetUpdateText(constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
-func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
+func PrintUpdateText(out io.Writer) {
+	select {
+	case t := <-updateTextChan:
+		fmt.Fprintf(out, t)
+	default:
+	}
+}
+
+func GetUpdateText(url string, lastUpdatePath string) string {
 	if !shouldCheckURLVersion(lastUpdatePath) {
-		return
+		return ""
 	}
 	latestVersion, err := getLatestVersionFromURL(url)
 	if err != nil {
 		glog.Errorln(err)
-		return
+		return ""
 	}
 	localVersion, err := version.GetSemverVersion()
 	if err != nil {
 		glog.Errorln(err)
-		return
+		return ""
 	}
-	if localVersion.Compare(latestVersion) < 0 {
-		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
-		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
+	if localVersion.Compare(latestVersion) >= 0 {
+		return ""
+	}
+	writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
+	return fmt.Sprintf(`
+There is a newer version of minikube available (%s%s).  Download it here:
 %s%s
 To disable this notification, add WantUpdateNotification: False to the json config file at %s
 (you may have to create the file config.json in this folder if you have no previous configuration)
 `,
-			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion, constants.MakeMiniPath("config"))
-	}
+		version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion, constants.MakeMiniPath("config"))
 }
 
 func shouldCheckURLVersion(filePath string) bool {
@@ -136,4 +147,8 @@ func getTimeFromFileIfExists(path string) time.Time {
 		return time.Time{}
 	}
 	return timeInFile
+}
+
+func init() {
+	updateTextChan = make(chan string)
 }
