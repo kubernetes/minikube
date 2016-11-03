@@ -76,7 +76,7 @@ func TestPersistence(t *testing.T) {
 
 	// Make sure the dashboard is running before we stop the VM.
 	// On slow networks it can take several minutes to pull the addon-manager then the dashboard image.
-	if err := commonutil.RetryAfter(30, checkDashboard, 6*time.Second); err != nil {
+	if err := commonutil.RetryAfter(25, checkDashboard, 20*time.Second); err != nil {
 		t.Fatalf("Dashboard pod is not healthy: %s", err)
 	}
 
