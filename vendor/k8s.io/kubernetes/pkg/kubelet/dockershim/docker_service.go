@@ -48,27 +48,34 @@ const (
 	containerTypeLabelKey       = "io.kubernetes.docker.type"
 	containerTypeLabelSandbox   = "podsandbox"
 	containerTypeLabelContainer = "container"
+	containerLogPathLabelKey    = "io.kubernetes.container.logpath"
 	sandboxIDLabelKey           = "io.kubernetes.sandbox.id"
 )
 
-var internalLabelKeys []string = []string{containerTypeLabelKey, sandboxIDLabelKey}
+var internalLabelKeys []string = []string{containerTypeLabelKey, containerLogPathLabelKey, sandboxIDLabelKey}
 
 // NOTE: Anything passed to DockerService should be eventually handled in another way when we switch to running the shim as a different process.
-func NewDockerService(client dockertools.DockerInterface, seccompProfileRoot string, podSandboxImage string) DockerLegacyService {
+func NewDockerService(client dockertools.DockerInterface, seccompProfileRoot string, podSandboxImage string) DockerService {
 	return &dockerService{
 		seccompProfileRoot: seccompProfileRoot,
 		client:             dockertools.NewInstrumentedDockerInterface(client),
+		os:                 kubecontainer.RealOS{},
 		podSandboxImage:    podSandboxImage,
 	}
 }
 
-// DockerLegacyService is an interface that embeds both the new
-// RuntimeService and ImageService interfaces, while including legacy methods
-// for backward compatibility.
-type DockerLegacyService interface {
+// DockerService is an interface that embeds both the new RuntimeService and
+// ImageService interfaces, while including DockerLegacyService for backward
+// compatibility.
+type DockerService interface {
 	internalApi.RuntimeService
 	internalApi.ImageManagerService
+	DockerLegacyService
+}
 
+// DockerLegacyService is an interface that embeds all legacy methods for
+// backward compatibility.
+type DockerLegacyService interface {
 	// Supporting legacy methods for docker.
 	GetContainerLogs(pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) (err error)
 	kubecontainer.ContainerAttacher
@@ -81,6 +88,7 @@ type DockerLegacyService interface {
 type dockerService struct {
 	seccompProfileRoot string
 	client             dockertools.DockerInterface
+	os                 kubecontainer.OSInterface
 	podSandboxImage    string
 }
 
@@ -101,4 +109,8 @@ func (ds *dockerService) Version(_ string) (*runtimeApi.VersionResponse, error) 
 		RuntimeVersion:    &v.Version,
 		RuntimeApiVersion: &apiVersion,
 	}, nil
+}
+
+func (ds *dockerService) UpdateRuntimeConfig(runtimeConfig *runtimeApi.RuntimeConfig) error {
+	return nil
 }

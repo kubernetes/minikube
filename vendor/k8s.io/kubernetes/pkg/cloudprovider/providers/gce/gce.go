@@ -736,9 +736,7 @@ func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *api.Serv
 			// This logic exists to detect a transition for a pre-existing service and turn on
 			// the tpNeedsUpdate flag to delete/recreate fwdrule/tpool adding the health check
 			// to the target pool.
-			glog.V(2).Infof("Annotation %s=%s added to new or pre-existing service",
-				apiservice.AnnotationExternalTraffic,
-				apiservice.AnnotationValueExternalTrafficLocal)
+			glog.V(2).Infof("Annotation external-traffic=OnlyLocal added to new or pre-existing service")
 			tpNeedsUpdate = true
 		}
 		hcToCreate, err = gce.ensureHttpHealthCheck(loadBalancerName, path, healthCheckNodePort)
@@ -1446,6 +1444,23 @@ func (gce *GCECloud) deleteForwardingRule(name, region string) error {
 		}
 	}
 	return nil
+}
+
+func (gce *GCECloud) DeleteForwardingRule(name string) error {
+	region, err := GetGCERegion(gce.localZone)
+	if err != nil {
+		return err
+	}
+	return gce.deleteForwardingRule(name, region)
+}
+
+// DeleteTargetPool deletes the given target pool.
+func (gce *GCECloud) DeleteTargetPool(name string, hc *compute.HttpHealthCheck) error {
+	region, err := GetGCERegion(gce.localZone)
+	if err != nil {
+		return err
+	}
+	return gce.deleteTargetPool(name, region, hc)
 }
 
 func (gce *GCECloud) deleteTargetPool(name, region string, hc *compute.HttpHealthCheck) error {
@@ -2832,6 +2847,7 @@ func (gce *GCECloud) getInstancesByNames(names []string) ([]*gceInstance, error)
 
 	instanceArray := make([]*gceInstance, len(names))
 	for i, name := range names {
+		name = canonicalizeInstanceName(name)
 		instance := instances[name]
 		if instance == nil {
 			glog.Errorf("Failed to retrieve instance: %q", name)

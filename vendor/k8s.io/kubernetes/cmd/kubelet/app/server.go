@@ -39,7 +39,7 @@ import (
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
-	v1alpha1 "k8s.io/kubernetes/pkg/apis/componentconfig/v1alpha1"
+	componentconfigv1alpha1 "k8s.io/kubernetes/pkg/apis/componentconfig/v1alpha1"
 	"k8s.io/kubernetes/pkg/capabilities"
 	"k8s.io/kubernetes/pkg/client/chaosclient"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
@@ -62,6 +62,7 @@ import (
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/kubernetes/pkg/util/cert"
 	certutil "k8s.io/kubernetes/pkg/util/cert"
 	utilconfig "k8s.io/kubernetes/pkg/util/config"
 	"k8s.io/kubernetes/pkg/util/configz"
@@ -117,7 +118,7 @@ func UnsecuredKubeletDeps(s *options.KubeletServer) (*kubelet.KubeletDeps, error
 		return nil, err
 	}
 
-	mounter := mount.New()
+	mounter := mount.New(s.ExperimentalMounterPath)
 	var writer kubeio.Writer = &kubeio.StdWriter{}
 	if s.Containerized {
 		glog.V(2).Info("Running kubelet in containerized mode (experimental)")
@@ -241,11 +242,12 @@ func initKubeletConfigSync(s *options.KubeletServer) (*componentconfig.KubeletCo
 		startKubeletConfigSyncLoop(s, jsonstr)
 
 		// Convert json from API server to external type struct, and convert that to internal type struct
-		extKC := v1alpha1.KubeletConfiguration{}
+		extKC := componentconfigv1alpha1.KubeletConfiguration{}
 		err := runtime.DecodeInto(api.Codecs.UniversalDecoder(), []byte(jsonstr), &extKC)
 		if err != nil {
 			return nil, err
 		}
+		api.Scheme.Default(&extKC)
 		kc := componentconfig.KubeletConfiguration{}
 		err = api.Scheme.Convert(&extKC, &kc, nil)
 		if err != nil {
@@ -282,7 +284,7 @@ func checkPermissions() error {
 }
 
 func setConfigz(cz *configz.Config, kc *componentconfig.KubeletConfiguration) {
-	tmp := v1alpha1.KubeletConfiguration{}
+	tmp := componentconfigv1alpha1.KubeletConfiguration{}
 	api.Scheme.Convert(kc, &tmp, nil)
 	cz.Set(tmp)
 }
@@ -345,7 +347,7 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.KubeletDeps) (err error) {
 		var kubeClient, eventClient *clientset.Clientset
 		var cloud cloudprovider.Interface
 
-		if s.CloudProvider != v1alpha1.AutoDetectCloudProvider {
+		if s.CloudProvider != componentconfigv1alpha1.AutoDetectCloudProvider {
 			cloud, err = cloudprovider.InitCloudProvider(s.CloudProvider, s.CloudConfigFile)
 			if err != nil {
 				return err
@@ -396,6 +398,18 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.KubeletDeps) (err error) {
 		kubeDeps.Cloud = cloud
 		kubeDeps.KubeClient = kubeClient
 		kubeDeps.EventClient = eventClient
+	}
+
+	if kubeDeps.Auth == nil {
+		nodeName, err := getNodeName(kubeDeps.Cloud, nodeutil.GetHostname(s.HostnameOverride))
+		if err != nil {
+			return err
+		}
+		auth, err := buildAuth(nodeName, kubeDeps.KubeClient, s.KubeletConfiguration)
+		if err != nil {
+			return err
+		}
+		kubeDeps.Auth = auth
 	}
 
 	if kubeDeps.CAdvisorInterface == nil {
@@ -500,12 +514,22 @@ func InitializeTLS(kc *componentconfig.KubeletConfiguration) (*server.TLSOptions
 			// Can't use TLSv1.0 because of POODLE and BEAST using CBC cipher
 			// Can't use TLSv1.1 because of RC4 cipher usage
 			MinVersion: tls.VersionTLS12,
-			// Populate PeerCertificates in requests, but don't yet reject connections without certificates.
-			ClientAuth: tls.RequestClientCert,
 		},
 		CertFile: kc.TLSCertFile,
 		KeyFile:  kc.TLSPrivateKeyFile,
 	}
+
+	if len(kc.Authentication.X509.ClientCAFile) > 0 {
+		clientCAs, err := cert.NewPool(kc.Authentication.X509.ClientCAFile)
+		if err != nil {
+			return nil, fmt.Errorf("unable to load client CA file %s: %v", kc.Authentication.X509.ClientCAFile, err)
+		}
+		// Specify allowed CAs for client certificates
+		tlsOptions.Config.ClientCAs = clientCAs
+		// Populate PeerCertificates in requests, but don't reject connections without verified certificates
+		tlsOptions.Config.ClientAuth = tls.RequestClientCert
+	}
+
 	return tlsOptions, nil
 }
 

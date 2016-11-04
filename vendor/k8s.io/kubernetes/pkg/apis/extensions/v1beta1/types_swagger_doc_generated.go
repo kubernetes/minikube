@@ -99,6 +99,7 @@ var map_DaemonSetStatus = map[string]string{
 	"currentNumberScheduled": "CurrentNumberScheduled is the number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod. More info: http://releases.k8s.io/HEAD/docs/admin/daemons.md",
 	"numberMisscheduled":     "NumberMisscheduled is the number of nodes that are running the daemon pod, but are not supposed to run the daemon pod. More info: http://releases.k8s.io/HEAD/docs/admin/daemons.md",
 	"desiredNumberScheduled": "DesiredNumberScheduled is the total number of nodes that should be running the daemon pod (including nodes correctly running the daemon pod). More info: http://releases.k8s.io/HEAD/docs/admin/daemons.md",
+	"numberReady":            "NumberReady is the number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
 }
 
 func (DaemonSetStatus) SwaggerDoc() map[string]string {
@@ -422,27 +423,6 @@ func (JobStatus) SwaggerDoc() map[string]string {
 	return map_JobStatus
 }
 
-var map_LabelSelector = map[string]string{
-	"":                 "A label selector is a label query over a set of resources. The result of matchLabels and matchExpressions are ANDed. An empty label selector matches all objects. A null label selector matches no objects.",
-	"matchLabels":      "matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is \"key\", the operator is \"In\", and the values array contains only \"value\". The requirements are ANDed.",
-	"matchExpressions": "matchExpressions is a list of label selector requirements. The requirements are ANDed.",
-}
-
-func (LabelSelector) SwaggerDoc() map[string]string {
-	return map_LabelSelector
-}
-
-var map_LabelSelectorRequirement = map[string]string{
-	"":         "A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.",
-	"key":      "key is the label key that the selector applies to.",
-	"operator": "operator represents a key's relationship to a set of values. Valid operators ard In, NotIn, Exists and DoesNotExist.",
-	"values":   "values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.",
-}
-
-func (LabelSelectorRequirement) SwaggerDoc() map[string]string {
-	return map_LabelSelectorRequirement
-}
-
 var map_NetworkPolicy = map[string]string{
 	"metadata": "Standard object's metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
 	"spec":     "Specification of the desired behavior for this NetworkPolicy.",
@@ -552,6 +532,19 @@ func (ReplicaSet) SwaggerDoc() map[string]string {
 	return map_ReplicaSet
 }
 
+var map_ReplicaSetCondition = map[string]string{
+	"":                   "ReplicaSetCondition describes the state of a replica set at a certain point.",
+	"type":               "Type of replica set condition.",
+	"status":             "Status of the condition, one of True, False, Unknown.",
+	"lastTransitionTime": "The last time the condition transitioned from one status to another.",
+	"reason":             "The reason for the condition's last transition.",
+	"message":            "A human readable message indicating details about the transition.",
+}
+
+func (ReplicaSetCondition) SwaggerDoc() map[string]string {
+	return map_ReplicaSetCondition
+}
+
 var map_ReplicaSetList = map[string]string{
 	"":         "ReplicaSetList is a collection of ReplicaSets.",
 	"metadata": "Standard list metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds",
@@ -581,6 +574,7 @@ var map_ReplicaSetStatus = map[string]string{
 	"readyReplicas":        "The number of ready replicas for this replica set.",
 	"availableReplicas":    "The number of available replicas (ready for at least minReadySeconds) for this replica set.",
 	"observedGeneration":   "ObservedGeneration reflects the generation of the most recently observed ReplicaSet.",
+	"conditions":           "Represents the latest available observations of a replica set's current state.",
 }
 
 func (ReplicaSetStatus) SwaggerDoc() map[string]string {

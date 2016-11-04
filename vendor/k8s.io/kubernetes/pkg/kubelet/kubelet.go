@@ -33,17 +33,19 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
-	kubeExternal "k8s.io/kubernetes/pkg/apis/componentconfig/v1alpha1"
+	componentconfigv1alpha1 "k8s.io/kubernetes/pkg/apis/componentconfig/v1alpha1"
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/fields"
+	internalApi "k8s.io/kubernetes/pkg/kubelet/api"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
 	"k8s.io/kubernetes/pkg/kubelet/config"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim"
+	dockerremote "k8s.io/kubernetes/pkg/kubelet/dockershim/remote"
 	"k8s.io/kubernetes/pkg/kubelet/dockertools"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/eviction"
@@ -357,7 +359,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 
 	serviceStore := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	if kubeClient != nil {
-		serviceLW := cache.NewListWatchFromClient(kubeClient.(*clientset.Clientset).CoreClient, "services", api.NamespaceAll, fields.Everything())
+		serviceLW := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(), "services", api.NamespaceAll, fields.Everything())
 		cache.NewReflector(serviceLW, &api.Service{}, serviceStore, 0).Run()
 	}
 	serviceLister := &cache.StoreToServiceLister{Indexer: serviceStore}
@@ -365,7 +367,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	nodeStore := cache.NewStore(cache.MetaNamespaceKeyFunc)
 	if kubeClient != nil {
 		fieldSelector := fields.Set{api.ObjectNameField: string(nodeName)}.AsSelector()
-		nodeLW := cache.NewListWatchFromClient(kubeClient.(*clientset.Clientset).CoreClient, "nodes", api.NamespaceAll, fieldSelector)
+		nodeLW := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(), "nodes", api.NamespaceAll, fieldSelector)
 		cache.NewReflector(nodeLW, &api.Node{}, nodeStore, 0).Run()
 	}
 	nodeLister := &cache.StoreToNodeLister{Store: nodeStore}
@@ -388,13 +390,6 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	containerRefManager := kubecontainer.NewRefManager()
 
 	oomWatcher := NewOOMWatcher(kubeDeps.CAdvisorInterface, kubeDeps.Recorder)
-
-	// TODO(mtaufen): remove when internal cbr0 implementation gets removed in favor
-	//                of the kubenet network plugin
-	var myConfigureCBR0 bool = kubeCfg.ConfigureCBR0
-	if kubeCfg.NetworkPluginName == "kubenet" {
-		myConfigureCBR0 = false
-	}
 
 	klet := &Kubelet{
 		hostname:                       hostname,
@@ -420,7 +415,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		cadvisor:                       kubeDeps.CAdvisorInterface,
 		diskSpaceManager:               diskSpaceManager,
 		cloud:                          kubeDeps.Cloud,
-		autoDetectCloudProvider:   (kubeExternal.AutoDetectCloudProvider == kubeCfg.CloudProvider),
+		autoDetectCloudProvider:   (componentconfigv1alpha1.AutoDetectCloudProvider == kubeCfg.CloudProvider),
 		nodeRef:                   nodeRef,
 		nodeLabels:                kubeCfg.NodeLabels,
 		nodeStatusUpdateFrequency: kubeCfg.NodeStatusUpdateFrequency.Duration,
@@ -430,9 +425,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		cgroupRoot:        kubeCfg.CgroupRoot,
 		mounter:           kubeDeps.Mounter,
 		writer:            kubeDeps.Writer,
-		configureCBR0:     myConfigureCBR0,
 		nonMasqueradeCIDR: kubeCfg.NonMasqueradeCIDR,
-		reconcileCIDR:     kubeCfg.ReconcileCIDR,
 		maxPods:           int(kubeCfg.MaxPods),
 		podsPerCore:       int(kubeCfg.PodsPerCore),
 		nvidiaGPUs:        int(kubeCfg.NvidiaGPUs),
@@ -454,7 +447,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		iptablesDropBit:              int(kubeCfg.IPTablesDropBit),
 	}
 
-	if mode, err := effectiveHairpinMode(componentconfig.HairpinMode(kubeCfg.HairpinMode), kubeCfg.ContainerRuntime, kubeCfg.ConfigureCBR0, kubeCfg.NetworkPluginName); err != nil {
+	if mode, err := effectiveHairpinMode(componentconfig.HairpinMode(kubeCfg.HairpinMode), kubeCfg.ContainerRuntime, kubeCfg.NetworkPluginName); err != nil {
 		// This is a non-recoverable error. Returning it up the callstack will just
 		// lead to retries of the same failure, so just fail hard.
 		glog.Fatalf("Invalid hairpin mode: %v", err)
@@ -483,8 +476,6 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	klet.podManager = kubepod.NewBasicPodManager(kubepod.NewBasicMirrorClient(klet.kubeClient))
 
 	if kubeCfg.RemoteRuntimeEndpoint != "" {
-		kubeCfg.ContainerRuntime = "remote"
-
 		// kubeCfg.RemoteImageEndpoint is same as kubeCfg.RemoteRuntimeEndpoint if not explicitly specified
 		if kubeCfg.RemoteImageEndpoint == "" {
 			kubeCfg.RemoteImageEndpoint = kubeCfg.RemoteRuntimeEndpoint
@@ -496,9 +487,36 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	case "docker":
 		switch kubeCfg.ExperimentalRuntimeIntegrationType {
 		case "cri":
-			// Use the new CRI shim for docker. This is need for testing the
+			// Use the new CRI shim for docker. This is needed for testing the
 			// docker integration through CRI, and may be removed in the future.
 			dockerService := dockershim.NewDockerService(klet.dockerClient, kubeCfg.SeccompProfileRoot, kubeCfg.PodInfraContainerImage)
+			runtimeService := dockerService.(internalApi.RuntimeService)
+			imageService := dockerService.(internalApi.ImageManagerService)
+
+			// This is a temporary knob to easily switch between grpc and non-grpc integration. grpc
+			// will be enabled if this is not empty.
+			// TODO(random-liu): Remove the temporary knob after grpc integration is stabilized and
+			// pass the runtime endpoint through kubelet flags.
+			remoteEndpoint := "/var/run/dockershim.sock"
+
+			// If the remote runtime endpoint is set, use the grpc integration.
+			if remoteEndpoint != "" {
+				// Start the in process dockershim grpc server.
+				server := dockerremote.NewDockerServer(remoteEndpoint, dockerService)
+				err := server.Start()
+				if err != nil {
+					return nil, err
+				}
+				// Start the remote kuberuntime manager.
+				runtimeService, err = remote.NewRemoteRuntimeService(remoteEndpoint, kubeCfg.RuntimeRequestTimeout.Duration)
+				if err != nil {
+					return nil, err
+				}
+				imageService, err = remote.NewRemoteImageService(remoteEndpoint, kubeCfg.RuntimeRequestTimeout.Duration)
+				if err != nil {
+					return nil, err
+				}
+			}
 			klet.containerRuntime, err = kuberuntime.NewKubeGenericRuntimeManager(
 				kubecontainer.FilterEventRecorder(kubeDeps.Recorder),
 				klet.livenessManager,
@@ -514,8 +532,18 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 				float32(kubeCfg.RegistryPullQPS),
 				int(kubeCfg.RegistryBurst),
 				klet.cpuCFSQuota,
-				dockerService,
-				dockerService,
+				// Use DockerLegacyService directly to workaround unimplemented functions.
+				// We add short hack here to keep other code clean.
+				// TODO: Remove this hack after CRI is fully designed and implemented.
+				// TODO: Move the instrumented interface wrapping into kuberuntime.
+				&struct {
+					internalApi.RuntimeService
+					dockershim.DockerLegacyService
+				}{
+					RuntimeService:      kuberuntime.NewInstrumentedRuntimeService(runtimeService),
+					DockerLegacyService: dockerService,
+				},
+				kuberuntime.NewInstrumentedImageManagerService(imageService),
 			)
 			if err != nil {
 				return nil, err
@@ -911,11 +939,6 @@ type Kubelet struct {
 	// Manager of non-Runtime containers.
 	containerManager cm.ContainerManager
 	nodeConfig       cm.NodeConfig
-
-	// Whether or not kubelet should take responsibility for keeping cbr0 in
-	// the correct state.
-	configureCBR0 bool
-	reconcileCIDR bool
 
 	// Traffic to IPs outside this range will use IP masquerade.
 	nonMasqueradeCIDR string

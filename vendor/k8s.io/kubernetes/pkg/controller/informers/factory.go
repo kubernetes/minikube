@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 )
@@ -31,15 +32,28 @@ type SharedInformerFactory interface {
 	// Start starts informers that can start AFTER the API server and controllers have started
 	Start(stopCh <-chan struct{})
 
+	ForResource(unversioned.GroupResource) (GenericInformer, error)
+
+	// when you update these, update generic.go/ForResource, same package
+
 	Pods() PodInformer
-	Nodes() NodeInformer
+	LimitRanges() LimitRangeInformer
 	Namespaces() NamespaceInformer
+	Nodes() NodeInformer
 	PersistentVolumeClaims() PVCInformer
 	PersistentVolumes() PVInformer
+	ServiceAccounts() ServiceAccountInformer
 
 	DaemonSets() DaemonSetInformer
 	Deployments() DeploymentInformer
 	ReplicaSets() ReplicaSetInformer
+
+	ClusterRoleBindings() ClusterRoleBindingInformer
+	ClusterRoles() ClusterRoleInformer
+	RoleBindings() RoleBindingInformer
+	Roles() RoleInformer
+
+	StorageClasses() StorageClassInformer
 }
 
 type sharedInformerFactory struct {
@@ -64,14 +78,14 @@ func NewSharedInformerFactory(client clientset.Interface, defaultResync time.Dur
 }
 
 // Start initializes all requested informers.
-func (s *sharedInformerFactory) Start(stopCh <-chan struct{}) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (f *sharedInformerFactory) Start(stopCh <-chan struct{}) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
 
-	for informerType, informer := range s.informers {
-		if !s.startedInformers[informerType] {
+	for informerType, informer := range f.informers {
+		if !f.startedInformers[informerType] {
 			go informer.Run(stopCh)
-			s.startedInformers[informerType] = true
+			f.startedInformers[informerType] = true
 		}
 	}
 }
@@ -101,6 +115,12 @@ func (f *sharedInformerFactory) PersistentVolumes() PVInformer {
 	return &pvInformer{sharedInformerFactory: f}
 }
 
+// ServiceAccounts returns a SharedIndexInformer that lists and watches all service accounts.
+func (f *sharedInformerFactory) ServiceAccounts() ServiceAccountInformer {
+	return &serviceAccountInformer{sharedInformerFactory: f}
+}
+
+// DaemonSets returns a SharedIndexInformer that lists and watches all daemon sets.
 func (f *sharedInformerFactory) DaemonSets() DaemonSetInformer {
 	return &daemonSetInformer{sharedInformerFactory: f}
 }
@@ -111,4 +131,30 @@ func (f *sharedInformerFactory) Deployments() DeploymentInformer {
 
 func (f *sharedInformerFactory) ReplicaSets() ReplicaSetInformer {
 	return &replicaSetInformer{sharedInformerFactory: f}
+}
+
+func (f *sharedInformerFactory) ClusterRoles() ClusterRoleInformer {
+	return &clusterRoleInformer{sharedInformerFactory: f}
+}
+
+func (f *sharedInformerFactory) ClusterRoleBindings() ClusterRoleBindingInformer {
+	return &clusterRoleBindingInformer{sharedInformerFactory: f}
+}
+
+func (f *sharedInformerFactory) Roles() RoleInformer {
+	return &roleInformer{sharedInformerFactory: f}
+}
+
+func (f *sharedInformerFactory) RoleBindings() RoleBindingInformer {
+	return &roleBindingInformer{sharedInformerFactory: f}
+}
+
+// LimitRanges returns a SharedIndexInformer that lists and watches all limit ranges.
+func (f *sharedInformerFactory) LimitRanges() LimitRangeInformer {
+	return &limitRangeInformer{sharedInformerFactory: f}
+}
+
+// StorageClasses returns a SharedIndexInformer that lists and watches all storage classes
+func (f *sharedInformerFactory) StorageClasses() StorageClassInformer {
+	return &storageClassInformer{sharedInformerFactory: f}
 }

@@ -31,6 +31,8 @@ import (
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/compute/v2/servers"
+	"github.com/rackspace/gophercloud/openstack/identity/v3/extensions/trust"
+	token3 "github.com/rackspace/gophercloud/openstack/identity/v3/tokens"
 	"github.com/rackspace/gophercloud/pagination"
 
 	"github.com/golang/glog"
@@ -72,14 +74,16 @@ type LoadBalancer struct {
 }
 
 type LoadBalancerOpts struct {
-	LBVersion         string     `gcfg:"lb-version"` // overrides autodetection. v1 or v2
-	SubnetId          string     `gcfg:"subnet-id"`  // required
-	FloatingNetworkId string     `gcfg:"floating-network-id"`
-	LBMethod          string     `gcfg:"lb-method"`
-	CreateMonitor     bool       `gcfg:"create-monitor"`
-	MonitorDelay      MyDuration `gcfg:"monitor-delay"`
-	MonitorTimeout    MyDuration `gcfg:"monitor-timeout"`
-	MonitorMaxRetries uint       `gcfg:"monitor-max-retries"`
+	LBVersion            string     `gcfg:"lb-version"` // overrides autodetection. v1 or v2
+	SubnetId             string     `gcfg:"subnet-id"`  // required
+	FloatingNetworkId    string     `gcfg:"floating-network-id"`
+	LBMethod             string     `gcfg:"lb-method"`
+	CreateMonitor        bool       `gcfg:"create-monitor"`
+	MonitorDelay         MyDuration `gcfg:"monitor-delay"`
+	MonitorTimeout       MyDuration `gcfg:"monitor-timeout"`
+	MonitorMaxRetries    uint       `gcfg:"monitor-max-retries"`
+	ManageSecurityGroups bool       `gcfg:"manage-security-groups"`
+	NodeSecurityGroupID  string     `gcfg:"node-security-group"`
 }
 
 // OpenStack is an implementation of cloud provider Interface for OpenStack.
@@ -100,6 +104,7 @@ type Config struct {
 		ApiKey     string `gcfg:"api-key"`
 		TenantId   string `gcfg:"tenant-id"`
 		TenantName string `gcfg:"tenant-name"`
+		TrustId    string `gcfg:"trust-id"`
 		DomainId   string `gcfg:"domain-id"`
 		DomainName string `gcfg:"domain-name"`
 		Region     string
@@ -168,7 +173,20 @@ func readInstanceID() (string, error) {
 }
 
 func newOpenStack(cfg Config) (*OpenStack, error) {
-	provider, err := openstack.AuthenticatedClient(cfg.toAuthOptions())
+	provider, err := openstack.NewClient(cfg.Global.AuthUrl)
+	if err != nil {
+		return nil, err
+	}
+	if cfg.Global.TrustId != "" {
+		authOptionsExt := trust.AuthOptionsExt{
+			TrustID:     cfg.Global.TrustId,
+			AuthOptions: token3.AuthOptions{AuthOptions: cfg.toAuthOptions()},
+		}
+		err = trust.AuthenticateV3Trust(provider, authOptionsExt)
+	} else {
+		err = openstack.Authenticate(provider, cfg.toAuthOptions())
+	}
+
 	if err != nil {
 		return nil, err
 	}

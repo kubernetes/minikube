@@ -36,7 +36,7 @@ type RemoteRuntimeService struct {
 // NewRemoteRuntimeService creates a new internalApi.RuntimeService.
 func NewRemoteRuntimeService(addr string, connectionTimout time.Duration) (internalApi.RuntimeService, error) {
 	glog.V(3).Infof("Connecting to runtime service %s", addr)
-	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDialer(dial))
+	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithTimeout(connectionTimout), grpc.WithDialer(dial))
 	if err != nil {
 		glog.Errorf("Connect remote runtime %s failed: %v", addr, err)
 		return nil, err
@@ -251,4 +251,8 @@ func (r *RemoteRuntimeService) ContainerStatus(containerID string) (*runtimeApi.
 // TODO: support terminal resizing for exec, refer https://github.com/kubernetes/kubernetes/issues/29579.
 func (r *RemoteRuntimeService) Exec(containerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error {
 	return fmt.Errorf("Not implemented")
+}
+
+func (r *RemoteRuntimeService) UpdateRuntimeConfig(runtimeConfig *runtimeApi.RuntimeConfig) error {
+	return nil
 }

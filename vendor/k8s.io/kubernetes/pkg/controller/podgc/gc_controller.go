@@ -61,8 +61,8 @@ type PodGCController struct {
 }
 
 func NewPodGC(kubeClient clientset.Interface, podInformer cache.SharedIndexInformer, terminatedPodThreshold int) *PodGCController {
-	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("gc_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	if kubeClient != nil && kubeClient.Core().RESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("gc_controller", kubeClient.Core().RESTClient().GetRateLimiter())
 	}
 	gcc := &PodGCController{
 		kubeClient:             kubeClient,
@@ -112,6 +112,10 @@ func (gcc *PodGCController) Run(stop <-chan struct{}) {
 }
 
 func (gcc *PodGCController) gc() {
+	if !gcc.podController.HasSynced() || !gcc.nodeController.HasSynced() {
+		glog.V(2).Infof("PodGCController is waiting for informer sync...")
+		return
+	}
 	pods, err := gcc.podStore.List(labels.Everything())
 	if err != nil {
 		glog.Errorf("Error while listing all Pods: %v", err)

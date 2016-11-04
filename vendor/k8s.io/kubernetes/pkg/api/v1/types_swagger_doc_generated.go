@@ -53,7 +53,7 @@ func (Affinity) SwaggerDoc() map[string]string {
 var map_AttachedVolume = map[string]string{
 	"":           "AttachedVolume describes a volume attached to a node",
 	"name":       "Name of the attached volume",
-	"devicePath": "DevicePath represents the device path where the volume should be avilable",
+	"devicePath": "DevicePath represents the device path where the volume should be available",
 }
 
 func (AttachedVolume) SwaggerDoc() map[string]string {
@@ -1443,6 +1443,19 @@ func (ReplicationController) SwaggerDoc() map[string]string {
 	return map_ReplicationController
 }
 
+var map_ReplicationControllerCondition = map[string]string{
+	"":                   "ReplicationControllerCondition describes the state of a replication controller at a certain point.",
+	"type":               "Type of replication controller condition.",
+	"status":             "Status of the condition, one of True, False, Unknown.",
+	"lastTransitionTime": "The last time the condition transitioned from one status to another.",
+	"reason":             "The reason for the condition's last transition.",
+	"message":            "A human readable message indicating details about the transition.",
+}
+
+func (ReplicationControllerCondition) SwaggerDoc() map[string]string {
+	return map_ReplicationControllerCondition
+}
+
 var map_ReplicationControllerList = map[string]string{
 	"":         "ReplicationControllerList is a collection of replication controllers.",
 	"metadata": "Standard list metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds",
@@ -1472,6 +1485,7 @@ var map_ReplicationControllerStatus = map[string]string{
 	"readyReplicas":        "The number of ready replicas for this replication controller.",
 	"availableReplicas":    "The number of available replicas (ready for at least minReadySeconds) for this replication controller.",
 	"observedGeneration":   "ObservedGeneration reflects the generation of the most recently observed replication controller.",
+	"conditions":           "Represents the latest available observations of a replication controller's current state.",
 }
 
 func (ReplicationControllerStatus) SwaggerDoc() map[string]string {

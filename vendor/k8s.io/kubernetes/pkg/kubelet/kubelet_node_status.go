@@ -31,6 +31,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/util/sliceutils"
@@ -309,23 +310,38 @@ func (kl *Kubelet) updateNodeStatus() error {
 // tryUpdateNodeStatus tries to update node status to master. If ReconcileCBR0
 // is set, this function will also confirm that cbr0 is configured correctly.
 func (kl *Kubelet) tryUpdateNodeStatus() error {
-	node, err := kl.kubeClient.Core().Nodes().Get(string(kl.nodeName))
+	// In large clusters, GET and PUT operations on Node objects coming
+	// from here are the majority of load on apiserver and etcd.
+	// To reduce the load on etcd, we are serving GET operations from
+	// apiserver cache (the data might be slightly delayed but it doesn't
+	// seem to cause more confilict - the delays are pretty small).
+	// TODO: Currently apiserver doesn't support serving GET operations
+	// from its cache. Thus we are hacking it by issuing LIST with
+	// field selector for the name of the node (field selectors with
+	// specified name are handled efficiently by apiserver). Once
+	// apiserver supports GET from cache, change it here.
+	opts := api.ListOptions{
+		FieldSelector:   fields.Set{"metadata.name": string(kl.nodeName)}.AsSelector(),
+		ResourceVersion: "0",
+	}
+	nodes, err := kl.kubeClient.Core().Nodes().List(opts)
 	if err != nil {
 		return fmt.Errorf("error getting node %q: %v", kl.nodeName, err)
 	}
-	if node == nil {
+	if len(nodes.Items) != 1 {
 		return fmt.Errorf("no node instance returned for %q", kl.nodeName)
 	}
+	node := &nodes.Items[0]
 
-	if kl.reconcileCIDR {
-		kl.updatePodCIDR(node.Spec.PodCIDR)
-	}
+	kl.updatePodCIDR(node.Spec.PodCIDR)
 
 	if err := kl.setNodeStatus(node); err != nil {
 		return err
 	}
 	// Update the current status on the API server
 	updatedNode, err := kl.kubeClient.Core().Nodes().UpdateStatus(node)
+	// If update finishes sucessfully, mark the volumeInUse as reportedInUse to indicate
+	// those volumes are already updated in the node's status
 	if err == nil {
 		kl.volumeManager.MarkVolumesAsReportedInUse(
 			updatedNode.Status.VolumesInUse)
@@ -866,9 +882,13 @@ func (kl *Kubelet) recordNodeSchedulableEvent(node *api.Node) {
 	}
 }
 
-// Update VolumesInUse field in Node Status
+// Update VolumesInUse field in Node Status only after states are synced up at least once
+// in volume reconciler.
 func (kl *Kubelet) setNodeVolumesInUseStatus(node *api.Node) {
-	node.Status.VolumesInUse = kl.volumeManager.GetVolumesInUse()
+	// Make sure to only update node status after reconciler starts syncing up states
+	if kl.volumeManager.ReconcilerStatesHasBeenSynced() {
+		node.Status.VolumesInUse = kl.volumeManager.GetVolumesInUse()
+	}
 }
 
 // setNodeStatus fills in the Status fields of the given Node, overwriting

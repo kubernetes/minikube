@@ -22,6 +22,7 @@ package app
 import (
 	"crypto/tls"
 	"net"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -39,7 +40,6 @@ import (
 	"k8s.io/kubernetes/pkg/apis/autoscaling"
 	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/apis/rbac"
 	"k8s.io/kubernetes/pkg/apiserver"
 	"k8s.io/kubernetes/pkg/apiserver/authenticator"
 	authorizerunion "k8s.io/kubernetes/pkg/auth/authorizer/union"
@@ -48,25 +48,16 @@ import (
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller/informers"
 	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
-	"k8s.io/kubernetes/pkg/generated/openapi"
+	generatedopenapi "k8s.io/kubernetes/pkg/generated/openapi"
 	"k8s.io/kubernetes/pkg/genericapiserver"
 	"k8s.io/kubernetes/pkg/genericapiserver/authorizer"
-	genericoptions "k8s.io/kubernetes/pkg/genericapiserver/options"
 	genericvalidation "k8s.io/kubernetes/pkg/genericapiserver/validation"
-	kubeletclient "k8s.io/kubernetes/pkg/kubelet/client"
 	"k8s.io/kubernetes/pkg/master"
 	"k8s.io/kubernetes/pkg/registry/cachesize"
-	"k8s.io/kubernetes/pkg/registry/generic"
-	"k8s.io/kubernetes/pkg/registry/rbac/clusterrole"
-	clusterroleetcd "k8s.io/kubernetes/pkg/registry/rbac/clusterrole/etcd"
-	"k8s.io/kubernetes/pkg/registry/rbac/clusterrolebinding"
-	clusterrolebindingetcd "k8s.io/kubernetes/pkg/registry/rbac/clusterrolebinding/etcd"
-	"k8s.io/kubernetes/pkg/registry/rbac/role"
-	roleetcd "k8s.io/kubernetes/pkg/registry/rbac/role/etcd"
-	"k8s.io/kubernetes/pkg/registry/rbac/rolebinding"
-	rolebindingetcd "k8s.io/kubernetes/pkg/registry/rbac/rolebinding/etcd"
 	"k8s.io/kubernetes/pkg/serviceaccount"
+	utilnet "k8s.io/kubernetes/pkg/util/net"
 	"k8s.io/kubernetes/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/version"
 	authenticatorunion "k8s.io/kubernetes/plugin/pkg/auth/authenticator/request/union"
 )
 
@@ -91,6 +82,13 @@ cluster's shared state through which all other components interact.`,
 func Run(s *options.APIServer) error {
 	genericvalidation.VerifyEtcdServersList(s.ServerRunOptions)
 	genericapiserver.DefaultAndValidateRunOptions(s.ServerRunOptions)
+	genericConfig := genericapiserver.NewConfig(). // create the new config
+							ApplyOptions(s.ServerRunOptions). // apply the options selected
+							Complete()                        // set default values based on the known values
+
+	if err := genericConfig.MaybeGenerateServingCerts(); err != nil {
+		glog.Fatalf("Failed to generate service certificate: %v", err)
+	}
 
 	capabilities.Initialize(capabilities.Capabilities{
 		AllowPrivileged: s.AllowPrivileged,
@@ -139,11 +137,6 @@ func Run(s *options.APIServer) error {
 
 	// Proxying to pods and services is IP-based... don't expect to be able to verify the hostname
 	proxyTLSClientConfig := &tls.Config{InsecureSkipVerify: true}
-
-	kubeletClient, err := kubeletclient.NewStaticKubeletClient(&s.KubeletConfig)
-	if err != nil {
-		glog.Fatalf("Failed to start kubelet client: %v", err)
-	}
 
 	if s.StorageConfig.DeserializationCacheSize == 0 {
 		// When size of cache is not explicitly set, estimate its size based on
@@ -222,7 +215,7 @@ func Run(s *options.APIServer) error {
 		serviceAccountGetter = serviceaccountcontroller.NewGetterFromStorageInterface(storageConfig, storageFactory.ResourcePrefix(api.Resource("serviceaccounts")), storageFactory.ResourcePrefix(api.Resource("secrets")))
 	}
 
-	apiAuthenticator, err := authenticator.New(authenticator.AuthenticatorConfig{
+	apiAuthenticator, securityDefinitions, err := authenticator.New(authenticator.AuthenticatorConfig{
 		Anonymous:                   s.AnonymousAuth,
 		AnyToken:                    s.EnableAnyToken,
 		BasicAuthFile:               s.BasicAuthFile,
@@ -245,48 +238,7 @@ func Run(s *options.APIServer) error {
 		glog.Fatalf("Invalid Authentication Config: %v", err)
 	}
 
-	authorizationModeNames := strings.Split(s.AuthorizationMode, ",")
-
-	modeEnabled := func(mode string) bool {
-		for _, m := range authorizationModeNames {
-			if m == mode {
-				return true
-			}
-		}
-		return false
-	}
-
-	authorizationConfig := authorizer.AuthorizationConfig{
-		PolicyFile:                  s.AuthorizationPolicyFile,
-		WebhookConfigFile:           s.AuthorizationWebhookConfigFile,
-		WebhookCacheAuthorizedTTL:   s.AuthorizationWebhookCacheAuthorizedTTL,
-		WebhookCacheUnauthorizedTTL: s.AuthorizationWebhookCacheUnauthorizedTTL,
-		RBACSuperUser:               s.AuthorizationRBACSuperUser,
-	}
-	if modeEnabled(genericoptions.ModeRBAC) {
-		mustGetRESTOptions := func(resource string) generic.RESTOptions {
-			config, err := storageFactory.NewConfig(rbac.Resource(resource))
-			if err != nil {
-				glog.Fatalf("Unable to get %s storage: %v", resource, err)
-			}
-			return generic.RESTOptions{StorageConfig: config, Decorator: generic.UndecoratedStorage, ResourcePrefix: storageFactory.ResourcePrefix(rbac.Resource(resource))}
-		}
-
-		// For initial bootstrapping go directly to etcd to avoid privillege escalation check.
-		authorizationConfig.RBACRoleRegistry = role.NewRegistry(roleetcd.NewREST(mustGetRESTOptions("roles")))
-		authorizationConfig.RBACRoleBindingRegistry = rolebinding.NewRegistry(rolebindingetcd.NewREST(mustGetRESTOptions("rolebindings")))
-		authorizationConfig.RBACClusterRoleRegistry = clusterrole.NewRegistry(clusterroleetcd.NewREST(mustGetRESTOptions("clusterroles")))
-		authorizationConfig.RBACClusterRoleBindingRegistry = clusterrolebinding.NewRegistry(clusterrolebindingetcd.NewREST(mustGetRESTOptions("clusterrolebindings")))
-	}
-
-	apiAuthorizer, err := authorizer.NewAuthorizerFromAuthorizationConfig(authorizationModeNames, authorizationConfig)
-	if err != nil {
-		glog.Fatalf("Invalid Authorization Config: %v", err)
-	}
-
-	admissionControlPluginNames := strings.Split(s.AdmissionControl, ",")
 	privilegedLoopbackToken := uuid.NewRandom().String()
-
 	selfClientConfig, err := s.NewSelfClientConfig(privilegedLoopbackToken)
 	if err != nil {
 		glog.Fatalf("Failed to create clientset: %v", err)
@@ -295,6 +247,23 @@ func Run(s *options.APIServer) error {
 	if err != nil {
 		glog.Errorf("Failed to create clientset: %v", err)
 	}
+	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
+
+	authorizationConfig := authorizer.AuthorizationConfig{
+		PolicyFile:                  s.AuthorizationPolicyFile,
+		WebhookConfigFile:           s.AuthorizationWebhookConfigFile,
+		WebhookCacheAuthorizedTTL:   s.AuthorizationWebhookCacheAuthorizedTTL,
+		WebhookCacheUnauthorizedTTL: s.AuthorizationWebhookCacheUnauthorizedTTL,
+		RBACSuperUser:               s.AuthorizationRBACSuperUser,
+		InformerFactory:             sharedInformers,
+	}
+	authorizationModeNames := strings.Split(s.AuthorizationMode, ",")
+	apiAuthorizer, err := authorizer.NewAuthorizerFromAuthorizationConfig(authorizationModeNames, authorizationConfig)
+	if err != nil {
+		glog.Fatalf("Invalid Authorization Config: %v", err)
+	}
+
+	admissionControlPluginNames := strings.Split(s.AdmissionControl, ",")
 
 	// TODO(dims): We probably need to add an option "EnableLoopbackToken"
 	if apiAuthenticator != nil {
@@ -313,16 +282,20 @@ func Run(s *options.APIServer) error {
 		apiAuthorizer = authorizerunion.New(tokenAuthorizer, apiAuthorizer)
 	}
 
-	sharedInformers := informers.NewSharedInformerFactory(client, 10*time.Minute)
-	pluginInitializer := admission.NewPluginInitializer(sharedInformers)
+	pluginInitializer := admission.NewPluginInitializer(sharedInformers, apiAuthorizer)
 
 	admissionController, err := admission.NewFromPlugins(client, admissionControlPluginNames, s.AdmissionControlConfigFile, pluginInitializer)
 	if err != nil {
 		glog.Fatalf("Failed to initialize plugins: %v", err)
 	}
 
-	genericConfig := genericapiserver.NewConfig(s.ServerRunOptions)
-	// TODO: Move the following to generic api server as well.
+	proxyTransport := utilnet.SetTransportDefaults(&http.Transport{
+		Dial:            proxyDialerFn,
+		TLSClientConfig: proxyTLSClientConfig,
+	})
+	kubeVersion := version.Get()
+
+	genericConfig.Version = &kubeVersion
 	genericConfig.LoopbackClientConfig = selfClientConfig
 	genericConfig.Authenticator = apiAuthenticator
 	genericConfig.SupportsBasicAuth = len(s.BasicAuthFile) > 0
@@ -331,24 +304,23 @@ func Run(s *options.APIServer) error {
 	genericConfig.AdmissionControl = admissionController
 	genericConfig.APIResourceConfigSource = storageFactory.APIResourceConfigSource
 	genericConfig.MasterServiceNamespace = s.MasterServiceNamespace
-	genericConfig.ProxyDialer = proxyDialerFn
-	genericConfig.ProxyTLSClientConfig = proxyTLSClientConfig
-	genericConfig.Serializer = api.Codecs
-	genericConfig.OpenAPIInfo.Title = "Kubernetes"
-	genericConfig.OpenAPIDefinitions = openapi.OpenAPIDefinitions
+	genericConfig.OpenAPIConfig.Info.Title = "Kubernetes"
+	genericConfig.OpenAPIConfig.Definitions = generatedopenapi.OpenAPIDefinitions
 	genericConfig.EnableOpenAPISupport = true
+	genericConfig.OpenAPIConfig.SecurityDefinitions = securityDefinitions
 
 	config := &master.Config{
-		GenericConfig: genericConfig,
+		GenericConfig: genericConfig.Config,
 
 		StorageFactory:          storageFactory,
 		EnableWatchCache:        s.EnableWatchCache,
 		EnableCoreControllers:   true,
 		DeleteCollectionWorkers: s.DeleteCollectionWorkers,
 		EventTTL:                s.EventTTL,
-		KubeletClient:           kubeletClient,
+		KubeletClientConfig:     s.KubeletConfig,
 		EnableUISupport:         true,
 		EnableLogsSupport:       true,
+		ProxyTransport:          proxyTransport,
 
 		Tunneler: tunneler,
 	}
@@ -365,6 +337,6 @@ func Run(s *options.APIServer) error {
 	}
 
 	sharedInformers.Start(wait.NeverStop)
-	m.Run()
+	m.GenericAPIServer.PrepareRun().Run()
 	return nil
 }

@@ -25,7 +25,9 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/go-openapi/spec"
 
+	genericmux "k8s.io/kubernetes/pkg/genericapiserver/mux"
 	"k8s.io/kubernetes/pkg/genericapiserver/openapi/common"
+	"k8s.io/kubernetes/pkg/util"
 	"k8s.io/kubernetes/pkg/util/json"
 )
 
@@ -33,39 +35,18 @@ const (
 	OpenAPIVersion = "2.0"
 )
 
-// Config is set of configuration for openAPI spec generation.
-type Config struct {
-	// Path to the spec file. by convention, it should name [.*/]*/swagger.json
-	OpenAPIServePath string
-	// List of web services for this API spec
-	WebServices []*restful.WebService
-
-	// List of supported protocols such as https, http, etc.
-	ProtocolList []string
-
-	// Info is general information about the API.
-	Info *spec.Info
-	// DefaultResponse will be used if an operation does not have any responses listed. It
-	// will show up as ... "responses" : {"default" : $DefaultResponse} in the spec.
-	DefaultResponse *spec.Response
-	// List of webservice's path prefixes to ignore
-	IgnorePrefixes []string
-
-	// OpenAPIDefinitions should provide definition for all models used by routes. Failure to provide this map
-	// or any of the models will result in spec generation failure.
-	OpenAPIDefinitions *common.OpenAPIDefinitions
-}
-
 type openAPI struct {
-	config       *Config
+	config       *common.Config
 	swagger      *spec.Swagger
 	protocolList []string
+	servePath    string
 }
 
 // RegisterOpenAPIService registers a handler to provides standard OpenAPI specification.
-func RegisterOpenAPIService(config *Config, containers *restful.Container) (err error) {
+func RegisterOpenAPIService(servePath string, webServices []*restful.WebService, config *common.Config, container *genericmux.APIContainer) (err error) {
 	o := openAPI{
-		config: config,
+		config:    config,
+		servePath: servePath,
 		swagger: &spec.Swagger{
 			SwaggerProps: spec.SwaggerProps{
 				Swagger:     OpenAPIVersion,
@@ -76,14 +57,14 @@ func RegisterOpenAPIService(config *Config, containers *restful.Container) (err 
 		},
 	}
 
-	err = o.init()
+	err = o.init(webServices)
 	if err != nil {
 		return err
 	}
 
-	containers.ServeMux.HandleFunc(config.OpenAPIServePath, func(w http.ResponseWriter, r *http.Request) {
+	container.SecretRoutes.HandleFunc(servePath, func(w http.ResponseWriter, r *http.Request) {
 		resp := restful.NewResponse(w)
-		if r.URL.Path != config.OpenAPIServePath {
+		if r.URL.Path != servePath {
 			resp.WriteErrorString(http.StatusNotFound, "Path not found!")
 		}
 		// TODO: we can cache json string and return it here.
@@ -92,10 +73,22 @@ func RegisterOpenAPIService(config *Config, containers *restful.Container) (err 
 	return nil
 }
 
-func (o *openAPI) init() error {
-	err := o.buildPaths()
+func (o *openAPI) init(webServices []*restful.WebService) error {
+	if o.config.GetOperationIDAndTags == nil {
+		o.config.GetOperationIDAndTags = func(_ string, r *restful.Route) (string, []string, error) {
+			return r.Operation, nil, nil
+		}
+	}
+	if o.config.CommonResponses == nil {
+		o.config.CommonResponses = map[int]spec.Response{}
+	}
+	err := o.buildPaths(webServices)
 	if err != nil {
 		return err
+	}
+	if o.config.SecurityDefinitions != nil {
+		o.swagger.SecurityDefinitions = *o.config.SecurityDefinitions
+		o.swagger.Security = o.config.DefaultSecurity
 	}
 	return nil
 }
@@ -104,7 +97,7 @@ func (o *openAPI) buildDefinitionRecursively(name string) error {
 	if _, ok := o.swagger.Definitions[name]; ok {
 		return nil
 	}
-	if item, ok := (*o.config.OpenAPIDefinitions)[name]; ok {
+	if item, ok := (*o.config.Definitions)[name]; ok {
 		o.swagger.Definitions[name] = item.Schema
 		for _, v := range item.Dependencies {
 			if err := o.buildDefinitionRecursively(v); err != nil {
@@ -133,20 +126,10 @@ func (o *openAPI) buildDefinitionForType(sample interface{}) (string, error) {
 }
 
 // buildPaths builds OpenAPI paths using go-restful's web services.
-func (o *openAPI) buildPaths() error {
-	pathsToIgnore := createTrie(o.config.IgnorePrefixes)
-	duplicateOpId := make(map[string]bool)
-	// Find duplicate operation IDs.
-	for _, service := range o.config.WebServices {
-		if pathsToIgnore.HasPrefix(service.RootPath()) {
-			continue
-		}
-		for _, route := range service.Routes() {
-			_, exists := duplicateOpId[route.Operation]
-			duplicateOpId[route.Operation] = exists
-		}
-	}
-	for _, w := range o.config.WebServices {
+func (o *openAPI) buildPaths(webServices []*restful.WebService) error {
+	pathsToIgnore := util.CreateTrie(o.config.IgnorePrefixes)
+	duplicateOpId := make(map[string]string)
+	for _, w := range webServices {
 		rootPath := w.RootPath()
 		if pathsToIgnore.HasPrefix(rootPath) {
 			continue
@@ -190,11 +173,11 @@ func (o *openAPI) buildPaths() error {
 				if err != nil {
 					return err
 				}
-				if duplicateOpId[op.ID] {
-					// Repeated Operation IDs are not allowed in OpenAPI spec but if
-					// an OperationID is empty, client generators will infer the ID
-					// from the path and method of operation.
-					op.ID = ""
+				dpath, exists := duplicateOpId[op.ID]
+				if exists {
+					return fmt.Errorf("Duplicate Operation ID %v for path %v and %v.", op.ID, dpath, path)
+				} else {
+					duplicateOpId[op.ID] = path
 				}
 				switch strings.ToUpper(route.Method) {
 				case "GET":
@@ -226,7 +209,6 @@ func (o *openAPI) buildOperations(route restful.Route, inPathCommonParamsMap map
 			Description: route.Doc,
 			Consumes:    route.Consumes,
 			Produces:    route.Produces,
-			ID:          route.Operation,
 			Schemes:     o.config.ProtocolList,
 			Responses: &spec.Responses{
 				ResponsesProps: spec.ResponsesProps{
@@ -234,6 +216,9 @@ func (o *openAPI) buildOperations(route restful.Route, inPathCommonParamsMap map
 				},
 			},
 		},
+	}
+	if ret.ID, ret.Tags, err = o.config.GetOperationIDAndTags(o.servePath, &route); err != nil {
+		return ret, err
 	}
 
 	// Build responses
@@ -248,6 +233,11 @@ func (o *openAPI) buildOperations(route restful.Route, inPathCommonParamsMap map
 		ret.Responses.StatusCodeResponses[http.StatusOK], err = o.buildResponse(route.WriteSample, "OK")
 		if err != nil {
 			return ret, err
+		}
+	}
+	for code, resp := range o.config.CommonResponses {
+		if _, exists := ret.Responses.StatusCodeResponses[code]; !exists {
+			ret.Responses.StatusCodeResponses[code] = resp
 		}
 	}
 	// If there is still no response, use default response provided.

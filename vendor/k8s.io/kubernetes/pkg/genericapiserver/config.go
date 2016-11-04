@@ -17,7 +17,6 @@ limitations under the License.
 package genericapiserver
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -25,6 +24,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -36,8 +36,8 @@ import (
 	"k8s.io/kubernetes/pkg/admission"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/apiserver"
 	apiserverfilters "k8s.io/kubernetes/pkg/apiserver/filters"
+	apiserveropenapi "k8s.io/kubernetes/pkg/apiserver/openapi"
 	"k8s.io/kubernetes/pkg/apiserver/request"
 	"k8s.io/kubernetes/pkg/auth/authenticator"
 	"k8s.io/kubernetes/pkg/auth/authorizer"
@@ -52,8 +52,18 @@ import (
 	genericvalidation "k8s.io/kubernetes/pkg/genericapiserver/validation"
 	ipallocator "k8s.io/kubernetes/pkg/registry/core/service/ipallocator"
 	"k8s.io/kubernetes/pkg/runtime"
+	certutil "k8s.io/kubernetes/pkg/util/cert"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 	"k8s.io/kubernetes/pkg/util/sets"
+	"k8s.io/kubernetes/pkg/version"
+)
+
+const (
+	// DefaultLegacyAPIPrefix is where the the legacy APIs will be located.
+	DefaultLegacyAPIPrefix = "/api"
+
+	// APIGroupPrefix is where non-legacy API group will be located.
+	APIGroupPrefix = "/apis"
 )
 
 // Config is a structure used to configure a GenericAPIServer.
@@ -71,12 +81,12 @@ type Config struct {
 	// allow downstream consumers to disable the index route
 	EnableIndex             bool
 	EnableProfiling         bool
-	EnableVersion           bool
 	EnableGarbageCollection bool
-	APIPrefix               string
-	APIGroupPrefix          string
-	CorsAllowedOriginList   []string
-	Authenticator           authenticator.Request
+
+	Version               *version.Info
+	APIGroupPrefix        string
+	CorsAllowedOriginList []string
+	Authenticator         authenticator.Request
 	// TODO(roberthbailey): Remove once the server no longer supports http basic auth.
 	SupportsBasicAuth      bool
 	Authorizer             authorizer.Authorizer
@@ -117,10 +127,6 @@ type Config struct {
 	// If nil or 0.0.0.0, the host's default interface will be used.
 	PublicAddress net.IP
 
-	// Control the interval that pod, node IP, and node heath status caches
-	// expire.
-	CacheTimeout time.Duration
-
 	// The range of IPs to be assigned to services with type=ClusterIP or greater
 	ServiceClusterIPRange *net.IPNet
 
@@ -132,10 +138,6 @@ type Config struct {
 
 	// The range of ports to be assigned to services with type=NodePort or greater
 	ServiceNodePortRange utilnet.PortRange
-
-	// Used to customize default proxy dial/tls options
-	ProxyDialer          apiserver.ProxyDialerFunc
-	ProxyTLSClientConfig *tls.Config
 
 	// Additional ports to be exposed on the GenericAPIServer service
 	// extraServicePorts is injectable in the event that more ports
@@ -156,15 +158,8 @@ type Config struct {
 	// EnableOpenAPISupport enables OpenAPI support. Allow downstream customers to disable OpenAPI spec.
 	EnableOpenAPISupport bool
 
-	// OpenAPIInfo will be directly available as Info section of Open API spec.
-	OpenAPIInfo spec.Info
-
-	// OpenAPIDefaultResponse will be used if an web service operation does not have any responses listed.
-	OpenAPIDefaultResponse spec.Response
-
-	// OpenAPIDefinitions is a map of type to OpenAPI spec for all types used in this API server. Failure to provide
-	// this map or any of the models used by the server APIs will result in spec generation failure.
-	OpenAPIDefinitions *common.OpenAPIDefinitions
+	// OpenAPIConfig will be used in generating OpenAPI spec.
+	OpenAPIConfig *common.Config
 
 	// MaxRequestsInFlight is the maximum number of parallel non-long-running requests. Every further
 	// request has to wait.
@@ -175,6 +170,10 @@ type Config struct {
 
 	// Build the handler chains by decorating the apiHandler.
 	BuildHandlerChainsFunc func(apiHandler http.Handler, c *Config) (secure, insecure http.Handler)
+
+	// LegacyAPIGroupPrefixes is used to set up URL parsing for authorization and for validating requests
+	// to InstallLegacyAPIGroup
+	LegacyAPIGroupPrefixes sets.String
 }
 
 type ServingInfo struct {
@@ -195,12 +194,54 @@ type CertInfo struct {
 	Generate bool
 }
 
-func NewConfig(options *options.ServerRunOptions) *Config {
-	longRunningRE := regexp.MustCompile(options.LongRunningRequestRE)
+// NewConfig returns a Config struct with the default values
+func NewConfig() *Config {
+	longRunningRE := regexp.MustCompile(options.DefaultLongRunningRequestRE)
 
-	var auditWriter io.Writer
+	config := &Config{
+		Serializer:             api.Codecs,
+		MasterCount:            1,
+		ReadWritePort:          6443,
+		ServiceReadWritePort:   443,
+		RequestContextMapper:   api.NewRequestContextMapper(),
+		BuildHandlerChainsFunc: DefaultBuildHandlerChain,
+		LegacyAPIGroupPrefixes: sets.NewString(DefaultLegacyAPIPrefix),
+
+		EnableIndex:          true,
+		EnableSwaggerSupport: true,
+		OpenAPIConfig: &common.Config{
+			ProtocolList:   []string{"https"},
+			IgnorePrefixes: []string{"/swaggerapi"},
+			Info: &spec.Info{
+				InfoProps: spec.InfoProps{
+					Title:   "Generic API Server",
+					Version: "unversioned",
+				},
+			},
+			DefaultResponse: &spec.Response{
+				ResponseProps: spec.ResponseProps{
+					Description: "Default Response.",
+				},
+			},
+			GetOperationIDAndTags: apiserveropenapi.GetOperationIDAndTags,
+		},
+		LongRunningFunc: genericfilters.BasicLongRunningRequestCheck(longRunningRE, map[string]string{"watch": "true"}),
+	}
+
+	// this keeps the defaults in sync
+	defaultOptions := options.NewServerRunOptions()
+	// unset fields that can be overridden to avoid setting values so that we won't end up with lingering values.
+	// TODO we probably want to run the defaults the other way.  A default here drives it in the CLI flags
+	defaultOptions.SecurePort = 0
+	defaultOptions.InsecurePort = 0
+	defaultOptions.AuditLogPath = ""
+	return config.ApplyOptions(defaultOptions)
+}
+
+// ApplyOptions applies the run options to the method receiver and returns self
+func (c *Config) ApplyOptions(options *options.ServerRunOptions) *Config {
 	if len(options.AuditLogPath) != 0 {
-		auditWriter = &lumberjack.Logger{
+		c.AuditWriter = &lumberjack.Logger{
 			Filename:   options.AuditLogPath,
 			MaxAge:     options.AuditLogMaxAge,
 			MaxBackups: options.AuditLogMaxBackups,
@@ -208,9 +249,8 @@ func NewConfig(options *options.ServerRunOptions) *Config {
 		}
 	}
 
-	var secureServingInfo *ServingInfo
 	if options.SecurePort > 0 {
-		secureServingInfo = &ServingInfo{
+		secureServingInfo := &ServingInfo{
 			BindAddress: net.JoinHostPort(options.BindAddress.String(), strconv.Itoa(options.SecurePort)),
 			ServerCert: CertInfo{
 				CertFile: options.TLSCertFile,
@@ -223,57 +263,42 @@ func NewConfig(options *options.ServerRunOptions) *Config {
 			secureServingInfo.ServerCert.CertFile = path.Join(options.CertDirectory, "apiserver.crt")
 			secureServingInfo.ServerCert.KeyFile = path.Join(options.CertDirectory, "apiserver.key")
 		}
+
+		c.SecureServingInfo = secureServingInfo
+		c.ReadWritePort = options.SecurePort
 	}
 
-	var insecureServingInfo *ServingInfo
 	if options.InsecurePort > 0 {
-		insecureServingInfo = &ServingInfo{
+		insecureServingInfo := &ServingInfo{
 			BindAddress: net.JoinHostPort(options.InsecureBindAddress.String(), strconv.Itoa(options.InsecurePort)),
 		}
+		c.InsecureServingInfo = insecureServingInfo
 	}
 
-	return &Config{
-		APIGroupPrefix:            options.APIGroupPrefix,
-		APIPrefix:                 options.APIPrefix,
-		CorsAllowedOriginList:     options.CorsAllowedOriginList,
-		AuditWriter:               auditWriter,
-		EnableGarbageCollection:   options.EnableGarbageCollection,
-		EnableIndex:               true,
-		EnableProfiling:           options.EnableProfiling,
-		EnableSwaggerSupport:      true,
-		EnableSwaggerUI:           options.EnableSwaggerUI,
-		EnableVersion:             true,
-		ExternalHost:              options.ExternalHost,
-		KubernetesServiceNodePort: options.KubernetesServiceNodePort,
-		MasterCount:               options.MasterCount,
-		MinRequestTimeout:         options.MinRequestTimeout,
-		SecureServingInfo:         secureServingInfo,
-		InsecureServingInfo:       insecureServingInfo,
-		PublicAddress:             options.AdvertiseAddress,
-		ReadWritePort:             options.SecurePort,
-		ServiceClusterIPRange:     &options.ServiceClusterIPRange,
-		ServiceNodePortRange:      options.ServiceNodePortRange,
-		OpenAPIDefaultResponse: spec.Response{
-			ResponseProps: spec.ResponseProps{
-				Description: "Default Response."}},
-		OpenAPIInfo: spec.Info{
-			InfoProps: spec.InfoProps{
-				Title:   "Generic API Server",
-				Version: "unversioned",
-			},
-		},
-		MaxRequestsInFlight: options.MaxRequestsInFlight,
-		LongRunningFunc:     genericfilters.BasicLongRunningRequestCheck(longRunningRE, map[string]string{"watch": "true"}),
-	}
+	c.CorsAllowedOriginList = options.CorsAllowedOriginList
+	c.EnableGarbageCollection = options.EnableGarbageCollection
+	c.EnableProfiling = options.EnableProfiling
+	c.EnableSwaggerUI = options.EnableSwaggerUI
+	c.ExternalHost = options.ExternalHost
+	c.KubernetesServiceNodePort = options.KubernetesServiceNodePort
+	c.MasterCount = options.MasterCount
+	c.MinRequestTimeout = options.MinRequestTimeout
+	c.PublicAddress = options.AdvertiseAddress
+	c.ServiceClusterIPRange = &options.ServiceClusterIPRange
+	c.ServiceNodePortRange = options.ServiceNodePortRange
+	c.MaxRequestsInFlight = options.MaxRequestsInFlight
+
+	return c
 }
 
 type completedConfig struct {
 	*Config
 }
 
-// Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
+// Complete fills in any fields not set that are required to have valid data and can be derived
+// from other fields.  If you're going to `ApplyOptions`, do that first.  It's mutating the receiver.
 func (c *Config) Complete() completedConfig {
-	if c.ServiceClusterIPRange == nil {
+	if c.ServiceClusterIPRange == nil || c.ServiceClusterIPRange.IP == nil {
 		defaultNet := "10.0.0.0/24"
 		glog.Warningf("Network range for service cluster IPs is unspecified. Defaulting to %v.", defaultNet)
 		_, serviceClusterIPRange, err := net.ParseCIDR(defaultNet)
@@ -294,9 +319,6 @@ func (c *Config) Complete() completedConfig {
 		glog.V(4).Infof("Setting GenericAPIServer service IP to %q (read-write).", serviceReadWriteIP)
 		c.ServiceReadWriteIP = serviceReadWriteIP
 	}
-	if c.ServiceReadWritePort == 0 {
-		c.ServiceReadWritePort = 443
-	}
 	if c.ServiceNodePortRange.Size == 0 {
 		// TODO: Currently no way to specify an empty range (do we need to allow this?)
 		// We should probably allow this for clouds that don't require NodePort to do load-balancing (GCE)
@@ -305,19 +327,6 @@ func (c *Config) Complete() completedConfig {
 		c.ServiceNodePortRange = options.DefaultServiceNodePortRange
 		glog.Infof("Node port range unspecified. Defaulting to %v.", c.ServiceNodePortRange)
 	}
-	if c.MasterCount == 0 {
-		// Clearly, there will be at least one GenericAPIServer.
-		c.MasterCount = 1
-	}
-	if c.ReadWritePort == 0 {
-		c.ReadWritePort = 6443
-	}
-	if c.CacheTimeout == 0 {
-		c.CacheTimeout = 5 * time.Second
-	}
-	if c.RequestContextMapper == nil {
-		c.RequestContextMapper = api.NewRequestContextMapper()
-	}
 	if len(c.ExternalHost) == 0 && c.PublicAddress != nil {
 		hostAndPort := c.PublicAddress.String()
 		if c.ReadWritePort != 0 {
@@ -325,8 +334,27 @@ func (c *Config) Complete() completedConfig {
 		}
 		c.ExternalHost = hostAndPort
 	}
-	if c.BuildHandlerChainsFunc == nil {
-		c.BuildHandlerChainsFunc = DefaultBuildHandlerChain
+	// All APIs will have the same authentication for now.
+	if c.OpenAPIConfig != nil && c.OpenAPIConfig.SecurityDefinitions != nil {
+		c.OpenAPIConfig.DefaultSecurity = []map[string][]string{}
+		keys := []string{}
+		for k := range *c.OpenAPIConfig.SecurityDefinitions {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			c.OpenAPIConfig.DefaultSecurity = append(c.OpenAPIConfig.DefaultSecurity, map[string][]string{k: {}})
+		}
+		if c.OpenAPIConfig.CommonResponses == nil {
+			c.OpenAPIConfig.CommonResponses = map[int]spec.Response{}
+		}
+		if _, exists := c.OpenAPIConfig.CommonResponses[http.StatusUnauthorized]; !exists {
+			c.OpenAPIConfig.CommonResponses[http.StatusUnauthorized] = spec.Response{
+				ResponseProps: spec.ResponseProps{
+					Description: "Unauthorized",
+				},
+			}
+		}
 	}
 	return completedConfig{c}
 }
@@ -364,14 +392,12 @@ func (c completedConfig) New() (*GenericAPIServer, error) {
 	}
 
 	s := &GenericAPIServer{
-		ServiceClusterIPRange: c.ServiceClusterIPRange,
-		ServiceNodePortRange:  c.ServiceNodePortRange,
-		LoopbackClientConfig:  c.LoopbackClientConfig,
-		legacyAPIPrefix:       c.APIPrefix,
-		apiPrefix:             c.APIGroupPrefix,
-		admissionControl:      c.AdmissionControl,
-		requestContextMapper:  c.RequestContextMapper,
-		Serializer:            c.Serializer,
+		ServiceClusterIPRange:  c.ServiceClusterIPRange,
+		LoopbackClientConfig:   c.LoopbackClientConfig,
+		legacyAPIGroupPrefixes: c.LegacyAPIGroupPrefixes,
+		admissionControl:       c.AdmissionControl,
+		requestContextMapper:   c.RequestContextMapper,
+		Serializer:             c.Serializer,
 
 		minRequestTimeout:    time.Duration(c.MinRequestTimeout) * time.Second,
 		enableSwaggerSupport: c.EnableSwaggerSupport,
@@ -380,36 +406,42 @@ func (c completedConfig) New() (*GenericAPIServer, error) {
 		SecureServingInfo:    c.SecureServingInfo,
 		InsecureServingInfo:  c.InsecureServingInfo,
 		ExternalAddress:      c.ExternalHost,
-		ClusterIP:            c.PublicAddress,
-		PublicReadWritePort:  c.ReadWritePort,
 		ServiceReadWriteIP:   c.ServiceReadWriteIP,
 		ServiceReadWritePort: c.ServiceReadWritePort,
-		ExtraServicePorts:    c.ExtraServicePorts,
-		ExtraEndpointPorts:   c.ExtraEndpointPorts,
 
 		KubernetesServiceNodePort: c.KubernetesServiceNodePort,
 		apiGroupsForDiscovery:     map[string]unversioned.APIGroup{},
 
-		enableOpenAPISupport:   c.EnableOpenAPISupport,
-		openAPIInfo:            c.OpenAPIInfo,
-		openAPIDefaultResponse: c.OpenAPIDefaultResponse,
-		openAPIDefinitions:     c.OpenAPIDefinitions,
+		enableOpenAPISupport: c.EnableOpenAPISupport,
+		openAPIConfig:        c.OpenAPIConfig,
 	}
 
 	s.HandlerContainer = mux.NewAPIContainer(http.NewServeMux(), c.Serializer)
-
-	if c.ProxyDialer != nil || c.ProxyTLSClientConfig != nil {
-		s.ProxyTransport = utilnet.SetTransportDefaults(&http.Transport{
-			Dial:            c.ProxyDialer,
-			TLSClientConfig: c.ProxyTLSClientConfig,
-		})
-	}
 
 	s.installAPI(c.Config)
 
 	s.Handler, s.InsecureHandler = c.BuildHandlerChainsFunc(s.HandlerContainer.ServeMux, c.Config)
 
 	return s, nil
+}
+
+// MaybeGenerateServingCerts generates serving certificates if requested and needed.
+func (c completedConfig) MaybeGenerateServingCerts() error {
+	// It would be nice to set a fqdn subject alt name, but only the kubelets know, the apiserver is clueless
+	// alternateDNS = append(alternateDNS, "kubernetes.default.svc.CLUSTER.DNS.NAME")
+	if c.SecureServingInfo != nil && c.SecureServingInfo.ServerCert.Generate && !certutil.CanReadCertOrKey(c.SecureServingInfo.ServerCert.CertFile, c.SecureServingInfo.ServerCert.KeyFile) {
+		// TODO (cjcullen): Is ClusterIP the right address to sign a cert with?
+		alternateIPs := []net.IP{c.ServiceReadWriteIP}
+		alternateDNS := []string{"kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
+
+		if err := certutil.GenerateSelfSignedCert(c.PublicAddress.String(), c.SecureServingInfo.ServerCert.CertFile, c.SecureServingInfo.ServerCert.KeyFile, alternateIPs, alternateDNS); err != nil {
+			return fmt.Errorf("Unable to generate self signed cert: %v", err)
+		} else {
+			glog.Infof("Generated self-signed cert (%s, %s)", c.SecureServingInfo.ServerCert.CertFile, c.SecureServingInfo.ServerCert.KeyFile)
+		}
+	}
+
+	return nil
 }
 
 func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) (secure, insecure http.Handler) {
@@ -448,9 +480,7 @@ func (s *GenericAPIServer) installAPI(c *Config) {
 	if c.EnableProfiling {
 		routes.Profiling{}.Install(s.HandlerContainer)
 	}
-	if c.EnableVersion {
-		routes.Version{}.Install(s.HandlerContainer)
-	}
+	routes.Version{Version: c.Version}.Install(s.HandlerContainer)
 	s.HandlerContainer.Add(s.DynamicApisDiscovery())
 }
 
@@ -505,8 +535,15 @@ func DefaultAndValidateRunOptions(options *options.ServerRunOptions) {
 }
 
 func NewRequestInfoResolver(c *Config) *request.RequestInfoFactory {
+	apiPrefixes := sets.NewString(strings.Trim(APIGroupPrefix, "/")) // all possible API prefixes
+	legacyAPIPrefixes := sets.String{}                               // APIPrefixes that won't have groups (legacy)
+	for legacyAPIPrefix := range c.LegacyAPIGroupPrefixes {
+		apiPrefixes.Insert(strings.Trim(legacyAPIPrefix, "/"))
+		legacyAPIPrefixes.Insert(strings.Trim(legacyAPIPrefix, "/"))
+	}
+
 	return &request.RequestInfoFactory{
-		APIPrefixes:          sets.NewString(strings.Trim(c.APIPrefix, "/"), strings.Trim(c.APIGroupPrefix, "/")), // all possible API prefixes
-		GrouplessAPIPrefixes: sets.NewString(strings.Trim(c.APIPrefix, "/")),                                      // APIPrefixes that won't have groups (legacy)
+		APIPrefixes:          apiPrefixes,
+		GrouplessAPIPrefixes: legacyAPIPrefixes,
 	}
 }

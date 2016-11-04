@@ -71,7 +71,7 @@ func (ds *dockerService) RunPodSandbox(config *runtimeApi.PodSandboxConfig) (str
 	// Step 3: Start the sandbox container.
 	// Assume kubelet's garbage collector would remove the sandbox later, if
 	// startContainer failed.
-	err = ds.StartContainer(createResp.ID)
+	err = ds.client.StartContainer(createResp.ID)
 	return createResp.ID, err
 }
 
@@ -102,7 +102,7 @@ func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeApi.PodS
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse timestamp for container %q: %v", podSandboxID, err)
 	}
-	ct := createdAt.Unix()
+	ct := createdAt.UnixNano()
 
 	// Translate container to sandbox state.
 	state := runtimeApi.PodSandBoxState_NOTREADY
@@ -224,6 +224,13 @@ func (ds *dockerService) makeSandboxDockerConfig(c *runtimeApi.PodSandboxConfig,
 		HostConfig: hc,
 	}
 
+	// Set sysctls if requested
+	sysctls, err := getSysctlsFromAnnotations(c.Annotations)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get sysctls from annotations %v for sandbox %q: %v", c.Annotations, c.Metadata.GetName(), err)
+	}
+	hc.Sysctls = sysctls
+
 	// Apply linux-specific options.
 	if lc := c.GetLinux(); lc != nil {
 		// Apply Cgroup options.
@@ -265,7 +272,6 @@ func (ds *dockerService) makeSandboxDockerConfig(c *runtimeApi.PodSandboxConfig,
 	setSandboxResources(hc)
 
 	// Set security options.
-	var err error
 	hc.SecurityOpt, err = getSandboxSecurityOpts(c, ds.seccompProfileRoot)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate sandbox security options for sandbox %q: %v", c.Metadata.GetName(), err)
