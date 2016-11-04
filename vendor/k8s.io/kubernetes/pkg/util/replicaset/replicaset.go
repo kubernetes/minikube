@@ -85,7 +85,7 @@ func UpdateRSWithRetries(rsClient unversionedextensions.ReplicaSetInterface, rs 
 }
 
 // GetPodTemplateSpecHash returns the pod template hash of a ReplicaSet's pod template space
-func GetPodTemplateSpecHash(rs extensions.ReplicaSet) string {
+func GetPodTemplateSpecHash(rs *extensions.ReplicaSet) string {
 	meta := rs.Spec.Template.ObjectMeta
 	meta.Labels = labelsutil.CloneAndRemoveLabel(meta.Labels, extensions.DefaultDeploymentUniqueLabelKey)
 	return fmt.Sprintf("%d", podutil.GetPodTemplateSpecHash(api.PodTemplateSpec{
@@ -107,26 +107,4 @@ func MatchingPodsFunc(rs *extensions.ReplicaSet) (func(api.Pod) bool, error) {
 		podLabelsSelector := labels.Set(pod.ObjectMeta.Labels)
 		return selector.Matches(podLabelsSelector)
 	}, nil
-}
-
-// ReplicaSetIsInactive returns a condition that will be true when a replica set is inactive ie.
-// it has zero running replicas.
-func ReplicaSetIsInactive(c unversionedextensions.ExtensionsInterface, replicaSet *extensions.ReplicaSet) wait.ConditionFunc {
-
-	// If we're given a ReplicaSet where the status lags the spec, it either means that the
-	// ReplicaSet is stale, or that the ReplicaSet manager hasn't noticed the update yet.
-	// Polling status.Replicas is not safe in the latter case.
-	desiredGeneration := replicaSet.Generation
-
-	return func() (bool, error) {
-		rs, err := c.ReplicaSets(replicaSet.Namespace).Get(replicaSet.Name)
-		if err != nil {
-			return false, err
-		}
-
-		return rs.Status.ObservedGeneration >= desiredGeneration &&
-			rs.Spec.Replicas == 0 &&
-			rs.Status.Replicas == 0 &&
-			rs.Status.FullyLabeledReplicas == 0, nil
-	}
 }

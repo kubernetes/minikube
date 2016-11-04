@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	gcfg "gopkg.in/gcfg.v1"
+	"gopkg.in/gcfg.v1"
 
 	"k8s.io/kubernetes/pkg/api"
 	apiservice "k8s.io/kubernetes/pkg/api/service"
@@ -40,6 +40,7 @@ import (
 	netsets "k8s.io/kubernetes/pkg/util/net/sets"
 	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/volume"
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/golang/glog"
@@ -121,16 +122,16 @@ const (
 
 // Disks is interface for manipulation with GCE PDs.
 type Disks interface {
-	// AttachDisk attaches given disk to given instance. Current instance
-	// is used when instanceID is empty string.
-	AttachDisk(diskName, instanceID string, readOnly bool) error
+	// AttachDisk attaches given disk to the node with the specified NodeName.
+	// Current instance is used when instanceID is empty string.
+	AttachDisk(diskName string, nodeName types.NodeName, readOnly bool) error
 
-	// DetachDisk detaches given disk to given instance. Current instance
-	// is used when instanceID is empty string.
-	DetachDisk(devicePath, instanceID string) error
+	// DetachDisk detaches given disk to the node with the specified NodeName.
+	// Current instance is used when nodeName is empty string.
+	DetachDisk(devicePath string, nodeName types.NodeName) error
 
-	// DiskIsAttached checks if a disk is attached to the given node.
-	DiskIsAttached(diskName, instanceID string) (bool, error)
+	// DiskIsAttached checks if a disk is attached to the node with the specified NodeName.
+	DiskIsAttached(diskName string, nodeName types.NodeName) (bool, error)
 
 	// CreateDisk creates a new PD with given properties. Tags are serialized
 	// as JSON into Description field.
@@ -735,9 +736,7 @@ func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *api.Serv
 			// This logic exists to detect a transition for a pre-existing service and turn on
 			// the tpNeedsUpdate flag to delete/recreate fwdrule/tpool adding the health check
 			// to the target pool.
-			glog.V(2).Infof("Annotation %s=%s added to new or pre-existing service",
-				apiservice.AnnotationExternalTraffic,
-				apiservice.AnnotationValueExternalTrafficLocal)
+			glog.V(2).Infof("Annotation external-traffic=OnlyLocal added to new or pre-existing service")
 			tpNeedsUpdate = true
 		}
 		hcToCreate, err = gce.ensureHttpHealthCheck(loadBalancerName, path, healthCheckNodePort)
@@ -1447,6 +1446,23 @@ func (gce *GCECloud) deleteForwardingRule(name, region string) error {
 	return nil
 }
 
+func (gce *GCECloud) DeleteForwardingRule(name string) error {
+	region, err := GetGCERegion(gce.localZone)
+	if err != nil {
+		return err
+	}
+	return gce.deleteForwardingRule(name, region)
+}
+
+// DeleteTargetPool deletes the given target pool.
+func (gce *GCECloud) DeleteTargetPool(name string, hc *compute.HttpHealthCheck) error {
+	region, err := GetGCERegion(gce.localZone)
+	if err != nil {
+		return err
+	}
+	return gce.deleteTargetPool(name, region, hc)
+}
+
 func (gce *GCECloud) deleteTargetPool(name, region string, hc *compute.HttpHealthCheck) error {
 	op, err := gce.service.TargetPools.Delete(gce.projectID, region, name).Do()
 	if err != nil && isHTTPErrorCode(err, http.StatusNotFound) {
@@ -2084,7 +2100,7 @@ func (gce *GCECloud) GetInstanceGroup(name string, zone string) (*compute.Instan
 
 // Take a GCE instance 'hostname' and break it down to something that can be fed
 // to the GCE API client library.  Basically this means reducing 'kubernetes-
-// minion-2.c.my-proj.internal' to 'kubernetes-minion-2' if necessary.
+// node-2.c.my-proj.internal' to 'kubernetes-node-2' if necessary.
 func canonicalizeInstanceName(name string) string {
 	ix := strings.Index(name, ".")
 	if ix != -1 {
@@ -2094,8 +2110,8 @@ func canonicalizeInstanceName(name string) string {
 }
 
 // Implementation of Instances.CurrentNodeName
-func (gce *GCECloud) CurrentNodeName(hostname string) (string, error) {
-	return hostname, nil
+func (gce *GCECloud) CurrentNodeName(hostname string) (types.NodeName, error) {
+	return types.NodeName(hostname), nil
 }
 
 func (gce *GCECloud) AddSSHKeyToAllInstances(user string, keyData []byte) error {
@@ -2144,7 +2160,7 @@ func (gce *GCECloud) AddSSHKeyToAllInstances(user string, keyData []byte) error 
 }
 
 // NodeAddresses is an implementation of Instances.NodeAddresses.
-func (gce *GCECloud) NodeAddresses(_ string) ([]api.NodeAddress, error) {
+func (gce *GCECloud) NodeAddresses(_ types.NodeName) ([]api.NodeAddress, error) {
 	internalIP, err := metadata.Get("instance/network-interfaces/0/ip")
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get internal IP: %v", err)
@@ -2171,11 +2187,23 @@ func (gce *GCECloud) isCurrentInstance(instanceID string) bool {
 	return currentInstanceID == canonicalizeInstanceName(instanceID)
 }
 
-// ExternalID returns the cloud provider ID of the specified instance (deprecated).
-func (gce *GCECloud) ExternalID(instance string) (string, error) {
+// mapNodeNameToInstanceName maps a k8s NodeName to a GCE Instance Name
+// This is a simple string cast.
+func mapNodeNameToInstanceName(nodeName types.NodeName) string {
+	return string(nodeName)
+}
+
+// mapInstanceToNodeName maps a GCE Instance to a k8s NodeName
+func mapInstanceToNodeName(instance *compute.Instance) types.NodeName {
+	return types.NodeName(instance.Name)
+}
+
+// ExternalID returns the cloud provider ID of the node with the specified NodeName (deprecated).
+func (gce *GCECloud) ExternalID(nodeName types.NodeName) (string, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
 	if gce.useMetadataServer {
 		// Use metadata, if possible, to fetch ID. See issue #12000
-		if gce.isCurrentInstance(instance) {
+		if gce.isCurrentInstance(instanceName) {
 			externalInstanceID, err := getCurrentExternalIDViaMetadata()
 			if err == nil {
 				return externalInstanceID, nil
@@ -2184,15 +2212,16 @@ func (gce *GCECloud) ExternalID(instance string) (string, error) {
 	}
 
 	// Fallback to GCE API call if metadata server fails to retrieve ID
-	inst, err := gce.getInstanceByName(instance)
+	inst, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		return "", err
 	}
 	return strconv.FormatUint(inst.ID, 10), nil
 }
 
-// InstanceID returns the cloud provider ID of the specified instance.
-func (gce *GCECloud) InstanceID(instanceName string) (string, error) {
+// InstanceID returns the cloud provider ID of the node with the specified NodeName.
+func (gce *GCECloud) InstanceID(nodeName types.NodeName) (string, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
 	if gce.useMetadataServer {
 		// Use metadata, if possible, to fetch ID. See issue #12000
 		if gce.isCurrentInstance(instanceName) {
@@ -2209,8 +2238,9 @@ func (gce *GCECloud) InstanceID(instanceName string) (string, error) {
 	return gce.projectID + "/" + instance.Zone + "/" + instance.Name, nil
 }
 
-// InstanceType returns the type of the specified instance.
-func (gce *GCECloud) InstanceType(instanceName string) (string, error) {
+// InstanceType returns the type of the specified node with the specified NodeName.
+func (gce *GCECloud) InstanceType(nodeName types.NodeName) (string, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
 	if gce.useMetadataServer {
 		// Use metadata, if possible, to fetch ID. See issue #12000
 		if gce.isCurrentInstance(instanceName) {
@@ -2228,8 +2258,8 @@ func (gce *GCECloud) InstanceType(instanceName string) (string, error) {
 }
 
 // List is an implementation of Instances.List.
-func (gce *GCECloud) List(filter string) ([]string, error) {
-	var instances []string
+func (gce *GCECloud) List(filter string) ([]types.NodeName, error) {
+	var instances []types.NodeName
 	// TODO: Parallelize, although O(zones) so not too bad (N <= 3 typically)
 	for _, zone := range gce.managedZones {
 		pageToken := ""
@@ -2248,7 +2278,7 @@ func (gce *GCECloud) List(filter string) ([]string, error) {
 			}
 			pageToken = res.NextPageToken
 			for _, instance := range res.Items {
-				instances = append(instances, instance.Name)
+				instances = append(instances, mapInstanceToNodeName(instance))
 			}
 		}
 		if page >= maxPages {
@@ -2348,7 +2378,9 @@ func (gce *GCECloud) ListRoutes(clusterName string) ([]*cloudprovider.Route, err
 			}
 
 			target := path.Base(r.NextHopInstance)
-			routes = append(routes, &cloudprovider.Route{Name: r.Name, TargetInstance: target, DestinationCIDR: r.DestRange})
+			// TODO: Should we lastComponent(target) this?
+			targetNodeName := types.NodeName(target) // NodeName == Instance Name on GCE
+			routes = append(routes, &cloudprovider.Route{Name: r.Name, TargetNode: targetNodeName, DestinationCIDR: r.DestRange})
 		}
 	}
 	if page >= maxPages {
@@ -2364,7 +2396,8 @@ func gceNetworkURL(project, network string) string {
 func (gce *GCECloud) CreateRoute(clusterName string, nameHint string, route *cloudprovider.Route) error {
 	routeName := truncateClusterName(clusterName) + "-" + nameHint
 
-	targetInstance, err := gce.getInstanceByName(route.TargetInstance)
+	instanceName := mapNodeNameToInstanceName(route.TargetNode)
+	targetInstance, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		return err
 	}
@@ -2416,6 +2449,19 @@ func (gce *GCECloud) encodeDiskTags(tags map[string]string) (string, error) {
 // the specified zone. It stores specified tags encoded in JSON in Description
 // field.
 func (gce *GCECloud) CreateDisk(name string, diskType string, zone string, sizeGb int64, tags map[string]string) error {
+	// Do not allow creation of PDs in zones that are not managed. Such PDs
+	// then cannot be deleted by DeleteDisk.
+	isManaged := false
+	for _, managedZone := range gce.managedZones {
+		if zone == managedZone {
+			isManaged = true
+			break
+		}
+	}
+	if !isManaged {
+		return fmt.Errorf("kubernetes does not manage zone %q", zone)
+	}
+
 	tagsStr, err := gce.encodeDiskTags(tags)
 	if err != nil {
 		return err
@@ -2446,7 +2492,7 @@ func (gce *GCECloud) CreateDisk(name string, diskType string, zone string, sizeG
 	return gce.waitForZoneOp(createOp, zone)
 }
 
-func (gce *GCECloud) DeleteDisk(diskToDelete string) error {
+func (gce *GCECloud) doDeleteDisk(diskToDelete string) error {
 	disk, err := gce.getDiskByNameUnknownZone(diskToDelete)
 	if err != nil {
 		return err
@@ -2458,6 +2504,30 @@ func (gce *GCECloud) DeleteDisk(diskToDelete string) error {
 	}
 
 	return gce.waitForZoneOp(deleteOp, disk.Zone)
+}
+
+func (gce *GCECloud) DeleteDisk(diskToDelete string) error {
+	err := gce.doDeleteDisk(diskToDelete)
+	if isGCEError(err, "resourceInUseByAnotherResource") {
+		return volume.NewDeletedVolumeInUseError(err.Error())
+	}
+	return err
+}
+
+// isGCEError returns true if given error is a googleapi.Error with given
+// reason (e.g. "resourceInUseByAnotherResource")
+func isGCEError(err error, reason string) bool {
+	apiErr, ok := err.(*googleapi.Error)
+	if !ok {
+		return false
+	}
+
+	for _, e := range apiErr.Errors {
+		if e.Reason == reason {
+			return true
+		}
+	}
+	return false
 }
 
 // Builds the labels that should be automatically added to a PersistentVolume backed by a GCE PD
@@ -2507,10 +2577,11 @@ func (gce *GCECloud) GetAutoLabelsForPD(name string, zone string) (map[string]st
 	return labels, nil
 }
 
-func (gce *GCECloud) AttachDisk(diskName, instanceID string, readOnly bool) error {
-	instance, err := gce.getInstanceByName(instanceID)
+func (gce *GCECloud) AttachDisk(diskName string, nodeName types.NodeName, readOnly bool) error {
+	instanceName := mapNodeNameToInstanceName(nodeName)
+	instance, err := gce.getInstanceByName(instanceName)
 	if err != nil {
-		return fmt.Errorf("error getting instance %q", instanceID)
+		return fmt.Errorf("error getting instance %q", instanceName)
 	}
 	disk, err := gce.getDiskByName(diskName, instance.Zone)
 	if err != nil {
@@ -2522,7 +2593,7 @@ func (gce *GCECloud) AttachDisk(diskName, instanceID string, readOnly bool) erro
 	}
 	attachedDisk := gce.convertDiskToAttachedDisk(disk, readWrite)
 
-	attachOp, err := gce.service.Instances.AttachDisk(gce.projectID, disk.Zone, instanceID, attachedDisk).Do()
+	attachOp, err := gce.service.Instances.AttachDisk(gce.projectID, disk.Zone, instanceName, attachedDisk).Do()
 	if err != nil {
 		return err
 	}
@@ -2530,19 +2601,20 @@ func (gce *GCECloud) AttachDisk(diskName, instanceID string, readOnly bool) erro
 	return gce.waitForZoneOp(attachOp, disk.Zone)
 }
 
-func (gce *GCECloud) DetachDisk(devicePath, instanceID string) error {
-	inst, err := gce.getInstanceByName(instanceID)
+func (gce *GCECloud) DetachDisk(devicePath string, nodeName types.NodeName) error {
+	instanceName := mapNodeNameToInstanceName(nodeName)
+	inst, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		if err == cloudprovider.InstanceNotFound {
 			// If instance no longer exists, safe to assume volume is not attached.
 			glog.Warningf(
 				"Instance %q does not exist. DetachDisk will assume PD %q is not attached to it.",
-				instanceID,
+				instanceName,
 				devicePath)
 			return nil
 		}
 
-		return fmt.Errorf("error getting instance %q", instanceID)
+		return fmt.Errorf("error getting instance %q", instanceName)
 	}
 
 	detachOp, err := gce.service.Instances.DetachDisk(gce.projectID, inst.Zone, inst.Name, devicePath).Do()
@@ -2553,14 +2625,15 @@ func (gce *GCECloud) DetachDisk(devicePath, instanceID string) error {
 	return gce.waitForZoneOp(detachOp, inst.Zone)
 }
 
-func (gce *GCECloud) DiskIsAttached(diskName, instanceID string) (bool, error) {
-	instance, err := gce.getInstanceByName(instanceID)
+func (gce *GCECloud) DiskIsAttached(diskName string, nodeName types.NodeName) (bool, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
+	instance, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		if err == cloudprovider.InstanceNotFound {
 			// If instance no longer exists, safe to assume volume is not attached.
 			glog.Warningf(
 				"Instance %q does not exist. DiskIsAttached will assume PD %q is not attached to it.",
-				instanceID,
+				instanceName,
 				diskName)
 			return false, nil
 		}
@@ -2637,7 +2710,7 @@ func (gce *GCECloud) getDiskByNameUnknownZone(diskName string) (*gceDisk, error)
 	if found != nil {
 		return found, nil
 	}
-	return nil, fmt.Errorf("GCE persistent disk not found: %q", diskName)
+	return nil, fmt.Errorf("GCE persistent disk %q not found in managed zones (%s)", diskName, strings.Join(gce.managedZones, ","))
 }
 
 // GetGCERegion returns region of the gce zone. Zone names
@@ -2774,6 +2847,7 @@ func (gce *GCECloud) getInstancesByNames(names []string) ([]*gceInstance, error)
 
 	instanceArray := make([]*gceInstance, len(names))
 	for i, name := range names {
+		name = canonicalizeInstanceName(name)
 		instance := instances[name]
 		if instance == nil {
 			glog.Errorf("Failed to retrieve instance: %q", name)

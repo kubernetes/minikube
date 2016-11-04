@@ -38,6 +38,10 @@ func (c *FakeExtensions) Ingresses(namespace string) unversioned.IngressInterfac
 	return &FakeIngresses{c, namespace}
 }
 
+func (c *FakeExtensions) NetworkPolicies(namespace string) unversioned.NetworkPolicyInterface {
+	return &FakeNetworkPolicies{c, namespace}
+}
+
 func (c *FakeExtensions) PodSecurityPolicies() unversioned.PodSecurityPolicyInterface {
 	return &FakePodSecurityPolicies{c}
 }
@@ -54,8 +58,9 @@ func (c *FakeExtensions) ThirdPartyResources() unversioned.ThirdPartyResourceInt
 	return &FakeThirdPartyResources{c}
 }
 
-// GetRESTClient returns a RESTClient that is used to communicate
+// RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeExtensions) GetRESTClient() *restclient.RESTClient {
-	return nil
+func (c *FakeExtensions) RESTClient() restclient.Interface {
+	var ret *restclient.RESTClient
+	return ret
 }

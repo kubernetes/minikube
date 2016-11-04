@@ -35,10 +35,6 @@ import (
 
 // Utilities for dealing with Jobs and ScheduledJobs and time.
 
-const (
-	CreatedByAnnotation = "kubernetes.io/created-by"
-)
-
 func inActiveList(sj batch.ScheduledJob, uid types.UID) bool {
 	for _, j := range sj.Status.Active {
 		if j.UID == uid {
@@ -63,7 +59,7 @@ func deleteFromActiveList(sj *batch.ScheduledJob, uid types.UID) {
 
 // getParentUIDFromJob extracts UID of job's parent and whether it was found
 func getParentUIDFromJob(j batch.Job) (types.UID, bool) {
-	creatorRefJson, found := j.ObjectMeta.Annotations[CreatedByAnnotation]
+	creatorRefJson, found := j.ObjectMeta.Annotations[api.CreatedByAnnotation]
 	if !found {
 		glog.V(4).Infof("Job with no created-by annotation, name %s namespace %s", j.Name, j.Namespace)
 		return types.UID(""), false
@@ -113,8 +109,7 @@ func getNextStartTimeAfter(schedule string, now time.Time) (time.Time, error) {
 	// How to handle concurrency control.
 	// How to detect changes to schedules or deleted schedules and then
 	// update the jobs?
-	tmpSched := addSeconds(schedule)
-	sched, err := cron.Parse(tmpSched)
+	sched, err := cron.Parse(schedule)
 	if err != nil {
 		return time.Unix(0, 0), fmt.Errorf("Unparseable schedule: %s : %s", schedule, err)
 	}
@@ -127,8 +122,7 @@ func getNextStartTimeAfter(schedule string, now time.Time) (time.Time, error) {
 // If there were missed times prior to the last known start time, then those are not returned.
 func getRecentUnmetScheduleTimes(sj batch.ScheduledJob, now time.Time) ([]time.Time, error) {
 	starts := []time.Time{}
-	tmpSched := addSeconds(sj.Spec.Schedule)
-	sched, err := cron.Parse(tmpSched)
+	sched, err := cron.ParseStandard(sj.Spec.Schedule)
 	if err != nil {
 		return starts, fmt.Errorf("Unparseable schedule: %s : %s", sj.Spec.Schedule, err)
 	}
@@ -176,15 +170,6 @@ func getRecentUnmetScheduleTimes(sj batch.ScheduledJob, now time.Time) ([]time.T
 	return starts, nil
 }
 
-// TODO soltysh: this should be removed when https://github.com/robfig/cron/issues/58 is fixed
-func addSeconds(schedule string) string {
-	tmpSched := schedule
-	if len(schedule) > 0 && schedule[0] != '@' {
-		tmpSched = "0 " + schedule
-	}
-	return tmpSched
-}
-
 // XXX unit test this
 
 // getJobFromTemplate makes a Job from a ScheduledJob
@@ -198,7 +183,7 @@ func getJobFromTemplate(sj *batch.ScheduledJob, scheduledTime time.Time) (*batch
 	if err != nil {
 		return nil, err
 	}
-	annotations[CreatedByAnnotation] = string(createdByRefJson)
+	annotations[api.CreatedByAnnotation] = string(createdByRefJson)
 	// We want job names for a given nominal start time to have a deterministic name to avoid the same job being created twice
 	name := fmt.Sprintf("%s-%d", sj.Name, getTimeHash(scheduledTime))
 

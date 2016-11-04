@@ -102,8 +102,8 @@ func New(cloud cloudprovider.Interface, kubeClient clientset.Interface, clusterN
 	broadcaster.StartRecordingToSink(&unversioned_core.EventSinkImpl{Interface: kubeClient.Core().Events("")})
 	recorder := broadcaster.NewRecorder(api.EventSource{Component: "service-controller"})
 
-	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("service_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	if kubeClient != nil && kubeClient.Core().RESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("service_controller", kubeClient.Core().RESTClient().GetRateLimiter())
 	}
 
 	s := &ServiceController{
@@ -119,7 +119,7 @@ func New(cloud cloudprovider.Interface, kubeClient clientset.Interface, clusterN
 		},
 		workingQueue: workqueue.NewDelayingQueue(),
 	}
-	s.serviceStore.Store, s.serviceController = cache.NewInformer(
+	s.serviceStore.Indexer, s.serviceController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (pkg_runtime.Object, error) {
 				return s.kubeClient.Core().Services(api.NamespaceAll).List(options)
@@ -141,6 +141,7 @@ func New(cloud cloudprovider.Interface, kubeClient clientset.Interface, clusterN
 			},
 			DeleteFunc: s.enqueueService,
 		},
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 	if err := s.init(); err != nil {
 		return nil, err
@@ -174,7 +175,7 @@ func (s *ServiceController) Run(workers int) {
 	for i := 0; i < workers; i++ {
 		go wait.Until(s.worker, time.Second, wait.NeverStop)
 	}
-	nodeLW := cache.NewListWatchFromClient(s.kubeClient.(*clientset.Clientset).CoreClient, "nodes", api.NamespaceAll, fields.Everything())
+	nodeLW := cache.NewListWatchFromClient(s.kubeClient.Core().RESTClient(), "nodes", api.NamespaceAll, fields.Everything())
 	cache.NewReflector(nodeLW, &api.Node{}, s.nodeLister.Store, 0).Run()
 	go wait.Until(s.nodeSyncLoop, nodeSyncPeriod, wait.NeverStop)
 }
@@ -724,7 +725,7 @@ func (s *ServiceController) syncService(key string) error {
 		glog.V(4).Infof("Finished syncing service %q (%v)", key, time.Now().Sub(startTime))
 	}()
 	// obj holds the latest service info from apiserver
-	obj, exists, err := s.serviceStore.Store.GetByKey(key)
+	obj, exists, err := s.serviceStore.Indexer.GetByKey(key)
 	if err != nil {
 		glog.Infof("Unable to retrieve service %v from store: %v", key, err)
 		s.workingQueue.Add(key)

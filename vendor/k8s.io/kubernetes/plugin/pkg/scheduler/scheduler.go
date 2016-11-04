@@ -16,9 +16,6 @@ limitations under the License.
 
 package scheduler
 
-// Note: if you change code in this file, you might need to change code in
-// contrib/mesos/pkg/scheduler/.
-
 import (
 	"time"
 
@@ -103,7 +100,7 @@ func (s *Scheduler) scheduleOne() {
 		s.config.PodConditionUpdater.Update(pod, &api.PodCondition{
 			Type:   api.PodScheduled,
 			Status: api.ConditionFalse,
-			Reason: "Unschedulable",
+			Reason: api.PodReasonUnschedulable,
 		})
 		return
 	}

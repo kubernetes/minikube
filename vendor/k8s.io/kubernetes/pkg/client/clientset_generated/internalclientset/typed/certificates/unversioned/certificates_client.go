@@ -23,13 +23,13 @@ import (
 )
 
 type CertificatesInterface interface {
-	GetRESTClient() *restclient.RESTClient
+	RESTClient() restclient.Interface
 	CertificateSigningRequestsGetter
 }
 
 // CertificatesClient is used to interact with features provided by the Certificates group.
 type CertificatesClient struct {
-	*restclient.RESTClient
+	restClient restclient.Interface
 }
 
 func (c *CertificatesClient) CertificateSigningRequests() CertificateSigningRequestInterface {
@@ -60,7 +60,7 @@ func NewForConfigOrDie(c *restclient.Config) *CertificatesClient {
 }
 
 // New creates a new CertificatesClient for the given RESTClient.
-func New(c *restclient.RESTClient) *CertificatesClient {
+func New(c restclient.Interface) *CertificatesClient {
 	return &CertificatesClient{c}
 }
 
@@ -74,12 +74,10 @@ func setConfigDefaults(config *restclient.Config) error {
 	if config.UserAgent == "" {
 		config.UserAgent = restclient.DefaultKubernetesUserAgent()
 	}
-	// TODO: Unconditionally set the config.Version, until we fix the config.
-	//if config.Version == "" {
-	copyGroupVersion := g.GroupVersion
-	config.GroupVersion = &copyGroupVersion
-	//}
-
+	if config.GroupVersion == nil || config.GroupVersion.Group != g.GroupVersion.Group {
+		copyGroupVersion := g.GroupVersion
+		config.GroupVersion = &copyGroupVersion
+	}
 	config.NegotiatedSerializer = api.Codecs
 
 	if config.QPS == 0 {
@@ -91,11 +89,11 @@ func setConfigDefaults(config *restclient.Config) error {
 	return nil
 }
 
-// GetRESTClient returns a RESTClient that is used to communicate
+// RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *CertificatesClient) GetRESTClient() *restclient.RESTClient {
+func (c *CertificatesClient) RESTClient() restclient.Interface {
 	if c == nil {
 		return nil
 	}
-	return c.RESTClient
+	return c.restClient
 }

@@ -26,12 +26,21 @@ type FakeAuthorization struct {
 	*core.Fake
 }
 
+func (c *FakeAuthorization) LocalSubjectAccessReviews(namespace string) unversioned.LocalSubjectAccessReviewInterface {
+	return &FakeLocalSubjectAccessReviews{c, namespace}
+}
+
+func (c *FakeAuthorization) SelfSubjectAccessReviews() unversioned.SelfSubjectAccessReviewInterface {
+	return &FakeSelfSubjectAccessReviews{c}
+}
+
 func (c *FakeAuthorization) SubjectAccessReviews() unversioned.SubjectAccessReviewInterface {
 	return &FakeSubjectAccessReviews{c}
 }
 
-// GetRESTClient returns a RESTClient that is used to communicate
+// RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeAuthorization) GetRESTClient() *restclient.RESTClient {
-	return nil
+func (c *FakeAuthorization) RESTClient() restclient.Interface {
+	var ret *restclient.RESTClient
+	return ret
 }

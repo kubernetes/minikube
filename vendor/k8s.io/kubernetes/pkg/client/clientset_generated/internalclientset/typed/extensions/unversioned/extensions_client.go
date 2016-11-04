@@ -23,10 +23,11 @@ import (
 )
 
 type ExtensionsInterface interface {
-	GetRESTClient() *restclient.RESTClient
+	RESTClient() restclient.Interface
 	DaemonSetsGetter
 	DeploymentsGetter
 	IngressesGetter
+	NetworkPoliciesGetter
 	PodSecurityPoliciesGetter
 	ReplicaSetsGetter
 	ScalesGetter
@@ -35,7 +36,7 @@ type ExtensionsInterface interface {
 
 // ExtensionsClient is used to interact with features provided by the Extensions group.
 type ExtensionsClient struct {
-	*restclient.RESTClient
+	restClient restclient.Interface
 }
 
 func (c *ExtensionsClient) DaemonSets(namespace string) DaemonSetInterface {
@@ -48,6 +49,10 @@ func (c *ExtensionsClient) Deployments(namespace string) DeploymentInterface {
 
 func (c *ExtensionsClient) Ingresses(namespace string) IngressInterface {
 	return newIngresses(c, namespace)
+}
+
+func (c *ExtensionsClient) NetworkPolicies(namespace string) NetworkPolicyInterface {
+	return newNetworkPolicies(c, namespace)
 }
 
 func (c *ExtensionsClient) PodSecurityPolicies() PodSecurityPolicyInterface {
@@ -90,7 +95,7 @@ func NewForConfigOrDie(c *restclient.Config) *ExtensionsClient {
 }
 
 // New creates a new ExtensionsClient for the given RESTClient.
-func New(c *restclient.RESTClient) *ExtensionsClient {
+func New(c restclient.Interface) *ExtensionsClient {
 	return &ExtensionsClient{c}
 }
 
@@ -104,12 +109,10 @@ func setConfigDefaults(config *restclient.Config) error {
 	if config.UserAgent == "" {
 		config.UserAgent = restclient.DefaultKubernetesUserAgent()
 	}
-	// TODO: Unconditionally set the config.Version, until we fix the config.
-	//if config.Version == "" {
-	copyGroupVersion := g.GroupVersion
-	config.GroupVersion = &copyGroupVersion
-	//}
-
+	if config.GroupVersion == nil || config.GroupVersion.Group != g.GroupVersion.Group {
+		copyGroupVersion := g.GroupVersion
+		config.GroupVersion = &copyGroupVersion
+	}
 	config.NegotiatedSerializer = api.Codecs
 
 	if config.QPS == 0 {
@@ -121,11 +124,11 @@ func setConfigDefaults(config *restclient.Config) error {
 	return nil
 }
 
-// GetRESTClient returns a RESTClient that is used to communicate
+// RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *ExtensionsClient) GetRESTClient() *restclient.RESTClient {
+func (c *ExtensionsClient) RESTClient() restclient.Interface {
 	if c == nil {
 		return nil
 	}
-	return c.RESTClient
+	return c.restClient
 }

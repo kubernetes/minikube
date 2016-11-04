@@ -38,6 +38,18 @@ const (
 	envBackoffDuration = "KUBE_CLIENT_BACKOFF_DURATION"
 )
 
+// Interface captures the set of operations for generically interacting with Kubernetes REST apis.
+type Interface interface {
+	GetRateLimiter() flowcontrol.RateLimiter
+	Verb(verb string) *Request
+	Post() *Request
+	Put() *Request
+	Patch(pt api.PatchType) *Request
+	Get() *Request
+	Delete() *Request
+	APIVersion() unversioned.GroupVersion
+}
+
 // RESTClient imposes common Kubernetes API conventions on a set of resource paths.
 // The baseURL is expected to point to an HTTP or HTTPS path that is the parent
 // of one or more resources.  The server should return a decodable API resource
@@ -54,7 +66,7 @@ type RESTClient struct {
 	// contentConfig is the information used to communicate with the server.
 	contentConfig ContentConfig
 
-	// serializers contain all serializers for undelying content type.
+	// serializers contain all serializers for underlying content type.
 	serializers Serializers
 
 	// creates BackoffManager that is passed to requests.

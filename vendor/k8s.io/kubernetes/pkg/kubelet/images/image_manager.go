@@ -19,37 +19,41 @@ package images
 import (
 	"fmt"
 
+	dockerref "github.com/docker/distribution/reference"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/record"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/util/flowcontrol"
+	"k8s.io/kubernetes/pkg/util/parsers"
 )
 
 // imageManager provides the functionalities for image pulling.
 type imageManager struct {
-	recorder record.EventRecorder
-	runtime  kubecontainer.Runtime
-	backOff  *flowcontrol.Backoff
+	recorder     record.EventRecorder
+	imageService kubecontainer.ImageService
+	backOff      *flowcontrol.Backoff
 	// It will check the presence of the image, and report the 'image pulling', image pulled' events correspondingly.
 	puller imagePuller
 }
 
 var _ ImageManager = &imageManager{}
 
-func NewImageManager(recorder record.EventRecorder, runtime kubecontainer.Runtime, imageBackOff *flowcontrol.Backoff, serialized bool) ImageManager {
+func NewImageManager(recorder record.EventRecorder, imageService kubecontainer.ImageService, imageBackOff *flowcontrol.Backoff, serialized bool, qps float32, burst int) ImageManager {
+	imageService = throttleImagePulling(imageService, qps, burst)
+
 	var puller imagePuller
 	if serialized {
-		puller = newSerialImagePuller(runtime)
+		puller = newSerialImagePuller(imageService)
 	} else {
-		puller = newParallelImagePuller(runtime)
+		puller = newParallelImagePuller(imageService)
 	}
 	return &imageManager{
-		recorder: recorder,
-		runtime:  runtime,
-		backOff:  imageBackOff,
-		puller:   puller,
+		recorder:     recorder,
+		imageService: imageService,
+		backOff:      imageBackOff,
+		puller:       puller,
 	}
 }
 
@@ -85,8 +89,16 @@ func (m *imageManager) EnsureImageExists(pod *api.Pod, container *api.Container,
 		glog.Errorf("Couldn't make a ref to pod %v, container %v: '%v'", pod.Name, container.Name, err)
 	}
 
-	spec := kubecontainer.ImageSpec{Image: container.Image}
-	present, err := m.runtime.IsImagePresent(spec)
+	// If the image contains no tag or digest, a default tag should be applied.
+	image, err := applyDefaultImageTag(container.Image)
+	if err != nil {
+		msg := fmt.Sprintf("Failed to apply default image tag %q: %v", container.Image, err)
+		m.logIt(ref, api.EventTypeWarning, events.FailedToInspectImage, logPrefix, msg, glog.Warning)
+		return ErrInvalidImageName, msg
+	}
+
+	spec := kubecontainer.ImageSpec{Image: image}
+	present, err := m.imageService.IsImagePresent(spec)
 	if err != nil {
 		msg := fmt.Sprintf("Failed to inspect image %q: %v", container.Image, err)
 		m.logIt(ref, api.EventTypeWarning, events.FailedToInspectImage, logPrefix, msg, glog.Warning)
@@ -127,4 +139,23 @@ func (m *imageManager) EnsureImageExists(pod *api.Pod, container *api.Container,
 	m.logIt(ref, api.EventTypeNormal, events.PulledImage, logPrefix, fmt.Sprintf("Successfully pulled image %q", container.Image), glog.Info)
 	m.backOff.GC()
 	return nil, ""
+}
+
+// applyDefaultImageTag parses a docker image string, if it doesn't contain any tag or digest,
+// a default tag will be applied.
+func applyDefaultImageTag(image string) (string, error) {
+	named, err := dockerref.ParseNamed(image)
+	if err != nil {
+		return "", fmt.Errorf("couldn't parse image reference %q: %v", image, err)
+	}
+	_, isTagged := named.(dockerref.Tagged)
+	_, isDigested := named.(dockerref.Digested)
+	if !isTagged && !isDigested {
+		named, err := dockerref.WithTag(named, parsers.DefaultImageTag)
+		if err != nil {
+			return "", fmt.Errorf("failed to apply default image tag %q: %v", image, err)
+		}
+		image = named.String()
+	}
+	return image, nil
 }

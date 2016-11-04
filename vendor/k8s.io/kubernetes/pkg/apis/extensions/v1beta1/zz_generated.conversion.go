@@ -22,7 +22,6 @@ package v1beta1
 
 import (
 	api "k8s.io/kubernetes/pkg/api"
-	unversioned "k8s.io/kubernetes/pkg/api/unversioned"
 	v1 "k8s.io/kubernetes/pkg/api/v1"
 	autoscaling "k8s.io/kubernetes/pkg/apis/autoscaling"
 	batch "k8s.io/kubernetes/pkg/apis/batch"
@@ -115,12 +114,6 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 		Convert_batch_JobSpec_To_v1beta1_JobSpec,
 		Convert_v1beta1_JobStatus_To_batch_JobStatus,
 		Convert_batch_JobStatus_To_v1beta1_JobStatus,
-		Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector,
-		Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector,
-		Convert_v1beta1_LabelSelectorRequirement_To_unversioned_LabelSelectorRequirement,
-		Convert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement,
-		Convert_v1beta1_ListOptions_To_api_ListOptions,
-		Convert_api_ListOptions_To_v1beta1_ListOptions,
 		Convert_v1beta1_NetworkPolicy_To_extensions_NetworkPolicy,
 		Convert_extensions_NetworkPolicy_To_v1beta1_NetworkPolicy,
 		Convert_v1beta1_NetworkPolicyIngressRule_To_extensions_NetworkPolicyIngressRule,
@@ -141,6 +134,8 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 		Convert_extensions_PodSecurityPolicySpec_To_v1beta1_PodSecurityPolicySpec,
 		Convert_v1beta1_ReplicaSet_To_extensions_ReplicaSet,
 		Convert_extensions_ReplicaSet_To_v1beta1_ReplicaSet,
+		Convert_v1beta1_ReplicaSetCondition_To_extensions_ReplicaSetCondition,
+		Convert_extensions_ReplicaSetCondition_To_v1beta1_ReplicaSetCondition,
 		Convert_v1beta1_ReplicaSetList_To_extensions_ReplicaSetList,
 		Convert_extensions_ReplicaSetList_To_v1beta1_ReplicaSetList,
 		Convert_v1beta1_ReplicaSetSpec_To_extensions_ReplicaSetSpec,
@@ -196,9 +191,7 @@ func Convert_extensions_APIVersion_To_v1beta1_APIVersion(in *extensions.APIVersi
 
 func autoConvert_v1beta1_CustomMetricCurrentStatus_To_extensions_CustomMetricCurrentStatus(in *CustomMetricCurrentStatus, out *extensions.CustomMetricCurrentStatus, s conversion.Scope) error {
 	out.Name = in.Name
-	if err := api.Convert_resource_Quantity_To_resource_Quantity(&in.CurrentValue, &out.CurrentValue, s); err != nil {
-		return err
-	}
+	out.CurrentValue = in.CurrentValue
 	return nil
 }
 
@@ -208,9 +201,7 @@ func Convert_v1beta1_CustomMetricCurrentStatus_To_extensions_CustomMetricCurrent
 
 func autoConvert_extensions_CustomMetricCurrentStatus_To_v1beta1_CustomMetricCurrentStatus(in *extensions.CustomMetricCurrentStatus, out *CustomMetricCurrentStatus, s conversion.Scope) error {
 	out.Name = in.Name
-	if err := api.Convert_resource_Quantity_To_resource_Quantity(&in.CurrentValue, &out.CurrentValue, s); err != nil {
-		return err
-	}
+	out.CurrentValue = in.CurrentValue
 	return nil
 }
 
@@ -258,9 +249,7 @@ func Convert_extensions_CustomMetricCurrentStatusList_To_v1beta1_CustomMetricCur
 
 func autoConvert_v1beta1_CustomMetricTarget_To_extensions_CustomMetricTarget(in *CustomMetricTarget, out *extensions.CustomMetricTarget, s conversion.Scope) error {
 	out.Name = in.Name
-	if err := api.Convert_resource_Quantity_To_resource_Quantity(&in.TargetValue, &out.TargetValue, s); err != nil {
-		return err
-	}
+	out.TargetValue = in.TargetValue
 	return nil
 }
 
@@ -270,9 +259,7 @@ func Convert_v1beta1_CustomMetricTarget_To_extensions_CustomMetricTarget(in *Cus
 
 func autoConvert_extensions_CustomMetricTarget_To_v1beta1_CustomMetricTarget(in *extensions.CustomMetricTarget, out *CustomMetricTarget, s conversion.Scope) error {
 	out.Name = in.Name
-	if err := api.Convert_resource_Quantity_To_resource_Quantity(&in.TargetValue, &out.TargetValue, s); err != nil {
-		return err
-	}
+	out.TargetValue = in.TargetValue
 	return nil
 }
 
@@ -319,10 +306,6 @@ func Convert_extensions_CustomMetricTargetList_To_v1beta1_CustomMetricTargetList
 }
 
 func autoConvert_v1beta1_DaemonSet_To_extensions_DaemonSet(in *DaemonSet, out *extensions.DaemonSet, s conversion.Scope) error {
-	SetDefaults_DaemonSet(in)
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -341,9 +324,6 @@ func Convert_v1beta1_DaemonSet_To_extensions_DaemonSet(in *DaemonSet, out *exten
 }
 
 func autoConvert_extensions_DaemonSet_To_v1beta1_DaemonSet(in *extensions.DaemonSet, out *DaemonSet, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -362,12 +342,7 @@ func Convert_extensions_DaemonSet_To_v1beta1_DaemonSet(in *extensions.DaemonSet,
 }
 
 func autoConvert_v1beta1_DaemonSetList_To_extensions_DaemonSetList(in *DaemonSetList, out *extensions.DaemonSetList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.DaemonSet, len(*in))
@@ -387,12 +362,7 @@ func Convert_v1beta1_DaemonSetList_To_extensions_DaemonSetList(in *DaemonSetList
 }
 
 func autoConvert_extensions_DaemonSetList_To_v1beta1_DaemonSetList(in *extensions.DaemonSetList, out *DaemonSetList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]DaemonSet, len(*in))
@@ -412,15 +382,7 @@ func Convert_extensions_DaemonSetList_To_v1beta1_DaemonSetList(in *extensions.Da
 }
 
 func autoConvert_v1beta1_DaemonSetSpec_To_extensions_DaemonSetSpec(in *DaemonSetSpec, out *extensions.DaemonSetSpec, s conversion.Scope) error {
-	if in.Selector != nil {
-		in, out := &in.Selector, &out.Selector
-		*out = new(unversioned.LabelSelector)
-		if err := Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Selector = nil
-	}
+	out.Selector = in.Selector
 	if err := v1.Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
@@ -432,15 +394,7 @@ func Convert_v1beta1_DaemonSetSpec_To_extensions_DaemonSetSpec(in *DaemonSetSpec
 }
 
 func autoConvert_extensions_DaemonSetSpec_To_v1beta1_DaemonSetSpec(in *extensions.DaemonSetSpec, out *DaemonSetSpec, s conversion.Scope) error {
-	if in.Selector != nil {
-		in, out := &in.Selector, &out.Selector
-		*out = new(LabelSelector)
-		if err := Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Selector = nil
-	}
+	out.Selector = in.Selector
 	if err := v1.Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
@@ -455,6 +409,7 @@ func autoConvert_v1beta1_DaemonSetStatus_To_extensions_DaemonSetStatus(in *Daemo
 	out.CurrentNumberScheduled = in.CurrentNumberScheduled
 	out.NumberMisscheduled = in.NumberMisscheduled
 	out.DesiredNumberScheduled = in.DesiredNumberScheduled
+	out.NumberReady = in.NumberReady
 	return nil
 }
 
@@ -466,6 +421,7 @@ func autoConvert_extensions_DaemonSetStatus_To_v1beta1_DaemonSetStatus(in *exten
 	out.CurrentNumberScheduled = in.CurrentNumberScheduled
 	out.NumberMisscheduled = in.NumberMisscheduled
 	out.DesiredNumberScheduled = in.DesiredNumberScheduled
+	out.NumberReady = in.NumberReady
 	return nil
 }
 
@@ -474,10 +430,6 @@ func Convert_extensions_DaemonSetStatus_To_v1beta1_DaemonSetStatus(in *extension
 }
 
 func autoConvert_v1beta1_Deployment_To_extensions_Deployment(in *Deployment, out *extensions.Deployment, s conversion.Scope) error {
-	SetDefaults_Deployment(in)
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -496,9 +448,6 @@ func Convert_v1beta1_Deployment_To_extensions_Deployment(in *Deployment, out *ex
 }
 
 func autoConvert_extensions_Deployment_To_v1beta1_Deployment(in *extensions.Deployment, out *Deployment, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -517,12 +466,7 @@ func Convert_extensions_Deployment_To_v1beta1_Deployment(in *extensions.Deployme
 }
 
 func autoConvert_v1beta1_DeploymentList_To_extensions_DeploymentList(in *DeploymentList, out *extensions.DeploymentList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.Deployment, len(*in))
@@ -542,12 +486,7 @@ func Convert_v1beta1_DeploymentList_To_extensions_DeploymentList(in *DeploymentL
 }
 
 func autoConvert_extensions_DeploymentList_To_v1beta1_DeploymentList(in *extensions.DeploymentList, out *DeploymentList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Deployment, len(*in))
@@ -567,9 +506,6 @@ func Convert_extensions_DeploymentList_To_v1beta1_DeploymentList(in *extensions.
 }
 
 func autoConvert_v1beta1_DeploymentRollback_To_extensions_DeploymentRollback(in *DeploymentRollback, out *extensions.DeploymentRollback, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	out.Name = in.Name
 	out.UpdatedAnnotations = in.UpdatedAnnotations
 	if err := Convert_v1beta1_RollbackConfig_To_extensions_RollbackConfig(&in.RollbackTo, &out.RollbackTo, s); err != nil {
@@ -583,9 +519,6 @@ func Convert_v1beta1_DeploymentRollback_To_extensions_DeploymentRollback(in *Dep
 }
 
 func autoConvert_extensions_DeploymentRollback_To_v1beta1_DeploymentRollback(in *extensions.DeploymentRollback, out *DeploymentRollback, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	out.Name = in.Name
 	out.UpdatedAnnotations = in.UpdatedAnnotations
 	if err := Convert_extensions_RollbackConfig_To_v1beta1_RollbackConfig(&in.RollbackTo, &out.RollbackTo, s); err != nil {
@@ -602,15 +535,7 @@ func autoConvert_v1beta1_DeploymentSpec_To_extensions_DeploymentSpec(in *Deploym
 	if err := api.Convert_Pointer_int32_To_int32(&in.Replicas, &out.Replicas, s); err != nil {
 		return err
 	}
-	if in.Selector != nil {
-		in, out := &in.Selector, &out.Selector
-		*out = new(unversioned.LabelSelector)
-		if err := Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Selector = nil
-	}
+	out.Selector = in.Selector
 	if err := v1.Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
@@ -636,15 +561,7 @@ func autoConvert_extensions_DeploymentSpec_To_v1beta1_DeploymentSpec(in *extensi
 	if err := api.Convert_int32_To_Pointer_int32(&in.Replicas, &out.Replicas, s); err != nil {
 		return err
 	}
-	if in.Selector != nil {
-		in, out := &in.Selector, &out.Selector
-		*out = new(LabelSelector)
-		if err := Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Selector = nil
-	}
+	out.Selector = in.Selector
 	if err := v1.Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
@@ -721,9 +638,6 @@ func autoConvert_extensions_DeploymentStrategy_To_v1beta1_DeploymentStrategy(in 
 }
 
 func autoConvert_v1beta1_ExportOptions_To_api_ExportOptions(in *ExportOptions, out *api.ExportOptions, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	out.Export = in.Export
 	out.Exact = in.Exact
 	return nil
@@ -734,9 +648,6 @@ func Convert_v1beta1_ExportOptions_To_api_ExportOptions(in *ExportOptions, out *
 }
 
 func autoConvert_api_ExportOptions_To_v1beta1_ExportOptions(in *api.ExportOptions, out *ExportOptions, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	out.Export = in.Export
 	out.Exact = in.Exact
 	return nil
@@ -849,10 +760,6 @@ func Convert_extensions_HTTPIngressRuleValue_To_v1beta1_HTTPIngressRuleValue(in 
 }
 
 func autoConvert_v1beta1_HorizontalPodAutoscaler_To_autoscaling_HorizontalPodAutoscaler(in *HorizontalPodAutoscaler, out *autoscaling.HorizontalPodAutoscaler, s conversion.Scope) error {
-	SetDefaults_HorizontalPodAutoscaler(in)
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -871,9 +778,6 @@ func Convert_v1beta1_HorizontalPodAutoscaler_To_autoscaling_HorizontalPodAutosca
 }
 
 func autoConvert_autoscaling_HorizontalPodAutoscaler_To_v1beta1_HorizontalPodAutoscaler(in *autoscaling.HorizontalPodAutoscaler, out *HorizontalPodAutoscaler, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -892,12 +796,7 @@ func Convert_autoscaling_HorizontalPodAutoscaler_To_v1beta1_HorizontalPodAutosca
 }
 
 func autoConvert_v1beta1_HorizontalPodAutoscalerList_To_autoscaling_HorizontalPodAutoscalerList(in *HorizontalPodAutoscalerList, out *autoscaling.HorizontalPodAutoscalerList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]autoscaling.HorizontalPodAutoscaler, len(*in))
@@ -917,12 +816,7 @@ func Convert_v1beta1_HorizontalPodAutoscalerList_To_autoscaling_HorizontalPodAut
 }
 
 func autoConvert_autoscaling_HorizontalPodAutoscalerList_To_v1beta1_HorizontalPodAutoscalerList(in *autoscaling.HorizontalPodAutoscalerList, out *HorizontalPodAutoscalerList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]HorizontalPodAutoscaler, len(*in))
@@ -939,6 +833,22 @@ func autoConvert_autoscaling_HorizontalPodAutoscalerList_To_v1beta1_HorizontalPo
 
 func Convert_autoscaling_HorizontalPodAutoscalerList_To_v1beta1_HorizontalPodAutoscalerList(in *autoscaling.HorizontalPodAutoscalerList, out *HorizontalPodAutoscalerList, s conversion.Scope) error {
 	return autoConvert_autoscaling_HorizontalPodAutoscalerList_To_v1beta1_HorizontalPodAutoscalerList(in, out, s)
+}
+
+func autoConvert_v1beta1_HorizontalPodAutoscalerSpec_To_autoscaling_HorizontalPodAutoscalerSpec(in *HorizontalPodAutoscalerSpec, out *autoscaling.HorizontalPodAutoscalerSpec, s conversion.Scope) error {
+	// WARNING: in.ScaleRef requires manual conversion: does not exist in peer-type
+	out.MinReplicas = in.MinReplicas
+	out.MaxReplicas = in.MaxReplicas
+	// WARNING: in.CPUUtilization requires manual conversion: does not exist in peer-type
+	return nil
+}
+
+func autoConvert_autoscaling_HorizontalPodAutoscalerSpec_To_v1beta1_HorizontalPodAutoscalerSpec(in *autoscaling.HorizontalPodAutoscalerSpec, out *HorizontalPodAutoscalerSpec, s conversion.Scope) error {
+	// WARNING: in.ScaleTargetRef requires manual conversion: does not exist in peer-type
+	out.MinReplicas = in.MinReplicas
+	out.MaxReplicas = in.MaxReplicas
+	// WARNING: in.TargetCPUUtilizationPercentage requires manual conversion: does not exist in peer-type
+	return nil
 }
 
 func autoConvert_v1beta1_HorizontalPodAutoscalerStatus_To_autoscaling_HorizontalPodAutoscalerStatus(in *HorizontalPodAutoscalerStatus, out *autoscaling.HorizontalPodAutoscalerStatus, s conversion.Scope) error {
@@ -1008,9 +918,6 @@ func Convert_extensions_IDRange_To_v1beta1_IDRange(in *extensions.IDRange, out *
 }
 
 func autoConvert_v1beta1_Ingress_To_extensions_Ingress(in *Ingress, out *extensions.Ingress, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1029,9 +936,6 @@ func Convert_v1beta1_Ingress_To_extensions_Ingress(in *Ingress, out *extensions.
 }
 
 func autoConvert_extensions_Ingress_To_v1beta1_Ingress(in *extensions.Ingress, out *Ingress, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1051,9 +955,7 @@ func Convert_extensions_Ingress_To_v1beta1_Ingress(in *extensions.Ingress, out *
 
 func autoConvert_v1beta1_IngressBackend_To_extensions_IngressBackend(in *IngressBackend, out *extensions.IngressBackend, s conversion.Scope) error {
 	out.ServiceName = in.ServiceName
-	if err := api.Convert_intstr_IntOrString_To_intstr_IntOrString(&in.ServicePort, &out.ServicePort, s); err != nil {
-		return err
-	}
+	out.ServicePort = in.ServicePort
 	return nil
 }
 
@@ -1063,9 +965,7 @@ func Convert_v1beta1_IngressBackend_To_extensions_IngressBackend(in *IngressBack
 
 func autoConvert_extensions_IngressBackend_To_v1beta1_IngressBackend(in *extensions.IngressBackend, out *IngressBackend, s conversion.Scope) error {
 	out.ServiceName = in.ServiceName
-	if err := api.Convert_intstr_IntOrString_To_intstr_IntOrString(&in.ServicePort, &out.ServicePort, s); err != nil {
-		return err
-	}
+	out.ServicePort = in.ServicePort
 	return nil
 }
 
@@ -1074,12 +974,7 @@ func Convert_extensions_IngressBackend_To_v1beta1_IngressBackend(in *extensions.
 }
 
 func autoConvert_v1beta1_IngressList_To_extensions_IngressList(in *IngressList, out *extensions.IngressList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.Ingress, len(*in))
@@ -1099,12 +994,7 @@ func Convert_v1beta1_IngressList_To_extensions_IngressList(in *IngressList, out 
 }
 
 func autoConvert_extensions_IngressList_To_v1beta1_IngressList(in *extensions.IngressList, out *IngressList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Ingress, len(*in))
@@ -1304,10 +1194,6 @@ func Convert_extensions_IngressTLS_To_v1beta1_IngressTLS(in *extensions.IngressT
 }
 
 func autoConvert_v1beta1_Job_To_batch_Job(in *Job, out *batch.Job, s conversion.Scope) error {
-	SetDefaults_Job(in)
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1326,9 +1212,6 @@ func Convert_v1beta1_Job_To_batch_Job(in *Job, out *batch.Job, s conversion.Scop
 }
 
 func autoConvert_batch_Job_To_v1beta1_Job(in *batch.Job, out *Job, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1349,12 +1232,8 @@ func Convert_batch_Job_To_v1beta1_Job(in *batch.Job, out *Job, s conversion.Scop
 func autoConvert_v1beta1_JobCondition_To_batch_JobCondition(in *JobCondition, out *batch.JobCondition, s conversion.Scope) error {
 	out.Type = batch.JobConditionType(in.Type)
 	out.Status = api.ConditionStatus(in.Status)
-	if err := api.Convert_unversioned_Time_To_unversioned_Time(&in.LastProbeTime, &out.LastProbeTime, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_Time_To_unversioned_Time(&in.LastTransitionTime, &out.LastTransitionTime, s); err != nil {
-		return err
-	}
+	out.LastProbeTime = in.LastProbeTime
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1367,12 +1246,8 @@ func Convert_v1beta1_JobCondition_To_batch_JobCondition(in *JobCondition, out *b
 func autoConvert_batch_JobCondition_To_v1beta1_JobCondition(in *batch.JobCondition, out *JobCondition, s conversion.Scope) error {
 	out.Type = JobConditionType(in.Type)
 	out.Status = v1.ConditionStatus(in.Status)
-	if err := api.Convert_unversioned_Time_To_unversioned_Time(&in.LastProbeTime, &out.LastProbeTime, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_Time_To_unversioned_Time(&in.LastTransitionTime, &out.LastTransitionTime, s); err != nil {
-		return err
-	}
+	out.LastProbeTime = in.LastProbeTime
+	out.LastTransitionTime = in.LastTransitionTime
 	out.Reason = in.Reason
 	out.Message = in.Message
 	return nil
@@ -1383,12 +1258,7 @@ func Convert_batch_JobCondition_To_v1beta1_JobCondition(in *batch.JobCondition, 
 }
 
 func autoConvert_v1beta1_JobList_To_batch_JobList(in *JobList, out *batch.JobList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]batch.Job, len(*in))
@@ -1408,12 +1278,7 @@ func Convert_v1beta1_JobList_To_batch_JobList(in *JobList, out *batch.JobList, s
 }
 
 func autoConvert_batch_JobList_To_v1beta1_JobList(in *batch.JobList, out *JobList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Job, len(*in))
@@ -1430,6 +1295,30 @@ func autoConvert_batch_JobList_To_v1beta1_JobList(in *batch.JobList, out *JobLis
 
 func Convert_batch_JobList_To_v1beta1_JobList(in *batch.JobList, out *JobList, s conversion.Scope) error {
 	return autoConvert_batch_JobList_To_v1beta1_JobList(in, out, s)
+}
+
+func autoConvert_v1beta1_JobSpec_To_batch_JobSpec(in *JobSpec, out *batch.JobSpec, s conversion.Scope) error {
+	out.Parallelism = in.Parallelism
+	out.Completions = in.Completions
+	out.ActiveDeadlineSeconds = in.ActiveDeadlineSeconds
+	out.Selector = in.Selector
+	// WARNING: in.AutoSelector requires manual conversion: does not exist in peer-type
+	if err := v1.Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func autoConvert_batch_JobSpec_To_v1beta1_JobSpec(in *batch.JobSpec, out *JobSpec, s conversion.Scope) error {
+	out.Parallelism = in.Parallelism
+	out.Completions = in.Completions
+	out.ActiveDeadlineSeconds = in.ActiveDeadlineSeconds
+	out.Selector = in.Selector
+	// WARNING: in.ManualSelector requires manual conversion: does not exist in peer-type
+	if err := v1.Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
+		return err
+	}
+	return nil
 }
 
 func autoConvert_v1beta1_JobStatus_To_batch_JobStatus(in *JobStatus, out *batch.JobStatus, s conversion.Scope) error {
@@ -1480,113 +1369,7 @@ func Convert_batch_JobStatus_To_v1beta1_JobStatus(in *batch.JobStatus, out *JobS
 	return autoConvert_batch_JobStatus_To_v1beta1_JobStatus(in, out, s)
 }
 
-func autoConvert_v1beta1_LabelSelector_To_unversioned_LabelSelector(in *LabelSelector, out *unversioned.LabelSelector, s conversion.Scope) error {
-	out.MatchLabels = in.MatchLabels
-	if in.MatchExpressions != nil {
-		in, out := &in.MatchExpressions, &out.MatchExpressions
-		*out = make([]unversioned.LabelSelectorRequirement, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_LabelSelectorRequirement_To_unversioned_LabelSelectorRequirement(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MatchExpressions = nil
-	}
-	return nil
-}
-
-func Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(in *LabelSelector, out *unversioned.LabelSelector, s conversion.Scope) error {
-	return autoConvert_v1beta1_LabelSelector_To_unversioned_LabelSelector(in, out, s)
-}
-
-func autoConvert_unversioned_LabelSelector_To_v1beta1_LabelSelector(in *unversioned.LabelSelector, out *LabelSelector, s conversion.Scope) error {
-	out.MatchLabels = in.MatchLabels
-	if in.MatchExpressions != nil {
-		in, out := &in.MatchExpressions, &out.MatchExpressions
-		*out = make([]LabelSelectorRequirement, len(*in))
-		for i := range *in {
-			if err := Convert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.MatchExpressions = nil
-	}
-	return nil
-}
-
-func Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(in *unversioned.LabelSelector, out *LabelSelector, s conversion.Scope) error {
-	return autoConvert_unversioned_LabelSelector_To_v1beta1_LabelSelector(in, out, s)
-}
-
-func autoConvert_v1beta1_LabelSelectorRequirement_To_unversioned_LabelSelectorRequirement(in *LabelSelectorRequirement, out *unversioned.LabelSelectorRequirement, s conversion.Scope) error {
-	out.Key = in.Key
-	out.Operator = unversioned.LabelSelectorOperator(in.Operator)
-	out.Values = in.Values
-	return nil
-}
-
-func Convert_v1beta1_LabelSelectorRequirement_To_unversioned_LabelSelectorRequirement(in *LabelSelectorRequirement, out *unversioned.LabelSelectorRequirement, s conversion.Scope) error {
-	return autoConvert_v1beta1_LabelSelectorRequirement_To_unversioned_LabelSelectorRequirement(in, out, s)
-}
-
-func autoConvert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement(in *unversioned.LabelSelectorRequirement, out *LabelSelectorRequirement, s conversion.Scope) error {
-	out.Key = in.Key
-	out.Operator = LabelSelectorOperator(in.Operator)
-	out.Values = in.Values
-	return nil
-}
-
-func Convert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement(in *unversioned.LabelSelectorRequirement, out *LabelSelectorRequirement, s conversion.Scope) error {
-	return autoConvert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement(in, out, s)
-}
-
-func autoConvert_v1beta1_ListOptions_To_api_ListOptions(in *ListOptions, out *api.ListOptions, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_string_To_labels_Selector(&in.LabelSelector, &out.LabelSelector, s); err != nil {
-		return err
-	}
-	if err := api.Convert_string_To_fields_Selector(&in.FieldSelector, &out.FieldSelector, s); err != nil {
-		return err
-	}
-	out.Watch = in.Watch
-	out.ResourceVersion = in.ResourceVersion
-	out.TimeoutSeconds = in.TimeoutSeconds
-	return nil
-}
-
-func Convert_v1beta1_ListOptions_To_api_ListOptions(in *ListOptions, out *api.ListOptions, s conversion.Scope) error {
-	return autoConvert_v1beta1_ListOptions_To_api_ListOptions(in, out, s)
-}
-
-func autoConvert_api_ListOptions_To_v1beta1_ListOptions(in *api.ListOptions, out *ListOptions, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_labels_Selector_To_string(&in.LabelSelector, &out.LabelSelector, s); err != nil {
-		return err
-	}
-	if err := api.Convert_fields_Selector_To_string(&in.FieldSelector, &out.FieldSelector, s); err != nil {
-		return err
-	}
-	out.Watch = in.Watch
-	out.ResourceVersion = in.ResourceVersion
-	out.TimeoutSeconds = in.TimeoutSeconds
-	return nil
-}
-
-func Convert_api_ListOptions_To_v1beta1_ListOptions(in *api.ListOptions, out *ListOptions, s conversion.Scope) error {
-	return autoConvert_api_ListOptions_To_v1beta1_ListOptions(in, out, s)
-}
-
 func autoConvert_v1beta1_NetworkPolicy_To_extensions_NetworkPolicy(in *NetworkPolicy, out *extensions.NetworkPolicy, s conversion.Scope) error {
-	SetDefaults_NetworkPolicy(in)
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1602,9 +1385,6 @@ func Convert_v1beta1_NetworkPolicy_To_extensions_NetworkPolicy(in *NetworkPolicy
 }
 
 func autoConvert_extensions_NetworkPolicy_To_v1beta1_NetworkPolicy(in *extensions.NetworkPolicy, out *NetworkPolicy, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1680,12 +1460,7 @@ func Convert_extensions_NetworkPolicyIngressRule_To_v1beta1_NetworkPolicyIngress
 }
 
 func autoConvert_v1beta1_NetworkPolicyList_To_extensions_NetworkPolicyList(in *NetworkPolicyList, out *extensions.NetworkPolicyList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.NetworkPolicy, len(*in))
@@ -1705,12 +1480,7 @@ func Convert_v1beta1_NetworkPolicyList_To_extensions_NetworkPolicyList(in *Netwo
 }
 
 func autoConvert_extensions_NetworkPolicyList_To_v1beta1_NetworkPolicyList(in *extensions.NetworkPolicyList, out *NetworkPolicyList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]NetworkPolicy, len(*in))
@@ -1730,24 +1500,8 @@ func Convert_extensions_NetworkPolicyList_To_v1beta1_NetworkPolicyList(in *exten
 }
 
 func autoConvert_v1beta1_NetworkPolicyPeer_To_extensions_NetworkPolicyPeer(in *NetworkPolicyPeer, out *extensions.NetworkPolicyPeer, s conversion.Scope) error {
-	if in.PodSelector != nil {
-		in, out := &in.PodSelector, &out.PodSelector
-		*out = new(unversioned.LabelSelector)
-		if err := Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.PodSelector = nil
-	}
-	if in.NamespaceSelector != nil {
-		in, out := &in.NamespaceSelector, &out.NamespaceSelector
-		*out = new(unversioned.LabelSelector)
-		if err := Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.NamespaceSelector = nil
-	}
+	out.PodSelector = in.PodSelector
+	out.NamespaceSelector = in.NamespaceSelector
 	return nil
 }
 
@@ -1756,24 +1510,8 @@ func Convert_v1beta1_NetworkPolicyPeer_To_extensions_NetworkPolicyPeer(in *Netwo
 }
 
 func autoConvert_extensions_NetworkPolicyPeer_To_v1beta1_NetworkPolicyPeer(in *extensions.NetworkPolicyPeer, out *NetworkPolicyPeer, s conversion.Scope) error {
-	if in.PodSelector != nil {
-		in, out := &in.PodSelector, &out.PodSelector
-		*out = new(LabelSelector)
-		if err := Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.PodSelector = nil
-	}
-	if in.NamespaceSelector != nil {
-		in, out := &in.NamespaceSelector, &out.NamespaceSelector
-		*out = new(LabelSelector)
-		if err := Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.NamespaceSelector = nil
-	}
+	out.PodSelector = in.PodSelector
+	out.NamespaceSelector = in.NamespaceSelector
 	return nil
 }
 
@@ -1814,9 +1552,7 @@ func Convert_extensions_NetworkPolicyPort_To_v1beta1_NetworkPolicyPort(in *exten
 }
 
 func autoConvert_v1beta1_NetworkPolicySpec_To_extensions_NetworkPolicySpec(in *NetworkPolicySpec, out *extensions.NetworkPolicySpec, s conversion.Scope) error {
-	if err := Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(&in.PodSelector, &out.PodSelector, s); err != nil {
-		return err
-	}
+	out.PodSelector = in.PodSelector
 	if in.Ingress != nil {
 		in, out := &in.Ingress, &out.Ingress
 		*out = make([]extensions.NetworkPolicyIngressRule, len(*in))
@@ -1836,9 +1572,7 @@ func Convert_v1beta1_NetworkPolicySpec_To_extensions_NetworkPolicySpec(in *Netwo
 }
 
 func autoConvert_extensions_NetworkPolicySpec_To_v1beta1_NetworkPolicySpec(in *extensions.NetworkPolicySpec, out *NetworkPolicySpec, s conversion.Scope) error {
-	if err := Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(&in.PodSelector, &out.PodSelector, s); err != nil {
-		return err
-	}
+	out.PodSelector = in.PodSelector
 	if in.Ingress != nil {
 		in, out := &in.Ingress, &out.Ingress
 		*out = make([]NetworkPolicyIngressRule, len(*in))
@@ -1858,9 +1592,6 @@ func Convert_extensions_NetworkPolicySpec_To_v1beta1_NetworkPolicySpec(in *exten
 }
 
 func autoConvert_v1beta1_PodSecurityPolicy_To_extensions_PodSecurityPolicy(in *PodSecurityPolicy, out *extensions.PodSecurityPolicy, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1876,9 +1607,6 @@ func Convert_v1beta1_PodSecurityPolicy_To_extensions_PodSecurityPolicy(in *PodSe
 }
 
 func autoConvert_extensions_PodSecurityPolicy_To_v1beta1_PodSecurityPolicy(in *extensions.PodSecurityPolicy, out *PodSecurityPolicy, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -1894,12 +1622,7 @@ func Convert_extensions_PodSecurityPolicy_To_v1beta1_PodSecurityPolicy(in *exten
 }
 
 func autoConvert_v1beta1_PodSecurityPolicyList_To_extensions_PodSecurityPolicyList(in *PodSecurityPolicyList, out *extensions.PodSecurityPolicyList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.PodSecurityPolicy, len(*in))
@@ -1919,12 +1642,7 @@ func Convert_v1beta1_PodSecurityPolicyList_To_extensions_PodSecurityPolicyList(i
 }
 
 func autoConvert_extensions_PodSecurityPolicyList_To_v1beta1_PodSecurityPolicyList(in *extensions.PodSecurityPolicyList, out *PodSecurityPolicyList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PodSecurityPolicy, len(*in))
@@ -2088,10 +1806,6 @@ func Convert_extensions_PodSecurityPolicySpec_To_v1beta1_PodSecurityPolicySpec(i
 }
 
 func autoConvert_v1beta1_ReplicaSet_To_extensions_ReplicaSet(in *ReplicaSet, out *extensions.ReplicaSet, s conversion.Scope) error {
-	SetDefaults_ReplicaSet(in)
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2110,9 +1824,6 @@ func Convert_v1beta1_ReplicaSet_To_extensions_ReplicaSet(in *ReplicaSet, out *ex
 }
 
 func autoConvert_extensions_ReplicaSet_To_v1beta1_ReplicaSet(in *extensions.ReplicaSet, out *ReplicaSet, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2130,13 +1841,34 @@ func Convert_extensions_ReplicaSet_To_v1beta1_ReplicaSet(in *extensions.ReplicaS
 	return autoConvert_extensions_ReplicaSet_To_v1beta1_ReplicaSet(in, out, s)
 }
 
+func autoConvert_v1beta1_ReplicaSetCondition_To_extensions_ReplicaSetCondition(in *ReplicaSetCondition, out *extensions.ReplicaSetCondition, s conversion.Scope) error {
+	out.Type = extensions.ReplicaSetConditionType(in.Type)
+	out.Status = api.ConditionStatus(in.Status)
+	out.LastTransitionTime = in.LastTransitionTime
+	out.Reason = in.Reason
+	out.Message = in.Message
+	return nil
+}
+
+func Convert_v1beta1_ReplicaSetCondition_To_extensions_ReplicaSetCondition(in *ReplicaSetCondition, out *extensions.ReplicaSetCondition, s conversion.Scope) error {
+	return autoConvert_v1beta1_ReplicaSetCondition_To_extensions_ReplicaSetCondition(in, out, s)
+}
+
+func autoConvert_extensions_ReplicaSetCondition_To_v1beta1_ReplicaSetCondition(in *extensions.ReplicaSetCondition, out *ReplicaSetCondition, s conversion.Scope) error {
+	out.Type = ReplicaSetConditionType(in.Type)
+	out.Status = v1.ConditionStatus(in.Status)
+	out.LastTransitionTime = in.LastTransitionTime
+	out.Reason = in.Reason
+	out.Message = in.Message
+	return nil
+}
+
+func Convert_extensions_ReplicaSetCondition_To_v1beta1_ReplicaSetCondition(in *extensions.ReplicaSetCondition, out *ReplicaSetCondition, s conversion.Scope) error {
+	return autoConvert_extensions_ReplicaSetCondition_To_v1beta1_ReplicaSetCondition(in, out, s)
+}
+
 func autoConvert_v1beta1_ReplicaSetList_To_extensions_ReplicaSetList(in *ReplicaSetList, out *extensions.ReplicaSetList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.ReplicaSet, len(*in))
@@ -2156,12 +1888,7 @@ func Convert_v1beta1_ReplicaSetList_To_extensions_ReplicaSetList(in *ReplicaSetL
 }
 
 func autoConvert_extensions_ReplicaSetList_To_v1beta1_ReplicaSetList(in *extensions.ReplicaSetList, out *ReplicaSetList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ReplicaSet, len(*in))
@@ -2184,15 +1911,8 @@ func autoConvert_v1beta1_ReplicaSetSpec_To_extensions_ReplicaSetSpec(in *Replica
 	if err := api.Convert_Pointer_int32_To_int32(&in.Replicas, &out.Replicas, s); err != nil {
 		return err
 	}
-	if in.Selector != nil {
-		in, out := &in.Selector, &out.Selector
-		*out = new(unversioned.LabelSelector)
-		if err := Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Selector = nil
-	}
+	out.MinReadySeconds = in.MinReadySeconds
+	out.Selector = in.Selector
 	if err := v1.Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
@@ -2203,15 +1923,8 @@ func autoConvert_extensions_ReplicaSetSpec_To_v1beta1_ReplicaSetSpec(in *extensi
 	if err := api.Convert_int32_To_Pointer_int32(&in.Replicas, &out.Replicas, s); err != nil {
 		return err
 	}
-	if in.Selector != nil {
-		in, out := &in.Selector, &out.Selector
-		*out = new(LabelSelector)
-		if err := Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.Selector = nil
-	}
+	out.MinReadySeconds = in.MinReadySeconds
+	out.Selector = in.Selector
 	if err := v1.Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
 		return err
 	}
@@ -2222,7 +1935,19 @@ func autoConvert_v1beta1_ReplicaSetStatus_To_extensions_ReplicaSetStatus(in *Rep
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
 	out.ReadyReplicas = in.ReadyReplicas
+	out.AvailableReplicas = in.AvailableReplicas
 	out.ObservedGeneration = in.ObservedGeneration
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]extensions.ReplicaSetCondition, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_ReplicaSetCondition_To_extensions_ReplicaSetCondition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	return nil
 }
 
@@ -2234,7 +1959,19 @@ func autoConvert_extensions_ReplicaSetStatus_To_v1beta1_ReplicaSetStatus(in *ext
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
 	out.ReadyReplicas = in.ReadyReplicas
+	out.AvailableReplicas = in.AvailableReplicas
 	out.ObservedGeneration = in.ObservedGeneration
+	if in.Conditions != nil {
+		in, out := &in.Conditions, &out.Conditions
+		*out = make([]ReplicaSetCondition, len(*in))
+		for i := range *in {
+			if err := Convert_extensions_ReplicaSetCondition_To_v1beta1_ReplicaSetCondition(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Conditions = nil
+	}
 	return nil
 }
 
@@ -2243,9 +1980,6 @@ func Convert_extensions_ReplicaSetStatus_To_v1beta1_ReplicaSetStatus(in *extensi
 }
 
 func autoConvert_v1beta1_ReplicationControllerDummy_To_extensions_ReplicationControllerDummy(in *ReplicationControllerDummy, out *extensions.ReplicationControllerDummy, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -2254,9 +1988,6 @@ func Convert_v1beta1_ReplicationControllerDummy_To_extensions_ReplicationControl
 }
 
 func autoConvert_extensions_ReplicationControllerDummy_To_v1beta1_ReplicationControllerDummy(in *extensions.ReplicationControllerDummy, out *ReplicationControllerDummy, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -2280,6 +2011,18 @@ func autoConvert_extensions_RollbackConfig_To_v1beta1_RollbackConfig(in *extensi
 
 func Convert_extensions_RollbackConfig_To_v1beta1_RollbackConfig(in *extensions.RollbackConfig, out *RollbackConfig, s conversion.Scope) error {
 	return autoConvert_extensions_RollbackConfig_To_v1beta1_RollbackConfig(in, out, s)
+}
+
+func autoConvert_v1beta1_RollingUpdateDeployment_To_extensions_RollingUpdateDeployment(in *RollingUpdateDeployment, out *extensions.RollingUpdateDeployment, s conversion.Scope) error {
+	// WARNING: in.MaxUnavailable requires manual conversion: inconvertible types (*k8s.io/kubernetes/pkg/util/intstr.IntOrString vs k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	// WARNING: in.MaxSurge requires manual conversion: inconvertible types (*k8s.io/kubernetes/pkg/util/intstr.IntOrString vs k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	return nil
+}
+
+func autoConvert_extensions_RollingUpdateDeployment_To_v1beta1_RollingUpdateDeployment(in *extensions.RollingUpdateDeployment, out *RollingUpdateDeployment, s conversion.Scope) error {
+	// WARNING: in.MaxUnavailable requires manual conversion: inconvertible types (k8s.io/kubernetes/pkg/util/intstr.IntOrString vs *k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	// WARNING: in.MaxSurge requires manual conversion: inconvertible types (k8s.io/kubernetes/pkg/util/intstr.IntOrString vs *k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	return nil
 }
 
 func autoConvert_v1beta1_RunAsUserStrategyOptions_To_extensions_RunAsUserStrategyOptions(in *RunAsUserStrategyOptions, out *extensions.RunAsUserStrategyOptions, s conversion.Scope) error {
@@ -2361,9 +2104,6 @@ func Convert_extensions_SELinuxStrategyOptions_To_v1beta1_SELinuxStrategyOptions
 }
 
 func autoConvert_v1beta1_Scale_To_extensions_Scale(in *Scale, out *extensions.Scale, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2382,9 +2122,6 @@ func Convert_v1beta1_Scale_To_extensions_Scale(in *Scale, out *extensions.Scale,
 }
 
 func autoConvert_extensions_Scale_To_v1beta1_Scale(in *extensions.Scale, out *Scale, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2418,6 +2155,19 @@ func autoConvert_extensions_ScaleSpec_To_v1beta1_ScaleSpec(in *extensions.ScaleS
 
 func Convert_extensions_ScaleSpec_To_v1beta1_ScaleSpec(in *extensions.ScaleSpec, out *ScaleSpec, s conversion.Scope) error {
 	return autoConvert_extensions_ScaleSpec_To_v1beta1_ScaleSpec(in, out, s)
+}
+
+func autoConvert_v1beta1_ScaleStatus_To_extensions_ScaleStatus(in *ScaleStatus, out *extensions.ScaleStatus, s conversion.Scope) error {
+	out.Replicas = in.Replicas
+	// WARNING: in.Selector requires manual conversion: inconvertible types (map[string]string vs *k8s.io/kubernetes/pkg/api/unversioned.LabelSelector)
+	// WARNING: in.TargetSelector requires manual conversion: does not exist in peer-type
+	return nil
+}
+
+func autoConvert_extensions_ScaleStatus_To_v1beta1_ScaleStatus(in *extensions.ScaleStatus, out *ScaleStatus, s conversion.Scope) error {
+	out.Replicas = in.Replicas
+	// WARNING: in.Selector requires manual conversion: inconvertible types (*k8s.io/kubernetes/pkg/api/unversioned.LabelSelector vs map[string]string)
+	return nil
 }
 
 func autoConvert_v1beta1_SupplementalGroupsStrategyOptions_To_extensions_SupplementalGroupsStrategyOptions(in *SupplementalGroupsStrategyOptions, out *extensions.SupplementalGroupsStrategyOptions, s conversion.Scope) error {
@@ -2461,9 +2211,6 @@ func Convert_extensions_SupplementalGroupsStrategyOptions_To_v1beta1_Supplementa
 }
 
 func autoConvert_v1beta1_ThirdPartyResource_To_extensions_ThirdPartyResource(in *ThirdPartyResource, out *extensions.ThirdPartyResource, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2488,9 +2235,6 @@ func Convert_v1beta1_ThirdPartyResource_To_extensions_ThirdPartyResource(in *Thi
 }
 
 func autoConvert_extensions_ThirdPartyResource_To_v1beta1_ThirdPartyResource(in *extensions.ThirdPartyResource, out *ThirdPartyResource, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2515,9 +2259,6 @@ func Convert_extensions_ThirdPartyResource_To_v1beta1_ThirdPartyResource(in *ext
 }
 
 func autoConvert_v1beta1_ThirdPartyResourceData_To_extensions_ThirdPartyResourceData(in *ThirdPartyResourceData, out *extensions.ThirdPartyResourceData, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2533,9 +2274,6 @@ func Convert_v1beta1_ThirdPartyResourceData_To_extensions_ThirdPartyResourceData
 }
 
 func autoConvert_extensions_ThirdPartyResourceData_To_v1beta1_ThirdPartyResourceData(in *extensions.ThirdPartyResourceData, out *ThirdPartyResourceData, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
 	// TODO: Inefficient conversion - can we improve it?
 	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
 		return err
@@ -2551,12 +2289,7 @@ func Convert_extensions_ThirdPartyResourceData_To_v1beta1_ThirdPartyResourceData
 }
 
 func autoConvert_v1beta1_ThirdPartyResourceDataList_To_extensions_ThirdPartyResourceDataList(in *ThirdPartyResourceDataList, out *extensions.ThirdPartyResourceDataList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.ThirdPartyResourceData, len(*in))
@@ -2576,12 +2309,7 @@ func Convert_v1beta1_ThirdPartyResourceDataList_To_extensions_ThirdPartyResource
 }
 
 func autoConvert_extensions_ThirdPartyResourceDataList_To_v1beta1_ThirdPartyResourceDataList(in *extensions.ThirdPartyResourceDataList, out *ThirdPartyResourceDataList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ThirdPartyResourceData, len(*in))
@@ -2601,12 +2329,7 @@ func Convert_extensions_ThirdPartyResourceDataList_To_v1beta1_ThirdPartyResource
 }
 
 func autoConvert_v1beta1_ThirdPartyResourceList_To_extensions_ThirdPartyResourceList(in *ThirdPartyResourceList, out *extensions.ThirdPartyResourceList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]extensions.ThirdPartyResource, len(*in))
@@ -2626,12 +2349,7 @@ func Convert_v1beta1_ThirdPartyResourceList_To_extensions_ThirdPartyResourceList
 }
 
 func autoConvert_extensions_ThirdPartyResourceList_To_v1beta1_ThirdPartyResourceList(in *extensions.ThirdPartyResourceList, out *ThirdPartyResourceList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]ThirdPartyResource, len(*in))

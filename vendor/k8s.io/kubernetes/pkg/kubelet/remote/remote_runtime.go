@@ -36,7 +36,7 @@ type RemoteRuntimeService struct {
 // NewRemoteRuntimeService creates a new internalApi.RuntimeService.
 func NewRemoteRuntimeService(addr string, connectionTimout time.Duration) (internalApi.RuntimeService, error) {
 	glog.V(3).Infof("Connecting to runtime service %s", addr)
-	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithDialer(dial))
+	conn, err := grpc.Dial(addr, grpc.WithInsecure(), grpc.WithTimeout(connectionTimout), grpc.WithDialer(dial))
 	if err != nil {
 		glog.Errorf("Connect remote runtime %s failed: %v", addr, err)
 		return nil, err
@@ -64,16 +64,17 @@ func (r *RemoteRuntimeService) Version(apiVersion string) (*runtimeApi.VersionRe
 	return typedVersion, err
 }
 
-// CreatePodSandbox creates a pod-level sandbox.
-func (r *RemoteRuntimeService) CreatePodSandbox(config *runtimeApi.PodSandboxConfig) (string, error) {
+// RunPodSandbox creates and starts a pod-level sandbox. Runtimes should ensure
+// the sandbox is in ready state.
+func (r *RemoteRuntimeService) RunPodSandbox(config *runtimeApi.PodSandboxConfig) (string, error) {
 	ctx, cancel := getContextWithTimeout(r.timeout)
 	defer cancel()
 
-	resp, err := r.runtimeClient.CreatePodSandbox(ctx, &runtimeApi.CreatePodSandboxRequest{
+	resp, err := r.runtimeClient.RunPodSandbox(ctx, &runtimeApi.RunPodSandboxRequest{
 		Config: config,
 	})
 	if err != nil {
-		glog.Errorf("CreatePodSandbox from runtime service failed: %v", err)
+		glog.Errorf("RunPodSandbox from runtime service failed: %v", err)
 		return "", err
 	}
 
@@ -250,4 +251,8 @@ func (r *RemoteRuntimeService) ContainerStatus(containerID string) (*runtimeApi.
 // TODO: support terminal resizing for exec, refer https://github.com/kubernetes/kubernetes/issues/29579.
 func (r *RemoteRuntimeService) Exec(containerID string, cmd []string, tty bool, stdin io.Reader, stdout, stderr io.WriteCloser) error {
 	return fmt.Errorf("Not implemented")
+}
+
+func (r *RemoteRuntimeService) UpdateRuntimeConfig(runtimeConfig *runtimeApi.RuntimeConfig) error {
+	return nil
 }

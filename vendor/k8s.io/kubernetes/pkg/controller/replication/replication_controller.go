@@ -130,8 +130,8 @@ func NewReplicationManager(podInformer cache.SharedIndexInformer, kubeClient cli
 
 // newReplicationManager configures a replication manager with the specified event recorder
 func newReplicationManager(eventRecorder record.EventRecorder, podInformer cache.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, burstReplicas int, lookupCacheSize int, garbageCollectorEnabled bool) *ReplicationManager {
-	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("replication_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	if kubeClient != nil && kubeClient.Core().RESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("replication_controller", kubeClient.Core().RESTClient().GetRateLimiter())
 	}
 
 	rm := &ReplicationManager{
@@ -269,16 +269,16 @@ func (rm *ReplicationManager) getPodController(pod *api.Pod) *api.ReplicationCon
 	}
 
 	// update lookup cache
-	rm.lookupCache.Update(pod, &controllers[0])
+	rm.lookupCache.Update(pod, controllers[0])
 
-	return &controllers[0]
+	return controllers[0]
 }
 
 // isCacheValid check if the cache is valid
 func (rm *ReplicationManager) isCacheValid(pod *api.Pod, cachedRC *api.ReplicationController) bool {
-	exists, err := rm.rcStore.Exists(cachedRC)
+	_, err := rm.rcStore.ReplicationControllers(cachedRC.Namespace).Get(cachedRC.Name)
 	// rc has been deleted or updated, cache is invalid
-	if err != nil || !exists || !isControllerMatch(pod, cachedRC) {
+	if err != nil || !isControllerMatch(pod, cachedRC) {
 		return false
 	}
 	return true
@@ -717,6 +717,7 @@ func (rm *ReplicationManager) syncReplicationController(key string) error {
 	// matching pods must be part of the filteredPods.
 	fullyLabeledReplicasCount := 0
 	readyReplicasCount := 0
+	availableReplicasCount := 0
 	templateLabel := labels.Set(rc.Spec.Template.Labels).AsSelectorPreValidated()
 	for _, pod := range filteredPods {
 		if templateLabel.Matches(labels.Set(pod.Labels)) {
@@ -724,11 +725,21 @@ func (rm *ReplicationManager) syncReplicationController(key string) error {
 		}
 		if api.IsPodReady(pod) {
 			readyReplicasCount++
+			if api.IsPodAvailable(pod, rc.Spec.MinReadySeconds, unversioned.Now()) {
+				availableReplicasCount++
+			}
 		}
 	}
 
 	// Always updates status as pods come up or die.
-	if err := updateReplicaCount(rm.kubeClient.Core().ReplicationControllers(rc.Namespace), rc, len(filteredPods), fullyLabeledReplicasCount, readyReplicasCount); err != nil {
+	if err := updateReplicaCount(
+		rm.kubeClient.Core().ReplicationControllers(rc.Namespace),
+		rc,
+		len(filteredPods),
+		fullyLabeledReplicasCount,
+		readyReplicasCount,
+		availableReplicasCount,
+	); err != nil {
 		// Multiple things could lead to this update failing.  Returning an error causes a requeue without forcing a hotloop
 		return err
 	}

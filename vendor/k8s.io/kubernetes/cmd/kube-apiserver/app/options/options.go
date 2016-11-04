@@ -24,7 +24,6 @@ import (
 	genericoptions "k8s.io/kubernetes/pkg/genericapiserver/options"
 	kubeletclient "k8s.io/kubernetes/pkg/kubelet/client"
 	"k8s.io/kubernetes/pkg/master/ports"
-	"k8s.io/kubernetes/pkg/registry/generic/registry"
 
 	"github.com/spf13/pflag"
 )
@@ -38,7 +37,7 @@ type APIServer struct {
 	MaxConnectionBytesPerSec    int64
 	SSHKeyfile                  string
 	SSHUser                     string
-	ServiceAccountKeyFile       string
+	ServiceAccountKeyFiles      []string
 	ServiceAccountLookup        bool
 	WebhookTokenAuthnConfigFile string
 	WebhookTokenAuthnCacheTTL   time.Duration
@@ -71,9 +70,10 @@ func (s *APIServer) AddFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&s.EventTTL, "event-ttl", s.EventTTL,
 		"Amount of time to retain events. Default is 1h.")
 
-	fs.StringVar(&s.ServiceAccountKeyFile, "service-account-key-file", s.ServiceAccountKeyFile, ""+
-		"File containing PEM-encoded x509 RSA private or public key, used to verify "+
-		"ServiceAccount tokens. If unspecified, --tls-private-key-file is used.")
+	fs.StringArrayVar(&s.ServiceAccountKeyFiles, "service-account-key-file", s.ServiceAccountKeyFiles, ""+
+		"File containing PEM-encoded x509 RSA or ECDSA private or public keys, used to verify "+
+		"ServiceAccount tokens. If unspecified, --tls-private-key-file is used. "+
+		"The specified file can contain multiple keys, and the flag can be specified multiple times with different files.")
 
 	fs.BoolVar(&s.ServiceAccountLookup, "service-account-lookup", s.ServiceAccountLookup,
 		"If true, validate ServiceAccount tokens exist in etcd as part of authentication.")
@@ -123,8 +123,4 @@ func (s *APIServer) AddFlags(fs *pflag.FlagSet) {
 		"If true, server will do its best to fix the update request to pass the validation, "+
 		"e.g., setting empty UID in update request to its existing value. This flag can be turned off "+
 		"after we fix all the clients that send malformed updates.")
-
-	fs.BoolVar(&registry.EnableGarbageCollector, "enable-garbage-collector", true, ""+
-		"Enables the generic garbage collector. MUST be synced with the corresponding flag "+
-		"of the kube-controller-manager.")
 }

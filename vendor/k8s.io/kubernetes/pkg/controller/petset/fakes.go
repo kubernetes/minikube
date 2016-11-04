@@ -84,7 +84,7 @@ func newPetSetWithVolumes(replicas int, name string, petMounts []api.VolumeMount
 			Selector: &unversioned.LabelSelector{
 				MatchLabels: map[string]string{"foo": "bar"},
 			},
-			Replicas: replicas,
+			Replicas: int32(replicas),
 			Template: api.PodTemplateSpec{
 				Spec: api.PodSpec{
 					Containers: []api.Container{
@@ -151,11 +151,13 @@ func newFakePetClient() *fakePetClient {
 }
 
 type fakePetClient struct {
-	pets                         []*pcb
-	claims                       []api.PersistentVolumeClaim
-	petsCreated, petsDeleted     int
-	claimsCreated, claimsDeleted int
-	recorder                     record.EventRecorder
+	pets          []*pcb
+	claims        []api.PersistentVolumeClaim
+	petsCreated   int
+	petsDeleted   int
+	claimsCreated int
+	claimsDeleted int
+	recorder      record.EventRecorder
 	petHealthChecker
 }
 
@@ -246,7 +248,7 @@ func (f *fakePetClient) deletePetAtIndex(index int) {
 }
 
 func (f *fakePetClient) setHealthy(index int) error {
-	if len(f.pets) < index {
+	if len(f.pets) <= index {
 		return fmt.Errorf("Index out of range, len %v index %v", len(f.pets), index)
 	}
 	f.pets[index].pod.Status.Phase = api.PodRunning
@@ -268,7 +270,7 @@ func (f *fakePetClient) isHealthy(pod *api.Pod) bool {
 }
 
 func (f *fakePetClient) setDeletionTimestamp(index int) error {
-	if len(f.pets) < index {
+	if len(f.pets) <= index {
 		return fmt.Errorf("Index out of range, len %v index %v", len(f.pets), index)
 	}
 	f.pets[index].pod.DeletionTimestamp = &unversioned.Time{Time: time.Now()}
