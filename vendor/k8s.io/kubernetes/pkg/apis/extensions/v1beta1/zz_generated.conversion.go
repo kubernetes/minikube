@@ -119,8 +119,6 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 		Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector,
 		Convert_v1beta1_LabelSelectorRequirement_To_unversioned_LabelSelectorRequirement,
 		Convert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement,
-		Convert_v1beta1_ListOptions_To_api_ListOptions,
-		Convert_api_ListOptions_To_v1beta1_ListOptions,
 		Convert_v1beta1_NetworkPolicy_To_extensions_NetworkPolicy,
 		Convert_extensions_NetworkPolicy_To_v1beta1_NetworkPolicy,
 		Convert_v1beta1_NetworkPolicyIngressRule_To_extensions_NetworkPolicyIngressRule,
@@ -163,10 +161,6 @@ func RegisterConversions(scheme *runtime.Scheme) error {
 		Convert_extensions_ScaleSpec_To_v1beta1_ScaleSpec,
 		Convert_v1beta1_ScaleStatus_To_extensions_ScaleStatus,
 		Convert_extensions_ScaleStatus_To_v1beta1_ScaleStatus,
-		Convert_v1beta1_StorageClass_To_extensions_StorageClass,
-		Convert_extensions_StorageClass_To_v1beta1_StorageClass,
-		Convert_v1beta1_StorageClassList_To_extensions_StorageClassList,
-		Convert_extensions_StorageClassList_To_v1beta1_StorageClassList,
 		Convert_v1beta1_SupplementalGroupsStrategyOptions_To_extensions_SupplementalGroupsStrategyOptions,
 		Convert_extensions_SupplementalGroupsStrategyOptions_To_v1beta1_SupplementalGroupsStrategyOptions,
 		Convert_v1beta1_ThirdPartyResource_To_extensions_ThirdPartyResource,
@@ -945,6 +939,22 @@ func Convert_autoscaling_HorizontalPodAutoscalerList_To_v1beta1_HorizontalPodAut
 	return autoConvert_autoscaling_HorizontalPodAutoscalerList_To_v1beta1_HorizontalPodAutoscalerList(in, out, s)
 }
 
+func autoConvert_v1beta1_HorizontalPodAutoscalerSpec_To_autoscaling_HorizontalPodAutoscalerSpec(in *HorizontalPodAutoscalerSpec, out *autoscaling.HorizontalPodAutoscalerSpec, s conversion.Scope) error {
+	// WARNING: in.ScaleRef requires manual conversion: does not exist in peer-type
+	out.MinReplicas = in.MinReplicas
+	out.MaxReplicas = in.MaxReplicas
+	// WARNING: in.CPUUtilization requires manual conversion: does not exist in peer-type
+	return nil
+}
+
+func autoConvert_autoscaling_HorizontalPodAutoscalerSpec_To_v1beta1_HorizontalPodAutoscalerSpec(in *autoscaling.HorizontalPodAutoscalerSpec, out *HorizontalPodAutoscalerSpec, s conversion.Scope) error {
+	// WARNING: in.ScaleTargetRef requires manual conversion: does not exist in peer-type
+	out.MinReplicas = in.MinReplicas
+	out.MaxReplicas = in.MaxReplicas
+	// WARNING: in.TargetCPUUtilizationPercentage requires manual conversion: does not exist in peer-type
+	return nil
+}
+
 func autoConvert_v1beta1_HorizontalPodAutoscalerStatus_To_autoscaling_HorizontalPodAutoscalerStatus(in *HorizontalPodAutoscalerStatus, out *autoscaling.HorizontalPodAutoscalerStatus, s conversion.Scope) error {
 	out.ObservedGeneration = in.ObservedGeneration
 	out.LastScaleTime = in.LastScaleTime
@@ -1436,6 +1446,46 @@ func Convert_batch_JobList_To_v1beta1_JobList(in *batch.JobList, out *JobList, s
 	return autoConvert_batch_JobList_To_v1beta1_JobList(in, out, s)
 }
 
+func autoConvert_v1beta1_JobSpec_To_batch_JobSpec(in *JobSpec, out *batch.JobSpec, s conversion.Scope) error {
+	out.Parallelism = in.Parallelism
+	out.Completions = in.Completions
+	out.ActiveDeadlineSeconds = in.ActiveDeadlineSeconds
+	if in.Selector != nil {
+		in, out := &in.Selector, &out.Selector
+		*out = new(unversioned.LabelSelector)
+		if err := Convert_v1beta1_LabelSelector_To_unversioned_LabelSelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Selector = nil
+	}
+	// WARNING: in.AutoSelector requires manual conversion: does not exist in peer-type
+	if err := v1.Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
+		return err
+	}
+	return nil
+}
+
+func autoConvert_batch_JobSpec_To_v1beta1_JobSpec(in *batch.JobSpec, out *JobSpec, s conversion.Scope) error {
+	out.Parallelism = in.Parallelism
+	out.Completions = in.Completions
+	out.ActiveDeadlineSeconds = in.ActiveDeadlineSeconds
+	if in.Selector != nil {
+		in, out := &in.Selector, &out.Selector
+		*out = new(LabelSelector)
+		if err := Convert_unversioned_LabelSelector_To_v1beta1_LabelSelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.Selector = nil
+	}
+	// WARNING: in.ManualSelector requires manual conversion: does not exist in peer-type
+	if err := v1.Convert_api_PodTemplateSpec_To_v1_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
+		return err
+	}
+	return nil
+}
+
 func autoConvert_v1beta1_JobStatus_To_batch_JobStatus(in *JobStatus, out *batch.JobStatus, s conversion.Scope) error {
 	if in.Conditions != nil {
 		in, out := &in.Conditions, &out.Conditions
@@ -1544,46 +1594,6 @@ func autoConvert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRe
 
 func Convert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement(in *unversioned.LabelSelectorRequirement, out *LabelSelectorRequirement, s conversion.Scope) error {
 	return autoConvert_unversioned_LabelSelectorRequirement_To_v1beta1_LabelSelectorRequirement(in, out, s)
-}
-
-func autoConvert_v1beta1_ListOptions_To_api_ListOptions(in *ListOptions, out *api.ListOptions, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_string_To_labels_Selector(&in.LabelSelector, &out.LabelSelector, s); err != nil {
-		return err
-	}
-	if err := api.Convert_string_To_fields_Selector(&in.FieldSelector, &out.FieldSelector, s); err != nil {
-		return err
-	}
-	out.Watch = in.Watch
-	out.ResourceVersion = in.ResourceVersion
-	out.TimeoutSeconds = in.TimeoutSeconds
-	return nil
-}
-
-func Convert_v1beta1_ListOptions_To_api_ListOptions(in *ListOptions, out *api.ListOptions, s conversion.Scope) error {
-	return autoConvert_v1beta1_ListOptions_To_api_ListOptions(in, out, s)
-}
-
-func autoConvert_api_ListOptions_To_v1beta1_ListOptions(in *api.ListOptions, out *ListOptions, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_labels_Selector_To_string(&in.LabelSelector, &out.LabelSelector, s); err != nil {
-		return err
-	}
-	if err := api.Convert_fields_Selector_To_string(&in.FieldSelector, &out.FieldSelector, s); err != nil {
-		return err
-	}
-	out.Watch = in.Watch
-	out.ResourceVersion = in.ResourceVersion
-	out.TimeoutSeconds = in.TimeoutSeconds
-	return nil
-}
-
-func Convert_api_ListOptions_To_v1beta1_ListOptions(in *api.ListOptions, out *ListOptions, s conversion.Scope) error {
-	return autoConvert_api_ListOptions_To_v1beta1_ListOptions(in, out, s)
 }
 
 func autoConvert_v1beta1_NetworkPolicy_To_extensions_NetworkPolicy(in *NetworkPolicy, out *extensions.NetworkPolicy, s conversion.Scope) error {
@@ -2188,6 +2198,7 @@ func autoConvert_v1beta1_ReplicaSetSpec_To_extensions_ReplicaSetSpec(in *Replica
 	if err := api.Convert_Pointer_int32_To_int32(&in.Replicas, &out.Replicas, s); err != nil {
 		return err
 	}
+	out.MinReadySeconds = in.MinReadySeconds
 	if in.Selector != nil {
 		in, out := &in.Selector, &out.Selector
 		*out = new(unversioned.LabelSelector)
@@ -2207,6 +2218,7 @@ func autoConvert_extensions_ReplicaSetSpec_To_v1beta1_ReplicaSetSpec(in *extensi
 	if err := api.Convert_int32_To_Pointer_int32(&in.Replicas, &out.Replicas, s); err != nil {
 		return err
 	}
+	out.MinReadySeconds = in.MinReadySeconds
 	if in.Selector != nil {
 		in, out := &in.Selector, &out.Selector
 		*out = new(LabelSelector)
@@ -2226,6 +2238,7 @@ func autoConvert_v1beta1_ReplicaSetStatus_To_extensions_ReplicaSetStatus(in *Rep
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
 	out.ReadyReplicas = in.ReadyReplicas
+	out.AvailableReplicas = in.AvailableReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
@@ -2238,6 +2251,7 @@ func autoConvert_extensions_ReplicaSetStatus_To_v1beta1_ReplicaSetStatus(in *ext
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
 	out.ReadyReplicas = in.ReadyReplicas
+	out.AvailableReplicas = in.AvailableReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
@@ -2284,6 +2298,18 @@ func autoConvert_extensions_RollbackConfig_To_v1beta1_RollbackConfig(in *extensi
 
 func Convert_extensions_RollbackConfig_To_v1beta1_RollbackConfig(in *extensions.RollbackConfig, out *RollbackConfig, s conversion.Scope) error {
 	return autoConvert_extensions_RollbackConfig_To_v1beta1_RollbackConfig(in, out, s)
+}
+
+func autoConvert_v1beta1_RollingUpdateDeployment_To_extensions_RollingUpdateDeployment(in *RollingUpdateDeployment, out *extensions.RollingUpdateDeployment, s conversion.Scope) error {
+	// WARNING: in.MaxUnavailable requires manual conversion: inconvertible types (*k8s.io/kubernetes/pkg/util/intstr.IntOrString vs k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	// WARNING: in.MaxSurge requires manual conversion: inconvertible types (*k8s.io/kubernetes/pkg/util/intstr.IntOrString vs k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	return nil
+}
+
+func autoConvert_extensions_RollingUpdateDeployment_To_v1beta1_RollingUpdateDeployment(in *extensions.RollingUpdateDeployment, out *RollingUpdateDeployment, s conversion.Scope) error {
+	// WARNING: in.MaxUnavailable requires manual conversion: inconvertible types (k8s.io/kubernetes/pkg/util/intstr.IntOrString vs *k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	// WARNING: in.MaxSurge requires manual conversion: inconvertible types (k8s.io/kubernetes/pkg/util/intstr.IntOrString vs *k8s.io/kubernetes/pkg/util/intstr.IntOrString)
+	return nil
 }
 
 func autoConvert_v1beta1_RunAsUserStrategyOptions_To_extensions_RunAsUserStrategyOptions(in *RunAsUserStrategyOptions, out *extensions.RunAsUserStrategyOptions, s conversion.Scope) error {
@@ -2424,88 +2450,17 @@ func Convert_extensions_ScaleSpec_To_v1beta1_ScaleSpec(in *extensions.ScaleSpec,
 	return autoConvert_extensions_ScaleSpec_To_v1beta1_ScaleSpec(in, out, s)
 }
 
-func autoConvert_v1beta1_StorageClass_To_extensions_StorageClass(in *StorageClass, out *extensions.StorageClass, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
-		return err
-	}
-	out.Provisioner = in.Provisioner
-	out.Parameters = in.Parameters
+func autoConvert_v1beta1_ScaleStatus_To_extensions_ScaleStatus(in *ScaleStatus, out *extensions.ScaleStatus, s conversion.Scope) error {
+	out.Replicas = in.Replicas
+	// WARNING: in.Selector requires manual conversion: inconvertible types (map[string]string vs *k8s.io/kubernetes/pkg/api/unversioned.LabelSelector)
+	// WARNING: in.TargetSelector requires manual conversion: does not exist in peer-type
 	return nil
 }
 
-func Convert_v1beta1_StorageClass_To_extensions_StorageClass(in *StorageClass, out *extensions.StorageClass, s conversion.Scope) error {
-	return autoConvert_v1beta1_StorageClass_To_extensions_StorageClass(in, out, s)
-}
-
-func autoConvert_extensions_StorageClass_To_v1beta1_StorageClass(in *extensions.StorageClass, out *StorageClass, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	// TODO: Inefficient conversion - can we improve it?
-	if err := s.Convert(&in.ObjectMeta, &out.ObjectMeta, 0); err != nil {
-		return err
-	}
-	out.Provisioner = in.Provisioner
-	out.Parameters = in.Parameters
+func autoConvert_extensions_ScaleStatus_To_v1beta1_ScaleStatus(in *extensions.ScaleStatus, out *ScaleStatus, s conversion.Scope) error {
+	out.Replicas = in.Replicas
+	// WARNING: in.Selector requires manual conversion: inconvertible types (*k8s.io/kubernetes/pkg/api/unversioned.LabelSelector vs map[string]string)
 	return nil
-}
-
-func Convert_extensions_StorageClass_To_v1beta1_StorageClass(in *extensions.StorageClass, out *StorageClass, s conversion.Scope) error {
-	return autoConvert_extensions_StorageClass_To_v1beta1_StorageClass(in, out, s)
-}
-
-func autoConvert_v1beta1_StorageClassList_To_extensions_StorageClassList(in *StorageClassList, out *extensions.StorageClassList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]extensions.StorageClass, len(*in))
-		for i := range *in {
-			if err := Convert_v1beta1_StorageClass_To_extensions_StorageClass(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
-	return nil
-}
-
-func Convert_v1beta1_StorageClassList_To_extensions_StorageClassList(in *StorageClassList, out *extensions.StorageClassList, s conversion.Scope) error {
-	return autoConvert_v1beta1_StorageClassList_To_extensions_StorageClassList(in, out, s)
-}
-
-func autoConvert_extensions_StorageClassList_To_v1beta1_StorageClassList(in *extensions.StorageClassList, out *StorageClassList, s conversion.Scope) error {
-	if err := api.Convert_unversioned_TypeMeta_To_unversioned_TypeMeta(&in.TypeMeta, &out.TypeMeta, s); err != nil {
-		return err
-	}
-	if err := api.Convert_unversioned_ListMeta_To_unversioned_ListMeta(&in.ListMeta, &out.ListMeta, s); err != nil {
-		return err
-	}
-	if in.Items != nil {
-		in, out := &in.Items, &out.Items
-		*out = make([]StorageClass, len(*in))
-		for i := range *in {
-			if err := Convert_extensions_StorageClass_To_v1beta1_StorageClass(&(*in)[i], &(*out)[i], s); err != nil {
-				return err
-			}
-		}
-	} else {
-		out.Items = nil
-	}
-	return nil
-}
-
-func Convert_extensions_StorageClassList_To_v1beta1_StorageClassList(in *extensions.StorageClassList, out *StorageClassList, s conversion.Scope) error {
-	return autoConvert_extensions_StorageClassList_To_v1beta1_StorageClassList(in, out, s)
 }
 
 func autoConvert_v1beta1_SupplementalGroupsStrategyOptions_To_extensions_SupplementalGroupsStrategyOptions(in *SupplementalGroupsStrategyOptions, out *extensions.SupplementalGroupsStrategyOptions, s conversion.Scope) error {

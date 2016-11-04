@@ -23,8 +23,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
-
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/extensions"
@@ -34,17 +32,17 @@ import (
 	unversionedextensions "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/extensions/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/framework"
-	"k8s.io/kubernetes/pkg/controller/framework/informers"
+	"k8s.io/kubernetes/pkg/controller/informers"
 	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/runtime"
+	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/util/metrics"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/util/workqueue"
-	"k8s.io/kubernetes/pkg/watch"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
+
+	"github.com/golang/glog"
 )
 
 const (
@@ -54,10 +52,6 @@ const (
 	// Realistic value of the burstReplica field for the replication manager based off
 	// performance requirements for kubernetes 1.0.
 	BurstReplicas = 500
-
-	// We must avoid counting pods until the pod store has synced. If it hasn't synced, to
-	// avoid a hot loop, we'll wait this long between checks.
-	PodStoreSyncedPollPeriod = 100 * time.Millisecond
 
 	// If sending a status upate to API server fails, we retry a finite number of times.
 	StatusUpdateRetries = 1
@@ -70,13 +64,6 @@ type DaemonSetsController struct {
 	eventRecorder record.EventRecorder
 	podControl    controller.PodControlInterface
 
-	// internalPodInformer is used to hold a personal informer.  If we're using
-	// a normal shared informer, then the informer will be started for us.  If
-	// we have a personal informer, we must start it ourselves.   If you start
-	// the controller using NewDaemonSetsController(passing SharedInformer), this
-	// will be null
-	internalPodInformer framework.SharedInformer
-
 	// An dsc is temporarily suspended after creating/deleting these many replicas.
 	// It resumes normal action after observing the watch events for them.
 	burstReplicas int
@@ -86,28 +73,25 @@ type DaemonSetsController struct {
 	// A TTLCache of pod creates/deletes each ds expects to see
 	expectations controller.ControllerExpectationsInterface
 	// A store of daemon sets
-	dsStore cache.StoreToDaemonSetLister
+	dsStore *cache.StoreToDaemonSetLister
 	// A store of pods
-	podStore cache.StoreToPodLister
+	podStore *cache.StoreToPodLister
 	// A store of nodes
-	nodeStore cache.StoreToNodeLister
-	// Watches changes to all daemon sets.
-	dsController *framework.Controller
-	// Watches changes to all pods
-	podController framework.ControllerInterface
-	// Watches changes to all nodes.
-	nodeController *framework.Controller
+	nodeStore *cache.StoreToNodeLister
 	// podStoreSynced returns true if the pod store has been synced at least once.
 	// Added as a member to the struct to allow injection for testing.
-	podStoreSynced func() bool
+	podStoreSynced cache.InformerSynced
+	// nodeStoreSynced returns true if the node store has been synced at least once.
+	// Added as a member to the struct to allow injection for testing.
+	nodeStoreSynced cache.InformerSynced
 
 	lookupCache *controller.MatchingCache
 
-	// Daemon sets that need to be synced.
-	queue *workqueue.Type
+	// DaemonSet keys that need to be synced.
+	queue workqueue.RateLimitingInterface
 }
 
-func NewDaemonSetsController(podInformer framework.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, lookupCacheSize int) *DaemonSetsController {
+func NewDaemonSetsController(daemonSetInformer informers.DaemonSetInformer, podInformer informers.PodInformer, nodeInformer informers.NodeInformer, kubeClient clientset.Interface, lookupCacheSize int) *DaemonSetsController {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
 	// TODO: remove the wrapper when every clients have moved to use the clientset.
@@ -125,90 +109,60 @@ func NewDaemonSetsController(podInformer framework.SharedIndexInformer, kubeClie
 		},
 		burstReplicas: BurstReplicas,
 		expectations:  controller.NewControllerExpectations(),
-		queue:         workqueue.NewNamed("daemonset"),
+		queue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "daemonset"),
 	}
-	// Manage addition/update of daemon sets.
-	dsc.dsStore.Store, dsc.dsController = framework.NewInformer(
-		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return dsc.kubeClient.Extensions().DaemonSets(api.NamespaceAll).List(options)
-			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return dsc.kubeClient.Extensions().DaemonSets(api.NamespaceAll).Watch(options)
-			},
-		},
-		&extensions.DaemonSet{},
-		// TODO: Can we have much longer period here?
-		FullDaemonSetResyncPeriod,
-		framework.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				ds := obj.(*extensions.DaemonSet)
-				glog.V(4).Infof("Adding daemon set %s", ds.Name)
-				dsc.enqueueDaemonSet(ds)
-			},
-			UpdateFunc: func(old, cur interface{}) {
-				oldDS := old.(*extensions.DaemonSet)
-				curDS := cur.(*extensions.DaemonSet)
-				// We should invalidate the whole lookup cache if a DS's selector has been updated.
-				//
-				// Imagine that you have two RSs:
-				// * old DS1
-				// * new DS2
-				// You also have a pod that is attached to DS2 (because it doesn't match DS1 selector).
-				// Now imagine that you are changing DS1 selector so that it is now matching that pod,
-				// in such case we must invalidate the whole cache so that pod could be adopted by DS1
-				//
-				// This makes the lookup cache less helpful, but selector update does not happen often,
-				// so it's not a big problem
-				if !reflect.DeepEqual(oldDS.Spec.Selector, curDS.Spec.Selector) {
-					dsc.lookupCache.InvalidateAll()
-				}
 
-				glog.V(4).Infof("Updating daemon set %s", oldDS.Name)
-				dsc.enqueueDaemonSet(curDS)
-			},
-			DeleteFunc: dsc.deleteDaemonset,
+	daemonSetInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			ds := obj.(*extensions.DaemonSet)
+			glog.V(4).Infof("Adding daemon set %s", ds.Name)
+			dsc.enqueueDaemonSet(ds)
 		},
-	)
+		UpdateFunc: func(old, cur interface{}) {
+			oldDS := old.(*extensions.DaemonSet)
+			curDS := cur.(*extensions.DaemonSet)
+			// We should invalidate the whole lookup cache if a DS's selector has been updated.
+			//
+			// Imagine that you have two RSs:
+			// * old DS1
+			// * new DS2
+			// You also have a pod that is attached to DS2 (because it doesn't match DS1 selector).
+			// Now imagine that you are changing DS1 selector so that it is now matching that pod,
+			// in such case we must invalidate the whole cache so that pod could be adopted by DS1
+			//
+			// This makes the lookup cache less helpful, but selector update does not happen often,
+			// so it's not a big problem
+			if !reflect.DeepEqual(oldDS.Spec.Selector, curDS.Spec.Selector) {
+				dsc.lookupCache.InvalidateAll()
+			}
+
+			glog.V(4).Infof("Updating daemon set %s", oldDS.Name)
+			dsc.enqueueDaemonSet(curDS)
+		},
+		DeleteFunc: dsc.deleteDaemonset,
+	})
+	dsc.dsStore = daemonSetInformer.Lister()
 
 	// Watch for creation/deletion of pods. The reason we watch is that we don't want a daemon set to create/delete
 	// more pods until all the effects (expectations) of a daemon set's create/delete have been observed.
-	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
+	podInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    dsc.addPod,
 		UpdateFunc: dsc.updatePod,
 		DeleteFunc: dsc.deletePod,
 	})
-	dsc.podStore.Indexer = podInformer.GetIndexer()
-	dsc.podController = podInformer.GetController()
-	dsc.podStoreSynced = podInformer.HasSynced
+	dsc.podStore = podInformer.Lister()
+	dsc.podStoreSynced = podInformer.Informer().HasSynced
 
-	// Watch for new nodes or updates to nodes - daemon pods are launched on new nodes, and possibly when labels on nodes change,
-	dsc.nodeStore.Store, dsc.nodeController = framework.NewInformer(
-		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return dsc.kubeClient.Core().Nodes().List(options)
-			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return dsc.kubeClient.Core().Nodes().Watch(options)
-			},
-		},
-		&api.Node{},
-		resyncPeriod(),
-		framework.ResourceEventHandlerFuncs{
-			AddFunc:    dsc.addNode,
-			UpdateFunc: dsc.updateNode,
-		},
+	nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    dsc.addNode,
+		UpdateFunc: dsc.updateNode,
+	},
 	)
+	dsc.nodeStoreSynced = nodeInformer.Informer().HasSynced
+	dsc.nodeStore = nodeInformer.Lister()
+
 	dsc.syncHandler = dsc.syncDaemonSet
 	dsc.lookupCache = controller.NewMatchingCache(lookupCacheSize)
-	return dsc
-}
-
-func NewDaemonSetsControllerFromClient(kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, lookupCacheSize int) *DaemonSetsController {
-	podInformer := informers.NewPodInformer(kubeClient, resyncPeriod())
-	dsc := NewDaemonSetsController(podInformer, kubeClient, resyncPeriod, lookupCacheSize)
-	dsc.internalPodInformer = podInformer
-
 	return dsc
 }
 
@@ -233,35 +187,45 @@ func (dsc *DaemonSetsController) deleteDaemonset(obj interface{}) {
 // Run begins watching and syncing daemon sets.
 func (dsc *DaemonSetsController) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()
+	defer dsc.queue.ShutDown()
+
 	glog.Infof("Starting Daemon Sets controller manager")
-	go dsc.dsController.Run(stopCh)
-	go dsc.podController.Run(stopCh)
-	go dsc.nodeController.Run(stopCh)
+
+	if !cache.WaitForCacheSync(stopCh, dsc.podStoreSynced, dsc.nodeStoreSynced) {
+		return
+	}
+
 	for i := 0; i < workers; i++ {
 		go wait.Until(dsc.runWorker, time.Second, stopCh)
 	}
 
-	if dsc.internalPodInformer != nil {
-		go dsc.internalPodInformer.Run(stopCh)
-	}
-
 	<-stopCh
 	glog.Infof("Shutting down Daemon Set Controller")
-	dsc.queue.ShutDown()
 }
 
 func (dsc *DaemonSetsController) runWorker() {
-	for {
-		dsKey, quit := dsc.queue.Get()
-		if quit {
-			continue
-		}
-		err := dsc.syncHandler(dsKey.(string))
-		if err != nil {
-			glog.Errorf("Error syncing daemon set with key %s: %v", dsKey.(string), err)
-		}
-		dsc.queue.Done(dsKey)
+	for dsc.processNextWorkItem() {
 	}
+}
+
+// processNextWorkItem deals with one key off the queue.  It returns false when it's time to quit.
+func (dsc *DaemonSetsController) processNextWorkItem() bool {
+	dsKey, quit := dsc.queue.Get()
+	if quit {
+		return false
+	}
+	defer dsc.queue.Done(dsKey)
+
+	err := dsc.syncHandler(dsKey.(string))
+	if err == nil {
+		dsc.queue.Forget(dsKey)
+		return true
+	}
+
+	utilruntime.HandleError(fmt.Errorf("%v failed with : %v", dsKey, err))
+	dsc.queue.AddRateLimited(dsKey)
+
+	return true
 }
 
 func (dsc *DaemonSetsController) enqueueDaemonSet(ds *extensions.DaemonSet) {
@@ -467,18 +431,18 @@ func (dsc *DaemonSetsController) getNodesToDaemonPods(ds *extensions.DaemonSet) 
 	return nodeToDaemonPods, nil
 }
 
-func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) {
+func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) error {
 	// Find out which nodes are running the daemon pods selected by ds.
 	nodeToDaemonPods, err := dsc.getNodesToDaemonPods(ds)
 	if err != nil {
-		glog.Errorf("Error getting node to daemon pod mapping for daemon set %#v: %v", ds, err)
+		return fmt.Errorf("error getting node to daemon pod mapping for daemon set %#v: %v", ds, err)
 	}
 
 	// For each node, if the node is running the daemon pod but isn't supposed to, kill the daemon
 	// pod. If the node is supposed to run the daemon pod, but isn't, create the daemon pod on the node.
 	nodeList, err := dsc.nodeStore.List()
 	if err != nil {
-		glog.Errorf("Couldn't get list of nodes when syncing daemon set %#v: %v", ds, err)
+		return fmt.Errorf("couldn't get list of nodes when syncing daemon set %#v: %v", ds, err)
 	}
 	var nodesNeedingDaemonPods, podsToDelete []string
 	for _, node := range nodeList.Items {
@@ -508,8 +472,7 @@ func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) {
 	// We need to set expectations before creating/deleting pods to avoid race conditions.
 	dsKey, err := controller.KeyFunc(ds)
 	if err != nil {
-		glog.Errorf("Couldn't get key for object %#v: %v", ds, err)
-		return
+		return fmt.Errorf("couldn't get key for object %#v: %v", ds, err)
 	}
 
 	createDiff := len(nodesNeedingDaemonPods)
@@ -524,6 +487,9 @@ func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) {
 
 	dsc.expectations.SetExpectations(dsKey, createDiff, deleteDiff)
 
+	// error channel to communicate back failures.  make the buffer big enough to avoid any blocking
+	errCh := make(chan error, createDiff+deleteDiff)
+
 	glog.V(4).Infof("Nodes needing daemon pods for daemon set %s: %+v, creating %d", ds.Name, nodesNeedingDaemonPods, createDiff)
 	createWait := sync.WaitGroup{}
 	createWait.Add(createDiff)
@@ -533,6 +499,7 @@ func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) {
 			if err := dsc.podControl.CreatePodsOnNode(nodesNeedingDaemonPods[ix], ds.Namespace, &ds.Spec.Template, ds); err != nil {
 				glog.V(2).Infof("Failed creation, decrementing expectations for set %q/%q", ds.Namespace, ds.Name)
 				dsc.expectations.CreationObserved(dsKey)
+				errCh <- err
 				utilruntime.HandleError(err)
 			}
 		}(i)
@@ -548,11 +515,20 @@ func (dsc *DaemonSetsController) manage(ds *extensions.DaemonSet) {
 			if err := dsc.podControl.DeletePod(ds.Namespace, podsToDelete[ix], ds); err != nil {
 				glog.V(2).Infof("Failed deletion, decrementing expectations for set %q/%q", ds.Namespace, ds.Name)
 				dsc.expectations.DeletionObserved(dsKey)
+				errCh <- err
 				utilruntime.HandleError(err)
 			}
 		}(i)
 	}
 	deleteWait.Wait()
+
+	// collect errors if any for proper reporting/retry logic in the controller
+	errors := []error{}
+	close(errCh)
+	for err := range errCh {
+		errors = append(errors, err)
+	}
+	return utilerrors.NewAggregate(errors)
 }
 
 func storeDaemonSetStatus(dsClient unversionedextensions.DaemonSetInterface, ds *extensions.DaemonSet, desiredNumberScheduled, currentNumberScheduled, numberMisscheduled int) error {
@@ -582,18 +558,16 @@ func storeDaemonSetStatus(dsClient unversionedextensions.DaemonSetInterface, ds 
 	return updateErr
 }
 
-func (dsc *DaemonSetsController) updateDaemonSetStatus(ds *extensions.DaemonSet) {
+func (dsc *DaemonSetsController) updateDaemonSetStatus(ds *extensions.DaemonSet) error {
 	glog.V(4).Infof("Updating daemon set status")
 	nodeToDaemonPods, err := dsc.getNodesToDaemonPods(ds)
 	if err != nil {
-		glog.Errorf("Error getting node to daemon pod mapping for daemon set %#v: %v", ds, err)
-		return
+		return fmt.Errorf("error getting node to daemon pod mapping for daemon set %#v: %v", ds, err)
 	}
 
 	nodeList, err := dsc.nodeStore.List()
 	if err != nil {
-		glog.Errorf("Couldn't get list of nodes when updating daemon set %#v: %v", ds, err)
-		return
+		return fmt.Errorf("couldn't get list of nodes when updating daemon set %#v: %v", ds, err)
 	}
 
 	var desiredNumberScheduled, currentNumberScheduled, numberMisscheduled int
@@ -616,8 +590,10 @@ func (dsc *DaemonSetsController) updateDaemonSetStatus(ds *extensions.DaemonSet)
 
 	err = storeDaemonSetStatus(dsc.kubeClient.Extensions().DaemonSets(ds.Namespace), ds, desiredNumberScheduled, currentNumberScheduled, numberMisscheduled)
 	if err != nil {
-		glog.Errorf("Error storing status for daemon set %#v: %v", ds, err)
+		return fmt.Errorf("error storing status for daemon set %#v: %v", ds, err)
 	}
+
+	return nil
 }
 
 func (dsc *DaemonSetsController) syncDaemonSet(key string) error {
@@ -626,19 +602,9 @@ func (dsc *DaemonSetsController) syncDaemonSet(key string) error {
 		glog.V(4).Infof("Finished syncing daemon set %q (%v)", key, time.Now().Sub(startTime))
 	}()
 
-	if !dsc.podStoreSynced() {
-		// Sleep so we give the pod reflector goroutine a chance to run.
-		time.Sleep(PodStoreSyncedPollPeriod)
-		glog.Infof("Waiting for pods controller to sync, requeuing ds %v", key)
-		dsc.queue.Add(key)
-		return nil
-	}
-
 	obj, exists, err := dsc.dsStore.Store.GetByKey(key)
 	if err != nil {
-		glog.Infof("Unable to retrieve ds %v from store: %v", key, err)
-		dsc.queue.Add(key)
-		return err
+		return fmt.Errorf("unable to retrieve ds %v from store: %v", key, err)
 	}
 	if !exists {
 		glog.V(3).Infof("daemon set has been deleted %v", key)
@@ -658,16 +624,16 @@ func (dsc *DaemonSetsController) syncDaemonSet(key string) error {
 	// then we do not want to call manage on foo until the daemon pods have been created.
 	dsKey, err := controller.KeyFunc(ds)
 	if err != nil {
-		glog.Errorf("Couldn't get key for object %#v: %v", ds, err)
-		return err
+		return fmt.Errorf("couldn't get key for object %#v: %v", ds, err)
 	}
 	dsNeedsSync := dsc.expectations.SatisfiedExpectations(dsKey)
 	if dsNeedsSync && ds.DeletionTimestamp == nil {
-		dsc.manage(ds)
+		if err := dsc.manage(ds); err != nil {
+			return err
+		}
 	}
 
-	dsc.updateDaemonSetStatus(ds)
-	return nil
+	return dsc.updateDaemonSetStatus(ds)
 }
 
 func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *api.Node, ds *extensions.DaemonSet) bool {
@@ -684,6 +650,7 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *api.Node, ds *exte
 	}
 
 	newPod := &api.Pod{Spec: ds.Spec.Template.Spec, ObjectMeta: ds.Spec.Template.ObjectMeta}
+	newPod.Namespace = ds.Namespace
 	newPod.Spec.NodeName = node.Name
 
 	pods := []*api.Pod{}
@@ -708,20 +675,10 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *api.Node, ds *exte
 	nodeInfo.SetNode(node)
 	fit, reasons, err := predicates.GeneralPredicates(newPod, nil, nodeInfo)
 	if err != nil {
-		glog.Warningf("GeneralPredicates failed on pod %s due to unexpected error: %v", newPod.Name, err)
+		glog.Warningf("GeneralPredicates failed on ds '%s/%s' due to unexpected error: %v", ds.ObjectMeta.Namespace, ds.ObjectMeta.Name, err)
 	}
 	for _, r := range reasons {
-		glog.V(2).Infof("GeneralPredicates failed on pod %s for reason: %v", newPod.Name, r.GetReason())
-	}
-	if !fit {
-		return false
-	}
-	fit, reasons, err = predicates.PodToleratesNodeTaints(newPod, predicates.PredicateMetadata(newPod, nil), nodeInfo)
-	if err != nil {
-		glog.Warningf("PodToleratesNodeTaints failed on pod %s due to unexpected error: %v", newPod.Name, err)
-	}
-	for _, r := range reasons {
-		glog.V(2).Infof("PodToleratesNodeTaints failed on pod %s for reason: %v", newPod.Name, r.GetReason())
+		glog.V(4).Infof("GeneralPredicates failed on ds '%s/%s' for reason: %v", ds.ObjectMeta.Namespace, ds.ObjectMeta.Name, r.GetReason())
 	}
 	return fit
 }

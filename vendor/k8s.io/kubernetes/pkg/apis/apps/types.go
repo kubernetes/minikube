@@ -21,6 +21,8 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 )
 
+// +genclient=true
+
 // PetSet represents a set of pods with consistent identities.
 // Identities are defined as:
 //  - Network: A single stable DNS and hostname.
@@ -47,11 +49,11 @@ type PetSetSpec struct {
 	// same Template, but individual replicas also have a consistent identity.
 	// If unspecified, defaults to 1.
 	// TODO: Consider a rename of this field.
-	Replicas int `json:"replicas,omitempty"`
+	Replicas int32 `json:"replicas,omitempty"`
 
 	// Selector is a label query over pods that should match the replica count.
 	// If empty, defaulted to labels on the pod template.
-	// More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors
+	// More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
 	Selector *unversioned.LabelSelector `json:"selector,omitempty"`
 
 	// Template is the object that describes the pod that will be created if
@@ -83,7 +85,7 @@ type PetSetStatus struct {
 	ObservedGeneration *int64 `json:"observedGeneration,omitempty"`
 
 	// Replicas is the number of actual replicas.
-	Replicas int `json:"replicas"`
+	Replicas int32 `json:"replicas"`
 }
 
 // PetSetList is a collection of PetSets.

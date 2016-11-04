@@ -31,7 +31,7 @@ import (
 type CinderDiskUtil struct{}
 
 // Attaches a disk specified by a volume.CinderPersistenDisk to the current kubelet.
-// Mounts the disk to it's global path.
+// Mounts the disk to its global path.
 func (util *CinderDiskUtil) AttachDisk(b *cinderVolumeMounter, globalPDPath string) error {
 	options := []string{}
 	if b.readOnly {
@@ -124,6 +124,8 @@ func (util *CinderDiskUtil) DeleteVolume(cd *cinderVolumeDeleter) error {
 	}
 
 	if err = cloud.DeleteVolume(cd.pdName); err != nil {
+		// OpenStack cloud provider returns volume.tryAgainError when necessary,
+		// no handling needed here.
 		glog.V(2).Infof("Error deleting cinder volume %s: %v", cd.pdName, err)
 		return err
 	}

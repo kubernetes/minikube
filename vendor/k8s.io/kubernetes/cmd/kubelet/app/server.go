@@ -61,9 +61,10 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/server"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/types"
+	certutil "k8s.io/kubernetes/pkg/util/cert"
 	utilconfig "k8s.io/kubernetes/pkg/util/config"
 	"k8s.io/kubernetes/pkg/util/configz"
-	"k8s.io/kubernetes/pkg/util/crypto"
 	"k8s.io/kubernetes/pkg/util/flock"
 	kubeio "k8s.io/kubernetes/pkg/util/io"
 	"k8s.io/kubernetes/pkg/util/mount"
@@ -139,7 +140,7 @@ func UnsecuredKubeletDeps(s *options.KubeletServer) (*kubelet.KubeletDeps, error
 		DockerClient:      dockerClient,
 		KubeClient:        nil,
 		Mounter:           mounter,
-		NetworkPlugins:    ProbeNetworkPlugins(s.NetworkPluginDir),
+		NetworkPlugins:    ProbeNetworkPlugins(s.NetworkPluginDir, s.CNIConfDir, s.CNIBinDir),
 		OOMAdjuster:       oom.NewOOMAdjuster(),
 		OSInterface:       kubecontainer.RealOS{},
 		Writer:            writer,
@@ -169,7 +170,7 @@ func getRemoteKubeletConfig(s *options.KubeletServer, kubeDeps *kubelet.KubeletD
 	}
 
 	configmap, err := func() (*api.ConfigMap, error) {
-		var nodename string
+		var nodename types.NodeName
 		hostname := nodeutil.GetHostname(s.HostnameOverride)
 
 		if kubeDeps != nil && kubeDeps.Cloud != nil {
@@ -298,7 +299,7 @@ func initConfigz(kc *componentconfig.KubeletConfiguration) (*configz.Config, err
 
 func run(s *options.KubeletServer, kubeDeps *kubelet.KubeletDeps) (err error) {
 	// TODO: this should be replaced by a --standalone flag
-	standaloneMode := (len(s.APIServerList) == 0)
+	standaloneMode := (len(s.APIServerList) == 0 && !s.RequireKubeConfig)
 
 	if s.ExitOnLockContention && s.LockFilePath == "" {
 		return errors.New("cannot exit on lock file contention: no lock file specified")
@@ -369,6 +370,9 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.KubeletDeps) (err error) {
 		clientConfig, err := CreateAPIServerClientConfig(s)
 		if err == nil {
 			kubeClient, err = clientset.NewForConfig(clientConfig)
+			if err != nil {
+				glog.Warningf("New kubeClient from clientConfig error: %v", err)
+			}
 			// make a separate client for events
 			eventClientConfig := *clientConfig
 			eventClientConfig.QPS = float32(s.EventRecordQPS)
@@ -457,9 +461,9 @@ func run(s *options.KubeletServer, kubeDeps *kubelet.KubeletDeps) (err error) {
 
 // getNodeName returns the node name according to the cloud provider
 // if cloud provider is specified. Otherwise, returns the hostname of the node.
-func getNodeName(cloud cloudprovider.Interface, hostname string) (string, error) {
+func getNodeName(cloud cloudprovider.Interface, hostname string) (types.NodeName, error) {
 	if cloud == nil {
-		return hostname, nil
+		return types.NodeName(hostname), nil
 	}
 
 	instances, ok := cloud.Instances()
@@ -483,8 +487,8 @@ func InitializeTLS(kc *componentconfig.KubeletConfiguration) (*server.TLSOptions
 	if kc.TLSCertFile == "" && kc.TLSPrivateKeyFile == "" {
 		kc.TLSCertFile = path.Join(kc.CertDirectory, "kubelet.crt")
 		kc.TLSPrivateKeyFile = path.Join(kc.CertDirectory, "kubelet.key")
-		if !crypto.FoundCertOrKey(kc.TLSCertFile, kc.TLSPrivateKeyFile) {
-			if err := crypto.GenerateSelfSignedCert(nodeutil.GetHostname(kc.HostnameOverride), kc.TLSCertFile, kc.TLSPrivateKeyFile, nil, nil); err != nil {
+		if !certutil.CanReadCertOrKey(kc.TLSCertFile, kc.TLSPrivateKeyFile) {
+			if err := certutil.GenerateSelfSignedCert(nodeutil.GetHostname(kc.HostnameOverride), kc.TLSCertFile, kc.TLSPrivateKeyFile, nil, nil); err != nil {
 				return nil, fmt.Errorf("unable to generate self signed cert: %v", err)
 			}
 			glog.V(4).Infof("Using self-signed cert (%s, %s)", kc.TLSCertFile, kc.TLSPrivateKeyFile)
@@ -604,7 +608,7 @@ func RunKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *kubelet
 	}
 
 	eventBroadcaster := record.NewBroadcaster()
-	kubeDeps.Recorder = eventBroadcaster.NewRecorder(api.EventSource{Component: "kubelet", Host: nodeName})
+	kubeDeps.Recorder = eventBroadcaster.NewRecorder(api.EventSource{Component: "kubelet", Host: string(nodeName)})
 	eventBroadcaster.StartLogging(glog.V(3).Infof)
 	if kubeDeps.EventClient != nil {
 		glog.V(4).Infof("Sending events to api server.")

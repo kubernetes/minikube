@@ -40,14 +40,15 @@ import (
 	netsets "k8s.io/kubernetes/pkg/util/net/sets"
 	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/volume"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/golang/glog"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	compute "google.golang.org/api/compute/v1"
 	container "google.golang.org/api/container/v1"
 	"google.golang.org/api/googleapi"
-	"google.golang.org/cloud/compute/metadata"
 )
 
 const (
@@ -121,16 +122,16 @@ const (
 
 // Disks is interface for manipulation with GCE PDs.
 type Disks interface {
-	// AttachDisk attaches given disk to given instance. Current instance
-	// is used when instanceID is empty string.
-	AttachDisk(diskName, instanceID string, readOnly bool) error
+	// AttachDisk attaches given disk to the node with the specified NodeName.
+	// Current instance is used when instanceID is empty string.
+	AttachDisk(diskName string, nodeName types.NodeName, readOnly bool) error
 
-	// DetachDisk detaches given disk to given instance. Current instance
-	// is used when instanceID is empty string.
-	DetachDisk(devicePath, instanceID string) error
+	// DetachDisk detaches given disk to the node with the specified NodeName.
+	// Current instance is used when nodeName is empty string.
+	DetachDisk(devicePath string, nodeName types.NodeName) error
 
-	// DiskIsAttached checks if a disk is attached to the given node.
-	DiskIsAttached(diskName, instanceID string) (bool, error)
+	// DiskIsAttached checks if a disk is attached to the node with the specified NodeName.
+	DiskIsAttached(diskName string, nodeName types.NodeName) (bool, error)
 
 	// CreateDisk creates a new PD with given properties. Tags are serialized
 	// as JSON into Description field.
@@ -324,6 +325,16 @@ func CreateGCECloud(projectID, region, zone string, managedZones []string, netwo
 		}
 	} else {
 		glog.Infof("Using existing Token Source %#v", tokenSource)
+	}
+
+	if err := wait.PollImmediate(5*time.Second, 30*time.Second, func() (bool, error) {
+		if _, err := tokenSource.Token(); err != nil {
+			glog.Errorf("error fetching initial token: %v", err)
+			return false, nil
+		}
+		return true, nil
+	}); err != nil {
+		return nil, err
 	}
 
 	client := oauth2.NewClient(oauth2.NoContext, tokenSource)
@@ -710,6 +721,37 @@ func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *api.Serv
 		glog.Infof("Target pool %v for Service %v/%v doesn't exist", loadBalancerName, apiService.Namespace, apiService.Name)
 	}
 
+	// Ensure health checks are created for this target pool to pass to createTargetPool for health check links
+	// Alternately, if the annotation on the service was removed, we need to recreate the target pool without
+	// health checks. This needs to be prior to the forwarding rule deletion below otherwise it is not possible
+	// to delete just the target pool or http health checks later.
+	var hcToCreate *compute.HttpHealthCheck
+	hcExisting, err := gce.GetHttpHealthCheck(loadBalancerName)
+	if err != nil && !isHTTPErrorCode(err, http.StatusNotFound) {
+		return nil, fmt.Errorf("Error checking HTTP health check %s: %v", loadBalancerName, err)
+	}
+	if path, healthCheckNodePort := apiservice.GetServiceHealthCheckPathPort(apiService); path != "" {
+		glog.V(4).Infof("service %v needs health checks on :%d/%s)", apiService.Name, healthCheckNodePort, path)
+		if err != nil {
+			// This logic exists to detect a transition for a pre-existing service and turn on
+			// the tpNeedsUpdate flag to delete/recreate fwdrule/tpool adding the health check
+			// to the target pool.
+			glog.V(2).Infof("Annotation %s=%s added to new or pre-existing service",
+				apiservice.AnnotationExternalTraffic,
+				apiservice.AnnotationValueExternalTrafficLocal)
+			tpNeedsUpdate = true
+		}
+		hcToCreate, err = gce.ensureHttpHealthCheck(loadBalancerName, path, healthCheckNodePort)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to ensure health check for localized service %v on node port %v: %v", loadBalancerName, healthCheckNodePort, err)
+		}
+	} else {
+		glog.V(4).Infof("service %v does not need health checks", apiService.Name)
+		if err == nil {
+			glog.V(2).Infof("Deleting stale health checks for service %v LB %v", apiService.Name, loadBalancerName)
+			tpNeedsUpdate = true
+		}
+	}
 	// Now we get to some slightly more interesting logic.
 	// First, neither target pools nor forwarding rules can be updated in place -
 	// they have to be deleted and recreated.
@@ -729,17 +771,16 @@ func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *api.Serv
 	}
 	if tpExists && tpNeedsUpdate {
 		// Generate the list of health checks for this target pool to pass to deleteTargetPool
-		var hc *compute.HttpHealthCheck
 		if path, _ := apiservice.GetServiceHealthCheckPathPort(apiService); path != "" {
 			var err error
-			hc, err = gce.GetHttpHealthCheck(loadBalancerName)
+			hcExisting, err = gce.GetHttpHealthCheck(loadBalancerName)
 			if err != nil && !isHTTPErrorCode(err, http.StatusNotFound) {
 				glog.Infof("Failed to retrieve health check %v:%v", loadBalancerName, err)
 			}
 		}
 
 		// Pass healthchecks to deleteTargetPool to cleanup health checks prior to cleaning up the target pool itself.
-		if err := gce.deleteTargetPool(loadBalancerName, gce.region, hc); err != nil {
+		if err := gce.deleteTargetPool(loadBalancerName, gce.region, hcExisting); err != nil {
 			return nil, fmt.Errorf("failed to delete existing target pool %s for load balancer update: %v", loadBalancerName, err)
 		}
 		glog.Infof("EnsureLoadBalancer(%v(%v)): deleted target pool", loadBalancerName, serviceName)
@@ -752,20 +793,12 @@ func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *api.Serv
 		if len(hosts) > maxTargetPoolCreateInstances {
 			createInstances = createInstances[:maxTargetPoolCreateInstances]
 		}
-
-		// Create health checks for this target pool to pass to createTargetPool for health check links
-		var hc *compute.HttpHealthCheck
-		if path, healthCheckNodePort := apiservice.GetServiceHealthCheckPathPort(apiService); path != "" {
-			glog.Infof("service %v needs health checks on :%d/%s)", apiService.Name, healthCheckNodePort, path)
-			var err error
-			hc, err = gce.ensureHttpHealthCheck(loadBalancerName, path, healthCheckNodePort)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to create health check for localized service %v on node port %v: %v", loadBalancerName, healthCheckNodePort, err)
-			}
-		}
 		// Pass healthchecks to createTargetPool which needs them as health check links in the target pool
-		if err := gce.createTargetPool(loadBalancerName, serviceName.String(), gce.region, createInstances, affinityType, hc); err != nil {
+		if err := gce.createTargetPool(loadBalancerName, serviceName.String(), gce.region, createInstances, affinityType, hcToCreate); err != nil {
 			return nil, fmt.Errorf("failed to create target pool %s: %v", loadBalancerName, err)
+		}
+		if hcToCreate != nil {
+			glog.Infof("EnsureLoadBalancer(%v(%v)): created health checks for target pool", loadBalancerName, serviceName)
 		}
 		if len(hosts) <= maxTargetPoolCreateInstances {
 			glog.Infof("EnsureLoadBalancer(%v(%v)): created target pool", loadBalancerName, serviceName)
@@ -829,17 +862,21 @@ func (gce *GCECloud) ensureHttpHealthCheck(name, path string, port int32) (hc *c
 			glog.Errorf("Failed to get http health check %v", err)
 			return nil, err
 		}
+		glog.Infof("Created HTTP health check %v healthCheckNodePort: %d", name, port)
 		return hc, nil
 	}
 	// Validate health check fields
+	glog.V(4).Infof("Checking http health check params %s", name)
 	drift := hc.Port != int64(port) || hc.RequestPath != path || hc.Description != makeHealthCheckDescription(name)
 	drift = drift || hc.CheckIntervalSec != gceHcCheckIntervalSeconds || hc.TimeoutSec != gceHcTimeoutSeconds
 	drift = drift || hc.UnhealthyThreshold != gceHcUnhealthyThreshold || hc.HealthyThreshold != gceHcHealthyThreshold
 	if drift {
-		glog.Infof("Health check %v exists but parameters have drifted - updating", name)
+		glog.Warningf("Health check %v exists but parameters have drifted - updating...", name)
 		if err := gce.UpdateHttpHealthCheck(newHC); err != nil {
+			glog.Warningf("Failed to reconcile http health check %v parameters", name)
 			return nil, err
 		}
+		glog.V(4).Infof("Corrected health check %v parameters successful", name)
 	}
 	return hc, nil
 }
@@ -1412,13 +1449,6 @@ func (gce *GCECloud) deleteForwardingRule(name, region string) error {
 }
 
 func (gce *GCECloud) deleteTargetPool(name, region string, hc *compute.HttpHealthCheck) error {
-	if hc != nil {
-		glog.Infof("Deleting health check %v", hc.Name)
-		if err := gce.DeleteHttpHealthCheck(hc.Name); err != nil {
-			glog.Warningf("Failed to delete health check %v: %v", hc, err)
-			return err
-		}
-	}
 	op, err := gce.service.TargetPools.Delete(gce.projectID, region, name).Do()
 	if err != nil && isHTTPErrorCode(err, http.StatusNotFound) {
 		glog.Infof("Target pool %s already deleted. Continuing to delete other resources.", name)
@@ -1429,6 +1459,23 @@ func (gce *GCECloud) deleteTargetPool(name, region string, hc *compute.HttpHealt
 		if err := gce.waitForRegionOp(op, region); err != nil {
 			glog.Warningf("Failed waiting for target pool %s to be deleted: got error %s.", name, err.Error())
 			return err
+		}
+	}
+	// Deletion of health checks is allowed only after the TargetPool reference is deleted
+	if hc != nil {
+		glog.Infof("Deleting health check %v", hc.Name)
+		if err := gce.DeleteHttpHealthCheck(hc.Name); err != nil {
+			glog.Warningf("Failed to delete health check %v: %v", hc, err)
+			return err
+		}
+	} else {
+		// This is a HC cleanup attempt to prevent stale HCs when errors are encountered
+		// during HC deletion in a prior pass through EnsureLoadBalancer.
+		// The HC name matches the load balancer name - normally this is expected to fail.
+		if err := gce.DeleteHttpHealthCheck(name); err == nil {
+			// We only print a warning if this deletion actually succeeded (which
+			// means there was indeed a stale health check with the LB name.
+			glog.Warningf("Deleted stale http health check for LB: %s", name)
 		}
 	}
 	return nil
@@ -2038,7 +2085,7 @@ func (gce *GCECloud) GetInstanceGroup(name string, zone string) (*compute.Instan
 
 // Take a GCE instance 'hostname' and break it down to something that can be fed
 // to the GCE API client library.  Basically this means reducing 'kubernetes-
-// minion-2.c.my-proj.internal' to 'kubernetes-minion-2' if necessary.
+// node-2.c.my-proj.internal' to 'kubernetes-node-2' if necessary.
 func canonicalizeInstanceName(name string) string {
 	ix := strings.Index(name, ".")
 	if ix != -1 {
@@ -2048,8 +2095,8 @@ func canonicalizeInstanceName(name string) string {
 }
 
 // Implementation of Instances.CurrentNodeName
-func (gce *GCECloud) CurrentNodeName(hostname string) (string, error) {
-	return hostname, nil
+func (gce *GCECloud) CurrentNodeName(hostname string) (types.NodeName, error) {
+	return types.NodeName(hostname), nil
 }
 
 func (gce *GCECloud) AddSSHKeyToAllInstances(user string, keyData []byte) error {
@@ -2098,7 +2145,7 @@ func (gce *GCECloud) AddSSHKeyToAllInstances(user string, keyData []byte) error 
 }
 
 // NodeAddresses is an implementation of Instances.NodeAddresses.
-func (gce *GCECloud) NodeAddresses(_ string) ([]api.NodeAddress, error) {
+func (gce *GCECloud) NodeAddresses(_ types.NodeName) ([]api.NodeAddress, error) {
 	internalIP, err := metadata.Get("instance/network-interfaces/0/ip")
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get internal IP: %v", err)
@@ -2125,11 +2172,23 @@ func (gce *GCECloud) isCurrentInstance(instanceID string) bool {
 	return currentInstanceID == canonicalizeInstanceName(instanceID)
 }
 
-// ExternalID returns the cloud provider ID of the specified instance (deprecated).
-func (gce *GCECloud) ExternalID(instance string) (string, error) {
+// mapNodeNameToInstanceName maps a k8s NodeName to a GCE Instance Name
+// This is a simple string cast.
+func mapNodeNameToInstanceName(nodeName types.NodeName) string {
+	return string(nodeName)
+}
+
+// mapInstanceToNodeName maps a GCE Instance to a k8s NodeName
+func mapInstanceToNodeName(instance *compute.Instance) types.NodeName {
+	return types.NodeName(instance.Name)
+}
+
+// ExternalID returns the cloud provider ID of the node with the specified NodeName (deprecated).
+func (gce *GCECloud) ExternalID(nodeName types.NodeName) (string, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
 	if gce.useMetadataServer {
 		// Use metadata, if possible, to fetch ID. See issue #12000
-		if gce.isCurrentInstance(instance) {
+		if gce.isCurrentInstance(instanceName) {
 			externalInstanceID, err := getCurrentExternalIDViaMetadata()
 			if err == nil {
 				return externalInstanceID, nil
@@ -2138,15 +2197,16 @@ func (gce *GCECloud) ExternalID(instance string) (string, error) {
 	}
 
 	// Fallback to GCE API call if metadata server fails to retrieve ID
-	inst, err := gce.getInstanceByName(instance)
+	inst, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		return "", err
 	}
 	return strconv.FormatUint(inst.ID, 10), nil
 }
 
-// InstanceID returns the cloud provider ID of the specified instance.
-func (gce *GCECloud) InstanceID(instanceName string) (string, error) {
+// InstanceID returns the cloud provider ID of the node with the specified NodeName.
+func (gce *GCECloud) InstanceID(nodeName types.NodeName) (string, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
 	if gce.useMetadataServer {
 		// Use metadata, if possible, to fetch ID. See issue #12000
 		if gce.isCurrentInstance(instanceName) {
@@ -2163,8 +2223,9 @@ func (gce *GCECloud) InstanceID(instanceName string) (string, error) {
 	return gce.projectID + "/" + instance.Zone + "/" + instance.Name, nil
 }
 
-// InstanceType returns the type of the specified instance.
-func (gce *GCECloud) InstanceType(instanceName string) (string, error) {
+// InstanceType returns the type of the specified node with the specified NodeName.
+func (gce *GCECloud) InstanceType(nodeName types.NodeName) (string, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
 	if gce.useMetadataServer {
 		// Use metadata, if possible, to fetch ID. See issue #12000
 		if gce.isCurrentInstance(instanceName) {
@@ -2182,8 +2243,8 @@ func (gce *GCECloud) InstanceType(instanceName string) (string, error) {
 }
 
 // List is an implementation of Instances.List.
-func (gce *GCECloud) List(filter string) ([]string, error) {
-	var instances []string
+func (gce *GCECloud) List(filter string) ([]types.NodeName, error) {
+	var instances []types.NodeName
 	// TODO: Parallelize, although O(zones) so not too bad (N <= 3 typically)
 	for _, zone := range gce.managedZones {
 		pageToken := ""
@@ -2202,7 +2263,7 @@ func (gce *GCECloud) List(filter string) ([]string, error) {
 			}
 			pageToken = res.NextPageToken
 			for _, instance := range res.Items {
-				instances = append(instances, instance.Name)
+				instances = append(instances, mapInstanceToNodeName(instance))
 			}
 		}
 		if page >= maxPages {
@@ -2302,7 +2363,9 @@ func (gce *GCECloud) ListRoutes(clusterName string) ([]*cloudprovider.Route, err
 			}
 
 			target := path.Base(r.NextHopInstance)
-			routes = append(routes, &cloudprovider.Route{Name: r.Name, TargetInstance: target, DestinationCIDR: r.DestRange})
+			// TODO: Should we lastComponent(target) this?
+			targetNodeName := types.NodeName(target) // NodeName == Instance Name on GCE
+			routes = append(routes, &cloudprovider.Route{Name: r.Name, TargetNode: targetNodeName, DestinationCIDR: r.DestRange})
 		}
 	}
 	if page >= maxPages {
@@ -2318,7 +2381,8 @@ func gceNetworkURL(project, network string) string {
 func (gce *GCECloud) CreateRoute(clusterName string, nameHint string, route *cloudprovider.Route) error {
 	routeName := truncateClusterName(clusterName) + "-" + nameHint
 
-	targetInstance, err := gce.getInstanceByName(route.TargetInstance)
+	instanceName := mapNodeNameToInstanceName(route.TargetNode)
+	targetInstance, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		return err
 	}
@@ -2370,6 +2434,19 @@ func (gce *GCECloud) encodeDiskTags(tags map[string]string) (string, error) {
 // the specified zone. It stores specified tags encoded in JSON in Description
 // field.
 func (gce *GCECloud) CreateDisk(name string, diskType string, zone string, sizeGb int64, tags map[string]string) error {
+	// Do not allow creation of PDs in zones that are not managed. Such PDs
+	// then cannot be deleted by DeleteDisk.
+	isManaged := false
+	for _, managedZone := range gce.managedZones {
+		if zone == managedZone {
+			isManaged = true
+			break
+		}
+	}
+	if !isManaged {
+		return fmt.Errorf("kubernetes does not manage zone %q", zone)
+	}
+
 	tagsStr, err := gce.encodeDiskTags(tags)
 	if err != nil {
 		return err
@@ -2400,7 +2477,7 @@ func (gce *GCECloud) CreateDisk(name string, diskType string, zone string, sizeG
 	return gce.waitForZoneOp(createOp, zone)
 }
 
-func (gce *GCECloud) DeleteDisk(diskToDelete string) error {
+func (gce *GCECloud) doDeleteDisk(diskToDelete string) error {
 	disk, err := gce.getDiskByNameUnknownZone(diskToDelete)
 	if err != nil {
 		return err
@@ -2412,6 +2489,30 @@ func (gce *GCECloud) DeleteDisk(diskToDelete string) error {
 	}
 
 	return gce.waitForZoneOp(deleteOp, disk.Zone)
+}
+
+func (gce *GCECloud) DeleteDisk(diskToDelete string) error {
+	err := gce.doDeleteDisk(diskToDelete)
+	if isGCEError(err, "resourceInUseByAnotherResource") {
+		return volume.NewDeletedVolumeInUseError(err.Error())
+	}
+	return err
+}
+
+// isGCEError returns true if given error is a googleapi.Error with given
+// reason (e.g. "resourceInUseByAnotherResource")
+func isGCEError(err error, reason string) bool {
+	apiErr, ok := err.(*googleapi.Error)
+	if !ok {
+		return false
+	}
+
+	for _, e := range apiErr.Errors {
+		if e.Reason == reason {
+			return true
+		}
+	}
+	return false
 }
 
 // Builds the labels that should be automatically added to a PersistentVolume backed by a GCE PD
@@ -2461,10 +2562,11 @@ func (gce *GCECloud) GetAutoLabelsForPD(name string, zone string) (map[string]st
 	return labels, nil
 }
 
-func (gce *GCECloud) AttachDisk(diskName, instanceID string, readOnly bool) error {
-	instance, err := gce.getInstanceByName(instanceID)
+func (gce *GCECloud) AttachDisk(diskName string, nodeName types.NodeName, readOnly bool) error {
+	instanceName := mapNodeNameToInstanceName(nodeName)
+	instance, err := gce.getInstanceByName(instanceName)
 	if err != nil {
-		return fmt.Errorf("error getting instance %q", instanceID)
+		return fmt.Errorf("error getting instance %q", instanceName)
 	}
 	disk, err := gce.getDiskByName(diskName, instance.Zone)
 	if err != nil {
@@ -2476,7 +2578,7 @@ func (gce *GCECloud) AttachDisk(diskName, instanceID string, readOnly bool) erro
 	}
 	attachedDisk := gce.convertDiskToAttachedDisk(disk, readWrite)
 
-	attachOp, err := gce.service.Instances.AttachDisk(gce.projectID, disk.Zone, instanceID, attachedDisk).Do()
+	attachOp, err := gce.service.Instances.AttachDisk(gce.projectID, disk.Zone, instanceName, attachedDisk).Do()
 	if err != nil {
 		return err
 	}
@@ -2484,19 +2586,20 @@ func (gce *GCECloud) AttachDisk(diskName, instanceID string, readOnly bool) erro
 	return gce.waitForZoneOp(attachOp, disk.Zone)
 }
 
-func (gce *GCECloud) DetachDisk(devicePath, instanceID string) error {
-	inst, err := gce.getInstanceByName(instanceID)
+func (gce *GCECloud) DetachDisk(devicePath string, nodeName types.NodeName) error {
+	instanceName := mapNodeNameToInstanceName(nodeName)
+	inst, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		if err == cloudprovider.InstanceNotFound {
 			// If instance no longer exists, safe to assume volume is not attached.
 			glog.Warningf(
 				"Instance %q does not exist. DetachDisk will assume PD %q is not attached to it.",
-				instanceID,
+				instanceName,
 				devicePath)
 			return nil
 		}
 
-		return fmt.Errorf("error getting instance %q", instanceID)
+		return fmt.Errorf("error getting instance %q", instanceName)
 	}
 
 	detachOp, err := gce.service.Instances.DetachDisk(gce.projectID, inst.Zone, inst.Name, devicePath).Do()
@@ -2507,14 +2610,15 @@ func (gce *GCECloud) DetachDisk(devicePath, instanceID string) error {
 	return gce.waitForZoneOp(detachOp, inst.Zone)
 }
 
-func (gce *GCECloud) DiskIsAttached(diskName, instanceID string) (bool, error) {
-	instance, err := gce.getInstanceByName(instanceID)
+func (gce *GCECloud) DiskIsAttached(diskName string, nodeName types.NodeName) (bool, error) {
+	instanceName := mapNodeNameToInstanceName(nodeName)
+	instance, err := gce.getInstanceByName(instanceName)
 	if err != nil {
 		if err == cloudprovider.InstanceNotFound {
 			// If instance no longer exists, safe to assume volume is not attached.
 			glog.Warningf(
 				"Instance %q does not exist. DiskIsAttached will assume PD %q is not attached to it.",
-				instanceID,
+				instanceName,
 				diskName)
 			return false, nil
 		}
@@ -2591,12 +2695,12 @@ func (gce *GCECloud) getDiskByNameUnknownZone(diskName string) (*gceDisk, error)
 	if found != nil {
 		return found, nil
 	}
-	return nil, fmt.Errorf("GCE persistent disk not found: %q", diskName)
+	return nil, fmt.Errorf("GCE persistent disk %q not found in managed zones (%s)", diskName, strings.Join(gce.managedZones, ","))
 }
 
 // GetGCERegion returns region of the gce zone. Zone names
 // are of the form: ${region-name}-${ix}.
-// For example "us-central1-b" has a region of "us-central1".
+// For example, "us-central1-b" has a region of "us-central1".
 // So we look for the last '-' and trim to just before that.
 func GetGCERegion(zone string) (string, error) {
 	ix := strings.LastIndex(zone, "-")

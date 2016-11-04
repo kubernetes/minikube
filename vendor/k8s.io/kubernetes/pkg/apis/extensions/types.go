@@ -54,7 +54,7 @@ type ScaleStatus struct {
 	Replicas int32 `json:"replicas"`
 
 	// label query over pods that should match the replicas count.
-	// More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors
+	// More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
 	Selector *unversioned.LabelSelector `json:"selector,omitempty"`
 }
 
@@ -339,14 +339,14 @@ type DaemonSetSpec struct {
 	// Selector is a label query over pods that are managed by the daemon set.
 	// Must match in order to be controlled.
 	// If empty, defaulted to labels on Pod template.
-	// More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors
+	// More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
 	Selector *unversioned.LabelSelector `json:"selector,omitempty"`
 
 	// Template is the object that describes the pod that will be created.
 	// The DaemonSet will create exactly one copy of this pod on every node
 	// that matches the template's node selector (or on every node if no node
 	// selector is specified).
-	// More info: http://releases.k8s.io/HEAD/docs/user-guide/replication-controller.md#pod-template
+	// More info: http://kubernetes.io/docs/user-guide/replication-controller#pod-template
 	Template api.PodTemplateSpec `json:"template"`
 
 	// TODO(madhusudancs): Uncomment while implementing DaemonSet updates.
@@ -610,10 +610,15 @@ type ReplicaSetSpec struct {
 	// Replicas is the number of desired replicas.
 	Replicas int32 `json:"replicas"`
 
+	// Minimum number of seconds for which a newly created pod should be ready
+	// without any of its container crashing, for it to be considered available.
+	// Defaults to 0 (pod will be considered available as soon as it is ready)
+	MinReadySeconds int32 `json:"minReadySeconds,omitempty"`
+
 	// Selector is a label query over pods that should match the replica count.
 	// Must match in order to be controlled.
 	// If empty, defaulted to labels on pod template.
-	// More info: http://releases.k8s.io/HEAD/docs/user-guide/labels.md#label-selectors
+	// More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
 	Selector *unversioned.LabelSelector `json:"selector,omitempty"`
 
 	// Template is the object that describes the pod that will be created if
@@ -631,6 +636,9 @@ type ReplicaSetStatus struct {
 
 	// The number of ready replicas for this replica set.
 	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+
+	// The number of available replicas (ready for at least minReadySeconds) for this replica set.
+	AvailableReplicas int32 `json:"availableReplicas,omitempty"`
 
 	// ObservedGeneration is the most recent generation observed by the controller.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -826,6 +834,8 @@ type PodSecurityPolicyList struct {
 	Items []PodSecurityPolicy `json:"items"`
 }
 
+// +genclient=true
+
 type NetworkPolicy struct {
 	unversioned.TypeMeta `json:",inline"`
 	api.ObjectMeta       `json:"metadata,omitempty"`
@@ -910,42 +920,4 @@ type NetworkPolicyList struct {
 	unversioned.ListMeta `json:"metadata,omitempty"`
 
 	Items []NetworkPolicy `json:"items"`
-}
-
-// +genclient=true
-// +nonNamespaced=true
-
-// StorageClass describes a named "class" of storage offered in a cluster.
-// Different classes might map to quality-of-service levels, or to backup policies,
-// or to arbitrary policies determined by the cluster administrators.  Kubernetes
-// itself is unopinionated about what classes represent.  This concept is sometimes
-// called "profiles" in other storage systems.
-// The name of a StorageClass object is significant, and is how users can request a particular class.
-type StorageClass struct {
-	unversioned.TypeMeta `json:",inline"`
-	api.ObjectMeta       `json:"metadata,omitempty"`
-
-	// provisioner is the driver expected to handle this StorageClass.
-	// This is an optionally-prefixed name, like a label key.
-	// For example: "kubernetes.io/gce-pd" or "kubernetes.io/aws-ebs".
-	// This value may not be empty.
-	Provisioner string `json:"provisioner"`
-
-	// parameters holds parameters for the provisioner.
-	// These values are opaque to the  system and are passed directly
-	// to the provisioner.  The only validation done on keys is that they are
-	// not empty.  The maximum number of parameters is
-	// 512, with a cumulative max size of 256K
-	Parameters map[string]string `json:"parameters,omitempty"`
-}
-
-// StorageClassList is a collection of storage classes.
-type StorageClassList struct {
-	unversioned.TypeMeta `json:",inline"`
-	// Standard list metadata
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
-	unversioned.ListMeta `json:"metadata,omitempty"`
-
-	// Items is the list of StorageClasses
-	Items []StorageClass `json:"items"`
 }

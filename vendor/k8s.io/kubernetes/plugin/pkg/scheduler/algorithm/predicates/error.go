@@ -18,6 +18,7 @@ package predicates
 
 import (
 	"fmt"
+
 	"k8s.io/kubernetes/pkg/api"
 )
 
@@ -36,6 +37,7 @@ var (
 	ErrMaxVolumeCountExceeded    = newPredicateFailureError("MaxVolumeCount")
 	ErrNodeUnderMemoryPressure   = newPredicateFailureError("NodeUnderMemoryPressure")
 	ErrNodeUnderDiskPressure     = newPredicateFailureError("NodeUnderDiskPressure")
+	ErrNodeUnderInodePressure    = newPredicateFailureError("NodeUnderInodePressure")
 	// ErrFakePredicate is used for test only. The fake predicates returning false also returns error
 	// as ErrFakePredicate.
 	ErrFakePredicate = newPredicateFailureError("FakePredicateError")

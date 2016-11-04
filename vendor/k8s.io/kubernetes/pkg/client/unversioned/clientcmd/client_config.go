@@ -34,15 +34,24 @@ import (
 )
 
 var (
-	// DefaultCluster is the cluster config used when no other config is specified
-	// TODO: eventually apiserver should start on 443 and be secure by default
-	DefaultCluster = clientcmdapi.Cluster{Server: "http://localhost:8080"}
-
-	// EnvVarCluster allows overriding the DefaultCluster using an envvar for the server name
-	EnvVarCluster = clientcmdapi.Cluster{Server: os.Getenv("KUBERNETES_MASTER")}
-
-	DefaultClientConfig = DirectClientConfig{*clientcmdapi.NewConfig(), "", &ConfigOverrides{}, nil, NewDefaultClientConfigLoadingRules()}
+	// ClusterDefaults has the same behavior as the old EnvVar and DefaultCluster fields
+	// DEPRECATED will be replaced
+	ClusterDefaults = clientcmdapi.Cluster{Server: getDefaultServer()}
+	// DefaultClientConfig represents the legacy behavior of this package for defaulting
+	// DEPRECATED will be replace
+	DefaultClientConfig = DirectClientConfig{*clientcmdapi.NewConfig(), "", &ConfigOverrides{
+		ClusterDefaults: ClusterDefaults,
+	}, nil, NewDefaultClientConfigLoadingRules()}
 )
+
+// getDefaultServer returns a default setting for DefaultClientConfig
+// DEPRECATED
+func getDefaultServer() string {
+	if server := os.Getenv("KUBERNETES_MASTER"); len(server) > 0 {
+		return server
+	}
+	return "http://localhost:8080"
+}
 
 // ClientConfig is used to make it easy to get an api server client
 type ClientConfig interface {
@@ -90,12 +99,28 @@ func (config *DirectClientConfig) RawConfig() (clientcmdapi.Config, error) {
 
 // ClientConfig implements ClientConfig
 func (config *DirectClientConfig) ClientConfig() (*restclient.Config, error) {
-	if err := config.ConfirmUsable(); err != nil {
+	// check that getAuthInfo, getContext, and getCluster do not return an error.
+	// Do this before checking if the curent config is usable in the event that an
+	// AuthInfo, Context, or Cluster config with user-defined names are not found.
+	// This provides a user with the immediate cause for error if one is found
+	configAuthInfo, err := config.getAuthInfo()
+	if err != nil {
 		return nil, err
 	}
 
-	configAuthInfo := config.getAuthInfo()
-	configClusterInfo := config.getCluster()
+	_, err = config.getContext()
+	if err != nil {
+		return nil, err
+	}
+
+	configClusterInfo, err := config.getCluster()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := config.ConfirmUsable(); err != nil {
+		return nil, err
+	}
 
 	clientConfig := &restclient.Config{}
 	clientConfig.Host = configClusterInfo.Server
@@ -117,7 +142,8 @@ func (config *DirectClientConfig) ClientConfig() (*restclient.Config, error) {
 		//       Our mergo.Merge version is older than this change.
 		var persister restclient.AuthProviderConfigPersister
 		if config.configAccess != nil {
-			persister = PersisterForUser(config.configAccess, config.getAuthInfoName())
+			authInfoName, _ := config.getAuthInfoName()
+			persister = PersisterForUser(config.configAccess, authInfoName)
 		}
 		userAuthPartialConfig, err := getUserIdentificationPartialConfig(configAuthInfo, config.fallbackReader, persister)
 		if err != nil {
@@ -195,8 +221,10 @@ func getUserIdentificationPartialConfig(configAuthInfo clientcmdapi.AuthInfo, fa
 	// if there still isn't enough information to authenticate the user, try prompting
 	if !canIdentifyUser(*mergedConfig) && (fallbackReader != nil) {
 		prompter := NewPromptingAuthLoader(fallbackReader)
-		promptedAuthInfo := prompter.Prompt()
-
+		promptedAuthInfo, err := prompter.Prompt()
+		if err != nil {
+			return nil, err
+		}
 		promptedConfig := makeUserIdentificationConfig(*promptedAuthInfo)
 		previouslyMergedConfig := mergedConfig
 		mergedConfig = &restclient.Config{}
@@ -241,7 +269,10 @@ func (config *DirectClientConfig) Namespace() (string, bool, error) {
 		return "", false, err
 	}
 
-	configContext := config.getContext()
+	configContext, err := config.getContext()
+	if err != nil {
+		return "", false, err
+	}
 
 	if len(configContext.Namespace) == 0 {
 		return api.NamespaceDefault, false, nil
@@ -263,8 +294,27 @@ func (config *DirectClientConfig) ConfigAccess() ConfigAccess {
 // but no errors in the sections requested or referenced.  It does not return early so that it can find as many errors as possible.
 func (config *DirectClientConfig) ConfirmUsable() error {
 	validationErrors := make([]error, 0)
-	validationErrors = append(validationErrors, validateAuthInfo(config.getAuthInfoName(), config.getAuthInfo())...)
-	validationErrors = append(validationErrors, validateClusterInfo(config.getClusterName(), config.getCluster())...)
+
+	var contextName string
+	if len(config.contextName) != 0 {
+		contextName = config.contextName
+	} else {
+		contextName = config.config.CurrentContext
+	}
+
+	if len(contextName) > 0 {
+		_, exists := config.config.Contexts[contextName]
+		if !exists {
+			validationErrors = append(validationErrors, &errContextNotFound{contextName})
+		}
+	}
+
+	authInfoName, _ := config.getAuthInfoName()
+	authInfo, _ := config.getAuthInfo()
+	validationErrors = append(validationErrors, validateAuthInfo(authInfoName, authInfo)...)
+	clusterName, _ := config.getClusterName()
+	cluster, _ := config.getCluster()
+	validationErrors = append(validationErrors, validateClusterInfo(clusterName, cluster)...)
 	// when direct client config is specified, and our only error is that no server is defined, we should
 	// return a standard "no config" error
 	if len(validationErrors) == 1 && validationErrors[0] == ErrEmptyCluster {
@@ -273,66 +323,84 @@ func (config *DirectClientConfig) ConfirmUsable() error {
 	return newErrConfigurationInvalid(validationErrors)
 }
 
-func (config *DirectClientConfig) getContextName() string {
+// getContextName returns the default, or user-set context name, and a boolean that indicates
+// whether the default context name has been overwritten by a user-set flag, or left as its default value
+func (config *DirectClientConfig) getContextName() (string, bool) {
 	if len(config.overrides.CurrentContext) != 0 {
-		return config.overrides.CurrentContext
+		return config.overrides.CurrentContext, true
 	}
 	if len(config.contextName) != 0 {
-		return config.contextName
+		return config.contextName, false
 	}
 
-	return config.config.CurrentContext
+	return config.config.CurrentContext, false
 }
 
-func (config *DirectClientConfig) getAuthInfoName() string {
+// getAuthInfoName returns a string containing the current authinfo name for the current context,
+// and a boolean indicating  whether the default authInfo name is overwritten by a user-set flag, or
+// left as its default value
+func (config *DirectClientConfig) getAuthInfoName() (string, bool) {
 	if len(config.overrides.Context.AuthInfo) != 0 {
-		return config.overrides.Context.AuthInfo
+		return config.overrides.Context.AuthInfo, true
 	}
-	return config.getContext().AuthInfo
+	context, _ := config.getContext()
+	return context.AuthInfo, false
 }
 
-func (config *DirectClientConfig) getClusterName() string {
+// getClusterName returns a string containing the default, or user-set cluster name, and a boolean
+// indicating whether the default clusterName has been overwritten by a user-set flag, or left as
+// its default value
+func (config *DirectClientConfig) getClusterName() (string, bool) {
 	if len(config.overrides.Context.Cluster) != 0 {
-		return config.overrides.Context.Cluster
+		return config.overrides.Context.Cluster, true
 	}
-	return config.getContext().Cluster
+	context, _ := config.getContext()
+	return context.Cluster, false
 }
 
-func (config *DirectClientConfig) getContext() clientcmdapi.Context {
+// getContext returns the clientcmdapi.Context, or an error if a required context is not found.
+func (config *DirectClientConfig) getContext() (clientcmdapi.Context, error) {
 	contexts := config.config.Contexts
-	contextName := config.getContextName()
+	contextName, required := config.getContextName()
 
 	var mergedContext clientcmdapi.Context
 	if configContext, exists := contexts[contextName]; exists {
 		mergo.Merge(&mergedContext, configContext)
+	} else if required {
+		return clientcmdapi.Context{}, fmt.Errorf("context %q does not exist", contextName)
 	}
 	mergo.Merge(&mergedContext, config.overrides.Context)
 
-	return mergedContext
+	return mergedContext, nil
 }
 
-func (config *DirectClientConfig) getAuthInfo() clientcmdapi.AuthInfo {
+// getAuthInfo returns the clientcmdapi.AuthInfo, or an error if a required auth info is not found.
+func (config *DirectClientConfig) getAuthInfo() (clientcmdapi.AuthInfo, error) {
 	authInfos := config.config.AuthInfos
-	authInfoName := config.getAuthInfoName()
+	authInfoName, required := config.getAuthInfoName()
 
 	var mergedAuthInfo clientcmdapi.AuthInfo
 	if configAuthInfo, exists := authInfos[authInfoName]; exists {
 		mergo.Merge(&mergedAuthInfo, configAuthInfo)
+	} else if required {
+		return clientcmdapi.AuthInfo{}, fmt.Errorf("auth info %q does not exist", authInfoName)
 	}
 	mergo.Merge(&mergedAuthInfo, config.overrides.AuthInfo)
 
-	return mergedAuthInfo
+	return mergedAuthInfo, nil
 }
 
-func (config *DirectClientConfig) getCluster() clientcmdapi.Cluster {
+// getCluster returns the clientcmdapi.Cluster, or an error if a required cluster is not found.
+func (config *DirectClientConfig) getCluster() (clientcmdapi.Cluster, error) {
 	clusterInfos := config.config.Clusters
-	clusterInfoName := config.getClusterName()
+	clusterInfoName, required := config.getClusterName()
 
 	var mergedClusterInfo clientcmdapi.Cluster
 	mergo.Merge(&mergedClusterInfo, config.overrides.ClusterDefaults)
-	mergo.Merge(&mergedClusterInfo, EnvVarCluster)
 	if configClusterInfo, exists := clusterInfos[clusterInfoName]; exists {
 		mergo.Merge(&mergedClusterInfo, configClusterInfo)
+	} else if required {
+		return clientcmdapi.Cluster{}, fmt.Errorf("cluster %q does not exist", clusterInfoName)
 	}
 	mergo.Merge(&mergedClusterInfo, config.overrides.ClusterInfo)
 	// An override of --insecure-skip-tls-verify=true and no accompanying CA/CA data should clear already-set CA/CA data
@@ -344,11 +412,13 @@ func (config *DirectClientConfig) getCluster() clientcmdapi.Cluster {
 		mergedClusterInfo.CertificateAuthorityData = nil
 	}
 
-	return mergedClusterInfo
+	return mergedClusterInfo, nil
 }
 
 // inClusterClientConfig makes a config that will work from within a kubernetes cluster container environment.
 type inClusterClientConfig struct{}
+
+var _ ClientConfig = inClusterClientConfig{}
 
 func (inClusterClientConfig) RawConfig() (clientcmdapi.Config, error) {
 	return clientcmdapi.Config{}, fmt.Errorf("inCluster environment config doesn't support multiple clusters")
@@ -358,21 +428,21 @@ func (inClusterClientConfig) ClientConfig() (*restclient.Config, error) {
 	return restclient.InClusterConfig()
 }
 
-func (inClusterClientConfig) Namespace() (string, error) {
+func (inClusterClientConfig) Namespace() (string, bool, error) {
 	// This way assumes you've set the POD_NAMESPACE environment variable using the downward API.
 	// This check has to be done first for backwards compatibility with the way InClusterConfig was originally set up
 	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
-		return ns, nil
+		return ns, true, nil
 	}
 
 	// Fall back to the namespace associated with the service account token, if available
 	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
 		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			return ns, nil
+			return ns, true, nil
 		}
 	}
 
-	return "default", nil
+	return "default", false, nil
 }
 
 func (inClusterClientConfig) ConfigAccess() ConfigAccess {

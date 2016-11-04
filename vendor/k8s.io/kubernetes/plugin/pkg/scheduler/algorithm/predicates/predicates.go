@@ -67,7 +67,7 @@ func (c *CachedNodeInfo) GetNodeInfo(id string) (*api.Node, error) {
 	return node.(*api.Node), nil
 }
 
-// podMetadata is a type that is passed as metadata for predicate functions
+// predicateMetadata is a type that is passed as metadata for predicate functions
 type predicateMetadata struct {
 	podBestEffort             bool
 	podRequest                *schedulercache.Resource
@@ -670,7 +670,7 @@ func (s *ServiceAffinity) CheckServiceAffinity(pod *api.Pod, meta interface{}, n
 	// skip looking at other pods in the service if the current pod defines all the required affinity labels
 	if !labelsExist {
 		services, err := s.serviceLister.GetPodServices(pod)
-		if err == nil {
+		if err == nil && len(services) > 0 {
 			// just use the first service and get the other pods within the service
 			// TODO: a separate predicate can be created that tries to handle all services for the pod
 			selector := labels.SelectorFromSet(services[0].Spec.Selector)
@@ -968,7 +968,7 @@ func (c *PodAffinityChecker) getMatchingAntiAffinityTerms(pod *api.Pod, allPods 
 		if err != nil {
 			return nil, err
 		}
-		if affinity.PodAntiAffinity != nil {
+		if affinity != nil && affinity.PodAntiAffinity != nil {
 			existingPodNode, err := c.info.GetNodeInfo(existingPod.Spec.NodeName)
 			if err != nil {
 				return nil, err
@@ -1163,6 +1163,24 @@ func CheckNodeDiskPressurePredicate(pod *api.Pod, meta interface{}, nodeInfo *sc
 	for _, cond := range node.Status.Conditions {
 		if cond.Type == api.NodeDiskPressure && cond.Status == api.ConditionTrue {
 			return false, []algorithm.PredicateFailureReason{ErrNodeUnderDiskPressure}, nil
+		}
+	}
+
+	return true, nil, nil
+}
+
+// CheckNodeInodePressurePredicate checks if a pod can be scheduled on a node
+// reporting inode pressure condition.
+func CheckNodeInodePressurePredicate(pod *api.Pod, meta interface{}, nodeInfo *schedulercache.NodeInfo) (bool, []algorithm.PredicateFailureReason, error) {
+	node := nodeInfo.Node()
+	if node == nil {
+		return false, nil, fmt.Errorf("node not found")
+	}
+
+	// is node under presure?
+	for _, cond := range node.Status.Conditions {
+		if cond.Type == api.NodeInodePressure && cond.Status == api.ConditionTrue {
+			return false, []algorithm.PredicateFailureReason{ErrNodeUnderInodePressure}, nil
 		}
 	}
 

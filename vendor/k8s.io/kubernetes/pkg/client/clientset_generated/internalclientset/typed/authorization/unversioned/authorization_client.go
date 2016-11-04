@@ -24,12 +24,22 @@ import (
 
 type AuthorizationInterface interface {
 	GetRESTClient() *restclient.RESTClient
+	LocalSubjectAccessReviewsGetter
+	SelfSubjectAccessReviewsGetter
 	SubjectAccessReviewsGetter
 }
 
 // AuthorizationClient is used to interact with features provided by the Authorization group.
 type AuthorizationClient struct {
 	*restclient.RESTClient
+}
+
+func (c *AuthorizationClient) LocalSubjectAccessReviews(namespace string) LocalSubjectAccessReviewInterface {
+	return newLocalSubjectAccessReviews(c, namespace)
+}
+
+func (c *AuthorizationClient) SelfSubjectAccessReviews() SelfSubjectAccessReviewInterface {
+	return newSelfSubjectAccessReviews(c)
 }
 
 func (c *AuthorizationClient) SubjectAccessReviews() SubjectAccessReviewInterface {
@@ -74,12 +84,10 @@ func setConfigDefaults(config *restclient.Config) error {
 	if config.UserAgent == "" {
 		config.UserAgent = restclient.DefaultKubernetesUserAgent()
 	}
-	// TODO: Unconditionally set the config.Version, until we fix the config.
-	//if config.Version == "" {
-	copyGroupVersion := g.GroupVersion
-	config.GroupVersion = &copyGroupVersion
-	//}
-
+	if config.GroupVersion == nil || config.GroupVersion.Group != g.GroupVersion.Group {
+		copyGroupVersion := g.GroupVersion
+		config.GroupVersion = &copyGroupVersion
+	}
 	config.NegotiatedSerializer = api.Codecs
 
 	if config.QPS == 0 {

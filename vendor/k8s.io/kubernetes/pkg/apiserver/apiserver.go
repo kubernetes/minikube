@@ -27,7 +27,6 @@ import (
 	"path"
 	rt "runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"k8s.io/kubernetes/pkg/admission"
@@ -42,7 +41,6 @@ import (
 	"k8s.io/kubernetes/pkg/util/flushwriter"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/wsstream"
-	"k8s.io/kubernetes/pkg/version"
 
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
@@ -50,12 +48,6 @@ import (
 
 func init() {
 	metrics.Register()
-}
-
-// mux is an object that can register http handlers.
-type Mux interface {
-	Handle(pattern string, handler http.Handler)
-	HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request))
 }
 
 type APIResourceLister interface {
@@ -74,10 +66,6 @@ type APIGroupVersion struct {
 
 	// GroupVersion is the external group version
 	GroupVersion unversioned.GroupVersion
-
-	// RequestInfoResolver is used to parse URLs for the legacy proxy handler.  Don't use this for anything else
-	// TODO: refactor proxy handler to use sub resources
-	RequestInfoResolver *RequestInfoResolver
 
 	// OptionsExternalVersion controls the Kubernetes APIVersion used for common objects in the apiserver
 	// schema like api.Status, api.DeleteOptions, and api.ListOptions. Other implementors may
@@ -183,53 +171,10 @@ func (g *APIGroupVersion) newInstaller() *APIInstaller {
 	prefix := path.Join(g.Root, g.GroupVersion.Group, g.GroupVersion.Version)
 	installer := &APIInstaller{
 		group:             g,
-		info:              g.RequestInfoResolver,
 		prefix:            prefix,
 		minRequestTimeout: g.MinRequestTimeout,
 	}
 	return installer
-}
-
-// TODO: document all handlers
-// InstallVersionHandler registers the APIServer's `/version` handler
-func InstallVersionHandler(mux Mux, container *restful.Container) {
-	// Set up a service to return the git code version.
-	versionWS := new(restful.WebService)
-	versionWS.Path("/version")
-	versionWS.Doc("git code version from which this is built")
-	versionWS.Route(
-		versionWS.GET("/").To(handleVersion).
-			Doc("get the code version").
-			Operation("getCodeVersion").
-			Produces(restful.MIME_JSON).
-			Consumes(restful.MIME_JSON).
-			Writes(version.Info{}))
-
-	container.Add(versionWS)
-}
-
-// InstallLogsSupport registers the APIServer's `/logs` into a mux.
-func InstallLogsSupport(mux Mux, container *restful.Container) {
-	// use restful: ws.Route(ws.GET("/logs/{logpath:*}").To(fileHandler))
-	// See github.com/emicklei/go-restful/blob/master/examples/restful-serve-static.go
-	ws := new(restful.WebService)
-	ws.Path("/logs")
-	ws.Doc("get log files")
-	ws.Route(ws.GET("/{logpath:*}").To(logFileHandler))
-	ws.Route(ws.GET("/").To(logFileListHandler))
-
-	container.Add(ws)
-}
-
-func logFileHandler(req *restful.Request, resp *restful.Response) {
-	logdir := "/var/log"
-	actual := path.Join(logdir, req.PathParameter("logpath"))
-	http.ServeFile(resp.ResponseWriter, req.Request, actual)
-}
-
-func logFileListHandler(req *restful.Request, resp *restful.Response) {
-	logdir := "/var/log"
-	http.ServeFile(resp.ResponseWriter, req.Request, logdir)
 }
 
 // TODO: needs to perform response type negotiation, this is probably the wrong way to recover panics
@@ -257,22 +202,6 @@ func logStackOnRecover(s runtime.NegotiatedSerializer, panicReason interface{}, 
 		headers.Set("Accept", ct)
 	}
 	errorNegotiated(apierrors.NewGenericServerResponse(http.StatusInternalServerError, "", api.Resource(""), "", "", 0, false), s, unversioned.GroupVersion{}, w, &http.Request{Header: headers})
-}
-
-func InstallServiceErrorHandler(s runtime.NegotiatedSerializer, container *restful.Container, requestResolver *RequestInfoResolver, apiVersions []string) {
-	container.ServiceErrorHandler(func(serviceErr restful.ServiceError, request *restful.Request, response *restful.Response) {
-		serviceErrorHandler(s, requestResolver, apiVersions, serviceErr, request, response)
-	})
-}
-
-func serviceErrorHandler(s runtime.NegotiatedSerializer, requestResolver *RequestInfoResolver, apiVersions []string, serviceErr restful.ServiceError, request *restful.Request, response *restful.Response) {
-	errorNegotiated(
-		apierrors.NewGenericServerResponse(serviceErr.Code, "", api.Resource(""), "", serviceErr.Message, 0, false),
-		s,
-		unversioned.GroupVersion{},
-		response.ResponseWriter,
-		request.Request,
-	)
 }
 
 // Adds a service to return the supported api versions at the legacy /api.
@@ -342,8 +271,8 @@ func keepUnversioned(group string) bool {
 	return group == "" || group == "extensions"
 }
 
-// Adds a service to return the supported api versions at /apis.
-func AddApisWebService(s runtime.NegotiatedSerializer, container *restful.Container, apiPrefix string, f func(req *restful.Request) []unversioned.APIGroup) {
+// NewApisWebService returns a webservice serving the available api version under /apis.
+func NewApisWebService(s runtime.NegotiatedSerializer, apiPrefix string, f func(req *restful.Request) []unversioned.APIGroup) *restful.WebService {
 	// Because in release 1.1, /apis returns response with empty APIVersion, we
 	// use StripVersionNegotiatedSerializer to keep the response backwards
 	// compatible.
@@ -358,12 +287,12 @@ func AddApisWebService(s runtime.NegotiatedSerializer, container *restful.Contai
 		Produces(s.SupportedMediaTypes()...).
 		Consumes(s.SupportedMediaTypes()...).
 		Writes(unversioned.APIGroupList{}))
-	container.Add(ws)
+	return ws
 }
 
-// Adds a service to return the supported versions, preferred version, and name
-// of a group. E.g., a such web service will be registered at /apis/extensions.
-func AddGroupWebService(s runtime.NegotiatedSerializer, container *restful.Container, path string, group unversioned.APIGroup) {
+// NewGroupWebService returns a webservice serving the supported versions, preferred version, and name
+// of a group. E.g., such a web service will be registered at /apis/extensions.
+func NewGroupWebService(s runtime.NegotiatedSerializer, path string, group unversioned.APIGroup) *restful.WebService {
 	ss := s
 	if keepUnversioned(group.Name) {
 		// Because in release 1.1, /apis/extensions returns response with empty
@@ -381,7 +310,7 @@ func AddGroupWebService(s runtime.NegotiatedSerializer, container *restful.Conta
 		Produces(s.SupportedMediaTypes()...).
 		Consumes(s.SupportedMediaTypes()...).
 		Writes(unversioned.APIGroup{}))
-	container.Add(ws)
+	return ws
 }
 
 // Adds a service to return the supported resources, E.g., a such web service
@@ -401,11 +330,6 @@ func AddSupportedResourcesWebService(s runtime.NegotiatedSerializer, ws *restful
 		Produces(s.SupportedMediaTypes()...).
 		Consumes(s.SupportedMediaTypes()...).
 		Writes(unversioned.APIResourceList{}))
-}
-
-// handleVersion writes the server's version information.
-func handleVersion(req *restful.Request, resp *restful.Response) {
-	writeRawJSON(http.StatusOK, version.Get(), resp.ResponseWriter)
 }
 
 // APIVersionHandler returns a handler which will list the provided versions as available.
@@ -484,7 +408,7 @@ func writeNegotiated(s runtime.NegotiatedSerializer, gv unversioned.GroupVersion
 	serializer, err := negotiateOutputSerializer(req, s)
 	if err != nil {
 		status := errToAPIStatus(err)
-		writeRawJSON(int(status.Code), status, w)
+		WriteRawJSON(int(status.Code), status, w)
 		return
 	}
 
@@ -528,8 +452,8 @@ func errorJSONFatal(err error, codec runtime.Encoder, w http.ResponseWriter) int
 	return code
 }
 
-// writeRawJSON writes a non-API object in JSON.
-func writeRawJSON(statusCode int, object interface{}, w http.ResponseWriter) {
+// WriteRawJSON writes a non-API object in JSON.
+func WriteRawJSON(statusCode int, object interface{}, w http.ResponseWriter) {
 	output, err := json.MarshalIndent(object, "", "  ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -554,13 +478,4 @@ func parseTimeout(str string) time.Duration {
 func readBody(req *http.Request) ([]byte, error) {
 	defer req.Body.Close()
 	return ioutil.ReadAll(req.Body)
-}
-
-// splitPath returns the segments for a URL path.
-func splitPath(path string) []string {
-	path = strings.Trim(path, "/")
-	if path == "" {
-		return []string{}
-	}
-	return strings.Split(path, "/")
 }

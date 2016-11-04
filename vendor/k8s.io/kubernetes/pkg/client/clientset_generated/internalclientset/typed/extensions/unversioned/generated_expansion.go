@@ -20,10 +20,10 @@ type DaemonSetExpansion interface{}
 
 type IngressExpansion interface{}
 
+type NetworkPolicyExpansion interface{}
+
 type PodSecurityPolicyExpansion interface{}
 
 type ReplicaSetExpansion interface{}
-
-type StorageClassExpansion interface{}
 
 type ThirdPartyResourceExpansion interface{}

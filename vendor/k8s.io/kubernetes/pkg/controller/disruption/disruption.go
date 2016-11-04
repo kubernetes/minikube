@@ -25,13 +25,15 @@ import (
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/policy"
 	"k8s.io/kubernetes/pkg/client/cache"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
+	policyclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/intstr"
+	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/util/workqueue"
 	"k8s.io/kubernetes/pkg/watch"
@@ -44,28 +46,29 @@ const statusUpdateRetries = 2
 type updater func(*policy.PodDisruptionBudget) error
 
 type DisruptionController struct {
-	kubeClient *client.Client
+	kubeClient internalclientset.Interface
 
 	pdbStore      cache.Store
-	pdbController *framework.Controller
+	pdbController *cache.Controller
 	pdbLister     cache.StoreToPodDisruptionBudgetLister
 
-	podController framework.ControllerInterface
+	podController cache.ControllerInterface
 	podLister     cache.StoreToPodLister
 
 	rcIndexer    cache.Indexer
-	rcController *framework.Controller
+	rcController *cache.Controller
 	rcLister     cache.StoreToReplicationControllerLister
 
 	rsStore      cache.Store
-	rsController *framework.Controller
+	rsController *cache.Controller
 	rsLister     cache.StoreToReplicaSetLister
 
 	dIndexer    cache.Indexer
-	dController *framework.Controller
+	dController *cache.Controller
 	dLister     cache.StoreToDeploymentLister
 
-	queue *workqueue.Type
+	// PodDisruptionBudget keys that need to be synced.
+	queue workqueue.RateLimitingInterface
 
 	broadcaster record.EventBroadcaster
 	recorder    record.EventRecorder
@@ -84,11 +87,11 @@ type controllerAndScale struct {
 // controllers and their scale.
 type podControllerFinder func(*api.Pod) ([]controllerAndScale, error)
 
-func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClient *client.Client) *DisruptionController {
+func NewDisruptionController(podInformer cache.SharedIndexInformer, kubeClient internalclientset.Interface) *DisruptionController {
 	dc := &DisruptionController{
 		kubeClient:    kubeClient,
 		podController: podInformer.GetController(),
-		queue:         workqueue.NewNamed("disruption"),
+		queue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "disruption"),
 		broadcaster:   record.NewBroadcaster(),
 	}
 	dc.recorder = dc.broadcaster.NewRecorder(api.EventSource{Component: "controllermanager"})
@@ -97,13 +100,13 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 
 	dc.podLister.Indexer = podInformer.GetIndexer()
 
-	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    dc.addPod,
 		UpdateFunc: dc.updatePod,
 		DeleteFunc: dc.deletePod,
 	})
 
-	dc.pdbStore, dc.pdbController = framework.NewInformer(
+	dc.pdbStore, dc.pdbController = cache.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.kubeClient.Policy().PodDisruptionBudgets(api.NamespaceAll).List(options)
@@ -114,7 +117,7 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 		},
 		&policy.PodDisruptionBudget{},
 		30*time.Second,
-		framework.ResourceEventHandlerFuncs{
+		cache.ResourceEventHandlerFuncs{
 			AddFunc:    dc.addDb,
 			UpdateFunc: dc.updateDb,
 			DeleteFunc: dc.removeDb,
@@ -122,24 +125,24 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 	)
 	dc.pdbLister.Store = dc.pdbStore
 
-	dc.rcIndexer, dc.rcController = framework.NewIndexerInformer(
+	dc.rcIndexer, dc.rcController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return dc.kubeClient.ReplicationControllers(api.NamespaceAll).List(options)
+				return dc.kubeClient.Core().ReplicationControllers(api.NamespaceAll).List(options)
 			},
 			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return dc.kubeClient.ReplicationControllers(api.NamespaceAll).Watch(options)
+				return dc.kubeClient.Core().ReplicationControllers(api.NamespaceAll).Watch(options)
 			},
 		},
 		&api.ReplicationController{},
 		30*time.Second,
-		framework.ResourceEventHandlerFuncs{},
+		cache.ResourceEventHandlerFuncs{},
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
 	dc.rcLister.Indexer = dc.rcIndexer
 
-	dc.rsStore, dc.rsController = framework.NewInformer(
+	dc.rsLister.Indexer, dc.rsController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.kubeClient.Extensions().ReplicaSets(api.NamespaceAll).List(options)
@@ -150,12 +153,12 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 		},
 		&extensions.ReplicaSet{},
 		30*time.Second,
-		framework.ResourceEventHandlerFuncs{},
+		cache.ResourceEventHandlerFuncs{},
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
+	dc.rsStore = dc.rsLister.Indexer
 
-	dc.rsLister.Store = dc.rsStore
-
-	dc.dIndexer, dc.dController = framework.NewIndexerInformer(
+	dc.dIndexer, dc.dController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.kubeClient.Extensions().Deployments(api.NamespaceAll).List(options)
@@ -166,7 +169,7 @@ func NewDisruptionController(podInformer framework.SharedIndexInformer, kubeClie
 		},
 		&extensions.Deployment{},
 		30*time.Second,
-		framework.ResourceEventHandlerFuncs{},
+		cache.ResourceEventHandlerFuncs{},
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
@@ -199,7 +202,7 @@ func (dc *DisruptionController) getPodReplicaSets(pod *api.Pod) ([]controllerAnd
 	for _, rs := range rss {
 		// GetDeploymentsForReplicaSet returns an error only if no matching
 		// deployments are found.
-		_, err := dc.dLister.GetDeploymentsForReplicaSet(&rs)
+		_, err := dc.dLister.GetDeploymentsForReplicaSet(rs)
 		if err == nil { // A deployment was found, so this finder will not count this RS.
 			continue
 		}
@@ -224,7 +227,7 @@ func (dc *DisruptionController) getPodDeployments(pod *api.Pod) ([]controllerAnd
 	}
 	controllerScale := map[types.UID]int32{}
 	for _, rs := range rss {
-		ds, err := dc.dLister.GetDeploymentsForReplicaSet(&rs)
+		ds, err := dc.dLister.GetDeploymentsForReplicaSet(rs)
 		// GetDeploymentsForReplicaSet returns an error only if no matching
 		// deployments are found.  In that case we skip this ReplicaSet.
 		if err != nil {
@@ -257,7 +260,7 @@ func (dc *DisruptionController) Run(stopCh <-chan struct{}) {
 	glog.V(0).Infof("Starting disruption controller")
 	if dc.kubeClient != nil {
 		glog.V(0).Infof("Sending events to api server.")
-		dc.broadcaster.StartRecordingToSink(dc.kubeClient.Events(""))
+		dc.broadcaster.StartRecordingToSink(&unversionedcore.EventSinkImpl{Interface: dc.kubeClient.Core().Events("")})
 	} else {
 		glog.V(0).Infof("No api server defined - no events will be sent to API server.")
 	}
@@ -391,33 +394,27 @@ func (dc *DisruptionController) getPodsForPdb(pdb *policy.PodDisruptionBudget) (
 }
 
 func (dc *DisruptionController) worker() {
-	work := func() bool {
-		key, quit := dc.queue.Get()
-		if quit {
-			return quit
-		}
-		defer dc.queue.Done(key)
-		glog.V(4).Infof("Syncing PodDisruptionBudget %q", key.(string))
-		if err := dc.sync(key.(string)); err != nil {
-			glog.Errorf("Error syncing PodDisruptionBudget %v, requeuing: %v", key.(string), err)
-			// TODO(mml): In order to be safe in the face of a total inability to write state
-			// changes, we should write an expiration timestamp here and consumers
-			// of the PDB state (the /evict subresource handler) should check that
-			// any 'true' state is relatively fresh.
+	for dc.processNextWorkItem() {
+	}
+}
 
-			// TODO(mml): file an issue to that effect
-
-			// TODO(mml): If we used a workqueue.RateLimitingInterface, we could
-			// improve our behavior (be a better citizen) when we need to retry.
-			dc.queue.Add(key)
-		}
+func (dc *DisruptionController) processNextWorkItem() bool {
+	dKey, quit := dc.queue.Get()
+	if quit {
 		return false
 	}
-	for {
-		if quit := work(); quit {
-			return
-		}
+	defer dc.queue.Done(dKey)
+
+	err := dc.sync(dKey.(string))
+	if err == nil {
+		dc.queue.Forget(dKey)
+		return true
 	}
+
+	utilruntime.HandleError(fmt.Errorf("Error syncing PodDisruptionBudget %v, requeuing: %v", dKey.(string), err))
+	dc.queue.AddRateLimited(dKey)
+
+	return true
 }
 
 func (dc *DisruptionController) sync(key string) error {
@@ -428,10 +425,10 @@ func (dc *DisruptionController) sync(key string) error {
 
 	obj, exists, err := dc.pdbLister.Store.GetByKey(key)
 	if !exists {
-		return err
+		glog.V(4).Infof("PodDisruptionBudget %q has been deleted", key)
+		return nil
 	}
 	if err != nil {
-		glog.Errorf("unable to retrieve PodDisruptionBudget %v from store: %v", key, err)
 		return err
 	}
 
@@ -565,7 +562,7 @@ func (dc *DisruptionController) updatePdbSpec(pdb *policy.PodDisruptionBudget, c
 	// pods are in a safe state when their first pods appear but this controller
 	// has not updated their status yet.  This isn't the only race, but it's a
 	// common one that's easy to detect.
-	disruptionAllowed := currentHealthy >= desiredHealthy && expectedCount > 0
+	disruptionAllowed := currentHealthy-1 >= desiredHealthy && expectedCount > 0
 
 	if pdb.Status.CurrentHealthy == currentHealthy && pdb.Status.DesiredHealthy == desiredHealthy && pdb.Status.ExpectedPods == expectedCount && pdb.Status.PodDisruptionAllowed == disruptionAllowed {
 		return nil
@@ -590,7 +587,7 @@ func (dc *DisruptionController) updatePdbSpec(pdb *policy.PodDisruptionBudget, c
 // refresh tries to re-GET the given PDB.  If there are any errors, it just
 // returns the old PDB.  Intended to be used in a retry loop where it runs a
 // bounded number of times.
-func refresh(pdbClient client.PodDisruptionBudgetInterface, pdb *policy.PodDisruptionBudget) *policy.PodDisruptionBudget {
+func refresh(pdbClient policyclientset.PodDisruptionBudgetInterface, pdb *policy.PodDisruptionBudget) *policy.PodDisruptionBudget {
 	newPdb, err := pdbClient.Get(pdb.Name)
 	if err == nil {
 		return newPdb

@@ -31,11 +31,23 @@ type Aggregate interface {
 // NewAggregate converts a slice of errors into an Aggregate interface, which
 // is itself an implementation of the error interface.  If the slice is empty,
 // this returns nil.
+// It will check if any of the element of input error list is nil, to avoid
+// nil pointer panic when call Error().
 func NewAggregate(errlist []error) Aggregate {
 	if len(errlist) == 0 {
 		return nil
 	}
-	return aggregate(errlist)
+	// In case of input error list contains nil
+	var errs []error
+	for _, e := range errlist {
+		if e != nil {
+			errs = append(errs, e)
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	return aggregate(errs)
 }
 
 // This helper implements the error and Errors interfaces.  Keeping it private
@@ -133,6 +145,20 @@ func Flatten(agg Aggregate) Aggregate {
 		}
 	}
 	return NewAggregate(result)
+}
+
+// Reduce will return err or, if err is an Aggregate and only has one item,
+// the first item in the aggregate.
+func Reduce(err error) error {
+	if agg, ok := err.(Aggregate); ok && err != nil {
+		switch len(agg.Errors()) {
+		case 1:
+			return agg.Errors()[0]
+		case 0:
+			return nil
+		}
+	}
+	return err
 }
 
 // AggregateGoroutines runs the provided functions in parallel, stuffing all

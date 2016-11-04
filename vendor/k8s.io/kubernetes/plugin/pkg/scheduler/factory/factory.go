@@ -29,7 +29,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/client/cache"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/runtime"
@@ -77,8 +76,8 @@ type ConfigFactory struct {
 	// Close this to stop all reflectors
 	StopEverything chan struct{}
 
-	scheduledPodPopulator *framework.Controller
-	nodePopulator         *framework.Controller
+	scheduledPodPopulator *cache.Controller
+	nodePopulator         *cache.Controller
 
 	schedulerCache schedulercache.Cache
 
@@ -109,9 +108,9 @@ func NewConfigFactory(client *client.Client, schedulerName string, hardPodAffini
 		NodeLister:                     &cache.StoreToNodeLister{},
 		PVLister:                       &cache.StoreToPVFetcher{Store: cache.NewStore(cache.MetaNamespaceKeyFunc)},
 		PVCLister:                      &cache.StoreToPVCFetcher{Store: cache.NewStore(cache.MetaNamespaceKeyFunc)},
-		ServiceLister:                  &cache.StoreToServiceLister{Store: cache.NewStore(cache.MetaNamespaceKeyFunc)},
+		ServiceLister:                  &cache.StoreToServiceLister{Indexer: cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})},
 		ControllerLister:               &cache.StoreToReplicationControllerLister{Indexer: cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})},
-		ReplicaSetLister:               &cache.StoreToReplicaSetLister{Store: cache.NewStore(cache.MetaNamespaceKeyFunc)},
+		ReplicaSetLister:               &cache.StoreToReplicaSetLister{Indexer: cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})},
 		schedulerCache:                 schedulerCache,
 		StopEverything:                 stopEverything,
 		SchedulerName:                  schedulerName,
@@ -125,11 +124,11 @@ func NewConfigFactory(client *client.Client, schedulerName string, hardPodAffini
 	// We construct this here instead of in CreateFromKeys because
 	// ScheduledPodLister is something we provide to plug in functions that
 	// they may need to call.
-	c.ScheduledPodLister.Indexer, c.scheduledPodPopulator = framework.NewIndexerInformer(
+	c.ScheduledPodLister.Indexer, c.scheduledPodPopulator = cache.NewIndexerInformer(
 		c.createAssignedNonTerminatedPodLW(),
 		&api.Pod{},
 		0,
-		framework.ResourceEventHandlerFuncs{
+		cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.addPodToCache,
 			UpdateFunc: c.updatePodInCache,
 			DeleteFunc: c.deletePodFromCache,
@@ -137,11 +136,11 @@ func NewConfigFactory(client *client.Client, schedulerName string, hardPodAffini
 		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
 
-	c.NodeLister.Store, c.nodePopulator = framework.NewInformer(
+	c.NodeLister.Store, c.nodePopulator = cache.NewInformer(
 		c.createNodeLW(),
 		&api.Node{},
 		0,
-		framework.ResourceEventHandlerFuncs{
+		cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.addNodeToCache,
 			UpdateFunc: c.updateNodeInCache,
 			DeleteFunc: c.deleteNodeFromCache,
@@ -316,9 +315,14 @@ func (f *ConfigFactory) CreateFromKeys(predicateKeys, priorityKeys sets.String, 
 		return nil, err
 	}
 
+	priorityMetaProducer, err := f.GetPriorityMetadataProducer()
+	if err != nil {
+		return nil, err
+	}
+
 	f.Run()
 
-	algo := scheduler.NewGenericScheduler(f.schedulerCache, predicateFuncs, priorityConfigs, extenders)
+	algo := scheduler.NewGenericScheduler(f.schedulerCache, predicateFuncs, priorityMetaProducer, priorityConfigs, extenders)
 
 	podBackoff := podBackoff{
 		perPodBackoff: map[types.NamespacedName]*backoffEntry{},
@@ -350,6 +354,15 @@ func (f *ConfigFactory) GetPriorityFunctionConfigs(priorityKeys sets.String) ([]
 	}
 
 	return getPriorityFunctionConfigs(priorityKeys, *pluginArgs)
+}
+
+func (f *ConfigFactory) GetPriorityMetadataProducer() (algorithm.MetadataProducer, error) {
+	pluginArgs, err := f.getPluginArgs()
+	if err != nil {
+		return nil, err
+	}
+
+	return getPriorityMetadataProducer(*pluginArgs)
 }
 
 func (f *ConfigFactory) GetPredicates(predicateKeys sets.String) (map[string]algorithm.FitPredicate, error) {
@@ -402,7 +415,7 @@ func (f *ConfigFactory) Run() {
 	// Watch and cache all service objects. Scheduler needs to find all pods
 	// created by the same services or ReplicationControllers/ReplicaSets, so that it can spread them correctly.
 	// Cache this locally.
-	cache.NewReflector(f.createServiceLW(), &api.Service{}, f.ServiceLister.Store, 0).RunUntil(f.StopEverything)
+	cache.NewReflector(f.createServiceLW(), &api.Service{}, f.ServiceLister.Indexer, 0).RunUntil(f.StopEverything)
 
 	// Watch and cache all ReplicationController objects. Scheduler needs to find all pods
 	// created by the same services or ReplicationControllers/ReplicaSets, so that it can spread them correctly.
@@ -412,7 +425,7 @@ func (f *ConfigFactory) Run() {
 	// Watch and cache all ReplicaSet objects. Scheduler needs to find all pods
 	// created by the same services or ReplicationControllers/ReplicaSets, so that it can spread them correctly.
 	// Cache this locally.
-	cache.NewReflector(f.createReplicaSetLW(), &extensions.ReplicaSet{}, f.ReplicaSetLister.Store, 0).RunUntil(f.StopEverything)
+	cache.NewReflector(f.createReplicaSetLW(), &extensions.ReplicaSet{}, f.ReplicaSetLister.Indexer, 0).RunUntil(f.StopEverything)
 }
 
 func (f *ConfigFactory) getNextPod() *api.Pod {
@@ -532,10 +545,13 @@ func (factory *ConfigFactory) makeDefaultErrorFunc(backoff *podBackoff, podQueue
 				return
 			}
 			// Get the pod again; it may have changed/been scheduled already.
-			pod = &api.Pod{}
 			getBackoff := initialGetBackoff
 			for {
-				if err := factory.Client.Get().Namespace(podID.Namespace).Resource("pods").Name(podID.Name).Do().Into(pod); err == nil {
+				pod, err := factory.Client.Pods(podID.Namespace).Get(podID.Name)
+				if err == nil {
+					if len(pod.Spec.NodeName) == 0 {
+						podQueue.AddIfNotPresent(pod)
+					}
 					break
 				}
 				if errors.IsNotFound(err) {
@@ -547,9 +563,6 @@ func (factory *ConfigFactory) makeDefaultErrorFunc(backoff *podBackoff, podQueue
 					getBackoff = maximalGetBackoff
 				}
 				time.Sleep(getBackoff)
-			}
-			if pod.Spec.NodeName == "" {
-				podQueue.AddIfNotPresent(pod)
 			}
 		}()
 	}

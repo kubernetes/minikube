@@ -54,7 +54,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ThirdPartyResourceDataList{},
 		&Ingress{},
 		&IngressList{},
-		&ListOptions{},
+		&v1.ListOptions{},
 		&v1.DeleteOptions{},
 		&ReplicaSet{},
 		&ReplicaSetList{},
@@ -62,8 +62,6 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&PodSecurityPolicyList{},
 		&NetworkPolicy{},
 		&NetworkPolicyList{},
-		&StorageClass{},
-		&StorageClassList{},
 	)
 	// Add the watch version that applies
 	versionedwatch.AddToGroupVersion(scheme, SchemeGroupVersion)

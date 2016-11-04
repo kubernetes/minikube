@@ -71,7 +71,7 @@ type Reconciler interface {
 //   successive executions
 // waitForAttachTimeout - the amount of time the Mount function will wait for
 //   the volume to be attached
-// hostName - the hostname for this node, used by Attach and Detach methods
+// nodeName - the Name for this node, used by Attach and Detach methods
 // desiredStateOfWorld - cache containing the desired state of the world
 // actualStateOfWorld - cache containing the actual state of the world
 // operationExecutor - used to trigger attach/detach/mount/unmount operations
@@ -85,7 +85,7 @@ func NewReconciler(
 	loopSleepDuration time.Duration,
 	reconstructDuration time.Duration,
 	waitForAttachTimeout time.Duration,
-	hostName string,
+	nodeName types.NodeName,
 	desiredStateOfWorld cache.DesiredStateOfWorld,
 	actualStateOfWorld cache.ActualStateOfWorld,
 	operationExecutor operationexecutor.OperationExecutor,
@@ -98,7 +98,7 @@ func NewReconciler(
 		loopSleepDuration:             loopSleepDuration,
 		reconstructDuration:           reconstructDuration,
 		waitForAttachTimeout:          waitForAttachTimeout,
-		hostName:                      hostName,
+		nodeName:                      nodeName,
 		desiredStateOfWorld:           desiredStateOfWorld,
 		actualStateOfWorld:            actualStateOfWorld,
 		operationExecutor:             operationExecutor,
@@ -115,7 +115,7 @@ type reconciler struct {
 	loopSleepDuration             time.Duration
 	reconstructDuration           time.Duration
 	waitForAttachTimeout          time.Duration
-	hostName                      string
+	nodeName                      types.NodeName
 	desiredStateOfWorld           cache.DesiredStateOfWorld
 	actualStateOfWorld            cache.ActualStateOfWorld
 	operationExecutor             operationexecutor.OperationExecutor
@@ -201,7 +201,7 @@ func (rc *reconciler) reconcile() {
 					volumeToMount.Pod.UID)
 				err := rc.operationExecutor.VerifyControllerAttachedVolume(
 					volumeToMount.VolumeToMount,
-					rc.hostName,
+					rc.nodeName,
 					rc.actualStateOfWorld)
 				if err != nil &&
 					!nestedpendingoperations.IsAlreadyExists(err) &&
@@ -230,7 +230,7 @@ func (rc *reconciler) reconcile() {
 				volumeToAttach := operationexecutor.VolumeToAttach{
 					VolumeName: volumeToMount.VolumeName,
 					VolumeSpec: volumeToMount.VolumeSpec,
-					NodeName:   rc.hostName,
+					NodeName:   rc.nodeName,
 				}
 				glog.V(12).Infof("Attempting to start AttachVolume for volume %q (spec.Name: %q)  pod %q (UID: %q)",
 					volumeToMount.VolumeName,
@@ -334,7 +334,7 @@ func (rc *reconciler) reconcile() {
 					// Kubelet not responsible for detaching or this volume has a non-attachable volume plugin,
 					// so just remove it to actualStateOfWorld without attach.
 					rc.actualStateOfWorld.MarkVolumeAsDetached(
-						attachedVolume.VolumeName, rc.hostName)
+						attachedVolume.VolumeName, rc.nodeName)
 				} else {
 					// Only detach if kubelet detach is enabled
 					glog.V(12).Infof("Attempting to start DetachVolume for volume %q (spec.Name: %q)",
@@ -387,7 +387,7 @@ type podVolume struct {
 }
 
 // reconstructFromDisk scans the volume directories under the given pod directory. If the volume is not
-// in either actual or desired state of world, or pending operation, this function will reconstuct
+// in either actual or desired state of world, or pending operation, this function will reconstruct
 // the volume spec and put it in both the actual and desired state of worlds. If no running
 // container is mounting the volume, the volume will be removed by desired state of world's populator and
 // cleaned up by the reconciler.
@@ -407,7 +407,7 @@ func (rc *reconciler) reconstructStates(podsDir string) {
 
 		// Check if there is an pending operation for the given pod and volume.
 		// Need to check pending operation before checking the actual and desired
-		// states to avoid race condition during checking. For exmaple, the following
+		// states to avoid race condition during checking. For example, the following
 		// might happen if pending operation is checked after checking actual and desired states.
 		// 1. Checking the pod and it does not exist in either actual or desired state.
 		// 2. An operation for the given pod finishes and the actual state is updated.
@@ -425,7 +425,7 @@ func (rc *reconciler) reconstructStates(podsDir string) {
 			"Could not find pod information in desired or actual states or pending operation, update it in both states: %+v",
 			volumeToMount)
 		if err = rc.updateStates(volumeToMount); err != nil {
-			glog.Errorf("Error occured during reconstruct volume from disk: %v", err)
+			glog.Errorf("Error occurred during reconstruct volume from disk: %v", err)
 		}
 	}
 }

@@ -25,7 +25,6 @@ import (
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/typed/dynamic"
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/metrics"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
@@ -45,7 +44,7 @@ type NamespaceController struct {
 	// store that holds the namespaces
 	store cache.Store
 	// controller that observes the namespaces
-	controller *framework.Controller
+	controller *cache.Controller
 	// namespaces that have been queued up for processing by workers
 	queue workqueue.RateLimitingInterface
 	// list of preferred group versions and their corresponding resource set for namespace deletion
@@ -63,13 +62,30 @@ func NewNamespaceController(
 	groupVersionResources []unversioned.GroupVersionResource,
 	resyncPeriod time.Duration,
 	finalizerToken api.FinalizerName) *NamespaceController {
+
+	// the namespace deletion code looks at the discovery document to enumerate the set of resources on the server.
+	// it then finds all namespaced resources, and in response to namespace deletion, will call delete on all of them.
+	// unfortunately, the discovery information does not include the list of supported verbs/methods.  if the namespace
+	// controller calls LIST/DELETECOLLECTION for a resource, it will get a 405 error from the server and cache that that was the case.
+	// we found in practice though that some auth engines when encountering paths they don't know about may return a 50x.
+	// until we have verbs, we pre-populate resources that do not support list or delete for well-known apis rather than
+	// probing the server once in order to be told no.
+	opCache := operationNotSupportedCache{}
+	ignoredGroupVersionResources := []unversioned.GroupVersionResource{
+		{Group: "", Version: "v1", Resource: "bindings"},
+	}
+	for _, ignoredGroupVersionResource := range ignoredGroupVersionResources {
+		opCache[operationKey{op: operationDeleteCollection, gvr: ignoredGroupVersionResource}] = true
+		opCache[operationKey{op: operationList, gvr: ignoredGroupVersionResource}] = true
+	}
+
 	// create the controller so we can inject the enqueue function
 	namespaceController := &NamespaceController{
 		kubeClient: kubeClient,
 		clientPool: clientPool,
 		queue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "namespace"),
 		groupVersionResources: groupVersionResources,
-		opCache:               operationNotSupportedCache{},
+		opCache:               opCache,
 		finalizerToken:        finalizerToken,
 	}
 
@@ -78,7 +94,7 @@ func NewNamespaceController(
 	}
 
 	// configure the backing store/controller
-	store, controller := framework.NewInformer(
+	store, controller := cache.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return kubeClient.Core().Namespaces().List(options)
@@ -89,7 +105,7 @@ func NewNamespaceController(
 		},
 		&api.Namespace{},
 		resyncPeriod,
-		framework.ResourceEventHandlerFuncs{
+		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 				namespace := obj.(*api.Namespace)
 				namespaceController.enqueueNamespace(namespace)
@@ -168,7 +184,7 @@ func (nm *NamespaceController) syncNamespaceFromKey(key string) (err error) {
 		return nil
 	}
 	if err != nil {
-		glog.Infof("Unable to retrieve namespace %v from store: %v", key, err)
+		glog.Errorf("Unable to retrieve namespace %v from store: %v", key, err)
 		nm.queue.Add(key)
 		return err
 	}

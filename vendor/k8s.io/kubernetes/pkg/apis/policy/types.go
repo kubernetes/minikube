@@ -24,8 +24,10 @@ import (
 
 // PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.
 type PodDisruptionBudgetSpec struct {
-	// The minimum number of pods that must be available simultaneously.  This
-	// can be either an integer or a string specifying a percentage, e.g. "28%".
+	// An eviction is allowed if at least "minAvailable" pods selected by
+	// "selector" will still be available after the eviction, i.e. even in the
+	// absence of the evicted pod.  So for example you can prevent all voluntary
+	// evictions by specifying "100%".
 	MinAvailable intstr.IntOrString `json:"minAvailable,omitempty"`
 
 	// Label query over pods whose evictions are managed by the disruption
@@ -50,7 +52,6 @@ type PodDisruptionBudgetStatus struct {
 }
 
 // +genclient=true
-// +noMethods=true
 
 // PodDisruptionBudget is an object to define the max disruption that can be caused to a collection of pods
 type PodDisruptionBudget struct {
@@ -72,7 +73,7 @@ type PodDisruptionBudgetList struct {
 
 // Eviction evicts a pod from its node subject to certain policies and safety constraints.
 // This is a subresource of Pod.  A request to cause such an eviction is
-// created by POSTing to .../pods/foo/evictions.
+// created by POSTing to .../pods/<pod name>/evictions.
 type Eviction struct {
 	unversioned.TypeMeta `json:",inline"`
 

@@ -18,6 +18,7 @@ package internalclientset
 
 import (
 	"github.com/golang/glog"
+	unversionedapps "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/apps/unversioned"
 	unversionedauthentication "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authentication/unversioned"
 	unversionedauthorization "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authorization/unversioned"
 	unversionedautoscaling "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/autoscaling/unversioned"
@@ -25,10 +26,13 @@ import (
 	unversionedcertificates "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/certificates/unversioned"
 	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
 	unversionedextensions "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/extensions/unversioned"
+	unversionedpolicy "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/unversioned"
 	unversionedrbac "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/rbac/unversioned"
+	unversionedstorage "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/storage/unversioned"
 	restclient "k8s.io/kubernetes/pkg/client/restclient"
 	discovery "k8s.io/kubernetes/pkg/client/typed/discovery"
 	"k8s.io/kubernetes/pkg/util/flowcontrol"
+	_ "k8s.io/kubernetes/plugin/pkg/client/auth"
 )
 
 type Interface interface {
@@ -41,6 +45,9 @@ type Interface interface {
 	Certificates() unversionedcertificates.CertificatesInterface
 	Extensions() unversionedextensions.ExtensionsInterface
 	Rbac() unversionedrbac.RbacInterface
+	Storage() unversionedstorage.StorageInterface
+	Apps() unversionedapps.AppsInterface
+	Policy() unversionedpolicy.PolicyInterface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -55,6 +62,9 @@ type Clientset struct {
 	*unversionedcertificates.CertificatesClient
 	*unversionedextensions.ExtensionsClient
 	*unversionedrbac.RbacClient
+	*unversionedstorage.StorageClient
+	*unversionedapps.AppsClient
+	*unversionedpolicy.PolicyClient
 }
 
 // Core retrieves the CoreClient
@@ -121,6 +131,30 @@ func (c *Clientset) Rbac() unversionedrbac.RbacInterface {
 	return c.RbacClient
 }
 
+// Storage retrieves the StorageClient
+func (c *Clientset) Storage() unversionedstorage.StorageInterface {
+	if c == nil {
+		return nil
+	}
+	return c.StorageClient
+}
+
+// Apps retrieves the AppsClient
+func (c *Clientset) Apps() unversionedapps.AppsInterface {
+	if c == nil {
+		return nil
+	}
+	return c.AppsClient
+}
+
+// Policy retrieves the PolicyClient
+func (c *Clientset) Policy() unversionedpolicy.PolicyInterface {
+	if c == nil {
+		return nil
+	}
+	return c.PolicyClient
+}
+
 // Discovery retrieves the DiscoveryClient
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	return c.DiscoveryClient
@@ -166,6 +200,18 @@ func NewForConfig(c *restclient.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	clientset.StorageClient, err = unversionedstorage.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	clientset.AppsClient, err = unversionedapps.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
+	clientset.PolicyClient, err = unversionedpolicy.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	clientset.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -187,6 +233,9 @@ func NewForConfigOrDie(c *restclient.Config) *Clientset {
 	clientset.CertificatesClient = unversionedcertificates.NewForConfigOrDie(c)
 	clientset.ExtensionsClient = unversionedextensions.NewForConfigOrDie(c)
 	clientset.RbacClient = unversionedrbac.NewForConfigOrDie(c)
+	clientset.StorageClient = unversionedstorage.NewForConfigOrDie(c)
+	clientset.AppsClient = unversionedapps.NewForConfigOrDie(c)
+	clientset.PolicyClient = unversionedpolicy.NewForConfigOrDie(c)
 
 	clientset.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &clientset
@@ -203,6 +252,9 @@ func New(c *restclient.RESTClient) *Clientset {
 	clientset.CertificatesClient = unversionedcertificates.New(c)
 	clientset.ExtensionsClient = unversionedextensions.New(c)
 	clientset.RbacClient = unversionedrbac.New(c)
+	clientset.StorageClient = unversionedstorage.New(c)
+	clientset.AppsClient = unversionedapps.New(c)
+	clientset.PolicyClient = unversionedpolicy.New(c)
 
 	clientset.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &clientset

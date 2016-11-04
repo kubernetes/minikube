@@ -68,14 +68,14 @@ type ProxyServer struct {
 
 const (
 	proxyModeUserspace              = "userspace"
-	proxyModeIptables               = "iptables"
+	proxyModeIPTables               = "iptables"
 	experimentalProxyModeAnnotation = options.ExperimentalProxyModeAnnotation
 	betaProxyModeAnnotation         = "net.beta.kubernetes.io/proxy-mode"
 )
 
 func checkKnownProxyMode(proxyMode string) bool {
 	switch proxyMode {
-	case "", proxyModeUserspace, proxyModeIptables:
+	case "", proxyModeUserspace, proxyModeIPTables:
 		return true
 	}
 	return false
@@ -199,18 +199,18 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
 
 	proxyMode := getProxyMode(string(config.Mode), client.Nodes(), hostname, iptInterface, iptables.LinuxKernelCompatTester{})
-	if proxyMode == proxyModeIptables {
+	if proxyMode == proxyModeIPTables {
 		glog.V(0).Info("Using iptables Proxier.")
 		if config.IPTablesMasqueradeBit == nil {
 			// IPTablesMasqueradeBit must be specified or defaulted.
 			return nil, fmt.Errorf("Unable to read IPTablesMasqueradeBit from config")
 		}
-		proxierIptables, err := iptables.NewProxier(iptInterface, utilsysctl.New(), execer, config.IPTablesSyncPeriod.Duration, config.MasqueradeAll, int(*config.IPTablesMasqueradeBit), config.ClusterCIDR, hostname, getNodeIP(client, hostname))
+		proxierIPTables, err := iptables.NewProxier(iptInterface, utilsysctl.New(), execer, config.IPTablesSyncPeriod.Duration, config.MasqueradeAll, int(*config.IPTablesMasqueradeBit), config.ClusterCIDR, hostname, getNodeIP(client, hostname))
 		if err != nil {
 			glog.Fatalf("Unable to create proxier: %v", err)
 		}
-		proxier = proxierIptables
-		endpointsHandler = proxierIptables
+		proxier = proxierIPTables
+		endpointsHandler = proxierIPTables
 		// No turning back. Remove artifacts that might still exist from the userspace Proxier.
 		glog.V(0).Info("Tearing down userspace rules.")
 		userspace.CleanupLeftovers(iptInterface)
@@ -335,13 +335,22 @@ func (s *ProxyServer) Run() error {
 }
 
 func getConntrackMax(config *options.ProxyServerConfig) (int, error) {
-	if config.ConntrackMax > 0 && config.ConntrackMaxPerCore > 0 {
-		return -1, fmt.Errorf("invalid config: ConntrackMax and ConntrackMaxPerCore are mutually exclusive")
-	}
 	if config.ConntrackMax > 0 {
+		if config.ConntrackMaxPerCore > 0 {
+			return -1, fmt.Errorf("invalid config: ConntrackMax and ConntrackMaxPerCore are mutually exclusive")
+		}
+		glog.V(3).Infof("getConntrackMax: using absolute conntrax-max (deprecated)")
 		return int(config.ConntrackMax), nil
-	} else if config.ConntrackMaxPerCore > 0 {
-		return (int(config.ConntrackMaxPerCore) * runtime.NumCPU()), nil
+	}
+	if config.ConntrackMaxPerCore > 0 {
+		floor := int(config.ConntrackMin)
+		scaled := int(config.ConntrackMaxPerCore) * runtime.NumCPU()
+		if scaled > floor {
+			glog.V(3).Infof("getConntrackMax: using scaled conntrax-max-per-core")
+			return scaled, nil
+		}
+		glog.V(3).Infof("getConntrackMax: using conntrax-min")
+		return floor, nil
 	}
 	return 0, nil
 }
@@ -350,28 +359,28 @@ type nodeGetter interface {
 	Get(hostname string) (*api.Node, error)
 }
 
-func getProxyMode(proxyMode string, client nodeGetter, hostname string, iptver iptables.IptablesVersioner, kcompat iptables.KernelCompatTester) string {
+func getProxyMode(proxyMode string, client nodeGetter, hostname string, iptver iptables.IPTablesVersioner, kcompat iptables.KernelCompatTester) string {
 	if proxyMode == proxyModeUserspace {
 		return proxyModeUserspace
-	} else if proxyMode == proxyModeIptables {
-		return tryIptablesProxy(iptver, kcompat)
+	} else if proxyMode == proxyModeIPTables {
+		return tryIPTablesProxy(iptver, kcompat)
 	} else if proxyMode != "" {
 		glog.Warningf("Flag proxy-mode=%q unknown, assuming iptables proxy", proxyMode)
-		return tryIptablesProxy(iptver, kcompat)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	// proxyMode == "" - choose the best option.
 	if client == nil {
 		glog.Errorf("nodeGetter is nil: assuming iptables proxy")
-		return tryIptablesProxy(iptver, kcompat)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	node, err := client.Get(hostname)
 	if err != nil {
 		glog.Errorf("Can't get Node %q, assuming iptables proxy, err: %v", hostname, err)
-		return tryIptablesProxy(iptver, kcompat)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	if node == nil {
 		glog.Errorf("Got nil Node %q, assuming iptables proxy", hostname)
-		return tryIptablesProxy(iptver, kcompat)
+		return tryIPTablesProxy(iptver, kcompat)
 	}
 	proxyMode, found := node.Annotations[betaProxyModeAnnotation]
 	if found {
@@ -387,22 +396,21 @@ func getProxyMode(proxyMode string, client nodeGetter, hostname string, iptver i
 		glog.V(1).Infof("Annotation demands userspace proxy")
 		return proxyModeUserspace
 	}
-	return tryIptablesProxy(iptver, kcompat)
+	return tryIPTablesProxy(iptver, kcompat)
 }
 
-func tryIptablesProxy(iptver iptables.IptablesVersioner, kcompat iptables.KernelCompatTester) string {
-	var err error
+func tryIPTablesProxy(iptver iptables.IPTablesVersioner, kcompat iptables.KernelCompatTester) string {
 	// guaranteed false on error, error only necessary for debugging
-	useIptablesProxy, err := iptables.CanUseIptablesProxier(iptver, kcompat)
+	useIPTablesProxy, err := iptables.CanUseIPTablesProxier(iptver, kcompat)
 	if err != nil {
 		glog.Errorf("Can't determine whether to use iptables proxy, using userspace proxier: %v", err)
 		return proxyModeUserspace
 	}
-	if useIptablesProxy {
-		return proxyModeIptables
+	if useIPTablesProxy {
+		return proxyModeIPTables
 	}
 	// Fallback.
-	glog.V(1).Infof("Can't use iptables proxy, using userspace proxier: %v", err)
+	glog.V(1).Infof("Can't use iptables proxy, using userspace proxier")
 	return proxyModeUserspace
 }
 

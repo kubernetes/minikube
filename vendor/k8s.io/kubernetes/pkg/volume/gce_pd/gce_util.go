@@ -60,6 +60,8 @@ func (util *GCEDiskUtil) DeleteVolume(d *gcePersistentDiskDeleter) error {
 
 	if err = cloud.DeleteDisk(d.pdName); err != nil {
 		glog.V(2).Infof("Error deleting GCE PD volume %s: %v", d.pdName, err)
+		// GCE cloud provider returns volume.deletedVolumeInUseError when
+		// necessary, no handling needed here.
 		return err
 	}
 	glog.V(2).Infof("Successfully deleted GCE PD volume %s", d.pdName)
@@ -216,7 +218,7 @@ func udevadmChangeToNewDrives(sdBeforeSet sets.String) error {
 }
 
 // Calls "udevadm trigger --action=change" on the specified drive.
-// drivePath must be the the block device path to trigger on, in the format "/dev/sd*", or a symlink to it.
+// drivePath must be the block device path to trigger on, in the format "/dev/sd*", or a symlink to it.
 // This is workaround for Issue #7972. Once the underlying issue has been resolved, this may be removed.
 func udevadmChangeToDrive(drivePath string) error {
 	glog.V(5).Infof("udevadmChangeToDrive: drive=%q", drivePath)

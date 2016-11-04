@@ -70,8 +70,7 @@ const (
 	RktType                      = "rkt"
 	DefaultRktAPIServiceEndpoint = "localhost:15441"
 
-	minimumRktBinVersion     = "1.13.0"
-	recommendedRktBinVersion = "1.13.0"
+	minimumRktBinVersion = "1.13.0"
 
 	minimumRktApiVersion  = "1.0.0-alpha"
 	minimumSystemdVersion = "219"
@@ -133,6 +132,9 @@ const (
 
 	// defaultRequestTimeout is the default timeout of rkt requests.
 	defaultRequestTimeout = 2 * time.Minute
+
+	etcHostsPath      = "/etc/hosts"
+	etcResolvConfPath = "/etc/resolv.conf"
 )
 
 // Runtime implements the Containerruntime for rkt. The implementation
@@ -208,6 +210,8 @@ func New(
 	os kubecontainer.OSInterface,
 	imageBackOff *flowcontrol.Backoff,
 	serializeImagePulls bool,
+	imagePullQPS float32,
+	imagePullBurst int,
 	requestTimeout time.Duration,
 ) (*Runtime, error) {
 	// Create dbus connection.
@@ -272,7 +276,7 @@ func New(
 
 	rkt.runner = lifecycle.NewHandlerRunner(httpClient, rkt, rkt)
 
-	rkt.imagePuller = images.NewImageManager(recorder, rkt, imageBackOff, serializeImagePulls)
+	rkt.imagePuller = images.NewImageManager(recorder, rkt, imageBackOff, serializeImagePulls, imagePullQPS, imagePullBurst)
 
 	if err := rkt.getVersions(); err != nil {
 		return nil, fmt.Errorf("rkt: error getting version info: %v", err)
@@ -657,27 +661,42 @@ func copyfile(src, dst string) error {
 
 // TODO(yifan): Can make rkt handle this when '--net=host'. See https://github.com/coreos/rkt/issues/2430.
 func makeHostNetworkMount(opts *kubecontainer.RunContainerOptions) (*kubecontainer.Mount, *kubecontainer.Mount, error) {
-	hostsPath := filepath.Join(opts.PodContainerDir, "etc-hosts")
-	resolvPath := filepath.Join(opts.PodContainerDir, "etc-resolv-conf")
+	mountHosts, mountResolvConf := true, true
+	for _, mnt := range opts.Mounts {
+		switch mnt.ContainerPath {
+		case etcHostsPath:
+			mountHosts = false
+		case etcResolvConfPath:
+			mountResolvConf = false
+		}
+	}
 
-	if err := copyfile("/etc/hosts", hostsPath); err != nil {
-		return nil, nil, err
-	}
-	if err := copyfile("/etc/resolv.conf", resolvPath); err != nil {
-		return nil, nil, err
+	var hostsMount, resolvMount kubecontainer.Mount
+	if mountHosts {
+		hostsPath := filepath.Join(opts.PodContainerDir, "etc-hosts")
+		if err := copyfile(etcHostsPath, hostsPath); err != nil {
+			return nil, nil, err
+		}
+		hostsMount = kubecontainer.Mount{
+			Name:          "kubernetes-hostnetwork-hosts-conf",
+			ContainerPath: etcHostsPath,
+			HostPath:      hostsPath,
+		}
+		opts.Mounts = append(opts.Mounts, hostsMount)
 	}
 
-	hostsMount := kubecontainer.Mount{
-		Name:          "kubernetes-hostnetwork-hosts-conf",
-		ContainerPath: "/etc/hosts",
-		HostPath:      hostsPath,
+	if mountResolvConf {
+		resolvPath := filepath.Join(opts.PodContainerDir, "etc-resolv-conf")
+		if err := copyfile(etcResolvConfPath, resolvPath); err != nil {
+			return nil, nil, err
+		}
+		resolvMount = kubecontainer.Mount{
+			Name:          "kubernetes-hostnetwork-resolv-conf",
+			ContainerPath: etcResolvConfPath,
+			HostPath:      resolvPath,
+		}
+		opts.Mounts = append(opts.Mounts, resolvMount)
 	}
-	resolvMount := kubecontainer.Mount{
-		Name:          "kubernetes-hostnetwork-resolv-conf",
-		ContainerPath: "/etc/resolv.conf",
-		HostPath:      resolvPath,
-	}
-	opts.Mounts = append(opts.Mounts, hostsMount, resolvMount)
 	return &hostsMount, &resolvMount, nil
 }
 
@@ -1679,11 +1698,11 @@ func (r *Runtime) APIVersion() (kubecontainer.Version, error) {
 
 // Status returns error if rkt is unhealthy, nil otherwise.
 func (r *Runtime) Status() error {
-	return r.checkVersion(minimumRktBinVersion, recommendedRktBinVersion, minimumRktApiVersion, minimumSystemdVersion)
+	return r.checkVersion(minimumRktBinVersion, minimumRktApiVersion, minimumSystemdVersion)
 }
 
 // SyncPod syncs the running pod to match the specified desired pod.
-func (r *Runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStatus *kubecontainer.PodStatus, pullSecrets []api.Secret, backOff *flowcontrol.Backoff) (result kubecontainer.PodSyncResult) {
+func (r *Runtime) SyncPod(pod *api.Pod, _ api.PodStatus, podStatus *kubecontainer.PodStatus, pullSecrets []api.Secret, backOff *flowcontrol.Backoff) (result kubecontainer.PodSyncResult) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -1691,9 +1710,7 @@ func (r *Runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 		}
 	}()
 	// TODO: (random-liu) Stop using running pod in SyncPod()
-	// TODO: (random-liu) Rename podStatus to apiPodStatus, rename internalPodStatus to podStatus, and use new pod status as much as possible,
-	// we may stop using apiPodStatus someday.
-	runningPod := kubecontainer.ConvertPodStatusToRunningPod(internalPodStatus)
+	runningPod := kubecontainer.ConvertPodStatusToRunningPod(r.Type(), podStatus)
 	// Add references to all containers.
 	unidentifiedContainers := make(map[kubecontainer.ContainerID]*kubecontainer.Container)
 	for _, c := range runningPod.Containers {
@@ -1706,7 +1723,7 @@ func (r *Runtime) SyncPod(pod *api.Pod, podStatus api.PodStatus, internalPodStat
 
 		c := runningPod.FindContainerByName(container.Name)
 		if c == nil {
-			if kubecontainer.ShouldContainerBeRestarted(&container, pod, internalPodStatus) {
+			if kubecontainer.ShouldContainerBeRestarted(&container, pod, podStatus) {
 				glog.V(3).Infof("Container %+v is dead, but RestartPolicy says that we should restart it.", container)
 				// TODO(yifan): Containers in one pod are fate-sharing at this moment, see:
 				// https://github.com/appc/spec/issues/276.
@@ -2082,7 +2099,6 @@ func (r *Runtime) ExecInContainer(containerID kubecontainer.ContainerID, cmd []s
 //  - should we support nsenter + socat in a container, running with elevated privs and --pid=host?
 //
 // TODO(yifan): Merge with the same function in dockertools.
-// TODO(yifan): If the rkt is using lkvm as the stage1 image, then this function will fail.
 func (r *Runtime) PortForward(pod *kubecontainer.Pod, port uint16, stream io.ReadWriteCloser) error {
 	glog.V(4).Infof("Rkt port forwarding in container.")
 
@@ -2103,20 +2119,41 @@ func (r *Runtime) PortForward(pod *kubecontainer.Pod, port uint16, stream io.Rea
 		}
 		return fmt.Errorf("more than one running rkt pod for the kubernetes pod [%s]", strings.Join(podlist, ", "))
 	}
+	listPod := listResp.Pods[0]
 
 	socatPath, lookupErr := exec.LookPath("socat")
 	if lookupErr != nil {
 		return fmt.Errorf("unable to do port forwarding: socat not found.")
 	}
 
-	args := []string{"-t", fmt.Sprintf("%d", listResp.Pods[0].Pid), "-n", socatPath, "-", fmt.Sprintf("TCP4:localhost:%d", port)}
-
-	nsenterPath, lookupErr := exec.LookPath("nsenter")
-	if lookupErr != nil {
-		return fmt.Errorf("unable to do port forwarding: nsenter not found.")
+	// Check in config and in annotations if we're running kvm flavor
+	isKvm := strings.Contains(r.config.Stage1Image, "kvm")
+	for _, anno := range listPod.Annotations {
+		if anno.Key == k8sRktStage1NameAnno {
+			isKvm = strings.Contains(anno.Value, "kvm")
+			break
+		}
 	}
 
-	command := exec.Command(nsenterPath, args...)
+	var args []string
+	var fwCaller string
+	if isKvm {
+		podNetworks := listPod.GetNetworks()
+		if podNetworks == nil {
+			return fmt.Errorf("unable to get networks")
+		}
+		args = []string{"-", fmt.Sprintf("TCP4:%s:%d", podNetworks[0].Ipv4, port)}
+		fwCaller = socatPath
+	} else {
+		args = []string{"-t", fmt.Sprintf("%d", listPod.Pid), "-n", socatPath, "-", fmt.Sprintf("TCP4:localhost:%d", port)}
+		nsenterPath, lookupErr := exec.LookPath("nsenter")
+		if lookupErr != nil {
+			return fmt.Errorf("unable to do port forwarding: nsenter not found")
+		}
+		fwCaller = nsenterPath
+	}
+
+	command := exec.Command(fwCaller, args...)
 	command.Stdout = stream
 
 	// If we use Stdin, command.Run() won't return until the goroutine that's copying

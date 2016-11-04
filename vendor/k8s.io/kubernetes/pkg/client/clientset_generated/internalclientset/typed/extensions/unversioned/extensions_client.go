@@ -27,10 +27,10 @@ type ExtensionsInterface interface {
 	DaemonSetsGetter
 	DeploymentsGetter
 	IngressesGetter
+	NetworkPoliciesGetter
 	PodSecurityPoliciesGetter
 	ReplicaSetsGetter
 	ScalesGetter
-	StorageClassesGetter
 	ThirdPartyResourcesGetter
 }
 
@@ -51,6 +51,10 @@ func (c *ExtensionsClient) Ingresses(namespace string) IngressInterface {
 	return newIngresses(c, namespace)
 }
 
+func (c *ExtensionsClient) NetworkPolicies(namespace string) NetworkPolicyInterface {
+	return newNetworkPolicies(c, namespace)
+}
+
 func (c *ExtensionsClient) PodSecurityPolicies() PodSecurityPolicyInterface {
 	return newPodSecurityPolicies(c)
 }
@@ -61,10 +65,6 @@ func (c *ExtensionsClient) ReplicaSets(namespace string) ReplicaSetInterface {
 
 func (c *ExtensionsClient) Scales(namespace string) ScaleInterface {
 	return newScales(c, namespace)
-}
-
-func (c *ExtensionsClient) StorageClasses() StorageClassInterface {
-	return newStorageClasses(c)
 }
 
 func (c *ExtensionsClient) ThirdPartyResources() ThirdPartyResourceInterface {
@@ -109,12 +109,10 @@ func setConfigDefaults(config *restclient.Config) error {
 	if config.UserAgent == "" {
 		config.UserAgent = restclient.DefaultKubernetesUserAgent()
 	}
-	// TODO: Unconditionally set the config.Version, until we fix the config.
-	//if config.Version == "" {
-	copyGroupVersion := g.GroupVersion
-	config.GroupVersion = &copyGroupVersion
-	//}
-
+	if config.GroupVersion == nil || config.GroupVersion.Group != g.GroupVersion.Group {
+		copyGroupVersion := g.GroupVersion
+		config.GroupVersion = &copyGroupVersion
+	}
 	config.NegotiatedSerializer = api.Codecs
 
 	if config.QPS == 0 {

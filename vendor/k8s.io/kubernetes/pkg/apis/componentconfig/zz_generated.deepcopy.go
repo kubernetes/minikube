@@ -86,6 +86,7 @@ func DeepCopy_componentconfig_KubeControllerManagerConfiguration(in interface{},
 		out.LookupCacheSizeForDaemonSet = in.LookupCacheSizeForDaemonSet
 		out.ServiceSyncPeriod = in.ServiceSyncPeriod
 		out.NodeSyncPeriod = in.NodeSyncPeriod
+		out.RouteReconciliationPeriod = in.RouteReconciliationPeriod
 		out.ResourceQuotaSyncPeriod = in.ResourceQuotaSyncPeriod
 		out.NamespaceSyncPeriod = in.NamespaceSyncPeriod
 		out.PVClaimBinderSyncPeriod = in.PVClaimBinderSyncPeriod
@@ -162,6 +163,7 @@ func DeepCopy_componentconfig_KubeProxyConfiguration(in interface{}, out interfa
 		out.UDPIdleTimeout = in.UDPIdleTimeout
 		out.ConntrackMax = in.ConntrackMax
 		out.ConntrackMaxPerCore = in.ConntrackMaxPerCore
+		out.ConntrackMin = in.ConntrackMin
 		out.ConntrackTCPEstablishedTimeout = in.ConntrackTCPEstablishedTimeout
 		return nil
 	}
@@ -259,11 +261,14 @@ func DeepCopy_componentconfig_KubeletConfiguration(in interface{}, out interface
 		out.NetworkPluginName = in.NetworkPluginName
 		out.NetworkPluginMTU = in.NetworkPluginMTU
 		out.NetworkPluginDir = in.NetworkPluginDir
+		out.CNIConfDir = in.CNIConfDir
+		out.CNIBinDir = in.CNIBinDir
 		out.VolumePluginDir = in.VolumePluginDir
 		out.CloudProvider = in.CloudProvider
 		out.CloudConfigFile = in.CloudConfigFile
 		out.KubeletCgroups = in.KubeletCgroups
 		out.CgroupsPerQOS = in.CgroupsPerQOS
+		out.CgroupDriver = in.CgroupDriver
 		out.RuntimeCgroups = in.RuntimeCgroups
 		out.SystemCgroups = in.SystemCgroups
 		out.CgroupRoot = in.CgroupRoot
@@ -293,7 +298,6 @@ func DeepCopy_componentconfig_KubeletConfiguration(in interface{}, out interface
 		out.KubeAPIQPS = in.KubeAPIQPS
 		out.KubeAPIBurst = in.KubeAPIBurst
 		out.SerializeImagePulls = in.SerializeImagePulls
-		out.ExperimentalFlannelOverlay = in.ExperimentalFlannelOverlay
 		out.OutOfDiskTransitionFrequency = in.OutOfDiskTransitionFrequency
 		out.NodeIP = in.NodeIP
 		if in.NodeLabels != nil {
@@ -344,6 +348,7 @@ func DeepCopy_componentconfig_KubeletConfiguration(in interface{}, out interface
 		} else {
 			out.AllowedUnsafeSysctls = nil
 		}
+		out.ExperimentalRuntimeIntegrationType = in.ExperimentalRuntimeIntegrationType
 		return nil
 	}
 }

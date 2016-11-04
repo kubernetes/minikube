@@ -20,6 +20,8 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apimachinery/registered"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	unversionedapps "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/apps/unversioned"
+	fakeunversionedapps "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/apps/unversioned/fake"
 	unversionedauthentication "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authentication/unversioned"
 	fakeunversionedauthentication "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authentication/unversioned/fake"
 	unversionedauthorization "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authorization/unversioned"
@@ -34,8 +36,12 @@ import (
 	fakeunversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned/fake"
 	unversionedextensions "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/extensions/unversioned"
 	fakeunversionedextensions "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/extensions/unversioned/fake"
+	unversionedpolicy "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/unversioned"
+	fakeunversionedpolicy "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/unversioned/fake"
 	unversionedrbac "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/rbac/unversioned"
 	fakeunversionedrbac "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/rbac/unversioned/fake"
+	unversionedstorage "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/storage/unversioned"
+	fakeunversionedstorage "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/storage/unversioned/fake"
 	"k8s.io/kubernetes/pkg/client/testing/core"
 	"k8s.io/kubernetes/pkg/client/typed/discovery"
 	fakediscovery "k8s.io/kubernetes/pkg/client/typed/discovery/fake"
@@ -114,4 +120,19 @@ func (c *Clientset) Extensions() unversionedextensions.ExtensionsInterface {
 // Rbac retrieves the RbacClient
 func (c *Clientset) Rbac() unversionedrbac.RbacInterface {
 	return &fakeunversionedrbac.FakeRbac{Fake: &c.Fake}
+}
+
+// Storage retrieves the StorageClient
+func (c *Clientset) Storage() unversionedstorage.StorageInterface {
+	return &fakeunversionedstorage.FakeStorage{Fake: &c.Fake}
+}
+
+// Apps retrieves the AppsClient
+func (c *Clientset) Apps() unversionedapps.AppsInterface {
+	return &fakeunversionedapps.FakeApps{Fake: &c.Fake}
+}
+
+// Policy retrieves the PolicyClient
+func (c *Clientset) Policy() unversionedpolicy.PolicyInterface {
+	return &fakeunversionedpolicy.FakePolicy{Fake: &c.Fake}
 }

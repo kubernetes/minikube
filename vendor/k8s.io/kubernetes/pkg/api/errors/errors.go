@@ -31,11 +31,9 @@ import (
 const (
 	StatusUnprocessableEntity = 422
 	StatusTooManyRequests     = 429
-	// HTTP recommendations are for servers to define 5xx error codes
-	// for scenarios not covered by behavior. In this case, ServerTimeout
-	// is an indication that a transient server error has occurred and the
-	// client *should* retry, with an optional Retry-After header to specify
-	// the back off window.
+	// StatusServerTimeout is an indication that a transient server error has
+	// occurred and the client *should* retry, with an optional Retry-After
+	// header to specify the back off window.
 	StatusServerTimeout = 504
 )
 
@@ -408,6 +406,11 @@ func IsForbidden(err error) bool {
 // by the client.
 func IsServerTimeout(err error) bool {
 	return reasonForError(err) == unversioned.StatusReasonServerTimeout
+}
+
+// IsInternalError determines if err is an error which indicates an internal server error.
+func IsInternalError(err error) bool {
+	return reasonForError(err) == unversioned.StatusReasonInternalError
 }
 
 // IsUnexpectedServerError returns true if the server response was not in the expected API format,

@@ -18,6 +18,7 @@ package namespace
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -47,6 +48,8 @@ type operation string
 const (
 	operationDeleteCollection operation = "deleteCollection"
 	operationList             operation = "list"
+	// assume a default estimate for finalizers to complete when found on items pending deletion.
+	finalizerEstimateSeconds int64 = int64(15)
 )
 
 // operationKey is an entry in a cache.
@@ -153,7 +156,12 @@ func deleteCollection(
 	}
 
 	apiResource := unversioned.APIResource{Name: gvr.Resource, Namespaced: true}
-	err := dynamicClient.Resource(&apiResource, namespace).DeleteCollection(nil, &v1.ListOptions{})
+
+	// namespace controller does not want the garbage collector to insert the orphan finalizer since it calls
+	// resource deletions generically.  it will ensure all resources in the namespace are purged prior to releasing
+	// namespace itself.
+	orphanDependents := false
+	err := dynamicClient.Resource(&apiResource, namespace).DeleteCollection(&v1.DeleteOptions{OrphanDependents: &orphanDependents}, &v1.ListOptions{})
 
 	if err == nil {
 		return true, nil
@@ -266,7 +274,7 @@ func deleteAllContentForGroupVersionResource(
 	glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - estimate - namespace: %s, gvr: %v, estimate: %v", namespace, gvr, estimate)
 
 	// get a client for this group version...
-	dynamicClient, err := clientPool.ClientForGroupVersion(gvr.GroupVersion())
+	dynamicClient, err := clientPool.ClientForGroupVersionResource(gvr)
 	if err != nil {
 		glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - unable to get client - namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
 		return estimate, err
@@ -299,6 +307,14 @@ func deleteAllContentForGroupVersionResource(
 	}
 	glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - items remaining - namespace: %s, gvr: %v, items: %v", namespace, gvr, len(unstructuredList.Items))
 	if len(unstructuredList.Items) != 0 && estimate == int64(0) {
+		// if any item has a finalizer, we treat that as a normal condition, and use a default estimation to allow for GC to complete.
+		for _, item := range unstructuredList.Items {
+			if len(item.GetFinalizers()) > 0 {
+				glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - items remaining with finalizers - namespace: %s, gvr: %v, finalizers: %v", namespace, gvr, item.GetFinalizers())
+				return finalizerEstimateSeconds, nil
+			}
+		}
+		// nothing reported a finalizer, so something was unexpected as it should have been deleted.
 		return estimate, fmt.Errorf("unexpected items still remain in namespace: %s for gvr: %v", namespace, gvr)
 	}
 	return estimate, nil
@@ -318,6 +334,8 @@ func deleteAllContent(
 	estimate := int64(0)
 	glog.V(4).Infof("namespace controller - deleteAllContent - namespace: %s, gvrs: %v", namespace, groupVersionResources)
 	// iterate over each group version, and attempt to delete all of its resources
+	// we sort resources to delete in a priority order that deletes pods LAST
+	sort.Sort(sortableGroupVersionResources(groupVersionResources))
 	for _, gvr := range groupVersionResources {
 		gvrEstimate, err := deleteAllContentForGroupVersionResource(kubeClient, clientPool, opCache, gvr, namespace, namespaceDeletedAt)
 		if err != nil {
@@ -452,4 +470,21 @@ func estimateGracefulTerminationForPods(kubeClient clientset.Interface, ns strin
 		}
 	}
 	return estimate, nil
+}
+
+// sortableGroupVersionResources sorts the input set of resources for deletion, and orders pods to always be last.
+// the idea is that the namespace controller will delete all things that spawn pods first in order to reduce the time
+// those controllers spend creating pods only to be told NO in admission and potentially overwhelming cluster especially if they lack rate limiting.
+type sortableGroupVersionResources []unversioned.GroupVersionResource
+
+func (list sortableGroupVersionResources) Len() int {
+	return len(list)
+}
+
+func (list sortableGroupVersionResources) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}
+
+func (list sortableGroupVersionResources) Less(i, j int) bool {
+	return list[j].Group == "" && list[j].Resource == "pods"
 }

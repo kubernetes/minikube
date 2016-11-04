@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	dockerdigest "github.com/docker/distribution/digest"
 	dockerref "github.com/docker/distribution/reference"
 	"github.com/docker/docker/pkg/jsonmessage"
 	dockerapi "github.com/docker/engine-api/client"
@@ -37,8 +38,6 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/leaky"
 	"k8s.io/kubernetes/pkg/types"
 	utilerrors "k8s.io/kubernetes/pkg/util/errors"
-	"k8s.io/kubernetes/pkg/util/flowcontrol"
-	"k8s.io/kubernetes/pkg/util/parsers"
 )
 
 const (
@@ -113,24 +112,11 @@ type dockerPuller struct {
 	keyring credentialprovider.DockerKeyring
 }
 
-type throttledDockerPuller struct {
-	puller  dockerPuller
-	limiter flowcontrol.RateLimiter
-}
-
 // newDockerPuller creates a new instance of the default implementation of DockerPuller.
-func newDockerPuller(client DockerInterface, qps float32, burst int) DockerPuller {
-	dp := dockerPuller{
+func newDockerPuller(client DockerInterface) DockerPuller {
+	return &dockerPuller{
 		client:  client,
 		keyring: credentialprovider.NewDockerKeyring(),
-	}
-
-	if qps == 0.0 {
-		return dp
-	}
-	return &throttledDockerPuller{
-		puller:  dp,
-		limiter: flowcontrol.NewTokenBucketRateLimiter(qps, burst),
 	}
 }
 
@@ -152,7 +138,6 @@ func filterHTTPError(err error, image string) error {
 
 // Check if the inspected image matches what we are looking for
 func matchImageTagOrSHA(inspected dockertypes.ImageInspect, image string) bool {
-
 	// The image string follows the grammar specified here
 	// https://github.com/docker/distribution/blob/master/reference/reference.go#L4
 	named, err := dockerref.ParseNamed(image)
@@ -180,11 +165,27 @@ func matchImageTagOrSHA(inspected dockertypes.ImageInspect, image string) bool {
 	}
 
 	if isDigested {
-		algo := digest.Digest().Algorithm().String()
-		sha := digest.Digest().Hex()
-		// Look specifically for short and long sha(s)
-		if strings.Contains(inspected.ID, algo+":"+sha) {
-			// We found the short or long SHA requested
+		for _, repoDigest := range inspected.RepoDigests {
+			named, err := dockerref.ParseNamed(repoDigest)
+			if err != nil {
+				glog.V(4).Infof("couldn't parse image RepoDigest reference %q: %v", repoDigest, err)
+				continue
+			}
+			if d, isDigested := named.(dockerref.Digested); isDigested {
+				if digest.Digest().Algorithm().String() == d.Digest().Algorithm().String() &&
+					digest.Digest().Hex() == d.Digest().Hex() {
+					return true
+				}
+			}
+		}
+
+		// process the ID as a digest
+		id, err := dockerdigest.ParseDigest(inspected.ID)
+		if err != nil {
+			glog.V(4).Infof("couldn't parse image ID reference %q: %v", id, err)
+			return false
+		}
+		if digest.Digest().Algorithm().String() == id.Algorithm().String() && digest.Digest().Hex() == id.Hex() {
 			return true
 		}
 	}
@@ -192,32 +193,7 @@ func matchImageTagOrSHA(inspected dockertypes.ImageInspect, image string) bool {
 	return false
 }
 
-// applyDefaultImageTag parses a docker image string, if it doesn't contain any tag or digest,
-// a default tag will be applied.
-func applyDefaultImageTag(image string) (string, error) {
-	named, err := dockerref.ParseNamed(image)
-	if err != nil {
-		return "", fmt.Errorf("couldn't parse image reference %q: %v", image, err)
-	}
-	_, isTagged := named.(dockerref.Tagged)
-	_, isDigested := named.(dockerref.Digested)
-	if !isTagged && !isDigested {
-		named, err := dockerref.WithTag(named, parsers.DefaultImageTag)
-		if err != nil {
-			return "", fmt.Errorf("failed to apply default image tag %q: %v", image, err)
-		}
-		image = named.String()
-	}
-	return image, nil
-}
-
 func (p dockerPuller) Pull(image string, secrets []api.Secret) error {
-	// If the image contains no tag or digest, a default tag should be applied.
-	image, err := applyDefaultImageTag(image)
-	if err != nil {
-		return err
-	}
-
 	keyring, err := credentialprovider.MakeDockerKeyring(secrets, p.keyring)
 	if err != nil {
 		return err
@@ -269,13 +245,6 @@ func (p dockerPuller) Pull(image string, secrets []api.Secret) error {
 	return utilerrors.NewAggregate(pullErrs)
 }
 
-func (p throttledDockerPuller) Pull(image string, secrets []api.Secret) error {
-	if p.limiter.TryAccept() {
-		return p.puller.Pull(image, secrets)
-	}
-	return fmt.Errorf("pull QPS exceeded.")
-}
-
 func (p dockerPuller) IsImagePresent(image string) (bool, error) {
 	_, err := p.client.InspectImage(image)
 	if err == nil {
@@ -285,10 +254,6 @@ func (p dockerPuller) IsImagePresent(image string) (bool, error) {
 		return false, nil
 	}
 	return false, err
-}
-
-func (p throttledDockerPuller) IsImagePresent(name string) (bool, error) {
-	return p.puller.IsImagePresent(name)
 }
 
 // Creates a name which can be reversed to identify both full pod name and container name.

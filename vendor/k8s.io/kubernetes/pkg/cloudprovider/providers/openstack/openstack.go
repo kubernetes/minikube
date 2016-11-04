@@ -17,7 +17,6 @@ limitations under the License.
 package openstack
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -37,15 +36,10 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	"k8s.io/kubernetes/pkg/types"
 )
 
 const ProviderName = "openstack"
-
-// metadataUrl is URL to OpenStack metadata server. It's hardcoded IPv4
-// link-local address as documented in "OpenStack Cloud Administrator Guide",
-// chapter Compute - Networking with nova-network.
-// http://docs.openstack.org/admin-guide-cloud/compute-networking-nova.html#metadata-service
-const metadataUrl = "http://169.254.169.254/openstack/2012-08-10/meta_data.json"
 
 var ErrNotFound = errors.New("Failed to find object")
 var ErrMultipleResults = errors.New("Multiple results where only one expected")
@@ -151,27 +145,6 @@ func readConfig(config io.Reader) (Config, error) {
 	return cfg, err
 }
 
-// parseMetadataUUID reads JSON from OpenStack metadata server and parses
-// instance ID out of it.
-func parseMetadataUUID(jsonData []byte) (string, error) {
-	// We should receive an object with { 'uuid': '<uuid>' } and couple of other
-	// properties (which we ignore).
-
-	obj := struct{ UUID string }{}
-	err := json.Unmarshal(jsonData, &obj)
-	if err != nil {
-		return "", err
-	}
-
-	uuid := obj.UUID
-	if uuid == "" {
-		err = fmt.Errorf("cannot parse OpenStack metadata, got empty uuid")
-		return "", err
-	}
-
-	return uuid, nil
-}
-
 func readInstanceID() (string, error) {
 	// Try to find instance ID on the local filesystem (created by cloud-init)
 	const instanceIDFile = "/var/lib/cloud/data/instance-id"
@@ -183,37 +156,15 @@ func readInstanceID() (string, error) {
 		if instanceID != "" {
 			return instanceID, nil
 		}
-		// Fall through with empty instanceID and try metadata server.
+		// Fall through to metadata server lookup
 	}
-	glog.V(5).Infof("Cannot read %s: '%v', trying metadata server", instanceIDFile, err)
 
-	// Try to get JSON from metdata server.
-	resp, err := http.Get(metadataUrl)
+	md, err := getMetadata()
 	if err != nil {
-		glog.V(3).Infof("Cannot read %s: %v", metadataUrl, err)
 		return "", err
 	}
 
-	if resp.StatusCode != 200 {
-		err = fmt.Errorf("got unexpected status code when reading metadata from %s: %s", metadataUrl, resp.Status)
-		glog.V(3).Infof("%v", err)
-		return "", err
-	}
-
-	defer resp.Body.Close()
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		glog.V(3).Infof("Cannot get HTTP response body from %s: %v", metadataUrl, err)
-		return "", err
-	}
-	instanceID, err := parseMetadataUUID(bodyBytes)
-	if err != nil {
-		glog.V(3).Infof("Cannot parse instance ID from metadata from %s: %v", metadataUrl, err)
-		return "", err
-	}
-
-	glog.V(3).Infof("Got instance id from %s: %s", metadataUrl, instanceID)
-	return instanceID, nil
+	return md.Uuid, nil
 }
 
 func newOpenStack(cfg Config) (*OpenStack, error) {
@@ -237,9 +188,20 @@ func newOpenStack(cfg Config) (*OpenStack, error) {
 	return &os, nil
 }
 
-func getServerByName(client *gophercloud.ServiceClient, name string) (*servers.Server, error) {
+// mapNodeNameToServerName maps a k8s NodeName to an OpenStack Server Name
+// This is a simple string cast.
+func mapNodeNameToServerName(nodeName types.NodeName) string {
+	return string(nodeName)
+}
+
+// mapServerToNodeName maps an OpenStack Server to a k8s NodeName
+func mapServerToNodeName(server *servers.Server) types.NodeName {
+	return types.NodeName(server.Name)
+}
+
+func getServerByName(client *gophercloud.ServiceClient, name types.NodeName) (*servers.Server, error) {
 	opts := servers.ListOpts{
-		Name:   fmt.Sprintf("^%s$", regexp.QuoteMeta(name)),
+		Name:   fmt.Sprintf("^%s$", regexp.QuoteMeta(mapNodeNameToServerName(name))),
 		Status: "ACTIVE",
 	}
 	pager := servers.List(client, opts)
@@ -270,7 +232,7 @@ func getServerByName(client *gophercloud.ServiceClient, name string) (*servers.S
 	return &serverList[0], nil
 }
 
-func getAddressesByName(client *gophercloud.ServiceClient, name string) ([]api.NodeAddress, error) {
+func getAddressesByName(client *gophercloud.ServiceClient, name types.NodeName) ([]api.NodeAddress, error) {
 	srv, err := getServerByName(client, name)
 	if err != nil {
 		return nil, err
@@ -339,7 +301,7 @@ func getAddressesByName(client *gophercloud.ServiceClient, name string) ([]api.N
 	return addrs, nil
 }
 
-func getAddressByName(client *gophercloud.ServiceClient, name string) (string, error) {
+func getAddressByName(client *gophercloud.ServiceClient, name types.NodeName) (string, error) {
 	addrs, err := getAddressesByName(client, name)
 	if err != nil {
 		return "", err
@@ -433,9 +395,18 @@ func (os *OpenStack) Zones() (cloudprovider.Zones, bool) {
 	return os, true
 }
 func (os *OpenStack) GetZone() (cloudprovider.Zone, error) {
-	glog.V(1).Infof("Current zone is %v", os.region)
+	md, err := getMetadata()
+	if err != nil {
+		return cloudprovider.Zone{}, err
+	}
 
-	return cloudprovider.Zone{Region: os.region}, nil
+	zone := cloudprovider.Zone{
+		FailureDomain: md.AvailabilityZone,
+		Region:        os.region,
+	}
+	glog.V(1).Infof("Current zone is %v", zone)
+
+	return zone, nil
 }
 
 func (os *OpenStack) Routes() (cloudprovider.Routes, bool) {

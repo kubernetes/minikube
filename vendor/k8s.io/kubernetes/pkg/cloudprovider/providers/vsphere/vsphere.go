@@ -34,11 +34,13 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/property"
 	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/soap"
 	"github.com/vmware/govmomi/vim25/types"
 	"golang.org/x/net/context"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	k8stypes "k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/runtime"
 )
 
@@ -46,14 +48,19 @@ const (
 	ProviderName              = "vsphere"
 	ActivePowerState          = "poweredOn"
 	SCSIControllerType        = "scsi"
-	LSILogicControllerType    = "lsilogic"
-	BusLogicControllerType    = "buslogic"
+	LSILogicControllerType    = "lsiLogic"
+	BusLogicControllerType    = "busLogic"
 	PVSCSIControllerType      = "pvscsi"
-	LSILogicSASControllerType = "lsilogic-sas"
+	LSILogicSASControllerType = "lsiLogic-sas"
 	SCSIControllerLimit       = 4
 	SCSIControllerDeviceLimit = 15
 	SCSIDeviceSlots           = 16
 	SCSIReservedSlot          = 7
+	ThinDiskType              = "thin"
+	PreallocatedDiskType      = "preallocated"
+	EagerZeroedThickDiskType  = "eagerZeroedThick"
+	ZeroedThickDiskType       = "zeroedThick"
+	VolDir                    = "kubevols"
 )
 
 // Controller types that are currently supported for hot attach of disks
@@ -61,18 +68,32 @@ const (
 // it fails to remove the device from the /dev path (which should be manually done)
 // making the subsequent attaches to the node to fail.
 // TODO: Add support for lsilogic driver type
-var supportedSCSIControllerType = []string{"lsilogic-sas", "pvscsi"}
+var supportedSCSIControllerType = []string{strings.ToLower(LSILogicSASControllerType), PVSCSIControllerType}
+
+// Maps user options to API parameters.
+// Keeping user options consistent with docker volume plugin for vSphere.
+// API: http://pubs.vmware.com/vsphere-60/index.jsp#com.vmware.wssdk.apiref.doc/vim.VirtualDiskManager.VirtualDiskType.html
+var diskFormatValidType = map[string]string{
+	ThinDiskType:                              ThinDiskType,
+	strings.ToLower(EagerZeroedThickDiskType): EagerZeroedThickDiskType,
+	strings.ToLower(ZeroedThickDiskType):      PreallocatedDiskType,
+}
+
+var DiskformatValidOptions = generateDiskFormatValidOptions()
 
 var ErrNoDiskUUIDFound = errors.New("No disk UUID found")
 var ErrNoDiskIDFound = errors.New("No vSphere disk ID found")
 var ErrNoDevicesFound = errors.New("No devices found")
 var ErrNonSupportedControllerType = errors.New("Disk is attached to non-supported controller type")
+var ErrFileAlreadyExist = errors.New("File requested already exist")
 
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
 	cfg *VSphereConfig
 	// InstanceID of the server where this VSphere object is instantiated.
 	localInstanceID string
+	// Cluster that VirtualMachine belongs to
+	clusterName string
 }
 
 type VSphereConfig struct {
@@ -108,22 +129,40 @@ type VSphereConfig struct {
 type Volumes interface {
 	// AttachDisk attaches given disk to given node. Current node
 	// is used when nodeName is empty string.
-	AttachDisk(vmDiskPath string, nodeName string) (diskID string, diskUUID string, err error)
+	AttachDisk(vmDiskPath string, nodeName k8stypes.NodeName) (diskID string, diskUUID string, err error)
 
 	// DetachDisk detaches given disk to given node. Current node
 	// is used when nodeName is empty string.
 	// Assumption: If node doesn't exist, disk is already detached from node.
-	DetachDisk(volPath string, nodeName string) error
+	DetachDisk(volPath string, nodeName k8stypes.NodeName) error
 
 	// DiskIsAttached checks if a disk is attached to the given node.
 	// Assumption: If node doesn't exist, disk is not attached to the node.
-	DiskIsAttached(volPath, nodeName string) (bool, error)
+	DiskIsAttached(volPath string, nodeName k8stypes.NodeName) (bool, error)
 
 	// CreateVolume creates a new vmdk with specified parameters.
-	CreateVolume(name string, size int, tags *map[string]string) (volumePath string, err error)
+	CreateVolume(volumeOptions *VolumeOptions) (volumePath string, err error)
 
 	// DeleteVolume deletes vmdk.
 	DeleteVolume(vmDiskPath string) error
+}
+
+// VolumeOptions specifies capacity, tags, name and diskFormat for a volume.
+type VolumeOptions struct {
+	CapacityKB int
+	Tags       map[string]string
+	Name       string
+	DiskFormat string
+}
+
+// Generates Valid Options for Diskformat
+func generateDiskFormatValidOptions() string {
+	validopts := ""
+	for diskformat := range diskFormatValidType {
+		validopts += (diskformat + ", ")
+	}
+	validopts = strings.TrimSuffix(validopts, ", ")
+	return validopts
 }
 
 // Parses vSphere cloud config file and stores it into VSphereConfig.
@@ -148,17 +187,17 @@ func init() {
 	})
 }
 
-// Returns the name of the VM on which this code is running.
+// Returns the name of the VM and its Cluster on which this code is running.
 // This is done by searching for the name of virtual machine by current IP.
 // Prerequisite: this code assumes VMWare vmtools or open-vm-tools to be installed in the VM.
-func readInstanceID(cfg *VSphereConfig) (string, error) {
+func readInstance(cfg *VSphereConfig) (string, string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if len(addrs) == 0 {
-		return "", fmt.Errorf("unable to retrieve Instance ID")
+		return "", "", fmt.Errorf("unable to retrieve Instance ID")
 	}
 
 	// Create context
@@ -168,7 +207,7 @@ func readInstanceID(cfg *VSphereConfig) (string, error) {
 	// Create vSphere client
 	c, err := vsphereLogin(cfg, ctx)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer c.Logout(ctx)
 
@@ -178,7 +217,7 @@ func readInstanceID(cfg *VSphereConfig) (string, error) {
 	// Fetch and set data center
 	dc, err := f.Datacenter(ctx, cfg.Global.Datacenter)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	f.SetDatacenter(dc)
 
@@ -188,7 +227,7 @@ func readInstanceID(cfg *VSphereConfig) (string, error) {
 	for _, v := range addrs {
 		ip, _, err := net.ParseCIDR(v.String())
 		if err != nil {
-			return "", fmt.Errorf("unable to parse cidr from ip")
+			return "", "", fmt.Errorf("unable to parse cidr from ip")
 		}
 
 		// Finds a virtual machine or host by IP address.
@@ -198,19 +237,37 @@ func readInstanceID(cfg *VSphereConfig) (string, error) {
 		}
 	}
 	if svm == nil {
-		return "", fmt.Errorf("unable to retrieve vm reference from vSphere")
+		return "", "", fmt.Errorf("unable to retrieve vm reference from vSphere")
 	}
 
 	var vm mo.VirtualMachine
-	err = s.Properties(ctx, svm.Reference(), []string{"name"}, &vm)
+	err = s.Properties(ctx, svm.Reference(), []string{"name", "resourcePool"}, &vm)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return vm.Name, nil
+
+	var cluster string
+	if vm.ResourcePool != nil {
+		// Extract the Cluster Name if VM belongs to a ResourcePool
+		var rp mo.ResourcePool
+		err = s.Properties(ctx, *vm.ResourcePool, []string{"parent"}, &rp)
+		if err == nil {
+			var ccr mo.ClusterComputeResource
+			err = s.Properties(ctx, *rp.Parent, []string{"name"}, &ccr)
+			if err == nil {
+				cluster = ccr.Name
+			} else {
+				glog.Warningf("VM %s, does not belong to a vSphere Cluster, will not have FailureDomain label", vm.Name)
+			}
+		} else {
+			glog.Warningf("VM %s, does not belong to a vSphere Cluster, will not have FailureDomain label", vm.Name)
+		}
+	}
+	return vm.Name, cluster, nil
 }
 
 func newVSphere(cfg VSphereConfig) (*VSphere, error) {
-	id, err := readInstanceID(&cfg)
+	id, cluster, err := readInstance(&cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +284,7 @@ func newVSphere(cfg VSphereConfig) (*VSphere, error) {
 	vs := VSphere{
 		cfg:             &cfg,
 		localInstanceID: id,
+		clusterName:     cluster,
 	}
 	return &vs, nil
 }
@@ -262,7 +320,9 @@ func vsphereLogin(cfg *VSphereConfig, ctx context.Context) (*govmomi.Client, err
 }
 
 // Returns vSphere object `virtual machine` by its name.
-func getVirtualMachineByName(cfg *VSphereConfig, ctx context.Context, c *govmomi.Client, name string) (*object.VirtualMachine, error) {
+func getVirtualMachineByName(cfg *VSphereConfig, ctx context.Context, c *govmomi.Client, nodeName k8stypes.NodeName) (*object.VirtualMachine, error) {
+	name := nodeNameToVMName(nodeName)
+
 	// Create a new finder
 	f := find.NewFinder(c.Client, true)
 
@@ -349,7 +409,7 @@ func (vs *VSphere) Instances() (cloudprovider.Instances, bool) {
 }
 
 // List returns names of VMs (inside vm folder) by applying filter and which are currently running.
-func (i *Instances) List(filter string) ([]string, error) {
+func (i *Instances) List(filter string) ([]k8stypes.NodeName, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	c, err := vsphereLogin(i.cfg, ctx)
@@ -366,11 +426,15 @@ func (i *Instances) List(filter string) ([]string, error) {
 	glog.V(3).Infof("Found %d instances matching %s: %s",
 		len(vmList), filter, vmList)
 
-	return vmList, nil
+	var nodeNames []k8stypes.NodeName
+	for _, n := range vmList {
+		nodeNames = append(nodeNames, k8stypes.NodeName(n))
+	}
+	return nodeNames, nil
 }
 
 // NodeAddresses is an implementation of Instances.NodeAddresses.
-func (i *Instances) NodeAddresses(name string) ([]api.NodeAddress, error) {
+func (i *Instances) NodeAddresses(nodeName k8stypes.NodeName) ([]api.NodeAddress, error) {
 	addrs := []api.NodeAddress{}
 
 	// Create context
@@ -384,7 +448,7 @@ func (i *Instances) NodeAddresses(name string) ([]api.NodeAddress, error) {
 	}
 	defer c.Logout(ctx)
 
-	vm, err := getVirtualMachineByName(i.cfg, ctx, c, name)
+	vm, err := getVirtualMachineByName(i.cfg, ctx, c, nodeName)
 	if err != nil {
 		return nil, err
 	}
@@ -419,12 +483,22 @@ func (i *Instances) AddSSHKeyToAllInstances(user string, keyData []byte) error {
 	return errors.New("unimplemented")
 }
 
-func (i *Instances) CurrentNodeName(hostname string) (string, error) {
-	return i.localInstanceID, nil
+func (i *Instances) CurrentNodeName(hostname string) (k8stypes.NodeName, error) {
+	return k8stypes.NodeName(i.localInstanceID), nil
 }
 
-// ExternalID returns the cloud provider ID of the specified instance (deprecated).
-func (i *Instances) ExternalID(name string) (string, error) {
+// nodeNameToVMName maps a NodeName to the vmware infrastructure name
+func nodeNameToVMName(nodeName k8stypes.NodeName) string {
+	return string(nodeName)
+}
+
+// nodeNameToVMName maps a vmware infrastructure name to a NodeName
+func vmNameToNodeName(vmName string) k8stypes.NodeName {
+	return k8stypes.NodeName(vmName)
+}
+
+// ExternalID returns the cloud provider ID of the node with the specified Name (deprecated).
+func (i *Instances) ExternalID(nodeName k8stypes.NodeName) (string, error) {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -436,8 +510,11 @@ func (i *Instances) ExternalID(name string) (string, error) {
 	}
 	defer c.Logout(ctx)
 
-	vm, err := getVirtualMachineByName(i.cfg, ctx, c, name)
+	vm, err := getVirtualMachineByName(i.cfg, ctx, c, nodeName)
 	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			return "", cloudprovider.InstanceNotFound
+		}
 		return "", err
 	}
 
@@ -452,16 +529,16 @@ func (i *Instances) ExternalID(name string) (string, error) {
 	}
 
 	if mvm.Summary.Config.Template == false {
-		glog.Warningf("VM %s, is not in %s state", name, ActivePowerState)
+		glog.Warningf("VM %s, is not in %s state", nodeName, ActivePowerState)
 	} else {
-		glog.Warningf("VM %s, is a template", name)
+		glog.Warningf("VM %s, is a template", nodeName)
 	}
 
 	return "", cloudprovider.InstanceNotFound
 }
 
-// InstanceID returns the cloud provider ID of the specified instance.
-func (i *Instances) InstanceID(name string) (string, error) {
+// InstanceID returns the cloud provider ID of the node with the specified Name.
+func (i *Instances) InstanceID(nodeName k8stypes.NodeName) (string, error) {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -473,7 +550,13 @@ func (i *Instances) InstanceID(name string) (string, error) {
 	}
 	defer c.Logout(ctx)
 
-	vm, err := getVirtualMachineByName(i.cfg, ctx, c, name)
+	vm, err := getVirtualMachineByName(i.cfg, ctx, c, nodeName)
+	if err != nil {
+		if _, ok := err.(*find.NotFoundError); ok {
+			return "", cloudprovider.InstanceNotFound
+		}
+		return "", err
+	}
 
 	var mvm mo.VirtualMachine
 	err = getVirtualMachineManagedObjectReference(ctx, c, vm, "summary", &mvm)
@@ -486,15 +569,15 @@ func (i *Instances) InstanceID(name string) (string, error) {
 	}
 
 	if mvm.Summary.Config.Template == false {
-		glog.Warningf("VM %s, is not in %s state", name, ActivePowerState)
+		glog.Warningf("VM %s, is not in %s state", nodeName, ActivePowerState)
 	} else {
-		glog.Warningf("VM %s, is a template", name)
+		glog.Warningf("VM %s, is a template", nodeName)
 	}
 
 	return "", cloudprovider.InstanceNotFound
 }
 
-func (i *Instances) InstanceType(name string) (string, error) {
+func (i *Instances) InstanceType(name k8stypes.NodeName) (string, error) {
 	return "", nil
 }
 
@@ -520,9 +603,14 @@ func (vs *VSphere) Zones() (cloudprovider.Zones, bool) {
 }
 
 func (vs *VSphere) GetZone() (cloudprovider.Zone, error) {
-	glog.V(4).Infof("Current zone is %v", vs.cfg.Global.Datacenter)
+	glog.V(4).Infof("Current datacenter is %v, cluster is %v", vs.cfg.Global.Datacenter, vs.clusterName)
 
-	return cloudprovider.Zone{Region: vs.cfg.Global.Datacenter}, nil
+	// The clusterName is determined from the VirtualMachine ManagedObjectReference during init
+	// If the VM is not created within a Cluster, this will return empty-string
+	return cloudprovider.Zone{
+		Region:        vs.cfg.Global.Datacenter,
+		FailureDomain: vs.clusterName,
+	}, nil
 }
 
 // Routes returns a false since the interface is not supported for vSphere.
@@ -570,6 +658,9 @@ func getVirtualMachineDevices(cfg *VSphereConfig, ctx context.Context, c *govmom
 
 // Removes SCSI controller which is latest attached to VM.
 func cleanUpController(newSCSIController types.BaseVirtualDevice, vmDevices object.VirtualDeviceList, vm *object.VirtualMachine, ctx context.Context) error {
+	if newSCSIController == nil || vmDevices == nil || vm == nil {
+		return nil
+	}
 	ctls := vmDevices.SelectByType(newSCSIController)
 	if len(ctls) < 1 {
 		return ErrNoDevicesFound
@@ -583,7 +674,7 @@ func cleanUpController(newSCSIController types.BaseVirtualDevice, vmDevices obje
 }
 
 // Attaches given virtual disk volume to the compute running kubelet.
-func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string, diskUUID string, err error) {
+func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName k8stypes.NodeName) (diskID string, diskUUID string, err error) {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -599,8 +690,9 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string
 	var vSphereInstance string
 	if nodeName == "" {
 		vSphereInstance = vs.localInstanceID
+		nodeName = vmNameToNodeName(vSphereInstance)
 	} else {
-		vSphereInstance = nodeName
+		vSphereInstance = nodeNameToVMName(nodeName)
 	}
 
 	// Get VM device list
@@ -662,10 +754,10 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string
 
 		scsiController = getSCSIController(vmDevices, vs.cfg.Disk.SCSIControllerType)
 		if scsiController == nil {
-			glog.Errorf("cannot find SCSI controller in VM - %v", err)
+			glog.Errorf("cannot find SCSI controller in VM")
 			// attempt clean up of scsi controller
 			cleanUpController(newSCSIController, vmDevices, vm, ctx)
-			return "", "", err
+			return "", "", fmt.Errorf("cannot find SCSI controller in VM")
 		}
 		newSCSICreated = true
 	}
@@ -716,7 +808,7 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName string) (diskID string
 		if newSCSICreated {
 			cleanUpController(newSCSIController, vmDevices, vm, ctx)
 		}
-		vs.DetachDisk(deviceName, vSphereInstance)
+		vs.DetachDisk(deviceName, nodeName)
 		return "", "", err
 	}
 
@@ -742,7 +834,7 @@ func getNextUnitNumber(devices object.VirtualDeviceList, c types.BaseVirtualCont
 			return int32(unitNumber), nil
 		}
 	}
-	return -1, fmt.Errorf("SCSI Controller with key=%d does not have any avaiable slots (LUN).", key)
+	return -1, fmt.Errorf("SCSI Controller with key=%d does not have any available slots (LUN).", key)
 }
 
 func getSCSIController(vmDevices object.VirtualDeviceList, scsiType string) *types.VirtualController {
@@ -778,7 +870,7 @@ func getSCSIControllers(vmDevices object.VirtualDeviceList) []*types.VirtualCont
 	for _, device := range vmDevices {
 		devType := vmDevices.Type(device)
 		switch devType {
-		case SCSIControllerType, LSILogicControllerType, BusLogicControllerType, PVSCSIControllerType, LSILogicSASControllerType:
+		case SCSIControllerType, strings.ToLower(LSILogicControllerType), strings.ToLower(BusLogicControllerType), PVSCSIControllerType, strings.ToLower(LSILogicSASControllerType):
 			if c, ok := device.(types.BaseVirtualController); ok {
 				scsiControllers = append(scsiControllers, c.GetVirtualController())
 			}
@@ -798,7 +890,7 @@ func getAvailableSCSIController(scsiControllers []*types.VirtualController) *typ
 }
 
 // DiskIsAttached returns if disk is attached to the VM using controllers supported by the plugin.
-func (vs *VSphere) DiskIsAttached(volPath string, nodeName string) (bool, error) {
+func (vs *VSphere) DiskIsAttached(volPath string, nodeName k8stypes.NodeName) (bool, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -810,15 +902,16 @@ func (vs *VSphere) DiskIsAttached(volPath string, nodeName string) (bool, error)
 	}
 	defer c.Logout(ctx)
 
-	// Find virtual machine to attach disk to
+	// Find VM to detach disk from
 	var vSphereInstance string
 	if nodeName == "" {
 		vSphereInstance = vs.localInstanceID
+		nodeName = vmNameToNodeName(vSphereInstance)
 	} else {
-		vSphereInstance = nodeName
+		vSphereInstance = nodeNameToVMName(nodeName)
 	}
 
-	nodeExist, err := vs.NodeExists(c, vSphereInstance)
+	nodeExist, err := vs.NodeExists(c, nodeName)
 
 	if err != nil {
 		glog.Errorf("Failed to check whether node exist. err: %s.", err)
@@ -969,7 +1062,7 @@ func getVirtualDiskID(volPath string, vmDevices object.VirtualDeviceList, dc *ob
 }
 
 // DetachDisk detaches given virtual disk volume from the compute running kubelet.
-func (vs *VSphere) DetachDisk(volPath string, nodeName string) error {
+func (vs *VSphere) DetachDisk(volPath string, nodeName k8stypes.NodeName) error {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -981,15 +1074,16 @@ func (vs *VSphere) DetachDisk(volPath string, nodeName string) error {
 	}
 	defer c.Logout(ctx)
 
-	// Find VM to detach disk from
+	// Find virtual machine to attach disk to
 	var vSphereInstance string
 	if nodeName == "" {
 		vSphereInstance = vs.localInstanceID
+		nodeName = vmNameToNodeName(vSphereInstance)
 	} else {
-		vSphereInstance = nodeName
+		vSphereInstance = nodeNameToVMName(nodeName)
 	}
 
-	nodeExist, err := vs.NodeExists(c, vSphereInstance)
+	nodeExist, err := vs.NodeExists(c, nodeName)
 
 	if err != nil {
 		glog.Errorf("Failed to check whether node exist. err: %s.", err)
@@ -999,7 +1093,7 @@ func (vs *VSphere) DetachDisk(volPath string, nodeName string) error {
 	if !nodeExist {
 		glog.Warningf(
 			"Node %q does not exist. DetachDisk will assume vmdk %q is not attached to it.",
-			vSphereInstance,
+			nodeName,
 			volPath)
 		return nil
 	}
@@ -1031,7 +1125,22 @@ func (vs *VSphere) DetachDisk(volPath string, nodeName string) error {
 }
 
 // CreateVolume creates a volume of given size (in KiB).
-func (vs *VSphere) CreateVolume(name string, size int, tags *map[string]string) (volumePath string, err error) {
+func (vs *VSphere) CreateVolume(volumeOptions *VolumeOptions) (volumePath string, err error) {
+
+	var diskFormat string
+
+	// Default diskformat as 'thin'
+	if volumeOptions.DiskFormat == "" {
+		volumeOptions.DiskFormat = ThinDiskType
+	}
+
+	if _, ok := diskFormatValidType[volumeOptions.DiskFormat]; !ok {
+		return "", fmt.Errorf("Cannot create disk. Error diskformat %+q."+
+			" Valid options are %s.", volumeOptions.DiskFormat, DiskformatValidOptions)
+	}
+
+	diskFormat = diskFormatValidType[volumeOptions.DiskFormat]
+
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -1050,17 +1159,32 @@ func (vs *VSphere) CreateVolume(name string, size int, tags *map[string]string) 
 	dc, err := f.Datacenter(ctx, vs.cfg.Global.Datacenter)
 	f.SetDatacenter(dc)
 
+	ds, err := f.Datastore(ctx, vs.cfg.Global.Datastore)
+	if err != nil {
+		glog.Errorf("Failed while searching for datastore %+q. err %s", vs.cfg.Global.Datastore, err)
+		return "", err
+	}
+
+	// vmdks will be created inside kubevols directory
+	kubeVolsPath := filepath.Clean(ds.Path(VolDir)) + "/"
+	err = makeDirectoryInDatastore(c, dc, kubeVolsPath, false)
+	if err != nil && err != ErrFileAlreadyExist {
+		glog.Errorf("Cannot create dir %#v. err %s", kubeVolsPath, err)
+		return "", err
+	}
+	glog.V(4).Infof("Created dir with path as %+q", kubeVolsPath)
+
+	vmDiskPath := kubeVolsPath + volumeOptions.Name + ".vmdk"
 	// Create a virtual disk manager
-	vmDiskPath := "[" + vs.cfg.Global.Datastore + "] " + name + ".vmdk"
 	virtualDiskManager := object.NewVirtualDiskManager(c.Client)
 
 	// Create specification for new virtual disk
 	vmDiskSpec := &types.FileBackedVirtualDiskSpec{
 		VirtualDiskSpec: types.VirtualDiskSpec{
-			AdapterType: (*tags)["adapterType"],
-			DiskType:    (*tags)["diskType"],
+			AdapterType: LSILogicControllerType,
+			DiskType:    diskFormat,
 		},
-		CapacityKb: int64(size),
+		CapacityKb: int64(volumeOptions.CapacityKB),
 	}
 
 	// Create virtual disk
@@ -1110,8 +1234,7 @@ func (vs *VSphere) DeleteVolume(vmDiskPath string) error {
 
 // NodeExists checks if the node with given nodeName exist.
 // Returns false if VM doesn't exist or VM is in powerOff state.
-func (vs *VSphere) NodeExists(c *govmomi.Client, nodeName string) (bool, error) {
-
+func (vs *VSphere) NodeExists(c *govmomi.Client, nodeName k8stypes.NodeName) (bool, error) {
 	if nodeName == "" {
 		return false, nil
 	}
@@ -1146,4 +1269,27 @@ func (vs *VSphere) NodeExists(c *govmomi.Client, nodeName string) (bool, error) 
 	}
 
 	return false, nil
+}
+
+// Creates a folder using the specified name.
+// If the intermediate level folders do not exist,
+// and the parameter createParents is true,
+// all the non-existent folders are created.
+func makeDirectoryInDatastore(c *govmomi.Client, dc *object.Datacenter, path string, createParents bool) error {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	fileManager := object.NewFileManager(c.Client)
+	err := fileManager.MakeDirectory(ctx, path, dc, createParents)
+	if err != nil {
+		if soap.IsSoapFault(err) {
+			soapFault := soap.ToSoapFault(err)
+			if _, ok := soapFault.VimFault().(types.FileAlreadyExists); ok {
+				return ErrFileAlreadyExist
+			}
+		}
+	}
+
+	return err
 }

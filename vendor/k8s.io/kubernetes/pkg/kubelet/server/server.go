@@ -342,7 +342,8 @@ func (s *Server) InstallDebuggingHandlers() {
 		Operation("getLogs"))
 	ws.Route(ws.GET("/{logpath:*}").
 		To(s.getLogs).
-		Operation("getLogs"))
+		Operation("getLogs").
+		Param(ws.PathParameter("logpath", "path to the log").DataType("string")))
 	s.restfulCont.Add(ws)
 
 	ws = new(restful.WebService)
@@ -369,7 +370,7 @@ func (s *Server) InstallDebuggingHandlers() {
 		}
 	}
 
-	// Setup pporf handlers.
+	// Setup pprof handlers.
 	ws = new(restful.WebService).Path(pprofBasePath)
 	ws.Route(ws.GET("/{subpath:*}").To(func(req *restful.Request, resp *restful.Response) {
 		handlePprofEndpoint(req, resp)

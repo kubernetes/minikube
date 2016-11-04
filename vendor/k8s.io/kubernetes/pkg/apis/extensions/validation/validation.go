@@ -491,6 +491,8 @@ func ValidateReplicaSetStatusUpdate(rs, oldRs *extensions.ReplicaSet) field.Erro
 	allErrs = append(allErrs, apivalidation.ValidateObjectMetaUpdate(&rs.ObjectMeta, &oldRs.ObjectMeta, field.NewPath("metadata"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(rs.Status.Replicas), field.NewPath("status", "replicas"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(rs.Status.FullyLabeledReplicas), field.NewPath("status", "fullyLabeledReplicas"))...)
+	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(rs.Status.ReadyReplicas), field.NewPath("status", "readyReplicas"))...)
+	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(rs.Status.AvailableReplicas), field.NewPath("status", "availableReplicas"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(rs.Status.ObservedGeneration), field.NewPath("status", "observedGeneration"))...)
 	return allErrs
 }
@@ -500,6 +502,7 @@ func ValidateReplicaSetSpec(spec *extensions.ReplicaSetSpec, fldPath *field.Path
 	allErrs := field.ErrorList{}
 
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(spec.Replicas), fldPath.Child("replicas"))...)
+	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(spec.MinReadySeconds), fldPath.Child("minReadySeconds"))...)
 
 	if spec.Selector == nil {
 		allErrs = append(allErrs, field.Required(fldPath.Child("selector"), ""))
@@ -762,7 +765,8 @@ func hasCap(needle api.Capability, haystack []api.Capability) bool {
 // ValidatePodSecurityPolicyUpdate validates a PSP for updates.
 func ValidatePodSecurityPolicyUpdate(old *extensions.PodSecurityPolicy, new *extensions.PodSecurityPolicy) field.ErrorList {
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, apivalidation.ValidateObjectMetaUpdate(&old.ObjectMeta, &new.ObjectMeta, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, apivalidation.ValidateObjectMetaUpdate(&new.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))...)
+	allErrs = append(allErrs, ValidatePodSecurityPolicySpecificAnnotations(new.Annotations, field.NewPath("metadata").Child("annotations"))...)
 	allErrs = append(allErrs, ValidatePodSecurityPolicySpec(&new.Spec, field.NewPath("spec"))...)
 	return allErrs
 }
@@ -818,68 +822,6 @@ func ValidateNetworkPolicyUpdate(update, old *extensions.NetworkPolicy) field.Er
 	allErrs = append(allErrs, apivalidation.ValidateObjectMetaUpdate(&update.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))...)
 	if !reflect.DeepEqual(update.Spec, old.Spec) {
 		allErrs = append(allErrs, field.Forbidden(field.NewPath("spec"), "updates to networkpolicy spec are forbidden."))
-	}
-	return allErrs
-}
-
-// ValidateStorageClass validates a StorageClass.
-func ValidateStorageClass(storageClass *extensions.StorageClass) field.ErrorList {
-	allErrs := apivalidation.ValidateObjectMeta(&storageClass.ObjectMeta, false, apivalidation.NameIsDNSSubdomain, field.NewPath("metadata"))
-	allErrs = append(allErrs, validateProvisioner(storageClass.Provisioner, field.NewPath("provisioner"))...)
-	allErrs = append(allErrs, validateParameters(storageClass.Parameters, field.NewPath("parameters"))...)
-
-	return allErrs
-}
-
-// ValidateStorageClassUpdate tests if an update to StorageClass is valid.
-func ValidateStorageClassUpdate(storageClass, oldStorageClass *extensions.StorageClass) field.ErrorList {
-	allErrs := apivalidation.ValidateObjectMetaUpdate(&storageClass.ObjectMeta, &oldStorageClass.ObjectMeta, field.NewPath("metadata"))
-	if !reflect.DeepEqual(oldStorageClass.Parameters, storageClass.Parameters) {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("parameters"), "updates to parameters are forbidden."))
-	}
-
-	if strings.Compare(storageClass.Provisioner, oldStorageClass.Provisioner) != 0 {
-		allErrs = append(allErrs, field.Forbidden(field.NewPath("provisioner"), "updates to provisioner are forbidden."))
-	}
-	return allErrs
-}
-
-// validateProvisioner tests if provisioner is a valid qualified name.
-func validateProvisioner(provisioner string, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
-	if len(provisioner) == 0 {
-		allErrs = append(allErrs, field.Required(fldPath, provisioner))
-	}
-	if len(provisioner) > 0 {
-		for _, msg := range validation.IsQualifiedName(strings.ToLower(provisioner)) {
-			allErrs = append(allErrs, field.Invalid(fldPath, provisioner, msg))
-		}
-	}
-	return allErrs
-}
-
-const maxProvisionerParameterSize = 256 * (1 << 10) // 256 kB
-const maxProvisionerParameterLen = 512
-
-// validateParameters tests that keys are qualified names and that provisionerParameter are < 256kB.
-func validateParameters(params map[string]string, fldPath *field.Path) field.ErrorList {
-	var totalSize int64
-	allErrs := field.ErrorList{}
-
-	if len(params) > maxProvisionerParameterLen {
-		allErrs = append(allErrs, field.TooLong(fldPath, "Provisioner Parameters exceeded max allowed", maxProvisionerParameterLen))
-		return allErrs
-	}
-
-	for k, v := range params {
-		if len(k) < 1 {
-			allErrs = append(allErrs, field.Invalid(fldPath, k, "field can not be empty."))
-		}
-		totalSize += (int64)(len(k)) + (int64)(len(v))
-	}
-
-	if totalSize > maxProvisionerParameterSize {
-		allErrs = append(allErrs, field.TooLong(fldPath, "", maxProvisionerParameterSize))
 	}
 	return allErrs
 }

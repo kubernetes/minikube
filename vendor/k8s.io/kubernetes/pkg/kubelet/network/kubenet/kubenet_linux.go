@@ -31,6 +31,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netlink/nl"
+	"io/ioutil"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
@@ -45,8 +46,9 @@ import (
 	utilsets "k8s.io/kubernetes/pkg/util/sets"
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 
-	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
 	"strconv"
+
+	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
 )
 
 const (
@@ -54,7 +56,7 @@ const (
 	BridgeName        = "cbr0"
 	DefaultCNIDir     = "/opt/cni/bin"
 
-	sysctlBridgeCallIptables = "net/bridge/bridge-nf-call-iptables"
+	sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
 
 	// fallbackMTU is used if an MTU is not specified, and we cannot determine the MTU
 	fallbackMTU = 1460
@@ -68,6 +70,9 @@ const (
 	// ebtables Chain to store dedup rules
 	dedupChain = utilebtables.Chain("KUBE-DEDUP")
 )
+
+// CNI plugins required by kubenet in /opt/cni/bin or vendor directory
+var requiredCNIPlugins = [...]string{"bridge", "host-local", "loopback"}
 
 type kubenetNetworkPlugin struct {
 	network.NoopNetworkPlugin
@@ -139,9 +144,9 @@ func (plugin *kubenetNetworkPlugin) Init(host network.Host, hairpinMode componen
 	// was built-in, we simply ignore the error here. A better thing to do is
 	// to check the kernel version in the future.
 	plugin.execer.Command("modprobe", "br-netfilter").CombinedOutput()
-	err := plugin.sysctl.SetSysctl(sysctlBridgeCallIptables, 1)
+	err := plugin.sysctl.SetSysctl(sysctlBridgeCallIPTables, 1)
 	if err != nil {
-		glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIptables, err)
+		glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIPTables, err)
 	}
 
 	plugin.loConfig, err = libcni.ConfFromBytes([]byte(`{
@@ -210,7 +215,7 @@ const NET_CONFIG_TEMPLATE = `{
   "addIf": "%s",
   "isGateway": true,
   "ipMasq": false,
-  "hairpin": "%t",
+  "hairpinMode": %t,
   "ipam": {
     "type": "host-local",
     "subnet": "%s",
@@ -236,7 +241,7 @@ func (plugin *kubenetNetworkPlugin) Event(name string, details map[string]interf
 	}
 
 	if plugin.netConfig != nil {
-		glog.V(5).Infof("Ignoring subsequent pod CIDR update to %s", podCIDR)
+		glog.Warningf("Ignoring subsequent pod CIDR update to %s", podCIDR)
 		return
 	}
 
@@ -391,13 +396,13 @@ func (plugin *kubenetNetworkPlugin) setup(namespace string, name string, id kube
 	plugin.podIPs[id] = ip4.String()
 
 	// Open any hostports the pod's containers want
-	runningPods, err := plugin.getRunningPods()
+	activePods, err := plugin.getActivePods()
 	if err != nil {
 		return err
 	}
 
-	newPod := &hostport.RunningPod{Pod: pod, IP: ip4}
-	if err := plugin.hostportHandler.OpenPodHostportsAndSync(newPod, BridgeName, runningPods); err != nil {
+	newPod := &hostport.ActivePod{Pod: pod, IP: ip4}
+	if err := plugin.hostportHandler.OpenPodHostportsAndSync(newPod, BridgeName, activePods); err != nil {
 		return err
 	}
 
@@ -465,9 +470,9 @@ func (plugin *kubenetNetworkPlugin) teardown(namespace string, name string, id k
 		}
 	}
 
-	runningPods, err := plugin.getRunningPods()
+	activePods, err := plugin.getActivePods()
 	if err == nil {
-		err = plugin.hostportHandler.SyncHostports(BridgeName, runningPods)
+		err = plugin.hostportHandler.SyncHostports(BridgeName, activePods)
 	}
 	if err != nil {
 		errList = append(errList, err)
@@ -531,19 +536,56 @@ func (plugin *kubenetNetworkPlugin) Status() error {
 	if plugin.netConfig == nil {
 		return fmt.Errorf("Kubenet does not have netConfig. This is most likely due to lack of PodCIDR")
 	}
+
+	if !plugin.checkCNIPlugin() {
+		return fmt.Errorf("could not locate kubenet required CNI plugins %v at %q or %q", requiredCNIPlugins, DefaultCNIDir, plugin.vendorDir)
+	}
 	return nil
 }
 
-// Returns a list of pods running on this node and each pod's IP address.  Assumes
-// PodSpecs retrieved from the runtime include the name and ID of containers in
+// checkCNIPlugin returns if all kubenet required cni plugins can be found at /opt/cni/bin or user specifed NetworkPluginDir.
+func (plugin *kubenetNetworkPlugin) checkCNIPlugin() bool {
+	if plugin.checkCNIPluginInDir(DefaultCNIDir) || plugin.checkCNIPluginInDir(plugin.vendorDir) {
+		return true
+	}
+	return false
+}
+
+// checkCNIPluginInDir returns if all required cni plugins are placed in dir
+func (plugin *kubenetNetworkPlugin) checkCNIPluginInDir(dir string) bool {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, cniPlugin := range requiredCNIPlugins {
+		found := false
+		for _, file := range files {
+			if strings.TrimSpace(file.Name()) == cniPlugin {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// Returns a list of pods running or ready to run on this node and each pod's IP address.
+// Assumes PodSpecs retrieved from the runtime include the name and ID of containers in
 // each pod.
-func (plugin *kubenetNetworkPlugin) getRunningPods() ([]*hostport.RunningPod, error) {
-	pods, err := plugin.host.GetRuntime().GetPods(false)
+func (plugin *kubenetNetworkPlugin) getActivePods() ([]*hostport.ActivePod, error) {
+	pods, err := plugin.host.GetRuntime().GetPods(true)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to retrieve pods from runtime: %v", err)
 	}
-	runningPods := make([]*hostport.RunningPod, 0)
+	activePods := make([]*hostport.ActivePod, 0)
 	for _, p := range pods {
+		if podIsExited(p) {
+			continue
+		}
+
 		containerID, err := plugin.host.GetRuntime().GetPodContainerID(p)
 		if err != nil {
 			continue
@@ -557,13 +599,28 @@ func (plugin *kubenetNetworkPlugin) getRunningPods() ([]*hostport.RunningPod, er
 			continue
 		}
 		if pod, ok := plugin.host.GetPodByName(p.Namespace, p.Name); ok {
-			runningPods = append(runningPods, &hostport.RunningPod{
+			activePods = append(activePods, &hostport.ActivePod{
 				Pod: pod,
 				IP:  podIP,
 			})
 		}
 	}
-	return runningPods, nil
+	return activePods, nil
+}
+
+// podIsExited returns true if the pod is exited (all containers inside are exited).
+func podIsExited(p *kubecontainer.Pod) bool {
+	for _, c := range p.Containers {
+		if c.State != kubecontainer.ContainerStateExited {
+			return false
+		}
+	}
+	for _, c := range p.Sandboxes {
+		if c.State != kubecontainer.ContainerStateExited {
+			return false
+		}
+	}
+	return true
 }
 
 func (plugin *kubenetNetworkPlugin) buildCNIRuntimeConf(ifName string, id kubecontainer.ContainerID) (*libcni.RuntimeConf, error) {

@@ -8,9 +8,9 @@ service RuntimeService {
     // Version returns the runtime name, runtime version and runtime API version
     rpc Version(VersionRequest) returns (VersionResponse) {}
 
-    // CreatePodSandbox creates a pod-level sandbox.
-    // The definition of PodSandbox is at https://github.com/kubernetes/kubernetes/pull/25899
-    rpc CreatePodSandbox(CreatePodSandboxRequest) returns (CreatePodSandboxResponse) {}
+    // RunPodSandbox creates and starts a pod-level sandbox. Runtimes should ensure
+    // the sandbox is in ready state.
+    rpc RunPodSandbox(RunPodSandboxRequest) returns (RunPodSandboxResponse) {}
     // StopPodSandbox stops the running sandbox. If there are any running
     // containers in the sandbox, they should be forcibly terminated.
     rpc StopPodSandbox(StopPodSandboxRequest) returns (StopPodSandboxResponse) {}
@@ -65,18 +65,23 @@ message VersionResponse {
     optional string version = 1;
     // The name of the container runtime.
     optional string runtime_name = 2;
-    // The version of the container runtime.
+    // The version of the container runtime. The string should be
+    // semver-compatible.
     optional string runtime_version = 3;
-    // The API version of the container runtime.
+    // The API version of the container runtime. The string should be
+    // semver-compatible.
     optional string runtime_api_version = 4;
 }
 
-// DNSOption specifies the DNS servers and search domains.
-message DNSOption {
+// DNSConfig specifies the DNS servers and search domains of a sandbox.
+message DNSConfig {
     // List of DNS servers of the cluster.
     repeated string servers = 1;
     // List of DNS search domains of the cluster.
     repeated string searches = 2;
+    // List of DNS options. See https://linux.die.net/man/5/resolv.conf
+    // for all available options.
+    repeated string options = 3;
 }
 
 enum Protocol {
@@ -84,50 +89,46 @@ enum Protocol {
     UDP = 1;
 }
 
-// PortMapping specifies the port mapping configurations of sandbox
+// PortMapping specifies the port mapping configurations of a sandbox.
 message PortMapping {
-    // The name of the port mapping
-    optional string name = 1;
     // The protocol of the port mapping.
-    optional Protocol protocol = 2;
+    optional Protocol protocol = 1;
     // The port number within the container.
-    optional int32 container_port = 3;
+    optional int32 container_port = 2;
     // The port number on the host.
-    optional int32 host_port = 4;
+    optional int32 host_port = 3;
     // The host IP.
-    optional string host_ip = 5;
+    optional string host_ip = 4;
 }
 
-// Mount specifies the volume mount for the sandbox
+// Mount specifies a host volume to mount into a container.
 message Mount {
-    // The name of the volume mount.
-    optional string name = 1;
     // The path of the mount within the container.
-    optional string container_path = 2;
+    optional string container_path = 1;
     // The path of the mount on the host.
-    optional string host_path = 3;
+    optional string host_path = 2;
     // If set, the mount is read-only.
-    optional bool readonly = 4;
+    optional bool readonly = 3;
     // If set, the mount needs SELinux relabeling
-    optional bool selinux_relabel = 5;
+    optional bool selinux_relabel = 4;
 }
 
 // NamespaceOption provides options for Linux namespaces.
 message NamespaceOption {
     // If set, use the host's network namespace.
     optional bool host_network = 1;
-    // If set, use the host's pid namesapce.
+    // If set, use the host's PID namespace.
     optional bool host_pid = 2;
-    // If set, use the host's ipc namespace.
+    // If set, use the host's IPC namespace.
     optional bool host_ipc = 3;
 }
 
-// LinuxPodSandboxConfig holds platform-specific configuraions for Linux
+// LinuxPodSandboxConfig holds platform-specific configurations for Linux
 // host platforms and Linux-based containers.
 message LinuxPodSandboxConfig {
     // The parent cgroup of the pod sandbox.
-    // The cgroupfs style syntax will be used, but the container runtime can 
-    // convert it to systemd semantices if needed.
+    // The cgroupfs style syntax will be used, but the container runtime can
+    // convert it to systemd semantics if needed.
     optional string cgroup_parent = 1;
     // The configurations for the sandbox's namespaces.
     // This will be used only if the PodSandbox uses namespace for isolation.
@@ -136,12 +137,12 @@ message LinuxPodSandboxConfig {
 
 // PodSandboxMetadata holds all necessary information for building the sandbox name.
 // The container runtime is encouraged to expose the metadata associated with the
-// PodSandbox in its user interface for better user experience. E.g., runtime can
-// construct a unique PodSandboxName based on the metadata.
+// PodSandbox in its user interface for better user experience. For example,
+// the runtime can construct a unique PodSandboxName based on the metadata.
 message PodSandboxMetadata {
     // The pod name of the sandbox. Same as the pod name in the PodSpec.
     optional string name = 1;
-    // The pod uid of the sandbox. Same as the pod UID in the PodSpec.
+    // The pod UID of the sandbox. Same as the pod UID in the PodSpec.
     optional string uid = 2;
     // The pod namespace of the sandbox. Same as the pod namespace in the PodSpec.
     optional string namespace = 3;
@@ -175,8 +176,8 @@ message PodSandboxConfig {
     // https://issues.k8s.io/24677. There *may* be future change of direction
     // for logging as the discussion carries on.
     optional string log_directory = 3;
-    // The DNS options for the sandbox.
-    optional DNSOption dns_options = 4;
+    // The DNS config for the sandbox.
+    optional DNSConfig dns_config = 4;
     // The port mappings for the sandbox.
     repeated PortMapping port_mappings = 5;
     // Labels are key value pairs that may be used to scope and select individual resources.
@@ -188,32 +189,32 @@ message PodSandboxConfig {
     optional LinuxPodSandboxConfig linux = 8;
 }
 
-message CreatePodSandboxRequest {
-    // The configuration for creating a PodSandBox.
+message RunPodSandboxRequest {
+    // The configuration for creating a PodSandbox.
     optional PodSandboxConfig config = 1;
 }
 
-message CreatePodSandboxResponse {
-    // The id of the PodSandBox
+message RunPodSandboxResponse {
+    // The id of the PodSandbox
     optional string pod_sandbox_id = 1;
 }
 
 message StopPodSandboxRequest {
-    // The id of the PodSandBox
+    // The id of the PodSandbox
     optional string pod_sandbox_id = 1;
 }
 
 message StopPodSandboxResponse {}
 
 message RemovePodSandboxRequest {
-    // The id of the PodSandBox
+    // The id of the PodSandbox
     optional string pod_sandbox_id = 1;
 }
 
 message RemovePodSandboxResponse {}
 
 message PodSandboxStatusRequest {
-    // The id of the PodSandBox
+    // The id of the PodSandbox
     optional string pod_sandbox_id = 1;
 }
 
@@ -250,7 +251,7 @@ message PodSandboxStatus {
     optional PodSandboxMetadata metadata = 2;
     // State of the sandbox.
     optional PodSandBoxState state = 3;
-    // Creation timestamp of the sandbox
+    // Creation timestamp of the sandbox in nanoseconds.
     optional int64 created_at = 4;
     // Network contains network status if network is handled by the runtime.
     optional PodSandboxNetworkStatus network = 5;
@@ -271,16 +272,14 @@ message PodSandboxStatusResponse {
 // PodSandboxFilter is used to filter a list of PodSandboxes.
 // All those fields are combined with 'AND'
 message PodSandboxFilter {
-    // Name of the sandbox.
-    optional string name = 1;
     // ID of the sandbox.
-    optional string id = 2;
+    optional string id = 1;
     // State of the sandbox.
-    optional PodSandBoxState state = 3;
+    optional PodSandBoxState state = 2;
     // LabelSelector to select matches.
     // Only api.MatchLabels is supported for now and the requirements
     // are ANDed. MatchExpressions is not supported yet.
-    map<string, string> label_selector = 4;
+    map<string, string> label_selector = 3;
 }
 
 message ListPodSandboxRequest {
@@ -297,10 +296,13 @@ message PodSandbox {
     optional PodSandboxMetadata metadata = 2;
     // The state of the PodSandbox
     optional PodSandBoxState state = 3;
-    // Creation timestamps of the sandbox
+    // Creation timestamps of the sandbox in nanoseconds
     optional int64 created_at = 4;
     // The labels of the PodSandbox
     map<string, string> labels = 5;
+    // Annotations is an unstructured key value map that may be set by external
+    // tools to store and retrieve arbitrary metadata.
+    map<string, string> annotations = 6;
 }
 
 message ListPodSandboxResponse {
@@ -453,7 +455,10 @@ message CreateContainerRequest {
     optional string pod_sandbox_id = 1;
     // The config of the container
     optional ContainerConfig config = 2;
-    // The config of the PodSandbox
+    // The config of the PodSandbox. This is the same config that was passed
+    // to RunPodSandboxRequest to create the PodSandbox. It is passed again
+    // here just for easy reference. The PodSandboxConfig is immutable and
+    // remains the same throughout the lifetime of the pod.
     optional PodSandboxConfig sandbox_config = 3;
 }
 
@@ -495,18 +500,16 @@ enum ContainerState {
 // ContainerFilter is used to filter containers.
 // All those fields are combined with 'AND'
 message ContainerFilter {
-    // Name of the container.
-    optional string name = 1;
     // ID of the container.
-    optional string id = 2;
+    optional string id = 1;
     // State of the container.
-    optional ContainerState state = 3;
+    optional ContainerState state = 2;
     // The id of the pod sandbox
-    optional string pod_sandbox_id = 4;
+    optional string pod_sandbox_id = 3;
     // LabelSelector to select matches.
     // Only api.MatchLabels is supported for now and the requirements
     // are ANDed. MatchExpressions is not supported yet.
-    map<string, string> label_selector = 5;
+    map<string, string> label_selector = 4;
 }
 
 message ListContainersRequest {
@@ -519,20 +522,24 @@ message Container {
     // The ID of the container, used by the container runtime to identify
     // a container.
     optional string id = 1;
+    // The id of the sandbox which this container belongs to.
+    optional string pod_sandbox_id = 2;
     // The metadata of the container.
-    optional ContainerMetadata metadata = 2;
+    optional ContainerMetadata metadata = 3;
      // The spec of the image
-    optional ImageSpec image = 3;
+    optional ImageSpec image = 4;
     // Reference to the image in use. For most runtimes, this should be an
     // image ID.
-    optional string image_ref = 4;
+    optional string image_ref = 5;
     // State is the state of the container.
-    optional ContainerState state = 5;
+    optional ContainerState state = 6;
+    // Creation time of the container in nanoseconds.
+    optional int64 created_at = 7;
     // Labels are key value pairs that may be used to scope and select individual resources.
-    map<string, string> labels = 6;
+    map<string, string> labels = 8;
     // Annotations is an unstructured key value map that may be set by external
     // tools to store and retrieve arbitrary metadata.
-    map<string, string> annotations = 7;
+    map<string, string> annotations = 9;
 }
 
 message ListContainersResponse {
@@ -553,11 +560,11 @@ message ContainerStatus {
     optional ContainerMetadata metadata = 2;
     // Status of the container.
     optional ContainerState state = 3;
-    // Creation time of the container.
+    // Creation time of the container in nanoseconds.
     optional int64 created_at = 4;
-    // Start time of the container.
+    // Start time of the container in nanoseconds.
     optional int64 started_at = 5;
-    // Finish time of the container.
+    // Finish time of the container in nanoseconds.
     optional int64 finished_at = 6;
     // Exit code of the container.
     optional int32 exit_code = 7;
@@ -566,14 +573,17 @@ message ContainerStatus {
     // Reference to the image in use. For most runtimes, this should be an
     // image ID
     optional string image_ref = 9;
-    // A string explains why container is in such a status.
+    // A brief CamelCase string explains why container is in such a status.
     optional string reason = 10;
+    // A human-readable message indication details about why container is in
+    // this state.
+    optional string message = 11;
     // Labels are key value pairs that may be used to scope and select individual resources.
-    map<string,string> labels = 11;
+    map<string,string> labels = 12;
     // Annotations is an unstructured key value map.
-    map<string,string> annotations = 12;
+    map<string,string> annotations = 13;
     // Mounts specifies mounts for the container
-    repeated Mount mounts = 13;
+    repeated Mount mounts = 14;
 }
 
 message ContainerStatusResponse {

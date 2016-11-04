@@ -20,17 +20,20 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/annotations"
+	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/labels"
+	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/util/integer"
 	intstrutil "k8s.io/kubernetes/pkg/util/intstr"
@@ -43,6 +46,8 @@ import (
 const (
 	// RevisionAnnotation is the revision annotation of a deployment's replica sets which records its rollout sequence
 	RevisionAnnotation = "deployment.kubernetes.io/revision"
+	// RevisionHistoryAnnotation maintains the history of all old revisions that a replica set has served for a deployment.
+	RevisionHistoryAnnotation = "deployment.kubernetes.io/revision-history"
 	// DesiredReplicasAnnotation is the desired replicas for a deployment recorded as an annotation
 	// in its replica sets. Helps in separating scaling events from the rollout process and for
 	// determining if the new replica set for a deployment is really saturated.
@@ -59,12 +64,29 @@ const (
 	// RollbackDone is the done rollback event reason
 	RollbackDone = "DeploymentRollback"
 	// OverlapAnnotation marks deployments with overlapping selector with other deployments
-	// TODO: Delete this annotation when we gracefully handle overlapping selectors. See https://github.com/kubernetes/kubernetes/issues/2210
+	// TODO: Delete this annotation when we gracefully handle overlapping selectors.
+	// See https://github.com/kubernetes/kubernetes/issues/2210
 	OverlapAnnotation = "deployment.kubernetes.io/error-selector-overlapping-with"
 	// SelectorUpdateAnnotation marks the last time deployment selector update
-	// TODO: Delete this annotation when we gracefully handle overlapping selectors. See https://github.com/kubernetes/kubernetes/issues/2210
+	// TODO: Delete this annotation when we gracefully handle overlapping selectors.
+	// See https://github.com/kubernetes/kubernetes/issues/2210
 	SelectorUpdateAnnotation = "deployment.kubernetes.io/selector-updated-at"
 )
+
+// SetDeploymentRevision updates the revision for a deployment.
+func SetDeploymentRevision(deployment *extensions.Deployment, revision string) bool {
+	updated := false
+
+	if deployment.Annotations == nil {
+		deployment.Annotations = make(map[string]string)
+	}
+	if deployment.Annotations[RevisionAnnotation] != revision {
+		deployment.Annotations[RevisionAnnotation] = revision
+		updated = true
+	}
+
+	return updated
+}
 
 // MaxRevision finds the highest revision in the replica sets
 func MaxRevision(allRSs []*extensions.ReplicaSet) int64 {
@@ -97,6 +119,19 @@ func LastRevision(allRSs []*extensions.ReplicaSet) int64 {
 	return secMax
 }
 
+// Revision returns the revision number of the input object.
+func Revision(obj runtime.Object) (int64, error) {
+	acc, err := meta.Accessor(obj)
+	if err != nil {
+		return 0, err
+	}
+	v, ok := acc.GetAnnotations()[RevisionAnnotation]
+	if !ok {
+		return 0, nil
+	}
+	return strconv.ParseInt(v, 10, 64)
+}
+
 // SetNewReplicaSetAnnotations sets new replica set's annotations appropriately by updating its revision and
 // copying required deployment annotations to it; it returns true if replica set's annotation is changed.
 func SetNewReplicaSetAnnotations(deployment *extensions.Deployment, newRS *extensions.ReplicaSet, newRevision string, exists bool) bool {
@@ -106,14 +141,29 @@ func SetNewReplicaSetAnnotations(deployment *extensions.Deployment, newRS *exten
 	if newRS.Annotations == nil {
 		newRS.Annotations = make(map[string]string)
 	}
+	oldRevision, ok := newRS.Annotations[RevisionAnnotation]
 	// The newRS's revision should be the greatest among all RSes. Usually, its revision number is newRevision (the max revision number
 	// of all old RSes + 1). However, it's possible that some of the old RSes are deleted after the newRS revision being updated, and
 	// newRevision becomes smaller than newRS's revision. We should only update newRS revision when it's smaller than newRevision.
-	if newRS.Annotations[RevisionAnnotation] < newRevision {
+	if oldRevision < newRevision {
 		newRS.Annotations[RevisionAnnotation] = newRevision
 		annotationChanged = true
 		glog.V(4).Infof("Updating replica set %q revision to %s", newRS.Name, newRevision)
 	}
+	// If a revision annotation already existed and this replica set was updated with a new revision
+	// then that means we are rolling back to this replica set. We need to preserve the old revisions
+	// for historical information.
+	if ok && annotationChanged {
+		revisionHistoryAnnotation := newRS.Annotations[RevisionHistoryAnnotation]
+		oldRevisions := strings.Split(revisionHistoryAnnotation, ",")
+		if len(oldRevisions[0]) == 0 {
+			newRS.Annotations[RevisionHistoryAnnotation] = oldRevision
+		} else {
+			oldRevisions = append(oldRevisions, oldRevision)
+			newRS.Annotations[RevisionHistoryAnnotation] = strings.Join(oldRevisions, ",")
+		}
+	}
+	// If the new replica set is about to be created, we need to add replica annotations to it.
 	if !exists && SetReplicasAnnotations(newRS, deployment.Spec.Replicas, deployment.Spec.Replicas+MaxSurge(*deployment)) {
 		annotationChanged = true
 	}
@@ -123,6 +173,7 @@ func SetNewReplicaSetAnnotations(deployment *extensions.Deployment, newRS *exten
 var annotationsToSkip = map[string]bool{
 	annotations.LastAppliedConfigAnnotation: true,
 	RevisionAnnotation:                      true,
+	RevisionHistoryAnnotation:               true,
 	DesiredReplicasAnnotation:               true,
 	MaxReplicasAnnotation:                   true,
 	OverlapAnnotation:                       true,
@@ -368,11 +419,18 @@ func GetNewReplicaSet(deployment *extensions.Deployment, c clientset.Interface) 
 }
 
 // listReplicaSets lists all RSes the given deployment targets with the given client interface.
-func listReplicaSets(deployment *extensions.Deployment, c clientset.Interface) ([]extensions.ReplicaSet, error) {
+func listReplicaSets(deployment *extensions.Deployment, c clientset.Interface) ([]*extensions.ReplicaSet, error) {
 	return ListReplicaSets(deployment,
-		func(namespace string, options api.ListOptions) ([]extensions.ReplicaSet, error) {
+		func(namespace string, options api.ListOptions) ([]*extensions.ReplicaSet, error) {
 			rsList, err := c.Extensions().ReplicaSets(namespace).List(options)
-			return rsList.Items, err
+			if err != nil {
+				return nil, err
+			}
+			ret := []*extensions.ReplicaSet{}
+			for i := range rsList.Items {
+				ret = append(ret, &rsList.Items[i])
+			}
+			return ret, err
 		})
 }
 
@@ -385,11 +443,11 @@ func listPods(deployment *extensions.Deployment, c clientset.Interface) (*api.Po
 }
 
 // TODO: switch this to full namespacers
-type rsListFunc func(string, api.ListOptions) ([]extensions.ReplicaSet, error)
+type rsListFunc func(string, api.ListOptions) ([]*extensions.ReplicaSet, error)
 type podListFunc func(string, api.ListOptions) (*api.PodList, error)
 
 // ListReplicaSets returns a slice of RSes the given deployment targets.
-func ListReplicaSets(deployment *extensions.Deployment, getRSList rsListFunc) ([]extensions.ReplicaSet, error) {
+func ListReplicaSets(deployment *extensions.Deployment, getRSList rsListFunc) ([]*extensions.ReplicaSet, error) {
 	// TODO: Right now we list replica sets by their labels. We should list them by selector, i.e. the replica set's selector
 	//       should be a superset of the deployment's selector, see https://github.com/kubernetes/kubernetes/issues/19830;
 	//       or use controllerRef, see https://github.com/kubernetes/kubernetes/issues/2210
@@ -442,7 +500,7 @@ func equalIgnoreHash(template1, template2 api.PodTemplateSpec) (bool, error) {
 }
 
 // FindNewReplicaSet returns the new RS this given deployment targets (the one with the same pod template).
-func FindNewReplicaSet(deployment *extensions.Deployment, rsList []extensions.ReplicaSet) (*extensions.ReplicaSet, error) {
+func FindNewReplicaSet(deployment *extensions.Deployment, rsList []*extensions.ReplicaSet) (*extensions.ReplicaSet, error) {
 	newRSTemplate := GetNewReplicaSetTemplate(deployment)
 	for i := range rsList {
 		equal, err := equalIgnoreHash(rsList[i].Spec.Template, newRSTemplate)
@@ -451,7 +509,7 @@ func FindNewReplicaSet(deployment *extensions.Deployment, rsList []extensions.Re
 		}
 		if equal {
 			// This is the new ReplicaSet.
-			return &rsList[i], nil
+			return rsList[i], nil
 		}
 	}
 	// new ReplicaSet does not exist.
@@ -460,11 +518,11 @@ func FindNewReplicaSet(deployment *extensions.Deployment, rsList []extensions.Re
 
 // FindOldReplicaSets returns the old replica sets targeted by the given Deployment, with the given PodList and slice of RSes.
 // Note that the first set of old replica sets doesn't include the ones with no pods, and the second set of old replica sets include all old replica sets.
-func FindOldReplicaSets(deployment *extensions.Deployment, rsList []extensions.ReplicaSet, podList *api.PodList) ([]*extensions.ReplicaSet, []*extensions.ReplicaSet, error) {
+func FindOldReplicaSets(deployment *extensions.Deployment, rsList []*extensions.ReplicaSet, podList *api.PodList) ([]*extensions.ReplicaSet, []*extensions.ReplicaSet, error) {
 	// Find all pods whose labels match deployment.Spec.Selector, and corresponding replica sets for pods in podList.
 	// All pods and replica sets are labeled with pod-template-hash to prevent overlapping
-	oldRSs := map[string]extensions.ReplicaSet{}
-	allOldRSs := map[string]extensions.ReplicaSet{}
+	oldRSs := map[string]*extensions.ReplicaSet{}
+	allOldRSs := map[string]*extensions.ReplicaSet{}
 	newRSTemplate := GetNewReplicaSetTemplate(deployment)
 	for _, pod := range podList.Items {
 		podLabelsSelector := labels.Set(pod.ObjectMeta.Labels)
@@ -490,12 +548,12 @@ func FindOldReplicaSets(deployment *extensions.Deployment, rsList []extensions.R
 	requiredRSs := []*extensions.ReplicaSet{}
 	for key := range oldRSs {
 		value := oldRSs[key]
-		requiredRSs = append(requiredRSs, &value)
+		requiredRSs = append(requiredRSs, value)
 	}
 	allRSs := []*extensions.ReplicaSet{}
 	for key := range allOldRSs {
 		value := allOldRSs[key]
-		allRSs = append(allRSs, &value)
+		allRSs = append(allRSs, value)
 	}
 	return requiredRSs, allRSs, nil
 }
@@ -640,6 +698,8 @@ func countAvailablePods(pods []api.Pod, minReadySeconds int32) int32 {
 }
 
 // IsPodAvailable return true if the pod is available.
+// TODO: Remove this once we start using replica set status for calculating available pods
+// for a deployment.
 func IsPodAvailable(pod *api.Pod, minReadySeconds int32, now time.Time) bool {
 	if !controller.IsPodActive(pod) {
 		return false
@@ -683,15 +743,6 @@ func filterPodsMatchingReplicaSets(replicaSets []*extensions.ReplicaSet, podList
 		allRSPods = append(allRSPods, podutil.Filter(podList, matchingFunc)...)
 	}
 	return allRSPods, nil
-}
-
-// Revision returns the revision number of the input replica set
-func Revision(rs *extensions.ReplicaSet) (int64, error) {
-	v, ok := rs.Annotations[RevisionAnnotation]
-	if !ok {
-		return 0, nil
-	}
-	return strconv.ParseInt(v, 10, 64)
 }
 
 // IsRollingUpdate returns true if the strategy type is a rolling update.
@@ -824,12 +875,12 @@ func LastSelectorUpdate(d *extensions.Deployment) unversioned.Time {
 
 // BySelectorLastUpdateTime sorts a list of deployments by the last update time of their selector,
 // first using their creation timestamp and then their names as a tie breaker.
-type BySelectorLastUpdateTime []extensions.Deployment
+type BySelectorLastUpdateTime []*extensions.Deployment
 
 func (o BySelectorLastUpdateTime) Len() int      { return len(o) }
 func (o BySelectorLastUpdateTime) Swap(i, j int) { o[i], o[j] = o[j], o[i] }
 func (o BySelectorLastUpdateTime) Less(i, j int) bool {
-	ti, tj := LastSelectorUpdate(&o[i]), LastSelectorUpdate(&o[j])
+	ti, tj := LastSelectorUpdate(o[i]), LastSelectorUpdate(o[j])
 	if ti.Equal(tj) {
 		if o[i].CreationTimestamp.Equal(o[j].CreationTimestamp) {
 			return o[i].Name < o[j].Name

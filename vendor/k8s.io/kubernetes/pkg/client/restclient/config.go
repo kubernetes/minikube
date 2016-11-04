@@ -32,7 +32,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	clientcmdapi "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
 	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/util/crypto"
+	certutil "k8s.io/kubernetes/pkg/util/cert"
 	"k8s.io/kubernetes/pkg/util/flowcontrol"
 	"k8s.io/kubernetes/pkg/version"
 )
@@ -261,7 +261,7 @@ func InClusterConfig() (*Config, error) {
 	}
 	tlsClientConfig := TLSClientConfig{}
 	rootCAFile := "/var/run/secrets/kubernetes.io/serviceaccount/" + api.ServiceAccountRootCAKey
-	if _, err := crypto.CertPoolFromFile(rootCAFile); err != nil {
+	if _, err := certutil.NewPool(rootCAFile); err != nil {
 		glog.Errorf("Expected to load root CA config from %s, but got err: %v", rootCAFile, err)
 	} else {
 		tlsClientConfig.CAFile = rootCAFile
@@ -332,4 +332,26 @@ func AddUserAgent(config *Config, userAgent string) *Config {
 	fullUserAgent := DefaultKubernetesUserAgent() + "/" + userAgent
 	config.UserAgent = fullUserAgent
 	return config
+}
+
+// AnonymousClientConfig returns a copy of the given config with all user credentials (cert/key, bearer token, and username/password) removed
+func AnonymousClientConfig(config *Config) *Config {
+	// copy only known safe fields
+	return &Config{
+		Host:          config.Host,
+		APIPath:       config.APIPath,
+		Prefix:        config.Prefix,
+		ContentConfig: config.ContentConfig,
+		TLSClientConfig: TLSClientConfig{
+			CAFile: config.TLSClientConfig.CAFile,
+			CAData: config.TLSClientConfig.CAData,
+		},
+		RateLimiter:   config.RateLimiter,
+		Insecure:      config.Insecure,
+		UserAgent:     config.UserAgent,
+		Transport:     config.Transport,
+		WrapTransport: config.WrapTransport,
+		QPS:           config.QPS,
+		Burst:         config.Burst,
+	}
 }

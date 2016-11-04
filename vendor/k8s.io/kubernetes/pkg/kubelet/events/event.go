@@ -24,6 +24,7 @@ const (
 	FailedToStartContainer  = "Failed"
 	KillingContainer        = "Killing"
 	BackOffStartContainer   = "BackOff"
+	ExceededGracePeriod     = "ExceededGracePeriod"
 
 	// Image event reason list
 	PullingImage            = "Pulling"
@@ -54,6 +55,8 @@ const (
 	HostNetworkNotSupported = "HostNetworkNotSupported"
 	UndefinedShaper         = "NilShaper"
 	NodeRebooted            = "Rebooted"
+	ContainerGCFailed       = "ContainerGCFailed"
+	ImageGCFailed           = "ImageGCFailed"
 
 	// Image manager event reason list
 	InvalidDiskCapacity = "InvalidDiskCapacity"

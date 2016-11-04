@@ -17,14 +17,39 @@ limitations under the License.
 package kuberuntime
 
 import (
+	"fmt"
+	"sort"
+
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/network"
+	"k8s.io/kubernetes/pkg/kubelet/types"
+	"k8s.io/kubernetes/pkg/kubelet/util/format"
 )
 
+// createPodSandbox creates a pod sandbox and returns (podSandBoxID, message, error).
+func (m *kubeGenericRuntimeManager) createPodSandbox(pod *api.Pod, attempt uint32) (string, string, error) {
+	podSandboxConfig, err := m.generatePodSandboxConfig(pod, attempt)
+	if err != nil {
+		message := fmt.Sprintf("GeneratePodSandboxConfig for pod %q failed: %v", format.Pod(pod), err)
+		glog.Error(message)
+		return "", message, err
+	}
+
+	podSandBoxID, err := m.runtimeService.RunPodSandbox(podSandboxConfig)
+	if err != nil {
+		message := fmt.Sprintf("CreatePodSandbox for pod %q failed: %v", format.Pod(pod), err)
+		glog.Error(message)
+		return "", message, err
+	}
+
+	return podSandBoxID, "", nil
+}
+
 // generatePodSandboxConfig generates pod sandbox config from api.Pod.
-func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *api.Pod, podIP string, attempt uint32) (*runtimeApi.PodSandboxConfig, error) {
+func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *api.Pod, attempt uint32) (*runtimeApi.PodSandboxConfig, error) {
 	// TODO: deprecating podsandbox resource requirements in favor of the pod level cgroup
 	// Refer https://github.com/kubernetes/kubernetes/issues/29871
 	podUID := string(pod.UID)
@@ -44,9 +69,10 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *api.Pod, podIP
 		if err != nil {
 			return nil, err
 		}
-		podSandboxConfig.DnsOptions = &runtimeApi.DNSOption{
+		podSandboxConfig.DnsConfig = &runtimeApi.DNSConfig{
 			Servers:  dnsServers,
 			Searches: dnsSearches,
+			Options:  defaultDNSOptions,
 		}
 		// TODO: Add domain support in new runtime interface
 		hostname, _, err := m.runtimeHelper.GeneratePodHostNameAndDomain(pod)
@@ -59,7 +85,8 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *api.Pod, podIP
 	cgroupParent := ""
 	portMappings := []*runtimeApi.PortMapping{}
 	for _, c := range pod.Spec.Containers {
-		opts, err := m.runtimeHelper.GenerateRunContainerOptions(pod, &c, podIP)
+		// TODO: use a separate interface to only generate portmappings
+		opts, err := m.runtimeHelper.GenerateRunContainerOptions(pod, &c, "")
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +101,6 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *api.Pod, podIP
 				HostPort:      &hostPort,
 				ContainerPort: &containerPort,
 				Protocol:      &protocol,
-				Name:          &port.Name,
 			})
 		}
 
@@ -140,4 +166,56 @@ func (m *kubeGenericRuntimeManager) getKubeletSandboxes(all bool) ([]*runtimeApi
 	}
 
 	return result, nil
+}
+
+// determinePodSandboxIP determines the IP address of the given pod sandbox.
+// TODO: remove determinePodSandboxIP after networking is delegated to the container runtime.
+func (m *kubeGenericRuntimeManager) determinePodSandboxIP(podNamespace, podName string, podSandbox *runtimeApi.PodSandboxStatus) string {
+	ip := ""
+
+	if podSandbox.Network != nil {
+		ip = podSandbox.Network.GetIp()
+	}
+
+	if m.networkPlugin.Name() != network.DefaultPluginName {
+		// TODO: podInfraContainerID in GetPodNetworkStatus() interface should be renamed to sandboxID
+		netStatus, err := m.networkPlugin.GetPodNetworkStatus(podNamespace, podName, kubecontainer.ContainerID{
+			Type: m.runtimeName,
+			ID:   podSandbox.GetId(),
+		})
+		if err != nil {
+			glog.Errorf("NetworkPlugin %s failed on the status hook for pod '%s' - %v", m.networkPlugin.Name(), kubecontainer.BuildPodFullName(podName, podNamespace), err)
+		} else if netStatus != nil {
+			ip = netStatus.IP.String()
+		}
+	}
+
+	return ip
+}
+
+// getPodSandboxID gets the sandbox id by podUID and returns ([]sandboxID, error).
+// Param state could be nil in order to get all sandboxes belonging to same pod.
+func (m *kubeGenericRuntimeManager) getSandboxIDByPodUID(podUID string, state *runtimeApi.PodSandBoxState) ([]string, error) {
+	filter := &runtimeApi.PodSandboxFilter{
+		State:         state,
+		LabelSelector: map[string]string{types.KubernetesPodUIDLabel: podUID},
+	}
+	sandboxes, err := m.runtimeService.ListPodSandbox(filter)
+	if err != nil {
+		glog.Errorf("ListPodSandbox with pod UID %q failed: %v", podUID, err)
+		return nil, err
+	}
+
+	if len(sandboxes) == 0 {
+		return nil, nil
+	}
+
+	// Sort with newest first.
+	sandboxIDs := make([]string, len(sandboxes))
+	sort.Sort(podSandboxByCreated(sandboxes))
+	for i, s := range sandboxes {
+		sandboxIDs[i] = s.GetId()
+	}
+
+	return sandboxIDs, nil
 }

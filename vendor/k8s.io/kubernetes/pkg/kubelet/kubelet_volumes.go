@@ -40,6 +40,12 @@ func (kl *Kubelet) ListVolumesForPod(podUID types.UID) (map[string]volume.Volume
 	podVolumes := kl.volumeManager.GetMountedVolumesForPod(
 		volumetypes.UniquePodName(podUID))
 	for outerVolumeSpecName, volume := range podVolumes {
+		// TODO: volume.Mounter could be nil if volume object is recovered
+		// from reconciler's sync state process. PR 33616 will fix this problem
+		// to create Mounter object when recovering volume state.
+		if volume.Mounter == nil {
+			continue
+		}
 		volumesToReturn[outerVolumeSpecName] = volume.Mounter
 	}
 
@@ -143,7 +149,7 @@ func (kl *Kubelet) cleanupOrphanedPodDirs(
 		// If volumes have not been unmounted/detached, do not delete directory.
 		// Doing so may result in corruption of data.
 		if podVolumesExist := kl.podVolumesExist(uid); podVolumesExist {
-			glog.V(3).Infof("Orphaned pod %q found, but volumes are not cleaned up; err: %v", uid, err)
+			glog.V(3).Infof("Orphaned pod %q found, but volumes are not cleaned up", uid)
 			continue
 		}
 		// Check whether volume is still mounted on disk. If so, do not delete directory

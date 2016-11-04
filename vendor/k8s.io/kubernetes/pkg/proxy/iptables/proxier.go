@@ -74,8 +74,8 @@ const (
 	KubeMarkDropChain utiliptables.Chain = "KUBE-MARK-DROP"
 )
 
-// IptablesVersioner can query the current iptables version.
-type IptablesVersioner interface {
+// IPTablesVersioner can query the current iptables version.
+type IPTablesVersioner interface {
 	// returns "X.Y.Z"
 	GetVersion() (string, error)
 }
@@ -86,12 +86,12 @@ type KernelCompatTester interface {
 	IsCompatible() error
 }
 
-// CanUseIptablesProxier returns true if we should use the iptables Proxier
+// CanUseIPTablesProxier returns true if we should use the iptables Proxier
 // instead of the "classic" userspace Proxier.  This is determined by checking
 // the iptables version and for the existence of kernel features. It may return
 // an error if it fails to get the iptables version without error, in which
 // case it will also return false.
-func CanUseIptablesProxier(iptver IptablesVersioner, kcompat KernelCompatTester) (bool, error) {
+func CanUseIPTablesProxier(iptver IPTablesVersioner, kcompat KernelCompatTester) (bool, error) {
 	minVersion, err := semver.NewVersion(iptablesMinVersion)
 	if err != nil {
 		return false, err
@@ -127,7 +127,7 @@ func (lkct LinuxKernelCompatTester) IsCompatible() error {
 }
 
 const sysctlRouteLocalnet = "net/ipv4/conf/all/route_localnet"
-const sysctlBridgeCallIptables = "net/bridge/bridge-nf-call-iptables"
+const sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
 
 // internal struct for string service information
 type serviceInfo struct {
@@ -177,6 +177,7 @@ type Proxier struct {
 	clusterCIDR    string
 	hostname       string
 	nodeIP         net.IP
+	portMapper     portOpener
 }
 
 type localPort struct {
@@ -192,6 +193,20 @@ func (lp *localPort) String() string {
 
 type closeable interface {
 	Close() error
+}
+
+// portOpener is an interface around port opening/closing.
+// Abstracted out for testing.
+type portOpener interface {
+	OpenLocalPort(lp *localPort) (closeable, error)
+}
+
+// listenPortOpener opens ports by calling bind() and listen().
+type listenPortOpener struct{}
+
+// OpenLocalPort holds the given local port open.
+func (l *listenPortOpener) OpenLocalPort(lp *localPort) (closeable, error) {
+	return openLocalPort(lp)
 }
 
 // Proxier implements ProxyProvider
@@ -211,7 +226,7 @@ func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec ut
 	// Proxy needs br_netfilter and bridge-nf-call-iptables=1 when containers
 	// are connected to a Linux bridge (but not SDN bridges).  Until most
 	// plugins handle this, log when config is missing
-	if val, err := sysctl.GetSysctl(sysctlBridgeCallIptables); err == nil && val != 1 {
+	if val, err := sysctl.GetSysctl(sysctlBridgeCallIPTables); err == nil && val != 1 {
 		glog.Infof("missing br-netfilter module or unset sysctl br-nf-call-iptables; proxy may not work as intended")
 	}
 
@@ -241,6 +256,7 @@ func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec ut
 		clusterCIDR:    clusterCIDR,
 		hostname:       hostname,
 		nodeIP:         nodeIP,
+		portMapper:     &listenPortOpener{},
 	}, nil
 }
 
@@ -346,6 +362,10 @@ func (proxier *Proxier) sameConfig(info *serviceInfo, service *api.Service, port
 	if info.sessionAffinityType != service.Spec.SessionAffinity {
 		return false
 	}
+	onlyNodeLocalEndpoints := apiservice.NeedsHealthCheck(service) && featuregate.DefaultFeatureGate.ExternalTrafficLocalOnly()
+	if info.onlyNodeLocalEndpoints != onlyNodeLocalEndpoints {
+		return false
+	}
 	return true
 }
 
@@ -446,6 +466,9 @@ func (proxier *Proxier) OnServiceUpdate(allServices []api.Service) {
 					// Turn on healthcheck responder to listen on the health check nodePort
 					healthcheck.AddServiceListener(serviceName.NamespacedName, info.healthCheckNodePort)
 				}
+			} else {
+				// Delete healthcheck responders, if any, previously listening for this service
+				healthcheck.DeleteServiceListener(serviceName.NamespacedName, 0)
 			}
 			proxier.serviceMap[serviceName] = info
 
@@ -639,7 +662,7 @@ func flattenValidEndpoints(endpoints []hostPortInfo) []string {
 
 // portProtoHash takes the ServicePortName and protocol for a service
 // returns the associated 16 character hash. This is computed by hashing (sha256)
-// then encoding to base32 and truncating to 16 chars. We do this because Iptables
+// then encoding to base32 and truncating to 16 chars. We do this because IPTables
 // Chain Names must be <= 28 chars long, and the longer they are the harder they are to read.
 func portProtoHash(s proxy.ServicePortName, protocol string) string {
 	hash := sha256.Sum256([]byte(s.String() + protocol))
@@ -664,7 +687,7 @@ func serviceFirewallChainName(s proxy.ServicePortName, protocol string) utilipta
 // serviceLBPortChainName takes the ServicePortName for a service and
 // returns the associated iptables chain.  This is computed by hashing (sha256)
 // then encoding to base32 and truncating with the prefix "KUBE-XLB-".  We do
-// this because Iptables Chain Names must be <= 28 chars long, and the longer
+// this because IPTables Chain Names must be <= 28 chars long, and the longer
 // they are the harder they are to read.
 func serviceLBChainName(s proxy.ServicePortName, protocol string) utiliptables.Chain {
 	return utiliptables.Chain("KUBE-XLB-" + portProtoHash(s, protocol))
@@ -895,6 +918,9 @@ func (proxier *Proxier) syncProxyRules() {
 				writeLine(natChains, utiliptables.MakeChainLine(svcXlbChain))
 			}
 			activeNATChains[svcXlbChain] = true
+		} else if activeNATChains[svcXlbChain] {
+			// Cleanup the previously created XLB chain for this service
+			delete(activeNATChains, svcXlbChain)
 		}
 
 		// Capture the clusterIP.
@@ -931,7 +957,7 @@ func (proxier *Proxier) syncProxyRules() {
 					glog.V(4).Infof("Port %s was open before and is still needed", lp.String())
 					replacementPortsMap[lp] = proxier.portsMap[lp]
 				} else {
-					socket, err := openLocalPort(&lp)
+					socket, err := proxier.portMapper.OpenLocalPort(&lp)
 					if err != nil {
 						glog.Errorf("can't open %s, skipping this externalIP: %v", lp.String(), err)
 						continue
@@ -1046,7 +1072,7 @@ func (proxier *Proxier) syncProxyRules() {
 				glog.V(4).Infof("Port %s was open before and is still needed", lp.String())
 				replacementPortsMap[lp] = proxier.portsMap[lp]
 			} else {
-				socket, err := openLocalPort(&lp)
+				socket, err := proxier.portMapper.OpenLocalPort(&lp)
 				if err != nil {
 					glog.Errorf("can't open %s, skipping this nodePort: %v", lp.String(), err)
 					continue
@@ -1060,10 +1086,16 @@ func (proxier *Proxier) syncProxyRules() {
 				"-m", protocol, "-p", protocol,
 				"--dport", fmt.Sprintf("%d", svcInfo.nodePort),
 			}
-			// Nodeports need SNAT.
-			writeLine(natRules, append(args, "-j", string(KubeMarkMasqChain))...)
-			// Jump to the service chain.
-			writeLine(natRules, append(args, "-j", string(svcChain))...)
+			if !svcInfo.onlyNodeLocalEndpoints {
+				// Nodeports need SNAT, unless they're local.
+				writeLine(natRules, append(args, "-j", string(KubeMarkMasqChain))...)
+				// Jump to the service chain.
+				writeLine(natRules, append(args, "-j", string(svcChain))...)
+			} else {
+				// TODO: Make all nodePorts jump to the firewall chain.
+				// Currently we only create it for loadbalancers (#33586).
+				writeLine(natRules, append(args, "-j", string(svcXlbChain))...)
+			}
 		}
 
 		// If the service has no endpoints then reject packets.
@@ -1163,6 +1195,16 @@ func (proxier *Proxier) syncProxyRules() {
 				localEndpointChains = append(localEndpointChains, endpointChains[i])
 			}
 		}
+		// First rule in the chain redirects all pod -> external vip traffic to the
+		// Service's ClusterIP instead. This happens whether or not we have local
+		// endpoints.
+		args = []string{
+			"-A", string(svcXlbChain),
+			"-m", "comment", "--comment",
+			fmt.Sprintf(`"Redirect pods trying to reach external loadbalancer VIP to clusterIP"`),
+		}
+		writeLine(natRules, append(args, "-s", proxier.clusterCIDR, "-j", string(svcChain))...)
+
 		numLocalEndpoints := len(localEndpointChains)
 		if numLocalEndpoints == 0 {
 			// Blackhole all traffic since there are no local endpoints

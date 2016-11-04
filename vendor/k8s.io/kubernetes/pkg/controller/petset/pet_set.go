@@ -26,11 +26,13 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/apps"
 	"k8s.io/kubernetes/pkg/client/cache"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
 	"k8s.io/kubernetes/pkg/client/record"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
+
 	"k8s.io/kubernetes/pkg/controller"
-	"k8s.io/kubernetes/pkg/controller/framework"
 	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/kubernetes/pkg/util/errors"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/util/workqueue"
@@ -50,7 +52,7 @@ const (
 
 // PetSetController controls petsets.
 type PetSetController struct {
-	kubeClient *client.Client
+	kubeClient internalclientset.Interface
 
 	// newSyncer returns an interface capable of syncing a single pet.
 	// Abstracted out for testing.
@@ -62,12 +64,12 @@ type PetSetController struct {
 	// podStoreSynced returns true if the pod store has synced at least once.
 	podStoreSynced func() bool
 	// Watches changes to all pods.
-	podController framework.ControllerInterface
+	podController cache.ControllerInterface
 
 	// A store of PetSets, populated by the psController.
 	psStore cache.StoreToPetSetLister
 	// Watches changes to all PetSets.
-	psController *framework.Controller
+	psController *cache.Controller
 
 	// A store of the 1 unhealthy pet blocking progress for a given ps
 	blockingPetStore *unhealthyPetTracker
@@ -77,14 +79,14 @@ type PetSetController struct {
 
 	// syncHandler handles sync events for petsets.
 	// Abstracted as a func to allow injection for testing.
-	syncHandler func(psKey string) []error
+	syncHandler func(psKey string) error
 }
 
 // NewPetSetController creates a new petset controller.
-func NewPetSetController(podInformer framework.SharedIndexInformer, kubeClient *client.Client, resyncPeriod time.Duration) *PetSetController {
+func NewPetSetController(podInformer cache.SharedIndexInformer, kubeClient internalclientset.Interface, resyncPeriod time.Duration) *PetSetController {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
-	eventBroadcaster.StartRecordingToSink(kubeClient.Events(""))
+	eventBroadcaster.StartRecordingToSink(&unversionedcore.EventSinkImpl{Interface: kubeClient.Core().Events("")})
 	recorder := eventBroadcaster.NewRecorder(api.EventSource{Component: "petset"})
 	pc := &apiServerPetClient{kubeClient, recorder, &defaultPetHealthChecker{}}
 
@@ -97,7 +99,7 @@ func NewPetSetController(podInformer framework.SharedIndexInformer, kubeClient *
 		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "petset"),
 	}
 
-	podInformer.AddEventHandler(framework.ResourceEventHandlerFuncs{
+	podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		// lookup the petset and enqueue
 		AddFunc: psc.addPod,
 		// lookup current and old petset if labels changed
@@ -108,7 +110,7 @@ func NewPetSetController(podInformer framework.SharedIndexInformer, kubeClient *
 	psc.podStore.Indexer = podInformer.GetIndexer()
 	psc.podController = podInformer.GetController()
 
-	psc.psStore.Store, psc.psController = framework.NewInformer(
+	psc.psStore.Store, psc.psController = cache.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return psc.kubeClient.Apps().PetSets(api.NamespaceAll).List(options)
@@ -119,7 +121,7 @@ func NewPetSetController(podInformer framework.SharedIndexInformer, kubeClient *
 		},
 		&apps.PetSet{},
 		petSetResyncPeriod,
-		framework.ResourceEventHandlerFuncs{
+		cache.ResourceEventHandlerFuncs{
 			AddFunc: psc.enqueuePetSet,
 			UpdateFunc: func(old, cur interface{}) {
 				oldPS := old.(*apps.PetSet)
@@ -266,8 +268,8 @@ func (psc *PetSetController) worker() {
 				return
 			}
 			defer psc.queue.Done(key)
-			if errs := psc.syncHandler(key.(string)); len(errs) != 0 {
-				glog.Errorf("Error syncing PetSet %v, requeuing: %v", key.(string), errs)
+			if err := psc.syncHandler(key.(string)); err != nil {
+				glog.Errorf("Error syncing PetSet %v, requeuing: %v", key.(string), err)
 				psc.queue.AddRateLimited(key)
 			} else {
 				psc.queue.Forget(key)
@@ -277,7 +279,7 @@ func (psc *PetSetController) worker() {
 }
 
 // Sync syncs the given petset.
-func (psc *PetSetController) Sync(key string) []error {
+func (psc *PetSetController) Sync(key string) error {
 	startTime := time.Now()
 	defer func() {
 		glog.V(4).Infof("Finished syncing pet set %q (%v)", key, time.Now().Sub(startTime))
@@ -286,45 +288,45 @@ func (psc *PetSetController) Sync(key string) []error {
 	if !psc.podStoreSynced() {
 		// Sleep so we give the pod reflector goroutine a chance to run.
 		time.Sleep(PodStoreSyncedPollPeriod)
-		return []error{fmt.Errorf("waiting for pods controller to sync")}
+		return fmt.Errorf("waiting for pods controller to sync")
 	}
 
 	obj, exists, err := psc.psStore.Store.GetByKey(key)
 	if !exists {
 		if err = psc.blockingPetStore.store.Delete(key); err != nil {
-			return []error{err}
+			return err
 		}
 		glog.Infof("PetSet has been deleted %v", key)
-		return []error{}
+		return nil
 	}
 	if err != nil {
 		glog.Errorf("Unable to retrieve PetSet %v from store: %v", key, err)
-		return []error{err}
+		return err
 	}
 
 	ps := *obj.(*apps.PetSet)
 	petList, err := psc.getPodsForPetSet(&ps)
 	if err != nil {
-		return []error{err}
+		return err
 	}
 
-	numPets, errs := psc.syncPetSet(&ps, petList)
-	if err := updatePetCount(psc.kubeClient, ps, numPets); err != nil {
-		glog.Infof("Failed to update replica count for petset %v/%v; requeuing; error: %v", ps.Namespace, ps.Name, err)
-		errs = append(errs, err)
+	numPets, syncErr := psc.syncPetSet(&ps, petList)
+	if updateErr := updatePetCount(psc.kubeClient.Apps(), ps, numPets); updateErr != nil {
+		glog.Infof("Failed to update replica count for petset %v/%v; requeuing; error: %v", ps.Namespace, ps.Name, updateErr)
+		return errors.NewAggregate([]error{syncErr, updateErr})
 	}
 
-	return errs
+	return syncErr
 }
 
 // syncPetSet syncs a tuple of (petset, pets).
-func (psc *PetSetController) syncPetSet(ps *apps.PetSet, pets []*api.Pod) (int, []error) {
+func (psc *PetSetController) syncPetSet(ps *apps.PetSet, pets []*api.Pod) (int, error) {
 	glog.Infof("Syncing PetSet %v/%v with %d pets", ps.Namespace, ps.Name, len(pets))
 
 	it := NewPetSetIterator(ps, pets)
 	blockingPet, err := psc.blockingPetStore.Get(ps, pets)
 	if err != nil {
-		return 0, []error{err}
+		return 0, err
 	}
 	if blockingPet != nil {
 		glog.Infof("PetSet %v blocked from scaling on pet %v", ps.Name, blockingPet.pod.Name)
@@ -346,7 +348,14 @@ func (psc *PetSetController) syncPetSet(ps *apps.PetSet, pets []*api.Pod) (int, 
 		case deletePet:
 			err = petManager.Delete(pet)
 		}
-		if err != nil {
+		switch err.(type) {
+		case errUnhealthyPet:
+			// We are not passing this error up, but we don't increment numPets if we encounter it,
+			// since numPets directly translates to petset.status.replicas
+			continue
+		case nil:
+			continue
+		default:
 			it.errs = append(it.errs, err)
 		}
 	}
@@ -357,5 +366,5 @@ func (psc *PetSetController) syncPetSet(ps *apps.PetSet, pets []*api.Pod) (int, 
 	// TODO: GC pvcs. We can't delete them per pet because of grace period, and
 	// in fact we *don't want to* till petset is stable to guarantee that bugs
 	// in the controller don't corrupt user data.
-	return numPets, it.errs
+	return numPets, errors.NewAggregate(it.errs)
 }

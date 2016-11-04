@@ -62,6 +62,8 @@ type managerImpl struct {
 	resourceToRankFunc map[api.ResourceName]rankFunc
 	// resourceToNodeReclaimFuncs maps a resource to an ordered list of functions that know how to reclaim that resource.
 	resourceToNodeReclaimFuncs map[api.ResourceName]nodeReclaimFuncs
+	// last observations from synchronize
+	lastObservations signalObservations
 }
 
 // ensure it implements the required interface
@@ -98,12 +100,8 @@ func (m *managerImpl) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAd
 		return lifecycle.PodAdmitResult{Admit: true}
 	}
 
-	// Check the node conditions to identify the resource under pressure.
-	// The resource can only be either disk or memory; set the default to disk.
-	resource := api.ResourceStorage
+	// the node has memory pressure, admit if not best-effort
 	if hasNodeCondition(m.nodeConditions, api.NodeMemoryPressure) {
-		resource = api.ResourceMemory
-		// the node has memory pressure, admit if not best-effort
 		notBestEffort := qos.BestEffort != qos.GetPodQOS(attrs.Pod)
 		if notBestEffort {
 			return lifecycle.PodAdmitResult{Admit: true}
@@ -111,11 +109,11 @@ func (m *managerImpl) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAd
 	}
 
 	// reject pods when under memory pressure (if pod is best effort), or if under disk pressure.
-	glog.Warningf("Failed to admit pod %q - node has conditions: %v", format.Pod(attrs.Pod), m.nodeConditions)
+	glog.Warningf("Failed to admit pod %v - %s", format.Pod(attrs.Pod), "node has conditions: %v", m.nodeConditions)
 	return lifecycle.PodAdmitResult{
 		Admit:   false,
 		Reason:  reason,
-		Message: getMessage(resource),
+		Message: message,
 	}
 }
 
@@ -138,6 +136,13 @@ func (m *managerImpl) IsUnderDiskPressure() bool {
 	m.RLock()
 	defer m.RUnlock()
 	return hasNodeCondition(m.nodeConditions, api.NodeDiskPressure)
+}
+
+// IsUnderDiskPressure returns true if the node is under disk pressure.
+func (m *managerImpl) IsUnderInodePressure() bool {
+	m.RLock()
+	defer m.RUnlock()
+	return hasNodeCondition(m.nodeConditions, api.NodeInodePressure)
 }
 
 // synchronize is the main control loop that enforces eviction thresholds.
@@ -179,6 +184,9 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 		thresholds = mergeThresholds(thresholds, thresholdsNotYetResolved)
 	}
 
+	// determine the set of thresholds whose stats have been updated since the last sync
+	thresholds = thresholdsUpdatedStats(thresholds, observations, m.lastObservations)
+
 	// track when a threshold was first observed
 	thresholdsFirstObservedAt := thresholdsFirstObservedAt(thresholds, m.thresholdsFirstObservedAt, now)
 
@@ -200,6 +208,7 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 	m.thresholdsFirstObservedAt = thresholdsFirstObservedAt
 	m.nodeConditionsLastObservedAt = nodeConditionsLastObservedAt
 	m.thresholdsMet = thresholds
+	m.lastObservations = observations
 	m.Unlock()
 
 	// determine the set of resources under starvation
@@ -248,7 +257,6 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 	glog.Infof("eviction manager: pods ranked for eviction: %s", format.Pods(activePods))
 
 	// we kill at most a single pod during each eviction interval
-	message := getMessage(resourceToReclaim)
 	for i := range activePods {
 		pod := activePods[i]
 		status := api.PodStatus{

@@ -309,6 +309,8 @@ func Convert_v1_ReplicationControllerStatus_to_extensions_ReplicaSetStatus(in *R
 	}
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ReadyReplicas = in.ReadyReplicas
+	out.AvailableReplicas = in.AvailableReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
@@ -345,6 +347,7 @@ func Convert_extensions_ReplicaSetSpec_to_v1_ReplicationControllerSpec(in *exten
 	}
 	out.Replicas = new(int32)
 	*out.Replicas = in.Replicas
+	out.MinReadySeconds = in.MinReadySeconds
 	var invalidErr error
 	if in.Selector != nil {
 		invalidErr = api.Convert_unversioned_LabelSelector_to_map(in.Selector, &out.Selector, s)
@@ -362,12 +365,15 @@ func Convert_extensions_ReplicaSetStatus_to_v1_ReplicationControllerStatus(in *e
 	}
 	out.Replicas = in.Replicas
 	out.FullyLabeledReplicas = in.FullyLabeledReplicas
+	out.ReadyReplicas = in.ReadyReplicas
+	out.AvailableReplicas = in.AvailableReplicas
 	out.ObservedGeneration = in.ObservedGeneration
 	return nil
 }
 
 func Convert_api_ReplicationControllerSpec_To_v1_ReplicationControllerSpec(in *api.ReplicationControllerSpec, out *ReplicationControllerSpec, s conversion.Scope) error {
 	out.Replicas = &in.Replicas
+	out.MinReadySeconds = in.MinReadySeconds
 	out.Selector = in.Selector
 	if in.Template != nil {
 		out.Template = new(PodTemplateSpec)
@@ -382,6 +388,7 @@ func Convert_api_ReplicationControllerSpec_To_v1_ReplicationControllerSpec(in *a
 
 func Convert_v1_ReplicationControllerSpec_To_api_ReplicationControllerSpec(in *ReplicationControllerSpec, out *api.ReplicationControllerSpec, s conversion.Scope) error {
 	out.Replicas = *in.Replicas
+	out.MinReadySeconds = in.MinReadySeconds
 	out.Selector = in.Selector
 	if in.Template != nil {
 		out.Template = new(api.PodTemplateSpec)
@@ -414,14 +421,22 @@ func Convert_api_PodStatusResult_To_v1_PodStatusResult(in *api.PodStatusResult, 
 			return err
 		}
 		out.Annotations[PodInitContainerStatusesAnnotationKey] = string(value)
+		out.Annotations[PodInitContainerStatusesBetaAnnotationKey] = string(value)
 	} else {
 		delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+		delete(out.Annotations, PodInitContainerStatusesBetaAnnotationKey)
 	}
 	return nil
 }
 
 func Convert_v1_PodStatusResult_To_api_PodStatusResult(in *PodStatusResult, out *api.PodStatusResult, s conversion.Scope) error {
 	// TODO: sometime after we move init container to stable, remove these conversions
+	// If there is a beta annotation, copy to alpha key.
+	// See commit log for PR #31026 for why we do this.
+	if valueBeta, okBeta := in.Annotations[PodInitContainerStatusesBetaAnnotationKey]; okBeta {
+		in.Annotations[PodInitContainerStatusesAnnotationKey] = valueBeta
+	}
+	// Move the annotation to the internal repr. field
 	if value, ok := in.Annotations[PodInitContainerStatusesAnnotationKey]; ok {
 		var values []ContainerStatus
 		if err := json.Unmarshal([]byte(value), &values); err != nil {
@@ -446,6 +461,7 @@ func Convert_v1_PodStatusResult_To_api_PodStatusResult(in *PodStatusResult, out 
 			out.Annotations[k] = v
 		}
 		delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+		delete(out.Annotations, PodInitContainerStatusesBetaAnnotationKey)
 	}
 	return nil
 }
@@ -575,6 +591,7 @@ func Convert_api_Pod_To_v1_Pod(in *api.Pod, out *Pod, s conversion.Scope) error 
 		delete(out.Annotations, PodInitContainersAnnotationKey)
 		delete(out.Annotations, PodInitContainersBetaAnnotationKey)
 		delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+		delete(out.Annotations, PodInitContainerStatusesBetaAnnotationKey)
 	}
 	if len(out.Spec.InitContainers) > 0 {
 		value, err := json.Marshal(out.Spec.InitContainers)
@@ -590,6 +607,7 @@ func Convert_api_Pod_To_v1_Pod(in *api.Pod, out *Pod, s conversion.Scope) error 
 			return err
 		}
 		out.Annotations[PodInitContainerStatusesAnnotationKey] = string(value)
+		out.Annotations[PodInitContainerStatusesBetaAnnotationKey] = string(value)
 	}
 
 	// We need to reset certain fields for mirror pods from pre-v1.1 kubelet
@@ -627,6 +645,11 @@ func Convert_v1_Pod_To_api_Pod(in *Pod, out *api.Pod, s conversion.Scope) error 
 		// back to the caller.
 		in.Spec.InitContainers = values
 	}
+	// If there is a beta annotation, copy to alpha key.
+	// See commit log for PR #31026 for why we do this.
+	if valueBeta, okBeta := in.Annotations[PodInitContainerStatusesBetaAnnotationKey]; okBeta {
+		in.Annotations[PodInitContainerStatusesAnnotationKey] = valueBeta
+	}
 	if value, ok := in.Annotations[PodInitContainerStatusesAnnotationKey]; ok {
 		var values []ContainerStatus
 		if err := json.Unmarshal([]byte(value), &values); err != nil {
@@ -653,6 +676,7 @@ func Convert_v1_Pod_To_api_Pod(in *Pod, out *api.Pod, s conversion.Scope) error 
 		delete(out.Annotations, PodInitContainersAnnotationKey)
 		delete(out.Annotations, PodInitContainersBetaAnnotationKey)
 		delete(out.Annotations, PodInitContainerStatusesAnnotationKey)
+		delete(out.Annotations, PodInitContainerStatusesBetaAnnotationKey)
 	}
 	return nil
 }

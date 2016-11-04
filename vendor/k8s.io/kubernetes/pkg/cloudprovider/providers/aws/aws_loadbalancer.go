@@ -218,7 +218,7 @@ func (c *Cloud) ensureLoadBalancer(namespacedName types.NamespacedName, loadBala
 
 				// NOTE The documentation for the AWS API indicates we could get an HTTP 400
 				// back if a policy of the same name already exists. However, the aws-sdk does not
-				// seem to return an error to us in these cases. Therefore this will issue an API
+				// seem to return an error to us in these cases. Therefore, this will issue an API
 				// request every time.
 				err := c.createProxyProtocolPolicy(loadBalancerName)
 				if err != nil {
@@ -293,6 +293,8 @@ func (c *Cloud) ensureLoadBalancer(namespacedName types.NamespacedName, loadBala
 
 		// Update attributes if they're dirty
 		if !reflect.DeepEqual(loadBalancerAttributes, foundAttributes) {
+			glog.V(2).Info("Updating load-balancer attributes for %q", loadBalancerName)
+
 			modifyAttributesRequest := &elb.ModifyLoadBalancerAttributesInput{}
 			modifyAttributesRequest.LoadBalancerName = aws.String(loadBalancerName)
 			modifyAttributesRequest.LoadBalancerAttributes = loadBalancerAttributes
