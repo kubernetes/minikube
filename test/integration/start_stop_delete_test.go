@@ -22,6 +22,7 @@ import (
 	"net"
 	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/test/integration/util"
 )
@@ -43,6 +44,10 @@ func TestStartStop(t *testing.T) {
 	if net.ParseIP(ip) == nil {
 		t.Fatalf("IP command returned an invalid address: %s", ip)
 	}
+
+	// TODO:r2d4 The KVM driver can't handle
+	// starting and stopping immediately
+	time.Sleep(30 * time.Second)
 
 	runner.RunCommand("stop", true)
 	runner.CheckStatus("Stopped")
