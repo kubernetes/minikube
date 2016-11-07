@@ -107,6 +107,15 @@ These are downstream packages that are being maintained by others and how to upg
 #### [How to Generate an Appcast Checkpoint for Homebrew](https://github.com/caskroom/homebrew-cask/blob/master/doc/cask_language_reference/stanzas/appcast.md)
 `curl --compressed --location --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36' "https://github.com/kubernetes/minikube/releases.atom" | sed 's|<pubDate>[^<]*</pubDate>||g' | shasum --algorithm 256`
 
+#### Updating the arch linux package
+The Arch Linux AUR is maintained at https://aur.archlinux.org/packages/minikube/.  The installer PKGBUILD is hosted in its own repository.  The public read-only repository is hosted here `https://aur.archlinux.org/minikube.git` and the private read-write repository is hosted here `ssh://aur@aur.archlinux.org/minikube.git`
+
+The repository is tracked in this repo under a submodule `installers/linux/arch_linux`.  Currently, its configured to point at the public readonly repository so if you want to push you should run this command to overwrite
+
+`git config submodule.archlinux.url ssh://aur@aur.archlinux.org/minikube.git `
+
+To actually update the package, you should bump the version and update the sha512 checksum.  You should also run `makepkg --printsrcinfo > .SRCINFO` to update the srcinfo file.  You can edit this manually if you don't have `makepkg` on your machine.
+
 ## Release Verification
 
 After you've finished the release, run this command from the release commit to verify the release was done correctly:
