@@ -63,10 +63,11 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
 		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
 %s%s
-To disable this notification, add WantUpdateNotification: False to the json config file at %s
-(you may have to create the file config.json in this folder if you have no previous configuration)
+
+To disable this notification, run the following:
+minikube config set WantUpdateNotification false
 `,
-			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion, constants.MakeMiniPath("config"))
+			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion)
 	}
 }
 
