@@ -11,8 +11,14 @@ Here is a rough set of steps that usually works to add a new dependency.
   export GOPATH=$HOME/newgopath
   cd $HOME/newgopath/src/k8s.io
   git clone https://github.com/kubernetes/minikube.git
+  cd minikube
   ```
-
+  
+1. Install the package versions specified in Godeps/Godeps.json
+  ```shell
+  godep restore ./...
+  ```
+  
 1. `go get` your new dependency.
   ```shell
   go get mynewdepenency
