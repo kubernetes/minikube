@@ -12,37 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# $ErrorActionPreference = "Stop"
 mkdir -p out
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/* out/
-# chmod +x out/e2e-windows-amd64.exe
-# chmod +x out/minikube-windows-amd64.exe
 cp -r out/testdata ./
 
 
 ./out/minikube-windows-amd64.exe delete # || true
 
-# Allow this to fail, we'll switch on the return code below.
-# set +e
 out/e2e-windows-amd64.exe --% -minikube-args="--vm-driver=hyperv --cpus=4 $env:EXTRA_BUILD_ARGS" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
-result=$?
-# set -e
 
-# If the last exit code was non-zero, return w/ error
-If (-Not $?) {exit $?}
+$env:result=$lastexitcode
+# If the last exit code was 0->success, x>0->error
+If($env:result -eq 0){$env:status="success"}
+Else {$env:status="failure"}
 
-# if [[ $result -eq 0 ]]; then
-#   status="success"
-# else
-#  status="failure"
-# fi
+$env:target_url="https://storage.googleapis.com/minikube-builds/logs/$env:MINIKUBE_LOCATION/Windows-hyperv.txt"
+$json = "{`"state`": `"$env:status`", `"description`": `"Jenkins`", `"target_url`": `"$env:target_url`", `"context`": `"Windows-hyperv`"}"
+Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
-# set +x
-# target_url="https://storage.googleapis.com/minikube-builds/logs/$env:MINIKUBE_LOCATION/OSX-hyperv.txt"
-# curl "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT?access_token=$access_token" \
-#  -H "Content-Type: application/json" \
-#  -X POST \
-#  -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"OSX-hyperv\"}"
-# set -x
-
-# exit $result
+Exit $env:result
