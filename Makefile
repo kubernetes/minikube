@@ -19,6 +19,7 @@ VERSION_BUILD ?= 2
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
+BUILDROOT_BRANCH ?= 2016.08
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -78,14 +79,12 @@ iso:
 	cd deploy/iso/boot2docker && ./build.sh
 
 minikube-iso:
-	[ ! -e $(BUILD_DIR)/buildroot ] && \
-		mkdir -p $(BUILD_DIR) && \
-		git clone https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot && \
-		cd $(BUILD_DIR)/buildroot && \
-		git checkout 2016.08 && \
-		make BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig && \
-		cd ../..
-	cd $(BUILD_DIR)/buildroot && make
+	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
+		mkdir -p $(BUILD_DIR); \
+		git clone --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+	fi;
+	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
+	$(MAKE) -C $(BUILD_DIR)/buildroot
 
 .PHONY: integration
 integration: out/minikube
