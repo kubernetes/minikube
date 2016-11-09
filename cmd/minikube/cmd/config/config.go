@@ -109,6 +109,10 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
+		name: config.WantKubectlDownloadMsg,
+		set:  SetBool,
+	},
+	{
 		name:        "dashboard",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},

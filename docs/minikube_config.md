@@ -21,6 +21,7 @@ Configurable fields:
  * ReminderWaitPeriodInHours
  * WantReportError
  * WantReportErrorPrompt
+ * WantKubectlDownloadMsg
  * dashboard
  * addon-manager
  * kube-dns
