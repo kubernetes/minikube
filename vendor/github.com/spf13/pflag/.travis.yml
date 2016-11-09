@@ -3,10 +3,13 @@ sudo: false
 language: go
 
 go:
-        - 1.5.4
         - 1.6.3
+        - 1.7.3
         - tip
 
+matrix:
+        allow_failures:
+                  - go: tip
 install:
         - go get github.com/golang/lint/golint
         - export PATH=$GOPATH/bin:$PATH
