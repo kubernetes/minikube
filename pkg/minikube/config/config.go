@@ -31,6 +31,7 @@ const (
 	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
 	WantReportError           = "WantReportError"
 	WantReportErrorPrompt     = "WantReportErrorPrompt"
+	WantKubectlDownloadMsg    = "WantKubectlDownloadMsg"
 )
 
 type configFile interface {

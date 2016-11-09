@@ -24,6 +24,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -163,5 +165,35 @@ func PromptUserForAccept(r io.Reader) bool {
 		}
 	case <-time.After(30 * time.Second):
 		return false
+	}
+}
+
+func MaybePrintKubectlDownloadMsg() {
+	if !viper.GetBool(config.WantKubectlDownloadMsg) {
+		return
+	}
+	verb := "run"
+	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/"
+	if runtime.GOOS == "windows" {
+		verb = "do"
+		installInstructions = `download kubectl from:
+https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl
+Add kubectl to your system PATH`
+	}
+
+	_, err := exec.LookPath("kubectl")
+	if err != nil {
+		fmt.Fprintf(os.Stderr,
+			`========================================
+kubectl could not be found on your path.  kubectl is a requirement for using minikube
+To install kubectl, please %s the following:
+
+%s
+
+To disable this message, run the following:
+
+minikube config set WantKubectlDownloadMsg false
+========================================\n`,
+			verb, installInstructions, constants.DefaultKubernetesVersion, runtime.GOOS, runtime.GOARCH)
 	}
 }
