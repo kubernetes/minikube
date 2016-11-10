@@ -21,6 +21,7 @@ metadata:
     app: kubernetes-dashboard
     version: v1.4.2
     kubernetes.io/cluster-service: "true"
+    kubernetes.io/minikube-addons: dashboard
 spec:
   replicas: 1
   selector:
