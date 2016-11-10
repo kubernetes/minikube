@@ -75,8 +75,7 @@ func TestDashboard(t *testing.T) {
 		BinaryPath: *binaryPath,
 		Args:       *args,
 		T:          t}
-	minikubeRunner.Start()
-	minikubeRunner.CheckStatus("Running")
+	minikubeRunner.EnsureRunning()
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	checkDashboard := func() error {
