@@ -21,6 +21,8 @@ metadata:
   labels:
     app: kubernetes-dashboard
     kubernetes.io/cluster-service: "true"
+    kubernetes.io/minikube-addons: dashboard
+    kubernetes.io/minikube-addons-endpoint: dashboard
 spec:
   type: NodePort
   ports:

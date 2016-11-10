@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  labels:
+    kubernetes.io/cluster-service: 'true'
+    k8s-app: heapster
+    name: heapster
+    kubernetes.io/minikube-addons: heapster
+  name: heapster
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    kubernetes.io/cluster-service: "true"
+    k8s-app: heapster
+  template:
+    metadata:
+      labels:
+        kubernetes.io/cluster-service: 'true'
+        k8s-app: heapster
+    spec:
+      containers:
+      - name: heapster
+        image: gcr.io/google_containers/heapster:v1.2.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - /heapster
+        - --source=kubernetes
+        - --sink=influxdb:http://monitoring-influxdb:8086
+        - --metric_resolution=60s
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+      volumes:
+      - name: ssl-certs
+        hostPath:
+          path: /etc/ssl/certs

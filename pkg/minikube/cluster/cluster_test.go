@@ -34,6 +34,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/kubernetes/pkg/client/restclient"
+	"k8s.io/kubernetes/pkg/watch"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -777,5 +779,99 @@ func TestUpdateCustomAddons(t *testing.T) {
 
 	if !bytes.Contains(transferred, testContent2) {
 		t.Fatalf("Custom addon not copied. Expected transfers to contain custom addon with content: %s. It was: %s", testContent2, transferred)
+	}
+}
+
+func TestCheckEndpointReady(t *testing.T) {
+	endpointNoSubsets := &api.Endpoints{}
+	if err := checkEndpointReady(endpointNoSubsets); err == nil {
+		t.Fatalf("Endpoint had no subsets but checkEndpointReady did not return an error")
+	}
+
+	endpointNotReady := &api.Endpoints{
+		Subsets: []api.EndpointSubset{
+			{Addresses: []api.EndpointAddress{},
+				NotReadyAddresses: []api.EndpointAddress{
+					{IP: "1.1.1.1"},
+					{IP: "2.2.2.2"},
+					{IP: "3.3.3.3"},
+				}}}}
+	if err := checkEndpointReady(endpointNotReady); err == nil {
+		t.Fatalf("Endpoint had no Addresses but checkEndpointReady did not return an error")
+	}
+
+	endpointReady := &api.Endpoints{
+		Subsets: []api.EndpointSubset{
+			{Addresses: []api.EndpointAddress{
+				{IP: "1.1.1.1"},
+				{IP: "2.2.2.2"},
+			},
+				NotReadyAddresses: []api.EndpointAddress{},
+			}},
+	}
+	if err := checkEndpointReady(endpointReady); err != nil {
+		t.Fatalf("Endpoint was ready with at least one Address, but checkEndpointReady returned an error")
+	}
+}
+
+type ServiceInterfaceMock struct {
+	ServiceList *api.ServiceList
+}
+
+func (s ServiceInterfaceMock) List(opts api.ListOptions) (*api.ServiceList, error) {
+	serviceList := &api.ServiceList{
+		Items: []api.Service{},
+	}
+	keyValArr := strings.Split(opts.LabelSelector.String(), "=")
+	for _, service := range s.ServiceList.Items {
+		if service.Spec.Selector[keyValArr[0]] == keyValArr[1] {
+			serviceList.Items = append(serviceList.Items, service)
+		}
+	}
+	return serviceList, nil
+}
+func (s ServiceInterfaceMock) Get(name string) (*api.Service, error) {
+	return nil, nil
+}
+func (s ServiceInterfaceMock) Create(*api.Service) (*api.Service, error) {
+	return nil, nil
+}
+func (s ServiceInterfaceMock) Update(*api.Service) (*api.Service, error) {
+	return nil, nil
+}
+func (s ServiceInterfaceMock) UpdateStatus(*api.Service) (*api.Service, error) {
+	return nil, nil
+}
+func (s ServiceInterfaceMock) Delete(name string) error {
+	return nil
+}
+func (s ServiceInterfaceMock) Watch(opts api.ListOptions) (watch.Interface, error) {
+	return nil, nil
+}
+func (s ServiceInterfaceMock) ProxyGet(scheme, name, port, path string, params map[string]string) restclient.ResponseWrapper {
+	return nil
+}
+
+func TestGetServiceListFromServicesByLabel(t *testing.T) {
+	serviceList := &api.ServiceList{
+		Items: []api.Service{
+			{
+				Spec: api.ServiceSpec{
+					Selector: map[string]string{
+						"foo": "bar",
+					},
+				},
+			},
+		},
+	}
+	serviceIface := ServiceInterfaceMock{
+		ServiceList: serviceList,
+	}
+	if _, err := getServiceListFromServicesByLabel(serviceIface, "shouldError", "shouldError"); err == nil {
+		t.Fatalf("Service had no label match but getServiceListFromServicesByLabel did not return an error")
+	}
+
+	if _, err := getServiceListFromServicesByLabel(serviceIface, "foo", "bar"); err != nil {
+		t.Fatalf("Endpoint was ready with at least one Address, but getServiceListFromServicesByLabel returned an error")
 	}
 }

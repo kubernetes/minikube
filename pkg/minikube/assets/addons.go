@@ -86,6 +86,33 @@ var Addons = map[string]*Addon{
 			"kube-dns-svc.yaml",
 			"0640"),
 	}, true, "kube-dns"),
+	"heapster": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/influxGrafana-rc.yaml",
+			constants.AddonsPath,
+			"influxGrafana-rc.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/grafana-svc.yaml",
+			constants.AddonsPath,
+			"grafana-svc.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/influxdb-svc.yaml",
+			constants.AddonsPath,
+			"influxdb-svc.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/heapster-rc.yaml",
+			constants.AddonsPath,
+			"heapster-rc.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/heapster-svc.yaml",
+			constants.AddonsPath,
+			"heapster-svc.yaml",
+			"0640"),
+	}, false, "heapster"),
 }
 
 func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
