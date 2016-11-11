@@ -36,18 +36,6 @@ $ make minikube-iso
 
 The bootable ISO image will be available in `out/buildroot/output/images/rootfs.iso9660`.
 
-### Testing local minikube changes
-
-To test a local build of minikube, include a `kubernetes-version` flag with a path to the `localkube` output from your source build directory:
-
-```
-$ cd minikube
-$ ./out/minikube start \
-    --container-runtime=rkt \
-    --network-plugin=cni \
-    --iso-url=http://storage.googleapis.com/minikube/iso/buildroot/minikube-v0.0.6.iso
-```
-
 ### Testing local minikube-iso changes
 
 ```
