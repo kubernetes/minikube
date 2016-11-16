@@ -29,7 +29,6 @@ chmod +x out/e2e-darwin-amd64
 chmod +x out/minikube-darwin-amd64
 cp -r out/testdata ./
 
-
 ./out/minikube-darwin-amd64 delete || true
 rm -rf $HOME/.minikube || true
 
