@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"path"
 	"text/template"
+	"time"
 
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
@@ -29,6 +30,7 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/pkgaction"
 	"github.com/docker/machine/libmachine/swarm"
+	"k8s.io/minikube/pkg/util"
 )
 
 type BuildrootProvisioner struct {
@@ -130,7 +132,17 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	log.Debugf("set auth options %+v", p.AuthOptions)
 
 	log.Debugf("setting up certificates")
-	if err := provision.ConfigureAuth(p); err != nil {
+
+	configureAuth := func() error {
+		if err := provision.ConfigureAuth(p); err != nil {
+			return &util.RetriableError{Err: err}
+		}
+		return nil
+	}
+
+	err := util.RetryAfter(5, configureAuth, time.Second*10)
+	if err != nil {
+		log.Debugf("Error configuring auth during provisioning %v", err)
 		return err
 	}
 

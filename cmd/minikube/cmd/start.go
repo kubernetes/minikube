@@ -21,6 +21,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	units "github.com/docker/go-units"
 	"github.com/docker/machine/libmachine"
@@ -89,11 +90,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)
 		if err != nil {
-			glog.Errorf("Error starting host: %s. Retrying.\n", err)
+			glog.Errorf("Error starting host: %s.\n\n Retrying.\n", err)
 		}
 		return err
 	}
-	err := util.Retry(3, start)
+	err := util.RetryAfter(5, start, 2*time.Second)
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
