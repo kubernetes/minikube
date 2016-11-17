@@ -13,11 +13,11 @@
 # limitations under the License.
 
 mkdir -p out
-gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/* out/
-cp -r out/testdata ./
+gsutil.cmd cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-windows-amd64.exe out/
+gsutil.cmd cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-windows-amd64.exe out/
+gsutil.cmd cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/testdata .
 
-
-./out/minikube-windows-amd64.exe delete # || true
+./out/minikube-windows-amd64.exe delete
 
 out/e2e-windows-amd64.exe --% -minikube-args="--vm-driver=hyperv --cpus=4 $env:EXTRA_BUILD_ARGS" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
 
