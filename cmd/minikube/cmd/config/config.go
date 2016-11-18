@@ -25,13 +25,21 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 type configFile interface {
 	io.ReadWriter
 }
+
+const (
+	kubernetesVersion = "kubernetes-version"
+	containerRuntime  = "container-runtime"
+	networkPlugin     = "network-plugin"
+)
 
 type setFn func(string, string) error
 
@@ -162,6 +170,16 @@ func WriteConfig(m config.MinikubeConfig) error {
 		return fmt.Errorf("Error encoding config %s: %s", constants.ConfigFile, err)
 	}
 	return nil
+}
+
+// Writes the kubernetes config parameters in `minikube start`
+// to the config file
+func SaveKubernetesConfig(k cluster.KubernetesConfig) error {
+	m := util.MultiError{}
+	m.Collect(Set(kubernetesVersion, k.KubernetesVersion))
+	m.Collect(Set(containerRuntime, k.ContainerRuntime))
+	m.Collect(Set(networkPlugin, k.NetworkPlugin))
+	return m.ToError()
 }
 
 func encode(w io.Writer, m config.MinikubeConfig) error {
