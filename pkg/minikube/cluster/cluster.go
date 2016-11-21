@@ -40,9 +40,10 @@ import (
 	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
-	kubeapi "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
+	"k8s.io/client-go/1.5/kubernetes"
+	kubeapi "k8s.io/client-go/1.5/pkg/api"
+	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/tools/clientcmd"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -534,7 +535,7 @@ func GetServiceURLsForService(api libmachine.API, namespace, service string, t *
 	return getServiceURLsWithClient(client, ip, namespace, service, t)
 }
 
-func getServiceURLsWithClient(client *unversioned.Client, ip, namespace, service string, t *template.Template) ([]string, error) {
+func getServiceURLsWithClient(client *kubernetes.Clientset, ip, namespace, service string, t *template.Template) ([]string, error) {
 	if t == nil {
 		return nil, errors.New("Error, attempted to generate service url with nil --format template")
 	}
@@ -563,24 +564,24 @@ func getServiceURLsWithClient(client *unversioned.Client, ip, namespace, service
 }
 
 type serviceGetter interface {
-	Get(name string) (*kubeapi.Service, error)
-	List(kubeapi.ListOptions) (*kubeapi.ServiceList, error)
+	Get(name string) (*v1.Service, error)
+	List(kubeapi.ListOptions) (*v1.ServiceList, error)
 }
 
-func getServicePorts(client *unversioned.Client, namespace, service string) ([]int32, error) {
+func getServicePorts(client *kubernetes.Clientset, namespace, service string) ([]int32, error) {
 	services := client.Services(namespace)
 	return getServicePortsFromServiceGetter(services, service)
 }
 
 type MissingNodePortError struct {
-	service *kubeapi.Service
+	service *v1.Service
 }
 
 func (e MissingNodePortError) Error() string {
 	return fmt.Sprintf("Service %s/%s does not have a node port. To have one assigned automatically, the service type must be NodePort or LoadBalancer, but this service is of type %s.", e.service.Namespace, e.service.Name, e.service.Spec.Type)
 }
 
-func getServiceFromServiceGetter(services serviceGetter, service string) (*kubeapi.Service, error) {
+func getServiceFromServiceGetter(services serviceGetter, service string) (*v1.Service, error) {
 	svc, err := services.Get(service)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting %s service: %s", service, err)
@@ -607,7 +608,7 @@ func getServicePortsFromServiceGetter(services serviceGetter, service string) ([
 	return nodePorts, nil
 }
 
-func GetKubernetesClient() (*unversioned.Client, error) {
+func GetKubernetesClient() (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -615,7 +616,7 @@ func GetKubernetesClient() (*unversioned.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
 	}
-	client, err := unversioned.New(config)
+	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}

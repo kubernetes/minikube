@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	kubeapi "k8s.io/kubernetes/pkg/api"
+	"k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
@@ -140,7 +140,7 @@ func CheckService(namespace string, service string) error {
 
 const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
 
-func CheckEndpointReady(endpoint *kubeapi.Endpoints) error {
+func CheckEndpointReady(endpoint *v1.Endpoints) error {
 	if len(endpoint.Subsets) == 0 {
 		fmt.Fprintf(os.Stderr, notReadyMsg)
 		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}

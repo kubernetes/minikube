@@ -32,8 +32,9 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/client-go/1.5/pkg/api"
+	"k8s.io/client-go/1.5/pkg/api/unversioned"
+	"k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -522,16 +523,16 @@ func TestCreateSSHShell(t *testing.T) {
 }
 
 type MockServiceGetter struct {
-	services map[string]api.Service
+	services map[string]v1.Service
 }
 
 func NewMockServiceGetter() *MockServiceGetter {
 	return &MockServiceGetter{
-		services: make(map[string]api.Service),
+		services: make(map[string]v1.Service),
 	}
 }
 
-func (mockServiceGetter *MockServiceGetter) Get(name string) (*api.Service, error) {
+func (mockServiceGetter *MockServiceGetter) Get(name string) (*v1.Service, error) {
 	service, ok := mockServiceGetter.services[name]
 	if !ok {
 		return nil, errors.Errorf("Error getting %s service from mockServiceGetter", name)
@@ -539,8 +540,8 @@ func (mockServiceGetter *MockServiceGetter) Get(name string) (*api.Service, erro
 	return &service, nil
 }
 
-func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*api.ServiceList, error) {
-	services := api.ServiceList{
+func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*v1.ServiceList, error) {
+	services := v1.ServiceList{
 		TypeMeta: unversioned.TypeMeta{Kind: "ServiceList", APIVersion: "v1"},
 		ListMeta: unversioned.ListMeta{},
 	}
@@ -554,9 +555,9 @@ func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*api.
 func TestGetServiceURLs(t *testing.T) {
 	mockServiceGetter := NewMockServiceGetter()
 	expected := []int32{1111, 2222}
-	mockDashboardService := api.Service{
-		Spec: api.ServiceSpec{
-			Ports: []api.ServicePort{
+	mockDashboardService := v1.Service{
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{
 				{
 					NodePort: expected[0],
 				}, {
@@ -579,7 +580,7 @@ func TestGetServiceURLs(t *testing.T) {
 
 func TestGetServiceURLWithoutNodePort(t *testing.T) {
 	mockServiceGetter := NewMockServiceGetter()
-	mockDashboardService := api.Service{}
+	mockDashboardService := v1.Service{}
 	mockServiceGetter.services["mock-service"] = mockDashboardService
 
 	_, err := getServicePortsFromServiceGetter(mockServiceGetter, "mock-service")
