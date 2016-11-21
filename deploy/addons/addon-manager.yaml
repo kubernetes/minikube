@@ -20,6 +20,7 @@ metadata:
   labels:
     component: kube-addon-manager
     version: v5.1
+    kubernetes.io/minikube-addons: addon-manager
 spec:
   hostNetwork: true
   containers:
