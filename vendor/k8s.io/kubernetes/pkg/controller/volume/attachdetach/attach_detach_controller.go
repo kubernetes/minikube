@@ -56,6 +56,10 @@ const (
 	// desiredStateOfWorldPopulatorLoopSleepPeriod is the amount of time the
 	// DesiredStateOfWorldPopulator loop waits between successive executions
 	desiredStateOfWorldPopulatorLoopSleepPeriod time.Duration = 1 * time.Minute
+
+	// reconcilerSyncDuration is the amount of time the reconciler sync states loop
+	// wait between successive executions
+	reconcilerSyncDuration time.Duration = 5 * time.Second
 )
 
 // AttachDetachController defines the operations supported by this controller.
@@ -116,12 +120,14 @@ func NewAttachDetachController(
 		operationexecutor.NewOperationExecutor(
 			kubeClient,
 			&adc.volumePluginMgr,
-			recorder)
+			recorder,
+			false) // flag for experimental binary check for volume mount
 	adc.nodeStatusUpdater = statusupdater.NewNodeStatusUpdater(
 		kubeClient, nodeInformer, adc.actualStateOfWorld)
 	adc.reconciler = reconciler.NewReconciler(
 		reconcilerLoopPeriod,
 		reconcilerMaxWaitForUnmountDuration,
+		reconcilerSyncDuration,
 		adc.desiredStateOfWorld,
 		adc.actualStateOfWorld,
 		adc.attacherDetacher,
@@ -586,10 +592,6 @@ func (adc *attachDetachController) GetHostName() string {
 
 func (adc *attachDetachController) GetHostIP() (net.IP, error) {
 	return nil, fmt.Errorf("GetHostIP() not supported by Attach/Detach controller's VolumeHost implementation")
-}
-
-func (adc *attachDetachController) GetRootContext() string {
-	return ""
 }
 
 func (adc *attachDetachController) GetNodeAllocatable() (api.ResourceList, error) {

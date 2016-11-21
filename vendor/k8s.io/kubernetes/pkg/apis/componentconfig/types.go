@@ -44,6 +44,9 @@ type KubeProxyConfiguration struct {
 	// iptablesSyncPeriod is the period that iptables rules are refreshed (e.g. '5s', '1m',
 	// '2h22m').  Must be greater than 0.
 	IPTablesSyncPeriod unversioned.Duration `json:"iptablesSyncPeriodSeconds"`
+	// iptablesMinSyncPeriod is the minimum period that iptables rules are refreshed (e.g. '5s', '1m',
+	// '2h22m').
+	IPTablesMinSyncPeriod unversioned.Duration `json:"iptablesMinSyncPeriodSeconds"`
 	// kubeconfigPath is the path to the kubeconfig file with authorization information (the
 	// master location is set by the master flag).
 	KubeconfigPath string `json:"kubeconfigPath"`
@@ -75,8 +78,12 @@ type KubeProxyConfiguration struct {
 	// regardless of conntrackMaxPerCore (set conntrackMaxPerCore=0 to leave the limit as-is).
 	ConntrackMin int32 `json:"conntrackMin"`
 	// conntrackTCPEstablishedTimeout is how long an idle TCP connection will be kept open
-	// (e.g. '250ms', '2s').  Must be greater than 0.
+	// (e.g. '2s').  Must be greater than 0.
 	ConntrackTCPEstablishedTimeout unversioned.Duration `json:"conntrackTCPEstablishedTimeout"`
+	// conntrackTCPCloseWaitTimeout is how long an idle conntrack entry
+	// in CLOSE_WAIT state will remain in the conntrack
+	// table. (e.g. '60s'). Must be greater than 0 to set.
+	ConntrackTCPCloseWaitTimeout unversioned.Duration `json:"conntrackTCPCloseWaitTimeout"`
 }
 
 // Currently two modes of proxying are available: 'userspace' (older, stable) or 'iptables'
@@ -287,7 +294,7 @@ type KubeletConfiguration struct {
 	// And all Burstable and BestEffort pods are brought up under their
 	// specific top level QoS cgroup.
 	// +optional
-	CgroupsPerQOS bool `json:"cgroupsPerQOS,omitempty"`
+	ExperimentalCgroupsPerQOS bool `json:"experimentalCgroupsPerQOS,omitempty"`
 	// driver that the kubelet uses to manipulate cgroups on the host (cgroupfs or systemd)
 	// +optional
 	CgroupDriver string `json:"cgroupDriver,omitempty"`
@@ -300,7 +307,7 @@ type KubeletConfiguration struct {
 	// +optional
 	SystemCgroups string `json:"systemCgroups,omitempty"`
 	// CgroupRoot is the root cgroup to use for pods.
-	// If CgroupsPerQOS is enabled, this is the root of the QoS cgroup hierarchy.
+	// If ExperimentalCgroupsPerQOS is enabled, this is the root of the QoS cgroup hierarchy.
 	// +optional
 	CgroupRoot string `json:"cgroupRoot,omitempty"`
 	// containerRuntime is the container runtime to use.
@@ -450,10 +457,19 @@ type KubeletConfiguration struct {
 	// Whitelist of unsafe sysctls or sysctl patterns (ending in *).
 	// +optional
 	AllowedUnsafeSysctls []string `json:"experimentalAllowedUnsafeSysctls,omitempty"`
-	// How to integrate with runtime. If set to cri, kubelet will switch to
-	// using the new Container Runtine Interface.
+	// featureGates is a string of comma-separated key=value pairs that describe feature
+	// gates for alpha/experimental features.
+	FeatureGates string `json:"featureGates"`
+	// Enable Container Runtime Interface (CRI) integration.
 	// +optional
-	ExperimentalRuntimeIntegrationType string `json:"experimentalRuntimeIntegrationType,omitempty"`
+	EnableCRI bool `json:"enableCRI,omitempty"`
+	// TODO(#34726:1.8.0): Remove the opt-in for failing when swap is enabled.
+	// Tells the Kubelet to fail to start if swap is enabled on the node.
+	ExperimentalFailSwapOn bool `json:"experimentalFailSwapOn,omitempty"`
+	// This flag, if set, enables a check prior to mount operations to verify that the required components
+	// (binaries, etc.) to mount the volume are available on the underlying node. If the check is enabled
+	// and fails the mount operation fails.
+	ExperimentalCheckNodeCapabilitiesBeforeMount bool `json:"ExperimentalCheckNodeCapabilitiesBeforeMount,omitempty"`
 }
 
 type KubeletAuthorizationMode string
@@ -577,6 +593,9 @@ type KubeControllerManagerConfiguration struct {
 	Port int32 `json:"port"`
 	// address is the IP address to serve on (set to 0.0.0.0 for all interfaces).
 	Address string `json:"address"`
+	// useServiceAccountCredentials indicates whether controllers should be run with
+	// individual service account credentials.
+	UseServiceAccountCredentials bool `json:"useServiceAccountCredentials"`
 	// cloudProvider is the provider for cloud services.
 	CloudProvider string `json:"cloudProvider"`
 	// cloudConfigFile is the path to the cloud provider configuration file.

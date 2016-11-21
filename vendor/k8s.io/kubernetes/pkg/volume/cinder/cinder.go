@@ -50,6 +50,8 @@ type CinderProvider interface {
 	InstanceID() (string, error)
 	GetAttachmentDiskPath(instanceID string, diskName string) (string, error)
 	DiskIsAttached(diskName, instanceID string) (bool, error)
+	DisksAreAttached(diskNames []string, instanceID string) (map[string]bool, error)
+	ShouldTrustDevicePath() bool
 	Instances() (cloudprovider.Instances, bool)
 }
 
@@ -277,6 +279,13 @@ func (b *cinderVolumeMounter) GetAttributes() volume.Attributes {
 		Managed:         !b.readOnly,
 		SupportsSELinux: true,
 	}
+}
+
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *cinderVolumeMounter) CanMount() error {
+	return nil
 }
 
 func (b *cinderVolumeMounter) SetUp(fsGroup *int64) error {

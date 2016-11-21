@@ -191,7 +191,12 @@ func (kl *Kubelet) cleanupBandwidthLimits(allPods []*api.Pod) error {
 
 // syncNetworkStatus updates the network state
 func (kl *Kubelet) syncNetworkStatus() {
-	kl.runtimeState.setNetworkState(kl.networkPlugin.Status())
+	// For cri integration, network state will be updated in updateRuntimeUp,
+	// we'll get runtime network status through cri directly.
+	// TODO: Remove this once we completely switch to cri integration.
+	if kl.networkPlugin != nil {
+		kl.runtimeState.setNetworkState(kl.networkPlugin.Status())
+	}
 }
 
 // updatePodCIDR updates the pod CIDR in the runtime state if it is different
@@ -203,14 +208,23 @@ func (kl *Kubelet) updatePodCIDR(cidr string) {
 		return
 	}
 
-	glog.Infof("Setting Pod CIDR: %v -> %v", podCIDR, cidr)
-	kl.runtimeState.setPodCIDR(cidr)
-
+	// kubelet -> network plugin
+	// cri runtime shims are responsible for their own network plugins
 	if kl.networkPlugin != nil {
 		details := make(map[string]interface{})
 		details[network.NET_PLUGIN_EVENT_POD_CIDR_CHANGE_DETAIL_CIDR] = cidr
 		kl.networkPlugin.Event(network.NET_PLUGIN_EVENT_POD_CIDR_CHANGE, details)
 	}
+
+	// kubelet -> generic runtime -> runtime shim -> network plugin
+	// docker/rkt non-cri implementations have a passthrough UpdatePodCIDR
+	if err := kl.GetRuntime().UpdatePodCIDR(cidr); err != nil {
+		glog.Errorf("Failed to update pod CIDR: %v", err)
+		return
+	}
+
+	glog.Infof("Setting Pod CIDR: %v -> %v", podCIDR, cidr)
+	kl.runtimeState.setPodCIDR(cidr)
 }
 
 // shapingEnabled returns whether traffic shaping is enabled.
@@ -219,6 +233,16 @@ func (kl *Kubelet) shapingEnabled() bool {
 	if kl.networkPlugin != nil && kl.networkPlugin.Capabilities().Has(network.NET_PLUGIN_CAPABILITY_SHAPING) {
 		return false
 	}
+	// This is not strictly true but we need to figure out how to handle
+	// bandwidth shaping anyway. If the kubelet doesn't have a networkPlugin,
+	// it could mean:
+	// a. the kubelet is responsible for bandwidth shaping
+	// b. the kubelet is using cri, and the cri has a network plugin
+	// Today, the only plugin that understands bandwidth shaping is kubenet, and
+	// it doesn't support bandwidth shaping when invoked through cri, so it
+	// effectively boils down to letting the kubelet decide how to handle
+	// shaping annotations. The combination of (cri + network plugin that
+	// handles bandwidth shaping) may not work because of this.
 	return true
 }
 

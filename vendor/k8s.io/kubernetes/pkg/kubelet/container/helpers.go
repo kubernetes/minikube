@@ -17,9 +17,11 @@ limitations under the License.
 package container
 
 import (
+	"bytes"
 	"fmt"
 	"hash/adler32"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 
@@ -28,6 +30,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/record"
 	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
+	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
 	hashutil "k8s.io/kubernetes/pkg/util/hash"
@@ -206,11 +209,11 @@ func ConvertPodStatusToRunningPod(runtimeName string, podStatus *PodStatus) Pod 
 // This is only needed because we need to return sandboxes as if they were
 // kubecontainer.Containers to avoid substantial changes to PLEG.
 // TODO: Remove this once it becomes obsolete.
-func SandboxToContainerState(state runtimeApi.PodSandBoxState) ContainerState {
+func SandboxToContainerState(state runtimeApi.PodSandboxState) ContainerState {
 	switch state {
-	case runtimeApi.PodSandBoxState_READY:
+	case runtimeApi.PodSandboxState_SANDBOX_READY:
 		return ContainerStateRunning
-	case runtimeApi.PodSandBoxState_NOTREADY:
+	case runtimeApi.PodSandboxState_SANDBOX_NOTREADY:
 		return ContainerStateExited
 	}
 	return ContainerStateUnknown
@@ -222,4 +225,24 @@ func FormatPod(pod *Pod) string {
 	// Use underscore as the delimiter because it is not allowed in pod name
 	// (DNS subdomain format), while allowed in the container name format.
 	return fmt.Sprintf("%s_%s(%s)", pod.Name, pod.Namespace, pod.ID)
+}
+
+type containerCommandRunnerWrapper struct {
+	DirectStreamingRuntime
+}
+
+var _ ContainerCommandRunner = &containerCommandRunnerWrapper{}
+
+func DirectStreamingRunner(runtime DirectStreamingRuntime) ContainerCommandRunner {
+	return &containerCommandRunnerWrapper{runtime}
+}
+
+func (r *containerCommandRunnerWrapper) RunInContainer(id ContainerID, cmd []string, timeout time.Duration) ([]byte, error) {
+	var buffer bytes.Buffer
+	output := ioutils.WriteCloserWrapper(&buffer)
+	err := r.ExecInContainer(id, cmd, nil, output, output, false, nil, timeout)
+	// Even if err is non-nil, there still may be output (e.g. the exec wrote to stdout or stderr but
+	// the command returned a nonzero exit code). Therefore, always return the output along with the
+	// error.
+	return buffer.Bytes(), err
 }

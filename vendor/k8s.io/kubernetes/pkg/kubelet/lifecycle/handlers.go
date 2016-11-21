@@ -17,7 +17,6 @@ limitations under the License.
 package lifecycle
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -29,7 +28,6 @@ import (
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
-	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 	"k8s.io/kubernetes/pkg/security/apparmor"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/intstr"
@@ -56,14 +54,11 @@ func NewHandlerRunner(httpGetter kubetypes.HttpGetter, commandRunner kubecontain
 func (hr *HandlerRunner) Run(containerID kubecontainer.ContainerID, pod *api.Pod, container *api.Container, handler *api.Handler) (string, error) {
 	switch {
 	case handler.Exec != nil:
-		var (
-			buffer bytes.Buffer
-			msg    string
-		)
-		output := ioutils.WriteCloserWrapper(&buffer)
-		err := hr.commandRunner.ExecInContainer(containerID, handler.Exec.Command, nil, output, output, false, nil)
+		var msg string
+		// TODO(timstclair): Pass a proper timeout value.
+		output, err := hr.commandRunner.RunInContainer(containerID, handler.Exec.Command, 0)
 		if err != nil {
-			msg := fmt.Sprintf("Exec lifecycle hook (%v) for Container %q in Pod %q failed - error: %v, message: %q", handler.Exec.Command, container.Name, format.Pod(pod), err, buffer.String())
+			msg := fmt.Sprintf("Exec lifecycle hook (%v) for Container %q in Pod %q failed - error: %v, message: %q", handler.Exec.Command, container.Name, format.Pod(pod), err, string(output))
 			glog.V(1).Infof(msg)
 		}
 		return msg, err
@@ -155,6 +150,11 @@ type appArmorAdmitHandler struct {
 }
 
 func (a *appArmorAdmitHandler) Admit(attrs *PodAdmitAttributes) PodAdmitResult {
+	// If the pod is already running or terminated, no need to recheck AppArmor.
+	if attrs.Pod.Status.Phase != api.PodPending {
+		return PodAdmitResult{Admit: true}
+	}
+
 	err := a.Validate(attrs.Pod)
 	if err == nil {
 		return PodAdmitResult{Admit: true}

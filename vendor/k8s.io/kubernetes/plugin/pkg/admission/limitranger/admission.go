@@ -26,13 +26,13 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	coreinternallisters "k8s.io/kubernetes/pkg/client/listers/core/internalversion"
 	"k8s.io/kubernetes/pkg/controller/informers"
 
 	"k8s.io/kubernetes/pkg/admission"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/resource"
-	"k8s.io/kubernetes/pkg/client/cache"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
 	utilerrors "k8s.io/kubernetes/pkg/util/errors"
@@ -53,7 +53,7 @@ type limitRanger struct {
 	*admission.Handler
 	client  clientset.Interface
 	actions LimitRangerActions
-	lister  *cache.StoreToLimitRangeLister
+	lister  coreinternallisters.LimitRangeLister
 
 	// liveLookups holds the last few live lookups we've done to help ammortize cost on repeated lookup failures.
 	// This let's us handle the case of latent caches, by looking up actual results for a namespace on cache miss/no results.
@@ -162,22 +162,6 @@ func NewLimitRanger(client clientset.Interface, actions LimitRangerActions) (adm
 		liveLookupCache: liveLookupCache,
 		liveTTL:         time.Duration(30 * time.Second),
 	}, nil
-}
-
-// Min returns the lesser of its 2 arguments
-func Min(a int64, b int64) int64 {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// Max returns the greater of its 2 arguments
-func Max(a int64, b int64) int64 {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // defaultContainerResourceRequirements returns the default requirements for a container

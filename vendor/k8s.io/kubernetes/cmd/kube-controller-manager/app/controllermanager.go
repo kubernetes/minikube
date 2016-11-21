@@ -37,7 +37,7 @@ import (
 	"k8s.io/kubernetes/pkg/apimachinery/registered"
 	"k8s.io/kubernetes/pkg/apis/batch"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
+	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 	"k8s.io/kubernetes/pkg/client/leaderelection"
 	"k8s.io/kubernetes/pkg/client/leaderelection/resourcelock"
 	"k8s.io/kubernetes/pkg/client/record"
@@ -47,6 +47,7 @@ import (
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	certcontroller "k8s.io/kubernetes/pkg/controller/certificates"
+	"k8s.io/kubernetes/pkg/controller/cronjob"
 	"k8s.io/kubernetes/pkg/controller/daemon"
 	"k8s.io/kubernetes/pkg/controller/deployment"
 	"k8s.io/kubernetes/pkg/controller/disruption"
@@ -65,7 +66,6 @@ import (
 	replicationcontroller "k8s.io/kubernetes/pkg/controller/replication"
 	resourcequotacontroller "k8s.io/kubernetes/pkg/controller/resourcequota"
 	routecontroller "k8s.io/kubernetes/pkg/controller/route"
-	"k8s.io/kubernetes/pkg/controller/scheduledjob"
 	servicecontroller "k8s.io/kubernetes/pkg/controller/service"
 	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach"
@@ -167,7 +167,7 @@ func Run(s *options.CMServer) error {
 			ClientConfig: kubeconfig,
 		}
 		var clientBuilder controller.ControllerClientBuilder
-		if len(s.ServiceAccountKeyFile) > 0 {
+		if len(s.ServiceAccountKeyFile) > 0 && s.UseServiceAccountCredentials {
 			clientBuilder = controller.SAControllerClientBuilder{
 				ClientConfig: restclient.AnonymousClientConfig(kubeconfig),
 				CoreClient:   kubeClient.Core(),
@@ -323,7 +323,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	}
 
 	resourceQuotaControllerClient := client("resourcequota-controller")
-	resourceQuotaRegistry := quotainstall.NewRegistry(resourceQuotaControllerClient)
+	resourceQuotaRegistry := quotainstall.NewRegistry(resourceQuotaControllerClient, sharedInformers)
 	groupKindsToReplenish := []unversioned.GroupKind{
 		api.Kind("Pod"),
 		api.Kind("Service"),
@@ -336,7 +336,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 		KubeClient:                resourceQuotaControllerClient,
 		ResyncPeriod:              controller.StaticResyncPeriodFunc(s.ResourceQuotaSyncPeriod.Duration),
 		Registry:                  resourceQuotaRegistry,
-		ControllerFactory:         resourcequotacontroller.NewReplenishmentControllerFactory(sharedInformers.Pods().Informer(), resourceQuotaControllerClient),
+		ControllerFactory:         resourcequotacontroller.NewReplenishmentControllerFactory(sharedInformers, resourceQuotaControllerClient),
 		ReplenishmentResyncPeriod: ResyncPeriod(s),
 		GroupKindsToReplenish:     groupKindsToReplenish,
 	}
@@ -382,20 +382,6 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	// TODO: this needs to be dynamic so users don't have to restart their controller manager if they change the apiserver
 	if containsVersion(versions, groupVersion) && found {
 		glog.Infof("Starting %s apis", groupVersion)
-		if containsResource(resources, "horizontalpodautoscalers") {
-			glog.Infof("Starting horizontal pod controller.")
-			hpaClient := client("horizontal-pod-autoscaler")
-			metricsClient := metrics.NewHeapsterMetricsClient(
-				hpaClient,
-				metrics.DefaultHeapsterNamespace,
-				metrics.DefaultHeapsterScheme,
-				metrics.DefaultHeapsterService,
-				metrics.DefaultHeapsterPort,
-			)
-			go podautoscaler.NewHorizontalController(hpaClient.Core(), hpaClient.Extensions(), hpaClient.Autoscaling(), metricsClient, s.HorizontalPodAutoscalerSyncPeriod.Duration).
-				Run(wait.NeverStop)
-			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
-		}
 
 		if containsResource(resources, "daemonsets") {
 			glog.Infof("Starting daemon set controller")
@@ -406,7 +392,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 
 		if containsResource(resources, "jobs") {
 			glog.Infof("Starting job controller")
-			go job.NewJobController(sharedInformers.Pods().Informer(), client("job-controller")).
+			go job.NewJobController(sharedInformers.Pods().Informer(), sharedInformers.Jobs(), client("job-controller")).
 				Run(int(s.ConcurrentJobSyncs), wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
@@ -426,7 +412,29 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 		}
 	}
 
-	groupVersion = "policy/v1alpha1"
+	groupVersion = "autoscaling/v1"
+	resources, found = resourceMap[groupVersion]
+	glog.Infof("Attempting to start horizontal pod autoscaler controller, full resource map %+v", resourceMap)
+	if containsVersion(versions, groupVersion) && found {
+		glog.Infof("Starting %s apis", groupVersion)
+		if containsResource(resources, "horizontalpodautoscalers") {
+			glog.Infof("Starting horizontal pod controller.")
+			hpaClient := client("horizontal-pod-autoscaler")
+			metricsClient := metrics.NewHeapsterMetricsClient(
+				hpaClient,
+				metrics.DefaultHeapsterNamespace,
+				metrics.DefaultHeapsterScheme,
+				metrics.DefaultHeapsterService,
+				metrics.DefaultHeapsterPort,
+			)
+			replicaCalc := podautoscaler.NewReplicaCalculator(metricsClient, hpaClient.Core())
+			go podautoscaler.NewHorizontalController(hpaClient.Core(), hpaClient.Extensions(), hpaClient.Autoscaling(), replicaCalc, s.HorizontalPodAutoscalerSyncPeriod.Duration).
+				Run(wait.NeverStop)
+			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+		}
+	}
+
+	groupVersion = "policy/v1beta1"
 	resources, found = resourceMap[groupVersion]
 	glog.Infof("Attempting to start disruption controller, full resource map %+v", resourceMap)
 	if containsVersion(versions, groupVersion) && found {
@@ -438,17 +446,17 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 		}
 	}
 
-	groupVersion = "apps/v1alpha1"
+	groupVersion = "apps/v1beta1"
 	resources, found = resourceMap[groupVersion]
-	glog.Infof("Attempting to start petset, full resource map %+v", resourceMap)
+	glog.Infof("Attempting to start statefulset, full resource map %+v", resourceMap)
 	if containsVersion(versions, groupVersion) && found {
 		glog.Infof("Starting %s apis", groupVersion)
-		if containsResource(resources, "petsets") {
-			glog.Infof("Starting PetSet controller")
+		if containsResource(resources, "statefulsets") {
+			glog.Infof("Starting StatefulSet controller")
 			resyncPeriod := ResyncPeriod(s)()
-			go petset.NewPetSetController(
+			go petset.NewStatefulSetController(
 				sharedInformers.Pods().Informer(),
-				client("petset-controller"),
+				client("statefulset-controller"),
 				resyncPeriod,
 			).Run(1, wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
@@ -459,11 +467,11 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	resources, found = resourceMap[groupVersion]
 	if containsVersion(versions, groupVersion) && found {
 		glog.Infof("Starting %s apis", groupVersion)
-		if containsResource(resources, "scheduledjobs") {
-			glog.Infof("Starting scheduledjob controller")
+		if containsResource(resources, "cronjobs") {
+			glog.Infof("Starting cronjob controller")
 			// // TODO: this is a temp fix for allowing kubeClient list v2alpha1 sj, should switch to using clientset
 			kubeconfig.ContentConfig.GroupVersion = &unversioned.GroupVersion{Group: batch.GroupName, Version: "v2alpha1"}
-			go scheduledjob.NewScheduledJobController(client("scheduledjob-controller")).
+			go cronjob.NewCronJobController(client("cronjob-controller")).
 				Run(wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
@@ -529,10 +537,11 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 		}
 	}
 
-	serviceaccountcontroller.NewServiceAccountsController(
+	go serviceaccountcontroller.NewServiceAccountsController(
+		sharedInformers.ServiceAccounts(), sharedInformers.Namespaces(),
 		client("service-account-controller"),
 		serviceaccountcontroller.DefaultServiceAccountsControllerOptions(),
-	).Run()
+	).Run(1, stop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
 	if s.EnableGarbageCollector {
@@ -545,7 +554,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 		config := restclient.AddUserAgent(kubeconfig, "generic-garbage-collector")
 		config.ContentConfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: metaonly.NewMetadataCodecFactory()}
 		metaOnlyClientPool := dynamic.NewClientPool(config, restMapper, dynamic.LegacyAPIPathResolverFunc)
-		config.ContentConfig.NegotiatedSerializer = nil
+		config.ContentConfig = dynamic.ContentConfig()
 		clientPool := dynamic.NewClientPool(config, restMapper, dynamic.LegacyAPIPathResolverFunc)
 		garbageCollector, err := garbagecollector.NewGarbageCollector(metaOnlyClientPool, clientPool, restMapper, groupVersionResources)
 		if err != nil {

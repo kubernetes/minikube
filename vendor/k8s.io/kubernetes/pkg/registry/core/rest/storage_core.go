@@ -20,17 +20,23 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/golang/glog"
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apimachinery/registered"
 	"k8s.io/kubernetes/pkg/apiserver"
-	policyclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/unversioned"
+	policyclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/internalversion"
 	"k8s.io/kubernetes/pkg/client/restclient"
 	"k8s.io/kubernetes/pkg/genericapiserver"
 	kubeletclient "k8s.io/kubernetes/pkg/kubelet/client"
+	"k8s.io/kubernetes/pkg/master/ports"
 	"k8s.io/kubernetes/pkg/registry/core/componentstatus"
 	configmapetcd "k8s.io/kubernetes/pkg/registry/core/configmap/etcd"
 	controlleretcd "k8s.io/kubernetes/pkg/registry/core/controller/etcd"
@@ -56,6 +62,7 @@ import (
 	ipallocator "k8s.io/kubernetes/pkg/registry/core/service/ipallocator"
 	"k8s.io/kubernetes/pkg/registry/core/service/portallocator"
 	serviceaccountetcd "k8s.io/kubernetes/pkg/registry/core/serviceaccount/etcd"
+	etcdutil "k8s.io/kubernetes/pkg/storage/etcd/util"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
@@ -68,17 +75,12 @@ type LegacyRESTStorageProvider struct {
 	KubeletClientConfig kubeletclient.KubeletClientConfig
 	EventTTL            time.Duration
 
-	// ServiceClusterIPRange is used to build cluster IPs for discovery.
-	ServiceClusterIPRange *net.IPNet
-	ServiceNodePortRange  utilnet.PortRange
-
-	// ComponentStatusServerFunc is a func used to locate servers to back component status
-	ComponentStatusServerFunc ComponentStatusServerFunc
+	// ServiceIPRange is used to build cluster IPs for discovery.
+	ServiceIPRange       net.IPNet
+	ServiceNodePortRange utilnet.PortRange
 
 	LoopbackClientConfig *restclient.Config
 }
-
-type ComponentStatusServerFunc func() map[string]apiserver.Server
 
 // LegacyRESTStorage returns stateful information about particular instances of REST storage to
 // master.go for wiring controllers.
@@ -106,7 +108,7 @@ func (c LegacyRESTStorageProvider) NewLegacyRESTStorage(restOptionsGetter generi
 	}
 
 	var podDisruptionClient policyclient.PodDisruptionBudgetsGetter
-	if policyGroupVersion := (unversioned.GroupVersion{Group: "policy", Version: "v1alpha1"}); registered.IsEnabledVersion(policyGroupVersion) {
+	if policyGroupVersion := (unversioned.GroupVersion{Group: "policy", Version: "v1beta1"}); registered.IsEnabledVersion(policyGroupVersion) {
 		apiGroupInfo.SubresourceGroupVersionKind["pods/eviction"] = policyGroupVersion.WithKind("Eviction")
 
 		var err error
@@ -152,9 +154,9 @@ func (c LegacyRESTStorageProvider) NewLegacyRESTStorage(restOptionsGetter generi
 	restStorage.ServiceRegistry = service.NewRegistry(serviceRESTStorage)
 
 	var serviceClusterIPRegistry rangeallocation.RangeRegistry
-	serviceClusterIPRange := c.ServiceClusterIPRange
-	if serviceClusterIPRange == nil {
-		return LegacyRESTStorage{}, genericapiserver.APIGroupInfo{}, fmt.Errorf("service clusterIPRange is nil")
+	serviceClusterIPRange := c.ServiceIPRange
+	if serviceClusterIPRange.IP == nil {
+		return LegacyRESTStorage{}, genericapiserver.APIGroupInfo{}, fmt.Errorf("service clusterIPRange is missing")
 	}
 
 	serviceStorageConfig, err := c.StorageFactory.NewConfig(api.Resource("services"))
@@ -162,7 +164,7 @@ func (c LegacyRESTStorageProvider) NewLegacyRESTStorage(restOptionsGetter generi
 		return LegacyRESTStorage{}, genericapiserver.APIGroupInfo{}, err
 	}
 
-	ServiceClusterIPAllocator := ipallocator.NewAllocatorCIDRRange(serviceClusterIPRange, func(max int, rangeSpec string) allocator.Interface {
+	ServiceClusterIPAllocator := ipallocator.NewAllocatorCIDRRange(&serviceClusterIPRange, func(max int, rangeSpec string) allocator.Interface {
 		mem := allocator.NewAllocationMap(max, rangeSpec)
 		// TODO etcdallocator package to return a storage interface via the storageFactory
 		etcd := etcdallocator.NewEtcd(mem, "/ranges/serviceips", api.Resource("serviceipallocations"), serviceStorageConfig)
@@ -227,15 +229,61 @@ func (c LegacyRESTStorageProvider) NewLegacyRESTStorage(restOptionsGetter generi
 		"persistentVolumeClaims/status": persistentVolumeClaimStatusStorage,
 		"configMaps":                    configMapStorage,
 
-		"componentStatuses": componentstatus.NewStorage(c.ComponentStatusServerFunc),
+		"componentStatuses": componentstatus.NewStorage(componentStatusStorage{c.StorageFactory}.serversToValidate),
 	}
 	if registered.IsEnabledVersion(unversioned.GroupVersion{Group: "autoscaling", Version: "v1"}) {
 		restStorageMap["replicationControllers/scale"] = controllerStorage.Scale
 	}
-	if registered.IsEnabledVersion(unversioned.GroupVersion{Group: "policy", Version: "v1alpha1"}) {
+	if registered.IsEnabledVersion(unversioned.GroupVersion{Group: "policy", Version: "v1beta1"}) {
 		restStorageMap["pods/eviction"] = podStorage.Eviction
 	}
 	apiGroupInfo.VersionedResourcesStorageMap["v1"] = restStorageMap
 
 	return restStorage, apiGroupInfo, nil
+}
+
+func (p LegacyRESTStorageProvider) GroupName() string {
+	return api.GroupName
+}
+
+type componentStatusStorage struct {
+	storageFactory genericapiserver.StorageFactory
+}
+
+func (s componentStatusStorage) serversToValidate() map[string]apiserver.Server {
+	serversToValidate := map[string]apiserver.Server{
+		"controller-manager": {Addr: "127.0.0.1", Port: ports.ControllerManagerPort, Path: "/healthz"},
+		"scheduler":          {Addr: "127.0.0.1", Port: ports.SchedulerPort, Path: "/healthz"},
+	}
+
+	for ix, machine := range s.storageFactory.Backends() {
+		etcdUrl, err := url.Parse(machine)
+		if err != nil {
+			glog.Errorf("Failed to parse etcd url for validation: %v", err)
+			continue
+		}
+		var port int
+		var addr string
+		if strings.Contains(etcdUrl.Host, ":") {
+			var portString string
+			addr, portString, err = net.SplitHostPort(etcdUrl.Host)
+			if err != nil {
+				glog.Errorf("Failed to split host/port: %s (%v)", etcdUrl.Host, err)
+				continue
+			}
+			port, _ = strconv.Atoi(portString)
+		} else {
+			addr = etcdUrl.Host
+			port = 2379
+		}
+		// TODO: etcd health checking should be abstracted in the storage tier
+		serversToValidate[fmt.Sprintf("etcd-%d", ix)] = apiserver.Server{
+			Addr:        addr,
+			EnableHTTPS: etcdUrl.Scheme == "https",
+			Port:        port,
+			Path:        "/health",
+			Validate:    etcdutil.EtcdHealthCheck,
+		}
+	}
+	return serversToValidate
 }

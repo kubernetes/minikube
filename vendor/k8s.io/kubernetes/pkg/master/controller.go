@@ -26,7 +26,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/endpoints"
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/rest"
-	coreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
+	coreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 	"k8s.io/kubernetes/pkg/genericapiserver"
 	"k8s.io/kubernetes/pkg/registry/core/namespace"
 	"k8s.io/kubernetes/pkg/registry/core/rangeallocation"
@@ -45,12 +45,13 @@ import (
 // loops, which manage creating the "kubernetes" service, the "default" and "kube-system"
 // namespace, and provide the IP repair check on service IPs
 type Controller struct {
+	ServiceClient     coreclient.ServicesGetter
 	NamespaceRegistry namespace.Registry
 	ServiceRegistry   service.Registry
 
 	ServiceClusterIPRegistry rangeallocation.RangeRegistry
 	ServiceClusterIPInterval time.Duration
-	ServiceClusterIPRange    *net.IPNet
+	ServiceClusterIPRange    net.IPNet
 
 	ServiceNodePortRegistry rangeallocation.RangeRegistry
 	ServiceNodePortInterval time.Duration
@@ -75,8 +76,9 @@ type Controller struct {
 }
 
 // NewBootstrapController returns a controller for watching the core capabilities of the master
-func (c *Config) NewBootstrapController(legacyRESTStorage corerest.LegacyRESTStorage) *Controller {
+func (c *Config) NewBootstrapController(legacyRESTStorage corerest.LegacyRESTStorage, serviceClient coreclient.ServicesGetter) *Controller {
 	return &Controller{
+		ServiceClient:     serviceClient,
 		NamespaceRegistry: legacyRESTStorage.NamespaceRegistry,
 		ServiceRegistry:   legacyRESTStorage.ServiceRegistry,
 
@@ -87,21 +89,21 @@ func (c *Config) NewBootstrapController(legacyRESTStorage corerest.LegacyRESTSto
 		SystemNamespacesInterval: 1 * time.Minute,
 
 		ServiceClusterIPRegistry: legacyRESTStorage.ServiceClusterIPAllocator,
-		ServiceClusterIPRange:    c.GenericConfig.ServiceClusterIPRange,
+		ServiceClusterIPRange:    c.ServiceIPRange,
 		ServiceClusterIPInterval: 3 * time.Minute,
 
 		ServiceNodePortRegistry: legacyRESTStorage.ServiceNodePortAllocator,
-		ServiceNodePortRange:    c.GenericConfig.ServiceNodePortRange,
+		ServiceNodePortRange:    c.ServiceNodePortRange,
 		ServiceNodePortInterval: 3 * time.Minute,
 
 		PublicIP: c.GenericConfig.PublicAddress,
 
-		ServiceIP:                 c.GenericConfig.ServiceReadWriteIP,
-		ServicePort:               c.GenericConfig.ServiceReadWritePort,
-		ExtraServicePorts:         c.GenericConfig.ExtraServicePorts,
-		ExtraEndpointPorts:        c.GenericConfig.ExtraEndpointPorts,
+		ServiceIP:                 c.APIServerServiceIP,
+		ServicePort:               c.APIServerServicePort,
+		ExtraServicePorts:         c.ExtraServicePorts,
+		ExtraEndpointPorts:        c.ExtraEndpointPorts,
 		PublicServicePort:         c.GenericConfig.ReadWritePort,
-		KubernetesServiceNodePort: c.GenericConfig.KubernetesServiceNodePort,
+		KubernetesServiceNodePort: c.KubernetesServiceNodePort,
 	}
 }
 
@@ -117,7 +119,7 @@ func (c *Controller) Start() {
 		return
 	}
 
-	repairClusterIPs := servicecontroller.NewRepair(c.ServiceClusterIPInterval, c.ServiceRegistry, c.ServiceClusterIPRange, c.ServiceClusterIPRegistry)
+	repairClusterIPs := servicecontroller.NewRepair(c.ServiceClusterIPInterval, c.ServiceRegistry, &c.ServiceClusterIPRange, c.ServiceClusterIPRegistry)
 	repairNodePorts := portallocatorcontroller.NewRepair(c.ServiceNodePortInterval, c.ServiceRegistry, c.ServiceNodePortRange, c.ServiceNodePortRegistry)
 
 	// run all of the controllers once prior to returning from Start.
@@ -240,12 +242,12 @@ func createEndpointPortSpec(endpointPort int, endpointPortName string, extraEndp
 // doesn't already exist.
 func (c *Controller) CreateOrUpdateMasterServiceIfNeeded(serviceName string, serviceIP net.IP, servicePorts []api.ServicePort, serviceType api.ServiceType, reconcile bool) error {
 	ctx := api.NewDefaultContext()
-	if s, err := c.ServiceRegistry.GetService(ctx, serviceName); err == nil {
+	if s, err := c.ServiceClient.Services(api.NamespaceDefault).Get(serviceName); err == nil {
 		// The service already exists.
 		if reconcile {
 			if svc, updated := getMasterServiceUpdateIfNeeded(s, servicePorts, serviceType); updated {
 				glog.Warningf("Resetting master service %q to %#v", serviceName, svc)
-				_, err := c.ServiceRegistry.UpdateService(ctx, svc)
+				_, err := c.ServiceClient.Services(api.NamespaceDefault).Update(svc)
 				return err
 			}
 		}
@@ -270,7 +272,7 @@ func (c *Controller) CreateOrUpdateMasterServiceIfNeeded(serviceName string, ser
 		return err
 	}
 
-	_, err := c.ServiceRegistry.CreateService(ctx, svc)
+	_, err := c.ServiceClient.Services(api.NamespaceDefault).Create(svc)
 	if err != nil && errors.IsAlreadyExists(err) {
 		err = nil
 	}

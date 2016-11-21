@@ -19,7 +19,6 @@ package kuberuntime
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -33,7 +32,6 @@ import (
 	internalApi "k8s.io/kubernetes/pkg/kubelet/api"
 	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	"k8s.io/kubernetes/pkg/kubelet/dockershim"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/images"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
@@ -110,6 +108,12 @@ type kubeGenericRuntimeManager struct {
 	versionCache *cache.ObjectCache
 }
 
+type KubeGenericRuntime interface {
+	kubecontainer.Runtime
+	kubecontainer.IndirectStreamingRuntime
+	kubecontainer.ContainerCommandRunner
+}
+
 // NewKubeGenericRuntimeManager creates a new kubeGenericRuntimeManager
 func NewKubeGenericRuntimeManager(
 	recorder record.EventRecorder,
@@ -128,7 +132,7 @@ func NewKubeGenericRuntimeManager(
 	cpuCFSQuota bool,
 	runtimeService internalApi.RuntimeService,
 	imageService internalApi.ImageManagerService,
-) (kubecontainer.Runtime, error) {
+) (KubeGenericRuntime, error) {
 	kubeRuntimeManager := &kubeGenericRuntimeManager{
 		recorder:            recorder,
 		cpuCFSQuota:         cpuCFSQuota,
@@ -260,15 +264,14 @@ func (m *kubeGenericRuntimeManager) APIVersion() (kubecontainer.Version, error) 
 	return newRuntimeVersion(typedVersion.GetRuntimeApiVersion())
 }
 
-// Status returns error if the runtime is unhealthy; nil otherwise.
-func (m *kubeGenericRuntimeManager) Status() error {
-	_, err := m.runtimeService.Version(kubeRuntimeAPIVersion)
+// Status returns the status of the runtime. An error is returned if the Status
+// function itself fails, nil otherwise.
+func (m *kubeGenericRuntimeManager) Status() (*kubecontainer.RuntimeStatus, error) {
+	status, err := m.runtimeService.Status()
 	if err != nil {
-		glog.Errorf("Checkout remote runtime status failed: %v", err)
-		return err
+		return nil, err
 	}
-
-	return nil
+	return toKubeRuntimeStatus(status), nil
 }
 
 // GetPods returns a list of containers grouped by pods. The boolean parameter
@@ -393,14 +396,14 @@ func (m *kubeGenericRuntimeManager) podSandboxChanged(pod *api.Pod, podStatus *k
 
 	readySandboxCount := 0
 	for _, s := range podStatus.SandboxStatuses {
-		if s.GetState() == runtimeApi.PodSandBoxState_READY {
+		if s.GetState() == runtimeApi.PodSandboxState_SANDBOX_READY {
 			readySandboxCount++
 		}
 	}
 
 	// Needs to create a new sandbox when readySandboxCount > 1 or the ready sandbox is not the latest one.
 	sandboxStatus := podStatus.SandboxStatuses[0]
-	if readySandboxCount > 1 || sandboxStatus.GetState() != runtimeApi.PodSandBoxState_READY {
+	if readySandboxCount > 1 || sandboxStatus.GetState() != runtimeApi.PodSandboxState_SANDBOX_READY {
 		glog.V(2).Infof("No ready sandbox for pod %q can be found. Need to start a new one", format.Pod(pod))
 		return true, sandboxStatus.Metadata.GetAttempt() + 1, sandboxStatus.GetId()
 	}
@@ -641,41 +644,16 @@ func (m *kubeGenericRuntimeManager) SyncPod(pod *api.Pod, _ api.PodStatus, podSt
 			return
 		}
 
-		setupNetworkResult := kubecontainer.NewSyncResult(kubecontainer.SetupNetwork, podSandboxID)
-		result.AddSyncResult(setupNetworkResult)
-		if !kubecontainer.IsHostNetworkPod(pod) {
-			glog.V(3).Infof("Calling network plugin %s to setup pod for %s", m.networkPlugin.Name(), format.Pod(pod))
-			// Setup pod network plugin with sandbox id
-			// TODO: rename the last param to sandboxID
-			err = m.networkPlugin.SetUpPod(pod.Namespace, pod.Name, kubecontainer.ContainerID{
-				Type: m.runtimeName,
-				ID:   podSandboxID,
-			})
-			if err != nil {
-				message := fmt.Sprintf("Failed to setup network for pod %q using network plugins %q: %v", format.Pod(pod), m.networkPlugin.Name(), err)
-				setupNetworkResult.Fail(kubecontainer.ErrSetupNetwork, message)
-				glog.Error(message)
-
-				killPodSandboxResult := kubecontainer.NewSyncResult(kubecontainer.KillPodSandbox, format.Pod(pod))
-				result.AddSyncResult(killPodSandboxResult)
-				if err := m.runtimeService.StopPodSandbox(podSandboxID); err != nil {
-					killPodSandboxResult.Fail(kubecontainer.ErrKillPodSandbox, err.Error())
-					glog.Errorf("Kill sandbox %q failed for pod %q: %v", podSandboxID, format.Pod(pod), err)
-				}
-				return
-			}
-
-			podSandboxStatus, err := m.runtimeService.PodSandboxStatus(podSandboxID)
-			if err != nil {
-				glog.Errorf("Failed to get pod sandbox status: %v; Skipping pod %q", err, format.Pod(pod))
-				result.Fail(err)
-				return
-			}
-
-			// Overwrite the podIP passed in the pod status, since we just started the infra container.
-			podIP = m.determinePodSandboxIP(pod.Namespace, pod.Name, podSandboxStatus)
-			glog.V(4).Infof("Determined the ip %q for pod %q after sandbox changed", podIP, format.Pod(pod))
+		podSandboxStatus, err := m.runtimeService.PodSandboxStatus(podSandboxID)
+		if err != nil {
+			glog.Errorf("Failed to get pod sandbox status: %v; Skipping pod %q", err, format.Pod(pod))
+			result.Fail(err)
+			return
 		}
+
+		// Overwrite the podIP passed in the pod status, since we just started the pod sandbox.
+		podIP = m.determinePodSandboxIP(pod.Namespace, pod.Name, podSandboxStatus)
+		glog.V(4).Infof("Determined the ip %q for pod %q after sandbox changed", podIP, format.Pod(pod))
 	}
 
 	// Get podSandboxConfig for containers to start.
@@ -815,33 +793,6 @@ func (m *kubeGenericRuntimeManager) killPodWithSyncResult(pod *api.Pod, runningP
 		result.AddSyncResult(containerResult)
 	}
 
-	// Teardown network plugin
-	if len(runningPod.Sandboxes) == 0 {
-		glog.V(4).Infof("Can not find pod sandbox by UID %q, assuming already removed.", runningPod.ID)
-		return
-	}
-
-	sandboxID := runningPod.Sandboxes[0].ID.ID
-	isHostNetwork, err := m.isHostNetwork(sandboxID, pod)
-	if err != nil {
-		result.Fail(err)
-		return
-	}
-	if !isHostNetwork {
-		teardownNetworkResult := kubecontainer.NewSyncResult(kubecontainer.TeardownNetwork, runningPod.ID)
-		result.AddSyncResult(teardownNetworkResult)
-		// Tear down network plugin with sandbox id
-		if err := m.networkPlugin.TearDownPod(runningPod.Namespace, runningPod.Name, kubecontainer.ContainerID{
-			Type: m.runtimeName,
-			ID:   sandboxID,
-		}); err != nil {
-			message := fmt.Sprintf("Failed to teardown network for pod %s_%s(%s) using network plugins %q: %v",
-				runningPod.Name, runningPod.Namespace, runningPod.ID, m.networkPlugin.Name(), err)
-			teardownNetworkResult.Fail(kubecontainer.ErrTeardownNetwork, message)
-			glog.Error(message)
-		}
-	}
-
 	// stop sandbox, the sandbox will be removed in GarbageCollect
 	killSandboxResult := kubecontainer.NewSyncResult(kubecontainer.KillPodSandbox, runningPod.ID)
 	result.AddSyncResult(killSandboxResult)
@@ -892,7 +843,7 @@ func (m *kubeGenericRuntimeManager) GetPodStatus(uid kubetypes.UID, name, namesp
 	// Anyhow, we only promised "best-effort" restart count reporting, we can just ignore
 	// these limitations now.
 	// TODO: move this comment to SyncPod.
-	podSandboxIDs, err := m.getSandboxIDByPodUID(string(uid), nil)
+	podSandboxIDs, err := m.getSandboxIDByPodUID(uid, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -917,7 +868,7 @@ func (m *kubeGenericRuntimeManager) GetPodStatus(uid kubetypes.UID, name, namesp
 		sandboxStatuses[idx] = podSandboxStatus
 
 		// Only get pod IP from latest sandbox
-		if idx == 0 && podSandboxStatus.GetState() == runtimeApi.PodSandBoxState_READY {
+		if idx == 0 && podSandboxStatus.GetState() == runtimeApi.PodSandboxState_SANDBOX_READY {
 			podIP = m.determinePodSandboxIP(namespace, name, podSandboxStatus)
 		}
 	}
@@ -939,36 +890,11 @@ func (m *kubeGenericRuntimeManager) GetPodStatus(uid kubetypes.UID, name, namesp
 	}, nil
 }
 
-// Returns the filesystem path of the pod's network namespace; if the
-// runtime does not handle namespace creation itself, or cannot return
-// the network namespace path, it returns an 'not supported' error.
-// TODO: Rename param name to sandboxID in kubecontainer.Runtime.GetNetNS().
-// TODO: Remove GetNetNS after networking is delegated to the container runtime.
-func (m *kubeGenericRuntimeManager) GetNetNS(sandboxID kubecontainer.ContainerID) (string, error) {
-	filter := &runtimeApi.PodSandboxFilter{
-		Id:            &sandboxID.ID,
-		LabelSelector: map[string]string{kubernetesManagedLabel: "true"},
-	}
-	sandboxes, err := m.runtimeService.ListPodSandbox(filter)
-	if err != nil {
-		glog.Errorf("ListPodSandbox with filter %q failed: %v", filter, err)
-		return "", err
-	}
-	if len(sandboxes) == 0 {
-		glog.Errorf("No sandbox is found with filter %q", filter)
-		return "", fmt.Errorf("Sandbox %q is not found", sandboxID)
-	}
-
-	sandboxStatus, err := m.runtimeService.PodSandboxStatus(sandboxes[0].GetId())
-	if err != nil {
-		glog.Errorf("PodSandboxStatus with id %q failed: %v", sandboxes[0].GetId(), err)
-		return "", err
-	}
-
-	if sandboxStatus.Linux != nil && sandboxStatus.Linux.Namespaces != nil {
-		return sandboxStatus.Linux.Namespaces.GetNetwork(), nil
-	}
-
+// Returns the filesystem path of the pod's network namespace.
+//
+// For CRI, container network is handled by the runtime completely and this
+// function should never be called.
+func (m *kubeGenericRuntimeManager) GetNetNS(_ kubecontainer.ContainerID) (string, error) {
 	return "", fmt.Errorf("not supported")
 }
 
@@ -989,20 +915,16 @@ func (m *kubeGenericRuntimeManager) GetPodContainerID(pod *kubecontainer.Pod) (k
 	return pod.Sandboxes[0].ID, nil
 }
 
-// Forward the specified port from the specified pod to the stream.
-func (m *kubeGenericRuntimeManager) PortForward(pod *kubecontainer.Pod, port uint16, stream io.ReadWriteCloser) error {
-	formattedPod := kubecontainer.FormatPod(pod)
-	if len(pod.Sandboxes) == 0 {
-		glog.Errorf("No sandboxes are found for pod %q", formattedPod)
-		return fmt.Errorf("sandbox for pod %q not found", formattedPod)
-	}
-
-	// Use docker portforward directly for in-process docker integration
-	// now to unblock other tests.
-	// TODO: remove this hack after portforward is defined in CRI.
-	if ds, ok := m.runtimeService.(dockershim.DockerLegacyService); ok {
-		return ds.PortForward(pod.Sandboxes[0].ID.ID, port, stream)
-	}
-
-	return fmt.Errorf("not implemented")
+// UpdatePodCIDR is just a passthrough method to update the runtimeConfig of the shim
+// with the podCIDR supplied by the kubelet.
+func (m *kubeGenericRuntimeManager) UpdatePodCIDR(podCIDR string) error {
+	// TODO(#35531): do we really want to write a method on this manager for each
+	// field of the config?
+	glog.Infof("updating runtime config through cri with podcidr %v", podCIDR)
+	return m.runtimeService.UpdateRuntimeConfig(
+		&runtimeApi.RuntimeConfig{
+			NetworkConfig: &runtimeApi.NetworkConfig{
+				PodCidr: &podCIDR,
+			},
+		})
 }

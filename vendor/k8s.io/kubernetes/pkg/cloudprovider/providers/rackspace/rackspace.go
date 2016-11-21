@@ -408,7 +408,12 @@ func (i *Instances) NodeAddresses(nodeName types.NodeName) ([]api.NodeAddress, e
 	glog.V(2).Infof("NodeAddresses(%v) => %v", serverName, ip)
 
 	// net.ParseIP().String() is to maintain compatibility with the old code
-	return []api.NodeAddress{{Type: api.NodeLegacyHostIP, Address: net.ParseIP(ip).String()}}, nil
+	parsedIP := net.ParseIP(ip).String()
+	return []api.NodeAddress{
+		{Type: api.NodeLegacyHostIP, Address: parsedIP},
+		{Type: api.NodeInternalIP, Address: parsedIP},
+		{Type: api.NodeExternalIP, Address: parsedIP},
+	}, nil
 }
 
 // mapNodeNameToServerName maps from a k8s NodeName to a rackspace Server Name
@@ -629,8 +634,10 @@ func (rs *Rackspace) DetachDisk(instanceID string, partialDiskId string) error {
 	return nil
 }
 
-// Get device path of attached volume to the compute running kubelet
+// Get device path of attached volume to the compute running kubelet, as known by cinder
 func (rs *Rackspace) GetAttachmentDiskPath(instanceID string, diskName string) (string, error) {
+	// See issue #33128 - Cinder does not always tell you the right device path, as such
+	// we must only use this value as a last resort.
 	disk, err := rs.getVolume(diskName)
 	if err != nil {
 		return "", err
@@ -659,4 +666,30 @@ func (rs *Rackspace) DiskIsAttached(diskName, instanceID string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// query if a list volumes are attached to a compute instance
+func (rs *Rackspace) DisksAreAttached(diskNames []string, instanceID string) (map[string]bool, error) {
+	attached := make(map[string]bool)
+	for _, diskName := range diskNames {
+		attached[diskName] = false
+	}
+	var returnedErr error
+	for _, diskName := range diskNames {
+		result, err := rs.DiskIsAttached(diskName, instanceID)
+		if err != nil {
+			returnedErr = fmt.Errorf("Error in checking disk %q attached: %v \n %v", diskName, err, returnedErr)
+			continue
+		}
+		if result {
+			attached[diskName] = true
+		}
+
+	}
+	return attached, returnedErr
+}
+
+// query if we should trust the cinder provide deviceName, See issue #33128
+func (rs *Rackspace) ShouldTrustDevicePath() bool {
+	return true
 }

@@ -31,6 +31,7 @@ import (
 
 	"github.com/golang/glog"
 	utilExec "k8s.io/kubernetes/pkg/util/exec"
+	"k8s.io/kubernetes/pkg/util/sets"
 )
 
 const (
@@ -62,16 +63,23 @@ type Mounter struct {
 // currently come from mount(8), e.g. "ro", "remount", "bind", etc. If no more option is
 // required, call Mount with an empty string list or nil.
 func (mounter *Mounter) Mount(source string, target string, fstype string, options []string) error {
+	// Path to mounter binary. Set to mount accessible via $PATH by default.
+	// All Linux distros are expected to be shipped with a mount utility that an support bind mounts.
+	mounterPath := defaultMountCommand
 	bind, bindRemountOpts := isBind(options)
 	if bind {
-		err := doMount(mounter.mounterPath, source, target, fstype, []string{"bind"})
+		err := doMount(mounterPath, source, target, fstype, []string{"bind"})
 		if err != nil {
 			return err
 		}
-		return doMount(mounter.mounterPath, source, target, fstype, bindRemountOpts)
-	} else {
-		return doMount(mounter.mounterPath, source, target, fstype, options)
+		return doMount(mounterPath, source, target, fstype, bindRemountOpts)
 	}
+	// These filesystem types are expected to be supported by the mount utility on the host across all Linux distros.
+	var defaultMounterFsTypes = sets.NewString("tmpfs", "ext4", "ext3", "ext2")
+	if !defaultMounterFsTypes.Has(fstype) {
+		mounterPath = mounter.mounterPath
+	}
+	return doMount(mounterPath, source, target, fstype, options)
 }
 
 // isBind detects whether a bind mount is being requested and makes the remount options to

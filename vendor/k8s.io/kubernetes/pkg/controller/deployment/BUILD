@@ -14,6 +14,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "deployment_controller.go",
+        "progress.go",
         "recreate.go",
         "rollback.go",
         "rolling.go",
@@ -27,7 +28,7 @@ go_library(
         "//pkg/apis/extensions:go_default_library",
         "//pkg/client/cache:go_default_library",
         "//pkg/client/clientset_generated/internalclientset:go_default_library",
-        "//pkg/client/clientset_generated/internalclientset/typed/core/unversioned:go_default_library",
+        "//pkg/client/clientset_generated/internalclientset/typed/core/internalversion:go_default_library",
         "//pkg/client/record:go_default_library",
         "//pkg/client/retry:go_default_library",
         "//pkg/controller:go_default_library",

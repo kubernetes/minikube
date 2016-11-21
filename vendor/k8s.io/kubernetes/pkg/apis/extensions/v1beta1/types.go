@@ -288,9 +288,19 @@ type DeploymentSpec struct {
 	// deployment controller.
 	// +optional
 	Paused bool `json:"paused,omitempty" protobuf:"varint,7,opt,name=paused"`
+
 	// The config this deployment is rolling back to. Will be cleared after rollback is done.
 	// +optional
 	RollbackTo *RollbackConfig `json:"rollbackTo,omitempty" protobuf:"bytes,8,opt,name=rollbackTo"`
+
+	// The maximum time in seconds for a deployment to make progress before it
+	// is considered to be failed. The deployment controller will continue to
+	// process failed deployments and a condition with a ProgressDeadlineExceeded
+	// reason will be surfaced in the deployment status. Once autoRollback is
+	// implemented, the deployment controller will automatically rollback failed
+	// deployments. Note that progress will not be estimated during the time a
+	// deployment is paused. This is not set by default.
+	ProgressDeadlineSeconds *int32 `json:"progressDeadlineSeconds,omitempty" protobuf:"varint,9,opt,name=progressDeadlineSeconds"`
 }
 
 // DeploymentRollback stores the information required to rollback a deployment.
@@ -394,6 +404,42 @@ type DeploymentStatus struct {
 	// Total number of unavailable pods targeted by this deployment.
 	// +optional
 	UnavailableReplicas int32 `json:"unavailableReplicas,omitempty" protobuf:"varint,5,opt,name=unavailableReplicas"`
+
+	// Represents the latest available observations of a deployment's current state.
+	Conditions []DeploymentCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
+}
+
+type DeploymentConditionType string
+
+// These are valid conditions of a deployment.
+const (
+	// Available means the deployment is available, ie. at least the minimum available
+	// replicas required are up and running for at least minReadySeconds.
+	DeploymentAvailable DeploymentConditionType = "Available"
+	// Progressing means the deployment is progressing. Progress for a deployment is
+	// considered when a new replica set is created or adopted, and when new pods scale
+	// up or old pods scale down. Progress is not estimated for paused deployments or
+	// when progressDeadlineSeconds is not specified.
+	DeploymentProgressing DeploymentConditionType = "Progressing"
+	// ReplicaFailure is added in a deployment when one of its pods fails to be created
+	// or deleted.
+	DeploymentReplicaFailure DeploymentConditionType = "ReplicaFailure"
+)
+
+// DeploymentCondition describes the state of a deployment at a certain point.
+type DeploymentCondition struct {
+	// Type of deployment condition.
+	Type DeploymentConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=DeploymentConditionType"`
+	// Status of the condition, one of True, False, Unknown.
+	Status v1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/kubernetes/pkg/api/v1.ConditionStatus"`
+	// The last time this condition was updated.
+	LastUpdateTime unversioned.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
+	// Last time the condition transitioned from one status to another.
+	LastTransitionTime unversioned.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,7,opt,name=lastTransitionTime"`
+	// The reason for the condition's last transition.
+	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
+	// A human readable message indicating details about the transition.
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
 // DeploymentList is a list of Deployments.
@@ -571,6 +617,7 @@ type ThirdPartyResourceDataList struct {
 // +genclient=true
 
 // Job represents the configuration of a single job.
+// DEPRECATED: extensions/v1beta1.Job is deprecated, use batch/v1.Job instead.
 type Job struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard object's metadata.
@@ -590,6 +637,7 @@ type Job struct {
 }
 
 // JobList is a collection of jobs.
+// DEPRECATED: extensions/v1beta1.JobList is deprecated, use batch/v1.JobList instead.
 type JobList struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard list metadata
@@ -976,7 +1024,7 @@ type ReplicaSetStatus struct {
 
 	// Represents the latest available observations of a replica set's current state.
 	// +optional
-	Conditions []ReplicaSetCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions []ReplicaSetCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,6,rep,name=conditions"`
 }
 
 type ReplicaSetConditionType string
@@ -992,18 +1040,18 @@ const (
 // ReplicaSetCondition describes the state of a replica set at a certain point.
 type ReplicaSetCondition struct {
 	// Type of replica set condition.
-	Type ReplicaSetConditionType `json:"type"`
+	Type ReplicaSetConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=ReplicaSetConditionType"`
 	// Status of the condition, one of True, False, Unknown.
-	Status v1.ConditionStatus `json:"status"`
+	Status v1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/kubernetes/pkg/api/v1.ConditionStatus"`
 	// The last time the condition transitioned from one status to another.
 	// +optional
-	LastTransitionTime unversioned.Time `json:"lastTransitionTime,omitempty"`
+	LastTransitionTime unversioned.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,3,opt,name=lastTransitionTime"`
 	// The reason for the condition's last transition.
 	// +optional
-	Reason string `json:"reason,omitempty"`
+	Reason string `json:"reason,omitempty" protobuf:"bytes,4,opt,name=reason"`
 	// A human readable message indicating details about the transition.
 	// +optional
-	Message string `json:"message,omitempty"`
+	Message string `json:"message,omitempty" protobuf:"bytes,5,opt,name=message"`
 }
 
 // +genclient=true

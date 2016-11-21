@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -32,15 +33,14 @@ import (
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	"k8s.io/kubernetes/pkg/kubelet/dockershim"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	kubetypes "k8s.io/kubernetes/pkg/types"
 	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
+	"k8s.io/kubernetes/pkg/util/selinux"
 	"k8s.io/kubernetes/pkg/util/sets"
-	"k8s.io/kubernetes/pkg/util/term"
 )
 
 // startContainer starts a container and returns a message indicates why it is failed on error.
@@ -135,9 +135,21 @@ func (m *kubeGenericRuntimeManager) generateContainerConfig(container *api.Conta
 		return nil, err
 	}
 
+	uid, username, err := m.getImageUser(container.Image)
+	if err != nil {
+		return nil, err
+	}
+	if uid != nil {
+		// Verify RunAsNonRoot. Non-root verification only supports numeric user.
+		if err := verifyRunAsNonRoot(pod, container, *uid); err != nil {
+			return nil, err
+		}
+	} else {
+		glog.Warningf("Non-root verification doesn't support non-numeric user (%s)", *username)
+	}
+
 	command, args := kubecontainer.ExpandContainerCommandAndArgs(container, opts.Envs)
 	containerLogsPath := buildContainerLogsPath(container.Name, restartCount)
-	podHasSELinuxLabel := pod.Spec.SecurityContext != nil && pod.Spec.SecurityContext.SELinuxOptions != nil
 	restartCountUint32 := uint32(restartCount)
 	config := &runtimeApi.ContainerConfig{
 		Metadata: &runtimeApi.ContainerMetadata{
@@ -150,23 +162,13 @@ func (m *kubeGenericRuntimeManager) generateContainerConfig(container *api.Conta
 		WorkingDir:  &container.WorkingDir,
 		Labels:      newContainerLabels(container, pod),
 		Annotations: newContainerAnnotations(container, pod, restartCount),
-		Mounts:      makeMounts(opts, container, podHasSELinuxLabel),
+		Devices:     makeDevices(opts),
+		Mounts:      m.makeMounts(opts, container),
 		LogPath:     &containerLogsPath,
 		Stdin:       &container.Stdin,
 		StdinOnce:   &container.StdinOnce,
 		Tty:         &container.TTY,
-		Linux:       m.generateLinuxContainerConfig(container, pod),
-	}
-
-	// set privileged and readonlyRootfs
-	if container.SecurityContext != nil {
-		securityContext := container.SecurityContext
-		if securityContext.Privileged != nil {
-			config.Privileged = securityContext.Privileged
-		}
-		if securityContext.ReadOnlyRootFilesystem != nil {
-			config.ReadonlyRootfs = securityContext.ReadOnlyRootFilesystem
-		}
+		Linux:       m.generateLinuxContainerConfig(container, pod, uid, username),
 	}
 
 	// set environment variables
@@ -184,9 +186,10 @@ func (m *kubeGenericRuntimeManager) generateContainerConfig(container *api.Conta
 }
 
 // generateLinuxContainerConfig generates linux container config for kubelet runtime api.
-func (m *kubeGenericRuntimeManager) generateLinuxContainerConfig(container *api.Container, pod *api.Pod) *runtimeApi.LinuxContainerConfig {
-	linuxConfig := &runtimeApi.LinuxContainerConfig{
-		Resources: &runtimeApi.LinuxContainerResources{},
+func (m *kubeGenericRuntimeManager) generateLinuxContainerConfig(container *api.Container, pod *api.Pod, uid *int64, username *string) *runtimeApi.LinuxContainerConfig {
+	lc := &runtimeApi.LinuxContainerConfig{
+		Resources:       &runtimeApi.LinuxContainerResources{},
+		SecurityContext: m.determineEffectiveSecurityContext(pod, container, uid, username),
 	}
 
 	// set linux container resources
@@ -206,67 +209,56 @@ func (m *kubeGenericRuntimeManager) generateLinuxContainerConfig(container *api.
 		// of CPU shares.
 		cpuShares = milliCPUToShares(cpuRequest.MilliValue())
 	}
-	linuxConfig.Resources.CpuShares = &cpuShares
+	lc.Resources.CpuShares = &cpuShares
 	if memoryLimit != 0 {
-		linuxConfig.Resources.MemoryLimitInBytes = &memoryLimit
+		lc.Resources.MemoryLimitInBytes = &memoryLimit
 	}
 	// Set OOM score of the container based on qos policy. Processes in lower-priority pods should
 	// be killed first if the system runs out of memory.
-	linuxConfig.Resources.OomScoreAdj = &oomScoreAdj
+	lc.Resources.OomScoreAdj = &oomScoreAdj
 
 	if m.cpuCFSQuota {
 		// if cpuLimit.Amount is nil, then the appropriate default value is returned
 		// to allow full usage of cpu resource.
 		cpuQuota, cpuPeriod := milliCPUToQuota(cpuLimit.MilliValue())
-		linuxConfig.Resources.CpuQuota = &cpuQuota
-		linuxConfig.Resources.CpuPeriod = &cpuPeriod
+		lc.Resources.CpuQuota = &cpuQuota
+		lc.Resources.CpuPeriod = &cpuPeriod
 	}
 
-	// set security context options
-	if container.SecurityContext != nil {
-		securityContext := container.SecurityContext
-		if securityContext.Capabilities != nil {
-			linuxConfig.Capabilities = &runtimeApi.Capability{
-				AddCapabilities:  make([]string, len(securityContext.Capabilities.Add)),
-				DropCapabilities: make([]string, len(securityContext.Capabilities.Drop)),
-			}
-			for index, value := range securityContext.Capabilities.Add {
-				linuxConfig.Capabilities.AddCapabilities[index] = string(value)
-			}
-			for index, value := range securityContext.Capabilities.Drop {
-				linuxConfig.Capabilities.DropCapabilities[index] = string(value)
-			}
-		}
+	return lc
+}
 
-		if securityContext.SELinuxOptions != nil {
-			linuxConfig.SelinuxOptions = &runtimeApi.SELinuxOption{
-				User:  &securityContext.SELinuxOptions.User,
-				Role:  &securityContext.SELinuxOptions.Role,
-				Type:  &securityContext.SELinuxOptions.Type,
-				Level: &securityContext.SELinuxOptions.Level,
-			}
+// makeDevices generates container devices for kubelet runtime api.
+func makeDevices(opts *kubecontainer.RunContainerOptions) []*runtimeApi.Device {
+	devices := make([]*runtimeApi.Device, len(opts.Devices))
+
+	for idx := range opts.Devices {
+		device := opts.Devices[idx]
+		devices[idx] = &runtimeApi.Device{
+			HostPath:      &device.PathOnHost,
+			ContainerPath: &device.PathInContainer,
+			Permissions:   &device.Permissions,
 		}
 	}
 
-	return linuxConfig
+	return devices
 }
 
 // makeMounts generates container volume mounts for kubelet runtime api.
-func makeMounts(opts *kubecontainer.RunContainerOptions, container *api.Container, podHasSELinuxLabel bool) []*runtimeApi.Mount {
+func (m *kubeGenericRuntimeManager) makeMounts(opts *kubecontainer.RunContainerOptions, container *api.Container) []*runtimeApi.Mount {
 	volumeMounts := []*runtimeApi.Mount{}
 
 	for idx := range opts.Mounts {
 		v := opts.Mounts[idx]
-		m := &runtimeApi.Mount{
-			HostPath:      &v.HostPath,
-			ContainerPath: &v.ContainerPath,
-			Readonly:      &v.ReadOnly,
-		}
-		if podHasSELinuxLabel && v.SELinuxRelabel {
-			m.SelinuxRelabel = &v.SELinuxRelabel
+		selinuxRelabel := v.SELinuxRelabel && selinux.SELinuxEnabled()
+		mount := &runtimeApi.Mount{
+			HostPath:       &v.HostPath,
+			ContainerPath:  &v.ContainerPath,
+			Readonly:       &v.ReadOnly,
+			SelinuxRelabel: &selinuxRelabel,
 		}
 
-		volumeMounts = append(volumeMounts, m)
+		volumeMounts = append(volumeMounts, mount)
 	}
 
 	// The reason we create and mount the log file in here (not in kubelet) is because
@@ -278,15 +270,16 @@ func makeMounts(opts *kubecontainer.RunContainerOptions, container *api.Containe
 		// of the same container.
 		cid := makeUID()
 		containerLogPath := filepath.Join(opts.PodContainerDir, cid)
-		// TODO: We should try to use os interface here.
-		fs, err := os.Create(containerLogPath)
+		fs, err := m.osInterface.Create(containerLogPath)
 		if err != nil {
 			glog.Errorf("Error on creating termination-log file %q: %v", containerLogPath, err)
 		} else {
 			fs.Close()
+			selinuxRelabel := selinux.SELinuxEnabled()
 			volumeMounts = append(volumeMounts, &runtimeApi.Mount{
-				HostPath:      &containerLogPath,
-				ContainerPath: &container.TerminationMessagePath,
+				HostPath:       &containerLogPath,
+				ContainerPath:  &container.TerminationMessagePath,
+				SelinuxRelabel: &selinuxRelabel,
 			})
 		}
 	}
@@ -302,7 +295,7 @@ func (m *kubeGenericRuntimeManager) getKubeletContainers(allContainers bool) ([]
 		LabelSelector: map[string]string{kubernetesManagedLabel: "true"},
 	}
 	if !allContainers {
-		runningState := runtimeApi.ContainerState_RUNNING
+		runningState := runtimeApi.ContainerState_CONTAINER_RUNNING
 		filter.State = &runningState
 	}
 
@@ -391,7 +384,7 @@ func (m *kubeGenericRuntimeManager) getPodContainerStatuses(uid kubetypes.UID, n
 			CreatedAt:    time.Unix(0, status.GetCreatedAt()),
 		}
 
-		if c.GetState() == runtimeApi.ContainerState_RUNNING {
+		if c.GetState() == runtimeApi.ContainerState_CONTAINER_RUNNING {
 			cStatus.StartedAt = time.Unix(0, status.GetStartedAt())
 		} else {
 			cStatus.Reason = status.GetReason()
@@ -662,41 +655,54 @@ func findNextInitContainerToRun(pod *api.Pod, podStatus *kubecontainer.PodStatus
 	return nil, &pod.Spec.InitContainers[0], false
 }
 
-// AttachContainer attaches to the container's console
-func (m *kubeGenericRuntimeManager) AttachContainer(id kubecontainer.ContainerID, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) (err error) {
-	// Use `docker attach` directly for in-process docker integration for
-	// now to unblock other tests.
-	// TODO: remove this hack after attach is defined in CRI.
-	if ds, ok := m.runtimeService.(dockershim.DockerLegacyService); ok {
-		return ds.AttachContainer(id, stdin, stdout, stderr, tty, resize)
-	}
-	return fmt.Errorf("not implemented")
-}
-
 // GetContainerLogs returns logs of a specific container.
 func (m *kubeGenericRuntimeManager) GetContainerLogs(pod *api.Pod, containerID kubecontainer.ContainerID, logOptions *api.PodLogOptions, stdout, stderr io.Writer) (err error) {
-	// Get logs directly from docker for in-process docker integration for
-	// now to unblock other tests.
-	// TODO: remove this hack after setting down on how to implement log
-	// retrieval/management.
-	if ds, ok := m.runtimeService.(dockershim.DockerLegacyService); ok {
-		return ds.GetContainerLogs(pod, containerID, logOptions, stdout, stderr)
+	status, err := m.runtimeService.ContainerStatus(containerID.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get container status %q: %v", containerID, err)
 	}
-	return fmt.Errorf("not implemented")
+	labeledInfo := getContainerInfoFromLabels(status.Labels)
+	annotatedInfo := getContainerInfoFromAnnotations(status.Annotations)
+	path := buildFullContainerLogsPath(pod.UID, labeledInfo.ContainerName, annotatedInfo.RestartCount)
+	return ReadLogs(path, logOptions, stdout, stderr)
 }
 
-// Runs the command in the container of the specified pod using nsenter.
-// Attaches the processes stdin, stdout, and stderr. Optionally uses a
-// tty.
-// TODO: handle terminal resizing, refer https://github.com/kubernetes/kubernetes/issues/29579
-func (m *kubeGenericRuntimeManager) ExecInContainer(containerID kubecontainer.ContainerID, cmd []string, stdin io.Reader, stdout, stderr io.WriteCloser, tty bool, resize <-chan term.Size) error {
-	// Use `docker exec` directly for in-process docker integration for
-	// now to unblock other tests.
-	// TODO: remove this hack after exec is defined in CRI.
-	if ds, ok := m.runtimeService.(dockershim.DockerLegacyService); ok {
-		return ds.ExecInContainer(containerID, cmd, stdin, stdout, stderr, tty, resize)
+// GetExec gets the endpoint the runtime will serve the exec request from.
+func (m *kubeGenericRuntimeManager) GetExec(id kubecontainer.ContainerID, cmd []string, stdin, stdout, stderr, tty bool) (*url.URL, error) {
+	req := &runtimeApi.ExecRequest{
+		ContainerId: &id.ID,
+		Cmd:         cmd,
+		Tty:         &tty,
+		Stdin:       &stdin,
 	}
-	return fmt.Errorf("not implemented")
+	resp, err := m.runtimeService.Exec(req)
+	if err != nil {
+		return nil, err
+	}
+
+	return url.Parse(resp.GetUrl())
+}
+
+// GetAttach gets the endpoint the runtime will serve the attach request from.
+func (m *kubeGenericRuntimeManager) GetAttach(id kubecontainer.ContainerID, stdin, stdout, stderr bool) (*url.URL, error) {
+	req := &runtimeApi.AttachRequest{
+		ContainerId: &id.ID,
+		Stdin:       &stdin,
+	}
+	resp, err := m.runtimeService.Attach(req)
+	if err != nil {
+		return nil, err
+	}
+	return url.Parse(resp.GetUrl())
+}
+
+// RunInContainer synchronously executes the command in the container, and returns the output.
+func (m *kubeGenericRuntimeManager) RunInContainer(id kubecontainer.ContainerID, cmd []string, timeout time.Duration) ([]byte, error) {
+	stdout, stderr, err := m.runtimeService.ExecSync(id.ID, cmd, 0)
+	// NOTE(timstclair): This does not correctly interleave stdout & stderr, but should be sufficient
+	// for logging purposes. A combined output option will need to be added to the ExecSyncRequest
+	// if more precise output ordering is ever required.
+	return append(stdout, stderr...), err
 }
 
 // removeContainer removes the container and the container logs.
@@ -708,6 +714,7 @@ func (m *kubeGenericRuntimeManager) ExecInContainer(containerID kubecontainer.Co
 func (m *kubeGenericRuntimeManager) removeContainer(containerID string) error {
 	glog.V(4).Infof("Removing container %q", containerID)
 	// Remove the container log.
+	// TODO: Separate log and container lifecycle management.
 	if err := m.removeContainerLog(containerID); err != nil {
 		return err
 	}
@@ -720,16 +727,13 @@ func (m *kubeGenericRuntimeManager) removeContainerLog(containerID string) error
 	// Remove the container log.
 	status, err := m.runtimeService.ContainerStatus(containerID)
 	if err != nil {
-		glog.Errorf("ContainerStatus for %q error: %v", containerID, err)
-		return err
+		return fmt.Errorf("failed to get container status %q: %v", containerID, err)
 	}
 	labeledInfo := getContainerInfoFromLabels(status.Labels)
 	annotatedInfo := getContainerInfoFromAnnotations(status.Annotations)
-	path := filepath.Join(buildPodLogsDirectory(labeledInfo.PodUID),
-		buildContainerLogsPath(labeledInfo.ContainerName, annotatedInfo.RestartCount))
+	path := buildFullContainerLogsPath(labeledInfo.PodUID, labeledInfo.ContainerName, annotatedInfo.RestartCount)
 	if err := m.osInterface.Remove(path); err != nil && !os.IsNotExist(err) {
-		glog.Errorf("Failed to remove container %q log %q: %v", containerID, path, err)
-		return err
+		return fmt.Errorf("failed to remove container %q log %q: %v", containerID, path, err)
 	}
 
 	// Remove the legacy container log symlink.
@@ -737,9 +741,8 @@ func (m *kubeGenericRuntimeManager) removeContainerLog(containerID string) error
 	legacySymlink := legacyLogSymlink(containerID, labeledInfo.ContainerName, labeledInfo.PodName,
 		labeledInfo.PodNamespace)
 	if err := m.osInterface.Remove(legacySymlink); err != nil && !os.IsNotExist(err) {
-		glog.Errorf("Failed to remove container %q log legacy symbolic link %q: %v",
+		return fmt.Errorf("failed to remove container %q log legacy symbolic link %q: %v",
 			containerID, legacySymlink, err)
-		return err
 	}
 	return nil
 }

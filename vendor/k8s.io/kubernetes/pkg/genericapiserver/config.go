@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	goruntime "runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,7 +51,6 @@ import (
 	"k8s.io/kubernetes/pkg/genericapiserver/options"
 	"k8s.io/kubernetes/pkg/genericapiserver/routes"
 	genericvalidation "k8s.io/kubernetes/pkg/genericapiserver/validation"
-	ipallocator "k8s.io/kubernetes/pkg/registry/core/service/ipallocator"
 	"k8s.io/kubernetes/pkg/runtime"
 	certutil "k8s.io/kubernetes/pkg/util/cert"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
@@ -79,19 +79,20 @@ type Config struct {
 	// Allows api group versions or specific resources to be conditionally enabled/disabled.
 	APIResourceConfigSource APIResourceConfigSource
 	// allow downstream consumers to disable the index route
-	EnableIndex             bool
-	EnableProfiling         bool
-	EnableGarbageCollection bool
+	EnableIndex     bool
+	EnableProfiling bool
+	// Requires generic profiling enabled
+	EnableContentionProfiling bool
+	EnableMetrics             bool
+	EnableGarbageCollection   bool
 
 	Version               *version.Info
-	APIGroupPrefix        string
 	CorsAllowedOriginList []string
 	Authenticator         authenticator.Request
 	// TODO(roberthbailey): Remove once the server no longer supports http basic auth.
-	SupportsBasicAuth      bool
-	Authorizer             authorizer.Authorizer
-	AdmissionControl       admission.Interface
-	MasterServiceNamespace string
+	SupportsBasicAuth bool
+	Authorizer        authorizer.Authorizer
+	AdmissionControl  admission.Interface
 	// TODO(ericchiang): Determine if policy escalation checks should be an admission controller.
 	AuthorizerRBACSuperUser string
 
@@ -108,52 +109,24 @@ type Config struct {
 	// Note that it is up to the request handlers to ignore or honor this timeout. In seconds.
 	MinRequestTimeout int
 
-	// Number of masters running; all masters must be started with the
-	// same value for this field. (Numbers > 1 currently untested.)
-	MasterCount int
-
-	SecureServingInfo   *ServingInfo
+	SecureServingInfo   *SecureServingInfo
 	InsecureServingInfo *ServingInfo
+
+	// DiscoveryAddresses is used to build the IPs pass to discovery.  If nil, the ExternalAddress is
+	// always reported
+	DiscoveryAddresses DiscoveryAddresses
 
 	// The port on PublicAddress where a read-write server will be installed.
 	// Defaults to 6443 if not set.
 	ReadWritePort int
 
-	// ExternalHost is the host name to use for external (public internet) facing URLs (e.g. Swagger)
-	ExternalHost string
+	// ExternalAddress is the host name to use for external (public internet) facing URLs (e.g. Swagger)
+	ExternalAddress string
 
 	// PublicAddress is the IP address where members of the cluster (kubelet,
 	// kube-proxy, services, etc.) can reach the GenericAPIServer.
 	// If nil or 0.0.0.0, the host's default interface will be used.
 	PublicAddress net.IP
-
-	// The range of IPs to be assigned to services with type=ClusterIP or greater
-	ServiceClusterIPRange *net.IPNet
-
-	// The IP address for the GenericAPIServer service (must be inside ServiceClusterIPRange)
-	ServiceReadWriteIP net.IP
-
-	// Port for the apiserver service.
-	ServiceReadWritePort int
-
-	// The range of ports to be assigned to services with type=NodePort or greater
-	ServiceNodePortRange utilnet.PortRange
-
-	// Additional ports to be exposed on the GenericAPIServer service
-	// extraServicePorts is injectable in the event that more ports
-	// (other than the default 443/tcp) are exposed on the GenericAPIServer
-	// and those ports need to be load balanced by the GenericAPIServer
-	// service because this pkg is linked by out-of-tree projects
-	// like openshift which want to use the GenericAPIServer but also do
-	// more stuff.
-	ExtraServicePorts []api.ServicePort
-	// Additional ports to be exposed on the GenericAPIServer endpoints
-	// Port names should align with ports defined in ExtraServicePorts
-	ExtraEndpointPorts []api.EndpointPort
-
-	// If non-zero, the "kubernetes" services uses this port as NodePort.
-	// TODO(sttts): move into master
-	KubernetesServiceNodePort int
 
 	// EnableOpenAPISupport enables OpenAPI support. Allow downstream customers to disable OpenAPI spec.
 	EnableOpenAPISupport bool
@@ -179,17 +152,39 @@ type Config struct {
 type ServingInfo struct {
 	// BindAddress is the ip:port to serve on
 	BindAddress string
+	// BindNetwork is the type of network to bind to - defaults to "tcp", accepts "tcp",
+	// "tcp4", and "tcp6".
+	BindNetwork string
+}
+
+type SecureServingInfo struct {
+	ServingInfo
+
 	// ServerCert is the TLS cert info for serving secure traffic
-	ServerCert CertInfo
+	ServerCert GeneratableKeyCert
+	// SNICerts are named CertKeys for serving secure traffic with SNI support.
+	SNICerts []NamedCertKey
 	// ClientCA is the certificate bundle for all the signers that you'll recognize for incoming client certificates
 	ClientCA string
 }
 
-type CertInfo struct {
+type CertKey struct {
 	// CertFile is a file containing a PEM-encoded certificate
 	CertFile string
 	// KeyFile is a file containing a PEM-encoded private key for the certificate specified by CertFile
 	KeyFile string
+}
+
+type NamedCertKey struct {
+	CertKey
+
+	// Names is a list of domain patterns: fully qualified domain names, possibly prefixed with
+	// wildcard segments.
+	Names []string
+}
+
+type GeneratableKeyCert struct {
+	CertKey
 	// Generate indicates that the cert/key pair should be generated if its not present.
 	Generate bool
 }
@@ -200,9 +195,7 @@ func NewConfig() *Config {
 
 	config := &Config{
 		Serializer:             api.Codecs,
-		MasterCount:            1,
 		ReadWritePort:          6443,
-		ServiceReadWritePort:   443,
 		RequestContextMapper:   api.NewRequestContextMapper(),
 		BuildHandlerChainsFunc: DefaultBuildHandlerChain,
 		LegacyAPIGroupPrefixes: sets.NewString(DefaultLegacyAPIPrefix),
@@ -250,18 +243,34 @@ func (c *Config) ApplyOptions(options *options.ServerRunOptions) *Config {
 	}
 
 	if options.SecurePort > 0 {
-		secureServingInfo := &ServingInfo{
-			BindAddress: net.JoinHostPort(options.BindAddress.String(), strconv.Itoa(options.SecurePort)),
-			ServerCert: CertInfo{
-				CertFile: options.TLSCertFile,
-				KeyFile:  options.TLSPrivateKeyFile,
+		secureServingInfo := &SecureServingInfo{
+			ServingInfo: ServingInfo{
+				BindAddress: net.JoinHostPort(options.BindAddress.String(), strconv.Itoa(options.SecurePort)),
 			},
+			ServerCert: GeneratableKeyCert{
+				CertKey: CertKey{
+					CertFile: options.TLSCertFile,
+					KeyFile:  options.TLSPrivateKeyFile,
+				},
+			},
+			SNICerts: []NamedCertKey{},
 			ClientCA: options.ClientCAFile,
 		}
 		if options.TLSCertFile == "" && options.TLSPrivateKeyFile == "" {
 			secureServingInfo.ServerCert.Generate = true
 			secureServingInfo.ServerCert.CertFile = path.Join(options.CertDirectory, "apiserver.crt")
 			secureServingInfo.ServerCert.KeyFile = path.Join(options.CertDirectory, "apiserver.key")
+		}
+
+		secureServingInfo.SNICerts = nil
+		for _, nkc := range options.SNICertKeys {
+			secureServingInfo.SNICerts = append(secureServingInfo.SNICerts, NamedCertKey{
+				CertKey: CertKey{
+					KeyFile:  nkc.KeyFile,
+					CertFile: nkc.CertFile,
+				},
+				Names: nkc.Names,
+			})
 		}
 
 		c.SecureServingInfo = secureServingInfo
@@ -275,18 +284,17 @@ func (c *Config) ApplyOptions(options *options.ServerRunOptions) *Config {
 		c.InsecureServingInfo = insecureServingInfo
 	}
 
+	c.AuthorizerRBACSuperUser = options.AuthorizationRBACSuperUser
 	c.CorsAllowedOriginList = options.CorsAllowedOriginList
 	c.EnableGarbageCollection = options.EnableGarbageCollection
 	c.EnableProfiling = options.EnableProfiling
+	c.EnableContentionProfiling = options.EnableContentionProfiling
 	c.EnableSwaggerUI = options.EnableSwaggerUI
-	c.ExternalHost = options.ExternalHost
-	c.KubernetesServiceNodePort = options.KubernetesServiceNodePort
-	c.MasterCount = options.MasterCount
+	c.ExternalAddress = options.ExternalHost
+	c.MaxRequestsInFlight = options.MaxRequestsInFlight
 	c.MinRequestTimeout = options.MinRequestTimeout
 	c.PublicAddress = options.AdvertiseAddress
-	c.ServiceClusterIPRange = &options.ServiceClusterIPRange
-	c.ServiceNodePortRange = options.ServiceNodePortRange
-	c.MaxRequestsInFlight = options.MaxRequestsInFlight
+	c.SupportsBasicAuth = len(options.BasicAuthFile) > 0
 
 	return c
 }
@@ -298,41 +306,12 @@ type completedConfig struct {
 // Complete fills in any fields not set that are required to have valid data and can be derived
 // from other fields.  If you're going to `ApplyOptions`, do that first.  It's mutating the receiver.
 func (c *Config) Complete() completedConfig {
-	if c.ServiceClusterIPRange == nil || c.ServiceClusterIPRange.IP == nil {
-		defaultNet := "10.0.0.0/24"
-		glog.Warningf("Network range for service cluster IPs is unspecified. Defaulting to %v.", defaultNet)
-		_, serviceClusterIPRange, err := net.ParseCIDR(defaultNet)
-		if err != nil {
-			glog.Fatalf("Unable to parse CIDR: %v", err)
-		}
-		if size := ipallocator.RangeSize(serviceClusterIPRange); size < 8 {
-			glog.Fatalf("The service cluster IP range must be at least %d IP addresses", 8)
-		}
-		c.ServiceClusterIPRange = serviceClusterIPRange
-	}
-	if c.ServiceReadWriteIP == nil {
-		// Select the first valid IP from ServiceClusterIPRange to use as the GenericAPIServer service IP.
-		serviceReadWriteIP, err := ipallocator.GetIndexedIP(c.ServiceClusterIPRange, 1)
-		if err != nil {
-			glog.Fatalf("Failed to generate service read-write IP for GenericAPIServer service: %v", err)
-		}
-		glog.V(4).Infof("Setting GenericAPIServer service IP to %q (read-write).", serviceReadWriteIP)
-		c.ServiceReadWriteIP = serviceReadWriteIP
-	}
-	if c.ServiceNodePortRange.Size == 0 {
-		// TODO: Currently no way to specify an empty range (do we need to allow this?)
-		// We should probably allow this for clouds that don't require NodePort to do load-balancing (GCE)
-		// but then that breaks the strict nestedness of ServiceType.
-		// Review post-v1
-		c.ServiceNodePortRange = options.DefaultServiceNodePortRange
-		glog.Infof("Node port range unspecified. Defaulting to %v.", c.ServiceNodePortRange)
-	}
-	if len(c.ExternalHost) == 0 && c.PublicAddress != nil {
+	if len(c.ExternalAddress) == 0 && c.PublicAddress != nil {
 		hostAndPort := c.PublicAddress.String()
 		if c.ReadWritePort != 0 {
 			hostAndPort = net.JoinHostPort(hostAndPort, strconv.Itoa(c.ReadWritePort))
 		}
-		c.ExternalHost = hostAndPort
+		c.ExternalAddress = hostAndPort
 	}
 	// All APIs will have the same authentication for now.
 	if c.OpenAPIConfig != nil && c.OpenAPIConfig.SecurityDefinitions != nil {
@@ -356,6 +335,10 @@ func (c *Config) Complete() completedConfig {
 			}
 		}
 	}
+	if c.DiscoveryAddresses == nil {
+		c.DiscoveryAddresses = DefaultDiscoveryAddresses{DefaultAddress: c.ExternalAddress}
+	}
+
 	return completedConfig{c}
 }
 
@@ -392,7 +375,7 @@ func (c completedConfig) New() (*GenericAPIServer, error) {
 	}
 
 	s := &GenericAPIServer{
-		ServiceClusterIPRange:  c.ServiceClusterIPRange,
+		discoveryAddresses:     c.DiscoveryAddresses,
 		LoopbackClientConfig:   c.LoopbackClientConfig,
 		legacyAPIGroupPrefixes: c.LegacyAPIGroupPrefixes,
 		admissionControl:       c.AdmissionControl,
@@ -402,18 +385,16 @@ func (c completedConfig) New() (*GenericAPIServer, error) {
 		minRequestTimeout:    time.Duration(c.MinRequestTimeout) * time.Second,
 		enableSwaggerSupport: c.EnableSwaggerSupport,
 
-		MasterCount:          c.MasterCount,
-		SecureServingInfo:    c.SecureServingInfo,
-		InsecureServingInfo:  c.InsecureServingInfo,
-		ExternalAddress:      c.ExternalHost,
-		ServiceReadWriteIP:   c.ServiceReadWriteIP,
-		ServiceReadWritePort: c.ServiceReadWritePort,
+		SecureServingInfo:   c.SecureServingInfo,
+		InsecureServingInfo: c.InsecureServingInfo,
+		ExternalAddress:     c.ExternalAddress,
 
-		KubernetesServiceNodePort: c.KubernetesServiceNodePort,
-		apiGroupsForDiscovery:     map[string]unversioned.APIGroup{},
+		apiGroupsForDiscovery: map[string]unversioned.APIGroup{},
 
 		enableOpenAPISupport: c.EnableOpenAPISupport,
 		openAPIConfig:        c.OpenAPIConfig,
+
+		postStartHooks: map[string]postStartHookEntry{},
 	}
 
 	s.HandlerContainer = mux.NewAPIContainer(http.NewServeMux(), c.Serializer)
@@ -426,17 +407,23 @@ func (c completedConfig) New() (*GenericAPIServer, error) {
 }
 
 // MaybeGenerateServingCerts generates serving certificates if requested and needed.
-func (c completedConfig) MaybeGenerateServingCerts() error {
+func (c completedConfig) MaybeGenerateServingCerts(alternateIPs ...net.IP) error {
 	// It would be nice to set a fqdn subject alt name, but only the kubelets know, the apiserver is clueless
 	// alternateDNS = append(alternateDNS, "kubernetes.default.svc.CLUSTER.DNS.NAME")
 	if c.SecureServingInfo != nil && c.SecureServingInfo.ServerCert.Generate && !certutil.CanReadCertOrKey(c.SecureServingInfo.ServerCert.CertFile, c.SecureServingInfo.ServerCert.KeyFile) {
 		// TODO (cjcullen): Is ClusterIP the right address to sign a cert with?
-		alternateIPs := []net.IP{c.ServiceReadWriteIP}
 		alternateDNS := []string{"kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
 
-		if err := certutil.GenerateSelfSignedCert(c.PublicAddress.String(), c.SecureServingInfo.ServerCert.CertFile, c.SecureServingInfo.ServerCert.KeyFile, alternateIPs, alternateDNS); err != nil {
-			return fmt.Errorf("Unable to generate self signed cert: %v", err)
+		if cert, key, err := certutil.GenerateSelfSignedCertKey(c.PublicAddress.String(), alternateIPs, alternateDNS); err != nil {
+			return fmt.Errorf("unable to generate self signed cert: %v", err)
 		} else {
+			if err := certutil.WriteCert(c.SecureServingInfo.ServerCert.CertFile, cert); err != nil {
+				return err
+			}
+
+			if err := certutil.WriteKey(c.SecureServingInfo.ServerCert.KeyFile, key); err != nil {
+				return err
+			}
 			glog.Infof("Generated self-signed cert (%s, %s)", c.SecureServingInfo.ServerCert.CertFile, c.SecureServingInfo.ServerCert.KeyFile)
 		}
 	}
@@ -479,6 +466,16 @@ func (s *GenericAPIServer) installAPI(c *Config) {
 	}
 	if c.EnableProfiling {
 		routes.Profiling{}.Install(s.HandlerContainer)
+		if c.EnableContentionProfiling {
+			goruntime.SetBlockProfileRate(1)
+		}
+	}
+	if c.EnableMetrics {
+		if c.EnableProfiling {
+			routes.MetricsWithReset{}.Install(s.HandlerContainer)
+		} else {
+			routes.DefaultMetrics{}.Install(s.HandlerContainer)
+		}
 	}
 	routes.Version{Version: c.Version}.Install(s.HandlerContainer)
 	s.HandlerContainer.Add(s.DynamicApisDiscovery())
@@ -500,17 +497,17 @@ func DefaultAndValidateRunOptions(options *options.ServerRunOptions) {
 	}
 	glog.Infof("Will report %v as public IP address.", options.AdvertiseAddress)
 
-	// Set default value for ExternalHost if not specified.
+	// Set default value for ExternalAddress if not specified.
 	if len(options.ExternalHost) == 0 {
 		// TODO: extend for other providers
-		if options.CloudProvider == "gce" {
+		if options.CloudProvider == "gce" || options.CloudProvider == "aws" {
 			cloud, err := cloudprovider.InitCloudProvider(options.CloudProvider, options.CloudConfigFile)
 			if err != nil {
 				glog.Fatalf("Cloud provider could not be initialized: %v", err)
 			}
 			instances, supported := cloud.Instances()
 			if !supported {
-				glog.Fatalf("GCE cloud provider has no instances.  this shouldn't happen. exiting.")
+				glog.Fatalf("%q cloud provider has no instances.  this shouldn't happen. exiting.", options.CloudProvider)
 			}
 			hostname, err := os.Hostname()
 			if err != nil {

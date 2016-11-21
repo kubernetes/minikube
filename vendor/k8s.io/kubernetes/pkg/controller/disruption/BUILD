@@ -21,8 +21,8 @@ go_library(
         "//pkg/apis/policy:go_default_library",
         "//pkg/client/cache:go_default_library",
         "//pkg/client/clientset_generated/internalclientset:go_default_library",
-        "//pkg/client/clientset_generated/internalclientset/typed/core/unversioned:go_default_library",
-        "//pkg/client/clientset_generated/internalclientset/typed/policy/unversioned:go_default_library",
+        "//pkg/client/clientset_generated/internalclientset/typed/core/internalversion:go_default_library",
+        "//pkg/client/clientset_generated/internalclientset/typed/policy/internalversion:go_default_library",
         "//pkg/client/record:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/runtime:go_default_library",
@@ -52,5 +52,6 @@ go_test(
         "//pkg/controller:go_default_library",
         "//pkg/util/intstr:go_default_library",
         "//pkg/util/uuid:go_default_library",
+        "//pkg/util/workqueue:go_default_library",
     ],
 )

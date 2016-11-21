@@ -25,7 +25,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/apps"
-	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/certificates"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/policy"
@@ -294,56 +293,6 @@ func (s *StoreToEndpointsLister) GetServiceEndpoints(svc *api.Service) (ep api.E
 	return
 }
 
-// StoreToJobLister gives a store List and Exists methods. The store must contain only Jobs.
-type StoreToJobLister struct {
-	Store
-}
-
-// Exists checks if the given job exists in the store.
-func (s *StoreToJobLister) Exists(job *batch.Job) (bool, error) {
-	_, exists, err := s.Store.Get(job)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
-}
-
-// StoreToJobLister lists all jobs in the store.
-func (s *StoreToJobLister) List() (jobs batch.JobList, err error) {
-	for _, c := range s.Store.List() {
-		jobs.Items = append(jobs.Items, *(c.(*batch.Job)))
-	}
-	return jobs, nil
-}
-
-// GetPodJobs returns a list of jobs managing a pod. Returns an error only if no matching jobs are found.
-func (s *StoreToJobLister) GetPodJobs(pod *api.Pod) (jobs []batch.Job, err error) {
-	var selector labels.Selector
-	var job batch.Job
-
-	if len(pod.Labels) == 0 {
-		err = fmt.Errorf("no jobs found for pod %v because it has no labels", pod.Name)
-		return
-	}
-
-	for _, m := range s.Store.List() {
-		job = *m.(*batch.Job)
-		if job.Namespace != pod.Namespace {
-			continue
-		}
-
-		selector, _ = unversioned.LabelSelectorAsSelector(job.Spec.Selector)
-		if !selector.Matches(labels.Set(pod.Labels)) {
-			continue
-		}
-		jobs = append(jobs, job)
-	}
-	if len(jobs) == 0 {
-		err = fmt.Errorf("could not find jobs for pod %s in namespace %s with labels: %v", pod.Name, pod.Namespace, pod.Labels)
-	}
-	return
-}
-
 // Typed wrapper around a store of PersistentVolumes
 type StoreToPVFetcher struct {
 	Store
@@ -364,13 +313,13 @@ func (s *StoreToPVFetcher) GetPersistentVolumeInfo(id string) (*api.PersistentVo
 	return o.(*api.PersistentVolume), nil
 }
 
-// StoreToPetSetLister gives a store List and Exists methods. The store must contain only PetSets.
-type StoreToPetSetLister struct {
+// StoreToStatefulSetLister gives a store List and Exists methods. The store must contain only StatefulSets.
+type StoreToStatefulSetLister struct {
 	Store
 }
 
-// Exists checks if the given PetSet exists in the store.
-func (s *StoreToPetSetLister) Exists(ps *apps.PetSet) (bool, error) {
+// Exists checks if the given StatefulSet exists in the store.
+func (s *StoreToStatefulSetLister) Exists(ps *apps.StatefulSet) (bool, error) {
 	_, exists, err := s.Store.Get(ps)
 	if err != nil {
 		return false, err
@@ -378,35 +327,35 @@ func (s *StoreToPetSetLister) Exists(ps *apps.PetSet) (bool, error) {
 	return exists, nil
 }
 
-// List lists all PetSets in the store.
-func (s *StoreToPetSetLister) List() (psList []apps.PetSet, err error) {
+// List lists all StatefulSets in the store.
+func (s *StoreToStatefulSetLister) List() (psList []apps.StatefulSet, err error) {
 	for _, ps := range s.Store.List() {
-		psList = append(psList, *(ps.(*apps.PetSet)))
+		psList = append(psList, *(ps.(*apps.StatefulSet)))
 	}
 	return psList, nil
 }
 
-type storePetSetsNamespacer struct {
+type storeStatefulSetsNamespacer struct {
 	store     Store
 	namespace string
 }
 
-func (s *StoreToPetSetLister) PetSets(namespace string) storePetSetsNamespacer {
-	return storePetSetsNamespacer{s.Store, namespace}
+func (s *StoreToStatefulSetLister) StatefulSets(namespace string) storeStatefulSetsNamespacer {
+	return storeStatefulSetsNamespacer{s.Store, namespace}
 }
 
-// GetPodPetSets returns a list of PetSets managing a pod. Returns an error only if no matching PetSets are found.
-func (s *StoreToPetSetLister) GetPodPetSets(pod *api.Pod) (psList []apps.PetSet, err error) {
+// GetPodStatefulSets returns a list of StatefulSets managing a pod. Returns an error only if no matching StatefulSets are found.
+func (s *StoreToStatefulSetLister) GetPodStatefulSets(pod *api.Pod) (psList []apps.StatefulSet, err error) {
 	var selector labels.Selector
-	var ps apps.PetSet
+	var ps apps.StatefulSet
 
 	if len(pod.Labels) == 0 {
-		err = fmt.Errorf("no PetSets found for pod %v because it has no labels", pod.Name)
+		err = fmt.Errorf("no StatefulSets found for pod %v because it has no labels", pod.Name)
 		return
 	}
 
 	for _, m := range s.Store.List() {
-		ps = *m.(*apps.PetSet)
+		ps = *m.(*apps.StatefulSet)
 		if ps.Namespace != pod.Namespace {
 			continue
 		}
@@ -416,14 +365,14 @@ func (s *StoreToPetSetLister) GetPodPetSets(pod *api.Pod) (psList []apps.PetSet,
 			return
 		}
 
-		// If a PetSet with a nil or empty selector creeps in, it should match nothing, not everything.
+		// If a StatefulSet with a nil or empty selector creeps in, it should match nothing, not everything.
 		if selector.Empty() || !selector.Matches(labels.Set(pod.Labels)) {
 			continue
 		}
 		psList = append(psList, ps)
 	}
 	if len(psList) == 0 {
-		err = fmt.Errorf("could not find PetSet for pod %s in namespace %s with labels: %v", pod.Name, pod.Namespace, pod.Labels)
+		err = fmt.Errorf("could not find StatefulSet for pod %s in namespace %s with labels: %v", pod.Name, pod.Namespace, pod.Labels)
 	}
 	return
 }
@@ -448,23 +397,6 @@ func (s *StoreToCertificateRequestLister) List() (csrs certificates.CertificateS
 		csrs.Items = append(csrs.Items, *(c.(*certificates.CertificateSigningRequest)))
 	}
 	return csrs, nil
-}
-
-// IndexerToNamespaceLister gives an Indexer List method
-type IndexerToNamespaceLister struct {
-	Indexer
-}
-
-// List returns a list of namespaces
-func (i *IndexerToNamespaceLister) List(selector labels.Selector) (namespaces []*api.Namespace, err error) {
-	for _, m := range i.Indexer.List() {
-		namespace := m.(*api.Namespace)
-		if selector.Matches(labels.Set(namespace.Labels)) {
-			namespaces = append(namespaces, namespace)
-		}
-	}
-
-	return namespaces, nil
 }
 
 type StoreToPodDisruptionBudgetLister struct {

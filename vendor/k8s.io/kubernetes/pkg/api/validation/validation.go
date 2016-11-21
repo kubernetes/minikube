@@ -665,6 +665,14 @@ func validateVolumeSource(source *api.VolumeSource, fldPath *field.Path) field.E
 			allErrs = append(allErrs, validateVsphereVolumeSource(source.VsphereVolume, fldPath.Child("vsphereVolume"))...)
 		}
 	}
+	if source.PhotonPersistentDisk != nil {
+		if numVolumes > 0 {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("photonPersistentDisk"), "may not specify more than 1 volume type"))
+		} else {
+			numVolumes++
+			allErrs = append(allErrs, validatePhotonPersistentDiskVolumeSource(source.PhotonPersistentDisk, fldPath.Child("photonPersistentDisk"))...)
+		}
+	}
 	if source.AzureDisk != nil {
 		numVolumes++
 		allErrs = append(allErrs, validateAzureDisk(source.AzureDisk, fldPath.Child("azureDisk"))...)
@@ -1008,6 +1016,14 @@ func validateVsphereVolumeSource(cd *api.VsphereVirtualDiskVolumeSource, fldPath
 	return allErrs
 }
 
+func validatePhotonPersistentDiskVolumeSource(cd *api.PhotonPersistentDiskVolumeSource, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if len(cd.PdID) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("pdID"), ""))
+	}
+	return allErrs
+}
+
 // ValidatePersistentVolumeName checks that a name is appropriate for a
 // PersistentVolumeName object.
 var ValidatePersistentVolumeName = NameIsDNSSubdomain
@@ -1157,6 +1173,14 @@ func ValidatePersistentVolume(pv *api.PersistentVolume) field.ErrorList {
 		} else {
 			numVolumes++
 			allErrs = append(allErrs, validateVsphereVolumeSource(pv.Spec.VsphereVolume, specPath.Child("vsphereVolume"))...)
+		}
+	}
+	if pv.Spec.PhotonPersistentDisk != nil {
+		if numVolumes > 0 {
+			allErrs = append(allErrs, field.Forbidden(specPath.Child("photonPersistentDisk"), "may not specify more than 1 volume type"))
+		} else {
+			numVolumes++
+			allErrs = append(allErrs, validatePhotonPersistentDiskVolumeSource(pv.Spec.PhotonPersistentDisk, specPath.Child("photonPersistentDisk"))...)
 		}
 	}
 	if pv.Spec.AzureDisk != nil {
@@ -1463,8 +1487,6 @@ func validateVolumeMounts(mounts []api.VolumeMount, volumes sets.String, fldPath
 		}
 		if len(mnt.MountPath) == 0 {
 			allErrs = append(allErrs, field.Required(idxPath.Child("mountPath"), ""))
-		} else if strings.Contains(mnt.MountPath, ":") {
-			allErrs = append(allErrs, field.Invalid(idxPath.Child("mountPath"), mnt.MountPath, "must not contain ':'"))
 		}
 		if mountpoints.Has(mnt.MountPath) {
 			allErrs = append(allErrs, field.Invalid(idxPath.Child("mountPath"), mnt.MountPath, "must be unique"))
@@ -2845,6 +2867,17 @@ func ValidateNodeUpdate(node, oldNode *api.Node) field.ErrorList {
 	// 	allErrs = append(allErrs, field.Invalid("status", node.Status, "must be empty"))
 	// }
 
+	// Validate resource quantities in capacity.
+	for k, v := range node.Status.Capacity {
+		resPath := field.NewPath("status", "capacity", string(k))
+		allErrs = append(allErrs, ValidateResourceQuantityValue(string(k), v, resPath)...)
+	}
+	// Validate resource quantities in allocatable.
+	for k, v := range node.Status.Allocatable {
+		resPath := field.NewPath("status", "allocatable", string(k))
+		allErrs = append(allErrs, ValidateResourceQuantityValue(string(k), v, resPath)...)
+	}
+
 	// Validte no duplicate addresses in node status.
 	addresses := make(map[api.NodeAddress]bool)
 	for i, address := range node.Status.Addresses {
@@ -3014,11 +3047,8 @@ func ValidateLimitRange(limitRange *api.LimitRange) field.ErrorList {
 		if limit.Type == api.LimitTypePersistentVolumeClaim {
 			_, minQuantityFound := limit.Min[api.ResourceStorage]
 			_, maxQuantityFound := limit.Max[api.ResourceStorage]
-			if !minQuantityFound {
-				allErrs = append(allErrs, field.Required(idxPath.Child("min"), "minimum storage value is required"))
-			}
-			if !maxQuantityFound {
-				allErrs = append(allErrs, field.Required(idxPath.Child("max"), "maximum storage value is required"))
+			if !minQuantityFound && !maxQuantityFound {
+				allErrs = append(allErrs, field.Required(idxPath.Child("limits"), "either minimum or maximum storage value is required, but neither was provided"))
 			}
 		}
 
@@ -3236,9 +3266,10 @@ func ValidateResourceRequirements(requirements *api.ResourceRequirements, fldPat
 		fldPath := limPath.Key(string(resourceName))
 		// Validate resource name.
 		allErrs = append(allErrs, validateContainerResourceName(string(resourceName), fldPath)...)
-		if api.IsStandardResourceName(string(resourceName)) {
-			allErrs = append(allErrs, validateBasicResource(quantity, fldPath.Key(string(resourceName)))...)
-		}
+
+		// Validate resource quantity.
+		allErrs = append(allErrs, ValidateResourceQuantityValue(string(resourceName), quantity, fldPath)...)
+
 		// Check that request <= limit.
 		requestQuantity, exists := requirements.Requests[resourceName]
 		if exists {
@@ -3254,10 +3285,10 @@ func ValidateResourceRequirements(requirements *api.ResourceRequirements, fldPat
 		fldPath := reqPath.Key(string(resourceName))
 		// Validate resource name.
 		allErrs = append(allErrs, validateContainerResourceName(string(resourceName), fldPath)...)
-		if api.IsStandardResourceName(string(resourceName)) {
-			allErrs = append(allErrs, validateBasicResource(quantity, fldPath.Key(string(resourceName)))...)
-		}
+		// Validate resource quantity.
+		allErrs = append(allErrs, ValidateResourceQuantityValue(string(resourceName), quantity, fldPath)...)
 	}
+
 	return allErrs
 }
 
