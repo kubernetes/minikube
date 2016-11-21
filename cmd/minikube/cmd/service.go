@@ -24,8 +24,10 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -90,6 +92,40 @@ func validateService(namespace string, service string) error {
 	services := client.Services(namespace)
 	if _, err = services.Get(service); err != nil {
 		return errors.Wrapf(err, "service '%s' could not be found running in namespace '%s' within kubernetes", service, namespace)
+	}
+	return nil
+}
+
+// CheckService waits for the specified service to be ready by returning an error until the service is up
+// The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
+func CheckService(namespace string, service string) error {
+	client, err := cluster.GetKubernetesClient()
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+	endpoints := client.Endpoints(namespace)
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+	endpoint, err := endpoints.Get(service)
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+	return CheckEndpointReady(endpoint)
+}
+
+const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
+
+func CheckEndpointReady(endpoint *v1.Endpoints) error {
+	if len(endpoint.Subsets) == 0 {
+		fmt.Fprintf(os.Stderr, notReadyMsg)
+		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
+	}
+	for _, subset := range endpoint.Subsets {
+		if len(subset.Addresses) == 0 {
+			fmt.Fprintf(os.Stderr, notReadyMsg)
+			return &util.RetriableError{Err: errors.New("No endpoints for service are ready yet")}
+		}
 	}
 	return nil
 }
