@@ -39,10 +39,12 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
+	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	kubeapi "k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
+	"k8s.io/kubernetes/pkg/labels"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -682,4 +684,86 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 	}
 
 	return serviceURLs, nil
+}
+
+// CheckService waits for the specified service to be ready by returning an error until the service is up
+// The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
+func CheckService(namespace string, service string) error {
+	client, err := GetKubernetesClient()
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+	endpoints := client.Endpoints(namespace)
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+	endpoint, err := endpoints.Get(service)
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+	return checkEndpointReady(endpoint)
+}
+
+func checkEndpointReady(endpoint *kubeapi.Endpoints) error {
+	const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
+	if len(endpoint.Subsets) == 0 {
+		fmt.Fprintf(os.Stderr, notReadyMsg)
+		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
+	}
+	for _, subset := range endpoint.Subsets {
+		if len(subset.Addresses) == 0 {
+			fmt.Fprintf(os.Stderr, notReadyMsg)
+			return &util.RetriableError{Err: errors.New("No endpoints for service are ready yet")}
+		}
+	}
+	return nil
+}
+
+func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool) {
+	if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", service, err)
+		os.Exit(1)
+	}
+
+	urls, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")
+		os.Exit(1)
+	}
+	for _, url := range urls {
+		if https {
+			url = strings.Replace(url, "http", "https", 1)
+		}
+		if urlMode || !strings.HasPrefix(url, "http") {
+			fmt.Fprintln(os.Stdout, url)
+		} else {
+			fmt.Fprintln(os.Stdout, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
+			browser.OpenURL(url)
+		}
+	}
+}
+
+func GetServiceListByLabel(namespace string, key string, value string) (*kubeapi.ServiceList, error) {
+	client, err := GetKubernetesClient()
+	if err != nil {
+		return &kubeapi.ServiceList{}, &util.RetriableError{Err: err}
+	}
+	services := client.Services(namespace)
+	if err != nil {
+		return &kubeapi.ServiceList{}, &util.RetriableError{Err: err}
+	}
+	return getServiceListFromServicesByLabel(services, key, value)
+}
+
+func getServiceListFromServicesByLabel(services unversioned.ServiceInterface, key string, value string) (*kubeapi.ServiceList, error) {
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
+	serviceList, err := services.List(kubeapi.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return &kubeapi.ServiceList{}, &util.RetriableError{Err: err}
+	}
+	if len(serviceList.Items) == 0 {
+		return &kubeapi.ServiceList{}, &util.RetriableError{Err: err}
+	}
+	return serviceList, nil
 }

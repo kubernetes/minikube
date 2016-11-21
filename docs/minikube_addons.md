@@ -37,4 +37,6 @@ For the list of accessible variables for the template, see the struct values her
 * [minikube addons disable](minikube_addons_disable.md)	 - Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list 
 * [minikube addons enable](minikube_addons_enable.md)	 - Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list 
 * [minikube addons list](minikube_addons_list.md)	 - Lists all available minikube addons as well as there current status (enabled/disabled)
+* [minikube addons open](minikube_addons_open.md)	 - Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list 
+* [minikube addons open](minikube_addons_open.md)	 - Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list 
 

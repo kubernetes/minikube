@@ -315,6 +315,68 @@ _minikube_addons_list()
     noun_aliases=()
 }
 
+_minikube_addons_open()
+{
+    last_command="minikube_addons_open"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--format=")
+    flags+=("--https")
+    local_nonpersistent_flags+=("--https")
+    flags+=("--url")
+    local_nonpersistent_flags+=("--url")
+    flags+=("--alsologtostderr")
+    flags+=("--log_backtrace_at=")
+    flags+=("--log_dir=")
+    flags+=("--logtostderr")
+    flags+=("--show-libmachine-logs")
+    flags+=("--stderrthreshold=")
+    flags+=("--v=")
+    two_word_flags+=("-v")
+    flags+=("--vmodule=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_minikube_addons_open()
+{
+    last_command="minikube_addons_open"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--format=")
+    flags+=("--https")
+    local_nonpersistent_flags+=("--https")
+    flags+=("--url")
+    local_nonpersistent_flags+=("--url")
+    flags+=("--alsologtostderr")
+    flags+=("--log_backtrace_at=")
+    flags+=("--log_dir=")
+    flags+=("--logtostderr")
+    flags+=("--show-libmachine-logs")
+    flags+=("--stderrthreshold=")
+    flags+=("--v=")
+    two_word_flags+=("-v")
+    flags+=("--vmodule=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _minikube_addons()
 {
     last_command="minikube_addons"
@@ -322,6 +384,8 @@ _minikube_addons()
     commands+=("disable")
     commands+=("enable")
     commands+=("list")
+    commands+=("open")
+    commands+=("open")
 
     flags=()
     two_word_flags=()

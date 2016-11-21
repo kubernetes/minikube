@@ -49,7 +49,7 @@ var dashboardCmd = &cobra.Command{
 		namespace := "kube-system"
 		service := "kubernetes-dashboard"
 
-		if err := commonutil.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
+		if err := commonutil.RetryAfter(20, func() error { return cluster.CheckService(namespace, service) }, 6*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", service, err)
 			os.Exit(1)
 		}
