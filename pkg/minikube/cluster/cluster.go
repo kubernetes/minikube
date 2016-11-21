@@ -206,17 +206,12 @@ func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error generating start command: %s", err)
 	}
-	commands := []string{stopCommand, startCommand}
-
-	for _, cmd := range commands {
-		glog.Infoln(cmd)
-		output, err := h.RunSSHCommand(cmd)
-		glog.Infoln(output)
-		if err != nil {
-			return errors.Wrapf(err, "Error running ssh command: %s", cmd)
-		}
+	glog.Infoln(startCommand)
+	output, err := h.RunSSHCommand(startCommand)
+	glog.Infoln(output)
+	if err != nil {
+		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
 	}
-
 	return nil
 }
 
