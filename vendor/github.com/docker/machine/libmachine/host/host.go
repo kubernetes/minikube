@@ -20,7 +20,7 @@ import (
 
 var (
 	validHostNamePattern                               = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-\.]*$`)
-	errMachineMustBeRunningForUpgrade                  = errors.New("Error: machine must be running to upgrade.")
+	errMachineMustBeRunningForUpgrade                  = errors.New("machine must be running to upgrade")
 	stdSSHClientCreator               SSHClientCreator = &StandardSSHClientCreator{}
 )
 

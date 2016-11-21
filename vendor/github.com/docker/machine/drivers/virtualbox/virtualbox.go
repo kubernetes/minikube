@@ -69,6 +69,7 @@ type Driver struct {
 	NoShare             bool
 	DNSProxy            bool
 	NoVTXCheck          bool
+	ShareFolder         string
 }
 
 // NewDriver creates a new VirtualBox driver with default settings.
@@ -190,6 +191,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "Disable checking for the availability of hardware virtualization before the vm is started",
 			EnvVar: "VIRTUALBOX_NO_VTX_CHECK",
 		},
+		mcnflag.StringFlag{
+			EnvVar: "VIRTUALBOX_SHARE_FOLDER",
+			Name:   "virtualbox-share-folder",
+			Usage:  "Mount the specified directory instead of the default home location. Format: dir:name",
+		},
 	}
 }
 
@@ -242,6 +248,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.NoShare = flags.Bool("virtualbox-no-share")
 	d.DNSProxy = !flags.Bool("virtualbox-no-dns-proxy")
 	d.NoVTXCheck = flags.Bool("virtualbox-no-vtx-check")
+	d.ShareFolder = flags.String("virtualbox-share-folder")
 
 	return nil
 }
@@ -447,6 +454,11 @@ func (d *Driver) CreateVM() error {
 	}
 
 	shareName, shareDir := getShareDriveAndName()
+
+	if d.ShareFolder != "" {
+		split := strings.Split(d.ShareFolder, ":")
+		shareDir, shareName = split[0], split[1]
+	}
 
 	if shareDir != "" && !d.NoShare {
 		log.Debugf("setting up shareDir")

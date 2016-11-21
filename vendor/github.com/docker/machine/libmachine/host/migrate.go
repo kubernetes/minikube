@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	errConfigFromFuture = errors.New("Config version is from the future, please upgrade your Docker Machine client.")
+	errConfigFromFuture = errors.New("config version is from the future -- you should upgrade your Docker Machine client")
 )
 
 type RawDataDriver struct {
