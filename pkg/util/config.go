@@ -22,6 +22,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	utilnet "k8s.io/client-go/1.4/pkg/util/net"
 )
 
 // findNestedElement uses reflection to find the element corresponding to the dot-separated string parameter.
@@ -63,7 +65,7 @@ func setElement(e reflect.Value, v string) error {
 	case bool:
 		b, err := strconv.ParseBool(v)
 		if err != nil {
-			return fmt.Errorf("Error converting input %s to a bool: %s", b, err)
+			return fmt.Errorf("Error converting input %s to a bool: %s", v, err)
 		}
 		e.SetBool(b)
 	case net.IP:
@@ -72,6 +74,12 @@ func setElement(e reflect.Value, v string) error {
 			return fmt.Errorf("Error converting input %s to an IP.", v)
 		}
 		e.Set(reflect.ValueOf(ip))
+	case utilnet.PortRange:
+		pr, err := utilnet.ParsePortRange(v)
+		if err != nil {
+			return fmt.Errorf("Error converting input %s to PortRange: %s", v, err)
+		}
+		e.Set(reflect.ValueOf(*pr))
 	default:
 		return fmt.Errorf("Unable to set type %s.", t)
 	}
