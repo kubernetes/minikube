@@ -20,6 +20,8 @@ import (
 	"math"
 	"net"
 	"testing"
+
+	utilnet "k8s.io/client-go/1.4/pkg/util/net"
 )
 
 type testConfig struct {
@@ -49,6 +51,7 @@ type subConfig3 struct {
 	O float32
 	P bool
 	Q net.IP
+	R utilnet.PortRange
 }
 
 func buildConfig() testConfig {
@@ -66,6 +69,7 @@ func buildConfig() testConfig {
 				O: 3.3,
 				P: false,
 				Q: net.ParseIP("12.34.56.78"),
+				R: utilnet.PortRange{Base: 2, Size: 4},
 			},
 		},
 		E: &subConfig2{
@@ -164,6 +168,7 @@ func TestSetElement(t *testing.T) {
 		{"D.I.P", "true", func(t testConfig) bool { return bool(t.D.I.P) == true }},
 		{"D.I.P", "false", func(t testConfig) bool { return bool(t.D.I.P) == false }},
 		{"D.I.Q", "11.22.33.44", func(t testConfig) bool { return t.D.I.Q.Equal(net.ParseIP("11.22.33.44")) }},
+		{"D.I.R", "7-11", func(t testConfig) bool { return t.D.I.R.Base == 7 && t.D.I.R.Size == 5 }},
 	} {
 		a := buildConfig()
 		if err := FindAndSet(tc.path, &a, tc.newval); err != nil {
