@@ -21,7 +21,7 @@ import (
 	"net"
 	"testing"
 
-	utilnet "k8s.io/client-go/1.4/pkg/util/net"
+	utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
 type testConfig struct {
