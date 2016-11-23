@@ -25,23 +25,19 @@
 
 set -e
 
-# Copy only the files we need to this workspace
-mkdir -p out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-linux-amd64 out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-linux-amd64 out/
-gsutil cp -r gs://minikube-builds/${MINIKUBE_LOCATION}/testdata .
+OS_ARCH="linux-amd64"
 
-chmod +x out/e2e-linux-amd64
-chmod +x out/minikube-linux-amd64
+# Download files and set permissions
+source common.sh
 
 MINIKUBE_WANTREPORTERRORPROMPT=False \
-	./out/minikube-linux-amd64 delete || true
+	./out/minikube-${OS_ARCH} delete || true
     
 rm -rf $HOME/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
-out/e2e-linux-amd64 -minikube-args="--vm-driver=kvm --cpus=4 --show-libmachine-logs --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64
+out/e2e-${OS_ARCH} -minikube-args="--vm-driver=kvm --cpus=4 --show-libmachine-logs --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
 result=$?
 set -e
 
