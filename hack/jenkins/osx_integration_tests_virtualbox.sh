@@ -25,17 +25,17 @@
 
 
 set -e
-chmod +x out/e2e-darwin-amd64
-chmod +x out/minikube-darwin-amd64
-cp -r out/testdata ./
+OS_ARCH="darwin-amd64"
 
+# Download files and set permissions
+source common.sh
 
-./out/minikube-darwin-amd64 delete || true
+./out/minikube-${OS_ARCH} delete || true
 rm -rf $HOME/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
-out/e2e-darwin-amd64 -minikube-args="--vm-driver=virtualbox --cpus=4 --show-libmachine-logs --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-darwin-amd64
+out/e2e-${OS_ARCH} -minikube-args="--vm-driver=virtualbox --cpus=4 --show-libmachine-logs --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
 result=$?
 set -e
 
