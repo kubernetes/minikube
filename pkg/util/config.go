@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	utilnet "k8s.io/client-go/1.4/pkg/util/net"
+	utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
 // findNestedElement uses reflection to find the element corresponding to the dot-separated string parameter.
@@ -81,7 +81,7 @@ func setElement(e reflect.Value, v string) error {
 		}
 		e.Set(reflect.ValueOf(*pr))
 	default:
-		return fmt.Errorf("Unable to set type %s.", t)
+		return fmt.Errorf("Unable to set type %T.", t)
 	}
 	return nil
 }
