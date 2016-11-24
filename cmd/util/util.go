@@ -193,7 +193,8 @@ To install kubectl, please %s the following:
 To disable this message, run the following:
 
 minikube config set WantKubectlDownloadMsg false
-========================================\n`,
-			verb, installInstructions, constants.DefaultKubernetesVersion, runtime.GOOS, runtime.GOARCH)
+========================================
+`,
+			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, runtime.GOOS, runtime.GOARCH))
 	}
 }
