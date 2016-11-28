@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: e2e
+spec:
+  volumes:
+  - name: certs
+    hostPath:
+      path: /etc/ssl/certs
+  containers:
+  - image: gcr.io/k8s-minikube/e2e:1
+    name: e2e
+    command:
+      - /sleep
+      - "3600"
+    imagePullPolicy: Always
+    volumeMounts:
+    - name: certs
+      readOnly: true
+      mountPath: /etc/ssl/certs
+  restartPolicy: Always

@@ -38,8 +38,8 @@ func TestClusterDNS(t *testing.T) {
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
-	podName := "busybox"
-	podPath, _ := filepath.Abs("testdata/busybox.yaml")
+	podName := "e2e"
+	podPath, _ := filepath.Abs("testdata/e2e.yaml")
 
 	dnsTest := func() error {
 		podNamespace := kubectlRunner.CreateRandomNamespace()
@@ -56,14 +56,14 @@ func TestClusterDNS(t *testing.T) {
 		}
 
 		dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName, "--namespace=" + podNamespace,
-			"nslookup", "kubernetes.default"})
+			"dns"})
 		dnsOutput := string(dnsByteArr)
 		if err != nil {
 			return &commonutil.RetriableError{Err: err}
 		}
 
-		if !strings.Contains(dnsOutput, "10.0.0.1") || !strings.Contains(dnsOutput, "10.0.0.10") {
-			return fmt.Errorf("DNS lookup failed, could not find both 10.0.0.1 and 10.0.0.10.  Output: %s", dnsOutput)
+		if !strings.Contains(dnsOutput, "10.0.0.1") {
+			return fmt.Errorf("DNS lookup failed, could not find 10.0.0.1. Output: %s", dnsOutput)
 		}
 		return nil
 	}
