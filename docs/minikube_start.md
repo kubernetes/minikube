@@ -26,7 +26,7 @@ minikube start
       --hyperv-virtual-switch string    The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)
       --insecure-registry stringSlice   Insecure Docker registries to pass to the Docker daemon
       --iso-url string                  Location of the minikube iso (default "https://storage.googleapis.com/minikube/minikube-0.7.iso")
-      --kubernetes-version string       The kubernetes version that the minikube VM will (ex: v1.2.3) 
+      --kubernetes-version string       The kubernetes version that the minikube VM will use (ex: v1.2.3) 
  OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.4.5")
       --kvm-network string              The KVM network name. (only supported with KVM driver) (default "default")
       --memory int                      Amount of RAM allocated to the minikube VM (default 2048)
