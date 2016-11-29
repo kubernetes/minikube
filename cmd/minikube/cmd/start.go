@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -159,9 +160,12 @@ func calculateDiskSizeInMB(humanReadableDiskSize string) int {
 // If no CurrentContext is set, the given name will be used.
 func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
 
-	configFile := os.Getenv(constants.KubeconfigEnvVar)
-	if configFile == "" {
+	configEnv := os.Getenv(constants.KubeconfigEnvVar)
+	var configFile string
+	if configEnv == "" {
 		configFile = constants.KubeconfigPath
+	} else {
+		configFile = filepath.SplitList(configEnv)[0]
 	}
 
 	glog.Infoln("Using kubeconfig: ", configFile)
