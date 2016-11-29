@@ -28,7 +28,9 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](http://www.linux-kvm.org/) installation,
 * VT-x/AMD-v virtualization must be enabled in BIOS
 * `kubectl` must be on your path. Minikube currently supports any version of `kubectl` greater than 1.0, but we recommend using the most recent version.
-  You can install kubectl with [these steps](http://kubernetes.io/docs/getting-started-guides/minikube/#install-kubectl). Hyper-v users may need to create a new external network switch as described [here](https://docs.docker.com/machine/drivers/hyper-v/). This step may prevent a problem in which `kubectl start` hangs indefinitely, unable to ssh into the minikube virtual machine. 
+  You can install kubectl with [these steps](http://kubernetes.io/docs/getting-started-guides/minikube/#install-kubectl).
+  Hyper-v users may need to create a new external network switch as described [here](https://docs.docker.com/machine/drivers/hyper-v/). This step may prevent a problem in which `minikube start` hangs indefinitely, unable to ssh into the minikube virtual machine. In this add, add the `--hyperv-virtual-switch=switch-name` argument to the `minikube start` command. 
+
 
 
 ### Instructions
