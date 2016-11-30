@@ -42,6 +42,9 @@ export GOPATH
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
+LOCALKUBE_VERSION := $(shell $(PYTHON) hack/get_k8s_version.py --k8s-version-only 2>&1)
+LOCALKUBE_BUCKET := gs://minikube/k8sReleases
+
 # Set the version information for the Kubernetes servers, and build localkube statically
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION)
@@ -156,3 +159,13 @@ $(GOPATH)/src/$(ORG):
 .PHONY: check-release
 check-release:
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
+
+.PHONY: release-localkube
+release-localkube: out/localkube checksum
+	gsutil cp out/localkube $(LOCALKUBE_BUCKET)/$(LOCALKUBE_VERSION)/localkube-linux-amd64
+	gsutil cp out/localkube.sha256 $(LOCALKUBE_BUCKET)/$(LOCALKUBE_VERSION)/localkube-linux-amd64.sha256
+
+.PHONY: update-releases
+update-releases: 
+	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
+

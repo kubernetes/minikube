@@ -45,6 +45,8 @@ def get_tree_state():
   return 'gitTreeState=%s' % result
 
 def main():
+  if len(sys.argv) > 1 and sys.argv[1] == "--k8s-version-only":
+      return get_from_godep('Comment')
   args = [get_rev(), get_version(), get_tree_state()]
   return ' '.join([X_ARG_BASE + arg for arg in args])
 
