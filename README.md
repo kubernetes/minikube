@@ -158,7 +158,7 @@ To use this feature, you can use the `--extra-config` flag on the `minikube star
 
 This flag is repeated, so you can pass it several times with several different values to set multiple options.
 
-This flag takes a string of the form `component.key=value`, where `component` is one of the strings from the above list, `key` is a value on the
+This flag takes a string of the form `component.key=value`, where `component` is one of the strings from the list below, `key` is a value on the
 configuration struct and `value` is the value to set.
 
 Valid `key`s can be found by examining the documentation for the Kubernetes `componentconfigs` for each component.
