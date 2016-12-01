@@ -1,4 +1,0 @@
-[submodule "installers/linux/archlinux/minikube"]
-	name = archlinux
-	path = installers/linux/archlinux/minikube
-	url = https://aur.archlinux.org/minikube.git
