@@ -1,5 +1,17 @@
 # Minikube Release Notes
 
+## Version 0.13.0 - 12/1/2016
+* Added heapster addon, disabled by default
+* Added `minikube addon open` command
+* Added Linux Virtualbox Integration tests
+* Added Linux KVM Integration tests
+* Added Minikube ISO Integration test on OS X
+* Multiple fixes to Minikube ISO
+* Updated docker-machine, pflag libraries
+* Added support for net.PortRange to the configurator
+* Fix bug for handling multiple kubeconfigs in env var
+* Update dashboard version to 1.5.0
+
 ## Version 0.12.2 - 10/31/2016
 * Fixed dashboard command
 * Added support for net.IP to the configurator
