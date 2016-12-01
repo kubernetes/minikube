@@ -12,7 +12,8 @@ Outputs minikube shell completion for the given shell (bash)
 	OS X:
 		$ brew install bash-completion
 		$ source $(brew --prefix)/etc/bash_completion
-		$ source <(minikube completion bash)
+		$ minikube completion bash > ~/.minikube-completion
+		$ source ~/.minikube-completion
 	Ubuntu:
 		$ apt-get install bash-completion
 		$ source /etc/bash-completion
