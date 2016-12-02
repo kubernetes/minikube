@@ -108,7 +108,6 @@ minikube addons enable %s`, addonName, addonName))
 }
 
 func init() {
-	AddonsCmd.AddCommand(addonsOpenCmd)
 	addonsOpenCmd.Flags().BoolVar(&addonsURLMode, "url", false, "Display the kubernetes addons URL in the CLI instead of opening it in the default browser")
 	addonsOpenCmd.Flags().BoolVar(&https, "https", false, "Open the addons URL with https instead of http")
 
