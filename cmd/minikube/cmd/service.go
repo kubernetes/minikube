@@ -41,7 +41,7 @@ var serviceCmd = &cobra.Command{
 	Use:   "service [flags] SERVICE",
 	Short: "Gets the kubernetes URL(s) for the specified service in your local cluster",
 	Long:  `Gets the kubernetes URL(s) for the specified service in your local cluster.  In the case of multiple URLs they will be printed one at a time`,
-	PreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("serviceURL").Parse(serviceURLFormat)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "The value passed to --format is invalid:\n\n", err)
