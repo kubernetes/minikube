@@ -19,7 +19,7 @@ gsutil.cmd cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 ./out/minikube-windows-amd64.exe delete
 
-out/e2e-windows-amd64.exe --% -minikube-args="--vm-driver=hyperv --cpus=4 $env:EXTRA_BUILD_ARGS" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
+out/e2e-windows-amd64.exe --% -minikube-args="--vm-driver=hyperv --hyperv-virtual-switch=Minikube --cpus=4 $env:EXTRA_BUILD_ARGS" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
 
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
