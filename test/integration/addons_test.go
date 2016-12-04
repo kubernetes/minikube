@@ -120,3 +120,18 @@ func TestDashboard(t *testing.T) {
 		t.Fatalf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
 	}
 }
+
+func TestServicesList(t *testing.T) {
+	minikubeRunner := util.MinikubeRunner{
+		BinaryPath: *binaryPath,
+		Args:       *args,
+		T:          t}
+	minikubeRunner.EnsureRunning()
+
+	output := minikubeRunner.RunCommand("service list", true)
+	for _, svc := range []string{"kubernetes", "kube-dns", "kubernetes-dashboard"} {
+		if !strings.Contains(output, svc) {
+			t.Errorf("Error, service %s missing from output %s", svc, output)
+		}
+	}
+}
