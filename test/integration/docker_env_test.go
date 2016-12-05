@@ -32,7 +32,7 @@ func TestDockerEnv(t *testing.T) {
 		BinaryPath: *binaryPath,
 		T:          t}
 
-	minikubeRunner.RunCommand("delete", true)
+	minikubeRunner.RunCommand("delete", false)
 
 	startCmd := fmt.Sprintf("start %s %s", minikubeRunner.Args, "--docker-env=FOO=BAR --docker-env=BAZ=BAT")
 	minikubeRunner.RunCommand(startCmd, true)

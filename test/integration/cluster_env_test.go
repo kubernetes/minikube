@@ -27,12 +27,12 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-func TestClusterEnv(t *testing.T) {
+func testClusterEnv(t *testing.T) {
+	t.Parallel()
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,
 		T:          t}
-	minikubeRunner.EnsureRunning()
 
 	dockerEnvVars := minikubeRunner.RunCommand("docker-env", true)
 	if err := minikubeRunner.SetEnvFromEnvCmdOutput(dockerEnvVars); err != nil {

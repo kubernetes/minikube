@@ -28,13 +28,8 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-func TestClusterStatus(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
-	minikubeRunner.EnsureRunning()
-
+func testClusterStatus(t *testing.T) {
+	t.Parallel()
 	kubectlRunner := util.NewKubectlRunner(t)
 	cs := api.ComponentStatusList{}
 
