@@ -38,13 +38,8 @@ var (
 	dashboardSvcCmd = []string{"get", "svc", "kubernetes-dashboard", "--namespace=kube-system"}
 )
 
-func TestAddons(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
-
-	minikubeRunner.EnsureRunning()
+func testAddons(t *testing.T) {
+	t.Parallel()
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	checkAddon := func() error {
@@ -70,23 +65,23 @@ func TestAddons(t *testing.T) {
 	}
 }
 
-func TestDashboard(t *testing.T) {
+func testDashboard(t *testing.T) {
+	t.Parallel()
+	kubectlRunner := util.NewKubectlRunner(t)
 	minikubeRunner := util.MinikubeRunner{
 		BinaryPath: *binaryPath,
 		Args:       *args,
 		T:          t}
-	minikubeRunner.EnsureRunning()
-	kubectlRunner := util.NewKubectlRunner(t)
 
 	checkDashboard := func() error {
 		rc := api.ReplicationController{}
 		svc := api.Service{}
 		if err := kubectlRunner.RunCommandParseOutput(dashboardRcCmd, &rc); err != nil {
-			return err
+			return &commonutil.RetriableError{Err: err}
 		}
 
 		if err := kubectlRunner.RunCommandParseOutput(dashboardSvcCmd, &svc); err != nil {
-			return err
+			return &commonutil.RetriableError{Err: err}
 		}
 
 		if rc.Status.Replicas != rc.Status.FullyLabeledReplicas {
@@ -100,7 +95,7 @@ func TestDashboard(t *testing.T) {
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(10, checkDashboard, 5*time.Second); err != nil {
+	if err := commonutil.RetryAfter(60, checkDashboard, 5*time.Second); err != nil {
 		t.Fatalf("Dashboard is unhealthy: %s", err)
 	}
 
@@ -121,17 +116,23 @@ func TestDashboard(t *testing.T) {
 	}
 }
 
-func TestServicesList(t *testing.T) {
+func testServicesList(t *testing.T) {
+	t.Parallel()
 	minikubeRunner := util.MinikubeRunner{
 		BinaryPath: *binaryPath,
 		Args:       *args,
 		T:          t}
-	minikubeRunner.EnsureRunning()
 
-	output := minikubeRunner.RunCommand("service list", true)
-	for _, svc := range []string{"kubernetes", "kube-dns", "kubernetes-dashboard"} {
-		if !strings.Contains(output, svc) {
-			t.Errorf("Error, service %s missing from output %s", svc, output)
+	checkServices := func() error {
+		output := minikubeRunner.RunCommand("service list", false)
+		if !strings.Contains(output, "kubernetes") {
+			return &commonutil.RetriableError{
+				Err: fmt.Errorf("Error, kubernetes service missing from output %s", output),
+			}
 		}
+		return nil
+	}
+	if err := commonutil.RetryAfter(5, checkServices, 2*time.Second); err != nil {
+		t.Fatalf(err.Error())
 	}
 }

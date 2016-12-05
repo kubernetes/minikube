@@ -19,17 +19,18 @@ limitations under the License.
 package integration
 
 import (
-	"k8s.io/minikube/test/integration/util"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/test/integration/util"
 )
 
-func TestClusterSSH(t *testing.T) {
+func testClusterSSH(t *testing.T) {
+	t.Parallel()
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,
 		T:          t}
-	minikubeRunner.EnsureRunning()
 
 	expectedStr := "hello"
 	sshCmdOutput := minikubeRunner.RunCommand("ssh echo "+expectedStr, true)

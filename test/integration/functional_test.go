@@ -19,27 +19,24 @@ limitations under the License.
 package integration
 
 import (
-	"strings"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
-func testClusterLogs(t *testing.T) {
-	t.Parallel()
+func TestFunctional(t *testing.T) {
 	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
 		BinaryPath: *binaryPath,
+		Args:       *args,
 		T:          t}
 	minikubeRunner.EnsureRunning()
 
-	logsCmdOutput := minikubeRunner.RunCommand("logs", true)
-	//check for # of lines or check for strings
-	logFiles := []string{constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath}
-	for _, logFile := range logFiles {
-		if !strings.Contains(logsCmdOutput, logFile) {
-			t.Fatalf("Error in logsCmdOutput, expected to find: %s. Output: %s", logFile, logsCmdOutput)
-		}
-	}
+	t.Run("DNS", testClusterDNS)
+	t.Run("EnvVars", testClusterEnv)
+	t.Run("Logs", testClusterLogs)
+	t.Run("SSH", testClusterSSH)
+	t.Run("Status", testClusterStatus)
+	t.Run("Addons", testAddons)
+	t.Run("Dashboard", testDashboard)
+	t.Run("ServicesList", testServicesList)
 }
