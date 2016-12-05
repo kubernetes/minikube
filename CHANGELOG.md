@@ -1,5 +1,9 @@
 # Minikube Release Notes
 
+## Version 0.13.1 - 12/5/2016
+* Fix `service list` command
+* Dashboard dowgnraded to v1.4.2, correctly shows PetSets again
+
 ## Version 0.13.0 - 12/1/2016
 * Added heapster addon, disabled by default
 * Added `minikube addon open` command
