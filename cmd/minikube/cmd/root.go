@@ -18,6 +18,7 @@ package cmd
 
 import (
 	goflag "flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -73,13 +74,22 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		shouldShowLibmachineLogs := viper.GetBool(showLibmachineLogs)
-		if glog.V(3) {
-			log.SetDebug(true)
+		if viper.GetBool(showLibmachineLogs) {
+			fmt.Println(`
+--show-libmachine-logs is deprecated.
+Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine logs
+`)
 		}
-		if !shouldShowLibmachineLogs {
+
+		// Log level 3 or greater enables libmachine logs
+		if !glog.V(3) {
 			log.SetOutWriter(ioutil.Discard)
 			log.SetErrWriter(ioutil.Discard)
+		}
+
+		// Log level 7 or greater enables debug level logs
+		if glog.V(7) {
+			log.SetDebug(true)
 		}
 
 		if enableUpdateNotification {
@@ -117,7 +127,7 @@ func setFlagsUsingViper() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Whether or not to show logs from libmachine.")
+	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Deprecated: To enable libmachine logs, set --v=3 or higher")
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
@@ -144,7 +154,7 @@ func initConfig() {
 func setupViper() {
 	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
 	// Replaces '-' in flags with '_' in env variables
-	// e.g. show-libmachine-logs => $ENVPREFIX_SHOW_LIBMACHINE_LOGS
+	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
