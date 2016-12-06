@@ -30,13 +30,8 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-func TestClusterDNS(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
-	minikubeRunner.EnsureRunning()
-
+func testClusterDNS(t *testing.T) {
+	t.Parallel()
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox"
 	podPath, _ := filepath.Abs("testdata/busybox.yaml")
@@ -68,7 +63,7 @@ func TestClusterDNS(t *testing.T) {
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(4, dnsTest, 1*time.Second); err != nil {
+	if err := commonutil.RetryAfter(40, dnsTest, 5*time.Second); err != nil {
 		t.Fatalf("DNS lookup failed with error:", err)
 	}
 }
