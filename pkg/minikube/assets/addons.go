@@ -64,51 +64,51 @@ var Addons = map[string]*Addon{
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
-			"deploy/addons/dashboard-rc.yaml",
+			"deploy/addons/dashboard/dashboard-rc.yaml",
 			constants.AddonsPath,
 			"dashboard-rc.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/dashboard-svc.yaml",
+			"deploy/addons/dashboard/dashboard-svc.yaml",
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
 	"kube-dns": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
-			"deploy/addons/kube-dns-rc.yaml",
+			"deploy/addons/kube-dns/kube-dns-rc.yaml",
 			constants.AddonsPath,
 			"kube-dns-rc.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/kube-dns-svc.yaml",
+			"deploy/addons/kube-dns/kube-dns-svc.yaml",
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
 	}, true, "kube-dns"),
 	"heapster": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
-			"deploy/addons/influxGrafana-rc.yaml",
+			"deploy/addons/heapster/influxGrafana-rc.yaml",
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/grafana-svc.yaml",
+			"deploy/addons/heapster/grafana-svc.yaml",
 			constants.AddonsPath,
 			"grafana-svc.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/influxdb-svc.yaml",
+			"deploy/addons/heapster/influxdb-svc.yaml",
 			constants.AddonsPath,
 			"influxdb-svc.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/heapster-rc.yaml",
+			"deploy/addons/heapster/heapster-rc.yaml",
 			constants.AddonsPath,
 			"heapster-rc.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/heapster-svc.yaml",
+			"deploy/addons/heapster/heapster-svc.yaml",
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640"),
