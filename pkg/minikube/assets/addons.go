@@ -113,6 +113,23 @@ var Addons = map[string]*Addon{
 			"heapster-svc.yaml",
 			"0640"),
 	}, false, "heapster"),
+	"ingress": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/ingress/ingress-configmap.yaml",
+			constants.AddonsPath,
+			"ingress-configmap.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/ingress/ingress-rc.yaml",
+			constants.AddonsPath,
+			"ingress-rc.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/ingress/ingress-svc.yaml",
+			constants.AddonsPath,
+			"ingress-svc.yaml",
+			"0640"),
+	}, false, "ingress"),
 }
 
 func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
