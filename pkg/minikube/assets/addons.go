@@ -130,6 +130,13 @@ var Addons = map[string]*Addon{
 			"ingress-svc.yaml",
 			"0640"),
 	}, false, "ingress"),
+	"awsecr-creds": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/awsecr-creds/awsecr-creds-rc.yaml",
+			constants.AddonsPath,
+			"awsecr-creds-rc.yaml",
+			"0640"),
+	}, false, "awsecr-creds"),
 }
 
 func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {

@@ -279,6 +279,7 @@ $ minikube addons list
 - dashboard: enabled
 - kube-dns: enabled
 - heapster: disabled
+- awsecr-creds: disabled
 
 # minikube must be running for these commands to take effect
 $ minikube addons enable heapster
@@ -294,6 +295,7 @@ The currently supported addons include:
 * [Kubernetes Dashboard](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dashboard)
 * [Kube-dns](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dns)
 * [Heapster](https://github.com/kubernetes/heapster): [Troubleshooting Guide](https://github.com/kubernetes/heapster/blob/master/docs/influxdb.md) Note:You will need to login to Grafana as admin/admin in order to access the console
+* [AWS ECR Credentials](https://github.com/upmc-enterprises/awsecr-creds): Allow for AWS ECR credentials to be refreshed inside your Kubernetes cluster via ImagePullSecrets [NOTE: Requires k8s secret to function](https://github.com/upmc-enterprises/awsecr-creds/blob/master/k8s/secret.yaml)
 
 If you would like to have minikube properly start/restart custom addons, place the addon(s) you wish to be launched with minikube in the `.minikube/addons` directory.  Addons in this folder will be moved to the minikubeVM and launched each time minikube is started/restarted.
 
