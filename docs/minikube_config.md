@@ -26,6 +26,7 @@ Configurable fields:
  * addon-manager
  * kube-dns
  * heapster
+ * ingress
 
 ```
 minikube config SUBCOMMAND [flags]
