@@ -93,6 +93,11 @@ var settings = []Setting{
 		set:  SetString,
 	},
 	{
+		name:        "iso-url",
+		set:         SetString,
+		validations: []setFn{IsValidURL},
+	},
+	{
 		name: config.WantUpdateNotification,
 		set:  SetBool,
 	},
