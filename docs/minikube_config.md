@@ -17,6 +17,7 @@ Configurable fields:
  * show-libmachine-logs
  * log_dir
  * kubernetes-version
+ * iso-url
  * WantUpdateNotification
  * ReminderWaitPeriodInHours
  * WantReportError

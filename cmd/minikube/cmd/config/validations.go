@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -46,6 +47,14 @@ func IsValidDiskSize(name string, disksize string) error {
 	_, err := units.FromHumanSize(disksize)
 	if err != nil {
 		return fmt.Errorf("Not valid disk size: %v", err)
+	}
+	return nil
+}
+
+func IsValidURL(name string, location string) error {
+	_, err := url.Parse(location)
+	if err != nil {
+		return fmt.Errorf("%s is not a valid URL", location)
 	}
 	return nil
 }
