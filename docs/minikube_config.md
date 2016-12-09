@@ -28,6 +28,7 @@ Configurable fields:
  * kube-dns
  * heapster
  * ingress
+ * awsecr-creds
 
 ```
 minikube config SUBCOMMAND [flags]
