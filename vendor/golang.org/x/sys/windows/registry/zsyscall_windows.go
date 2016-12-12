@@ -2,17 +2,14 @@
 
 package registry
 
-import (
-	"golang.org/x/sys/windows"
-	"syscall"
-	"unsafe"
-)
+import "unsafe"
+import "syscall"
 
 var _ unsafe.Pointer
 
 var (
-	modadvapi32 = windows.NewLazySystemDLL("advapi32.dll")
-	modkernel32 = windows.NewLazySystemDLL("kernel32.dll")
+	modadvapi32 = syscall.NewLazyDLL("advapi32.dll")
+	modkernel32 = syscall.NewLazyDLL("kernel32.dll")
 
 	procRegCreateKeyExW           = modadvapi32.NewProc("RegCreateKeyExW")
 	procRegDeleteKeyW             = modadvapi32.NewProc("RegDeleteKeyW")
