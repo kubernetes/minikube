@@ -42,7 +42,7 @@ RUN curl -fSL -o /tmp/dockerbin.tgz https://get.docker.com/builds/Linux/x86_64/d
 RUN $ROOTFS/usr/local/bin/docker -v
 
 # Build the actual iso image
-RUN /make_iso.sh
+RUN /tmp/make_iso.sh
 
 # Output it to transfer back to the host
 CMD ["cat", "boot2docker.iso"]
