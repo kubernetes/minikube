@@ -76,12 +76,6 @@ const (
 
 var DefaultKubernetesVersion = version.Get().GitVersion
 
-const (
-	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
-	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
-	LocalkubePIDPath       = "/var/run/localkube.pid"
-)
-
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
 
@@ -94,3 +88,15 @@ const DockerAPIVersion = "1.23"
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
 
 const AddonsPath = "/etc/kubernetes/addons"
+
+const (
+	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
+	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
+	LocalkubePIDPath       = "/var/run/localkube.pid"
+)
+
+const (
+	LocalkubeServicePath = "/usr/lib/systemd/system/localkube.service"
+	LocalkubeRunning     = "active"
+	LocalkubeStopped     = "inactive"
+)
