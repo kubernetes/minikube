@@ -138,7 +138,7 @@ type serviceInfo struct {
 	nodePort                 int
 	loadBalancerStatus       api.LoadBalancerStatus
 	sessionAffinityType      api.ServiceAffinity
-	stickyMaxAgeSeconds      int
+	stickyMaxAgeMinutes      int
 	externalIPs              []string
 	loadBalancerSourceRanges []string
 	onlyNodeLocalEndpoints   bool
@@ -155,7 +155,7 @@ type endpointsInfo struct {
 func newServiceInfo(service proxy.ServicePortName) *serviceInfo {
 	return &serviceInfo{
 		sessionAffinityType: api.ServiceAffinityNone, // default
-		stickyMaxAgeSeconds: 180,                     // TODO: paramaterize this in the API.
+		stickyMaxAgeMinutes: 180,                     // TODO: paramaterize this in the API.
 	}
 }
 
@@ -386,6 +386,9 @@ func (proxier *Proxier) sameConfig(info *serviceInfo, service *api.Service, port
 	}
 	onlyNodeLocalEndpoints := apiservice.NeedsHealthCheck(service) && featuregate.DefaultFeatureGate.ExternalTrafficLocalOnly()
 	if info.onlyNodeLocalEndpoints != onlyNodeLocalEndpoints {
+		return false
+	}
+	if !reflect.DeepEqual(info.loadBalancerSourceRanges, service.Spec.LoadBalancerSourceRanges) {
 		return false
 	}
 	return true
@@ -1165,7 +1168,7 @@ func (proxier *Proxier) syncProxyRules() {
 					"-A", string(svcChain),
 					"-m", "comment", "--comment", svcName.String(),
 					"-m", "recent", "--name", string(endpointChain),
-					"--rcheck", "--seconds", fmt.Sprintf("%d", svcInfo.stickyMaxAgeSeconds), "--reap",
+					"--rcheck", "--seconds", fmt.Sprintf("%d", svcInfo.stickyMaxAgeMinutes*60), "--reap",
 					"-j", string(endpointChain))
 			}
 		}
