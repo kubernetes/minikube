@@ -127,10 +127,8 @@ func (f *fundamental) Format(s fmt.State, verb rune) {
 			return
 		}
 		fallthrough
-	case 's':
+	case 's', 'q':
 		io.WriteString(s, f.msg)
-	case 'q':
-		fmt.Fprintf(s, "%q", f.msg)
 	}
 }
 

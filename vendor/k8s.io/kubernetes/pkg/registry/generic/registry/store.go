@@ -29,7 +29,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/api/validation"
+	"k8s.io/kubernetes/pkg/api/validation/path"
 	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/runtime"
@@ -41,10 +41,6 @@ import (
 
 	"github.com/golang/glog"
 )
-
-// EnableGarbageCollector affects the handling of Update and Delete requests. It
-// must be synced with the corresponding flag in kube-controller-manager.
-var EnableGarbageCollector bool
 
 // Store implements generic.Registry.
 // It's intended to be embeddable, so that you can implement any
@@ -92,6 +88,10 @@ type Store struct {
 
 	// Called to cleanup storage clients.
 	DestroyFunc func()
+
+	// EnableGarbageCollection affects the handling of Update and Delete requests. It
+	// must be synced with the corresponding flag in kube-controller-manager.
+	EnableGarbageCollection bool
 
 	// DeleteCollectionWorkers is the maximum number of workers in a single
 	// DeleteCollection call.
@@ -148,7 +148,7 @@ func NamespaceKeyFunc(ctx api.Context, prefix string, name string) (string, erro
 	if len(name) == 0 {
 		return "", kubeerr.NewBadRequest("Name parameter required.")
 	}
-	if msgs := validation.IsValidPathSegmentName(name); len(msgs) != 0 {
+	if msgs := path.IsValidPathSegmentName(name); len(msgs) != 0 {
 		return "", kubeerr.NewBadRequest(fmt.Sprintf("Name parameter invalid: %q: %s", name, strings.Join(msgs, ";")))
 	}
 	key = key + "/" + name
@@ -160,7 +160,7 @@ func NoNamespaceKeyFunc(ctx api.Context, prefix string, name string) (string, er
 	if len(name) == 0 {
 		return "", kubeerr.NewBadRequest("Name parameter required.")
 	}
-	if msgs := validation.IsValidPathSegmentName(name); len(msgs) != 0 {
+	if msgs := path.IsValidPathSegmentName(name); len(msgs) != 0 {
 		return "", kubeerr.NewBadRequest(fmt.Sprintf("Name parameter invalid: %q: %s", name, strings.Join(msgs, ";")))
 	}
 	key := prefix + "/" + name
@@ -201,18 +201,19 @@ func (e *Store) List(ctx api.Context, options *api.ListOptions) (runtime.Object,
 
 // ListPredicate returns a list of all the items matching m.
 func (e *Store) ListPredicate(ctx api.Context, p storage.SelectionPredicate, options *api.ListOptions) (runtime.Object, error) {
+	if options == nil {
+		// By default we should serve the request from etcd.
+		options = &api.ListOptions{ResourceVersion: ""}
+	}
 	list := e.NewListFunc()
 	if name, ok := p.MatchesSingle(); ok {
 		if key, err := e.KeyFunc(ctx, name); err == nil {
-			err := e.Storage.GetToList(ctx, key, p, list)
+			err := e.Storage.GetToList(ctx, key, options.ResourceVersion, p, list)
 			return list, storeerr.InterpretListError(err, e.QualifiedResource)
 		}
 		// if we cannot extract a key based on the current context, the optimization is skipped
 	}
 
-	if options == nil {
-		options = &api.ListOptions{ResourceVersion: "0"}
-	}
 	err := e.Storage.List(ctx, e.KeyRootFunc(ctx), options.ResourceVersion, p, list)
 	return list, storeerr.InterpretListError(err, e.QualifiedResource)
 }
@@ -299,7 +300,7 @@ func (e *Store) Create(ctx api.Context, obj runtime.Object) (runtime.Object, err
 // it further checks if the object's DeletionGracePeriodSeconds is 0. If so, it
 // returns true.
 func (e *Store) shouldDelete(ctx api.Context, key string, obj, existing runtime.Object) bool {
-	if !EnableGarbageCollector {
+	if !e.EnableGarbageCollection {
 		return false
 	}
 	newMeta, err := api.ObjectMetaFor(obj)
@@ -721,7 +722,7 @@ func (e *Store) Delete(ctx api.Context, name string, options *api.DeleteOptions)
 	var ignoreNotFound bool
 	var deleteImmediately bool = true
 	var lastExisting, out runtime.Object
-	if !EnableGarbageCollector {
+	if !e.EnableGarbageCollection {
 		// TODO: remove the check on graceful, because we support no-op updates now.
 		if graceful {
 			err, ignoreNotFound, deleteImmediately, out, lastExisting = e.updateForGracefulDeletion(ctx, name, key, options, preconditions, obj)

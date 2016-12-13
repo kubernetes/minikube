@@ -46,7 +46,6 @@ type NativeClient struct {
 	Hostname    string
 	Port        int
 	openSession *ssh.Session
-	openClient  *ssh.Client
 }
 
 type Auth struct {
@@ -157,49 +156,43 @@ func NewNativeConfig(user string, auth *Auth) (ssh.ClientConfig, error) {
 }
 
 func (client *NativeClient) dialSuccess() bool {
-	conn, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config)
-	if err != nil {
+	if _, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config); err != nil {
 		log.Debugf("Error dialing TCP: %s", err)
 		return false
 	}
-	closeConn(conn)
 	return true
 }
 
-func (client *NativeClient) session(command string) (*ssh.Client, *ssh.Session, error) {
+func (client *NativeClient) session(command string) (*ssh.Session, error) {
 	if err := mcnutils.WaitFor(client.dialSuccess); err != nil {
-		return nil, nil, fmt.Errorf("Error attempting SSH client dial: %s", err)
+		return nil, fmt.Errorf("Error attempting SSH client dial: %s", err)
 	}
 
 	conn, err := ssh.Dial("tcp", net.JoinHostPort(client.Hostname, strconv.Itoa(client.Port)), &client.Config)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Mysterious error dialing TCP for SSH (we already succeeded at least once) : %s", err)
+		return nil, fmt.Errorf("Mysterious error dialing TCP for SSH (we already succeeded at least once) : %s", err)
 	}
-	session, err := conn.NewSession()
 
-	return conn, session, err
+	return conn.NewSession()
 }
 
 func (client *NativeClient) Output(command string) (string, error) {
-	conn, session, err := client.session(command)
+	session, err := client.session(command)
 	if err != nil {
 		return "", nil
 	}
-	defer closeConn(conn)
-	defer session.Close()
 
 	output, err := session.CombinedOutput(command)
+	defer session.Close()
 
 	return string(output), err
 }
 
 func (client *NativeClient) OutputWithPty(command string) (string, error) {
-	conn, session, err := client.session(command)
+	session, err := client.session(command)
 	if err != nil {
 		return "", nil
 	}
-	defer closeConn(conn)
-	defer session.Close()
 
 	fd := int(os.Stdin.Fd())
 
@@ -221,12 +214,13 @@ func (client *NativeClient) OutputWithPty(command string) (string, error) {
 	}
 
 	output, err := session.CombinedOutput(command)
+	defer session.Close()
 
 	return string(output), err
 }
 
 func (client *NativeClient) Start(command string) (io.ReadCloser, io.ReadCloser, error) {
-	conn, session, err := client.session(command)
+	session, err := client.session(command)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -243,27 +237,15 @@ func (client *NativeClient) Start(command string) (io.ReadCloser, io.ReadCloser,
 		return nil, nil, err
 	}
 
-	client.openClient = conn
 	client.openSession = session
 	return ioutil.NopCloser(stdout), ioutil.NopCloser(stderr), nil
 }
 
 func (client *NativeClient) Wait() error {
 	err := client.openSession.Wait()
-	if err != nil {
-		return err
-	}
-
 	_ = client.openSession.Close()
-
-	err = client.openClient.Close()
-	if err != nil {
-		return err
-	}
-
 	client.openSession = nil
-	client.openClient = nil
-	return nil
+	return err
 }
 
 func (client *NativeClient) Shell(args ...string) error {
@@ -274,7 +256,6 @@ func (client *NativeClient) Shell(args ...string) error {
 	if err != nil {
 		return err
 	}
-	defer closeConn(conn)
 
 	session, err := conn.NewSession()
 	if err != nil {
@@ -432,11 +413,4 @@ func (client *ExternalClient) Wait() error {
 	err := client.cmd.Wait()
 	client.cmd = nil
 	return err
-}
-
-func closeConn(c io.Closer) {
-	err := c.Close()
-	if err != nil {
-		log.Debugf("Error closing SSH Client: %s", err)
-	}
 }

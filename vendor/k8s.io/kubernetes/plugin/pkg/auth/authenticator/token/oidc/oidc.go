@@ -40,7 +40,7 @@ import (
 	"github.com/coreos/go-oidc/oidc"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/auth/user"
-	"k8s.io/kubernetes/pkg/util/crypto"
+	certutil "k8s.io/kubernetes/pkg/util/cert"
 	"k8s.io/kubernetes/pkg/util/net"
 	"k8s.io/kubernetes/pkg/util/runtime"
 )
@@ -72,8 +72,8 @@ type OIDCOptions struct {
 	UsernameClaim string
 
 	// GroupsClaim, if specified, causes the OIDCAuthenticator to try to populate the user's
-	// groups with a ID Token field. If the GrouppClaim field is present in a ID Token the value
-	// must be a list of strings.
+	// groups with an ID Token field. If the GrouppClaim field is present in an ID Token the value
+	// must be a string or list of strings.
 	GroupsClaim string
 }
 
@@ -112,7 +112,7 @@ func New(opts OIDCOptions) (*OIDCAuthenticator, error) {
 
 	var roots *x509.CertPool
 	if opts.CAFile != "" {
-		roots, err = crypto.CertPoolFromFile(opts.CAFile)
+		roots, err = certutil.NewPool(opts.CAFile)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read the CA file: %v", err)
 		}
@@ -206,7 +206,7 @@ func (a *OIDCAuthenticator) client() (*oidc.Client, error) {
 	return client, nil
 }
 
-// AuthenticateToken decodes and verifies a ID Token using the OIDC client, if the verification succeeds,
+// AuthenticateToken decodes and verifies an ID Token using the OIDC client, if the verification succeeds,
 // then it will extract the user info from the JWT claims.
 func (a *OIDCAuthenticator) AuthenticateToken(value string) (user.Info, bool, error) {
 	jwt, err := jose.ParseJWT(value)
@@ -251,10 +251,14 @@ func (a *OIDCAuthenticator) AuthenticateToken(value string) (user.Info, bool, er
 	if a.groupsClaim != "" {
 		groups, found, err := claims.StringsClaim(a.groupsClaim)
 		if err != nil {
-			// Custom claim is present, but isn't an array of strings.
-			return nil, false, fmt.Errorf("custom group claim contains invalid object: %v", err)
-		}
-		if found {
+			// Groups type is present but is not an array of strings, try to decode as a string.
+			group, _, err := claims.StringClaim(a.groupsClaim)
+			if err != nil {
+				// Custom claim is present, but isn't an array of strings or a string.
+				return nil, false, fmt.Errorf("custom group claim contains invalid type: %T", claims[a.groupsClaim])
+			}
+			info.Groups = []string{group}
+		} else if found {
 			info.Groups = groups
 		}
 	}

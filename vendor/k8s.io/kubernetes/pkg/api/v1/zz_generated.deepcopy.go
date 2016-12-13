@@ -132,6 +132,7 @@ func RegisterDeepCopies(scheme *runtime.Scheme) error {
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_PersistentVolumeSource, InType: reflect.TypeOf(&PersistentVolumeSource{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_PersistentVolumeSpec, InType: reflect.TypeOf(&PersistentVolumeSpec{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_PersistentVolumeStatus, InType: reflect.TypeOf(&PersistentVolumeStatus{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_PhotonPersistentDiskVolumeSource, InType: reflect.TypeOf(&PhotonPersistentDiskVolumeSource{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_Pod, InType: reflect.TypeOf(&Pod{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_PodAffinity, InType: reflect.TypeOf(&PodAffinity{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_PodAffinityTerm, InType: reflect.TypeOf(&PodAffinityTerm{})},
@@ -158,6 +159,7 @@ func RegisterDeepCopies(scheme *runtime.Scheme) error {
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_RBDVolumeSource, InType: reflect.TypeOf(&RBDVolumeSource{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_RangeAllocation, InType: reflect.TypeOf(&RangeAllocation{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_ReplicationController, InType: reflect.TypeOf(&ReplicationController{})},
+		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_ReplicationControllerCondition, InType: reflect.TypeOf(&ReplicationControllerCondition{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_ReplicationControllerList, InType: reflect.TypeOf(&ReplicationControllerList{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_ReplicationControllerSpec, InType: reflect.TypeOf(&ReplicationControllerSpec{})},
 		conversion.GeneratedDeepCopyFunc{Fn: DeepCopy_v1_ReplicationControllerStatus, InType: reflect.TypeOf(&ReplicationControllerStatus{})},
@@ -1150,6 +1152,7 @@ func DeepCopy_v1_FlockerVolumeSource(in interface{}, out interface{}, c *convers
 		in := in.(*FlockerVolumeSource)
 		out := out.(*FlockerVolumeSource)
 		out.DatasetName = in.DatasetName
+		out.DatasetUUID = in.DatasetUUID
 		return nil
 	}
 }
@@ -2229,6 +2232,13 @@ func DeepCopy_v1_PersistentVolumeSource(in interface{}, out interface{}, c *conv
 		} else {
 			out.AzureDisk = nil
 		}
+		if in.PhotonPersistentDisk != nil {
+			in, out := &in.PhotonPersistentDisk, &out.PhotonPersistentDisk
+			*out = new(PhotonPersistentDiskVolumeSource)
+			**out = **in
+		} else {
+			out.PhotonPersistentDisk = nil
+		}
 		return nil
 	}
 }
@@ -2277,6 +2287,16 @@ func DeepCopy_v1_PersistentVolumeStatus(in interface{}, out interface{}, c *conv
 		out.Phase = in.Phase
 		out.Message = in.Message
 		out.Reason = in.Reason
+		return nil
+	}
+}
+
+func DeepCopy_v1_PhotonPersistentDiskVolumeSource(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*PhotonPersistentDiskVolumeSource)
+		out := out.(*PhotonPersistentDiskVolumeSource)
+		out.PdID = in.PdID
+		out.FSType = in.FSType
 		return nil
 	}
 }
@@ -2904,7 +2924,22 @@ func DeepCopy_v1_ReplicationController(in interface{}, out interface{}, c *conve
 		if err := DeepCopy_v1_ReplicationControllerSpec(&in.Spec, &out.Spec, c); err != nil {
 			return err
 		}
+		if err := DeepCopy_v1_ReplicationControllerStatus(&in.Status, &out.Status, c); err != nil {
+			return err
+		}
+		return nil
+	}
+}
+
+func DeepCopy_v1_ReplicationControllerCondition(in interface{}, out interface{}, c *conversion.Cloner) error {
+	{
+		in := in.(*ReplicationControllerCondition)
+		out := out.(*ReplicationControllerCondition)
+		out.Type = in.Type
 		out.Status = in.Status
+		out.LastTransitionTime = in.LastTransitionTime.DeepCopy()
+		out.Reason = in.Reason
+		out.Message = in.Message
 		return nil
 	}
 }
@@ -2941,6 +2976,7 @@ func DeepCopy_v1_ReplicationControllerSpec(in interface{}, out interface{}, c *c
 		} else {
 			out.Replicas = nil
 		}
+		out.MinReadySeconds = in.MinReadySeconds
 		if in.Selector != nil {
 			in, out := &in.Selector, &out.Selector
 			*out = make(map[string]string)
@@ -2970,7 +3006,19 @@ func DeepCopy_v1_ReplicationControllerStatus(in interface{}, out interface{}, c 
 		out.Replicas = in.Replicas
 		out.FullyLabeledReplicas = in.FullyLabeledReplicas
 		out.ReadyReplicas = in.ReadyReplicas
+		out.AvailableReplicas = in.AvailableReplicas
 		out.ObservedGeneration = in.ObservedGeneration
+		if in.Conditions != nil {
+			in, out := &in.Conditions, &out.Conditions
+			*out = make([]ReplicationControllerCondition, len(*in))
+			for i := range *in {
+				if err := DeepCopy_v1_ReplicationControllerCondition(&(*in)[i], &(*out)[i], c); err != nil {
+					return err
+				}
+			}
+		} else {
+			out.Conditions = nil
+		}
 		return nil
 	}
 }
@@ -3675,6 +3723,13 @@ func DeepCopy_v1_VolumeSource(in interface{}, out interface{}, c *conversion.Clo
 			}
 		} else {
 			out.AzureDisk = nil
+		}
+		if in.PhotonPersistentDisk != nil {
+			in, out := &in.PhotonPersistentDisk, &out.PhotonPersistentDisk
+			*out = new(PhotonPersistentDiskVolumeSource)
+			**out = **in
+		} else {
+			out.PhotonPersistentDisk = nil
 		}
 		return nil
 	}

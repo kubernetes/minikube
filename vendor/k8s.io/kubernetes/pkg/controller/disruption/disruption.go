@@ -18,6 +18,7 @@ package disruption
 
 import (
 	"fmt"
+	"reflect"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -25,12 +26,15 @@ import (
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/policy"
 	"k8s.io/kubernetes/pkg/client/cache"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
+	policyclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/internalversion"
 	"k8s.io/kubernetes/pkg/client/record"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/runtime"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/intstr"
+	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/util/workqueue"
 	"k8s.io/kubernetes/pkg/watch"
@@ -40,10 +44,21 @@ import (
 
 const statusUpdateRetries = 2
 
+// DeletionTimeout sets maximum time from the moment a pod is added to DisruptedPods in PDB.Status
+// to the time when the pod is expected to be seen by PDB controller as having been marked for deletion.
+// If the pod was not marked for deletion during that time it is assumed that it won't be deleted at
+// all and the corresponding entry can be removed from pdb.Status.DisruptedPods. It is assumed that
+// pod/pdb apiserver to controller latency is relatively small (like 1-2sec) so the below value should
+// be more than enough.
+// If the cotroller is running on a different node it is important that the two nodes have synced
+// clock (via ntp for example). Otherwise PodDisruptionBudget controller may not provide enough
+// protection against unwanted pod disruptions.
+const DeletionTimeout = 2 * 60 * time.Second
+
 type updater func(*policy.PodDisruptionBudget) error
 
 type DisruptionController struct {
-	kubeClient *client.Client
+	kubeClient internalclientset.Interface
 
 	pdbStore      cache.Store
 	pdbController *cache.Controller
@@ -64,7 +79,9 @@ type DisruptionController struct {
 	dController *cache.Controller
 	dLister     cache.StoreToDeploymentLister
 
-	queue *workqueue.Type
+	// PodDisruptionBudget keys that need to be synced.
+	queue        workqueue.RateLimitingInterface
+	recheckQueue workqueue.DelayingInterface
 
 	broadcaster record.EventBroadcaster
 	recorder    record.EventRecorder
@@ -83,11 +100,12 @@ type controllerAndScale struct {
 // controllers and their scale.
 type podControllerFinder func(*api.Pod) ([]controllerAndScale, error)
 
-func NewDisruptionController(podInformer cache.SharedIndexInformer, kubeClient *client.Client) *DisruptionController {
+func NewDisruptionController(podInformer cache.SharedIndexInformer, kubeClient internalclientset.Interface) *DisruptionController {
 	dc := &DisruptionController{
 		kubeClient:    kubeClient,
 		podController: podInformer.GetController(),
-		queue:         workqueue.NewNamed("disruption"),
+		queue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "disruption"),
+		recheckQueue:  workqueue.NewNamedDelayingQueue("disruption-recheck"),
 		broadcaster:   record.NewBroadcaster(),
 	}
 	dc.recorder = dc.broadcaster.NewRecorder(api.EventSource{Component: "controllermanager"})
@@ -124,10 +142,10 @@ func NewDisruptionController(podInformer cache.SharedIndexInformer, kubeClient *
 	dc.rcIndexer, dc.rcController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return dc.kubeClient.ReplicationControllers(api.NamespaceAll).List(options)
+				return dc.kubeClient.Core().ReplicationControllers(api.NamespaceAll).List(options)
 			},
 			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return dc.kubeClient.ReplicationControllers(api.NamespaceAll).Watch(options)
+				return dc.kubeClient.Core().ReplicationControllers(api.NamespaceAll).Watch(options)
 			},
 		},
 		&api.ReplicationController{},
@@ -138,7 +156,7 @@ func NewDisruptionController(podInformer cache.SharedIndexInformer, kubeClient *
 
 	dc.rcLister.Indexer = dc.rcIndexer
 
-	dc.rsStore, dc.rsController = cache.NewInformer(
+	dc.rsLister.Indexer, dc.rsController = cache.NewIndexerInformer(
 		&cache.ListWatch{
 			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
 				return dc.kubeClient.Extensions().ReplicaSets(api.NamespaceAll).List(options)
@@ -150,9 +168,9 @@ func NewDisruptionController(podInformer cache.SharedIndexInformer, kubeClient *
 		&extensions.ReplicaSet{},
 		30*time.Second,
 		cache.ResourceEventHandlerFuncs{},
+		cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc},
 	)
-
-	dc.rsLister.Store = dc.rsStore
+	dc.rsStore = dc.rsLister.Indexer
 
 	dc.dIndexer, dc.dController = cache.NewIndexerInformer(
 		&cache.ListWatch{
@@ -198,7 +216,7 @@ func (dc *DisruptionController) getPodReplicaSets(pod *api.Pod) ([]controllerAnd
 	for _, rs := range rss {
 		// GetDeploymentsForReplicaSet returns an error only if no matching
 		// deployments are found.
-		_, err := dc.dLister.GetDeploymentsForReplicaSet(&rs)
+		_, err := dc.dLister.GetDeploymentsForReplicaSet(rs)
 		if err == nil { // A deployment was found, so this finder will not count this RS.
 			continue
 		}
@@ -223,7 +241,7 @@ func (dc *DisruptionController) getPodDeployments(pod *api.Pod) ([]controllerAnd
 	}
 	controllerScale := map[types.UID]int32{}
 	for _, rs := range rss {
-		ds, err := dc.dLister.GetDeploymentsForReplicaSet(&rs)
+		ds, err := dc.dLister.GetDeploymentsForReplicaSet(rs)
 		// GetDeploymentsForReplicaSet returns an error only if no matching
 		// deployments are found.  In that case we skip this ReplicaSet.
 		if err != nil {
@@ -256,7 +274,7 @@ func (dc *DisruptionController) Run(stopCh <-chan struct{}) {
 	glog.V(0).Infof("Starting disruption controller")
 	if dc.kubeClient != nil {
 		glog.V(0).Infof("Sending events to api server.")
-		dc.broadcaster.StartRecordingToSink(dc.kubeClient.Events(""))
+		dc.broadcaster.StartRecordingToSink(&unversionedcore.EventSinkImpl{Interface: dc.kubeClient.Core().Events("")})
 	} else {
 		glog.V(0).Infof("No api server defined - no events will be sent to API server.")
 	}
@@ -266,6 +284,8 @@ func (dc *DisruptionController) Run(stopCh <-chan struct{}) {
 	go dc.rsController.Run(stopCh)
 	go dc.dController.Run(stopCh)
 	go wait.Until(dc.worker, time.Second, stopCh)
+	go wait.Until(dc.recheckWorker, time.Second, stopCh)
+
 	<-stopCh
 	glog.V(0).Infof("Shutting down disruption controller")
 }
@@ -351,6 +371,15 @@ func (dc *DisruptionController) enqueuePdb(pdb *policy.PodDisruptionBudget) {
 	dc.queue.Add(key)
 }
 
+func (dc *DisruptionController) enqueuePdbForRecheck(pdb *policy.PodDisruptionBudget, delay time.Duration) {
+	key, err := controller.KeyFunc(pdb)
+	if err != nil {
+		glog.Errorf("Cound't get key for PodDisruptionBudget object %+v: %v", pdb, err)
+		return
+	}
+	dc.recheckQueue.AddAfter(key, delay)
+}
+
 func (dc *DisruptionController) getPdbForPod(pod *api.Pod) *policy.PodDisruptionBudget {
 	// GetPodPodDisruptionBudgets returns an error only if no
 	// PodDisruptionBudgets are found.  We don't return that as an error to the
@@ -390,33 +419,42 @@ func (dc *DisruptionController) getPodsForPdb(pdb *policy.PodDisruptionBudget) (
 }
 
 func (dc *DisruptionController) worker() {
-	work := func() bool {
-		key, quit := dc.queue.Get()
-		if quit {
-			return quit
-		}
-		defer dc.queue.Done(key)
-		glog.V(4).Infof("Syncing PodDisruptionBudget %q", key.(string))
-		if err := dc.sync(key.(string)); err != nil {
-			glog.Errorf("Error syncing PodDisruptionBudget %v, requeuing: %v", key.(string), err)
-			// TODO(mml): In order to be safe in the face of a total inability to write state
-			// changes, we should write an expiration timestamp here and consumers
-			// of the PDB state (the /evict subresource handler) should check that
-			// any 'true' state is relatively fresh.
+	for dc.processNextWorkItem() {
+	}
+}
 
-			// TODO(mml): file an issue to that effect
-
-			// TODO(mml): If we used a workqueue.RateLimitingInterface, we could
-			// improve our behavior (be a better citizen) when we need to retry.
-			dc.queue.Add(key)
-		}
+func (dc *DisruptionController) processNextWorkItem() bool {
+	dKey, quit := dc.queue.Get()
+	if quit {
 		return false
 	}
-	for {
-		if quit := work(); quit {
-			return
-		}
+	defer dc.queue.Done(dKey)
+
+	err := dc.sync(dKey.(string))
+	if err == nil {
+		dc.queue.Forget(dKey)
+		return true
 	}
+
+	utilruntime.HandleError(fmt.Errorf("Error syncing PodDisruptionBudget %v, requeuing: %v", dKey.(string), err))
+	dc.queue.AddRateLimited(dKey)
+
+	return true
+}
+
+func (dc *DisruptionController) recheckWorker() {
+	for dc.processNextRecheckWorkItem() {
+	}
+}
+
+func (dc *DisruptionController) processNextRecheckWorkItem() bool {
+	dKey, quit := dc.recheckQueue.Get()
+	if quit {
+		return false
+	}
+	defer dc.recheckQueue.Done(dKey)
+	dc.queue.AddRateLimited(dKey)
+	return true
 }
 
 func (dc *DisruptionController) sync(key string) error {
@@ -427,16 +465,17 @@ func (dc *DisruptionController) sync(key string) error {
 
 	obj, exists, err := dc.pdbLister.Store.GetByKey(key)
 	if !exists {
-		return err
+		glog.V(4).Infof("PodDisruptionBudget %q has been deleted", key)
+		return nil
 	}
 	if err != nil {
-		glog.Errorf("unable to retrieve PodDisruptionBudget %v from store: %v", key, err)
 		return err
 	}
 
 	pdb := obj.(*policy.PodDisruptionBudget)
 
 	if err := dc.trySync(pdb); err != nil {
+		glog.Errorf("Failed to sync pdb %s/%s: %v", pdb.Namespace, pdb.Name, err)
 		return dc.failSafe(pdb)
 	}
 
@@ -446,17 +485,30 @@ func (dc *DisruptionController) sync(key string) error {
 func (dc *DisruptionController) trySync(pdb *policy.PodDisruptionBudget) error {
 	pods, err := dc.getPodsForPdb(pdb)
 	if err != nil {
+		dc.recorder.Eventf(pdb, api.EventTypeWarning, "NoPods", "Failed to get pods: %v", err)
 		return err
+	}
+	if len(pods) == 0 {
+		dc.recorder.Eventf(pdb, api.EventTypeNormal, "NoPods", "No matching pods found")
 	}
 
 	expectedCount, desiredHealthy, err := dc.getExpectedPodCount(pdb, pods)
 	if err != nil {
+		dc.recorder.Eventf(pdb, api.EventTypeNormal, "ExpectedPods", "Failed to calculate the number of expected pods: %v", err)
 		return err
 	}
 
-	currentHealthy := countHealthyPods(pods)
-	err = dc.updatePdbSpec(pdb, currentHealthy, desiredHealthy, expectedCount)
+	currentTime := time.Now()
+	disruptedPods, recheckTime := dc.buildDisruptedPodMap(pods, pdb, currentTime)
+	currentHealthy := countHealthyPods(pods, disruptedPods, currentTime)
+	err = dc.updatePdbStatus(pdb, currentHealthy, desiredHealthy, expectedCount, disruptedPods)
 
+	if err == nil && recheckTime != nil {
+		// There is always at most one PDB waiting with a particular name in the queue,
+		// and each PDB in the queue is associated with the lowest timestamp
+		// that was supplied when a PDB with that name was added.
+		dc.enqueuePdbForRecheck(pdb, recheckTime.Sub(currentTime))
+	}
 	return err
 }
 
@@ -529,22 +581,64 @@ func (dc *DisruptionController) getExpectedPodCount(pdb *policy.PodDisruptionBud
 	return
 }
 
-func countHealthyPods(pods []*api.Pod) (currentHealthy int32) {
+func countHealthyPods(pods []*api.Pod, disruptedPods map[string]unversioned.Time, currentTime time.Time) (currentHealthy int32) {
 Pod:
 	for _, pod := range pods {
-		for _, c := range pod.Status.Conditions {
-			if c.Type == api.PodReady && c.Status == api.ConditionTrue {
-				currentHealthy++
-				continue Pod
-			}
+		// Pod is beeing deleted.
+		if pod.DeletionTimestamp != nil {
+			continue
+		}
+		// Pod is expected to be deleted soon.
+		if disruptionTime, found := disruptedPods[pod.Name]; found && disruptionTime.Time.Add(DeletionTimeout).After(currentTime) {
+			continue
+		}
+		if api.IsPodReady(pod) {
+			currentHealthy++
+			continue Pod
 		}
 	}
 
 	return
 }
 
-// failSafe is an attempt to at least update the PodDisruptionAllowed field to
-// false if everything something else has failed.  This is one place we
+// Builds new PodDisruption map, possibly removing items that refer to non-existing, already deleted
+// or not-deleted at all items. Also returns an information when this check should be repeated.
+func (dc *DisruptionController) buildDisruptedPodMap(pods []*api.Pod, pdb *policy.PodDisruptionBudget, currentTime time.Time) (map[string]unversioned.Time, *time.Time) {
+	disruptedPods := pdb.Status.DisruptedPods
+	result := make(map[string]unversioned.Time)
+	var recheckTime *time.Time
+
+	if disruptedPods == nil || len(disruptedPods) == 0 {
+		return result, recheckTime
+	}
+	for _, pod := range pods {
+		if pod.DeletionTimestamp != nil {
+			// Already being deleted.
+			continue
+		}
+		disruptionTime, found := disruptedPods[pod.Name]
+		if !found {
+			// Pod not on the list.
+			continue
+		}
+		expectedDeletion := disruptionTime.Time.Add(DeletionTimeout)
+		if expectedDeletion.Before(currentTime) {
+			glog.V(1).Infof("Pod %s/%s was expected to be deleted at %s but it wasn't, updating pdb %s/%s",
+				pod.Namespace, pod.Name, disruptionTime.String(), pdb.Namespace, pdb.Name)
+			dc.recorder.Eventf(pod, api.EventTypeWarning, "NotDeleted", "Pod was expected by PDB %s/%s to be deleted but it wasn't",
+				pdb.Namespace, pdb.Namespace)
+		} else {
+			if recheckTime == nil || expectedDeletion.Before(*recheckTime) {
+				recheckTime = &expectedDeletion
+			}
+			result[pod.Name] = disruptionTime
+		}
+	}
+	return result, recheckTime
+}
+
+// failSafe is an attempt to at least update the PodDisruptionsAllowed field to
+// 0 if everything else has failed.  This is one place we
 // implement the  "fail open" part of the design since if we manage to update
 // this field correctly, we will prevent the /evict handler from approving an
 // eviction when it may be unsafe to do so.
@@ -554,19 +648,29 @@ func (dc *DisruptionController) failSafe(pdb *policy.PodDisruptionBudget) error 
 		return err
 	}
 	newPdb := obj.(policy.PodDisruptionBudget)
-	newPdb.Status.PodDisruptionAllowed = false
+	newPdb.Status.PodDisruptionsAllowed = 0
 
 	return dc.getUpdater()(&newPdb)
 }
 
-func (dc *DisruptionController) updatePdbSpec(pdb *policy.PodDisruptionBudget, currentHealthy, desiredHealthy, expectedCount int32) error {
+func (dc *DisruptionController) updatePdbStatus(pdb *policy.PodDisruptionBudget, currentHealthy, desiredHealthy, expectedCount int32,
+	disruptedPods map[string]unversioned.Time) error {
+
 	// We require expectedCount to be > 0 so that PDBs which currently match no
 	// pods are in a safe state when their first pods appear but this controller
 	// has not updated their status yet.  This isn't the only race, but it's a
 	// common one that's easy to detect.
-	disruptionAllowed := currentHealthy-1 >= desiredHealthy && expectedCount > 0
+	disruptionsAllowed := currentHealthy - desiredHealthy
+	if expectedCount <= 0 || disruptionsAllowed <= 0 {
+		disruptionsAllowed = 0
+	}
 
-	if pdb.Status.CurrentHealthy == currentHealthy && pdb.Status.DesiredHealthy == desiredHealthy && pdb.Status.ExpectedPods == expectedCount && pdb.Status.PodDisruptionAllowed == disruptionAllowed {
+	if pdb.Status.CurrentHealthy == currentHealthy &&
+		pdb.Status.DesiredHealthy == desiredHealthy &&
+		pdb.Status.ExpectedPods == expectedCount &&
+		pdb.Status.PodDisruptionsAllowed == disruptionsAllowed &&
+		reflect.DeepEqual(pdb.Status.DisruptedPods, disruptedPods) &&
+		pdb.Status.ObservedGeneration == pdb.Generation {
 		return nil
 	}
 
@@ -577,10 +681,12 @@ func (dc *DisruptionController) updatePdbSpec(pdb *policy.PodDisruptionBudget, c
 	newPdb := obj.(policy.PodDisruptionBudget)
 
 	newPdb.Status = policy.PodDisruptionBudgetStatus{
-		CurrentHealthy:       currentHealthy,
-		DesiredHealthy:       desiredHealthy,
-		ExpectedPods:         expectedCount,
-		PodDisruptionAllowed: disruptionAllowed,
+		CurrentHealthy:        currentHealthy,
+		DesiredHealthy:        desiredHealthy,
+		ExpectedPods:          expectedCount,
+		PodDisruptionsAllowed: disruptionsAllowed,
+		DisruptedPods:         disruptedPods,
+		ObservedGeneration:    pdb.Generation,
 	}
 
 	return dc.getUpdater()(&newPdb)
@@ -589,7 +695,7 @@ func (dc *DisruptionController) updatePdbSpec(pdb *policy.PodDisruptionBudget, c
 // refresh tries to re-GET the given PDB.  If there are any errors, it just
 // returns the old PDB.  Intended to be used in a retry loop where it runs a
 // bounded number of times.
-func refresh(pdbClient client.PodDisruptionBudgetInterface, pdb *policy.PodDisruptionBudget) *policy.PodDisruptionBudget {
+func refresh(pdbClient policyclientset.PodDisruptionBudgetInterface, pdb *policy.PodDisruptionBudget) *policy.PodDisruptionBudget {
 	newPdb, err := pdbClient.Get(pdb.Name)
 	if err == nil {
 		return newPdb

@@ -43,11 +43,13 @@ func (provisioner *ArchProvisioner) Package(name string, action pkgaction.Packag
 	updateMetadata := true
 
 	switch action {
-	case pkgaction.Install, pkgaction.Upgrade:
+	case pkgaction.Install:
 		packageAction = "S"
 	case pkgaction.Remove:
 		packageAction = "R"
 		updateMetadata = false
+	case pkgaction.Upgrade:
+		packageAction = "U"
 	}
 
 	switch name {

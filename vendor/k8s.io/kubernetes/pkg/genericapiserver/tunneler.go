@@ -17,8 +17,10 @@ limitations under the License.
 package genericapiserver
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"sync/atomic"
@@ -43,6 +45,25 @@ type Tunneler interface {
 	Dial(net, addr string) (net.Conn, error)
 	SecondsSinceSync() int64
 	SecondsSinceSSHKeySync() int64
+}
+
+// TunnelSyncHealthChecker returns a health func that indicates if a tunneler is healthy.
+// It's compatible with healthz.NamedCheck
+func TunnelSyncHealthChecker(tunneler Tunneler) func(req *http.Request) error {
+	return func(req *http.Request) error {
+		if tunneler == nil {
+			return nil
+		}
+		lag := tunneler.SecondsSinceSync()
+		if lag > 600 {
+			return fmt.Errorf("Tunnel sync is taking to long: %d", lag)
+		}
+		sshKeyLag := tunneler.SecondsSinceSSHKeySync()
+		if sshKeyLag > 600 {
+			return fmt.Errorf("SSHKey sync is taking to long: %d", sshKeyLag)
+		}
+		return nil
+	}
 }
 
 type SSHTunneler struct {
@@ -162,13 +183,13 @@ func (c *SSHTunneler) installSSHKeySyncLoop(user, publicKeyfile string) {
 	}, 5*time.Minute, c.stopChan)
 }
 
-// nodesSyncLoop lists nodes ever 15 seconds, calling Update() on the TunnelList
+// nodesSyncLoop lists nodes every 15 seconds, calling Update() on the TunnelList
 // each time (Update() is a noop if no changes are necessary).
 func (c *SSHTunneler) nodesSyncLoop() {
 	// TODO (cjcullen) make this watch.
 	go wait.Until(func() {
 		addrs, err := c.getAddresses()
-		glog.Infof("Calling update w/ addrs: %v", addrs)
+		glog.V(4).Infof("Calling update w/ addrs: %v", addrs)
 		if err != nil {
 			glog.Errorf("Failed to getAddresses: %v", err)
 		}

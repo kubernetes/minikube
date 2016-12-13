@@ -343,12 +343,28 @@ func NewUIDTrackingControllerExpectations(ce ControllerExpectationsInterface) *U
 	return &UIDTrackingControllerExpectations{ControllerExpectationsInterface: ce, uidStore: cache.NewStore(UIDSetKeyFunc)}
 }
 
+// Reasons for pod events
+const (
+	// FailedCreatePodReason is added in an event and in a replica set condition
+	// when a pod for a replica set is failed to be created.
+	FailedCreatePodReason = "FailedCreate"
+	// SuccessfulCreatePodReason is added in an event when a pod for a replica set
+	// is successfully created.
+	SuccessfulCreatePodReason = "SuccessfulCreate"
+	// FailedDeletePodReason is added in an event and in a replica set condition
+	// when a pod for a replica set is failed to be deleted.
+	FailedDeletePodReason = "FailedDelete"
+	// SuccessfulDeletePodReason is added in an event when a pod for a replica set
+	// is successfully deleted.
+	SuccessfulDeletePodReason = "SuccessfulDelete"
+)
+
 // PodControlInterface is an interface that knows how to add or delete pods
 // created as an interface to allow testing.
 type PodControlInterface interface {
 	// CreatePods creates new pods according to the spec.
 	CreatePods(namespace string, template *api.PodTemplateSpec, object runtime.Object) error
-	// CreatePodsOnNode creates a new pod accorting to the spec on the specified node.
+	// CreatePodsOnNode creates a new pod according to the spec on the specified node.
 	CreatePodsOnNode(nodeName, namespace string, template *api.PodTemplateSpec, object runtime.Object) error
 	// CreatePodsWithControllerRef creates new pods according to the spec, and sets object as the pod's controller.
 	CreatePodsWithControllerRef(namespace string, template *api.PodTemplateSpec, object runtime.Object, controllerRef *api.OwnerReference) error
@@ -372,6 +388,12 @@ func getPodsLabelSet(template *api.PodTemplateSpec) labels.Set {
 		desiredLabels[k] = v
 	}
 	return desiredLabels
+}
+
+func getPodsFinalizers(template *api.PodTemplateSpec) []string {
+	desiredFinalizers := make([]string, len(template.Finalizers))
+	copy(desiredFinalizers, template.Finalizers)
+	return desiredFinalizers
 }
 
 func getPodsAnnotationSet(template *api.PodTemplateSpec, object runtime.Object) (labels.Set, error) {
@@ -439,6 +461,7 @@ func (r RealPodControl) PatchPod(namespace, name string, data []byte) error {
 
 func GetPodFromTemplate(template *api.PodTemplateSpec, parentObject runtime.Object, controllerRef *api.OwnerReference) (*api.Pod, error) {
 	desiredLabels := getPodsLabelSet(template)
+	desiredFinalizers := getPodsFinalizers(template)
 	desiredAnnotations, err := getPodsAnnotationSet(template, parentObject)
 	if err != nil {
 		return nil, err
@@ -454,6 +477,7 @@ func GetPodFromTemplate(template *api.PodTemplateSpec, parentObject runtime.Obje
 			Labels:       desiredLabels,
 			Annotations:  desiredAnnotations,
 			GenerateName: prefix,
+			Finalizers:   desiredFinalizers,
 		},
 	}
 	if controllerRef != nil {
@@ -477,7 +501,7 @@ func (r RealPodControl) createPods(nodeName, namespace string, template *api.Pod
 		return fmt.Errorf("unable to create pods, no labels")
 	}
 	if newPod, err := r.KubeClient.Core().Pods(namespace).Create(pod); err != nil {
-		r.Recorder.Eventf(object, api.EventTypeWarning, "FailedCreate", "Error creating: %v", err)
+		r.Recorder.Eventf(object, api.EventTypeWarning, FailedCreatePodReason, "Error creating: %v", err)
 		return fmt.Errorf("unable to create pods: %v", err)
 	} else {
 		accessor, err := meta.Accessor(object)
@@ -486,7 +510,7 @@ func (r RealPodControl) createPods(nodeName, namespace string, template *api.Pod
 			return nil
 		}
 		glog.V(4).Infof("Controller %v created pod %v", accessor.GetName(), newPod.Name)
-		r.Recorder.Eventf(object, api.EventTypeNormal, "SuccessfulCreate", "Created pod: %v", newPod.Name)
+		r.Recorder.Eventf(object, api.EventTypeNormal, SuccessfulCreatePodReason, "Created pod: %v", newPod.Name)
 	}
 	return nil
 }
@@ -496,12 +520,12 @@ func (r RealPodControl) DeletePod(namespace string, podID string, object runtime
 	if err != nil {
 		return fmt.Errorf("object does not have ObjectMeta, %v", err)
 	}
+	glog.V(2).Infof("Controller %v deleting pod %v/%v", accessor.GetName(), namespace, podID)
 	if err := r.KubeClient.Core().Pods(namespace).Delete(podID, nil); err != nil {
-		r.Recorder.Eventf(object, api.EventTypeWarning, "FailedDelete", "Error deleting: %v", err)
+		r.Recorder.Eventf(object, api.EventTypeWarning, FailedDeletePodReason, "Error deleting: %v", err)
 		return fmt.Errorf("unable to delete pods: %v", err)
 	} else {
-		glog.V(4).Infof("Controller %v deleted pod %v", accessor.GetName(), podID)
-		r.Recorder.Eventf(object, api.EventTypeNormal, "SuccessfulDelete", "Deleted pod: %v", podID)
+		r.Recorder.Eventf(object, api.EventTypeNormal, SuccessfulDeletePodReason, "Deleted pod: %v", podID)
 	}
 	return nil
 }

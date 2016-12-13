@@ -120,7 +120,8 @@ func NewAttachDetachController(
 		operationexecutor.NewOperationExecutor(
 			kubeClient,
 			&adc.volumePluginMgr,
-			recorder)
+			recorder,
+			false) // flag for experimental binary check for volume mount
 	adc.nodeStatusUpdater = statusupdater.NewNodeStatusUpdater(
 		kubeClient, nodeInformer, adc.actualStateOfWorld)
 	adc.reconciler = reconciler.NewReconciler(
@@ -238,23 +239,34 @@ func (adc *attachDetachController) podDelete(obj interface{}) {
 
 func (adc *attachDetachController) nodeAdd(obj interface{}) {
 	node, ok := obj.(*api.Node)
+	// TODO: investigate if nodeName is empty then if we can return
+	// kubernetes/kubernetes/issues/37777
+	if node == nil || !ok {
+		return
+	}
+	nodeName := types.NodeName(node.Name)
+	adc.nodeUpdate(nil, obj)
+	// kubernetes/kubernetes/issues/37586
+	// This is to workaround the case when a node add causes to wipe out
+	// the attached volumes field. This function ensures that we sync with
+	// the actual status.
+	adc.actualStateOfWorld.SetNodeStatusUpdateNeeded(nodeName)
+}
+
+func (adc *attachDetachController) nodeUpdate(oldObj, newObj interface{}) {
+	node, ok := newObj.(*api.Node)
+	// TODO: investigate if nodeName is empty then if we can return
 	if node == nil || !ok {
 		return
 	}
 
-	nodeName := node.Name
+	nodeName := types.NodeName(node.Name)
 	if _, exists := node.Annotations[volumehelper.ControllerManagedAttachAnnotation]; exists {
 		// Node specifies annotation indicating it should be managed by attach
 		// detach controller. Add it to desired state of world.
 		adc.desiredStateOfWorld.AddNode(nodeName)
 	}
-
 	adc.processVolumesInUse(nodeName, node.Status.VolumesInUse)
-}
-
-func (adc *attachDetachController) nodeUpdate(oldObj, newObj interface{}) {
-	// The flow for update is the same as add.
-	adc.nodeAdd(newObj)
 }
 
 func (adc *attachDetachController) nodeDelete(obj interface{}) {
@@ -263,7 +275,7 @@ func (adc *attachDetachController) nodeDelete(obj interface{}) {
 		return
 	}
 
-	nodeName := node.Name
+	nodeName := types.NodeName(node.Name)
 	if err := adc.desiredStateOfWorld.DeleteNode(nodeName); err != nil {
 		glog.V(10).Infof("%v", err)
 	}
@@ -283,7 +295,9 @@ func (adc *attachDetachController) processPodVolumes(
 		return
 	}
 
-	if !adc.desiredStateOfWorld.NodeExists(pod.Spec.NodeName) {
+	nodeName := types.NodeName(pod.Spec.NodeName)
+
+	if !adc.desiredStateOfWorld.NodeExists(nodeName) {
 		// If the node the pod is scheduled to does not exist in the desired
 		// state of the world data structure, that indicates the node is not
 		// yet managed by the controller. Therefore, ignore the pod.
@@ -293,7 +307,7 @@ func (adc *attachDetachController) processPodVolumes(
 			"Skipping processing of pod %q/%q: it is scheduled to node %q which is not managed by the controller.",
 			pod.Namespace,
 			pod.Name,
-			pod.Spec.NodeName)
+			nodeName)
 		return
 	}
 
@@ -326,7 +340,7 @@ func (adc *attachDetachController) processPodVolumes(
 		if addVolumes {
 			// Add volume to desired state of world
 			_, err := adc.desiredStateOfWorld.AddPod(
-				uniquePodName, pod, volumeSpec, pod.Spec.NodeName)
+				uniquePodName, pod, volumeSpec, nodeName)
 			if err != nil {
 				glog.V(10).Infof(
 					"Failed to add volume %q for pod %q/%q to desiredStateOfWorld. %v",
@@ -350,7 +364,7 @@ func (adc *attachDetachController) processPodVolumes(
 				continue
 			}
 			adc.desiredStateOfWorld.DeletePod(
-				uniquePodName, uniqueVolumeName, pod.Spec.NodeName)
+				uniquePodName, uniqueVolumeName, nodeName)
 		}
 	}
 
@@ -521,7 +535,7 @@ func (adc *attachDetachController) getPVSpecFromCache(
 // corresponding volume in the actual state of the world to indicate that it is
 // mounted.
 func (adc *attachDetachController) processVolumesInUse(
-	nodeName string, volumesInUse []api.UniqueVolumeName) {
+	nodeName types.NodeName, volumesInUse []api.UniqueVolumeName) {
 	glog.V(4).Infof("processVolumesInUse for node %q", nodeName)
 	for _, attachedVolume := range adc.actualStateOfWorld.GetAttachedVolumesForNode(nodeName) {
 		mounted := false
@@ -589,10 +603,6 @@ func (adc *attachDetachController) GetHostName() string {
 
 func (adc *attachDetachController) GetHostIP() (net.IP, error) {
 	return nil, fmt.Errorf("GetHostIP() not supported by Attach/Detach controller's VolumeHost implementation")
-}
-
-func (adc *attachDetachController) GetRootContext() string {
-	return ""
 }
 
 func (adc *attachDetachController) GetNodeAllocatable() (api.ResourceList, error) {

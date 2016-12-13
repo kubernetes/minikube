@@ -31,6 +31,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/resource"
 	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	"k8s.io/kubernetes/pkg/fields"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/util/sliceutils"
@@ -98,7 +99,7 @@ func (kl *Kubelet) tryRegisterWithApiServer(node *api.Node) bool {
 		return false
 	}
 
-	existingNode, err := kl.kubeClient.Core().Nodes().Get(kl.nodeName)
+	existingNode, err := kl.kubeClient.Core().Nodes().Get(string(kl.nodeName))
 	if err != nil {
 		glog.Errorf("Unable to register node %q with API server: error getting existing node: %v", kl.nodeName, err)
 		return false
@@ -173,7 +174,7 @@ func (kl *Kubelet) reconcileCMADAnnotationWithExistingNode(node, existingNode *a
 func (kl *Kubelet) initialNode() (*api.Node, error) {
 	node := &api.Node{
 		ObjectMeta: api.ObjectMeta{
-			Name: kl.nodeName,
+			Name: string(kl.nodeName),
 			Labels: map[string]string{
 				unversioned.LabelHostname: kl.hostname,
 				unversioned.LabelOS:       goRuntime.GOOS,
@@ -297,7 +298,7 @@ func (kl *Kubelet) syncNodeStatus() {
 // updateNodeStatus updates node status to master with retries.
 func (kl *Kubelet) updateNodeStatus() error {
 	for i := 0; i < nodeStatusUpdateRetry; i++ {
-		if err := kl.tryUpdateNodeStatus(); err != nil {
+		if err := kl.tryUpdateNodeStatus(i); err != nil {
 			glog.Errorf("Error updating node status, will retry: %v", err)
 		} else {
 			return nil
@@ -308,33 +309,34 @@ func (kl *Kubelet) updateNodeStatus() error {
 
 // tryUpdateNodeStatus tries to update node status to master. If ReconcileCBR0
 // is set, this function will also confirm that cbr0 is configured correctly.
-func (kl *Kubelet) tryUpdateNodeStatus() error {
-	node, err := kl.kubeClient.Core().Nodes().Get(kl.nodeName)
+func (kl *Kubelet) tryUpdateNodeStatus(tryNumber int) error {
+	// In large clusters, GET and PUT operations on Node objects coming
+	// from here are the majority of load on apiserver and etcd.
+	// To reduce the load on etcd, we are serving GET operations from
+	// apiserver cache (the data might be slightly delayed but it doesn't
+	// seem to cause more confilict - the delays are pretty small).
+	// If it result in a conflict, all retries are served directly from etcd.
+	// TODO: Currently apiserver doesn't support serving GET operations
+	// from its cache. Thus we are hacking it by issuing LIST with
+	// field selector for the name of the node (field selectors with
+	// specified name are handled efficiently by apiserver). Once
+	// apiserver supports GET from cache, change it here.
+	opts := api.ListOptions{
+		FieldSelector: fields.Set{"metadata.name": string(kl.nodeName)}.AsSelector(),
+	}
+	if tryNumber == 0 {
+		opts.ResourceVersion = "0"
+	}
+	nodes, err := kl.kubeClient.Core().Nodes().List(opts)
 	if err != nil {
 		return fmt.Errorf("error getting node %q: %v", kl.nodeName, err)
 	}
-	if node == nil {
+	if len(nodes.Items) != 1 {
 		return fmt.Errorf("no node instance returned for %q", kl.nodeName)
 	}
+	node := &nodes.Items[0]
 
-	// Flannel is the authoritative source of pod CIDR, if it's running.
-	// This is a short term compromise till we get flannel working in
-	// reservation mode.
-	if kl.flannelExperimentalOverlay {
-		flannelPodCIDR := kl.runtimeState.podCIDR()
-		if node.Spec.PodCIDR != flannelPodCIDR {
-			node.Spec.PodCIDR = flannelPodCIDR
-			glog.Infof("Updating podcidr to %v", node.Spec.PodCIDR)
-			if updatedNode, err := kl.kubeClient.Core().Nodes().Update(node); err != nil {
-				glog.Warningf("Failed to update podCIDR: %v", err)
-			} else {
-				// Update the node resourceVersion so the status update doesn't fail.
-				node = updatedNode
-			}
-		}
-	} else if kl.reconcileCIDR {
-		kl.updatePodCIDR(node.Spec.PodCIDR)
-	}
+	kl.updatePodCIDR(node.Spec.PodCIDR)
 
 	if err := kl.setNodeStatus(node); err != nil {
 		return err
@@ -359,8 +361,15 @@ func (kl *Kubelet) recordNodeStatusEvent(eventtype, event string) {
 	kl.recorder.Eventf(kl.nodeRef, eventtype, event, "Node %s status is now: %s", kl.nodeName, event)
 }
 
-// Set IP addresses for the node.
+// Set IP and hostname addresses for the node.
 func (kl *Kubelet) setNodeAddress(node *api.Node) error {
+	if kl.nodeIP != nil {
+		if err := kl.validateNodeIP(); err != nil {
+			return fmt.Errorf("failed to validate nodeIP: %v", err)
+		}
+		glog.V(2).Infof("Using node IP: %q", kl.nodeIP.String())
+	}
+
 	if kl.cloud != nil {
 		instances, ok := kl.cloud.Instances()
 		if !ok {
@@ -373,6 +382,34 @@ func (kl *Kubelet) setNodeAddress(node *api.Node) error {
 		nodeAddresses, err := instances.NodeAddresses(kl.nodeName)
 		if err != nil {
 			return fmt.Errorf("failed to get node address from cloud provider: %v", err)
+		}
+		if kl.nodeIP != nil {
+			for _, nodeAddress := range nodeAddresses {
+				if nodeAddress.Address == kl.nodeIP.String() {
+					node.Status.Addresses = []api.NodeAddress{
+						{Type: nodeAddress.Type, Address: nodeAddress.Address},
+						{Type: api.NodeHostName, Address: kl.GetHostname()},
+					}
+					return nil
+				}
+			}
+			return fmt.Errorf("failed to get node address from cloud provider that matches ip: %v", kl.nodeIP)
+		}
+
+		// Only add a NodeHostName address if the cloudprovider did not specify one
+		// (we assume the cloudprovider knows best)
+		var addressNodeHostName *api.NodeAddress
+		for i := range nodeAddresses {
+			if nodeAddresses[i].Type == api.NodeHostName {
+				addressNodeHostName = &nodeAddresses[i]
+				break
+			}
+		}
+		if addressNodeHostName == nil {
+			hostnameAddress := api.NodeAddress{Type: api.NodeHostName, Address: kl.GetHostname()}
+			nodeAddresses = append(nodeAddresses, hostnameAddress)
+		} else {
+			glog.V(2).Infof("Using Node Hostname from cloudprovider: %q", addressNodeHostName.Address)
 		}
 		node.Status.Addresses = nodeAddresses
 	} else {
@@ -409,6 +446,7 @@ func (kl *Kubelet) setNodeAddress(node *api.Node) error {
 			node.Status.Addresses = []api.NodeAddress{
 				{Type: api.NodeLegacyHostIP, Address: ipAddr.String()},
 				{Type: api.NodeInternalIP, Address: ipAddr.String()},
+				{Type: api.NodeHostName, Address: kl.GetHostname()},
 			}
 		}
 	}
@@ -416,23 +454,32 @@ func (kl *Kubelet) setNodeAddress(node *api.Node) error {
 }
 
 func (kl *Kubelet) setNodeStatusMachineInfo(node *api.Node) {
+	// Note: avoid blindly overwriting the capacity in case opaque
+	//       resources are being advertised.
+	if node.Status.Capacity == nil {
+		node.Status.Capacity = api.ResourceList{}
+	}
+
 	// TODO: Post NotReady if we cannot get MachineInfo from cAdvisor. This needs to start
 	// cAdvisor locally, e.g. for test-cmd.sh, and in integration test.
 	info, err := kl.GetCachedMachineInfo()
 	if err != nil {
 		// TODO(roberthbailey): This is required for test-cmd.sh to pass.
 		// See if the test should be updated instead.
-		node.Status.Capacity = api.ResourceList{
-			api.ResourceCPU:       *resource.NewMilliQuantity(0, resource.DecimalSI),
-			api.ResourceMemory:    resource.MustParse("0Gi"),
-			api.ResourcePods:      *resource.NewQuantity(int64(kl.maxPods), resource.DecimalSI),
-			api.ResourceNvidiaGPU: *resource.NewQuantity(int64(kl.nvidiaGPUs), resource.DecimalSI),
-		}
+		node.Status.Capacity[api.ResourceCPU] = *resource.NewMilliQuantity(0, resource.DecimalSI)
+		node.Status.Capacity[api.ResourceMemory] = resource.MustParse("0Gi")
+		node.Status.Capacity[api.ResourcePods] = *resource.NewQuantity(int64(kl.maxPods), resource.DecimalSI)
+		node.Status.Capacity[api.ResourceNvidiaGPU] = *resource.NewQuantity(int64(kl.nvidiaGPUs), resource.DecimalSI)
+
 		glog.Errorf("Error getting machine info: %v", err)
 	} else {
 		node.Status.NodeInfo.MachineID = info.MachineID
 		node.Status.NodeInfo.SystemUUID = info.SystemUUID
-		node.Status.Capacity = cadvisor.CapacityFromMachineInfo(info)
+
+		for rName, rCap := range cadvisor.CapacityFromMachineInfo(info) {
+			node.Status.Capacity[rName] = rCap
+		}
+
 		if kl.podsPerCore > 0 {
 			node.Status.Capacity[api.ResourcePods] = *resource.NewQuantity(
 				int64(math.Min(float64(info.NumCores*kl.podsPerCore), float64(kl.maxPods))), resource.DecimalSI)
@@ -548,7 +595,8 @@ func (kl *Kubelet) setNodeReadyCondition(node *api.Node) {
 	// ref: https://github.com/kubernetes/kubernetes/issues/16961
 	currentTime := unversioned.NewTime(kl.clock.Now())
 	var newNodeReadyCondition api.NodeCondition
-	if rs := kl.runtimeState.errors(); len(rs) == 0 {
+	rs := append(kl.runtimeState.runtimeErrors(), kl.runtimeState.networkErrors()...)
+	if len(rs) == 0 {
 		newNodeReadyCondition = api.NodeCondition{
 			Type:              api.NodeReady,
 			Status:            api.ConditionTrue,
@@ -853,4 +901,37 @@ func SetNodeStatus(f func(*api.Node) error) Option {
 	return func(k *Kubelet) {
 		k.setNodeStatusFuncs = append(k.setNodeStatusFuncs, f)
 	}
+}
+
+// Validate given node IP belongs to the current host
+func (kl *Kubelet) validateNodeIP() error {
+	if kl.nodeIP == nil {
+		return nil
+	}
+
+	// Honor IP limitations set in setNodeStatus()
+	if kl.nodeIP.IsLoopback() {
+		return fmt.Errorf("nodeIP can't be loopback address")
+	}
+	if kl.nodeIP.To4() == nil {
+		return fmt.Errorf("nodeIP must be IPv4 address")
+	}
+
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return err
+	}
+	for _, addr := range addrs {
+		var ip net.IP
+		switch v := addr.(type) {
+		case *net.IPNet:
+			ip = v.IP
+		case *net.IPAddr:
+			ip = v.IP
+		}
+		if ip != nil && ip.Equal(kl.nodeIP) {
+			return nil
+		}
+	}
+	return fmt.Errorf("Node IP: %q not found in the host's network interfaces", kl.nodeIP.String())
 }

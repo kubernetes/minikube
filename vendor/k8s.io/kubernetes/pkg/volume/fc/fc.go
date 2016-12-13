@@ -61,7 +61,7 @@ func (plugin *fcPlugin) GetVolumeName(spec *volume.Spec) (string, error) {
 		return "", err
 	}
 
-	//  TargetWWNs are the FibreChannel target world wide names
+	//  TargetWWNs are the FibreChannel target worldwide names
 	return fmt.Sprintf("%v", volumeSource.TargetWWNs), nil
 }
 
@@ -187,6 +187,14 @@ func (b *fcDiskMounter) GetAttributes() volume.Attributes {
 		SupportsSELinux: true,
 	}
 }
+
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *fcDiskMounter) CanMount() error {
+	return nil
+}
+
 func (b *fcDiskMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }

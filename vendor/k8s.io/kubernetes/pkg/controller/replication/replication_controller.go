@@ -31,7 +31,7 @@ import (
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/cache"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/unversioned"
+	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/informers"
@@ -130,8 +130,8 @@ func NewReplicationManager(podInformer cache.SharedIndexInformer, kubeClient cli
 
 // newReplicationManager configures a replication manager with the specified event recorder
 func newReplicationManager(eventRecorder record.EventRecorder, podInformer cache.SharedIndexInformer, kubeClient clientset.Interface, resyncPeriod controller.ResyncPeriodFunc, burstReplicas int, lookupCacheSize int, garbageCollectorEnabled bool) *ReplicationManager {
-	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("replication_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	if kubeClient != nil && kubeClient.Core().RESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("replication_controller", kubeClient.Core().RESTClient().GetRateLimiter())
 	}
 
 	rm := &ReplicationManager{
@@ -269,16 +269,16 @@ func (rm *ReplicationManager) getPodController(pod *api.Pod) *api.ReplicationCon
 	}
 
 	// update lookup cache
-	rm.lookupCache.Update(pod, &controllers[0])
+	rm.lookupCache.Update(pod, controllers[0])
 
-	return &controllers[0]
+	return controllers[0]
 }
 
 // isCacheValid check if the cache is valid
 func (rm *ReplicationManager) isCacheValid(pod *api.Pod, cachedRC *api.ReplicationController) bool {
-	exists, err := rm.rcStore.Exists(cachedRC)
+	_, err := rm.rcStore.ReplicationControllers(cachedRC.Namespace).Get(cachedRC.Name)
 	// rc has been deleted or updated, cache is invalid
-	if err != nil || !exists || !isControllerMatch(pod, cachedRC) {
+	if err != nil || !isControllerMatch(pod, cachedRC) {
 		return false
 	}
 	return true
@@ -401,8 +401,19 @@ func (rm *ReplicationManager) updatePod(old, cur interface{}) {
 		}
 	}
 
+	changedToReady := !api.IsPodReady(oldPod) && api.IsPodReady(curPod)
 	if curRC := rm.getPodController(curPod); curRC != nil {
 		rm.enqueueController(curRC)
+		// TODO: MinReadySeconds in the Pod will generate an Available condition to be added in
+		// the Pod status which in turn will trigger a requeue of the owning replication controller
+		// thus having its status updated with the newly available replica. For now, we can fake the
+		// update by resyncing the controller MinReadySeconds after the it is requeued because a Pod
+		// transitioned to Ready.
+		// Note that this still suffers from #29229, we are just moving the problem one level
+		// "closer" to kubelet (from the deployment to the replication controller manager).
+		if changedToReady && curRC.Spec.MinReadySeconds > 0 {
+			rm.enqueueControllerAfter(curRC, time.Duration(curRC.Spec.MinReadySeconds)*time.Second)
+		}
 	}
 }
 
@@ -454,6 +465,23 @@ func (rm *ReplicationManager) enqueueController(obj interface{}) {
 	// by querying the store for all controllers that this rc overlaps, as well as all
 	// controllers that overlap this rc, and sorting them.
 	rm.queue.Add(key)
+}
+
+// obj could be an *v1.ReplicationController, or a DeletionFinalStateUnknown marker item.
+func (rm *ReplicationManager) enqueueControllerAfter(obj interface{}, after time.Duration) {
+	key, err := controller.KeyFunc(obj)
+	if err != nil {
+		glog.Errorf("Couldn't get key for object %+v: %v", obj, err)
+		return
+	}
+
+	// TODO: Handle overlapping controllers better. Either disallow them at admission time or
+	// deterministically avoid syncing controllers that fight over pods. Currently, we only
+	// ensure that the same controller is synced for a given pod. When we periodically relist
+	// all controllers there will still be some replica instability. One way to handle this is
+	// by querying the store for all controllers that this rc overlaps, as well as all
+	// controllers that overlap this rc, and sorting them.
+	rm.queue.AddAfter(key, after)
 }
 
 // worker runs a worker thread that just dequeues items, processes them, and marks them done.
@@ -710,25 +738,10 @@ func (rm *ReplicationManager) syncReplicationController(key string) error {
 	}
 	trace.Step("manageReplicas done")
 
-	// Count the number of pods that have labels matching the labels of the pod
-	// template of the replication controller, the matching pods may have more
-	// labels than are in the template. Because the label of podTemplateSpec is
-	// a superset of the selector of the replication controller, so the possible
-	// matching pods must be part of the filteredPods.
-	fullyLabeledReplicasCount := 0
-	readyReplicasCount := 0
-	templateLabel := labels.Set(rc.Spec.Template.Labels).AsSelectorPreValidated()
-	for _, pod := range filteredPods {
-		if templateLabel.Matches(labels.Set(pod.Labels)) {
-			fullyLabeledReplicasCount++
-		}
-		if api.IsPodReady(pod) {
-			readyReplicasCount++
-		}
-	}
+	newStatus := calculateStatus(rc, filteredPods, manageReplicasErr)
 
 	// Always updates status as pods come up or die.
-	if err := updateReplicaCount(rm.kubeClient.Core().ReplicationControllers(rc.Namespace), rc, len(filteredPods), fullyLabeledReplicasCount, readyReplicasCount); err != nil {
+	if err := updateReplicationControllerStatus(rm.kubeClient.Core().ReplicationControllers(rc.Namespace), rc, newStatus); err != nil {
 		// Multiple things could lead to this update failing.  Returning an error causes a requeue without forcing a hotloop
 		return err
 	}

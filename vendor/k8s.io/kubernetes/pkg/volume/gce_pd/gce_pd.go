@@ -166,9 +166,6 @@ func (plugin *gcePersistentDiskPlugin) newDeleterInternal(spec *volume.Spec, man
 }
 
 func (plugin *gcePersistentDiskPlugin) NewProvisioner(options volume.VolumeOptions) (volume.Provisioner, error) {
-	if len(options.AccessModes) == 0 {
-		options.AccessModes = plugin.GetAccessModes()
-	}
 	return plugin.newProvisionerInternal(options, &GCEDiskUtil{})
 }
 
@@ -241,6 +238,13 @@ func (b *gcePersistentDiskMounter) GetAttributes() volume.Attributes {
 	}
 }
 
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *gcePersistentDiskMounter) CanMount() error {
+	return nil
+}
+
 // SetUp bind mounts the disk global mount to the volume path.
 func (b *gcePersistentDiskMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
@@ -310,7 +314,7 @@ func (b *gcePersistentDiskMounter) SetUpAt(dir string, fsGroup *int64) error {
 }
 
 func makeGlobalPDName(host volume.VolumeHost, devName string) string {
-	return path.Join(host.GetPluginDir(gcePersistentDiskPluginName), "mounts", devName)
+	return path.Join(host.GetPluginDir(gcePersistentDiskPluginName), mount.MountsInGlobalPDPath, devName)
 }
 
 func (b *gcePersistentDiskMounter) GetPath() string {
@@ -393,7 +397,7 @@ func (c *gcePersistentDiskProvisioner) Provision() (*api.PersistentVolume, error
 		},
 		Spec: api.PersistentVolumeSpec{
 			PersistentVolumeReclaimPolicy: c.options.PersistentVolumeReclaimPolicy,
-			AccessModes:                   c.options.AccessModes,
+			AccessModes:                   c.options.PVC.Spec.AccessModes,
 			Capacity: api.ResourceList{
 				api.ResourceName(api.ResourceStorage): resource.MustParse(fmt.Sprintf("%dGi", sizeGB)),
 			},
@@ -405,6 +409,9 @@ func (c *gcePersistentDiskProvisioner) Provision() (*api.PersistentVolume, error
 				},
 			},
 		},
+	}
+	if len(c.options.PVC.Spec.AccessModes) == 0 {
+		pv.Spec.AccessModes = c.plugin.GetAccessModes()
 	}
 
 	if len(labels) != 0 {

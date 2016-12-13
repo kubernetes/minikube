@@ -65,3 +65,14 @@ func (i *DefaultInfo) GetGroups() []string {
 func (i *DefaultInfo) GetExtra() map[string][]string {
 	return i.Extra
 }
+
+// well-known user and group names
+const (
+	SystemPrivilegedGroup = "system:masters"
+	NodesGroup            = "system:nodes"
+	AllUnauthenticated    = "system:unauthenticated"
+	AllAuthenticated      = "system:authenticated"
+
+	Anonymous     = "system:anonymous"
+	APIServerUser = "system:apiserver"
+)

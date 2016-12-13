@@ -23,6 +23,8 @@ import (
 	"path"
 	"strings"
 
+	"k8s.io/kubernetes/pkg/volume"
+
 	"github.com/rackspace/gophercloud"
 	"github.com/rackspace/gophercloud/openstack"
 	"github.com/rackspace/gophercloud/openstack/blockstorage/v1/volumes"
@@ -167,21 +169,39 @@ func (os *OpenStack) CreateVolume(name string, size int, vtype, availability str
 
 // GetDevicePath returns the path of an attached block storage volume, specified by its id.
 func (os *OpenStack) GetDevicePath(diskId string) string {
+	// Build a list of candidate device paths
+	candidateDeviceNodes := []string{
+		// KVM
+		fmt.Sprintf("virtio-%s", diskId[:20]),
+		// ESXi
+		fmt.Sprintf("wwn-0x%s", strings.Replace(diskId, "-", "", -1)),
+	}
+
 	files, _ := ioutil.ReadDir("/dev/disk/by-id/")
+
 	for _, f := range files {
-		if strings.Contains(f.Name(), "virtio-") {
-			devid_prefix := f.Name()[len("virtio-"):len(f.Name())]
-			if strings.Contains(diskId, devid_prefix) {
+		for _, c := range candidateDeviceNodes {
+			if c == f.Name() {
 				glog.V(4).Infof("Found disk attached as %q; full devicepath: %s\n", f.Name(), path.Join("/dev/disk/by-id/", f.Name()))
 				return path.Join("/dev/disk/by-id/", f.Name())
 			}
 		}
 	}
+
 	glog.Warningf("Failed to find device for the diskid: %q\n", diskId)
 	return ""
 }
 
 func (os *OpenStack) DeleteVolume(volumeName string) error {
+	used, err := os.diskIsUsed(volumeName)
+	if err != nil {
+		return err
+	}
+	if used {
+		msg := fmt.Sprintf("Cannot delete the volume %q, it's still attached to a node", volumeName)
+		return volume.NewDeletedVolumeInUseError(msg)
+	}
+
 	sClient, err := openstack.NewBlockStorageV1(os.provider, gophercloud.EndpointOpts{
 		Region: os.region,
 	})
@@ -197,8 +217,10 @@ func (os *OpenStack) DeleteVolume(volumeName string) error {
 	return err
 }
 
-// Get device path of attached volume to the compute running kubelet
+// Get device path of attached volume to the compute running kubelet, as known by cinder
 func (os *OpenStack) GetAttachmentDiskPath(instanceID string, diskName string) (string, error) {
+	// See issue #33128 - Cinder does not always tell you the right device path, as such
+	// we must only use this value as a last resort.
 	disk, err := os.getVolume(diskName)
 	if err != nil {
 		return "", err
@@ -257,4 +279,9 @@ func (os *OpenStack) diskIsUsed(diskName string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+// query if we should trust the cinder provide deviceName, See issue #33128
+func (os *OpenStack) ShouldTrustDevicePath() bool {
+	return os.bsOpts.TrustDevicePath
 }

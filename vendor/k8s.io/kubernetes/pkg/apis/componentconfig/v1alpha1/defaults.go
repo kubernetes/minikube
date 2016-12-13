@@ -51,6 +51,7 @@ const (
 var zeroDuration = unversioned.Duration{}
 
 func addDefaultingFuncs(scheme *kruntime.Scheme) error {
+	RegisterDefaults(scheme)
 	return scheme.AddDefaultingFuncs(
 		SetDefaults_KubeProxyConfiguration,
 		SetDefaults_KubeSchedulerConfiguration,
@@ -169,6 +170,25 @@ func SetDefaults_LeaderElectionConfiguration(obj *LeaderElectionConfiguration) {
 }
 
 func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
+	if obj.Authentication.Anonymous.Enabled == nil {
+		obj.Authentication.Anonymous.Enabled = boolVar(true)
+	}
+	if obj.Authentication.Webhook.Enabled == nil {
+		obj.Authentication.Webhook.Enabled = boolVar(false)
+	}
+	if obj.Authentication.Webhook.CacheTTL == zeroDuration {
+		obj.Authentication.Webhook.CacheTTL = unversioned.Duration{Duration: 2 * time.Minute}
+	}
+	if obj.Authorization.Mode == "" {
+		obj.Authorization.Mode = KubeletAuthorizationModeAlwaysAllow
+	}
+	if obj.Authorization.Webhook.CacheAuthorizedTTL == zeroDuration {
+		obj.Authorization.Webhook.CacheAuthorizedTTL = unversioned.Duration{Duration: 5 * time.Minute}
+	}
+	if obj.Authorization.Webhook.CacheUnauthorizedTTL == zeroDuration {
+		obj.Authorization.Webhook.CacheUnauthorizedTTL = unversioned.Duration{Duration: 30 * time.Second}
+	}
+
 	if obj.Address == "" {
 		obj.Address = "0.0.0.0"
 	}
@@ -184,11 +204,8 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	if obj.CertDirectory == "" {
 		obj.CertDirectory = "/var/run/kubernetes"
 	}
-	if obj.ConfigureCBR0 == nil {
-		obj.ConfigureCBR0 = boolVar(false)
-	}
-	if obj.CgroupsPerQOS == nil {
-		obj.CgroupsPerQOS = boolVar(false)
+	if obj.ExperimentalCgroupsPerQOS == nil {
+		obj.ExperimentalCgroupsPerQOS = boolVar(false)
 	}
 	if obj.ContainerRuntime == "" {
 		obj.ContainerRuntime = "docker"
@@ -202,7 +219,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	if obj.DockerExecHandlerName == "" {
 		obj.DockerExecHandlerName = "native"
 	}
-	if obj.DockerEndpoint == "" {
+	if obj.DockerEndpoint == "" && runtime.GOOS != "windows" {
 		obj.DockerEndpoint = "unix:///var/run/docker.sock"
 	}
 	if obj.EventBurst == 0 {
@@ -323,7 +340,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.SerializeImagePulls = boolVar(true)
 	}
 	if obj.SeccompProfileRoot == "" {
-		filepath.Join(defaultRootDir, "seccomp")
+		obj.SeccompProfileRoot = filepath.Join(defaultRootDir, "seccomp")
 	}
 	if obj.StreamingConnectionIdleTimeout == zeroDuration {
 		obj.StreamingConnectionIdleTimeout = unversioned.Duration{Duration: 4 * time.Hour}
@@ -357,6 +374,9 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	if obj.EvictionPressureTransitionPeriod == zeroDuration {
 		obj.EvictionPressureTransitionPeriod = unversioned.Duration{Duration: 5 * time.Minute}
 	}
+	if obj.ExperimentalKernelMemcgNotification == nil {
+		obj.ExperimentalKernelMemcgNotification = boolVar(false)
+	}
 	if obj.SystemReserved == nil {
 		obj.SystemReserved = make(map[string]string)
 	}
@@ -373,6 +393,23 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	if obj.IPTablesDropBit == nil {
 		temp := int32(defaultIPTablesDropBit)
 		obj.IPTablesDropBit = &temp
+	}
+	if obj.ExperimentalCgroupsPerQOS == nil {
+		temp := false
+		obj.ExperimentalCgroupsPerQOS = &temp
+	}
+	if obj.CgroupDriver == "" {
+		obj.CgroupDriver = "cgroupfs"
+	}
+	// NOTE: this is for backwards compatibility with earlier releases where cgroup-root was optional.
+	// if cgroups per qos is not enabled, and cgroup-root is not specified, we need to default to the
+	// container runtime default and not default to the root cgroup.
+	if obj.ExperimentalCgroupsPerQOS != nil {
+		if *obj.ExperimentalCgroupsPerQOS {
+			if obj.CgroupRoot == "" {
+				obj.CgroupRoot = "/"
+			}
+		}
 	}
 }
 

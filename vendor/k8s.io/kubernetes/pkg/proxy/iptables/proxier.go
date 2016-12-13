@@ -42,6 +42,7 @@ import (
 	"k8s.io/kubernetes/pkg/types"
 	featuregate "k8s.io/kubernetes/pkg/util/config"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
+	"k8s.io/kubernetes/pkg/util/flowcontrol"
 	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
 	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/util/slice"
@@ -137,7 +138,7 @@ type serviceInfo struct {
 	nodePort                 int
 	loadBalancerStatus       api.LoadBalancerStatus
 	sessionAffinityType      api.ServiceAffinity
-	stickyMaxAgeSeconds      int
+	stickyMaxAgeMinutes      int
 	externalIPs              []string
 	loadBalancerSourceRanges []string
 	onlyNodeLocalEndpoints   bool
@@ -154,7 +155,7 @@ type endpointsInfo struct {
 func newServiceInfo(service proxy.ServicePortName) *serviceInfo {
 	return &serviceInfo{
 		sessionAffinityType: api.ServiceAffinityNone, // default
-		stickyMaxAgeSeconds: 180,                     // TODO: paramaterize this in the API.
+		stickyMaxAgeMinutes: 180,                     // TODO: paramaterize this in the API.
 	}
 }
 
@@ -167,9 +168,11 @@ type Proxier struct {
 	portsMap                    map[localPort]closeable
 	haveReceivedServiceUpdate   bool // true once we've seen an OnServiceUpdate event
 	haveReceivedEndpointsUpdate bool // true once we've seen an OnEndpointsUpdate event
+	throttle                    flowcontrol.RateLimiter
 
 	// These are effectively const and do not need the mutex to be held.
 	syncPeriod     time.Duration
+	minSyncPeriod  time.Duration
 	iptables       utiliptables.Interface
 	masqueradeAll  bool
 	masqueradeMark string
@@ -177,6 +180,7 @@ type Proxier struct {
 	clusterCIDR    string
 	hostname       string
 	nodeIP         net.IP
+	portMapper     portOpener
 }
 
 type localPort struct {
@@ -194,6 +198,20 @@ type closeable interface {
 	Close() error
 }
 
+// portOpener is an interface around port opening/closing.
+// Abstracted out for testing.
+type portOpener interface {
+	OpenLocalPort(lp *localPort) (closeable, error)
+}
+
+// listenPortOpener opens ports by calling bind() and listen().
+type listenPortOpener struct{}
+
+// OpenLocalPort holds the given local port open.
+func (l *listenPortOpener) OpenLocalPort(lp *localPort) (closeable, error) {
+	return openLocalPort(lp)
+}
+
 // Proxier implements ProxyProvider
 var _ proxy.ProxyProvider = &Proxier{}
 
@@ -202,7 +220,12 @@ var _ proxy.ProxyProvider = &Proxier{}
 // An error will be returned if iptables fails to update or acquire the initial lock.
 // Once a proxier is created, it will keep iptables up to date in the background and
 // will not terminate if a particular iptables call fails.
-func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec utilexec.Interface, syncPeriod time.Duration, masqueradeAll bool, masqueradeBit int, clusterCIDR string, hostname string, nodeIP net.IP) (*Proxier, error) {
+func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec utilexec.Interface, syncPeriod time.Duration, minSyncPeriod time.Duration, masqueradeAll bool, masqueradeBit int, clusterCIDR string, hostname string, nodeIP net.IP) (*Proxier, error) {
+	// check valid user input
+	if minSyncPeriod > syncPeriod {
+		return nil, fmt.Errorf("min-sync (%v) must be < sync(%v)", minSyncPeriod, syncPeriod)
+	}
+
 	// Set the route_localnet sysctl we need for
 	if err := sysctl.SetSysctl(sysctlRouteLocalnet, 1); err != nil {
 		return nil, fmt.Errorf("can't set sysctl %s: %v", sysctlRouteLocalnet, err)
@@ -227,13 +250,27 @@ func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec ut
 		nodeIP = net.ParseIP("127.0.0.1")
 	}
 
+	if len(clusterCIDR) == 0 {
+		glog.Warningf("clusterCIDR not specified, unable to distinguish between internal and external traffic")
+	}
+
 	go healthcheck.Run()
+
+	var throttle flowcontrol.RateLimiter
+	// Defaulting back to not limit sync rate when minSyncPeriod is 0.
+	if minSyncPeriod != 0 {
+		syncsPerSecond := float32(time.Second) / float32(minSyncPeriod)
+		// The average use case will process 2 updates in short succession
+		throttle = flowcontrol.NewTokenBucketRateLimiter(syncsPerSecond, 2)
+	}
 
 	return &Proxier{
 		serviceMap:     make(map[proxy.ServicePortName]*serviceInfo),
 		endpointsMap:   make(map[proxy.ServicePortName][]*endpointsInfo),
 		portsMap:       make(map[localPort]closeable),
 		syncPeriod:     syncPeriod,
+		minSyncPeriod:  minSyncPeriod,
+		throttle:       throttle,
 		iptables:       ipt,
 		masqueradeAll:  masqueradeAll,
 		masqueradeMark: masqueradeMark,
@@ -241,6 +278,7 @@ func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec ut
 		clusterCIDR:    clusterCIDR,
 		hostname:       hostname,
 		nodeIP:         nodeIP,
+		portMapper:     &listenPortOpener{},
 	}, nil
 }
 
@@ -350,6 +388,9 @@ func (proxier *Proxier) sameConfig(info *serviceInfo, service *api.Service, port
 	if info.onlyNodeLocalEndpoints != onlyNodeLocalEndpoints {
 		return false
 	}
+	if !reflect.DeepEqual(info.loadBalancerSourceRanges, service.Spec.LoadBalancerSourceRanges) {
+		return false
+	}
 	return true
 }
 
@@ -439,18 +480,20 @@ func (proxier *Proxier) OnServiceUpdate(allServices []api.Service) {
 			info.loadBalancerStatus = *api.LoadBalancerStatusDeepCopy(&service.Status.LoadBalancer)
 			info.sessionAffinityType = service.Spec.SessionAffinity
 			info.loadBalancerSourceRanges = service.Spec.LoadBalancerSourceRanges
-			info.onlyNodeLocalEndpoints = apiservice.NeedsHealthCheck(service) && featuregate.DefaultFeatureGate.ExternalTrafficLocalOnly()
+			info.onlyNodeLocalEndpoints = apiservice.NeedsHealthCheck(service) && featuregate.DefaultFeatureGate.ExternalTrafficLocalOnly() && (service.Spec.Type == api.ServiceTypeLoadBalancer || service.Spec.Type == api.ServiceTypeNodePort)
 			if info.onlyNodeLocalEndpoints {
 				p := apiservice.GetServiceHealthCheckNodePort(service)
 				if p == 0 {
 					glog.Errorf("Service does not contain necessary annotation %v",
-						apiservice.AnnotationHealthCheckNodePort)
+						apiservice.BetaAnnotationHealthCheckNodePort)
 				} else {
+					glog.V(4).Infof("Adding health check for %+v, port %v", serviceName.NamespacedName, p)
 					info.healthCheckNodePort = int(p)
 					// Turn on healthcheck responder to listen on the health check nodePort
 					healthcheck.AddServiceListener(serviceName.NamespacedName, info.healthCheckNodePort)
 				}
 			} else {
+				glog.V(4).Infof("Deleting health check for %+v", serviceName.NamespacedName)
 				// Delete healthcheck responders, if any, previously listening for this service
 				healthcheck.DeleteServiceListener(serviceName.NamespacedName, 0)
 			}
@@ -472,6 +515,7 @@ func (proxier *Proxier) OnServiceUpdate(allServices []api.Service) {
 			if info.onlyNodeLocalEndpoints && info.healthCheckNodePort > 0 {
 				// Remove ServiceListener health check nodePorts from the health checker
 				// TODO - Stats
+				glog.V(4).Infof("Deleting health check for %+v, port %v", name.NamespacedName, info.healthCheckNodePort)
 				healthcheck.DeleteServiceListener(name.NamespacedName, info.healthCheckNodePort)
 			}
 		}
@@ -746,6 +790,9 @@ func (proxier *Proxier) execConntrackTool(parameters ...string) error {
 // The only other iptables rules are those that are setup in iptablesInit()
 // assumes proxier.mu is held
 func (proxier *Proxier) syncProxyRules() {
+	if proxier.throttle != nil {
+		proxier.throttle.Accept()
+	}
 	start := time.Now()
 	defer func() {
 		glog.V(4).Infof("syncProxyRules took %v", time.Since(start))
@@ -941,7 +988,7 @@ func (proxier *Proxier) syncProxyRules() {
 					glog.V(4).Infof("Port %s was open before and is still needed", lp.String())
 					replacementPortsMap[lp] = proxier.portsMap[lp]
 				} else {
-					socket, err := openLocalPort(&lp)
+					socket, err := proxier.portMapper.OpenLocalPort(&lp)
 					if err != nil {
 						glog.Errorf("can't open %s, skipping this externalIP: %v", lp.String(), err)
 						continue
@@ -1056,7 +1103,7 @@ func (proxier *Proxier) syncProxyRules() {
 				glog.V(4).Infof("Port %s was open before and is still needed", lp.String())
 				replacementPortsMap[lp] = proxier.portsMap[lp]
 			} else {
-				socket, err := openLocalPort(&lp)
+				socket, err := proxier.portMapper.OpenLocalPort(&lp)
 				if err != nil {
 					glog.Errorf("can't open %s, skipping this nodePort: %v", lp.String(), err)
 					continue
@@ -1070,10 +1117,16 @@ func (proxier *Proxier) syncProxyRules() {
 				"-m", protocol, "-p", protocol,
 				"--dport", fmt.Sprintf("%d", svcInfo.nodePort),
 			}
-			// Nodeports need SNAT.
-			writeLine(natRules, append(args, "-j", string(KubeMarkMasqChain))...)
-			// Jump to the service chain.
-			writeLine(natRules, append(args, "-j", string(svcChain))...)
+			if !svcInfo.onlyNodeLocalEndpoints {
+				// Nodeports need SNAT, unless they're local.
+				writeLine(natRules, append(args, "-j", string(KubeMarkMasqChain))...)
+				// Jump to the service chain.
+				writeLine(natRules, append(args, "-j", string(svcChain))...)
+			} else {
+				// TODO: Make all nodePorts jump to the firewall chain.
+				// Currently we only create it for loadbalancers (#33586).
+				writeLine(natRules, append(args, "-j", string(svcXlbChain))...)
+			}
 		}
 
 		// If the service has no endpoints then reject packets.
@@ -1115,7 +1168,7 @@ func (proxier *Proxier) syncProxyRules() {
 					"-A", string(svcChain),
 					"-m", "comment", "--comment", svcName.String(),
 					"-m", "recent", "--name", string(endpointChain),
-					"--rcheck", "--seconds", fmt.Sprintf("%d", svcInfo.stickyMaxAgeSeconds), "--reap",
+					"--rcheck", "--seconds", fmt.Sprintf("%d", svcInfo.stickyMaxAgeMinutes*60), "--reap",
 					"-j", string(endpointChain))
 			}
 		}
@@ -1173,6 +1226,20 @@ func (proxier *Proxier) syncProxyRules() {
 				localEndpointChains = append(localEndpointChains, endpointChains[i])
 			}
 		}
+		// First rule in the chain redirects all pod -> external vip traffic to the
+		// Service's ClusterIP instead. This happens whether or not we have local
+		// endpoints; only if clusterCIDR is specified
+		if len(proxier.clusterCIDR) > 0 {
+			args = []string{
+				"-A", string(svcXlbChain),
+				"-m", "comment", "--comment",
+				fmt.Sprintf(`"Redirect pods trying to reach external loadbalancer VIP to clusterIP"`),
+				"-s", proxier.clusterCIDR,
+				"-j", string(svcChain),
+			}
+			writeLine(natRules, args...)
+		}
+
 		numLocalEndpoints := len(localEndpointChains)
 		if numLocalEndpoints == 0 {
 			// Blackhole all traffic since there are no local endpoints
@@ -1244,7 +1311,7 @@ func (proxier *Proxier) syncProxyRules() {
 	glog.V(3).Infof("Restoring iptables rules: %s", lines)
 	err = proxier.iptables.RestoreAll(lines, utiliptables.NoFlushTables, utiliptables.RestoreCounters)
 	if err != nil {
-		glog.Errorf("Failed to execute iptables-restore: %v", err)
+		glog.Errorf("Failed to execute iptables-restore: %v\nRules:\n%s", err, lines)
 		// Revert new local ports.
 		revertPorts(replacementPortsMap, proxier.portsMap)
 		return

@@ -190,7 +190,7 @@ func dec(p *Properties, key string, def *string, opts map[string]string, v refle
 			fv := v.Field(i)
 			fk, def, opts := keydef(t.Field(i))
 			if !fv.CanSet() {
-				return fmt.Errorf("cannot set ", t.Field(i).Name)
+				return fmt.Errorf("cannot set %s", t.Field(i).Name)
 			}
 			if fk == "-" {
 				continue

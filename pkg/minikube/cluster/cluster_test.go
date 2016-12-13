@@ -32,10 +32,11 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/client/restclient"
-	"k8s.io/kubernetes/pkg/watch"
+	"k8s.io/client-go/1.5/pkg/api"
+	"k8s.io/client-go/1.5/pkg/api/unversioned"
+	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/pkg/watch"
+	"k8s.io/client-go/1.5/rest"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -524,16 +525,16 @@ func TestCreateSSHShell(t *testing.T) {
 }
 
 type MockServiceGetter struct {
-	services map[string]api.Service
+	services map[string]v1.Service
 }
 
 func NewMockServiceGetter() *MockServiceGetter {
 	return &MockServiceGetter{
-		services: make(map[string]api.Service),
+		services: make(map[string]v1.Service),
 	}
 }
 
-func (mockServiceGetter *MockServiceGetter) Get(name string) (*api.Service, error) {
+func (mockServiceGetter *MockServiceGetter) Get(name string) (*v1.Service, error) {
 	service, ok := mockServiceGetter.services[name]
 	if !ok {
 		return nil, errors.Errorf("Error getting %s service from mockServiceGetter", name)
@@ -541,8 +542,8 @@ func (mockServiceGetter *MockServiceGetter) Get(name string) (*api.Service, erro
 	return &service, nil
 }
 
-func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*api.ServiceList, error) {
-	services := api.ServiceList{
+func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*v1.ServiceList, error) {
+	services := v1.ServiceList{
 		TypeMeta: unversioned.TypeMeta{Kind: "ServiceList", APIVersion: "v1"},
 		ListMeta: unversioned.ListMeta{},
 	}
@@ -556,9 +557,9 @@ func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*api.
 func TestGetServiceURLs(t *testing.T) {
 	mockServiceGetter := NewMockServiceGetter()
 	expected := []int32{1111, 2222}
-	mockDashboardService := api.Service{
-		Spec: api.ServiceSpec{
-			Ports: []api.ServicePort{
+	mockDashboardService := v1.Service{
+		Spec: v1.ServiceSpec{
+			Ports: []v1.ServicePort{
 				{
 					NodePort: expected[0],
 				}, {
@@ -581,7 +582,7 @@ func TestGetServiceURLs(t *testing.T) {
 
 func TestGetServiceURLWithoutNodePort(t *testing.T) {
 	mockServiceGetter := NewMockServiceGetter()
-	mockDashboardService := api.Service{}
+	mockDashboardService := v1.Service{}
 	mockServiceGetter.services["mock-service"] = mockDashboardService
 
 	_, err := getServicePortsFromServiceGetter(mockServiceGetter, "mock-service")
@@ -783,15 +784,15 @@ func TestUpdateCustomAddons(t *testing.T) {
 }
 
 func TestCheckEndpointReady(t *testing.T) {
-	endpointNoSubsets := &api.Endpoints{}
+	endpointNoSubsets := &v1.Endpoints{}
 	if err := checkEndpointReady(endpointNoSubsets); err == nil {
 		t.Fatalf("Endpoint had no subsets but checkEndpointReady did not return an error")
 	}
 
-	endpointNotReady := &api.Endpoints{
-		Subsets: []api.EndpointSubset{
-			{Addresses: []api.EndpointAddress{},
-				NotReadyAddresses: []api.EndpointAddress{
+	endpointNotReady := &v1.Endpoints{
+		Subsets: []v1.EndpointSubset{
+			{Addresses: []v1.EndpointAddress{},
+				NotReadyAddresses: []v1.EndpointAddress{
 					{IP: "1.1.1.1"},
 					{IP: "2.2.2.2"},
 					{IP: "3.3.3.3"},
@@ -800,13 +801,13 @@ func TestCheckEndpointReady(t *testing.T) {
 		t.Fatalf("Endpoint had no Addresses but checkEndpointReady did not return an error")
 	}
 
-	endpointReady := &api.Endpoints{
-		Subsets: []api.EndpointSubset{
-			{Addresses: []api.EndpointAddress{
+	endpointReady := &v1.Endpoints{
+		Subsets: []v1.EndpointSubset{
+			{Addresses: []v1.EndpointAddress{
 				{IP: "1.1.1.1"},
 				{IP: "2.2.2.2"},
 			},
-				NotReadyAddresses: []api.EndpointAddress{},
+				NotReadyAddresses: []v1.EndpointAddress{},
 			}},
 	}
 	if err := checkEndpointReady(endpointReady); err != nil {
@@ -815,12 +816,12 @@ func TestCheckEndpointReady(t *testing.T) {
 }
 
 type ServiceInterfaceMock struct {
-	ServiceList *api.ServiceList
+	ServiceList *v1.ServiceList
 }
 
-func (s ServiceInterfaceMock) List(opts api.ListOptions) (*api.ServiceList, error) {
-	serviceList := &api.ServiceList{
-		Items: []api.Service{},
+func (s ServiceInterfaceMock) List(opts api.ListOptions) (*v1.ServiceList, error) {
+	serviceList := &v1.ServiceList{
+		Items: []v1.Service{},
 	}
 	keyValArr := strings.Split(opts.LabelSelector.String(), "=")
 	for _, service := range s.ServiceList.Items {
@@ -830,33 +831,41 @@ func (s ServiceInterfaceMock) List(opts api.ListOptions) (*api.ServiceList, erro
 	}
 	return serviceList, nil
 }
-func (s ServiceInterfaceMock) Get(name string) (*api.Service, error) {
+func (s ServiceInterfaceMock) Get(name string) (*v1.Service, error) {
 	return nil, nil
 }
-func (s ServiceInterfaceMock) Create(*api.Service) (*api.Service, error) {
+func (s ServiceInterfaceMock) Create(*v1.Service) (*v1.Service, error) {
 	return nil, nil
 }
-func (s ServiceInterfaceMock) Update(*api.Service) (*api.Service, error) {
+func (s ServiceInterfaceMock) Update(*v1.Service) (*v1.Service, error) {
 	return nil, nil
 }
-func (s ServiceInterfaceMock) UpdateStatus(*api.Service) (*api.Service, error) {
+func (s ServiceInterfaceMock) UpdateStatus(*v1.Service) (*v1.Service, error) {
 	return nil, nil
 }
-func (s ServiceInterfaceMock) Delete(name string) error {
+func (s ServiceInterfaceMock) Delete(string, *api.DeleteOptions) error {
 	return nil
 }
 func (s ServiceInterfaceMock) Watch(opts api.ListOptions) (watch.Interface, error) {
 	return nil, nil
 }
-func (s ServiceInterfaceMock) ProxyGet(scheme, name, port, path string, params map[string]string) restclient.ResponseWrapper {
+func (s ServiceInterfaceMock) ProxyGet(scheme, name, port, path string, params map[string]string) rest.ResponseWrapper {
 	return nil
 }
 
+func (s ServiceInterfaceMock) DeleteCollection(options *api.DeleteOptions, listOptions api.ListOptions) error {
+	return nil
+}
+
+func (s ServiceInterfaceMock) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1.Service, err error) {
+	return nil, nil
+}
+
 func TestGetServiceListFromServicesByLabel(t *testing.T) {
-	serviceList := &api.ServiceList{
-		Items: []api.Service{
+	serviceList := &v1.ServiceList{
+		Items: []v1.Service{
 			{
-				Spec: api.ServiceSpec{
+				Spec: v1.ServiceSpec{
 					Selector: map[string]string{
 						"foo": "bar",
 					},

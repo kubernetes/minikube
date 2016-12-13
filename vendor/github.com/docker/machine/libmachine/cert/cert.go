@@ -257,7 +257,7 @@ func (xcg *X509CertGenerator) ValidateCertificate(addr string, authOptions *auth
 	}
 
 	dialer := &net.Dialer{
-		Timeout: time.Second * 20,
+		Timeout: time.Second * 2,
 	}
 
 	_, err = tls.DialWithDialer(dialer, "tcp", addr, tlsConfig)

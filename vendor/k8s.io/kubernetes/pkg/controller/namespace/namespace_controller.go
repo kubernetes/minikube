@@ -35,6 +35,16 @@ import (
 	"github.com/golang/glog"
 )
 
+const (
+	// namespaceDeletionGracePeriod is the time period to wait before processing a received namespace event.
+	// This allows time for the following to occur:
+	// * lifecycle admission plugins on HA apiservers to also observe a namespace
+	//   deletion and prevent new objects from being created in the terminating namespace
+	// * non-leader etcd servers to observe last-minute object creations in a namespace
+	//   so this controller's cleanup can actually clean up all objects
+	namespaceDeletionGracePeriod = 5 * time.Second
+)
+
 // NamespaceController is responsible for performing actions dependent upon a namespace phase
 type NamespaceController struct {
 	// client that purges namespace content, must have list/delete privileges on all content
@@ -47,10 +57,10 @@ type NamespaceController struct {
 	controller *cache.Controller
 	// namespaces that have been queued up for processing by workers
 	queue workqueue.RateLimitingInterface
-	// list of preferred group versions and their corresponding resource set for namespace deletion
-	groupVersionResources []unversioned.GroupVersionResource
+	// function to list of preferred group versions and their corresponding resource set for namespace deletion
+	groupVersionResourcesFn func() ([]unversioned.GroupVersionResource, error)
 	// opCache is a cache to remember if a particular operation is not supported to aid dynamic client.
-	opCache operationNotSupportedCache
+	opCache *operationNotSupportedCache
 	// finalizerToken is the finalizer token managed by this controller
 	finalizerToken api.FinalizerName
 }
@@ -59,7 +69,7 @@ type NamespaceController struct {
 func NewNamespaceController(
 	kubeClient clientset.Interface,
 	clientPool dynamic.ClientPool,
-	groupVersionResources []unversioned.GroupVersionResource,
+	groupVersionResourcesFn func() ([]unversioned.GroupVersionResource, error),
 	resyncPeriod time.Duration,
 	finalizerToken api.FinalizerName) *NamespaceController {
 
@@ -70,13 +80,15 @@ func NewNamespaceController(
 	// we found in practice though that some auth engines when encountering paths they don't know about may return a 50x.
 	// until we have verbs, we pre-populate resources that do not support list or delete for well-known apis rather than
 	// probing the server once in order to be told no.
-	opCache := operationNotSupportedCache{}
+	opCache := &operationNotSupportedCache{
+		m: make(map[operationKey]bool),
+	}
 	ignoredGroupVersionResources := []unversioned.GroupVersionResource{
 		{Group: "", Version: "v1", Resource: "bindings"},
 	}
 	for _, ignoredGroupVersionResource := range ignoredGroupVersionResources {
-		opCache[operationKey{op: operationDeleteCollection, gvr: ignoredGroupVersionResource}] = true
-		opCache[operationKey{op: operationList, gvr: ignoredGroupVersionResource}] = true
+		opCache.setNotSupported(operationKey{op: operationDeleteCollection, gvr: ignoredGroupVersionResource})
+		opCache.setNotSupported(operationKey{op: operationList, gvr: ignoredGroupVersionResource})
 	}
 
 	// create the controller so we can inject the enqueue function
@@ -84,13 +96,13 @@ func NewNamespaceController(
 		kubeClient: kubeClient,
 		clientPool: clientPool,
 		queue:      workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "namespace"),
-		groupVersionResources: groupVersionResources,
-		opCache:               opCache,
-		finalizerToken:        finalizerToken,
+		groupVersionResourcesFn: groupVersionResourcesFn,
+		opCache:                 opCache,
+		finalizerToken:          finalizerToken,
 	}
 
-	if kubeClient != nil && kubeClient.Core().GetRESTClient().GetRateLimiter() != nil {
-		metrics.RegisterMetricAndTrackRateLimiterUsage("namespace_controller", kubeClient.Core().GetRESTClient().GetRateLimiter())
+	if kubeClient != nil && kubeClient.Core().RESTClient().GetRateLimiter() != nil {
+		metrics.RegisterMetricAndTrackRateLimiterUsage("namespace_controller", kubeClient.Core().RESTClient().GetRateLimiter())
 	}
 
 	// configure the backing store/controller
@@ -130,7 +142,9 @@ func (nm *NamespaceController) enqueueNamespace(obj interface{}) {
 		glog.Errorf("Couldn't get key for object %+v: %v", obj, err)
 		return
 	}
-	nm.queue.Add(key)
+	// delay processing namespace events to allow HA api servers to observe namespace deletion,
+	// and HA etcd servers to observe last minute object creations inside the namespace
+	nm.queue.AddAfter(key, namespaceDeletionGracePeriod)
 }
 
 // worker processes the queue of namespace objects.
@@ -184,12 +198,12 @@ func (nm *NamespaceController) syncNamespaceFromKey(key string) (err error) {
 		return nil
 	}
 	if err != nil {
-		glog.Infof("Unable to retrieve namespace %v from store: %v", key, err)
+		glog.Errorf("Unable to retrieve namespace %v from store: %v", key, err)
 		nm.queue.Add(key)
 		return err
 	}
 	namespace := obj.(*api.Namespace)
-	return syncNamespace(nm.kubeClient, nm.clientPool, nm.opCache, nm.groupVersionResources, namespace, nm.finalizerToken)
+	return syncNamespace(nm.kubeClient, nm.clientPool, nm.opCache, nm.groupVersionResourcesFn, namespace, nm.finalizerToken)
 }
 
 // Run starts observing the system with the specified number of workers.
