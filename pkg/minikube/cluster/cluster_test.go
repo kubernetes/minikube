@@ -102,7 +102,7 @@ func TestStartCluster(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error getting start command: %s", err)
 	}
-	for _, cmd := range []string{stopCommand, startCommand} {
+	for _, cmd := range []string{startCommand} {
 		if _, ok := h.Commands[cmd]; !ok {
 			t.Fatalf("Expected command not run: %s. Commands run: %v", cmd, h.Commands)
 		}
