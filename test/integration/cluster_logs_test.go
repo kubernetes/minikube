@@ -22,7 +22,6 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -36,10 +35,10 @@ func testClusterLogs(t *testing.T) {
 
 	logsCmdOutput := minikubeRunner.RunCommand("logs", true)
 	//check for # of lines or check for strings
-	logFiles := []string{constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath}
-	for _, logFile := range logFiles {
-		if !strings.Contains(logsCmdOutput, logFile) {
-			t.Fatalf("Error in logsCmdOutput, expected to find: %s. Output: %s", logFile, logsCmdOutput)
+	logWords := []string{"minikube", ".go"}
+	for _, logWord := range logWords {
+		if !strings.Contains(logsCmdOutput, logWord) {
+			t.Fatalf("Error in logsCmdOutput, expected to find: %s. Output: %s", logWord, logsCmdOutput)
 		}
 	}
 }
