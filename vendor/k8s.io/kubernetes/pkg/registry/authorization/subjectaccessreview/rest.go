@@ -24,7 +24,6 @@ import (
 	authorizationapi "k8s.io/kubernetes/pkg/apis/authorization"
 	authorizationvalidation "k8s.io/kubernetes/pkg/apis/authorization/validation"
 	"k8s.io/kubernetes/pkg/auth/authorizer"
-	"k8s.io/kubernetes/pkg/auth/user"
 	authorizationutil "k8s.io/kubernetes/pkg/registry/authorization/util"
 	"k8s.io/kubernetes/pkg/runtime"
 )
@@ -50,19 +49,7 @@ func (r *REST) Create(ctx kapi.Context, obj runtime.Object) (runtime.Object, err
 		return nil, kapierrors.NewInvalid(authorizationapi.Kind(subjectAccessReview.Kind), "", errs)
 	}
 
-	userToCheck := &user.DefaultInfo{
-		Name:   subjectAccessReview.Spec.User,
-		Groups: subjectAccessReview.Spec.Groups,
-		Extra:  convertToUserInfoExtra(subjectAccessReview.Spec.Extra),
-	}
-
-	var authorizationAttributes authorizer.AttributesRecord
-	if subjectAccessReview.Spec.ResourceAttributes != nil {
-		authorizationAttributes = authorizationutil.ResourceAttributesFrom(userToCheck, *subjectAccessReview.Spec.ResourceAttributes)
-	} else {
-		authorizationAttributes = authorizationutil.NonResourceAttributesFrom(userToCheck, *subjectAccessReview.Spec.NonResourceAttributes)
-	}
-
+	authorizationAttributes := authorizationutil.AuthorizationAttributesFrom(subjectAccessReview.Spec)
 	allowed, reason, evaluationErr := r.authorizer.Authorize(authorizationAttributes)
 
 	subjectAccessReview.Status = authorizationapi.SubjectAccessReviewStatus{
@@ -74,16 +61,4 @@ func (r *REST) Create(ctx kapi.Context, obj runtime.Object) (runtime.Object, err
 	}
 
 	return subjectAccessReview, nil
-}
-
-func convertToUserInfoExtra(extra map[string]authorizationapi.ExtraValue) map[string][]string {
-	if extra == nil {
-		return nil
-	}
-	ret := map[string][]string{}
-	for k, v := range extra {
-		ret[k] = []string(v)
-	}
-
-	return ret
 }

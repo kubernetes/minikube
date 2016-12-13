@@ -18,11 +18,14 @@ package kuberuntime
 
 import (
 	"fmt"
+	"path/filepath"
+	"strconv"
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/types"
 )
 
 const (
@@ -34,6 +37,11 @@ const (
 	// 100000 is equivalent to 100ms
 	quotaPeriod    = 100 * minQuotaPeriod
 	minQuotaPeriod = 1000
+)
+
+var (
+	// The default dns opt strings
+	defaultDNSOptions = []string{"ndots:5"}
 )
 
 type podsByID []*kubecontainer.Pod
@@ -48,16 +56,29 @@ func (b containersByID) Len() int           { return len(b) }
 func (b containersByID) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 func (b containersByID) Less(i, j int) bool { return b[i].ID.ID < b[j].ID.ID }
 
+// Newest first.
+type podSandboxByCreated []*runtimeApi.PodSandbox
+
+func (p podSandboxByCreated) Len() int           { return len(p) }
+func (p podSandboxByCreated) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p podSandboxByCreated) Less(i, j int) bool { return p[i].GetCreatedAt() > p[j].GetCreatedAt() }
+
+type containerStatusByCreated []*kubecontainer.ContainerStatus
+
+func (c containerStatusByCreated) Len() int           { return len(c) }
+func (c containerStatusByCreated) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
+func (c containerStatusByCreated) Less(i, j int) bool { return c[i].CreatedAt.After(c[j].CreatedAt) }
+
 // toKubeContainerState converts runtimeApi.ContainerState to kubecontainer.ContainerState.
 func toKubeContainerState(state runtimeApi.ContainerState) kubecontainer.ContainerState {
 	switch state {
-	case runtimeApi.ContainerState_CREATED:
+	case runtimeApi.ContainerState_CONTAINER_CREATED:
 		return kubecontainer.ContainerStateCreated
-	case runtimeApi.ContainerState_RUNNING:
+	case runtimeApi.ContainerState_CONTAINER_RUNNING:
 		return kubecontainer.ContainerStateRunning
-	case runtimeApi.ContainerState_EXITED:
+	case runtimeApi.ContainerState_CONTAINER_EXITED:
 		return kubecontainer.ContainerStateExited
-	case runtimeApi.ContainerState_UNKNOWN:
+	case runtimeApi.ContainerState_CONTAINER_UNKNOWN:
 		return kubecontainer.ContainerStateUnknown
 	}
 
@@ -92,6 +113,66 @@ func (m *kubeGenericRuntimeManager) toKubeContainer(c *runtimeApi.Container) (*k
 		Hash:  annotatedInfo.Hash,
 		State: toKubeContainerState(c.GetState()),
 	}, nil
+}
+
+// sandboxToKubeContainer converts runtimeApi.PodSandbox to kubecontainer.Container.
+// This is only needed because we need to return sandboxes as if they were
+// kubecontainer.Containers to avoid substantial changes to PLEG.
+// TODO: Remove this once it becomes obsolete.
+func (m *kubeGenericRuntimeManager) sandboxToKubeContainer(s *runtimeApi.PodSandbox) (*kubecontainer.Container, error) {
+	if s == nil || s.Id == nil || s.State == nil {
+		return nil, fmt.Errorf("unable to convert a nil pointer to a runtime container")
+	}
+
+	return &kubecontainer.Container{
+		ID:    kubecontainer.ContainerID{Type: m.runtimeName, ID: s.GetId()},
+		State: kubecontainer.SandboxToContainerState(s.GetState()),
+	}, nil
+}
+
+// getContainerSpec gets the container spec by containerName.
+func getContainerSpec(pod *api.Pod, containerName string) *api.Container {
+	for i, c := range pod.Spec.Containers {
+		if containerName == c.Name {
+			return &pod.Spec.Containers[i]
+		}
+	}
+	for i, c := range pod.Spec.InitContainers {
+		if containerName == c.Name {
+			return &pod.Spec.InitContainers[i]
+		}
+	}
+
+	return nil
+}
+
+// getImageUser gets uid or user name that will run the command(s) from image. The function
+// guarantees that only one of them is set.
+func (m *kubeGenericRuntimeManager) getImageUser(image string) (*int64, *string, error) {
+	imageStatus, err := m.imageService.ImageStatus(&runtimeApi.ImageSpec{Image: &image})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if imageStatus != nil && imageStatus.Uid != nil {
+		// If uid is set, return uid.
+		return imageStatus.Uid, nil, nil
+	}
+	if imageStatus != nil && imageStatus.Username != nil {
+		// If uid is not set, but user name is set, return user name.
+		return nil, imageStatus.Username, nil
+	}
+	// If non of them is set, treat it as root.
+	return new(int64), nil, nil
+}
+
+// isContainerFailed returns true if container has exited and exitcode is not zero.
+func isContainerFailed(status *kubecontainer.ContainerStatus) bool {
+	if status.State == kubecontainer.ContainerStateExited && status.ExitCode != 0 {
+		return true
+	}
+
+	return false
 }
 
 // milliCPUToShares converts milliCPU to CPU shares
@@ -131,4 +212,41 @@ func milliCPUToQuota(milliCPU int64) (quota int64, period int64) {
 	}
 
 	return
+}
+
+// getStableKey generates a key (string) to uniquely identify a
+// (pod, container) tuple. The key should include the content of the
+// container, so that any change to the container generates a new key.
+func getStableKey(pod *api.Pod, container *api.Container) string {
+	hash := strconv.FormatUint(kubecontainer.HashContainer(container), 16)
+	return fmt.Sprintf("%s_%s_%s_%s_%s", pod.Name, pod.Namespace, string(pod.UID), container.Name, hash)
+}
+
+// buildContainerLogsPath builds log path for container relative to pod logs directory.
+func buildContainerLogsPath(containerName string, restartCount int) string {
+	return fmt.Sprintf("%s_%d.log", containerName, restartCount)
+}
+
+// buildFullContainerLogsPath builds absolute log path for container.
+func buildFullContainerLogsPath(podUID types.UID, containerName string, restartCount int) string {
+	return filepath.Join(buildPodLogsDirectory(podUID), buildContainerLogsPath(containerName, restartCount))
+}
+
+// buildPodLogsDirectory builds absolute log directory path for a pod sandbox.
+func buildPodLogsDirectory(podUID types.UID) string {
+	return filepath.Join(podLogsRootDirectory, string(podUID))
+}
+
+// toKubeRuntimeStatus converts the runtimeApi.RuntimeStatus to kubecontainer.RuntimeStatus.
+func toKubeRuntimeStatus(status *runtimeApi.RuntimeStatus) *kubecontainer.RuntimeStatus {
+	conditions := []kubecontainer.RuntimeCondition{}
+	for _, c := range status.GetConditions() {
+		conditions = append(conditions, kubecontainer.RuntimeCondition{
+			Type:    kubecontainer.RuntimeConditionType(c.GetType()),
+			Status:  c.GetStatus(),
+			Reason:  c.GetReason(),
+			Message: c.GetMessage(),
+		})
+	}
+	return &kubecontainer.RuntimeStatus{Conditions: conditions}
 }

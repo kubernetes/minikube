@@ -19,11 +19,11 @@ package localkube
 import (
 	"strings"
 
+	"k8s.io/client-go/1.5/kubernetes"
+	"k8s.io/client-go/1.5/rest"
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 
-	kuberest "k8s.io/kubernetes/pkg/client/restclient"
-	kubeclient "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/storage/storagebackend"
 )
 
@@ -32,32 +32,32 @@ func (lk LocalkubeServer) NewAPIServer() Server {
 }
 
 func StartAPIServer(lk LocalkubeServer) func() error {
-	config := options.NewAPIServer()
+	config := options.NewServerRunOptions()
 
-	config.BindAddress = lk.APIServerAddress
-	config.SecurePort = lk.APIServerPort
-	config.InsecureBindAddress = lk.APIServerInsecureAddress
-	config.InsecurePort = lk.APIServerInsecurePort
+	config.GenericServerRunOptions.BindAddress = lk.APIServerAddress
+	config.GenericServerRunOptions.SecurePort = lk.APIServerPort
+	config.GenericServerRunOptions.InsecureBindAddress = lk.APIServerInsecureAddress
+	config.GenericServerRunOptions.InsecurePort = lk.APIServerInsecurePort
 
-	config.ClientCAFile = lk.GetCAPublicKeyCertPath()
-	config.TLSCertFile = lk.GetPublicKeyCertPath()
-	config.TLSPrivateKeyFile = lk.GetPrivateKeyCertPath()
-	config.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
+	config.GenericServerRunOptions.ClientCAFile = lk.GetCAPublicKeyCertPath()
+	config.GenericServerRunOptions.TLSCertFile = lk.GetPublicKeyCertPath()
+	config.GenericServerRunOptions.TLSPrivateKeyFile = lk.GetPrivateKeyCertPath()
+	config.GenericServerRunOptions.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
 
 	// use localkube etcd
-	config.StorageConfig = storagebackend.Config{ServerList: KubeEtcdClientURLs}
+	config.GenericServerRunOptions.StorageConfig = storagebackend.Config{ServerList: KubeEtcdClientURLs}
 
 	// set Service IP range
-	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
+	config.GenericServerRunOptions.ServiceClusterIPRange = lk.ServiceClusterIPRange
 
 	// defaults from apiserver command
-	config.EnableProfiling = true
-	config.EnableWatchCache = true
-	config.MinRequestTimeout = 1800
+	config.GenericServerRunOptions.EnableProfiling = true
+	config.GenericServerRunOptions.EnableWatchCache = true
+	config.GenericServerRunOptions.MinRequestTimeout = 1800
 
 	config.AllowPrivileged = true
 
-	config.RuntimeConfig = lk.RuntimeConfig
+	config.GenericServerRunOptions.RuntimeConfig = lk.RuntimeConfig
 
 	lk.SetExtraConfigForComponent("apiserver", &config)
 
@@ -74,11 +74,11 @@ func notFoundErr(err error) bool {
 	return strings.HasSuffix(err.Error(), "not found")
 }
 
-func kubeClient() *kubeclient.Client {
-	config := &kuberest.Config{
+func kubeClient() *kubernetes.Clientset {
+	config := &rest.Config{
 		Host: "http://localhost:8080", // TODO: Make configurable
 	}
-	client, err := kubeclient.New(config)
+	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		panic(err)
 	}

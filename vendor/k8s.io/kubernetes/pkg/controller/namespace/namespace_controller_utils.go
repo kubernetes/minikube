@@ -19,6 +19,7 @@ package namespace
 import (
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
@@ -60,17 +61,29 @@ type operationKey struct {
 
 // operationNotSupportedCache is a simple cache to remember if an operation is not supported for a resource.
 // if the operationKey maps to true, it means the operation is not supported.
-type operationNotSupportedCache map[operationKey]bool
+type operationNotSupportedCache struct {
+	lock sync.RWMutex
+	m    map[operationKey]bool
+}
 
 // isSupported returns true if the operation is supported
-func (o operationNotSupportedCache) isSupported(key operationKey) bool {
-	return !o[key]
+func (o *operationNotSupportedCache) isSupported(key operationKey) bool {
+	o.lock.RLock()
+	defer o.lock.RUnlock()
+	return !o.m[key]
+}
+
+func (o *operationNotSupportedCache) setNotSupported(key operationKey) {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	o.m[key] = true
 }
 
 // updateNamespaceFunc is a function that makes an update to a namespace
 type updateNamespaceFunc func(kubeClient clientset.Interface, namespace *api.Namespace) (*api.Namespace, error)
 
 // retryOnConflictError retries the specified fn if there was a conflict error
+// it will return an error if the UID for an object changes across retry operations.
 // TODO RetryOnConflict should be a generic concept in client code
 func retryOnConflictError(kubeClient clientset.Interface, namespace *api.Namespace, fn updateNamespaceFunc) (result *api.Namespace, err error) {
 	latestNamespace := namespace
@@ -82,9 +95,13 @@ func retryOnConflictError(kubeClient clientset.Interface, namespace *api.Namespa
 		if !errors.IsConflict(err) {
 			return nil, err
 		}
+		prevNamespace := latestNamespace
 		latestNamespace, err = kubeClient.Core().Namespaces().Get(latestNamespace.Name)
 		if err != nil {
 			return nil, err
+		}
+		if prevNamespace.UID != latestNamespace.UID {
+			return nil, fmt.Errorf("namespace uid has changed across retries")
 		}
 	}
 }
@@ -143,7 +160,7 @@ func finalizeNamespace(kubeClient clientset.Interface, namespace *api.Namespace,
 // it returns an error if the operation was supported on the server but was unable to complete.
 func deleteCollection(
 	dynamicClient *dynamic.Client,
-	opCache operationNotSupportedCache,
+	opCache *operationNotSupportedCache,
 	gvr unversioned.GroupVersionResource,
 	namespace string,
 ) (bool, error) {
@@ -175,7 +192,7 @@ func deleteCollection(
 	// remember next time that this resource does not support delete collection...
 	if errors.IsMethodNotSupported(err) || errors.IsNotFound(err) {
 		glog.V(5).Infof("namespace controller - deleteCollection not supported - namespace: %s, gvr: %v", namespace, gvr)
-		opCache[key] = true
+		opCache.setNotSupported(key)
 		return false, nil
 	}
 
@@ -190,7 +207,7 @@ func deleteCollection(
 //  an error if the operation is supported but could not be completed.
 func listCollection(
 	dynamicClient *dynamic.Client,
-	opCache operationNotSupportedCache,
+	opCache *operationNotSupportedCache,
 	gvr unversioned.GroupVersionResource,
 	namespace string,
 ) (*runtime.UnstructuredList, bool, error) {
@@ -220,7 +237,7 @@ func listCollection(
 	// remember next time that this resource does not support delete collection...
 	if errors.IsMethodNotSupported(err) || errors.IsNotFound(err) {
 		glog.V(5).Infof("namespace controller - listCollection not supported - namespace: %s, gvr: %v", namespace, gvr)
-		opCache[key] = true
+		opCache.setNotSupported(key)
 		return nil, false, nil
 	}
 
@@ -230,7 +247,7 @@ func listCollection(
 // deleteEachItem is a helper function that will list the collection of resources and delete each item 1 by 1.
 func deleteEachItem(
 	dynamicClient *dynamic.Client,
-	opCache operationNotSupportedCache,
+	opCache *operationNotSupportedCache,
 	gvr unversioned.GroupVersionResource,
 	namespace string,
 ) error {
@@ -258,7 +275,7 @@ func deleteEachItem(
 func deleteAllContentForGroupVersionResource(
 	kubeClient clientset.Interface,
 	clientPool dynamic.ClientPool,
-	opCache operationNotSupportedCache,
+	opCache *operationNotSupportedCache,
 	gvr unversioned.GroupVersionResource,
 	namespace string,
 	namespaceDeletedAt unversioned.Time,
@@ -274,7 +291,7 @@ func deleteAllContentForGroupVersionResource(
 	glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - estimate - namespace: %s, gvr: %v, estimate: %v", namespace, gvr, estimate)
 
 	// get a client for this group version...
-	dynamicClient, err := clientPool.ClientForGroupVersion(gvr.GroupVersion())
+	dynamicClient, err := clientPool.ClientForGroupVersionResource(gvr)
 	if err != nil {
 		glog.V(5).Infof("namespace controller - deleteAllContentForGroupVersionResource - unable to get client - namespace: %s, gvr: %v, err: %v", namespace, gvr, err)
 		return estimate, err
@@ -326,7 +343,7 @@ func deleteAllContentForGroupVersionResource(
 func deleteAllContent(
 	kubeClient clientset.Interface,
 	clientPool dynamic.ClientPool,
-	opCache operationNotSupportedCache,
+	opCache *operationNotSupportedCache,
 	groupVersionResources []unversioned.GroupVersionResource,
 	namespace string,
 	namespaceDeletedAt unversioned.Time,
@@ -353,8 +370,8 @@ func deleteAllContent(
 func syncNamespace(
 	kubeClient clientset.Interface,
 	clientPool dynamic.ClientPool,
-	opCache operationNotSupportedCache,
-	groupVersionResources []unversioned.GroupVersionResource,
+	opCache *operationNotSupportedCache,
+	groupVersionResourcesFn func() ([]unversioned.GroupVersionResource, error),
 	namespace *api.Namespace,
 	finalizerToken api.FinalizerName,
 ) error {
@@ -385,9 +402,19 @@ func syncNamespace(
 		return err
 	}
 
+	// the latest view of the namespace asserts that namespace is no longer deleting..
+	if namespace.DeletionTimestamp.IsZero() {
+		return nil
+	}
+
 	// if the namespace is already finalized, delete it
 	if finalized(namespace) {
-		err = kubeClient.Core().Namespaces().Delete(namespace.Name, nil)
+		var opts *api.DeleteOptions
+		uid := namespace.UID
+		if len(uid) > 0 {
+			opts = &api.DeleteOptions{Preconditions: &api.Preconditions{UID: &uid}}
+		}
+		err = kubeClient.Core().Namespaces().Delete(namespace.Name, opts)
 		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}
@@ -395,6 +422,10 @@ func syncNamespace(
 	}
 
 	// there may still be content for us to remove
+	groupVersionResources, err := groupVersionResourcesFn()
+	if err != nil {
+		return err
+	}
 	estimate, err := deleteAllContent(kubeClient, clientPool, opCache, groupVersionResources, namespace.Name, *namespace.DeletionTimestamp)
 	if err != nil {
 		return err

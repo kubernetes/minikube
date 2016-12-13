@@ -17,8 +17,6 @@ limitations under the License.
 package kuberuntime
 
 import (
-	"fmt"
-
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/credentialprovider"
@@ -30,7 +28,6 @@ import (
 
 // PullImage pulls an image from the network to local storage using the supplied
 // secrets if necessary.
-// TODO: pull image with qps and burst, ref https://github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/dockertools/docker.go#L120
 func (m *kubeGenericRuntimeManager) PullImage(image kubecontainer.ImageSpec, pullSecrets []api.Secret) error {
 	img := image.Image
 	repoToPull, _, _, err := parsers.ParseImageName(img)
@@ -83,17 +80,12 @@ func (m *kubeGenericRuntimeManager) PullImage(image kubecontainer.ImageSpec, pul
 
 // IsImagePresent checks whether the container image is already in the local storage.
 func (m *kubeGenericRuntimeManager) IsImagePresent(image kubecontainer.ImageSpec) (bool, error) {
-	images, err := m.imageService.ListImages(&runtimeApi.ImageFilter{
-		Image: &runtimeApi.ImageSpec{
-			Image: &image.Image,
-		},
-	})
+	status, err := m.imageService.ImageStatus(&runtimeApi.ImageSpec{Image: &image.Image})
 	if err != nil {
-		glog.Errorf("ListImages failed: %v", err)
+		glog.Errorf("ImageStatus for image %q failed: %v", image, err)
 		return false, err
 	}
-
-	return len(images) > 0, nil
+	return status != nil, nil
 }
 
 // ListImages gets all images currently on the machine.
@@ -130,7 +122,18 @@ func (m *kubeGenericRuntimeManager) RemoveImage(image kubecontainer.ImageSpec) e
 }
 
 // ImageStats returns the statistics of the image.
+// Notice that current logic doesn't really work for images which share layers (e.g. docker image),
+// this is a known issue, and we'll address this by getting imagefs stats directly from CRI.
+// TODO: Get imagefs stats directly from CRI.
 func (m *kubeGenericRuntimeManager) ImageStats() (*kubecontainer.ImageStats, error) {
-	// TODO: support image stats in new runtime interface
-	return nil, fmt.Errorf("not implemented")
+	allImages, err := m.imageService.ListImages(nil)
+	if err != nil {
+		glog.Errorf("ListImages failed: %v", err)
+		return nil, err
+	}
+	stats := &kubecontainer.ImageStats{}
+	for _, img := range allImages {
+		stats.TotalStorageBytes += img.GetSize_()
+	}
+	return stats, nil
 }

@@ -28,7 +28,7 @@ func installDockerGeneric(p Provisioner, baseURL string) error {
 	// install docker - until cloudinit we use ubuntu everywhere so we
 	// just install it using the docker repos
 	if output, err := p.SSHCommand(fmt.Sprintf("if ! type docker; then curl -sSL %s | sh -; fi", baseURL)); err != nil {
-		return fmt.Errorf("error installing docker: %s", output)
+		return fmt.Errorf("error installing docker: %s\n", output)
 	}
 
 	return nil
@@ -271,26 +271,4 @@ func WaitForDocker(p Provisioner, dockerPort int) error {
 	}
 
 	return nil
-}
-
-// DockerClientVersion returns the version of the Docker client on the host
-// that ssh is connected to, e.g. "1.12.1".
-func DockerClientVersion(ssh SSHCommander) (string, error) {
-	// `docker version --format {{.Client.Version}}` would be preferrable, but
-	// that fails if the server isn't running yet.
-	//
-	// output is expected to be something like
-	//
-	//     Docker version 1.12.1, build 7a86f89
-	output, err := ssh.SSHCommand("docker --version")
-	if err != nil {
-		return "", err
-	}
-
-	words := strings.Fields(output)
-	if len(words) < 3 || words[0] != "Docker" || words[1] != "version" {
-		return "", fmt.Errorf("DockerClientVersion: cannot parse version string from %q", output)
-	}
-
-	return strings.TrimRight(words[2], ","), nil
 }

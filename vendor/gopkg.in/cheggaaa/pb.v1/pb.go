@@ -13,7 +13,7 @@ import (
 )
 
 // Current version
-const Version = "1.0.5"
+const Version = "1.0.6"
 
 const (
 	// Default refresh rate - 200ms
@@ -222,7 +222,10 @@ func (pb *ProgressBar) Finish() {
 	pb.finishOnce.Do(func() {
 		close(pb.finish)
 		pb.write(atomic.LoadInt64(&pb.current))
-		if !pb.NotPrint {
+		switch {
+		case pb.Output != nil:
+			fmt.Fprintln(pb.Output)
+		case !pb.NotPrint:
 			fmt.Println()
 		}
 		pb.isFinish = true
@@ -232,7 +235,11 @@ func (pb *ProgressBar) Finish() {
 // End print and write string 'str'
 func (pb *ProgressBar) FinishPrint(str string) {
 	pb.Finish()
-	fmt.Println(str)
+	if pb.Output != nil {
+		fmt.Fprintln(pb.Output, str)
+	} else {
+		fmt.Println(str)
+	}
 }
 
 // implement io.Writer
@@ -289,11 +296,7 @@ func (pb *ProgressBar) write(current int64) {
 	case <-pb.finish:
 		if pb.ShowFinalTime {
 			var left time.Duration
-			if pb.Total > 0 {
-				left = (fromStart / time.Second) * time.Second
-			} else {
-				left = (time.Duration(currentFromStart) / time.Second) * time.Second
-			}
+			left = (fromStart / time.Second) * time.Second
 			timeLeftBox = fmt.Sprintf(" %s", left.String())
 		}
 	default:

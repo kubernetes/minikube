@@ -17,6 +17,7 @@ limitations under the License.
 package options
 
 import (
+	"errors"
 	"net"
 	"strconv"
 	"strings"
@@ -25,7 +26,6 @@ import (
 	"k8s.io/kubernetes/pkg/admission"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
-	apiutil "k8s.io/kubernetes/pkg/api/util"
 	"k8s.io/kubernetes/pkg/apimachinery/registered"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	"k8s.io/kubernetes/pkg/client/restclient"
@@ -33,13 +33,12 @@ import (
 	"k8s.io/kubernetes/pkg/util/config"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 
-	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 )
 
 const (
 	// TODO: This can be tightened up. It still matches objects named watch or proxy.
-	defaultLongRunningRequestRE = "(/|^)((watch|proxy)(/|$)|(logs?|portforward|exec|attach)/?$)"
+	DefaultLongRunningRequestRE = "(/|^)((watch|proxy)(/|$)|(logs?|portforward|exec|attach)/?$)"
 )
 
 var DefaultServiceNodePortRange = utilnet.PortRange{Base: 30000, Size: 2768}
@@ -56,8 +55,6 @@ var AuthorizationModeChoices = []string{ModeAlwaysAllow, ModeAlwaysDeny, ModeABA
 
 // ServerRunOptions contains the options while running a generic api server.
 type ServerRunOptions struct {
-	APIGroupPrefix             string
-	APIPrefix                  string
 	AdmissionControl           string
 	AdmissionControlConfigFile string
 	AdvertiseAddress           net.IP
@@ -70,63 +67,69 @@ type ServerRunOptions struct {
 	AuthorizationWebhookCacheUnauthorizedTTL time.Duration
 	AuthorizationRBACSuperUser               string
 
-	BasicAuthFile           string
-	BindAddress             net.IP
-	CertDirectory           string
-	ClientCAFile            string
-	CloudConfigFile         string
-	CloudProvider           string
-	CorsAllowedOriginList   []string
-	DefaultStorageMediaType string
-	DeleteCollectionWorkers int
-	// Used to specify the storage version that should be used for the legacy v1 api group.
-	DeprecatedStorageVersion  string
-	AuditLogPath              string
-	AuditLogMaxAge            int
-	AuditLogMaxBackups        int
-	AuditLogMaxSize           int
-	EnableLogsSupport         bool
-	EnableProfiling           bool
-	EnableSwaggerUI           bool
-	EnableWatchCache          bool
-	EtcdServersOverrides      []string
-	StorageConfig             storagebackend.Config
-	ExternalHost              string
-	InsecureBindAddress       net.IP
-	InsecurePort              int
-	KeystoneURL               string
-	KubernetesServiceNodePort int
-	LongRunningRequestRE      string
-	MasterCount               int
-	MasterServiceNamespace    string
-	MaxRequestsInFlight       int
-	MinRequestTimeout         int
-	OIDCCAFile                string
-	OIDCClientID              string
-	OIDCIssuerURL             string
-	OIDCUsernameClaim         string
-	OIDCGroupsClaim           string
-	RuntimeConfig             config.ConfigurationMap
-	SecurePort                int
-	ServiceClusterIPRange     net.IPNet // TODO: make this a list
-	ServiceNodePortRange      utilnet.PortRange
-	StorageVersions           string
+	AnonymousAuth                bool
+	BasicAuthFile                string
+	BindAddress                  net.IP
+	CertDirectory                string
+	ClientCAFile                 string
+	CloudConfigFile              string
+	CloudProvider                string
+	CorsAllowedOriginList        []string
+	DefaultStorageMediaType      string
+	DeleteCollectionWorkers      int
+	AuditLogPath                 string
+	AuditLogMaxAge               int
+	AuditLogMaxBackups           int
+	AuditLogMaxSize              int
+	EnableGarbageCollection      bool
+	EnableProfiling              bool
+	EnableContentionProfiling    bool
+	EnableSwaggerUI              bool
+	EnableWatchCache             bool
+	EtcdServersOverrides         []string
+	StorageConfig                storagebackend.Config
+	ExternalHost                 string
+	InsecureBindAddress          net.IP
+	InsecurePort                 int
+	KeystoneURL                  string
+	KeystoneCAFile               string
+	KubernetesServiceNodePort    int
+	LongRunningRequestRE         string
+	MasterCount                  int
+	MasterServiceNamespace       string
+	MaxRequestsInFlight          int
+	MinRequestTimeout            int
+	OIDCCAFile                   string
+	OIDCClientID                 string
+	OIDCIssuerURL                string
+	OIDCUsernameClaim            string
+	OIDCGroupsClaim              string
+	RequestHeaderUsernameHeaders []string
+	RequestHeaderClientCAFile    string
+	RequestHeaderAllowedNames    []string
+	RuntimeConfig                config.ConfigurationMap
+	SecurePort                   int
+	ServiceClusterIPRange        net.IPNet // TODO: make this a list
+	ServiceNodePortRange         utilnet.PortRange
+	StorageVersions              string
 	// The default values for StorageVersions. StorageVersions overrides
 	// these; you can change this if you want to change the defaults (e.g.,
 	// for testing). This is not actually exposed as a flag.
 	DefaultStorageVersions string
 	TargetRAMMB            int
+	TLSCAFile              string
 	TLSCertFile            string
 	TLSPrivateKeyFile      string
+	SNICertKeys            []config.NamedCertKey
 	TokenAuthFile          string
+	EnableAnyToken         bool
 	WatchCacheSizes        []string
 }
 
 func NewServerRunOptions() *ServerRunOptions {
 	return &ServerRunOptions{
-		APIGroupPrefix:                           "/apis",
-		APIPrefix:                                "/api",
 		AdmissionControl:                         "AlwaysAdmit",
+		AnonymousAuth:                            true,
 		AuthorizationMode:                        "AlwaysAllow",
 		AuthorizationWebhookCacheAuthorizedTTL:   5 * time.Minute,
 		AuthorizationWebhookCacheUnauthorizedTTL: 30 * time.Second,
@@ -135,12 +138,13 @@ func NewServerRunOptions() *ServerRunOptions {
 		DefaultStorageMediaType:                  "application/json",
 		DefaultStorageVersions:                   registered.AllPreferredGroupVersions(),
 		DeleteCollectionWorkers:                  1,
-		EnableLogsSupport:                        true,
+		EnableGarbageCollection:                  true,
 		EnableProfiling:                          true,
+		EnableContentionProfiling:                false,
 		EnableWatchCache:                         true,
 		InsecureBindAddress:                      net.ParseIP("127.0.0.1"),
 		InsecurePort:                             8080,
-		LongRunningRequestRE:                     defaultLongRunningRequestRE,
+		LongRunningRequestRE:                     DefaultLongRunningRequestRE,
 		MasterCount:                              1,
 		MasterServiceNamespace:                   api.NamespaceDefault,
 		MaxRequestsInFlight:                      400,
@@ -163,12 +167,9 @@ func (o *ServerRunOptions) WithEtcdOptions() *ServerRunOptions {
 }
 
 // StorageGroupsToEncodingVersion returns a map from group name to group version,
-// computed from the s.DeprecatedStorageVersion and s.StorageVersions flags.
+// computed from s.StorageVersions flag.
 func (s *ServerRunOptions) StorageGroupsToEncodingVersion() (map[string]unversioned.GroupVersion, error) {
 	storageVersionMap := map[string]unversioned.GroupVersion{}
-	if s.DeprecatedStorageVersion != "" {
-		storageVersionMap[""] = unversioned.GroupVersion{Group: apiutil.GetGroup(s.DeprecatedStorageVersion), Version: apiutil.GetVersion(s.DeprecatedStorageVersion)}
-	}
 
 	// First, get the defaults.
 	if err := mergeGroupVersionIntoMap(s.DefaultStorageVersions, storageVersionMap); err != nil {
@@ -212,24 +213,40 @@ func mergeGroupVersionIntoMap(gvList string, dest map[string]unversioned.GroupVe
 }
 
 // Returns a clientset which can be used to talk to this apiserver.
-func (s *ServerRunOptions) NewSelfClient() (clientset.Interface, error) {
+func (s *ServerRunOptions) NewSelfClient(token string) (clientset.Interface, error) {
+	clientConfig, err := s.NewSelfClientConfig(token)
+	if err != nil {
+		return nil, err
+	}
+	return clientset.NewForConfig(clientConfig)
+}
+
+// Returns a clientconfig which can be used to talk to this apiserver.
+func (s *ServerRunOptions) NewSelfClientConfig(token string) (*restclient.Config, error) {
 	clientConfig := &restclient.Config{
-		Host: net.JoinHostPort(s.InsecureBindAddress.String(), strconv.Itoa(s.InsecurePort)),
 		// Increase QPS limits. The client is currently passed to all admission plugins,
 		// and those can be throttled in case of higher load on apiserver - see #22340 and #22422
 		// for more details. Once #22422 is fixed, we may want to remove it.
 		QPS:   50,
 		Burst: 100,
 	}
-	if len(s.DeprecatedStorageVersion) != 0 {
-		gv, err := unversioned.ParseGroupVersion(s.DeprecatedStorageVersion)
-		if err != nil {
-			glog.Fatalf("error in parsing group version: %s", err)
+
+	// Use secure port if the TLSCAFile is specified
+	if s.SecurePort > 0 && len(s.TLSCAFile) > 0 {
+		host := s.BindAddress.String()
+		if host == "0.0.0.0" {
+			host = "localhost"
 		}
-		clientConfig.GroupVersion = &gv
+		clientConfig.Host = "https://" + net.JoinHostPort(host, strconv.Itoa(s.SecurePort))
+		clientConfig.CAFile = s.TLSCAFile
+		clientConfig.BearerToken = token
+	} else if s.InsecurePort > 0 {
+		clientConfig.Host = net.JoinHostPort(s.InsecureBindAddress.String(), strconv.Itoa(s.InsecurePort))
+	} else {
+		return nil, errors.New("Unable to set url for apiserver local client")
 	}
 
-	return clientset.NewForConfig(clientConfig)
+	return clientConfig, nil
 }
 
 // AddFlags adds flags for a specific APIServer to the specified FlagSet
@@ -272,6 +289,11 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.AuthorizationRBACSuperUser, "authorization-rbac-super-user", s.AuthorizationRBACSuperUser, ""+
 		"If specified, a username which avoids RBAC authorization checks and role binding "+
 		"privilege escalation checks, to be used with --authorization-mode=RBAC.")
+
+	fs.BoolVar(&s.AnonymousAuth, "anonymous-auth", s.AnonymousAuth, ""+
+		"Enables anonymous requests to the secure port of the API server. "+
+		"Requests that are not rejected by another authentication method are treated as anonymous requests. "+
+		"Anonymous requests have a username of system:anonymous, and a group name of system:unauthenticated.")
 
 	fs.StringVar(&s.BasicAuthFile, "basic-auth-file", s.BasicAuthFile, ""+
 		"If set, the file that will be used to admit requests to the secure port of the API server "+
@@ -321,8 +343,14 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&s.AuditLogMaxSize, "audit-log-maxsize", s.AuditLogMaxSize,
 		"The maximum size in megabytes of the audit log file before it gets rotated. Defaults to 100MB.")
 
+	fs.BoolVar(&s.EnableGarbageCollection, "enable-garbage-collector", s.EnableGarbageCollection, ""+
+		"Enables the generic garbage collector. MUST be synced with the corresponding flag "+
+		"of the kube-controller-manager.")
+
 	fs.BoolVar(&s.EnableProfiling, "profiling", s.EnableProfiling,
 		"Enable profiling via web interface host:port/debug/pprof/")
+	fs.BoolVar(&s.EnableContentionProfiling, "contention-profiling", s.EnableContentionProfiling,
+		"Enable contention profiling. Requires --profiling to be set to work.")
 
 	fs.BoolVar(&s.EnableSwaggerUI, "enable-swagger-ui", s.EnableSwaggerUI,
 		"Enables swagger ui on the apiserver at /swagger-ui")
@@ -356,6 +384,10 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&s.KeystoneURL, "experimental-keystone-url", s.KeystoneURL,
 		"If passed, activates the keystone authentication plugin.")
 
+	fs.StringVar(&s.KeystoneCAFile, "experimental-keystone-ca-file", s.KeystoneCAFile, ""+
+		"If set, the Keystone server's certificate will be verified by one of the authorities "+
+		"in the experimental-keystone-ca-file, otherwise the host's root CA set will be used.")
+
 	// See #14282 for details on how to test/try this option out.
 	// TODO: remove this comment once this option is tested in CI.
 	fs.IntVar(&s.KubernetesServiceNodePort, "kubernetes-service-node-port", s.KubernetesServiceNodePort, ""+
@@ -371,7 +403,7 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 		"The number of apiservers running in the cluster.")
 
 	fs.StringVar(&s.MasterServiceNamespace, "master-service-namespace", s.MasterServiceNamespace, ""+
-		"The namespace from which the kubernetes master services should be injected into pods.")
+		"DEPRECATED: the namespace from which the kubernetes master services should be injected into pods.")
 
 	fs.IntVar(&s.MaxRequestsInFlight, "max-requests-inflight", s.MaxRequestsInFlight, ""+
 		"The maximum number of requests in flight at a given time. When the server exceeds this, "+
@@ -401,8 +433,20 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.OIDCGroupsClaim, "oidc-groups-claim", "", ""+
 		"If provided, the name of a custom OpenID Connect claim for specifying user groups. "+
-		"The claim value is expected to be an array of strings. This flag is experimental, "+
+		"The claim value is expected to be a string or array of strings. This flag is experimental, "+
 		"please see the authentication documentation for further details.")
+
+	fs.StringSliceVar(&s.RequestHeaderUsernameHeaders, "requestheader-username-headers", s.RequestHeaderUsernameHeaders, ""+
+		"List of request headers to inspect for usernames. X-Remote-User is common.")
+
+	fs.StringVar(&s.RequestHeaderClientCAFile, "requestheader-client-ca-file", s.RequestHeaderClientCAFile, ""+
+		"Root certificate bundle to use to verify client certificates on incoming requests "+
+		"before trusting usernames in headers specified by --requestheader-username-headers")
+
+	fs.StringSliceVar(&s.RequestHeaderAllowedNames, "requestheader-allowed-names", s.RequestHeaderAllowedNames, ""+
+		"List of client certificate common names to allow to provide usernames in headers "+
+		"specified by --requestheader-username-headers. If empty, any client certificate validated "+
+		"by the authorities in --requestheader-client-ca-file is allowed.")
 
 	fs.Var(&s.RuntimeConfig, "runtime-config", ""+
 		"A set of key=value pairs that describe runtime configuration that may be passed "+
@@ -434,10 +478,11 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&s.StorageConfig.DeserializationCacheSize, "deserialization-cache-size", s.StorageConfig.DeserializationCacheSize,
 		"Number of deserialized json objects to cache in memory.")
 
-	fs.StringVar(&s.DeprecatedStorageVersion, "storage-version", s.DeprecatedStorageVersion,
+	deprecatedStorageVersion := ""
+	fs.StringVar(&deprecatedStorageVersion, "storage-version", deprecatedStorageVersion,
 		"DEPRECATED: the version to store the legacy v1 resources with. Defaults to server preferred.")
 	fs.MarkDeprecated("storage-version", "--storage-version is deprecated and will be removed when the v1 API "+
-		"is retired. See --storage-versions instead.")
+		"is retired. Setting this has no effect. See --storage-versions instead.")
 
 	fs.StringVar(&s.StorageVersions, "storage-versions", s.StorageVersions, ""+
 		"The per-group version to store resources in. "+
@@ -448,18 +493,35 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 		"It defaults to a list of preferred versions of all registered groups, "+
 		"which is derived from the KUBE_API_VERSIONS environment variable.")
 
+	fs.StringVar(&s.TLSCAFile, "tls-ca-file", s.TLSCAFile, "If set, this "+
+		"certificate authority will used for secure access from Admission "+
+		"Controllers. This must be a valid PEM-encoded CA bundle.")
+
 	fs.StringVar(&s.TLSCertFile, "tls-cert-file", s.TLSCertFile, ""+
-		"File containing x509 Certificate for HTTPS. (CA cert, if any, concatenated "+
+		"File containing the default x509 Certificate for HTTPS. (CA cert, if any, concatenated "+
 		"after server cert). If HTTPS serving is enabled, and --tls-cert-file and "+
 		"--tls-private-key-file are not provided, a self-signed certificate and key "+
 		"are generated for the public address and saved to /var/run/kubernetes.")
 
 	fs.StringVar(&s.TLSPrivateKeyFile, "tls-private-key-file", s.TLSPrivateKeyFile,
-		"File containing x509 private key matching --tls-cert-file.")
+		"File containing the default x509 private key matching --tls-cert-file.")
+
+	fs.Var(config.NewNamedCertKeyArray(&s.SNICertKeys), "tls-sni-cert-key", ""+
+		"A pair of x509 certificate and private key file paths, optionally suffixed with a list of "+
+		"domain patterns which are fully qualified domain names, possibly with prefixed wildcard "+
+		"segments. If no domain patterns are provided, the names of the certificate are "+
+		"extracted. Non-wildcard matches trump over wildcard matches, explicit domain patterns "+
+		"trump over extracted names. For multiple key/certificate pairs, use the "+
+		"--tls-sni-cert-key multiple times. "+
+		"Examples: \"example.key,example.crt\" or \"*.foo.com,foo.com:foo.key,foo.crt\".")
 
 	fs.StringVar(&s.TokenAuthFile, "token-auth-file", s.TokenAuthFile, ""+
 		"If set, the file that will be used to secure the secure port of the API server "+
 		"via token authentication.")
+
+	fs.BoolVar(&s.EnableAnyToken, "insecure-allow-any-token", s.EnableAnyToken, ""+
+		"If set, your server will be INSECURE.  Any token will be allowed and user information will be parsed "+
+		"from the token as `username/group1,group2`")
 
 	fs.StringSliceVar(&s.WatchCacheSizes, "watch-cache-sizes", s.WatchCacheSizes, ""+
 		"List of watch cache sizes for every resource (pods, nodes, etc.), comma separated. "+

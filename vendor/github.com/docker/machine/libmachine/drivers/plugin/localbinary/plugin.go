@@ -17,7 +17,7 @@ var (
 	// plugin server.
 	defaultTimeout               = 10 * time.Second
 	CurrentBinaryIsDockerMachine = false
-	CoreDrivers                  = []string{"amazonec2", "azure", "digitalocean",
+	CoreDrivers                  = [...]string{"amazonec2", "azure", "digitalocean",
 		"exoscale", "generic", "google", "hyperv", "none", "openstack",
 		"rackspace", "softlayer", "virtualbox", "vmwarefusion",
 		"vmwarevcloudair", "vmwarevsphere"}
@@ -85,11 +85,10 @@ type Executor struct {
 
 type ErrPluginBinaryNotFound struct {
 	driverName string
-	driverPath string
 }
 
 func (e ErrPluginBinaryNotFound) Error() string {
-	return fmt.Sprintf("Driver %q not found. Do you have the plugin binary %q accessible in your PATH?", e.driverName, e.driverPath)
+	return fmt.Sprintf("Driver %q not found. Do you have the plugin binary accessible in your PATH?", e.driverName)
 }
 
 // driverPath finds the path of a driver binary by its name.
@@ -115,7 +114,7 @@ func NewPlugin(driverName string) (*Plugin, error) {
 	driverPath := driverPath(driverName)
 	binaryPath, err := exec.LookPath(driverPath)
 	if err != nil {
-		return nil, ErrPluginBinaryNotFound{driverName, driverPath}
+		return nil, ErrPluginBinaryNotFound{driverName}
 	}
 
 	log.Debugf("Found binary path at %s", binaryPath)

@@ -28,6 +28,7 @@ import (
 
 	dockertypes "github.com/docker/engine-api/types"
 	dockercontainer "github.com/docker/engine-api/types/container"
+	"k8s.io/kubernetes/pkg/util/clock"
 
 	"k8s.io/kubernetes/pkg/api"
 )
@@ -37,9 +38,15 @@ type calledDetail struct {
 	arguments []interface{}
 }
 
+// NewCalledDetail create a new call detail item.
+func NewCalledDetail(name string, arguments []interface{}) calledDetail {
+	return calledDetail{name: name, arguments: arguments}
+}
+
 // FakeDockerClient is a simple fake docker client, so that kubelet can be run for testing without requiring a real docker setup.
 type FakeDockerClient struct {
 	sync.Mutex
+	Clock                clock.Clock
 	RunningContainerList []dockertypes.Container
 	ExitedContainerList  []dockertypes.Container
 	ContainerMap         map[string]*dockertypes.ContainerJSON
@@ -70,11 +77,22 @@ func NewFakeDockerClient() *FakeDockerClient {
 	return NewFakeDockerClientWithVersion(fakeDockerVersion, minimumDockerAPIVersion)
 }
 
+func NewFakeDockerClientWithClock(c clock.Clock) *FakeDockerClient {
+	return newClientWithVersionAndClock(fakeDockerVersion, minimumDockerAPIVersion, c)
+}
+
 func NewFakeDockerClientWithVersion(version, apiVersion string) *FakeDockerClient {
+	return newClientWithVersionAndClock(version, apiVersion, clock.RealClock{})
+}
+
+func newClientWithVersionAndClock(version, apiVersion string, c clock.Clock) *FakeDockerClient {
 	return &FakeDockerClient{
 		VersionInfo:  dockertypes.Version{Version: version, APIVersion: apiVersion},
 		Errors:       make(map[string]error),
 		ContainerMap: make(map[string]*dockertypes.ContainerJSON),
+		Clock:        c,
+		// default this to an empty result, so that we never have a nil non-error response from InspectImage
+		Image: &dockertypes.ImageInspect{},
 	}
 }
 
@@ -199,7 +217,7 @@ func (f *FakeDockerClient) AssertCalls(calls []string) (err error) {
 	return
 }
 
-func (f *FakeDockerClient) AssertCallDetails(calls []calledDetail) (err error) {
+func (f *FakeDockerClient) AssertCallDetails(calls ...calledDetail) (err error) {
 	f.Lock()
 	defer f.Unlock()
 
@@ -292,12 +310,26 @@ func (f *FakeDockerClient) InspectContainer(id string) (*dockertypes.ContainerJS
 	if container, ok := f.ContainerMap[id]; ok {
 		return container, err
 	}
-	return nil, err
+	if err != nil {
+		// Use the custom error if it exists.
+		return nil, err
+	}
+	return nil, fmt.Errorf("container %q not found", id)
 }
 
-// InspectImage is a test-spy implementation of DockerInterface.InspectImage.
+// InspectImageByRef is a test-spy implementation of DockerInterface.InspectImageByRef.
 // It adds an entry "inspect" to the internal method call record.
-func (f *FakeDockerClient) InspectImage(name string) (*dockertypes.ImageInspect, error) {
+func (f *FakeDockerClient) InspectImageByRef(name string) (*dockertypes.ImageInspect, error) {
+	f.Lock()
+	defer f.Unlock()
+	f.called = append(f.called, calledDetail{name: "inspect_image"})
+	err := f.popError("inspect_image")
+	return f.Image, err
+}
+
+// InspectImageByID is a test-spy implementation of DockerInterface.InspectImageByID.
+// It adds an entry "inspect" to the internal method call record.
+func (f *FakeDockerClient) InspectImageByID(name string) (*dockertypes.ImageInspect, error) {
 	f.Lock()
 	defer f.Unlock()
 	f.called = append(f.called, calledDetail{name: "inspect_image"})
@@ -337,7 +369,8 @@ func (f *FakeDockerClient) CreateContainer(c dockertypes.ContainerCreateConfig) 
 	f.RunningContainerList = append([]dockertypes.Container{
 		{ID: name, Names: []string{name}, Image: c.Config.Image, Labels: c.Config.Labels},
 	}, f.RunningContainerList...)
-	f.ContainerMap[name] = convertFakeContainer(&FakeContainer{ID: id, Name: name, Config: c.Config, HostConfig: c.HostConfig})
+	f.ContainerMap[name] = convertFakeContainer(&FakeContainer{
+		ID: id, Name: name, Config: c.Config, HostConfig: c.HostConfig, CreatedAt: f.Clock.Now()})
 	f.normalSleep(100, 25, 25)
 	return &dockertypes.ContainerCreateResponse{ID: id}, nil
 }
@@ -358,7 +391,7 @@ func (f *FakeDockerClient) StartContainer(id string) error {
 	}
 	container.State.Running = true
 	container.State.Pid = os.Getpid()
-	container.State.StartedAt = dockerTimestampToString(time.Now())
+	container.State.StartedAt = dockerTimestampToString(f.Clock.Now())
 	container.NetworkSettings.IPAddress = "2.3.4.5"
 	f.ContainerMap[id] = container
 	f.updateContainerStatus(id, statusRunningPrefix)
@@ -398,7 +431,7 @@ func (f *FakeDockerClient) StopContainer(id string, timeout int) error {
 			FinishedAt: time.Now(),
 		})
 	} else {
-		container.State.FinishedAt = dockerTimestampToString(time.Now())
+		container.State.FinishedAt = dockerTimestampToString(f.Clock.Now())
 		container.State.Running = false
 	}
 	f.ContainerMap[id] = container

@@ -191,7 +191,7 @@ func (kl *Kubelet) GetNode() (*api.Node, error) {
 	if kl.standaloneMode {
 		return kl.initialNode()
 	}
-	return kl.nodeInfo.GetNodeInfo(kl.nodeName)
+	return kl.nodeInfo.GetNodeInfo(string(kl.nodeName))
 }
 
 // getNodeAnyWay() must return a *api.Node which is required by RunGeneralPredicates().
@@ -201,7 +201,7 @@ func (kl *Kubelet) GetNode() (*api.Node, error) {
 // zero capacity, and the default labels.
 func (kl *Kubelet) getNodeAnyWay() (*api.Node, error) {
 	if !kl.standaloneMode {
-		if n, err := kl.nodeInfo.GetNodeInfo(kl.nodeName); err == nil {
+		if n, err := kl.nodeInfo.GetNodeInfo(string(kl.nodeName)); err == nil {
 			return n, nil
 		}
 	}
@@ -252,16 +252,12 @@ func (kl *Kubelet) getPodVolumePathListFromDisk(podUID types.UID) ([]string, err
 	for _, volumePluginDir := range volumePluginDirs {
 		volumePluginName := volumePluginDir.Name()
 		volumePluginPath := path.Join(podVolDir, volumePluginName)
-		volumeDirs, volumeDirsStatErrs, err := util.ReadDirNoExit(volumePluginPath)
+		volumeDirs, err := util.ReadDirNoStat(volumePluginPath)
 		if err != nil {
 			return volumes, fmt.Errorf("Could not read directory %s: %v", volumePluginPath, err)
 		}
-		for i, volumeDir := range volumeDirs {
-			if volumeDir != nil {
-				volumes = append(volumes, path.Join(volumePluginPath, volumeDir.Name()))
-				continue
-			}
-			glog.Errorf("Could not read directory %s: %v", podVolDir, volumeDirsStatErrs[i])
+		for _, volumeDir := range volumeDirs {
+			volumes = append(volumes, path.Join(volumePluginPath, volumeDir))
 		}
 	}
 	return volumes, nil

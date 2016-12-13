@@ -55,7 +55,9 @@ type NodeConfig struct {
 	ContainerRuntime      string
 	CgroupsPerQOS         bool
 	CgroupRoot            string
+	CgroupDriver          string
 	ProtectKernelDefaults bool
+	EnableCRI             bool
 }
 
 type Status struct {

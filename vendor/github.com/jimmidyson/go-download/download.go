@@ -31,9 +31,8 @@ import (
 	"path/filepath"
 	"time"
 
-	pb "gopkg.in/cheggaaa/pb.v1"
-
 	"github.com/pkg/errors"
+	pb "gopkg.in/cheggaaa/pb.v1"
 )
 
 // Options holds the possible configuration options for the Downloader.
@@ -100,14 +99,8 @@ func ToFile(src, dest string, options FileOptions) error {
 	}
 
 	targetDir := filepath.Dir(dest)
-	if _, err = os.Stat(targetDir); err != nil {
-		if !os.IsNotExist(err) || (options.Mkdirs != nil && !*options.Mkdirs) {
-			return errors.Wrap(err, "failed to check destination directory")
-		}
-		err = os.MkdirAll(targetDir, 0700)
-		if err != nil {
-			return errors.Wrap(err, "failed to create destination directory")
-		}
+	if err = createDir(targetDir, options.Mkdirs == nil || *options.Mkdirs); err != nil {
+		return err
 	}
 
 	targetName := filepath.Base(dest)
@@ -128,11 +121,26 @@ func ToFile(src, dest string, options FileOptions) error {
 		return errors.Wrap(err, "failed to close temp file")
 	}
 
-	err = os.Rename(f.Name(), dest)
+	if err = renameFile(f.Name(), dest); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func renameFile(src, dest string) error {
+	err := os.Rename(src, dest)
 	if err != nil {
 		// Rename failed, try to copy file.
 		destF, err := os.Create(dest)
-		f, err = os.Open(f.Name())
+		if err != nil {
+			return errors.Wrap(err, "failed to create target file")
+		}
+		f, err := os.Open(src)
+		if err != nil {
+			_ = os.Remove(dest)
+			return errors.Wrap(err, "failed to open source file")
+		}
 		defer func() {
 			_ = f.Close()           // #nosec
 			_ = os.Remove(f.Name()) // #nosec
@@ -147,6 +155,23 @@ func ToFile(src, dest string, options FileOptions) error {
 		if err != nil {
 			_ = os.Remove(destF.Name())
 			return errors.Wrap(err, "failed to rename temp file to destination")
+		}
+	}
+
+	return nil
+}
+
+func createDir(dir string, mkdirs bool) error {
+	if _, err := os.Stat(dir); err != nil {
+		if !os.IsNotExist(err) {
+			return errors.Wrap(err, "failed to check destination directory")
+		}
+		if !mkdirs {
+			return errors.Errorf("directory %s does not exist", dir)
+		}
+		err = os.MkdirAll(dir, 0700)
+		if err != nil {
+			return errors.Wrap(err, "failed to create destination directory")
 		}
 	}
 
@@ -183,7 +208,7 @@ func FromURL(src *url.URL, w io.Writer, options Options) error {
 	downloader := func() error {
 		resp, err = httpClient.Get(src.String())
 		if err != nil {
-			return &retriableError{errors.Wrap(err, "Temporary error downloading localkube via http")}
+			return &retriableError{errors.Wrap(err, "Temporary download error")}
 		}
 		if resp.StatusCode != http.StatusOK {
 			defer func() { _ = resp.Body.Close() }() // #nosec
@@ -216,26 +241,47 @@ func FromURL(src *url.URL, w io.Writer, options Options) error {
 		}()
 	}
 
-	if len(options.Checksum) != 0 {
-		validator, err = createValidator(options.ChecksumHash, httpClient, options.Checksum, path.Base(src.Path))
-		if err != nil {
-			return errors.Wrap(err, "failed to create validator")
-		}
-		reader = io.TeeReader(reader, validator)
+	validator, reader, err = createValidatorReader(reader, options.ChecksumHash, httpClient, options.Checksum, path.Base(src.Path))
+	if err != nil {
+		return err
 	}
 
 	if _, err = io.Copy(w, reader); err != nil {
 		return errors.Wrap(err, "failed to copy contents")
 	}
 
-	if validator != nil && !validator.validate() {
+	if !validator.validate() {
 		return errors.New("checksum validation failed")
 	}
 
 	return nil
 }
 
+func createValidatorReader(reader io.Reader, hashType crypto.Hash, httpClient *http.Client, checksum, filename string) (checksumValidator, io.Reader, error) {
+	validator, err := createValidator(hashType, httpClient, checksum, filename)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create validator")
+	}
+	return validator, io.TeeReader(reader, validator), nil
+}
+
+type noopValidator struct {
+}
+
+func (*noopValidator) validate() bool {
+	return true
+}
+
+func (*noopValidator) Write(p []byte) (n int, err error) {
+	return ioutil.Discard.Write(p)
+}
+
+var _ checksumValidator = &noopValidator{}
+
 func createValidator(hashType crypto.Hash, httpClient *http.Client, checksum, filename string) (checksumValidator, error) {
+	if len(checksum) == 0 {
+		return &noopValidator{}, nil
+	}
 	var hasher hash.Hash
 	switch hashType {
 	case crypto.SHA256, 0:

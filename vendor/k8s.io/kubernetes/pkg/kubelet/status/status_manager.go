@@ -414,7 +414,7 @@ func (m *manager) syncPod(uid types.UID, status versionedPodStatus) {
 	if err == nil {
 		translatedUID := m.podManager.TranslatePodUID(pod.UID)
 		if len(translatedUID) > 0 && translatedUID != uid {
-			glog.V(3).Infof("Pod %q was deleted and then recreated, skipping status update", format.Pod(pod))
+			glog.V(2).Infof("Pod %q was deleted and then recreated, skipping status update; old UID %q, new UID %q", format.Pod(pod), uid, translatedUID)
 			m.deletePodStatus(uid)
 			return
 		}
@@ -438,6 +438,7 @@ func (m *manager) syncPod(uid types.UID, status versionedPodStatus) {
 			deleteOptions := api.NewDeleteOptions(0)
 			// Use the pod UID as the precondition for deletion to prevent deleting a newly created pod with the same name and namespace.
 			deleteOptions.Preconditions = api.NewUIDPreconditions(string(pod.UID))
+			glog.V(2).Infof("Removing Pod %q from etcd", format.Pod(pod))
 			if err = m.kubeClient.Core().Pods(pod.Namespace).Delete(pod.Name, deleteOptions); err == nil {
 				glog.V(3).Infof("Pod %q fully terminated and removed from etcd", format.Pod(pod))
 				m.deletePodStatus(uid)
