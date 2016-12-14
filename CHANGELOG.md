@@ -1,5 +1,15 @@
 # Minikube Release Notes
 
+## Version 0.14.0 - 12/14/2016
+* Update to k8s v1.5.1
+* Update Addon-manager to v6.1
+* Update Dashboard to v1.5
+* Run localkube as systemd unit in minikube-iso
+* Add ingress addon
+* Add aws-creds addon
+* Iso-url is now configurable through `minikube config set`
+* Refactor integration tests
+
 ## Version 0.13.1 - 12/5/2016
 * Fix `service list` command
 * Dashboard dowgnraded to v1.4.2, correctly shows PetSets again
