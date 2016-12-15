@@ -199,6 +199,7 @@ type KubernetesConfig struct {
 	NodeIP            string
 	ContainerRuntime  string
 	NetworkPlugin     string
+	FeatureGates      string
 	ExtraOptions      util.ExtraOptionSlice
 }
 
