@@ -150,6 +150,10 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 		flagVals = append(flagVals, "--network-plugin="+kubernetesConfig.NetworkPlugin)
 	}
 
+	if kubernetesConfig.FeatureGates != "" {
+		flagVals = append(flagVals, "--feature-gates="+kubernetesConfig.FeatureGates)
+	}
+
 	for _, e := range kubernetesConfig.ExtraOptions {
 		flagVals = append(flagVals, fmt.Sprintf("--extra-config=%s", e.String()))
 	}

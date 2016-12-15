@@ -56,6 +56,7 @@ type LocalkubeServer struct {
 	NodeIP                   net.IP
 	ContainerRuntime         string
 	NetworkPlugin            string
+	FeatureGates             string
 	ExtraConfig              util.ExtraOptionSlice
 }
 
