@@ -117,6 +117,9 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /mnt/$PARTNAME/var/lib/docker
     ln -s /mnt/$PARTNAME/var/lib/docker /var/lib/docker
 
+    mkdir -p /mnt/$PARTNAME/var/log
+    ln -s /mnt/$PARTNAME/var/log /var/log
+
     mkdir -p /mnt/$PARTNAME/var/lib/kubelet
     ln -s /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
 
