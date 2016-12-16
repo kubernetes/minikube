@@ -35,7 +35,7 @@ func ReadConfigOrNew(filename string) (*api.Config, error) {
 	if os.IsNotExist(err) {
 		return api.NewConfig(), nil
 	} else if err != nil {
-		return nil, errors.Wrapf(err, "Error reading file", filename)
+		return nil, errors.Wrapf(err, "Error reading file %q", filename)
 	}
 
 	// decode config, empty if no bytes
