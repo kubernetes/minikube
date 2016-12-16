@@ -26,6 +26,13 @@ gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprb
 # Build all platforms (Windows, Linux, OSX)
 make cross
 
+## If there are ISO changes, build the ISO and upload it to be used in the integration tests
+if git diff --name-only origin/master...HEAD | grep deploy/iso/minikube-iso > /dev/null; then
+	make minikube-iso
+	gsutil cp out/buildroot/output/images/rootfs.iso9660 gs://minikube-builds/${ghprbPullId}/minikube.iso
+	EXTRA_BUILD_ARGS="--iso-url=https://storage.googleapis.com/minikube-builds/${ghprbPullId}/minikube.iso"
+fi
+
 # Build the e2e test target for Darwin and Linux. We don't run tests on Windows yet.
 # We build these on Linux, but run the tests on different platforms.
 # This makes it easier to provision slaves, since they don't need to have a go toolchain.'
