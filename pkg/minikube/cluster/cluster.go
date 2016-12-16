@@ -91,10 +91,10 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 	if s != state.Running {
 		if err := h.Driver.Start(); err != nil {
-			return nil, errors.Wrapf(err, "Error starting stopped host")
+			return nil, errors.Wrap(err, "Error starting stopped host")
 		}
 		if err := api.Save(h); err != nil {
-			return nil, errors.Wrapf(err, "Error saving started host")
+			return nil, errors.Wrap(err, "Error saving started host")
 		}
 	}
 
@@ -133,7 +133,7 @@ func GetHostStatus(api libmachine.API) (string, error) {
 	dne := "Does Not Exist"
 	exists, err := api.Exists(constants.MachineName)
 	if err != nil {
-		return "", errors.Wrapf(err, "Error checking that api exists for: ", constants.MachineName)
+		return "", errors.Wrapf(err, "Error checking that api exists for: %s", constants.MachineName)
 	}
 	if !exists {
 		return dne, nil
@@ -141,7 +141,7 @@ func GetHostStatus(api libmachine.API) (string, error) {
 
 	host, err := api.Load(constants.MachineName)
 	if err != nil {
-		return "", errors.Wrapf(err, "Error loading api for: ", constants.MachineName)
+		return "", errors.Wrapf(err, "Error loading api for: %s", constants.MachineName)
 	}
 
 	s, err := host.Driver.GetState()
@@ -474,7 +474,7 @@ func GetHostLogs(api libmachine.API) (string, error) {
 func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
 	exists, err := api.Exists(constants.MachineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking that api exists for: ", constants.MachineName)
+		return nil, errors.Wrapf(err, "Error checking that api exists for: %s", constants.MachineName)
 	}
 	if !exists {
 		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", constants.MachineName)
@@ -482,7 +482,7 @@ func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
 
 	host, err := api.Load(constants.MachineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading api for: ", constants.MachineName)
+		return nil, errors.Wrapf(err, "Error loading api for: %s", constants.MachineName)
 	}
 	return host, nil
 }
