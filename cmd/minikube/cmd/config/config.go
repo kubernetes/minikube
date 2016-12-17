@@ -80,10 +80,6 @@ var settings = []Setting{
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
-		name: "show-libmachine-logs",
-		set:  SetBool,
-	},
-	{
 		name:        "log_dir",
 		set:         SetString,
 		validations: []setFn{IsValidPath},
