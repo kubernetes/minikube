@@ -53,7 +53,11 @@ func Get(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if val, ok := m[name]; ok {
+	return get(name, m)
+}
+
+func get(name string, config MinikubeConfig) (string, error) {
+	if val, ok := config[name]; ok {
 		return fmt.Sprintf("%v", val), nil
 	} else {
 		return "", errors.New("specified key could not be found in config")
