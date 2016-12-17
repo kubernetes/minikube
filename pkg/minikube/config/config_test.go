@@ -67,3 +67,35 @@ func TestReadConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestGet(t *testing.T) {
+	cfg := `{
+		"key": "val"
+	}`
+
+	config, err := decode(bytes.NewBufferString(cfg))
+	if err != nil {
+		t.Fatalf("Error decoding config : %v", err)
+	}
+
+	var testcases = []struct {
+		key string
+		val string
+		err bool
+	}{
+		{"key", "val", false},
+		{"badkey", "", true},
+	}
+
+	for _, tt := range testcases {
+		val, err := get(tt.key, config)
+		if (err != nil) && !tt.err {
+			t.Errorf("Error fetching key: %s. Err: %v", tt.key, err)
+			continue
+		}
+		if val != tt.val {
+			t.Errorf("Expected %s, got %s", tt.val, val)
+			continue
+		}
+	}
+}
