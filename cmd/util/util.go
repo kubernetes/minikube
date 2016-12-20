@@ -177,7 +177,7 @@ func MaybePrintKubectlDownloadMsg() {
 	if runtime.GOOS == "windows" {
 		verb = "do"
 		installInstructions = `download kubectl from:
-https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl
+https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl.exe
 Add kubectl to your system PATH`
 	}
 
