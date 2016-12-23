@@ -18,13 +18,13 @@
 # This is intended to be run on a new release tag in order to generate the github release page for that release
 
 # The script expects the following env variabls:
-# VERSION_MAJOR: The the major version of the tag to be released.
-# VERSION_MINOR: The the minor version of the tag to be released.
-# VERSION_BUILD: The the build version of the tag to be released.
+# VERSION_MAJOR: The major version of the tag to be released.
+# VERSION_MINOR: The minor version of the tag to be released.
+# VERSION_BUILD: The build version of the tag to be released.
 # ISO_SHA256: The sha 256 of the minikube-iso for the current release
-# GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider. 
+# GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider.
 
-set -e 
+set -e
 export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}-${VERSION_BUILD}
 
@@ -90,7 +90,7 @@ ${WINDOWS_SHA256}
 ### ISO
 \`\`\`shell
 $ openssl sha256 minikube.iso
-SHA256(minikube.iso)= 
+SHA256(minikube.iso)=
 ${ISO_SHA256}
 \`\`\`
 "
@@ -116,4 +116,3 @@ github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag 
 github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-windows-amd64.sha256" --file out/minikube-windows-amd64.exe.sha256
 github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-installer.exe" --file out/minikube-installer.exe
 github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube_${DEB_VERSION}.deb" --file out/minikube_${DEB_VERSION}.deb
-
