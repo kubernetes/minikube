@@ -18,11 +18,11 @@
 # This is intended to be run on a new release tag in order to build/upload the required files for a release
 
 # The script expects the following env variabls:
-# VERSION_MAJOR: The the major version of the tag to be released.
-# VERSION_MINOR: The the minor version of the tag to be released.
-# VERSION_BUILD: The the build version of the tag to be released.
+# VERSION_MAJOR: The major version of the tag to be released.
+# VERSION_MINOR: The minor version of the tag to be released.
+# VERSION_BUILD: The build version of the tag to be released.
 # BUCKET: The GCP bucket the build files should be uploaded to.
-# GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider. 
+# GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider.
 
 set -e
 
@@ -47,7 +47,7 @@ gsutil cp out/minikube-darwin-amd64.sha256 gs://$BUCKET/releases/$TAGNAME/
 gsutil cp out/minikube-windows-amd64.exe gs://$BUCKET/releases/$TAGNAME/
 gsutil cp out/minikube-windows-amd64.exe.sha256 gs://$BUCKET/releases/$TAGNAME/
 
-make out/minikube-installer.exe 
+make out/minikube-installer.exe
 gsutil cp out/minikube-installer.exe gs://$BUCKET/releases/$TAGNAME/
 
 make out/minikube_${DEB_VERSION}.deb

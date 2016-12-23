@@ -25,8 +25,8 @@ import (
 
 var RootCmd = &cobra.Command{
 	Use:   "localkube",
-	Short: "localkube is a all-in-one kubernetes binary.",
-	Long:  `localkube is a all-in-one kubernetes binary that runs all Kubernetes server binaries.`,
+	Short: "localkube is an all-in-one kubernetes binary.",
+	Long:  `localkube is an all-in-one kubernetes binary that runs all Kubernetes server binaries.`,
 	Run: func(command *cobra.Command, args []string) {
 		StartLocalkube()
 	},
