@@ -50,7 +50,7 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 // AddFlags adds flags for a specific LocalkubeServer
 func AddFlags(s *localkube.LocalkubeServer) {
 	flag.BoolVar(&s.Containerized, "containerized", s.Containerized, "If kubelet should run in containerized mode")
-	flag.BoolVar(&s.EnableDNS, "enable-dns", s.EnableDNS, "DEPRECATED: Please run kube-dns as an cluster addon")
+	flag.BoolVar(&s.EnableDNS, "enable-dns", s.EnableDNS, "DEPRECATED: Please run kube-dns as a cluster addon")
 	flag.StringVar(&s.DNSDomain, "dns-domain", s.DNSDomain, "The cluster dns domain")
 	flag.IPVar(&s.DNSIP, "dns-ip", s.DNSIP, "The cluster dns IP")
 	flag.StringVar(&s.LocalkubeDirectory, "localkube-directory", s.LocalkubeDirectory, "The directory localkube will store files in")
