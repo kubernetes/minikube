@@ -17,7 +17,7 @@
 
 # This script runs the integration tests on an OSX machine for the XHyve Driver
 
-# The script expects the following env variabls:
+# The script expects the following env variables:
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
 # COMMIT: Actual commit ID from upstream build
 # EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
