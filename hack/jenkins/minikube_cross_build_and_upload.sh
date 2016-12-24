@@ -17,7 +17,7 @@
 # This script builds the minikube binary for all 3 platforms and uploads them.
 # This is to done as part of the CI tests for Github PRs
 
-# The script expects the following env variabls:
+# The script expects the following env variables:
 # ghprbPullId: The pull request ID, injected from the ghpbr plugin.
 # ghprbActualCommit: The commit hash, injected from the ghpbr plugin.
 

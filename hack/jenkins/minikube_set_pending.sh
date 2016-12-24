@@ -19,7 +19,7 @@
 # This is intended to run before the tests start, so the icons show up on the Github PR and block submit until
 # the tests finish.
 
-# The script expects the following env variabls:
+# The script expects the following env variables:
 # ghprbPullId: The pull request ID, injected from the ghpbr plugin.
 # ghprbActualCommit: The commit hash, injected from the ghpbr plugin.
 # access_token: The Github API access token. Injected by the Jenkins credential provider. 
