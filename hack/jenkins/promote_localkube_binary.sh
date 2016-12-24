@@ -17,7 +17,7 @@
 
 # This script runs the integration tests on an OSX machine for the xhyve Driver
 
-# The script expects the following env variabls:
+# The script expects the following env variables:
 # K8S_VERSION: GIT_COMMIT from upstream build.
 # BUCKET: The GCP bucket the build files should be uploaded to.
 
