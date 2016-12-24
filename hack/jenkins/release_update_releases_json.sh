@@ -17,7 +17,7 @@
 # This script generates the Github Release page and uploads all the binaries/etc to that page
 # This is intended to be run on a new release tag in order to generate the github release page for that release
 
-# The script expects the following env variabls:
+# The script expects the following env variables:
 # VERSION_MAJOR: The major version of the tag to be released.
 # VERSION_MINOR: The minor version of the tag to be released.
 # VERSION_BUILD: The build version of the tag to be released.

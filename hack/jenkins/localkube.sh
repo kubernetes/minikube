@@ -17,7 +17,7 @@
 
 # This script creates the localkube binary for a specified kubernetes Github tag (ex: v1.4.0)
 
-# The script expects the following env variabls:
+# The script expects the following env variables:
 # K8S_VERSION: The version of kubernetes to build localkube with
 # COMMIT: The commit to build minikube with
 
