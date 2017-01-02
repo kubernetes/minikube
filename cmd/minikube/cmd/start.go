@@ -50,6 +50,7 @@ const (
 	networkPlugin         = "network-plugin"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
+	keepContext           = "keep-context"
 )
 
 var (
@@ -136,15 +137,21 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(constants.APIServerPort), -1)
 
 	// setup kubeconfig
+	keepContext := viper.GetBool(keepContext)
 	name := constants.MinikubeContext
 	certAuth := constants.MakeMiniPath("ca.crt")
 	clientCert := constants.MakeMiniPath("apiserver.crt")
 	clientKey := constants.MakeMiniPath("apiserver.key")
-	if err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey); err != nil {
+	if err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey, keepContext); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
-	fmt.Println("Kubectl is now configured to use the cluster.")
+
+	if keepContext {
+		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been alterted, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", name)
+	} else {
+		fmt.Println("Kubectl is now configured to use the cluster.")
+	}
 }
 
 func calculateDiskSizeInMB(humanReadableDiskSize string) int {
@@ -158,7 +165,7 @@ func calculateDiskSizeInMB(humanReadableDiskSize string) int {
 // setupKubeconfig reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
-func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
+func setupKubeconfig(name, server, certAuth, cliCert, cliKey string, keepContext bool) error {
 
 	configEnv := os.Getenv(constants.KubeconfigEnvVar)
 	var configFile string
@@ -196,8 +203,10 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
 	context.AuthInfo = userName
 	config.Contexts[contextName] = context
 
-	// Always set current context to minikube.
-	config.CurrentContext = contextName
+	// Only set current context to minikube if the user has not used the keepContext flag
+	if keepContext != true {
+		config.CurrentContext = contextName
+	}
 
 	// write back to disk
 	if err := kubeconfig.WriteConfig(config, configFile); err != nil {
@@ -207,6 +216,7 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string) error {
 }
 
 func init() {
+	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().String(isoURL, constants.DefaultIsoUrl, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
