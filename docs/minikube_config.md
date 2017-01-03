@@ -28,6 +28,7 @@ Configurable fields:
  * heapster
  * ingress
  * awsecr-creds
+ * hyperv-virtual-switch
 
 ```
 minikube config SUBCOMMAND [flags]

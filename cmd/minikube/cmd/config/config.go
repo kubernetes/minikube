@@ -149,6 +149,10 @@ var settings = []Setting{
 		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
+	{
+		name: "hyperv-virtual-switch",
+		set:  SetString,
+	},
 }
 
 var ConfigCmd = &cobra.Command{
