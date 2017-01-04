@@ -196,6 +196,7 @@ func (b *hostPathMounter) CanMount() error {
 
 // SetUp does nothing.
 func (b *hostPathMounter) SetUp(fsGroup *int64) error {
+	volume.SetVolumeOwnership(b, fsGroup)
 	return nil
 }
 
