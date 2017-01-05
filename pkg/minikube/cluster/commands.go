@@ -57,6 +57,7 @@ var startCommandTemplate = `
 if which systemctl 2>&1 1>/dev/null; then
   {{.StartCommandSystemd}}
   sudo systemctl daemon-reload
+  sudo systemctl enable localkube.service
   sudo systemctl restart localkube.service
 else
   sudo killall localkube || true
