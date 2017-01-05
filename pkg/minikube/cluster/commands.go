@@ -40,6 +40,9 @@ var localkubeSystemdTmpl = `[Unit]
 Description=Localkube
 Documentation=https://github.com/kubernetes/minikube/tree/master/pkg/localkube
 
+Wants=network-online.target
+After=network-online.target
+
 [Service]
 Type=notify
 Restart=always
@@ -58,7 +61,7 @@ if which systemctl 2>&1 1>/dev/null; then
   {{.StartCommandSystemd}}
   sudo systemctl daemon-reload
   sudo systemctl enable localkube.service
-  sudo systemctl restart localkube.service
+  sudo systemctl restart localkube.service || true
 else
   sudo killall localkube || true
   {{.StartCommandB2D}}
