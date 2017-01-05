@@ -48,7 +48,7 @@ func (k *KubectlRunner) IsPodReady(p *api.Pod) bool {
 				return true
 			}
 			k.T.Logf("Pod %s not ready. Ready: %s. Reason: %s", p.Name, cond.Status, cond.Reason)
-			return false /**/
+			return false
 		}
 	}
 	k.T.Logf("Unable to find ready pod condition: %v", p.Status.Conditions)
