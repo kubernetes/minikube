@@ -37,8 +37,9 @@ var addonsEnableCmd = &cobra.Command{
 		err := Set(addon, "true")
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
+		} else {
+			fmt.Fprintln(os.Stdout, fmt.Sprintf("%s was successfully enabled", addon))
 		}
-		fmt.Fprintln(os.Stdout, fmt.Sprintf("%s was successfully enabled", addon))
 	},
 }
 
