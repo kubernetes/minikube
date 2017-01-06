@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/kubernetes/pkg/util/config"
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
@@ -80,6 +81,13 @@ func setElement(e reflect.Value, v string) error {
 			return fmt.Errorf("Error converting input %s to PortRange: %s", v, err)
 		}
 		e.Set(reflect.ValueOf(*pr))
+	case config.ConfigurationMap:
+		c := config.ConfigurationMap{}
+		err := c.Set(v)
+		if err != nil {
+			return fmt.Errorf("Error converting input %s to ConfigurationMap: %s", v, err)
+		}
+		e.Set(reflect.ValueOf(c))
 	default:
 		return fmt.Errorf("Unable to set type %T.", t)
 	}
