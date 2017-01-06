@@ -148,7 +148,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if keepContext {
-		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been alterted, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", name)
+		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", name)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
 	}
