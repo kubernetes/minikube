@@ -4,7 +4,7 @@ metadata:
   name: busybox
 spec:
   containers:
-  - image: gcr.io/google-containers/busybox
+  - image: busybox:glibc
     command:
       - sleep
       - "3600"
