@@ -19,6 +19,9 @@
 
 # The script expects the following env variables:
 # OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
+# VM_DRIVER: the vm-driver to use for the test
+# EXTRA_BUILD_ARGS: additional flags to pass into minikube start
+# JOB_NAME: the name of the logfile and check name to update on github
 
 
 # Copy only the files we need to this workspace
@@ -30,3 +33,30 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testda
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}
 chmod +x out/minikube-${OS_ARCH}
+
+MINIKUBE_WANTREPORTERRORPROMPT=False \
+	./out/minikube-${OS_ARCH} delete || true
+
+rm -rf $HOME/.minikube || true
+
+# Allow this to fail, we'll switch on the return code below.
+set +e
+out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --cpus=4 --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
+result=$?
+set -e
+
+if [[ $result -eq 0 ]]; then
+  status="success"
+else
+  status="failure"
+fi
+
+set +x
+target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
+curl "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"${JOB_NAME}\"}"
+set -x
+
+exit $result

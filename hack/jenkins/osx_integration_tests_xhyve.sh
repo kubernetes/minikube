@@ -27,31 +27,9 @@
 set -e
 
 OS_ARCH="darwin-amd64"
+VM_DRIVER="xhyve"
+JOB_NAME="OSX-Xhyve"
+
 
 # Download files and set permissions
 source common.sh
-
-./out/minikube-darwin-amd64 delete || true
-rm -rf $HOME/.minikube || true
-
-# Allow this to fail, we'll switch on the return code below.
-set +e
-out/e2e-${OS_ARCH} -minikube-args="--vm-driver=xhyve --cpus=4 --show-libmachine-logs --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
-result=$?
-set -e
-
-if [[ $result -eq 0 ]]; then
-  status="success"
-else
-  status="failure"
-fi
-
-set +x
-target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/OSX-XHyve.txt"
-curl "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"OSX-XHyve\"}"
-set -x
-
-exit $result
