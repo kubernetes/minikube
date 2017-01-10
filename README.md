@@ -178,6 +178,18 @@ Here is the documentation for each supported configuration:
 * [etcd](https://godoc.org/github.com/coreos/etcd/etcdserver#ServerConfig)
 * [scheduler](https://godoc.org/k8s.io/kubernetes/pkg/apis/componentconfig#KubeSchedulerConfiguration)
 
+You can enable feature gates for alpha and experimental features with the `--feature-gates` flag on `minikube start`.  As of v1.5.1, the options are:
+
+* AllAlpha=true|false (ALPHA - default=false)
+* AllowExtTrafficLocalEndpoints=true|false (BETA - default=true)
+* AppArmor=true|false (BETA - default=true)
+* DynamicKubeletConfig=true|false (ALPHA - default=false)
+* DynamicVolumeProvisioning=true|false (ALPHA - default=true)
+* ExperimentalHostUserNamespaceDefaulting=true|false (ALPHA - default=false)
+* StreamingProxyRedirects=true|false (ALPHA - default=false)
+
+Note: All alpha and experimental features are not guaranteed to work with minikube.
+
 #### Examples
 
 To change the `MaxPods` setting to 5 on the Kubelet, pass this flag: `--extra-config=kubelet.MaxPods=5`.
@@ -185,6 +197,8 @@ To change the `MaxPods` setting to 5 on the Kubelet, pass this flag: `--extra-co
 This feature also supports nested structs. To change the `LeaderElection.LeaderElect` setting to `true` on the scheduler, pass this flag: `--extra-config=scheduler.LeaderElection.LeaderElect=true`.
 
 To set the `AuthorizationMode` on the `apiserver` to `RBAC`, you can use: `--extra-config=apiserver.GenericServerRunOptions.AuthorizationMode=RBAC`. You should use `--extra-config=apiserver.GenericServerRunOptions.AuthorizationRBACSuperUser=minikube` as well in that case.
+
+To enable all alpha feature gates, you can use: `--feature-gates=AllAlpha=true`
 
 ### Stopping a Cluster
 The [minikube stop](./docs/minikube_stop.md) command can be used to stop your cluster.

@@ -22,6 +22,7 @@ minikube start
       --extra-config ExtraOption        A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.
+      --feature-gates string            A set of key=value pairs that describe feature gates for alpha/experimental features.
       --host-only-cidr string           The CIDR to be used for the minikube VM (only supported with Virtualbox driver) (default "192.168.99.1/24")
       --hyperv-virtual-switch string    The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)
       --insecure-registry stringSlice   Insecure Docker registries to pass to the Docker daemon

@@ -51,6 +51,7 @@ const (
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
 	keepContext           = "keep-context"
+	featureGates          = "feature-gates"
 )
 
 var (
@@ -110,6 +111,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubernetesConfig := cluster.KubernetesConfig{
 		KubernetesVersion: viper.GetString(kubernetesVersion),
 		NodeIP:            ip,
+		FeatureGates:      viper.GetString(featureGates),
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
@@ -231,6 +233,7 @@ func init() {
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
+	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
