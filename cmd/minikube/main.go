@@ -17,13 +17,21 @@ limitations under the License.
 package main
 
 import (
+	"github.com/pkg/profile"
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/machine"
+
+	"os"
 
 	_ "k8s.io/minikube/pkg/provision"
 )
 
+const minikubeEnvPrefix = "MINIKUBE_ENABLE_PROFILING"
+
 func main() {
+	if os.Getenv(minikubeEnvPrefix) == "1" {
+		defer profile.Start(profile.TraceProfile).Stop()
+	}
 	machine.StartDriver()
 	cmd.Execute()
 }
