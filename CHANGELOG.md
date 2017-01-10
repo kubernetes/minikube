@@ -1,5 +1,16 @@
 # Minikube Release Notes
 
+## Version 0.15.0 - 1/10/2017
+* Update Dashboard to v1.5.1, fixes a CSRF vulnerability in the dashboard
+* Updated Kube-DNS addon to v1.9
+* Now supports kubenet as a network plugin
+* Added --feature-gates flag to enable alpha and experimental features in kube components 
+* Added --keep-context flag to keep the current kubectl context when starting minikube
+* Added environment variable to enable trace profiling in minikube binary
+* Updated default ISO to buildroot based minikube.iso v1.0.2
+* Localkube now runs as a systemd unit in the minikube VM
+* Switched integration tests to use golang subtest framework
+
 ## Version 0.14.0 - 12/14/2016
 * Update to k8s v1.5.1
 * Update Addon-manager to v6.1
