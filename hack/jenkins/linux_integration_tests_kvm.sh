@@ -26,33 +26,9 @@
 set -e
 
 OS_ARCH="linux-amd64"
+VM_DRIVER="kvm"
+JOB_NAME="Linux-KVM"
+
 
 # Download files and set permissions
 source common.sh
-
-MINIKUBE_WANTREPORTERRORPROMPT=False \
-	./out/minikube-${OS_ARCH} delete || true
-    
-rm -rf $HOME/.minikube || true
-
-# Allow this to fail, we'll switch on the return code below.
-set +e
-out/e2e-${OS_ARCH} -minikube-args="--vm-driver=kvm --cpus=4 --show-libmachine-logs --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
-result=$?
-set -e
-
-if [[ $result -eq 0 ]]; then
-  status="success"
-else
-  status="failure"
-fi
-
-set +x
-target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/Linux-KVM.txt"
-curl "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"Linux-KVM\"}"
-set -x
-
-exit $result
