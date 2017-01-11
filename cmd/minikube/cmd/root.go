@@ -93,7 +93,7 @@ Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine l
 		}
 
 		if enableUpdateNotification {
-			notify.MaybePrintUpdateTextFromGithub(os.Stdout)
+			notify.MaybePrintUpdateTextFromGithub(os.Stderr)
 		}
 		if enableKubectlDownloadMsg {
 			util.MaybePrintKubectlDownloadMsg()
