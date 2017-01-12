@@ -19,6 +19,7 @@ package util
 import (
 	"math"
 	"net"
+	"reflect"
 	"testing"
 
 	utilnet "k8s.io/kubernetes/pkg/util/net"
@@ -52,6 +53,7 @@ type subConfig3 struct {
 	P bool
 	Q net.IP
 	R utilnet.PortRange
+	S []string
 }
 
 func buildConfig() testConfig {
@@ -169,6 +171,7 @@ func TestSetElement(t *testing.T) {
 		{"D.I.P", "false", func(t testConfig) bool { return bool(t.D.I.P) == false }},
 		{"D.I.Q", "11.22.33.44", func(t testConfig) bool { return t.D.I.Q.Equal(net.ParseIP("11.22.33.44")) }},
 		{"D.I.R", "7-11", func(t testConfig) bool { return t.D.I.R.Base == 7 && t.D.I.R.Size == 5 }},
+		{"D.I.S", "a,b", func(t testConfig) bool { return reflect.DeepEqual(t.D.I.S, []string{"a", "b"}) }},
 	} {
 		a := buildConfig()
 		if err := FindAndSet(tc.path, &a, tc.newval); err != nil {
