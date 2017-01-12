@@ -28,8 +28,14 @@ const VersionPrefix = "v"
 
 var version = "v0.0.0-unset"
 
+var isoVersion = "v0.0.0-unset"
+
 func GetVersion() string {
 	return version
+}
+
+func GetIsoVersion() string {
+	return isoVersion
 }
 
 func GetSemverVersion() (semver.Version, error) {
