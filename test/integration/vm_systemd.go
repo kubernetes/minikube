@@ -19,25 +19,22 @@ limitations under the License.
 package integration
 
 import (
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/test/integration/util"
 )
 
-func TestFunctional(t *testing.T) {
+func testVMSystemd(t *testing.T) {
+	t.Parallel()
 	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
 		Args:       *args,
+		BinaryPath: *binaryPath,
 		T:          t}
-	minikubeRunner.EnsureRunning()
 
-	t.Run("DNS", testClusterDNS)
-	t.Run("EnvVars", testClusterEnv)
-	t.Run("Logs", testClusterLogs)
-	t.Run("SSH", testClusterSSH)
-	t.Run("Systemd", testVMSystemd)
-	t.Run("Status", testClusterStatus)
-	t.Run("Addons", testAddons)
-	t.Run("Dashboard", testDashboard)
-	t.Run("ServicesList", testServicesList)
+	expectedStr := "0 loaded units listed"
+	sshCmdOutput := minikubeRunner.RunCommand("ssh -- systemctl --state=failed --all", true)
+	if !strings.Contains(sshCmdOutput, expectedStr) {
+		t.Logf("Expected no systemd units to be failed got:\n %s", expectedStr, sshCmdOutput)
+	}
 }
