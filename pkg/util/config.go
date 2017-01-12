@@ -80,6 +80,9 @@ func setElement(e reflect.Value, v string) error {
 			return fmt.Errorf("Error converting input %s to PortRange: %s", v, err)
 		}
 		e.Set(reflect.ValueOf(*pr))
+	case []string:
+		vals := strings.Split(v, ",")
+		e.Set(reflect.ValueOf(vals))
 	default:
 		return fmt.Errorf("Unable to set type %T.", t)
 	}
