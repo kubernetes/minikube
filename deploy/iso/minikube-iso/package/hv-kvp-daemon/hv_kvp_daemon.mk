@@ -22,6 +22,9 @@ define HV_KVP_DAEMON_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
 		$(BR2_EXTERNAL)/package/hv-kvp-daemon/hv_kvp_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_kvp_daemon.service
+
+	ln -fs /usr/lib/systemd/system/hv_kvp_daemon.service \
+		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/hv_kvp_daemon.service
 endef
 
 $(eval $(generic-package))
