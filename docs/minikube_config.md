@@ -27,7 +27,7 @@ Configurable fields:
  * kube-dns
  * heapster
  * ingress
- * awsecr-creds
+ * registry-creds
  * hyperv-virtual-switch
 
 ```
