@@ -876,8 +876,8 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 	serviceIface := ServiceInterfaceMock{
 		ServiceList: serviceList,
 	}
-	if _, err := getServiceListFromServicesByLabel(serviceIface, "shouldError", "shouldError"); err == nil {
-		t.Fatalf("Service had no label match but getServiceListFromServicesByLabel did not return an error")
+	if _, err := getServiceListFromServicesByLabel(serviceIface, "nothing", "nothing"); err != nil {
+		t.Fatalf("Service had no label match, but getServiceListFromServicesByLabel returned an error")
 	}
 
 	if _, err := getServiceListFromServicesByLabel(serviceIface, "foo", "bar"); err != nil {
