@@ -72,7 +72,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	if s.FeatureGates != "" {
 		err := config.DefaultFeatureGate.Set(s.FeatureGates)
 		if err != nil {
-			fmt.Printf("Error setting feature gates: %s")
+			fmt.Printf("Error setting feature gates: %s", err)
 		}
 	}
 
