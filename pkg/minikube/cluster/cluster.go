@@ -760,8 +760,6 @@ func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key str
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}
-	if len(serviceList.Items) == 0 {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
-	}
+
 	return serviceList, nil
 }
