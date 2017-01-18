@@ -75,11 +75,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
 	defer api.Close()
 
+	diskSize := viper.GetString(humanReadableDiskSize)
+	diskSizeMB := calculateDiskSizeInMB(diskSize)
+
+	if diskSizeMB < constants.MinimumDiskSizeMB {
+		err := fmt.Errorf("Disk Size %dMB (%s) is too small, the minimum disk size is %dMB", diskSizeMB, diskSize, constants.MinimumDiskSizeMB)
+		glog.Errorln("Error parsing disk size:", err)
+		os.Exit(1)
+	}
+
 	config := cluster.MachineConfig{
 		MinikubeISO:         viper.GetString(isoURL),
 		Memory:              viper.GetInt(memory),
 		CPUs:                viper.GetInt(cpus),
-		DiskSize:            calculateDiskSizeInMB(viper.GetString(humanReadableDiskSize)),
+		DiskSize:            diskSizeMB,
 		VMDriver:            viper.GetString(vmDriver),
 		DockerEnv:           dockerEnv,
 		InsecureRegistry:    insecureRegistry,
