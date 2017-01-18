@@ -60,7 +60,7 @@ var LogFlags = [...]string{
 
 const (
 	DefaultKeepContext  = false
-	DefaultIsoUrl       = "https://storage.googleapis.com/minikube/iso/minikube-v1.0.2.iso"
+	DefaultIsoUrl       = "https://storage.googleapis.com/minikube/iso/minikube-v1.0.3.iso"
 	ShaSuffix           = ".sha256"
 	DefaultIsoShaUrl    = DefaultIsoUrl + ShaSuffix
 	DefaultMemory       = 2048
