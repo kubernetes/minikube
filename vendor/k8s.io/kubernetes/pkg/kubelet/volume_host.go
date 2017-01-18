@@ -132,3 +132,12 @@ func (kvh *kubeletVolumeHost) GetNodeAllocatable() (api.ResourceList, error) {
 	}
 	return node.Status.Allocatable, nil
 }
+
+func (kvh *kubeletVolumeHost) GetRootContext() string {
+	rootContext, err := kvh.kubelet.getRootDirContext()
+	if err != nil {
+		return ""
+	}
+
+	return rootContext
+}

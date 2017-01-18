@@ -69,8 +69,6 @@ type Config struct {
 	MaxPodGracePeriodSeconds int64
 	// Thresholds define the set of conditions monitored to trigger eviction.
 	Thresholds []Threshold
-	// KernelMemcgNotification if true will integrate with the kernel memcg notification to determine if memory thresholds are crossed.
-	KernelMemcgNotification bool
 }
 
 // ThresholdValue is a value holder that abstracts literal versus percentage based quantity
@@ -107,6 +105,9 @@ type Manager interface {
 
 	// IsUnderDiskPressure returns true if the node is under disk pressure.
 	IsUnderDiskPressure() bool
+
+	// IsUnderInodePressure returns true if the node is under disk pressure.
+	IsUnderInodePressure() bool
 }
 
 // DiskInfoProvider is responsible for informing the manager how disk is configured.
@@ -163,11 +164,3 @@ type nodeReclaimFunc func() (*resource.Quantity, error)
 
 // nodeReclaimFuncs is an ordered list of nodeReclaimFunc
 type nodeReclaimFuncs []nodeReclaimFunc
-
-// thresholdNotifierHandlerFunc is a function that takes action in response to a crossed threshold
-type thresholdNotifierHandlerFunc func(thresholdDescription string)
-
-// ThresholdNotifier notifies the user when an attribute crosses a threshold value
-type ThresholdNotifier interface {
-	Start(stopCh <-chan struct{})
-}

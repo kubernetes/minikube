@@ -15,3 +15,14 @@ limitations under the License.
 */
 
 package fake
+
+import (
+	authenticationapi "k8s.io/kubernetes/pkg/apis/authentication"
+
+	"k8s.io/kubernetes/pkg/client/testing/core"
+)
+
+func (c *FakeTokenReviews) Create(tokenReview *authenticationapi.TokenReview) (result *authenticationapi.TokenReview, err error) {
+	obj, err := c.Fake.Invokes(core.NewRootCreateAction(authenticationapi.SchemeGroupVersion.WithResource("tokenreviews"), tokenReview), &authenticationapi.TokenReview{})
+	return obj.(*authenticationapi.TokenReview), err
+}

@@ -22,7 +22,6 @@ import (
 	"path"
 	"time"
 
-	flockerApi "github.com/clusterhq/flocker-go"
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/types"
@@ -30,7 +29,8 @@ import (
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
-	"k8s.io/kubernetes/pkg/volume/util"
+
+	flockerApi "github.com/clusterhq/flocker-go"
 )
 
 // This is the primary entrypoint for volume plugins.
@@ -210,14 +210,6 @@ func (b *flockerVolumeMounter) GetAttributes() volume.Attributes {
 		SupportsSELinux: false,
 	}
 }
-
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *flockerVolumeMounter) CanMount() error {
-	return nil
-}
-
 func (b *flockerVolumeMounter) GetPath() string {
 	return getPath(b.podUID, b.volName, b.plugin.host)
 }
@@ -421,7 +413,25 @@ func (c *flockerVolumeUnmounter) TearDown() error {
 
 // TearDownAt unmounts the bind mount
 func (c *flockerVolumeUnmounter) TearDownAt(dir string) error {
-	return util.UnmountPath(dir, c.mounter)
+	notMnt, err := c.mounter.IsLikelyNotMountPoint(dir)
+	if err != nil {
+		return err
+	}
+	if notMnt {
+		return os.Remove(dir)
+	}
+	if err := c.mounter.Unmount(dir); err != nil {
+		return err
+	}
+	notMnt, mntErr := c.mounter.IsLikelyNotMountPoint(dir)
+	if mntErr != nil {
+		glog.Errorf("isLikelyNotMountPoint check failed: %v", mntErr)
+		return err
+	}
+	if notMnt {
+		return os.Remove(dir)
+	}
+	return fmt.Errorf("Failed to unmount volume dir")
 }
 
 func (plugin *flockerPlugin) NewDeleter(spec *volume.Spec) (volume.Deleter, error) {

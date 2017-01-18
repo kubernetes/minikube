@@ -217,13 +217,6 @@ func (b *azureDiskMounter) GetAttributes() volume.Attributes {
 	}
 }
 
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *azureDiskMounter) CanMount() error {
-	return nil
-}
-
 // SetUp attaches the disk and bind mounts to the volume path.
 func (b *azureDiskMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
@@ -293,7 +286,7 @@ func (b *azureDiskMounter) SetUpAt(dir string, fsGroup *int64) error {
 }
 
 func makeGlobalPDPath(host volume.VolumeHost, volume string) string {
-	return path.Join(host.GetPluginDir(azureDataDiskPluginName), mount.MountsInGlobalPDPath, volume)
+	return path.Join(host.GetPluginDir(azureDataDiskPluginName), "mounts", volume)
 }
 
 func (azure *azureDisk) GetPath() string {

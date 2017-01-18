@@ -114,13 +114,9 @@ func (s *volumeStatCalculator) calcAndStoreStats() {
 func (s *volumeStatCalculator) parsePodVolumeStats(podName string, metric *volume.Metrics) stats.VolumeStats {
 	available := uint64(metric.Available.Value())
 	capacity := uint64(metric.Capacity.Value())
-	used := uint64(metric.Used.Value())
-	inodes := uint64(metric.Inodes.Value())
-	inodesFree := uint64(metric.InodesFree.Value())
-	inodesUsed := uint64(metric.InodesUsed.Value())
+	used := uint64((metric.Used.Value()))
 	return stats.VolumeStats{
-		Name: podName,
-		FsStats: stats.FsStats{AvailableBytes: &available, CapacityBytes: &capacity, UsedBytes: &used,
-			Inodes: &inodes, InodesFree: &inodesFree, InodesUsed: &inodesUsed},
+		Name:    podName,
+		FsStats: stats.FsStats{AvailableBytes: &available, CapacityBytes: &capacity, UsedBytes: &used},
 	}
 }

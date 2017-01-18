@@ -24,8 +24,8 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"k8s.io/kubernetes/pkg/api/v1"
 
+	"k8s.io/client-go/pkg/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -67,6 +67,6 @@ var serviceListCmd = &cobra.Command{
 }
 
 func init() {
-	serviceListCmd.Flags().StringVarP(&serviceListNamespace, "namespace", "n", v1.NamespaceAll, "The services namespace")
+	serviceListCmd.Flags().StringVarP(&serviceListNamespace, "namespace", "n", api.NamespaceAll, "The services namespace")
 	serviceCmd.AddCommand(serviceListCmd)
 }

@@ -43,26 +43,18 @@ const (
 	dynamicKubeletConfig      = "DynamicKubeletConfig"
 	dynamicVolumeProvisioning = "DynamicVolumeProvisioning"
 	streamingProxyRedirects   = "StreamingProxyRedirects"
-
-	// experimentalHostUserNamespaceDefaulting Default userns=host for containers
-	// that are using other host namespaces, host mounts, the pod contains a privileged container,
-	// or specific non-namespaced capabilities
-	// (MKNOD, SYS_MODULE, SYS_TIME). This should only be enabled if user namespace remapping is enabled
-	// in the docker daemon.
-	experimentalHostUserNamespaceDefaultingGate = "ExperimentalHostUserNamespaceDefaulting"
 )
 
 var (
 	// Default values for recorded features.  Every new feature gate should be
 	// represented here.
 	knownFeatures = map[string]featureSpec{
-		allAlphaGate:                                {false, alpha},
-		externalTrafficLocalOnly:                    {true, beta},
-		appArmor:                                    {true, beta},
-		dynamicKubeletConfig:                        {false, alpha},
-		dynamicVolumeProvisioning:                   {true, alpha},
-		streamingProxyRedirects:                     {false, alpha},
-		experimentalHostUserNamespaceDefaultingGate: {false, alpha},
+		allAlphaGate:              {false, alpha},
+		externalTrafficLocalOnly:  {true, beta},
+		appArmor:                  {true, beta},
+		dynamicKubeletConfig:      {false, alpha},
+		dynamicVolumeProvisioning: {true, alpha},
+		streamingProxyRedirects:   {false, alpha},
 	}
 
 	// Special handling for a few gates.
@@ -123,10 +115,6 @@ type FeatureGate interface {
 	// owner: timstclair
 	// alpha: v1.5
 	StreamingProxyRedirects() bool
-
-	// owner: @pweil-
-	// alpha: v1.5
-	ExperimentalHostUserNamespaceDefaulting() bool
 }
 
 // featureGate implements FeatureGate as well as pflag.Value for flag parsing.
@@ -219,11 +207,6 @@ func (f *featureGate) DynamicVolumeProvisioning() bool {
 // redirects from the backend (Kubelet) for streaming requests (exec/attach/port-forward).
 func (f *featureGate) StreamingProxyRedirects() bool {
 	return f.lookup(streamingProxyRedirects)
-}
-
-// ExperimentalHostUserNamespaceDefaulting returns value for experimentalHostUserNamespaceDefaulting
-func (f *featureGate) ExperimentalHostUserNamespaceDefaulting() bool {
-	return f.lookup(experimentalHostUserNamespaceDefaultingGate)
 }
 
 func (f *featureGate) lookup(key string) bool {

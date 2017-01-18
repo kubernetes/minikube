@@ -56,6 +56,10 @@ const (
 	// desiredStateOfWorldPopulatorLoopSleepPeriod is the amount of time the
 	// DesiredStateOfWorldPopulator loop waits between successive executions
 	desiredStateOfWorldPopulatorLoopSleepPeriod time.Duration = 1 * time.Minute
+
+	// reconcilerSyncDuration is the amount of time the reconciler sync states loop
+	// wait between successive executions
+	reconcilerSyncDuration time.Duration = 5 * time.Second
 )
 
 // AttachDetachController defines the operations supported by this controller.
@@ -72,9 +76,7 @@ func NewAttachDetachController(
 	pvInformer kcache.SharedInformer,
 	cloud cloudprovider.Interface,
 	plugins []volume.VolumePlugin,
-	recorder record.EventRecorder,
-	disableReconciliationSync bool,
-	reconcilerSyncDuration time.Duration) (AttachDetachController, error) {
+	recorder record.EventRecorder) (AttachDetachController, error) {
 	// TODO: The default resyncPeriod for shared informers is 12 hours, this is
 	// unacceptable for the attach/detach controller. For example, if a pod is
 	// skipped because the node it is scheduled to didn't set its annotation in
@@ -118,17 +120,13 @@ func NewAttachDetachController(
 		operationexecutor.NewOperationExecutor(
 			kubeClient,
 			&adc.volumePluginMgr,
-			recorder,
-			false) // flag for experimental binary check for volume mount
+			recorder)
 	adc.nodeStatusUpdater = statusupdater.NewNodeStatusUpdater(
 		kubeClient, nodeInformer, adc.actualStateOfWorld)
-
-	// Default these to values in options
 	adc.reconciler = reconciler.NewReconciler(
 		reconcilerLoopPeriod,
 		reconcilerMaxWaitForUnmountDuration,
 		reconcilerSyncDuration,
-		disableReconciliationSync,
 		adc.desiredStateOfWorld,
 		adc.actualStateOfWorld,
 		adc.attacherDetacher,
@@ -240,23 +238,6 @@ func (adc *attachDetachController) podDelete(obj interface{}) {
 
 func (adc *attachDetachController) nodeAdd(obj interface{}) {
 	node, ok := obj.(*api.Node)
-	// TODO: investigate if nodeName is empty then if we can return
-	// kubernetes/kubernetes/issues/37777
-	if node == nil || !ok {
-		return
-	}
-	nodeName := types.NodeName(node.Name)
-	adc.nodeUpdate(nil, obj)
-	// kubernetes/kubernetes/issues/37586
-	// This is to workaround the case when a node add causes to wipe out
-	// the attached volumes field. This function ensures that we sync with
-	// the actual status.
-	adc.actualStateOfWorld.SetNodeStatusUpdateNeeded(nodeName)
-}
-
-func (adc *attachDetachController) nodeUpdate(oldObj, newObj interface{}) {
-	node, ok := newObj.(*api.Node)
-	// TODO: investigate if nodeName is empty then if we can return
 	if node == nil || !ok {
 		return
 	}
@@ -267,7 +248,13 @@ func (adc *attachDetachController) nodeUpdate(oldObj, newObj interface{}) {
 		// detach controller. Add it to desired state of world.
 		adc.desiredStateOfWorld.AddNode(nodeName)
 	}
+
 	adc.processVolumesInUse(nodeName, node.Status.VolumesInUse)
+}
+
+func (adc *attachDetachController) nodeUpdate(oldObj, newObj interface{}) {
+	// The flow for update is the same as add.
+	adc.nodeAdd(newObj)
 }
 
 func (adc *attachDetachController) nodeDelete(obj interface{}) {
@@ -604,6 +591,10 @@ func (adc *attachDetachController) GetHostName() string {
 
 func (adc *attachDetachController) GetHostIP() (net.IP, error) {
 	return nil, fmt.Errorf("GetHostIP() not supported by Attach/Detach controller's VolumeHost implementation")
+}
+
+func (adc *attachDetachController) GetRootContext() string {
+	return ""
 }
 
 func (adc *attachDetachController) GetNodeAllocatable() (api.ResourceList, error) {

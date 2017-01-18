@@ -38,7 +38,7 @@ const (
 	// the reason reported back in status.
 	reason = "Evicted"
 	// the message associated with the reason.
-	message = "The node was low on resource: %v."
+	message = "The node was low on compute resources."
 	// disk, in bytes.  internal to this module, used to account for local disk usage.
 	resourceDisk api.ResourceName = "disk"
 	// inodes, number. internal to this module, used to account for local disk inode consumption.
@@ -68,8 +68,8 @@ func init() {
 	signalToNodeCondition[SignalMemoryAvailable] = api.NodeMemoryPressure
 	signalToNodeCondition[SignalImageFsAvailable] = api.NodeDiskPressure
 	signalToNodeCondition[SignalNodeFsAvailable] = api.NodeDiskPressure
-	signalToNodeCondition[SignalImageFsInodesFree] = api.NodeDiskPressure
-	signalToNodeCondition[SignalNodeFsInodesFree] = api.NodeDiskPressure
+	signalToNodeCondition[SignalImageFsInodesFree] = api.NodeInodePressure
+	signalToNodeCondition[SignalNodeFsInodesFree] = api.NodeInodePressure
 
 	// map signals to resources (and vice-versa)
 	signalToResource = map[Signal]api.ResourceName{}
@@ -848,21 +848,16 @@ func getStarvedResources(thresholds []Threshold) []api.ResourceName {
 }
 
 // isSoftEviction returns true if the thresholds met for the starved resource are only soft thresholds
-func isSoftEvictionThresholds(thresholds []Threshold, starvedResource api.ResourceName) bool {
+func isSoftEviction(thresholds []Threshold, starvedResource api.ResourceName) bool {
 	for _, threshold := range thresholds {
 		if resourceToCheck := signalToResource[threshold.Signal]; resourceToCheck != starvedResource {
 			continue
 		}
-		if isHardEvictionThreshold(threshold) {
+		if threshold.GracePeriod == time.Duration(0) {
 			return false
 		}
 	}
 	return true
-}
-
-// isSoftEviction returns true if the thresholds met for the starved resource are only soft thresholds
-func isHardEvictionThreshold(threshold Threshold) bool {
-	return threshold.GracePeriod == time.Duration(0)
 }
 
 // buildResourceToRankFunc returns ranking functions associated with resources

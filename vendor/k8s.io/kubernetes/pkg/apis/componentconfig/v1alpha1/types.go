@@ -42,7 +42,7 @@ type KubeProxyConfiguration struct {
 	// '2h22m').  Must be greater than 0.
 	IPTablesSyncPeriod unversioned.Duration `json:"iptablesSyncPeriodSeconds"`
 	// iptablesMinSyncPeriod is the minimum period that iptables rules are refreshed (e.g. '5s', '1m',
-	// '2h22m').
+	// '2h22m').  Must be greater than 0.
 	IPTablesMinSyncPeriod unversioned.Duration `json:"iptablesMinSyncPeriodSeconds"`
 	// kubeconfigPath is the path to the kubeconfig file with authorization information (the
 	// master location is set by the master flag).
@@ -355,7 +355,7 @@ type KubeletConfiguration struct {
 	// And all Burstable and BestEffort pods are brought up under their
 	// specific top level QoS cgroup.
 	// +optional
-	ExperimentalCgroupsPerQOS *bool `json:"experimentalCgroupsPerQOS,omitempty"`
+	CgroupsPerQOS *bool `json:"cgroupsPerQOS,omitempty"`
 	// driver that the kubelet uses to manipulate cgroups on the host (cgroupfs or systemd)
 	// +optional
 	CgroupDriver string `json:"cgroupDriver,omitempty"`
@@ -374,6 +374,8 @@ type KubeletConfiguration struct {
 	// experimentalMounterPath is the path to mounter binary. If not set, kubelet will attempt to use mount
 	// binary that is available via $PATH,
 	ExperimentalMounterPath string `json:"experimentalMounterPath,omitempty"`
+	// experimentalMounterRootfsPath is the absolute path to root filesystem for the mounter binary.
+	ExperimentalMounterRootfsPath string `json:"experimentalMounterRootfsPath,omitempty"`
 	// rktApiEndpoint is the endpoint of the rkt API service to communicate with.
 	RktAPIEndpoint string `json:"rktAPIEndpoint"`
 	// rktStage1Image is the image to use as stage1. Local paths and
@@ -462,8 +464,6 @@ type KubeletConfiguration struct {
 	EvictionMaxPodGracePeriod int32 `json:"evictionMaxPodGracePeriod"`
 	// Comma-delimited list of minimum reclaims (e.g. imagefs.available=2Gi) that describes the minimum amount of resource the kubelet will reclaim when performing a pod eviction if that resource is under pressure.
 	EvictionMinimumReclaim string `json:"evictionMinimumReclaim"`
-	// If enabled, the kubelet will integrate with the kernel memcg notification to determine if memory eviction thresholds are crossed rather than polling.
-	ExperimentalKernelMemcgNotification *bool `json:"experimentalKernelMemcgNotification"`
 	// Maximum number of pods per core. Cannot exceed MaxPods
 	PodsPerCore int32 `json:"podsPerCore"`
 	// enableControllerAttachDetach enables the Attach/Detach controller to
@@ -501,16 +501,10 @@ type KubeletConfiguration struct {
 	// featureGates is a string of comma-separated key=value pairs that describe feature
 	// gates for alpha/experimental features.
 	FeatureGates string `json:"featureGates,omitempty"`
-	// Enable Container Runtime Interface (CRI) integration.
+	// How to integrate with runtime. If set to CRI, kubelet will switch to
+	// using the new Container Runtine Interface.
 	// +optional
-	EnableCRI bool `json:"enableCRI,omitempty"`
-	// TODO(#34726:1.8.0): Remove the opt-in for failing when swap is enabled.
-	// Tells the Kubelet to fail to start if swap is enabled on the node.
-	ExperimentalFailSwapOn bool `json:"experimentalFailSwapOn,omitempty"`
-	// This flag, if set, enables a check prior to mount operations to verify that the required components
-	// (binaries, etc.) to mount the volume are available on the underlying node. If the check is enabled
-	// and fails the mount operation fails.
-	ExperimentalCheckNodeCapabilitiesBeforeMount bool `json:"ExperimentalCheckNodeCapabilitiesBeforeMount,omitempty"`
+	ExperimentalRuntimeIntegrationType string `json:"experimentalRuntimeIntegrationType,omitempty"`
 }
 
 type KubeletAuthorizationMode string

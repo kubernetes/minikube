@@ -19,19 +19,19 @@ package cmd
 import (
 	"testing"
 
-	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/pkg/api"
 )
 
 func TestCheckEndpointReady(t *testing.T) {
-	endpointNoSubsets := &v1.Endpoints{}
+	endpointNoSubsets := &api.Endpoints{}
 	if err := CheckEndpointReady(endpointNoSubsets); err == nil {
 		t.Fatalf("Endpoint had no subsets but CheckEndpointReady did not return an error")
 	}
 
-	endpointNotReady := &v1.Endpoints{
-		Subsets: []v1.EndpointSubset{
-			{Addresses: []v1.EndpointAddress{},
-				NotReadyAddresses: []v1.EndpointAddress{
+	endpointNotReady := &api.Endpoints{
+		Subsets: []api.EndpointSubset{
+			{Addresses: []api.EndpointAddress{},
+				NotReadyAddresses: []api.EndpointAddress{
 					{IP: "1.1.1.1"},
 					{IP: "2.2.2.2"},
 					{IP: "3.3.3.3"},
@@ -40,13 +40,13 @@ func TestCheckEndpointReady(t *testing.T) {
 		t.Fatalf("Endpoint had no Addresses but CheckEndpointReady did not return an error")
 	}
 
-	endpointReady := &v1.Endpoints{
-		Subsets: []v1.EndpointSubset{
-			{Addresses: []v1.EndpointAddress{
+	endpointReady := &api.Endpoints{
+		Subsets: []api.EndpointSubset{
+			{Addresses: []api.EndpointAddress{
 				{IP: "1.1.1.1"},
 				{IP: "2.2.2.2"},
 			},
-				NotReadyAddresses: []v1.EndpointAddress{},
+				NotReadyAddresses: []api.EndpointAddress{},
 			}},
 	}
 	if err := CheckEndpointReady(endpointReady); err != nil {

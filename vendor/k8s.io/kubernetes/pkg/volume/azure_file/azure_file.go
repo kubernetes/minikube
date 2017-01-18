@@ -27,7 +27,6 @@ import (
 	"k8s.io/kubernetes/pkg/volume"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/volume/util"
 )
 
 // This is the primary entrypoint for volume plugins.
@@ -169,13 +168,6 @@ func (b *azureFileMounter) GetAttributes() volume.Attributes {
 	}
 }
 
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *azureFileMounter) CanMount() error {
-	return nil
-}
-
 // SetUp attaches the disk and bind mounts to the volume path.
 func (b *azureFileMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
@@ -241,7 +233,31 @@ func (c *azureFileUnmounter) TearDown() error {
 }
 
 func (c *azureFileUnmounter) TearDownAt(dir string) error {
-	return util.UnmountPath(dir, c.mounter)
+	notMnt, err := c.mounter.IsLikelyNotMountPoint(dir)
+	if err != nil {
+		glog.Errorf("Error checking IsLikelyNotMountPoint: %v", err)
+		return err
+	}
+	if notMnt {
+		return os.Remove(dir)
+	}
+
+	if err := c.mounter.Unmount(dir); err != nil {
+		glog.Errorf("Unmounting failed: %v", err)
+		return err
+	}
+	notMnt, mntErr := c.mounter.IsLikelyNotMountPoint(dir)
+	if mntErr != nil {
+		glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
+		return mntErr
+	}
+	if notMnt {
+		if err := os.Remove(dir); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func getVolumeSource(

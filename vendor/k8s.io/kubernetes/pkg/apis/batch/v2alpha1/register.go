@@ -40,13 +40,11 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&Job{},
 		&JobList{},
 		&JobTemplate{},
-		&CronJob{},
-		&CronJobList{},
+		&ScheduledJob{},
+		&ScheduledJobList{},
 		&v1.ListOptions{},
 		&v1.DeleteOptions{},
 	)
-	scheme.AddKnownTypeWithName(SchemeGroupVersion.WithKind("ScheduledJob"), &CronJob{})
-	scheme.AddKnownTypeWithName(SchemeGroupVersion.WithKind("ScheduledJobList"), &CronJobList{})
 	versionedwatch.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

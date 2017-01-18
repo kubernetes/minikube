@@ -190,8 +190,8 @@ type JobCondition struct {
 
 // +genclient=true
 
-// CronJob represents the configuration of a single cron job.
-type CronJob struct {
+// ScheduledJob represents the configuration of a single scheduled job.
+type ScheduledJob struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard object's metadata.
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
@@ -201,28 +201,28 @@ type CronJob struct {
 	// Spec is a structure defining the expected behavior of a job, including the schedule.
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	// +optional
-	Spec CronJobSpec `json:"spec,omitempty"`
+	Spec ScheduledJobSpec `json:"spec,omitempty"`
 
 	// Status is a structure describing current status of a job.
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
 	// +optional
-	Status CronJobStatus `json:"status,omitempty"`
+	Status ScheduledJobStatus `json:"status,omitempty"`
 }
 
-// CronJobList is a collection of cron jobs.
-type CronJobList struct {
+// ScheduledJobList is a collection of scheduled jobs.
+type ScheduledJobList struct {
 	unversioned.TypeMeta `json:",inline"`
 	// Standard list metadata
 	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
 	// +optional
 	unversioned.ListMeta `json:"metadata,omitempty"`
 
-	// Items is the list of CronJob.
-	Items []CronJob `json:"items"`
+	// Items is the list of ScheduledJob.
+	Items []ScheduledJob `json:"items"`
 }
 
-// CronJobSpec describes how the job execution will look like and when it will actually run.
-type CronJobSpec struct {
+// ScheduledJobSpec describes how the job execution will look like and when it will actually run.
+type ScheduledJobSpec struct {
 
 	// Schedule contains the schedule in Cron format, see https://en.wikipedia.org/wiki/Cron.
 	Schedule string `json:"schedule"`
@@ -242,7 +242,7 @@ type CronJobSpec struct {
 	Suspend *bool `json:"suspend,omitempty"`
 
 	// JobTemplate is the object that describes the job that will be created when
-	// executing a CronJob.
+	// executing a ScheduledJob.
 	JobTemplate JobTemplateSpec `json:"jobTemplate"`
 }
 
@@ -253,7 +253,7 @@ type CronJobSpec struct {
 type ConcurrencyPolicy string
 
 const (
-	// AllowConcurrent allows CronJobs to run concurrently.
+	// AllowConcurrent allows ScheduledJobs to run concurrently.
 	AllowConcurrent ConcurrencyPolicy = "Allow"
 
 	// ForbidConcurrent forbids concurrent runs, skipping next run if previous
@@ -264,8 +264,8 @@ const (
 	ReplaceConcurrent ConcurrencyPolicy = "Replace"
 )
 
-// CronJobStatus represents the current state of a cron job.
-type CronJobStatus struct {
+// ScheduledJobStatus represents the current state of a Job.
+type ScheduledJobStatus struct {
 	// Active holds pointers to currently running jobs.
 	// +optional
 	Active []api.ObjectReference `json:"active,omitempty"`

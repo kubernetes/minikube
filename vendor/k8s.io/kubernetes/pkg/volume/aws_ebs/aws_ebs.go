@@ -33,7 +33,6 @@ import (
 	"k8s.io/kubernetes/pkg/util/mount"
 	kstrings "k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
-	"k8s.io/kubernetes/pkg/volume/util"
 )
 
 // This is the primary entrypoint for volume plugins.
@@ -52,7 +51,6 @@ var _ volume.ProvisionableVolumePlugin = &awsElasticBlockStorePlugin{}
 
 const (
 	awsElasticBlockStorePluginName = "kubernetes.io/aws-ebs"
-	awsURLNamePrefix               = "aws://"
 )
 
 func getPath(uid types.UID, volName string, host volume.VolumeHost) string {
@@ -191,36 +189,10 @@ func getVolumeSource(
 func (plugin *awsElasticBlockStorePlugin) ConstructVolumeSpec(volName, mountPath string) (*volume.Spec, error) {
 	mounter := plugin.host.GetMounter()
 	pluginDir := plugin.host.GetPluginDir(plugin.GetPluginName())
-	volumeID, err := mounter.GetDeviceNameFromMount(mountPath, pluginDir)
+	sourceName, err := mounter.GetDeviceNameFromMount(mountPath, pluginDir)
 	if err != nil {
 		return nil, err
 	}
-	// This is a workaround to fix the issue in converting aws volume id from globalPDPath
-	// There are three aws volume id formats and their volumeID from GetDeviceNameFromMount() are:
-	// aws:///vol-1234 (aws/vol-1234)
-	// aws://us-east-1/vol-1234 (aws/us-east-1/vol-1234)
-	// vol-1234 (vol-1234)
-	// This code is for converting volume id to aws style volume id for the first two cases.
-	sourceName := volumeID
-	if strings.HasPrefix(volumeID, "aws/") {
-		names := strings.Split(volumeID, "/")
-		length := len(names)
-		if length < 2 || length > 3 {
-			return nil, fmt.Errorf("Failed to get AWS volume id from mount path %q: invalid volume name format %q", mountPath, volumeID)
-		}
-		volName := names[length-1]
-		if !strings.HasPrefix(volName, "vol-") {
-			return nil, fmt.Errorf("Invalid volume name format for AWS volume (%q) retrieved from mount path %q", volName, mountPath)
-		}
-		if length == 2 {
-			sourceName = awsURLNamePrefix + "" + "/" + volName // empty zone label
-		}
-		if length == 3 {
-			sourceName = awsURLNamePrefix + names[1] + "/" + volName // names[1] is the zone label
-		}
-		glog.V(4).Infof("Convert aws volume name from %q to %q ", volumeID, sourceName)
-	}
-
 	awsVolume := &api.Volume{
 		Name: volName,
 		VolumeSource: api.VolumeSource{
@@ -274,13 +246,6 @@ func (b *awsElasticBlockStoreMounter) GetAttributes() volume.Attributes {
 		Managed:         !b.readOnly,
 		SupportsSELinux: true,
 	}
-}
-
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *awsElasticBlockStoreMounter) CanMount() error {
-	return nil
 }
 
 // SetUp attaches the disk and bind mounts to the volume path.
@@ -352,12 +317,12 @@ func makeGlobalPDPath(host volume.VolumeHost, volumeID aws.KubernetesVolumeID) s
 	// Clean up the URI to be more fs-friendly
 	name := string(volumeID)
 	name = strings.Replace(name, "://", "/", -1)
-	return path.Join(host.GetPluginDir(awsElasticBlockStorePluginName), mount.MountsInGlobalPDPath, name)
+	return path.Join(host.GetPluginDir(awsElasticBlockStorePluginName), "mounts", name)
 }
 
 // Reverses the mapping done in makeGlobalPDPath
 func getVolumeIDFromGlobalMount(host volume.VolumeHost, globalPath string) (string, error) {
-	basePath := path.Join(host.GetPluginDir(awsElasticBlockStorePluginName), mount.MountsInGlobalPDPath)
+	basePath := path.Join(host.GetPluginDir(awsElasticBlockStorePluginName), "mounts")
 	rel, err := filepath.Rel(basePath, globalPath)
 	if err != nil {
 		glog.Errorf("Failed to get volume id from global mount %s - %v", globalPath, err)
@@ -394,7 +359,33 @@ func (c *awsElasticBlockStoreUnmounter) TearDown() error {
 
 // Unmounts the bind mount
 func (c *awsElasticBlockStoreUnmounter) TearDownAt(dir string) error {
-	return util.UnmountPath(dir, c.mounter)
+	notMnt, err := c.mounter.IsLikelyNotMountPoint(dir)
+	if err != nil {
+		glog.V(2).Info("Error checking if mountpoint ", dir, ": ", err)
+		return err
+	}
+	if notMnt {
+		glog.V(2).Info("Not mountpoint, deleting")
+		return os.Remove(dir)
+	}
+
+	// Unmount the bind-mount inside this pod
+	if err := c.mounter.Unmount(dir); err != nil {
+		glog.V(2).Info("Error unmounting dir ", dir, ": ", err)
+		return err
+	}
+	notMnt, mntErr := c.mounter.IsLikelyNotMountPoint(dir)
+	if mntErr != nil {
+		glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
+		return err
+	}
+	if notMnt {
+		if err := os.Remove(dir); err != nil {
+			glog.V(2).Info("Error removing mountpoint ", dir, ": ", err)
+			return err
+		}
+	}
+	return nil
 }
 
 type awsElasticBlockStoreDeleter struct {

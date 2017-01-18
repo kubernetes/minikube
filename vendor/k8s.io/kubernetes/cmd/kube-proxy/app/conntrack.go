@@ -89,7 +89,7 @@ func (realConntracker) setIntSysCtl(name string, value int) error {
 func isSysFSWritable() (bool, error) {
 	const permWritable = "rw"
 	const sysfsDevice = "sysfs"
-	m := mount.New("" /* default mount path */)
+	m := mount.New()
 	mountPoints, err := m.List()
 	if err != nil {
 		glog.Errorf("failed to list mount points: %v", err)
@@ -98,7 +98,7 @@ func isSysFSWritable() (bool, error) {
 
 	for _, mountPoint := range mountPoints {
 		const sysfsDevice = "sysfs"
-		if mountPoint.Type != sysfsDevice {
+		if mountPoint.Device != sysfsDevice {
 			continue
 		}
 		// Check whether sysfs is 'rw'

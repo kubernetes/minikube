@@ -48,7 +48,9 @@ func (r *streamingRuntime) exec(containerID string, cmd []string, in io.Reader, 
 	if err != nil {
 		return err
 	}
-	return r.execHandler.ExecInContainer(r.client, container, cmd, in, out, errw, tty, resize, timeout)
+
+	// TODO(timstclair): Add timeout once PR#33366 merges.
+	return r.execHandler.ExecInContainer(r.client, container, cmd, in, out, errw, tty, resize)
 }
 
 func (r *streamingRuntime) Attach(containerID string, in io.Reader, out, errw io.WriteCloser, resize <-chan term.Size) error {

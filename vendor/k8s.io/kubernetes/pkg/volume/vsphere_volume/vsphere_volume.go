@@ -29,7 +29,6 @@ import (
 	"k8s.io/kubernetes/pkg/util/mount"
 	utilstrings "k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
-	"k8s.io/kubernetes/pkg/volume/util"
 )
 
 // This is the primary entrypoint for volume plugins.
@@ -178,13 +177,6 @@ func (b *vsphereVolumeMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }
 
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *vsphereVolumeMounter) CanMount() error {
-	return nil
-}
-
 // SetUp attaches the disk and bind mounts to the volume path.
 func (b *vsphereVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 	glog.V(5).Infof("vSphere volume setup %s to %s", b.volPath, dir)
@@ -254,11 +246,30 @@ func (v *vsphereVolumeUnmounter) TearDown() error {
 // Unmounts the bind mount, and detaches the disk only if the PD
 // resource was the last reference to that disk on the kubelet.
 func (v *vsphereVolumeUnmounter) TearDownAt(dir string) error {
-	return util.UnmountPath(dir, v.mounter)
+	glog.V(5).Infof("vSphere Volume TearDown of %s", dir)
+	notMnt, err := v.mounter.IsLikelyNotMountPoint(dir)
+	if err != nil {
+		return err
+	}
+	if notMnt {
+		return os.Remove(dir)
+	}
+	if err := v.mounter.Unmount(dir); err != nil {
+		return err
+	}
+	notMnt, mntErr := v.mounter.IsLikelyNotMountPoint(dir)
+	if mntErr != nil {
+		glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
+		return err
+	}
+	if notMnt {
+		return os.Remove(dir)
+	}
+	return fmt.Errorf("Failed to unmount volume dir")
 }
 
 func makeGlobalPDPath(host volume.VolumeHost, devName string) string {
-	return path.Join(host.GetPluginDir(vsphereVolumePluginName), mount.MountsInGlobalPDPath, devName)
+	return path.Join(host.GetPluginDir(vsphereVolumePluginName), "mounts", devName)
 }
 
 func (vv *vsphereVolume) GetPath() string {

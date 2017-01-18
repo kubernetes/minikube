@@ -45,15 +45,6 @@ type DiscoveryInterface interface {
 	SwaggerSchemaInterface
 }
 
-// CachedDiscoveryInterface is a DiscoveryInterface with cache invalidation and freshness.
-type CachedDiscoveryInterface interface {
-	DiscoveryInterface
-	// Fresh returns true if no cached data was used that had been retrieved before the instantiation.
-	Fresh() bool
-	// Invalidate enforces that no cached data is used in the future that is older than the current time.
-	Invalidate()
-}
-
 // ServerGroupsInterface has methods for obtaining supported groups on the API server
 type ServerGroupsInterface interface {
 	// ServerGroups returns the supported groups, with information like supported versions and the
@@ -213,11 +204,9 @@ func (d *DiscoveryClient) serverPreferredResources(namespaced bool) ([]unversion
 	const maxRetries = 2
 	var failedGroups map[unversioned.GroupVersion]error
 	var results []unversioned.GroupVersionResource
-	var resources map[unversioned.GroupResource]string
 RetrieveGroups:
 	for i := 0; i < maxRetries; i++ {
 		results = []unversioned.GroupVersionResource{}
-		resources = map[unversioned.GroupResource]string{}
 		failedGroups = make(map[unversioned.GroupVersion]error)
 		serverGroupList, err := d.ServerGroups()
 		if err != nil {
@@ -225,40 +214,25 @@ RetrieveGroups:
 		}
 
 		for _, apiGroup := range serverGroupList.Groups {
-			versions := apiGroup.Versions
-			for _, version := range versions {
-				groupVersion := unversioned.GroupVersion{Group: apiGroup.Name, Version: version.Version}
-				apiResourceList, err := d.ServerResourcesForGroupVersion(version.GroupVersion)
-				if err != nil {
-					if i < maxRetries-1 {
-						continue RetrieveGroups
-					}
-					failedGroups[groupVersion] = err
+			preferredVersion := apiGroup.PreferredVersion
+			groupVersion := unversioned.GroupVersion{Group: apiGroup.Name, Version: preferredVersion.Version}
+			apiResourceList, err := d.ServerResourcesForGroupVersion(preferredVersion.GroupVersion)
+			if err != nil {
+				if i < maxRetries-1 {
+					continue RetrieveGroups
+				}
+				failedGroups[groupVersion] = err
+				continue
+			}
+			for _, apiResource := range apiResourceList.APIResources {
+				// ignore the root scoped resources if "namespaced" is true.
+				if namespaced && !apiResource.Namespaced {
 					continue
 				}
-				for _, apiResource := range apiResourceList.APIResources {
-					// ignore the root scoped resources if "namespaced" is true.
-					if namespaced && !apiResource.Namespaced {
-						continue
-					}
-					if strings.Contains(apiResource.Name, "/") {
-						continue
-					}
-					gvr := groupVersion.WithResource(apiResource.Name)
-					if _, ok := resources[gvr.GroupResource()]; ok {
-						if gvr.Version != apiGroup.PreferredVersion.Version {
-							continue
-						}
-						// remove previous entry, because it will be replaced with a preferred one
-						for i := range results {
-							if results[i].GroupResource() == gvr.GroupResource() {
-								results = append(results[:i], results[i+1:]...)
-							}
-						}
-					}
-					resources[gvr.GroupResource()] = gvr.Version
-					results = append(results, gvr)
+				if strings.Contains(apiResource.Name, "/") {
+					continue
 				}
+				results = append(results, groupVersion.WithResource(apiResource.Name))
 			}
 		}
 		if len(failedGroups) == 0 {

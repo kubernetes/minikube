@@ -80,6 +80,9 @@ func SetDefaults_KubeProxyConfiguration(obj *KubeProxyConfiguration) {
 	if obj.IPTablesSyncPeriod.Duration == 0 {
 		obj.IPTablesSyncPeriod = unversioned.Duration{Duration: 30 * time.Second}
 	}
+	if obj.IPTablesMinSyncPeriod.Duration == 0 {
+		obj.IPTablesMinSyncPeriod = unversioned.Duration{Duration: 2 * time.Second}
+	}
 	zero := unversioned.Duration{}
 	if obj.UDPIdleTimeout == zero {
 		obj.UDPIdleTimeout = unversioned.Duration{Duration: 250 * time.Millisecond}
@@ -204,8 +207,8 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	if obj.CertDirectory == "" {
 		obj.CertDirectory = "/var/run/kubernetes"
 	}
-	if obj.ExperimentalCgroupsPerQOS == nil {
-		obj.ExperimentalCgroupsPerQOS = boolVar(false)
+	if obj.CgroupsPerQOS == nil {
+		obj.CgroupsPerQOS = boolVar(false)
 	}
 	if obj.ContainerRuntime == "" {
 		obj.ContainerRuntime = "docker"
@@ -219,7 +222,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	if obj.DockerExecHandlerName == "" {
 		obj.DockerExecHandlerName = "native"
 	}
-	if obj.DockerEndpoint == "" && runtime.GOOS != "windows" {
+	if obj.DockerEndpoint == "" {
 		obj.DockerEndpoint = "unix:///var/run/docker.sock"
 	}
 	if obj.EventBurst == 0 {
@@ -340,7 +343,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.SerializeImagePulls = boolVar(true)
 	}
 	if obj.SeccompProfileRoot == "" {
-		obj.SeccompProfileRoot = filepath.Join(defaultRootDir, "seccomp")
+		filepath.Join(defaultRootDir, "seccomp")
 	}
 	if obj.StreamingConnectionIdleTimeout == zeroDuration {
 		obj.StreamingConnectionIdleTimeout = unversioned.Duration{Duration: 4 * time.Hour}
@@ -374,9 +377,6 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	if obj.EvictionPressureTransitionPeriod == zeroDuration {
 		obj.EvictionPressureTransitionPeriod = unversioned.Duration{Duration: 5 * time.Minute}
 	}
-	if obj.ExperimentalKernelMemcgNotification == nil {
-		obj.ExperimentalKernelMemcgNotification = boolVar(false)
-	}
 	if obj.SystemReserved == nil {
 		obj.SystemReserved = make(map[string]string)
 	}
@@ -394,9 +394,9 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		temp := int32(defaultIPTablesDropBit)
 		obj.IPTablesDropBit = &temp
 	}
-	if obj.ExperimentalCgroupsPerQOS == nil {
+	if obj.CgroupsPerQOS == nil {
 		temp := false
-		obj.ExperimentalCgroupsPerQOS = &temp
+		obj.CgroupsPerQOS = &temp
 	}
 	if obj.CgroupDriver == "" {
 		obj.CgroupDriver = "cgroupfs"
@@ -404,8 +404,8 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	// NOTE: this is for backwards compatibility with earlier releases where cgroup-root was optional.
 	// if cgroups per qos is not enabled, and cgroup-root is not specified, we need to default to the
 	// container runtime default and not default to the root cgroup.
-	if obj.ExperimentalCgroupsPerQOS != nil {
-		if *obj.ExperimentalCgroupsPerQOS {
+	if obj.CgroupsPerQOS != nil {
+		if *obj.CgroupsPerQOS {
 			if obj.CgroupRoot == "" {
 				obj.CgroupRoot = "/"
 			}

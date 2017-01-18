@@ -158,14 +158,14 @@ func ValidateJobStatusUpdate(status, oldStatus batch.JobStatus) field.ErrorList 
 	return allErrs
 }
 
-func ValidateCronJob(scheduledJob *batch.CronJob) field.ErrorList {
-	// CronJobs and rcs have the same name validation
+func ValidateScheduledJob(scheduledJob *batch.ScheduledJob) field.ErrorList {
+	// ScheduledJobs and rcs have the same name validation
 	allErrs := apivalidation.ValidateObjectMeta(&scheduledJob.ObjectMeta, true, apivalidation.ValidateReplicationControllerName, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateCronJobSpec(&scheduledJob.Spec, field.NewPath("spec"))...)
+	allErrs = append(allErrs, ValidateScheduledJobSpec(&scheduledJob.Spec, field.NewPath("spec"))...)
 	return allErrs
 }
 
-func ValidateCronJobSpec(spec *batch.CronJobSpec, fldPath *field.Path) field.ErrorList {
+func ValidateScheduledJobSpec(spec *batch.ScheduledJobSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	if len(spec.Schedule) == 0 {

@@ -113,21 +113,8 @@ func NewReplenishmentControllerFactoryFromClient(kubeClient clientset.Interface)
 	return NewReplenishmentControllerFactory(nil, kubeClient)
 }
 
-// controllerFor returns a replenishment controller for the specified group resource.
-func controllerFor(
-	groupResource unversioned.GroupResource,
-	f informers.SharedInformerFactory,
-	handlerFuncs cache.ResourceEventHandlerFuncs) (cache.ControllerInterface, error) {
-	genericInformer, err := f.ForResource(groupResource)
-	if err != nil {
-		return nil, err
-	}
-	informer := genericInformer.Informer()
-	informer.AddEventHandler(handlerFuncs)
-	return informer.GetController(), nil
-}
-
-func (r *replenishmentControllerFactory) NewController(options *ReplenishmentControllerOptions) (result cache.ControllerInterface, err error) {
+func (r *replenishmentControllerFactory) NewController(options *ReplenishmentControllerOptions) (cache.ControllerInterface, error) {
+	var result cache.ControllerInterface
 	if r.kubeClient != nil && r.kubeClient.Core().RESTClient().GetRateLimiter() != nil {
 		metrics.RegisterMetricAndTrackRateLimiterUsage("replenishment_controller", r.kubeClient.Core().RESTClient().GetRateLimiter())
 	}
@@ -135,15 +122,16 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 	switch options.GroupKind {
 	case api.Kind("Pod"):
 		if r.sharedInformerFactory != nil {
-			result, err = controllerFor(api.Resource("pods"), r.sharedInformerFactory, cache.ResourceEventHandlerFuncs{
+			podInformer := r.sharedInformerFactory.Pods().Informer()
+			podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 				UpdateFunc: PodReplenishmentUpdateFunc(options),
 				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
 			})
+			result = podInformer.GetController()
 			break
 		}
 		result = informers.NewPodInformer(r.kubeClient, options.ResyncPeriod())
 	case api.Kind("Service"):
-		// TODO move to informer when defined
 		_, result = cache.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
@@ -161,7 +149,6 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 		)
 	case api.Kind("ReplicationController"):
-		// TODO move to informer when defined
 		_, result = cache.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
@@ -178,13 +165,6 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 		)
 	case api.Kind("PersistentVolumeClaim"):
-		if r.sharedInformerFactory != nil {
-			result, err = controllerFor(api.Resource("persistentvolumeclaims"), r.sharedInformerFactory, cache.ResourceEventHandlerFuncs{
-				DeleteFunc: ObjectReplenishmentDeleteFunc(options),
-			})
-			break
-		}
-		// TODO (derekwaynecarr) remove me when we can require a sharedInformerFactory in all code paths...
 		_, result = cache.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
@@ -201,7 +181,6 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 		)
 	case api.Kind("Secret"):
-		// TODO move to informer when defined
 		_, result = cache.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
@@ -218,7 +197,6 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 			},
 		)
 	case api.Kind("ConfigMap"):
-		// TODO move to informer when defined
 		_, result = cache.NewInformer(
 			&cache.ListWatch{
 				ListFunc: func(options api.ListOptions) (runtime.Object, error) {
@@ -237,7 +215,7 @@ func (r *replenishmentControllerFactory) NewController(options *ReplenishmentCon
 	default:
 		return nil, NewUnhandledGroupKindError(options.GroupKind)
 	}
-	return result, err
+	return result, nil
 }
 
 // ServiceReplenishmentUpdateFunc will replenish if the service was quota tracked has changed service type

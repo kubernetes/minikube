@@ -202,8 +202,7 @@ func (e *Store) List(ctx api.Context, options *api.ListOptions) (runtime.Object,
 // ListPredicate returns a list of all the items matching m.
 func (e *Store) ListPredicate(ctx api.Context, p storage.SelectionPredicate, options *api.ListOptions) (runtime.Object, error) {
 	if options == nil {
-		// By default we should serve the request from etcd.
-		options = &api.ListOptions{ResourceVersion: ""}
+		options = &api.ListOptions{ResourceVersion: "0"}
 	}
 	list := e.NewListFunc()
 	if name, ok := p.MatchesSingle(); ok {

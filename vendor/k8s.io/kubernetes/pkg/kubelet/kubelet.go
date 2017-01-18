@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"sort"
@@ -63,7 +62,6 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/rkt"
 	"k8s.io/kubernetes/pkg/kubelet/server"
 	"k8s.io/kubernetes/pkg/kubelet/server/stats"
-	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
 	"k8s.io/kubernetes/pkg/kubelet/status"
 	"k8s.io/kubernetes/pkg/kubelet/sysctl"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
@@ -102,7 +100,7 @@ const (
 	nodeStatusUpdateRetry = 5
 
 	// Location of container logs.
-	ContainerLogsDir = "/var/log/containers"
+	containerLogsDir = "/var/log/containers"
 
 	// max backoff period, exported for the e2e test
 	MaxContainerBackOff = 300 * time.Second
@@ -255,18 +253,6 @@ func makePodSourceConfig(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps
 	return cfg, nil
 }
 
-func getRuntimeAndImageServices(config *componentconfig.KubeletConfiguration) (internalApi.RuntimeService, internalApi.ImageManagerService, error) {
-	rs, err := remote.NewRemoteRuntimeService(config.RemoteRuntimeEndpoint, config.RuntimeRequestTimeout.Duration)
-	if err != nil {
-		return nil, nil, err
-	}
-	is, err := remote.NewRemoteImageService(config.RemoteImageEndpoint, config.RuntimeRequestTimeout.Duration)
-	if err != nil {
-		return nil, nil, err
-	}
-	return rs, is, err
-}
-
 // NewMainKubelet instantiates a new Kubelet object along with all the required internal modules.
 // No initialization of Kubelet and its modules should happen here.
 func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *KubeletDeps, standaloneMode bool) (*Kubelet, error) {
@@ -353,7 +339,6 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		PressureTransitionPeriod: kubeCfg.EvictionPressureTransitionPeriod.Duration,
 		MaxPodGracePeriodSeconds: int64(kubeCfg.EvictionMaxPodGracePeriod),
 		Thresholds:               thresholds,
-		KernelMemcgNotification:  kubeCfg.ExperimentalKernelMemcgNotification,
 	}
 
 	reservation, err := ParseReservation(kubeCfg.KubeReserved, kubeCfg.SystemReserved)
@@ -436,7 +421,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		nodeStatusUpdateFrequency: kubeCfg.NodeStatusUpdateFrequency.Duration,
 		os:                kubeDeps.OSInterface,
 		oomWatcher:        oomWatcher,
-		cgroupsPerQOS:     kubeCfg.ExperimentalCgroupsPerQOS,
+		cgroupsPerQOS:     kubeCfg.CgroupsPerQOS,
 		cgroupRoot:        kubeCfg.CgroupRoot,
 		mounter:           kubeDeps.Mounter,
 		writer:            kubeDeps.Writer,
@@ -451,20 +436,15 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		containerManager:  kubeDeps.ContainerManager,
 		nodeIP:            net.ParseIP(kubeCfg.NodeIP),
 		clock:             clock.RealClock{},
-		outOfDiskTransitionFrequency:            kubeCfg.OutOfDiskTransitionFrequency.Duration,
-		reservation:                             *reservation,
-		enableCustomMetrics:                     kubeCfg.EnableCustomMetrics,
-		babysitDaemons:                          kubeCfg.BabysitDaemons,
-		enableControllerAttachDetach:            kubeCfg.EnableControllerAttachDetach,
-		iptClient:                               utilipt.New(utilexec.New(), utildbus.New(), utilipt.ProtocolIpv4),
-		makeIPTablesUtilChains:                  kubeCfg.MakeIPTablesUtilChains,
-		iptablesMasqueradeBit:                   int(kubeCfg.IPTablesMasqueradeBit),
-		iptablesDropBit:                         int(kubeCfg.IPTablesDropBit),
-		experimentalHostUserNamespaceDefaulting: utilconfig.DefaultFeatureGate.ExperimentalHostUserNamespaceDefaulting(),
-	}
-
-	if klet.experimentalHostUserNamespaceDefaulting {
-		glog.Infof("Experimental host user namespace defaulting is enabled.")
+		outOfDiskTransitionFrequency: kubeCfg.OutOfDiskTransitionFrequency.Duration,
+		reservation:                  *reservation,
+		enableCustomMetrics:          kubeCfg.EnableCustomMetrics,
+		babysitDaemons:               kubeCfg.BabysitDaemons,
+		enableControllerAttachDetach: kubeCfg.EnableControllerAttachDetach,
+		iptClient:                    utilipt.New(utilexec.New(), utildbus.New(), utilipt.ProtocolIpv4),
+		makeIPTablesUtilChains:       kubeCfg.MakeIPTablesUtilChains,
+		iptablesMasqueradeBit:        int(kubeCfg.IPTablesMasqueradeBit),
+		iptablesDropBit:              int(kubeCfg.IPTablesDropBit),
 	}
 
 	if mode, err := effectiveHairpinMode(componentconfig.HairpinMode(kubeCfg.HairpinMode), kubeCfg.ContainerRuntime, kubeCfg.NetworkPluginName); err != nil {
@@ -522,97 +502,90 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	var nl *noOpLegacyHost
 	pluginSettings.LegacyRuntimeHost = nl
 
-	if kubeCfg.EnableCRI {
-		// kubelet defers to the runtime shim to setup networking. Setting
-		// this to nil will prevent it from trying to invoke the plugin.
-		// It's easier to always probe and initialize plugins till cri
-		// becomes the default.
-		klet.networkPlugin = nil
-
-		var runtimeService internalApi.RuntimeService
-		var imageService internalApi.ImageManagerService
-		var err error
-
-		switch kubeCfg.ContainerRuntime {
-		case "docker":
-			streamingConfig := getStreamingConfig(kubeCfg, kubeDeps)
-			// Use the new CRI shim for docker.
-			ds, err := dockershim.NewDockerService(klet.dockerClient, kubeCfg.SeccompProfileRoot, kubeCfg.PodInfraContainerImage, streamingConfig, &pluginSettings, kubeCfg.RuntimeCgroups)
+	// Initialize the runtime.
+	switch kubeCfg.ContainerRuntime {
+	case "docker":
+		switch kubeCfg.ExperimentalRuntimeIntegrationType {
+		case "cri":
+			// Use the new CRI shim for docker. This is needed for testing the
+			// docker integration through CRI, and may be removed in the future.
+			dockerService, err := dockershim.NewDockerService(klet.dockerClient, kubeCfg.SeccompProfileRoot, kubeCfg.PodInfraContainerImage, nil, &pluginSettings, kubeCfg.RuntimeCgroups)
 			if err != nil {
 				return nil, err
 			}
-			// TODO: Once we switch to grpc completely, we should move this
-			// call to the grpc server start.
-			if err := ds.Start(); err != nil {
-				return nil, err
-			}
+			runtimeService := dockerService.(internalApi.RuntimeService)
+			imageService := dockerService.(internalApi.ImageManagerService)
 
-			klet.criHandler = ds
-			rs := ds.(internalApi.RuntimeService)
-			is := ds.(internalApi.ImageManagerService)
-			// This is an internal knob to switch between grpc and non-grpc
-			// integration.
-			// TODO: Remove this knob once we switch to using GRPC completely.
-			overGRPC := true
-			if overGRPC {
-				const (
-					// The unix socket for kubelet <-> dockershim communication.
-					ep = "/var/run/dockershim.sock"
-				)
-				kubeCfg.RemoteRuntimeEndpoint = ep
-				kubeCfg.RemoteImageEndpoint = ep
+			// This is a temporary knob to easily switch between grpc and non-grpc integration. grpc
+			// will be enabled if this is not empty.
+			// TODO(random-liu): Remove the temporary knob after grpc integration is stabilized and
+			// pass the runtime endpoint through kubelet flags.
+			remoteEndpoint := "/var/run/dockershim.sock"
 
-				server := dockerremote.NewDockerServer(ep, ds)
-				glog.V(2).Infof("Starting the GRPC server for the docker CRI shim.")
+			// If the remote runtime endpoint is set, use the grpc integration.
+			if remoteEndpoint != "" {
+				// Start the in process dockershim grpc server.
+				server := dockerremote.NewDockerServer(remoteEndpoint, dockerService)
 				err := server.Start()
 				if err != nil {
 					return nil, err
 				}
-				rs, is, err = getRuntimeAndImageServices(kubeCfg)
+				// Start the remote kuberuntime manager.
+				runtimeService, err = remote.NewRemoteRuntimeService(remoteEndpoint, kubeCfg.RuntimeRequestTimeout.Duration)
+				if err != nil {
+					return nil, err
+				}
+				imageService, err = remote.NewRemoteImageService(remoteEndpoint, kubeCfg.RuntimeRequestTimeout.Duration)
 				if err != nil {
 					return nil, err
 				}
 			}
-			// Use DockerLegacyService directly to work around unimplemented
-			// functions in CRI.
-			// TODO: Remove this hack after CRI is fully implemented.
-			// TODO: Move the instrumented interface wrapping into kuberuntime.
-			runtimeService = kuberuntime.NewInstrumentedRuntimeService(rs)
-			imageService = is
-		case "remote":
-			runtimeService, imageService, err = getRuntimeAndImageServices(kubeCfg)
+			// TODO: Find a better place to start the service.
+			if err := dockerService.Start(); err != nil {
+				return nil, err
+			}
+
+			// kubelet defers to the runtime shim to setup networking. Setting
+			// this to nil will prevent it from trying to invoke the plugin.
+			// It's easier to always probe and initialize plugins till cri
+			// becomes the default.
+			klet.networkPlugin = nil
+
+			runtime, err := kuberuntime.NewKubeGenericRuntimeManager(
+				kubecontainer.FilterEventRecorder(kubeDeps.Recorder),
+				klet.livenessManager,
+				containerRefManager,
+				machineInfo,
+				klet.podManager,
+				kubeDeps.OSInterface,
+				klet.networkPlugin,
+				klet,
+				klet.httpClient,
+				imageBackOff,
+				kubeCfg.SerializeImagePulls,
+				float32(kubeCfg.RegistryPullQPS),
+				int(kubeCfg.RegistryBurst),
+				klet.cpuCFSQuota,
+				// Use DockerLegacyService directly to workaround unimplemented functions.
+				// We add short hack here to keep other code clean.
+				// TODO: Remove this hack after CRI is fully designed and implemented.
+				// TODO: Move the instrumented interface wrapping into kuberuntime.
+				&struct {
+					internalApi.RuntimeService
+					dockershim.DockerLegacyService
+				}{
+					RuntimeService:      kuberuntime.NewInstrumentedRuntimeService(runtimeService),
+					DockerLegacyService: dockerService,
+				},
+				kuberuntime.NewInstrumentedImageManagerService(imageService),
+			)
 			if err != nil {
 				return nil, err
 			}
+			klet.containerRuntime = runtime
+			klet.runner = runtime
 		default:
-			return nil, fmt.Errorf("unsupported CRI runtime: %q", kubeCfg.ContainerRuntime)
-		}
-		runtime, err := kuberuntime.NewKubeGenericRuntimeManager(
-			kubecontainer.FilterEventRecorder(kubeDeps.Recorder),
-			klet.livenessManager,
-			containerRefManager,
-			machineInfo,
-			klet.podManager,
-			kubeDeps.OSInterface,
-			klet.networkPlugin,
-			klet,
-			klet.httpClient,
-			imageBackOff,
-			kubeCfg.SerializeImagePulls,
-			float32(kubeCfg.RegistryPullQPS),
-			int(kubeCfg.RegistryBurst),
-			klet.cpuCFSQuota,
-			runtimeService,
-			kuberuntime.NewInstrumentedImageManagerService(imageService),
-		)
-		if err != nil {
-			return nil, err
-		}
-		klet.containerRuntime = runtime
-		klet.runner = runtime
-	} else {
-		switch kubeCfg.ContainerRuntime {
-		case "docker":
+			// Only supported one for now, continue.
 			runtime := dockertools.NewDockerManager(
 				kubeDeps.DockerClient,
 				kubecontainer.FilterEventRecorder(kubeDeps.Recorder),
@@ -623,7 +596,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 				kubeCfg.PodInfraContainerImage,
 				float32(kubeCfg.RegistryPullQPS),
 				int(kubeCfg.RegistryBurst),
-				ContainerLogsDir,
+				containerLogsDir,
 				kubeDeps.OSInterface,
 				klet.networkPlugin,
 				klet,
@@ -647,40 +620,72 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 			)
 			klet.containerRuntime = runtime
 			klet.runner = kubecontainer.DirectStreamingRunner(runtime)
-		case "rkt":
-			// TODO: Include hairpin mode settings in rkt?
-			conf := &rkt.Config{
-				Path:            kubeCfg.RktPath,
-				Stage1Image:     kubeCfg.RktStage1Image,
-				InsecureOptions: "image,ondisk",
-			}
-			runtime, err := rkt.New(
-				kubeCfg.RktAPIEndpoint,
-				conf,
-				klet,
-				kubeDeps.Recorder,
-				containerRefManager,
-				klet.podManager,
-				klet.livenessManager,
-				klet.httpClient,
-				klet.networkPlugin,
-				klet.hairpinMode == componentconfig.HairpinVeth,
-				utilexec.New(),
-				kubecontainer.RealOS{},
-				imageBackOff,
-				kubeCfg.SerializeImagePulls,
-				float32(kubeCfg.RegistryPullQPS),
-				int(kubeCfg.RegistryBurst),
-				kubeCfg.RuntimeRequestTimeout.Duration,
-			)
-			if err != nil {
-				return nil, err
-			}
-			klet.containerRuntime = runtime
-			klet.runner = kubecontainer.DirectStreamingRunner(runtime)
-		default:
-			return nil, fmt.Errorf("unsupported container runtime %q specified", kubeCfg.ContainerRuntime)
 		}
+	case "rkt":
+		// TODO: Include hairpin mode settings in rkt?
+		conf := &rkt.Config{
+			Path:            kubeCfg.RktPath,
+			Stage1Image:     kubeCfg.RktStage1Image,
+			InsecureOptions: "image,ondisk",
+		}
+		rktRuntime, err := rkt.New(
+			kubeCfg.RktAPIEndpoint,
+			conf,
+			klet,
+			kubeDeps.Recorder,
+			containerRefManager,
+			klet.podManager,
+			klet.livenessManager,
+			klet.httpClient,
+			klet.networkPlugin,
+			klet.hairpinMode == componentconfig.HairpinVeth,
+			utilexec.New(),
+			kubecontainer.RealOS{},
+			imageBackOff,
+			kubeCfg.SerializeImagePulls,
+			float32(kubeCfg.RegistryPullQPS),
+			int(kubeCfg.RegistryBurst),
+			kubeCfg.RuntimeRequestTimeout.Duration,
+		)
+		if err != nil {
+			return nil, err
+		}
+		klet.containerRuntime = rktRuntime
+		klet.runner = kubecontainer.DirectStreamingRunner(rktRuntime)
+	case "remote":
+		remoteRuntimeService, err := remote.NewRemoteRuntimeService(kubeCfg.RemoteRuntimeEndpoint, kubeCfg.RuntimeRequestTimeout.Duration)
+		if err != nil {
+			return nil, err
+		}
+		remoteImageService, err := remote.NewRemoteImageService(kubeCfg.RemoteImageEndpoint, kubeCfg.RuntimeRequestTimeout.Duration)
+		if err != nil {
+			return nil, err
+		}
+		runtime, err := kuberuntime.NewKubeGenericRuntimeManager(
+			kubecontainer.FilterEventRecorder(kubeDeps.Recorder),
+			klet.livenessManager,
+			containerRefManager,
+			machineInfo,
+			klet.podManager,
+			kubeDeps.OSInterface,
+			klet.networkPlugin,
+			klet,
+			klet.httpClient,
+			imageBackOff,
+			kubeCfg.SerializeImagePulls,
+			float32(kubeCfg.RegistryPullQPS),
+			int(kubeCfg.RegistryBurst),
+			klet.cpuCFSQuota,
+			remoteRuntimeService,
+			remoteImageService,
+		)
+		if err != nil {
+			return nil, err
+		}
+		klet.containerRuntime = runtime
+		klet.runner = runtime
+	default:
+		return nil, fmt.Errorf("unsupported container runtime %q specified", kubeCfg.ContainerRuntime)
 	}
 
 	// TODO: Factor out "StatsProvider" from Kubelet so we don't have a cyclic dependency
@@ -720,11 +725,6 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		return nil, err
 	}
 
-	// If the experimentalMounterPathFlag is set, we do not want to
-	// check node capabilities since the mount path is not the default
-	if len(kubeCfg.ExperimentalMounterPath) != 0 {
-		kubeCfg.ExperimentalCheckNodeCapabilitiesBeforeMount = false
-	}
 	// setup volumeManager
 	klet.volumeManager, err = volumemanager.NewVolumeManager(
 		kubeCfg.EnableControllerAttachDetach,
@@ -735,8 +735,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		klet.containerRuntime,
 		kubeDeps.Mounter,
 		klet.getPodsDir(),
-		kubeDeps.Recorder,
-		kubeCfg.ExperimentalCheckNodeCapabilitiesBeforeMount)
+		kubeDeps.Recorder)
 
 	runtimeCache, err := kubecontainer.NewRuntimeCache(klet.containerRuntime)
 	if err != nil {
@@ -758,7 +757,7 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 		return nil, fmt.Errorf("failed to initialize eviction manager: %v", err)
 	}
 	klet.evictionManager = evictionManager
-	klet.admitHandlers.AddPodAdmitHandler(evictionAdmitHandler)
+	klet.AddPodAdmitHandler(evictionAdmitHandler)
 
 	// add sysctl admission
 	runtimeSupport, err := sysctl.NewRuntimeAdmitHandler(klet.containerRuntime)
@@ -776,9 +775,9 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	if err != nil {
 		return nil, err
 	}
-	klet.admitHandlers.AddPodAdmitHandler(runtimeSupport)
-	klet.admitHandlers.AddPodAdmitHandler(safeWhitelist)
-	klet.admitHandlers.AddPodAdmitHandler(unsafeWhitelist)
+	klet.AddPodAdmitHandler(runtimeSupport)
+	klet.AddPodAdmitHandler(safeWhitelist)
+	klet.AddPodAdmitHandler(unsafeWhitelist)
 
 	// enable active deadline handler
 	activeDeadlineHandler, err := newActiveDeadlineHandler(klet.statusManager, kubeDeps.Recorder, klet.clock)
@@ -788,14 +787,13 @@ func NewMainKubelet(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *Kub
 	klet.AddPodSyncLoopHandler(activeDeadlineHandler)
 	klet.AddPodSyncHandler(activeDeadlineHandler)
 
-	klet.admitHandlers.AddPodAdmitHandler(lifecycle.NewPredicateAdmitHandler(klet.getNodeAnyWay))
+	klet.appArmorValidator = apparmor.NewValidator(kubeCfg.ContainerRuntime)
+	klet.AddPodAdmitHandler(lifecycle.NewAppArmorAdmitHandler(klet.appArmorValidator))
+	klet.AddPodAdmitHandler(lifecycle.NewPredicateAdmitHandler(klet.getNodeAnyWay))
 	// apply functional Option's
 	for _, opt := range kubeDeps.Options {
 		opt(klet)
 	}
-
-	klet.appArmorValidator = apparmor.NewValidator(kubeCfg.ContainerRuntime)
-	klet.softAdmitHandlers.AddPodAdmitHandler(lifecycle.NewAppArmorAdmitHandler(klet.appArmorValidator))
 
 	// Finally, put the most recent version of the config on the Kubelet, so
 	// people can see how it was configured.
@@ -1054,13 +1052,7 @@ type Kubelet struct {
 
 	// TODO: think about moving this to be centralized in PodWorkers in follow-on.
 	// the list of handlers to call during pod admission.
-	admitHandlers lifecycle.PodAdmitHandlers
-
-	// softAdmithandlers are applied to the pod after it is admitted by the Kubelet, but before it is
-	// run. A pod rejected by a softAdmitHandler will be left in a Pending state indefinitely. If a
-	// rejected pod should not be recreated, or the scheduler is not aware of the rejection rule, the
-	// admission rule should be applied by a softAdmitHandler.
-	softAdmitHandlers lifecycle.PodAdmitHandlers
+	lifecycle.PodAdmitHandlers
 
 	// the list of handlers to call during pod sync loop.
 	lifecycle.PodSyncLoopHandlers
@@ -1090,16 +1082,6 @@ type Kubelet struct {
 
 	// The AppArmor validator for checking whether AppArmor is supported.
 	appArmorValidator apparmor.Validator
-
-	// The handler serving CRI streaming calls (exec/attach/port-forward).
-	criHandler http.Handler
-
-	// experimentalHostUserNamespaceDefaulting sets userns=true when users request host namespaces (pid, ipc, net),
-	// are using non-namespaced capabilities (mknod, sys_time, sys_module), the pod contains a privileged container,
-	// or using host path volumes.
-	// This should only be enabled when the container runtime is performing user remapping AND if the
-	// experimental behavior is desired.
-	experimentalHostUserNamespaceDefaulting bool
 }
 
 // setupDataDirs creates:
@@ -1169,9 +1151,9 @@ func (kl *Kubelet) initializeModules() error {
 	}
 
 	// Step 3: If the container logs directory does not exist, create it.
-	if _, err := os.Stat(ContainerLogsDir); err != nil {
-		if err := kl.os.MkdirAll(ContainerLogsDir, 0755); err != nil {
-			glog.Errorf("Failed to create directory %q: %v", ContainerLogsDir, err)
+	if _, err := os.Stat(containerLogsDir); err != nil {
+		if err := kl.os.MkdirAll(containerLogsDir, 0755); err != nil {
+			glog.Errorf("Failed to create directory %q: %v", containerLogsDir, err)
 		}
 	}
 
@@ -1404,47 +1386,17 @@ func (kl *Kubelet) syncPod(o syncPodOptions) error {
 		metrics.PodStartLatency.Observe(metrics.SinceInMicroseconds(firstSeenTime))
 	}
 
-	runnable := kl.canRunPod(pod)
-	if !runnable.Admit {
-		// Pod is not runnable; update the Pod and Container statuses to why.
-		apiPodStatus.Reason = runnable.Reason
-		apiPodStatus.Message = runnable.Message
-		// Waiting containers are not creating.
-		const waitingReason = "Blocked"
-		for _, cs := range apiPodStatus.InitContainerStatuses {
-			if cs.State.Waiting != nil {
-				cs.State.Waiting.Reason = waitingReason
-			}
-		}
-		for _, cs := range apiPodStatus.ContainerStatuses {
-			if cs.State.Waiting != nil {
-				cs.State.Waiting.Reason = waitingReason
-			}
-		}
-	}
-
 	// Update status in the status manager
 	kl.statusManager.SetPodStatus(pod, apiPodStatus)
 
 	// Kill pod if it should not be running
-	if !runnable.Admit || pod.DeletionTimestamp != nil || apiPodStatus.Phase == api.PodFailed {
-		var syncErr error
-		if err := kl.killPod(pod, nil, podStatus, nil); err != nil {
-			syncErr = fmt.Errorf("error killing pod: %v", err)
-			utilruntime.HandleError(syncErr)
-		} else {
-			if !runnable.Admit {
-				// There was no error killing the pod, but the pod cannot be run.
-				// Return an error to signal that the sync loop should back off.
-				syncErr = fmt.Errorf("pod cannot be run: %s", runnable.Message)
-			}
+	if errOuter := canRunPod(pod); errOuter != nil || pod.DeletionTimestamp != nil || apiPodStatus.Phase == api.PodFailed {
+		if errInner := kl.killPod(pod, nil, podStatus, nil); errInner != nil {
+			errOuter = fmt.Errorf("error killing pod: %v", errInner)
+			utilruntime.HandleError(errOuter)
 		}
-		return syncErr
-	}
-
-	// If the network plugin is not ready, only start the pod if it uses the host network
-	if rs := kl.runtimeState.networkErrors(); len(rs) != 0 && !podUsesHostNetwork(pod) {
-		return fmt.Errorf("network is not ready: %v", rs)
+		// there was no error killing the pod, but the pod cannot be run, so we return that err (if any)
+		return errOuter
 	}
 
 	// Create Cgroups for the pod and apply resource parameters
@@ -1667,7 +1619,7 @@ func (kl *Kubelet) canAdmitPod(pods []*api.Pod, pod *api.Pod) (bool, string, str
 	// TODO: move out of disk check into a pod admitter
 	// TODO: out of resource eviction should have a pod admitter call-out
 	attrs := &lifecycle.PodAdmitAttributes{Pod: pod, OtherPods: pods}
-	for _, podAdmitHandler := range kl.admitHandlers {
+	for _, podAdmitHandler := range kl.PodAdmitHandlers {
 		if result := podAdmitHandler.Admit(attrs); !result.Admit {
 			return false, result.Reason, result.Message
 		}
@@ -1680,29 +1632,6 @@ func (kl *Kubelet) canAdmitPod(pods []*api.Pod, pod *api.Pod) (bool, string, str
 	}
 
 	return true, "", ""
-}
-
-func (kl *Kubelet) canRunPod(pod *api.Pod) lifecycle.PodAdmitResult {
-	attrs := &lifecycle.PodAdmitAttributes{Pod: pod}
-	// Get "OtherPods". Rejected pods are failed, so only include admitted pods that are alive.
-	attrs.OtherPods = kl.filterOutTerminatedPods(kl.podManager.GetPods())
-
-	for _, handler := range kl.softAdmitHandlers {
-		if result := handler.Admit(attrs); !result.Admit {
-			return result
-		}
-	}
-
-	// TODO: Refactor as a soft admit handler.
-	if err := canRunPod(pod); err != nil {
-		return lifecycle.PodAdmitResult{
-			Admit:   false,
-			Reason:  "Forbidden",
-			Message: err.Error(),
-		}
-	}
-
-	return lifecycle.PodAdmitResult{Admit: true}
 }
 
 // syncLoop is the main loop for processing changes. It watches for changes from
@@ -1721,7 +1650,7 @@ func (kl *Kubelet) syncLoop(updates <-chan kubetypes.PodUpdate, handler SyncHand
 	defer housekeepingTicker.Stop()
 	plegCh := kl.pleg.Watch()
 	for {
-		if rs := kl.runtimeState.runtimeErrors(); len(rs) != 0 {
+		if rs := kl.runtimeState.errors(); len(rs) != 0 {
 			glog.Infof("skipping pod synchronization - %v", rs)
 			time.Sleep(5 * time.Second)
 			continue
@@ -1851,8 +1780,8 @@ func (kl *Kubelet) syncLoopIteration(configCh <-chan kubetypes.PodUpdate, handle
 		}
 	case <-housekeepingCh:
 		if !kl.sourcesReady.AllReady() {
-			// If the sources aren't ready or volume manager has not yet synced the states,
-			// skip housekeeping, as we may accidentally delete pods from unready sources.
+			// If the sources aren't ready, skip housekeeping, as we may
+			// accidentally delete pods from unready sources.
 			glog.V(4).Infof("SyncLoop (housekeeping, skipped): sources aren't ready yet.")
 		} else {
 			glog.V(4).Infof("SyncLoop (housekeeping)")
@@ -1909,47 +1838,24 @@ func (kl *Kubelet) handleMirrorPod(mirrorPod *api.Pod, start time.Time) {
 // a config source.
 func (kl *Kubelet) HandlePodAdditions(pods []*api.Pod) {
 	start := kl.clock.Now()
-
-	// Pass critical pods through admission check first.
-	var criticalPods []*api.Pod
-	var nonCriticalPods []*api.Pod
-	for _, p := range pods {
-		if kubetypes.IsCriticalPod(p) {
-			criticalPods = append(criticalPods, p)
-		} else {
-			nonCriticalPods = append(nonCriticalPods, p)
-		}
-	}
-	sort.Sort(sliceutils.PodsByCreationTime(criticalPods))
-	sort.Sort(sliceutils.PodsByCreationTime(nonCriticalPods))
-
-	for _, pod := range append(criticalPods, nonCriticalPods...) {
-		existingPods := kl.podManager.GetPods()
-		// Always add the pod to the pod manager. Kubelet relies on the pod
-		// manager as the source of truth for the desired state. If a pod does
-		// not exist in the pod manager, it means that it has been deleted in
-		// the apiserver and no action (other than cleanup) is required.
-		kl.podManager.AddPod(pod)
-
+	sort.Sort(sliceutils.PodsByCreationTime(pods))
+	for _, pod := range pods {
 		if kubepod.IsMirrorPod(pod) {
+			kl.podManager.AddPod(pod)
 			kl.handleMirrorPod(pod, start)
 			continue
 		}
-
-		if !kl.podIsTerminated(pod) {
-			// Only go through the admission process if the pod is not
-			// terminated.
-
-			// We failed pods that we rejected, so activePods include all admitted
-			// pods that are alive.
-			activePods := kl.filterOutTerminatedPods(existingPods)
-
-			// Check if we can admit the pod; if not, reject it.
-			if ok, reason, message := kl.canAdmitPod(activePods, pod); !ok {
-				kl.rejectPod(pod, reason, message)
-				continue
-			}
+		// Note that allPods excludes the new pod.
+		allPods := kl.podManager.GetPods()
+		// We failed pods that we rejected, so activePods include all admitted
+		// pods that are alive.
+		activePods := kl.filterOutTerminatedPods(allPods)
+		// Check if we can admit the pod; if not, reject it.
+		if ok, reason, message := kl.canAdmitPod(activePods, pod); !ok {
+			kl.rejectPod(pod, reason, message)
+			continue
 		}
+		kl.podManager.AddPod(pod)
 		mirrorPod, _ := kl.podManager.GetMirrorPodByPod(pod)
 		kl.dispatchWork(pod, kubetypes.SyncPodCreate, mirrorPod, start)
 		kl.probeManager.AddPod(pod)
@@ -2038,39 +1944,9 @@ func (kl *Kubelet) PLEGHealthCheck() (bool, error) {
 // and returns an error if the status check fails.  If the status check is OK,
 // update the container runtime uptime in the kubelet runtimeState.
 func (kl *Kubelet) updateRuntimeUp() {
-	s, err := kl.containerRuntime.Status()
-	if err != nil {
+	if err := kl.containerRuntime.Status(); err != nil {
 		glog.Errorf("Container runtime sanity check failed: %v", err)
 		return
-	}
-	// Only check specific conditions when runtime integration type is cri,
-	// because the old integration doesn't populate any runtime condition.
-	if kl.kubeletConfiguration.EnableCRI {
-		if s == nil {
-			glog.Errorf("Container runtime status is nil")
-			return
-		}
-		// Periodically log the whole runtime status for debugging.
-		// TODO(random-liu): Consider to send node event when optional
-		// condition is unmet.
-		glog.V(4).Infof("Container runtime status: %v", s)
-		networkReady := s.GetRuntimeCondition(kubecontainer.NetworkReady)
-		if networkReady == nil || !networkReady.Status {
-			glog.Errorf("Container runtime network not ready: %v", networkReady)
-			kl.runtimeState.setNetworkState(fmt.Errorf("runtime network not ready: %v", networkReady))
-		} else {
-			// Set nil if the containe runtime network is ready.
-			kl.runtimeState.setNetworkState(nil)
-		}
-		// TODO(random-liu): Add runtime error in runtimeState, and update it
-		// when runtime is not ready, so that the information in RuntimeReady
-		// condition will be propagated to NodeReady condition.
-		runtimeReady := s.GetRuntimeCondition(kubecontainer.RuntimeReady)
-		// If RuntimeReady is not set or is false, report an error.
-		if runtimeReady == nil || !runtimeReady.Status {
-			glog.Errorf("Container runtime not ready: %v", runtimeReady)
-			return
-		}
 	}
 	kl.oneTimeInitializer.Do(kl.initializeRuntimeDependentModules)
 	kl.runtimeState.setRuntimeSync(kl.clock.Now())
@@ -2113,7 +1989,7 @@ func (kl *Kubelet) ResyncInterval() time.Duration {
 
 // ListenAndServe runs the kubelet HTTP server.
 func (kl *Kubelet) ListenAndServe(address net.IP, port uint, tlsOptions *server.TLSOptions, auth server.AuthInterface, enableDebuggingHandlers bool) {
-	server.ListenAndServeKubeletServer(kl, kl.resourceAnalyzer, address, port, tlsOptions, auth, enableDebuggingHandlers, kl.containerRuntime, kl.criHandler)
+	server.ListenAndServeKubeletServer(kl, kl.resourceAnalyzer, address, port, tlsOptions, auth, enableDebuggingHandlers, kl.containerRuntime)
 }
 
 // ListenAndServeReadOnly runs the kubelet HTTP server in read-only mode.
@@ -2178,21 +2054,4 @@ func ParseReservation(kubeReserved, systemReserved utilconfig.ConfigurationMap) 
 		reservation.System = rl
 	}
 	return reservation, nil
-}
-
-// Gets the streaming server configuration to use with in-process CRI shims.
-func getStreamingConfig(kubeCfg *componentconfig.KubeletConfiguration, kubeDeps *KubeletDeps) *streaming.Config {
-	config := &streaming.Config{
-		// Use a relative redirect (no scheme or host).
-		BaseURL: &url.URL{
-			Path: "/cri/",
-		},
-		StreamIdleTimeout:     kubeCfg.StreamingConnectionIdleTimeout.Duration,
-		StreamCreationTimeout: streaming.DefaultConfig.StreamCreationTimeout,
-		SupportedProtocols:    streaming.DefaultConfig.SupportedProtocols,
-	}
-	if kubeDeps.TLSOptions != nil {
-		config.TLSConfig = kubeDeps.TLSOptions.Config
-	}
-	return config
 }

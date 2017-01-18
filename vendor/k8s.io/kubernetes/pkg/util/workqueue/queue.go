@@ -154,7 +154,7 @@ func (q *Type) Done(item interface{}) {
 	}
 }
 
-// ShutDown will cause q to ignore all new items added to it. As soon as the
+// Shutdown will cause q to ignore all new items added to it. As soon as the
 // worker goroutines have drained the existing items in the queue, they will be
 // instructed to exit.
 func (q *Type) ShutDown() {

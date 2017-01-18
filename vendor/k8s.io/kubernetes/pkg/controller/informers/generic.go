@@ -21,7 +21,6 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/rbac"
 	"k8s.io/kubernetes/pkg/client/cache"
@@ -68,9 +67,6 @@ func (f *sharedInformerFactory) ForResource(resource unversioned.GroupResource) 
 		return &genericInformer{resource: resource, informer: f.RoleBindings().Informer()}, nil
 	case rbac.Resource("roles"):
 		return &genericInformer{resource: resource, informer: f.Roles().Informer()}, nil
-
-	case batch.Resource("jobs"):
-		return &genericInformer{resource: resource, informer: f.Jobs().Informer()}, nil
 	}
 
 	return nil, fmt.Errorf("no informer found for %v", resource)

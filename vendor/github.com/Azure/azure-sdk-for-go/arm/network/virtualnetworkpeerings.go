@@ -26,7 +26,7 @@ import (
 
 // VirtualNetworkPeeringsClient is the the Microsoft Azure Network management
 // API provides a RESTful set of web services that interact with Microsoft
-// Azure Networks service to manage your network resources. The API has
+// Azure Networks service to manage your network resrources. The API has
 // entities that capture the relationship between an end user and the
 // Microsoft Azure Networks service.
 type VirtualNetworkPeeringsClient struct {
@@ -45,15 +45,16 @@ func NewVirtualNetworkPeeringsClientWithBaseURI(baseURI string, subscriptionID s
 	return VirtualNetworkPeeringsClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates a peering in the specified virtual
-// network. This method may poll for completion. Polling can be canceled by
-// passing the cancel channel argument. The channel will be used to cancel
-// polling and any outstanding HTTP requests.
+// CreateOrUpdate the Put virtual network peering operation creates/updates a
+// peering in the specified virtual network This method may poll for
+// completion. Polling can be canceled by passing the cancel channel
+// argument. The channel will be used to cancel polling and any outstanding
+// HTTP requests.
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is
 // the name of the virtual network. virtualNetworkPeeringName is the name of
 // the peering. virtualNetworkPeeringParameters is parameters supplied to the
-// create or update virtual network peering operation.
+// create/update virtual network peering operation
 func (client VirtualNetworkPeeringsClient) CreateOrUpdate(resourceGroupName string, virtualNetworkName string, virtualNetworkPeeringName string, virtualNetworkPeeringParameters VirtualNetworkPeering, cancel <-chan struct{}) (result autorest.Response, err error) {
 	req, err := client.CreateOrUpdatePreparer(resourceGroupName, virtualNetworkName, virtualNetworkPeeringName, virtualNetworkPeeringParameters, cancel)
 	if err != nil {
@@ -117,10 +118,10 @@ func (client VirtualNetworkPeeringsClient) CreateOrUpdateResponder(resp *http.Re
 	return
 }
 
-// Delete deletes the specified virtual network peering. This method may poll
-// for completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// Delete the delete virtual network peering operation deletes the specified
+// peering. This method may poll for completion. Polling can be canceled by
+// passing the cancel channel argument. The channel will be used to cancel
+// polling and any outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is
 // the name of the virtual network. virtualNetworkPeeringName is the name of
@@ -186,7 +187,8 @@ func (client VirtualNetworkPeeringsClient) DeleteResponder(resp *http.Response) 
 	return
 }
 
-// Get gets the specified virtual network peering.
+// Get the Get virtual network peering operation retreives information about
+// the specified virtual network peering.
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is
 // the name of the virtual network. virtualNetworkPeeringName is the name of
@@ -251,7 +253,8 @@ func (client VirtualNetworkPeeringsClient) GetResponder(resp *http.Response) (re
 	return
 }
 
-// List gets all virtual network peerings in a virtual network.
+// List the List virtual network peerings operation retrieves all the peerings
+// in a virtual network.
 //
 // resourceGroupName is the name of the resource group. virtualNetworkName is
 // the name of the virtual network.
@@ -318,7 +321,7 @@ func (client VirtualNetworkPeeringsClient) ListResponder(resp *http.Response) (r
 func (client VirtualNetworkPeeringsClient) ListNextResults(lastResults VirtualNetworkPeeringListResult) (result VirtualNetworkPeeringListResult, err error) {
 	req, err := lastResults.VirtualNetworkPeeringListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", nil, "Failure preparing next results request request")
 	}
 	if req == nil {
 		return
@@ -327,12 +330,12 @@ func (client VirtualNetworkPeeringsClient) ListNextResults(lastResults VirtualNe
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure sending next results request request")
 	}
 
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.VirtualNetworkPeeringsClient", "List", resp, "Failure responding to next results request request")
 	}
 
 	return

@@ -23,8 +23,6 @@ import (
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/api/unversioned"
-
-	"github.com/golang/glog"
 )
 
 // APIGroupResources is an API group with a mapping of versions to
@@ -37,7 +35,7 @@ type APIGroupResources struct {
 }
 
 // NewRESTMapper returns a PriorityRESTMapper based on the discovered
-// groups and resources passed in.
+// groups and resourced passed in.
 func NewRESTMapper(groupResources []*APIGroupResources, versionInterfaces meta.VersionInterfacesFunc) meta.RESTMapper {
 	unionMapper := meta.MultiRESTMapper{}
 
@@ -49,8 +47,8 @@ func NewRESTMapper(groupResources []*APIGroupResources, versionInterfaces meta.V
 		groupPriority = append(groupPriority, group.Group.Name)
 
 		if len(group.Group.PreferredVersion.Version) != 0 {
-			preferred := group.Group.PreferredVersion.Version
-			if _, ok := group.VersionedResources[preferred]; ok {
+			preffered := group.Group.PreferredVersion.Version
+			if _, ok := group.VersionedResources[preffered]; ok {
 				resourcePriority = append(resourcePriority, unversioned.GroupVersionResource{
 					Group:    group.Group.Name,
 					Version:  group.Group.PreferredVersion.Version,
@@ -143,14 +141,14 @@ func GetAPIGroupResources(cl DiscoveryInterface) ([]*APIGroupResources, error) {
 type DeferredDiscoveryRESTMapper struct {
 	initMu           sync.Mutex
 	delegate         meta.RESTMapper
-	cl               CachedDiscoveryInterface
+	cl               DiscoveryInterface
 	versionInterface meta.VersionInterfacesFunc
 }
 
 // NewDeferredDiscoveryRESTMapper returns a
 // DeferredDiscoveryRESTMapper that will lazily query the provided
 // client for discovery information to do REST mappings.
-func NewDeferredDiscoveryRESTMapper(cl CachedDiscoveryInterface, versionInterface meta.VersionInterfacesFunc) *DeferredDiscoveryRESTMapper {
+func NewDeferredDiscoveryRESTMapper(cl DiscoveryInterface, versionInterface meta.VersionInterfacesFunc) *DeferredDiscoveryRESTMapper {
 	return &DeferredDiscoveryRESTMapper{
 		cl:               cl,
 		versionInterface: versionInterface,
@@ -177,118 +175,79 @@ func (d *DeferredDiscoveryRESTMapper) getDelegate() (meta.RESTMapper, error) {
 // Reset resets the internally cached Discovery information and will
 // cause the next mapping request to re-discover.
 func (d *DeferredDiscoveryRESTMapper) Reset() {
-	glog.V(5).Info("Invalidating discovery information")
-
 	d.initMu.Lock()
-	defer d.initMu.Unlock()
-
-	d.cl.Invalidate()
 	d.delegate = nil
+	d.initMu.Unlock()
 }
 
 // KindFor takes a partial resource and returns back the single match.
 // It returns an error if there are multiple matches.
-func (d *DeferredDiscoveryRESTMapper) KindFor(resource unversioned.GroupVersionResource) (gvk unversioned.GroupVersionKind, err error) {
+func (d *DeferredDiscoveryRESTMapper) KindFor(resource unversioned.GroupVersionResource) (unversioned.GroupVersionKind, error) {
 	del, err := d.getDelegate()
 	if err != nil {
 		return unversioned.GroupVersionKind{}, err
 	}
-	gvk, err = del.KindFor(resource)
-	if err != nil && !d.cl.Fresh() {
-		d.Reset()
-		gvk, err = d.KindFor(resource)
-	}
-	return
+	return del.KindFor(resource)
 }
 
 // KindsFor takes a partial resource and returns back the list of
 // potential kinds in priority order.
-func (d *DeferredDiscoveryRESTMapper) KindsFor(resource unversioned.GroupVersionResource) (gvks []unversioned.GroupVersionKind, err error) {
+func (d *DeferredDiscoveryRESTMapper) KindsFor(resource unversioned.GroupVersionResource) ([]unversioned.GroupVersionKind, error) {
 	del, err := d.getDelegate()
 	if err != nil {
 		return nil, err
 	}
-	gvks, err = del.KindsFor(resource)
-	if len(gvks) == 0 && !d.cl.Fresh() {
-		d.Reset()
-		gvks, err = d.KindsFor(resource)
-	}
-	return
+	return del.KindsFor(resource)
 }
 
 // ResourceFor takes a partial resource and returns back the single
 // match. It returns an error if there are multiple matches.
-func (d *DeferredDiscoveryRESTMapper) ResourceFor(input unversioned.GroupVersionResource) (gvr unversioned.GroupVersionResource, err error) {
+func (d *DeferredDiscoveryRESTMapper) ResourceFor(input unversioned.GroupVersionResource) (unversioned.GroupVersionResource, error) {
 	del, err := d.getDelegate()
 	if err != nil {
 		return unversioned.GroupVersionResource{}, err
 	}
-	gvr, err = del.ResourceFor(input)
-	if err != nil && !d.cl.Fresh() {
-		d.Reset()
-		gvr, err = d.ResourceFor(input)
-	}
-	return
+	return del.ResourceFor(input)
 }
 
 // ResourcesFor takes a partial resource and returns back the list of
 // potential resource in priority order.
-func (d *DeferredDiscoveryRESTMapper) ResourcesFor(input unversioned.GroupVersionResource) (gvrs []unversioned.GroupVersionResource, err error) {
+func (d *DeferredDiscoveryRESTMapper) ResourcesFor(input unversioned.GroupVersionResource) ([]unversioned.GroupVersionResource, error) {
 	del, err := d.getDelegate()
 	if err != nil {
 		return nil, err
 	}
-	gvrs, err = del.ResourcesFor(input)
-	if len(gvrs) == 0 && !d.cl.Fresh() {
-		d.Reset()
-		gvrs, err = d.ResourcesFor(input)
-	}
-	return
+	return del.ResourcesFor(input)
 }
 
 // RESTMapping identifies a preferred resource mapping for the
 // provided group kind.
-func (d *DeferredDiscoveryRESTMapper) RESTMapping(gk unversioned.GroupKind, versions ...string) (m *meta.RESTMapping, err error) {
+func (d *DeferredDiscoveryRESTMapper) RESTMapping(gk unversioned.GroupKind, versions ...string) (*meta.RESTMapping, error) {
 	del, err := d.getDelegate()
 	if err != nil {
 		return nil, err
 	}
-	m, err = del.RESTMapping(gk, versions...)
-	if err != nil && !d.cl.Fresh() {
-		d.Reset()
-		m, err = d.RESTMapping(gk, versions...)
-	}
-	return
+	return del.RESTMapping(gk, versions...)
 }
 
 // RESTMappings returns the RESTMappings for the provided group kind
 // in a rough internal preferred order. If no kind is found, it will
 // return a NoResourceMatchError.
-func (d *DeferredDiscoveryRESTMapper) RESTMappings(gk unversioned.GroupKind) (ms []*meta.RESTMapping, err error) {
+func (d *DeferredDiscoveryRESTMapper) RESTMappings(gk unversioned.GroupKind) ([]*meta.RESTMapping, error) {
 	del, err := d.getDelegate()
 	if err != nil {
 		return nil, err
 	}
-	ms, err = del.RESTMappings(gk)
-	if len(ms) == 0 && !d.cl.Fresh() {
-		d.Reset()
-		ms, err = d.RESTMappings(gk)
-	}
-	return
+	return del.RESTMappings(gk)
 }
 
 // AliasesForResource returns whether a resource has an alias or not.
-func (d *DeferredDiscoveryRESTMapper) AliasesForResource(resource string) (as []string, ok bool) {
+func (d *DeferredDiscoveryRESTMapper) AliasesForResource(resource string) ([]string, bool) {
 	del, err := d.getDelegate()
 	if err != nil {
 		return nil, false
 	}
-	as, ok = del.AliasesForResource(resource)
-	if len(as) == 0 && !d.cl.Fresh() {
-		d.Reset()
-		as, ok = d.AliasesForResource(resource)
-	}
-	return
+	return del.AliasesForResource(resource)
 }
 
 // ResourceSingularizer converts a resource name from plural to
@@ -298,12 +257,7 @@ func (d *DeferredDiscoveryRESTMapper) ResourceSingularizer(resource string) (sin
 	if err != nil {
 		return resource, err
 	}
-	singular, err = del.ResourceSingularizer(resource)
-	if err != nil && !d.cl.Fresh() {
-		d.Reset()
-		singular, err = d.ResourceSingularizer(resource)
-	}
-	return
+	return del.ResourceSingularizer(resource)
 }
 
 func (d *DeferredDiscoveryRESTMapper) String() string {

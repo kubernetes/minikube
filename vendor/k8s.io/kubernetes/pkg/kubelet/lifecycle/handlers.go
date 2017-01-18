@@ -55,8 +55,7 @@ func (hr *HandlerRunner) Run(containerID kubecontainer.ContainerID, pod *api.Pod
 	switch {
 	case handler.Exec != nil:
 		var msg string
-		// TODO(timstclair): Pass a proper timeout value.
-		output, err := hr.commandRunner.RunInContainer(containerID, handler.Exec.Command, 0)
+		output, err := hr.commandRunner.RunInContainer(containerID, handler.Exec.Command)
 		if err != nil {
 			msg := fmt.Sprintf("Exec lifecycle hook (%v) for Container %q in Pod %q failed - error: %v, message: %q", handler.Exec.Command, container.Name, format.Pod(pod), err, string(output))
 			glog.V(1).Infof(msg)
@@ -150,11 +149,6 @@ type appArmorAdmitHandler struct {
 }
 
 func (a *appArmorAdmitHandler) Admit(attrs *PodAdmitAttributes) PodAdmitResult {
-	// If the pod is already running or terminated, no need to recheck AppArmor.
-	if attrs.Pod.Status.Phase != api.PodPending {
-		return PodAdmitResult{Admit: true}
-	}
-
 	err := a.Validate(attrs.Pod)
 	if err == nil {
 		return PodAdmitResult{Admit: true}
