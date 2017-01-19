@@ -163,3 +163,41 @@ fi
 
 # /etc dirs are initialised from /usr/local, to allow the user/admin to customise
 mkdir -p /var/lib/boot2docker/etc/
+
+# Below code is taken from: https://github.com/boot2docker/boot2docker/blob/master/rootfs/rootfs/etc/rc.d/vbox
+# VirtualBox Host Mounting
+# - this will bail quickly and gracefully if we're not in VBox
+if modprobe vboxguest &> /dev/null && modprobe vboxsf &> /dev/null; then
+	mountOptions='defaults,iocharset=utf8'
+	if grep -q '^docker:' /etc/passwd; then
+		mountOptions="${mountOptions},uid=$(id -u docker),gid=$(id -g docker)"
+	fi
+	
+	# try mounting "$name" (which defaults to "$dir") at "$dir",
+	# but quietly clean up empty directories if it fails
+	try_mount_share() {
+		dir="$1"
+		name="${2:-$dir}"
+		
+		# normalize "dir" to be definitively root-relative
+		# ie, "/Users" and "Users" will both translate to "/Users" explicitly
+		dir="/${dir#/}"
+		
+		mkdir -p "$dir" 2>/dev/null
+		if ! mount -t vboxsf -o "$mountOptions" "$name" "$dir" 2>/dev/null; then
+			rmdir "$dir" 2>/dev/null || true
+			while [ "$(dirname "$dir")" != "$dir" ]; do
+				dir="$(dirname "$dir")"
+				rmdir "$dir" 2>/dev/null || break
+			done
+			
+			return 1
+		fi
+		
+		return 0
+	}
+	
+	for line in $(VBoxControl --nologo sharedfolder list -automount | tail -n+3 | cut  -d ' ' -f 3); do
+		try_mount_share "$line"
+	done
+fi
