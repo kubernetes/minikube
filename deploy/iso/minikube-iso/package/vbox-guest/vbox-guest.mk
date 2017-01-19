@@ -39,6 +39,8 @@ define VBOX_GUEST_BUILD_CMDS
 	7z x $(BR2_DL_DIR)/VBoxGuestAdditions_${VBOX_GUEST_VERSION}.iso -ir'!VBoxLinuxAdditions.run' -o"$(@D)"
 	sh $(@D)/VBoxLinuxAdditions.run --noexec --target $(@D)
 	tar -C $(@D) -xjf $(@D)/VBoxGuestAdditions-amd64.tar.bz2 sbin/VBoxService
+	tar -C $(@D) -xjf $(@D)/VBoxGuestAdditions-amd64.tar.bz2 bin/VBoxControl
+
 
 	$(TARGET_CC) -Wall -O2 -D_GNU_SOURCE -DIN_RING3 \
 		-I$(@D)/vbox-modules/vboxsf/include \
@@ -56,6 +58,10 @@ define VBOX_GUEST_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
 		$(@D)/sbin/VBoxService \
 		$(TARGET_DIR)/sbin
+
+	$(INSTALL) -Dm755 \
+		$(@D)/bin/VBoxControl \
+		$(TARGET_DIR)/bin
 endef
 
 $(eval $(kernel-module))
