@@ -177,11 +177,16 @@ func MaybePrintKubectlDownloadMsg() {
 	if runtime.GOOS == "windows" {
 		verb = "do"
 		installInstructions = `download kubectl from:
-https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl
+https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl.exe
 Add kubectl to your system PATH`
 	}
 
-	_, err := exec.LookPath("kubectl")
+	var err error
+	if runtime.GOOS == "windows" {
+		_, err = exec.LookPath("kubectl.exe")
+	} else {
+		_, err = exec.LookPath("kubectl")
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr,
 			`========================================
