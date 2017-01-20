@@ -10,6 +10,7 @@ BR2_INIT_SYSTEMD=y
 BR2_SYSTEM_BIN_SH_BASH=y
 # BR2_TARGET_GENERIC_GETTY is not set
 BR2_ROOTFS_USERS_TABLES="$(BR2_EXTERNAL)/board/coreos/minikube/users"
+BR2_ROOTFS_DEVICE_TABLE="$(BR2_EXTERNAL)/board/coreos/minikube/permissions"
 BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL)/board/coreos/minikube/rootfs-overlay"
 BR2_LINUX_KERNEL=y
 BR2_LINUX_KERNEL_USE_CUSTOM_CONFIG=y
