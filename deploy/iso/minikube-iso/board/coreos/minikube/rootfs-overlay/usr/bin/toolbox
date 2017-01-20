@@ -1,0 +1,78 @@
+#!/bin/bash
+# https://github.com/coreos/toolbox
+
+set -e
+set -o pipefail
+
+machine=$(uname -m)
+
+case ${machine} in
+	aarch64 )
+		TOOLBOX_NAME=fedora-base-24-1.1.aarch64
+		TOOLBOX_DOCKER_ARCHIVE="https://dl.fedoraproject.org/pub/fedora-secondary/releases/24/Docker/aarch64/images/Fedora-Docker-Base-24-1.1.aarch64.tar.xz"
+		;;
+	x86_64 )
+		TOOLBOX_DOCKER_IMAGE=fedora
+		TOOLBOX_DOCKER_TAG=24
+		;;
+	* )
+		echo "Warning: Unknown machine type ${machine}" >&2
+		;;
+esac
+
+TOOLBOX_USER=root
+TOOLBOX_DIRECTORY="/var/lib/toolbox"
+TOOLBOX_BIND="--bind=/:/media/root --bind=/usr:/media/root/usr --bind=/run:/media/root/run"
+# Ex: "--setenv=KEY=VALUE"
+TOOLBOX_ENV=""
+
+toolboxrc="${HOME}"/.toolboxrc
+
+# System defaults
+if [ -f "/etc/default/toolbox" ]; then
+	source "/etc/default/toolbox"
+fi
+
+# User overrides
+if [ -f "${toolboxrc}" ]; then
+	source "${toolboxrc}"
+fi
+
+if [[ -n "${TOOLBOX_DOCKER_IMAGE}" ]] && [[ -n "${TOOLBOX_DOCKER_TAG}" ]]; then
+	TOOLBOX_NAME=${TOOLBOX_DOCKER_IMAGE}-${TOOLBOX_DOCKER_TAG}
+	have_docker_image="y"
+fi
+
+machinename=$(echo "${USER}-${TOOLBOX_NAME}" | sed -r 's/[^a-zA-Z0-9_.-]/_/g')
+machinepath="${TOOLBOX_DIRECTORY}/${machinename}"
+osrelease="${machinepath}/etc/os-release"
+if [ ! -f "${osrelease}" ] || systemctl is-failed -q "${machinename}" ; then
+	sudo mkdir -p "${machinepath}"
+	sudo chown "${USER}:" "${machinepath}"
+
+	if [[ -n "${have_docker_image}" ]]; then
+		riid=$(sudo rkt --insecure-options=image fetch "docker://${TOOLBOX_DOCKER_IMAGE}:${TOOLBOX_DOCKER_TAG}")
+		sudo rkt image extract --overwrite --rootfs-only "${riid}" "${machinepath}"
+		sudo rkt image rm "${riid}"
+	elif [[ -n "${TOOLBOX_DOCKER_ARCHIVE}" ]]; then
+		tmpdir=$(mktemp -d -p /var/tmp/)
+		trap "sudo rm -rf ${tmpdir}" EXIT PIPE
+		wget -O- "${TOOLBOX_DOCKER_ARCHIVE}" | xz -cd | tar -C ${tmpdir} -xf -
+		layer=$(find ${tmpdir} -name layer.tar -type f)
+		sudo tar -C ${machinepath} -xf ${layer}
+		trap - EXIT PIPE
+		sudo rm -rf ${tmpdir}
+	else
+		echo "Error: No toolbox filesystem specified." >&2
+		exit 1
+	fi
+	sudo touch "${osrelease}"
+fi
+
+sudo systemd-nspawn \
+	--directory="${machinepath}" \
+	--capability=all \
+	--share-system \
+        ${TOOLBOX_BIND} \
+        ${TOOLBOX_ENV} \
+	--user="${TOOLBOX_USER}" "$@"
