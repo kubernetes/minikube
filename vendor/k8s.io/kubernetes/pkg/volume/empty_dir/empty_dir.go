@@ -174,13 +174,6 @@ func (ed *emptyDir) GetAttributes() volume.Attributes {
 	}
 }
 
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *emptyDir) CanMount() error {
-	return nil
-}
-
 // SetUp creates new directory.
 func (ed *emptyDir) SetUp(fsGroup *int64) error {
 	return ed.SetUpAt(ed.GetPath(), fsGroup)
@@ -299,13 +292,6 @@ func (ed *emptyDir) TearDown() error {
 
 // TearDownAt simply discards everything in the directory.
 func (ed *emptyDir) TearDownAt(dir string) error {
-	if pathExists, pathErr := volumeutil.PathExists(dir); pathErr != nil {
-		return fmt.Errorf("Error checking if path exists: %v", pathErr)
-	} else if !pathExists {
-		glog.Warningf("Warning: Unmount skipped because path does not exist: %v", dir)
-		return nil
-	}
-
 	// Figure out the medium.
 	medium, isMnt, err := ed.mountDetector.GetMountMedium(dir)
 	if err != nil {

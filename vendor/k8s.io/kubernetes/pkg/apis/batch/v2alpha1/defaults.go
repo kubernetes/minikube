@@ -24,7 +24,7 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	RegisterDefaults(scheme)
 	return scheme.AddDefaultingFuncs(
 		SetDefaults_Job,
-		SetDefaults_CronJob,
+		SetDefaults_ScheduledJob,
 	)
 }
 
@@ -47,7 +47,7 @@ func SetDefaults_Job(obj *Job) {
 	}
 }
 
-func SetDefaults_CronJob(obj *CronJob) {
+func SetDefaults_ScheduledJob(obj *ScheduledJob) {
 	if obj.Spec.ConcurrencyPolicy == "" {
 		obj.Spec.ConcurrencyPolicy = AllowConcurrent
 	}

@@ -191,11 +191,19 @@ func (kl *Kubelet) cleanupBandwidthLimits(allPods []*api.Pod) error {
 
 // syncNetworkStatus updates the network state
 func (kl *Kubelet) syncNetworkStatus() {
-	// For cri integration, network state will be updated in updateRuntimeUp,
-	// we'll get runtime network status through cri directly.
-	// TODO: Remove this once we completely switch to cri integration.
+	// TODO(#35701): cri shim handles network plugin but we currently
+	// don't have a cri status hook, so network plugin status isn't
+	// reported if --experimental-runtime-integration=cri. This isn't
+	// too bad, because kubenet is the only network plugin that
+	// implements status(), and it just checks for plugin binaries
+	// on the filesystem.
 	if kl.networkPlugin != nil {
 		kl.runtimeState.setNetworkState(kl.networkPlugin.Status())
+	} else if kl.runtimeState.podCIDR() != "" {
+		// Don't mark the node ready till we've successfully executed
+		// the first UpdatePodCIDR call through cri. See comment above
+		// setPodCIDR call.
+		kl.runtimeState.setNetworkState(nil)
 	}
 }
 
@@ -223,6 +231,9 @@ func (kl *Kubelet) updatePodCIDR(cidr string) {
 		return
 	}
 
+	// We need to be careful about setting podCIDR. Till #35839 lands we're
+	// using it to indicate network plugin status for cri shims. See comment
+	// in syncNetworkStatus.
 	glog.Infof("Setting Pod CIDR: %v -> %v", podCIDR, cidr)
 	kl.runtimeState.setPodCIDR(cidr)
 }

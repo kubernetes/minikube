@@ -29,6 +29,7 @@ go_library(
         "pod_container_deletor.go",
         "pod_workers.go",
         "reason_cache.go",
+        "root_context_linux.go",
         "runonce.go",
         "runtime.go",
         "util.go",
@@ -77,7 +78,6 @@ go_library(
         "//pkg/kubelet/server:go_default_library",
         "//pkg/kubelet/server/remotecommand:go_default_library",
         "//pkg/kubelet/server/stats:go_default_library",
-        "//pkg/kubelet/server/streaming:go_default_library",
         "//pkg/kubelet/status:go_default_library",
         "//pkg/kubelet/sysctl:go_default_library",
         "//pkg/kubelet/types:go_default_library",
@@ -122,6 +122,7 @@ go_library(
         "//vendor:github.com/google/cadvisor/events",
         "//vendor:github.com/google/cadvisor/info/v1",
         "//vendor:github.com/google/cadvisor/info/v2",
+        "//vendor:github.com/opencontainers/runc/libcontainer/selinux",
     ],
 )
 

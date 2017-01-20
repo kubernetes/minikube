@@ -143,7 +143,7 @@ func (pb *prober) runProbe(p *api.Probe, pod *api.Pod, status api.PodStatus, con
 	timeout := time.Duration(p.TimeoutSeconds) * time.Second
 	if p.Exec != nil {
 		glog.V(4).Infof("Exec-Probe Pod: %v, Container: %v, Command: %v", pod, container, p.Exec.Command)
-		return pb.exec.Probe(pb.newExecInContainer(container, containerID, p.Exec.Command, timeout))
+		return pb.exec.Probe(pb.newExecInContainer(container, containerID, p.Exec.Command))
 	}
 	if p.HTTPGet != nil {
 		scheme := strings.ToLower(string(p.HTTPGet.Scheme))
@@ -226,9 +226,9 @@ type execInContainer struct {
 	run func() ([]byte, error)
 }
 
-func (pb *prober) newExecInContainer(container api.Container, containerID kubecontainer.ContainerID, cmd []string, timeout time.Duration) exec.Cmd {
+func (p *prober) newExecInContainer(container api.Container, containerID kubecontainer.ContainerID, cmd []string) exec.Cmd {
 	return execInContainer{func() ([]byte, error) {
-		return pb.runner.RunInContainer(containerID, cmd, timeout)
+		return p.runner.RunInContainer(containerID, cmd)
 	}}
 }
 

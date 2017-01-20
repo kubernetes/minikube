@@ -138,7 +138,7 @@ type serviceInfo struct {
 	nodePort                 int
 	loadBalancerStatus       api.LoadBalancerStatus
 	sessionAffinityType      api.ServiceAffinity
-	stickyMaxAgeMinutes      int
+	stickyMaxAgeSeconds      int
 	externalIPs              []string
 	loadBalancerSourceRanges []string
 	onlyNodeLocalEndpoints   bool
@@ -155,7 +155,7 @@ type endpointsInfo struct {
 func newServiceInfo(service proxy.ServicePortName) *serviceInfo {
 	return &serviceInfo{
 		sessionAffinityType: api.ServiceAffinityNone, // default
-		stickyMaxAgeMinutes: 180,                     // TODO: paramaterize this in the API.
+		stickyMaxAgeSeconds: 180,                     // TODO: paramaterize this in the API.
 	}
 }
 
@@ -222,8 +222,8 @@ var _ proxy.ProxyProvider = &Proxier{}
 // will not terminate if a particular iptables call fails.
 func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec utilexec.Interface, syncPeriod time.Duration, minSyncPeriod time.Duration, masqueradeAll bool, masqueradeBit int, clusterCIDR string, hostname string, nodeIP net.IP) (*Proxier, error) {
 	// check valid user input
-	if minSyncPeriod > syncPeriod {
-		return nil, fmt.Errorf("min-sync (%v) must be < sync(%v)", minSyncPeriod, syncPeriod)
+	if minSyncPeriod == 0 || minSyncPeriod > syncPeriod {
+		return nil, fmt.Errorf("min-sync (%v) must be < sync(%v) and > 0 ", minSyncPeriod, syncPeriod)
 	}
 
 	// Set the route_localnet sysctl we need for
@@ -250,27 +250,18 @@ func NewProxier(ipt utiliptables.Interface, sysctl utilsysctl.Interface, exec ut
 		nodeIP = net.ParseIP("127.0.0.1")
 	}
 
-	if len(clusterCIDR) == 0 {
-		glog.Warningf("clusterCIDR not specified, unable to distinguish between internal and external traffic")
-	}
-
 	go healthcheck.Run()
 
-	var throttle flowcontrol.RateLimiter
-	// Defaulting back to not limit sync rate when minSyncPeriod is 0.
-	if minSyncPeriod != 0 {
-		syncsPerSecond := float32(time.Second) / float32(minSyncPeriod)
-		// The average use case will process 2 updates in short succession
-		throttle = flowcontrol.NewTokenBucketRateLimiter(syncsPerSecond, 2)
-	}
+	syncsPerSecond := float32(time.Second) / float32(minSyncPeriod)
 
 	return &Proxier{
-		serviceMap:     make(map[proxy.ServicePortName]*serviceInfo),
-		endpointsMap:   make(map[proxy.ServicePortName][]*endpointsInfo),
-		portsMap:       make(map[localPort]closeable),
-		syncPeriod:     syncPeriod,
-		minSyncPeriod:  minSyncPeriod,
-		throttle:       throttle,
+		serviceMap:    make(map[proxy.ServicePortName]*serviceInfo),
+		endpointsMap:  make(map[proxy.ServicePortName][]*endpointsInfo),
+		portsMap:      make(map[localPort]closeable),
+		syncPeriod:    syncPeriod,
+		minSyncPeriod: minSyncPeriod,
+		// The average use case will process 2 updates in short succession
+		throttle:       flowcontrol.NewTokenBucketRateLimiter(syncsPerSecond, 2),
 		iptables:       ipt,
 		masqueradeAll:  masqueradeAll,
 		masqueradeMark: masqueradeMark,
@@ -386,9 +377,6 @@ func (proxier *Proxier) sameConfig(info *serviceInfo, service *api.Service, port
 	}
 	onlyNodeLocalEndpoints := apiservice.NeedsHealthCheck(service) && featuregate.DefaultFeatureGate.ExternalTrafficLocalOnly()
 	if info.onlyNodeLocalEndpoints != onlyNodeLocalEndpoints {
-		return false
-	}
-	if !reflect.DeepEqual(info.loadBalancerSourceRanges, service.Spec.LoadBalancerSourceRanges) {
 		return false
 	}
 	return true
@@ -1168,7 +1156,7 @@ func (proxier *Proxier) syncProxyRules() {
 					"-A", string(svcChain),
 					"-m", "comment", "--comment", svcName.String(),
 					"-m", "recent", "--name", string(endpointChain),
-					"--rcheck", "--seconds", fmt.Sprintf("%d", svcInfo.stickyMaxAgeMinutes*60), "--reap",
+					"--rcheck", "--seconds", fmt.Sprintf("%d", svcInfo.stickyMaxAgeSeconds), "--reap",
 					"-j", string(endpointChain))
 			}
 		}
@@ -1228,17 +1216,13 @@ func (proxier *Proxier) syncProxyRules() {
 		}
 		// First rule in the chain redirects all pod -> external vip traffic to the
 		// Service's ClusterIP instead. This happens whether or not we have local
-		// endpoints; only if clusterCIDR is specified
-		if len(proxier.clusterCIDR) > 0 {
-			args = []string{
-				"-A", string(svcXlbChain),
-				"-m", "comment", "--comment",
-				fmt.Sprintf(`"Redirect pods trying to reach external loadbalancer VIP to clusterIP"`),
-				"-s", proxier.clusterCIDR,
-				"-j", string(svcChain),
-			}
-			writeLine(natRules, args...)
+		// endpoints.
+		args = []string{
+			"-A", string(svcXlbChain),
+			"-m", "comment", "--comment",
+			fmt.Sprintf(`"Redirect pods trying to reach external loadbalancer VIP to clusterIP"`),
 		}
+		writeLine(natRules, append(args, "-s", proxier.clusterCIDR, "-j", string(svcChain))...)
 
 		numLocalEndpoints := len(localEndpointChains)
 		if numLocalEndpoints == 0 {
@@ -1311,7 +1295,7 @@ func (proxier *Proxier) syncProxyRules() {
 	glog.V(3).Infof("Restoring iptables rules: %s", lines)
 	err = proxier.iptables.RestoreAll(lines, utiliptables.NoFlushTables, utiliptables.RestoreCounters)
 	if err != nil {
-		glog.Errorf("Failed to execute iptables-restore: %v\nRules:\n%s", err, lines)
+		glog.Errorf("Failed to execute iptables-restore: %v", err)
 		// Revert new local ports.
 		revertPorts(replacementPortsMap, proxier.portsMap)
 		return

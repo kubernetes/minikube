@@ -47,7 +47,6 @@ import (
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	certcontroller "k8s.io/kubernetes/pkg/controller/certificates"
-	"k8s.io/kubernetes/pkg/controller/cronjob"
 	"k8s.io/kubernetes/pkg/controller/daemon"
 	"k8s.io/kubernetes/pkg/controller/deployment"
 	"k8s.io/kubernetes/pkg/controller/disruption"
@@ -66,6 +65,7 @@ import (
 	replicationcontroller "k8s.io/kubernetes/pkg/controller/replication"
 	resourcequotacontroller "k8s.io/kubernetes/pkg/controller/resourcequota"
 	routecontroller "k8s.io/kubernetes/pkg/controller/route"
+	"k8s.io/kubernetes/pkg/controller/scheduledjob"
 	servicecontroller "k8s.io/kubernetes/pkg/controller/service"
 	serviceaccountcontroller "k8s.io/kubernetes/pkg/controller/serviceaccount"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach"
@@ -369,30 +369,11 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	// Find the list of namespaced resources via discovery that the namespace controller must manage
 	namespaceKubeClient := client("namespace-controller")
 	namespaceClientPool := dynamic.NewClientPool(restclient.AddUserAgent(kubeconfig, "namespace-controller"), restMapper, dynamic.LegacyAPIPathResolverFunc)
-	// TODO: consider using a list-watch + cache here rather than polling
-	var gvrFn func() ([]unversioned.GroupVersionResource, error)
-	rsrcs, err := namespaceKubeClient.Discovery().ServerResources()
+	groupVersionResources, err := namespaceKubeClient.Discovery().ServerPreferredNamespacedResources()
 	if err != nil {
-		glog.Fatalf("Failed to get group version resources: %v", err)
+		glog.Fatalf("Failed to get supported resources from server: %v", err)
 	}
-	for _, rsrcList := range rsrcs {
-		for ix := range rsrcList.APIResources {
-			rsrc := &rsrcList.APIResources[ix]
-			if rsrc.Kind == "ThirdPartyResource" {
-				gvrFn = namespaceKubeClient.Discovery().ServerPreferredNamespacedResources
-			}
-		}
-	}
-	if gvrFn == nil {
-		gvr, err := namespaceKubeClient.Discovery().ServerPreferredNamespacedResources()
-		if err != nil {
-			glog.Fatalf("Failed to get resources: %v", err)
-		}
-		gvrFn = func() ([]unversioned.GroupVersionResource, error) {
-			return gvr, nil
-		}
-	}
-	namespaceController := namespacecontroller.NewNamespaceController(namespaceKubeClient, namespaceClientPool, gvrFn, s.NamespaceSyncPeriod.Duration, api.FinalizerKubernetes)
+	namespaceController := namespacecontroller.NewNamespaceController(namespaceKubeClient, namespaceClientPool, groupVersionResources, s.NamespaceSyncPeriod.Duration, api.FinalizerKubernetes)
 	go namespaceController.Run(int(s.ConcurrentNamespaceSyncs), wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
@@ -401,6 +382,20 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	// TODO: this needs to be dynamic so users don't have to restart their controller manager if they change the apiserver
 	if containsVersion(versions, groupVersion) && found {
 		glog.Infof("Starting %s apis", groupVersion)
+		if containsResource(resources, "horizontalpodautoscalers") {
+			glog.Infof("Starting horizontal pod controller.")
+			hpaClient := client("horizontal-pod-autoscaler")
+			metricsClient := metrics.NewHeapsterMetricsClient(
+				hpaClient,
+				metrics.DefaultHeapsterNamespace,
+				metrics.DefaultHeapsterScheme,
+				metrics.DefaultHeapsterService,
+				metrics.DefaultHeapsterPort,
+			)
+			go podautoscaler.NewHorizontalController(hpaClient.Core(), hpaClient.Extensions(), hpaClient.Autoscaling(), metricsClient, s.HorizontalPodAutoscalerSyncPeriod.Duration).
+				Run(wait.NeverStop)
+			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
+		}
 
 		if containsResource(resources, "daemonsets") {
 			glog.Infof("Starting daemon set controller")
@@ -411,7 +406,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 
 		if containsResource(resources, "jobs") {
 			glog.Infof("Starting job controller")
-			go job.NewJobController(sharedInformers.Pods().Informer(), sharedInformers.Jobs(), client("job-controller")).
+			go job.NewJobController(sharedInformers.Pods().Informer(), client("job-controller")).
 				Run(int(s.ConcurrentJobSyncs), wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
@@ -427,28 +422,6 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 			glog.Infof("Starting ReplicaSet controller")
 			go replicaset.NewReplicaSetController(sharedInformers.ReplicaSets(), sharedInformers.Pods(), client("replicaset-controller"), replicaset.BurstReplicas, int(s.LookupCacheSizeForRS), s.EnableGarbageCollector).
 				Run(int(s.ConcurrentRSSyncs), wait.NeverStop)
-			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
-		}
-	}
-
-	groupVersion = "autoscaling/v1"
-	resources, found = resourceMap[groupVersion]
-	glog.Infof("Attempting to start horizontal pod autoscaler controller, full resource map %+v", resourceMap)
-	if containsVersion(versions, groupVersion) && found {
-		glog.Infof("Starting %s apis", groupVersion)
-		if containsResource(resources, "horizontalpodautoscalers") {
-			glog.Infof("Starting horizontal pod controller.")
-			hpaClient := client("horizontal-pod-autoscaler")
-			metricsClient := metrics.NewHeapsterMetricsClient(
-				hpaClient,
-				metrics.DefaultHeapsterNamespace,
-				metrics.DefaultHeapsterScheme,
-				metrics.DefaultHeapsterService,
-				metrics.DefaultHeapsterPort,
-			)
-			replicaCalc := podautoscaler.NewReplicaCalculator(metricsClient, hpaClient.Core())
-			go podautoscaler.NewHorizontalController(hpaClient.Core(), hpaClient.Extensions(), hpaClient.Autoscaling(), replicaCalc, s.HorizontalPodAutoscalerSyncPeriod.Duration).
-				Run(wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
 	}
@@ -486,11 +459,11 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	resources, found = resourceMap[groupVersion]
 	if containsVersion(versions, groupVersion) && found {
 		glog.Infof("Starting %s apis", groupVersion)
-		if containsResource(resources, "cronjobs") {
-			glog.Infof("Starting cronjob controller")
+		if containsResource(resources, "scheduledjobs") {
+			glog.Infof("Starting scheduledjob controller")
 			// // TODO: this is a temp fix for allowing kubeClient list v2alpha1 sj, should switch to using clientset
 			kubeconfig.ContentConfig.GroupVersion = &unversioned.GroupVersion{Group: batch.GroupName, Version: "v2alpha1"}
-			go cronjob.NewCronJobController(client("cronjob-controller")).
+			go scheduledjob.NewScheduledJobController(client("scheduledjob-controller")).
 				Run(wait.NeverStop)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
@@ -516,10 +489,6 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 	volumeController.Run(wait.NeverStop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
-	if s.ReconcilerSyncLoopPeriod.Duration < time.Second {
-		return fmt.Errorf("Duration time must be greater than one second as set via command line option reconcile-sync-loop-period.")
-	}
-
 	attachDetachController, attachDetachControllerErr :=
 		attachdetach.NewAttachDetachController(
 			client("attachdetach-controller"),
@@ -529,10 +498,7 @@ func StartControllers(s *options.CMServer, kubeconfig *restclient.Config, rootCl
 			sharedInformers.PersistentVolumes().Informer(),
 			cloud,
 			ProbeAttachableVolumePlugins(s.VolumeConfiguration),
-			recorder,
-			s.DisableAttachDetachReconcilerSync,
-			s.ReconcilerSyncLoopPeriod.Duration,
-		)
+			recorder)
 	if attachDetachControllerErr != nil {
 		glog.Fatalf("Failed to start attach/detach controller: %v", attachDetachControllerErr)
 	}

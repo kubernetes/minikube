@@ -52,6 +52,5 @@ go_test(
         "//pkg/controller:go_default_library",
         "//pkg/util/intstr:go_default_library",
         "//pkg/util/uuid:go_default_library",
-        "//pkg/util/workqueue:go_default_library",
     ],
 )

@@ -156,8 +156,7 @@ func NewVolumeManager(
 	kubeContainerRuntime kubecontainer.Runtime,
 	mounter mount.Interface,
 	kubeletPodsDir string,
-	recorder record.EventRecorder,
-	checkNodeCapabilitiesBeforeMount bool) (VolumeManager, error) {
+	recorder record.EventRecorder) (VolumeManager, error) {
 
 	vm := &volumeManager{
 		kubeClient:          kubeClient,
@@ -167,8 +166,7 @@ func NewVolumeManager(
 		operationExecutor: operationexecutor.NewOperationExecutor(
 			kubeClient,
 			volumePluginMgr,
-			recorder,
-			checkNodeCapabilitiesBeforeMount),
+			recorder),
 	}
 
 	vm.reconciler = reconciler.NewReconciler(
@@ -357,8 +355,8 @@ func (vm *volumeManager) WaitForAttachAndMount(pod *api.Pod) error {
 
 		return fmt.Errorf(
 			"timeout expired waiting for volumes to attach/mount for pod %q/%q. list of unattached/unmounted volumes=%v",
-			pod.Namespace,
 			pod.Name,
+			pod.Namespace,
 			ummountedVolumes)
 	}
 

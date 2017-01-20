@@ -339,17 +339,3 @@ func (r *RemoteRuntimeService) UpdateRuntimeConfig(runtimeConfig *runtimeApi.Run
 
 	return nil
 }
-
-// Status returns the status of the runtime.
-func (r *RemoteRuntimeService) Status() (*runtimeApi.RuntimeStatus, error) {
-	ctx, cancel := getContextWithTimeout(r.timeout)
-	defer cancel()
-
-	resp, err := r.runtimeClient.Status(ctx, &runtimeApi.StatusRequest{})
-	if err != nil {
-		glog.Errorf("Status from runtime service failed: %v", err)
-		return nil, err
-	}
-
-	return resp.Status, nil
-}

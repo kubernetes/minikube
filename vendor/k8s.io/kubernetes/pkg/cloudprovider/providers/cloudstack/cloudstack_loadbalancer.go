@@ -227,7 +227,7 @@ func (cs *CSCloud) EnsureLoadBalancerDeleted(clusterName string, service *api.Se
 		}
 	}
 
-	if lb.ipAddr != "" && lb.ipAddr != service.Spec.LoadBalancerIP {
+	if lb.ipAddr != service.Spec.LoadBalancerIP {
 		glog.V(4).Infof("Releasing load balancer IP: %v", lb.ipAddr)
 		if err := lb.releaseLoadBalancerIP(); err != nil {
 			return err
@@ -275,11 +275,11 @@ func (cs *CSCloud) getLoadBalancer(service *api.Service) (*loadBalancer, error) 
 	return lb, nil
 }
 
-// verifyHosts verifies if all hosts belong to the same network, and returns the host ID's and network ID.
+// verifyHosts verifies if all hosts belong to the same network, and returns the network and host ID's.
 func (cs *CSCloud) verifyHosts(hosts []string) ([]string, string, error) {
-	hostNames := map[string]bool{}
+	ipAddrs := map[string]bool{}
 	for _, host := range hosts {
-		hostNames[host] = true
+		ipAddrs[host] = true
 	}
 
 	p := cs.client.VirtualMachine.NewListVirtualMachinesParams()
@@ -291,15 +291,16 @@ func (cs *CSCloud) verifyHosts(hosts []string) ([]string, string, error) {
 
 	l, err := cs.client.VirtualMachine.ListVirtualMachines(p)
 	if err != nil {
-		return nil, "", fmt.Errorf("error retrieving list of hosts: %v", err)
+		return nil, "", fmt.Errorf("error retrieving a list of hosts: %v", err)
 	}
 
 	var hostIDs []string
 	var networkID string
 
-	// Check if the virtual machine is in the hosts slice, then add the corresponding ID.
+	// Check if the address belongs to the hosts slice, then add the corresponding vm ID.
 	for _, vm := range l.VirtualMachines {
-		if hostNames[vm.Name] {
+		// We only check the primary NIC.
+		if ipAddrs[vm.Nic[0].Ipaddress] {
 			if networkID != "" && networkID != vm.Nic[0].Networkid {
 				return nil, "", fmt.Errorf("found hosts that belong to different networks")
 			}
@@ -312,12 +313,12 @@ func (cs *CSCloud) verifyHosts(hosts []string) ([]string, string, error) {
 	return hostIDs, networkID, nil
 }
 
-// hasLoadBalancerIP returns true if we have a load balancer address and ID.
+// getLoadBalancerIP retieves an existing IP or associates a new IP and returns the address and it's ID.
 func (lb *loadBalancer) hasLoadBalancerIP() bool {
 	return lb.ipAddr != "" && lb.ipAddrID != ""
 }
 
-// getLoadBalancerIP retieves an existing IP or associates a new IP.
+// getLoadBalancerIP retieves an existing IP or associates a new IP and returns the address and it's ID.
 func (lb *loadBalancer) getLoadBalancerIP(loadBalancerIP string) error {
 	if loadBalancerIP != "" {
 		return lb.getPublicIPAddress(loadBalancerIP)
@@ -326,7 +327,7 @@ func (lb *loadBalancer) getLoadBalancerIP(loadBalancerIP string) error {
 	return lb.associatePublicIPAddress()
 }
 
-// getPublicIPAddressID retrieves the ID of the given IP, and sets the address and it's ID.
+// getPublicIPAddressID retrieves the ID of the given IP, and returns the address and it's ID.
 func (lb *loadBalancer) getPublicIPAddress(loadBalancerIP string) error {
 	glog.V(4).Infof("Retrieve load balancer IP details: %v", loadBalancerIP)
 
@@ -340,7 +341,7 @@ func (lb *loadBalancer) getPublicIPAddress(loadBalancerIP string) error {
 
 	l, err := lb.Address.ListPublicIpAddresses(p)
 	if err != nil {
-		return fmt.Errorf("error retrieving IP address: %v", err)
+		return fmt.Errorf("error retrieving the IP address: %v", err)
 	}
 
 	if l.Count != 1 {
@@ -353,7 +354,7 @@ func (lb *loadBalancer) getPublicIPAddress(loadBalancerIP string) error {
 	return nil
 }
 
-// associatePublicIPAddress associates a new IP and sets the address and it's ID.
+// associatePublicIPAddress associates a new IP and returns the address and it's ID.
 func (lb *loadBalancer) associatePublicIPAddress() error {
 	glog.V(4).Infof("Allocate new IP for load balancer: %v", lb.name)
 	// If a network belongs to a VPC, the IP address needs to be associated with
@@ -381,7 +382,7 @@ func (lb *loadBalancer) associatePublicIPAddress() error {
 	// Associate a new IP address
 	r, err := lb.Address.AssociateIpAddress(p)
 	if err != nil {
-		return fmt.Errorf("error associating new IP address: %v", err)
+		return fmt.Errorf("error associating a new IP address: %v", err)
 	}
 
 	lb.ipAddr = r.Ipaddress
@@ -460,7 +461,7 @@ func (lb *loadBalancer) createLoadBalancerRule(lbRuleName string, port api.Servi
 	// Create a new load balancer rule.
 	r, err := lb.LoadBalancer.CreateLoadBalancerRule(p)
 	if err != nil {
-		return nil, fmt.Errorf("error creating load balancer rule %v: %v", lbRuleName, err)
+		return nil, fmt.Errorf("error creating the load balancer rule %v: %v", lbRuleName, err)
 	}
 
 	lbRule := &cloudstack.LoadBalancerRule{

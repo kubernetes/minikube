@@ -45,7 +45,7 @@ type KubeProxyConfiguration struct {
 	// '2h22m').  Must be greater than 0.
 	IPTablesSyncPeriod unversioned.Duration `json:"iptablesSyncPeriodSeconds"`
 	// iptablesMinSyncPeriod is the minimum period that iptables rules are refreshed (e.g. '5s', '1m',
-	// '2h22m').
+	// '2h22m').  Must be greater than 0.
 	IPTablesMinSyncPeriod unversioned.Duration `json:"iptablesMinSyncPeriodSeconds"`
 	// kubeconfigPath is the path to the kubeconfig file with authorization information (the
 	// master location is set by the master flag).
@@ -294,7 +294,7 @@ type KubeletConfiguration struct {
 	// And all Burstable and BestEffort pods are brought up under their
 	// specific top level QoS cgroup.
 	// +optional
-	ExperimentalCgroupsPerQOS bool `json:"experimentalCgroupsPerQOS,omitempty"`
+	CgroupsPerQOS bool `json:"cgroupsPerQOS,omitempty"`
 	// driver that the kubelet uses to manipulate cgroups on the host (cgroupfs or systemd)
 	// +optional
 	CgroupDriver string `json:"cgroupDriver,omitempty"`
@@ -307,7 +307,7 @@ type KubeletConfiguration struct {
 	// +optional
 	SystemCgroups string `json:"systemCgroups,omitempty"`
 	// CgroupRoot is the root cgroup to use for pods.
-	// If ExperimentalCgroupsPerQOS is enabled, this is the root of the QoS cgroup hierarchy.
+	// If CgroupsPerQOS is enabled, this is the root of the QoS cgroup hierarchy.
 	// +optional
 	CgroupRoot string `json:"cgroupRoot,omitempty"`
 	// containerRuntime is the container runtime to use.
@@ -326,6 +326,8 @@ type KubeletConfiguration struct {
 	RktPath string `json:"rktPath,omitempty"`
 	// experimentalMounterPath is the path of mounter binary. Leave empty to use the default mount path
 	ExperimentalMounterPath string `json:"experimentalMounterPath,omitempty"`
+	// experimentalMounterRootfsPath is the absolute path to root filesystem for the mounter binary.
+	ExperimentalMounterRootfsPath string `json:"experimentalMounterRootfsPath,omitempty"`
 	// rktApiEndpoint is the endpoint of the rkt API service to communicate with.
 	// +optional
 	RktAPIEndpoint string `json:"rktAPIEndpoint,omitempty"`
@@ -424,9 +426,6 @@ type KubeletConfiguration struct {
 	// Comma-delimited list of minimum reclaims (e.g. imagefs.available=2Gi) that describes the minimum amount of resource the kubelet will reclaim when performing a pod eviction if that resource is under pressure.
 	// +optional
 	EvictionMinimumReclaim string `json:"evictionMinimumReclaim,omitempty"`
-	// If enabled, the kubelet will integrate with the kernel memcg notification to determine if memory eviction thresholds are crossed rather than polling.
-	// +optional
-	ExperimentalKernelMemcgNotification bool `json:"experimentalKernelMemcgNotification"`
 	// Maximum number of pods per core. Cannot exceed MaxPods
 	PodsPerCore int32 `json:"podsPerCore"`
 	// enableControllerAttachDetach enables the Attach/Detach controller to
@@ -463,16 +462,10 @@ type KubeletConfiguration struct {
 	// featureGates is a string of comma-separated key=value pairs that describe feature
 	// gates for alpha/experimental features.
 	FeatureGates string `json:"featureGates"`
-	// Enable Container Runtime Interface (CRI) integration.
+	// How to integrate with runtime. If set to cri, kubelet will switch to
+	// using the new Container Runtine Interface.
 	// +optional
-	EnableCRI bool `json:"enableCRI,omitempty"`
-	// TODO(#34726:1.8.0): Remove the opt-in for failing when swap is enabled.
-	// Tells the Kubelet to fail to start if swap is enabled on the node.
-	ExperimentalFailSwapOn bool `json:"experimentalFailSwapOn,omitempty"`
-	// This flag, if set, enables a check prior to mount operations to verify that the required components
-	// (binaries, etc.) to mount the volume are available on the underlying node. If the check is enabled
-	// and fails the mount operation fails.
-	ExperimentalCheckNodeCapabilitiesBeforeMount bool `json:"ExperimentalCheckNodeCapabilitiesBeforeMount,omitempty"`
+	ExperimentalRuntimeIntegrationType string `json:"experimentalRuntimeIntegrationType,omitempty"`
 }
 
 type KubeletAuthorizationMode string
@@ -763,13 +756,6 @@ type KubeControllerManagerConfiguration struct {
 	// Zone is treated as unhealthy in nodeEvictionRate and secondaryNodeEvictionRate when at least
 	// unhealthyZoneThreshold (no less than 3) of Nodes in the zone are NotReady
 	UnhealthyZoneThreshold float32 `json:"unhealthyZoneThreshold"`
-	// Reconciler runs a periodic loop to reconcile the desired state of the with
-	// the actual state of the world by triggering attach detach operations.
-	// This flag enables or disables reconcile.  Is false by default, and thus enabled.
-	DisableAttachDetachReconcilerSync bool `json:"disableAttachDetachReconcilerSync"`
-	// ReconcilerSyncLoopPeriod is the amount of time the reconciler sync states loop
-	// wait between successive executions. Is set to 5 min by default.
-	ReconcilerSyncLoopPeriod unversioned.Duration `json:"reconcilerSyncLoopPeriod"`
 }
 
 // VolumeConfiguration contains *all* enumerated flags meant to configure all volume

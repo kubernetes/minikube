@@ -41,12 +41,11 @@ import (
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/1.5/kubernetes"
-	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
-	kubeapi "k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/labels"
-	"k8s.io/client-go/1.5/tools/clientcmd"
+	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/labels"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -564,7 +563,7 @@ func getServiceURLsWithClient(client *kubernetes.Clientset, ip, namespace, servi
 
 type serviceGetter interface {
 	Get(name string) (*v1.Service, error)
-	List(kubeapi.ListOptions) (*v1.ServiceList, error)
+	List(v1.ListOptions) (*v1.ServiceList, error)
 }
 
 func getServicePorts(client *kubernetes.Clientset, namespace, service string) ([]int32, error) {
@@ -662,7 +661,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 	getter := client.Services(namespace)
 
-	svcs, err := getter.List(kubeapi.ListOptions{})
+	svcs, err := getter.List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -756,7 +755,7 @@ func GetServiceListByLabel(namespace string, key string, value string) (*v1.Serv
 
 func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
-	serviceList, err := services.List(kubeapi.ListOptions{LabelSelector: selector})
+	serviceList, err := services.List(v1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}

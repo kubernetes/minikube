@@ -21,7 +21,6 @@ package compute
 import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/validation"
 	"net/http"
 )
 
@@ -52,14 +51,6 @@ func NewVirtualMachinesClientWithBaseURI(baseURI string, subscriptionID string) 
 // the virtual machine. parameters is parameters supplied to the Capture
 // Virtual Machine operation.
 func (client VirtualMachinesClient) Capture(resourceGroupName string, vmName string, parameters VirtualMachineCaptureParameters, cancel <-chan struct{}) (result autorest.Response, err error) {
-	if err := validation.Validate([]validation.Validation{
-		{TargetValue: parameters,
-			Constraints: []validation.Constraint{{Target: "parameters.VhdPrefix", Name: validation.Null, Rule: true, Chain: nil},
-				{Target: "parameters.DestinationContainerName", Name: validation.Null, Rule: true, Chain: nil},
-				{Target: "parameters.OverwriteVhds", Name: validation.Null, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "compute.VirtualMachinesClient", "Capture")
-	}
-
 	req, err := client.CapturePreparer(resourceGroupName, vmName, parameters, cancel)
 	if err != nil {
 		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "Capture", nil, "Failure preparing request")
@@ -130,33 +121,6 @@ func (client VirtualMachinesClient) CaptureResponder(resp *http.Response) (resul
 // the virtual machine. parameters is parameters supplied to the Create
 // Virtual Machine operation.
 func (client VirtualMachinesClient) CreateOrUpdate(resourceGroupName string, vmName string, parameters VirtualMachine, cancel <-chan struct{}) (result autorest.Response, err error) {
-	if err := validation.Validate([]validation.Validation{
-		{TargetValue: parameters,
-			Constraints: []validation.Constraint{{Target: "parameters.VirtualMachineProperties", Name: validation.Null, Rule: false,
-				Chain: []validation.Constraint{{Target: "parameters.VirtualMachineProperties.StorageProfile", Name: validation.Null, Rule: false,
-					Chain: []validation.Constraint{{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk", Name: validation.Null, Rule: false,
-						Chain: []validation.Constraint{{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.EncryptionSettings", Name: validation.Null, Rule: false,
-							Chain: []validation.Constraint{{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.EncryptionSettings.DiskEncryptionKey", Name: validation.Null, Rule: false,
-								Chain: []validation.Constraint{{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.EncryptionSettings.DiskEncryptionKey.SecretURL", Name: validation.Null, Rule: true, Chain: nil},
-									{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.EncryptionSettings.DiskEncryptionKey.SourceVault", Name: validation.Null, Rule: true, Chain: nil},
-								}},
-								{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.EncryptionSettings.KeyEncryptionKey", Name: validation.Null, Rule: false,
-									Chain: []validation.Constraint{{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.EncryptionSettings.KeyEncryptionKey.KeyURL", Name: validation.Null, Rule: true, Chain: nil},
-										{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.EncryptionSettings.KeyEncryptionKey.SourceVault", Name: validation.Null, Rule: true, Chain: nil},
-									}},
-							}},
-							{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.Name", Name: validation.Null, Rule: true, Chain: nil},
-							{Target: "parameters.VirtualMachineProperties.StorageProfile.OsDisk.Vhd", Name: validation.Null, Rule: true, Chain: nil},
-						}},
-					}},
-					{Target: "parameters.VirtualMachineProperties.ProvisioningState", Name: validation.ReadOnly, Rule: true, Chain: nil},
-					{Target: "parameters.VirtualMachineProperties.InstanceView", Name: validation.ReadOnly, Rule: true, Chain: nil},
-					{Target: "parameters.VirtualMachineProperties.VMID", Name: validation.ReadOnly, Rule: true, Chain: nil},
-				}},
-				{Target: "parameters.Resources", Name: validation.ReadOnly, Rule: true, Chain: nil}}}}); err != nil {
-		return result, validation.NewErrorWithValidationError(err, "compute.VirtualMachinesClient", "CreateOrUpdate")
-	}
-
 	req, err := client.CreateOrUpdatePreparer(resourceGroupName, vmName, parameters, cancel)
 	if err != nil {
 		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "CreateOrUpdate", nil, "Failure preparing request")
@@ -218,9 +182,9 @@ func (client VirtualMachinesClient) CreateOrUpdateResponder(resp *http.Response)
 	return
 }
 
-// Deallocate shuts down the virtual machine and releases the compute
-// resources. You are not billed for the compute resources that this virtual
-// machine uses. This method may poll for completion. Polling can be canceled
+// Deallocate shuts down the Virtual Machine and releases the compute
+// resources. You are not billed for the compute resources that this Virtual
+// Machine uses. This method may poll for completion. Polling can be canceled
 // by passing the cancel channel argument. The channel will be used to cancel
 // polling and any outstanding HTTP requests.
 //
@@ -353,7 +317,7 @@ func (client VirtualMachinesClient) DeleteResponder(resp *http.Response) (result
 	return
 }
 
-// Generalize sets the state of the virtual machine to generalized.
+// Generalize sets the state of the VM as Generalized.
 //
 // resourceGroupName is the name of the resource group. vmName is the name of
 // the virtual machine.
@@ -415,8 +379,7 @@ func (client VirtualMachinesClient) GeneralizeResponder(resp *http.Response) (re
 	return
 }
 
-// Get retrieves information about the model view or the instance view of a
-// virtual machine.
+// Get the operation to get a virtual machine.
 //
 // resourceGroupName is the name of the resource group. vmName is the name of
 // the virtual machine. expand is the expand expression to apply on the
@@ -483,9 +446,7 @@ func (client VirtualMachinesClient) GetResponder(resp *http.Response) (result Vi
 	return
 }
 
-// List lists all of the virtual machines in the specified resource group. Use
-// the nextLink property in the response to get the next page of virtual
-// machines.
+// List the operation to list virtual machines under a resource group.
 //
 // resourceGroupName is the name of the resource group.
 func (client VirtualMachinesClient) List(resourceGroupName string) (result VirtualMachineListResult, err error) {
@@ -550,7 +511,7 @@ func (client VirtualMachinesClient) ListResponder(resp *http.Response) (result V
 func (client VirtualMachinesClient) ListNextResults(lastResults VirtualMachineListResult) (result VirtualMachineListResult, err error) {
 	req, err := lastResults.VirtualMachineListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", nil, "Failure preparing next results request request")
 	}
 	if req == nil {
 		return
@@ -559,20 +520,20 @@ func (client VirtualMachinesClient) ListNextResults(lastResults VirtualMachineLi
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure sending next results request request")
 	}
 
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "List", resp, "Failure responding to next results request request")
 	}
 
 	return
 }
 
-// ListAll lists all of the virtual machines in the specified subscription.
-// Use the nextLink property in the response to get the next page of virtual
-// machines.
+// ListAll gets the list of Virtual Machines in the subscription. Use nextLink
+// property in the response to get the next page of Virtual Machines. Do this
+// till nextLink is not null to fetch all the Virtual Machines.
 func (client VirtualMachinesClient) ListAll() (result VirtualMachineListResult, err error) {
 	req, err := client.ListAllPreparer()
 	if err != nil {
@@ -634,7 +595,7 @@ func (client VirtualMachinesClient) ListAllResponder(resp *http.Response) (resul
 func (client VirtualMachinesClient) ListAllNextResults(lastResults VirtualMachineListResult) (result VirtualMachineListResult, err error) {
 	req, err := lastResults.VirtualMachineListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", nil, "Failure preparing next results request request")
 	}
 	if req == nil {
 		return
@@ -643,19 +604,19 @@ func (client VirtualMachinesClient) ListAllNextResults(lastResults VirtualMachin
 	resp, err := client.ListAllSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure sending next results request request")
 	}
 
 	result, err = client.ListAllResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "compute.VirtualMachinesClient", "ListAll", resp, "Failure responding to next results request request")
 	}
 
 	return
 }
 
-// ListAvailableSizes lists all available virtual machine sizes to which the
-// specified virtual machine can be resized.
+// ListAvailableSizes lists all available virtual machine sizes it can be
+// resized to for a virtual machine.
 //
 // resourceGroupName is the name of the resource group. vmName is the name of
 // the virtual machine.
@@ -718,12 +679,10 @@ func (client VirtualMachinesClient) ListAvailableSizesResponder(resp *http.Respo
 	return
 }
 
-// PowerOff the operation to power off (stop) a virtual machine. The virtual
-// machine can be restarted with the same provisioned resources. You are
-// still charged for this virtual machine. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// PowerOff the operation to power off (stop) a virtual machine. This method
+// may poll for completion. Polling can be canceled by passing the cancel
+// channel argument. The channel will be used to cancel polling and any
+// outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. vmName is the name of
 // the virtual machine.

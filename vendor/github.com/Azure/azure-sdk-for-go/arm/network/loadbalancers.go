@@ -26,7 +26,7 @@ import (
 
 // LoadBalancersClient is the the Microsoft Azure Network management API
 // provides a RESTful set of web services that interact with Microsoft Azure
-// Networks service to manage your network resources. The API has entities
+// Networks service to manage your network resrources. The API has entities
 // that capture the relationship between an end user and the Microsoft Azure
 // Networks service.
 type LoadBalancersClient struct {
@@ -45,14 +45,14 @@ func NewLoadBalancersClientWithBaseURI(baseURI string, subscriptionID string) Lo
 	return LoadBalancersClient{NewWithBaseURI(baseURI, subscriptionID)}
 }
 
-// CreateOrUpdate creates or updates a load balancer. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// CreateOrUpdate the Put LoadBalancer operation creates/updates a
+// LoadBalancer This method may poll for completion. Polling can be canceled
+// by passing the cancel channel argument. The channel will be used to cancel
+// polling and any outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is
-// the name of the load balancer. parameters is parameters supplied to the
-// create or update load balancer operation.
+// the name of the loadBalancer. parameters is parameters supplied to the
+// create/delete LoadBalancer operation
 func (client LoadBalancersClient) CreateOrUpdate(resourceGroupName string, loadBalancerName string, parameters LoadBalancer, cancel <-chan struct{}) (result autorest.Response, err error) {
 	req, err := client.CreateOrUpdatePreparer(resourceGroupName, loadBalancerName, parameters, cancel)
 	if err != nil {
@@ -115,13 +115,13 @@ func (client LoadBalancersClient) CreateOrUpdateResponder(resp *http.Response) (
 	return
 }
 
-// Delete deletes the specified load balancer. This method may poll for
-// completion. Polling can be canceled by passing the cancel channel
-// argument. The channel will be used to cancel polling and any outstanding
-// HTTP requests.
+// Delete the delete loadbalancer operation deletes the specified
+// loadbalancer. This method may poll for completion. Polling can be canceled
+// by passing the cancel channel argument. The channel will be used to cancel
+// polling and any outstanding HTTP requests.
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is
-// the name of the load balancer.
+// the name of the loadBalancer.
 func (client LoadBalancersClient) Delete(resourceGroupName string, loadBalancerName string, cancel <-chan struct{}) (result autorest.Response, err error) {
 	req, err := client.DeletePreparer(resourceGroupName, loadBalancerName, cancel)
 	if err != nil {
@@ -182,10 +182,11 @@ func (client LoadBalancersClient) DeleteResponder(resp *http.Response) (result a
 	return
 }
 
-// Get gets the specified load balancer.
+// Get the Get ntework interface operation retreives information about the
+// specified network interface.
 //
 // resourceGroupName is the name of the resource group. loadBalancerName is
-// the name of the load balancer. expand is expands referenced resources.
+// the name of the loadBalancer. expand is expand references resources.
 func (client LoadBalancersClient) Get(resourceGroupName string, loadBalancerName string, expand string) (result LoadBalancer, err error) {
 	req, err := client.GetPreparer(resourceGroupName, loadBalancerName, expand)
 	if err != nil {
@@ -248,7 +249,8 @@ func (client LoadBalancersClient) GetResponder(resp *http.Response) (result Load
 	return
 }
 
-// List gets all the load balancers in a resource group.
+// List the List loadBalancer operation retrieves all the loadbalancers in a
+// resource group.
 //
 // resourceGroupName is the name of the resource group.
 func (client LoadBalancersClient) List(resourceGroupName string) (result LoadBalancerListResult, err error) {
@@ -313,7 +315,7 @@ func (client LoadBalancersClient) ListResponder(resp *http.Response) (result Loa
 func (client LoadBalancersClient) ListNextResults(lastResults LoadBalancerListResult) (result LoadBalancerListResult, err error) {
 	req, err := lastResults.LoadBalancerListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "List", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "List", nil, "Failure preparing next results request request")
 	}
 	if req == nil {
 		return
@@ -322,18 +324,19 @@ func (client LoadBalancersClient) ListNextResults(lastResults LoadBalancerListRe
 	resp, err := client.ListSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "List", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "List", resp, "Failure sending next results request request")
 	}
 
 	result, err = client.ListResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "List", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "List", resp, "Failure responding to next results request request")
 	}
 
 	return
 }
 
-// ListAll gets all the load balancers in a subscription.
+// ListAll the List loadBalancer operation retrieves all the loadbalancers in
+// a subscription.
 func (client LoadBalancersClient) ListAll() (result LoadBalancerListResult, err error) {
 	req, err := client.ListAllPreparer()
 	if err != nil {
@@ -395,7 +398,7 @@ func (client LoadBalancersClient) ListAllResponder(resp *http.Response) (result 
 func (client LoadBalancersClient) ListAllNextResults(lastResults LoadBalancerListResult) (result LoadBalancerListResult, err error) {
 	req, err := lastResults.LoadBalancerListResultPreparer()
 	if err != nil {
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "ListAll", nil, "Failure preparing next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "ListAll", nil, "Failure preparing next results request request")
 	}
 	if req == nil {
 		return
@@ -404,12 +407,12 @@ func (client LoadBalancersClient) ListAllNextResults(lastResults LoadBalancerLis
 	resp, err := client.ListAllSender(req)
 	if err != nil {
 		result.Response = autorest.Response{Response: resp}
-		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "ListAll", resp, "Failure sending next results request")
+		return result, autorest.NewErrorWithError(err, "network.LoadBalancersClient", "ListAll", resp, "Failure sending next results request request")
 	}
 
 	result, err = client.ListAllResponder(resp)
 	if err != nil {
-		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "ListAll", resp, "Failure responding to next results request")
+		err = autorest.NewErrorWithError(err, "network.LoadBalancersClient", "ListAll", resp, "Failure responding to next results request request")
 	}
 
 	return

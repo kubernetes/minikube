@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -24,10 +24,6 @@ import (
 
 type FakePolicy struct {
 	*core.Fake
-}
-
-func (c *FakePolicy) Evictions(namespace string) internalversion.EvictionInterface {
-	return &FakeEvictions{c, namespace}
 }
 
 func (c *FakePolicy) PodDisruptionBudgets(namespace string) internalversion.PodDisruptionBudgetInterface {

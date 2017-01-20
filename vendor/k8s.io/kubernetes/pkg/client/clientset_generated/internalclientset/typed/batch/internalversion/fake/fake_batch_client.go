@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2016 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,12 +26,12 @@ type FakeBatch struct {
 	*core.Fake
 }
 
-func (c *FakeBatch) CronJobs(namespace string) internalversion.CronJobInterface {
-	return &FakeCronJobs{c, namespace}
-}
-
 func (c *FakeBatch) Jobs(namespace string) internalversion.JobInterface {
 	return &FakeJobs{c, namespace}
+}
+
+func (c *FakeBatch) ScheduledJobs(namespace string) internalversion.ScheduledJobInterface {
+	return &FakeScheduledJobs{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

@@ -30,8 +30,7 @@ import (
 
 const (
 	// Default mount command if mounter path is not specified
-	defaultMountCommand  = "mount"
-	MountsInGlobalPDPath = "mounts"
+	mount = "mount"
 )
 
 type Interface interface {
@@ -95,16 +94,25 @@ func (mounter *SafeFormatAndMount) FormatAndMount(source string, target string, 
 }
 
 // New returns a mount.Interface for the current system.
+func New() Interface {
+	return &Mounter{}
+}
+
+// NewCustomMounter returns a mount.Interface for the current system.
 // It provides options to override the default mounter behavior.
 // mounterPath allows using an alternative to `/bin/mount` for mounting.
-func New(mounterPath string) Interface {
+// mounterRootfsPath allows specifying a custom root filesystem path for non default `mounterPath`.
+func NewCustomMounter(mounterPath, mounterRootfsPath string) Interface {
 	// If mounter-path flag is not set, use default mount path
 	if mounterPath == "" {
-		mounterPath = defaultMountCommand
+		mounterPath = mount
 	}
-
+	if mounterRootfsPath == "" {
+		mounterRootfsPath = "/"
+	}
 	return &Mounter{
-		mounterPath: mounterPath,
+		mounterPath:       mounterPath,
+		mounterRootfsPath: mounterRootfsPath,
 	}
 }
 
@@ -190,15 +198,9 @@ func getDeviceNameFromMount(mounter Interface, mountPath, pluginDir string) (str
 		glog.V(4).Infof("Directory %s is not mounted", mountPath)
 		return "", fmt.Errorf("directory %s is not mounted", mountPath)
 	}
-	basemountPath := path.Join(pluginDir, MountsInGlobalPDPath)
 	for _, ref := range refs {
-		if strings.HasPrefix(ref, basemountPath) {
-			volumeID, err := filepath.Rel(basemountPath, ref)
-			if err != nil {
-				glog.Errorf("Failed to get volume id from mount %s - %v", mountPath, err)
-				return "", err
-			}
-			return volumeID, nil
+		if strings.HasPrefix(ref, pluginDir) {
+			return path.Base(ref), nil
 		}
 	}
 

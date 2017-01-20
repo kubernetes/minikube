@@ -84,7 +84,7 @@ func (r *privilegedGroupAuthorizer) Authorize(attr authorizer.Attributes) (bool,
 			}
 		}
 	}
-	return false, "", nil
+	return false, "Not in privileged list.", nil
 }
 
 // NewPrivilegedGroups is for use in loopback scenarios

@@ -22,7 +22,6 @@ import (
 	"regexp"
 
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/uuid"
 	"k8s.io/kubernetes/pkg/volume"
@@ -35,15 +34,22 @@ import (
 func ProbeVolumePlugins(volumeConfig volume.VolumeConfig) []volume.VolumePlugin {
 	return []volume.VolumePlugin{
 		&hostPathPlugin{
-			host:   nil,
-			config: volumeConfig,
+			host:               nil,
+			newRecyclerFunc:    newRecycler,
+			newDeleterFunc:     newDeleter,
+			newProvisionerFunc: newProvisioner,
+			config:             volumeConfig,
 		},
 	}
 }
 
 type hostPathPlugin struct {
-	host   volume.VolumeHost
-	config volume.VolumeConfig
+	host volume.VolumeHost
+	// decouple creating Recyclers/Deleters/Provisioners by deferring to a function.  Allows for easier testing.
+	newRecyclerFunc    func(pvName string, spec *volume.Spec, eventRecorder volume.RecycleEventRecorder, host volume.VolumeHost, volumeConfig volume.VolumeConfig) (volume.Recycler, error)
+	newDeleterFunc     func(spec *volume.Spec, host volume.VolumeHost) (volume.Deleter, error)
+	newProvisionerFunc func(options volume.VolumeOptions, host volume.VolumeHost, plugin *hostPathPlugin) (volume.Provisioner, error)
+	config             volume.VolumeConfig
 }
 
 var _ volume.VolumePlugin = &hostPathPlugin{}
@@ -107,18 +113,18 @@ func (plugin *hostPathPlugin) NewUnmounter(volName string, podUID types.UID) (vo
 }
 
 func (plugin *hostPathPlugin) NewRecycler(pvName string, spec *volume.Spec, eventRecorder volume.RecycleEventRecorder) (volume.Recycler, error) {
-	return newRecycler(pvName, spec, eventRecorder, plugin.host, plugin.config)
+	return plugin.newRecyclerFunc(pvName, spec, eventRecorder, plugin.host, plugin.config)
 }
 
 func (plugin *hostPathPlugin) NewDeleter(spec *volume.Spec) (volume.Deleter, error) {
-	return newDeleter(spec, plugin.host)
+	return plugin.newDeleterFunc(spec, plugin.host)
 }
 
 func (plugin *hostPathPlugin) NewProvisioner(options volume.VolumeOptions) (volume.Provisioner, error) {
 	if !plugin.config.ProvisioningEnabled {
 		return nil, fmt.Errorf("Provisioning in volume plugin %q is disabled", plugin.GetPluginName())
 	}
-	return newProvisioner(options, plugin.host, plugin)
+	return plugin.newProvisionerFunc(options, plugin.host, plugin)
 }
 
 func (plugin *hostPathPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
@@ -187,13 +193,6 @@ func (b *hostPathMounter) GetAttributes() volume.Attributes {
 	}
 }
 
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *hostPathMounter) CanMount() error {
-	return nil
-}
-
 // SetUp does nothing.
 func (b *hostPathMounter) SetUp(fsGroup *int64) error {
 	return nil
@@ -245,11 +244,7 @@ func (r *hostPathRecycler) GetPath() string {
 // Recycle blocks until the pod has completed or any error occurs.
 // HostPath recycling only works in single node clusters and is meant for testing purposes only.
 func (r *hostPathRecycler) Recycle() error {
-	templateClone, err := conversion.NewCloner().DeepCopy(r.config.RecyclerPodTemplate)
-	if err != nil {
-		return err
-	}
-	pod := templateClone.(*api.Pod)
+	pod := r.config.RecyclerPodTemplate
 	// overrides
 	pod.Spec.ActiveDeadlineSeconds = &r.timeout
 	pod.Spec.Volumes[0].VolumeSource = api.VolumeSource{

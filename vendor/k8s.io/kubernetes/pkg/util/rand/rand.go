@@ -23,6 +23,8 @@ import (
 	"time"
 )
 
+var letters = []rune("abcdefghijklmnopqrstuvwxyz0123456789")
+var numLetters = len(letters)
 var rng = struct {
 	sync.Mutex
 	rand *rand.Rand
@@ -70,16 +72,12 @@ func Perm(n int) []int {
 	return rng.rand.Perm(n)
 }
 
-// We omit vowels from the set of available characters to reduce the chances
-// of "bad words" being formed.
-var alphanums = []rune("bcdfghjklmnpqrstvwxz0123456789")
-
-// String generates a random alphanumeric string, without vowels, which is n
-// characters long.  This will panic if n is less than zero.
+// String generates a random alphanumeric string n characters long.  This will
+// panic if n is less than zero.
 func String(length int) string {
 	b := make([]rune, length)
 	for i := range b {
-		b[i] = alphanums[Intn(len(alphanums))]
+		b[i] = letters[Intn(numLetters)]
 	}
 	return string(b)
 }

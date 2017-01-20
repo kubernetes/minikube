@@ -33,9 +33,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/api/resource"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/sets"
-	volutil "k8s.io/kubernetes/pkg/volume/util"
 )
 
 type RecycleEventRecorder func(eventtype, message string)
@@ -85,12 +83,7 @@ func internalRecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *api.P
 			return fmt.Errorf("unexpected error creating recycler pod:  %+v\n", err)
 		}
 	}
-	defer func(pod *api.Pod) {
-		glog.V(2).Infof("deleting recycler pod %s/%s", pod.Namespace, pod.Name)
-		if err := recyclerClient.DeletePod(pod.Name, pod.Namespace); err != nil {
-			glog.Errorf("failed to delete recycler pod %s/%s: %v", pod.Namespace, pod.Name, err)
-		}
-	}(pod)
+	defer recyclerClient.DeletePod(pod.Name, pod.Namespace)
 
 	// Now only the old pod or the new pod run. Watch it until it finishes
 	// and send all events on the pod to the PV
@@ -332,24 +325,4 @@ func ChooseZoneForVolume(zones sets.String, pvcName string) string {
 
 	glog.V(2).Infof("Creating volume for PVC %q; chose zone=%q from zones=%q", pvcName, zone, zoneSlice)
 	return zone
-}
-
-// UnmountViaEmptyDir delegates the tear down operation for secret, configmap, git_repo and downwardapi
-// to empty_dir
-func UnmountViaEmptyDir(dir string, host VolumeHost, volName string, volSpec Spec, podUID types.UID) error {
-	glog.V(3).Infof("Tearing down volume %v for pod %v at %v", volName, podUID, dir)
-
-	if pathExists, pathErr := volutil.PathExists(dir); pathErr != nil {
-		return fmt.Errorf("Error checking if path exists: %v", pathErr)
-	} else if !pathExists {
-		glog.Warningf("Warning: Unmount skipped because path does not exist: %v", dir)
-		return nil
-	}
-
-	// Wrap EmptyDir, let it do the teardown.
-	wrapped, err := host.NewWrapperUnmounter(volName, volSpec, podUID)
-	if err != nil {
-		return err
-	}
-	return wrapped.TearDownAt(dir)
 }

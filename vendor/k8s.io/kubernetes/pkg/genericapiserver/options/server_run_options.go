@@ -83,7 +83,6 @@ type ServerRunOptions struct {
 	AuditLogMaxSize              int
 	EnableGarbageCollection      bool
 	EnableProfiling              bool
-	EnableContentionProfiling    bool
 	EnableSwaggerUI              bool
 	EnableWatchCache             bool
 	EtcdServersOverrides         []string
@@ -92,7 +91,6 @@ type ServerRunOptions struct {
 	InsecureBindAddress          net.IP
 	InsecurePort                 int
 	KeystoneURL                  string
-	KeystoneCAFile               string
 	KubernetesServiceNodePort    int
 	LongRunningRequestRE         string
 	MasterCount                  int
@@ -129,7 +127,7 @@ type ServerRunOptions struct {
 func NewServerRunOptions() *ServerRunOptions {
 	return &ServerRunOptions{
 		AdmissionControl:                         "AlwaysAdmit",
-		AnonymousAuth:                            false,
+		AnonymousAuth:                            true,
 		AuthorizationMode:                        "AlwaysAllow",
 		AuthorizationWebhookCacheAuthorizedTTL:   5 * time.Minute,
 		AuthorizationWebhookCacheUnauthorizedTTL: 30 * time.Second,
@@ -140,7 +138,6 @@ func NewServerRunOptions() *ServerRunOptions {
 		DeleteCollectionWorkers:                  1,
 		EnableGarbageCollection:                  true,
 		EnableProfiling:                          true,
-		EnableContentionProfiling:                false,
 		EnableWatchCache:                         true,
 		InsecureBindAddress:                      net.ParseIP("127.0.0.1"),
 		InsecurePort:                             8080,
@@ -293,7 +290,7 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&s.AnonymousAuth, "anonymous-auth", s.AnonymousAuth, ""+
 		"Enables anonymous requests to the secure port of the API server. "+
 		"Requests that are not rejected by another authentication method are treated as anonymous requests. "+
-		"Anonymous requests have a username of system:anonymous, and a group name of system:unauthenticated. ")
+		"Anonymous requests have a username of system:anonymous, and a group name of system:unauthenticated.")
 
 	fs.StringVar(&s.BasicAuthFile, "basic-auth-file", s.BasicAuthFile, ""+
 		"If set, the file that will be used to admit requests to the secure port of the API server "+
@@ -349,8 +346,6 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 
 	fs.BoolVar(&s.EnableProfiling, "profiling", s.EnableProfiling,
 		"Enable profiling via web interface host:port/debug/pprof/")
-	fs.BoolVar(&s.EnableContentionProfiling, "contention-profiling", s.EnableContentionProfiling,
-		"Enable contention profiling. Requires --profiling to be set to work.")
 
 	fs.BoolVar(&s.EnableSwaggerUI, "enable-swagger-ui", s.EnableSwaggerUI,
 		"Enables swagger ui on the apiserver at /swagger-ui")
@@ -383,10 +378,6 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.KeystoneURL, "experimental-keystone-url", s.KeystoneURL,
 		"If passed, activates the keystone authentication plugin.")
-
-	fs.StringVar(&s.KeystoneCAFile, "experimental-keystone-ca-file", s.KeystoneCAFile, ""+
-		"If set, the Keystone server's certificate will be verified by one of the authorities "+
-		"in the experimental-keystone-ca-file, otherwise the host's root CA set will be used.")
 
 	// See #14282 for details on how to test/try this option out.
 	// TODO: remove this comment once this option is tested in CI.

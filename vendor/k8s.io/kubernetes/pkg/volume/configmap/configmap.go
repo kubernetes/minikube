@@ -141,13 +141,6 @@ func wrappedVolumeSpec() volume.Spec {
 	}
 }
 
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *configMapVolumeMounter) CanMount() error {
-	return nil
-}
-
 func (b *configMapVolumeMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }
@@ -266,7 +259,14 @@ func (c *configMapVolumeUnmounter) TearDown() error {
 }
 
 func (c *configMapVolumeUnmounter) TearDownAt(dir string) error {
-	return volume.UnmountViaEmptyDir(dir, c.plugin.host, c.volName, wrappedVolumeSpec(), c.podUID)
+	glog.V(3).Infof("Tearing down volume %v for pod %v at %v", c.volName, c.podUID, dir)
+
+	// Wrap EmptyDir, let it do the teardown.
+	wrapped, err := c.plugin.host.NewWrapperUnmounter(c.volName, wrappedVolumeSpec(), c.podUID)
+	if err != nil {
+		return err
+	}
+	return wrapped.TearDownAt(dir)
 }
 
 func getVolumeSource(spec *volume.Spec) (*api.ConfigMapVolumeSource, bool) {

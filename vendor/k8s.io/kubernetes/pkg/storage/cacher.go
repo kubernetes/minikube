@@ -531,23 +531,17 @@ func (c *Cacher) dispatchEvents() {
 func (c *Cacher) dispatchEvent(event *watchCacheEvent) {
 	triggerValues, supported := c.triggerValues(event)
 
-	// TODO: For now we assume we have a given <timeout> budget for dispatching
-	// a single event. We should consider changing to the approach with:
-	// - budget has upper bound at <max_timeout>
-	// - we add <portion> to current timeout every second
-	timeout := time.Duration(250) * time.Millisecond
-
 	c.Lock()
 	defer c.Unlock()
 	// Iterate over "allWatchers" no matter what the trigger function is.
 	for _, watcher := range c.watchers.allWatchers {
-		watcher.add(event, &timeout)
+		watcher.add(event)
 	}
 	if supported {
 		// Iterate over watchers interested in the given values of the trigger.
 		for _, triggerValue := range triggerValues {
 			for _, watcher := range c.watchers.valueWatchers[triggerValue] {
-				watcher.add(event, &timeout)
+				watcher.add(event)
 			}
 		}
 	} else {
@@ -560,7 +554,7 @@ func (c *Cacher) dispatchEvent(event *watchCacheEvent) {
 		// Iterate over watchers interested in exact values for all values.
 		for _, watchers := range c.watchers.valueWatchers {
 			for _, watcher := range watchers {
-				watcher.add(event, &timeout)
+				watcher.add(event)
 			}
 		}
 	}
@@ -696,7 +690,6 @@ type cacheWatcher struct {
 	input   chan watchCacheEvent
 	result  chan watch.Event
 	filter  filterObjectFunc
-	done    chan struct{}
 	stopped bool
 	forget  func(bool)
 }
@@ -705,7 +698,6 @@ func newCacheWatcher(resourceVersion uint64, chanSize int, initEvents []watchCac
 	watcher := &cacheWatcher{
 		input:   make(chan watchCacheEvent, chanSize),
 		result:  make(chan watch.Event, chanSize),
-		done:    make(chan struct{}),
 		filter:  filter,
 		stopped: false,
 		forget:  forget,
@@ -730,14 +722,13 @@ func (c *cacheWatcher) stop() {
 	defer c.Unlock()
 	if !c.stopped {
 		c.stopped = true
-		close(c.done)
 		close(c.input)
 	}
 }
 
 var timerPool sync.Pool
 
-func (c *cacheWatcher) add(event *watchCacheEvent, timeout *time.Duration) {
+func (c *cacheWatcher) add(event *watchCacheEvent) {
 	// Try to send the event immediately, without blocking.
 	select {
 	case c.input <- *event:
@@ -745,16 +736,20 @@ func (c *cacheWatcher) add(event *watchCacheEvent, timeout *time.Duration) {
 	default:
 	}
 
-	// OK, block sending, but only for up to <timeout>.
+	// OK, block sending, but only for up to 5 seconds.
 	// cacheWatcher.add is called very often, so arrange
 	// to reuse timers instead of constantly allocating.
-	startTime := time.Now()
+	trace := util.NewTrace(
+		fmt.Sprintf("cacheWatcher %v: waiting for add (initial result size %v)",
+			reflect.TypeOf(event.Object).String(), len(c.result)))
+	defer trace.LogIfLong(50 * time.Millisecond)
 
+	const timeout = 5 * time.Second
 	t, ok := timerPool.Get().(*time.Timer)
 	if ok {
-		t.Reset(*timeout)
+		t.Reset(timeout)
 	} else {
-		t = time.NewTimer(*timeout)
+		t = time.NewTimer(timeout)
 	}
 	defer timerPool.Put(t)
 
@@ -772,10 +767,6 @@ func (c *cacheWatcher) add(event *watchCacheEvent, timeout *time.Duration) {
 		// we simply terminate it.
 		c.forget(false)
 		c.stop()
-	}
-
-	if *timeout = *timeout - time.Since(startTime); *timeout < 0 {
-		*timeout = 0
 	}
 }
 
@@ -796,37 +787,13 @@ func (c *cacheWatcher) sendWatchCacheEvent(event *watchCacheEvent) {
 		glog.Errorf("unexpected copy error: %v", err)
 		return
 	}
-	var watchEvent watch.Event
 	switch {
 	case curObjPasses && !oldObjPasses:
-		watchEvent = watch.Event{Type: watch.Added, Object: object}
+		c.result <- watch.Event{Type: watch.Added, Object: object}
 	case curObjPasses && oldObjPasses:
-		watchEvent = watch.Event{Type: watch.Modified, Object: object}
+		c.result <- watch.Event{Type: watch.Modified, Object: object}
 	case !curObjPasses && oldObjPasses:
-		watchEvent = watch.Event{Type: watch.Deleted, Object: object}
-	}
-
-	// We need to ensure that if we put event X to the c.result, all
-	// previous events were already put into it before, no matter whether
-	// c.done is close or not.
-	// Thus we cannot simply select from c.done and c.result and this
-	// would give us non-determinism.
-	// At the same time, we don't want to block infinitely on putting
-	// to c.result, when c.done is already closed.
-
-	// This ensures that with c.done already close, we at most once go
-	// into the next select after this. With that, no matter which
-	// statement we choose there, we will deliver only consecutive
-	// events.
-	select {
-	case <-c.done:
-		return
-	default:
-	}
-
-	select {
-	case c.result <- watchEvent:
-	case <-c.done:
+		c.result <- watch.Event{Type: watch.Deleted, Object: object}
 	}
 }
 

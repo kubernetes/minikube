@@ -12,10 +12,7 @@ load(
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "api.pb.go",
-        "constants.go",
-    ],
+    srcs = ["api.pb.go"],
     tags = ["automanaged"],
     deps = [
         "//vendor:github.com/gogo/protobuf/proto",

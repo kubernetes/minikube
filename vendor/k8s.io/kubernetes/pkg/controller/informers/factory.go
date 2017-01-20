@@ -54,8 +54,6 @@ type SharedInformerFactory interface {
 	Roles() RoleInformer
 
 	StorageClasses() StorageClassInformer
-
-	Jobs() JobInformer
 }
 
 type sharedInformerFactory struct {
@@ -159,9 +157,4 @@ func (f *sharedInformerFactory) LimitRanges() LimitRangeInformer {
 // StorageClasses returns a SharedIndexInformer that lists and watches all storage classes
 func (f *sharedInformerFactory) StorageClasses() StorageClassInformer {
 	return &storageClassInformer{sharedInformerFactory: f}
-}
-
-// Jobs returns a SharedIndexInformer that lists and watches all storage jobs
-func (f *sharedInformerFactory) Jobs() JobInformer {
-	return &jobInformer{sharedInformerFactory: f}
 }

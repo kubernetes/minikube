@@ -94,10 +94,10 @@ func UnmountPath(mountPath string, mounter mount.Interface) error {
 		return err
 	}
 	if notMnt {
-		glog.V(4).Infof("%q is unmounted, deleting the directory", mountPath)
+		glog.V(4).Info("%q is unmounted, deleting the directory", mountPath)
 		return os.Remove(mountPath)
 	}
-	return fmt.Errorf("Failed to unmount path %v", mountPath)
+	return nil
 }
 
 // PathExists returns true if the specified path exists.
@@ -145,6 +145,36 @@ func GetSecretForPV(secretNamespace, secretName, volumePluginName string, kubeCl
 		secret[name] = string(data)
 	}
 	return secret, nil
+}
+
+// AddVolumeAnnotations adds a golang Map as annotation to a PersistentVolume
+func AddVolumeAnnotations(pv *api.PersistentVolume, annotations map[string]string) {
+	if pv.Annotations == nil {
+		pv.Annotations = map[string]string{}
+	}
+
+	for k, v := range annotations {
+		pv.Annotations[k] = v
+	}
+}
+
+// ParseVolumeAnnotations reads the defined annoations from a PersistentVolume
+func ParseVolumeAnnotations(pv *api.PersistentVolume, parseAnnotations []string) (map[string]string, error) {
+	result := map[string]string{}
+
+	if pv.Annotations == nil {
+		return result, fmt.Errorf("cannot parse volume annotations: no annotations found")
+	}
+
+	for _, annotation := range parseAnnotations {
+		if val, ok := pv.Annotations[annotation]; ok {
+			result[annotation] = val
+		} else {
+			return result, fmt.Errorf("cannot parse volume annotations: annotation %s not found", annotation)
+		}
+	}
+
+	return result, nil
 }
 
 func GetClassForVolume(kubeClient clientset.Interface, pv *api.PersistentVolume) (*storage.StorageClass, error) {

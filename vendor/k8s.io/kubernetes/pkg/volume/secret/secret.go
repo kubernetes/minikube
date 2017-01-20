@@ -18,8 +18,6 @@ package secret
 
 import (
 	"fmt"
-	"path/filepath"
-	"runtime"
 
 	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
@@ -158,21 +156,8 @@ func (sv *secretVolume) GetAttributes() volume.Attributes {
 		SupportsSELinux: true,
 	}
 }
-
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (b *secretVolumeMounter) CanMount() error {
-	return nil
-}
-
 func (b *secretVolumeMounter) SetUp(fsGroup *int64) error {
-	// Update each Slash "/" character for Windows with seperator character
-	dir := b.GetPath()
-	if runtime.GOOS == "windows" {
-		dir = filepath.FromSlash(dir)
-	}
-	return b.SetUpAt(dir, fsGroup)
+	return b.SetUpAt(b.GetPath(), fsGroup)
 }
 
 func (b *secretVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
@@ -284,16 +269,18 @@ type secretVolumeUnmounter struct {
 var _ volume.Unmounter = &secretVolumeUnmounter{}
 
 func (c *secretVolumeUnmounter) TearDown() error {
-	// Update each Slash "/" character for Windows with seperator character
-	dir := c.GetPath()
-	if runtime.GOOS == "windows" {
-		dir = filepath.FromSlash(dir)
-	}
-	return c.TearDownAt(dir)
+	return c.TearDownAt(c.GetPath())
 }
 
 func (c *secretVolumeUnmounter) TearDownAt(dir string) error {
-	return volume.UnmountViaEmptyDir(dir, c.plugin.host, c.volName, wrappedVolumeSpec(), c.podUID)
+	glog.V(3).Infof("Tearing down volume %v for pod %v at %v", c.volName, c.podUID, dir)
+
+	// Wrap EmptyDir, let it do the teardown.
+	wrapped, err := c.plugin.host.NewWrapperUnmounter(c.volName, wrappedVolumeSpec(), c.podUID)
+	if err != nil {
+		return err
+	}
+	return wrapped.TearDownAt(dir)
 }
 
 func getVolumeSource(spec *volume.Spec) (*api.SecretVolumeSource, bool) {

@@ -324,10 +324,12 @@ func (s *ServiceController) persistUpdate(service *api.Service) error {
 			return nil
 		}
 		// TODO: Try to resolve the conflict if the change was unrelated to load
-		// balancer status. For now, just pass it up the stack.
+		// balancer status. For now, just rely on the fact that we'll
+		// also process the update that caused the resource version to change.
 		if errors.IsConflict(err) {
-			return fmt.Errorf("Not persisting update to service '%s/%s' that has been changed since we received it: %v",
+			glog.V(4).Infof("Not persisting update to service '%s/%s' that has been changed since we received it: %v",
 				service.Namespace, service.Name, err)
+			return nil
 		}
 		glog.Warningf("Failed to persist updated LoadBalancerStatus to service '%s/%s' after creating its load balancer: %v",
 			service.Namespace, service.Name, err)
@@ -428,13 +430,6 @@ func (s *ServiceController) needsUpdate(oldService *api.Service, newService *api
 			oldService.Spec.Type, newService.Spec.Type)
 		return true
 	}
-
-	if wantsLoadBalancer(newService) && !reflect.DeepEqual(oldService.Spec.LoadBalancerSourceRanges, newService.Spec.LoadBalancerSourceRanges) {
-		s.eventRecorder.Eventf(newService, api.EventTypeNormal, "LoadBalancerSourceRanges", "%v -> %v",
-			oldService.Spec.LoadBalancerSourceRanges, newService.Spec.LoadBalancerSourceRanges)
-		return true
-	}
-
 	if !portsEqualForLB(oldService, newService) || oldService.Spec.SessionAffinity != newService.Spec.SessionAffinity {
 		return true
 	}

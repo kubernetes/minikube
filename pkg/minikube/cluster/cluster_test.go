@@ -32,11 +32,12 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/unversioned"
-	"k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/pkg/watch"
-	"k8s.io/client-go/1.5/rest"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/unversioned"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/watch"
+
+	"k8s.io/client-go/rest"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -542,7 +543,7 @@ func (mockServiceGetter *MockServiceGetter) Get(name string) (*v1.Service, error
 	return &service, nil
 }
 
-func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*v1.ServiceList, error) {
+func (mockServiceGetter *MockServiceGetter) List(options v1.ListOptions) (*v1.ServiceList, error) {
 	services := v1.ServiceList{
 		TypeMeta: unversioned.TypeMeta{Kind: "ServiceList", APIVersion: "v1"},
 		ListMeta: unversioned.ListMeta{},
@@ -819,11 +820,11 @@ type ServiceInterfaceMock struct {
 	ServiceList *v1.ServiceList
 }
 
-func (s ServiceInterfaceMock) List(opts api.ListOptions) (*v1.ServiceList, error) {
+func (s ServiceInterfaceMock) List(opts v1.ListOptions) (*v1.ServiceList, error) {
 	serviceList := &v1.ServiceList{
 		Items: []v1.Service{},
 	}
-	keyValArr := strings.Split(opts.LabelSelector.String(), "=")
+	keyValArr := strings.Split(opts.LabelSelector, "=")
 	for _, service := range s.ServiceList.Items {
 		if service.Spec.Selector[keyValArr[0]] == keyValArr[1] {
 			serviceList.Items = append(serviceList.Items, service)
@@ -843,17 +844,17 @@ func (s ServiceInterfaceMock) Update(*v1.Service) (*v1.Service, error) {
 func (s ServiceInterfaceMock) UpdateStatus(*v1.Service) (*v1.Service, error) {
 	return nil, nil
 }
-func (s ServiceInterfaceMock) Delete(string, *api.DeleteOptions) error {
+func (s ServiceInterfaceMock) Delete(string, *v1.DeleteOptions) error {
 	return nil
 }
-func (s ServiceInterfaceMock) Watch(opts api.ListOptions) (watch.Interface, error) {
+func (s ServiceInterfaceMock) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return nil, nil
 }
 func (s ServiceInterfaceMock) ProxyGet(scheme, name, port, path string, params map[string]string) rest.ResponseWrapper {
 	return nil
 }
 
-func (s ServiceInterfaceMock) DeleteCollection(options *api.DeleteOptions, listOptions api.ListOptions) error {
+func (s ServiceInterfaceMock) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	return nil
 }
 

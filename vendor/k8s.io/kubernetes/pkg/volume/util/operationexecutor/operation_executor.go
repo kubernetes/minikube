@@ -22,7 +22,6 @@ package operationexecutor
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -120,8 +119,7 @@ type OperationExecutor interface {
 func NewOperationExecutor(
 	kubeClient internalclientset.Interface,
 	volumePluginMgr *volume.VolumePluginMgr,
-	recorder record.EventRecorder,
-	checkNodeCapabilitiesBeforeMount bool) OperationExecutor {
+	recorder record.EventRecorder) OperationExecutor {
 
 	return &operationExecutor{
 		kubeClient:      kubeClient,
@@ -129,7 +127,6 @@ func NewOperationExecutor(
 		pendingOperations: nestedpendingoperations.NewNestedPendingOperations(
 			true /* exponentialBackOffOnError */),
 		recorder: recorder,
-		checkNodeCapabilitiesBeforeMount: checkNodeCapabilitiesBeforeMount,
 	}
 }
 
@@ -374,11 +371,6 @@ type operationExecutor struct {
 
 	// recorder is used to record events in the API server
 	recorder record.EventRecorder
-
-	// checkNodeCapabilitiesBeforeMount, if set, enables the CanMount check,
-	// which verifies that the components (binaries, etc.) required to mount
-	// the volume are available on the underlying node before attempting mount.
-	checkNodeCapabilitiesBeforeMount bool
 }
 
 func (oe *operationExecutor) IsOperationPending(volumeName api.UniqueVolumeName, podName volumetypes.UniquePodName) bool {
@@ -885,15 +877,6 @@ func (oe *operationExecutor) generateMountVolumeFunc(
 			}
 		}
 
-		if oe.checkNodeCapabilitiesBeforeMount {
-			if canMountErr := volumeMounter.CanMount(); canMountErr != nil {
-				errMsg := fmt.Sprintf("Unable to mount volume %v (spec.Name: %v) on pod %v (UID: %v). Verify that your node machine has the required components before attempting to mount this volume type. %s", volumeToMount.VolumeName, volumeToMount.VolumeSpec.Name(), volumeToMount.Pod.Name, volumeToMount.Pod.UID, canMountErr.Error())
-				oe.recorder.Eventf(volumeToMount.Pod, api.EventTypeWarning, kevents.FailedMountVolume, errMsg)
-				glog.Errorf(errMsg)
-				return fmt.Errorf(errMsg)
-			}
-		}
-
 		// Execute mount
 		mountErr := volumeMounter.SetUp(fsGroup)
 		if mountErr != nil {
@@ -1002,7 +985,7 @@ func (oe *operationExecutor) generateUnmountVolumeFunc(
 				volumeToUnmount.OuterVolumeSpecName,
 				volumeToUnmount.PodName,
 				volumeToUnmount.PodUID,
-				markVolMountedErr)
+				unmountErr)
 		}
 
 		return nil
@@ -1054,8 +1037,7 @@ func (oe *operationExecutor) generateUnmountDeviceFunc(
 				err)
 		}
 		refs, err := attachableVolumePlugin.GetDeviceMountRefs(deviceMountPath)
-
-		if err != nil || hasMountRefs(deviceMountPath, refs) {
+		if err != nil || len(refs) > 0 {
 			if err == nil {
 				err = fmt.Errorf("The device mount path %q is still mounted by other references %v", deviceMountPath, refs)
 			}
@@ -1124,24 +1106,6 @@ func (oe *operationExecutor) generateUnmountDeviceFunc(
 
 		return nil
 	}, nil
-}
-
-// TODO: this is a workaround for the unmount device issue caused by gci mounter.
-// In GCI cluster, if gci mounter is used for mounting, the container started by mounter
-// script will cause additional mounts created in the container. Since these mounts are
-// irrelavant to the original mounts, they should be not considered when checking the
-// mount references. Current solution is to filter out those mount paths that contain
-// the string of original mount path.
-// Plan to work on better approach to solve this issue.
-
-func hasMountRefs(mountPath string, mountRefs []string) bool {
-	count := 0
-	for _, ref := range mountRefs {
-		if !strings.Contains(ref, mountPath) {
-			count = count + 1
-		}
-	}
-	return count > 0
 }
 
 func (oe *operationExecutor) generateVerifyControllerAttachedVolumeFunc(

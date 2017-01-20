@@ -120,7 +120,7 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *api.Pod, attem
 		// TODO: refactor kubelet to get cgroup parent for pod instead of containers
 		cgroupParent = opts.CgroupParent
 	}
-	podSandboxConfig.Linux = m.generatePodSandboxLinuxConfig(pod, cgroupParent)
+	podSandboxConfig.Linux = generatePodSandboxLinuxConfig(pod, cgroupParent)
 	if len(portMappings) > 0 {
 		podSandboxConfig.PortMappings = portMappings
 	}
@@ -129,46 +129,26 @@ func (m *kubeGenericRuntimeManager) generatePodSandboxConfig(pod *api.Pod, attem
 }
 
 // generatePodSandboxLinuxConfig generates LinuxPodSandboxConfig from api.Pod.
-func (m *kubeGenericRuntimeManager) generatePodSandboxLinuxConfig(pod *api.Pod, cgroupParent string) *runtimeApi.LinuxPodSandboxConfig {
+func generatePodSandboxLinuxConfig(pod *api.Pod, cgroupParent string) *runtimeApi.LinuxPodSandboxConfig {
 	if pod.Spec.SecurityContext == nil && cgroupParent == "" {
 		return nil
 	}
 
-	lc := &runtimeApi.LinuxPodSandboxConfig{}
-	if cgroupParent != "" {
-		lc.CgroupParent = &cgroupParent
-	}
+	linuxPodSandboxConfig := &runtimeApi.LinuxPodSandboxConfig{}
 	if pod.Spec.SecurityContext != nil {
-		sc := pod.Spec.SecurityContext
-		lc.SecurityContext = &runtimeApi.LinuxSandboxSecurityContext{
-			NamespaceOptions: &runtimeApi.NamespaceOption{
-				HostNetwork: &sc.HostNetwork,
-				HostIpc:     &sc.HostIPC,
-				HostPid:     &sc.HostPID,
-			},
-			RunAsUser: sc.RunAsUser,
-		}
-
-		if sc.FSGroup != nil {
-			lc.SecurityContext.SupplementalGroups = append(lc.SecurityContext.SupplementalGroups, *sc.FSGroup)
-		}
-		if groups := m.runtimeHelper.GetExtraSupplementalGroupsForPod(pod); len(groups) > 0 {
-			lc.SecurityContext.SupplementalGroups = append(lc.SecurityContext.SupplementalGroups, groups...)
-		}
-		if sc.SupplementalGroups != nil {
-			lc.SecurityContext.SupplementalGroups = append(lc.SecurityContext.SupplementalGroups, sc.SupplementalGroups...)
-		}
-		if sc.SELinuxOptions != nil {
-			lc.SecurityContext.SelinuxOptions = &runtimeApi.SELinuxOption{
-				User:  &sc.SELinuxOptions.User,
-				Role:  &sc.SELinuxOptions.Role,
-				Type:  &sc.SELinuxOptions.Type,
-				Level: &sc.SELinuxOptions.Level,
-			}
+		securityContext := pod.Spec.SecurityContext
+		linuxPodSandboxConfig.NamespaceOptions = &runtimeApi.NamespaceOption{
+			HostNetwork: &securityContext.HostNetwork,
+			HostIpc:     &securityContext.HostIPC,
+			HostPid:     &securityContext.HostPID,
 		}
 	}
 
-	return lc
+	if cgroupParent != "" {
+		linuxPodSandboxConfig.CgroupParent = &cgroupParent
+	}
+
+	return linuxPodSandboxConfig
 }
 
 // getKubeletSandboxes lists all (or just the running) sandboxes managed by kubelet.

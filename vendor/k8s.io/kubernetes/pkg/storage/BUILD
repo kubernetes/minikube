@@ -48,7 +48,6 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = [
-        "cacher_whitebox_test.go",
         "selection_predicate_test.go",
         "util_test.go",
         "watch_cache_test.go",
@@ -88,7 +87,6 @@ go_test(
         "//pkg/storage/etcd:go_default_library",
         "//pkg/storage/etcd/etcdtest:go_default_library",
         "//pkg/storage/etcd/testing:go_default_library",
-        "//pkg/storage/etcd3:go_default_library",
         "//pkg/util/sets:go_default_library",
         "//pkg/util/wait:go_default_library",
         "//pkg/watch:go_default_library",

@@ -19,17 +19,14 @@ package nfs
 import (
 	"fmt"
 	"os"
-	"runtime"
 
-	"github.com/golang/glog"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/conversion"
 	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
-	"k8s.io/kubernetes/pkg/volume/util"
+
+	"github.com/golang/glog"
 )
 
 // This is the primary entrypoint for volume plugins.
@@ -39,15 +36,18 @@ import (
 func ProbeVolumePlugins(volumeConfig volume.VolumeConfig) []volume.VolumePlugin {
 	return []volume.VolumePlugin{
 		&nfsPlugin{
-			host:   nil,
-			config: volumeConfig,
+			host:            nil,
+			newRecyclerFunc: newRecycler,
+			config:          volumeConfig,
 		},
 	}
 }
 
 type nfsPlugin struct {
-	host   volume.VolumeHost
-	config volume.VolumeConfig
+	host volume.VolumeHost
+	// decouple creating recyclers by deferring to a function.  Allows for easier testing.
+	newRecyclerFunc func(pvName string, spec *volume.Spec, eventRecorder volume.RecycleEventRecorder, host volume.VolumeHost, volumeConfig volume.VolumeConfig) (volume.Recycler, error)
+	config          volume.VolumeConfig
 }
 
 var _ volume.VolumePlugin = &nfsPlugin{}
@@ -133,7 +133,7 @@ func (plugin *nfsPlugin) newUnmounterInternal(volName string, podUID types.UID, 
 }
 
 func (plugin *nfsPlugin) NewRecycler(pvName string, spec *volume.Spec, eventRecorder volume.RecycleEventRecorder) (volume.Recycler, error) {
-	return newRecycler(pvName, spec, eventRecorder, plugin.host, plugin.config)
+	return plugin.newRecyclerFunc(pvName, spec, eventRecorder, plugin.host, plugin.config)
 }
 
 func (plugin *nfsPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
@@ -154,38 +154,14 @@ type nfs struct {
 	pod     *api.Pod
 	mounter mount.Interface
 	plugin  *nfsPlugin
+	// decouple creating recyclers by deferring to a function.  Allows for easier testing.
+	newRecyclerFunc func(spec *volume.Spec, host volume.VolumeHost, volumeConfig volume.VolumeConfig) (volume.Recycler, error)
 	volume.MetricsNil
 }
 
 func (nfsVolume *nfs) GetPath() string {
 	name := nfsPluginName
 	return nfsVolume.plugin.host.GetPodVolumeDir(nfsVolume.pod.UID, strings.EscapeQualifiedNameForDisk(name), nfsVolume.volName)
-}
-
-// Checks prior to mount operations to verify that the required components (binaries, etc.)
-// to mount the volume are available on the underlying node.
-// If not, it returns an error
-func (nfsMounter *nfsMounter) CanMount() error {
-	exe := exec.New()
-	switch runtime.GOOS {
-	case "linux":
-		_, err1 := exe.Command("/bin/ls", "/sbin/mount.nfs").CombinedOutput()
-		_, err2 := exe.Command("/bin/ls", "/sbin/mount.nfs4").CombinedOutput()
-
-		if err1 != nil {
-			return fmt.Errorf("Required binary /sbin/mount.nfs is missing")
-		}
-		if err2 != nil {
-			return fmt.Errorf("Required binary /sbin/mount.nfs4 is missing")
-		}
-		return nil
-	case "darwin":
-		_, err := exe.Command("/bin/ls", "/sbin/mount_nfs").CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("Required binary /sbin/mount_nfs is missing")
-		}
-	}
-	return nil
 }
 
 type nfsMounter struct {
@@ -271,7 +247,31 @@ func (c *nfsUnmounter) TearDown() error {
 }
 
 func (c *nfsUnmounter) TearDownAt(dir string) error {
-	return util.UnmountPath(dir, c.mounter)
+	notMnt, err := c.mounter.IsLikelyNotMountPoint(dir)
+	if err != nil {
+		glog.Errorf("Error checking IsLikelyNotMountPoint: %v", err)
+		return err
+	}
+	if notMnt {
+		return os.Remove(dir)
+	}
+
+	if err := c.mounter.Unmount(dir); err != nil {
+		glog.Errorf("Unmounting failed: %v", err)
+		return err
+	}
+	notMnt, mntErr := c.mounter.IsLikelyNotMountPoint(dir)
+	if mntErr != nil {
+		glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
+		return mntErr
+	}
+	if notMnt {
+		if err := os.Remove(dir); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func newRecycler(pvName string, spec *volume.Spec, eventRecorder volume.RecycleEventRecorder, host volume.VolumeHost, volumeConfig volume.VolumeConfig) (volume.Recycler, error) {
@@ -310,11 +310,7 @@ func (r *nfsRecycler) GetPath() string {
 // Recycle recycles/scrubs clean an NFS volume.
 // Recycle blocks until the pod has completed or any error occurs.
 func (r *nfsRecycler) Recycle() error {
-	templateClone, err := conversion.NewCloner().DeepCopy(r.config.RecyclerPodTemplate)
-	if err != nil {
-		return err
-	}
-	pod := templateClone.(*api.Pod)
+	pod := r.config.RecyclerPodTemplate
 	// overrides
 	pod.Spec.ActiveDeadlineSeconds = &r.timeout
 	pod.GenerateName = "pv-recycler-nfs-"

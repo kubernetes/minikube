@@ -146,7 +146,6 @@ func (wc *watchChan) ResultChan() <-chan watch.Event {
 
 // sync tries to retrieve existing data and send them to process.
 // The revision to watch will be set to the revision in response.
-// All events sent will have isCreated=true
 func (wc *watchChan) sync() error {
 	opts := []clientv3.OpOption{}
 	if wc.recursive {
@@ -157,8 +156,17 @@ func (wc *watchChan) sync() error {
 		return err
 	}
 	wc.initialRev = getResp.Header.Revision
+
 	for _, kv := range getResp.Kvs {
-		wc.sendEvent(parseKV(kv))
+		prevResp, err := wc.watcher.client.Get(wc.ctx, string(kv.Key), clientv3.WithRev(kv.ModRevision-1), clientv3.WithSerializable())
+		if err != nil {
+			return err
+		}
+		var prevVal []byte
+		if len(prevResp.Kvs) > 0 {
+			prevVal = prevResp.Kvs[0].Value
+		}
+		wc.sendEvent(parseKV(kv, prevVal))
 	}
 	return nil
 }
