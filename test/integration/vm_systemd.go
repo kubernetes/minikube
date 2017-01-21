@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -27,6 +28,9 @@ import (
 
 func testVMSystemd(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test in windows as it doesn't exit properly")
+	}
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,
