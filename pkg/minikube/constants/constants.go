@@ -66,6 +66,7 @@ const (
 	DefaultMemory       = 2048
 	DefaultCPUS         = 2
 	DefaultDiskSize     = "20g"
+	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
 		"localkube: {{.LocalkubeStatus}}\n"
