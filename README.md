@@ -150,6 +150,15 @@ The fix is to update /etc/sysconfig/docker to ensure that minikube's environment
 
 Remember to turn off the imagePullPolicy:Always, as otherwise kubernetes won't use images you built locally.
 
+#### Enabling Docker Insecure Registry
+
+Minikube allows users to configure the docker engine's `--insecure-registry` flag. You can use the `--insecure-registry` flag on the
+`minikube start` command to enable insecure communication between the docker engine and registries listening to reqeusts from the CIDR range.
+
+One nifty hack is to allow the kubelet running in minikube to talk to registries deployed inside a pod in the cluster without backing them
+with TLS certificates. Because the default service cluster IP is known to be available at 10.0.0.1, users can pull images from registries
+deployed inside the cluster by creating the cluster with `minikube start --insecure-registry "10.0.0.0/24"`.
+
 ## Managing your Cluster
 
 ### Starting a Cluster
