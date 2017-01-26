@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_BIN_VERSION = 0.3.0
+CNI_BIN_VERSION = 0.4.0
 CNI_BIN_SITE = https://github.com/containernetworking/cni/releases/download/v$(CNI_BIN_VERSION)
 CNI_BIN_SOURCE = cni-v$(CNI_BIN_VERSION).tgz
 
