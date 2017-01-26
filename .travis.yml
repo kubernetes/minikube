@@ -1,9 +1,14 @@
 language: go
+os: linux
+sudo: require
+dist: trusty
+
 go:
   - 1.7.1
 go_import_path: k8s.io/minikube
+
 install:
-  - echo "Don't run anything."
+  - sudo apt-get -qqy install libvirt-dev
 script:
   - make test
 after_success:

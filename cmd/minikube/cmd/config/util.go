@@ -18,15 +18,16 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
@@ -79,12 +80,25 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+func GetClientType() machine.ClientType {
+	if viper.GetBool(useVendoredDriver) {
+		return machine.ClientTypeLocal
+	}
+	return machine.ClientTypeRPC
+}
+
 func EnableOrDisableAddon(name string, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
 	}
-	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+
+	//TODO(r2d4): config package should not reference API, pull this out
+	api, err := machine.NewAPIClient(GetClientType())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+		os.Exit(1)
+	}
 	defer api.Close()
 	cluster.EnsureMinikubeRunningOrExit(api, 0)
 

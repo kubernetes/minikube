@@ -21,11 +21,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // logsCmd represents the logs command
@@ -34,7 +33,11 @@ var logsCmd = &cobra.Command{
 	Short: "Gets the logs of the running localkube instance, used for debugging minikube, not user code.",
 	Long:  `Gets the logs of the running localkube instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api, err := machine.NewAPIClient(clientType)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 		s, err := cluster.GetHostLogs(api)
 		if err != nil {

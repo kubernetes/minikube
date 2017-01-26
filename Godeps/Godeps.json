@@ -103,6 +103,11 @@
 			"Rev": "c0ef4539dfab4d21c8ef20ba2924f9fc6f186d35"
 		},
 		{
+			"ImportPath": "github.com/alexzorin/libvirt-go",
+			"Comment": "v2.13.0-6-g9359c4f",
+			"Rev": "9359c4feb97212380aa05213fa30c4b7348365f0"
+		},
+		{
 			"ImportPath": "github.com/appc/spec/schema",
 			"Comment": "v0.8.1-6-gab50d12",
 			"Rev": "ab50d12e88f57788bf84b83fef2be236eb1fcc0b"
@@ -682,6 +687,11 @@
 			"ImportPath": "github.com/dgrijalva/jwt-go",
 			"Comment": "v3.0.0-4-g01aeca5",
 			"Rev": "01aeca54ebda6e0fbfafd0a524d234159c05ec20"
+		},
+		{
+			"ImportPath": "github.com/dhiltgen/docker-machine-kvm",
+			"Comment": "v0.5.6-10-g37bb4cc",
+			"Rev": "37bb4cc6778c35860a0ce502f3a2d1a96dc3fd67"
 		},
 		{
 			"ImportPath": "github.com/docker/distribution/digest",

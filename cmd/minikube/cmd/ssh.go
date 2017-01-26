@@ -17,14 +17,14 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // sshCmd represents the docker-ssh command
@@ -33,12 +33,15 @@ var sshCmd = &cobra.Command{
 	Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
-		defer api.Close()
-		err := cluster.CreateSSHShell(api, args)
-		err = errors.Wrap(err, "Error attempting to ssh/run-ssh-command")
+		api, err := machine.NewAPIClient(clientType)
 		if err != nil {
-			glog.Errorln(err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
+		defer api.Close()
+		err = cluster.CreateSSHShell(api, args)
+		if err != nil {
+			glog.Errorln(errors.Wrap(err, "Error attempting to ssh/run-ssh-command"))
 			os.Exit(1)
 		}
 	},

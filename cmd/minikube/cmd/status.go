@@ -17,16 +17,17 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"text/template"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 var statusFormat string
@@ -42,7 +43,11 @@ var statusCmd = &cobra.Command{
 	Short: "Gets the status of a local kubernetes cluster.",
 	Long:  `Gets the status of a local kubernetes cluster.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api, err := machine.NewAPIClient(clientType)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 		ms, err := cluster.GetHostStatus(api)
 		if err != nil {

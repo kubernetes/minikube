@@ -18,22 +18,173 @@ package machine
 
 import (
 	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"net"
 	"os"
+	"path/filepath"
 	"time"
 
-	"net"
+	"k8s.io/minikube/pkg/minikube/constants"
 
-	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/drivers/virtualbox"
-	"github.com/docker/machine/drivers/vmwarefusion"
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/cert"
 	"github.com/docker/machine/libmachine/check"
-	"github.com/docker/machine/libmachine/drivers/plugin"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/docker/machine/libmachine/drivers/rpc"
+	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/golang/glog"
+	"github.com/docker/machine/libmachine/persist"
+	"github.com/docker/machine/libmachine/swarm"
+	"github.com/docker/machine/libmachine/version"
+	"github.com/pkg/errors"
 )
+
+type driverGetter func(string, []byte) (drivers.Driver, error)
+
+type ClientType int
+type clientFactory interface {
+	NewClient(string, string) libmachine.API
+}
+
+type localClientFactory struct{}
+
+func (*localClientFactory) NewClient(storePath, certsDir string) libmachine.API {
+	return &LocalClient{
+		certsDir:  certsDir,
+		storePath: storePath,
+		Filestore: persist.NewFilestore(storePath, certsDir, certsDir),
+	}
+}
+
+type rpcClientFactory struct{}
+
+func (*rpcClientFactory) NewClient(storePath, certsDir string) libmachine.API {
+	return libmachine.NewClient(storePath, certsDir)
+}
+
+var clientFactories = map[ClientType]clientFactory{
+	ClientTypeLocal: &localClientFactory{},
+	ClientTypeRPC:   &rpcClientFactory{},
+}
+
+const (
+	ClientTypeLocal ClientType = iota
+	ClientTypeRPC
+)
+
+// Gets a new client depending on the clientType specified
+// defaults to the libmachine client
+func NewAPIClient(clientType ClientType) (libmachine.API, error) {
+	storePath := constants.Minipath
+	certsDir := constants.MakeMiniPath("certs")
+	newClientFactory, ok := clientFactories[clientType]
+	if !ok {
+		return nil, fmt.Errorf("No implementation for API client type %d", clientType)
+	}
+
+	return newClientFactory.NewClient(storePath, certsDir), nil
+}
+
+func getDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
+	driverGetter, ok := driverMap[driverName]
+	if !ok {
+		return nil, fmt.Errorf("Unknown driver %s for platform.", driverName)
+	}
+	driver, err := driverGetter(driverName, rawDriver)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error getting driver for %s", driverName)
+	}
+
+	return driver, nil
+}
+
+func getVirtualboxDriver(_ string, rawDriver []byte) (drivers.Driver, error) {
+	var driver drivers.Driver
+	driver = virtualbox.NewDriver("", "")
+	err := json.Unmarshal(rawDriver, driver)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error unmarshalling virtualbox driver %s", string(rawDriver))
+	}
+	return driver, nil
+}
+
+func getDriverRPC(driverName string, rawDriver []byte) (drivers.Driver, error) {
+	return rpcdriver.NewRPCClientDriverFactory().NewRPCClientDriver(driverName, rawDriver)
+}
+
+// LocalClient is a non-RPC implemenation
+// of the libmachine API
+type LocalClient struct {
+	certsDir  string
+	storePath string
+	*persist.Filestore
+}
+
+func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+	driver, err := getDriver(driverName, rawDriver)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting driver")
+	}
+	return &host.Host{
+		ConfigVersion: version.ConfigVersion,
+		Name:          driver.GetMachineName(),
+		Driver:        driver,
+		DriverName:    driver.DriverName(),
+		HostOptions: &host.Options{
+			AuthOptions: &auth.Options{
+				CertDir:          api.certsDir,
+				CaCertPath:       filepath.Join(api.certsDir, "ca.pem"),
+				CaPrivateKeyPath: filepath.Join(api.certsDir, "ca-key.pem"),
+				ClientCertPath:   filepath.Join(api.certsDir, "cert.pem"),
+				ClientKeyPath:    filepath.Join(api.certsDir, "key.pem"),
+				ServerCertPath:   filepath.Join(api.GetMachinesDir(), "server.pem"),
+				ServerKeyPath:    filepath.Join(api.GetMachinesDir(), "server-key.pem"),
+			},
+			EngineOptions: &engine.Options{
+				StorageDriver: "aufs",
+				TLSVerify:     true,
+			},
+			SwarmOptions: &swarm.Options{},
+		},
+	}, nil
+}
+
+func (api *LocalClient) Load(name string) (*host.Host, error) {
+	h, err := api.Filestore.Load(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error loading host from store")
+	}
+
+	h.Driver, err = getDriver(h.DriverName, h.RawDriver)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error loading driver from host")
+	}
+
+	return h, nil
+}
+
+func (api *LocalClient) Close() error { return nil }
+
+// TODO(r2d4): We can rewrite the create function,
+// for now, just defer to libmachine's implementation
+func (api *LocalClient) Create(h *host.Host) error {
+	c := libmachine.NewClient(api.storePath, api.certsDir)
+	return c.Create(h)
+}
+
+func StartDriver() {
+	cert.SetCertGenerator(&CertGenerator{})
+	check.DefaultConnChecker = &ConnChecker{}
+	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
+		registerDriver(os.Getenv(localbinary.PluginEnvDriverName))
+	}
+
+	localbinary.CurrentBinaryIsDockerMachine = true
+}
 
 // CertGenerator is used to override the default machine CertGenerator with a longer timeout.
 type CertGenerator struct {
@@ -69,27 +220,4 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 	}
 
 	return true, nil
-}
-
-// StartDriver starts the desired machine driver if necessary.
-func StartDriver() {
-	cert.SetCertGenerator(&CertGenerator{})
-	check.DefaultConnChecker = &ConnChecker{}
-
-	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
-		driverName := os.Getenv(localbinary.PluginEnvDriverName)
-		switch driverName {
-		case "virtualbox":
-			plugin.RegisterDriver(virtualbox.NewDriver("", ""))
-		case "vmwarefusion":
-			plugin.RegisterDriver(vmwarefusion.NewDriver("", ""))
-		case "hyperv":
-			plugin.RegisterDriver(hyperv.NewDriver("", ""))
-		default:
-			glog.Exitf("Unsupported driver: %s\n", driverName)
-		}
-		return
-	}
-
-	localbinary.CurrentBinaryIsDockerMachine = true
 }
