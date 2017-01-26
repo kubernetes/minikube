@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // ipCmd represents the ip command
@@ -32,7 +32,11 @@ var ipCmd = &cobra.Command{
 	Short: "Retrieve the IP address of the running cluster.",
 	Long:  `Retrieves the IP address of the running cluster, and writes it to STDOUT.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api, err := machine.NewAPIClient(clientType)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 		host, err := api.Load(constants.MachineName)
 		if err != nil {
