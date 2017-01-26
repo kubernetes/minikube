@@ -28,14 +28,28 @@ import (
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/cert"
+	"github.com/docker/machine/libmachine/check"
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 )
 
 // CertGenerator is used to override the default machine CertGenerator with a longer timeout.
 type CertGenerator struct {
 	cert.X509CertGenerator
+}
+
+type ConnChecker struct {
+}
+
+func (cc *ConnChecker) Check(h *host.Host, swarm bool) (string, *auth.Options, error) {
+	authOptions := h.AuthOptions()
+	dockerHost, err := h.Driver.GetURL()
+	if err != nil {
+		return "", &auth.Options{}, err
+	}
+	return dockerHost, authOptions, nil
 }
 
 // ValidateCertificate is a reimplementation of the default generator with a longer timeout.
@@ -60,6 +74,7 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 // StartDriver starts the desired machine driver if necessary.
 func StartDriver() {
 	cert.SetCertGenerator(&CertGenerator{})
+	check.DefaultConnChecker = &ConnChecker{}
 
 	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
 		driverName := os.Getenv(localbinary.PluginEnvDriverName)
