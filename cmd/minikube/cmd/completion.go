@@ -21,6 +21,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	cmdutil "k8s.io/minikube/cmd/util"
 )
@@ -86,7 +87,7 @@ func GenerateBashCompletion(w io.Writer, cmd *cobra.Command) error {
 
 	err = cmd.GenBashCompletion(w)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error generating bash completion")
 	}
 
 	return nil

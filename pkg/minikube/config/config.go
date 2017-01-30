@@ -34,19 +34,7 @@ const (
 	WantKubectlDownloadMsg    = "WantKubectlDownloadMsg"
 )
 
-type configFile interface {
-	io.ReadWriter
-}
-
-type setFn func(string, string) error
 type MinikubeConfig map[string]interface{}
-
-type Setting struct {
-	name        string
-	set         func(MinikubeConfig, string, string) error
-	validations []setFn
-	callbacks   []setFn
-}
 
 func Get(name string) (string, error) {
 	m, err := ReadConfig()
