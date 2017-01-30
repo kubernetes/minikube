@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"bytes"
-	"crypto"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -38,7 +37,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/1.5/kubernetes"
@@ -178,31 +176,6 @@ type sshAble interface {
 	RunSSHCommand(string) (string, error)
 }
 
-// MachineConfig contains the parameters used to start a cluster.
-type MachineConfig struct {
-	MinikubeISO         string
-	Memory              int
-	CPUs                int
-	DiskSize            int
-	VMDriver            string
-	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
-	InsecureRegistry    []string
-	RegistryMirror      []string
-	HostOnlyCIDR        string // Only used by the virtualbox driver
-	HypervVirtualSwitch string
-	KvmNetwork          string // Only used by the KVM driver
-}
-
-// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
-type KubernetesConfig struct {
-	KubernetesVersion string
-	NodeIP            string
-	ContainerRuntime  string
-	NetworkPlugin     string
-	FeatureGates      string
-	ExtraOptions      util.ExtraOptionSlice
-}
-
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
 	startCommand, err := GetStartCommand(kubernetesConfig)
@@ -315,7 +288,7 @@ func engineOptions(config MachineConfig) *engine.Options {
 
 func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
-	d.Boot2DockerURL = config.GetISOFileURI()
+	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = int(config.DiskSize)
@@ -323,77 +296,11 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	return d
 }
 
-func (m *MachineConfig) CacheMinikubeISOFromURL() error {
-	options := download.FileOptions{
-		Mkdirs: download.MkdirAll,
-		Options: download.Options{
-			ProgressBars: &download.ProgressBarOptions{
-				MaxWidth: 80,
-			},
-		},
-	}
-
-	// Validate the ISO if it was the default URL, before writing it to disk.
-	if m.MinikubeISO == constants.DefaultIsoUrl {
-		options.Checksum = constants.DefaultIsoShaUrl
-		options.ChecksumHash = crypto.SHA256
-	}
-
-	fmt.Println("Downloading Minikube ISO")
-	if err := download.ToFile(m.MinikubeISO, m.GetISOCacheFilepath(), options); err != nil {
-		return errors.Wrap(err, "Error downloading Minikube ISO")
-	}
-
-	return nil
-}
-
-func (m *MachineConfig) ShouldCacheMinikubeISO() bool {
-	// store the miniube-iso inside the .minikube dir
-
-	urlObj, err := url.Parse(m.MinikubeISO)
-	if err != nil {
-		return false
-	}
-	if urlObj.Scheme == fileScheme {
-		return false
-	}
-	if m.IsMinikubeISOCached() {
-		return false
-	}
-	return true
-}
-
-func (m *MachineConfig) GetISOCacheFilepath() string {
-	return filepath.Join(constants.Minipath, "cache", "iso", filepath.Base(m.MinikubeISO))
-}
-
-func (m *MachineConfig) GetISOFileURI() string {
-	urlObj, err := url.Parse(m.MinikubeISO)
-	if err != nil {
-		return m.MinikubeISO
-	}
-	if urlObj.Scheme == fileScheme {
-		return m.MinikubeISO
-	}
-	isoPath := filepath.Join(constants.Minipath, "cache", "iso", filepath.Base(m.MinikubeISO))
-	// As this is a file URL there should be no backslashes regardless of platform running on.
-	return "file://" + filepath.ToSlash(isoPath)
-}
-
-func (m *MachineConfig) IsMinikubeISOCached() bool {
-	if _, err := os.Stat(m.GetISOCacheFilepath()); os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	var driver interface{}
 
-	if config.ShouldCacheMinikubeISO() {
-		if err := config.CacheMinikubeISOFromURL(); err != nil {
-			return nil, errors.Wrap(err, "Error attempting to cache minikube iso from url")
-		}
+	if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
+		return nil, errors.Wrap(err, "Error attempting to cache minikube ISO from URL")
 	}
 
 	switch config.VMDriver {
@@ -510,11 +417,6 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	return client.Shell(strings.Join(args, " "))
 }
 
-type ipPort struct {
-	IP   string
-	Port int32
-}
-
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
@@ -547,7 +449,13 @@ func getServiceURLsWithClient(client *kubernetes.Clientset, ip, namespace, servi
 	for _, port := range ports {
 
 		var doc bytes.Buffer
-		err = t.Execute(&doc, ipPort{ip, port})
+		err = t.Execute(&doc, struct {
+			IP   string
+			Port int32
+		}{
+			ip,
+			port,
+		})
 		if err != nil {
 			return nil, err
 		}
