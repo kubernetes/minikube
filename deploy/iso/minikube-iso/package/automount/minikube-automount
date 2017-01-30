@@ -9,12 +9,12 @@ MAGIC="boot2docker, please format-me"
 # If there is a partition with `boot2docker-data` as its label, use it and be
 # very happy. Thus, you can come along if you feel like a room without a roof.
 BOOT2DOCKER_DATA=`blkid -o device -l -t LABEL=$LABEL`
+UNPARTITIONED_HD="/dev/$(lsblk | grep disk | cut -f1 -d' ')"
 echo $BOOT2DOCKER_DATA
 if [ ! -n "$BOOT2DOCKER_DATA" ]; then
     echo "Is the disk unpartitioned?, test for the 'boot2docker format-me' string"
 
     # Is the disk unpartitioned?, test for the 'boot2docker format-me' string
-    UNPARTITIONED_HD="/dev/$(lsblk | grep disk | cut -f1 -d' ')"
     parted --script "$UNPARTITIONED_HD" print | grep "Partition Table: unknown"
 
     if [ $? -eq 0 ]; then
@@ -53,7 +53,6 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
             done
             BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
             mkfs.ext4 -i 8192 -L $LABEL $BOOT2DOCKER_DATA
-            swapon "${UNPARTITIONED_HD}2"
         fi
 
         DISK_VENDOR=$(cat /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/vendor /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/model | tr -d "\n")
@@ -77,7 +76,6 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                     (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
                     BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
                     mkfs.ext4 -i 8192 -L $LABEL $BOOT2DOCKER_DATA
-                    swapon "${UNPARTITIONED_HD}2"
                 else
                     echo "Disk unpartitioned but something is there... not doing anything"
                 fi
@@ -160,6 +158,7 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /mnt/$PARTNAME/var/lib/localkube
     ln -s /mnt/$PARTNAME/var/lib/localkube /var/lib/localkube
 fi
+swapon "${UNPARTITIONED_HD}2"
 
 # /etc dirs are initialised from /usr/local, to allow the user/admin to customise
 mkdir -p /var/lib/boot2docker/etc/
