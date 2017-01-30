@@ -29,10 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-type configFile interface {
-	io.ReadWriter
-}
-
 type setFn func(string, string) error
 
 type Setting struct {

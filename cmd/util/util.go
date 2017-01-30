@@ -108,7 +108,7 @@ func UploadError(b []byte, url string) error {
 	if err != nil {
 		return errors.Wrap(err, "")
 	} else if resp.StatusCode != 200 {
-		return errors.Errorf("Error sending error report to %s, got response code %s", url, resp.StatusCode)
+		return errors.Errorf("Error sending error report to %s, got response code %d", url, resp.StatusCode)
 	}
 	return nil
 }

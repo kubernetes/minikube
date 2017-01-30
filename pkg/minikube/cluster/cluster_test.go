@@ -519,7 +519,7 @@ func TestCreateSSHShell(t *testing.T) {
 		t.Fatalf("Error running ssh command: %s", err)
 	}
 
-	if s.HadASessionRequested != true {
+	if !s.HadASessionRequested {
 		t.Fatalf("Expected ssh session to be run")
 	}
 }
@@ -679,12 +679,6 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}
 }
-
-type nopCloser struct {
-	io.Reader
-}
-
-func (nopCloser) Close() error { return nil }
 
 func TestIsLocalkubeCached(t *testing.T) {
 	tempDir := tests.MakeTempDir()
