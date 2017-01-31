@@ -1,5 +1,3 @@
-// +build integration
-
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -68,6 +66,14 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
 		}
 	}
+	return string(stdout)
+}
+
+func (m *MinikubeRunner) SSH(command string) string {
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command(path, "ssh", command)
+	stdout, _ := cmd.CombinedOutput()
+
 	return string(stdout)
 }
 
