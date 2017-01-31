@@ -39,6 +39,6 @@ func testVMSystemd(t *testing.T) {
 	expectedStr := "0 loaded units listed"
 	sshCmdOutput := minikubeRunner.RunCommand("ssh -- systemctl --state=failed --all", true)
 	if !strings.Contains(sshCmdOutput, expectedStr) {
-		t.Logf("Expected no systemd units to be failed got:\n %s", expectedStr, sshCmdOutput)
+		t.Logf("Expected no systemd units to be failed got:\n %s", sshCmdOutput)
 	}
 }

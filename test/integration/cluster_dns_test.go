@@ -64,6 +64,6 @@ func testClusterDNS(t *testing.T) {
 	}
 
 	if err := commonutil.RetryAfter(40, dnsTest, 5*time.Second); err != nil {
-		t.Fatalf("DNS lookup failed with error:", err)
+		t.Fatal("DNS lookup failed with error:", err)
 	}
 }

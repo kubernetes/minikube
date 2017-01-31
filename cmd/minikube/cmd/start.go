@@ -215,7 +215,7 @@ func setupKubeconfig(name, server, certAuth, cliCert, cliKey string, keepContext
 	config.Contexts[contextName] = context
 
 	// Only set current context to minikube if the user has not used the keepContext flag
-	if keepContext != true {
+	if !keepContext {
 		config.CurrentContext = contextName
 	}
 

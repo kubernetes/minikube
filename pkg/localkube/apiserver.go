@@ -17,10 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-	"strings"
-
-	"k8s.io/client-go/1.5/kubernetes"
-	"k8s.io/client-go/1.5/rest"
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 
@@ -64,23 +60,4 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	return func() error {
 		return apiserver.Run(config)
 	}
-}
-
-// notFoundErr returns true if the passed error is an API server object not found error
-func notFoundErr(err error) bool {
-	if err == nil {
-		return false
-	}
-	return strings.HasSuffix(err.Error(), "not found")
-}
-
-func kubeClient() *kubernetes.Clientset {
-	config := &rest.Config{
-		Host: "http://localhost:8080", // TODO: Make configurable
-	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err)
-	}
-	return client
 }

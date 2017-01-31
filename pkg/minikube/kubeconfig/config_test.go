@@ -198,7 +198,7 @@ func configEquals(a, b *api.Config) bool {
 			aContext.Cluster != bContext.Cluster ||
 			aContext.AuthInfo != bContext.AuthInfo ||
 			aContext.Namespace != bContext.Namespace ||
-			len(aContext.Extensions) != len(aContext.Extensions) {
+			len(aContext.Extensions) != len(bContext.Extensions) {
 			return false
 		}
 
