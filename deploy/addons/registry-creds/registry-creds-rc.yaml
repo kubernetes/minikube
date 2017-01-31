@@ -6,24 +6,24 @@ metadata:
   namespace: kube-system
   labels:
     app: registry-creds
-    version: v1.1
+    version: v1.5
     kubernetes.io/cluster-service: "true"
     kubernetes.io/minikube-addons: registry-creds
 spec:
   replicas: 1
   selector:
     app: registry-creds
-    version: v1.4
+    version: v1.5
     kubernetes.io/cluster-service: "true"
   template:
     metadata:
       labels:
         app: registry-creds
-        version: v1.4
+        version: v1.5
         kubernetes.io/cluster-service: "true"
     spec:
       containers:
-      - image: upmcenterprises/registry-creds:1.4
+      - image: upmcenterprises/registry-creds:1.5
         name: registry-creds
         imagePullPolicy: Always
         env:
