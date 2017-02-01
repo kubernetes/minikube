@@ -18,6 +18,8 @@ Here is a rough set of steps that usually works to add a new dependency.
   ```shell
   godep restore ./...
   ```
+  NOTE:  If you encounter a HTTP 301 error, you may need to set the following:
+  `git config --global http.https://gopkg.in.followRedirects true`
   
 1. `go get` your new dependency.
   ```shell
