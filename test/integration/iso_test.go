@@ -37,6 +37,7 @@ func TestISO(t *testing.T) {
 	minikubeRunner.Start()
 
 	t.Run("permissions", testMountPermissions)
+	t.Run("packages", testPackages)
 }
 
 func testMountPermissions(t *testing.T) {
@@ -50,8 +51,8 @@ func testMountPermissions(t *testing.T) {
 	foundMount := false
 
 	for _, dir := range mountPoints {
-		output := minikubeRunner.SSH(fmt.Sprintf("ls -l %s", dir))
-		if strings.Contains(output, "No such file or directory") {
+		output, err := minikubeRunner.SSH(fmt.Sprintf("ls -l %s", dir))
+		if err != nil {
 			continue
 		}
 		foundMount = true
@@ -62,4 +63,29 @@ func testMountPermissions(t *testing.T) {
 	if !foundMount {
 		t.Fatalf("No shared mount found. Checked %s", mountPoints)
 	}
+}
+
+func testPackages(t *testing.T) {
+	minikubeRunner := util.MinikubeRunner{
+		Args:       *args,
+		BinaryPath: *binaryPath,
+		T:          t}
+
+	packages := []string{
+		"git",
+		"rsync",
+		"curl",
+		"wget",
+		"socat",
+		"iptables",
+		"VBoxControl",
+		"VBoxService",
+	}
+
+	for _, pkg := range packages {
+		if output, err := minikubeRunner.SSH(fmt.Sprintf("which %s", pkg)); err != nil {
+			t.Errorf("Error finding package: %s. Error: %s. Output: %s", pkg, err, output)
+		}
+	}
+
 }
