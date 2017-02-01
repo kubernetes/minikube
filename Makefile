@@ -89,6 +89,9 @@ minikube-iso:
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 
+test-iso:
+	go test -v $(REPOPATH)/test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
+
 .PHONY: integration
 integration: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)"
