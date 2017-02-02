@@ -69,12 +69,15 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	return string(stdout)
 }
 
-func (m *MinikubeRunner) SSH(command string) string {
+func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
-	stdout, _ := cmd.CombinedOutput()
+	stdout, err := cmd.CombinedOutput()
+	if err, ok := err.(*exec.ExitError); ok {
+		return string(stdout), err
+	}
 
-	return string(stdout)
+	return string(stdout), nil
 }
 
 func (m *MinikubeRunner) Start() {
