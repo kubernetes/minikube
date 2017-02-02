@@ -1,5 +1,11 @@
 # Minikube Release Notes
 
+## Version 0.16.0 - 2/2/2017
+* Updated minikube ISO to [v1.0.6](https://github.com/kubernetes/minikube/tree/v0.16.0/deploy/iso/minikube-iso/CHANGELOG.md)
+* Updated Registry Creds addon to v1.5
+* Added check for minimum disk size
+* Updated kubernetes to v1.5.2
+
 ## Version 0.15.0 - 1/10/2017
 * Update Dashboard to v1.5.1, fixes a CSRF vulnerability in the dashboard
 * Updated Kube-DNS addon to v1.9
