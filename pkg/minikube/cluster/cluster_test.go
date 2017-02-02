@@ -42,9 +42,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
+type MockDownloader struct{}
+
+func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
+func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
+
 var defaultMachineConfig = MachineConfig{
 	VMDriver:    constants.DefaultVMDriver,
 	MinikubeISO: constants.DefaultIsoUrl,
+	Downloader:  MockDownloader{},
 }
 
 func TestCreateHost(t *testing.T) {
@@ -225,8 +231,9 @@ func TestStartHostConfig(t *testing.T) {
 	provision.SetDetector(md)
 
 	config := MachineConfig{
-		VMDriver:  constants.DefaultVMDriver,
-		DockerEnv: []string{"FOO=BAR"},
+		VMDriver:   constants.DefaultVMDriver,
+		DockerEnv:  []string{"FOO=BAR"},
+		Downloader: MockDownloader{},
 	}
 
 	h, err := StartHost(api, config)
