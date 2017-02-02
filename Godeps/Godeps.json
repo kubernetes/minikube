@@ -1,7 +1,7 @@
 {
 	"ImportPath": "k8s.io/minikube",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v77",
+	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
 	],
@@ -2362,6 +2362,11 @@
 			"Rev": "843f7c4f28b1f647f664f883697107d5c02c5acc"
 		},
 		{
+			"ImportPath": "k8s.io/client-go/1.5/kubernetes/typed/core/v1/fake",
+			"Comment": "v1.5.0",
+			"Rev": "843f7c4f28b1f647f664f883697107d5c02c5acc"
+		},
+		{
 			"ImportPath": "k8s.io/client-go/1.5/kubernetes/typed/extensions/v1beta1",
 			"Comment": "v1.5.0",
 			"Rev": "843f7c4f28b1f647f664f883697107d5c02c5acc"
@@ -2813,6 +2818,11 @@
 		},
 		{
 			"ImportPath": "k8s.io/client-go/1.5/rest",
+			"Comment": "v1.5.0",
+			"Rev": "843f7c4f28b1f647f664f883697107d5c02c5acc"
+		},
+		{
+			"ImportPath": "k8s.io/client-go/1.5/testing",
 			"Comment": "v1.5.0",
 			"Rev": "843f7c4f28b1f647f664f883697107d5c02c5acc"
 		},
