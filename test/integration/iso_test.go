@@ -38,6 +38,7 @@ func TestISO(t *testing.T) {
 
 	t.Run("permissions", testMountPermissions)
 	t.Run("packages", testPackages)
+	t.Run("persistence", testPersistence)
 }
 
 func testMountPermissions(t *testing.T) {
@@ -88,4 +89,29 @@ func testPackages(t *testing.T) {
 		}
 	}
 
+}
+
+func testPersistence(t *testing.T) {
+	minikubeRunner := util.MinikubeRunner{
+		Args:       *args,
+		BinaryPath: *binaryPath,
+		T:          t}
+
+	for _, dir := range []string{
+		"/data",
+		"/var/lib/docker",
+		"/var/lib/cni",
+		"/var/lib/kubelet",
+		"/var/lib/localkube",
+		"/var/lib/rkt",
+		"/var/lib/boot2docker",
+	} {
+		output, err := minikubeRunner.SSH(fmt.Sprintf("df %s | tail -n 1 | awk '{print $1}'", dir))
+		if err != nil {
+			t.Errorf("Error checking device for %s. Error: %s.", dir, err)
+		}
+		if !strings.Contains(output, "/dev/sda1") {
+			t.Errorf("Path %s is not mounted persistently. %s", dir, output)
+		}
+	}
 }
