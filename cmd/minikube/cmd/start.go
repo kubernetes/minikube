@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/util"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -96,6 +97,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
 		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
 		KvmNetwork:          viper.GetString(kvmNetwork),
+		Downloader:          pkgutil.DefaultDownloader{},
 	}
 
 	var host *host.Host
