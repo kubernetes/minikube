@@ -17,7 +17,7 @@
 
 set -e
 ISO="out/buildroot/output/images/rootfs.iso9660"
-make minikube-iso
+make minikube_iso
 openssl sha256 ${ISO} | awk '{print $2}' > "${ISO}.sha256"
 gsutil cp "${ISO}" "${DEST}"
 gsutil cp "${ISO}.sha256" "${DEST}.sha256"
