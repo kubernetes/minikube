@@ -17,11 +17,13 @@ limitations under the License.
 package constants
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
 	"k8s.io/kubernetes/pkg/util/homedir"
 	"k8s.io/kubernetes/pkg/version"
+	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
 // MachineName is the name to use for the VM.
@@ -60,9 +62,7 @@ var LogFlags = [...]string{
 
 const (
 	DefaultKeepContext  = false
-	DefaultIsoUrl       = "https://storage.googleapis.com/minikube/iso/minikube-v1.0.6.iso"
 	ShaSuffix           = ".sha256"
-	DefaultIsoShaUrl    = DefaultIsoUrl + ShaSuffix
 	DefaultMemory       = 2048
 	DefaultCPUS         = 2
 	DefaultDiskSize     = "20g"
@@ -75,6 +75,9 @@ const (
 	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
 )
+
+var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/minikube/iso/minikube-%s.iso", minikubeVersion.GetIsoVersion())
+var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
 var DefaultKubernetesVersion = version.Get().GitVersion
 
