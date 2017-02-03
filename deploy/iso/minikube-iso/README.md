@@ -26,6 +26,15 @@ The following configurations are known to have issues currently:
 
 ## Hacking
 
+### Requirements
+
+* Linux
+```
+sudo apt-get install gnupg2 p7zip-full
+```
+
+Either import your private key or generate a sign-only key using `gpg2 --gen-key`.
+
 ### Build instructions
 
 ```
