@@ -153,7 +153,7 @@ Remember to turn off the imagePullPolicy:Always, as otherwise kubernetes won't u
 #### Enabling Docker Insecure Registry
 
 Minikube allows users to configure the docker engine's `--insecure-registry` flag. You can use the `--insecure-registry` flag on the
-`minikube start` command to enable insecure communication between the docker engine and registries listening to reqeusts from the CIDR range.
+`minikube start` command to enable insecure communication between the docker engine and registries listening to requests from the CIDR range.
 
 One nifty hack is to allow the kubelet running in minikube to talk to registries deployed inside a pod in the cluster without backing them
 with TLS certificates. Because the default service cluster IP is known to be available at 10.0.0.1, users can pull images from registries
