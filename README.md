@@ -349,6 +349,21 @@ $ minikube start --docker-env HTTP_PROXY=http://$YOURPROXY:PORT \
                  --docker-env HTTPS_PROXY=https://$YOURPROXY:PORT
 ```
 
+## Minikube Without a VM
+Minikube by default creates a Virtual Machine.  Users attempting to use this for CI which are already in a VM won't be able to use Minikube as nested virtualization is typically not an option.  For this use case, the localkube binary can be run in the place of minikube to allow for a local kubernetes environment (Note: this method will not have the minikube CLI and will require additional dependencies on the host machine, for example docker)
+
+localkube binaries are built based off of kubernetes versions and the list of available versions is here :
+[localkube versions](./deploy/minikube/k8s_releases.json)
+
+Once a version is selected, you can download the localkube binary :
+```shell
+$ VERSION=v1.3.0
+$ curl https://storage.googleapis.com/minikube/k8sReleases/$VERSION/localkube-linux-amd64
+```
+
+For insight on how to start the localkube binary with additional options, look here:
+[](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/cluster/commands.go#L32)
+
 
 ## Known Issues
 * Features that require a Cloud Provider will not work in Minikube. These include:
