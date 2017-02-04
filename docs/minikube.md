@@ -31,6 +31,7 @@ Minikube is a CLI tool that provisions and manages single-node Kubernetes cluste
 * [minikube get-k8s-versions](minikube_get-k8s-versions.md)	 - Gets the list of available kubernetes versions available for minikube.
 * [minikube ip](minikube_ip.md)	 - Retrieve the IP address of the running cluster.
 * [minikube logs](minikube_logs.md)	 - Gets the logs of the running localkube instance, used for debugging minikube, not user code.
+* [minikube mount](minikube_mount.md)	 - Mounts the specified directory into minikube.
 * [minikube service](minikube_service.md)	 - Gets the kubernetes URL(s) for the specified service in your local cluster
 * [minikube ssh](minikube_ssh.md)	 - Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'
 * [minikube start](minikube_start.md)	 - Starts a local kubernetes cluster.

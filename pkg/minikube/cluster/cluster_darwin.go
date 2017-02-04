@@ -17,8 +17,12 @@ limitations under the License.
 package cluster
 
 import (
+	"errors"
+	"net"
+
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -65,5 +69,16 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		DiskSize:       int64(config.DiskSize),
 		Virtio9p:       true,
 		Virtio9pFolder: "/Users",
+	}
+}
+
+func getVMHostIP(host *host.Host) (net.IP, error) {
+	switch host.DriverName {
+	case "virtualbox":
+		return net.ParseIP("10.0.2.2"), nil
+	case "xhyve":
+		return net.ParseIP("10.0.2.2"), nil
+	default:
+		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
 	}
 }
