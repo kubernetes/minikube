@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/docker/machine/libmachine/log"
@@ -28,24 +29,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"k8s.io/kubernetes/pkg/util/homedir"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
 )
-
-var dirs = [...]string{
-	constants.Minipath,
-	constants.MakeMiniPath("certs"),
-	constants.MakeMiniPath("machines"),
-	constants.MakeMiniPath("cache"),
-	constants.MakeMiniPath("cache", "iso"),
-	constants.MakeMiniPath("cache", "localkube"),
-	constants.MakeMiniPath("config"),
-	constants.MakeMiniPath("addons"),
-	constants.MakeMiniPath("logs"),
-}
 
 const (
 	showLibmachineLogs = "show-libmachine-logs"
@@ -62,18 +52,34 @@ var viperWhiteList = []string{
 	"log_dir",
 }
 
+func getDirs() [9]string {
+	return [9]string{
+		constants.GetMinipath(),
+		constants.MakeMiniPath("certs"),
+		constants.MakeMiniPath("machines"),
+		constants.MakeMiniPath("cache"),
+		constants.MakeMiniPath("cache", "iso"),
+		constants.MakeMiniPath("cache", "localkube"),
+		constants.MakeMiniPath("config"),
+		constants.MakeMiniPath("addons"),
+		constants.MakeMiniPath("logs"),
+	}
+
+}
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "minikube",
 	Short: "Minikube is a tool for managing local Kubernetes clusters.",
 	Long:  `Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		dirs := getDirs()
+
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
 				glog.Exitf("Error creating minikube directory: %s", err)
 			}
 		}
-
 		if viper.GetBool(showLibmachineLogs) {
 			fmt.Println(`
 --show-libmachine-logs is deprecated.
@@ -163,5 +169,6 @@ func setupViper() {
 	viper.SetDefault(config.WantReportError, false)
 	viper.SetDefault(config.WantReportErrorPrompt, true)
 	viper.SetDefault(config.WantKubectlDownloadMsg, true)
+	viper.SetDefault(config.MinikubeHome, filepath.Join(homedir.HomeDir(), ".minikube"))
 	setFlagsUsingViper()
 }

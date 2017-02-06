@@ -19,8 +19,9 @@ package constants
 import (
 	"path/filepath"
 
+	"github.com/spf13/viper"
+
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
-	"k8s.io/kubernetes/pkg/util/homedir"
 	"k8s.io/kubernetes/pkg/version"
 )
 
@@ -31,7 +32,7 @@ const MachineName = "minikube"
 const APIServerPort = 8443
 
 // Minipath is the path to the user's minikube dir
-var Minipath = filepath.Join(homedir.HomeDir(), ".minikube")
+// var Minipath = constants.GetMinipath()
 
 // KubeconfigPath is the path to the Kubernetes client config
 var KubeconfigPath = clientcmd.RecommendedHomeFile
@@ -45,9 +46,17 @@ const MinikubeContext = "minikube"
 // MinikubeEnvPrefix is the prefix for the environmental variables
 const MinikubeEnvPrefix = "MINIKUBE"
 
+// GetMinipath gets the path for the .minikube directory
+func GetMinipath() string {
+	if filepath.Base(viper.GetString("Home")) == ".minikube" { // "Home" value comes from config.MinikubeHome
+		return viper.GetString("Home")
+	}
+	return filepath.Join(viper.GetString("Home"), ".minikube")
+}
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
-	args := []string{Minipath}
+	args := []string{GetMinipath()}
 	args = append(args, fileName...)
 	return filepath.Join(args...)
 }

@@ -32,6 +32,7 @@ const (
 	WantReportError           = "WantReportError"
 	WantReportErrorPrompt     = "WantReportErrorPrompt"
 	WantKubectlDownloadMsg    = "WantKubectlDownloadMsg"
+	MinikubeHome              = "Home"
 )
 
 type MinikubeConfig map[string]interface{}

@@ -17,16 +17,21 @@ limitations under the License.
 package tests
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 
+	"github.com/spf13/viper"
+
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func MakeTempDir() string {
 	tempDir, err := ioutil.TempDir("", "minipath")
+	tempDir = filepath.Join(tempDir, ".minikube")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,6 +47,8 @@ func MakeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	constants.Minipath = tempDir
-	return tempDir
+	// constants.GetMinipath() = tempDir //TODO(aprindle) This won't work
+	viper.Set(config.MinikubeHome, tempDir)
+	fmt.Println(constants.GetMinipath())
+	return constants.GetMinipath()
 }

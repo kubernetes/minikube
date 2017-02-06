@@ -24,8 +24,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+
+	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
+	"github.com/spf13/viper"
 )
 
 func makeTempDir() string {
@@ -33,8 +36,8 @@ func makeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	constants.Minipath = tempDir
-	return tempDir
+	viper.Set(config.MinikubeHome, tempDir) // TODO(aprindle) test
+	return constants.GetMinipath()
 }
 
 func TestRunNotDriver(t *testing.T) {

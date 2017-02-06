@@ -59,7 +59,7 @@ var serviceCmd = &cobra.Command{
 		}
 
 		service := args[0]
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
