@@ -26,8 +26,8 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/kubernetes/pkg/util/config"
-	utilnet "k8s.io/kubernetes/pkg/util/net"
+	utilnet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/apiserver/pkg/util/flag"
 
 	"k8s.io/minikube/pkg/util"
 )
@@ -52,7 +52,7 @@ type LocalkubeServer struct {
 	APIServerInsecurePort    int
 	ShouldGenerateCerts      bool
 	ShowVersion              bool
-	RuntimeConfig            config.ConfigurationMap
+	RuntimeConfig            flag.ConfigurationMap
 	NodeIP                   net.IP
 	ContainerRuntime         string
 	NetworkPlugin            string

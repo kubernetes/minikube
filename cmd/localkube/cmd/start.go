@@ -23,9 +23,9 @@ import (
 
 	"github.com/coreos/pkg/capnslog"
 	"github.com/golang/glog"
+	"k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/kubernetes/pkg/capabilities"
 	"k8s.io/kubernetes/pkg/kubelet/types"
-	"k8s.io/kubernetes/pkg/util/config"
 	"k8s.io/minikube/pkg/localkube"
 	"k8s.io/minikube/pkg/version"
 )
@@ -70,7 +70,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	//Set feature gates
 	glog.Infof("Feature gates:", s.FeatureGates)
 	if s.FeatureGates != "" {
-		err := config.DefaultFeatureGate.Set(s.FeatureGates)
+		err := feature.DefaultFeatureGate.Set(s.FeatureGates)
 		if err != nil {
 			fmt.Printf("Error setting feature gates: %s", err)
 		}

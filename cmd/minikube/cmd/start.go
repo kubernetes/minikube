@@ -30,7 +30,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	cfg "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
+	cfg "k8s.io/client-go/tools/clientcmd/api"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"

@@ -41,10 +41,11 @@ import (
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/labels"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -562,8 +563,8 @@ func getServiceURLsWithClient(client *kubernetes.Clientset, ip, namespace, servi
 }
 
 type serviceGetter interface {
-	Get(name string) (*v1.Service, error)
-	List(v1.ListOptions) (*v1.ServiceList, error)
+	Get(name string, opts meta_v1.GetOptions) (*v1.Service, error)
+	List(meta_v1.ListOptions) (*v1.ServiceList, error)
 }
 
 func getServicePorts(client *kubernetes.Clientset, namespace, service string) ([]int32, error) {
@@ -580,7 +581,7 @@ func (e MissingNodePortError) Error() string {
 }
 
 func getServiceFromServiceGetter(services serviceGetter, service string) (*v1.Service, error) {
-	svc, err := services.Get(service)
+	svc, err := services.Get(service, meta_v1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("Error getting %s service: %s", service, err)
 	}
@@ -661,7 +662,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 	getter := client.Services(namespace)
 
-	svcs, err := getter.List(v1.ListOptions{})
+	svcs, err := getter.List(meta_v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -694,7 +695,7 @@ func CheckService(namespace string, service string) error {
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
-	endpoint, err := endpoints.Get(service)
+	endpoint, err := endpoints.Get(service, meta_v1.GetOptions{})
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
@@ -755,7 +756,7 @@ func GetServiceListByLabel(namespace string, key string, value string) (*v1.Serv
 
 func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
-	serviceList, err := services.List(v1.ListOptions{LabelSelector: selector.String()})
+	serviceList, err := services.List(meta_v1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -90,7 +91,7 @@ func validateService(namespace string, service string) error {
 		return errors.Wrap(err, "error validating input service name")
 	}
 	services := client.Services(namespace)
-	if _, err = services.Get(service); err != nil {
+	if _, err = services.Get(service, meta_v1.GetOptions{}); err != nil {
 		return errors.Wrapf(err, "service '%s' could not be found running in namespace '%s' within kubernetes", service, namespace)
 	}
 	return nil
@@ -107,7 +108,7 @@ func CheckService(namespace string, service string) error {
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
-	endpoint, err := endpoints.Get(service)
+	endpoint, err := endpoints.Get(service, meta_v1.GetOptions{})
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}

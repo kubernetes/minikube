@@ -35,6 +35,8 @@ import (
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
+const kubectlBinary = "kubectl-v1.6.0-alpha.1"
+
 type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
@@ -114,7 +116,7 @@ type KubectlRunner struct {
 }
 
 func NewKubectlRunner(t *testing.T) *KubectlRunner {
-	p, err := exec.LookPath("kubectl")
+	p, err := exec.LookPath(kubectlBinary)
 	if err != nil {
 		t.Fatalf("Couldn't find kubectl on path.")
 	}

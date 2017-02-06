@@ -32,12 +32,11 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/watch"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/pkg/api/v1"
+
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -535,7 +534,7 @@ func NewMockServiceGetter() *MockServiceGetter {
 	}
 }
 
-func (mockServiceGetter *MockServiceGetter) Get(name string) (*v1.Service, error) {
+func (mockServiceGetter *MockServiceGetter) Get(name string, _ meta_v1.GetOptions) (*v1.Service, error) {
 	service, ok := mockServiceGetter.services[name]
 	if !ok {
 		return nil, errors.Errorf("Error getting %s service from mockServiceGetter", name)
@@ -543,10 +542,10 @@ func (mockServiceGetter *MockServiceGetter) Get(name string) (*v1.Service, error
 	return &service, nil
 }
 
-func (mockServiceGetter *MockServiceGetter) List(options v1.ListOptions) (*v1.ServiceList, error) {
+func (mockServiceGetter *MockServiceGetter) List(options meta_v1.ListOptions) (*v1.ServiceList, error) {
 	services := v1.ServiceList{
-		TypeMeta: unversioned.TypeMeta{Kind: "ServiceList", APIVersion: "v1"},
-		ListMeta: unversioned.ListMeta{},
+		TypeMeta: meta_v1.TypeMeta{Kind: "ServiceList", APIVersion: "v1"},
+		ListMeta: meta_v1.ListMeta{},
 	}
 
 	for _, svc := range mockServiceGetter.services {
@@ -817,10 +816,11 @@ func TestCheckEndpointReady(t *testing.T) {
 }
 
 type ServiceInterfaceMock struct {
+	fake.FakeServices
 	ServiceList *v1.ServiceList
 }
 
-func (s ServiceInterfaceMock) List(opts v1.ListOptions) (*v1.ServiceList, error) {
+func (s ServiceInterfaceMock) List(opts meta_v1.ListOptions) (*v1.ServiceList, error) {
 	serviceList := &v1.ServiceList{
 		Items: []v1.Service{},
 	}
@@ -831,35 +831,6 @@ func (s ServiceInterfaceMock) List(opts v1.ListOptions) (*v1.ServiceList, error)
 		}
 	}
 	return serviceList, nil
-}
-func (s ServiceInterfaceMock) Get(name string) (*v1.Service, error) {
-	return nil, nil
-}
-func (s ServiceInterfaceMock) Create(*v1.Service) (*v1.Service, error) {
-	return nil, nil
-}
-func (s ServiceInterfaceMock) Update(*v1.Service) (*v1.Service, error) {
-	return nil, nil
-}
-func (s ServiceInterfaceMock) UpdateStatus(*v1.Service) (*v1.Service, error) {
-	return nil, nil
-}
-func (s ServiceInterfaceMock) Delete(string, *v1.DeleteOptions) error {
-	return nil
-}
-func (s ServiceInterfaceMock) Watch(opts v1.ListOptions) (watch.Interface, error) {
-	return nil, nil
-}
-func (s ServiceInterfaceMock) ProxyGet(scheme, name, port, path string, params map[string]string) rest.ResponseWrapper {
-	return nil
-}
-
-func (s ServiceInterfaceMock) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	return nil
-}
-
-func (s ServiceInterfaceMock) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1.Service, err error) {
-	return nil, nil
 }
 
 func TestGetServiceListFromServicesByLabel(t *testing.T) {
@@ -877,11 +848,11 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 	serviceIface := ServiceInterfaceMock{
 		ServiceList: serviceList,
 	}
-	if _, err := getServiceListFromServicesByLabel(serviceIface, "nothing", "nothing"); err != nil {
+	if _, err := getServiceListFromServicesByLabel(&serviceIface, "nothing", "nothing"); err != nil {
 		t.Fatalf("Service had no label match, but getServiceListFromServicesByLabel returned an error")
 	}
 
-	if _, err := getServiceListFromServicesByLabel(serviceIface, "foo", "bar"); err != nil {
+	if _, err := getServiceListFromServicesByLabel(&serviceIface, "foo", "bar"); err != nil {
 		t.Fatalf("Endpoint was ready with at least one Address, but getServiceListFromServicesByLabel returned an error")
 	}
 }

@@ -19,8 +19,8 @@ package constants
 import (
 	"path/filepath"
 
-	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
-	"k8s.io/kubernetes/pkg/util/homedir"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/kubernetes/pkg/version"
 )
 
