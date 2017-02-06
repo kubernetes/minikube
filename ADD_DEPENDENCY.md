@@ -33,6 +33,10 @@ Here is a rough set of steps that usually works to add a new dependency.
   godep save ./...
   ```
 
+  NOTE:  godep seems to have an issue with not recovering files in `vendor/golang.org/x/sys/windows/`
+  IF you plan on committing your updated dependencies, make sure not to remove these files in your commit
+  
+
   If it is a large dependency, please commit the vendor/ directory changes separately.
   This makes review easier in Github.
 
