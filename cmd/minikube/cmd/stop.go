@@ -34,7 +34,7 @@ var stopCmd = &cobra.Command{
 itself, leaving all files intact. The cluster can be started again with the "start" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Stopping local Kubernetes cluster...")
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 		defer api.Close()
 
 		if err := cluster.StopHost(api); err != nil {

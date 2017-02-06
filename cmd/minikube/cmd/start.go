@@ -36,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/util"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -73,7 +72,7 @@ assumes you already have Virtualbox installed.`,
 
 func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Starting local Kubernetes cluster...")
-	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+	api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 	defer api.Close()
 
 	diskSize := viper.GetString(humanReadableDiskSize)
@@ -97,7 +96,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
 		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
 		KvmNetwork:          viper.GetString(kvmNetwork),
-		Downloader:          pkgutil.DefaultDownloader{},
+		Downloader:          util.DefaultDownloader{},
 	}
 
 	var host *host.Host

@@ -149,6 +149,10 @@ var settings = []Setting{
 		name: "hyperv-virtual-switch",
 		set:  SetString,
 	},
+	{
+		name: config.MinikubeHome,
+		set:  SetString,
+	},
 }
 
 var ConfigCmd = &cobra.Command{

@@ -229,7 +229,7 @@ var dockerEnvCmd = &cobra.Command{
 	Long:  `sets up docker env variables; similar to '$(docker-machine env)'`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 		defer api.Close()
 
 		var (

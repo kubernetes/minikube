@@ -46,7 +46,7 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 	if urlObj.Scheme == fileScheme {
 		return isoURL
 	}
-	isoPath := filepath.Join(constants.Minipath, "cache", "iso", filepath.Base(isoURL))
+	isoPath := filepath.Join(constants.GetMinipath(), "cache", "iso", filepath.Base(isoURL))
 	// As this is a file URL there should be no backslashes regardless of platform running on.
 	return "file://" + filepath.ToSlash(isoPath)
 }
@@ -97,7 +97,7 @@ func (f DefaultDownloader) shouldCacheMinikubeISO(isoURL string) bool {
 }
 
 func (f DefaultDownloader) getISOCacheFilepath(isoURL string) string {
-	return filepath.Join(constants.Minipath, "cache", "iso", filepath.Base(isoURL))
+	return filepath.Join(constants.GetMinipath(), "cache", "iso", filepath.Base(isoURL))
 }
 
 func (f DefaultDownloader) isMinikubeISOCached(isoURL string) bool {

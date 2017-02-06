@@ -42,7 +42,7 @@ var statusCmd = &cobra.Command{
 	Short: "Gets the status of a local kubernetes cluster.",
 	Long:  `Gets the status of a local kubernetes cluster.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 		defer api.Close()
 		ms, err := cluster.GetHostStatus(api)
 		if err != nil {

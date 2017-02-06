@@ -29,6 +29,7 @@ Configurable fields:
  * ingress
  * registry-creds
  * hyperv-virtual-switch
+ * Home
 
 ```
 minikube config SUBCOMMAND [flags]

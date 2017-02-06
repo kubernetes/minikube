@@ -33,7 +33,7 @@ var sshCmd = &cobra.Command{
 	Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 		defer api.Close()
 		err := cluster.CreateSSHShell(api, args)
 		err = errors.Wrap(err, "Error attempting to ssh/run-ssh-command")

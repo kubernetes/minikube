@@ -84,7 +84,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
 	}
-	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+	api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 	defer api.Close()
 	cluster.EnsureMinikubeRunningOrExit(api, 0)
 

@@ -34,7 +34,7 @@ var deleteCmd = &cobra.Command{
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Deleting local Kubernetes cluster...")
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api := libmachine.NewClient(constants.GetMinipath(), constants.MakeMiniPath("certs"))
 		defer api.Close()
 
 		if err := cluster.DeleteHost(api); err != nil {

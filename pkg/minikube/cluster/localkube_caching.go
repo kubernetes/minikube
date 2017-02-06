@@ -53,7 +53,7 @@ type localkubeCacher struct {
 }
 
 func (l *localkubeCacher) getLocalkubeCacheFilepath() string {
-	return filepath.Join(constants.Minipath, "cache", "localkube",
+	return filepath.Join(constants.GetMinipath(), "cache", "localkube",
 		filepath.Base(url.QueryEscape("localkube-"+l.k8sConf.KubernetesVersion)))
 }
 
