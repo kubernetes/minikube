@@ -24,20 +24,21 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/errors"
-	"k8s.io/kubernetes/pkg/api/meta"
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/client/cache"
-	"k8s.io/kubernetes/pkg/conversion"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/util"
-	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
-	"k8s.io/kubernetes/pkg/util/wait"
-	"k8s.io/kubernetes/pkg/watch"
-
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
+	utiltrace "k8s.io/apiserver/pkg/util/trace"
+	"k8s.io/client-go/tools/cache"
 )
 
 // CacherConfig contains the configuration for a given Cache.
@@ -51,6 +52,8 @@ type CacherConfig struct {
 	// An underlying storage.Versioner.
 	Versioner Versioner
 
+	Copier runtime.ObjectCopier
+
 	// The Cache will be caching objects of a given Type and assumes that they
 	// are all stored under ResourcePrefix directory in the underlying database.
 	Type           interface{}
@@ -58,6 +61,9 @@ type CacherConfig struct {
 
 	// KeyFunc is used to get a key in the underyling storage for a given object.
 	KeyFunc func(runtime.Object) (string, error)
+
+	// GetAttrsFunc is used to get object labels and fields.
+	GetAttrsFunc func(runtime.Object) (labels.Set, fields.Set, error)
 
 	// TriggerPublisherFunc is used for optimizing amount of watchers that
 	// needs to process an incoming event.
@@ -125,7 +131,7 @@ func (i *indexedWatchers) terminateAll(objectType reflect.Type) {
 	}
 }
 
-type filterObjectFunc func(string, runtime.Object) bool
+type watchFilterFunc func(string, labels.Set, fields.Set) bool
 
 // Cacher is responsible for serving WATCH and LIST requests for a given
 // resource from its internal cache and updating its cache in the background
@@ -153,6 +159,8 @@ type Cacher struct {
 	// Underlying storage.Interface.
 	storage Interface
 
+	copier runtime.ObjectCopier
+
 	// Expected type of objects in the underlying cache.
 	objectType reflect.Type
 
@@ -171,6 +179,10 @@ type Cacher struct {
 	watcherIdx int
 	watchers   indexedWatchers
 
+	// Defines a time budget that can be spend on waiting for not-ready watchers
+	// while dispatching event before shutting them down.
+	dispatchTimeoutBudget *timeBudget
+
 	// Handling graceful termination.
 	stopLock sync.RWMutex
 	stopped  bool
@@ -178,11 +190,11 @@ type Cacher struct {
 	stopWg   sync.WaitGroup
 }
 
-// Create a new Cacher responsible from service WATCH and LIST requests from its
-// internal cache and updating its cache in the background based on the given
-// configuration.
+// Create a new Cacher responsible for servicing WATCH and LIST requests from
+// its internal cache and updating its cache in the background based on the
+// given configuration.
 func NewCacherFromConfig(config CacherConfig) *Cacher {
-	watchCache := newWatchCache(config.CacheCapacity, config.KeyFunc)
+	watchCache := newWatchCache(config.CacheCapacity, config.KeyFunc, config.GetAttrsFunc)
 	listerWatcher := newCacherListerWatcher(config.Storage, config.ResourcePrefix, config.NewListFunc)
 
 	// Give this error when it is constructed rather than when you get the
@@ -193,9 +205,11 @@ func NewCacherFromConfig(config CacherConfig) *Cacher {
 		}
 	}
 
+	stopCh := make(chan struct{})
 	cacher := &Cacher{
 		ready:       newReady(),
 		storage:     config.Storage,
+		copier:      config.Copier,
 		objectType:  reflect.TypeOf(config.Type),
 		watchCache:  watchCache,
 		reflector:   cache.NewReflector(listerWatcher, config.Type, watchCache, 0),
@@ -207,18 +221,18 @@ func NewCacherFromConfig(config CacherConfig) *Cacher {
 			valueWatchers: make(map[string]watchersMap),
 		},
 		// TODO: Figure out the correct value for the buffer size.
-		incoming: make(chan watchCacheEvent, 100),
+		incoming:              make(chan watchCacheEvent, 100),
+		dispatchTimeoutBudget: newTimeBudget(stopCh),
 		// We need to (potentially) stop both:
 		// - wait.Until go-routine
 		// - reflector.ListAndWatch
 		// and there are no guarantees on the order that they will stop.
 		// So we will be simply closing the channel, and synchronizing on the WaitGroup.
-		stopCh: make(chan struct{}),
+		stopCh: stopCh,
 	}
 	watchCache.SetOnEvent(cacher.processEvent)
 	go cacher.dispatchEvents()
 
-	stopCh := cacher.stopCh
 	cacher.stopWg.Add(1)
 	go func() {
 		defer cacher.stopWg.Done()
@@ -326,7 +340,7 @@ func (c *Cacher) Watch(ctx context.Context, key string, resourceVersion string, 
 	c.Lock()
 	defer c.Unlock()
 	forget := forgetWatcher(c, c.watcherIdx, triggerValue, triggerSupported)
-	watcher := newCacheWatcher(watchRV, chanSize, initEvents, filterFunction(key, pred), forget)
+	watcher := newCacheWatcher(c.copier, watchRV, chanSize, initEvents, watchFilterFunction(key, pred), forget)
 
 	c.watchers.addWatcher(watcher, c.watcherIdx, triggerValue, triggerSupported)
 	c.watcherIdx++
@@ -339,8 +353,48 @@ func (c *Cacher) WatchList(ctx context.Context, key string, resourceVersion stri
 }
 
 // Implements storage.Interface.
-func (c *Cacher) Get(ctx context.Context, key string, objPtr runtime.Object, ignoreNotFound bool) error {
-	return c.storage.Get(ctx, key, objPtr, ignoreNotFound)
+func (c *Cacher) Get(ctx context.Context, key string, resourceVersion string, objPtr runtime.Object, ignoreNotFound bool) error {
+	if resourceVersion == "" {
+		// If resourceVersion is not specified, serve it from underlying
+		// storage (for backward compatibility).
+		return c.storage.Get(ctx, key, resourceVersion, objPtr, ignoreNotFound)
+	}
+
+	// If resourceVersion is specified, serve it from cache.
+	// It's guaranteed that the returned value is at least that
+	// fresh as the given resourceVersion.
+	getRV, err := ParseListResourceVersion(resourceVersion)
+	if err != nil {
+		return err
+	}
+
+	// Do not create a trace - it's not for free and there are tons
+	// of Get requests. We can add it if it will be really needed.
+	c.ready.wait()
+
+	objVal, err := conversion.EnforcePtr(objPtr)
+	if err != nil {
+		return err
+	}
+
+	obj, exists, readResourceVersion, err := c.watchCache.WaitUntilFreshAndGet(getRV, key, nil)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		elem, ok := obj.(*storeElement)
+		if !ok {
+			return fmt.Errorf("non *storeElement returned from storage: %v", obj)
+		}
+		objVal.Set(reflect.ValueOf(elem.Object).Elem())
+	} else {
+		objVal.Set(reflect.Zero(objVal.Type()))
+		if !ignoreNotFound {
+			return NewKeyNotFoundError(key, int64(readResourceVersion))
+		}
+	}
+	return nil
 }
 
 // Implements storage.Interface.
@@ -359,7 +413,7 @@ func (c *Cacher) GetToList(ctx context.Context, key string, resourceVersion stri
 		return err
 	}
 
-	trace := util.NewTrace(fmt.Sprintf("cacher %v: List", c.objectType.String()))
+	trace := utiltrace.New(fmt.Sprintf("cacher %v: List", c.objectType.String()))
 	defer trace.LogIfLong(500 * time.Millisecond)
 
 	c.ready.wait()
@@ -378,7 +432,7 @@ func (c *Cacher) GetToList(ctx context.Context, key string, resourceVersion stri
 
 	obj, exists, readResourceVersion, err := c.watchCache.WaitUntilFreshAndGet(listRV, key, trace)
 	if err != nil {
-		return fmt.Errorf("failed to wait for fresh list: %v", err)
+		return err
 	}
 	trace.Step("Got from cache")
 
@@ -415,7 +469,7 @@ func (c *Cacher) List(ctx context.Context, key string, resourceVersion string, p
 		return err
 	}
 
-	trace := util.NewTrace(fmt.Sprintf("cacher %v: List", c.objectType.String()))
+	trace := utiltrace.New(fmt.Sprintf("cacher %v: List", c.objectType.String()))
 	defer trace.LogIfLong(500 * time.Millisecond)
 
 	c.ready.wait()
@@ -434,7 +488,7 @@ func (c *Cacher) List(ctx context.Context, key string, resourceVersion string, p
 
 	objs, readResourceVersion, err := c.watchCache.WaitUntilFreshAndList(listRV, trace)
 	if err != nil {
-		return fmt.Errorf("failed to wait for fresh list: %v", err)
+		return err
 	}
 	trace.Step(fmt.Sprintf("Listed %d items from cache", len(objs)))
 	if len(objs) > listVal.Cap() && pred.Label.Empty() && pred.Field.Empty() {
@@ -470,7 +524,7 @@ func (c *Cacher) GuaranteedUpdate(
 	if elem, exists, err := c.watchCache.GetByKey(key); err != nil {
 		glog.Errorf("GetByKey returned error: %v", err)
 	} else if exists {
-		currObj, copyErr := api.Scheme.Copy(elem.(*storeElement).Object)
+		currObj, copyErr := c.copier.Copy(elem.(*storeElement).Object)
 		if copyErr == nil {
 			return c.storage.GuaranteedUpdate(ctx, key, ptrToType, ignoreNotFound, preconditions, tryUpdate, currObj)
 		}
@@ -506,12 +560,12 @@ func (c *Cacher) triggerValues(event *watchCacheEvent) ([]string, bool) {
 	return result, len(result) > 0
 }
 
-func (c *Cacher) processEvent(event watchCacheEvent) {
+func (c *Cacher) processEvent(event *watchCacheEvent) {
 	if curLen := int64(len(c.incoming)); c.incomingHWM.Update(curLen) {
 		// Monitor if this gets backed up, and how much.
 		glog.V(1).Infof("cacher (%v): %v objects queued in incoming channel.", c.objectType.String(), curLen)
 	}
-	c.incoming <- event
+	c.incoming <- *event
 }
 
 func (c *Cacher) dispatchEvents() {
@@ -535,13 +589,13 @@ func (c *Cacher) dispatchEvent(event *watchCacheEvent) {
 	defer c.Unlock()
 	// Iterate over "allWatchers" no matter what the trigger function is.
 	for _, watcher := range c.watchers.allWatchers {
-		watcher.add(event)
+		watcher.add(event, c.dispatchTimeoutBudget)
 	}
 	if supported {
 		// Iterate over watchers interested in the given values of the trigger.
 		for _, triggerValue := range triggerValues {
 			for _, watcher := range c.watchers.valueWatchers[triggerValue] {
-				watcher.add(event)
+				watcher.add(event, c.dispatchTimeoutBudget)
 			}
 		}
 	} else {
@@ -554,7 +608,7 @@ func (c *Cacher) dispatchEvent(event *watchCacheEvent) {
 		// Iterate over watchers interested in exact values for all values.
 		for _, watchers := range c.watchers.valueWatchers {
 			for _, watcher := range watchers {
-				watcher.add(event)
+				watcher.add(event, c.dispatchTimeoutBudget)
 			}
 		}
 	}
@@ -592,13 +646,23 @@ func forgetWatcher(c *Cacher, index int, triggerValue string, triggerSupported b
 	}
 }
 
-func filterFunction(key string, p SelectionPredicate) filterObjectFunc {
+func filterFunction(key string, p SelectionPredicate) func(string, runtime.Object) bool {
 	f := SimpleFilter(p)
 	filterFunc := func(objKey string, obj runtime.Object) bool {
 		if !hasPathPrefix(objKey, key) {
 			return false
 		}
 		return f(obj)
+	}
+	return filterFunc
+}
+
+func watchFilterFunction(key string, p SelectionPredicate) watchFilterFunc {
+	filterFunc := func(objKey string, label labels.Set, field fields.Set) bool {
+		if !hasPathPrefix(objKey, key) {
+			return false
+		}
+		return p.MatchesLabelsAndFields(label, field)
 	}
 	return filterFunc
 }
@@ -631,7 +695,7 @@ func newCacherListerWatcher(storage Interface, resourcePrefix string, newListFun
 }
 
 // Implements cache.ListerWatcher interface.
-func (lw *cacherListerWatcher) List(options api.ListOptions) (runtime.Object, error) {
+func (lw *cacherListerWatcher) List(options metav1.ListOptions) (runtime.Object, error) {
 	list := lw.newListFunc()
 	if err := lw.storage.List(context.TODO(), lw.resourcePrefix, "", Everything, list); err != nil {
 		return nil, err
@@ -640,7 +704,7 @@ func (lw *cacherListerWatcher) List(options api.ListOptions) (runtime.Object, er
 }
 
 // Implements cache.ListerWatcher interface.
-func (lw *cacherListerWatcher) Watch(options api.ListOptions) (watch.Interface, error) {
+func (lw *cacherListerWatcher) Watch(options metav1.ListOptions) (watch.Interface, error) {
 	return lw.storage.WatchList(context.TODO(), lw.resourcePrefix, options.ResourceVersion, Everything)
 }
 
@@ -658,10 +722,10 @@ func newErrWatcher(err error) *errWatcher {
 	case *errors.StatusError:
 		errEvent.Object = &err.ErrStatus
 	default:
-		errEvent.Object = &unversioned.Status{
-			Status:  unversioned.StatusFailure,
+		errEvent.Object = &metav1.Status{
+			Status:  metav1.StatusFailure,
 			Message: err.Error(),
-			Reason:  unversioned.StatusReasonInternalError,
+			Reason:  metav1.StatusReasonInternalError,
 			Code:    http.StatusInternalServerError,
 		}
 	}
@@ -687,17 +751,21 @@ func (c *errWatcher) Stop() {
 // cacherWatch implements watch.Interface
 type cacheWatcher struct {
 	sync.Mutex
+	copier  runtime.ObjectCopier
 	input   chan watchCacheEvent
 	result  chan watch.Event
-	filter  filterObjectFunc
+	done    chan struct{}
+	filter  watchFilterFunc
 	stopped bool
 	forget  func(bool)
 }
 
-func newCacheWatcher(resourceVersion uint64, chanSize int, initEvents []watchCacheEvent, filter filterObjectFunc, forget func(bool)) *cacheWatcher {
+func newCacheWatcher(copier runtime.ObjectCopier, resourceVersion uint64, chanSize int, initEvents []*watchCacheEvent, filter watchFilterFunc, forget func(bool)) *cacheWatcher {
 	watcher := &cacheWatcher{
+		copier:  copier,
 		input:   make(chan watchCacheEvent, chanSize),
 		result:  make(chan watch.Event, chanSize),
+		done:    make(chan struct{}),
 		filter:  filter,
 		stopped: false,
 		forget:  forget,
@@ -722,13 +790,14 @@ func (c *cacheWatcher) stop() {
 	defer c.Unlock()
 	if !c.stopped {
 		c.stopped = true
+		close(c.done)
 		close(c.input)
 	}
 }
 
 var timerPool sync.Pool
 
-func (c *cacheWatcher) add(event *watchCacheEvent) {
+func (c *cacheWatcher) add(event *watchCacheEvent, budget *timeBudget) {
 	// Try to send the event immediately, without blocking.
 	select {
 	case c.input <- *event:
@@ -736,15 +805,12 @@ func (c *cacheWatcher) add(event *watchCacheEvent) {
 	default:
 	}
 
-	// OK, block sending, but only for up to 5 seconds.
+	// OK, block sending, but only for up to <timeout>.
 	// cacheWatcher.add is called very often, so arrange
 	// to reuse timers instead of constantly allocating.
-	trace := util.NewTrace(
-		fmt.Sprintf("cacheWatcher %v: waiting for add (initial result size %v)",
-			reflect.TypeOf(event.Object).String(), len(c.result)))
-	defer trace.LogIfLong(50 * time.Millisecond)
+	startTime := time.Now()
+	timeout := budget.takeAvailable()
 
-	const timeout = 5 * time.Second
 	t, ok := timerPool.Get().(*time.Timer)
 	if ok {
 		t.Reset(timeout)
@@ -768,36 +834,62 @@ func (c *cacheWatcher) add(event *watchCacheEvent) {
 		c.forget(false)
 		c.stop()
 	}
+
+	budget.returnUnused(timeout - time.Since(startTime))
 }
 
 // NOTE: sendWatchCacheEvent is assumed to not modify <event> !!!
 func (c *cacheWatcher) sendWatchCacheEvent(event *watchCacheEvent) {
-	curObjPasses := event.Type != watch.Deleted && c.filter(event.Key, event.Object)
+	curObjPasses := event.Type != watch.Deleted && c.filter(event.Key, event.ObjLabels, event.ObjFields)
 	oldObjPasses := false
 	if event.PrevObject != nil {
-		oldObjPasses = c.filter(event.Key, event.PrevObject)
+		oldObjPasses = c.filter(event.Key, event.PrevObjLabels, event.PrevObjFields)
 	}
 	if !curObjPasses && !oldObjPasses {
 		// Watcher is not interested in that object.
 		return
 	}
 
-	object, err := api.Scheme.Copy(event.Object)
+	object, err := c.copier.Copy(event.Object)
 	if err != nil {
 		glog.Errorf("unexpected copy error: %v", err)
 		return
 	}
+	var watchEvent watch.Event
 	switch {
 	case curObjPasses && !oldObjPasses:
-		c.result <- watch.Event{Type: watch.Added, Object: object}
+		watchEvent = watch.Event{Type: watch.Added, Object: object}
 	case curObjPasses && oldObjPasses:
-		c.result <- watch.Event{Type: watch.Modified, Object: object}
+		watchEvent = watch.Event{Type: watch.Modified, Object: object}
 	case !curObjPasses && oldObjPasses:
-		c.result <- watch.Event{Type: watch.Deleted, Object: object}
+		watchEvent = watch.Event{Type: watch.Deleted, Object: object}
+	}
+
+	// We need to ensure that if we put event X to the c.result, all
+	// previous events were already put into it before, no matter whether
+	// c.done is close or not.
+	// Thus we cannot simply select from c.done and c.result and this
+	// would give us non-determinism.
+	// At the same time, we don't want to block infinitely on putting
+	// to c.result, when c.done is already closed.
+
+	// This ensures that with c.done already close, we at most once go
+	// into the next select after this. With that, no matter which
+	// statement we choose there, we will deliver only consecutive
+	// events.
+	select {
+	case <-c.done:
+		return
+	default:
+	}
+
+	select {
+	case c.result <- watchEvent:
+	case <-c.done:
 	}
 }
 
-func (c *cacheWatcher) process(initEvents []watchCacheEvent, resourceVersion uint64) {
+func (c *cacheWatcher) process(initEvents []*watchCacheEvent, resourceVersion uint64) {
 	defer utilruntime.HandleCrash()
 
 	// Check how long we are processing initEvents.
@@ -816,7 +908,7 @@ func (c *cacheWatcher) process(initEvents []watchCacheEvent, resourceVersion uin
 	const initProcessThreshold = 500 * time.Millisecond
 	startTime := time.Now()
 	for _, event := range initEvents {
-		c.sendWatchCacheEvent(&event)
+		c.sendWatchCacheEvent(event)
 	}
 	processingTime := time.Since(startTime)
 	if processingTime > initProcessThreshold {

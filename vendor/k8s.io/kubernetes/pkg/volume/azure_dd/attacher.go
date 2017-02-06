@@ -26,12 +26,12 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/keymutex"
 	"k8s.io/kubernetes/pkg/util/mount"
-	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/volume"
 	"k8s.io/kubernetes/pkg/volume/util"
 )
@@ -268,20 +268,6 @@ func (detacher *azureDiskDetacher) Detach(diskName string, nodeName types.NodeNa
 	}
 
 	return err
-}
-
-// WaitForDetach detects if the disk is detached on the node
-func (detacher *azureDiskDetacher) WaitForDetach(devicePath string, timeout time.Duration) error {
-	return wait.Poll(checkSleepDuration, timeout, func() (bool, error) {
-		glog.V(4).Infof("Checking device %q is detached.", devicePath)
-		if pathExists, err := util.PathExists(devicePath); err != nil {
-			return false, fmt.Errorf("Error checking if device path exists: %v", err)
-		} else if !pathExists {
-			return true, nil
-		} else {
-			return false, nil
-		}
-	})
 }
 
 // UnmountDevice unmounts the volume on the node

@@ -19,19 +19,21 @@ package streaming
 import (
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"time"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	restful "github.com/emicklei/go-restful"
 
-	"k8s.io/client-go/pkg/api"
+	"k8s.io/apimachinery/pkg/types"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/server/portforward"
 	"k8s.io/kubernetes/pkg/kubelet/server/remotecommand"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/term"
 )
 
@@ -39,10 +41,10 @@ import (
 type Server interface {
 	http.Handler
 
-	// Get the serving URL for the requests. Server must be started before these are called.
+	// Get the serving URL for the requests.
 	// Requests must not be nil. Responses may be nil iff an error is returned.
 	GetExec(*runtimeapi.ExecRequest) (*runtimeapi.ExecResponse, error)
-	GetAttach(req *runtimeapi.AttachRequest, tty bool) (*runtimeapi.AttachResponse, error)
+	GetAttach(req *runtimeapi.AttachRequest) (*runtimeapi.AttachResponse, error)
 	GetPortForward(*runtimeapi.PortForwardRequest) (*runtimeapi.PortForwardResponse, error)
 
 	// Start the server.
@@ -58,7 +60,7 @@ type Server interface {
 // The interface to execute the commands and provide the streams.
 type Runtime interface {
 	Exec(containerID string, cmd []string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size) error
-	Attach(containerID string, in io.Reader, out, err io.WriteCloser, resize <-chan term.Size) error
+	Attach(containerID string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size) error
 	PortForward(podSandboxID string, port int32, stream io.ReadWriteCloser) error
 }
 
@@ -66,6 +68,9 @@ type Runtime interface {
 type Config struct {
 	// The host:port address the server will listen on.
 	Addr string
+	// The optional base URL for constructing streaming URLs. If empty, the baseURL will be
+	// constructed from the serve address.
+	BaseURL *url.URL
 
 	// How long to leave idle connections open for.
 	StreamIdleTimeout time.Duration
@@ -94,6 +99,17 @@ func NewServer(config Config, runtime Runtime) (Server, error) {
 	s := &server{
 		config:  config,
 		runtime: &criAdapter{runtime},
+		cache:   newRequestCache(),
+	}
+
+	if s.config.BaseURL == nil {
+		s.config.BaseURL = &url.URL{
+			Scheme: "http",
+			Host:   s.config.Addr,
+		}
+		if s.config.TLSConfig != nil {
+			s.config.BaseURL.Scheme = "https"
+		}
 	}
 
 	ws := &restful.WebService{}
@@ -101,15 +117,17 @@ func NewServer(config Config, runtime Runtime) (Server, error) {
 		path    string
 		handler restful.RouteFunction
 	}{
-		{"/exec/{containerID}", s.serveExec},
-		{"/attach/{containerID}", s.serveAttach},
-		{"/portforward/{podSandboxID}", s.servePortForward},
+		{"/exec/{token}", s.serveExec},
+		{"/attach/{token}", s.serveAttach},
+		{"/portforward/{token}", s.servePortForward},
 	}
+	// If serving relative to a base path, set that here.
+	pathPrefix := path.Dir(s.config.BaseURL.Path)
 	for _, e := range endpoints {
 		for _, method := range []string{"GET", "POST"} {
 			ws.Route(ws.
 				Method(method).
-				Path(e.path).
+				Path(path.Join(pathPrefix, e.path)).
 				To(e.handler))
 		}
 	}
@@ -124,37 +142,45 @@ type server struct {
 	config  Config
 	runtime *criAdapter
 	handler http.Handler
+	cache   *requestCache
 }
 
 func (s *server) GetExec(req *runtimeapi.ExecRequest) (*runtimeapi.ExecResponse, error) {
-	url := s.buildURL("exec", req.GetContainerId(), streamOpts{
-		stdin:   req.GetStdin(),
-		stdout:  true,
-		stderr:  !req.GetTty(), // For TTY connections, both stderr is combined with stdout.
-		tty:     req.GetTty(),
-		command: req.GetCmd(),
-	})
+	if req.ContainerId == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing required container_id")
+	}
+	token, err := s.cache.Insert(req)
+	if err != nil {
+		return nil, err
+	}
 	return &runtimeapi.ExecResponse{
-		Url: &url,
+		Url: s.buildURL("exec", token),
 	}, nil
 }
 
-func (s *server) GetAttach(req *runtimeapi.AttachRequest, tty bool) (*runtimeapi.AttachResponse, error) {
-	url := s.buildURL("attach", req.GetContainerId(), streamOpts{
-		stdin:  req.GetStdin(),
-		stdout: true,
-		stderr: !tty, // For TTY connections, both stderr is combined with stdout.
-		tty:    tty,
-	})
+func (s *server) GetAttach(req *runtimeapi.AttachRequest) (*runtimeapi.AttachResponse, error) {
+	if req.ContainerId == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing required container_id")
+	}
+	token, err := s.cache.Insert(req)
+	if err != nil {
+		return nil, err
+	}
 	return &runtimeapi.AttachResponse{
-		Url: &url,
+		Url: s.buildURL("attach", token),
 	}, nil
 }
 
 func (s *server) GetPortForward(req *runtimeapi.PortForwardRequest) (*runtimeapi.PortForwardResponse, error) {
-	url := s.buildURL("portforward", req.GetPodSandboxId(), streamOpts{})
+	if req.PodSandboxId == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing required pod_sandbox_id")
+	}
+	token, err := s.cache.Insert(req)
+	if err != nil {
+		return nil, err
+	}
 	return &runtimeapi.PortForwardResponse{
-		Url: &url,
+		Url: s.buildURL("portforward", token),
 	}, nil
 }
 
@@ -185,60 +211,30 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.handler.ServeHTTP(w, r)
 }
 
-type streamOpts struct {
-	stdin  bool
-	stdout bool
-	stderr bool
-	tty    bool
-
-	command []string
-	port    []int32
-}
-
-const (
-	urlParamStdin   = api.ExecStdinParam
-	urlParamStdout  = api.ExecStdoutParam
-	urlParamStderr  = api.ExecStderrParam
-	urlParamTTY     = api.ExecTTYParam
-	urlParamCommand = api.ExecCommandParamm
-)
-
-func (s *server) buildURL(method, id string, opts streamOpts) string {
-	loc := url.URL{
-		Scheme: "http",
-		Host:   s.config.Addr,
-		Path:   fmt.Sprintf("/%s/%s", method, id),
-	}
-	if s.config.TLSConfig != nil {
-		loc.Scheme = "https"
-	}
-
-	query := url.Values{}
-	if opts.stdin {
-		query.Add(urlParamStdin, "1")
-	}
-	if opts.stdout {
-		query.Add(urlParamStdout, "1")
-	}
-	if opts.stderr {
-		query.Add(urlParamStderr, "1")
-	}
-	if opts.tty {
-		query.Add(urlParamTTY, "1")
-	}
-	for _, c := range opts.command {
-		query.Add(urlParamCommand, c)
-	}
-	loc.RawQuery = query.Encode()
-
-	return loc.String()
+func (s *server) buildURL(method, token string) string {
+	return s.config.BaseURL.ResolveReference(&url.URL{
+		Path: path.Join(method, token),
+	}).String()
 }
 
 func (s *server) serveExec(req *restful.Request, resp *restful.Response) {
-	containerID := req.PathParameter("containerID")
-	if containerID == "" {
-		resp.WriteError(http.StatusBadRequest, errors.New("missing required containerID path parameter"))
+	token := req.PathParameter("token")
+	cachedRequest, ok := s.cache.Consume(token)
+	if !ok {
+		http.NotFound(resp.ResponseWriter, req.Request)
 		return
+	}
+	exec, ok := cachedRequest.(*runtimeapi.ExecRequest)
+	if !ok {
+		http.NotFound(resp.ResponseWriter, req.Request)
+		return
+	}
+
+	streamOpts := &remotecommand.Options{
+		Stdin:  exec.Stdin,
+		Stdout: true,
+		Stderr: !exec.Tty,
+		TTY:    exec.Tty,
 	}
 
 	remotecommand.ServeExec(
@@ -247,35 +243,56 @@ func (s *server) serveExec(req *restful.Request, resp *restful.Response) {
 		s.runtime,
 		"", // unused: podName
 		"", // unusued: podUID
-		containerID,
+		exec.ContainerId,
+		exec.Cmd,
+		streamOpts,
 		s.config.StreamIdleTimeout,
 		s.config.StreamCreationTimeout,
 		s.config.SupportedProtocols)
 }
 
 func (s *server) serveAttach(req *restful.Request, resp *restful.Response) {
-	containerID := req.PathParameter("containerID")
-	if containerID == "" {
-		resp.WriteError(http.StatusBadRequest, errors.New("missing required containerID path parameter"))
+	token := req.PathParameter("token")
+	cachedRequest, ok := s.cache.Consume(token)
+	if !ok {
+		http.NotFound(resp.ResponseWriter, req.Request)
+		return
+	}
+	attach, ok := cachedRequest.(*runtimeapi.AttachRequest)
+	if !ok {
+		http.NotFound(resp.ResponseWriter, req.Request)
 		return
 	}
 
+	streamOpts := &remotecommand.Options{
+		Stdin:  attach.Stdin,
+		Stdout: true,
+		Stderr: !attach.Tty,
+		TTY:    attach.Tty,
+	}
 	remotecommand.ServeAttach(
 		resp.ResponseWriter,
 		req.Request,
 		s.runtime,
 		"", // unused: podName
 		"", // unusued: podUID
-		containerID,
+		attach.ContainerId,
+		streamOpts,
 		s.config.StreamIdleTimeout,
 		s.config.StreamCreationTimeout,
 		s.config.SupportedProtocols)
 }
 
 func (s *server) servePortForward(req *restful.Request, resp *restful.Response) {
-	podSandboxID := req.PathParameter("podSandboxID")
-	if podSandboxID == "" {
-		resp.WriteError(http.StatusBadRequest, errors.New("missing required podSandboxID path parameter"))
+	token := req.PathParameter("token")
+	cachedRequest, ok := s.cache.Consume(token)
+	if !ok {
+		http.NotFound(resp.ResponseWriter, req.Request)
+		return
+	}
+	pf, ok := cachedRequest.(*runtimeapi.PortForwardRequest)
+	if !ok {
+		http.NotFound(resp.ResponseWriter, req.Request)
 		return
 	}
 
@@ -283,7 +300,7 @@ func (s *server) servePortForward(req *restful.Request, resp *restful.Response) 
 		resp.ResponseWriter,
 		req.Request,
 		s.runtime,
-		podSandboxID,
+		pf.PodSandboxId,
 		"", // unused: podUID
 		s.config.StreamIdleTimeout,
 		s.config.StreamCreationTimeout)
@@ -299,12 +316,12 @@ var _ remotecommand.Executor = &criAdapter{}
 var _ remotecommand.Attacher = &criAdapter{}
 var _ portforward.PortForwarder = &criAdapter{}
 
-func (a *criAdapter) ExecInContainer(podName string, podUID types.UID, container string, cmd []string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size) error {
+func (a *criAdapter) ExecInContainer(podName string, podUID types.UID, container string, cmd []string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size, timeout time.Duration) error {
 	return a.Exec(container, cmd, in, out, err, tty, resize)
 }
 
 func (a *criAdapter) AttachContainer(podName string, podUID types.UID, container string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size) error {
-	return a.Attach(container, in, out, err, resize)
+	return a.Attach(container, in, out, err, tty, resize)
 }
 
 func (a *criAdapter) PortForward(podName string, podUID types.UID, port uint16, stream io.ReadWriteCloser) error {

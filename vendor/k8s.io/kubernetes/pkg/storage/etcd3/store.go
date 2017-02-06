@@ -23,18 +23,20 @@ import (
 	"path"
 	"reflect"
 	"strings"
-
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/meta"
-	"k8s.io/kubernetes/pkg/conversion"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/storage/etcd"
-	"k8s.io/kubernetes/pkg/watch"
+	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	utiltrace "k8s.io/apiserver/pkg/util/trace"
+	"k8s.io/kubernetes/pkg/storage"
+	"k8s.io/kubernetes/pkg/storage/etcd"
 )
 
 type store struct {
@@ -94,8 +96,8 @@ func (s *store) Versioner() storage.Versioner {
 }
 
 // Get implements storage.Interface.Get.
-func (s *store) Get(ctx context.Context, key string, out runtime.Object, ignoreNotFound bool) error {
-	key = keyWithPrefix(s.pathPrefix, key)
+func (s *store) Get(ctx context.Context, key string, resourceVersion string, out runtime.Object, ignoreNotFound bool) error {
+	key = path.Join(s.pathPrefix, key)
 	getResp, err := s.client.KV.Get(ctx, key, s.getOps...)
 	if err != nil {
 		return err
@@ -120,7 +122,7 @@ func (s *store) Create(ctx context.Context, key string, obj, out runtime.Object,
 	if err != nil {
 		return err
 	}
-	key = keyWithPrefix(s.pathPrefix, key)
+	key = path.Join(s.pathPrefix, key)
 
 	opts, err := s.ttlOpts(ctx, int64(ttl))
 	if err != nil {
@@ -152,7 +154,7 @@ func (s *store) Delete(ctx context.Context, key string, out runtime.Object, prec
 	if err != nil {
 		panic("unable to convert output object to pointer")
 	}
-	key = keyWithPrefix(s.pathPrefix, key)
+	key = path.Join(s.pathPrefix, key)
 	if precondtions == nil {
 		return s.unconditionalDelete(ctx, key, out)
 	}
@@ -214,11 +216,14 @@ func (s *store) conditionalDelete(ctx context.Context, key string, out runtime.O
 func (s *store) GuaranteedUpdate(
 	ctx context.Context, key string, out runtime.Object, ignoreNotFound bool,
 	precondtions *storage.Preconditions, tryUpdate storage.UpdateFunc, suggestion ...runtime.Object) error {
+	trace := utiltrace.New(fmt.Sprintf("GuaranteedUpdate etcd3: %s", reflect.TypeOf(out).String()))
+	defer trace.LogIfLong(500 * time.Millisecond)
+
 	v, err := conversion.EnforcePtr(out)
 	if err != nil {
 		panic("unable to convert output object to pointer")
 	}
-	key = keyWithPrefix(s.pathPrefix, key)
+	key = path.Join(s.pathPrefix, key)
 
 	var origState *objState
 	if len(suggestion) == 1 && suggestion[0] != nil {
@@ -236,6 +241,7 @@ func (s *store) GuaranteedUpdate(
 			return err
 		}
 	}
+	trace.Step("initial value restored")
 
 	for {
 		if err := checkPreconditions(key, precondtions, origState.obj); err != nil {
@@ -259,6 +265,7 @@ func (s *store) GuaranteedUpdate(
 		if err != nil {
 			return err
 		}
+		trace.Step("Transaction prepared")
 
 		txnResp, err := s.client.KV.Txn(ctx).If(
 			clientv3.Compare(clientv3.ModRevision(key), "=", origState.rev),
@@ -270,6 +277,7 @@ func (s *store) GuaranteedUpdate(
 		if err != nil {
 			return err
 		}
+		trace.Step("Transaction committed")
 		if !txnResp.Succeeded {
 			getResp := (*clientv3.GetResponse)(txnResp.Responses[0].GetResponseRange())
 			glog.V(4).Infof("GuaranteedUpdate of %s failed because of a conflict, going to retry", key)
@@ -277,6 +285,7 @@ func (s *store) GuaranteedUpdate(
 			if err != nil {
 				return err
 			}
+			trace.Step("Retry value restored")
 			continue
 		}
 		putResp := txnResp.Responses[0].GetResponsePut()
@@ -290,7 +299,7 @@ func (s *store) GetToList(ctx context.Context, key string, resourceVersion strin
 	if err != nil {
 		return err
 	}
-	key = keyWithPrefix(s.pathPrefix, key)
+	key = path.Join(s.pathPrefix, key)
 
 	getResp, err := s.client.KV.Get(ctx, key, s.getOps...)
 	if err != nil {
@@ -316,7 +325,7 @@ func (s *store) List(ctx context.Context, key, resourceVersion string, pred stor
 	if err != nil {
 		return err
 	}
-	key = keyWithPrefix(s.pathPrefix, key)
+	key = path.Join(s.pathPrefix, key)
 	// We need to make sure the key ended with "/" so that we only get children "directories".
 	// e.g. if we have key "/a", "/a/b", "/ab", getting keys with prefix "/a" will return all three,
 	// while with prefix "/a/" will return only "/a/b" which is the correct answer.
@@ -357,7 +366,7 @@ func (s *store) watch(ctx context.Context, key string, rv string, pred storage.S
 	if err != nil {
 		return nil, err
 	}
-	key = keyWithPrefix(s.pathPrefix, key)
+	key = path.Join(s.pathPrefix, key)
 	return s.watcher.Watch(ctx, key, int64(rev), recursive, pred)
 }
 
@@ -448,13 +457,6 @@ func (s *store) ttlOpts(ctx context.Context, ttl int64) ([]clientv3.OpOption, er
 	return []clientv3.OpOption{clientv3.WithLease(clientv3.LeaseID(lcr.ID))}, nil
 }
 
-func keyWithPrefix(prefix, key string) string {
-	if strings.HasPrefix(key, prefix) {
-		return key
-	}
-	return path.Join(prefix, key)
-}
-
 // decode decodes value of bytes into object. It will also set the object resource version to rev.
 // On success, objPtr would be set to the object.
 func decode(codec runtime.Codec, versioner storage.Versioner, value []byte, objPtr runtime.Object, rev int64) error {
@@ -495,7 +497,7 @@ func checkPreconditions(key string, preconditions *storage.Preconditions, out ru
 	if preconditions == nil {
 		return nil
 	}
-	objMeta, err := api.ObjectMetaFor(out)
+	objMeta, err := metav1.ObjectMetaFor(out)
 	if err != nil {
 		return storage.NewInternalErrorf("can't enforce preconditions %v on un-introspectable object %v, got error: %v", *preconditions, out, err)
 	}

@@ -4,37 +4,52 @@ licenses(["notice"])
 
 load(
     "@io_bazel_rules_go//go:def.bzl",
-    "go_binary",
     "go_library",
-    "go_test",
-    "cgo_library",
 )
 
 go_library(
     name = "go_default_library",
     srcs = [
-        "zz_generated.componentstatus.go",
-        "zz_generated.configmap.go",
-        "zz_generated.endpoints.go",
-        "zz_generated.event.go",
-        "zz_generated.limitrange.go",
-        "zz_generated.namespace.go",
-        "zz_generated.node.go",
-        "zz_generated.persistentvolume.go",
-        "zz_generated.persistentvolumeclaim.go",
-        "zz_generated.pod.go",
-        "zz_generated.podtemplate.go",
-        "zz_generated.replicationcontroller.go",
-        "zz_generated.resourcequota.go",
-        "zz_generated.secret.go",
-        "zz_generated.service.go",
-        "zz_generated.serviceaccount.go",
+        "componentstatus.go",
+        "configmap.go",
+        "endpoints.go",
+        "event.go",
+        "expansion_generated.go",
+        "limitrange.go",
+        "namespace.go",
+        "node.go",
+        "node_expansion.go",
+        "persistentvolume.go",
+        "persistentvolumeclaim.go",
+        "pod.go",
+        "podtemplate.go",
+        "replicationcontroller.go",
+        "replicationcontroller_expansion.go",
+        "resourcequota.go",
+        "secret.go",
+        "service.go",
+        "service_expansion.go",
+        "serviceaccount.go",
     ],
     tags = ["automanaged"],
     deps = [
         "//pkg/api:go_default_library",
-        "//pkg/api/errors:go_default_library",
-        "//pkg/client/cache:go_default_library",
-        "//pkg/labels:go_default_library",
+        "//vendor:k8s.io/apimachinery/pkg/api/errors",
+        "//vendor:k8s.io/apimachinery/pkg/apis/meta/v1",
+        "//vendor:k8s.io/apimachinery/pkg/labels",
+        "//vendor:k8s.io/client-go/tools/cache",
     ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
 )

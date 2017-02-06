@@ -40,9 +40,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/crypto/ssh"
 
-	utilnet "k8s.io/kubernetes/pkg/util/net"
-	"k8s.io/kubernetes/pkg/util/runtime"
-	"k8s.io/kubernetes/pkg/util/wait"
+	utilnet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 var (
@@ -161,7 +161,17 @@ type realSSHDialer struct{}
 var _ sshDialer = &realSSHDialer{}
 
 func (d *realSSHDialer) Dial(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
-	return ssh.Dial(network, addr, config)
+	conn, err := net.DialTimeout(network, addr, config.Timeout)
+	if err != nil {
+		return nil, err
+	}
+	conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	c, chans, reqs, err := ssh.NewClientConn(conn, addr, config)
+	if err != nil {
+		return nil, err
+	}
+	conn.SetReadDeadline(time.Time{})
+	return ssh.NewClient(c, chans, reqs), nil
 }
 
 // timeoutDialer wraps an sshDialer with a timeout around Dial(). The golang
@@ -180,20 +190,8 @@ const sshDialTimeout = 150 * time.Second
 var realTimeoutDialer sshDialer = &timeoutDialer{&realSSHDialer{}, sshDialTimeout}
 
 func (d *timeoutDialer) Dial(network, addr string, config *ssh.ClientConfig) (*ssh.Client, error) {
-	var client *ssh.Client
-	errCh := make(chan error, 1)
-	go func() {
-		defer runtime.HandleCrash()
-		var err error
-		client, err = d.dialer.Dial(network, addr, config)
-		errCh <- err
-	}()
-	select {
-	case err := <-errCh:
-		return client, err
-	case <-time.After(d.timeout):
-		return nil, fmt.Errorf("timed out dialing %s:%s", network, addr)
-	}
+	config.Timeout = d.timeout
+	return d.dialer.Dial(network, addr, config)
 }
 
 // RunSSHCommand returns the stdout, stderr, and exit code from running cmd on
@@ -364,6 +362,9 @@ func (l *SSHTunnelList) healthCheck(e sshTunnelEntry) error {
 		Dial: e.Tunnel.Dial,
 		// TODO(cjcullen): Plumb real TLS options through.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		// We don't reuse the clients, so disable the keep-alive to properly
+		// close the connection.
+		DisableKeepAlives: true,
 	})
 	client := &http.Client{Transport: transport}
 	resp, err := client.Get(l.healthCheckURL.String())
@@ -377,15 +378,18 @@ func (l *SSHTunnelList) healthCheck(e sshTunnelEntry) error {
 func (l *SSHTunnelList) removeAndReAdd(e sshTunnelEntry) {
 	// Find the entry to replace.
 	l.tunnelsLock.Lock()
-	defer l.tunnelsLock.Unlock()
 	for i, entry := range l.entries {
 		if entry.Tunnel == e.Tunnel {
 			l.entries = append(l.entries[:i], l.entries[i+1:]...)
 			l.adding[e.Address] = true
-			go l.createAndAddTunnel(e.Address)
-			return
+			break
 		}
 	}
+	l.tunnelsLock.Unlock()
+	if err := e.Tunnel.Close(); err != nil {
+		glog.Infof("Failed to close removed tunnel: %v", err)
+	}
+	go l.createAndAddTunnel(e.Address)
 }
 
 func (l *SSHTunnelList) Dial(net, addr string) (net.Conn, error) {

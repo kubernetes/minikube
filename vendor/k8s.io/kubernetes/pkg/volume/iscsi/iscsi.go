@@ -22,8 +22,8 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/mount"
 	utilstrings "k8s.io/kubernetes/pkg/util/strings"
@@ -82,14 +82,14 @@ func (plugin *iscsiPlugin) RequiresRemount() bool {
 	return false
 }
 
-func (plugin *iscsiPlugin) GetAccessModes() []api.PersistentVolumeAccessMode {
-	return []api.PersistentVolumeAccessMode{
-		api.ReadWriteOnce,
-		api.ReadOnlyMany,
+func (plugin *iscsiPlugin) GetAccessModes() []v1.PersistentVolumeAccessMode {
+	return []v1.PersistentVolumeAccessMode{
+		v1.ReadWriteOnce,
+		v1.ReadOnlyMany,
 	}
 }
 
-func (plugin *iscsiPlugin) NewMounter(spec *volume.Spec, pod *api.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
+func (plugin *iscsiPlugin) NewMounter(spec *volume.Spec, pod *v1.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
 	// Inject real implementations here, test through the internal function.
 	return plugin.newMounterInternal(spec, pod.UID, &ISCSIUtil{}, plugin.host.GetMounter())
 }
@@ -147,10 +147,10 @@ func (plugin *iscsiPlugin) execCommand(command string, args []string) ([]byte, e
 }
 
 func (plugin *iscsiPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
-	iscsiVolume := &api.Volume{
+	iscsiVolume := &v1.Volume{
 		Name: volumeName,
-		VolumeSource: api.VolumeSource{
-			ISCSI: &api.ISCSIVolumeSource{
+		VolumeSource: v1.VolumeSource{
+			ISCSI: &v1.ISCSIVolumeSource{
 				TargetPortal: volumeName,
 				IQN:          volumeName,
 			},
@@ -196,6 +196,13 @@ func (b *iscsiDiskMounter) GetAttributes() volume.Attributes {
 	}
 }
 
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *iscsiDiskMounter) CanMount() error {
+	return nil
+}
+
 func (b *iscsiDiskMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }
@@ -223,6 +230,12 @@ func (c *iscsiDiskUnmounter) TearDown() error {
 }
 
 func (c *iscsiDiskUnmounter) TearDownAt(dir string) error {
+	if pathExists, pathErr := ioutil.PathExists(dir); pathErr != nil {
+		return fmt.Errorf("Error checking if path exists: %v", pathErr)
+	} else if !pathExists {
+		glog.Warningf("Warning: Unmount skipped because path does not exist: %v", dir)
+		return nil
+	}
 	return diskTearDown(c.manager, *c, dir, c.mounter)
 }
 
@@ -233,7 +246,7 @@ func portalMounter(portal string) string {
 	return portal
 }
 
-func getVolumeSource(spec *volume.Spec) (*api.ISCSIVolumeSource, bool, error) {
+func getVolumeSource(spec *volume.Spec) (*v1.ISCSIVolumeSource, bool, error) {
 	if spec.Volume != nil && spec.Volume.ISCSI != nil {
 		return spec.Volume.ISCSI, spec.Volume.ISCSI.ReadOnly, nil
 	} else if spec.PersistentVolume != nil &&

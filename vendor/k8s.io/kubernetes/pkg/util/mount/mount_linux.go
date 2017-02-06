@@ -25,13 +25,13 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
 	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/golang/glog"
-	utilExec "k8s.io/kubernetes/pkg/util/exec"
+	"k8s.io/apimachinery/pkg/util/sets"
+	utilexec "k8s.io/kubernetes/pkg/util/exec"
 )
 
 const (
@@ -54,8 +54,7 @@ const (
 // for the linux platform.  This implementation assumes that the
 // kubelet is running in the host's root mount namespace.
 type Mounter struct {
-	mounterPath       string
-	mounterRootfsPath string
+	mounterPath string
 }
 
 // Mount mounts source to target as fstype with given options. 'source' and 'fstype' must
@@ -63,18 +62,24 @@ type Mounter struct {
 // type, where kernel handles fs type for you. The mount 'options' is a list of options,
 // currently come from mount(8), e.g. "ro", "remount", "bind", etc. If no more option is
 // required, call Mount with an empty string list or nil.
-// Update source path to include a root filesystem override to make a containerized mounter (specified via `mounterPath`) work.
 func (mounter *Mounter) Mount(source string, target string, fstype string, options []string) error {
+	// Path to mounter binary. Set to mount accessible via $PATH by default.
+	// All Linux distros are expected to be shipped with a mount utility that an support bind mounts.
+	mounterPath := defaultMountCommand
 	bind, bindRemountOpts := isBind(options)
 	if bind {
-		err := doMount(mounter.mounterPath, path.Join(mounter.mounterRootfsPath, source), path.Join(mounter.mounterRootfsPath, target), fstype, []string{"bind"})
+		err := doMount(mounterPath, source, target, fstype, []string{"bind"})
 		if err != nil {
 			return err
 		}
-		return doMount(mounter.mounterPath, path.Join(mounter.mounterRootfsPath, source), path.Join(mounter.mounterRootfsPath, target), fstype, bindRemountOpts)
-	} else {
-		return doMount(mounter.mounterPath, source, path.Join(mounter.mounterRootfsPath, target), fstype, options)
+		return doMount(mounterPath, source, target, fstype, bindRemountOpts)
 	}
+	// The list of filesystems that require containerized mounter on GCI image cluster
+	fsTypesNeedMounter := sets.NewString("nfs", "glusterfs")
+	if fsTypesNeedMounter.Has(fstype) {
+		mounterPath = mounter.mounterPath
+	}
+	return doMount(mounterPath, source, target, fstype, options)
 }
 
 // isBind detects whether a bind mount is being requested and makes the remount options to
@@ -327,9 +332,9 @@ func (mounter *SafeFormatAndMount) formatAndMount(source string, target string, 
 	cmd := mounter.Runner.Command("fsck", args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		ee, isExitError := err.(utilExec.ExitError)
+		ee, isExitError := err.(utilexec.ExitError)
 		switch {
-		case err == utilExec.ErrExecutableNotFound:
+		case err == utilexec.ErrExecutableNotFound:
 			glog.Warningf("'fsck' not found on system; continuing mount without running 'fsck'.")
 		case isExitError && ee.ExitStatus() == fsckErrorsCorrected:
 			glog.Infof("Device %s has errors which were corrected by fsck.", source)
@@ -354,7 +359,7 @@ func (mounter *SafeFormatAndMount) formatAndMount(source string, target string, 
 				fstype = "ext4"
 			}
 			if fstype == "ext4" || fstype == "ext3" {
-				args = []string{"-E", "lazy_itable_init=0,lazy_journal_init=0", "-F", source}
+				args = []string{"-F", source}
 			}
 			glog.Infof("Disk %q appears to be unformatted, attempting to format as type: %q with options: %v", source, fstype, args)
 			cmd := mounter.Runner.Command("mkfs."+fstype, args...)

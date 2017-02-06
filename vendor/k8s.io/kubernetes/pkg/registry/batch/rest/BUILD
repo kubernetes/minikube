@@ -4,10 +4,7 @@ licenses(["notice"])
 
 load(
     "@io_bazel_rules_go//go:def.bzl",
-    "go_binary",
     "go_library",
-    "go_test",
-    "cgo_library",
 )
 
 go_library(
@@ -15,12 +12,27 @@ go_library(
     srcs = ["storage_batch.go"],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api/rest:go_default_library",
         "//pkg/apis/batch:go_default_library",
         "//pkg/apis/batch/v1:go_default_library",
         "//pkg/apis/batch/v2alpha1:go_default_library",
-        "//pkg/genericapiserver:go_default_library",
-        "//pkg/registry/batch/job/etcd:go_default_library",
-        "//pkg/registry/batch/scheduledjob/etcd:go_default_library",
+        "//pkg/genericapiserver/registry/generic:go_default_library",
+        "//pkg/genericapiserver/registry/rest:go_default_library",
+        "//pkg/genericapiserver/server:go_default_library",
+        "//pkg/registry/batch/cronjob/storage:go_default_library",
+        "//pkg/registry/batch/job/storage:go_default_library",
+        "//vendor:k8s.io/apimachinery/pkg/runtime/schema",
     ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [":package-srcs"],
+    tags = ["automanaged"],
 )

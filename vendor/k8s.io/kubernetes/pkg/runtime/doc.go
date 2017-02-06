@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,32 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package runtime includes helper functions for working with API objects
-// that follow the kubernetes API object conventions, which are:
-//
-// 0. Your API objects have a common metadata struct member, TypeMeta.
-// 1. Your code refers to an internal set of API objects.
-// 2. In a separate package, you have an external set of API objects.
-// 3. The external set is considered to be versioned, and no breaking
-//    changes are ever made to it (fields may be added but not changed
-//    or removed).
-// 4. As your api evolves, you'll make an additional versioned package
-//    with every major change.
-// 5. Versioned packages have conversion functions which convert to
-//    and from the internal version.
-// 6. You'll continue to support older versions according to your
-//    deprecation policy, and you can easily provide a program/library
-//    to update old versions into new versions because of 5.
-// 7. All of your serializations and deserializations are handled in a
-//    centralized place.
-//
-// Package runtime provides a conversion helper to make 5 easy, and the
-// Encode/Decode/DecodeInto trio to accomplish 7. You can also register
-// additional "codecs" which use a version of your choice. It's
-// recommended that you register your types with runtime in your
-// package's init function.
-//
-// As a bonus, a few common types useful from all api objects and versions
-// are provided in types.go.
-
+// Package runtime only exists until heapster rebases
+// TODO genericapiserver remove this empty package.  Godep fails without this because heapster relies
+// on this package.  This will allow us to start splitting packages, but will force
+// heapster to update on their next kube rebase.
 package runtime

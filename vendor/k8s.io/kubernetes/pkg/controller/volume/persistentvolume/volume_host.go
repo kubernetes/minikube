@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"net"
 
-	"k8s.io/kubernetes/pkg/api"
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/io"
 	"k8s.io/kubernetes/pkg/util/mount"
 	vol "k8s.io/kubernetes/pkg/volume"
@@ -49,7 +49,7 @@ func (ctrl *PersistentVolumeController) GetKubeClient() clientset.Interface {
 	return ctrl.kubeClient
 }
 
-func (ctrl *PersistentVolumeController) NewWrapperMounter(volName string, spec vol.Spec, pod *api.Pod, opts vol.VolumeOptions) (vol.Mounter, error) {
+func (ctrl *PersistentVolumeController) NewWrapperMounter(volName string, spec vol.Spec, pod *v1.Pod, opts vol.VolumeOptions) (vol.Mounter, error) {
 	return nil, fmt.Errorf("PersistentVolumeController.NewWrapperMounter is not implemented")
 }
 
@@ -77,10 +77,12 @@ func (ctrl *PersistentVolumeController) GetHostIP() (net.IP, error) {
 	return nil, fmt.Errorf("PersistentVolumeController.GetHostIP() is not implemented")
 }
 
-func (ctrl *PersistentVolumeController) GetRootContext() string {
-	return ""
+func (ctrl *PersistentVolumeController) GetNodeAllocatable() (v1.ResourceList, error) {
+	return v1.ResourceList{}, nil
 }
 
-func (ctrl *PersistentVolumeController) GetNodeAllocatable() (api.ResourceList, error) {
-	return api.ResourceList{}, nil
+func (adc *PersistentVolumeController) GetSecretFunc() func(namespace, name string) (*v1.Secret, error) {
+	return func(_, _ string) (*v1.Secret, error) {
+		return nil, fmt.Errorf("GetSecret unsupported in PersistentVolumeController")
+	}
 }

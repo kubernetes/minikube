@@ -40,9 +40,9 @@ import (
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/servers"
 	"github.com/rackspace/gophercloud/rackspace/compute/v2/volumeattach"
 
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/types"
 )
 
 const ProviderName = "rackspace"
@@ -231,35 +231,6 @@ func (os *Rackspace) Instances() (cloudprovider.Instances, bool) {
 	return &Instances{compute}, true
 }
 
-func (i *Instances) List(name_filter string) ([]types.NodeName, error) {
-	glog.V(2).Infof("rackspace List(%v) called", name_filter)
-
-	opts := osservers.ListOpts{
-		Name:   name_filter,
-		Status: "ACTIVE",
-	}
-	pager := servers.List(i.compute, opts)
-
-	ret := make([]types.NodeName, 0)
-	err := pager.EachPage(func(page pagination.Page) (bool, error) {
-		sList, err := servers.ExtractServers(page)
-		if err != nil {
-			return false, err
-		}
-		for i := range sList {
-			ret = append(ret, mapServerToNodeName(&sList[i]))
-		}
-		return true, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	glog.V(2).Infof("Found %v entries: %v", len(ret), ret)
-
-	return ret, nil
-}
-
 func serverHasAddress(srv osservers.Server, ip string) bool {
 	if ip == firstAddr(srv.Addresses["private"]) {
 		return true
@@ -397,7 +368,7 @@ func getAddressByName(api *gophercloud.ServiceClient, name string) (string, erro
 	return getAddressByServer(srv)
 }
 
-func (i *Instances) NodeAddresses(nodeName types.NodeName) ([]api.NodeAddress, error) {
+func (i *Instances) NodeAddresses(nodeName types.NodeName) ([]v1.NodeAddress, error) {
 	glog.V(2).Infof("NodeAddresses(%v) called", nodeName)
 	serverName := mapNodeNameToServerName(nodeName)
 	ip, err := probeNodeAddress(i.compute, serverName)
@@ -408,7 +379,12 @@ func (i *Instances) NodeAddresses(nodeName types.NodeName) ([]api.NodeAddress, e
 	glog.V(2).Infof("NodeAddresses(%v) => %v", serverName, ip)
 
 	// net.ParseIP().String() is to maintain compatibility with the old code
-	return []api.NodeAddress{{Type: api.NodeLegacyHostIP, Address: net.ParseIP(ip).String()}}, nil
+	parsedIP := net.ParseIP(ip).String()
+	return []v1.NodeAddress{
+		{Type: v1.NodeLegacyHostIP, Address: parsedIP},
+		{Type: v1.NodeInternalIP, Address: parsedIP},
+		{Type: v1.NodeExternalIP, Address: parsedIP},
+	}, nil
 }
 
 // mapNodeNameToServerName maps from a k8s NodeName to a rackspace Server Name

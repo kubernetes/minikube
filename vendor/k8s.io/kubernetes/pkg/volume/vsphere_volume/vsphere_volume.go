@@ -20,15 +20,18 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/resource"
-	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/mount"
 	utilstrings "k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
+	"k8s.io/kubernetes/pkg/volume/util"
 )
 
 // This is the primary entrypoint for volume plugins.
@@ -77,7 +80,7 @@ func (plugin *vsphereVolumePlugin) RequiresRemount() bool {
 	return false
 }
 
-func (plugin *vsphereVolumePlugin) NewMounter(spec *volume.Spec, pod *api.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
+func (plugin *vsphereVolumePlugin) NewMounter(spec *volume.Spec, pod *v1.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
 	return plugin.newMounterInternal(spec, pod.UID, &VsphereDiskUtil{}, plugin.host.GetMounter())
 }
 
@@ -119,11 +122,19 @@ func (plugin *vsphereVolumePlugin) newUnmounterInternal(volName string, podUID t
 }
 
 func (plugin *vsphereVolumePlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
-	vsphereVolume := &api.Volume{
+	mounter := plugin.host.GetMounter()
+	pluginDir := plugin.host.GetPluginDir(plugin.GetPluginName())
+	volumePath, err := mounter.GetDeviceNameFromMount(mountPath, pluginDir)
+	if err != nil {
+		return nil, err
+	}
+	volumePath = strings.Replace(volumePath, "\\040", " ", -1)
+	glog.V(5).Infof("vSphere volume path is %q", volumePath)
+	vsphereVolume := &v1.Volume{
 		Name: volumeName,
-		VolumeSource: api.VolumeSource{
-			VsphereVolume: &api.VsphereVirtualDiskVolumeSource{
-				VolumePath: volumeName,
+		VolumeSource: v1.VolumeSource{
+			VsphereVolume: &v1.VsphereVirtualDiskVolumeSource{
+				VolumePath: volumePath,
 			},
 		},
 	}
@@ -177,6 +188,13 @@ func (b *vsphereVolumeMounter) SetUp(fsGroup *int64) error {
 	return b.SetUpAt(b.GetPath(), fsGroup)
 }
 
+// Checks prior to mount operations to verify that the required components (binaries, etc.)
+// to mount the volume are available on the underlying node.
+// If not, it returns an error
+func (b *vsphereVolumeMounter) CanMount() error {
+	return nil
+}
+
 // SetUp attaches the disk and bind mounts to the volume path.
 func (b *vsphereVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 	glog.V(5).Infof("vSphere volume setup %s to %s", b.volPath, dir)
@@ -226,6 +244,7 @@ func (b *vsphereVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 		os.Remove(dir)
 		return err
 	}
+	volume.SetVolumeOwnership(b, fsGroup)
 	glog.V(3).Infof("vSphere volume %s mounted to %s", b.volPath, dir)
 
 	return nil
@@ -246,30 +265,11 @@ func (v *vsphereVolumeUnmounter) TearDown() error {
 // Unmounts the bind mount, and detaches the disk only if the PD
 // resource was the last reference to that disk on the kubelet.
 func (v *vsphereVolumeUnmounter) TearDownAt(dir string) error {
-	glog.V(5).Infof("vSphere Volume TearDown of %s", dir)
-	notMnt, err := v.mounter.IsLikelyNotMountPoint(dir)
-	if err != nil {
-		return err
-	}
-	if notMnt {
-		return os.Remove(dir)
-	}
-	if err := v.mounter.Unmount(dir); err != nil {
-		return err
-	}
-	notMnt, mntErr := v.mounter.IsLikelyNotMountPoint(dir)
-	if mntErr != nil {
-		glog.Errorf("IsLikelyNotMountPoint check failed: %v", mntErr)
-		return err
-	}
-	if notMnt {
-		return os.Remove(dir)
-	}
-	return fmt.Errorf("Failed to unmount volume dir")
+	return util.UnmountPath(dir, v.mounter)
 }
 
 func makeGlobalPDPath(host volume.VolumeHost, devName string) string {
-	return path.Join(host.GetPluginDir(vsphereVolumePluginName), "mounts", devName)
+	return path.Join(host.GetPluginDir(vsphereVolumePluginName), mount.MountsInGlobalPDPath, devName)
 }
 
 func (vv *vsphereVolume) GetPath() string {
@@ -278,9 +278,9 @@ func (vv *vsphereVolume) GetPath() string {
 }
 
 // vSphere Persistent Volume Plugin
-func (plugin *vsphereVolumePlugin) GetAccessModes() []api.PersistentVolumeAccessMode {
-	return []api.PersistentVolumeAccessMode{
-		api.ReadWriteOnce,
+func (plugin *vsphereVolumePlugin) GetAccessModes() []v1.PersistentVolumeAccessMode {
+	return []v1.PersistentVolumeAccessMode{
+		v1.ReadWriteOnce,
 	}
 }
 
@@ -334,28 +334,28 @@ func (plugin *vsphereVolumePlugin) newProvisionerInternal(options volume.VolumeO
 	}, nil
 }
 
-func (v *vsphereVolumeProvisioner) Provision() (*api.PersistentVolume, error) {
+func (v *vsphereVolumeProvisioner) Provision() (*v1.PersistentVolume, error) {
 	vmDiskPath, sizeKB, err := v.manager.CreateVolume(v)
 	if err != nil {
 		return nil, err
 	}
 
-	pv := &api.PersistentVolume{
-		ObjectMeta: api.ObjectMeta{
+	pv := &v1.PersistentVolume{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   v.options.PVName,
 			Labels: map[string]string{},
 			Annotations: map[string]string{
 				"kubernetes.io/createdby": "vsphere-volume-dynamic-provisioner",
 			},
 		},
-		Spec: api.PersistentVolumeSpec{
+		Spec: v1.PersistentVolumeSpec{
 			PersistentVolumeReclaimPolicy: v.options.PersistentVolumeReclaimPolicy,
 			AccessModes:                   v.options.PVC.Spec.AccessModes,
-			Capacity: api.ResourceList{
-				api.ResourceName(api.ResourceStorage): resource.MustParse(fmt.Sprintf("%dKi", sizeKB)),
+			Capacity: v1.ResourceList{
+				v1.ResourceName(v1.ResourceStorage): resource.MustParse(fmt.Sprintf("%dKi", sizeKB)),
 			},
-			PersistentVolumeSource: api.PersistentVolumeSource{
-				VsphereVolume: &api.VsphereVirtualDiskVolumeSource{
+			PersistentVolumeSource: v1.PersistentVolumeSource{
+				VsphereVolume: &v1.VsphereVirtualDiskVolumeSource{
 					VolumePath: vmDiskPath,
 					FSType:     "ext4",
 				},
@@ -370,7 +370,7 @@ func (v *vsphereVolumeProvisioner) Provision() (*api.PersistentVolume, error) {
 }
 
 func getVolumeSource(
-	spec *volume.Spec) (*api.VsphereVirtualDiskVolumeSource, bool, error) {
+	spec *volume.Spec) (*v1.VsphereVirtualDiskVolumeSource, bool, error) {
 	if spec.Volume != nil && spec.Volume.VsphereVolume != nil {
 		return spec.Volume.VsphereVolume, spec.ReadOnly, nil
 	} else if spec.PersistentVolume != nil &&

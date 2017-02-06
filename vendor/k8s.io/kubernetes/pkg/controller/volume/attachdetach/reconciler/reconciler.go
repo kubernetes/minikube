@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/cache"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/statusupdater"
 	"k8s.io/kubernetes/pkg/util/goroutinemap/exponentialbackoff"
-	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/volume/util/nestedpendingoperations"
 	"k8s.io/kubernetes/pkg/volume/util/operationexecutor"
 )
@@ -57,6 +57,7 @@ func NewReconciler(
 	loopPeriod time.Duration,
 	maxWaitForUnmountDuration time.Duration,
 	syncDuration time.Duration,
+	disableReconciliationSync bool,
 	desiredStateOfWorld cache.DesiredStateOfWorld,
 	actualStateOfWorld cache.ActualStateOfWorld,
 	attacherDetacher operationexecutor.OperationExecutor,
@@ -65,6 +66,7 @@ func NewReconciler(
 		loopPeriod:                loopPeriod,
 		maxWaitForUnmountDuration: maxWaitForUnmountDuration,
 		syncDuration:              syncDuration,
+		disableReconciliationSync: disableReconciliationSync,
 		desiredStateOfWorld:       desiredStateOfWorld,
 		actualStateOfWorld:        actualStateOfWorld,
 		attacherDetacher:          attacherDetacher,
@@ -82,18 +84,27 @@ type reconciler struct {
 	attacherDetacher          operationexecutor.OperationExecutor
 	nodeStatusUpdater         statusupdater.NodeStatusUpdater
 	timeOfLastSync            time.Time
+	disableReconciliationSync bool
 }
 
 func (rc *reconciler) Run(stopCh <-chan struct{}) {
 	wait.Until(rc.reconciliationLoopFunc(), rc.loopPeriod, stopCh)
 }
 
+// reconciliationLoopFunc this can be disabled via cli option disableReconciliation.
+// It periodically checks whether the attached volumes from actual state
+// are still attached to the node and update the status if they are not.
 func (rc *reconciler) reconciliationLoopFunc() func() {
 	return func() {
+
 		rc.reconcile()
-		// reconciler periodically checks whether the attached volumes from actual state
-		// are still attached to the node and udpate the status if they are not.
-		if time.Since(rc.timeOfLastSync) > rc.syncDuration {
+
+		if rc.disableReconciliationSync {
+			glog.V(5).Info("Skipping reconciling attached volumes still attached since it is disabled via the command line.")
+		} else if rc.syncDuration < time.Second {
+			glog.V(5).Info("Skipping reconciling attached volumes still attached since it is set to less than one second via the command line.")
+		} else if time.Since(rc.timeOfLastSync) > rc.syncDuration {
+			glog.V(5).Info("Starting reconciling attached volumes still attached")
 			rc.sync()
 		}
 	}
@@ -192,11 +203,11 @@ func (rc *reconciler) reconcile() {
 		if rc.actualStateOfWorld.VolumeNodeExists(
 			volumeToAttach.VolumeName, volumeToAttach.NodeName) {
 			// Volume/Node exists, touch it to reset detachRequestedTime
-			glog.V(1).Infof("Volume %q/Node %q is attached--touching.", volumeToAttach.VolumeName, volumeToAttach.NodeName)
+			glog.V(5).Infof("Volume %q/Node %q is attached--touching.", volumeToAttach.VolumeName, volumeToAttach.NodeName)
 			rc.actualStateOfWorld.ResetDetachRequestTime(volumeToAttach.VolumeName, volumeToAttach.NodeName)
 		} else {
 			// Volume/Node doesn't exist, spawn a goroutine to attach it
-			glog.V(1).Infof("Attempting to start AttachVolume for volume %q to node %q", volumeToAttach.VolumeName, volumeToAttach.NodeName)
+			glog.V(5).Infof("Attempting to start AttachVolume for volume %q to node %q", volumeToAttach.VolumeName, volumeToAttach.NodeName)
 			err := rc.attacherDetacher.AttachVolume(volumeToAttach.VolumeToAttach, rc.actualStateOfWorld)
 			if err == nil {
 				glog.Infof("Started AttachVolume for volume %q to node %q", volumeToAttach.VolumeName, volumeToAttach.NodeName)

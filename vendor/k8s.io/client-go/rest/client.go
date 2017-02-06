@@ -26,10 +26,10 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/util/flowcontrol"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/flowcontrol"
 )
 
 const (
@@ -45,10 +45,10 @@ type Interface interface {
 	Verb(verb string) *Request
 	Post() *Request
 	Put() *Request
-	Patch(pt api.PatchType) *Request
+	Patch(pt types.PatchType) *Request
 	Get() *Request
 	Delete() *Request
-	APIVersion() unversioned.GroupVersion
+	APIVersion() schema.GroupVersion
 }
 
 // RESTClient imposes common Kubernetes API conventions on a set of resource paths.
@@ -100,7 +100,7 @@ func NewRESTClient(baseURL *url.URL, versionedAPIPath string, config ContentConf
 	base.Fragment = ""
 
 	if config.GroupVersion == nil {
-		config.GroupVersion = &unversioned.GroupVersion{}
+		config.GroupVersion = &schema.GroupVersion{}
 	}
 	if len(config.ContentType) == 0 {
 		config.ContentType = "application/json"
@@ -173,9 +173,16 @@ func createSerializers(config ContentConfig) (*Serializers, error) {
 		info = mediaTypes[0]
 	}
 
-	internalGV := unversioned.GroupVersion{
-		Group:   config.GroupVersion.Group,
-		Version: runtime.APIVersionInternal,
+	internalGV := schema.GroupVersions{
+		{
+			Group:   config.GroupVersion.Group,
+			Version: runtime.APIVersionInternal,
+		},
+		// always include the legacy group as a decoding target to handle non-error `Status` return types
+		{
+			Group:   "",
+			Version: runtime.APIVersionInternal,
+		},
 	}
 
 	s := &Serializers{
@@ -231,7 +238,7 @@ func (c *RESTClient) Put() *Request {
 }
 
 // Patch begins a PATCH request. Short for c.Verb("Patch").
-func (c *RESTClient) Patch(pt api.PatchType) *Request {
+func (c *RESTClient) Patch(pt types.PatchType) *Request {
 	return c.Verb("PATCH").SetHeader("Content-Type", string(pt))
 }
 
@@ -246,6 +253,6 @@ func (c *RESTClient) Delete() *Request {
 }
 
 // APIVersion returns the APIVersion this RESTClient is expected to use.
-func (c *RESTClient) APIVersion() unversioned.GroupVersion {
+func (c *RESTClient) APIVersion() schema.GroupVersion {
 	return *c.contentConfig.GroupVersion
 }

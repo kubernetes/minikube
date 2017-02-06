@@ -4,10 +4,8 @@ licenses(["notice"])
 
 load(
     "@io_bazel_rules_go//go:def.bzl",
-    "go_binary",
     "go_library",
     "go_test",
-    "cgo_library",
 )
 
 go_library(
@@ -21,15 +19,16 @@ go_library(
         "docker_service.go",
         "docker_streaming.go",
         "helpers.go",
-        "legacy.go",
         "naming.go",
+        "security_context.go",
     ],
     tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/api/v1:go_default_library",
         "//pkg/apis/componentconfig:go_default_library",
         "//pkg/kubelet/api:go_default_library",
         "//pkg/kubelet/api/v1alpha1/runtime:go_default_library",
+        "//pkg/kubelet/cm:go_default_library",
         "//pkg/kubelet/container:go_default_library",
         "//pkg/kubelet/dockershim/cm:go_default_library",
         "//pkg/kubelet/dockertools:go_default_library",
@@ -41,6 +40,7 @@ go_library(
         "//pkg/kubelet/server/streaming:go_default_library",
         "//pkg/kubelet/types:go_default_library",
         "//pkg/kubelet/util/ioutils:go_default_library",
+        "//pkg/securitycontext:go_default_library",
         "//pkg/util/term:go_default_library",
         "//vendor:github.com/docker/engine-api/types",
         "//vendor:github.com/docker/engine-api/types/container",
@@ -62,11 +62,12 @@ go_test(
         "docker_service_test.go",
         "helpers_test.go",
         "naming_test.go",
+        "security_context_test.go",
     ],
-    library = "go_default_library",
+    library = ":go_default_library",
     tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/api/v1:go_default_library",
         "//pkg/kubelet/api/v1alpha1/runtime:go_default_library",
         "//pkg/kubelet/container:go_default_library",
         "//pkg/kubelet/container/testing:go_default_library",
@@ -75,9 +76,29 @@ go_test(
         "//pkg/kubelet/network/mock_network:go_default_library",
         "//pkg/kubelet/types:go_default_library",
         "//pkg/security/apparmor:go_default_library",
-        "//pkg/util/clock:go_default_library",
+        "//pkg/securitycontext:go_default_library",
         "//vendor:github.com/docker/engine-api/types",
+        "//vendor:github.com/docker/engine-api/types/container",
         "//vendor:github.com/golang/mock/gomock",
         "//vendor:github.com/stretchr/testify/assert",
+        "//vendor:github.com/stretchr/testify/require",
+        "//vendor:k8s.io/client-go/util/clock",
     ],
+)
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(["**"]),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//pkg/kubelet/dockershim/cm:all-srcs",
+        "//pkg/kubelet/dockershim/remote:all-srcs",
+    ],
+    tags = ["automanaged"],
 )

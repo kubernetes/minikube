@@ -24,8 +24,9 @@ import (
 	dockerfilters "github.com/docker/engine-api/types/filters"
 	"github.com/golang/glog"
 
-	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
+	"k8s.io/kubernetes/pkg/kubelet/dockertools"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 )
@@ -48,7 +49,7 @@ const (
 // For docker, PodSandbox is implemented by a container holding the network
 // namespace for the pod.
 // Note: docker doesn't use LogDirectory (yet).
-func (ds *dockerService) RunPodSandbox(config *runtimeApi.PodSandboxConfig) (string, error) {
+func (ds *dockerService) RunPodSandbox(config *runtimeapi.PodSandboxConfig) (string, error) {
 	// Step 1: Pull the image for the sandbox.
 	image := defaultSandboxImage
 	podSandboxImage := ds.podSandboxImage
@@ -65,11 +66,15 @@ func (ds *dockerService) RunPodSandbox(config *runtimeApi.PodSandboxConfig) (str
 	// Step 2: Create the sandbox container.
 	createConfig, err := ds.makeSandboxDockerConfig(config, image)
 	if err != nil {
-		return "", fmt.Errorf("failed to make sandbox docker config for pod %q: %v", config.Metadata.GetName(), err)
+		return "", fmt.Errorf("failed to make sandbox docker config for pod %q: %v", config.Metadata.Name, err)
 	}
 	createResp, err := ds.client.CreateContainer(*createConfig)
+	if err != nil {
+		createResp, err = recoverFromCreationConflictIfNeeded(ds.client, *createConfig, err)
+	}
+
 	if err != nil || createResp == nil {
-		return "", fmt.Errorf("failed to create a sandbox for pod %q: %v", config.Metadata.GetName(), err)
+		return "", fmt.Errorf("failed to create a sandbox for pod %q: %v", config.Metadata.Name, err)
 	}
 
 	// Step 3: Start the sandbox container.
@@ -77,9 +82,9 @@ func (ds *dockerService) RunPodSandbox(config *runtimeApi.PodSandboxConfig) (str
 	// startContainer failed.
 	err = ds.client.StartContainer(createResp.ID)
 	if err != nil {
-		return createResp.ID, fmt.Errorf("failed to start sandbox container for pod %q: %v", config.Metadata.GetName(), err)
+		return createResp.ID, fmt.Errorf("failed to start sandbox container for pod %q: %v", config.Metadata.Name, err)
 	}
-	if config.GetLinux().GetNamespaceOptions().GetHostNetwork() {
+	if nsOptions := config.GetLinux().GetSecurityContext().GetNamespaceOptions(); nsOptions != nil && nsOptions.HostNetwork {
 		return createResp.ID, nil
 	}
 
@@ -91,7 +96,7 @@ func (ds *dockerService) RunPodSandbox(config *runtimeApi.PodSandboxConfig) (str
 	// on the host as well, to satisfy parts of the pod spec that aren't
 	// recognized by the CNI standard yet.
 	cID := kubecontainer.BuildContainerID(runtimeName, createResp.ID)
-	err = ds.networkPlugin.SetUpPod(config.GetMetadata().GetNamespace(), config.GetMetadata().GetName(), cID)
+	err = ds.networkPlugin.SetUpPod(config.GetMetadata().Namespace, config.GetMetadata().Name, cID)
 	// TODO: Do we need to teardown on failure or can we rely on a StopPodSandbox call with the given ID?
 	return createResp.ID, err
 }
@@ -106,16 +111,16 @@ func (ds *dockerService) StopPodSandbox(podSandboxID string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to get sandbox status: %v", err)
 	}
-	if !status.GetLinux().GetNamespaces().GetOptions().GetHostNetwork() {
+	if nsOpts := status.GetLinux().GetNamespaces().GetOptions(); nsOpts != nil && !nsOpts.HostNetwork {
 		m := status.GetMetadata()
 		cID := kubecontainer.BuildContainerID(runtimeName, podSandboxID)
-		if err := ds.networkPlugin.TearDownPod(m.GetNamespace(), m.GetName(), cID); err != nil {
+		if err := ds.networkPlugin.TearDownPod(m.Namespace, m.Name, cID); err != nil {
 			// TODO: Figure out a way to retry this error. We can't
 			// right now because the plugin throws errors when it doesn't find
 			// eth0, which might not exist for various reasons (setup failed,
 			// conf changed etc). In theory, it should teardown everything else
 			// so there's no need to retry.
-			glog.Errorf("Failed to teardown sandbox %v for pod %v/%v: %v", m.GetNamespace(), m.GetName(), podSandboxID, err)
+			glog.Errorf("Failed to teardown sandbox %v for pod %v/%v: %v", m.Namespace, m.Name, podSandboxID, err)
 		}
 	}
 	return ds.client.StopContainer(podSandboxID, defaultSandboxGracePeriod)
@@ -135,12 +140,12 @@ func (ds *dockerService) getIPFromPlugin(sandbox *dockertypes.ContainerJSON) (st
 	if err != nil {
 		return "", err
 	}
-	msg := fmt.Sprintf("Couldn't find network status for %s/%s through plugin", *metadata.Namespace, *metadata.Name)
+	msg := fmt.Sprintf("Couldn't find network status for %s/%s through plugin", metadata.Namespace, metadata.Name)
 	if sharesHostNetwork(sandbox) {
 		return "", fmt.Errorf("%v: not responsible for host-network sandboxes", msg)
 	}
 	cID := kubecontainer.BuildContainerID(runtimeName, sandbox.ID)
-	networkStatus, err := ds.networkPlugin.GetPodNetworkStatus(*metadata.Namespace, *metadata.Name, cID)
+	networkStatus, err := ds.networkPlugin.GetPodNetworkStatus(metadata.Namespace, metadata.Name, cID)
 	if err != nil {
 		// This might be a sandbox that somehow ended up without a default
 		// interface (eth0). We can't distinguish this from a more serious
@@ -177,7 +182,7 @@ func (ds *dockerService) getIP(sandbox *dockertypes.ContainerJSON) (string, erro
 }
 
 // PodSandboxStatus returns the status of the PodSandbox.
-func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeApi.PodSandboxStatus, error) {
+func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeapi.PodSandboxStatus, error) {
 	// Inspect the container.
 	r, err := ds.client.InspectContainer(podSandboxID)
 	if err != nil {
@@ -192,15 +197,15 @@ func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeApi.PodS
 	ct := createdAt.UnixNano()
 
 	// Translate container to sandbox state.
-	state := runtimeApi.PodSandboxState_SANDBOX_NOTREADY
+	state := runtimeapi.PodSandboxState_SANDBOX_NOTREADY
 	if r.State.Running {
-		state = runtimeApi.PodSandboxState_SANDBOX_READY
+		state = runtimeapi.PodSandboxState_SANDBOX_READY
 	}
 	IP, err := ds.getIP(r)
 	if err != nil {
 		return nil, err
 	}
-	network := &runtimeApi.PodSandboxNetworkStatus{Ip: &IP}
+	network := &runtimeapi.PodSandboxNetworkStatus{Ip: IP}
 	netNS := getNetworkNamespace(r)
 
 	metadata, err := parseSandboxName(r.Name)
@@ -209,19 +214,19 @@ func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeApi.PodS
 	}
 	hostNetwork := sharesHostNetwork(r)
 	labels, annotations := extractLabels(r.Config.Labels)
-	return &runtimeApi.PodSandboxStatus{
-		Id:          &r.ID,
-		State:       &state,
-		CreatedAt:   &ct,
+	return &runtimeapi.PodSandboxStatus{
+		Id:          r.ID,
+		State:       state,
+		CreatedAt:   ct,
 		Metadata:    metadata,
 		Labels:      labels,
 		Annotations: annotations,
 		Network:     network,
-		Linux: &runtimeApi.LinuxPodSandboxStatus{
-			Namespaces: &runtimeApi.Namespace{
-				Network: &netNS,
-				Options: &runtimeApi.NamespaceOption{
-					HostNetwork: &hostNetwork,
+		Linux: &runtimeapi.LinuxPodSandboxStatus{
+			Namespaces: &runtimeapi.Namespace{
+				Network: netNS,
+				Options: &runtimeapi.NamespaceOption{
+					HostNetwork: hostNetwork,
 				},
 			},
 		},
@@ -229,7 +234,7 @@ func (ds *dockerService) PodSandboxStatus(podSandboxID string) (*runtimeApi.PodS
 }
 
 // ListPodSandbox returns a list of Sandbox.
-func (ds *dockerService) ListPodSandbox(filter *runtimeApi.PodSandboxFilter) ([]*runtimeApi.PodSandbox, error) {
+func (ds *dockerService) ListPodSandbox(filter *runtimeapi.PodSandboxFilter) ([]*runtimeapi.PodSandbox, error) {
 	// By default, list all containers whether they are running or not.
 	opts := dockertypes.ContainerListOptions{All: true}
 	filterOutReadySandboxes := false
@@ -240,15 +245,15 @@ func (ds *dockerService) ListPodSandbox(filter *runtimeApi.PodSandboxFilter) ([]
 	f.AddLabel(containerTypeLabelKey, containerTypeLabelSandbox)
 
 	if filter != nil {
-		if filter.Id != nil {
-			f.Add("id", filter.GetId())
+		if filter.Id != "" {
+			f.Add("id", filter.Id)
 		}
 		if filter.State != nil {
-			if filter.GetState() == runtimeApi.PodSandboxState_SANDBOX_READY {
+			if filter.GetState().State == runtimeapi.PodSandboxState_SANDBOX_READY {
 				// Only list running containers.
 				opts.All = false
 			} else {
-				// runtimeApi.PodSandboxState_SANDBOX_NOTREADY can mean the
+				// runtimeapi.PodSandboxState_SANDBOX_NOTREADY can mean the
 				// container is in any of the non-running state (e.g., created,
 				// exited). We can't tell docker to filter out running
 				// containers directly, so we'll need to filter them out
@@ -269,7 +274,7 @@ func (ds *dockerService) ListPodSandbox(filter *runtimeApi.PodSandboxFilter) ([]
 	}
 
 	// Convert docker containers to runtime api sandboxes.
-	result := []*runtimeApi.PodSandbox{}
+	result := []*runtimeapi.PodSandbox{}
 	for i := range containers {
 		c := containers[i]
 		converted, err := toRuntimeAPISandbox(&c)
@@ -277,7 +282,7 @@ func (ds *dockerService) ListPodSandbox(filter *runtimeApi.PodSandboxFilter) ([]
 			glog.V(4).Infof("Unable to convert docker to runtime API sandbox: %v", err)
 			continue
 		}
-		if filterOutReadySandboxes && converted.GetState() == runtimeApi.PodSandboxState_SANDBOX_READY {
+		if filterOutReadySandboxes && converted.State == runtimeapi.PodSandboxState_SANDBOX_READY {
 			continue
 		}
 
@@ -286,12 +291,27 @@ func (ds *dockerService) ListPodSandbox(filter *runtimeApi.PodSandboxFilter) ([]
 	return result, nil
 }
 
-func (ds *dockerService) makeSandboxDockerConfig(c *runtimeApi.PodSandboxConfig, image string) (*dockertypes.ContainerCreateConfig, error) {
+// applySandboxLinuxOptions applies LinuxPodSandboxConfig to dockercontainer.HostConfig and dockercontainer.ContainerCreateConfig.
+func (ds *dockerService) applySandboxLinuxOptions(hc *dockercontainer.HostConfig, lc *runtimeapi.LinuxPodSandboxConfig, createConfig *dockertypes.ContainerCreateConfig, image string) error {
+	// Apply Cgroup options.
+	cgroupParent, err := ds.GenerateExpectedCgroupParent(lc.CgroupParent)
+	if err != nil {
+		return err
+	}
+	hc.CgroupParent = cgroupParent
+	// Apply security context.
+	applySandboxSecurityContext(lc, createConfig.Config, hc, ds.networkPlugin)
+
+	return nil
+}
+
+// makeSandboxDockerConfig returns dockertypes.ContainerCreateConfig based on runtimeapi.PodSandboxConfig.
+func (ds *dockerService) makeSandboxDockerConfig(c *runtimeapi.PodSandboxConfig, image string) (*dockertypes.ContainerCreateConfig, error) {
 	// Merge annotations and labels because docker supports only labels.
 	labels := makeLabels(c.GetLabels(), c.GetAnnotations())
 	// Apply a label to distinguish sandboxes from regular containers.
 	labels[containerTypeLabelKey] = containerTypeLabelSandbox
-	// Apply a container name label for infra container. This is used in summary api.
+	// Apply a container name label for infra container. This is used in summary v1.
 	// TODO(random-liu): Deprecate this label once container metrics is directly got from CRI.
 	labels[types.KubernetesContainerNameLabel] = sandboxContainerName
 
@@ -299,7 +319,7 @@ func (ds *dockerService) makeSandboxDockerConfig(c *runtimeApi.PodSandboxConfig,
 	createConfig := &dockertypes.ContainerCreateConfig{
 		Name: makeSandboxName(c),
 		Config: &dockercontainer.Config{
-			Hostname: c.GetHostname(),
+			Hostname: c.Hostname,
 			// TODO: Handle environment variables.
 			Image:  image,
 			Labels: labels,
@@ -310,35 +330,17 @@ func (ds *dockerService) makeSandboxDockerConfig(c *runtimeApi.PodSandboxConfig,
 	// Set sysctls if requested
 	sysctls, err := getSysctlsFromAnnotations(c.Annotations)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get sysctls from annotations %v for sandbox %q: %v", c.Annotations, c.Metadata.GetName(), err)
+		return nil, fmt.Errorf("failed to get sysctls from annotations %v for sandbox %q: %v", c.Annotations, c.Metadata.Name, err)
 	}
 	hc.Sysctls = sysctls
 
 	// Apply linux-specific options.
 	if lc := c.GetLinux(); lc != nil {
-		// Apply Cgroup options.
-		// TODO: Check if this works with per-pod cgroups.
-		hc.CgroupParent = lc.GetCgroupParent()
-
-		// Apply namespace options.
-		hc.NetworkMode, hc.UTSMode, hc.PidMode = "", "", ""
-		nsOpts := lc.GetNamespaceOptions()
-		if nsOpts != nil {
-			if nsOpts.GetHostNetwork() {
-				hc.NetworkMode = namespaceModeHost
-			} else {
-				// Assume kubelet uses either the cni or the kubenet plugin.
-				// TODO: support docker networking.
-				hc.NetworkMode = "none"
-			}
-			if nsOpts.GetHostIpc() {
-				hc.IpcMode = namespaceModeHost
-			}
-			if nsOpts.GetHostPid() {
-				hc.PidMode = namespaceModeHost
-			}
+		if err := ds.applySandboxLinuxOptions(hc, lc, createConfig, image); err != nil {
+			return nil, err
 		}
 	}
+
 	// Set port mappings.
 	exposedPorts, portBindings := makePortsAndBindings(c.GetPortMappings())
 	createConfig.Config.ExposedPorts = exposedPorts
@@ -346,19 +348,20 @@ func (ds *dockerService) makeSandboxDockerConfig(c *runtimeApi.PodSandboxConfig,
 
 	// Set DNS options.
 	if dnsConfig := c.GetDnsConfig(); dnsConfig != nil {
-		hc.DNS = dnsConfig.GetServers()
-		hc.DNSSearch = dnsConfig.GetSearches()
-		hc.DNSOptions = dnsConfig.GetOptions()
+		hc.DNS = dnsConfig.Servers
+		hc.DNSSearch = dnsConfig.Searches
+		hc.DNSOptions = dnsConfig.Options
 	}
 
 	// Apply resource options.
 	setSandboxResources(hc)
 
 	// Set security options.
-	hc.SecurityOpt, err = getSandboxSecurityOpts(c, ds.seccompProfileRoot)
+	securityOpts, err := getSandboxSecurityOpts(c, ds.seccompProfileRoot)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate sandbox security options for sandbox %q: %v", c.Metadata.GetName(), err)
+		return nil, fmt.Errorf("failed to generate sandbox security options for sandbox %q: %v", c.Metadata.Name, err)
 	}
+	hc.SecurityOpt = append(hc.SecurityOpt, securityOpts...)
 	return createConfig, nil
 }
 
@@ -373,7 +376,7 @@ func sharesHostNetwork(container *dockertypes.ContainerJSON) bool {
 
 func setSandboxResources(hc *dockercontainer.HostConfig) {
 	hc.Resources = dockercontainer.Resources{
-		MemorySwap: -1, // Always disable memory swap.
+		MemorySwap: dockertools.DefaultMemorySwap(),
 		CPUShares:  defaultSandboxCPUshares,
 		// Use docker's default cpu quota/period.
 	}

@@ -17,14 +17,14 @@ limitations under the License.
 package v2alpha1
 
 import (
-	"k8s.io/client-go/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	RegisterDefaults(scheme)
 	return scheme.AddDefaultingFuncs(
 		SetDefaults_Job,
-		SetDefaults_ScheduledJob,
+		SetDefaults_CronJob,
 	)
 }
 
@@ -47,7 +47,7 @@ func SetDefaults_Job(obj *Job) {
 	}
 }
 
-func SetDefaults_ScheduledJob(obj *ScheduledJob) {
+func SetDefaults_CronJob(obj *CronJob) {
 	if obj.Spec.ConcurrencyPolicy == "" {
 		obj.Spec.ConcurrencyPolicy = AllowConcurrent
 	}
