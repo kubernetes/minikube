@@ -25,7 +25,6 @@ import (
 	"time"
 
 	units "github.com/docker/go-units"
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
@@ -73,7 +73,11 @@ assumes you already have Virtualbox installed.`,
 
 func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Starting local Kubernetes cluster...")
-	api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+	api, err := machine.NewAPIClient(clientType)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+		os.Exit(1)
+	}
 	defer api.Close()
 
 	diskSize := viper.GetString(humanReadableDiskSize)
@@ -108,7 +112,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 		return err
 	}
-	err := util.RetryAfter(5, start, 2*time.Second)
+	err = util.RetryAfter(5, start, 2*time.Second)
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)

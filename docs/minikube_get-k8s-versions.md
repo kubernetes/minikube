@@ -20,6 +20,7 @@ minikube get-k8s-versions
       --logtostderr                      log to standard error instead of files
       --show-libmachine-logs             Deprecated: To enable libmachine logs, set --v=3 or higher
       --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+      --use-vendored-driver              Use the vendored in drivers instead of RPC
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```

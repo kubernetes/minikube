@@ -21,11 +21,10 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 var (
@@ -56,7 +55,12 @@ var addonsOpenCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		addonName := args[0]
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		//TODO(r2d4): config should not reference API, pull this out
+		api, err := machine.NewAPIClient(GetClientType())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
@@ -67,7 +71,7 @@ To see the list of available addons run:
 minikube addons list`, addonName))
 			os.Exit(1)
 		}
-		ok, err := addon.IsEnabled()
+		ok, err = addon.IsEnabled()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)

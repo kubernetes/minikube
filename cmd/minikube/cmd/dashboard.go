@@ -22,12 +22,11 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 
 	commonutil "k8s.io/minikube/pkg/util"
 )
@@ -42,14 +41,18 @@ var dashboardCmd = &cobra.Command{
 	Short: "Opens/displays the kubernetes dashboard URL for your local cluster",
 	Long:  `Opens/displays the kubernetes dashboard URL for your local cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api, err := machine.NewAPIClient(clientType)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 		namespace := "kube-system"
 		service := "kubernetes-dashboard"
 
-		if err := commonutil.RetryAfter(20, func() error { return cluster.CheckService(namespace, service) }, 6*time.Second); err != nil {
+		if err = commonutil.RetryAfter(20, func() error { return cluster.CheckService(namespace, service) }, 6*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", service, err)
 			os.Exit(1)
 		}
