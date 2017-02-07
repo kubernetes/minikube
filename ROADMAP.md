@@ -20,7 +20,7 @@ Here are some specific features that align with our goal:
 This section contains the overall priorities of the minikube project, in rough order.
 
  * Setting up a well-tested, secure and complete Kubernetes cluster locally.
- * Mac OSX and Linux support.
+ * Cross Platform support (macOS, Linux, Windows)
  * Supporting existing Kubernetes features:
     * Load Balancer support.
     * Persistent disks.
@@ -28,30 +28,21 @@ This section contains the overall priorities of the minikube project, in rough o
  * Development-focused features like:
    * Mounting host directories.
    * VPN/proxy networking.
- * Windows support.
  * Native hypervisor integration.
  * Support for alternative Kubernetes runtimes, like rkt.
  * Removing the VirtualBox dependency and replacing it with Hypervisor.framework/Hyper-V.
- * Support for multiple nodes.
 
 ## Timelines
-These are rough dates, on a 3-month schedule. Minikube will release much faster than this, so this section is fairly speculative.
+Minikube will release much faster than this, so this section is fairly speculative.
 This section is subject to change based on feedback and staffing.
 
-### June 2016
- * Fully-tested, complete release of minikube that supports:
-   * Mac OSX and Linux.
-   * Kubernetes 1.3.
-   * Docker 1.11.x.
-   * VirtualBox.
+### Q1 2017
 
-### September 2016
- * Support for Windows.
- * Kubernetes 1.4, Docker 1.x.y.
- * Host Directory mounting.
- * Improved networking (Ingress, proxies, VPN...).
-
-### December 2016
- * Native hypervisor integration (Hypervisor.framework for OSX, Hyper-V for Windows).
- * Support Rkt.
- * Remove hypervisor on Linux systems.
+* Release Kubernetes 1.6.0 alpha and beta releases packaged with minikube
+* Release Kubernetes 1.6.0 packaged with minikube within two days of GA upstream build
+* Run local e2e Kubernetes tests with minikube
+* Minikube no longer depends on libmachine
+* Minikube no longer depends on existing KVM driver
+* Native drivers are made default and packaged with minikube
+* Improve minikube start time by 30%
+* Add a no-vm driver for linux CI environments
