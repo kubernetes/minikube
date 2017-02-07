@@ -20,27 +20,13 @@ import (
 	"fmt"
 	"path/filepath"
 
+	kvm "github.com/dhiltgen/docker-machine-kvm"
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-type kvmDriver struct {
-	*drivers.BaseDriver
-
-	Memory         int
-	DiskSize       int
-	CPU            int
-	Network        string
-	PrivateNetwork string
-	ISO            string
-	Boot2DockerURL string
-	DiskPath       string
-	CacheMode      string
-	IOMode         string
-}
-
-func createKVMHost(config MachineConfig) *kvmDriver {
-	return &kvmDriver{
+func createKVMHost(config MachineConfig) *kvm.Driver {
+	return &kvm.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: constants.MachineName,
 			StorePath:   constants.Minipath,

@@ -21,12 +21,11 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/1.5/pkg/api/v1"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -59,7 +58,11 @@ var serviceCmd = &cobra.Command{
 		}
 
 		service := args[0]
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api, err := machine.NewAPIClient(clientType)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)

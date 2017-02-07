@@ -18,12 +18,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // deleteCmd represents the delete command
@@ -34,10 +34,14 @@ var deleteCmd = &cobra.Command{
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Deleting local Kubernetes cluster...")
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api, err := machine.NewAPIClient(clientType)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 
-		if err := cluster.DeleteHost(api); err != nil {
+		if err = cluster.DeleteHost(api); err != nil {
 			fmt.Println("Errors occurred deleting machine: ", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}

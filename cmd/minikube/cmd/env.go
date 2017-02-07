@@ -33,6 +33,7 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 const (
@@ -156,7 +157,7 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	return shellCfg, nil
 }
 
-func shellCfgUnset(api libmachine.API) (*ShellConfig, error) {
+func shellCfgUnset() (*ShellConfig, error) {
 
 	userShell, err := getShell(forceShell)
 	if err != nil {
@@ -229,16 +230,17 @@ var dockerEnvCmd = &cobra.Command{
 	Long:  `sets up docker env variables; similar to '$(docker-machine env)'`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		api := libmachine.NewClient(constants.Minipath, constants.MakeMiniPath("certs"))
+		api, err := machine.NewAPIClient(clientType)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			os.Exit(1)
+		}
 		defer api.Close()
 
-		var (
-			err      error
-			shellCfg *ShellConfig
-		)
+		var shellCfg *ShellConfig
 
 		if unset {
-			shellCfg, err = shellCfgUnset(api)
+			shellCfg, err = shellCfgUnset()
 			if err != nil {
 				glog.Errorln("Error setting machine env variable(s):", err)
 				cmdUtil.MaybeReportErrorAndExit(err)

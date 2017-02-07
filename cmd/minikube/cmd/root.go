@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/notify"
 )
 
@@ -49,11 +50,13 @@ var dirs = [...]string{
 
 const (
 	showLibmachineLogs = "show-libmachine-logs"
+	useVendoredDriver  = "use-vendored-driver"
 )
 
 var (
 	enableUpdateNotification = true
 	enableKubectlDownloadMsg = true
+	clientType               machine.ClientType
 )
 
 var viperWhiteList = []string{
@@ -80,6 +83,9 @@ var RootCmd = &cobra.Command{
 Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine logs
 `)
 		}
+
+		//TODO(r2d4): config should not reference API
+		clientType = configCmd.GetClientType()
 
 		// Log level 3 or greater enables libmachine logs
 		if !glog.V(3) {
@@ -128,6 +134,7 @@ func setFlagsUsingViper() {
 
 func init() {
 	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Deprecated: To enable libmachine logs, set --v=3 or higher")
+	RootCmd.PersistentFlags().Bool(useVendoredDriver, false, "Use the vendored in drivers instead of RPC")
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
