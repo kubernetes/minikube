@@ -37,7 +37,7 @@ import (
 )
 
 var dirs = [...]string{
-	constants.Minipath,
+	constants.GetMinipath(),
 	constants.MakeMiniPath("certs"),
 	constants.MakeMiniPath("machines"),
 	constants.MakeMiniPath("cache"),

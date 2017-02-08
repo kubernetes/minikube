@@ -22,6 +22,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
@@ -33,8 +34,9 @@ func makeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	constants.Minipath = tempDir
-	return tempDir
+	tempDir = filepath.Join(tempDir, ".minikube")
+	os.Setenv(constants.MinikubeHome, tempDir)
+	return constants.GetMinipath()
 }
 
 func TestRunNotDriver(t *testing.T) {
