@@ -79,7 +79,7 @@ const (
 // Gets a new client depending on the clientType specified
 // defaults to the libmachine client
 func NewAPIClient(clientType ClientType) (libmachine.API, error) {
-	storePath := constants.Minipath
+	storePath := constants.GetMinipath()
 	certsDir := constants.MakeMiniPath("certs")
 	newClientFactory, ok := clientFactories[clientType]
 	if !ok {

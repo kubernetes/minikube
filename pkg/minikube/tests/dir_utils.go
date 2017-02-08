@@ -30,6 +30,7 @@ func MakeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	tempDir = filepath.Join(tempDir, ".minikube")
 	err = os.MkdirAll(filepath.Join(tempDir, "addons"), 0777)
 	if err != nil {
 		log.Fatal(err)
@@ -42,6 +43,6 @@ func MakeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	constants.Minipath = tempDir
-	return tempDir
+	os.Setenv(constants.MinikubeHome, tempDir)
+	return constants.GetMinipath()
 }
