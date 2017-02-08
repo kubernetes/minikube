@@ -1,0 +1,9 @@
+[Match]
+Name=eth1
+Virtualization=qemu
+
+[Network]
+DHCP=ipv4
+
+[DHCP]
+UseDNS=false
