@@ -20,6 +20,7 @@ VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2016.08
+REGISTRY?=gcr.io/k8s-minikube
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -44,6 +45,7 @@ BUILD_OS := $(shell uname -s)
 
 LOCALKUBE_VERSION := $(shell $(PYTHON) hack/get_k8s_version.py --k8s-version-only 2>&1)
 LOCALKUBE_BUCKET := gs://minikube/k8sReleases
+TAG ?= $(LOCALKUBE_VERSION)
 
 # Set the version information for the Kubernetes servers, and build localkube statically
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
@@ -172,3 +174,9 @@ release-localkube: out/localkube checksum
 update-releases: 
 	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
 
+out/localkube-image: out/localkube
+	# TODO(aprindle) make addons placed into container configurable
+	docker build -t $(REGISTRY)/localkube-image:$(TAG) -f deploy/docker/Dockerfile .
+	@echo ""
+	@echo "${REGISTRY}/localkube-image:$(TAG) succesfully built"
+	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instrucions on how to run image"
