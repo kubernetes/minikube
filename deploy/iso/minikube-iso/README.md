@@ -40,10 +40,10 @@ Either import your private key or generate a sign-only key using `gpg2 --gen-key
 ```
 $ git clone https://github.com/kubernetes/minikube
 $ cd minikube
-$ make minikube-iso
+$ make minikube_iso
 ```
 
-The bootable ISO image will be available in `out/buildroot/output/images/rootfs.iso9660`.
+The bootable ISO image will be available in `out/minikube.iso`.
 
 ### Testing local minikube-iso changes
 
