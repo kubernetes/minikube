@@ -23,7 +23,7 @@ import (
 )
 
 func createVMwareFusionHost(config MachineConfig) drivers.Driver {
-	d := vmwarefusion.NewDriver(constants.MachineName, constants.Minipath).(*vmwarefusion.Driver)
+	d := vmwarefusion.NewDriver(constants.MachineName, constants.GetMinipath()).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
@@ -56,7 +56,7 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 	return &xhyveDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: constants.MachineName,
-			StorePath:   constants.Minipath,
+			StorePath:   constants.GetMinipath(),
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
