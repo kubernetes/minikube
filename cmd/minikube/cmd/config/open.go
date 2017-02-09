@@ -88,13 +88,14 @@ minikube addons enable %s`, addonName, addonName))
 
 		serviceList, err := cluster.GetServiceListByLabel(namespace, key, addonName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting service with namespace: %s and labels %s:%s: %s", namespace, key, addonName, err)
+			fmt.Fprintf(os.Stderr, "Error getting service with namespace: %s and labels %s:%s: %s\n", namespace, key, addonName, err)
 			os.Exit(1)
 		}
 		if len(serviceList.Items) == 0 {
 			fmt.Fprintf(os.Stdout, `
 This addon does not have an endpoint defined for the 'addons open' command
-You can add one by annotating a service with the label %s:%s`, key, addonName)
+You can add one by annotating a service with the label %s:%s
+`, key, addonName)
 			os.Exit(0)
 		}
 		for i := range serviceList.Items {
