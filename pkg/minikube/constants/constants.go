@@ -18,6 +18,7 @@ package constants
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd"
@@ -32,8 +33,20 @@ const MachineName = "minikube"
 // APIServerPort is the port that the API server should listen on.
 const APIServerPort = 8443
 
+const MinikubeHome = "MINIKUBE_HOME"
+
 // Minipath is the path to the user's minikube dir
-var Minipath = filepath.Join(homedir.HomeDir(), ".minikube")
+func GetMinipath() string {
+	if os.Getenv(MinikubeHome) == "" {
+		return DefaultMinipath
+	}
+	if filepath.Base(os.Getenv(MinikubeHome)) == ".minikube" {
+		return os.Getenv(MinikubeHome)
+	}
+	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
+}
+
+var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 // KubeconfigPath is the path to the Kubernetes client config
 var KubeconfigPath = clientcmd.RecommendedHomeFile
@@ -49,7 +62,7 @@ const MinikubeEnvPrefix = "MINIKUBE"
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
-	args := []string{Minipath}
+	args := []string{GetMinipath()}
 	args = append(args, fileName...)
 	return filepath.Join(args...)
 }

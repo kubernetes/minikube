@@ -238,7 +238,7 @@ func localkubeURIWasSpecified(config KubernetesConfig) bool {
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(d drivers.Driver) error {
-	localPath := constants.Minipath
+	localPath := constants.GetMinipath()
 	ipStr, err := d.GetIP()
 	if err != nil {
 		return errors.Wrap(err, "Error getting ip from driver")
@@ -287,7 +287,7 @@ func engineOptions(config MachineConfig) *engine.Options {
 }
 
 func createVirtualboxHost(config MachineConfig) drivers.Driver {
-	d := virtualbox.NewDriver(constants.MachineName, constants.Minipath)
+	d := virtualbox.NewDriver(constants.MachineName, constants.GetMinipath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
@@ -328,8 +328,8 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		return nil, errors.Wrap(err, "Error creating new host")
 	}
 
-	h.HostOptions.AuthOptions.CertDir = constants.Minipath
-	h.HostOptions.AuthOptions.StorePath = constants.Minipath
+	h.HostOptions.AuthOptions.CertDir = constants.GetMinipath()
+	h.HostOptions.AuthOptions.StorePath = constants.GetMinipath()
 	h.HostOptions.EngineOptions = engineOptions(config)
 
 	if err := api.Create(h); err != nil {
