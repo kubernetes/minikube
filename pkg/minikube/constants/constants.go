@@ -89,7 +89,7 @@ const (
 	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
 )
 
-var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/minikube/iso/minikube-%s.iso", minikubeVersion.GetIsoVersion())
+var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
 var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
 var DefaultKubernetesVersion = version.Get().GitVersion
