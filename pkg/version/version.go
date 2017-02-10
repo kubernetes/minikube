@@ -30,12 +30,18 @@ var version = "v0.0.0-unset"
 
 var isoVersion = "v0.0.0-unset"
 
+var isoPath = "minikube/iso"
+
 func GetVersion() string {
 	return version
 }
 
 func GetIsoVersion() string {
 	return isoVersion
+}
+
+func GetIsoPath() string {
+	return isoPath
 }
 
 func GetSemverVersion() (semver.Version, error) {
