@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -45,12 +46,14 @@ func TestStartStop(t *testing.T) {
 		t.Fatalf("IP command returned an invalid address: %s", ip)
 	}
 
-	// TODO:r2d4 The KVM driver can't handle
-	// starting and stopping immediately
-	time.Sleep(30 * time.Second)
+	checkStop := func() error {
+		runner.RunCommand("stop", true)
+		return runner.CheckStatusNoFail("Stopped")
+	}
 
-	runner.RunCommand("stop", true)
-	runner.CheckStatus("Stopped")
+	if err := commonutil.RetryAfter(6, checkStop, 5*time.Second); err != nil {
+		t.Fatalf("timed out while checking stopped status: %s", err)
+	}
 
 	runner.Start()
 	runner.CheckStatus("Running")
