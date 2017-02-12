@@ -41,6 +41,9 @@ git status
 #Prepends the new version to the release.json file
 sed -i "0,/{/s/{/{\n      \"name\": \"${TAGNAME}\",\n      \"checksums\": {\n          \"darwin\": \"${DARWIN_SHA256}\",\n          \"linux\": \"${LINUX_SHA256}\",\n          \"windows\": \"${WINDOWS_SHA256}\"\n      }\n  },\n  {"/ deploy/minikube/releases.json
 
+# Update stable release
+echo "${TAGNAME}" > deploy/minikube/stable.txt
+
 git add -A
 git commit -m "Update releases.json to include ${TAGNAME}"
 git remote add minikube-bot git@github.com:minikube-bot/minikube.git
@@ -51,3 +54,7 @@ curl -X POST -u minikube-bot:${BOT_PASSWORD} -k   -d "{\"title\": \"update relea
 
 # Upload file to GCS so that minikube can see the new version
 gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
+
+# Upload stable releases file
+gsutil cp deploy/minikube/stable.txt gs://minikube/releases/stable.txt
+

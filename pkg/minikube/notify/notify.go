@@ -17,7 +17,6 @@ limitations under the License.
 package notify
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,7 +41,7 @@ var (
 )
 
 func MaybePrintUpdateTextFromGithub(output io.Writer) {
-	MaybePrintUpdateText(output, constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+	MaybePrintUpdateText(output, constants.GithubMinikubeStableReleaseURL, lastUpdateCheckFilePath)
 }
 
 func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
@@ -82,41 +81,17 @@ func shouldCheckURLVersion(filePath string) bool {
 	return true
 }
 
-type Release struct {
-	Name      string
-	Checksums map[string]string
-}
-
-type Releases []Release
-
-func getJson(url string, target *Releases) error {
-	r, err := http.Get(url)
-	if err != nil {
-		return errors.Wrap(err, "Error getting minikube version url via http")
-	}
-	defer r.Body.Close()
-
-	return json.NewDecoder(r.Body).Decode(target)
-}
-
 func getLatestVersionFromURL(url string) (semver.Version, error) {
-	r, err := GetAllVersionsFromURL(url)
+	r, err := http.Get(url)
 	if err != nil {
 		return semver.Version{}, err
 	}
-	return semver.Make(strings.TrimPrefix(r[0].Name, version.VersionPrefix))
-}
-
-func GetAllVersionsFromURL(url string) (Releases, error) {
-	var releases Releases
-	glog.Infof("Checking for updates...")
-	if err := getJson(url, &releases); err != nil {
-		return releases, errors.Wrap(err, "Error getting json from minikube version url")
+	defer r.Body.Close()
+	v, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return semver.Version{}, err
 	}
-	if len(releases) == 0 {
-		return releases, errors.Errorf("There were no json releases at the url specified: %s", url)
-	}
-	return releases, nil
+	return semver.Make(strings.TrimSpace(strings.TrimPrefix(string(v), version.VersionPrefix)))
 }
 
 func writeTimeToFile(path string, inputTime time.Time) error {
