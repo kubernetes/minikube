@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"k8s.io/kubernetes/pkg/api"
 	commonutil "k8s.io/minikube/pkg/util"
 
@@ -45,7 +47,7 @@ func testAddons(t *testing.T) {
 	checkAddon := func() error {
 		pods := api.PodList{}
 		if err := kubectlRunner.RunCommandParseOutput(addonManagerCmd, &pods); err != nil {
-			return err
+			return &commonutil.RetriableError{Err: errors.Wrap(err, "Error parsing kubectl output")}
 		}
 
 		for _, p := range pods.Items {
