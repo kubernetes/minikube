@@ -32,7 +32,7 @@ var driverMap = map[string]driverGetter{
 	"virtualbox": getVirtualboxDriver,
 }
 
-func getKVMDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
+func getKVMDriver(rawDriver []byte) (drivers.Driver, error) {
 	var driver drivers.Driver
 	driver = &kvm.Driver{}
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {

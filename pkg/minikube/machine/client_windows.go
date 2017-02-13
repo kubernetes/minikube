@@ -32,7 +32,7 @@ var driverMap = map[string]driverGetter{
 	"virtualbox": getVirtualboxDriver,
 }
 
-func getHyperVDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
+func getHyperVDriver(rawDriver []byte) (drivers.Driver, error) {
 	var driver drivers.Driver
 	driver = &hyperv.Driver{}
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
