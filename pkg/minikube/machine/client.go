@@ -43,7 +43,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type driverGetter func(string, []byte) (drivers.Driver, error)
+type driverGetter func([]byte) (drivers.Driver, error)
 
 type ClientType int
 type clientFactory interface {
@@ -94,7 +94,7 @@ func getDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
 	if !ok {
 		return nil, fmt.Errorf("Unknown driver %s for platform.", driverName)
 	}
-	driver, err := driverGetter(driverName, rawDriver)
+	driver, err := driverGetter(rawDriver)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error getting driver for %s", driverName)
 	}
@@ -102,7 +102,7 @@ func getDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
 	return driver, nil
 }
 
-func getVirtualboxDriver(_ string, rawDriver []byte) (drivers.Driver, error) {
+func getVirtualboxDriver(rawDriver []byte) (drivers.Driver, error) {
 	var driver drivers.Driver
 	driver = virtualbox.NewDriver("", "")
 	err := json.Unmarshal(rawDriver, driver)
