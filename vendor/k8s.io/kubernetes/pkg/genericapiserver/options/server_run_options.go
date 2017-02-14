@@ -241,7 +241,7 @@ func (s *ServerRunOptions) NewSelfClientConfig(token string) (*restclient.Config
 		clientConfig.CAFile = s.TLSCAFile
 		clientConfig.BearerToken = token
 	} else if s.InsecurePort > 0 {
-		clientConfig.Host = net.JoinHostPort(s.InsecureBindAddress.String(), strconv.Itoa(s.InsecurePort))
+		clientConfig.Host = "http://" + net.JoinHostPort(s.InsecureBindAddress.String(), strconv.Itoa(s.InsecurePort))
 	} else {
 		return nil, errors.New("Unable to set url for apiserver local client")
 	}

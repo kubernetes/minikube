@@ -23,3 +23,7 @@ import "github.com/docker/machine/libmachine/drivers"
 func createKVMHost(config MachineConfig) drivers.Driver {
 	panic("kvm not supported")
 }
+
+func createLocalHost(config MachineConfig) drivers.Driver {
+	panic("local not supported")
+}

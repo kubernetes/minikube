@@ -27,6 +27,10 @@
 set -e
 set +x
 
+# NOTE(dims): We should add "Linux-Local" to the list below after the CI system
+# supports password-less sudo as the local driver needs to ssh and run sudo to
+# install and start for example the localkube service.
+
 for job in "OSX-Virtualbox" "OSX-XHyve" "Linux-Virtualbox" "Linux-KVM" "Windows-HyperV"; do
   target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${job}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \

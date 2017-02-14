@@ -43,6 +43,11 @@ rm -rf $HOME/.minikube || true
 # See the default image
 ./out/minikube-${OS_ARCH} start -h | grep iso
 
+# Force use-vendored-driver for local driver job
+if [ "$JOB_NAME" = "Linux-Local" ]; then
+    ./out/minikube-${OS_ARCH} config set use-vendored-driver true
+fi
+
 # Allow this to fail, we'll switch on the return code below.
 set +e
 out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --cpus=4 --v=100 ${EXTRA_BUILD_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
