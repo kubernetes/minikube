@@ -636,18 +636,13 @@ func (d *Driver) getIPByMacFromSettings(mac string) (string, error) {
 		log.Warnf("Failed to decode dnsmasq lease status: %s", err)
 		return "", err
 	}
-	ipAddr := ""
 	for _, value := range s {
 		if strings.ToLower(value.Mac_address) == strings.ToLower(mac) {
-			// If there are multiple entries,
-			// the last one is the most current
-			ipAddr = value.Ip_address
+			log.Debugf("IP address: %s", value.Ip_address)
+			return value.Ip_address, nil
 		}
 	}
-	if ipAddr != "" {
-		log.Debugf("IP Address: %s", ipAddr)
-	}
-	return ipAddr, nil
+	return "", nil
 }
 
 func (d *Driver) GetIP() (string, error) {
