@@ -1432,6 +1432,10 @@
 			"Rev": "3433f3ea46d9f8019119e7dd41274e112a2359a9"
 		},
 		{
+			"ImportPath": "github.com/johanneswuerbach/nfsexports",
+			"Rev": "a9068f3f0daa39616953aec11c3eb1209ebc4086"
+		},
+		{
 			"ImportPath": "github.com/jonboulle/clockwork",
 			"Rev": "72f9bd7c4e0c2a40055ab3d0f09654f730cce982"
 		},
@@ -2035,6 +2039,29 @@
 			"Rev": "07dd2e8dfe18522e9c447ba95f2fe95262f63bb2"
 		},
 		{
+			"ImportPath": "github.com/zchee/docker-machine-driver-xhyve/b2d",
+			"Comment": "v0.3.1-1-g46a94c2",
+			"Rev": "46a94c2450c532fa766698ae8906cdc69933134a"
+		},
+		{
+			"ImportPath": "github.com/zchee/docker-machine-driver-xhyve/vmnet",
+			"Comment": "v0.3.1-1-g46a94c2",
+			"Rev": "46a94c2450c532fa766698ae8906cdc69933134a"
+		},
+		{
+			"ImportPath": "github.com/zchee/docker-machine-driver-xhyve/xhyve",
+			"Comment": "v0.3.1-1-g46a94c2",
+			"Rev": "46a94c2450c532fa766698ae8906cdc69933134a"
+		},
+		{
+			"ImportPath": "github.com/zchee/go-qcow2",
+			"Rev": "9a991fd172f0e8a2a3adfe529ff5e6b814e26b97"
+		},
+		{
+			"ImportPath": "github.com/zchee/go-qcow2/internal/mem",
+			"Rev": "9a991fd172f0e8a2a3adfe529ff5e6b814e26b97"
+		},
+		{
 			"ImportPath": "go4.org/errorutil",
 			"Rev": "03efcb870d84809319ea509714dd6d19a1498483"
 		},
@@ -2140,6 +2167,10 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/windows",
 			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
 		},
 		{
