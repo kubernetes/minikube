@@ -35,10 +35,10 @@ const (
 
 var (
 	// EtcdClientURLs have listeners created and handle etcd API traffic
-	KubeEtcdClientURLs = []string{"http://localhost:2379"}
+	KubeEtcdClientURLs = []string{"http://0.0.0.0:2379"}
 
 	// EtcdPeerURLs don't have listeners created for them, they are used to pass Etcd validation
-	KubeEtcdPeerURLs = []string{"http://localhost:2380"}
+	KubeEtcdPeerURLs = []string{"http://0.0.0.0:2380"}
 )
 
 // Etcd is a Server which manages an Etcd cluster
