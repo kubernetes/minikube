@@ -39,6 +39,8 @@ Here is a rough set of steps that usually works to add a new dependency.
 
   If it is a large dependency, please commit the vendor/ directory changes separately.
   This makes review easier in Github.
+  
+  NOTE: We have recently added a deprecation message regarding boot2docker.  Make sure that this deprecation message ends up in the vendored code at `/vendor/github.com/docker/machine/libmachine/provision/boot2docker.go`: [https://github.com/kubernetes/minikube/blob/master/vendor/github.com/docker/machine/libmachine/provision/boot2docker.go#L220](https://github.com/kubernetes/minikube/blob/master/vendor/github.com/docker/machine/libmachine/provision/boot2docker.go#L220)
 
   ```shell
   git add vendor/
