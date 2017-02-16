@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script can take the following env variables
+# ARGS: args to pass into the make rule
+# 	ISO_BUCKET = the bucket location to upload the ISO (e.g. minikube-builds/PR_NUMBER)
+# 	ISO_VERSION = the suffix for the iso (i.e. minikube-$(ISO_VERSION).iso)
 
 set -e
-ISO="out/buildroot/output/images/rootfs.iso9660"
-make minikube_iso
-openssl sha256 ${ISO} | awk '{print $2}' > "${ISO}.sha256"
-gsutil cp "${ISO}" "${DEST}"
-gsutil cp "${ISO}.sha256" "${DEST}.sha256"
+${ARGS} make release-iso
