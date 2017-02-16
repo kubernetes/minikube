@@ -1,47 +1,46 @@
-
 apiVersion: v1
 kind: ReplicationController
 metadata:
   name: registry-creds
   namespace: kube-system
   labels:
-    app: registry-creds
-    version: v1.5
-    kubernetes.io/cluster-service: "true"
-    kubernetes.io/minikube-addons: registry-creds
+    version: v1.6
 spec:
   replicas: 1
   selector:
-    app: registry-creds
-    version: v1.5
-    kubernetes.io/cluster-service: "true"
+    name: registry-creds
+    version: v1.6
   template:
     metadata:
       labels:
-        app: registry-creds
-        version: v1.5
-        kubernetes.io/cluster-service: "true"
+        name: registry-creds
+        version: v1.6
     spec:
       containers:
-      - image: upmcenterprises/registry-creds:1.5
+      - image: upmcenterprises/registry-creds:1.6
         name: registry-creds
         imagePullPolicy: Always
         env:
           - name: AWS_ACCESS_KEY_ID
             valueFrom:
               secretKeyRef:
-                name: registry-creds
+                name: registry-creds-ecr
                 key: AWS_ACCESS_KEY_ID
           - name: AWS_SECRET_ACCESS_KEY
             valueFrom:
               secretKeyRef:
-                name: registry-creds
+                name: registry-creds-ecr
                 key: AWS_SECRET_ACCESS_KEY
           - name: awsaccount
             valueFrom:
               secretKeyRef:
-                name: registry-creds
+                name: registry-creds-ecr
                 key: aws-account
+          - name: awsregion
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: aws-region
         volumeMounts:
         - name: gcr-creds
           mountPath: "/root/.config/gcloud"
@@ -49,4 +48,7 @@ spec:
       volumes:
       - name: gcr-creds
         secret:
-          secretName: gcr-secret
+          secretName: registry-creds-gcr
+          items:
+            - key: application_default_credentials.json
+              path: application_default_credentials.json

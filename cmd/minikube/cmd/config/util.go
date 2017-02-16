@@ -88,9 +88,65 @@ func GetClientType() machine.ClientType {
 }
 
 func EnableOrDisableAddon(name string, val string) error {
+
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
+	}
+
+	// allows for additional prompting of information when enabling addons
+	if enable {
+		switch name {
+		case "registry-creds":
+			posResponses := []string{"yes", "y"}
+			negResponses := []string{"no", "n"}
+
+			enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
+			if enableAWSECR {
+				awsAccessID := AskForStaticValue("-- Enter AWS Access Key ID: ")
+				awsAccessKey := AskForStaticValue("-- Enter AWS Secret Access Key: ")
+				awsRegion := AskForStaticValue("-- Enter AWS Region: ")
+				awsAccount := AskForStaticValue("-- Enter 12 digit AWS Account ID: ")
+
+				cluster.CreateSecret(
+					"kube-system",
+					"registry-creds-ecr",
+					map[string]string{
+						"AWS_ACCESS_KEY_ID":     awsAccessID,
+						"AWS_SECRET_ACCESS_KEY": awsAccessKey,
+						"aws-account":           awsAccount,
+						"awsregion":             awsRegion,
+					},
+					map[string]string{
+						"app":   "registry-creds",
+						"cloud": "ecr",
+						"kubernetes.io/minikube-addons": "registry-creds",
+					})
+			}
+
+			enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
+			if enableGCR {
+				fmt.Println("-- Enter applicatoin_default_credentials.json as base64 by running following command:")
+				gcrApplicationDefaultCredentials := AskForStaticValue("  base64 -w 0 $HOME/.config/gcloud/application_default_credentials.json: ")
+
+				cluster.CreateSecret(
+					"kube-system",
+					"registry-creds-gcr",
+					map[string]string{
+						"application_default_credentials.json": gcrApplicationDefaultCredentials,
+					},
+					map[string]string{
+						"app":   "registry-creds",
+						"cloud": "gcr",
+						"kubernetes.io/minikube-addons": "registry-creds",
+					})
+			}
+			break
+		}
+	} else {
+		// Cleanup existing secrets
+		cluster.DeleteSecret("kube-system", "registry-creds-ecr")
+		cluster.DeleteSecret("kube-system", "registry-creds-gcr")
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
