@@ -52,6 +52,7 @@ type LocalkubeServer struct {
 	APIServerInsecurePort    int
 	ShouldGenerateCerts      bool
 	ShowVersion              bool
+	ShowHostIP               bool
 	RuntimeConfig            config.ConfigurationMap
 	NodeIP                   net.IP
 	ContainerRuntime         string
