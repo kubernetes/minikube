@@ -38,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/persist"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
@@ -63,7 +64,9 @@ func (*localClientFactory) NewClient(storePath, certsDir string) libmachine.API 
 type rpcClientFactory struct{}
 
 func (*rpcClientFactory) NewClient(storePath, certsDir string) libmachine.API {
-	return libmachine.NewClient(storePath, certsDir)
+	c := libmachine.NewClient(storePath, certsDir)
+	c.SSHClientType = ssh.Native
+	return c
 }
 
 var clientFactories = map[ClientType]clientFactory{
@@ -173,6 +176,7 @@ func (api *LocalClient) Close() error { return nil }
 // for now, just defer to libmachine's implementation
 func (api *LocalClient) Create(h *host.Host) error {
 	c := libmachine.NewClient(api.storePath, api.certsDir)
+	c.SSHClientType = ssh.Native
 	return c.Create(h)
 }
 
