@@ -25,6 +25,17 @@ set -e
 
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
+# If there are ISO changes, build and upload the ISO
+# then set the default to the newly built ISO for testing
+if out="$(git diff origin/master --name-only | grep deploy/iso/minikube)" &> /dev/null; then
+	echo "ISO changes detected ... rebuilding ISO"
+	export ISO_BUCKET="minikube-builds/${ghprbPullId}"
+	export ISO_VERSION="testing"
+
+	make release-iso
+fi
+
+
 # Build all platforms (Windows, Linux, OSX)
 make cross
 
@@ -35,6 +46,9 @@ GOPATH=$(pwd)/_gopath GOOS=darwin GOARCH=amd64 go test -c k8s.io/minikube/test/i
 GOPATH=$(pwd)/_gopath GOOS=linux GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-linux-amd64
 GOPATH=$(pwd)/_gopath GOOS=windows GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-windows-amd64.exe
 cp -r test/integration/testdata out/
+
+# Don't upload the buildroot artifacts if they exist
+rm -r out/buildroot || true
 
 # Upload everything we built to Cloud Storage.
 gsutil -m cp -r out/* gs://minikube-builds/${ghprbPullId}/

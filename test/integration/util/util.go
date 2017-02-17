@@ -111,10 +111,17 @@ func (m *MinikubeRunner) GetStatus() string {
 }
 
 func (m *MinikubeRunner) CheckStatus(desired string) {
+	if err := m.CheckStatusNoFail(desired); err != nil {
+		m.T.Fatalf("%v", err)
+	}
+}
+
+func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
 	s := m.GetStatus()
 	if s != desired {
-		m.T.Fatalf("Machine is in the wrong state: %s, expected  %s", s, desired)
+		return fmt.Errorf("Machine is in the wrong state: %s, expected  %s", s, desired)
 	}
+	return nil
 }
 
 type KubectlRunner struct {

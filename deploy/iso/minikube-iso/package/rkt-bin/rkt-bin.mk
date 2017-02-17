@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-RKT_BIN_VERSION = 1.23.0
+RKT_BIN_VERSION = 1.24.0
 RKT_BIN_SITE = https://github.com/coreos/rkt/releases/download/v$(RKT_BIN_VERSION)
 RKT_BIN_SOURCE = rkt-v$(RKT_BIN_VERSION).tar.gz
 
@@ -21,7 +21,7 @@ define RKT_BIN_BUILD_CMDS
 	gpg2 --import $(BR2_DL_DIR)/app-signing-pubkey.gpg
 
 	gpg2 \
-		--trusted-key $(shell gpg2 --with-colons --keyid-format LONG -k security@coreos.com | egrep ^pub | cut -d ':' -f5) \
+		--trusted-key `gpg2 --with-colons --keyid-format long -k security@coreos.com | egrep ^pub | cut -d ':' -f5` \
 		--verify-files $(BR2_DL_DIR)/rkt-v$(RKT_BIN_VERSION).tar.gz.asc
 
 	mkdir -p $(TARGET_DIR)/var/lib/rkt

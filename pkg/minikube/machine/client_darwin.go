@@ -33,7 +33,7 @@ var driverMap = map[string]driverGetter{
 	"virtualbox":   getVirtualboxDriver,
 }
 
-func getVMWareFusionDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
+func getVMWareFusionDriver(rawDriver []byte) (drivers.Driver, error) {
 	var driver drivers.Driver
 	driver = &vmwarefusion.Driver{}
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
@@ -43,7 +43,7 @@ func getVMWareFusionDriver(driverName string, rawDriver []byte) (drivers.Driver,
 }
 
 // Xhyve driver not implemented yet for non-RPC access
-func getXhyveDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
+func getXhyveDriver(rawDriver []byte) (drivers.Driver, error) {
 	return nil, errors.New(`
 The Xhyve driver is not included in minikube yet.  Please follow the directions at
 https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#xhyve-driver
