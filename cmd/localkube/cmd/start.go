@@ -40,6 +40,12 @@ func StartLocalkube() {
 		os.Exit(0)
 	}
 
+	if Server.ShowHostIP {
+		hostIP, _ := Server.GetHostIP()
+		fmt.Println("localkube host ip: ", hostIP.String())
+		os.Exit(0)
+	}
+
 	// Get the etcd logger for the api repo
 	apiRepoLogger := capnslog.MustRepoLogger("github.com/coreos/etcd/etcdserver/api")
 	// Set the logging level to NOTICE as there is an INFO lvl log statement that runs every few seconds -> log spam
@@ -94,6 +100,10 @@ func SetupServer(s *localkube.LocalkubeServer) {
 		panic(err)
 	}
 	s.AddServer(etcd)
+
+	// setup access to etcd
+	netIP, _ := s.GetHostIP()
+	fmt.Printf("localkube host ip address: %s\n", netIP.String())
 
 	// setup apiserver
 	apiserver := s.NewAPIServer()
