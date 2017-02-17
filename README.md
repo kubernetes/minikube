@@ -120,6 +120,8 @@ $ minikube start \
 See [DRIVERS](./DRIVERS.md) for details on supported drivers and how to install
 plugins, if required.
 
+To start using the the driver, you'll need to configure minikube: `minikube config set vm-driver kvm`.
+
 ### Reusing the Docker daemon
 
 When using a single VM of kubernetes it's really handy to reuse the Docker daemon inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
