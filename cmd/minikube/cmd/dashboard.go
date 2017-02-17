@@ -27,6 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/service"
 
 	commonutil "k8s.io/minikube/pkg/util"
 )
@@ -50,14 +51,14 @@ var dashboardCmd = &cobra.Command{
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 		namespace := "kube-system"
-		service := "kubernetes-dashboard"
+		svc := "kubernetes-dashboard"
 
-		if err = commonutil.RetryAfter(20, func() error { return cluster.CheckService(namespace, service) }, 6*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", service, err)
+		if err = commonutil.RetryAfter(20, func() error { return service.CheckService(namespace, svc) }, 6*time.Second); err != nil {
+			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", svc, err)
 			os.Exit(1)
 		}
 
-		urls, err := cluster.GetServiceURLsForService(api, namespace, service, template.Must(template.New("dashboardServiceFormat").Parse(defaultServiceFormatTemplate)))
+		urls, err := service.GetServiceURLsForService(api, namespace, svc, template.Must(template.New("dashboardServiceFormat").Parse(defaultServiceFormatTemplate)))
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running.")

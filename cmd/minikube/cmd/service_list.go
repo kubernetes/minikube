@@ -25,8 +25,8 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/kubernetes/pkg/api/v1"
 
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/service"
 )
 
 var serviceListNamespace string
@@ -43,7 +43,7 @@ var serviceListCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		serviceURLs, err := cluster.GetServiceURLs(api, serviceListNamespace, serviceURLTemplate)
+		serviceURLs, err := service.GetServiceURLs(api, serviceListNamespace, serviceURLTemplate)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
