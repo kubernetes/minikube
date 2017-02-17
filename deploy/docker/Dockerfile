@@ -27,6 +27,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
     && DEBIAN_FRONTEND=noninteractive apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Copy over important files
-COPY localkube /
-COPY static-pods /etc/kubernetes/manifests
-COPY addons /etc/kubernetes/addons
+COPY out/localkube /
+COPY out/deploy/addons/addon-manager.yaml /etc/kubernetes/manifests/addon-manager.yaml
+COPY out/deploy/addons /etc/kubernetes/addons
