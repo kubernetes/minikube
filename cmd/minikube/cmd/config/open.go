@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/service"
 )
 
 var (
@@ -86,7 +87,7 @@ minikube addons enable %s`, addonName, addonName))
 		namespace := "kube-system"
 		key := "kubernetes.io/minikube-addons-endpoint"
 
-		serviceList, err := cluster.GetServiceListByLabel(namespace, key, addonName)
+		serviceList, err := service.GetServiceListByLabel(namespace, key, addonName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting service with namespace: %s and labels %s:%s: %s\n", namespace, key, addonName, err)
 			os.Exit(1)
@@ -99,8 +100,8 @@ You can add one by annotating a service with the label %s:%s
 			os.Exit(0)
 		}
 		for i := range serviceList.Items {
-			service := serviceList.Items[i].ObjectMeta.Name
-			cluster.WaitAndMaybeOpenService(api, namespace, service, addonsURLTemplate, addonsURLMode, https)
+			svc := serviceList.Items[i].ObjectMeta.Name
+			service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https)
 
 		}
 	},
