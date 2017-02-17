@@ -17,11 +17,9 @@ limitations under the License.
 package cluster
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -147,11 +145,11 @@ func GetHostStatus(api libmachine.API) (string, error) {
 
 // GetLocalkubeStatus gets the status of localkube from the host VM.
 func GetLocalkubeStatus(api libmachine.API) (string, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+	h, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return "", err
 	}
-	s, err := host.RunSSHCommand(localkubeStatusCommand)
+	s, err := h.RunSSHCommand(localkubeStatusCommand)
 	if err != nil {
 		return "", err
 	}
@@ -185,26 +183,27 @@ func StartCluster(h sshAble, kubernetesConfig KubernetesConfig) error {
 }
 
 func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
-	client, err := sshutil.NewSSHClient(d)
-	if err != nil {
-		return errors.Wrap(err, "Error creating new ssh client")
-	}
+	copyableFiles := []assets.CopyableFile{}
+	var localkubeFile assets.CopyableFile
+	var err error
 
-	// transfer localkube from cache/asset to vm
+	//add url/file/bundled localkube to file list
 	if localkubeURIWasSpecified(config) {
 		lCacher := localkubeCacher{config}
-		if err = lCacher.updateLocalkubeFromURI(client); err != nil {
+		localkubeFile, err = lCacher.fetchLocalkubeFromURI()
+		if err != nil {
 			return errors.Wrap(err, "Error updating localkube from uri")
 		}
+
 	} else {
-		if err = updateLocalkubeFromAsset(client); err != nil {
-			return errors.Wrap(err, "Error updating localkube from asset")
-		}
+		localkubeFile = assets.NewMemoryAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
 	}
-	fileAssets := []assets.CopyableFile{}
-	assets.AddMinikubeAddonsDirToAssets(&fileAssets)
-	// merge files to copy
-	var copyableFiles []assets.CopyableFile
+	copyableFiles = append(copyableFiles, localkubeFile)
+
+	// add addons to file list
+	// custom addons
+	assets.AddMinikubeAddonsDirToAssets(&copyableFiles)
+	// bundled addons
 	for _, addonBundle := range assets.Addons {
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
 			for _, addon := range addonBundle.Assets {
@@ -214,10 +213,15 @@ func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
 			return err
 		}
 	}
-	copyableFiles = append(copyableFiles, fileAssets...)
-	// transfer files to vm
-	for _, copyableFile := range copyableFiles {
-		if err := sshutil.TransferFile(copyableFile, client); err != nil {
+
+	// transfer files to vm via SSH
+	client, err := sshutil.NewSSHClient(d)
+	if err != nil {
+		return errors.Wrap(err, "Error creating new ssh client")
+	}
+
+	for _, f := range copyableFiles {
+		if err := sshutil.TransferFile(f, client); err != nil {
 			return err
 		}
 	}
@@ -247,23 +251,30 @@ func SetupCerts(d drivers.Driver) error {
 		return errors.Wrap(err, "Error generating certs")
 	}
 
+	copyableFiles := []assets.CopyableFile{}
+
+	for _, cert := range certs {
+		p := filepath.Join(localPath, cert)
+		perms := "0644"
+		if strings.HasSuffix(cert, ".key") {
+			perms = "0600"
+		}
+		certFile, err := assets.NewFileAsset(p, util.DefaultCertPath, cert, perms)
+		if err != nil {
+			return err
+		}
+		copyableFiles = append(copyableFiles, certFile)
+	}
+
+	// transfer files to vm via SSH
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return errors.Wrap(err, "Error creating new ssh client")
 	}
 
-	for _, cert := range certs {
-		p := filepath.Join(localPath, cert)
-		data, err := ioutil.ReadFile(p)
-		if err != nil {
-			return errors.Wrapf(err, "Error reading file: %s", p)
-		}
-		perms := "0644"
-		if strings.HasSuffix(cert, ".key") {
-			perms = "0600"
-		}
-		if err := sshutil.Transfer(bytes.NewReader(data), len(data), util.DefaultCertPath, cert, perms, client); err != nil {
-			return errors.Wrapf(err, "Error transferring data: %s", string(data))
+	for _, f := range copyableFiles {
+		if err := sshutil.TransferFile(f, client); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -361,11 +372,11 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 
 // GetHostLogs gets the localkube logs of the host VM.
 func GetHostLogs(api libmachine.API) (string, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+	h, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return "", errors.Wrap(err, "Error checking that api exists and loading it")
 	}
-	s, err := host.RunSSHCommand(logsCommand)
+	s, err := h.RunSSHCommand(logsCommand)
 	if err != nil {
 		return "", err
 	}
