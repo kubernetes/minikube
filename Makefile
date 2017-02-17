@@ -81,9 +81,6 @@ out/minikube-windows-amd64.exe: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.
 localkube-image: out/localkube
 	make -C deploy/docker VERSION=$(VERSION)
 
-iso:
-	cd deploy/iso/boot2docker && ./build.sh
-
 minikube_iso:
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
