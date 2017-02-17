@@ -104,6 +104,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		Downloader:          pkgutil.DefaultDownloader{},
 	}
 
+	fmt.Println("Starting VM...")
 	var host *host.Host
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)
@@ -131,21 +132,26 @@ func runStart(cmd *cobra.Command, args []string) {
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
 	}
+
+	fmt.Println("SSH-ing files into VM...")
 	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Println("Setting up certs...")
 	if err := cluster.SetupCerts(host.Driver); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Println("Starting cluster components...")
 	if err := cluster.StartCluster(host, kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Println("Connecting to cluster...")
 	kubeHost, err := host.Driver.GetURL()
 	if err != nil {
 		glog.Errorln("Error connecting to cluster: ", err)
@@ -153,6 +159,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
 	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(constants.APIServerPort), -1)
 
+	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
 	keepContext := viper.GetBool(keepContext)
 	name := constants.MinikubeContext

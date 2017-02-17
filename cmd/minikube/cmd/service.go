@@ -49,6 +49,8 @@ var serviceCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		serviceURLTemplate = t
+
+		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 || len(args) > 1 {

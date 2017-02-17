@@ -45,6 +45,8 @@ We publish CI builds of minikube, built at every Pull Request. Builds are availa
 - https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-linux-amd64
 - https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-windows-amd64.exe
 
+We also publish CI builds of minikube-iso, built at every Pull Request that touches deploy/iso/minikube-iso.  Builds are available at:
+- https://storage.googleapis.com/minikube-builds/PR_NUMBER/minikube-testing.iso
 
 ## Quickstart
 
@@ -120,7 +122,7 @@ plugins, if required.
 
 ### Reusing the Docker daemon
 
-When using a single VM of kubernetes its really handy to reuse the Docker daemon inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
+When using a single VM of kubernetes it's really handy to reuse the Docker daemon inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
 
 To be able to work with the docker daemon on your mac/linux host use the [docker-env command](./docs/minikube_docker-env.md) in your shell:
 
@@ -205,7 +207,7 @@ To change the `MaxPods` setting to 5 on the Kubelet, pass this flag: `--extra-co
 
 This feature also supports nested structs. To change the `LeaderElection.LeaderElect` setting to `true` on the scheduler, pass this flag: `--extra-config=scheduler.LeaderElection.LeaderElect=true`.
 
-To set the `AuthorizationMode` on the `apiserver` to `RBAC`, you can use: `--extra-config=apiserver.GenericServerRunOptions.AuthorizationMode=RBAC`. You should use `--extra-config=apiserver.GenericServerRunOptions.AuthorizationRBACSuperUser=minikube` as well in that case.
+To set the `AuthorizationMode` on the `apiserver` to `RBAC`, you can use: `--extra-config=apiserver.GenericServerRunOptions.AuthorizationMode=RBAC`. You should use `--extra-config=apiserver.GenericServerRunOptions.AuthorizationRBAC,SuperUser=minikube` as well in that case.
 
 To enable all alpha feature gates, you can use: `--feature-gates=AllAlpha=true`
 
@@ -264,6 +266,7 @@ However, Minikube is configured to persist files stored under the following host
 * `/data`
 * `/var/lib/localkube`
 * `/var/lib/docker`
+* `/tmp/hostpath_pv`
 
 Here is an example PersistentVolume config to persist data in the '/data' directory:
 
@@ -349,8 +352,38 @@ $ minikube start --docker-env HTTP_PROXY=http://$YOURPROXY:PORT \
                  --docker-env HTTPS_PROXY=https://$YOURPROXY:PORT
 ```
 
+## Minikube Environment Variables
+Minikube supports passing environment variables instead of flags for every value listed in `minikube config list`.  This is done by passing an environment variable with the prefix `MINIKUBE_`For example the `minikube start --iso-url="$ISO_URL"` flag can also be set by setting the `MINIKUBE_ISO_URL="$ISO_URL"` environment variable.
 
-## Known Issues
+Some features can only be accessed by environment variables, here is a list of these features:
+
+* **MINIKUBE_HOME** - (string) sets the path for the .minikube directory that minikube uses for state/configuration
+
+* **MINIKUBE_WANTUPDATENOTIFICATION** - (bool) sets whether the user wants an update notification for new minikube versions
+
+* **MINIKUBE_REMINDERWAITPERIODINHOURS** - (int) sets the number of hours to check for an update notification
+* **MINIKUBE_WANTREPORTERROR** - (bool) sets whether the user wants to send anonymous errors reports to help improve minikube
+
+* **MINIKUBE_WANTREPORTERRORPROMPT** - (bool) sets whether the user wants to be prompted on an error that they can report them to help improve minikube
+
+* **MINIKUBE_WANTKUBECTLDOWNLOADMSG** - (bool) sets whether minikube should tell a user that `kubectl` cannot be found on there path
+
+* **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube which can be analyzed via:
+
+```shell
+# set env var and then run minikube
+$ MINIKUBE_ENABLE_PROFILING=1 ./out/minikube start
+2017/01/09 13:18:00 profile: cpu profiling enabled, /tmp/profile933201292/cpu.pprof
+Starting local Kubernetes cluster...
+Kubectl is now configured to use the cluster.
+2017/01/09 13:19:06 profile: cpu profiling disabled, /tmp/profile933201292/cpu.pprof
+
+# Then you can examine the profile with:
+$ go tool pprof  /tmp/profile933201292/cpu.pprof
+```
+
+
+## KNOWN Issues
 * Features that require a Cloud Provider will not work in Minikube. These include:
   * LoadBalancers
 * Features that require multiple nodes. These include:
