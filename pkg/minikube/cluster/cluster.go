@@ -230,7 +230,7 @@ func localkubeURIWasSpecified(config KubernetesConfig) bool {
 }
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(d drivers.Driver) error {
+func SetupCerts(d drivers.Driver, apiServerName string) error {
 	localPath := constants.GetMinipath()
 	ipStr, err := d.GetIP()
 	if err != nil {
@@ -243,7 +243,7 @@ func SetupCerts(d drivers.Driver) error {
 	caKey := filepath.Join(localPath, "ca.key")
 	publicPath := filepath.Join(localPath, "apiserver.crt")
 	privatePath := filepath.Join(localPath, "apiserver.key")
-	if err := GenerateCerts(caCert, caKey, publicPath, privatePath, ip); err != nil {
+	if err := GenerateCerts(caCert, caKey, publicPath, privatePath, ip, apiServerName); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
 
