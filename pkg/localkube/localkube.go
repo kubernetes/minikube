@@ -50,6 +50,7 @@ type LocalkubeServer struct {
 	APIServerPort            int
 	APIServerInsecureAddress net.IP
 	APIServerInsecurePort    int
+	APIServerName            string
 	ShouldGenerateCerts      bool
 	ShowVersion              bool
 	ShowHostIP               bool
@@ -200,7 +201,7 @@ func (lk LocalkubeServer) GenerateCerts() error {
 		fmt.Println("Using these existing CA certs: ", lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath())
 	} else {
 		fmt.Println("Creating CA cert")
-		if err := util.GenerateCACert(lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath()); err != nil {
+		if err := util.GenerateCACert(lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath(), lk.APIServerName); err != nil {
 			fmt.Println("Failed to create CA certs: ", err)
 			return err
 		}

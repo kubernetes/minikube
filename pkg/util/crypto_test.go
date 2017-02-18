@@ -23,6 +23,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestGenerateCACert(t *testing.T) {
@@ -34,7 +36,7 @@ func TestGenerateCACert(t *testing.T) {
 
 	certPath := filepath.Join(tmpDir, "cert")
 	keyPath := filepath.Join(tmpDir, "key")
-	if err := GenerateCACert(certPath, keyPath); err != nil {
+	if err := GenerateCACert(certPath, keyPath, constants.APIServerName); err != nil {
 		t.Fatalf("GenerateCACert() error = %v", err)
 	}
 

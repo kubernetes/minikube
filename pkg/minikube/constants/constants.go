@@ -31,7 +31,10 @@ import (
 const MachineName = "minikube"
 
 // APIServerPort is the port that the API server should listen on.
-const APIServerPort = 8443
+const (
+	APIServerPort = 8443
+	APIServerName = "minikubeCA"
+)
 
 const MinikubeHome = "MINIKUBE_HOME"
 
