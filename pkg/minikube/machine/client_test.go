@@ -25,9 +25,178 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/docker/machine/drivers/virtualbox"
+	"github.com/docker/machine/libmachine/drivers"
+
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
+
+var expectedDrivers = map[string]drivers.Driver{
+	vboxConfig: virtualbox.NewDriver("", ""),
+}
+
+const vboxConfig = `
+{
+        "IPAddress": "192.168.99.101",
+        "MachineName": "minikube",
+        "SSHUser": "docker",
+        "SSHPort": 33627,
+        "SSHKeyPath": "/home/sundarp/.minikube/machines/minikube/id_rsa",
+        "StorePath": "/home/sundarp/.minikube",
+        "SwarmMaster": false,
+        "SwarmHost": "",
+        "SwarmDiscovery": "",
+        "VBoxManager": {},
+        "HostInterfaces": {},
+        "CPU": 4,
+        "Memory": 16384,
+        "DiskSize": 20000,
+        "NatNicType": "82540EM",
+        "Boot2DockerURL": "file:///home/sundarp/.minikube/cache/iso/minikube-v1.0.6.iso",
+        "Boot2DockerImportVM": "",
+        "HostDNSResolver": false,
+        "HostOnlyCIDR": "192.168.99.1/24",
+        "HostOnlyNicType": "82540EM",
+        "HostOnlyPromiscMode": "deny",
+        "UIType": "headless",
+        "HostOnlyNoDHCP": false,
+        "NoShare": false,
+        "DNSProxy": true,
+        "NoVTXCheck": false
+}
+`
+
+func TestGetDriver(t *testing.T) {
+	var tests = []struct {
+		description string
+		driver      string
+		rawDriver   []byte
+		expected    drivers.Driver
+		err         bool
+	}{
+		{
+			description: "vbox correct",
+			driver:      "virtualbox",
+			rawDriver:   []byte(vboxConfig),
+			expected:    virtualbox.NewDriver("", ""),
+		},
+		{
+			description: "unknown driver",
+			driver:      "unknown",
+			rawDriver:   []byte("?"),
+			expected:    nil,
+			err:         true,
+		},
+		{
+			description: "vbox bad",
+			driver:      "virtualbox",
+			rawDriver:   []byte("?"),
+			expected:    nil,
+			err:         true,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			driver, err := getDriver(test.driver, test.rawDriver)
+			if err != nil && !test.err {
+				t.Errorf("Unexpected error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("No error returned, but expected err")
+			}
+			if driver != nil && test.expected.DriverName() != driver.DriverName() {
+				t.Errorf("Driver names did not match, actual: %s, expected: %s", driver.DriverName(), test.expected.DriverName())
+			}
+		})
+	}
+}
+
+func TestLocalClientNewHost(t *testing.T) {
+	f := clientFactories[ClientTypeLocal]
+	c := f.NewClient("", "")
+
+	var tests = []struct {
+		description string
+		driver      string
+		rawDriver   []byte
+		err         bool
+	}{
+		{
+			description: "host vbox correct",
+			driver:      "virtualbox",
+			rawDriver:   []byte(vboxConfig),
+		},
+		{
+			description: "host vbox incorrect",
+			driver:      "virtualbox",
+			rawDriver:   []byte("?"),
+			err:         true,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			host, err := c.NewHost(test.driver, test.rawDriver)
+			// A few sanity checks that we can do on the host
+			if host != nil {
+				if host.DriverName != test.driver {
+					t.Errorf("Host driver name is not correct.  Expected: %s, got: %s", test.driver, host.DriverName)
+				}
+				if host.Name != host.Driver.GetMachineName() {
+					t.Errorf("Host name is not correct.  Expected :%s, got: %s", host.Driver.GetMachineName(), host.Name)
+				}
+			}
+			if err != nil && !test.err {
+				t.Errorf("Unexpected error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("No error returned, but expected err")
+			}
+		})
+	}
+}
+
+func TestNewAPIClient(t *testing.T) {
+	var tests = []struct {
+		description string
+		clientType  ClientType
+		err         bool
+	}{
+		{
+			description: "Client type local",
+			clientType:  ClientTypeLocal,
+		},
+		{
+			description: "Client type RPC",
+			clientType:  ClientTypeRPC,
+		},
+		{
+			description: "Incorrect client type",
+			clientType:  -1,
+			err:         true,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			_, err := NewAPIClient(test.clientType)
+			if err != nil && !test.err {
+				t.Errorf("Unexpected error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("No error returned, but expected err")
+			}
+		})
+	}
+}
 
 func makeTempDir() string {
 	tempDir, err := ioutil.TempDir("", "minipath")
