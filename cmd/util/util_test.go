@@ -17,9 +17,11 @@ limitations under the License.
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/pkg/version"
@@ -79,5 +81,64 @@ func TestUploadError(t *testing.T) {
 	}))
 	if err := UploadError(jsonErrMsg, server.URL); err == nil {
 		t.Fatalf("UploadError should have errored from a 400 response")
+	}
+}
+
+func revertLookPath(l LookPath) {
+	lookPath = l
+}
+
+func fakeLookPathFound(string) (string, error) { return "/usr/local/bin/kubectl", nil }
+func fakeLookPathError(string) (string, error) { return "", errors.New("") }
+
+func TestKubectlDownloadMsg(t *testing.T) {
+	var tests = []struct {
+		description string
+		lp          LookPath
+		goos        string
+		matches     string
+		noOutput    bool
+	}{
+		{
+			description: "No output when binary is found windows",
+			goos:        "windows",
+			lp:          fakeLookPathFound,
+			noOutput:    true,
+		},
+		{
+			description: "No output when binary is found darwin",
+			goos:        "darwin",
+			lp:          fakeLookPathFound,
+			noOutput:    true,
+		},
+		{
+			description: "windows kubectl not found, has .exe in output",
+			goos:        "windows",
+			lp:          fakeLookPathError,
+			matches:     ".exe",
+		},
+		{
+			description: "linux kubectl not found",
+			goos:        "linux",
+			lp:          fakeLookPathError,
+			matches:     "WantKubectlDownloadMsg",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			defer revertLookPath(lookPath)
+			lookPath = test.lp
+			var b bytes.Buffer
+			MaybePrintKubectlDownloadMsg(test.goos, &b)
+			actual := b.String()
+			if actual != "" && test.noOutput {
+				t.Errorf("Got output, but kubectl binary was found")
+			}
+			if !strings.Contains(actual, test.matches) {
+				t.Errorf("Output did not contain substring expected got output %s")
+			}
+		})
 	}
 }
