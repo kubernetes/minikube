@@ -31,6 +31,7 @@ import (
 	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
 	kubeapi "k8s.io/client-go/1.5/pkg/api"
 	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/client-go/1.5/tools/clientcmd"
 
 	"text/template"
 
@@ -38,6 +39,33 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/util"
 )
+
+type K8sClient interface {
+	GetCoreClient() (corev1.CoreInterface, error)
+}
+
+type K8sClientGetter struct{}
+
+var k8s K8sClient
+
+func init() {
+	k8s = &K8sClientGetter{}
+}
+
+func (*K8sClientGetter) GetCoreClient() (corev1.CoreInterface, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+	}
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
+	}
+	return client.Core(), nil
+}
 
 type ServiceURL struct {
 	Namespace string
@@ -47,6 +75,8 @@ type ServiceURL struct {
 
 type ServiceURLs []ServiceURL
 
+// Returns all the node port URLs for every service in a particular namespace
+// Accepts a template for formating
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (ServiceURLs, error) {
 	host, err := cluster.CheckIfApiExistsAndLoad(api)
 	if err != nil {
@@ -58,27 +88,22 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 		return nil, err
 	}
 
-	client, err := cluster.GetKubernetesClient()
+	client, err := k8s.GetCoreClient()
 	if err != nil {
 		return nil, err
 	}
 
-	getter := client.Services(namespace)
+	serviceInterface := client.Services(namespace)
 
-	svcs, err := getter.List(kubeapi.ListOptions{})
+	svcs, err := serviceInterface.List(kubeapi.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
 	var serviceURLs []ServiceURL
-
 	for _, svc := range svcs.Items {
-		urls, err := getServiceURLsWithClient(client, ip, svc.Namespace, svc.Name, t)
+		urls, err := printURLsForService(client, ip, svc.Name, svc.Namespace, t)
 		if err != nil {
-			if _, ok := err.(MissingNodePortError); ok {
-				serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name})
-				continue
-			}
 			return nil, err
 		}
 		serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls})
@@ -87,123 +112,8 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 	return serviceURLs, nil
 }
 
-// CheckService waits for the specified service to be ready by returning an error until the service is up
-// The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
-func CheckService(namespace string, service string) error {
-	client, err := cluster.GetKubernetesClient()
-	if err != nil {
-		return &util.RetriableError{Err: err}
-	}
-	endpoints := client.Endpoints(namespace)
-	if err != nil {
-		return &util.RetriableError{Err: err}
-	}
-	endpoint, err := endpoints.Get(service)
-	if err != nil {
-		return &util.RetriableError{Err: err}
-	}
-	return checkEndpointReady(endpoint)
-}
-
-func checkEndpointReady(endpoint *v1.Endpoints) error {
-	const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
-	if len(endpoint.Subsets) == 0 {
-		fmt.Fprintf(os.Stderr, notReadyMsg)
-		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
-	}
-	for _, subset := range endpoint.Subsets {
-		if len(subset.Addresses) == 0 {
-			fmt.Fprintf(os.Stderr, notReadyMsg)
-			return &util.RetriableError{Err: errors.New("No endpoints for service are ready yet")}
-		}
-	}
-	return nil
-}
-
-func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool) {
-	if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
-		fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", service, err)
-		os.Exit(1)
-	}
-
-	urls, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag).")
-		os.Exit(1)
-	}
-	for _, url := range urls {
-		if https {
-			url = strings.Replace(url, "http", "https", 1)
-		}
-		if urlMode || !strings.HasPrefix(url, "http") {
-			fmt.Fprintln(os.Stdout, url)
-		} else {
-			fmt.Fprintln(os.Stdout, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
-			browser.OpenURL(url)
-		}
-	}
-}
-
-func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
-	client, err := cluster.GetKubernetesClient()
-	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
-	}
-	services := client.Services(namespace)
-	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
-	}
-	return getServiceListFromServicesByLabel(services, key, value)
-}
-
-func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
-	serviceList, err := services.List(kubeapi.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
-	}
-
-	return serviceList, nil
-}
-
-func getServicePortsFromServiceGetter(services serviceGetter, service string) ([]int32, error) {
-	svc, err := services.Get(service)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting %s service: %s", service, err)
-	}
-	var nodePorts []int32
-	if len(svc.Spec.Ports) > 0 {
-		for _, port := range svc.Spec.Ports {
-			if port.NodePort > 0 {
-				nodePorts = append(nodePorts, port.NodePort)
-			}
-		}
-	}
-	if len(nodePorts) == 0 {
-		return nil, MissingNodePortError{svc}
-	}
-	return nodePorts, nil
-}
-
-type serviceGetter interface {
-	Get(name string) (*v1.Service, error)
-	List(kubeapi.ListOptions) (*v1.ServiceList, error)
-}
-
-func getServicePorts(client *kubernetes.Clientset, namespace, service string) ([]int32, error) {
-	services := client.Services(namespace)
-	return getServicePortsFromServiceGetter(services, service)
-}
-
-type MissingNodePortError struct {
-	service *v1.Service
-}
-
-func (e MissingNodePortError) Error() string {
-	return fmt.Sprintf("Service %s/%s does not have a node port. To have one assigned automatically, the service type must be NodePort or LoadBalancer, but this service is of type %s.", e.service.Namespace, e.service.Name, e.service.Spec.Type)
-}
-
+// Returns all the node ports for a service in a namespace
+// with optional formatting
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
 	host, err := cluster.CheckIfApiExistsAndLoad(api)
 	if err != nil {
@@ -215,26 +125,34 @@ func GetServiceURLsForService(api libmachine.API, namespace, service string, t *
 		return nil, errors.Wrap(err, "Error getting ip from host")
 	}
 
-	client, err := cluster.GetKubernetesClient()
+	client, err := k8s.GetCoreClient()
 	if err != nil {
 		return nil, err
 	}
 
-	return getServiceURLsWithClient(client, ip, namespace, service, t)
+	return printURLsForService(client, ip, service, namespace, t)
 }
 
-func getServiceURLsWithClient(client *kubernetes.Clientset, ip, namespace, service string, t *template.Template) ([]string, error) {
+func printURLsForService(c corev1.CoreInterface, ip, service, namespace string, t *template.Template) ([]string, error) {
 	if t == nil {
 		return nil, errors.New("Error, attempted to generate service url with nil --format template")
 	}
 
-	ports, err := getServicePorts(client, namespace, service)
+	s := c.Services(namespace)
+	svc, err := s.Get(service)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "service '%s' could not be found running", service)
+	}
+	var nodePorts []int32
+	if len(svc.Spec.Ports) > 0 {
+		for _, port := range svc.Spec.Ports {
+			if port.NodePort > 0 {
+				nodePorts = append(nodePorts, port.NodePort)
+			}
+		}
 	}
 	urls := []string{}
-	for _, port := range ports {
-
+	for _, port := range nodePorts {
 		var doc bytes.Buffer
 		err = t.Execute(&doc, struct {
 			IP   string
@@ -257,14 +175,89 @@ func getServiceURLsWithClient(client *kubernetes.Clientset, ip, namespace, servi
 	return urls, nil
 }
 
-func ValidateService(namespace string, service string) error {
-	client, err := cluster.GetKubernetesClient()
+// CheckService waits for the specified service to be ready by returning an error until the service is up
+// The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
+func CheckService(namespace string, service string) error {
+	client, err := k8s.GetCoreClient()
 	if err != nil {
-		return errors.Wrap(err, "error validating input service name")
+		return errors.Wrap(err, "Error getting kubernetes client")
 	}
 	services := client.Services(namespace)
-	if _, err = services.Get(service); err != nil {
-		return errors.Wrapf(err, "service '%s' could not be found running in namespace '%s' within kubernetes", service, namespace)
+	err = validateService(services, service)
+	if err != nil {
+		return errors.Wrap(err, "Error validating service")
+	}
+	endpoints := client.Endpoints(namespace)
+	return checkEndpointReady(endpoints, service)
+}
+
+func validateService(s corev1.ServiceInterface, service string) error {
+	if _, err := s.Get(service); err != nil {
+		return errors.Wrapf(err, "Error getting service %s", service)
 	}
 	return nil
+}
+
+func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) error {
+	endpoint, err := endpoints.Get(service)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting endpoints for service %s", service)
+	}
+	const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
+	if len(endpoint.Subsets) == 0 {
+		fmt.Fprintf(os.Stderr, notReadyMsg)
+		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
+	}
+	for _, subset := range endpoint.Subsets {
+		if len(subset.Addresses) == 0 {
+			fmt.Fprintf(os.Stderr, notReadyMsg)
+			return &util.RetriableError{Err: errors.New("No endpoints for service are ready yet")}
+		}
+	}
+	return nil
+}
+
+func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool) error {
+	if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
+		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
+	}
+
+	urls, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
+	if err != nil {
+		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
+	}
+	for _, url := range urls {
+		if https {
+			url = strings.Replace(url, "http", "https", 1)
+		}
+		if urlMode || !strings.HasPrefix(url, "http") {
+			fmt.Fprintln(os.Stdout, url)
+		} else {
+			fmt.Fprintln(os.Stdout, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
+			browser.OpenURL(url)
+		}
+	}
+	return nil
+}
+
+func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
+	client, err := k8s.GetCoreClient()
+	if err != nil {
+		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+	}
+	services := client.Services(namespace)
+	if err != nil {
+		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+	}
+	return getServiceListFromServicesByLabel(services, key, value)
+}
+
+func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
+	serviceList, err := services.List(kubeapi.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+	}
+
+	return serviceList, nil
 }

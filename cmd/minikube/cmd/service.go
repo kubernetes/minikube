@@ -68,12 +68,11 @@ var serviceCmd = &cobra.Command{
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
-		if err := service.ValidateService(namespace, svc); err != nil {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("service '%s' could not be found running in namespace '%s' within kubernetes",
-				svc, namespace))
+		err = service.WaitAndMaybeOpenService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error opening service: %s\n", err)
 			os.Exit(1)
 		}
-		service.WaitAndMaybeOpenService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https)
 	},
 }
 
