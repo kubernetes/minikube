@@ -36,8 +36,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/1.5/kubernetes"
-	"k8s.io/client-go/1.5/tools/clientcmd"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -408,21 +406,6 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 		return errors.Wrap(err, "Error creating ssh client")
 	}
 	return client.Shell(strings.Join(args, " "))
-}
-
-func GetKubernetesClient() (*kubernetes.Clientset, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
-	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
-	}
-	return client, nil
 }
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
