@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine/log"
@@ -102,7 +103,7 @@ Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine l
 			notify.MaybePrintUpdateTextFromGithub(os.Stderr)
 		}
 		if enableKubectlDownloadMsg {
-			util.MaybePrintKubectlDownloadMsg()
+			util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
 		}
 	},
 }
