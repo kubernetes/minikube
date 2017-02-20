@@ -27,6 +27,107 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+var fakeKubeCfg = []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: 192.168.1.1:8080
+  name: la-croix
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+current-context: la-croix
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
+`)
+
+func TestSetupKubeConfig(t *testing.T) {
+	setupCfg := &KubeConfigSetup{
+		ClusterName:          "test",
+		ClusterServerAddress: "192.168.1.1:8080",
+		ClientCertificate:    "/home/apiserver.crt",
+		ClientKey:            "/home/apiserver.key",
+		CertificateAuthority: "/home/apiserver.crt",
+		KeepContext:          false,
+	}
+
+	var tests = []struct {
+		description string
+		cfg         *KubeConfigSetup
+		existingCfg []byte
+		expected    api.Config
+		err         bool
+	}{
+		{
+			description: "new kube config",
+			cfg:         setupCfg,
+		},
+		{
+			description: "add to kube config",
+			cfg:         setupCfg,
+			existingCfg: fakeKubeCfg,
+		},
+		{
+			description: "use config env var",
+			cfg:         setupCfg,
+		},
+		{
+			description: "keep context",
+			cfg: &KubeConfigSetup{
+				ClusterName:          "test",
+				ClusterServerAddress: "192.168.1.1:8080",
+				ClientCertificate:    "/home/apiserver.crt",
+				ClientKey:            "/home/apiserver.key",
+				CertificateAuthority: "/home/apiserver.crt",
+				KeepContext:          true,
+			},
+			existingCfg: fakeKubeCfg,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			tmpDir, err := ioutil.TempDir("", "")
+			if err != nil {
+				t.Fatalf("Error making temp directory %s", err)
+			}
+			test.cfg.KubeConfigFile = filepath.Join(tmpDir, "kubeconfig")
+			if len(test.existingCfg) != 0 {
+				ioutil.WriteFile(test.cfg.KubeConfigFile, test.existingCfg, 0600)
+			}
+			err = SetupKubeConfig(test.cfg)
+			if err != nil && !test.err {
+				t.Errorf("Got unexpected error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Expected error but got none")
+			}
+			config, err := ReadConfigOrNew(test.cfg.KubeConfigFile)
+			if err != nil {
+				t.Errorf("Error reading kubeconfig file: %s", err)
+			}
+			if test.cfg.KeepContext && config.CurrentContext == test.cfg.ClusterName {
+				t.Errorf("Context was changed even though KeepContext was true")
+			}
+			if !test.cfg.KeepContext && config.CurrentContext != test.cfg.ClusterName {
+				t.Errorf("Context was not switched")
+			}
+
+			os.RemoveAll(tmpDir)
+		})
+
+	}
+}
+
 func TestEmptyConfig(t *testing.T) {
 	tmp := tempFile(t, []byte{})
 	defer os.Remove(tmp)
