@@ -28,6 +28,73 @@ import (
 	"k8s.io/kubernetes/pkg/runtime"
 )
 
+type KubeConfigSetup struct {
+	// The name of the cluster for this context
+	ClusterName string
+
+	// ClusterServerAddress is the address of of the kubernetes cluster
+	ClusterServerAddress string
+
+	// ClientCertificate is the path to a client cert file for TLS.
+	ClientCertificate string
+
+	// CertificateAuthority is the path to a cert file for the certificate authority.
+	CertificateAuthority string
+
+	// ClientKey is the path to a client key file for TLS.
+	ClientKey string
+
+	// Should the current context be kept when setting up this one
+	KeepContext bool
+
+	// KubeConfigFile is the path where the kube config is stored
+	KubeConfigFile string
+}
+
+// SetupKubeconfig reads config from disk, adds the minikube settings, and writes it back.
+// activeContext is true when minikube is the CurrentContext
+// If no CurrentContext is set, the given name will be used.
+func SetupKubeConfig(cfg *KubeConfigSetup) error {
+	glog.Infoln("Using kubeconfig: ", cfg.KubeConfigFile)
+
+	// read existing config or create new if does not exist
+	config, err := ReadConfigOrNew(cfg.KubeConfigFile)
+	if err != nil {
+		return err
+	}
+
+	clusterName := cfg.ClusterName
+	cluster := api.NewCluster()
+	cluster.Server = cfg.ClusterServerAddress
+	cluster.CertificateAuthority = cfg.CertificateAuthority
+	config.Clusters[clusterName] = cluster
+
+	// user
+	userName := cfg.ClusterName
+	user := api.NewAuthInfo()
+	user.ClientCertificate = cfg.ClientCertificate
+	user.ClientKey = cfg.ClientKey
+	config.AuthInfos[userName] = user
+
+	// context
+	contextName := cfg.ClusterName
+	context := api.NewContext()
+	context.Cluster = cfg.ClusterName
+	context.AuthInfo = userName
+	config.Contexts[contextName] = context
+
+	// Only set current context to minikube if the user has not used the keepContext flag
+	if !cfg.KeepContext {
+		config.CurrentContext = contextName
+	}
+
+	// write back to disk
+	if err := WriteConfig(config, cfg.KubeConfigFile); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ReadConfigOrNew retrieves Kubernetes client configuration from a file.
 // If no files exists, an empty configuration is returned.
 func ReadConfigOrNew(filename string) (*api.Config, error) {
