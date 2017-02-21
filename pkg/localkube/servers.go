@@ -18,6 +18,9 @@ package localkube
 
 import (
 	"fmt"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Servers allows operations to be performed on many servers at once.
@@ -36,9 +39,13 @@ func (servers Servers) Get(name string) (Server, error) {
 
 // StartAll starts all services, starting from 0th item and ascending.
 func (servers Servers) StartAll() {
+
 	for _, server := range servers {
 		fmt.Printf("Starting %s...\n", server.Name())
 		server.Start()
+		fmt.Printf("Waiting for %s to be healthy...\n", server.Name())
+		wait.PollInfinite(time.Second, server.Ready)
+		fmt.Printf("%s is ready!\n", server.Name())
 	}
 }
 

@@ -22,7 +22,7 @@ import (
 )
 
 func (lk LocalkubeServer) NewControllerManagerServer() Server {
-	return NewSimpleServer("controller-manager", serverInterval, StartControllerManagerServer(lk))
+	return NewSimpleServer("controller-manager", serverInterval, StartControllerManagerServer(lk), noop)
 }
 
 func StartControllerManagerServer(lk LocalkubeServer) func() error {

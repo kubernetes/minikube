@@ -24,6 +24,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 	"github.com/golang/glog"
 	"k8s.io/apiserver/pkg/util/feature"
+
 	"k8s.io/kubernetes/pkg/capabilities"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/minikube/pkg/localkube"
@@ -108,7 +109,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 
 	// setup apiserver
 	apiserver := s.NewAPIServer()
-	apiserver.Start()
+	s.AddServer(apiserver)
 
 	// setup controller-manager
 	controllerManager := s.NewControllerManagerServer()

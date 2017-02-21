@@ -18,6 +18,7 @@ package localkube
 
 import (
 	kubeproxy "k8s.io/kubernetes/cmd/kube-proxy/app"
+
 	"k8s.io/kubernetes/cmd/kube-proxy/app/options"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
@@ -29,7 +30,7 @@ var (
 )
 
 func (lk LocalkubeServer) NewProxyServer() Server {
-	return NewSimpleServer("proxy", serverInterval, StartProxyServer(lk))
+	return NewSimpleServer("proxy", serverInterval, StartProxyServer(lk), noop)
 }
 
 func StartProxyServer(lk LocalkubeServer) func() error {
@@ -46,12 +47,12 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 
 	lk.SetExtraConfigForComponent("proxy", &config)
 
-	server, err := kubeproxy.NewProxyServerDefault(config)
-	if err != nil {
-		panic(err)
-	}
-
 	return func() error {
+		// Creating this config requires the API Server to be up, so do it in the start function itself.
+		server, err := kubeproxy.NewProxyServerDefault(config)
+		if err != nil {
+			panic(err)
+		}
 		return server.Run()
 	}
 }
