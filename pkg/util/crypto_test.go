@@ -20,6 +20,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
@@ -50,5 +51,95 @@ func TestGenerateCACert(t *testing.T) {
 	}
 	if !c.IsCA {
 		t.Fatalf("Cert is not a CA cert.")
+	}
+}
+
+func TestGenerateSignedCert(t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("Error generating tmpdir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	signerTmpDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("Error generating signer tmpdir: %v", err)
+	}
+	defer os.RemoveAll(signerTmpDir)
+
+	validSignerCertPath := filepath.Join(signerTmpDir, "cert")
+	validSignerKeyPath := filepath.Join(signerTmpDir, "key")
+
+	err = GenerateCACert(validSignerCertPath, validSignerKeyPath)
+	if err != nil {
+		t.Fatalf("Error generating signer cert")
+	}
+
+	certPath := filepath.Join(tmpDir, "cert")
+	keyPath := filepath.Join(tmpDir, "key")
+
+	ips := []net.IP{net.ParseIP("192.168.99.100"), net.ParseIP("10.0.0.10")}
+	alternateDNS := []string{"kubernetes.default.svc.cluster.local", "kubernetes.default"}
+
+	var tests = []struct {
+		description    string
+		signerCertPath string
+		signerKeyPath  string
+		err            bool
+	}{
+		{
+			description:    "wrong cert path",
+			signerCertPath: "",
+			signerKeyPath:  validSignerKeyPath,
+			err:            true,
+		},
+		{
+			description:    "wrong key path",
+			signerCertPath: validSignerCertPath,
+			signerKeyPath:  "",
+			err:            true,
+		},
+		{
+			description:    "valid cert",
+			signerCertPath: validSignerCertPath,
+			signerKeyPath:  validSignerKeyPath,
+		},
+		{
+			description:    "wrong key file",
+			signerCertPath: validSignerCertPath,
+			signerKeyPath:  validSignerCertPath,
+			err:            true,
+		},
+		{
+			description:    "wrong cert file",
+			signerCertPath: validSignerKeyPath,
+			signerKeyPath:  validSignerKeyPath,
+			err:            true,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			err := GenerateSignedCert(certPath, keyPath, ips, alternateDNS, test.signerCertPath, test.signerKeyPath)
+			if err != nil && !test.err {
+				t.Errorf("GenerateSignedCert() error = %v", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("GenerateSignedCert() should have returned error, but didn't")
+			}
+			if err == nil {
+				certBytes, err := ioutil.ReadFile(certPath)
+				if err != nil {
+					t.Errorf("Error reading cert data: %v", err)
+				}
+				data, _ := pem.Decode(certBytes)
+				_, err = x509.ParseCertificate(data.Bytes)
+				if err != nil {
+					t.Errorf("Error parsing certificate: %v", err)
+				}
+			}
+
+		})
 	}
 }
