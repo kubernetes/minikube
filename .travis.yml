@@ -7,6 +7,8 @@ go:
   - 1.7.1
 go_import_path: k8s.io/minikube
 
+before_install:
+  - sudo apt-get update -q
 install:
   - sudo apt-get -qqy install libvirt-dev
 script:
