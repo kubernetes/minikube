@@ -49,6 +49,14 @@ type Message struct {
 	ServiceContext `json:"serviceContext"`
 }
 
+type LookPath func(filename string) (string, error)
+
+var lookPath LookPath
+
+func init() {
+	lookPath = exec.LookPath
+}
+
 func ReportError(err error, url string) error {
 	errMsg, err := FormatError(err)
 	if err != nil {
@@ -168,13 +176,10 @@ func PromptUserForAccept(r io.Reader) bool {
 	}
 }
 
-func MaybePrintKubectlDownloadMsg() {
-	if !viper.GetBool(config.WantKubectlDownloadMsg) {
-		return
-	}
+func MaybePrintKubectlDownloadMsg(goos string, out io.Writer) {
 	verb := "run"
 	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/"
-	if runtime.GOOS == "windows" {
+	if goos == "windows" {
 		verb = "do"
 		installInstructions = `download kubectl from:
 https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl.exe
@@ -182,13 +187,13 @@ Add kubectl to your system PATH`
 	}
 
 	var err error
-	if runtime.GOOS == "windows" {
-		_, err = exec.LookPath("kubectl.exe")
+	if goos == "windows" {
+		_, err = lookPath("kubectl.exe")
 	} else {
-		_, err = exec.LookPath("kubectl")
+		_, err = lookPath("kubectl")
 	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr,
+		fmt.Fprintf(out,
 			`========================================
 kubectl could not be found on your path.  kubectl is a requirement for using minikube
 To install kubectl, please %s the following:
@@ -200,6 +205,6 @@ To disable this message, run the following:
 minikube config set WantKubectlDownloadMsg false
 ========================================
 `,
-			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, runtime.GOOS, runtime.GOARCH))
+			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, goos, runtime.GOARCH))
 	}
 }
