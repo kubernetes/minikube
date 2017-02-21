@@ -52,7 +52,7 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 }
 
 func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
-	if !f.shouldCacheMinikubeISO(isoURL) {
+	if !f.ShouldCacheMinikubeISO(isoURL) {
 		glog.Infof("Not caching ISO, using %s", isoURL)
 		return nil
 	}
@@ -73,14 +73,14 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 	}
 
 	fmt.Println("Downloading Minikube ISO")
-	if err := download.ToFile(isoURL, f.getISOCacheFilepath(isoURL), options); err != nil {
+	if err := download.ToFile(isoURL, f.GetISOCacheFilepath(isoURL), options); err != nil {
 		return errors.Wrap(err, "Error downloading Minikube ISO")
 	}
 
 	return nil
 }
 
-func (f DefaultDownloader) shouldCacheMinikubeISO(isoURL string) bool {
+func (f DefaultDownloader) ShouldCacheMinikubeISO(isoURL string) bool {
 	// store the miniube-iso inside the .minikube dir
 
 	urlObj, err := url.Parse(isoURL)
@@ -90,18 +90,18 @@ func (f DefaultDownloader) shouldCacheMinikubeISO(isoURL string) bool {
 	if urlObj.Scheme == fileScheme {
 		return false
 	}
-	if f.isMinikubeISOCached(isoURL) {
+	if f.IsMinikubeISOCached(isoURL) {
 		return false
 	}
 	return true
 }
 
-func (f DefaultDownloader) getISOCacheFilepath(isoURL string) string {
+func (f DefaultDownloader) GetISOCacheFilepath(isoURL string) string {
 	return filepath.Join(constants.GetMinipath(), "cache", "iso", filepath.Base(isoURL))
 }
 
-func (f DefaultDownloader) isMinikubeISOCached(isoURL string) bool {
-	if _, err := os.Stat(f.getISOCacheFilepath(isoURL)); os.IsNotExist(err) {
+func (f DefaultDownloader) IsMinikubeISOCached(isoURL string) bool {
+	if _, err := os.Stat(f.GetISOCacheFilepath(isoURL)); os.IsNotExist(err) {
 		return false
 	}
 	return true
