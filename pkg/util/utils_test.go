@@ -17,6 +17,9 @@ limitations under the License.
 package util
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -83,14 +86,14 @@ func TestRetryNotRetriableError(t *testing.T) {
 	}
 }
 
-type getLocalkubeArgs struct {
+type getTestArgs struct {
 	input         string
 	expected      string
 	expectedError bool
 }
 
 func TestGetLocalkubeDownloadURL(t *testing.T) {
-	argsList := [...]getLocalkubeArgs{
+	argsList := [...]getTestArgs{
 		{"v1.3.0",
 			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64", false},
 		{"v1.3.3",
@@ -108,6 +111,35 @@ func TestGetLocalkubeDownloadURL(t *testing.T) {
 		}
 		if url != args.expected {
 			t.Errorf("GetLocalkubeDownloadURL: Expected %s, Actual: %s", args.expected, url)
+		}
+	}
+}
+
+var testSHAString = "test"
+
+func TestParseSHAFromURL(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, testSHAString)
+	}))
+	serverBadResponse := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("500 HTTP status code returned!"))
+	}))
+
+	argsList := [...]getTestArgs{
+		{server.URL, testSHAString, false},
+		{serverBadResponse.URL, "", true},
+		{"abc", "", true},
+	}
+	for _, args := range argsList {
+		url, err := ParseSHAFromURL(args.input)
+		wasError := err != nil
+		if wasError != args.expectedError {
+			t.Errorf("ParseSHAFromURL Expected error was: %t, Actual Error was: %s",
+				args.expectedError, err)
+		}
+		if url != args.expected {
+			t.Errorf("ParseSHAFromURL: Expected %s, Actual: %s", args.expected, url)
 		}
 	}
 }
