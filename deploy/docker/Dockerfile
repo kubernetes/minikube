@@ -28,5 +28,5 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
 
 # Copy over important files
 COPY out/localkube /
-COPY out/deploy/addons/addon-manager.yaml /etc/kubernetes/manifests/addon-manager.yaml
-COPY out/deploy/addons /etc/kubernetes/addons
+COPY deploy/addons/addon-manager.yaml /etc/kubernetes/manifests/addon-manager.yaml
+COPY deploy/addons /etc/kubernetes/addons
