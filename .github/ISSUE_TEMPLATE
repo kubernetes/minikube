@@ -22,7 +22,7 @@ explain why.
 **Environment**:
 - **OS** (e.g. from /etc/os-release):
 - **VM Driver** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep DriverName`):
-- **ISO version** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep ISO`):
+- **ISO version** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep ISO` or `minikube ssh cat /etc/VERSION`):
 - **Install tools**:
 - **Others**:
 
