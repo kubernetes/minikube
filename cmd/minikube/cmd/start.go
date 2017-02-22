@@ -29,7 +29,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	cfg "k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
+
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -161,18 +161,31 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
-	keepContext := viper.GetBool(keepContext)
-	name := constants.MinikubeContext
-	certAuth := constants.MakeMiniPath("ca.crt")
-	clientCert := constants.MakeMiniPath("apiserver.crt")
-	clientKey := constants.MakeMiniPath("apiserver.key")
-	if err := setupKubeconfig(name, kubeHost, certAuth, clientCert, clientKey, keepContext); err != nil {
+
+	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
+	var kubeConfigFile string
+	if kubeConfigEnv == "" {
+		kubeConfigFile = constants.KubeconfigPath
+	} else {
+		kubeConfigFile = filepath.SplitList(kubeConfigEnv)[0]
+	}
+
+	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
+		ClusterName:          constants.MinikubeContext,
+		ClusterServerAddress: kubeHost,
+		ClientCertificate:    constants.MakeMiniPath("apiserver.crt"),
+		ClientKey:            constants.MakeMiniPath("apiserver.key"),
+		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
+		KeepContext:          viper.GetBool(keepContext),
+		KubeConfigFile:       kubeConfigFile,
+	}
+	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	if keepContext {
-		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", name)
+	if kubeCfgSetup.KeepContext {
+		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", kubeCfgSetup.ClusterName)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
 	}
@@ -184,59 +197,6 @@ func calculateDiskSizeInMB(humanReadableDiskSize string) int {
 		glog.Errorf("Invalid disk size: %s", err)
 	}
 	return int(diskSize / units.MB)
-}
-
-// setupKubeconfig reads config from disk, adds the minikube settings, and writes it back.
-// activeContext is true when minikube is the CurrentContext
-// If no CurrentContext is set, the given name will be used.
-func setupKubeconfig(name, server, certAuth, cliCert, cliKey string, keepContext bool) error {
-
-	configEnv := os.Getenv(constants.KubeconfigEnvVar)
-	var configFile string
-	if configEnv == "" {
-		configFile = constants.KubeconfigPath
-	} else {
-		configFile = filepath.SplitList(configEnv)[0]
-	}
-
-	glog.Infoln("Using kubeconfig: ", configFile)
-
-	// read existing config or create new if does not exist
-	config, err := kubeconfig.ReadConfigOrNew(configFile)
-	if err != nil {
-		return err
-	}
-
-	clusterName := name
-	cluster := cfg.NewCluster()
-	cluster.Server = server
-	cluster.CertificateAuthority = certAuth
-	config.Clusters[clusterName] = cluster
-
-	// user
-	userName := name
-	user := cfg.NewAuthInfo()
-	user.ClientCertificate = cliCert
-	user.ClientKey = cliKey
-	config.AuthInfos[userName] = user
-
-	// context
-	contextName := name
-	context := cfg.NewContext()
-	context.Cluster = clusterName
-	context.AuthInfo = userName
-	config.Contexts[contextName] = context
-
-	// Only set current context to minikube if the user has not used the keepContext flag
-	if !keepContext {
-		config.CurrentContext = contextName
-	}
-
-	// write back to disk
-	if err := kubeconfig.WriteConfig(config, configFile); err != nil {
-		return err
-	}
-	return nil
 }
 
 func init() {
