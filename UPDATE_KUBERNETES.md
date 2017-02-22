@@ -88,3 +88,6 @@ git commit -m "Manual changes to update Kubernetes to foo"
 
 As a final part of updating kubernetes, a new version of localkube should be uploaded to GCS so that users can select this version of kubernetes/localkube in later minikube/localkube builds.  For instructions on how to do this, see [LOCALKUBE_RELEASING.md](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
 
+#### Note on bugfix from Kubernetes
+
+In case that specific bugfix patches have been applied to the k8s vendor tree, the patches could be at some point overwritten by next Kubernetes updates. So contributors should check if the vendor tree still contains the bugfixes even after having updated the vendor tree.
