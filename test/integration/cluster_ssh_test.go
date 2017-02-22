@@ -27,6 +27,9 @@ import (
 
 func testClusterSSH(t *testing.T) {
 	t.Parallel()
+	if strings.Contains(*args, "--vm-driver=none") {
+		t.Skip("skipping test for none driver as it does not support ssh")
+	}
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,

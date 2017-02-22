@@ -36,7 +36,7 @@ func TestEnableUnknownAddon(t *testing.T) {
 	}
 }
 
-func TestEnableValidAddonNoVM(t *testing.T) {
+func TestEnableValidAddonLocal(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
@@ -59,7 +59,7 @@ func TestEnableValidAddonNoVM(t *testing.T) {
 	}
 }
 
-func TestTransferAddonViaDriver(t *testing.T) {
+func TestTransferAddonSSH(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
@@ -75,7 +75,7 @@ func TestTransferAddonViaDriver(t *testing.T) {
 	}
 
 	dashboard := assets.Addons["dashboard"]
-	if err := transferAddonViaDriver(dashboard, d); err != nil {
+	if err := transferAddonSSH(dashboard, d); err != nil {
 		t.Fatalf("Unexpected error %s transferring addon", err)
 	}
 	// check contents

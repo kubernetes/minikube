@@ -24,6 +24,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	pkgDrivers "k8s.io/minikube/pkg/minikube/machine/drivers"
 )
 
 type kvmDriver struct {
@@ -66,4 +67,13 @@ func detectVBoxManageCmd() string {
 		return path
 	}
 	return cmd
+}
+
+func createNoneHost(config MachineConfig) *pkgDrivers.Driver {
+	return &pkgDrivers.Driver{
+		BaseDriver: &drivers.BaseDriver{
+			MachineName: cfg.GetMachineName(),
+			StorePath:   constants.GetMinipath(),
+		},
+	}
 }

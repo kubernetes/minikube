@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +34,9 @@ import (
 
 func testMounting(t *testing.T) {
 	t.Parallel()
+	if strings.Contains(*args, "--vm-driver=none") {
+		t.Skip("skipping test for none driver as it does not need mount")
+	}
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,

@@ -23,3 +23,7 @@ import "github.com/docker/machine/libmachine/drivers"
 func createKVMHost(config MachineConfig) drivers.Driver {
 	panic("kvm not supported")
 }
+
+func createNoneHost(config MachineConfig) drivers.Driver {
+	panic("no-vm not supported")
+}

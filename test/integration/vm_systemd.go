@@ -31,6 +31,10 @@ func testVMSystemd(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test in windows as it doesn't exit properly")
 	}
+	if strings.Contains(*args, "--vm-driver=none") {
+		t.Skip("skipping test for none driver as it does not boot systemd")
+	}
+
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,

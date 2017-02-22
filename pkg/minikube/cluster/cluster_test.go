@@ -86,14 +86,14 @@ func TestCreateHost(t *testing.T) {
 	}
 }
 
-func TestStartCluster(t *testing.T) {
+func TestStartClusterSSH(t *testing.T) {
 	h := tests.NewMockHost()
 	ip, _ := h.Driver.GetIP()
 	kubernetesConfig := KubernetesConfig{
 		NodeIP: ip,
 	}
 
-	err := StartCluster(h, kubernetesConfig)
+	err := StartClusterSSH(h, kubernetesConfig)
 
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
@@ -118,7 +118,7 @@ func TestStartClusterError(t *testing.T) {
 		NodeIP: ip,
 	}
 
-	err := StartCluster(h, kubernetesConfig)
+	err := StartClusterSSH(h, kubernetesConfig)
 
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
@@ -337,7 +337,7 @@ func TestGetHostStatus(t *testing.T) {
 		}
 	}
 
-	checkState("Does Not Exist")
+	checkState(state.None.String())
 
 	createHost(api, defaultMachineConfig)
 	checkState(state.Running.String())
