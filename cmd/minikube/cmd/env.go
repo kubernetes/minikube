@@ -292,6 +292,15 @@ var dockerEnvCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
+		host, err := cluster.CheckIfApiExistsAndLoad(api)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting host: %s\n", err)
+			os.Exit(1)
+		}
+		if host.Driver.DriverName() == "none" {
+			fmt.Println(`'none' driver does not support 'minikube docker-env' command`)
+			os.Exit(0)
+		}
 
 		var shellCfg *ShellConfig
 

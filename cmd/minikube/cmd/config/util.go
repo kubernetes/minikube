@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -110,18 +111,18 @@ func EnableOrDisableAddon(name string, val string) error {
 	}
 	host, err := cluster.CheckIfApiExistsAndLoad(api)
 	if enable {
-		if err = transferAddonViaDriver(addon, host.Driver); err != nil {
+		if err = transferAddon(addon, host.Driver); err != nil {
 			return errors.Wrapf(err, "Error transferring addon %s to VM", name)
 		}
 	} else {
-		if err = deleteAddonViaDriver(addon, host.Driver); err != nil {
+		if err = deleteAddon(addon, host.Driver); err != nil {
 			return errors.Wrapf(err, "Error deleting addon %s from VM", name)
 		}
 	}
 	return nil
 }
 
-func deleteAddonViaDriver(addon *assets.Addon, d drivers.Driver) error {
+func deleteAddonSSH(addon *assets.Addon, d drivers.Driver) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
@@ -132,7 +133,30 @@ func deleteAddonViaDriver(addon *assets.Addon, d drivers.Driver) error {
 	return nil
 }
 
-func transferAddonViaDriver(addon *assets.Addon, d drivers.Driver) error {
+func deleteAddon(addon *assets.Addon, d drivers.Driver) error {
+	if d.DriverName() == "none" {
+		if err := deleteAddonLocal(addon, d); err != nil {
+			return err
+		}
+	} else {
+		if err := deleteAddonSSH(addon, d); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deleteAddonLocal(addon *assets.Addon, d drivers.Driver) error {
+	var err error
+	for _, f := range addon.Assets {
+		if err = os.Remove(filepath.Join(f.GetTargetDir(), f.GetTargetName())); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func transferAddonSSH(addon *assets.Addon, d drivers.Driver) error {
 	client, err := sshutil.NewSSHClient(d)
 	if err != nil {
 		return err
@@ -157,4 +181,27 @@ func EnableOrDisableDefaultStorageClass(name, val string) error {
 		}
 	}
 	return EnableOrDisableAddon(name, val)
+}
+
+func transferAddon(addon *assets.Addon, d drivers.Driver) error {
+	if d.DriverName() == "none" {
+		if err := transferAddonLocal(addon, d); err != nil {
+			return err
+		}
+	} else {
+		if err := transferAddonSSH(addon, d); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func transferAddonLocal(addon *assets.Addon, d drivers.Driver) error {
+	var err error
+	for _, f := range addon.Assets {
+		if err = assets.CopyFileLocal(f); err != nil {
+			return err
+		}
+	}
+	return err
 }

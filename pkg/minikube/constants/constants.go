@@ -89,7 +89,7 @@ const (
 	DefaultDiskSize     = "20g"
 	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
-	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
+	DefaultStatusFormat = "minikube: {{.MinikubeStatus}}\n" +
 		"localkube: {{.LocalkubeStatus}}\n"
 	DefaultAddonListFormat    = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	DefaultConfigViewFormat   = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
@@ -118,6 +118,7 @@ const AddonsPath = "/etc/kubernetes/addons"
 const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
+	LocalkubePIDPath       = "/var/run/localkube.pid"
 )
 
 const (

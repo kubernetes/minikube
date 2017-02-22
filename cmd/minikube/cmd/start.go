@@ -18,8 +18,10 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -30,9 +32,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"io/ioutil"
-
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -150,7 +149,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ExtraOptions:      extraOptions,
 	}
 
-	fmt.Println("SSH-ing files into VM...")
+	fmt.Println("Moving files into cluster...")
 	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
@@ -163,9 +162,16 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Starting cluster components...")
-	if err := cluster.StartCluster(host, kubernetesConfig); err != nil {
-		glog.Errorln("Error starting cluster: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+	if host.DriverName == "none" {
+		if err := cluster.StartClusterLocal(host, kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+	} else {
+		if err := cluster.StartClusterSSH(host, kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 
 	fmt.Println("Connecting to cluster...")
@@ -183,6 +189,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	var kubeConfigFile string
 	if kubeConfigEnv == "" {
 		kubeConfigFile = constants.KubeconfigPath
+		if config.VMDriver == "none" {
+			kubeConfigFile = path.Join(os.Getenv(constants.MinikubeHome), ".kube", "config")
+		}
 	} else {
 		kubeConfigFile = filepath.SplitList(kubeConfigEnv)[0]
 	}
@@ -234,6 +243,18 @@ func runStart(cmd *cobra.Command, args []string) {
 			kubeCfgSetup.ClusterName)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
+	}
+
+	if config.VMDriver == "none" {
+		username := os.Getenv("SUDO_USER")
+		fmt.Println("username: ", username)
+		command := fmt.Sprintf("/bin/chown -R %s %s; /bin/chown -R %s %s", username, constants.GetMinipath(),
+			username, path.Join(os.Getenv(constants.MinikubeHome), ".kube"))
+		_, err := exec.Command("bash", "-c", command).Output()
+		if err != nil {
+			glog.Errorln("Error modifying priveleges for none driver: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 }
 

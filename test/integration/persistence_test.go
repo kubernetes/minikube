@@ -84,8 +84,16 @@ func TestPersistence(t *testing.T) {
 	}
 
 	// Now restart minikube and make sure the pod is still there.
-	minikubeRunner.RunCommand("stop", true)
-	minikubeRunner.CheckStatus("Stopped")
+	// minikubeRunner.RunCommand("stop", true)
+	// minikubeRunner.CheckStatus("Stopped")
+	checkStop := func() error {
+		minikubeRunner.RunCommand("stop", true)
+		return minikubeRunner.CheckStatusNoFail(state.Stopped.String())
+	}
+
+	if err := commonutil.RetryAfter(6, checkStop, 5*time.Second); err != nil {
+		t.Fatalf("timed out while checking stopped status: %s", err)
+	}
 
 	minikubeRunner.Start()
 	minikubeRunner.CheckStatus(state.Running.String())

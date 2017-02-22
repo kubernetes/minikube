@@ -18,8 +18,13 @@ package assets
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -134,4 +139,50 @@ func (m *MemoryAsset) GetLength() int {
 
 func (m *MemoryAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
+}
+
+func CopyFileLocal(f CopyableFile) error {
+	os.MkdirAll(f.GetTargetDir(), os.ModePerm)
+	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
+	os.Remove(targetPath)
+	target, err := os.Create(targetPath)
+	defer target.Close()
+
+	perms, err := strconv.Atoi(f.GetPermissions())
+	if err != nil {
+		return errors.Wrap(err, "Error converting permissions to integer")
+	}
+	target.Chmod(os.FileMode(perms))
+	if err != nil {
+		return errors.Wrap(err, "Error changing file permissions")
+	}
+
+	if os.Getenv("KEEP_SUDO_FOR_MINIKUBE_NONE") == "" {
+		username := os.Getenv("SUDO_USER")
+		fmt.Println(username)
+		command := fmt.Sprintf("/bin/chown %s %s", username, targetPath)
+		fmt.Println(command)
+		args := strings.Split(command, " ")
+		binary := args[0]
+		args = append(args[:0], args[1:]...)
+		cmd := exec.Command(binary, args...)
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+		command = fmt.Sprintf("/bin/chgrp %s %s", username, targetPath)
+		fmt.Println(command)
+		args = strings.Split(command, " ")
+		binary = args[0]
+		args = append(args[:0], args[1:]...)
+		cmd = exec.Command(binary, args...)
+		if err := cmd.Start(); err != nil {
+			return err
+		}
+
+		_, err = io.Copy(target, f)
+		if err != nil {
+			return errors.Wrap(err, "Error copying file to target location")
+		}
+	}
+	return nil
 }

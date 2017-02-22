@@ -35,7 +35,7 @@ import (
 	"github.com/docker/machine/libmachine/check"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"github.com/docker/machine/libmachine/drivers/rpc"
+	rpcdriver "github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -73,6 +73,7 @@ func (*rpcClientFactory) NewClient(storePath, certsDir string) libmachine.API {
 }
 
 var clientFactories = map[ClientType]clientFactory{
+	//	ClientTypeNative: &nativeClientFactory{},
 	ClientTypeLocal: &localClientFactory{},
 	ClientTypeRPC:   &rpcClientFactory{},
 }
@@ -80,6 +81,8 @@ var clientFactories = map[ClientType]clientFactory{
 const (
 	ClientTypeLocal ClientType = iota
 	ClientTypeRPC
+
+//	ClientTypeNative
 )
 
 // Gets a new client depending on the clientType specified
@@ -206,7 +209,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		},
 		{
 			"Provisioning VM.",
-			func() error {
+			func() error {==
 				pv := provision.NewBuildrootProvisioner(h.Driver)
 				return pv.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
 			},
