@@ -17,9 +17,7 @@ limitations under the License.
 package cluster
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -27,25 +25,11 @@ import (
 
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
-
-func updateLocalkubeFromAsset(client *ssh.Client) error {
-	contents, err := assets.Asset("out/localkube")
-	if err != nil {
-		return errors.Wrap(err, "Error loading asset out/localkube")
-	}
-	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return errors.Wrap(err, "Error transferring localkube via ssh")
-	}
-	return nil
-}
 
 // localkubeCacher is a struct with methods designed for caching localkube
 type localkubeCacher struct {
@@ -82,52 +66,36 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 	return download.ToFile(url, l.getLocalkubeCacheFilepath(), opts)
 }
 
-func (l *localkubeCacher) updateLocalkubeFromURI(client *ssh.Client) error {
+func (l *localkubeCacher) fetchLocalkubeFromURI() (assets.CopyableFile, error) {
 	urlObj, err := url.Parse(l.k8sConf.KubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "Error parsing --kubernetes-version url")
+		return nil, errors.Wrap(err, "Error parsing --kubernetes-version url")
 	}
 	if urlObj.Scheme == fileScheme {
-		return l.updateLocalkubeFromFile(client)
+		return l.genLocalkubeFileFromFile()
 	}
-	return l.updateLocalkubeFromURL(client)
+	return l.genLocalkubeFileFromURL()
 }
 
-func (l *localkubeCacher) updateLocalkubeFromURL(client *ssh.Client) error {
+func (l *localkubeCacher) genLocalkubeFileFromURL() (assets.CopyableFile, error) {
 	if !l.isLocalkubeCached() {
 		if err := l.downloadAndCacheLocalkube(); err != nil {
-			return errors.Wrap(err, "Error attempting to download and cache localkube")
+			return nil, errors.Wrap(err, "Error attempting to download and cache localkube")
 		}
 	}
-	if err := l.transferCachedLocalkubeToVM(client); err != nil {
-		return errors.Wrap(err, "Error transferring cached localkube to VM")
-	}
-	return nil
-}
-
-func (l *localkubeCacher) transferCachedLocalkubeToVM(client *ssh.Client) error {
-	contents, err := ioutil.ReadFile(l.getLocalkubeCacheFilepath())
+	localkubeFile, err := assets.NewFileAsset(l.getLocalkubeCacheFilepath(), "/usr/local/bin", "localkube", "0777")
 	if err != nil {
-		return errors.Wrap(err, "Error reading file: localkube cache filepath")
+		return nil, errors.Wrap(err, "Error creating localkube asset from url")
 	}
-
-	if err = sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return errors.Wrap(err, "Error transferring cached localkube to VM via ssh")
-	}
-	return nil
+	return localkubeFile, nil
 }
 
-func (l *localkubeCacher) updateLocalkubeFromFile(client *ssh.Client) error {
+func (l *localkubeCacher) genLocalkubeFileFromFile() (assets.CopyableFile, error) {
 	path := strings.TrimPrefix(l.k8sConf.KubernetesVersion, "file://")
 	path = filepath.FromSlash(path)
-	contents, err := ioutil.ReadFile(path)
+	localkubeFile, err := assets.NewFileAsset(path, "/usr/local/bin", "localkube", "0777")
 	if err != nil {
-		return errors.Wrapf(err, "Error reading localkube file at %s", path)
+		return nil, errors.Wrap(err, "Error creating localkube asset from file")
 	}
-	if err := sshutil.Transfer(bytes.NewReader(contents), len(contents), "/usr/local/bin",
-		"localkube", "0777", client); err != nil {
-		return errors.Wrapf(err, "Error transferring specified localkube file at %s to VM via ssh", path)
-	}
-	return nil
+	return localkubeFile, nil
 }
