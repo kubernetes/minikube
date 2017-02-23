@@ -89,7 +89,8 @@ func GenerateSignedCert(certPath, keyPath string, ips []net.IP, alternateDNS []s
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(2),
 		Subject: pkix.Name{
-			CommonName: "minikube",
+			CommonName:   "minikube",
+			Organization: []string{"system:masters"},
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(time.Hour * 24 * 365),
