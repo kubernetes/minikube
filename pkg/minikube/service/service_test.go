@@ -17,64 +17,187 @@ limitations under the License.
 package service
 
 import (
+	"reflect"
 	"strings"
 	"testing"
+	"text/template"
 
+	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
+	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
 	"k8s.io/client-go/1.5/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/unversioned"
 	"k8s.io/client-go/1.5/pkg/api/v1"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func TestCheckEndpointReady(t *testing.T) {
-	endpointNoSubsets := &v1.Endpoints{}
-	if err := checkEndpointReady(endpointNoSubsets); err == nil {
-		t.Fatalf("Endpoint had no subsets but checkEndpointReady did not return an error")
-	}
+type MockClientGetter struct {
+	servicesMap map[string]corev1.ServiceInterface
+}
 
-	endpointNotReady := &v1.Endpoints{
+func (m *MockClientGetter) GetCoreClient() (corev1.CoreInterface, error) {
+	return &MockCoreClient{
+		servicesMap: m.servicesMap,
+	}, nil
+}
+
+type MockCoreClient struct {
+	fake.FakeCore
+	servicesMap map[string]corev1.ServiceInterface
+}
+
+var serviceNamespaces = map[string]corev1.ServiceInterface{
+	"default": defaultNamespaceServiceInterface,
+}
+
+var defaultNamespaceServiceInterface = &MockServiceInterface{
+	ServiceList: &v1.ServiceList{
+		Items: []v1.Service{
+			{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "mock-dashboard",
+					Namespace: "default",
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{
+						{NodePort: int32(1111)},
+						{NodePort: int32(2222)},
+					},
+				},
+			},
+			{
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "mock-dashboard-no-ports",
+					Namespace: "default",
+				},
+				Spec: v1.ServiceSpec{
+					Ports: []v1.ServicePort{},
+				},
+			},
+		},
+	},
+}
+
+func (m *MockCoreClient) Endpoints(namespace string) corev1.EndpointsInterface {
+	return &MockEndpointsInterface{}
+}
+
+func (m *MockCoreClient) Services(namespace string) corev1.ServiceInterface {
+	return m.servicesMap[namespace]
+}
+
+type MockEndpointsInterface struct {
+	fake.FakeEndpoints
+	Endpoints *v1.Endpoints
+}
+
+var endpointMap = map[string]*v1.Endpoints{
+	"no-subsets": {},
+	"not-ready": {
 		Subsets: []v1.EndpointSubset{
-			{Addresses: []v1.EndpointAddress{},
+			{
+				Addresses: []v1.EndpointAddress{},
 				NotReadyAddresses: []v1.EndpointAddress{
 					{IP: "1.1.1.1"},
 					{IP: "2.2.2.2"},
-					{IP: "3.3.3.3"},
-				}}}}
-	if err := checkEndpointReady(endpointNotReady); err == nil {
-		t.Fatalf("Endpoint had no Addresses but checkEndpointReady did not return an error")
+				},
+			},
+		},
+	},
+	"one-ready": {
+		Subsets: []v1.EndpointSubset{
+			{
+				Addresses: []v1.EndpointAddress{
+					{IP: "1.1.1.1"},
+				},
+				NotReadyAddresses: []v1.EndpointAddress{
+					{IP: "2.2.2.2"},
+				},
+			},
+		},
+	},
+}
+
+func (e MockEndpointsInterface) Get(name string) (*v1.Endpoints, error) {
+	endpoint, ok := endpointMap[name]
+	if !ok {
+		return nil, errors.New("Endpoint not found")
+	}
+	return endpoint, nil
+}
+
+func TestCheckEndpointReady(t *testing.T) {
+	var tests = []struct {
+		description string
+		service     string
+		err         bool
+	}{
+		{
+			description: "Endpoint with no subsets should return an error",
+			service:     "no-subsets",
+			err:         true,
+		},
+		{
+			description: "Endpoint with no ready endpoints should return an error",
+			service:     "not-ready",
+			err:         true,
+		},
+		{
+			description: "Endpoint with at least one ready endpoint should not return an error",
+			service:     "one-ready",
+			err:         false,
+		},
 	}
 
-	endpointReady := &v1.Endpoints{
-		Subsets: []v1.EndpointSubset{
-			{Addresses: []v1.EndpointAddress{
-				{IP: "1.1.1.1"},
-				{IP: "2.2.2.2"},
-			},
-				NotReadyAddresses: []v1.EndpointAddress{},
-			}},
-	}
-	if err := checkEndpointReady(endpointReady); err != nil {
-		t.Fatalf("Endpoint was ready with at least one Address, but checkEndpointReady returned an error")
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			err := checkEndpointReady(&MockEndpointsInterface{}, test.service)
+			if err != nil && !test.err {
+				t.Errorf("Check endpoints returned an error: %+v", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Check endpoints should have returned an error but returned nil")
+			}
+		})
 	}
 }
 
-type ServiceInterfaceMock struct {
+type MockServiceInterface struct {
 	fake.FakeServices
 	ServiceList *v1.ServiceList
 }
 
-func (s ServiceInterfaceMock) List(opts api.ListOptions) (*v1.ServiceList, error) {
+func (s MockServiceInterface) List(opts api.ListOptions) (*v1.ServiceList, error) {
 	serviceList := &v1.ServiceList{
 		Items: []v1.Service{},
 	}
-	keyValArr := strings.Split(opts.LabelSelector.String(), "=")
-	for _, service := range s.ServiceList.Items {
-		if service.Spec.Selector[keyValArr[0]] == keyValArr[1] {
-			serviceList.Items = append(serviceList.Items, service)
+	if opts.LabelSelector != nil {
+		keyValArr := strings.Split(opts.LabelSelector.String(), "=")
+
+		for _, service := range s.ServiceList.Items {
+			if service.Spec.Selector[keyValArr[0]] == keyValArr[1] {
+				serviceList.Items = append(serviceList.Items, service)
+			}
+		}
+
+		return serviceList, nil
+	}
+
+	return s.ServiceList, nil
+}
+
+func (s MockServiceInterface) Get(name string) (*v1.Service, error) {
+	for _, svc := range s.ServiceList.Items {
+		if svc.ObjectMeta.Name == name {
+			return &svc, nil
 		}
 	}
-	return serviceList, nil
+
+	return nil, nil
 }
 
 func TestGetServiceListFromServicesByLabel(t *testing.T) {
@@ -89,7 +212,7 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 			},
 		},
 	}
-	serviceIface := ServiceInterfaceMock{
+	serviceIface := MockServiceInterface{
 		ServiceList: serviceList,
 	}
 	if _, err := getServiceListFromServicesByLabel(&serviceIface, "nothing", "nothing"); err != nil {
@@ -101,69 +224,186 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 	}
 }
 
-type MockServiceGetter struct {
-	services map[string]v1.Service
-}
-
-func NewMockServiceGetter() *MockServiceGetter {
-	return &MockServiceGetter{
-		services: make(map[string]v1.Service),
+func TestPrintURLsForService(t *testing.T) {
+	defaultTemplate := template.Must(template.New("svc-template").Parse("{{.IP}}:{{.Port}}"))
+	client := &MockCoreClient{
+		servicesMap: serviceNamespaces,
 	}
-}
-
-func (mockServiceGetter *MockServiceGetter) Get(name string) (*v1.Service, error) {
-	service, ok := mockServiceGetter.services[name]
-	if !ok {
-		return nil, errors.Errorf("Error getting %s service from mockServiceGetter", name)
+	var tests = []struct {
+		description    string
+		serviceName    string
+		namespace      string
+		tmpl           *template.Template
+		expectedOutput []string
+		err            bool
+	}{
+		{
+			description:    "should get all node ports",
+			serviceName:    "mock-dashboard",
+			namespace:      "default",
+			tmpl:           defaultTemplate,
+			expectedOutput: []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+		},
+		{
+			description:    "empty slice for no node ports",
+			serviceName:    "mock-dashboard-no-ports",
+			namespace:      "default",
+			tmpl:           defaultTemplate,
+			expectedOutput: []string{},
+		},
+		{
+			description: "throw error without template",
+			err:         true,
+		},
 	}
-	return &service, nil
-}
-
-func (mockServiceGetter *MockServiceGetter) List(options api.ListOptions) (*v1.ServiceList, error) {
-	services := v1.ServiceList{
-		TypeMeta: unversioned.TypeMeta{Kind: "ServiceList", APIVersion: "v1"},
-		ListMeta: unversioned.ListMeta{},
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
+			if err != nil && !test.err {
+				t.Errorf("Error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Expected error but got none")
+			}
+			if !reflect.DeepEqual(urls, test.expectedOutput) {
+				t.Errorf("Expected %+v \n\n Actual: %+v \n\n")
+			}
+		})
 	}
-
-	for _, svc := range mockServiceGetter.services {
-		services.Items = append(services.Items, svc)
-	}
-	return &services, nil
 }
 
 func TestGetServiceURLs(t *testing.T) {
-	mockServiceGetter := NewMockServiceGetter()
-	expected := []int32{1111, 2222}
-	mockDashboardService := v1.Service{
-		Spec: v1.ServiceSpec{
-			Ports: []v1.ServicePort{
-				{
-					NodePort: expected[0],
-				}, {
-					NodePort: expected[1],
-				}},
+	defaultAPI := &tests.MockAPI{
+		Hosts: map[string]*host.Host{
+			constants.MachineName: {
+				Name:   constants.MachineName,
+				Driver: &tests.MockDriver{},
+			},
 		},
 	}
-	mockServiceGetter.services["mock-service"] = mockDashboardService
+	defaultTemplate := template.Must(template.New("svc-template").Parse("{{.IP}}:{{.Port}}"))
 
-	ports, err := getServicePortsFromServiceGetter(mockServiceGetter, "mock-service")
-	if err != nil {
-		t.Fatalf("Error getting mock-service ports from api: Error: %s", err)
+	var tests = []struct {
+		description string
+		api         libmachine.API
+		namespace   string
+		expected    ServiceURLs
+		err         bool
+	}{
+		{
+			description: "no host",
+			api: &tests.MockAPI{
+				Hosts: make(map[string]*host.Host),
+			},
+			err: true,
+		},
+		{
+			description: "correctly return serviceURLs",
+			namespace:   "default",
+			api:         defaultAPI,
+			expected: []ServiceURL{
+				{
+					Namespace: "default",
+					Name:      "mock-dashboard",
+					URLs:      []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+				},
+				{
+					Namespace: "default",
+					Name:      "mock-dashboard-no-ports",
+					URLs:      []string{},
+				},
+			},
+		},
 	}
-	for i := range ports {
-		if ports[i] != expected[i] {
-			t.Fatalf("Error getting mock-service port from api: Expected: %d, Got: %d", ports[0], expected)
-		}
+
+	defer revertK8sClient(k8s)
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+
+			k8s = &MockClientGetter{
+				servicesMap: serviceNamespaces,
+			}
+			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
+			if err != nil && !test.err {
+				t.Errorf("Error GetServiceURLs %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Test should have failed, but didn't")
+			}
+			if !reflect.DeepEqual(urls, test.expected) {
+				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, urls)
+			}
+		})
 	}
 }
 
-func TestGetServiceURLWithoutNodePort(t *testing.T) {
-	mockServiceGetter := NewMockServiceGetter()
-	mockDashboardService := v1.Service{}
-	mockServiceGetter.services["mock-service"] = mockDashboardService
-
-	_, err := getServicePortsFromServiceGetter(mockServiceGetter, "mock-service")
-	if err == nil {
-		t.Fatalf("Expected error getting service with no node port")
+func TestGetServiceURLsForService(t *testing.T) {
+	defaultAPI := &tests.MockAPI{
+		Hosts: map[string]*host.Host{
+			constants.MachineName: {
+				Name:   constants.MachineName,
+				Driver: &tests.MockDriver{},
+			},
+		},
 	}
+	defaultTemplate := template.Must(template.New("svc-template").Parse("{{.IP}}:{{.Port}}"))
+
+	var tests = []struct {
+		description string
+		api         libmachine.API
+		namespace   string
+		service     string
+		expected    []string
+		err         bool
+	}{
+		{
+			description: "no host",
+			api: &tests.MockAPI{
+				Hosts: make(map[string]*host.Host),
+			},
+			err: true,
+		},
+		{
+			description: "correctly return serviceURLs",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			expected:    []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return empty serviceURLs",
+			namespace:   "default",
+			service:     "mock-dashboard-no-ports",
+			api:         defaultAPI,
+			expected:    []string{},
+		},
+	}
+
+	defer revertK8sClient(k8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			k8s = &MockClientGetter{
+				servicesMap: serviceNamespaces,
+			}
+			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
+			if err != nil && !test.err {
+				t.Errorf("Error GetServiceURLsForService %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Test should have failed, but didn't")
+			}
+			if !reflect.DeepEqual(urls, test.expected) {
+				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, urls)
+			}
+		})
+	}
+}
+
+func revertK8sClient(k K8sClient) {
+	k8s = k
 }
