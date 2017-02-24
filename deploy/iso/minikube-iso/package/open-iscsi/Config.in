@@ -1,0 +1,4 @@
+config BR2_PACKAGE_OPENISCSI
+	bool "open-iscsi"
+	default y
+	select BR2_PACKAGE_BERKELEYDB
