@@ -101,7 +101,7 @@ integration: out/minikube
 test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
 	./test.sh
 
-pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata deploy/addons
+pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/addons/...
 
 $(GOPATH)/bin/go-bindata: $(GOPATH)/src/$(ORG)
