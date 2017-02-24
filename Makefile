@@ -21,6 +21,7 @@ DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2016.08
 REGISTRY?=gcr.io/k8s-minikube
+DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
 
 ISO_VERSION ?= v1.0.6
 ISO_BUCKET ?= minikube/iso
@@ -72,7 +73,11 @@ else
 endif
 
 out/minikube-darwin-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-darwin-amd64 k8s.io/minikube/cmd/minikube
+ifeq ($(IN_DOCKER),1)
+	CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-darwin-amd64 k8s.io/minikube/cmd/minikube
+else
+	docker run -e IN_DOCKER=1 --workdir /go/src/$(REPOPATH) --entrypoint /usr/bin/make -v $(PWD):/go/src/$(REPOPATH) $(DARWIN_BUILD_IMAGE) out/minikube-darwin-amd64
+endif
 
 out/minikube-linux-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-linux-amd64 k8s.io/minikube/cmd/minikube
