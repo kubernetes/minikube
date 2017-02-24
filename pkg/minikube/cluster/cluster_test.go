@@ -520,7 +520,7 @@ func TestCreateSSHShell(t *testing.T) {
 		t.Fatalf("Error running ssh command: %s", err)
 	}
 
-	if !s.HadASessionRequested {
+	if !s.IsSessionRequested() {
 		t.Fatalf("Expected ssh session to be run")
 	}
 }
