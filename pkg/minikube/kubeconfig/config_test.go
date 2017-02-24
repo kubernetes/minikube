@@ -100,9 +100,9 @@ func TestSetupKubeConfig(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error making temp directory %s", err)
 			}
-			test.cfg.KubeConfigFile = filepath.Join(tmpDir, "kubeconfig")
+			test.cfg.SetKubeConfigFile(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				ioutil.WriteFile(test.cfg.KubeConfigFile, test.existingCfg, 0600)
+				ioutil.WriteFile(test.cfg.GetKubeConfigFile(), test.existingCfg, 0600)
 			}
 			err = SetupKubeConfig(test.cfg)
 			if err != nil && !test.err {
@@ -111,7 +111,7 @@ func TestSetupKubeConfig(t *testing.T) {
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			config, err := ReadConfigOrNew(test.cfg.KubeConfigFile)
+			config, err := ReadConfigOrNew(test.cfg.GetKubeConfigFile())
 			if err != nil {
 				t.Errorf("Error reading kubeconfig file: %s", err)
 			}
