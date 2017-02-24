@@ -23,6 +23,7 @@ import (
 	"io"
 	"net"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -33,10 +34,11 @@ import (
 type SSHServer struct {
 	Config *ssh.ServerConfig
 	// Commands stores the raw commands executed against the server.
-	Commands             map[string]int
-	Connected            bool
-	Transfers            *bytes.Buffer
-	HadASessionRequested bool
+	Commands  map[string]int
+	Connected bool
+	Transfers *bytes.Buffer
+	// Only access this with atomic ops
+	hadASessionRequested int32
 	// CommandsToOutput can be used to mock what the SSHServer returns for a given command
 	CommandToOutput map[string]string
 }
@@ -59,6 +61,7 @@ func NewSSHServer() (*SSHServer, error) {
 		return nil, errors.Wrap(err, "Error creating signer from key")
 	}
 	s.Config.AddHostKey(signer)
+	s.SetSessionRequested(false)
 	return s, nil
 }
 
@@ -92,7 +95,7 @@ func (s *SSHServer) Start() (int, error) {
 				// Service the incoming Channel channel.
 				for newChannel := range chans {
 					if newChannel.ChannelType() == "session" {
-						s.HadASessionRequested = true
+						s.SetSessionRequested(true)
 					}
 					channel, requests, err := newChannel.Accept()
 					s.Connected = true
@@ -135,4 +138,16 @@ func (s *SSHServer) Start() (int, error) {
 		return 0, errors.Wrap(err, "Error converting port string to integer")
 	}
 	return port, nil
+}
+
+func (s *SSHServer) SetSessionRequested(b bool) {
+	var i int32
+	if b {
+		i = 1
+	}
+	atomic.StoreInt32(&s.hadASessionRequested, i)
+}
+
+func (s *SSHServer) IsSessionRequested() bool {
+	return atomic.LoadInt32(&s.hadASessionRequested) != 0
 }
