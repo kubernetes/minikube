@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -39,8 +40,9 @@ type SSHServer struct {
 	Transfers *bytes.Buffer
 	// Only access this with atomic ops
 	hadASessionRequested int32
-	// CommandsToOutput can be used to mock what the SSHServer returns for a given command
-	CommandToOutput map[string]string
+	// commandsToOutput can be used to mock what the SSHServer returns for a given command
+	// Only access this with atomic ops
+	commandToOutput atomic.Value
 }
 
 // NewSSHServer returns a NewSSHServer instance, ready for use.
@@ -62,6 +64,7 @@ func NewSSHServer() (*SSHServer, error) {
 	}
 	s.Config.AddHostKey(signer)
 	s.SetSessionRequested(false)
+	s.SetCommandToOutput(map[string]string{})
 	return s, nil
 }
 
@@ -115,7 +118,7 @@ func (s *SSHServer) Start() (int, error) {
 					s.Commands[cmd.Command] = 1
 
 					// Write specified command output as mocked ssh output
-					if val, ok := s.CommandToOutput[cmd.Command]; ok {
+					if val, err := s.GetCommandToOutput(cmd.Command); err == nil {
 						channel.Write([]byte(val))
 					}
 					channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
@@ -138,6 +141,19 @@ func (s *SSHServer) Start() (int, error) {
 		return 0, errors.Wrap(err, "Error converting port string to integer")
 	}
 	return port, nil
+}
+
+func (s *SSHServer) SetCommandToOutput(cmdToOutput map[string]string) {
+	s.commandToOutput.Store(cmdToOutput)
+}
+
+func (s *SSHServer) GetCommandToOutput(cmd string) (string, error) {
+	cmdMap := s.commandToOutput.Load().(map[string]string)
+	val, ok := cmdMap[cmd]
+	if !ok {
+		return "", fmt.Errorf("unavailable command %s", cmd)
+	}
+	return val, nil
 }
 
 func (s *SSHServer) SetSessionRequested(b bool) {
