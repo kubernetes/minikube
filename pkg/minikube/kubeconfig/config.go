@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -47,18 +48,27 @@ type KubeConfigSetup struct {
 	// Should the current context be kept when setting up this one
 	KeepContext bool
 
-	// KubeConfigFile is the path where the kube config is stored
-	KubeConfigFile string
+	// kubeConfigFile is the path where the kube config is stored
+	// Only access this with atomic ops
+	kubeConfigFile atomic.Value
+}
+
+func (k *KubeConfigSetup) SetKubeConfigFile(kubeConfigFile string) {
+	k.kubeConfigFile.Store(kubeConfigFile)
+}
+
+func (k *KubeConfigSetup) GetKubeConfigFile() string {
+	return k.kubeConfigFile.Load().(string)
 }
 
 // SetupKubeconfig reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
 func SetupKubeConfig(cfg *KubeConfigSetup) error {
-	glog.Infoln("Using kubeconfig: ", cfg.KubeConfigFile)
+	glog.Infoln("Using kubeconfig: ", cfg.GetKubeConfigFile())
 
 	// read existing config or create new if does not exist
-	config, err := ReadConfigOrNew(cfg.KubeConfigFile)
+	config, err := ReadConfigOrNew(cfg.GetKubeConfigFile())
 	if err != nil {
 		return err
 	}
@@ -89,7 +99,7 @@ func SetupKubeConfig(cfg *KubeConfigSetup) error {
 	}
 
 	// write back to disk
-	if err := WriteConfig(config, cfg.KubeConfigFile); err != nil {
+	if err := WriteConfig(config, cfg.GetKubeConfigFile()); err != nil {
 		return err
 	}
 	return nil

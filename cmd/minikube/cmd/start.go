@@ -177,8 +177,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		ClientKey:            constants.MakeMiniPath("apiserver.key"),
 		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
-		KubeConfigFile:       kubeConfigFile,
 	}
+	kubeCfgSetup.SetKubeConfigFile(kubeConfigFile)
+
 	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
