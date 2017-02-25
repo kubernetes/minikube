@@ -17,11 +17,14 @@ limitations under the License.
 package cluster
 
 import (
+	"errors"
 	"fmt"
+	"net"
 	"path/filepath"
 
 	kvm "github.com/dhiltgen/docker-machine-kvm"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -41,5 +44,16 @@ func createKVMHost(config MachineConfig) *kvm.Driver {
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", constants.MachineName, "boot2docker.iso"),
 		CacheMode:      "default",
 		IOMode:         "threads",
+	}
+}
+
+func getVMHostIP(host *host.Host) (net.IP, error) {
+	switch host.DriverName {
+	case "virtualbox":
+		return net.ParseIP("10.0.2.2"), nil
+	case "kvm":
+		return net.ParseIP("10.0.2.2"), nil
+	default:
+		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
 	}
 }
