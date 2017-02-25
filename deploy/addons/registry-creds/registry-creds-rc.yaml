@@ -5,16 +5,20 @@ metadata:
   namespace: kube-system
   labels:
     version: v1.6
+    kubernetes.io/cluster-service: "true"
+    kubernetes.io/minikube-addons: registry-creds
 spec:
   replicas: 1
   selector:
     name: registry-creds
     version: v1.6
+    kubernetes.io/cluster-service: "true"
   template:
     metadata:
       labels:
         name: registry-creds
         version: v1.6
+        kubernetes.io/cluster-service: "true"
     spec:
       containers:
       - image: upmcenterprises/registry-creds:1.6
@@ -49,6 +53,3 @@ spec:
       - name: gcr-creds
         secret:
           secretName: registry-creds-gcr
-          items:
-            - key: application_default_credentials.json
-              path: application_default_credentials.json
