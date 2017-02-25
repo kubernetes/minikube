@@ -74,6 +74,13 @@ var Addons = map[string]*Addon{
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
+	"default-storageclass": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/storageclass/storageclass.yaml",
+			constants.AddonsPath,
+			"storageclass.yaml",
+			"0640"),
+	}, true, "default-storageclass"),
 	"kube-dns": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/kube-dns/kube-dns-rc.yaml",
