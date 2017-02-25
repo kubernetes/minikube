@@ -266,7 +266,7 @@ Minikube supports [PersistentVolumes](http://kubernetes.io/docs/user-guide/persi
 These PersistentVolumes are mapped to a directory inside the minikube VM.
 
 The Minikube VM boots into a tmpfs, so most directories will not be persisted across reboots (`minikube stop`).
-However, Minikube is configured to persist files stored under the following host directories:
+However, Minikube is configured to persist files stored under the following directories in the minikube VM:
 
 * `/data`
 * `/var/lib/localkube`
@@ -288,6 +288,8 @@ spec:
   hostPath:
     path: /data/pv0001/
 ```
+
+You can also achieve persistence by creating a PV in a mounted host folder.
 
 ## Mounted Host Folders
 Some drivers will mount a host folder within the VM so that you can easily share files between the VM and host.  These are not configurable at the moment and different for the driver and OS you are using.  Note: Host folder sharing is not implemented on Linux yet.
