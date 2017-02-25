@@ -722,6 +722,33 @@ _minikube_logs()
     noun_aliases=()
 }
 
+_minikube_mount()
+{
+    last_command="minikube_mount"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--alsologtostderr")
+    flags+=("--log_backtrace_at=")
+    flags+=("--log_dir=")
+    flags+=("--logtostderr")
+    flags+=("--show-libmachine-logs")
+    flags+=("--stderrthreshold=")
+    flags+=("--use-vendored-driver")
+    flags+=("--v=")
+    two_word_flags+=("-v")
+    flags+=("--vmodule=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _minikube_service_list()
 {
     last_command="minikube_service_list"
@@ -973,6 +1000,7 @@ _minikube()
     commands+=("get-k8s-versions")
     commands+=("ip")
     commands+=("logs")
+    commands+=("mount")
     commands+=("service")
     commands+=("ssh")
     commands+=("start")

@@ -1,0 +1,18 @@
+# This is the official list of people who can contribute
+# (and typically have contributed) code to the Go9p repository.
+# The AUTHORS file lists the copyright holders; this file
+# lists people.  For example, Google employees are listed here
+# but not in AUTHORS, because Google holds the copyright.
+#
+# The submission process automatically checks to make sure
+# that people submitting code are listed in this file (by email address).
+# XXX more bumph here?
+# Names should be added to this file like so:
+#     Name <email address>
+
+# Please keep the list sorted.
+
+Andrey Mirtchovski <mirtchovski@gmail.com>
+Latchesar Ionkov <lionkov@gmail.com>
+Akshat Kumar <seed@mail.nanosouffle.net>
+Roger Peppe <rogpeppe@gmail.com>

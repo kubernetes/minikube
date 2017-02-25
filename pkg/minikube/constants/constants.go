@@ -118,3 +118,8 @@ const (
 	LocalkubeRunning     = "active"
 	LocalkubeStopped     = "inactive"
 )
+
+const (
+	DefaultUfsAddress  = ":5640"
+	DefaultUfsDebugLvl = 0
+)

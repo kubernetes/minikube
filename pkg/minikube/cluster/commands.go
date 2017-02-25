@@ -20,8 +20,8 @@ import (
 	"bytes"
 	gflag "flag"
 	"fmt"
+	"net"
 	"strings"
-
 	"text/template"
 
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -193,3 +193,10 @@ else
   fi
 fi
 `, constants.LocalkubePIDPath)
+
+func GetMount9pCommand(ip net.IP) string {
+	return fmt.Sprintf(`
+sudo mkdir /mount-9p;
+sudo mount -t 9p -o trans=tcp -o port=5640 %s /mount-9p;
+sudo chmod 775 /mount-9p;`, ip)
+}
