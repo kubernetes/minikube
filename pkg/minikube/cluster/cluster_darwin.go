@@ -19,6 +19,7 @@ package cluster
 import (
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/zchee/docker-machine-driver-xhyve/xhyve"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -35,35 +36,14 @@ func createVMwareFusionHost(config MachineConfig) drivers.Driver {
 	return d
 }
 
-type xhyveDriver struct {
-	*drivers.BaseDriver
-	Boot2DockerURL string
-	BootCmd        string
-	CPU            int
-	CaCertPath     string
-	DiskSize       int64
-	MacAddr        string
-	Memory         int
-	PrivateKeyPath string
-	UUID           string
-	NFSShare       bool
-	DiskNumber     int
-	Virtio9p       bool
-	Virtio9pFolder string
-}
-
-func createXhyveHost(config MachineConfig) *xhyveDriver {
-	return &xhyveDriver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: constants.MachineName,
-			StorePath:   constants.GetMinipath(),
-		},
-		Memory:         config.Memory,
-		CPU:            config.CPUs,
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
-		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=" + constants.MachineName,
-		DiskSize:       int64(config.DiskSize),
-		Virtio9p:       true,
-		Virtio9pFolder: "/Users",
-	}
+func createXhyveHost(config MachineConfig) *xhyve.Driver {
+	d := xhyve.NewDriver(constants.MachineName, constants.GetMinipath())
+	d.Memory = config.Memory
+	d.CPU = config.CPUs
+	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
+	d.BootCmd = "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=" + constants.MachineName
+	d.DiskSize = int64(config.DiskSize)
+	d.Virtio9p = true
+	d.Virtio9pFolder = "/Users"
+	return d
 }

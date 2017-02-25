@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/zchee/docker-machine-driver-xhyve/xhyve"
 )
 
 var driverMap = map[string]driverGetter{
@@ -42,12 +43,13 @@ func getVMWareFusionDriver(rawDriver []byte) (drivers.Driver, error) {
 	return driver, nil
 }
 
-// Xhyve driver not implemented yet for non-RPC access
 func getXhyveDriver(rawDriver []byte) (drivers.Driver, error) {
-	return nil, errors.New(`
-The Xhyve driver is not included in minikube yet.  Please follow the directions at
-https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#xhyve-driver
-`)
+	var driver drivers.Driver
+	driver = &xhyve.Driver{}
+	if err := json.Unmarshal(rawDriver, &driver); err != nil {
+		return nil, errors.Wrap(err, "Error unmarshalling xhyve driver")
+	}
+	return driver, nil
 }
 
 // StartDriver starts the desired machine driver if necessary.

@@ -32,6 +32,7 @@ BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
 BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.7.1-0
+DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
 IS_EXE ?=
 
 ifeq ($(IN_DOCKER),1)
