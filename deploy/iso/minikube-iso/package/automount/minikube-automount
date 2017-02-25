@@ -203,3 +203,9 @@ if modprobe vboxguest &> /dev/null && modprobe vboxsf &> /dev/null; then
 		try_mount_share "$line"
 	done
 fi
+
+# This script will get called when the machine is started up
+# Feel free to add any initialization you need to be ran here
+if [ -e /var/lib/boot2docker/bootlocal.sh ]; then
+    /bin/sh /var/lib/boot2docker/bootlocal.sh
+fi
