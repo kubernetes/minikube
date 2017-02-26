@@ -26,7 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/google/cadvisor/cache/memory"
-	cadvisorMetrics "github.com/google/cadvisor/container"
+	cadvisormetrics "github.com/google/cadvisor/container"
 	"github.com/google/cadvisor/events"
 	cadvisorfs "github.com/google/cadvisor/fs"
 	cadvisorhttp "github.com/google/cadvisor/http"
@@ -35,8 +35,8 @@ import (
 	"github.com/google/cadvisor/manager"
 	"github.com/google/cadvisor/metrics"
 	"github.com/google/cadvisor/utils/sysfs"
+	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/types"
-	"k8s.io/kubernetes/pkg/util/runtime"
 )
 
 type cadvisorClient struct {
@@ -101,7 +101,7 @@ func New(port uint, runtime string, rootPath string) (Interface, error) {
 	}
 
 	// Create and start the cAdvisor container manager.
-	m, err := manager.New(memory.New(statsCacheDuration, nil), sysFs, maxHousekeepingInterval, allowDynamicHousekeeping, cadvisorMetrics.MetricSet{cadvisorMetrics.NetworkTcpUsageMetrics: struct{}{}}, http.DefaultClient)
+	m, err := manager.New(memory.New(statsCacheDuration, nil), sysFs, maxHousekeepingInterval, allowDynamicHousekeeping, cadvisormetrics.MetricSet{cadvisormetrics.NetworkTcpUsageMetrics: struct{}{}}, http.DefaultClient)
 	if err != nil {
 		return nil, err
 	}

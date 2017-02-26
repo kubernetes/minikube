@@ -25,10 +25,10 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/azure"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/keymutex"
 	"k8s.io/kubernetes/pkg/util/mount"
@@ -103,13 +103,13 @@ func (plugin *azureDataDiskPlugin) RequiresRemount() bool {
 	return false
 }
 
-func (plugin *azureDataDiskPlugin) GetAccessModes() []api.PersistentVolumeAccessMode {
-	return []api.PersistentVolumeAccessMode{
-		api.ReadWriteOnce,
+func (plugin *azureDataDiskPlugin) GetAccessModes() []v1.PersistentVolumeAccessMode {
+	return []v1.PersistentVolumeAccessMode{
+		v1.ReadWriteOnce,
 	}
 }
 
-func (plugin *azureDataDiskPlugin) NewMounter(spec *volume.Spec, pod *api.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
+func (plugin *azureDataDiskPlugin) NewMounter(spec *volume.Spec, pod *v1.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
 	return plugin.newMounterInternal(spec, pod.UID, plugin.host.GetMounter())
 }
 
@@ -124,7 +124,7 @@ func (plugin *azureDataDiskPlugin) newMounterInternal(spec *volume.Spec, podUID 
 	if azure.FSType != nil {
 		fsType = *azure.FSType
 	}
-	cachingMode := api.AzureDataDiskCachingNone
+	cachingMode := v1.AzureDataDiskCachingNone
 	if azure.CachingMode != nil {
 		cachingMode = *azure.CachingMode
 	}
@@ -171,10 +171,10 @@ func (plugin *azureDataDiskPlugin) ConstructVolumeSpec(volName, mountPath string
 	if err != nil {
 		return nil, err
 	}
-	azVolume := &api.Volume{
+	azVolume := &v1.Volume{
 		Name: volName,
-		VolumeSource: api.VolumeSource{
-			AzureDisk: &api.AzureDiskVolumeSource{
+		VolumeSource: v1.VolumeSource{
+			AzureDisk: &v1.AzureDiskVolumeSource{
 				DiskName: sourceName,
 			},
 		},
@@ -192,7 +192,7 @@ type azureDisk struct {
 	podUID      types.UID
 	diskName    string
 	diskUri     string
-	cachingMode api.AzureDataDiskCachingMode
+	cachingMode v1.AzureDataDiskCachingMode
 	mounter     mount.Interface
 	plugin      *azureDataDiskPlugin
 	volume.MetricsNil
@@ -367,7 +367,7 @@ func (c *azureDiskUnmounter) TearDownAt(dir string) error {
 	return nil
 }
 
-func getVolumeSource(spec *volume.Spec) (*api.AzureDiskVolumeSource, error) {
+func getVolumeSource(spec *volume.Spec) (*v1.AzureDiskVolumeSource, error) {
 	if spec.Volume != nil && spec.Volume.AzureDisk != nil {
 		return spec.Volume.AzureDisk, nil
 	}

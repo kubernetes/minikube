@@ -26,11 +26,11 @@ import (
 	"github.com/containernetworking/cni/libcni"
 	cnitypes "github.com/containernetworking/cni/pkg/types"
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
-	"k8s.io/kubernetes/pkg/util/wait"
 )
 
 const (
@@ -180,7 +180,7 @@ func (plugin *cniNetworkPlugin) setDefaultNetwork(n *cniNetwork) {
 
 func (plugin *cniNetworkPlugin) checkInitialized() error {
 	if plugin.getDefaultNetwork() == nil {
-		return errors.New("cni config unintialized")
+		return errors.New("cni config uninitialized")
 	}
 	return nil
 }

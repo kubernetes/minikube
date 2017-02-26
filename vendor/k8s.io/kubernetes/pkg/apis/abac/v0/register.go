@@ -17,15 +17,15 @@ limitations under the License.
 package v0
 
 import (
-	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	api "k8s.io/kubernetes/pkg/apis/abac"
-	"k8s.io/kubernetes/pkg/runtime"
 )
 
 const GroupName = "abac.authorization.kubernetes.io"
 
 // GroupVersion is the API group and version for abac v0
-var SchemeGroupVersion = unversioned.GroupVersion{Group: GroupName, Version: "v0"}
+var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v0"}
 
 func init() {
 	// TODO: Delete this init function, abac should not have its own scheme.
@@ -51,4 +51,4 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (obj *Policy) GetObjectKind() unversioned.ObjectKind { return &obj.TypeMeta }
+func (obj *Policy) GetObjectKind() schema.ObjectKind { return &obj.TypeMeta }

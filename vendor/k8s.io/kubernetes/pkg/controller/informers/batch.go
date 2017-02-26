@@ -20,20 +20,20 @@ import (
 	"reflect"
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/batch"
-	"k8s.io/kubernetes/pkg/client/cache"
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	batchinternallisters "k8s.io/kubernetes/pkg/client/listers/batch/internalversion"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/watch"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+	batch "k8s.io/kubernetes/pkg/apis/batch/v1"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
+	batchv1listers "k8s.io/kubernetes/pkg/client/listers/batch/v1"
 )
 
 // JobInformer is type of SharedIndexInformer which watches and lists all jobs.
 // Interface provides constructor for informer and lister for jobs
 type JobInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() batchinternallisters.JobLister
+	Lister() batchv1listers.JobLister
 }
 
 type jobInformer struct {
@@ -61,11 +61,11 @@ func (f *jobInformer) Informer() cache.SharedIndexInformer {
 func NewJobInformer(client clientset.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
 	sharedIndexInformer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return client.Batch().Jobs(api.NamespaceAll).List(options)
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.Batch().Jobs(metav1.NamespaceAll).List(options)
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return client.Batch().Jobs(api.NamespaceAll).Watch(options)
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return client.Batch().Jobs(metav1.NamespaceAll).Watch(options)
 			},
 		},
 		&batch.Job{},
@@ -77,7 +77,7 @@ func NewJobInformer(client clientset.Interface, resyncPeriod time.Duration) cach
 }
 
 // Lister returns lister for jobInformer
-func (f *jobInformer) Lister() batchinternallisters.JobLister {
+func (f *jobInformer) Lister() batchv1listers.JobLister {
 	informer := f.Informer()
-	return batchinternallisters.NewJobLister(informer.GetIndexer())
+	return batchv1listers.NewJobLister(informer.GetIndexer())
 }
