@@ -40,4 +40,5 @@ func TestFunctional(t *testing.T) {
 	t.Run("Addons", testAddons)
 	t.Run("Dashboard", testDashboard)
 	t.Run("ServicesList", testServicesList)
+	t.Run("Provisioning", testProvisioning)
 }
