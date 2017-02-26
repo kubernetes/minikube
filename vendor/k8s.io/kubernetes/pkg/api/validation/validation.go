@@ -31,6 +31,7 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
+	genericvalidation "k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	unversionedvalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
 	"k8s.io/apimachinery/pkg/labels"
@@ -43,7 +44,6 @@ import (
 	utilpod "k8s.io/kubernetes/pkg/api/pod"
 	apiservice "k8s.io/kubernetes/pkg/api/service"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/api/validation/genericvalidation"
 	storageutil "k8s.io/kubernetes/pkg/apis/storage/util"
 	"k8s.io/kubernetes/pkg/capabilities"
 	"k8s.io/kubernetes/pkg/features"
@@ -293,12 +293,24 @@ func ValidateImmutableAnnotation(newVal string, oldVal string, annotation string
 // It doesn't return an error for rootscoped resources with namespace, because namespace should already be cleared before.
 // TODO: Remove calls to this method scattered in validations of specific resources, e.g., ValidatePodUpdate.
 func ValidateObjectMeta(meta *metav1.ObjectMeta, requiresNamespace bool, nameFn ValidateNameFunc, fldPath *field.Path) field.ErrorList {
-	return genericvalidation.ValidateObjectMeta(meta, requiresNamespace, apimachineryvalidation.ValidateNameFunc(nameFn), fldPath)
+	allErrs := genericvalidation.ValidateObjectMeta(meta, requiresNamespace, apimachineryvalidation.ValidateNameFunc(nameFn), fldPath)
+	// run additional checks for the finalizer name
+	for i := range meta.Finalizers {
+		allErrs = append(allErrs, validateKubeFinalizerName(string(meta.Finalizers[i]), fldPath.Child("finalizers").Index(i))...)
+	}
+
+	return allErrs
 }
 
 // ValidateObjectMetaUpdate validates an object's metadata when updated
 func ValidateObjectMetaUpdate(newMeta, oldMeta *metav1.ObjectMeta, fldPath *field.Path) field.ErrorList {
-	return genericvalidation.ValidateObjectMetaUpdate(newMeta, oldMeta, fldPath)
+	allErrs := genericvalidation.ValidateObjectMetaUpdate(newMeta, oldMeta, fldPath)
+	// run additional checks for the finalizer name
+	for i := range newMeta.Finalizers {
+		allErrs = append(allErrs, validateKubeFinalizerName(string(newMeta.Finalizers[i]), fldPath.Child("finalizers").Index(i))...)
+	}
+
+	return allErrs
 }
 
 func ValidateNoNewFinalizers(newFinalizers []string, oldFinalizers []string, fldPath *field.Path) field.ErrorList {
@@ -506,6 +518,14 @@ func validateVolumeSource(source *api.VolumeSource, fldPath *field.Path) field.E
 		numVolumes++
 		allErrs = append(allErrs, validateAzureDisk(source.AzureDisk, fldPath.Child("azureDisk"))...)
 	}
+	if source.Projected != nil {
+		if numVolumes > 0 {
+			allErrs = append(allErrs, field.Forbidden(fldPath.Child("projected"), "may not specify more than 1 volume type"))
+		} else {
+			numVolumes++
+			allErrs = append(allErrs, validateProjectedVolumeSource(source.Projected, fldPath.Child("projected"))...)
+		}
+	}
 
 	if numVolumes == 0 {
 		allErrs = append(allErrs, field.Required(fldPath, "must specify a volume type"))
@@ -711,6 +731,30 @@ var validDownwardAPIFieldPathExpressions = sets.NewString(
 	"metadata.labels",
 	"metadata.annotations")
 
+func validateDownwardAPIVolumeFile(file *api.DownwardAPIVolumeFile, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	if len(file.Path) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("path"), ""))
+	}
+	allErrs = append(allErrs, validateLocalNonReservedPath(file.Path, fldPath.Child("path"))...)
+	if file.FieldRef != nil {
+		allErrs = append(allErrs, validateObjectFieldSelector(file.FieldRef, &validDownwardAPIFieldPathExpressions, fldPath.Child("fieldRef"))...)
+		if file.ResourceFieldRef != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, "resource", "fieldRef and resourceFieldRef can not be specified simultaneously"))
+		}
+	} else if file.ResourceFieldRef != nil {
+		allErrs = append(allErrs, validateContainerResourceFieldSelector(file.ResourceFieldRef, &validContainerResourceFieldPathExpressions, fldPath.Child("resourceFieldRef"), true)...)
+	} else {
+		allErrs = append(allErrs, field.Required(fldPath, "one of fieldRef and resourceFieldRef is required"))
+	}
+	if file.Mode != nil && (*file.Mode > 0777 || *file.Mode < 0) {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("mode"), *file.Mode, volumeModeErrorMsg))
+	}
+
+	return allErrs
+}
+
 func validateDownwardAPIVolumeSource(downwardAPIVolume *api.DownwardAPIVolumeSource, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
 
@@ -720,24 +764,96 @@ func validateDownwardAPIVolumeSource(downwardAPIVolume *api.DownwardAPIVolumeSou
 	}
 
 	for _, file := range downwardAPIVolume.Items {
-		if len(file.Path) == 0 {
-			allErrs = append(allErrs, field.Required(fldPath.Child("path"), ""))
-		}
-		allErrs = append(allErrs, validateLocalNonReservedPath(file.Path, fldPath.Child("path"))...)
-		if file.FieldRef != nil {
-			allErrs = append(allErrs, validateObjectFieldSelector(file.FieldRef, &validDownwardAPIFieldPathExpressions, fldPath.Child("fieldRef"))...)
-			if file.ResourceFieldRef != nil {
-				allErrs = append(allErrs, field.Invalid(fldPath, "resource", "fieldRef and resourceFieldRef can not be specified simultaneously"))
+		allErrs = append(allErrs, validateDownwardAPIVolumeFile(&file, fldPath)...)
+	}
+	return allErrs
+}
+
+func validateProjectionSources(projection *api.ProjectedVolumeSource, projectionMode *int32, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	allPaths := sets.String{}
+
+	for _, source := range projection.Sources {
+		numSources := 0
+		if source.Secret != nil {
+			if numSources > 0 {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("secret"), "may not specify more than 1 volume type"))
+			} else {
+				numSources++
+				if len(source.Secret.Name) == 0 {
+					allErrs = append(allErrs, field.Required(fldPath.Child("name"), ""))
+				}
+				itemsPath := fldPath.Child("items")
+				for i, kp := range source.Secret.Items {
+					itemPath := itemsPath.Index(i)
+					allErrs = append(allErrs, validateKeyToPath(&kp, itemPath)...)
+					if len(kp.Path) > 0 {
+						curPath := kp.Path
+						if !allPaths.Has(curPath) {
+							allPaths.Insert(curPath)
+						} else {
+							allErrs = append(allErrs, field.Invalid(fldPath, source.Secret.Name, "conflicting duplicate paths"))
+						}
+					}
+				}
 			}
-		} else if file.ResourceFieldRef != nil {
-			allErrs = append(allErrs, validateContainerResourceFieldSelector(file.ResourceFieldRef, &validContainerResourceFieldPathExpressions, fldPath.Child("resourceFieldRef"), true)...)
-		} else {
-			allErrs = append(allErrs, field.Required(fldPath, "one of fieldRef and resourceFieldRef is required"))
 		}
-		if file.Mode != nil && (*file.Mode > 0777 || *file.Mode < 0) {
-			allErrs = append(allErrs, field.Invalid(fldPath.Child("mode"), *file.Mode, volumeModeErrorMsg))
+		if source.ConfigMap != nil {
+			if numSources > 0 {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("configMap"), "may not specify more than 1 volume type"))
+			} else {
+				numSources++
+				if len(source.ConfigMap.Name) == 0 {
+					allErrs = append(allErrs, field.Required(fldPath.Child("name"), ""))
+				}
+				itemsPath := fldPath.Child("items")
+				for i, kp := range source.ConfigMap.Items {
+					itemPath := itemsPath.Index(i)
+					allErrs = append(allErrs, validateKeyToPath(&kp, itemPath)...)
+					if len(kp.Path) > 0 {
+						curPath := kp.Path
+						if !allPaths.Has(curPath) {
+							allPaths.Insert(curPath)
+						} else {
+							allErrs = append(allErrs, field.Invalid(fldPath, source.ConfigMap.Name, "conflicting duplicate paths"))
+						}
+
+					}
+				}
+			}
+		}
+		if source.DownwardAPI != nil {
+			if numSources > 0 {
+				allErrs = append(allErrs, field.Forbidden(fldPath.Child("downwardAPI"), "may not specify more than 1 volume type"))
+			} else {
+				numSources++
+				for _, file := range source.DownwardAPI.Items {
+					allErrs = append(allErrs, validateDownwardAPIVolumeFile(&file, fldPath.Child("downwardAPI"))...)
+					if len(file.Path) > 0 {
+						curPath := file.Path
+						if !allPaths.Has(curPath) {
+							allPaths.Insert(curPath)
+						} else {
+							allErrs = append(allErrs, field.Invalid(fldPath, curPath, "conflicting duplicate paths"))
+						}
+
+					}
+				}
+			}
 		}
 	}
+	return allErrs
+}
+
+func validateProjectedVolumeSource(projection *api.ProjectedVolumeSource, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	projectionMode := projection.DefaultMode
+	if projectionMode != nil && (*projectionMode > 0777 || *projectionMode < 0) {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("defaultMode"), *projectionMode, volumeModeErrorMsg))
+	}
+
+	allErrs = append(allErrs, validateProjectionSources(projection, projectionMode, fldPath)...)
 	return allErrs
 }
 
@@ -1409,7 +1525,7 @@ func AccumulateUniqueHostPorts(containers []api.Container, accumulator *sets.Str
 			if port == 0 {
 				continue
 			}
-			str := fmt.Sprintf("%d/%s", port, ctr.Ports[pi].Protocol)
+			str := fmt.Sprintf("%s/%s/%d", ctr.Ports[pi].Protocol, ctr.Ports[pi].HostIP, port)
 			if accumulator.Has(str) {
 				allErrs = append(allErrs, field.Duplicate(idxPath.Child("hostPort"), str))
 			} else {
@@ -3326,7 +3442,7 @@ func ValidateResourceQuotaUpdate(newResourceQuota, oldResourceQuota *api.Resourc
 		oldScopes.Insert(string(scope))
 	}
 	if !oldScopes.Equal(newScopes) {
-		allErrs = append(allErrs, field.Invalid(fldPath, newResourceQuota.Spec.Scopes, "field is immutable"))
+		allErrs = append(allErrs, field.Invalid(fldPath, newResourceQuota.Spec.Scopes, fieldImmutableErrorMsg))
 	}
 
 	newResourceQuota.Status = oldResourceQuota.Status
@@ -3367,7 +3483,24 @@ func ValidateNamespace(namespace *api.Namespace) field.ErrorList {
 
 // Validate finalizer names
 func validateFinalizerName(stringValue string, fldPath *field.Path) field.ErrorList {
-	return genericvalidation.ValidateFinalizerName(stringValue, fldPath)
+	allErrs := genericvalidation.ValidateFinalizerName(stringValue, fldPath)
+	for _, err := range validateKubeFinalizerName(stringValue, fldPath) {
+		allErrs = append(allErrs, err)
+	}
+
+	return allErrs
+}
+
+// validateKubeFinalizerName checks for "standard" names of legacy finalizer
+func validateKubeFinalizerName(stringValue string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+	if len(strings.Split(stringValue, "/")) == 1 {
+		if !api.IsStandardFinalizerName(stringValue) {
+			return append(allErrs, field.Invalid(fldPath, stringValue, "name is neither a standard finalizer name nor is it fully qualified"))
+		}
+	}
+
+	return allErrs
 }
 
 // ValidateNamespaceUpdate tests to make sure a namespace update can be applied.

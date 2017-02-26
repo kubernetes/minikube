@@ -33,10 +33,6 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 	scheme.AddTypeDefaultingFunc(&DaemonSetList{}, func(obj interface{}) { SetObjectDefaults_DaemonSetList(obj.(*DaemonSetList)) })
 	scheme.AddTypeDefaultingFunc(&Deployment{}, func(obj interface{}) { SetObjectDefaults_Deployment(obj.(*Deployment)) })
 	scheme.AddTypeDefaultingFunc(&DeploymentList{}, func(obj interface{}) { SetObjectDefaults_DeploymentList(obj.(*DeploymentList)) })
-	scheme.AddTypeDefaultingFunc(&HorizontalPodAutoscaler{}, func(obj interface{}) { SetObjectDefaults_HorizontalPodAutoscaler(obj.(*HorizontalPodAutoscaler)) })
-	scheme.AddTypeDefaultingFunc(&HorizontalPodAutoscalerList{}, func(obj interface{}) {
-		SetObjectDefaults_HorizontalPodAutoscalerList(obj.(*HorizontalPodAutoscalerList))
-	})
 	scheme.AddTypeDefaultingFunc(&NetworkPolicy{}, func(obj interface{}) { SetObjectDefaults_NetworkPolicy(obj.(*NetworkPolicy)) })
 	scheme.AddTypeDefaultingFunc(&NetworkPolicyList{}, func(obj interface{}) { SetObjectDefaults_NetworkPolicyList(obj.(*NetworkPolicyList)) })
 	scheme.AddTypeDefaultingFunc(&ReplicaSet{}, func(obj interface{}) { SetObjectDefaults_ReplicaSet(obj.(*ReplicaSet)) })
@@ -73,6 +69,20 @@ func SetObjectDefaults_DaemonSet(in *DaemonSet) {
 		}
 		if a.VolumeSource.AzureDisk != nil {
 			v1.SetDefaults_AzureDiskVolumeSource(a.VolumeSource.AzureDisk)
+		}
+		if a.VolumeSource.Projected != nil {
+			v1.SetDefaults_ProjectedVolumeSource(a.VolumeSource.Projected)
+			for j := range a.VolumeSource.Projected.Sources {
+				b := &a.VolumeSource.Projected.Sources[j]
+				if b.DownwardAPI != nil {
+					for k := range b.DownwardAPI.Items {
+						c := &b.DownwardAPI.Items[k]
+						if c.FieldRef != nil {
+							v1.SetDefaults_ObjectFieldSelector(c.FieldRef)
+						}
+					}
+				}
+			}
 		}
 	}
 	for i := range in.Spec.Template.Spec.InitContainers {
@@ -198,6 +208,20 @@ func SetObjectDefaults_Deployment(in *Deployment) {
 		if a.VolumeSource.AzureDisk != nil {
 			v1.SetDefaults_AzureDiskVolumeSource(a.VolumeSource.AzureDisk)
 		}
+		if a.VolumeSource.Projected != nil {
+			v1.SetDefaults_ProjectedVolumeSource(a.VolumeSource.Projected)
+			for j := range a.VolumeSource.Projected.Sources {
+				b := &a.VolumeSource.Projected.Sources[j]
+				if b.DownwardAPI != nil {
+					for k := range b.DownwardAPI.Items {
+						c := &b.DownwardAPI.Items[k]
+						if c.FieldRef != nil {
+							v1.SetDefaults_ObjectFieldSelector(c.FieldRef)
+						}
+					}
+				}
+			}
+		}
 	}
 	for i := range in.Spec.Template.Spec.InitContainers {
 		a := &in.Spec.Template.Spec.InitContainers[i]
@@ -292,17 +316,6 @@ func SetObjectDefaults_DeploymentList(in *DeploymentList) {
 	}
 }
 
-func SetObjectDefaults_HorizontalPodAutoscaler(in *HorizontalPodAutoscaler) {
-	SetDefaults_HorizontalPodAutoscaler(in)
-}
-
-func SetObjectDefaults_HorizontalPodAutoscalerList(in *HorizontalPodAutoscalerList) {
-	for i := range in.Items {
-		a := &in.Items[i]
-		SetObjectDefaults_HorizontalPodAutoscaler(a)
-	}
-}
-
 func SetObjectDefaults_NetworkPolicy(in *NetworkPolicy) {
 	SetDefaults_NetworkPolicy(in)
 }
@@ -343,6 +356,20 @@ func SetObjectDefaults_ReplicaSet(in *ReplicaSet) {
 		}
 		if a.VolumeSource.AzureDisk != nil {
 			v1.SetDefaults_AzureDiskVolumeSource(a.VolumeSource.AzureDisk)
+		}
+		if a.VolumeSource.Projected != nil {
+			v1.SetDefaults_ProjectedVolumeSource(a.VolumeSource.Projected)
+			for j := range a.VolumeSource.Projected.Sources {
+				b := &a.VolumeSource.Projected.Sources[j]
+				if b.DownwardAPI != nil {
+					for k := range b.DownwardAPI.Items {
+						c := &b.DownwardAPI.Items[k]
+						if c.FieldRef != nil {
+							v1.SetDefaults_ObjectFieldSelector(c.FieldRef)
+						}
+					}
+				}
+			}
 		}
 	}
 	for i := range in.Spec.Template.Spec.InitContainers {

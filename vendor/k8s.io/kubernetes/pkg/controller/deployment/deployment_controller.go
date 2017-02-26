@@ -35,30 +35,27 @@ import (
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	clientv1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/v1"
 	extensions "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	v1core "k8s.io/kubernetes/pkg/client/clientset_generated/clientset/typed/core/v1"
-	"k8s.io/kubernetes/pkg/client/legacylisters"
-	"k8s.io/kubernetes/pkg/client/record"
+	coreinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/core/v1"
+	extensionsinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/extensions/v1beta1"
+	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
+	extensionslisters "k8s.io/kubernetes/pkg/client/listers/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/deployment/util"
-	"k8s.io/kubernetes/pkg/controller/informers"
 	"k8s.io/kubernetes/pkg/util/metrics"
 )
 
 const (
-	// FullDeploymentResyncPeriod means we'll attempt to recompute the required replicas
-	// of all deployments.
-	// This recomputation happens based on contents in the local caches.
-	FullDeploymentResyncPeriod = 30 * time.Second
-	// We must avoid creating new replica set / counting pods until the replica set / pods store has synced.
-	// If it hasn't synced, to avoid a hot loop, we'll wait this long between checks.
-	StoreSyncedPollPeriod = 100 * time.Millisecond
-	// MaxRetries is the number of times a deployment will be retried before it is dropped out of the queue.
-	MaxRetries = 5
+	// maxRetries is the number of times a deployment will be retried before it is dropped out of the queue.
+	maxRetries = 5
 )
 
 func getDeploymentKind() schema.GroupVersionKind {
@@ -68,6 +65,7 @@ func getDeploymentKind() schema.GroupVersionKind {
 // DeploymentController is responsible for synchronizing Deployment objects stored
 // in the system with actual running replica sets and pods.
 type DeploymentController struct {
+	// rsControl is used for adopting/releasing replica sets.
 	rsControl     controller.RSControlInterface
 	client        clientset.Interface
 	eventRecorder record.EventRecorder
@@ -77,12 +75,12 @@ type DeploymentController struct {
 	// used for unit testing
 	enqueueDeployment func(deployment *extensions.Deployment)
 
-	// A store of deployments, populated by the dController
-	dLister *listers.StoreToDeploymentLister
-	// A store of ReplicaSets, populated by the rsController
-	rsLister *listers.StoreToReplicaSetLister
-	// A store of pods, populated by the podController
-	podLister *listers.StoreToPodLister
+	// dLister can list/get deployments from the shared informer's store
+	dLister extensionslisters.DeploymentLister
+	// rsLister can list/get replica sets from the shared informer's store
+	rsLister extensionslisters.ReplicaSetLister
+	// podLister can list/get pods from the shared informer's store
+	podLister corelisters.PodLister
 
 	// dListerSynced returns true if the Deployment store has been synced at least once.
 	// Added as a member to the struct to allow injection for testing.
@@ -101,18 +99,18 @@ type DeploymentController struct {
 }
 
 // NewDeploymentController creates a new DeploymentController.
-func NewDeploymentController(dInformer informers.DeploymentInformer, rsInformer informers.ReplicaSetInformer, podInformer informers.PodInformer, client clientset.Interface) *DeploymentController {
+func NewDeploymentController(dInformer extensionsinformers.DeploymentInformer, rsInformer extensionsinformers.ReplicaSetInformer, podInformer coreinformers.PodInformer, client clientset.Interface) *DeploymentController {
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
 	// TODO: remove the wrapper when every clients have moved to use the clientset.
-	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: client.Core().Events("")})
+	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: v1core.New(client.Core().RESTClient()).Events("")})
 
 	if client != nil && client.Core().RESTClient().GetRateLimiter() != nil {
 		metrics.RegisterMetricAndTrackRateLimiterUsage("deployment_controller", client.Core().RESTClient().GetRateLimiter())
 	}
 	dc := &DeploymentController{
 		client:        client,
-		eventRecorder: eventBroadcaster.NewRecorder(v1.EventSource{Component: "deployment-controller"}),
+		eventRecorder: eventBroadcaster.NewRecorder(api.Scheme, clientv1.EventSource{Component: "deployment-controller"}),
 		queue:         workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "deployment"),
 		progressQueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "progress-check"),
 	}
@@ -157,6 +155,7 @@ func (dc *DeploymentController) Run(workers int, stopCh <-chan struct{}) {
 	glog.Infof("Starting deployment controller")
 
 	if !cache.WaitForCacheSync(stopCh, dc.dListerSynced, dc.rsListerSynced, dc.podListerSynced) {
+		utilruntime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
 
@@ -305,12 +304,12 @@ func (dc *DeploymentController) deleteReplicaSet(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			utilruntime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v, could take up to %v before a deployment recreates/updates replicasets", obj, FullDeploymentResyncPeriod))
+			utilruntime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
 			return
 		}
 		rs, ok = tombstone.Obj.(*extensions.ReplicaSet)
 		if !ok {
-			utilruntime.HandleError(fmt.Errorf("Tombstone contained object that is not a ReplicaSet %#v, could take up to %v before a deployment recreates/updates replicasets", obj, FullDeploymentResyncPeriod))
+			utilruntime.HandleError(fmt.Errorf("Tombstone contained object that is not a ReplicaSet %#v", obj))
 			return
 		}
 	}
@@ -331,12 +330,12 @@ func (dc *DeploymentController) deletePod(obj interface{}) {
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
-			utilruntime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v, could take up to %v before a deployment recreates/updates pod", obj, FullDeploymentResyncPeriod))
+			utilruntime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
 			return
 		}
 		pod, ok = tombstone.Obj.(*v1.Pod)
 		if !ok {
-			utilruntime.HandleError(fmt.Errorf("Tombstone contained object that is not a pod %#v, could take up to %v before a deployment recreates/updates pods", obj, FullDeploymentResyncPeriod))
+			utilruntime.HandleError(fmt.Errorf("Tombstone contained object that is not a pod %#v", obj))
 			return
 		}
 	}
@@ -433,7 +432,7 @@ func (dc *DeploymentController) handleErr(err error, key interface{}) {
 		return
 	}
 
-	if dc.queue.NumRequeues(key) < MaxRetries {
+	if dc.queue.NumRequeues(key) < maxRetries {
 		glog.V(2).Infof("Error syncing deployment %v: %v", key, err)
 		dc.queue.AddRateLimited(key)
 		return
@@ -495,17 +494,20 @@ func (dc *DeploymentController) syncDeployment(key string) error {
 		glog.V(4).Infof("Finished syncing deployment %q (%v)", key, time.Now().Sub(startTime))
 	}()
 
-	obj, exists, err := dc.dLister.Indexer.GetByKey(key)
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return err
+	}
+	deployment, err := dc.dLister.Deployments(namespace).Get(name)
+	if errors.IsNotFound(err) {
+		glog.Infof("Deployment has been deleted %v", key)
+		return nil
+	}
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Unable to retrieve deployment %v from store: %v", key, err))
 		return err
 	}
-	if !exists {
-		glog.Infof("Deployment has been deleted %v", key)
-		return nil
-	}
 
-	deployment := obj.(*extensions.Deployment)
 	// Deep-copy otherwise we are mutating our cache.
 	// TODO: Deep-copy only when needed.
 	d, err := util.DeploymentDeepCopy(deployment)
@@ -755,6 +757,7 @@ func (dc *DeploymentController) checkNextItemForProgress() bool {
 		utilruntime.HandleError(err)
 	}
 	if err == nil && needsResync {
+		glog.V(2).Infof("Deployment %q has failed progressing - syncing it back to the main queue for an update", key.(string))
 		dc.queue.AddRateLimited(key)
 	}
 	dc.progressQueue.Forget(key)
@@ -764,15 +767,18 @@ func (dc *DeploymentController) checkNextItemForProgress() bool {
 // checkForProgress checks the progress for the provided deployment. Meant to be called
 // by the progressWorker and work on items synced in a secondary queue.
 func (dc *DeploymentController) checkForProgress(key string) (bool, error) {
-	obj, exists, err := dc.dLister.Indexer.GetByKey(key)
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return false, err
+	}
+	deployment, err := dc.dLister.Deployments(namespace).Get(name)
+	if errors.IsNotFound(err) {
+		return false, nil
+	}
 	if err != nil {
 		glog.V(2).Infof("Cannot retrieve deployment %q found in the secondary queue: %#v", key, err)
 		return false, err
 	}
-	if !exists {
-		return false, nil
-	}
-	deployment := obj.(*extensions.Deployment)
 	cond := util.GetDeploymentCondition(deployment.Status, extensions.DeploymentProgressing)
 	// Already marked with a terminal reason - no need to add it back to the main queue.
 	if cond != nil && (cond.Reason == util.TimedOutReason || cond.Reason == util.NewRSAvailableReason) {
@@ -785,5 +791,6 @@ func (dc *DeploymentController) checkForProgress(key string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	glog.V(2).Infof("Syncing deployment %q for a progress check", key)
 	return dc.hasFailed(d)
 }

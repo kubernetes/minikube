@@ -20,19 +20,19 @@ package factory
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
-	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/api/v1"
+	extensions "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	"k8s.io/kubernetes/pkg/client/legacylisters"
 	"k8s.io/kubernetes/pkg/controller/informers"
@@ -41,9 +41,7 @@ import (
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
 	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/api/validation"
-
-	"github.com/golang/glog"
-	extensions "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
+	"k8s.io/kubernetes/plugin/pkg/scheduler/core"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/util"
 )
@@ -98,16 +96,13 @@ type ConfigFactory struct {
 	// HardPodAffinitySymmetricWeight represents the weight of implicit PreferredDuringScheduling affinity rule, in the range 0-100.
 	hardPodAffinitySymmetricWeight int
 
-	// Indicate the "all topologies" set for empty topologyKey when it's used for PreferredDuringScheduling pod anti-affinity.
-	failureDomains []string
-
 	// Equivalence class cache
-	equivalencePodCache *scheduler.EquivalenceCache
+	equivalencePodCache *core.EquivalenceCache
 }
 
 // NewConfigFactory initializes the default implementation of a Configurator To encourage eventual privatization of the struct type, we only
 // return the interface.
-func NewConfigFactory(client clientset.Interface, schedulerName string, hardPodAffinitySymmetricWeight int, failureDomains string) scheduler.Configurator {
+func NewConfigFactory(client clientset.Interface, schedulerName string, hardPodAffinitySymmetricWeight int) scheduler.Configurator {
 	stopEverything := make(chan struct{})
 	schedulerCache := schedulercache.New(30*time.Second, stopEverything)
 
@@ -132,7 +127,6 @@ func NewConfigFactory(client clientset.Interface, schedulerName string, hardPodA
 		StopEverything:                 stopEverything,
 		schedulerName:                  schedulerName,
 		hardPodAffinitySymmetricWeight: hardPodAffinitySymmetricWeight,
-		failureDomains:                 strings.Split(failureDomains, ","),
 	}
 
 	c.podLister = schedulerCache
@@ -198,10 +192,6 @@ func (c *ConfigFactory) GetNodeStore() cache.Store {
 
 func (c *ConfigFactory) GetHardPodAffinitySymmetricWeight() int {
 	return c.hardPodAffinitySymmetricWeight
-}
-
-func (c *ConfigFactory) GetFailureDomains() []string {
-	return c.failureDomains
 }
 
 func (f *ConfigFactory) GetSchedulerName() string {
@@ -360,7 +350,7 @@ func (f *ConfigFactory) CreateFromConfig(policy schedulerapi.Policy) (*scheduler
 	if len(policy.ExtenderConfigs) != 0 {
 		for ii := range policy.ExtenderConfigs {
 			glog.V(2).Infof("Creating extender with config %+v", policy.ExtenderConfigs[ii])
-			if extender, err := scheduler.NewHTTPExtender(&policy.ExtenderConfigs[ii], policy.APIVersion); err != nil {
+			if extender, err := core.NewHTTPExtender(&policy.ExtenderConfigs[ii], policy.APIVersion); err != nil {
 				return nil, err
 			} else {
 				extenders = append(extenders, extender)
@@ -399,7 +389,7 @@ func (f *ConfigFactory) CreateFromKeys(predicateKeys, priorityKeys sets.String, 
 	}
 
 	f.Run()
-	algo := scheduler.NewGenericScheduler(f.schedulerCache, predicateFuncs, predicateMetaProducer, priorityConfigs, priorityMetaProducer, extenders)
+	algo := core.NewGenericScheduler(f.schedulerCache, predicateFuncs, predicateMetaProducer, priorityConfigs, priorityMetaProducer, extenders)
 	podBackoff := util.CreateDefaultPodBackoff()
 	return &scheduler.Config{
 		SchedulerCache: f.schedulerCache,
@@ -452,12 +442,6 @@ func (f *ConfigFactory) GetPredicates(predicateKeys sets.String) (map[string]alg
 }
 
 func (f *ConfigFactory) getPluginArgs() (*PluginFactoryArgs, error) {
-	for _, failureDomain := range f.failureDomains {
-		if errs := utilvalidation.IsQualifiedName(failureDomain); len(errs) != 0 {
-			return nil, fmt.Errorf("invalid failure domain: %q: %s", failureDomain, strings.Join(errs, ";"))
-		}
-	}
-
 	return &PluginFactoryArgs{
 		PodLister:        f.podLister,
 		ServiceLister:    f.serviceLister,
@@ -469,7 +453,6 @@ func (f *ConfigFactory) getPluginArgs() (*PluginFactoryArgs, error) {
 		PVInfo:     f.pVLister,
 		PVCInfo:    &predicates.CachedPersistentVolumeClaimInfo{StoreToPersistentVolumeClaimLister: f.pVCLister},
 		HardPodAffinitySymmetricWeight: f.hardPodAffinitySymmetricWeight,
-		FailureDomains:                 sets.NewString(f.failureDomains...).List(),
 	}, nil
 }
 
@@ -594,7 +577,7 @@ func (factory *ConfigFactory) createReplicaSetLW() *cache.ListWatch {
 
 func (factory *ConfigFactory) MakeDefaultErrorFunc(backoff *util.PodBackoff, podQueue *cache.FIFO) func(pod *v1.Pod, err error) {
 	return func(pod *v1.Pod, err error) {
-		if err == scheduler.ErrNoNodesAvailable {
+		if err == core.ErrNoNodesAvailable {
 			glog.V(4).Infof("Unable to schedule %v %v: no nodes are registered to the cluster; waiting", pod.Namespace, pod.Name)
 		} else {
 			glog.Errorf("Error scheduling %v %v: %v; retrying", pod.Namespace, pod.Name, err)

@@ -37,16 +37,18 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/server/healthz"
 	"k8s.io/client-go/discovery"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	clientv1 "k8s.io/client-go/pkg/api/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/record"
 	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
-	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	v1core "k8s.io/kubernetes/pkg/client/clientset_generated/clientset/typed/core/v1"
+	newinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions"
 	"k8s.io/kubernetes/pkg/client/leaderelection"
 	"k8s.io/kubernetes/pkg/client/leaderelection/resourcelock"
-	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/informers"
@@ -91,6 +93,9 @@ controller, and serviceaccounts controller.`,
 	return cmd
 }
 
+// ResyncPeriod returns a function which generates a duration each time it is
+// invoked; this is so that multiple controllers don't get into lock-step and all
+// hammer the apiserver with list requests simultaneously.
 func ResyncPeriod(s *options.CMServer) func() time.Duration {
 	return func() time.Duration {
 		factor := rand.Float64() + 1
@@ -144,8 +149,8 @@ func Run(s *options.CMServer) error {
 
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(glog.Infof)
-	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: kubeClient.Core().Events("")})
-	recorder := eventBroadcaster.NewRecorder(v1.EventSource{Component: "controller-manager"})
+	eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: v1core.New(kubeClient.Core().RESTClient()).Events("")})
+	recorder := eventBroadcaster.NewRecorder(api.Scheme, clientv1.EventSource{Component: "controller-manager"})
 
 	run := func(stop <-chan struct{}) {
 		rootClientBuilder := controller.SimpleControllerClientBuilder{
@@ -154,9 +159,10 @@ func Run(s *options.CMServer) error {
 		var clientBuilder controller.ControllerClientBuilder
 		if len(s.ServiceAccountKeyFile) > 0 && s.UseServiceAccountCredentials {
 			clientBuilder = controller.SAControllerClientBuilder{
-				ClientConfig: restclient.AnonymousClientConfig(kubeconfig),
-				CoreClient:   kubeClient.Core(),
-				Namespace:    "kube-system",
+				ClientConfig:         restclient.AnonymousClientConfig(kubeconfig),
+				CoreClient:           kubeClient.Core(),
+				AuthenticationClient: kubeClient.Authentication(),
+				Namespace:            "kube-system",
 			}
 		} else {
 			clientBuilder = rootClientBuilder
@@ -209,8 +215,13 @@ type ControllerContext struct {
 	// ClientBuilder will provide a client for this controller to use
 	ClientBuilder controller.ControllerClientBuilder
 
-	// InformerFactory gives access to informers for the controller
+	// InformerFactory gives access to informers for the controller.
+	// TODO delete this instance once the conversion to generated informers is complete.
 	InformerFactory informers.SharedInformerFactory
+
+	// NewInformerFactory gives access to informers for the controller.
+	// TODO rename this to InformerFactory once the conversion to generated informers is complete.
+	NewInformerFactory newinformers.SharedInformerFactory
 
 	// Options provides access to init options for a given controller
 	Options options.CMServer
@@ -260,7 +271,10 @@ func KnownControllers() []string {
 	return sets.StringKeySet(newControllerInitializers()).List()
 }
 
-var ControllersDisabledByDefault = sets.NewString()
+var ControllersDisabledByDefault = sets.NewString(
+	"bootstrapsigner",
+	"tokencleaner",
+)
 
 func newControllerInitializers() map[string]InitFunc {
 	controllers := map[string]InitFunc{}
@@ -280,6 +294,9 @@ func newControllerInitializers() map[string]InitFunc {
 	controllers["statefuleset"] = startStatefulSetController
 	controllers["cronjob"] = startCronJobController
 	controllers["certificatesigningrequests"] = startCSRController
+	controllers["ttl"] = startTTLController
+	controllers["bootstrapsigner"] = startBootstrapSignerController
+	controllers["tokencleaner"] = startTokenCleanerController
 
 	return controllers
 }
@@ -325,7 +342,10 @@ func getAvailableResources(clientBuilder controller.ControllerClientBuilder) (ma
 }
 
 func StartControllers(controllers map[string]InitFunc, s *options.CMServer, rootClientBuilder, clientBuilder controller.ControllerClientBuilder, stop <-chan struct{}) error {
-	sharedInformers := informers.NewSharedInformerFactory(rootClientBuilder.ClientOrDie("shared-informers"), nil, ResyncPeriod(s)())
+	versionedClient := rootClientBuilder.ClientOrDie("shared-informers")
+	// TODO replace sharedInformers with newSharedInformers
+	sharedInformers := informers.NewSharedInformerFactory(versionedClient, nil, ResyncPeriod(s)())
+	newSharedInformers := newinformers.NewSharedInformerFactory(versionedClient, ResyncPeriod(s)())
 
 	// always start the SA token controller first using a full-power client, since it needs to mint tokens for the rest
 	if len(s.ServiceAccountKeyFile) > 0 {
@@ -365,6 +385,7 @@ func StartControllers(controllers map[string]InitFunc, s *options.CMServer, root
 	ctx := ControllerContext{
 		ClientBuilder:      clientBuilder,
 		InformerFactory:    sharedInformers,
+		NewInformerFactory: newSharedInformers,
 		Options:            *s,
 		AvailableResources: availableResources,
 		Stop:               stop,
@@ -405,22 +426,42 @@ func StartControllers(controllers map[string]InitFunc, s *options.CMServer, root
 		glog.Warningf("Unsuccessful parsing of service CIDR %v: %v", s.ServiceCIDR, err)
 	}
 	nodeController, err := nodecontroller.NewNodeController(
-		sharedInformers.Pods(), sharedInformers.Nodes(), sharedInformers.DaemonSets(),
-		cloud, clientBuilder.ClientOrDie("node-controller"),
-		s.PodEvictionTimeout.Duration, s.NodeEvictionRate, s.SecondaryNodeEvictionRate, s.LargeClusterSizeThreshold, s.UnhealthyZoneThreshold, s.NodeMonitorGracePeriod.Duration,
-		s.NodeStartupGracePeriod.Duration, s.NodeMonitorPeriod.Duration, clusterCIDR, serviceCIDR,
-		int(s.NodeCIDRMaskSize), s.AllocateNodeCIDRs)
+		newSharedInformers.Core().V1().Pods(),
+		newSharedInformers.Core().V1().Nodes(),
+		newSharedInformers.Extensions().V1beta1().DaemonSets(),
+		cloud,
+		clientBuilder.ClientOrDie("node-controller"),
+		s.PodEvictionTimeout.Duration,
+		s.NodeEvictionRate,
+		s.SecondaryNodeEvictionRate,
+		s.LargeClusterSizeThreshold,
+		s.UnhealthyZoneThreshold,
+		s.NodeMonitorGracePeriod.Duration,
+		s.NodeStartupGracePeriod.Duration,
+		s.NodeMonitorPeriod.Duration,
+		clusterCIDR,
+		serviceCIDR,
+		int(s.NodeCIDRMaskSize),
+		s.AllocateNodeCIDRs,
+		s.EnableTaintManager,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to initialize nodecontroller: %v", err)
 	}
 	nodeController.Run()
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
-	serviceController, err := servicecontroller.New(cloud, clientBuilder.ClientOrDie("service-controller"), s.ClusterName)
+	serviceController, err := servicecontroller.New(
+		cloud,
+		clientBuilder.ClientOrDie("service-controller"),
+		newSharedInformers.Core().V1().Services(),
+		newSharedInformers.Core().V1().Nodes(),
+		s.ClusterName,
+	)
 	if err != nil {
 		glog.Errorf("Failed to start service controller: %v", err)
 	} else {
-		serviceController.Run(int(s.ConcurrentServiceSyncs))
+		go serviceController.Run(stop, int(s.ConcurrentServiceSyncs))
 	}
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
@@ -430,8 +471,8 @@ func StartControllers(controllers map[string]InitFunc, s *options.CMServer, root
 		} else if routes, ok := cloud.Routes(); !ok {
 			glog.Warning("configure-cloud-routes is set, but cloud provider does not support routes. Will not configure cloud provider routes.")
 		} else {
-			routeController := routecontroller.New(routes, clientBuilder.ClientOrDie("route-controller"), s.ClusterName, clusterCIDR)
-			routeController.Run(s.RouteReconciliationPeriod.Duration)
+			routeController := routecontroller.New(routes, clientBuilder.ClientOrDie("route-controller"), newSharedInformers.Core().V1().Nodes(), s.ClusterName, clusterCIDR)
+			go routeController.Run(stop, s.RouteReconciliationPeriod.Duration)
 			time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 		}
 	} else {
@@ -449,6 +490,9 @@ func StartControllers(controllers map[string]InitFunc, s *options.CMServer, root
 		VolumePlugins:             ProbeControllerVolumePlugins(cloud, s.VolumeConfiguration),
 		Cloud:                     cloud,
 		ClusterName:               s.ClusterName,
+		VolumeInformer:            newSharedInformers.Core().V1().PersistentVolumes(),
+		ClaimInformer:             newSharedInformers.Core().V1().PersistentVolumeClaims(),
+		ClassInformer:             newSharedInformers.Storage().V1beta1().StorageClasses(),
 		EnableDynamicProvisioning: s.VolumeConfiguration.EnableDynamicProvisioning,
 	}
 	volumeController := persistentvolumecontroller.NewController(params)
@@ -462,10 +506,10 @@ func StartControllers(controllers map[string]InitFunc, s *options.CMServer, root
 	attachDetachController, attachDetachControllerErr :=
 		attachdetach.NewAttachDetachController(
 			clientBuilder.ClientOrDie("attachdetach-controller"),
-			sharedInformers.Pods().Informer(),
-			sharedInformers.Nodes().Informer(),
-			sharedInformers.PersistentVolumeClaims().Informer(),
-			sharedInformers.PersistentVolumes().Informer(),
+			newSharedInformers.Core().V1().Pods(),
+			newSharedInformers.Core().V1().Nodes(),
+			newSharedInformers.Core().V1().PersistentVolumeClaims(),
+			newSharedInformers.Core().V1().PersistentVolumes(),
 			cloud,
 			ProbeAttachableVolumePlugins(s.VolumeConfiguration),
 			s.DisableAttachDetachReconcilerSync,
@@ -477,7 +521,9 @@ func StartControllers(controllers map[string]InitFunc, s *options.CMServer, root
 	go attachDetachController.Run(stop)
 	time.Sleep(wait.Jitter(s.ControllerStartInterval.Duration, ControllerStartJitter))
 
+	// TODO replace sharedInformers with newSharedInformers
 	sharedInformers.Start(stop)
+	newSharedInformers.Start(stop)
 
 	select {}
 }
