@@ -21,23 +21,23 @@ import (
 	"fmt"
 	"path"
 	"reflect"
-	"strings"
 	"time"
-
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/meta"
-	"k8s.io/kubernetes/pkg/conversion"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/storage/etcd/metrics"
-	etcdutil "k8s.io/kubernetes/pkg/storage/etcd/util"
-	"k8s.io/kubernetes/pkg/util"
-	utilcache "k8s.io/kubernetes/pkg/util/cache"
-	"k8s.io/kubernetes/pkg/watch"
 
 	etcd "github.com/coreos/etcd/client"
 	"github.com/golang/glog"
 	"golang.org/x/net/context"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/apiserver/pkg/storage/etcd/metrics"
+	utilcache "k8s.io/apiserver/pkg/util/cache"
+	utiltrace "k8s.io/apiserver/pkg/util/trace"
+	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/storage"
+	etcdutil "k8s.io/kubernetes/pkg/storage/etcd/util"
 )
 
 // Creates a new storage interface from the client
@@ -92,12 +92,12 @@ func (h *etcdHelper) Versioner() storage.Versioner {
 
 // Implements storage.Interface.
 func (h *etcdHelper) Create(ctx context.Context, key string, obj, out runtime.Object, ttl uint64) error {
-	trace := util.NewTrace("etcdHelper::Create " + getTypeName(obj))
+	trace := utiltrace.New("etcdHelper::Create " + getTypeName(obj))
 	defer trace.LogIfLong(250 * time.Millisecond)
 	if ctx == nil {
 		glog.Errorf("Context is nil")
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	data, err := runtime.Encode(h.codec, obj)
 	trace.Step("Object encoded")
 	if err != nil {
@@ -132,7 +132,7 @@ func checkPreconditions(key string, preconditions *storage.Preconditions, out ru
 	if preconditions == nil {
 		return nil
 	}
-	objMeta, err := api.ObjectMetaFor(out)
+	objMeta, err := metav1.ObjectMetaFor(out)
 	if err != nil {
 		return storage.NewInternalErrorf("can't enforce preconditions %v on un-introspectable object %v, got error: %v", *preconditions, out, err)
 	}
@@ -148,7 +148,7 @@ func (h *etcdHelper) Delete(ctx context.Context, key string, out runtime.Object,
 	if ctx == nil {
 		glog.Errorf("Context is nil")
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	v, err := conversion.EnforcePtr(out)
 	if err != nil {
 		panic("unable to convert output object to pointer")
@@ -210,7 +210,7 @@ func (h *etcdHelper) Watch(ctx context.Context, key string, resourceVersion stri
 	if err != nil {
 		return nil, err
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	w := newEtcdWatcher(false, h.quorum, nil, storage.SimpleFilter(pred), h.codec, h.versioner, nil, h)
 	go w.etcdWatch(ctx, h.etcdKeysAPI, key, watchRV)
 	return w, nil
@@ -225,18 +225,18 @@ func (h *etcdHelper) WatchList(ctx context.Context, key string, resourceVersion 
 	if err != nil {
 		return nil, err
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	w := newEtcdWatcher(true, h.quorum, exceptKey(key), storage.SimpleFilter(pred), h.codec, h.versioner, nil, h)
 	go w.etcdWatch(ctx, h.etcdKeysAPI, key, watchRV)
 	return w, nil
 }
 
 // Implements storage.Interface.
-func (h *etcdHelper) Get(ctx context.Context, key string, objPtr runtime.Object, ignoreNotFound bool) error {
+func (h *etcdHelper) Get(ctx context.Context, key string, resourceVersion string, objPtr runtime.Object, ignoreNotFound bool) error {
 	if ctx == nil {
 		glog.Errorf("Context is nil")
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	_, _, _, err := h.bodyAndExtractObj(ctx, key, objPtr, ignoreNotFound)
 	return err
 }
@@ -301,12 +301,12 @@ func (h *etcdHelper) GetToList(ctx context.Context, key string, resourceVersion 
 	if ctx == nil {
 		glog.Errorf("Context is nil")
 	}
-	trace := util.NewTrace("GetToList " + getTypeName(listObj))
+	trace := utiltrace.New("GetToList " + getTypeName(listObj))
 	listPtr, err := meta.GetItemsPtr(listObj)
 	if err != nil {
 		return err
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	startTime := time.Now()
 	trace.Step("About to read etcd node")
 
@@ -338,7 +338,7 @@ func (h *etcdHelper) GetToList(ctx context.Context, key string, resourceVersion 
 
 // decodeNodeList walks the tree of each node in the list and decodes into the specified object
 func (h *etcdHelper) decodeNodeList(nodes []*etcd.Node, filter storage.FilterFunc, slicePtr interface{}) error {
-	trace := util.NewTrace("decodeNodeList " + getTypeName(slicePtr))
+	trace := utiltrace.New("decodeNodeList " + getTypeName(slicePtr))
 	defer trace.LogIfLong(400 * time.Millisecond)
 	v, err := conversion.EnforcePtr(slicePtr)
 	if err != nil || v.Kind() != reflect.Slice {
@@ -383,13 +383,13 @@ func (h *etcdHelper) List(ctx context.Context, key string, resourceVersion strin
 	if ctx == nil {
 		glog.Errorf("Context is nil")
 	}
-	trace := util.NewTrace("List " + getTypeName(listObj))
+	trace := utiltrace.New("List " + getTypeName(listObj))
 	defer trace.LogIfLong(400 * time.Millisecond)
 	listPtr, err := meta.GetItemsPtr(listObj)
 	if err != nil {
 		return err
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	startTime := time.Now()
 	trace.Step("About to list etcd node")
 	nodes, index, err := h.listEtcdNode(ctx, key)
@@ -446,7 +446,7 @@ func (h *etcdHelper) GuaranteedUpdate(
 		// Panic is appropriate, because this is a programming error.
 		panic("need ptr to type")
 	}
-	key = h.prefixEtcdKey(key)
+	key = path.Join(h.pathPrefix, key)
 	for {
 		obj := reflect.New(v.Type()).Interface().(runtime.Object)
 		origBody, node, res, err := h.bodyAndExtractObj(ctx, key, obj, ignoreNotFound)
@@ -525,7 +525,6 @@ func (h *etcdHelper) GuaranteedUpdate(
 		startTime := time.Now()
 		// Swap origBody with data, if origBody is the latest etcd data.
 		opts := etcd.SetOptions{
-			PrevValue: origBody,
 			PrevIndex: index,
 			TTL:       time.Duration(ttl) * time.Second,
 		}
@@ -538,13 +537,6 @@ func (h *etcdHelper) GuaranteedUpdate(
 		_, _, err = h.extractObj(response, err, ptrToType, false, false)
 		return toStorageErr(err, key, int64(index))
 	}
-}
-
-func (h *etcdHelper) prefixEtcdKey(key string) string {
-	if strings.HasPrefix(key, h.pathPrefix) {
-		return key
-	}
-	return path.Join(h.pathPrefix, key)
 }
 
 // etcdCache defines interface used for caching objects stored in etcd. Objects are keyed by

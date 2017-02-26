@@ -2,23 +2,25 @@
 
 package windows
 
-import "unsafe"
-import "syscall"
+import (
+	"syscall"
+	"unsafe"
+)
 
 var _ unsafe.Pointer
 
 var (
-	modadvapi32 = syscall.NewLazyDLL("advapi32.dll")
-	modkernel32 = syscall.NewLazyDLL("kernel32.dll")
-	modshell32  = syscall.NewLazyDLL("shell32.dll")
-	modmswsock  = syscall.NewLazyDLL("mswsock.dll")
-	modcrypt32  = syscall.NewLazyDLL("crypt32.dll")
-	modws2_32   = syscall.NewLazyDLL("ws2_32.dll")
-	moddnsapi   = syscall.NewLazyDLL("dnsapi.dll")
-	modiphlpapi = syscall.NewLazyDLL("iphlpapi.dll")
-	modsecur32  = syscall.NewLazyDLL("secur32.dll")
-	modnetapi32 = syscall.NewLazyDLL("netapi32.dll")
-	moduserenv  = syscall.NewLazyDLL("userenv.dll")
+	modadvapi32 = NewLazySystemDLL("advapi32.dll")
+	modkernel32 = NewLazySystemDLL("kernel32.dll")
+	modshell32  = NewLazySystemDLL("shell32.dll")
+	modmswsock  = NewLazySystemDLL("mswsock.dll")
+	modcrypt32  = NewLazySystemDLL("crypt32.dll")
+	modws2_32   = NewLazySystemDLL("ws2_32.dll")
+	moddnsapi   = NewLazySystemDLL("dnsapi.dll")
+	modiphlpapi = NewLazySystemDLL("iphlpapi.dll")
+	modsecur32  = NewLazySystemDLL("secur32.dll")
+	modnetapi32 = NewLazySystemDLL("netapi32.dll")
+	moduserenv  = NewLazySystemDLL("userenv.dll")
 
 	procRegisterEventSourceW               = modadvapi32.NewProc("RegisterEventSourceW")
 	procDeregisterEventSource              = modadvapi32.NewProc("DeregisterEventSource")
@@ -39,6 +41,7 @@ var (
 	procQueryServiceConfig2W               = modadvapi32.NewProc("QueryServiceConfig2W")
 	procGetLastError                       = modkernel32.NewProc("GetLastError")
 	procLoadLibraryW                       = modkernel32.NewProc("LoadLibraryW")
+	procLoadLibraryExW                     = modkernel32.NewProc("LoadLibraryExW")
 	procFreeLibrary                        = modkernel32.NewProc("FreeLibrary")
 	procGetProcAddress                     = modkernel32.NewProc("GetProcAddress")
 	procGetVersion                         = modkernel32.NewProc("GetVersion")
@@ -60,6 +63,7 @@ var (
 	procRemoveDirectoryW                   = modkernel32.NewProc("RemoveDirectoryW")
 	procDeleteFileW                        = modkernel32.NewProc("DeleteFileW")
 	procMoveFileW                          = modkernel32.NewProc("MoveFileW")
+	procMoveFileExW                        = modkernel32.NewProc("MoveFileExW")
 	procGetComputerNameW                   = modkernel32.NewProc("GetComputerNameW")
 	procGetComputerNameExW                 = modkernel32.NewProc("GetComputerNameExW")
 	procSetEndOfFile                       = modkernel32.NewProc("SetEndOfFile")
@@ -169,6 +173,9 @@ var (
 	procGetAdaptersInfo                    = modiphlpapi.NewProc("GetAdaptersInfo")
 	procSetFileCompletionNotificationModes = modkernel32.NewProc("SetFileCompletionNotificationModes")
 	procWSAEnumProtocolsW                  = modws2_32.NewProc("WSAEnumProtocolsW")
+	procGetAdaptersAddresses               = modiphlpapi.NewProc("GetAdaptersAddresses")
+	procGetACP                             = modkernel32.NewProc("GetACP")
+	procMultiByteToWideChar                = modkernel32.NewProc("MultiByteToWideChar")
 	procTranslateNameW                     = modsecur32.NewProc("TranslateNameW")
 	procGetUserNameExW                     = modsecur32.NewProc("GetUserNameExW")
 	procNetUserGetInfo                     = modnetapi32.NewProc("NetUserGetInfo")
@@ -415,6 +422,28 @@ func LoadLibrary(libname string) (handle Handle, err error) {
 
 func _LoadLibrary(libname *uint16) (handle Handle, err error) {
 	r0, _, e1 := syscall.Syscall(procLoadLibraryW.Addr(), 1, uintptr(unsafe.Pointer(libname)), 0, 0)
+	handle = Handle(r0)
+	if handle == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func LoadLibraryEx(libname string, zero Handle, flags uintptr) (handle Handle, err error) {
+	var _p0 *uint16
+	_p0, err = syscall.UTF16PtrFromString(libname)
+	if err != nil {
+		return
+	}
+	return _LoadLibraryEx(_p0, zero, flags)
+}
+
+func _LoadLibraryEx(libname *uint16, zero Handle, flags uintptr) (handle Handle, err error) {
+	r0, _, e1 := syscall.Syscall(procLoadLibraryExW.Addr(), 3, uintptr(unsafe.Pointer(libname)), uintptr(zero), uintptr(flags))
 	handle = Handle(r0)
 	if handle == 0 {
 		if e1 != 0 {
@@ -690,6 +719,18 @@ func DeleteFile(path *uint16) (err error) {
 
 func MoveFile(from *uint16, to *uint16) (err error) {
 	r1, _, e1 := syscall.Syscall(procMoveFileW.Addr(), 2, uintptr(unsafe.Pointer(from)), uintptr(unsafe.Pointer(to)), 0)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func MoveFileEx(from *uint16, to *uint16, flags uint32) (err error) {
+	r1, _, e1 := syscall.Syscall(procMoveFileExW.Addr(), 3, uintptr(unsafe.Pointer(from)), uintptr(unsafe.Pointer(to)), uintptr(flags))
 	if r1 == 0 {
 		if e1 != 0 {
 			err = error(e1)
@@ -1987,6 +2028,33 @@ func WSAEnumProtocols(protocols *int32, protocolBuffer *WSAProtocolInfo, bufferL
 	r0, _, e1 := syscall.Syscall(procWSAEnumProtocolsW.Addr(), 3, uintptr(unsafe.Pointer(protocols)), uintptr(unsafe.Pointer(protocolBuffer)), uintptr(unsafe.Pointer(bufferLength)))
 	n = int32(r0)
 	if n == -1 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapterAddresses *IpAdapterAddresses, sizePointer *uint32) (errcode error) {
+	r0, _, _ := syscall.Syscall6(procGetAdaptersAddresses.Addr(), 5, uintptr(family), uintptr(flags), uintptr(reserved), uintptr(unsafe.Pointer(adapterAddresses)), uintptr(unsafe.Pointer(sizePointer)), 0)
+	if r0 != 0 {
+		errcode = syscall.Errno(r0)
+	}
+	return
+}
+
+func GetACP() (acp uint32) {
+	r0, _, _ := syscall.Syscall(procGetACP.Addr(), 0, 0, 0, 0)
+	acp = uint32(r0)
+	return
+}
+
+func MultiByteToWideChar(codePage uint32, dwFlags uint32, str *byte, nstr int32, wchar *uint16, nwchar int32) (nwrite int32, err error) {
+	r0, _, e1 := syscall.Syscall6(procMultiByteToWideChar.Addr(), 6, uintptr(codePage), uintptr(dwFlags), uintptr(unsafe.Pointer(str)), uintptr(nstr), uintptr(unsafe.Pointer(wchar)), uintptr(nwchar))
+	nwrite = int32(r0)
+	if nwrite == 0 {
 		if e1 != 0 {
 			err = error(e1)
 		} else {

@@ -19,12 +19,12 @@ package validation
 import (
 	"encoding/json"
 
+	pathvalidation "k8s.io/apimachinery/pkg/api/validation/path"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	apivalidation "k8s.io/kubernetes/pkg/api/validation"
-	pathvalidation "k8s.io/kubernetes/pkg/api/validation/path"
 	"k8s.io/kubernetes/pkg/apis/autoscaling"
-	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/controller/podautoscaler"
-	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 func ValidateScale(scale *autoscaling.Scale) field.ErrorList {
@@ -87,7 +87,7 @@ func validateHorizontalPodAutoscalerAnnotations(annotations map[string]string, f
 	allErrs := field.ErrorList{}
 	if annotationValue, found := annotations[podautoscaler.HpaCustomMetricsTargetAnnotationName]; found {
 		// Try to parse the annotation
-		var targetList extensions.CustomMetricTargetList
+		var targetList v1beta1.CustomMetricTargetList
 		if err := json.Unmarshal([]byte(annotationValue), &targetList); err != nil {
 			allErrs = append(allErrs, field.Invalid(fldPath.Child("annotations"), annotations, "failed to parse custom metrics target annotation"))
 		} else {

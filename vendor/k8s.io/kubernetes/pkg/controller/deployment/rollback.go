@@ -18,11 +18,10 @@ package deployment
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/extensions"
+	"k8s.io/kubernetes/pkg/api/v1"
+	extensions "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	deploymentutil "k8s.io/kubernetes/pkg/controller/deployment/util"
 )
 
@@ -66,7 +65,7 @@ func (dc *DeploymentController) rollback(deployment *extensions.Deployment, toRe
 }
 
 func (dc *DeploymentController) rollbackToTemplate(deployment *extensions.Deployment, rs *extensions.ReplicaSet) (d *extensions.Deployment, performedRollback bool, err error) {
-	if !reflect.DeepEqual(deploymentutil.GetNewReplicaSetTemplate(deployment), rs.Spec.Template) {
+	if !deploymentutil.EqualIgnoreHash(deployment.Spec.Template, rs.Spec.Template) {
 		glog.Infof("Rolling back deployment %s to template spec %+v", deployment.Name, rs.Spec.Template.Spec)
 		deploymentutil.SetFromReplicaSetTemplate(deployment, rs.Spec.Template)
 		// set RS (the old RS we'll rolling back to) annotations back to the deployment;
@@ -91,11 +90,11 @@ func (dc *DeploymentController) rollbackToTemplate(deployment *extensions.Deploy
 }
 
 func (dc *DeploymentController) emitRollbackWarningEvent(deployment *extensions.Deployment, reason, message string) {
-	dc.eventRecorder.Eventf(deployment, api.EventTypeWarning, reason, message)
+	dc.eventRecorder.Eventf(deployment, v1.EventTypeWarning, reason, message)
 }
 
 func (dc *DeploymentController) emitRollbackNormalEvent(deployment *extensions.Deployment, message string) {
-	dc.eventRecorder.Eventf(deployment, api.EventTypeNormal, deploymentutil.RollbackDone, message)
+	dc.eventRecorder.Eventf(deployment, v1.EventTypeNormal, deploymentutil.RollbackDone, message)
 }
 
 // updateDeploymentAndClearRollbackTo sets .spec.rollbackTo to nil and update the input deployment
