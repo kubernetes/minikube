@@ -19,12 +19,14 @@ limitations under the License.
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/apis/storage"
 	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -42,12 +44,29 @@ func testProvisioning(t *testing.T) {
 		kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName})
 	}()
 
-	pvcPath, _ := filepath.Abs("testdata/pvc.yaml")
+	// We have to make sure the addon-manager has created the StorageClass before creating
+	// a claim. Otherwise it will never get bound.
 
+	checkStorageClass := func() error {
+		scl := storage.StorageClassList{}
+		kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl)
+		if len(scl.Items) > 0 {
+			return nil
+		}
+		return &commonutil.RetriableError{Err: errors.New("No default StorageClass yet.")}
+	}
+
+	if err := commonutil.RetryAfter(20, checkStorageClass, 5*time.Second); err != nil {
+		t.Fatalf("No default storage class: %s", err)
+	}
+
+	// Now create the PVC
+	pvcPath, _ := filepath.Abs("testdata/pvc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
 		t.Fatalf("Error creating pvc")
 	}
 
+	// And check that it gets bound to a PV.
 	checkStorage := func() error {
 		pvc := api.PersistentVolumeClaim{}
 		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
@@ -60,7 +79,7 @@ func testProvisioning(t *testing.T) {
 		return &commonutil.RetriableError{Err: fmt.Errorf("PV not attached to PVC: %v", pvc)}
 	}
 
-	if err := commonutil.RetryAfter(25, checkStorage, 20*time.Second); err != nil {
+	if err := commonutil.RetryAfter(5, checkStorage, 2*time.Second); err != nil {
 		t.Fatal("PV Creation failed with error:", err)
 	}
 
