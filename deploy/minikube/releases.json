@@ -80,6 +80,14 @@
       }
   },
   {
+      "name": "v0.10.0",
+      "checksums": {
+          "darwin": "1",
+          "linux": "2",
+          "windows": "3"
+      }
+  },
+  {
       "name": "v0.9.0",
       "checksums": {
           "darwin": "4415e7f3a30ace7cf0e5ad023f979509e6b25ded1bfb55368f918fc25098307e",
