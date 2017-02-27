@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
@@ -132,7 +133,7 @@ func EnableOrDisableAddon(name string, val string) error {
 			}
 
 			// Create ECR Secret
-			err = cluster.CreateSecret(
+			err = service.CreateSecret(
 				"kube-system",
 				"registry-creds-ecr",
 				map[string]string{
@@ -152,7 +153,7 @@ func EnableOrDisableAddon(name string, val string) error {
 			}
 
 			// Create GCR Secret
-			err = cluster.CreateSecret(
+			err = service.CreateSecret(
 				"kube-system",
 				"registry-creds-gcr",
 				map[string]string{
@@ -172,8 +173,8 @@ func EnableOrDisableAddon(name string, val string) error {
 		}
 	} else {
 		// Cleanup existing secrets
-		cluster.DeleteSecret("kube-system", "registry-creds-ecr")
-		cluster.DeleteSecret("kube-system", "registry-creds-gcr")
+		service.DeleteSecret("kube-system", "registry-creds-ecr")
+		service.DeleteSecret("kube-system", "registry-creds-gcr")
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
