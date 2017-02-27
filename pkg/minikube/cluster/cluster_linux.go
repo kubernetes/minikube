@@ -52,7 +52,7 @@ func getVMHostIP(host *host.Host) (net.IP, error) {
 	case "virtualbox":
 		return net.ParseIP("10.0.2.2"), nil
 	case "kvm":
-		return net.ParseIP("10.0.2.2"), nil
+		return net.ParseIP("192.168.42.1"), nil
 	default:
 		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
 	}
