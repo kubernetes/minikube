@@ -395,7 +395,7 @@ func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	if err := SetupCerts(d); err != nil {
+	if err := SetupCerts(d, constants.APIServerName); err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
 	}
 

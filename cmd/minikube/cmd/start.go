@@ -53,6 +53,7 @@ const (
 	kvmNetwork            = "kvm-network"
 	keepContext           = "keep-context"
 	featureGates          = "feature-gates"
+	apiServerName         = "apiserver-name"
 )
 
 var (
@@ -127,6 +128,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubernetesConfig := cluster.KubernetesConfig{
 		KubernetesVersion: viper.GetString(kubernetesVersion),
 		NodeIP:            ip,
+		APIServerName:     viper.GetString(apiServerName),
 		FeatureGates:      viper.GetString(featureGates),
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
@@ -140,7 +142,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := cluster.SetupCerts(host.Driver); err != nil {
+	if err := cluster.SetupCerts(host.Driver, kubernetesConfig.APIServerName); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -211,6 +213,7 @@ func init() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")

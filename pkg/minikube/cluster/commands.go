@@ -29,7 +29,7 @@ import (
 
 // Kill any running instances.
 
-var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false --node-ip={{.NodeIP}}"
+var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false --node-ip={{.NodeIP}} --apiserver-name={{.APIServerName}}"
 
 var startCommandB2DTemplate = `
 # Run with nohup so it stays up. Redirect logs to useful places.
@@ -162,11 +162,13 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 	t := template.Must(template.New("localkubeStartCmd").Parse(localkubeStartCmdTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
-		Flags  string
-		NodeIP string
+		Flags         string
+		NodeIP        string
+		APIServerName string
 	}{
-		Flags:  flags,
-		NodeIP: kubernetesConfig.NodeIP,
+		Flags:         flags,
+		NodeIP:        kubernetesConfig.NodeIP,
+		APIServerName: kubernetesConfig.APIServerName,
 	}
 	if err := t.Execute(&buf, data); err != nil {
 		return "", err

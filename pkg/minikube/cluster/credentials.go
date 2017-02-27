@@ -28,9 +28,9 @@ var (
 	internalIP = net.ParseIP(util.DefaultServiceClusterIP)
 )
 
-func GenerateCerts(caCert, caKey, pub, priv string, ip net.IP) error {
+func GenerateCerts(caCert, caKey, pub, priv string, ip net.IP, name string) error {
 	if !(util.CanReadFile(caCert) && util.CanReadFile(caKey)) {
-		if err := util.GenerateCACert(caCert, caKey); err != nil {
+		if err := util.GenerateCACert(caCert, caKey, name); err != nil {
 			return errors.Wrap(err, "Error generating certificate")
 		}
 	}

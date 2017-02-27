@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func GenerateCACert(certPath, keyPath string) error {
+func GenerateCACert(certPath, keyPath string, name string) error {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return errors.Wrap(err, "Error generating rsa key")
@@ -42,7 +42,7 @@ func GenerateCACert(certPath, keyPath string) error {
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{
-			CommonName: "minikubeCA",
+			CommonName: name,
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(time.Hour * 24 * 365 * 10),
