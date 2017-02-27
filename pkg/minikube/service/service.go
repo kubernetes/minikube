@@ -261,3 +261,69 @@ func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key str
 
 	return serviceList, nil
 }
+
+// CreateSecret creates or modifies secrets
+func CreateSecret(namespace, name string, dataValues map[string]string, labels map[string]string) error {
+	client, err := k8s.GetCoreClient()
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+	secrets := client.Secrets(namespace)
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+
+	secret, _ := secrets.Get(name)
+
+	// Delete existing secret
+	if len(secret.Name) > 0 {
+		err = DeleteSecret(namespace, name)
+		if err != nil {
+			return &util.RetriableError{Err: err}
+		}
+	}
+
+	// convert strings to data secrets
+	data := map[string][]byte{}
+	for key, value := range dataValues {
+		data[key] = []byte(value)
+	}
+
+	// Create Secret
+	secretObj := &v1.Secret{
+		ObjectMeta: v1.ObjectMeta{
+			Name:   name,
+			Labels: labels,
+		},
+		Data: data,
+		Type: v1.SecretTypeOpaque,
+	}
+
+	_, err = secrets.Create(secretObj)
+	if err != nil {
+		fmt.Println("err: ", err)
+		return &util.RetriableError{Err: err}
+	}
+
+	return nil
+}
+
+// DeleteSecret deletes a secret from a namespace
+func DeleteSecret(namespace, name string) error {
+	client, err := k8s.GetCoreClient()
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+
+	secrets := client.Secrets(namespace)
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+
+	err = secrets.Delete(name, &kubeapi.DeleteOptions{})
+	if err != nil {
+		return &util.RetriableError{Err: err}
+	}
+
+	return nil
+}
