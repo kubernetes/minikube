@@ -17,8 +17,10 @@ limitations under the License.
 package localkube
 
 import (
+	apiserveroptions "k8s.io/apiserver/pkg/server/options"
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
+	kubeapioptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 )
@@ -50,15 +52,19 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 
 	// set Service IP range
 	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
+	config.Etcd.EnableWatchCache = true
 
-	// defaults from apiserver command
-	config.GenericServerRunOptions.EnableProfiling = true
-	config.GenericServerRunOptions.EnableWatchCache = true
+	config.Features = &apiserveroptions.FeatureOptions{
+		EnableProfiling: true,
+	}
+
 	config.GenericServerRunOptions.MinRequestTimeout = 1800
 
 	config.AllowPrivileged = true
 
-	config.GenericServerRunOptions.RuntimeConfig = lk.RuntimeConfig
+	config.APIEnablement = &kubeapioptions.APIEnablementOptions{
+		RuntimeConfig: lk.RuntimeConfig,
+	}
 
 	lk.SetExtraConfigForComponent("apiserver", &config)
 
