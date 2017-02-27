@@ -15,6 +15,7 @@ minikube start
 ### Options
 
 ```
+      --apiserver-name string           The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine (default "minikubeCA")
       --container-runtime string        The container runtime to be used
       --cpus int                        Number of CPUs allocated to the minikube VM (default 2)
       --disk-size string                Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g) (default "20g")

@@ -854,6 +854,8 @@ _minikube_start()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--apiserver-name=")
+    local_nonpersistent_flags+=("--apiserver-name=")
     flags+=("--container-runtime=")
     local_nonpersistent_flags+=("--container-runtime=")
     flags+=("--cpus=")
