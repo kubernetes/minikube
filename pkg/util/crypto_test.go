@@ -72,7 +72,7 @@ func TestGenerateSignedCert(t *testing.T) {
 	validSignerCertPath := filepath.Join(signerTmpDir, "cert")
 	validSignerKeyPath := filepath.Join(signerTmpDir, "key")
 
-	err = GenerateCACert(validSignerCertPath, validSignerKeyPath)
+	err = GenerateCACert(validSignerCertPath, validSignerKeyPath, constants.APIServerName)
 	if err != nil {
 		t.Fatalf("Error generating signer cert")
 	}
