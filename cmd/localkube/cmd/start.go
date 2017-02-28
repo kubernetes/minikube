@@ -124,4 +124,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	// setup proxy
 	proxy := s.NewProxyServer()
 	s.AddServer(proxy)
+
+	storageProvisioner := s.NewStorageProvisionerServer()
+	s.AddServer(storageProvisioner)
 }
