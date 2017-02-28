@@ -27,21 +27,20 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/1.5/kubernetes"
-	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
-	kubeapi "k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/tools/clientcmd"
+	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"text/template"
 
-	"k8s.io/client-go/1.5/pkg/labels"
+	"k8s.io/client-go/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/util"
 )
 
 type K8sClient interface {
-	GetCoreClient() (corev1.CoreInterface, error)
+	GetCoreClient() (corev1.CoreV1Interface, error)
 }
 
 type K8sClientGetter struct{}
@@ -52,7 +51,7 @@ func init() {
 	k8s = &K8sClientGetter{}
 }
 
-func (*K8sClientGetter) GetCoreClient() (corev1.CoreInterface, error) {
+func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -95,7 +94,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 	serviceInterface := client.Services(namespace)
 
-	svcs, err := serviceInterface.List(kubeapi.ListOptions{})
+	svcs, err := serviceInterface.List(v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +132,7 @@ func GetServiceURLsForService(api libmachine.API, namespace, service string, t *
 	return printURLsForService(client, ip, service, namespace, t)
 }
 
-func printURLsForService(c corev1.CoreInterface, ip, service, namespace string, t *template.Template) ([]string, error) {
+func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string, t *template.Template) ([]string, error) {
 	if t == nil {
 		return nil, errors.New("Error, attempted to generate service url with nil --format template")
 	}
@@ -254,7 +253,7 @@ func GetServiceListByLabel(namespace string, key string, value string) (*v1.Serv
 
 func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
-	serviceList, err := services.List(kubeapi.ListOptions{LabelSelector: selector})
+	serviceList, err := services.List(v1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}
@@ -320,7 +319,7 @@ func DeleteSecret(namespace, name string) error {
 		return &util.RetriableError{Err: err}
 	}
 
-	err = secrets.Delete(name, &kubeapi.DeleteOptions{})
+	err = secrets.Delete(name, &v1.DeleteOptions{})
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
