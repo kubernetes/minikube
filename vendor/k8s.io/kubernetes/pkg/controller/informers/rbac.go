@@ -19,16 +19,18 @@ package informers
 import (
 	"reflect"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/rbac"
-	"k8s.io/kubernetes/pkg/client/cache"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/watch"
+	"k8s.io/kubernetes/pkg/client/legacylisters"
 )
 
 type ClusterRoleInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() cache.ClusterRoleLister
+	Lister() listers.ClusterRoleLister
 }
 
 type clusterRoleInformer struct {
@@ -46,11 +48,11 @@ func (f *clusterRoleInformer) Informer() cache.SharedIndexInformer {
 	}
 	informer = cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return f.client.Rbac().ClusterRoles().List(options)
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return f.internalclient.Rbac().ClusterRoles().List(convertListOptionsOrDie(options))
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return f.client.Rbac().ClusterRoles().Watch(options)
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return f.internalclient.Rbac().ClusterRoles().Watch(convertListOptionsOrDie(options))
 			},
 		},
 		&rbac.ClusterRole{},
@@ -62,13 +64,13 @@ func (f *clusterRoleInformer) Informer() cache.SharedIndexInformer {
 	return informer
 }
 
-func (f *clusterRoleInformer) Lister() cache.ClusterRoleLister {
-	return cache.NewClusterRoleLister(f.Informer().GetIndexer())
+func (f *clusterRoleInformer) Lister() listers.ClusterRoleLister {
+	return listers.NewClusterRoleLister(f.Informer().GetIndexer())
 }
 
 type ClusterRoleBindingInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() cache.ClusterRoleBindingLister
+	Lister() listers.ClusterRoleBindingLister
 }
 
 type clusterRoleBindingInformer struct {
@@ -86,11 +88,11 @@ func (f *clusterRoleBindingInformer) Informer() cache.SharedIndexInformer {
 	}
 	informer = cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return f.client.Rbac().ClusterRoleBindings().List(options)
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return f.internalclient.Rbac().ClusterRoleBindings().List(convertListOptionsOrDie(options))
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return f.client.Rbac().ClusterRoleBindings().Watch(options)
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return f.internalclient.Rbac().ClusterRoleBindings().Watch(convertListOptionsOrDie(options))
 			},
 		},
 		&rbac.ClusterRoleBinding{},
@@ -102,13 +104,13 @@ func (f *clusterRoleBindingInformer) Informer() cache.SharedIndexInformer {
 	return informer
 }
 
-func (f *clusterRoleBindingInformer) Lister() cache.ClusterRoleBindingLister {
-	return cache.NewClusterRoleBindingLister(f.Informer().GetIndexer())
+func (f *clusterRoleBindingInformer) Lister() listers.ClusterRoleBindingLister {
+	return listers.NewClusterRoleBindingLister(f.Informer().GetIndexer())
 }
 
 type RoleInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() cache.RoleLister
+	Lister() listers.RoleLister
 }
 
 type roleInformer struct {
@@ -126,11 +128,11 @@ func (f *roleInformer) Informer() cache.SharedIndexInformer {
 	}
 	informer = cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return f.client.Rbac().Roles(api.NamespaceAll).List(options)
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return f.internalclient.Rbac().Roles(metav1.NamespaceAll).List(convertListOptionsOrDie(options))
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return f.client.Rbac().Roles(api.NamespaceAll).Watch(options)
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return f.internalclient.Rbac().Roles(metav1.NamespaceAll).Watch(convertListOptionsOrDie(options))
 			},
 		},
 		&rbac.Role{},
@@ -142,13 +144,13 @@ func (f *roleInformer) Informer() cache.SharedIndexInformer {
 	return informer
 }
 
-func (f *roleInformer) Lister() cache.RoleLister {
-	return cache.NewRoleLister(f.Informer().GetIndexer())
+func (f *roleInformer) Lister() listers.RoleLister {
+	return listers.NewRoleLister(f.Informer().GetIndexer())
 }
 
 type RoleBindingInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() cache.RoleBindingLister
+	Lister() listers.RoleBindingLister
 }
 
 type roleBindingInformer struct {
@@ -166,11 +168,11 @@ func (f *roleBindingInformer) Informer() cache.SharedIndexInformer {
 	}
 	informer = cache.NewSharedIndexInformer(
 		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return f.client.Rbac().RoleBindings(api.NamespaceAll).List(options)
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return f.internalclient.Rbac().RoleBindings(metav1.NamespaceAll).List(convertListOptionsOrDie(options))
 			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return f.client.Rbac().RoleBindings(api.NamespaceAll).Watch(options)
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return f.internalclient.Rbac().RoleBindings(metav1.NamespaceAll).Watch(convertListOptionsOrDie(options))
 			},
 		},
 		&rbac.RoleBinding{},
@@ -182,6 +184,14 @@ func (f *roleBindingInformer) Informer() cache.SharedIndexInformer {
 	return informer
 }
 
-func (f *roleBindingInformer) Lister() cache.RoleBindingLister {
-	return cache.NewRoleBindingLister(f.Informer().GetIndexer())
+func (f *roleBindingInformer) Lister() listers.RoleBindingLister {
+	return listers.NewRoleBindingLister(f.Informer().GetIndexer())
+}
+
+func convertListOptionsOrDie(in metav1.ListOptions) metav1.ListOptions {
+	out := metav1.ListOptions{}
+	if err := api.Scheme.Convert(&in, &out, nil); err != nil {
+		panic(err)
+	}
+	return out
 }

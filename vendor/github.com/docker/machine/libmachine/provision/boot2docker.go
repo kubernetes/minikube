@@ -216,9 +216,6 @@ You also might want to clear any VirtualBox host only interfaces you are not usi
 }
 
 func (provisioner *Boot2DockerProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
-	fmt.Println(`==========
-WARNING: The boot2docker iso is deprecated and will not be supported by future versions of minikube")
-==========`)
 	var (
 		err error
 	)

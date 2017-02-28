@@ -35,25 +35,27 @@ import (
 	cadvisorapiv2 "github.com/google/cadvisor/info/v2"
 	"github.com/prometheus/client_golang/prometheus"
 
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/apiserver/pkg/server/healthz"
+	"k8s.io/apiserver/pkg/server/httplog"
+	"k8s.io/apiserver/pkg/util/flushwriter"
 	"k8s.io/kubernetes/pkg/api"
-	apierrs "k8s.io/kubernetes/pkg/api/errors"
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/api/validation"
-	"k8s.io/kubernetes/pkg/auth/authenticator"
-	"k8s.io/kubernetes/pkg/auth/authorizer"
-	"k8s.io/kubernetes/pkg/healthz"
-	"k8s.io/kubernetes/pkg/httplog"
+	"k8s.io/kubernetes/pkg/api/v1/validation"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/server/portforward"
 	"k8s.io/kubernetes/pkg/kubelet/server/remotecommand"
 	"k8s.io/kubernetes/pkg/kubelet/server/stats"
 	"k8s.io/kubernetes/pkg/kubelet/server/streaming"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/configz"
-	"k8s.io/kubernetes/pkg/util/flushwriter"
 	"k8s.io/kubernetes/pkg/util/limitwriter"
 	"k8s.io/kubernetes/pkg/util/term"
 	"k8s.io/kubernetes/pkg/volume"
@@ -162,28 +164,27 @@ type HostInterface interface {
 	GetContainerInfoV2(name string, options cadvisorapiv2.RequestOptions) (map[string]cadvisorapiv2.ContainerInfo, error)
 	GetRawContainerInfo(containerName string, req *cadvisorapi.ContainerInfoRequest, subcontainers bool) (map[string]*cadvisorapi.ContainerInfo, error)
 	GetCachedMachineInfo() (*cadvisorapi.MachineInfo, error)
-	GetPods() []*api.Pod
-	GetRunningPods() ([]*api.Pod, error)
-	GetPodByName(namespace, name string) (*api.Pod, bool)
+	GetPods() []*v1.Pod
+	GetRunningPods() ([]*v1.Pod, error)
+	GetPodByName(namespace, name string) (*v1.Pod, bool)
 	RunInContainer(name string, uid types.UID, container string, cmd []string) ([]byte, error)
 	ExecInContainer(name string, uid types.UID, container string, cmd []string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size, timeout time.Duration) error
 	AttachContainer(name string, uid types.UID, container string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size) error
-	GetKubeletContainerLogs(podFullName, containerName string, logOptions *api.PodLogOptions, stdout, stderr io.Writer) error
+	GetKubeletContainerLogs(podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error
 	ServeLogs(w http.ResponseWriter, req *http.Request)
-	PortForward(name string, uid types.UID, port uint16, stream io.ReadWriteCloser) error
+	PortForward(name string, uid types.UID, port int32, stream io.ReadWriteCloser) error
 	StreamingConnectionIdleTimeout() time.Duration
 	ResyncInterval() time.Duration
 	GetHostname() string
-	GetNode() (*api.Node, error)
+	GetNode() (*v1.Node, error)
 	GetNodeConfig() cm.NodeConfig
 	LatestLoopEntryTime() time.Time
 	ImagesFsInfo() (cadvisorapiv2.FsInfo, error)
 	RootFsInfo() (cadvisorapiv2.FsInfo, error)
 	ListVolumesForPod(podUID types.UID) (map[string]volume.Volume, bool)
-	PLEGHealthCheck() (bool, error)
 	GetExec(podFullName string, podUID types.UID, containerName string, cmd []string, streamOpts remotecommand.Options) (*url.URL, error)
 	GetAttach(podFullName string, podUID types.UID, containerName string, streamOpts remotecommand.Options) (*url.URL, error)
-	GetPortForward(podName, podNamespace string, podUID types.UID) (*url.URL, error)
+	GetPortForward(podName, podNamespace string, podUID types.UID, portForwardOpts portforward.V4Options) (*url.URL, error)
 }
 
 // NewServer initializes and configures a kubelet.Server object to handle HTTP requests.
@@ -255,7 +256,6 @@ func (s *Server) InstallDefaultHandlers() {
 	healthz.InstallHandler(s.restfulCont,
 		healthz.PingHealthz,
 		healthz.NamedCheck("syncloop", s.syncLoopHealthCheck),
-		healthz.NamedCheck("pleg", s.plegHealthCheck),
 	)
 	var ws *restful.WebService
 	ws = new(restful.WebService)
@@ -283,8 +283,9 @@ func (s *Server) InstallDefaultHandlers() {
 
 const pprofBasePath = "/debug/pprof/"
 
-// InstallDeguggingHandlers registers the HTTP request patterns that serve logs or run commands/containers
+// InstallDebuggingHandlers registers the HTTP request patterns that serve logs or run commands/containers
 func (s *Server) InstallDebuggingHandlers(criHandler http.Handler) {
+	glog.Infof("Adding debug handlers to kubelet server.")
 	var ws *restful.WebService
 
 	ws = new(restful.WebService)
@@ -335,7 +336,13 @@ func (s *Server) InstallDebuggingHandlers(criHandler http.Handler) {
 	ws = new(restful.WebService)
 	ws.
 		Path("/portForward")
+	ws.Route(ws.GET("/{podNamespace}/{podID}").
+		To(s.getPortForward).
+		Operation("getPortForward"))
 	ws.Route(ws.POST("/{podNamespace}/{podID}").
+		To(s.getPortForward).
+		Operation("getPortForward"))
+	ws.Route(ws.GET("/{podNamespace}/{podID}/{uid}").
 		To(s.getPortForward).
 		Operation("getPortForward"))
 	ws.Route(ws.POST("/{podNamespace}/{podID}/{uid}").
@@ -415,14 +422,6 @@ func (s *Server) syncLoopHealthCheck(req *http.Request) error {
 	return nil
 }
 
-// Checks if pleg, which lists pods periodically, is healthy.
-func (s *Server) plegHealthCheck(req *http.Request) error {
-	if ok, err := s.host.PLEGHealthCheck(); !ok {
-		return fmt.Errorf("PLEG took longer than expected: %v", err)
-	}
-	return nil
-}
-
 // getContainerLogs handles containerLogs request against the Kubelet
 func (s *Server) getContainerLogs(request *restful.Request, response *restful.Response) {
 	podNamespace := request.PathParameter("podNamespace")
@@ -456,12 +455,12 @@ func (s *Server) getContainerLogs(request *restful.Request, response *restful.Re
 		}
 	}
 	// container logs on the kubelet are locked to the v1 API version of PodLogOptions
-	logOptions := &api.PodLogOptions{}
+	logOptions := &v1.PodLogOptions{}
 	if err := api.ParameterCodec.DecodeParameters(query, v1.SchemeGroupVersion, logOptions); err != nil {
 		response.WriteError(http.StatusBadRequest, fmt.Errorf(`{"message": "Unable to decode query."}`))
 		return
 	}
-	logOptions.TypeMeta = unversioned.TypeMeta{}
+	logOptions.TypeMeta = metav1.TypeMeta{}
 	if errs := validation.ValidatePodLogOptions(logOptions); len(errs) > 0 {
 		response.WriteError(apierrs.StatusUnprocessableEntity, fmt.Errorf(`{"message": "Invalid request."}`))
 		return
@@ -477,12 +476,14 @@ func (s *Server) getContainerLogs(request *restful.Request, response *restful.Re
 	for _, container := range pod.Spec.Containers {
 		if container.Name == containerName {
 			containerExists = true
+			break
 		}
 	}
 	if !containerExists {
 		for _, container := range pod.Spec.InitContainers {
 			if container.Name == containerName {
 				containerExists = true
+				break
 			}
 		}
 	}
@@ -511,17 +512,17 @@ func (s *Server) getContainerLogs(request *restful.Request, response *restful.Re
 	}
 }
 
-// encodePods creates an api.PodList object from pods and returns the encoded
+// encodePods creates an v1.PodList object from pods and returns the encoded
 // PodList.
-func encodePods(pods []*api.Pod) (data []byte, err error) {
-	podList := new(api.PodList)
+func encodePods(pods []*v1.Pod) (data []byte, err error) {
+	podList := new(v1.PodList)
 	for _, pod := range pods {
 		podList.Items = append(podList.Items, *pod)
 	}
 	// TODO: this needs to be parameterized to the kubelet, not hardcoded. Depends on Kubelet
 	//   as API server refactor.
 	// TODO: Locked to v1, needs to be made generic
-	codec := api.Codecs.LegacyCodec(unversioned.GroupVersion{Group: api.GroupName, Version: "v1"})
+	codec := api.Codecs.LegacyCodec(schema.GroupVersion{Group: v1.GroupName, Version: "v1"})
 	return runtime.Encode(codec, podList)
 }
 
@@ -568,36 +569,47 @@ func (s *Server) getSpec(request *restful.Request, response *restful.Response) {
 	response.WriteEntity(info)
 }
 
-type requestParams struct {
+type execRequestParams struct {
 	podNamespace  string
 	podName       string
 	podUID        types.UID
 	containerName string
 	cmd           []string
-	streamOpts    remotecommand.Options
 }
 
-func getRequestParams(req *restful.Request) requestParams {
-	streamOpts, err := remotecommand.NewOptions(req.Request)
-	if err != nil {
-		glog.Warningf("Unable to parse request stream options: %v", err)
-	}
-	if streamOpts == nil {
-		streamOpts = &remotecommand.Options{}
-	}
-	return requestParams{
+func getExecRequestParams(req *restful.Request) execRequestParams {
+	return execRequestParams{
 		podNamespace:  req.PathParameter("podNamespace"),
 		podName:       req.PathParameter("podID"),
 		podUID:        types.UID(req.PathParameter("uid")),
 		containerName: req.PathParameter("containerName"),
 		cmd:           req.Request.URL.Query()[api.ExecCommandParamm],
-		streamOpts:    *streamOpts,
+	}
+}
+
+type portForwardRequestParams struct {
+	podNamespace string
+	podName      string
+	podUID       types.UID
+}
+
+func getPortForwardRequestParams(req *restful.Request) portForwardRequestParams {
+	return portForwardRequestParams{
+		podNamespace: req.PathParameter("podNamespace"),
+		podName:      req.PathParameter("podID"),
+		podUID:       types.UID(req.PathParameter("uid")),
 	}
 }
 
 // getAttach handles requests to attach to a container.
 func (s *Server) getAttach(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getExecRequestParams(request)
+	streamOpts, err := remotecommand.NewOptions(request.Request)
+	if err != nil {
+		utilruntime.HandleError(err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	}
 	pod, ok := s.host.GetPodByName(params.podNamespace, params.podName)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
@@ -605,9 +617,9 @@ func (s *Server) getAttach(request *restful.Request, response *restful.Response)
 	}
 
 	podFullName := kubecontainer.GetPodFullName(pod)
-	redirect, err := s.host.GetAttach(podFullName, params.podUID, params.containerName, params.streamOpts)
+	redirect, err := s.host.GetAttach(podFullName, params.podUID, params.containerName, *streamOpts)
 	if err != nil {
-		response.WriteError(streaming.HTTPStatus(err), err)
+		streaming.WriteError(err, response.ResponseWriter)
 		return
 	}
 	if redirect != nil {
@@ -621,6 +633,7 @@ func (s *Server) getAttach(request *restful.Request, response *restful.Response)
 		podFullName,
 		params.podUID,
 		params.containerName,
+		streamOpts,
 		s.host.StreamingConnectionIdleTimeout(),
 		remotecommand.DefaultStreamCreationTimeout,
 		remotecommand.SupportedStreamingProtocols)
@@ -628,7 +641,13 @@ func (s *Server) getAttach(request *restful.Request, response *restful.Response)
 
 // getExec handles requests to run a command inside a container.
 func (s *Server) getExec(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getExecRequestParams(request)
+	streamOpts, err := remotecommand.NewOptions(request.Request)
+	if err != nil {
+		utilruntime.HandleError(err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	}
 	pod, ok := s.host.GetPodByName(params.podNamespace, params.podName)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
@@ -636,9 +655,9 @@ func (s *Server) getExec(request *restful.Request, response *restful.Response) {
 	}
 
 	podFullName := kubecontainer.GetPodFullName(pod)
-	redirect, err := s.host.GetExec(podFullName, params.podUID, params.containerName, params.cmd, params.streamOpts)
+	redirect, err := s.host.GetExec(podFullName, params.podUID, params.containerName, params.cmd, *streamOpts)
 	if err != nil {
-		response.WriteError(streaming.HTTPStatus(err), err)
+		streaming.WriteError(err, response.ResponseWriter)
 		return
 	}
 	if redirect != nil {
@@ -652,6 +671,8 @@ func (s *Server) getExec(request *restful.Request, response *restful.Response) {
 		podFullName,
 		params.podUID,
 		params.containerName,
+		params.cmd,
+		streamOpts,
 		s.host.StreamingConnectionIdleTimeout(),
 		remotecommand.DefaultStreamCreationTimeout,
 		remotecommand.SupportedStreamingProtocols)
@@ -659,7 +680,7 @@ func (s *Server) getExec(request *restful.Request, response *restful.Response) {
 
 // getRun handles requests to run a command inside a container.
 func (s *Server) getRun(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getExecRequestParams(request)
 	pod, ok := s.host.GetPodByName(params.podNamespace, params.podName)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
@@ -693,7 +714,14 @@ func writeJsonResponse(response *restful.Response, data []byte) {
 // getPortForward handles a new restful port forward request. It determines the
 // pod name and uid and then calls ServePortForward.
 func (s *Server) getPortForward(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getPortForwardRequestParams(request)
+
+	portForwardOptions, err := portforward.NewV4Options(request.Request)
+	if err != nil {
+		utilruntime.HandleError(err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	}
 	pod, ok := s.host.GetPodByName(params.podNamespace, params.podName)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
@@ -704,9 +732,9 @@ func (s *Server) getPortForward(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	redirect, err := s.host.GetPortForward(pod.Name, pod.Namespace, pod.UID)
+	redirect, err := s.host.GetPortForward(pod.Name, pod.Namespace, pod.UID, *portForwardOptions)
 	if err != nil {
-		response.WriteError(streaming.HTTPStatus(err), err)
+		streaming.WriteError(err, response.ResponseWriter)
 		return
 	}
 	if redirect != nil {
@@ -719,8 +747,10 @@ func (s *Server) getPortForward(request *restful.Request, response *restful.Resp
 		s.host,
 		kubecontainer.GetPodFullName(pod),
 		params.podUID,
+		portForwardOptions,
 		s.host.StreamingConnectionIdleTimeout(),
-		remotecommand.DefaultStreamCreationTimeout)
+		remotecommand.DefaultStreamCreationTimeout,
+		portforward.SupportedProtocols)
 }
 
 // ServeHTTP responds to HTTP requests on the Kubelet.

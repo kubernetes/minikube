@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/cache"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/statusupdater"
 	"k8s.io/kubernetes/pkg/util/goroutinemap/exponentialbackoff"
-	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/volume/util/nestedpendingoperations"
 	"k8s.io/kubernetes/pkg/volume/util/operationexecutor"
 )
@@ -93,7 +93,7 @@ func (rc *reconciler) Run(stopCh <-chan struct{}) {
 
 // reconciliationLoopFunc this can be disabled via cli option disableReconciliation.
 // It periodically checks whether the attached volumes from actual state
-// are still attached to the node and udpate the status if they are not.
+// are still attached to the node and update the status if they are not.
 func (rc *reconciler) reconciliationLoopFunc() func() {
 	return func() {
 

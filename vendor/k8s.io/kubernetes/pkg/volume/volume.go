@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/resource"
-	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 // Volume represents a directory used by pods or hosts on a node. All method
@@ -134,22 +134,13 @@ type Unmounter interface {
 	TearDownAt(dir string) error
 }
 
-// Recycler provides methods to reclaim the volume resource.
-type Recycler interface {
-	Volume
-	// Recycle reclaims the resource. Calls to this method should block until
-	// the recycling task is complete. Any error returned indicates the volume
-	// has failed to be reclaimed. A nil return indicates success.
-	Recycle() error
-}
-
 // Provisioner is an interface that creates templates for PersistentVolumes
 // and can create the volume as a new resource in the infrastructure provider.
 type Provisioner interface {
 	// Provision creates the resource by allocating the underlying volume in a
 	// storage system. This method should block until completion and returns
 	// PersistentVolume representing the created storage resource.
-	Provision() (*api.PersistentVolume, error)
+	Provision() (*v1.PersistentVolume, error)
 }
 
 // Deleter removes the resource from the underlying storage provider. Calls

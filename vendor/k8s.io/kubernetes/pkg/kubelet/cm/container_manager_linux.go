@@ -29,25 +29,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/opencontainers/runc/libcontainer/cgroups"
 	"github.com/opencontainers/runc/libcontainer/cgroups/fs"
 	"github.com/opencontainers/runc/libcontainer/configs"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/api/resource"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/kubelet/cadvisor"
 	cmutil "k8s.io/kubernetes/pkg/kubelet/cm/util"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 	"k8s.io/kubernetes/pkg/util"
-	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/oom"
 	"k8s.io/kubernetes/pkg/util/procfs"
-	"k8s.io/kubernetes/pkg/util/runtime"
-	"k8s.io/kubernetes/pkg/util/sets"
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
-	"k8s.io/kubernetes/pkg/util/wait"
+	utilversion "k8s.io/kubernetes/pkg/util/version"
 )
 
 const (
@@ -66,7 +66,7 @@ const (
 
 var (
 	// The docker version in which containerd was introduced.
-	containerdVersion = semver.MustParse("1.11.0")
+	containerdVersion = utilversion.MustParseSemantic("1.11.0")
 )
 
 // A non-user container tracked by the Kubelet.
@@ -104,7 +104,7 @@ type containerManagerImpl struct {
 	periodicTasks    []func()
 	// holds all the mounted cgroup subsystems
 	subsystems *CgroupSubsystems
-	nodeInfo   *api.Node
+	nodeInfo   *v1.Node
 }
 
 type features struct {
@@ -209,7 +209,7 @@ func NewContainerManager(mountUtil mount.Interface, cadvisorInterface cadvisor.I
 	if nodeConfig.CgroupsPerQOS {
 		// this does default to / when enabled, but this tests against regressions.
 		if nodeConfig.CgroupRoot == "" {
-			return nil, fmt.Errorf("invalid configuration: experimental-cgroups-per-qos was specified and cgroup-root was not specified. To enable the QoS cgroup hierarchy you need to specify a valid cgroup-root")
+			return nil, fmt.Errorf("invalid configuration: cgroups-per-qos was specified and cgroup-root was not specified. To enable the QoS cgroup hierarchy you need to specify a valid cgroup-root")
 		}
 
 		// we need to check that the cgroup root actually exists for each subsystem
@@ -276,7 +276,7 @@ func InitQOS(cgroupDriver, rootContainer string, subsystems *CgroupSubsystems) (
 	cm := NewCgroupManager(subsystems, cgroupDriver)
 	// Top level for Qos containers are created only for Burstable
 	// and Best Effort classes
-	qosClasses := [2]qos.QOSClass{qos.Burstable, qos.BestEffort}
+	qosClasses := [2]v1.PodQOSClass{v1.PodQOSBurstable, v1.PodQOSBestEffort}
 
 	// Create containers for both qos classes
 	for _, qosClass := range qosClasses {
@@ -297,8 +297,8 @@ func InitQOS(cgroupDriver, rootContainer string, subsystems *CgroupSubsystems) (
 	// Store the top level qos container names
 	qosContainersInfo := QOSContainersInfo{
 		Guaranteed: rootContainer,
-		Burstable:  path.Join(rootContainer, string(qos.Burstable)),
-		BestEffort: path.Join(rootContainer, string(qos.BestEffort)),
+		Burstable:  path.Join(rootContainer, string(v1.PodQOSBurstable)),
+		BestEffort: path.Join(rootContainer, string(v1.PodQOSBestEffort)),
 	}
 	return qosContainersInfo, nil
 }
@@ -392,7 +392,7 @@ func (cm *containerManagerImpl) setupNode() error {
 			})
 		} else if cm.RuntimeCgroupsName != "" {
 			cont := newSystemCgroups(cm.RuntimeCgroupsName)
-			var capacity = api.ResourceList{}
+			var capacity = v1.ResourceList{}
 			if info, err := cm.cadvisorInterface.MachineInfo(); err == nil {
 				capacity = cadvisor.CapacityFromMachineInfo(info)
 			}
@@ -523,7 +523,7 @@ func (cm *containerManagerImpl) Status() Status {
 	return cm.status
 }
 
-func (cm *containerManagerImpl) Start(node *api.Node) error {
+func (cm *containerManagerImpl) Start(node *v1.Node) error {
 	// cache the node Info including resource capacity and
 	// allocatable of the node
 	cm.nodeInfo = node
@@ -566,7 +566,7 @@ func (cm *containerManagerImpl) Start(node *api.Node) error {
 	return nil
 }
 
-func (cm *containerManagerImpl) SystemCgroupsLimit() api.ResourceList {
+func (cm *containerManagerImpl) SystemCgroupsLimit() v1.ResourceList {
 	cpuLimit := int64(0)
 
 	// Sum up resources of all external containers.
@@ -574,8 +574,8 @@ func (cm *containerManagerImpl) SystemCgroupsLimit() api.ResourceList {
 		cpuLimit += cont.cpuMillicores
 	}
 
-	return api.ResourceList{
-		api.ResourceCPU: *resource.NewMilliQuantity(
+	return v1.ResourceList{
+		v1.ResourceCPU: *resource.NewMilliQuantity(
 			cpuLimit,
 			resource.DecimalSI),
 	}
@@ -632,10 +632,10 @@ func getPidsForProcess(name, pidFile string) ([]int, error) {
 // Temporarily export the function to be used by dockershim.
 // TODO(yujuhong): Move this function to dockershim once kubelet migrates to
 // dockershim as the default.
-func EnsureDockerInContainer(dockerVersion semver.Version, oomScoreAdj int, manager *fs.Manager) error {
+func EnsureDockerInContainer(dockerVersion *utilversion.Version, oomScoreAdj int, manager *fs.Manager) error {
 	type process struct{ name, file string }
 	dockerProcs := []process{{dockerProcessName, dockerPidFile}}
-	if dockerVersion.GTE(containerdVersion) {
+	if dockerVersion.AtLeast(containerdVersion) {
 		dockerProcs = append(dockerProcs, process{containerdProcessName, containerdPidFile})
 	}
 	var errs []error
@@ -797,17 +797,16 @@ func isKernelPid(pid int) bool {
 }
 
 // Helper for getting the docker version.
-func getDockerVersion(cadvisor cadvisor.Interface) semver.Version {
-	var fallback semver.Version // Fallback to zero-value by default.
+func getDockerVersion(cadvisor cadvisor.Interface) *utilversion.Version {
 	versions, err := cadvisor.VersionInfo()
 	if err != nil {
 		glog.Errorf("Error requesting cAdvisor VersionInfo: %v", err)
-		return fallback
+		return utilversion.MustParseSemantic("0.0.0")
 	}
-	dockerVersion, err := semver.Parse(versions.DockerVersion)
+	dockerVersion, err := utilversion.ParseSemantic(versions.DockerVersion)
 	if err != nil {
 		glog.Errorf("Error parsing docker version %q: %v", versions.DockerVersion, err)
-		return fallback
+		return utilversion.MustParseSemantic("0.0.0")
 	}
 	return dockerVersion
 }

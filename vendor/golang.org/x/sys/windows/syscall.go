@@ -19,11 +19,10 @@
 // These calls return err == nil to indicate success; otherwise
 // err represents an operating system error describing the failure and
 // holds a value of type syscall.Errno.
-package windows // import "golang.org/x/sys/windows"
+package windows
 
 import (
 	"syscall"
-	"unsafe"
 )
 
 // ByteSliceFromString returns a NUL-terminated slice of bytes
@@ -70,8 +69,3 @@ func (ts *Timespec) Nano() int64 {
 func (tv *Timeval) Nano() int64 {
 	return int64(tv.Sec)*1e9 + int64(tv.Usec)*1000
 }
-
-// use is a no-op, but the compiler cannot see that it is.
-// Calling use(p) ensures that p is kept live until that point.
-//go:noescape
-func use(p unsafe.Pointer)

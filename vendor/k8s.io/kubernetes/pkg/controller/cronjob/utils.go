@@ -24,11 +24,13 @@ import (
 	"github.com/golang/glog"
 	"github.com/robfig/cron"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/apis/batch"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
+	batch "k8s.io/kubernetes/pkg/apis/batch/v2alpha1"
 )
 
 // Utilities for dealing with Jobs and CronJobs and time.
@@ -46,7 +48,7 @@ func deleteFromActiveList(sj *batch.CronJob, uid types.UID) {
 	if sj == nil {
 		return
 	}
-	newActive := []api.ObjectReference{}
+	newActive := []v1.ObjectReference{}
 	for _, j := range sj.Status.Active {
 		if j.UID != uid {
 			newActive = append(newActive, j)
@@ -57,12 +59,12 @@ func deleteFromActiveList(sj *batch.CronJob, uid types.UID) {
 
 // getParentUIDFromJob extracts UID of job's parent and whether it was found
 func getParentUIDFromJob(j batch.Job) (types.UID, bool) {
-	creatorRefJson, found := j.ObjectMeta.Annotations[api.CreatedByAnnotation]
+	creatorRefJson, found := j.ObjectMeta.Annotations[v1.CreatedByAnnotation]
 	if !found {
 		glog.V(4).Infof("Job with no created-by annotation, name %s namespace %s", j.Name, j.Namespace)
 		return types.UID(""), false
 	}
-	var sr api.SerializedReference
+	var sr v1.SerializedReference
 	err := json.Unmarshal([]byte(creatorRefJson), &sr)
 	if err != nil {
 		glog.V(4).Infof("Job with unparsable created-by annotation, name %s namespace %s: %v", j.Name, j.Namespace, err)
@@ -124,6 +126,7 @@ func getRecentUnmetScheduleTimes(sj batch.CronJob, now time.Time) ([]time.Time, 
 	if err != nil {
 		return starts, fmt.Errorf("Unparseable schedule: %s : %s", sj.Spec.Schedule, err)
 	}
+
 	var earliestTime time.Time
 	if sj.Status.LastScheduleTime != nil {
 		earliestTime = sj.Status.LastScheduleTime.Time
@@ -136,7 +139,14 @@ func getRecentUnmetScheduleTimes(sj batch.CronJob, now time.Time) ([]time.Time, 
 		// CronJob as last known start time.
 		earliestTime = sj.ObjectMeta.CreationTimestamp.Time
 	}
+	if sj.Spec.StartingDeadlineSeconds != nil {
+		// Controller is not going to schedule anything below this point
+		schedulingDeadline := now.Add(-time.Second * time.Duration(*sj.Spec.StartingDeadlineSeconds))
 
+		if schedulingDeadline.After(earliestTime) {
+			earliestTime = schedulingDeadline
+		}
+	}
 	if earliestTime.After(now) {
 		return []time.Time{}, nil
 	}
@@ -162,7 +172,7 @@ func getRecentUnmetScheduleTimes(sj batch.CronJob, now time.Time) ([]time.Time, 
 		// but less than "lots".
 		if len(starts) > 100 {
 			// We can't get the most recent times so just return an empty slice
-			return []time.Time{}, fmt.Errorf("Too many missed start times to list")
+			return []time.Time{}, fmt.Errorf("Too many missed start time (> 100). Set or decrease .spec.startingDeadlineSeconds or check clock skew.")
 		}
 	}
 	return starts, nil
@@ -181,12 +191,12 @@ func getJobFromTemplate(sj *batch.CronJob, scheduledTime time.Time) (*batch.Job,
 	if err != nil {
 		return nil, err
 	}
-	annotations[api.CreatedByAnnotation] = string(createdByRefJson)
+	annotations[v1.CreatedByAnnotation] = string(createdByRefJson)
 	// We want job names for a given nominal start time to have a deterministic name to avoid the same job being created twice
 	name := fmt.Sprintf("%s-%d", sj.Name, getTimeHash(scheduledTime))
 
 	job := &batch.Job{
-		ObjectMeta: api.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Labels:      labels,
 			Annotations: annotations,
 			Name:        name,
@@ -205,7 +215,7 @@ func getTimeHash(scheduledTime time.Time) int64 {
 
 // makeCreatedByRefJson makes a json string with an object reference for use in "created-by" annotation value
 func makeCreatedByRefJson(object runtime.Object) (string, error) {
-	createdByRef, err := api.GetReference(object)
+	createdByRef, err := v1.GetReference(api.Scheme, object)
 	if err != nil {
 		return "", fmt.Errorf("unable to get controller reference: %v", err)
 	}
@@ -213,13 +223,22 @@ func makeCreatedByRefJson(object runtime.Object) (string, error) {
 	// TODO: this code was not safe previously - as soon as new code came along that switched to v2, old clients
 	//   would be broken upon reading it. This is explicitly hardcoded to v1 to guarantee predictable deployment.
 	//   We need to consistently handle this case of annotation versioning.
-	codec := api.Codecs.LegacyCodec(unversioned.GroupVersion{Group: api.GroupName, Version: "v1"})
+	codec := api.Codecs.LegacyCodec(schema.GroupVersion{Group: v1.GroupName, Version: "v1"})
 
-	createdByRefJson, err := runtime.Encode(codec, &api.SerializedReference{
+	createdByRefJson, err := runtime.Encode(codec, &v1.SerializedReference{
 		Reference: *createdByRef,
 	})
 	if err != nil {
 		return "", fmt.Errorf("unable to serialize controller reference: %v", err)
 	}
 	return string(createdByRefJson), nil
+}
+
+func IsJobFinished(j *batch.Job) bool {
+	for _, c := range j.Status.Conditions {
+		if (c.Type == batch.JobComplete || c.Type == batch.JobFailed) && c.Status == v1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }

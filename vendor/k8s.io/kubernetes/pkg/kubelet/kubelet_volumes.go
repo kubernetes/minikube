@@ -21,11 +21,11 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/kubernetes/pkg/api/v1"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	"k8s.io/kubernetes/pkg/types"
-	utilerrors "k8s.io/kubernetes/pkg/util/errors"
-	"k8s.io/kubernetes/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/volume"
 	volumetypes "k8s.io/kubernetes/pkg/volume/util/types"
 )
@@ -64,7 +64,7 @@ func (kl *Kubelet) podVolumesExist(podUID types.UID) bool {
 // newVolumeMounterFromPlugins attempts to find a plugin by volume spec, pod
 // and volume options and then creates a Mounter.
 // Returns a valid Unmounter or an error.
-func (kl *Kubelet) newVolumeMounterFromPlugins(spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions) (volume.Mounter, error) {
+func (kl *Kubelet) newVolumeMounterFromPlugins(spec *volume.Spec, pod *v1.Pod, opts volume.VolumeOptions) (volume.Mounter, error) {
 	plugin, err := kl.volumePluginMgr.FindPluginBySpec(spec)
 	if err != nil {
 		return nil, fmt.Errorf("can't use volume plugins for %s: %v", spec.Name(), err)
@@ -80,7 +80,7 @@ func (kl *Kubelet) newVolumeMounterFromPlugins(spec *volume.Spec, pod *api.Pod, 
 // cleanupOrphanedPodDirs removes the volumes of pods that should not be
 // running and that have no containers running.
 func (kl *Kubelet) cleanupOrphanedPodDirs(
-	pods []*api.Pod, runningPods []*kubecontainer.Pod) error {
+	pods []*v1.Pod, runningPods []*kubecontainer.Pod) error {
 	allPods := sets.NewString()
 	for _, pod := range pods {
 		allPods.Insert(string(pod.UID))
@@ -106,8 +106,12 @@ func (kl *Kubelet) cleanupOrphanedPodDirs(
 		}
 		// If there are still volume directories, do not delete directory
 		volumePaths, err := kl.getPodVolumePathListFromDisk(uid)
-		if err != nil || len(volumePaths) > 0 {
-			glog.Errorf("Orphaned pod %q found, but error %v occured during reading volume dir from disk", uid, err)
+		if err != nil {
+			glog.Errorf("Orphaned pod %q found, but error %v occurred during reading volume dir from disk", uid, err)
+			continue
+		}
+		if len(volumePaths) > 0 {
+			glog.Errorf("Orphaned pod %q found, but volume paths are still present on disk.", uid)
 			continue
 		}
 		glog.V(3).Infof("Orphaned pod %q found, removing", uid)
