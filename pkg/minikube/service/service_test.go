@@ -25,10 +25,10 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	corev1 "k8s.io/client-go/1.5/kubernetes/typed/core/v1"
-	"k8s.io/client-go/1.5/kubernetes/typed/core/v1/fake"
-	"k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -37,14 +37,14 @@ type MockClientGetter struct {
 	servicesMap map[string]corev1.ServiceInterface
 }
 
-func (m *MockClientGetter) GetCoreClient() (corev1.CoreInterface, error) {
+func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	return &MockCoreClient{
 		servicesMap: m.servicesMap,
 	}, nil
 }
 
 type MockCoreClient struct {
-	fake.FakeCore
+	fake.FakeCoreV1
 	servicesMap map[string]corev1.ServiceInterface
 }
 
@@ -56,7 +56,7 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 	ServiceList: &v1.ServiceList{
 		Items: []v1.Service{
 			{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "mock-dashboard",
 					Namespace: "default",
 				},
@@ -68,7 +68,7 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 				},
 			},
 			{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "mock-dashboard-no-ports",
 					Namespace: "default",
 				},
@@ -120,7 +120,7 @@ var endpointMap = map[string]*v1.Endpoints{
 	},
 }
 
-func (e MockEndpointsInterface) Get(name string) (*v1.Endpoints, error) {
+func (e MockEndpointsInterface) Get(name string, _ meta_v1.GetOptions) (*v1.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -171,12 +171,12 @@ type MockServiceInterface struct {
 	ServiceList *v1.ServiceList
 }
 
-func (s MockServiceInterface) List(opts api.ListOptions) (*v1.ServiceList, error) {
+func (s MockServiceInterface) List(opts meta_v1.ListOptions) (*v1.ServiceList, error) {
 	serviceList := &v1.ServiceList{
 		Items: []v1.Service{},
 	}
-	if opts.LabelSelector != nil {
-		keyValArr := strings.Split(opts.LabelSelector.String(), "=")
+	if opts.LabelSelector != "" {
+		keyValArr := strings.Split(opts.LabelSelector, "=")
 
 		for _, service := range s.ServiceList.Items {
 			if service.Spec.Selector[keyValArr[0]] == keyValArr[1] {
@@ -190,7 +190,7 @@ func (s MockServiceInterface) List(opts api.ListOptions) (*v1.ServiceList, error
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(name string) (*v1.Service, error) {
+func (s MockServiceInterface) Get(name string, _ meta_v1.GetOptions) (*v1.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
