@@ -21,7 +21,7 @@ DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2016.08
 REGISTRY?=gcr.io/k8s-minikube
-DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
+DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.8.1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
 # The iso will be versioned the same as minikube
@@ -33,7 +33,7 @@ GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
-BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.7.1-0
+BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.8.1-1
 IS_EXE ?=
 
 ifeq ($(IN_DOCKER),1)

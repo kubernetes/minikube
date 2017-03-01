@@ -165,7 +165,11 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 			return nil, err
 		}
 
-		u, err := url.Parse(doc.String())
+		value := doc.String()
+		if !strings.HasPrefix(value, "https://") && !strings.HasPrefix(value, "http://") {
+			value = "https://" + value
+		}
+		u, err := url.Parse(value)
 		if err != nil {
 			return nil, err
 		}
