@@ -130,6 +130,9 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /mnt/$PARTNAME/hostpath_pv
     ln -s /mnt/$PARTNAME/hostpath_pv /tmp/hostpath_pv
 
+    mkdir -p /mnt/$PARTNAME/hostpath-provisioner
+    ln -s /mnt/$PARTNAME/hostpath-provisioner /tmp/hostpath-provisioner
+
     rm -rf /var/lib/rkt
     if [ ! -d /mnt/$PARTNAME/var/lib/rkt ]; then
         mkdir -p /mnt/$PARTNAME/var/lib/rkt
