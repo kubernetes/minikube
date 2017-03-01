@@ -8,4 +8,4 @@ metadata:
   labels:
     kubernetes.io/cluster-service: "true"
 
-provisioner: kubernetes.io/host-path
+provisioner: k8s.io/minikube-hostpath
