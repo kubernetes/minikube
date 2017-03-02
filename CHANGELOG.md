@@ -1,5 +1,15 @@
 # Minikube Release Notes
 
+## Version 0.17.0 - 3/2/2017
+* Added external hostpath provisioner to localkube
+* Added unit test coverage
+* Added API Name as configuration option
+* Etcd is now accesible to pods
+* Always use native golang SSH
+* Added a deprecation warning to boot2docker provisioner
+* Added MINIKUBE_HOME environment variable
+* Added `minikube mount` command for 9p server
+
 ## Version 0.16.0 - 2/2/2017
 * Updated minikube ISO to [v1.0.6](https://github.com/kubernetes/minikube/tree/v0.16.0/deploy/iso/minikube-iso/CHANGELOG.md)
 * Updated Registry Creds addon to v1.5
