@@ -272,6 +272,7 @@ However, Minikube is configured to persist files stored under the following dire
 * `/var/lib/localkube`
 * `/var/lib/docker`
 * `/tmp/hostpath_pv`
+* `/tmp/hostpath-provisioner`
 
 Here is an example PersistentVolume config to persist data in the '/data' directory:
 
