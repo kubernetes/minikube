@@ -28,11 +28,12 @@ import (
 	"reflect"
 	"time"
 
-	rl "github.com/kubernetes-incubator/external-storage/lib/leaderelection/resourcelock"
 	"k8s.io/client-go/pkg/api/errors"
 	"k8s.io/client-go/pkg/api/unversioned"
 	"k8s.io/client-go/pkg/util/runtime"
 	"k8s.io/client-go/pkg/util/wait"
+
+	rl "k8s.io/minikube/pkg/localkube/provisioner/leaderelection/resourcelock"
 
 	"github.com/golang/glog"
 )
