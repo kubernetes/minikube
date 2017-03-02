@@ -27,7 +27,7 @@ minikube start
       --host-only-cidr string           The CIDR to be used for the minikube VM (only supported with Virtualbox driver) (default "192.168.99.1/24")
       --hyperv-virtual-switch string    The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)
       --insecure-registry stringSlice   Insecure Docker registries to pass to the Docker daemon
-      --iso-url string                  Location of the minikube iso (default "https://storage.googleapis.com/minikube/iso/minikube-v1.0.6.iso")
+      --iso-url string                  Location of the minikube iso (default "https://storage.googleapis.com/minikube/iso/minikube-v1.0.7.iso")
       --keep-context                    This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string       The kubernetes version that the minikube VM will use (ex: v1.2.3) 
  OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.5.3")
