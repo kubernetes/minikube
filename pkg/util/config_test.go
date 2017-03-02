@@ -57,6 +57,7 @@ type subConfig3 struct {
 	R utilnet.PortRange
 	S []string
 	T aliasedString
+	U net.IPNet
 }
 
 func buildConfig() testConfig {
@@ -75,6 +76,7 @@ func buildConfig() testConfig {
 				P: false,
 				Q: net.ParseIP("12.34.56.78"),
 				R: utilnet.PortRange{Base: 2, Size: 4},
+				T: net.ParseCIDR("12.34.0.0/16")[1],
 			},
 		},
 		E: &subConfig2{
@@ -176,6 +178,7 @@ func TestSetElement(t *testing.T) {
 		{"D.I.R", "7-11", func(t testConfig) bool { return t.D.I.R.Base == 7 && t.D.I.R.Size == 5 }},
 		{"D.I.S", "a,b", func(t testConfig) bool { return reflect.DeepEqual(t.D.I.S, []string{"a", "b"}) }},
 		{"D.I.T", "foo", func(t testConfig) bool { return t.D.I.T == "foo" }},
+		{"D.I.U", "11.22.0.0/16", func(t testConfig) bool { return t.D.I.U.Network.Equal(net.ParseCIDR("11.22.0.0/16").Network) }},
 	} {
 		a := buildConfig()
 		if err := FindAndSet(tc.path, &a, tc.newval); err != nil {
