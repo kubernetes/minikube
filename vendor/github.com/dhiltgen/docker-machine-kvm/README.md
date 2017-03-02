@@ -19,7 +19,7 @@ developed for Docker Machine.
 # Dependencies
 
 This driver leverages [libvirt](http://libvirt.org/) and the [libvirt-go
-library](https://github.com/alexzorin/libvirt-go) to create and manage
+library](https://github.com/libvirt/libvirt-go) to create and manage
 KVM based virtual machines.  It has been tested with Ubuntu 12.04 through 15.04
 and should work on most platforms with KVM/libvirt support.  If you run into
 compatibility problems, please file an [issue](https://github.com/dhiltgen/docker-machine-kvm/issues).

@@ -1,6 +1,6 @@
 {
 	"ImportPath": "k8s.io/minikube",
-	"GoVersion": "go1.7",
+	"GoVersion": "go1.8",
 	"GodepVersion": "v74",
 	"Packages": [
 		"./..."
@@ -101,11 +101,6 @@
 		{
 			"ImportPath": "github.com/abbot/go-http-auth",
 			"Rev": "c0ef4539dfab4d21c8ef20ba2924f9fc6f186d35"
-		},
-		{
-			"ImportPath": "github.com/alexzorin/libvirt-go",
-			"Comment": "v2.13.0-6-g9359c4f",
-			"Rev": "9359c4feb97212380aa05213fa30c4b7348365f0"
 		},
 		{
 			"ImportPath": "github.com/appc/spec/schema",
@@ -690,8 +685,8 @@
 		},
 		{
 			"ImportPath": "github.com/dhiltgen/docker-machine-kvm",
-			"Comment": "v0.5.6-10-g37bb4cc",
-			"Rev": "37bb4cc6778c35860a0ce502f3a2d1a96dc3fd67"
+			"Comment": "v0.8.2",
+			"Rev": "b14a80ebb5156b63f0f273b223fc4a10b02cb6f0"
 		},
 		{
 			"ImportPath": "github.com/docker/distribution/digest",
@@ -1447,6 +1442,11 @@
 			"ImportPath": "github.com/kr/pty",
 			"Comment": "release.r56-29-gf7ee69f",
 			"Rev": "f7ee69f31298ecbe5d2b349c711e2547a617d398"
+		},
+		{
+			"ImportPath": "github.com/libvirt/libvirt-go",
+			"Comment": "v3.0.0-5-gea3aa116",
+			"Rev": "ea3aa1162f01b9a41d4ab1c183f3a4dc59f57273"
 		},
 		{
 			"ImportPath": "github.com/lpabon/godbc",
