@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ import (
 	testclient "k8s.io/client-go/testing"
 	fcache "k8s.io/client-go/tools/cache/testing"
 
-	"k8s.io/minikube/pkg/localkube/leaderelection"
-	rl "k8s.io/minikube/pkg/localkube/leaderelection/resourcelock"
+	"k8s.io/minikube/pkg/localkube/provisioner/leaderelection"
+	rl "k8s.io/minikube/pkg/localkube/provisioner/leaderelection/resourcelock"
 )
 
 const (
