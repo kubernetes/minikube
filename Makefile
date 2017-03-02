@@ -23,7 +23,7 @@ BUILDROOT_BRANCH ?= 2016.08
 REGISTRY?=gcr.io/k8s-minikube
 DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
 
-ISO_VERSION ?= v1.0.6
+ISO_VERSION ?= v1.0.7
 ISO_BUCKET ?= minikube/iso
 
 GOOS ?= $(shell go env GOOS)
