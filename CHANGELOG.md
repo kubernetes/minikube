@@ -1,5 +1,8 @@
 # Minikube Release Notes
 
+## Version 0.17.1 - 3/2/2017
+* Removed vendored KVM driver so minikube doesn't have a dependency on libvirt-bin
+
 ## Version 0.17.0 - 3/2/2017
 * Added external hostpath provisioner to localkube
 * Added unit test coverage
