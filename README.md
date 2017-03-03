@@ -293,10 +293,11 @@ spec:
 You can also achieve persistence by creating a PV in a mounted host folder.
 
 ## Mounted Host Folders
-Some drivers will mount a host folder within the VM so that you can easily share files between the VM and host.  These are not configurable at the moment and different for the driver and OS you are using.  Note: Host folder sharing is not implemented on Linux yet.
+Some drivers will mount a host folder within the VM so that you can easily share files between the VM and host.  These are not configurable at the moment and different for the driver and OS you are using.  Note: Host folder sharing is not implemented in the KVM driver yet.
 
 | Driver | OS | HostFolder | VM |
 | --- | --- | --- | --- |
+| Virtualbox | Linux | /home | /hosthome |
 | Virtualbox | OSX | /Users | /Users |
 | Virtualbox | Windows | C://Users | /c/Users |
 | VMWare Fusion | OSX | /Users | /Users |
