@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -191,6 +192,16 @@ func runStart(cmd *cobra.Command, args []string) {
 		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", kubeCfgSetup.ClusterName)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
+	}
+
+	// start mount daemon
+	fmt.Println("Starting minikube mount...")
+	fmt.Println(len(args))
+	cd := exec.Command(args[0], "mount /usr/local/google/home/aprindle/")
+	err = cd.Start()
+	if err != nil {
+		glog.Errorln("Error setting up mount: ", err)
+		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 }
 
