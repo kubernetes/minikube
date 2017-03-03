@@ -17,9 +17,6 @@ limitations under the License.
 package machine
 
 import (
-	"encoding/json"
-
-	kvm "github.com/dhiltgen/docker-machine-kvm"
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin"
@@ -33,12 +30,10 @@ var driverMap = map[string]driverGetter{
 }
 
 func getKVMDriver(rawDriver []byte) (drivers.Driver, error) {
-	var driver drivers.Driver
-	driver = &kvm.Driver{}
-	if err := json.Unmarshal(rawDriver, &driver); err != nil {
-		return nil, errors.Wrap(err, "Error unmarshalling kvm driver")
-	}
-	return driver, nil
+	return nil, errors.New(`
+The KVM driver is not included in minikube yet.  Please follow the direction at
+https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#kvm-driver
+`)
 }
 
 // StartDriver starts the desired machine driver if necessary.
