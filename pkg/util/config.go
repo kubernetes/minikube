@@ -47,44 +47,47 @@ func findNestedElement(s string, c interface{}) (reflect.Value, error) {
 
 // setElement sets the supplied element to the value in the supplied string. The string will be coerced to the correct type.
 func setElement(e reflect.Value, v string) error {
-	switch t := e.Interface().(type) {
-	case int, int32, int64:
+	switch e.Kind() {
+	case reflect.Int, reflect.Int32, reflect.Int64:
 		i, err := strconv.Atoi(v)
 		if err != nil {
 			return fmt.Errorf("Error converting input %s to an integer: %s", v, err)
 		}
 		e.SetInt(int64(i))
-	case string:
+	case reflect.String:
 		e.SetString(v)
-	case float32, float64:
+	case reflect.Float32, reflect.Float64:
 		f, err := strconv.ParseFloat(v, 64)
 		if err != nil {
 			return fmt.Errorf("Error converting input %s to a float: %s", v, err)
 		}
 		e.SetFloat(f)
-	case bool:
+	case reflect.Bool:
 		b, err := strconv.ParseBool(v)
 		if err != nil {
 			return fmt.Errorf("Error converting input %s to a bool: %s", v, err)
 		}
 		e.SetBool(b)
-	case net.IP:
-		ip := net.ParseIP(v)
-		if ip == nil {
-			return fmt.Errorf("Error converting input %s to an IP.", v)
-		}
-		e.Set(reflect.ValueOf(ip))
-	case utilnet.PortRange:
-		pr, err := utilnet.ParsePortRange(v)
-		if err != nil {
-			return fmt.Errorf("Error converting input %s to PortRange: %s", v, err)
-		}
-		e.Set(reflect.ValueOf(*pr))
-	case []string:
-		vals := strings.Split(v, ",")
-		e.Set(reflect.ValueOf(vals))
 	default:
-		return fmt.Errorf("Unable to set type %T.", t)
+		switch t := e.Interface().(type) {
+		case net.IP:
+			ip := net.ParseIP(v)
+			if ip == nil {
+				return fmt.Errorf("Error converting input %s to an IP.", v)
+			}
+			e.Set(reflect.ValueOf(ip))
+		case utilnet.PortRange:
+			pr, err := utilnet.ParsePortRange(v)
+			if err != nil {
+				return fmt.Errorf("Error converting input %s to PortRange: %s", v, err)
+			}
+			e.Set(reflect.ValueOf(*pr))
+		case []string:
+			vals := strings.Split(v, ",")
+			e.Set(reflect.ValueOf(vals))
+		default:
+			return fmt.Errorf("Unable to set type %T.", t)
+		}
 	}
 	return nil
 }

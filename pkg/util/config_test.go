@@ -25,6 +25,8 @@ import (
 	utilnet "k8s.io/kubernetes/pkg/util/net"
 )
 
+type aliasedString string
+
 type testConfig struct {
 	A string
 	B int
@@ -54,6 +56,7 @@ type subConfig3 struct {
 	Q net.IP
 	R utilnet.PortRange
 	S []string
+	T aliasedString
 }
 
 func buildConfig() testConfig {
@@ -172,6 +175,7 @@ func TestSetElement(t *testing.T) {
 		{"D.I.Q", "11.22.33.44", func(t testConfig) bool { return t.D.I.Q.Equal(net.ParseIP("11.22.33.44")) }},
 		{"D.I.R", "7-11", func(t testConfig) bool { return t.D.I.R.Base == 7 && t.D.I.R.Size == 5 }},
 		{"D.I.S", "a,b", func(t testConfig) bool { return reflect.DeepEqual(t.D.I.S, []string{"a", "b"}) }},
+		{"D.I.T", "foo", func(t testConfig) bool { return t.D.I.T == "foo" }},
 	} {
 		a := buildConfig()
 		if err := FindAndSet(tc.path, &a, tc.newval); err != nil {
