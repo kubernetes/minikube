@@ -108,6 +108,11 @@ To debug issues with minikube (not kubernetes but minikube itself), you can use 
 * --v=3 libmachine logging
 * --v=7 libmachine --debug level logging
 
+If you need to access additional tools for debugging, minikube also includes the [CoreOS toolbox](https://github.com/coreos/toolbox)
+
+You can ssh into the toolbox and access these additional commands using:
+`minikube ssh toolbox`
+
 ### Using rkt container engine
 
 To use [rkt](https://github.com/coreos/rkt) as the container runtime run:
@@ -293,10 +298,11 @@ spec:
 You can also achieve persistence by creating a PV in a mounted host folder.
 
 ## Mounted Host Folders
-Some drivers will mount a host folder within the VM so that you can easily share files between the VM and host.  These are not configurable at the moment and different for the driver and OS you are using.  Note: Host folder sharing is not implemented on Linux yet.
+Some drivers will mount a host folder within the VM so that you can easily share files between the VM and host.  These are not configurable at the moment and different for the driver and OS you are using.  Note: Host folder sharing is not implemented in the KVM driver yet.
 
 | Driver | OS | HostFolder | VM |
 | --- | --- | --- | --- |
+| Virtualbox | Linux | /home | /hosthome |
 | Virtualbox | OSX | /Users | /Users |
 | Virtualbox | Windows | C://Users | /c/Users |
 | VMWare Fusion | OSX | /Users | /Users |
