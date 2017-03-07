@@ -24,7 +24,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/arm/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // ListRoutes lists all managed routes that belong to the specified clusterName
@@ -82,27 +82,6 @@ func (az *Cloud) CreateRoute(clusterName string, nameHint string, kubeRoute *clo
 		}
 
 		routeTable, err = az.RouteTablesClient.Get(az.ResourceGroup, az.RouteTableName, "")
-		if err != nil {
-			return err
-		}
-	}
-
-	// ensure the subnet is properly configured
-	subnet, err := az.SubnetsClient.Get(az.ResourceGroup, az.VnetName, az.SubnetName, "")
-	if err != nil {
-		// 404 is fatal here
-		return err
-	}
-	if subnet.RouteTable != nil {
-		if *subnet.RouteTable.ID != *routeTable.ID {
-			return fmt.Errorf("The subnet has a route table, but it was unrecognized. Refusing to modify it. active_routetable=%q expected_routetable=%q", *subnet.RouteTable.ID, *routeTable.ID)
-		}
-	} else {
-		subnet.RouteTable = &network.RouteTable{
-			ID: routeTable.ID,
-		}
-		glog.V(3).Info("create: updating subnet")
-		_, err := az.SubnetsClient.CreateOrUpdate(az.ResourceGroup, az.VnetName, az.SubnetName, subnet, nil)
 		if err != nil {
 			return err
 		}
