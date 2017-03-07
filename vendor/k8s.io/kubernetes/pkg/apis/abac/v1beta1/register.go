@@ -17,15 +17,15 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/kubernetes/pkg/api/unversioned"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	api "k8s.io/kubernetes/pkg/apis/abac"
-	"k8s.io/kubernetes/pkg/runtime"
 )
 
 const GroupName = "abac.authorization.kubernetes.io"
 
 // SchemeGroupVersion is the API group and version for abac v1beta1
-var SchemeGroupVersion = unversioned.GroupVersion{Group: GroupName, Version: "v1beta1"}
+var SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: "v1beta1"}
 
 func init() {
 	// TODO: delete this, abac should not have its own scheme.
@@ -33,10 +33,14 @@ func init() {
 		// Programmer error.
 		panic(err)
 	}
+	if err := addConversionFuncs(api.Scheme); err != nil {
+		// Programmer error.
+		panic(err)
+	}
 }
 
 var (
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
+	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes, addConversionFuncs)
 	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
@@ -47,4 +51,4 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	return nil
 }
 
-func (obj *Policy) GetObjectKind() unversioned.ObjectKind { return &obj.TypeMeta }
+func (obj *Policy) GetObjectKind() schema.ObjectKind { return &obj.TypeMeta }

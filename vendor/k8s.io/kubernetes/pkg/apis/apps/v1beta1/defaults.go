@@ -17,8 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func addDefaultingFuncs(scheme *runtime.Scheme) error {
@@ -32,7 +32,7 @@ func SetDefaults_StatefulSet(obj *StatefulSet) {
 	labels := obj.Spec.Template.Labels
 	if labels != nil {
 		if obj.Spec.Selector == nil {
-			obj.Spec.Selector = &unversioned.LabelSelector{
+			obj.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: labels,
 			}
 		}

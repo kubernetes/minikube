@@ -21,9 +21,9 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/resource"
-	clientcache "k8s.io/kubernetes/pkg/client/cache"
+	"k8s.io/apimachinery/pkg/api/resource"
+	clientcache "k8s.io/client-go/tools/cache"
+	"k8s.io/kubernetes/pkg/api/v1"
 	priorityutil "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util"
 )
 
@@ -32,10 +32,10 @@ var emptyResource = Resource{}
 // NodeInfo is node level aggregated information.
 type NodeInfo struct {
 	// Overall node information.
-	node *api.Node
+	node *v1.Node
 
-	pods             []*api.Pod
-	podsWithAffinity []*api.Pod
+	pods             []*v1.Pod
+	podsWithAffinity []*v1.Pod
 
 	// Total requested resource of all pods on this node.
 	// It includes assumed pods which scheduler sends binding to apiserver but
@@ -49,6 +49,14 @@ type NodeInfo struct {
 	// explicitly as int, to avoid conversions and improve performance.
 	allowedPodNumber int
 
+	// Cached tains of the node for faster lookup.
+	taints    []v1.Taint
+	taintsErr error
+
+	// Cached conditions of node for faster lookup.
+	memoryPressureCondition v1.ConditionStatus
+	diskPressureCondition   v1.ConditionStatus
+
 	// Whenever NodeInfo changes, generation is bumped.
 	// This is used to avoid cloning it if the object didn't change.
 	generation int64
@@ -59,14 +67,14 @@ type Resource struct {
 	MilliCPU           int64
 	Memory             int64
 	NvidiaGPU          int64
-	OpaqueIntResources map[api.ResourceName]int64
+	OpaqueIntResources map[v1.ResourceName]int64
 }
 
-func (r *Resource) ResourceList() api.ResourceList {
-	result := api.ResourceList{
-		api.ResourceCPU:       *resource.NewMilliQuantity(r.MilliCPU, resource.DecimalSI),
-		api.ResourceMemory:    *resource.NewQuantity(r.Memory, resource.BinarySI),
-		api.ResourceNvidiaGPU: *resource.NewQuantity(r.NvidiaGPU, resource.DecimalSI),
+func (r *Resource) ResourceList() v1.ResourceList {
+	result := v1.ResourceList{
+		v1.ResourceCPU:       *resource.NewMilliQuantity(r.MilliCPU, resource.DecimalSI),
+		v1.ResourceMemory:    *resource.NewQuantity(r.Memory, resource.BinarySI),
+		v1.ResourceNvidiaGPU: *resource.NewQuantity(r.NvidiaGPU, resource.DecimalSI),
 	}
 	for rName, rQuant := range r.OpaqueIntResources {
 		result[rName] = *resource.NewQuantity(rQuant, resource.DecimalSI)
@@ -74,10 +82,18 @@ func (r *Resource) ResourceList() api.ResourceList {
 	return result
 }
 
+func (r *Resource) AddOpaque(name v1.ResourceName, quantity int64) {
+	// Lazily allocate opaque integer resource map.
+	if r.OpaqueIntResources == nil {
+		r.OpaqueIntResources = map[v1.ResourceName]int64{}
+	}
+	r.OpaqueIntResources[name] += quantity
+}
+
 // NewNodeInfo returns a ready to use empty NodeInfo object.
 // If any pods are given in arguments, their information will be aggregated in
 // the returned object.
-func NewNodeInfo(pods ...*api.Pod) *NodeInfo {
+func NewNodeInfo(pods ...*v1.Pod) *NodeInfo {
 	ni := &NodeInfo{
 		requestedResource:   &Resource{},
 		nonzeroRequest:      &Resource{},
@@ -92,7 +108,7 @@ func NewNodeInfo(pods ...*api.Pod) *NodeInfo {
 }
 
 // Returns overall information about this node.
-func (n *NodeInfo) Node() *api.Node {
+func (n *NodeInfo) Node() *v1.Node {
 	if n == nil {
 		return nil
 	}
@@ -100,7 +116,7 @@ func (n *NodeInfo) Node() *api.Node {
 }
 
 // Pods return all pods scheduled (including assumed to be) on this node.
-func (n *NodeInfo) Pods() []*api.Pod {
+func (n *NodeInfo) Pods() []*v1.Pod {
 	if n == nil {
 		return nil
 	}
@@ -108,7 +124,7 @@ func (n *NodeInfo) Pods() []*api.Pod {
 }
 
 // PodsWithAffinity return all pods with (anti)affinity constraints on this node.
-func (n *NodeInfo) PodsWithAffinity() []*api.Pod {
+func (n *NodeInfo) PodsWithAffinity() []*v1.Pod {
 	if n == nil {
 		return nil
 	}
@@ -120,6 +136,27 @@ func (n *NodeInfo) AllowedPodNumber() int {
 		return 0
 	}
 	return n.allowedPodNumber
+}
+
+func (n *NodeInfo) Taints() ([]v1.Taint, error) {
+	if n == nil {
+		return nil, nil
+	}
+	return n.taints, n.taintsErr
+}
+
+func (n *NodeInfo) MemoryPressureCondition() v1.ConditionStatus {
+	if n == nil {
+		return v1.ConditionUnknown
+	}
+	return n.memoryPressureCondition
+}
+
+func (n *NodeInfo) DiskPressureCondition() v1.ConditionStatus {
+	if n == nil {
+		return v1.ConditionUnknown
+	}
+	return n.diskPressureCondition
 }
 
 // RequestedResource returns aggregated resource request of pods on this node.
@@ -148,18 +185,24 @@ func (n *NodeInfo) AllocatableResource() Resource {
 
 func (n *NodeInfo) Clone() *NodeInfo {
 	clone := &NodeInfo{
-		node:                n.node,
-		requestedResource:   &(*n.requestedResource),
-		nonzeroRequest:      &(*n.nonzeroRequest),
-		allocatableResource: &(*n.allocatableResource),
-		allowedPodNumber:    n.allowedPodNumber,
-		generation:          n.generation,
+		node:                    n.node,
+		requestedResource:       &(*n.requestedResource),
+		nonzeroRequest:          &(*n.nonzeroRequest),
+		allocatableResource:     &(*n.allocatableResource),
+		allowedPodNumber:        n.allowedPodNumber,
+		taintsErr:               n.taintsErr,
+		memoryPressureCondition: n.memoryPressureCondition,
+		diskPressureCondition:   n.diskPressureCondition,
+		generation:              n.generation,
 	}
 	if len(n.pods) > 0 {
-		clone.pods = append([]*api.Pod(nil), n.pods...)
+		clone.pods = append([]*v1.Pod(nil), n.pods...)
 	}
 	if len(n.podsWithAffinity) > 0 {
-		clone.podsWithAffinity = append([]*api.Pod(nil), n.podsWithAffinity...)
+		clone.podsWithAffinity = append([]*v1.Pod(nil), n.podsWithAffinity...)
+	}
+	if len(n.taints) > 0 {
+		clone.taints = append([]v1.Taint(nil), n.taints...)
 	}
 	return clone
 }
@@ -173,23 +216,19 @@ func (n *NodeInfo) String() string {
 	return fmt.Sprintf("&NodeInfo{Pods:%v, RequestedResource:%#v, NonZeroRequest: %#v}", podKeys, n.requestedResource, n.nonzeroRequest)
 }
 
-func hasPodAffinityConstraints(pod *api.Pod) bool {
-	affinity, err := api.GetAffinityFromPodAnnotations(pod.Annotations)
-	if err != nil || affinity == nil {
-		return false
-	}
-	return affinity.PodAffinity != nil || affinity.PodAntiAffinity != nil
+func hasPodAffinityConstraints(pod *v1.Pod) bool {
+	affinity := pod.Spec.Affinity
+	return affinity != nil && (affinity.PodAffinity != nil || affinity.PodAntiAffinity != nil)
 }
 
 // addPod adds pod information to this NodeInfo.
-func (n *NodeInfo) addPod(pod *api.Pod) {
-	// cpu, mem, nvidia_gpu, non0_cpu, non0_mem := calculateResource(pod)
+func (n *NodeInfo) addPod(pod *v1.Pod) {
 	res, non0_cpu, non0_mem := calculateResource(pod)
 	n.requestedResource.MilliCPU += res.MilliCPU
 	n.requestedResource.Memory += res.Memory
 	n.requestedResource.NvidiaGPU += res.NvidiaGPU
 	if n.requestedResource.OpaqueIntResources == nil && len(res.OpaqueIntResources) > 0 {
-		n.requestedResource.OpaqueIntResources = map[api.ResourceName]int64{}
+		n.requestedResource.OpaqueIntResources = map[v1.ResourceName]int64{}
 	}
 	for rName, rQuant := range res.OpaqueIntResources {
 		n.requestedResource.OpaqueIntResources[rName] += rQuant
@@ -204,7 +243,7 @@ func (n *NodeInfo) addPod(pod *api.Pod) {
 }
 
 // removePod subtracts pod information to this NodeInfo.
-func (n *NodeInfo) removePod(pod *api.Pod) error {
+func (n *NodeInfo) removePod(pod *v1.Pod) error {
 	k1, err := getPodKey(pod)
 	if err != nil {
 		return err
@@ -240,7 +279,7 @@ func (n *NodeInfo) removePod(pod *api.Pod) error {
 			n.requestedResource.Memory -= res.Memory
 			n.requestedResource.NvidiaGPU -= res.NvidiaGPU
 			if len(res.OpaqueIntResources) > 0 && n.requestedResource.OpaqueIntResources == nil {
-				n.requestedResource.OpaqueIntResources = map[api.ResourceName]int64{}
+				n.requestedResource.OpaqueIntResources = map[v1.ResourceName]int64{}
 			}
 			for rName, rQuant := range res.OpaqueIntResources {
 				n.requestedResource.OpaqueIntResources[rName] -= rQuant
@@ -254,23 +293,19 @@ func (n *NodeInfo) removePod(pod *api.Pod) error {
 	return fmt.Errorf("no corresponding pod %s in pods of node %s", pod.Name, n.node.Name)
 }
 
-func calculateResource(pod *api.Pod) (res Resource, non0_cpu int64, non0_mem int64) {
+func calculateResource(pod *v1.Pod) (res Resource, non0_cpu int64, non0_mem int64) {
 	for _, c := range pod.Spec.Containers {
 		for rName, rQuant := range c.Resources.Requests {
 			switch rName {
-			case api.ResourceCPU:
+			case v1.ResourceCPU:
 				res.MilliCPU += rQuant.MilliValue()
-			case api.ResourceMemory:
+			case v1.ResourceMemory:
 				res.Memory += rQuant.Value()
-			case api.ResourceNvidiaGPU:
+			case v1.ResourceNvidiaGPU:
 				res.NvidiaGPU += rQuant.Value()
 			default:
-				if api.IsOpaqueIntResourceName(rName) {
-					// Lazily allocate opaque resource map.
-					if res.OpaqueIntResources == nil {
-						res.OpaqueIntResources = map[api.ResourceName]int64{}
-					}
-					res.OpaqueIntResources[rName] += rQuant.Value()
+				if v1.IsOpaqueIntResourceName(rName) {
+					res.AddOpaque(rName, rQuant.Value())
 				}
 			}
 		}
@@ -284,26 +319,34 @@ func calculateResource(pod *api.Pod) (res Resource, non0_cpu int64, non0_mem int
 }
 
 // Sets the overall node information.
-func (n *NodeInfo) SetNode(node *api.Node) error {
+func (n *NodeInfo) SetNode(node *v1.Node) error {
 	n.node = node
 	for rName, rQuant := range node.Status.Allocatable {
 		switch rName {
-		case api.ResourceCPU:
+		case v1.ResourceCPU:
 			n.allocatableResource.MilliCPU = rQuant.MilliValue()
-		case api.ResourceMemory:
+		case v1.ResourceMemory:
 			n.allocatableResource.Memory = rQuant.Value()
-		case api.ResourceNvidiaGPU:
+		case v1.ResourceNvidiaGPU:
 			n.allocatableResource.NvidiaGPU = rQuant.Value()
-		case api.ResourcePods:
+		case v1.ResourcePods:
 			n.allowedPodNumber = int(rQuant.Value())
 		default:
-			if api.IsOpaqueIntResourceName(rName) {
-				// Lazily allocate opaque resource map.
-				if n.allocatableResource.OpaqueIntResources == nil {
-					n.allocatableResource.OpaqueIntResources = map[api.ResourceName]int64{}
-				}
-				n.allocatableResource.OpaqueIntResources[rName] = rQuant.Value()
+			if v1.IsOpaqueIntResourceName(rName) {
+				n.allocatableResource.AddOpaque(rName, rQuant.Value())
 			}
+		}
+	}
+	n.taints, n.taintsErr = v1.GetTaintsFromNodeAnnotations(node.Annotations)
+	for i := range node.Status.Conditions {
+		cond := &node.Status.Conditions[i]
+		switch cond.Type {
+		case v1.NodeMemoryPressure:
+			n.memoryPressureCondition = cond.Status
+		case v1.NodeDiskPressure:
+			n.diskPressureCondition = cond.Status
+		default:
+			// We ignore other conditions.
 		}
 	}
 	n.generation++
@@ -311,7 +354,7 @@ func (n *NodeInfo) SetNode(node *api.Node) error {
 }
 
 // Removes the overall information about the node.
-func (n *NodeInfo) RemoveNode(node *api.Node) error {
+func (n *NodeInfo) RemoveNode(node *v1.Node) error {
 	// We don't remove NodeInfo for because there can still be some pods on this node -
 	// this is because notifications about pods are delivered in a different watch,
 	// and thus can potentially be observed later, even though they happened before
@@ -319,11 +362,14 @@ func (n *NodeInfo) RemoveNode(node *api.Node) error {
 	n.node = nil
 	n.allocatableResource = &Resource{}
 	n.allowedPodNumber = 0
+	n.taints, n.taintsErr = nil, nil
+	n.memoryPressureCondition = v1.ConditionUnknown
+	n.diskPressureCondition = v1.ConditionUnknown
 	n.generation++
 	return nil
 }
 
 // getPodKey returns the string key of a pod.
-func getPodKey(pod *api.Pod) (string, error) {
+func getPodKey(pod *v1.Pod) (string, error) {
 	return clientcache.MetaNamespaceKeyFunc(pod)
 }

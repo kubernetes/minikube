@@ -25,8 +25,9 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/types"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/mount"
 	utilstrings "k8s.io/kubernetes/pkg/util/strings"
@@ -98,15 +99,15 @@ func (plugin *flexVolumePlugin) RequiresRemount() bool {
 }
 
 // GetAccessModes gets the allowed access modes for this plugin.
-func (plugin *flexVolumePlugin) GetAccessModes() []api.PersistentVolumeAccessMode {
-	return []api.PersistentVolumeAccessMode{
-		api.ReadWriteOnce,
-		api.ReadOnlyMany,
+func (plugin *flexVolumePlugin) GetAccessModes() []v1.PersistentVolumeAccessMode {
+	return []v1.PersistentVolumeAccessMode{
+		v1.ReadWriteOnce,
+		v1.ReadOnlyMany,
 	}
 }
 
 // NewMounter is the mounter routine to build the volume.
-func (plugin *flexVolumePlugin) NewMounter(spec *volume.Spec, pod *api.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
+func (plugin *flexVolumePlugin) NewMounter(spec *volume.Spec, pod *v1.Pod, _ volume.VolumeOptions) (volume.Mounter, error) {
 	fv, _, err := getVolumeSource(spec)
 	if err != nil {
 		return nil, err
@@ -118,7 +119,7 @@ func (plugin *flexVolumePlugin) NewMounter(spec *volume.Spec, pod *api.Pod, _ vo
 			return nil, fmt.Errorf("Cannot get kube client")
 		}
 
-		secretName, err := kubeClient.Core().Secrets(pod.Namespace).Get(fv.SecretRef.Name)
+		secretName, err := kubeClient.Core().Secrets(pod.Namespace).Get(fv.SecretRef.Name, metav1.GetOptions{})
 		if err != nil {
 			err = fmt.Errorf("Couldn't get secret %v/%v err: %v", pod.Namespace, fv.SecretRef, err)
 			return nil, err
@@ -132,7 +133,7 @@ func (plugin *flexVolumePlugin) NewMounter(spec *volume.Spec, pod *api.Pod, _ vo
 }
 
 // newMounterInternal is the internal mounter routine to build the volume.
-func (plugin *flexVolumePlugin) newMounterInternal(spec *volume.Spec, pod *api.Pod, manager flexVolumeManager, mounter mount.Interface, runner exec.Interface, secrets map[string]string) (volume.Mounter, error) {
+func (plugin *flexVolumePlugin) newMounterInternal(spec *volume.Spec, pod *v1.Pod, manager flexVolumeManager, mounter mount.Interface, runner exec.Interface, secrets map[string]string) (volume.Mounter, error) {
 	source, _, err := getVolumeSource(spec)
 	if err != nil {
 		return nil, err
@@ -181,10 +182,10 @@ func (plugin *flexVolumePlugin) newUnmounterInternal(volName string, podUID type
 }
 
 func (plugin *flexVolumePlugin) ConstructVolumeSpec(volumeName, sourceName string) (*volume.Spec, error) {
-	flexVolume := &api.Volume{
+	flexVolume := &v1.Volume{
 		Name: volumeName,
-		VolumeSource: api.VolumeSource{
-			FlexVolume: &api.FlexVolumeSource{
+		VolumeSource: v1.VolumeSource{
+			FlexVolume: &v1.FlexVolumeSource{
 				Driver: sourceName,
 			},
 		},
@@ -427,7 +428,7 @@ func (f *flexVolumeUnmounter) TearDownAt(dir string) error {
 	return nil
 }
 
-func getVolumeSource(spec *volume.Spec) (*api.FlexVolumeSource, bool, error) {
+func getVolumeSource(spec *volume.Spec) (*v1.FlexVolumeSource, bool, error) {
 	if spec.Volume != nil && spec.Volume.FlexVolume != nil {
 		return spec.Volume.FlexVolume, spec.Volume.FlexVolume.ReadOnly, nil
 	} else if spec.PersistentVolume != nil &&

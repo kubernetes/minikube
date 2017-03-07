@@ -20,15 +20,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/util/bandwidth"
 	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
-	"k8s.io/kubernetes/pkg/util/sets"
 )
 
 const (
@@ -89,25 +90,124 @@ func (kl *Kubelet) providerRequiresNetworkingConfiguration() bool {
 	return supported
 }
 
-// Returns the list of DNS servers and DNS search domains.
-func (kl *Kubelet) parseResolvConf(reader io.Reader) (nameservers []string, searches []string, err error) {
-	var scrubber dnsScrubber
-	if kl.cloud != nil {
-		scrubber = kl.cloud
+func omitDuplicates(kl *Kubelet, pod *v1.Pod, combinedSearch []string) []string {
+	uniqueDomains := map[string]bool{}
+
+	for _, dnsDomain := range combinedSearch {
+		if _, exists := uniqueDomains[dnsDomain]; !exists {
+			combinedSearch[len(uniqueDomains)] = dnsDomain
+			uniqueDomains[dnsDomain] = true
+		} else {
+			log := fmt.Sprintf("Found and omitted duplicated dns domain in host search line: '%s' during merging with cluster dns domains", dnsDomain)
+			kl.recorder.Event(pod, v1.EventTypeWarning, "DNSSearchForming", log)
+			glog.Error(log)
+		}
 	}
-	return parseResolvConf(reader, scrubber)
+	return combinedSearch[:len(uniqueDomains)]
 }
 
-// A helper for testing.
-type dnsScrubber interface {
-	ScrubDNS(nameservers, searches []string) (nsOut, srchOut []string)
+func formDNSSearchFitsLimits(kl *Kubelet, pod *v1.Pod, composedSearch []string) []string {
+	// resolver file Search line current limitations
+	resolvSearchLineDNSDomainsLimit := 6
+	resolvSearchLineLenLimit := 255
+	limitsExceeded := false
+
+	if len(composedSearch) > resolvSearchLineDNSDomainsLimit {
+		composedSearch = composedSearch[:resolvSearchLineDNSDomainsLimit]
+		limitsExceeded = true
+	}
+
+	if resolvSearchhLineStrLen := len(strings.Join(composedSearch, " ")); resolvSearchhLineStrLen > resolvSearchLineLenLimit {
+		cutDomainsNum := 0
+		cutDoaminsLen := 0
+		for i := len(composedSearch) - 1; i >= 0; i-- {
+			cutDoaminsLen += len(composedSearch[i]) + 1
+			cutDomainsNum++
+
+			if (resolvSearchhLineStrLen - cutDoaminsLen) <= resolvSearchLineLenLimit {
+				break
+			}
+		}
+
+		composedSearch = composedSearch[:(len(composedSearch) - cutDomainsNum)]
+		limitsExceeded = true
+	}
+
+	if limitsExceeded {
+		log := fmt.Sprintf("Search Line limits were exceeded, some dns names have been omitted, the applied search line is: %s", strings.Join(composedSearch, " "))
+		kl.recorder.Event(pod, v1.EventTypeWarning, "DNSSearchForming", log)
+		glog.Error(log)
+	}
+	return composedSearch
+}
+
+func (kl *Kubelet) formDNSSearchForDNSDefault(hostSearch []string, pod *v1.Pod) []string {
+	return formDNSSearchFitsLimits(kl, pod, hostSearch)
+}
+
+func (kl *Kubelet) formDNSSearch(hostSearch []string, pod *v1.Pod) []string {
+	if kl.clusterDomain == "" {
+		formDNSSearchFitsLimits(kl, pod, hostSearch)
+		return hostSearch
+	}
+
+	nsSvcDomain := fmt.Sprintf("%s.svc.%s", pod.Namespace, kl.clusterDomain)
+	svcDomain := fmt.Sprintf("svc.%s", kl.clusterDomain)
+	dnsSearch := []string{nsSvcDomain, svcDomain, kl.clusterDomain}
+
+	combinedSearch := append(dnsSearch, hostSearch...)
+
+	combinedSearch = omitDuplicates(kl, pod, combinedSearch)
+	return formDNSSearchFitsLimits(kl, pod, combinedSearch)
+}
+
+func (kl *Kubelet) checkLimitsForResolvConf() {
+	// resolver file Search line current limitations
+	resolvSearchLineDNSDomainsLimit := 6
+	resolvSearchLineLenLimit := 255
+
+	f, err := os.Open(kl.resolverConfig)
+	if err != nil {
+		kl.recorder.Event(kl.nodeRef, v1.EventTypeWarning, "checkLimitsForResolvConf", err.Error())
+		glog.Error("checkLimitsForResolvConf: " + err.Error())
+		return
+	}
+	defer f.Close()
+
+	_, hostSearch, err := kl.parseResolvConf(f)
+	if err != nil {
+		kl.recorder.Event(kl.nodeRef, v1.EventTypeWarning, "checkLimitsForResolvConf", err.Error())
+		glog.Error("checkLimitsForResolvConf: " + err.Error())
+		return
+	}
+
+	domainCntLimit := resolvSearchLineDNSDomainsLimit
+
+	if kl.clusterDomain != "" {
+		domainCntLimit -= 3
+	}
+
+	if len(hostSearch) > domainCntLimit {
+		log := fmt.Sprintf("Resolv.conf file '%s' contains search line consisting of more than %d domains!", kl.resolverConfig, domainCntLimit)
+		kl.recorder.Event(kl.nodeRef, v1.EventTypeWarning, "checkLimitsForResolvConf", log)
+		glog.Error("checkLimitsForResolvConf: " + log)
+		return
+	}
+
+	if len(strings.Join(hostSearch, " ")) > resolvSearchLineLenLimit {
+		log := fmt.Sprintf("Resolv.conf file '%s' contains search line which length is more than allowed %d chars!", kl.resolverConfig, resolvSearchLineLenLimit)
+		kl.recorder.Event(kl.nodeRef, v1.EventTypeWarning, "checkLimitsForResolvConf", log)
+		glog.Error("checkLimitsForResolvConf: " + log)
+		return
+	}
+
+	return
 }
 
 // parseResolveConf reads a resolv.conf file from the given reader, and parses
-// it into nameservers and searches, possibly returning an error.  The given
-// dnsScrubber allows cloud providers to post-process dns names.
+// it into nameservers and searches, possibly returning an error.
 // TODO: move to utility package
-func parseResolvConf(reader io.Reader, dnsScrubber dnsScrubber) (nameservers []string, searches []string, err error) {
+func (kl *Kubelet) parseResolvConf(reader io.Reader) (nameservers []string, searches []string, err error) {
 	file, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return nil, nil, err
@@ -137,16 +237,16 @@ func parseResolvConf(reader io.Reader, dnsScrubber dnsScrubber) (nameservers []s
 		}
 	}
 
-	// Give the cloud-provider a chance to post-process DNS settings.
-	if dnsScrubber != nil {
-		nameservers, searches = dnsScrubber.ScrubDNS(nameservers, searches)
-	}
+	// There used to be code here to scrub DNS for each cloud, but doesn't
+	// make sense anymore since cloudproviders are being factored out.
+	// contact @thockin or @wlan0 for more information
+
 	return nameservers, searches, nil
 }
 
 // cleanupBandwidthLimits updates the status of bandwidth-limited containers
 // and ensures that only the appropriate CIDRs are active on the node.
-func (kl *Kubelet) cleanupBandwidthLimits(allPods []*api.Pod) error {
+func (kl *Kubelet) cleanupBandwidthLimits(allPods []*v1.Pod) error {
 	if kl.shaper == nil {
 		return nil
 	}
@@ -174,7 +274,7 @@ func (kl *Kubelet) cleanupBandwidthLimits(allPods []*api.Pod) error {
 			}
 			status = kl.generateAPIPodStatus(pod, s)
 		}
-		if status.Phase == api.PodRunning {
+		if status.Phase == v1.PodRunning {
 			possibleCIDRs.Insert(fmt.Sprintf("%s/32", status.PodIP))
 		}
 	}
