@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"testing"
 
-	"k8s.io/kubernetes/pkg/client/unversioned/clientcmd/api"
+	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
