@@ -17,9 +17,9 @@ limitations under the License.
 package storage
 
 import (
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/runtime"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // AttrFunc returns label and field sets for List or Watch to match.
@@ -46,10 +46,23 @@ func (s *SelectionPredicate) Matches(obj runtime.Object) (bool, error) {
 		return false, err
 	}
 	matched := s.Label.Matches(labels)
-	if s.Field != nil {
+	if matched && s.Field != nil {
 		matched = (matched && s.Field.Matches(fields))
 	}
 	return matched, nil
+}
+
+// MatchesLabelsAndFields returns true if the given labels and fields
+// match s.Label and s.Field.
+func (s *SelectionPredicate) MatchesLabelsAndFields(l labels.Set, f fields.Set) bool {
+	if s.Label.Empty() && s.Field.Empty() {
+		return true
+	}
+	matched := s.Label.Matches(l)
+	if matched && s.Field != nil {
+		matched = (matched && s.Field.Matches(f))
+	}
+	return matched
 }
 
 // MatchesSingle will return (name, true) if and only if s.Field matches on the object's

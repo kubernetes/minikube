@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/resource"
-	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 // Volume represents a directory used by pods or hosts on a node. All method
@@ -149,7 +149,7 @@ type Provisioner interface {
 	// Provision creates the resource by allocating the underlying volume in a
 	// storage system. This method should block until completion and returns
 	// PersistentVolume representing the created storage resource.
-	Provision() (*api.PersistentVolume, error)
+	Provision() (*v1.PersistentVolume, error)
 }
 
 // Deleter removes the resource from the underlying storage provider. Calls

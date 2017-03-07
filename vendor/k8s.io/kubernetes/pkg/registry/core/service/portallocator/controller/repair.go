@@ -20,24 +20,26 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/errors"
+	coreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 	"k8s.io/kubernetes/pkg/client/retry"
 	"k8s.io/kubernetes/pkg/registry/core/rangeallocation"
 	"k8s.io/kubernetes/pkg/registry/core/service"
 	"k8s.io/kubernetes/pkg/registry/core/service/portallocator"
-	"k8s.io/kubernetes/pkg/util/net"
-	"k8s.io/kubernetes/pkg/util/runtime"
-	"k8s.io/kubernetes/pkg/util/wait"
 )
 
 // See ipallocator/controller/repair.go; this is a copy for ports.
 type Repair struct {
-	interval  time.Duration
-	registry  service.Registry
-	portRange net.PortRange
-	alloc     rangeallocation.RangeRegistry
-	leaks     map[int]int // counter per leaked port
+	interval      time.Duration
+	serviceClient coreclient.ServicesGetter
+	portRange     net.PortRange
+	alloc         rangeallocation.RangeRegistry
+	leaks         map[int]int // counter per leaked port
 }
 
 // How many times we need to detect a leak before we clean up.  This is to
@@ -46,13 +48,13 @@ const numRepairsBeforeLeakCleanup = 3
 
 // NewRepair creates a controller that periodically ensures that all ports are uniquely allocated across the cluster
 // and generates informational warnings for a cluster that is not in sync.
-func NewRepair(interval time.Duration, registry service.Registry, portRange net.PortRange, alloc rangeallocation.RangeRegistry) *Repair {
+func NewRepair(interval time.Duration, serviceClient coreclient.ServicesGetter, portRange net.PortRange, alloc rangeallocation.RangeRegistry) *Repair {
 	return &Repair{
-		interval:  interval,
-		registry:  registry,
-		portRange: portRange,
-		alloc:     alloc,
-		leaks:     map[int]int{},
+		interval:      interval,
+		serviceClient: serviceClient,
+		portRange:     portRange,
+		alloc:         alloc,
+		leaks:         map[int]int{},
 	}
 }
 
@@ -101,13 +103,12 @@ func (c *Repair) runOnce() error {
 		return fmt.Errorf("unable to rebuild allocator from snapshot: %v", err)
 	}
 
-	ctx := api.WithNamespace(api.NewDefaultContext(), api.NamespaceAll)
 	// We explicitly send no resource version, since the resource version
 	// of 'snapshot' is from a different collection, it's not comparable to
 	// the service collection. The caching layer keeps per-collection RVs,
 	// and this is proper, since in theory the collections could be hosted
 	// in separate etcd (or even non-etcd) instances.
-	list, err := c.registry.ListServices(ctx, &api.ListOptions{})
+	list, err := c.serviceClient.Services(metav1.NamespaceAll).List(metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to refresh the port block: %v", err)
 	}

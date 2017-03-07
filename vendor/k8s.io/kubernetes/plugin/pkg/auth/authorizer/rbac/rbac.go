@@ -18,10 +18,14 @@ limitations under the License.
 package rbac
 
 import (
+	"fmt"
+
+	"github.com/golang/glog"
+
+	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/kubernetes/pkg/apis/rbac"
-	"k8s.io/kubernetes/pkg/apis/rbac/validation"
-	"k8s.io/kubernetes/pkg/auth/authorizer"
-	"k8s.io/kubernetes/pkg/auth/user"
+	rbacregistryvalidation "k8s.io/kubernetes/pkg/registry/rbac/validation"
 )
 
 type RequestToRuleMapper interface {
@@ -33,28 +37,49 @@ type RequestToRuleMapper interface {
 }
 
 type RBACAuthorizer struct {
-	superUser string
-
 	authorizationRuleResolver RequestToRuleMapper
 }
 
 func (r *RBACAuthorizer) Authorize(requestAttributes authorizer.Attributes) (bool, string, error) {
-	if r.superUser != "" && requestAttributes.GetUser() != nil && requestAttributes.GetUser().GetName() == r.superUser {
-		return true, "", nil
-	}
-
 	rules, ruleResolutionError := r.authorizationRuleResolver.RulesFor(requestAttributes.GetUser(), requestAttributes.GetNamespace())
 	if RulesAllow(requestAttributes, rules...) {
 		return true, "", nil
 	}
 
-	return false, "", ruleResolutionError
+	// Build a detailed log of the denial.
+	// Make the whole block conditional so we don't do a lot of string-building we won't use.
+	if glog.V(2) {
+		var operation string
+		if requestAttributes.IsResourceRequest() {
+			operation = fmt.Sprintf(
+				"%q on \"%v.%v/%v\"",
+				requestAttributes.GetVerb(),
+				requestAttributes.GetResource(), requestAttributes.GetAPIGroup(), requestAttributes.GetSubresource(),
+			)
+		} else {
+			operation = fmt.Sprintf("%q nonResourceURL %q", requestAttributes.GetVerb(), requestAttributes.GetPath())
+		}
+
+		var scope string
+		if ns := requestAttributes.GetNamespace(); len(ns) > 0 {
+			scope = fmt.Sprintf("in namespace %q", ns)
+		} else {
+			scope = "cluster-wide"
+		}
+
+		glog.Infof("RBAC DENY: user %q groups %v cannot %s %s", requestAttributes.GetUser().GetName(), requestAttributes.GetUser().GetGroups(), operation, scope)
+	}
+
+	reason := ""
+	if ruleResolutionError != nil {
+		reason = fmt.Sprintf("%v", ruleResolutionError)
+	}
+	return false, reason, nil
 }
 
-func New(roles validation.RoleGetter, roleBindings validation.RoleBindingLister, clusterRoles validation.ClusterRoleGetter, clusterRoleBindings validation.ClusterRoleBindingLister, superUser string) *RBACAuthorizer {
+func New(roles rbacregistryvalidation.RoleGetter, roleBindings rbacregistryvalidation.RoleBindingLister, clusterRoles rbacregistryvalidation.ClusterRoleGetter, clusterRoleBindings rbacregistryvalidation.ClusterRoleBindingLister) *RBACAuthorizer {
 	authorizer := &RBACAuthorizer{
-		superUser: superUser,
-		authorizationRuleResolver: validation.NewDefaultRuleResolver(
+		authorizationRuleResolver: rbacregistryvalidation.NewDefaultRuleResolver(
 			roles, roleBindings, clusterRoles, clusterRoleBindings,
 		),
 	}

@@ -30,16 +30,16 @@ import (
 
 	"gopkg.in/gcfg.v1"
 
-	"k8s.io/kubernetes/pkg/api"
-	apiservice "k8s.io/kubernetes/pkg/api/service"
-	"k8s.io/kubernetes/pkg/api/unversioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/flowcontrol"
+	"k8s.io/kubernetes/pkg/api/v1"
+	apiservice "k8s.io/kubernetes/pkg/api/v1/service"
 	"k8s.io/kubernetes/pkg/cloudprovider"
-	"k8s.io/kubernetes/pkg/types"
-	utilerrors "k8s.io/kubernetes/pkg/util/errors"
-	"k8s.io/kubernetes/pkg/util/flowcontrol"
 	netsets "k8s.io/kubernetes/pkg/util/net/sets"
-	"k8s.io/kubernetes/pkg/util/sets"
-	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/volume"
 
 	"cloud.google.com/go/compute/metadata"
@@ -63,8 +63,9 @@ const (
 	// AffinityTypeClientIPProto - affinity based on Client IP and port.
 	gceAffinityTypeClientIPProto = "CLIENT_IP_PROTO"
 
-	operationPollInterval        = 3 * time.Second
-	operationPollTimeoutDuration = 30 * time.Minute
+	operationPollInterval = 3 * time.Second
+	// Creating Route in very large clusters, may take more than half an hour.
+	operationPollTimeoutDuration = time.Hour
 
 	// Each page can have 500 results, but we cap how many pages
 	// are iterated through to prevent infinite loops if the API
@@ -527,12 +528,12 @@ func (gce *GCECloud) waitForZoneOp(op *compute.Operation, zone string) error {
 }
 
 // GetLoadBalancer is an implementation of LoadBalancer.GetLoadBalancer
-func (gce *GCECloud) GetLoadBalancer(clusterName string, service *api.Service) (*api.LoadBalancerStatus, bool, error) {
+func (gce *GCECloud) GetLoadBalancer(clusterName string, service *v1.Service) (*v1.LoadBalancerStatus, bool, error) {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	fwd, err := gce.service.ForwardingRules.Get(gce.projectID, gce.region, loadBalancerName).Do()
 	if err == nil {
-		status := &api.LoadBalancerStatus{}
-		status.Ingress = []api.LoadBalancerIngress{{IP: fwd.IPAddress}}
+		status := &v1.LoadBalancerStatus{}
+		status.Ingress = []v1.LoadBalancerIngress{{IP: fwd.IPAddress}}
 
 		return status, true, nil
 	}
@@ -547,6 +548,14 @@ func isHTTPErrorCode(err error, code int) bool {
 	return ok && apiErr.Code == code
 }
 
+func nodeNames(nodes []*v1.Node) []string {
+	ret := make([]string, len(nodes))
+	for i, node := range nodes {
+		ret[i] = node.Name
+	}
+	return ret
+}
+
 // EnsureLoadBalancer is an implementation of LoadBalancer.EnsureLoadBalancer.
 // Our load balancers in GCE consist of four separate GCE resources - a static
 // IP address, a firewall rule, a target pool, and a forwarding rule. This
@@ -554,11 +563,12 @@ func isHTTPErrorCode(err error, code int) bool {
 // Due to an interesting series of design decisions, this handles both creating
 // new load balancers and updating existing load balancers, recognizing when
 // each is needed.
-func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *api.Service, hostNames []string) (*api.LoadBalancerStatus, error) {
-	if len(hostNames) == 0 {
+func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *v1.Service, nodes []*v1.Node) (*v1.LoadBalancerStatus, error) {
+	if len(nodes) == 0 {
 		return nil, fmt.Errorf("Cannot EnsureLoadBalancer() with no hosts")
 	}
 
+	hostNames := nodeNames(nodes)
 	hosts, err := gce.getInstancesByNames(hostNames)
 	if err != nil {
 		return nil, err
@@ -832,8 +842,8 @@ func (gce *GCECloud) EnsureLoadBalancer(clusterName string, apiService *api.Serv
 		glog.Infof("EnsureLoadBalancer(%v(%v)): created forwarding rule, IP %s", loadBalancerName, serviceName, ipAddress)
 	}
 
-	status := &api.LoadBalancerStatus{}
-	status.Ingress = []api.LoadBalancerIngress{{IP: ipAddress}}
+	status := &v1.LoadBalancerStatus{}
+	status.Ingress = []v1.LoadBalancerIngress{{IP: ipAddress}}
 
 	return status, nil
 }
@@ -889,7 +899,7 @@ func (gce *GCECloud) ensureHttpHealthCheck(name, path string, port int32) (hc *c
 // IP is being requested.
 // Returns whether the forwarding rule exists, whether it needs to be updated,
 // what its IP address is (if it exists), and any error we encountered.
-func (gce *GCECloud) forwardingRuleNeedsUpdate(name, region string, loadBalancerIP string, ports []api.ServicePort) (exists bool, needsUpdate bool, ipAddress string, err error) {
+func (gce *GCECloud) forwardingRuleNeedsUpdate(name, region string, loadBalancerIP string, ports []v1.ServicePort) (exists bool, needsUpdate bool, ipAddress string, err error) {
 	fwd, err := gce.service.ForwardingRules.Get(gce.projectID, region, name).Do()
 	if err != nil {
 		if isHTTPErrorCode(err, http.StatusNotFound) {
@@ -926,13 +936,13 @@ func (gce *GCECloud) forwardingRuleNeedsUpdate(name, region string, loadBalancer
 	return true, false, fwd.IPAddress, nil
 }
 
-func loadBalancerPortRange(ports []api.ServicePort) (string, error) {
+func loadBalancerPortRange(ports []v1.ServicePort) (string, error) {
 	if len(ports) == 0 {
 		return "", fmt.Errorf("no ports specified for GCE load balancer")
 	}
 
 	// The service controller verified all the protocols match on the ports, just check and use the first one
-	if ports[0].Protocol != api.ProtocolTCP && ports[0].Protocol != api.ProtocolUDP {
+	if ports[0].Protocol != v1.ProtocolTCP && ports[0].Protocol != v1.ProtocolUDP {
 		return "", fmt.Errorf("Invalid protocol %s, only TCP and UDP are supported", string(ports[0].Protocol))
 	}
 
@@ -951,7 +961,7 @@ func loadBalancerPortRange(ports []api.ServicePort) (string, error) {
 
 // Doesn't check whether the hosts have changed, since host updating is handled
 // separately.
-func (gce *GCECloud) targetPoolNeedsUpdate(name, region string, affinityType api.ServiceAffinity) (exists bool, needsUpdate bool, err error) {
+func (gce *GCECloud) targetPoolNeedsUpdate(name, region string, affinityType v1.ServiceAffinity) (exists bool, needsUpdate bool, err error) {
 	tp, err := gce.service.TargetPools.Get(gce.projectID, region, name).Do()
 	if err != nil {
 		if isHTTPErrorCode(err, http.StatusNotFound) {
@@ -977,11 +987,11 @@ func (gce *GCECloud) targetPoolNeedsUpdate(name, region string, affinityType api
 }
 
 // translate from what K8s supports to what the cloud provider supports for session affinity.
-func translateAffinityType(affinityType api.ServiceAffinity) string {
+func translateAffinityType(affinityType v1.ServiceAffinity) string {
 	switch affinityType {
-	case api.ServiceAffinityClientIP:
+	case v1.ServiceAffinityClientIP:
 		return gceAffinityTypeClientIP
-	case api.ServiceAffinityNone:
+	case v1.ServiceAffinityNone:
 		return gceAffinityTypeNone
 	default:
 		glog.Errorf("Unexpected affinity type: %v", affinityType)
@@ -989,7 +999,7 @@ func translateAffinityType(affinityType api.ServiceAffinity) string {
 	}
 }
 
-func (gce *GCECloud) firewallNeedsUpdate(name, serviceName, region, ipAddress string, ports []api.ServicePort, sourceRanges netsets.IPNet) (exists bool, needsUpdate bool, err error) {
+func (gce *GCECloud) firewallNeedsUpdate(name, serviceName, region, ipAddress string, ports []v1.ServicePort, sourceRanges netsets.IPNet) (exists bool, needsUpdate bool, err error) {
 	fw, err := gce.service.Firewalls.Get(gce.projectID, makeFirewallName(name)).Do()
 	if err != nil {
 		if isHTTPErrorCode(err, http.StatusNotFound) {
@@ -1050,7 +1060,7 @@ func slicesEqual(x, y []string) bool {
 	return true
 }
 
-func (gce *GCECloud) createForwardingRule(name, serviceName, region, ipAddress string, ports []api.ServicePort) error {
+func (gce *GCECloud) createForwardingRule(name, serviceName, region, ipAddress string, ports []v1.ServicePort) error {
 	portRange, err := loadBalancerPortRange(ports)
 	if err != nil {
 		return err
@@ -1077,7 +1087,7 @@ func (gce *GCECloud) createForwardingRule(name, serviceName, region, ipAddress s
 	return nil
 }
 
-func (gce *GCECloud) createTargetPool(name, serviceName, region string, hosts []*gceInstance, affinityType api.ServiceAffinity, hc *compute.HttpHealthCheck) error {
+func (gce *GCECloud) createTargetPool(name, serviceName, region string, hosts []*gceInstance, affinityType v1.ServiceAffinity, hc *compute.HttpHealthCheck) error {
 	var instances []string
 	for _, host := range hosts {
 		instances = append(instances, makeHostURL(gce.projectID, host.Zone, host.Name))
@@ -1114,7 +1124,7 @@ func (gce *GCECloud) createTargetPool(name, serviceName, region string, hosts []
 	return nil
 }
 
-func (gce *GCECloud) createFirewall(name, region, desc string, sourceRanges netsets.IPNet, ports []api.ServicePort, hosts []*gceInstance) error {
+func (gce *GCECloud) createFirewall(name, region, desc string, sourceRanges netsets.IPNet, ports []v1.ServicePort, hosts []*gceInstance) error {
 	firewall, err := gce.firewallObject(name, region, desc, sourceRanges, ports, hosts)
 	if err != nil {
 		return err
@@ -1132,7 +1142,7 @@ func (gce *GCECloud) createFirewall(name, region, desc string, sourceRanges nets
 	return nil
 }
 
-func (gce *GCECloud) updateFirewall(name, region, desc string, sourceRanges netsets.IPNet, ports []api.ServicePort, hosts []*gceInstance) error {
+func (gce *GCECloud) updateFirewall(name, region, desc string, sourceRanges netsets.IPNet, ports []v1.ServicePort, hosts []*gceInstance) error {
 	firewall, err := gce.firewallObject(name, region, desc, sourceRanges, ports, hosts)
 	if err != nil {
 		return err
@@ -1150,7 +1160,7 @@ func (gce *GCECloud) updateFirewall(name, region, desc string, sourceRanges nets
 	return nil
 }
 
-func (gce *GCECloud) firewallObject(name, region, desc string, sourceRanges netsets.IPNet, ports []api.ServicePort, hosts []*gceInstance) (*compute.Firewall, error) {
+func (gce *GCECloud) firewallObject(name, region, desc string, sourceRanges netsets.IPNet, ports []v1.ServicePort, hosts []*gceInstance) (*compute.Firewall, error) {
 	allowedPorts := make([]string, len(ports))
 	for ix := range ports {
 		allowedPorts[ix] = strconv.Itoa(int(ports[ix].Port))
@@ -1331,8 +1341,8 @@ func (gce *GCECloud) ensureStaticIP(name, serviceName, region, existingIP string
 }
 
 // UpdateLoadBalancer is an implementation of LoadBalancer.UpdateLoadBalancer.
-func (gce *GCECloud) UpdateLoadBalancer(clusterName string, service *api.Service, hostNames []string) error {
-	hosts, err := gce.getInstancesByNames(hostNames)
+func (gce *GCECloud) UpdateLoadBalancer(clusterName string, service *v1.Service, nodes []*v1.Node) error {
+	hosts, err := gce.getInstancesByNames(nodeNames(nodes))
 	if err != nil {
 		return err
 	}
@@ -1402,7 +1412,7 @@ func (gce *GCECloud) updateTargetPool(loadBalancerName string, existing sets.Str
 }
 
 // EnsureLoadBalancerDeleted is an implementation of LoadBalancer.EnsureLoadBalancerDeleted.
-func (gce *GCECloud) EnsureLoadBalancerDeleted(clusterName string, service *api.Service) error {
+func (gce *GCECloud) EnsureLoadBalancerDeleted(clusterName string, service *v1.Service) error {
 	loadBalancerName := cloudprovider.GetLoadBalancerName(service)
 	glog.V(2).Infof("EnsureLoadBalancerDeleted(%v, %v, %v, %v, %v)", clusterName, service.Namespace, service.Name, loadBalancerName,
 		gce.region)
@@ -1555,15 +1565,15 @@ func (gce *GCECloud) CreateFirewall(name, desc string, sourceRanges netsets.IPNe
 		return err
 	}
 	// TODO: This completely breaks modularity in the cloudprovider but the methods
-	// shared with the TCPLoadBalancer take api.ServicePorts.
-	svcPorts := []api.ServicePort{}
+	// shared with the TCPLoadBalancer take v1.ServicePorts.
+	svcPorts := []v1.ServicePort{}
 	// TODO: Currently the only consumer of this method is the GCE L7
 	// loadbalancer controller, which never needs a protocol other than TCP.
 	// We should pipe through a mapping of port:protocol and default to TCP
 	// if UDP ports are required. This means the method signature will change
 	// forcing downstream clients to refactor interfaces.
 	for _, p := range ports {
-		svcPorts = append(svcPorts, api.ServicePort{Port: int32(p), Protocol: api.ProtocolTCP})
+		svcPorts = append(svcPorts, v1.ServicePort{Port: int32(p), Protocol: v1.ProtocolTCP})
 	}
 	hosts, err := gce.getInstancesByNames(hostNames)
 	if err != nil {
@@ -1589,15 +1599,15 @@ func (gce *GCECloud) UpdateFirewall(name, desc string, sourceRanges netsets.IPNe
 		return err
 	}
 	// TODO: This completely breaks modularity in the cloudprovider but the methods
-	// shared with the TCPLoadBalancer take api.ServicePorts.
-	svcPorts := []api.ServicePort{}
+	// shared with the TCPLoadBalancer take v1.ServicePorts.
+	svcPorts := []v1.ServicePort{}
 	// TODO: Currently the only consumer of this method is the GCE L7
 	// loadbalancer controller, which never needs a protocol other than TCP.
 	// We should pipe through a mapping of port:protocol and default to TCP
 	// if UDP ports are required. This means the method signature will change,
 	// forcing downstream clients to refactor interfaces.
 	for _, p := range ports {
-		svcPorts = append(svcPorts, api.ServicePort{Port: int32(p), Protocol: api.ProtocolTCP})
+		svcPorts = append(svcPorts, v1.ServicePort{Port: int32(p), Protocol: v1.ProtocolTCP})
 	}
 	hosts, err := gce.getInstancesByNames(hostNames)
 	if err != nil {
@@ -2171,7 +2181,7 @@ func (gce *GCECloud) AddSSHKeyToAllInstances(user string, keyData []byte) error 
 }
 
 // NodeAddresses is an implementation of Instances.NodeAddresses.
-func (gce *GCECloud) NodeAddresses(_ types.NodeName) ([]api.NodeAddress, error) {
+func (gce *GCECloud) NodeAddresses(_ types.NodeName) ([]v1.NodeAddress, error) {
 	internalIP, err := metadata.Get("instance/network-interfaces/0/ip")
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get internal IP: %v", err)
@@ -2180,9 +2190,9 @@ func (gce *GCECloud) NodeAddresses(_ types.NodeName) ([]api.NodeAddress, error) 
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get external IP: %v", err)
 	}
-	return []api.NodeAddress{
-		{Type: api.NodeInternalIP, Address: internalIP},
-		{Type: api.NodeExternalIP, Address: externalIP},
+	return []v1.NodeAddress{
+		{Type: v1.NodeInternalIP, Address: internalIP},
+		{Type: v1.NodeExternalIP, Address: externalIP},
 	}, nil
 }
 
@@ -2266,37 +2276,6 @@ func (gce *GCECloud) InstanceType(nodeName types.NodeName) (string, error) {
 		return "", err
 	}
 	return instance.Type, nil
-}
-
-// List is an implementation of Instances.List.
-func (gce *GCECloud) List(filter string) ([]types.NodeName, error) {
-	var instances []types.NodeName
-	// TODO: Parallelize, although O(zones) so not too bad (N <= 3 typically)
-	for _, zone := range gce.managedZones {
-		pageToken := ""
-		page := 0
-		for ; page == 0 || (pageToken != "" && page < maxPages); page++ {
-			listCall := gce.service.Instances.List(gce.projectID, zone)
-			if len(filter) > 0 {
-				listCall = listCall.Filter("name eq " + filter)
-			}
-			if pageToken != "" {
-				listCall = listCall.PageToken(pageToken)
-			}
-			res, err := listCall.Do()
-			if err != nil {
-				return nil, err
-			}
-			pageToken = res.NextPageToken
-			for _, instance := range res.Items {
-				instances = append(instances, mapInstanceToNodeName(instance))
-			}
-		}
-		if page >= maxPages {
-			glog.Errorf("List exceeded maxPages=%d for Instances.List: truncating.", maxPages)
-		}
-	}
-	return instances, nil
 }
 
 // GetAllZones returns all the zones in which nodes are running
@@ -2421,7 +2400,12 @@ func (gce *GCECloud) CreateRoute(clusterName string, nameHint string, route *clo
 		Description:     k8sNodeRouteTag,
 	}).Do()
 	if err != nil {
-		return err
+		if isHTTPErrorCode(err, http.StatusConflict) {
+			glog.Info("Route %v already exists.")
+			return nil
+		} else {
+			return err
+		}
 	}
 	return gce.waitForGlobalOp(insertOp)
 }
@@ -2582,8 +2566,8 @@ func (gce *GCECloud) GetAutoLabelsForPD(name string, zone string) (map[string]st
 	}
 
 	labels := make(map[string]string)
-	labels[unversioned.LabelZoneFailureDomain] = zone
-	labels[unversioned.LabelZoneRegion] = region
+	labels[metav1.LabelZoneFailureDomain] = zone
+	labels[metav1.LabelZoneRegion] = region
 
 	return labels, nil
 }

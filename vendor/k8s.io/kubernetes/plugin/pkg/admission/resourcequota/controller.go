@@ -25,14 +25,14 @@ import (
 
 	"github.com/golang/glog"
 
-	"k8s.io/kubernetes/pkg/admission"
+	"k8s.io/apimachinery/pkg/api/meta"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apiserver/pkg/admission"
+	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/meta"
 	"k8s.io/kubernetes/pkg/quota"
-	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
-	"k8s.io/kubernetes/pkg/util/sets"
-	"k8s.io/kubernetes/pkg/util/wait"
-	"k8s.io/kubernetes/pkg/util/workqueue"
 	_ "k8s.io/kubernetes/pkg/util/workqueue/prometheus" // for workqueue metric registration
 )
 
@@ -327,8 +327,7 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 	}
 
 	op := a.GetOperation()
-	operationResources := evaluator.OperationResources(op)
-	if len(operationResources) == 0 {
+	if !evaluator.Handles(op) {
 		return quotas, nil
 	}
 
@@ -340,14 +339,16 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 	interestingQuotaIndexes := []int{}
 	for i := range quotas {
 		resourceQuota := quotas[i]
-		match := evaluator.Matches(&resourceQuota, inputObject)
+		match, err := evaluator.Matches(&resourceQuota, inputObject)
+		if err != nil {
+			return quotas, err
+		}
 		if !match {
 			continue
 		}
 
 		hardResources := quota.ResourceNames(resourceQuota.Status.Hard)
-		evaluatorResources := evaluator.MatchesResources()
-		requiredResources := quota.Intersection(hardResources, evaluatorResources)
+		requiredResources := evaluator.MatchingResources(hardResources)
 		if err := evaluator.Constraints(requiredResources, inputObject); err != nil {
 			return nil, admission.NewForbidden(a, fmt.Errorf("failed quota: %s: %v", resourceQuota.Name, err))
 		}
@@ -375,7 +376,10 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 	// as a result, we need to measure the usage of this object for quota
 	// on updates, we need to subtract the previous measured usage
 	// if usage shows no change, just return since it has no impact on quota
-	deltaUsage := evaluator.Usage(inputObject)
+	deltaUsage, err := evaluator.Usage(inputObject)
+	if err != nil {
+		return quotas, err
+	}
 
 	// ensure that usage for input object is never negative (this would mean a resource made a negative resource requirement)
 	if negativeUsage := quota.IsNegative(deltaUsage); len(negativeUsage) > 0 {
@@ -392,7 +396,10 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 		// then charge based on the delta.  Otherwise, bill the maximum
 		metadata, err := meta.Accessor(prevItem)
 		if err == nil && len(metadata.GetResourceVersion()) > 0 {
-			prevUsage := evaluator.Usage(prevItem)
+			prevUsage, innerErr := evaluator.Usage(prevItem)
+			if innerErr != nil {
+				return quotas, innerErr
+			}
 			deltaUsage = quota.Subtract(deltaUsage, prevUsage)
 		}
 	}
@@ -446,8 +453,7 @@ func (e *quotaEvaluator) Evaluate(a admission.Attributes) error {
 	// for this kind, check if the operation could mutate any quota resources
 	// if no resources tracked by quota are impacted, then just return
 	op := a.GetOperation()
-	operationResources := evaluator.OperationResources(op)
-	if len(operationResources) == 0 {
+	if !evaluator.Handles(op) {
 		return nil
 	}
 

@@ -21,8 +21,8 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/config"
 )
 
@@ -108,7 +108,6 @@ func (c *EndpointsConfig) Channel(source string) chan EndpointsUpdate {
 		for update := range endpointsCh {
 			ch <- update
 		}
-		close(ch)
 	}()
 	return endpointsCh
 }
@@ -217,7 +216,6 @@ func (c *ServiceConfig) Channel(source string) chan ServiceUpdate {
 		for update := range serviceCh {
 			ch <- update
 		}
-		close(ch)
 	}()
 	return serviceCh
 }
