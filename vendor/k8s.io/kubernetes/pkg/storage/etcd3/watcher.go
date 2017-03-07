@@ -22,10 +22,10 @@ import (
 	"strings"
 	"sync"
 
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/watch"
 
 	"github.com/coreos/etcd/clientv3"
 	etcdrpc "github.com/coreos/etcd/etcdserver/api/v3rpc/rpctypes"
@@ -296,21 +296,21 @@ func (wc *watchChan) transform(e *event) (res *watch.Event) {
 }
 
 func parseError(err error) *watch.Event {
-	var status *unversioned.Status
+	var status *metav1.Status
 	switch {
 	case err == etcdrpc.ErrCompacted:
-		status = &unversioned.Status{
-			Status:  unversioned.StatusFailure,
+		status = &metav1.Status{
+			Status:  metav1.StatusFailure,
 			Message: err.Error(),
 			Code:    http.StatusGone,
-			Reason:  unversioned.StatusReasonExpired,
+			Reason:  metav1.StatusReasonExpired,
 		}
 	default:
-		status = &unversioned.Status{
-			Status:  unversioned.StatusFailure,
+		status = &metav1.Status{
+			Status:  metav1.StatusFailure,
 			Message: err.Error(),
 			Code:    http.StatusInternalServerError,
-			Reason:  unversioned.StatusReasonInternalError,
+			Reason:  metav1.StatusReasonInternalError,
 		}
 	}
 

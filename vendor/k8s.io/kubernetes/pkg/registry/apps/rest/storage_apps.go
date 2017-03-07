@@ -17,18 +17,17 @@ limitations under the License.
 package rest
 
 import (
-	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/apis/apps"
 	appsapiv1beta1 "k8s.io/kubernetes/pkg/apis/apps/v1beta1"
-	"k8s.io/kubernetes/pkg/genericapiserver"
-	statefulsetetcd "k8s.io/kubernetes/pkg/registry/apps/petset/etcd"
+	"k8s.io/kubernetes/pkg/genericapiserver/registry/generic"
+	"k8s.io/kubernetes/pkg/genericapiserver/registry/rest"
+	genericapiserver "k8s.io/kubernetes/pkg/genericapiserver/server"
+	statefulsetstore "k8s.io/kubernetes/pkg/registry/apps/petset/storage"
 )
 
 type RESTStorageProvider struct{}
 
-var _ genericapiserver.RESTStorageProvider = &RESTStorageProvider{}
-
-func (p RESTStorageProvider) NewRESTStorage(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter genericapiserver.RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
+func (p RESTStorageProvider) NewRESTStorage(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) (genericapiserver.APIGroupInfo, bool) {
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(apps.GroupName)
 
 	if apiResourceConfigSource.AnyResourcesForVersionEnabled(appsapiv1beta1.SchemeGroupVersion) {
@@ -39,12 +38,12 @@ func (p RESTStorageProvider) NewRESTStorage(apiResourceConfigSource genericapise
 	return apiGroupInfo, true
 }
 
-func (p RESTStorageProvider) v1beta1Storage(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter genericapiserver.RESTOptionsGetter) map[string]rest.Storage {
+func (p RESTStorageProvider) v1beta1Storage(apiResourceConfigSource genericapiserver.APIResourceConfigSource, restOptionsGetter generic.RESTOptionsGetter) map[string]rest.Storage {
 	version := appsapiv1beta1.SchemeGroupVersion
 
 	storage := map[string]rest.Storage{}
 	if apiResourceConfigSource.ResourceEnabled(version.WithResource("statefulsets")) {
-		statefulsetStorage, statefulsetStatusStorage := statefulsetetcd.NewREST(restOptionsGetter(apps.Resource("statefulsets")))
+		statefulsetStorage, statefulsetStatusStorage := statefulsetstore.NewREST(restOptionsGetter)
 		storage["statefulsets"] = statefulsetStorage
 		storage["statefulsets/status"] = statefulsetStatusStorage
 	}

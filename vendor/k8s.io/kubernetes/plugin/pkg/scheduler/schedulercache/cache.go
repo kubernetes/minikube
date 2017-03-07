@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 var (
@@ -57,9 +57,11 @@ type schedulerCache struct {
 }
 
 type podState struct {
-	pod *api.Pod
+	pod *v1.Pod
 	// Used by assumedPod to determinate expiration.
 	deadline *time.Time
+	// Used to block cache from expiring assumedPod if binding still runs
+	bindingFinished bool
 }
 
 func newSchedulerCache(ttl, period time.Duration, stop <-chan struct{}) *schedulerCache {
@@ -90,10 +92,10 @@ func (cache *schedulerCache) UpdateNodeNameToInfoMap(nodeNameToInfo map[string]*
 	return nil
 }
 
-func (cache *schedulerCache) List(selector labels.Selector) ([]*api.Pod, error) {
+func (cache *schedulerCache) List(selector labels.Selector) ([]*v1.Pod, error) {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
-	var pods []*api.Pod
+	var pods []*v1.Pod
 	for _, info := range cache.nodes {
 		for _, pod := range info.pods {
 			if selector.Matches(labels.Set(pod.Labels)) {
@@ -104,12 +106,7 @@ func (cache *schedulerCache) List(selector labels.Selector) ([]*api.Pod, error) 
 	return pods, nil
 }
 
-func (cache *schedulerCache) AssumePod(pod *api.Pod) error {
-	return cache.assumePod(pod, time.Now())
-}
-
-// assumePod exists for making test deterministic by taking time as input argument.
-func (cache *schedulerCache) assumePod(pod *api.Pod, now time.Time) error {
+func (cache *schedulerCache) AssumePod(pod *v1.Pod) error {
 	key, err := getPodKey(pod)
 	if err != nil {
 		return err
@@ -122,17 +119,39 @@ func (cache *schedulerCache) assumePod(pod *api.Pod, now time.Time) error {
 	}
 
 	cache.addPod(pod)
-	dl := now.Add(cache.ttl)
 	ps := &podState{
-		pod:      pod,
-		deadline: &dl,
+		pod: pod,
 	}
 	cache.podStates[key] = ps
 	cache.assumedPods[key] = true
 	return nil
 }
 
-func (cache *schedulerCache) ForgetPod(pod *api.Pod) error {
+func (cache *schedulerCache) FinishBinding(pod *v1.Pod) error {
+	return cache.finishBinding(pod, time.Now())
+}
+
+// finishBinding exists to make tests determinitistic by injecting now as an argument
+func (cache *schedulerCache) finishBinding(pod *v1.Pod, now time.Time) error {
+	key, err := getPodKey(pod)
+	if err != nil {
+		return err
+	}
+
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	glog.V(5).Infof("Finished binding for pod %v. Can be expired.", key)
+	currState, ok := cache.podStates[key]
+	if ok && cache.assumedPods[key] {
+		dl := now.Add(cache.ttl)
+		currState.bindingFinished = true
+		currState.deadline = &dl
+	}
+	return nil
+}
+
+func (cache *schedulerCache) ForgetPod(pod *v1.Pod) error {
 	key, err := getPodKey(pod)
 	if err != nil {
 		return err
@@ -162,7 +181,7 @@ func (cache *schedulerCache) ForgetPod(pod *api.Pod) error {
 }
 
 // Assumes that lock is already acquired.
-func (cache *schedulerCache) addPod(pod *api.Pod) {
+func (cache *schedulerCache) addPod(pod *v1.Pod) {
 	n, ok := cache.nodes[pod.Spec.NodeName]
 	if !ok {
 		n = NewNodeInfo()
@@ -172,7 +191,7 @@ func (cache *schedulerCache) addPod(pod *api.Pod) {
 }
 
 // Assumes that lock is already acquired.
-func (cache *schedulerCache) updatePod(oldPod, newPod *api.Pod) error {
+func (cache *schedulerCache) updatePod(oldPod, newPod *v1.Pod) error {
 	if err := cache.removePod(oldPod); err != nil {
 		return err
 	}
@@ -181,7 +200,7 @@ func (cache *schedulerCache) updatePod(oldPod, newPod *api.Pod) error {
 }
 
 // Assumes that lock is already acquired.
-func (cache *schedulerCache) removePod(pod *api.Pod) error {
+func (cache *schedulerCache) removePod(pod *v1.Pod) error {
 	n := cache.nodes[pod.Spec.NodeName]
 	if err := n.removePod(pod); err != nil {
 		return err
@@ -192,7 +211,7 @@ func (cache *schedulerCache) removePod(pod *api.Pod) error {
 	return nil
 }
 
-func (cache *schedulerCache) AddPod(pod *api.Pod) error {
+func (cache *schedulerCache) AddPod(pod *v1.Pod) error {
 	key, err := getPodKey(pod)
 	if err != nil {
 		return err
@@ -226,7 +245,7 @@ func (cache *schedulerCache) AddPod(pod *api.Pod) error {
 	return nil
 }
 
-func (cache *schedulerCache) UpdatePod(oldPod, newPod *api.Pod) error {
+func (cache *schedulerCache) UpdatePod(oldPod, newPod *v1.Pod) error {
 	key, err := getPodKey(oldPod)
 	if err != nil {
 		return err
@@ -253,7 +272,7 @@ func (cache *schedulerCache) UpdatePod(oldPod, newPod *api.Pod) error {
 	return nil
 }
 
-func (cache *schedulerCache) RemovePod(pod *api.Pod) error {
+func (cache *schedulerCache) RemovePod(pod *v1.Pod) error {
 	key, err := getPodKey(pod)
 	if err != nil {
 		return err
@@ -282,7 +301,7 @@ func (cache *schedulerCache) RemovePod(pod *api.Pod) error {
 	return nil
 }
 
-func (cache *schedulerCache) AddNode(node *api.Node) error {
+func (cache *schedulerCache) AddNode(node *v1.Node) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -294,7 +313,7 @@ func (cache *schedulerCache) AddNode(node *api.Node) error {
 	return n.SetNode(node)
 }
 
-func (cache *schedulerCache) UpdateNode(oldNode, newNode *api.Node) error {
+func (cache *schedulerCache) UpdateNode(oldNode, newNode *v1.Node) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -306,7 +325,7 @@ func (cache *schedulerCache) UpdateNode(oldNode, newNode *api.Node) error {
 	return n.SetNode(newNode)
 }
 
-func (cache *schedulerCache) RemoveNode(node *api.Node) error {
+func (cache *schedulerCache) RemoveNode(node *v1.Node) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
@@ -343,9 +362,15 @@ func (cache *schedulerCache) cleanupAssumedPods(now time.Time) {
 		if !ok {
 			panic("Key found in assumed set but not in podStates. Potentially a logical error.")
 		}
+		if !ps.bindingFinished {
+			glog.Warningf("Couldn't expire cache for pod %v/%v. Binding is still in progress.",
+				ps.pod.Namespace, ps.pod.Name)
+			continue
+		}
 		if now.After(*ps.deadline) {
+			glog.Warningf("Pod %s/%s expired", ps.pod.Namespace, ps.pod.Name)
 			if err := cache.expirePod(key, ps); err != nil {
-				glog.Errorf(" expirePod failed for %s: %v", key, err)
+				glog.Errorf("ExpirePod failed for %s: %v", key, err)
 			}
 		}
 	}
