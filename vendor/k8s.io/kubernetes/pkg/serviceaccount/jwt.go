@@ -29,6 +29,7 @@ import (
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	apiserverserviceaccount "k8s.io/apiserver/pkg/authentication/serviceaccount"
 	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/client-go/util/cert"
 	"k8s.io/kubernetes/pkg/api/v1"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -64,22 +65,11 @@ func ReadPrivateKey(file string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := ReadPrivateKeyFromPEM(data)
+	key, err := cert.ParsePrivateKeyPEM(data)
 	if err != nil {
 		return nil, fmt.Errorf("error reading private key file %s: %v", file, err)
 	}
 	return key, nil
-}
-
-// ReadPrivateKeyFromPEM is a helper function for reading a private key from a PEM-encoded file
-func ReadPrivateKeyFromPEM(data []byte) (interface{}, error) {
-	if key, err := jwt.ParseRSAPrivateKeyFromPEM(data); err == nil {
-		return key, nil
-	}
-	if key, err := jwt.ParseECPrivateKeyFromPEM(data); err == nil {
-		return key, nil
-	}
-	return nil, fmt.Errorf("data does not contain a valid RSA or ECDSA private key")
 }
 
 // ReadPublicKeys is a helper function for reading an array of rsa.PublicKey or ecdsa.PublicKey from a PEM-encoded file.

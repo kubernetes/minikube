@@ -15,10 +15,10 @@ go_library(
     deps = [
         "//pkg/api/v1:go_default_library",
         "//pkg/cloudprovider/providers/aws:go_default_library",
-        "//plugin/pkg/scheduler:go_default_library",
         "//plugin/pkg/scheduler/algorithm:go_default_library",
         "//plugin/pkg/scheduler/algorithm/predicates:go_default_library",
         "//plugin/pkg/scheduler/algorithm/priorities:go_default_library",
+        "//plugin/pkg/scheduler/core:go_default_library",
         "//plugin/pkg/scheduler/factory:go_default_library",
         "//vendor:github.com/golang/glog",
         "//vendor:k8s.io/apimachinery/pkg/apis/meta/v1",
@@ -28,13 +28,17 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = ["compatibility_test.go"],
+    srcs = [
+        "compatibility_test.go",
+        "defaults_test.go",
+    ],
     library = ":go_default_library",
     tags = ["automanaged"],
     deps = [
         "//pkg/api:go_default_library",
         "//pkg/api/v1:go_default_library",
         "//pkg/client/clientset_generated/clientset:go_default_library",
+        "//pkg/client/informers/informers_generated/externalversions:go_default_library",
         "//plugin/pkg/scheduler/api:go_default_library",
         "//plugin/pkg/scheduler/api/latest:go_default_library",
         "//plugin/pkg/scheduler/factory:go_default_library",

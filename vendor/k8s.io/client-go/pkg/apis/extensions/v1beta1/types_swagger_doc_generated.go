@@ -36,14 +36,6 @@ func (APIVersion) SwaggerDoc() map[string]string {
 	return map_APIVersion
 }
 
-var map_CPUTargetUtilization = map[string]string{
-	"targetPercentage": "fraction of the requested CPU that should be utilized/used, e.g. 70 means that 70% of the requested CPU should be in use.",
-}
-
-func (CPUTargetUtilization) SwaggerDoc() map[string]string {
-	return map_CPUTargetUtilization
-}
-
 var map_CustomMetricCurrentStatus = map[string]string{
 	"name":  "Custom Metric name.",
 	"value": "Custom Metric value (average).",
@@ -85,9 +77,12 @@ func (DaemonSetList) SwaggerDoc() map[string]string {
 }
 
 var map_DaemonSetSpec = map[string]string{
-	"":         "DaemonSetSpec is the specification of a daemon set.",
-	"selector": "Selector is a label query over pods that are managed by the daemon set. Must match in order to be controlled. If empty, defaulted to labels on Pod template. More info: http://kubernetes.io/docs/user-guide/labels#label-selectors",
-	"template": "Template is the object that describes the pod that will be created. The DaemonSet will create exactly one copy of this pod on every node that matches the template's node selector (or on every node if no node selector is specified). More info: http://kubernetes.io/docs/user-guide/replication-controller#pod-template",
+	"":                   "DaemonSetSpec is the specification of a daemon set.",
+	"selector":           "Selector is a label query over pods that are managed by the daemon set. Must match in order to be controlled. If empty, defaulted to labels on Pod template. More info: http://kubernetes.io/docs/user-guide/labels#label-selectors",
+	"template":           "Template is the object that describes the pod that will be created. The DaemonSet will create exactly one copy of this pod on every node that matches the template's node selector (or on every node if no node selector is specified). More info: http://kubernetes.io/docs/user-guide/replication-controller#pod-template",
+	"updateStrategy":     "UpdateStrategy to replace existing DaemonSet pods with new pods.",
+	"minReadySeconds":    "MinReadySeconds minimum number of seconds for which a newly created DaemonSet pod should be ready without any of its container crashing, for it to be considered available. Defaults to 0 (pod will be considered available as soon as it is ready).",
+	"templateGeneration": "A sequence number representing a specific generation of the template. Populated by the system. It can be set only during the creation.",
 }
 
 func (DaemonSetSpec) SwaggerDoc() map[string]string {
@@ -101,10 +96,22 @@ var map_DaemonSetStatus = map[string]string{
 	"desiredNumberScheduled": "DesiredNumberScheduled is the total number of nodes that should be running the daemon pod (including nodes correctly running the daemon pod). More info: http://releases.k8s.io/HEAD/docs/admin/daemons.md",
 	"numberReady":            "NumberReady is the number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.",
 	"observedGeneration":     "ObservedGeneration is the most recent generation observed by the daemon set controller.",
+	"updatedNumberScheduled": "UpdatedNumberScheduled is the total number of nodes that are running updated daemon pod",
+	"numberAvailable":        "NumberAvailable is the number of nodes that should be running the daemon pod and have one or more of the daemon pod running and available (ready for at least minReadySeconds)",
+	"numberUnavailable":      "NumberUnavailable is the number of nodes that should be running the daemon pod and have none of the daemon pod running and available (ready for at least minReadySeconds)",
 }
 
 func (DaemonSetStatus) SwaggerDoc() map[string]string {
 	return map_DaemonSetStatus
+}
+
+var map_DaemonSetUpdateStrategy = map[string]string{
+	"type":          "Type of daemon set update. Can be \"RollingUpdate\" or \"OnDelete\". Default is OnDelete.",
+	"rollingUpdate": "Rolling update config params. Present only if DaemonSetUpdateStrategy = RollingUpdate.",
+}
+
+func (DaemonSetUpdateStrategy) SwaggerDoc() map[string]string {
+	return map_DaemonSetUpdateStrategy
 }
 
 var map_Deployment = map[string]string{
@@ -222,52 +229,6 @@ var map_HTTPIngressRuleValue = map[string]string{
 
 func (HTTPIngressRuleValue) SwaggerDoc() map[string]string {
 	return map_HTTPIngressRuleValue
-}
-
-var map_HorizontalPodAutoscaler = map[string]string{
-	"":         "configuration of a horizontal pod autoscaler.",
-	"metadata": "Standard object metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata",
-	"spec":     "behaviour of autoscaler. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status.",
-	"status":   "current information about the autoscaler.",
-}
-
-func (HorizontalPodAutoscaler) SwaggerDoc() map[string]string {
-	return map_HorizontalPodAutoscaler
-}
-
-var map_HorizontalPodAutoscalerList = map[string]string{
-	"":         "list of horizontal pod autoscaler objects.",
-	"metadata": "Standard list metadata.",
-	"items":    "list of horizontal pod autoscaler objects.",
-}
-
-func (HorizontalPodAutoscalerList) SwaggerDoc() map[string]string {
-	return map_HorizontalPodAutoscalerList
-}
-
-var map_HorizontalPodAutoscalerSpec = map[string]string{
-	"":               "specification of a horizontal pod autoscaler.",
-	"scaleRef":       "reference to Scale subresource; horizontal pod autoscaler will learn the current resource consumption from its status, and will set the desired number of pods by modifying its spec.",
-	"minReplicas":    "lower limit for the number of pods that can be set by the autoscaler, default 1.",
-	"maxReplicas":    "upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.",
-	"cpuUtilization": "target average CPU utilization (represented as a percentage of requested CPU) over all the pods; if not specified it defaults to the target CPU utilization at 80% of the requested resources.",
-}
-
-func (HorizontalPodAutoscalerSpec) SwaggerDoc() map[string]string {
-	return map_HorizontalPodAutoscalerSpec
-}
-
-var map_HorizontalPodAutoscalerStatus = map[string]string{
-	"":                                "current status of a horizontal pod autoscaler",
-	"observedGeneration":              "most recent generation observed by this autoscaler.",
-	"lastScaleTime":                   "last time the HorizontalPodAutoscaler scaled the number of pods; used by the autoscaler to control how often the number of pods is changed.",
-	"currentReplicas":                 "current number of replicas of pods managed by this autoscaler.",
-	"desiredReplicas":                 "desired number of replicas of pods managed by this autoscaler.",
-	"currentCPUUtilizationPercentage": "current average CPU utilization over all pods, represented as a percentage of requested CPU, e.g. 70 means that an average pod is using now 70% of its requested CPU.",
-}
-
-func (HorizontalPodAutoscalerStatus) SwaggerDoc() map[string]string {
-	return map_HorizontalPodAutoscalerStatus
 }
 
 var map_HostPortRange = map[string]string{
@@ -542,6 +503,15 @@ func (RollbackConfig) SwaggerDoc() map[string]string {
 	return map_RollbackConfig
 }
 
+var map_RollingUpdateDaemonSet = map[string]string{
+	"":               "Spec to control the desired behavior of daemon set rolling update.",
+	"maxUnavailable": "The maximum number of DaemonSet pods that can be unavailable during the update. Value can be an absolute number (ex: 5) or a percentage of total number of DaemonSet pods at the start of the update (ex: 10%). Absolute number is calculated from percentage by rounding up. This cannot be 0. Default value is 1. Example: when this is set to 30%, 30% of the currently running DaemonSet pods can be stopped for an update at any given time. The update starts by stopping at most 30% of the currently running DaemonSet pods and then brings up new DaemonSet pods in their place. Once the new pods are ready, it then proceeds onto other DaemonSet pods, thus ensuring that at least 70% of original number of DaemonSet pods are available at all times during the update.",
+}
+
+func (RollingUpdateDaemonSet) SwaggerDoc() map[string]string {
+	return map_RollingUpdateDaemonSet
+}
+
 var map_RollingUpdateDeployment = map[string]string{
 	"":               "Spec to control the desired behavior of rolling update.",
 	"maxUnavailable": "The maximum number of pods that can be unavailable during the update. Value can be an absolute number (ex: 5) or a percentage of desired pods (ex: 10%). Absolute number is calculated from percentage by rounding down. This can not be 0 if MaxSurge is 0. By default, a fixed value of 1 is used. Example: when this is set to 30%, the old RC can be scaled down to 70% of desired pods immediately when the rolling update starts. Once new pods are ready, old RC can be scaled down further, followed by scaling up the new RC, ensuring that the total number of pods available at all times during the update is at least 70% of desired pods.",
@@ -601,18 +571,6 @@ var map_ScaleStatus = map[string]string{
 
 func (ScaleStatus) SwaggerDoc() map[string]string {
 	return map_ScaleStatus
-}
-
-var map_SubresourceReference = map[string]string{
-	"":            "SubresourceReference contains enough information to let you inspect or modify the referred subresource.",
-	"kind":        "Kind of the referent; More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds",
-	"name":        "Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names",
-	"apiVersion":  "API version of the referent",
-	"subresource": "Subresource name of the referent",
-}
-
-func (SubresourceReference) SwaggerDoc() map[string]string {
-	return map_SubresourceReference
 }
 
 var map_SupplementalGroupsStrategyOptions = map[string]string{

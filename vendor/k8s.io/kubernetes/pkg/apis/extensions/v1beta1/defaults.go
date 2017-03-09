@@ -28,7 +28,6 @@ func addDefaultingFuncs(scheme *runtime.Scheme) error {
 	return scheme.AddDefaultingFuncs(
 		SetDefaults_DaemonSet,
 		SetDefaults_Deployment,
-		SetDefaults_HorizontalPodAutoscaler,
 		SetDefaults_ReplicaSet,
 		SetDefaults_NetworkPolicy,
 	)
@@ -46,6 +45,21 @@ func SetDefaults_DaemonSet(obj *DaemonSet) {
 		}
 		if len(obj.Labels) == 0 {
 			obj.Labels = labels
+		}
+	}
+	updateStrategy := &obj.Spec.UpdateStrategy
+	if updateStrategy.Type == "" {
+		updateStrategy.Type = OnDeleteDaemonSetStrategyType
+	}
+	if updateStrategy.Type == RollingUpdateDaemonSetStrategyType {
+		if updateStrategy.RollingUpdate == nil {
+			rollingUpdate := RollingUpdateDaemonSet{}
+			updateStrategy.RollingUpdate = &rollingUpdate
+		}
+		if updateStrategy.RollingUpdate.MaxUnavailable == nil {
+			// Set default MaxUnavailable as 1 by default.
+			maxUnavailable := intstr.FromInt(1)
+			updateStrategy.RollingUpdate.MaxUnavailable = &maxUnavailable
 		}
 	}
 }
@@ -87,16 +101,6 @@ func SetDefaults_Deployment(obj *Deployment) {
 			maxSurge := intstr.FromInt(1)
 			strategy.RollingUpdate.MaxSurge = &maxSurge
 		}
-	}
-}
-
-func SetDefaults_HorizontalPodAutoscaler(obj *HorizontalPodAutoscaler) {
-	if obj.Spec.MinReplicas == nil {
-		minReplicas := int32(1)
-		obj.Spec.MinReplicas = &minReplicas
-	}
-	if obj.Spec.CPUUtilization == nil {
-		obj.Spec.CPUUtilization = &CPUTargetUtilization{TargetPercentage: 80}
 	}
 }
 

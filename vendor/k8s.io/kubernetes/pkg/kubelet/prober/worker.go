@@ -193,6 +193,9 @@ func (w *worker) doProbe() (keepGoing bool) {
 		return true
 	}
 
+	// TODO: in order for exec probes to correctly handle downward API env, we must be able to reconstruct
+	// the full container environment here, OR we must make a call to the CRI in order to get those environment
+	// values from the running container.
 	result, err := w.probeManager.prober.probe(w.probeType, w.pod, status, w.container, w.containerID)
 	if err != nil {
 		// Prober error, throw away the result.
@@ -215,7 +218,7 @@ func (w *worker) doProbe() (keepGoing bool) {
 	w.resultsManager.Set(w.containerID, result, w.pod)
 
 	if w.probeType == liveness && result == results.Failure {
-		// The container fails a liveness check, it will need to be restared.
+		// The container fails a liveness check, it will need to be restarted.
 		// Stop probing until we see a new container ID. This is to reduce the
 		// chance of hitting #21751, where running `docker exec` when a
 		// container is being stopped may lead to corrupted container state.
