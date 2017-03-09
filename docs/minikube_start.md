@@ -30,7 +30,7 @@ minikube start
       --iso-url string                  Location of the minikube iso (default "https://storage.googleapis.com/minikube/iso/minikube-v1.0.7.iso")
       --keep-context                    This will keep the existing kubectl context and will create a minikube context.
       --kubernetes-version string       The kubernetes version that the minikube VM will use (ex: v1.2.3) 
- OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.6.0-alpha.1")
+ OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64) (default "v1.6.0-beta.2")
       --kvm-network string              The KVM network name. (only supported with KVM driver) (default "default")
       --memory int                      Amount of RAM allocated to the minikube VM (default 2048)
       --network-plugin string           The name of the network plugin
