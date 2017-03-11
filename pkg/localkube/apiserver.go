@@ -44,10 +44,9 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.GenericServerRunOptions.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
 
 	// use localkube etcd
-	config.Etcd.StorageConfig = storagebackend.Config{
-		ServerList: KubeEtcdClientURLs,
-		Type:       storagebackend.StorageTypeETCD2,
-	}
+
+	config.Etcd.StorageConfig.ServerList = KubeEtcdClientURLs
+	config.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD2
 
 	// set Service IP range
 	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
