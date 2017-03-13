@@ -200,9 +200,16 @@ else
 fi
 `, constants.LocalkubePIDPath)
 
+func GetMount9pCleanupCommand() string {
+	return `
+sudo umount /mount-9p;
+sudo rm -rf /mount-9p;
+`
+}
+
 func GetMount9pCommand(ip net.IP) string {
 	return fmt.Sprintf(`
 sudo mkdir /mount-9p;
-sudo mount -t 9p -o trans=tcp -o port=5640 %s /mount-9p;
+sudo mount -t 9p -o trans=tcp -o port=5640 -o uid=1001 -o gid=1001 %s /mount-9p;
 sudo chmod 775 /mount-9p;`, ip)
 }

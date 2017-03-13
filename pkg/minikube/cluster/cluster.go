@@ -391,6 +391,7 @@ func Mount9pHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "Error getting the host IP address to use from within the VM")
 	}
+	host.RunSSHCommand(GetMount9pCleanupCommand())
 	_, err = host.RunSSHCommand(GetMount9pCommand(ip))
 	if err != nil {
 		return err

@@ -7,10 +7,11 @@
 package srv
 
 import (
-	"k8s.io/minikube/third_party/go9p/p"
 	"net"
 	"runtime"
 	"sync"
+
+	"k8s.io/minikube/third_party/go9p/p"
 )
 
 type reqStatus int
