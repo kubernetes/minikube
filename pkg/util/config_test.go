@@ -77,7 +77,7 @@ func buildConfig() testConfig {
 				P: false,
 				Q: net.ParseIP("12.34.56.78"),
 				R: utilnet.PortRange{Base: 2, Size: 4},
-				T: *cidr,
+				U: *cidr,
 			},
 		},
 		E: &subConfig2{
