@@ -213,11 +213,6 @@ func (*Ufs) Walk(req *srv.Req) {
 		p := path + "/" + tc.Wname[i]
 		st, err := os.Lstat(p)
 		if err != nil {
-			if i == 0 {
-				req.RespondError(Enoent)
-				return
-			}
-
 			break
 		}
 
