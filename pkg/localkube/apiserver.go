@@ -17,10 +17,11 @@ limitations under the License.
 package localkube
 
 import (
+	apiserveroptions "k8s.io/apiserver/pkg/server/options"
+	"k8s.io/apiserver/pkg/storage/storagebackend"
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
-
-	"k8s.io/apiserver/pkg/storage/storagebackend"
+	kubeapioptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 )
 
 func (lk LocalkubeServer) NewAPIServer() Server {
@@ -43,22 +44,26 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.GenericServerRunOptions.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
 
 	// use localkube etcd
-	config.Etcd.StorageConfig = storagebackend.Config{
-		ServerList: KubeEtcdClientURLs,
-		Type:       storagebackend.StorageTypeETCD2,
-	}
+
+	config.Etcd.StorageConfig.ServerList = KubeEtcdClientURLs
+	config.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD2
 
 	// set Service IP range
 	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
+	config.Etcd.EnableWatchCache = true
+
+	config.Features = &apiserveroptions.FeatureOptions{
+		EnableProfiling: true,
+	}
 
 	// defaults from apiserver command
-	config.GenericServerRunOptions.EnableProfiling = true
-	config.GenericServerRunOptions.EnableWatchCache = true
 	config.GenericServerRunOptions.MinRequestTimeout = 1800
 
 	config.AllowPrivileged = true
 
-	config.GenericServerRunOptions.RuntimeConfig = lk.RuntimeConfig
+	config.APIEnablement = &kubeapioptions.APIEnablementOptions{
+		RuntimeConfig: lk.RuntimeConfig,
+	}
 
 	lk.SetExtraConfigForComponent("apiserver", &config)
 

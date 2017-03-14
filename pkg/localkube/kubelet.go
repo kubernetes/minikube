@@ -39,7 +39,7 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 
 	// Networking
 	config.ClusterDomain = lk.DNSDomain
-	config.ClusterDNS = lk.DNSIP.String()
+	config.ClusterDNS = []string{lk.DNSIP.String()}
 	// For kubenet plugin.
 	config.PodCIDR = "10.180.1.0/24"
 
