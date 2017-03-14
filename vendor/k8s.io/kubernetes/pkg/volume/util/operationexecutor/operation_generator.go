@@ -24,9 +24,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	"k8s.io/kubernetes/pkg/client/record"
 	kevents "k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
@@ -88,6 +88,14 @@ type OperationGenerator interface {
 
 	// Generates the function needed to check if the attach_detach controller has attached the volume plugin
 	GenerateVerifyControllerAttachedVolumeFunc(volumeToMount VolumeToMount, nodeName types.NodeName, actualStateOfWorld ActualStateOfWorldAttacherUpdater) (func() error, error)
+
+	// GetVolumePluginMgr returns volume plugin manager
+	GetVolumePluginMgr() *volume.VolumePluginMgr
+
+	GenerateBulkVolumeVerifyFunc(
+		map[types.NodeName][]*volume.Spec,
+		string,
+		map[*volume.Spec]v1.UniqueVolumeName, ActualStateOfWorldAttacherUpdater) (func() error, error)
 }
 
 func (og *operationGenerator) GenerateVolumesAreAttachedFunc(
@@ -167,6 +175,71 @@ func (og *operationGenerator) GenerateVolumesAreAttachedFunc(
 	}, nil
 }
 
+func (og *operationGenerator) GenerateBulkVolumeVerifyFunc(
+	pluginNodeVolumes map[types.NodeName][]*volume.Spec,
+	pluginName string,
+	volumeSpecMap map[*volume.Spec]v1.UniqueVolumeName,
+	actualStateOfWorld ActualStateOfWorldAttacherUpdater) (func() error, error) {
+
+	return func() error {
+		attachableVolumePlugin, err :=
+			og.volumePluginMgr.FindAttachablePluginByName(pluginName)
+		if err != nil || attachableVolumePlugin == nil {
+			glog.Errorf(
+				"BulkVerifyVolume.FindAttachablePluginBySpec failed for plugin %q with: %v",
+				pluginName,
+				err)
+			return nil
+		}
+
+		volumeAttacher, newAttacherErr := attachableVolumePlugin.NewAttacher()
+
+		if newAttacherErr != nil {
+			glog.Errorf(
+				"BulkVerifyVolumes failed for getting plugin %q with: %v",
+				attachableVolumePlugin,
+				newAttacherErr)
+			return nil
+		}
+		bulkVolumeVerifier, ok := volumeAttacher.(volume.BulkVolumeVerifier)
+
+		if !ok {
+			glog.Errorf("BulkVerifyVolume failed to type assert attacher %q", bulkVolumeVerifier)
+			return nil
+		}
+
+		attached, bulkAttachErr := bulkVolumeVerifier.BulkVerifyVolumes(pluginNodeVolumes)
+		if bulkAttachErr != nil {
+			glog.Errorf("BulkVerifyVolume.BulkVerifyVolumes Error checking volumes are attached with %v", bulkAttachErr)
+			return nil
+		}
+
+		for nodeName, volumeSpecs := range pluginNodeVolumes {
+			for _, volumeSpec := range volumeSpecs {
+				nodeVolumeSpecs, nodeChecked := attached[nodeName]
+
+				if !nodeChecked {
+					glog.V(2).Infof("VerifyVolumesAreAttached.BulkVerifyVolumes failed for node %q and leaving volume %q as attached",
+						nodeName,
+						volumeSpec.Name())
+					continue
+				}
+
+				check := nodeVolumeSpecs[volumeSpec]
+
+				if !check {
+					glog.V(2).Infof("VerifyVolumesAreAttached.BulkVerifyVolumes failed for node %q and volume %q",
+						nodeName,
+						volumeSpec.Name())
+					actualStateOfWorld.MarkVolumeAsDetached(volumeSpecMap[volumeSpec], nodeName)
+				}
+			}
+		}
+
+		return nil
+	}, nil
+}
+
 func (og *operationGenerator) GenerateAttachVolumeFunc(
 	volumeToAttach VolumeToAttach,
 	actualStateOfWorld ActualStateOfWorldAttacherUpdater) (func() error, error) {
@@ -231,6 +304,10 @@ func (og *operationGenerator) GenerateAttachVolumeFunc(
 
 		return nil
 	}, nil
+}
+
+func (og *operationGenerator) GetVolumePluginMgr() *volume.VolumePluginMgr {
+	return og.volumePluginMgr
 }
 
 func (og *operationGenerator) GenerateDetachVolumeFunc(
@@ -381,6 +458,12 @@ func (og *operationGenerator) GenerateMountVolumeFunc(
 			volumeToMount.PodName,
 			volumeToMount.Pod.UID,
 			newMounterErr)
+	}
+
+	mountCheckError := checkMountOptionSupport(og, volumeToMount, volumePlugin)
+
+	if mountCheckError != nil {
+		return nil, mountCheckError
 	}
 
 	// Get attacher, if possible
@@ -865,5 +948,22 @@ func (og *operationGenerator) verifyVolumeIsSafeToDetach(
 		volumeToDetach.VolumeName,
 		volumeToDetach.VolumeSpec.Name(),
 		volumeToDetach.NodeName)
+	return nil
+}
+
+func checkMountOptionSupport(og *operationGenerator, volumeToMount VolumeToMount, plugin volume.VolumePlugin) error {
+	mountOptions := volume.MountOptionFromSpec(volumeToMount.VolumeSpec)
+
+	if len(mountOptions) > 0 && !plugin.SupportsMountOption() {
+		err := fmt.Errorf(
+			"MountVolume.checkMountOptionSupport failed for volume %q (spec.Name: %q) pod %q (UID: %q) with: %q",
+			volumeToMount.VolumeName,
+			volumeToMount.VolumeSpec.Name(),
+			volumeToMount.PodName,
+			volumeToMount.Pod.UID,
+			"Mount options are not supported for this volume type")
+		og.recorder.Eventf(volumeToMount.Pod, v1.EventTypeWarning, kevents.UnsupportedMountOption, err.Error())
+		return err
+	}
 	return nil
 }

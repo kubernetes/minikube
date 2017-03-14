@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/errors"
 	intstrutil "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -40,7 +41,8 @@ import (
 	internalextensions "k8s.io/kubernetes/pkg/apis/extensions"
 	extensions "k8s.io/kubernetes/pkg/apis/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	"k8s.io/kubernetes/pkg/client/legacylisters"
+	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
+	extensionslisters "k8s.io/kubernetes/pkg/client/listers/extensions/v1beta1"
 	"k8s.io/kubernetes/pkg/controller"
 	labelsutil "k8s.io/kubernetes/pkg/util/labels"
 )
@@ -65,14 +67,6 @@ const (
 	RollbackTemplateUnchanged = "DeploymentRollbackTemplateUnchanged"
 	// RollbackDone is the done rollback event reason
 	RollbackDone = "DeploymentRollback"
-	// OverlapAnnotation marks deployments with overlapping selector with other deployments
-	// TODO: Delete this annotation when we gracefully handle overlapping selectors.
-	// See https://github.com/kubernetes/kubernetes/issues/2210
-	OverlapAnnotation = "deployment.kubernetes.io/error-selector-overlapping-with"
-	// SelectorUpdateAnnotation marks the last time deployment selector update
-	// TODO: Delete this annotation when we gracefully handle overlapping selectors.
-	// See https://github.com/kubernetes/kubernetes/issues/2210
-	SelectorUpdateAnnotation = "deployment.kubernetes.io/selector-updated-at"
 
 	// Reasons for deployment conditions
 	//
@@ -293,8 +287,6 @@ var annotationsToSkip = map[string]bool{
 	RevisionHistoryAnnotation:               true,
 	DesiredReplicasAnnotation:               true,
 	MaxReplicasAnnotation:                   true,
-	OverlapAnnotation:                       true,
-	SelectorUpdateAnnotation:                true,
 }
 
 // skipCopyAnnotation returns true if we should skip copying the annotation with the given annotation key
@@ -387,8 +379,7 @@ func getIntFromAnnotation(rs *extensions.ReplicaSet, annotationKey string) (int3
 	}
 	intValue, err := strconv.Atoi(annotationValue)
 	if err != nil {
-		glog.Warningf("Cannot convert the value %q with annotation key %q for the replica set %q",
-			annotationValue, annotationKey, rs.Name)
+		glog.V(2).Infof("Cannot convert the value %q with annotation key %q for the replica set %q", annotationValue, annotationKey, rs.Name)
 		return int32(0), false
 	}
 	return int32(intValue), true
@@ -415,11 +406,22 @@ func SetReplicasAnnotations(rs *extensions.ReplicaSet, desiredReplicas, maxRepli
 
 // MaxUnavailable returns the maximum unavailable pods a rolling deployment can take.
 func MaxUnavailable(deployment extensions.Deployment) int32 {
-	if !IsRollingUpdate(&deployment) {
+	if !IsRollingUpdate(&deployment) || *(deployment.Spec.Replicas) == 0 {
 		return int32(0)
 	}
 	// Error caught by validation
 	_, maxUnavailable, _ := ResolveFenceposts(deployment.Spec.Strategy.RollingUpdate.MaxSurge, deployment.Spec.Strategy.RollingUpdate.MaxUnavailable, *(deployment.Spec.Replicas))
+	return maxUnavailable
+}
+
+// MaxUnavailableInternal returns the maximum unavailable pods a rolling deployment can take.
+// TODO: remove the duplicate
+func MaxUnavailableInternal(deployment internalextensions.Deployment) int32 {
+	if !(deployment.Spec.Strategy.Type == internalextensions.RollingUpdateDeploymentStrategyType) || deployment.Spec.Replicas == 0 {
+		return int32(0)
+	}
+	// Error caught by validation
+	_, maxUnavailable, _ := ResolveFenceposts(&deployment.Spec.Strategy.RollingUpdate.MaxSurge, &deployment.Spec.Strategy.RollingUpdate.MaxUnavailable, deployment.Spec.Replicas)
 	return maxUnavailable
 }
 
@@ -496,7 +498,7 @@ func GetAllReplicaSets(deployment *extensions.Deployment, c clientset.Interface)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	podList, err := listPods(deployment, c)
+	podList, err := listPods(deployment, rsList, c)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -518,7 +520,7 @@ func GetOldReplicaSets(deployment *extensions.Deployment, c clientset.Interface)
 	if err != nil {
 		return nil, nil, err
 	}
-	podList, err := listPods(deployment, c)
+	podList, err := listPods(deployment, rsList, c)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -552,8 +554,8 @@ func listReplicaSets(deployment *extensions.Deployment, c clientset.Interface) (
 }
 
 // listReplicaSets lists all Pods the given deployment targets with the given client interface.
-func listPods(deployment *extensions.Deployment, c clientset.Interface) (*v1.PodList, error) {
-	return ListPods(deployment,
+func listPods(deployment *extensions.Deployment, rsList []*extensions.ReplicaSet, c clientset.Interface) (*v1.PodList, error) {
+	return ListPods(deployment, rsList,
 		func(namespace string, options metav1.ListOptions) (*v1.PodList, error) {
 			return c.Core().Pods(namespace).List(options)
 		})
@@ -564,28 +566,94 @@ type rsListFunc func(string, metav1.ListOptions) ([]*extensions.ReplicaSet, erro
 type podListFunc func(string, metav1.ListOptions) (*v1.PodList, error)
 
 // ListReplicaSets returns a slice of RSes the given deployment targets.
+// Note that this does NOT attempt to reconcile ControllerRef (adopt/orphan),
+// because only the controller itself should do that.
+// However, it does filter out anything whose ControllerRef doesn't match.
 func ListReplicaSets(deployment *extensions.Deployment, getRSList rsListFunc) ([]*extensions.ReplicaSet, error) {
 	// TODO: Right now we list replica sets by their labels. We should list them by selector, i.e. the replica set's selector
-	//       should be a superset of the deployment's selector, see https://github.com/kubernetes/kubernetes/issues/19830;
-	//       or use controllerRef, see https://github.com/kubernetes/kubernetes/issues/2210
+	//       should be a superset of the deployment's selector, see https://github.com/kubernetes/kubernetes/issues/19830.
 	namespace := deployment.Namespace
 	selector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
 	if err != nil {
 		return nil, err
 	}
 	options := metav1.ListOptions{LabelSelector: selector.String()}
-	return getRSList(namespace, options)
+	all, err := getRSList(namespace, options)
+	if err != nil {
+		return all, err
+	}
+	// Only include those whose ControllerRef matches the Deployment.
+	owned := make([]*extensions.ReplicaSet, 0, len(all))
+	for _, rs := range all {
+		controllerRef := controller.GetControllerOf(rs)
+		if controllerRef != nil && controllerRef.UID == deployment.UID {
+			owned = append(owned, rs)
+		}
+	}
+	return owned, nil
+}
+
+// ListReplicaSets returns a slice of RSes the given deployment targets.
+// Note that this does NOT attempt to reconcile ControllerRef (adopt/orphan),
+// because only the controller itself should do that.
+// However, it does filter out anything whose ControllerRef doesn't match.
+// TODO: Remove the duplicate.
+func ListReplicaSetsInternal(deployment *internalextensions.Deployment, getRSList func(string, metav1.ListOptions) ([]*internalextensions.ReplicaSet, error)) ([]*internalextensions.ReplicaSet, error) {
+	// TODO: Right now we list replica sets by their labels. We should list them by selector, i.e. the replica set's selector
+	//       should be a superset of the deployment's selector, see https://github.com/kubernetes/kubernetes/issues/19830.
+	namespace := deployment.Namespace
+	selector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
+	if err != nil {
+		return nil, err
+	}
+	options := metav1.ListOptions{LabelSelector: selector.String()}
+	all, err := getRSList(namespace, options)
+	if err != nil {
+		return all, err
+	}
+	// Only include those whose ControllerRef matches the Deployment.
+	owned := make([]*internalextensions.ReplicaSet, 0, len(all))
+	for _, rs := range all {
+		controllerRef := controller.GetControllerOf(rs)
+		if controllerRef != nil && controllerRef.UID == deployment.UID {
+			owned = append(owned, rs)
+		}
+	}
+	return owned, nil
 }
 
 // ListPods returns a list of pods the given deployment targets.
-func ListPods(deployment *extensions.Deployment, getPodList podListFunc) (*v1.PodList, error) {
+// This needs a list of ReplicaSets for the Deployment,
+// which can be found with ListReplicaSets().
+// Note that this does NOT attempt to reconcile ControllerRef (adopt/orphan),
+// because only the controller itself should do that.
+// However, it does filter out anything whose ControllerRef doesn't match.
+func ListPods(deployment *extensions.Deployment, rsList []*extensions.ReplicaSet, getPodList podListFunc) (*v1.PodList, error) {
 	namespace := deployment.Namespace
 	selector, err := metav1.LabelSelectorAsSelector(deployment.Spec.Selector)
 	if err != nil {
 		return nil, err
 	}
 	options := metav1.ListOptions{LabelSelector: selector.String()}
-	return getPodList(namespace, options)
+	all, err := getPodList(namespace, options)
+	if err != nil {
+		return all, err
+	}
+	// Only include those whose ControllerRef points to a ReplicaSet that is in
+	// turn owned by this Deployment.
+	rsMap := make(map[types.UID]bool, len(rsList))
+	for _, rs := range rsList {
+		rsMap[rs.UID] = true
+	}
+	owned := &v1.PodList{Items: make([]v1.Pod, 0, len(all.Items))}
+	for i := range all.Items {
+		pod := &all.Items[i]
+		controllerRef := controller.GetControllerOf(pod)
+		if controllerRef != nil && rsMap[controllerRef.UID] {
+			owned.Items = append(owned.Items, *pod)
+		}
+	}
+	return owned, nil
 }
 
 // EqualIgnoreHash returns true if two given podTemplateSpec are equal, ignoring the diff in value of Labels[pod-template-hash]
@@ -612,9 +680,13 @@ func EqualIgnoreHash(template1, template2 v1.PodTemplateSpec) bool {
 // FindNewReplicaSet returns the new RS this given deployment targets (the one with the same pod template).
 func FindNewReplicaSet(deployment *extensions.Deployment, rsList []*extensions.ReplicaSet) (*extensions.ReplicaSet, error) {
 	newRSTemplate := GetNewReplicaSetTemplate(deployment)
+	sort.Sort(controller.ReplicaSetsByCreationTimestamp(rsList))
 	for i := range rsList {
 		if EqualIgnoreHash(rsList[i].Spec.Template, newRSTemplate) {
-			// This is the new ReplicaSet.
+			// In rare cases, such as after cluster upgrades, Deployment may end up with
+			// having more than one new ReplicaSets that have the same template as its template,
+			// see https://github.com/kubernetes/kubernetes/issues/40415
+			// We deterministically choose the oldest new ReplicaSet.
 			return rsList[i], nil
 		}
 	}
@@ -629,7 +701,12 @@ func FindOldReplicaSets(deployment *extensions.Deployment, rsList []*extensions.
 	// All pods and replica sets are labeled with pod-template-hash to prevent overlapping
 	oldRSs := map[string]*extensions.ReplicaSet{}
 	allOldRSs := map[string]*extensions.ReplicaSet{}
-	newRSTemplate := GetNewReplicaSetTemplate(deployment)
+	requiredRSs := []*extensions.ReplicaSet{}
+	allRSs := []*extensions.ReplicaSet{}
+	newRS, err := FindNewReplicaSet(deployment, rsList)
+	if err != nil {
+		return requiredRSs, allRSs, err
+	}
 	for _, pod := range podList.Items {
 		podLabelsSelector := labels.Set(pod.ObjectMeta.Labels)
 		for _, rs := range rsList {
@@ -637,22 +714,21 @@ func FindOldReplicaSets(deployment *extensions.Deployment, rsList []*extensions.
 			if err != nil {
 				return nil, nil, fmt.Errorf("invalid label selector: %v", err)
 			}
-			// Filter out replica set that has the same pod template spec as the deployment - that is the new replica set.
-			if EqualIgnoreHash(rs.Spec.Template, newRSTemplate) {
+			// Filter out new replica set
+			if newRS != nil && rs.UID == newRS.UID {
 				continue
 			}
+			// TODO: If there are no pods for a deployment, we will never return old replica sets....!
 			allOldRSs[rs.ObjectMeta.Name] = rs
 			if rsLabelsSelector.Matches(podLabelsSelector) {
 				oldRSs[rs.ObjectMeta.Name] = rs
 			}
 		}
 	}
-	requiredRSs := []*extensions.ReplicaSet{}
 	for key := range oldRSs {
 		value := oldRSs[key]
 		requiredRSs = append(requiredRSs, value)
 	}
-	allRSs := []*extensions.ReplicaSet{}
 	for key := range allOldRSs {
 		value := allOldRSs[key]
 		allRSs = append(allRSs, value)
@@ -661,9 +737,9 @@ func FindOldReplicaSets(deployment *extensions.Deployment, rsList []*extensions.
 }
 
 // WaitForReplicaSetUpdated polls the replica set until it is updated.
-func WaitForReplicaSetUpdated(c clientset.Interface, desiredGeneration int64, namespace, name string) error {
-	return wait.Poll(10*time.Millisecond, 1*time.Minute, func() (bool, error) {
-		rs, err := c.Extensions().ReplicaSets(namespace).Get(name, metav1.GetOptions{})
+func WaitForReplicaSetUpdated(c extensionslisters.ReplicaSetLister, desiredGeneration int64, namespace, name string) error {
+	return wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
+		rs, err := c.ReplicaSets(namespace).Get(name)
 		if err != nil {
 			return false, err
 		}
@@ -672,9 +748,9 @@ func WaitForReplicaSetUpdated(c clientset.Interface, desiredGeneration int64, na
 }
 
 // WaitForPodsHashPopulated polls the replica set until updated and fully labeled.
-func WaitForPodsHashPopulated(c clientset.Interface, desiredGeneration int64, namespace, name string) error {
-	return wait.Poll(1*time.Second, 1*time.Minute, func() (bool, error) {
-		rs, err := c.Extensions().ReplicaSets(namespace).Get(name, metav1.GetOptions{})
+func WaitForPodsHashPopulated(c extensionslisters.ReplicaSetLister, desiredGeneration int64, namespace, name string) error {
+	return wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
+		rs, err := c.ReplicaSets(namespace).Get(name)
 		if err != nil {
 			return false, err
 		}
@@ -685,7 +761,7 @@ func WaitForPodsHashPopulated(c clientset.Interface, desiredGeneration int64, na
 
 // LabelPodsWithHash labels all pods in the given podList with the new hash label.
 // The returned bool value can be used to tell if all pods are actually labeled.
-func LabelPodsWithHash(podList *v1.PodList, c clientset.Interface, podLister *listers.StoreToPodLister, namespace, name, hash string) error {
+func LabelPodsWithHash(podList *v1.PodList, c clientset.Interface, podLister corelisters.PodLister, namespace, name, hash string) error {
 	for _, pod := range podList.Items {
 		// Only label the pod that doesn't already have the new hash
 		if pod.Labels[extensions.DefaultDeploymentUniqueLabelKey] != hash {
@@ -786,31 +862,6 @@ func GetAvailableReplicaCountForReplicaSets(replicaSets []*extensions.ReplicaSet
 	return totalAvailableReplicas
 }
 
-// IsPodAvailable return true if the pod is available.
-// TODO: Remove this once we start using replica set status for calculating available pods
-// for a deployment.
-func IsPodAvailable(pod *v1.Pod, minReadySeconds int32, now time.Time) bool {
-	if !controller.IsPodActive(pod) {
-		return false
-	}
-	// Check if we've passed minReadySeconds since LastTransitionTime
-	// If so, this pod is ready
-	for _, c := range pod.Status.Conditions {
-		// we only care about pod ready conditions
-		if c.Type == v1.PodReady && c.Status == v1.ConditionTrue {
-			glog.V(4).Infof("Comparing pod %s/%s ready condition last transition time %s + minReadySeconds %d with now %s.", pod.Namespace, pod.Name, c.LastTransitionTime.String(), minReadySeconds, now.String())
-			// 2 cases that this ready condition is valid (passed minReadySeconds, i.e. the pod is available):
-			// 1. minReadySeconds == 0, or
-			// 2. LastTransitionTime (is set) + minReadySeconds (>0) < current time
-			minReadySecondsDuration := time.Duration(minReadySeconds) * time.Second
-			if minReadySeconds == 0 || !c.LastTransitionTime.IsZero() && c.LastTransitionTime.Add(minReadySecondsDuration).Before(now) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // IsRollingUpdate returns true if the strategy type is a rolling update.
 func IsRollingUpdate(deployment *extensions.Deployment) bool {
 	return deployment.Spec.Strategy.Type == extensions.RollingUpdateDeploymentStrategyType
@@ -867,8 +918,12 @@ func DeploymentTimedOut(deployment *extensions.Deployment, newStatus *extensions
 	// progress or tried to create a replica set, or resumed a paused deployment and
 	// compare against progressDeadlineSeconds.
 	from := condition.LastUpdateTime
+	now := nowFn()
 	delta := time.Duration(*deployment.Spec.ProgressDeadlineSeconds) * time.Second
-	return from.Add(delta).Before(nowFn())
+	timedOut := from.Add(delta).Before(now)
+
+	glog.V(4).Infof("Deployment %q timed out (%t) [last progress check: %v - now: %v]", deployment.Name, timedOut, from, now)
+	return timedOut
 }
 
 // NewRSNewReplicas calculates the number of replicas a deployment's new RS should have.
@@ -983,60 +1038,4 @@ func DeploymentDeepCopy(deployment *extensions.Deployment) (*extensions.Deployme
 		return nil, fmt.Errorf("expected Deployment, got %#v", objCopy)
 	}
 	return copied, nil
-}
-
-// SelectorUpdatedBefore returns true if the former deployment's selector
-// is updated before the latter, false otherwise.
-func SelectorUpdatedBefore(d1, d2 *extensions.Deployment) bool {
-	t1, t2 := LastSelectorUpdate(d1), LastSelectorUpdate(d2)
-	return t1.Before(t2)
-}
-
-// LastSelectorUpdate returns the last time given deployment's selector is updated
-func LastSelectorUpdate(d *extensions.Deployment) metav1.Time {
-	t := d.Annotations[SelectorUpdateAnnotation]
-	if len(t) > 0 {
-		parsedTime, err := time.Parse(time.RFC3339, t)
-		// If failed to parse the time, use creation timestamp instead
-		if err != nil {
-			return d.CreationTimestamp
-		}
-		return metav1.Time{Time: parsedTime}
-	}
-	// If it's never updated, use creation timestamp instead
-	return d.CreationTimestamp
-}
-
-// BySelectorLastUpdateTime sorts a list of deployments by the last update time of their selector,
-// first using their creation timestamp and then their names as a tie breaker.
-type BySelectorLastUpdateTime []*extensions.Deployment
-
-func (o BySelectorLastUpdateTime) Len() int      { return len(o) }
-func (o BySelectorLastUpdateTime) Swap(i, j int) { o[i], o[j] = o[j], o[i] }
-func (o BySelectorLastUpdateTime) Less(i, j int) bool {
-	ti, tj := LastSelectorUpdate(o[i]), LastSelectorUpdate(o[j])
-	if ti.Equal(tj) {
-		if o[i].CreationTimestamp.Equal(o[j].CreationTimestamp) {
-			return o[i].Name < o[j].Name
-		}
-		return o[i].CreationTimestamp.Before(o[j].CreationTimestamp)
-	}
-	return ti.Before(tj)
-}
-
-// OverlapsWith returns true when two given deployments are different and overlap with each other
-func OverlapsWith(current, other *extensions.Deployment) (bool, error) {
-	if current.UID == other.UID {
-		return false, nil
-	}
-	currentSelector, err := metav1.LabelSelectorAsSelector(current.Spec.Selector)
-	if err != nil {
-		return false, fmt.Errorf("deployment %s/%s has invalid label selector: %v", current.Namespace, current.Name, err)
-	}
-	otherSelector, err := metav1.LabelSelectorAsSelector(other.Spec.Selector)
-	if err != nil {
-		return false, fmt.Errorf("deployment %s/%s has invalid label selector: %v", other.Namespace, other.Name, err)
-	}
-	return (!currentSelector.Empty() && currentSelector.Matches(labels.Set(other.Spec.Template.Labels))) ||
-		(!otherSelector.Empty() && otherSelector.Matches(labels.Set(current.Spec.Template.Labels))), nil
 }

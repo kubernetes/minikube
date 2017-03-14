@@ -25,9 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
-	"k8s.io/kubernetes/pkg/genericapiserver/registry/rest"
 )
 
 // Registry is an interface for things that know how to store ReplicaSets.
@@ -91,6 +91,6 @@ func (s *storage) UpdateReplicaSet(ctx genericapirequest.Context, replicaSet *ex
 }
 
 func (s *storage) DeleteReplicaSet(ctx genericapirequest.Context, replicaSetID string) error {
-	_, err := s.Delete(ctx, replicaSetID, nil)
+	_, _, err := s.Delete(ctx, replicaSetID, nil)
 	return err
 }

@@ -24,7 +24,6 @@ go_library(
     tags = ["automanaged"],
     deps = [
         "//pkg/api/v1:go_default_library",
-        "//pkg/client/record:go_default_library",
         "//pkg/credentialprovider:go_default_library",
         "//pkg/kubelet/container:go_default_library",
         "//pkg/kubelet/events:go_default_library",
@@ -57,6 +56,7 @@ go_library(
         "//vendor:k8s.io/apimachinery/pkg/util/errors",
         "//vendor:k8s.io/apimachinery/pkg/util/uuid",
         "//vendor:k8s.io/apimachinery/pkg/util/wait",
+        "//vendor:k8s.io/client-go/tools/record",
         "//vendor:k8s.io/client-go/util/flowcontrol",
     ],
 )
@@ -76,7 +76,7 @@ go_test(
         "//pkg/kubelet/lifecycle:go_default_library",
         "//pkg/kubelet/network:go_default_library",
         "//pkg/kubelet/network/kubenet:go_default_library",
-        "//pkg/kubelet/network/mock_network:go_default_library",
+        "//pkg/kubelet/network/testing:go_default_library",
         "//pkg/kubelet/types:go_default_library",
         "//pkg/util/exec:go_default_library",
         "//vendor:github.com/appc/spec/schema",
