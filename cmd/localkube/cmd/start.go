@@ -99,7 +99,8 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	if err != nil {
 		panic(err)
 	}
-	s.AddServer(etcd)
+	// Start etcd first
+	etcd.Start()
 
 	// setup access to etcd
 	netIP, _ := s.GetHostIP()
@@ -107,7 +108,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 
 	// setup apiserver
 	apiserver := s.NewAPIServer()
-	s.AddServer(apiserver)
+	apiserver.Start()
 
 	// setup controller-manager
 	controllerManager := s.NewControllerManagerServer()
