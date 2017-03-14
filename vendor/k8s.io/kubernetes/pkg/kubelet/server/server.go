@@ -25,6 +25,7 @@ import (
 	"net/http/pprof"
 	"net/url"
 	"reflect"
+	goruntime "runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -119,11 +120,12 @@ func ListenAndServeKubeletServer(
 	port uint,
 	tlsOptions *TLSOptions,
 	auth AuthInterface,
-	enableDebuggingHandlers bool,
+	enableDebuggingHandlers,
+	enableContentionProfiling bool,
 	runtime kubecontainer.Runtime,
 	criHandler http.Handler) {
 	glog.Infof("Starting to listen on %s:%d", address, port)
-	handler := NewServer(host, resourceAnalyzer, auth, enableDebuggingHandlers, runtime, criHandler)
+	handler := NewServer(host, resourceAnalyzer, auth, enableDebuggingHandlers, enableContentionProfiling, runtime, criHandler)
 	s := &http.Server{
 		Addr:           net.JoinHostPort(address.String(), strconv.FormatUint(uint64(port), 10)),
 		Handler:        &handler,
@@ -140,7 +142,7 @@ func ListenAndServeKubeletServer(
 // ListenAndServeKubeletReadOnlyServer initializes a server to respond to HTTP network requests on the Kubelet.
 func ListenAndServeKubeletReadOnlyServer(host HostInterface, resourceAnalyzer stats.ResourceAnalyzer, address net.IP, port uint, runtime kubecontainer.Runtime) {
 	glog.V(1).Infof("Starting to listen read-only on %s:%d", address, port)
-	s := NewServer(host, resourceAnalyzer, nil, false, runtime, nil)
+	s := NewServer(host, resourceAnalyzer, nil, false, false, runtime, nil)
 
 	server := &http.Server{
 		Addr:           net.JoinHostPort(address.String(), strconv.FormatUint(uint64(port), 10)),
@@ -172,7 +174,7 @@ type HostInterface interface {
 	AttachContainer(name string, uid types.UID, container string, in io.Reader, out, err io.WriteCloser, tty bool, resize <-chan term.Size) error
 	GetKubeletContainerLogs(podFullName, containerName string, logOptions *v1.PodLogOptions, stdout, stderr io.Writer) error
 	ServeLogs(w http.ResponseWriter, req *http.Request)
-	PortForward(name string, uid types.UID, port uint16, stream io.ReadWriteCloser) error
+	PortForward(name string, uid types.UID, port int32, stream io.ReadWriteCloser) error
 	StreamingConnectionIdleTimeout() time.Duration
 	ResyncInterval() time.Duration
 	GetHostname() string
@@ -184,7 +186,7 @@ type HostInterface interface {
 	ListVolumesForPod(podUID types.UID) (map[string]volume.Volume, bool)
 	GetExec(podFullName string, podUID types.UID, containerName string, cmd []string, streamOpts remotecommand.Options) (*url.URL, error)
 	GetAttach(podFullName string, podUID types.UID, containerName string, streamOpts remotecommand.Options) (*url.URL, error)
-	GetPortForward(podName, podNamespace string, podUID types.UID) (*url.URL, error)
+	GetPortForward(podName, podNamespace string, podUID types.UID, portForwardOpts portforward.V4Options) (*url.URL, error)
 }
 
 // NewServer initializes and configures a kubelet.Server object to handle HTTP requests.
@@ -192,7 +194,8 @@ func NewServer(
 	host HostInterface,
 	resourceAnalyzer stats.ResourceAnalyzer,
 	auth AuthInterface,
-	enableDebuggingHandlers bool,
+	enableDebuggingHandlers,
+	enableContentionProfiling bool,
 	runtime kubecontainer.Runtime,
 	criHandler http.Handler) Server {
 	server := Server{
@@ -208,6 +211,9 @@ func NewServer(
 	server.InstallDefaultHandlers()
 	if enableDebuggingHandlers {
 		server.InstallDebuggingHandlers(criHandler)
+		if enableContentionProfiling {
+			goruntime.SetBlockProfileRate(1)
+		}
 	}
 	return server
 }
@@ -283,8 +289,9 @@ func (s *Server) InstallDefaultHandlers() {
 
 const pprofBasePath = "/debug/pprof/"
 
-// InstallDeguggingHandlers registers the HTTP request patterns that serve logs or run commands/containers
+// InstallDebuggingHandlers registers the HTTP request patterns that serve logs or run commands/containers
 func (s *Server) InstallDebuggingHandlers(criHandler http.Handler) {
+	glog.Infof("Adding debug handlers to kubelet server.")
 	var ws *restful.WebService
 
 	ws = new(restful.WebService)
@@ -335,7 +342,13 @@ func (s *Server) InstallDebuggingHandlers(criHandler http.Handler) {
 	ws = new(restful.WebService)
 	ws.
 		Path("/portForward")
+	ws.Route(ws.GET("/{podNamespace}/{podID}").
+		To(s.getPortForward).
+		Operation("getPortForward"))
 	ws.Route(ws.POST("/{podNamespace}/{podID}").
+		To(s.getPortForward).
+		Operation("getPortForward"))
+	ws.Route(ws.GET("/{podNamespace}/{podID}/{uid}").
 		To(s.getPortForward).
 		Operation("getPortForward"))
 	ws.Route(ws.POST("/{podNamespace}/{podID}/{uid}").
@@ -374,6 +387,8 @@ func (s *Server) InstallDebuggingHandlers(criHandler http.Handler) {
 			pprof.Symbol(resp, req.Request)
 		case "cmdline":
 			pprof.Cmdline(resp, req.Request)
+		case "trace":
+			pprof.Trace(resp, req.Request)
 		default:
 			pprof.Index(resp, req.Request)
 		}
@@ -562,7 +577,7 @@ func (s *Server) getSpec(request *restful.Request, response *restful.Response) {
 	response.WriteEntity(info)
 }
 
-type requestParams struct {
+type execRequestParams struct {
 	podNamespace  string
 	podName       string
 	podUID        types.UID
@@ -570,8 +585,8 @@ type requestParams struct {
 	cmd           []string
 }
 
-func getRequestParams(req *restful.Request) requestParams {
-	return requestParams{
+func getExecRequestParams(req *restful.Request) execRequestParams {
+	return execRequestParams{
 		podNamespace:  req.PathParameter("podNamespace"),
 		podName:       req.PathParameter("podID"),
 		podUID:        types.UID(req.PathParameter("uid")),
@@ -580,9 +595,23 @@ func getRequestParams(req *restful.Request) requestParams {
 	}
 }
 
+type portForwardRequestParams struct {
+	podNamespace string
+	podName      string
+	podUID       types.UID
+}
+
+func getPortForwardRequestParams(req *restful.Request) portForwardRequestParams {
+	return portForwardRequestParams{
+		podNamespace: req.PathParameter("podNamespace"),
+		podName:      req.PathParameter("podID"),
+		podUID:       types.UID(req.PathParameter("uid")),
+	}
+}
+
 // getAttach handles requests to attach to a container.
 func (s *Server) getAttach(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getExecRequestParams(request)
 	streamOpts, err := remotecommand.NewOptions(request.Request)
 	if err != nil {
 		utilruntime.HandleError(err)
@@ -620,7 +649,7 @@ func (s *Server) getAttach(request *restful.Request, response *restful.Response)
 
 // getExec handles requests to run a command inside a container.
 func (s *Server) getExec(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getExecRequestParams(request)
 	streamOpts, err := remotecommand.NewOptions(request.Request)
 	if err != nil {
 		utilruntime.HandleError(err)
@@ -659,7 +688,7 @@ func (s *Server) getExec(request *restful.Request, response *restful.Response) {
 
 // getRun handles requests to run a command inside a container.
 func (s *Server) getRun(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getExecRequestParams(request)
 	pod, ok := s.host.GetPodByName(params.podNamespace, params.podName)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
@@ -693,7 +722,14 @@ func writeJsonResponse(response *restful.Response, data []byte) {
 // getPortForward handles a new restful port forward request. It determines the
 // pod name and uid and then calls ServePortForward.
 func (s *Server) getPortForward(request *restful.Request, response *restful.Response) {
-	params := getRequestParams(request)
+	params := getPortForwardRequestParams(request)
+
+	portForwardOptions, err := portforward.NewV4Options(request.Request)
+	if err != nil {
+		utilruntime.HandleError(err)
+		response.WriteError(http.StatusBadRequest, err)
+		return
+	}
 	pod, ok := s.host.GetPodByName(params.podNamespace, params.podName)
 	if !ok {
 		response.WriteError(http.StatusNotFound, fmt.Errorf("pod does not exist"))
@@ -704,7 +740,7 @@ func (s *Server) getPortForward(request *restful.Request, response *restful.Resp
 		return
 	}
 
-	redirect, err := s.host.GetPortForward(pod.Name, pod.Namespace, pod.UID)
+	redirect, err := s.host.GetPortForward(pod.Name, pod.Namespace, pod.UID, *portForwardOptions)
 	if err != nil {
 		streaming.WriteError(err, response.ResponseWriter)
 		return
@@ -719,8 +755,10 @@ func (s *Server) getPortForward(request *restful.Request, response *restful.Resp
 		s.host,
 		kubecontainer.GetPodFullName(pod),
 		params.podUID,
+		portForwardOptions,
 		s.host.StreamingConnectionIdleTimeout(),
-		remotecommand.DefaultStreamCreationTimeout)
+		remotecommand.DefaultStreamCreationTimeout,
+		portforward.SupportedProtocols)
 }
 
 // ServeHTTP responds to HTTP requests on the Kubelet.

@@ -21,8 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/genericapiserver/registry/rest"
 )
 
 // Registry is an interface implemented by things that know how to store Namespace objects.
@@ -77,6 +77,6 @@ func (s *storage) UpdateNamespace(ctx genericapirequest.Context, namespace *api.
 }
 
 func (s *storage) DeleteNamespace(ctx genericapirequest.Context, namespaceID string) error {
-	_, err := s.Delete(ctx, namespaceID, nil)
+	_, _, err := s.Delete(ctx, namespaceID, nil)
 	return err
 }

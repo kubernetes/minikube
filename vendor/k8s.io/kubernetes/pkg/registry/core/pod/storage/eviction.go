@@ -26,12 +26,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
+	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/policy"
 	policyclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/policy/internalversion"
 	"k8s.io/kubernetes/pkg/client/retry"
-	genericregistry "k8s.io/kubernetes/pkg/genericapiserver/registry/generic/registry"
-	"k8s.io/kubernetes/pkg/genericapiserver/registry/rest"
 )
 
 const (
@@ -136,7 +136,7 @@ func (r *EvictionREST) Create(ctx genericapirequest.Context, obj runtime.Object)
 	// At this point there was either no PDB or we succeded in decrementing
 
 	// Try the delete
-	_, err = r.store.Delete(ctx, eviction.Name, eviction.DeleteOptions)
+	_, _, err = r.store.Delete(ctx, eviction.Name, eviction.DeleteOptions)
 	if err != nil {
 		return nil, err
 	}

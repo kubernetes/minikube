@@ -29,9 +29,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	clientv1 "k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/client/record"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/kubelet/util/ioutils"
 	hashutil "k8s.io/kubernetes/pkg/util/hash"
@@ -46,8 +48,11 @@ type HandlerRunner interface {
 // RuntimeHelper wraps kubelet to make container runtime
 // able to get necessary informations like the RunContainerOptions, DNS settings.
 type RuntimeHelper interface {
-	GenerateRunContainerOptions(pod *v1.Pod, container *v1.Container, podIP string) (*RunContainerOptions, error)
-	GetClusterDNS(pod *v1.Pod) (dnsServers []string, dnsSearches []string, err error)
+	GenerateRunContainerOptions(pod *v1.Pod, container *v1.Container, podIP string) (contOpts *RunContainerOptions, useClusterFirstPolicy bool, err error)
+	GetClusterDNS(pod *v1.Pod) (dnsServers []string, dnsSearches []string, useClusterFirstPolicy bool, err error)
+	// GetPodCgroupParent returns the the CgroupName identifer, and its literal cgroupfs form on the host
+	// of a pod.
+	GetPodCgroupParent(pod *v1.Pod) string
 	GetPodDir(podUID types.UID) string
 	GeneratePodHostNameAndDomain(pod *v1.Pod) (hostname string, hostDomain string, err error)
 	// GetExtraSupplementalGroupsForPod returns a list of the extra
@@ -70,8 +75,8 @@ func ShouldContainerBeRestarted(container *v1.Container, pod *v1.Pod, podStatus 
 	if status.State == ContainerStateRunning {
 		return false
 	}
-	// Always restart container in unknown state now
-	if status.State == ContainerStateUnknown {
+	// Always restart container in the unknown, or in the created state.
+	if status.State == ContainerStateUnknown || status.State == ContainerStateCreated {
 		return true
 	}
 	// Check RestartPolicy for dead container
@@ -113,8 +118,31 @@ func EnvVarsToMap(envs []EnvVar) map[string]string {
 	for _, env := range envs {
 		result[env.Name] = env.Value
 	}
+	return result
+}
+
+// V1EnvVarsToMap constructs a map of environment name to value from a slice
+// of env vars.
+func V1EnvVarsToMap(envs []v1.EnvVar) map[string]string {
+	result := map[string]string{}
+	for _, env := range envs {
+		result[env.Name] = env.Value
+	}
 
 	return result
+}
+
+// ExpandContainerCommandOnlyStatic substitutes only static environment variable values from the
+// container environment definitions. This does *not* include valueFrom substitutions.
+// TODO: callers should use ExpandContainerCommandAndArgs with a fully resolved list of environment.
+func ExpandContainerCommandOnlyStatic(containerCommand []string, envs []v1.EnvVar) (command []string) {
+	mapping := expansion.MappingFuncFor(V1EnvVarsToMap(envs))
+	if len(containerCommand) != 0 {
+		for _, cmd := range containerCommand {
+			command = append(command, expansion.Expand(cmd, mapping))
+		}
+	}
+	return command
 }
 
 func ExpandContainerCommandAndArgs(container *v1.Container, envs []EnvVar) (command []string, args []string) {
@@ -146,13 +174,19 @@ type innerEventRecorder struct {
 	recorder record.EventRecorder
 }
 
-func (irecorder *innerEventRecorder) shouldRecordEvent(object runtime.Object) (*v1.ObjectReference, bool) {
+func (irecorder *innerEventRecorder) shouldRecordEvent(object runtime.Object) (*clientv1.ObjectReference, bool) {
 	if object == nil {
 		return nil, false
 	}
-	if ref, ok := object.(*v1.ObjectReference); ok {
+	if ref, ok := object.(*clientv1.ObjectReference); ok {
 		if !strings.HasPrefix(ref.FieldPath, ImplicitContainerPrefix) {
 			return ref, true
+		}
+	}
+	// just in case we miss a spot, be sure that we still log something
+	if ref, ok := object.(*v1.ObjectReference); ok {
+		if !strings.HasPrefix(ref.FieldPath, ImplicitContainerPrefix) {
+			return events.ToObjectReference(ref), true
 		}
 	}
 	return nil, false
@@ -282,4 +316,50 @@ func HasPrivilegedContainer(pod *v1.Pod) bool {
 		}
 	}
 	return false
+}
+
+// MakeCapabilities creates string slices from Capability slices
+func MakeCapabilities(capAdd []v1.Capability, capDrop []v1.Capability) ([]string, []string) {
+	var (
+		addCaps  []string
+		dropCaps []string
+	)
+	for _, cap := range capAdd {
+		addCaps = append(addCaps, string(cap))
+	}
+	for _, cap := range capDrop {
+		dropCaps = append(dropCaps, string(cap))
+	}
+	return addCaps, dropCaps
+}
+
+// MakePortMappings creates internal port mapping from api port mapping.
+func MakePortMappings(container *v1.Container) (ports []PortMapping) {
+	names := make(map[string]struct{})
+	for _, p := range container.Ports {
+		pm := PortMapping{
+			HostPort:      int(p.HostPort),
+			ContainerPort: int(p.ContainerPort),
+			Protocol:      p.Protocol,
+			HostIP:        p.HostIP,
+		}
+
+		// We need to create some default port name if it's not specified, since
+		// this is necessary for rkt.
+		// http://issue.k8s.io/7710
+		if p.Name == "" {
+			pm.Name = fmt.Sprintf("%s-%s:%d", container.Name, p.Protocol, p.ContainerPort)
+		} else {
+			pm.Name = fmt.Sprintf("%s-%s", container.Name, p.Name)
+		}
+
+		// Protect against exposing the same protocol-port more than once in a container.
+		if _, ok := names[pm.Name]; ok {
+			glog.Warningf("Port name conflicted, %q is defined more than once", pm.Name)
+			continue
+		}
+		ports = append(ports, pm)
+		names[pm.Name] = struct{}{}
+	}
+	return
 }

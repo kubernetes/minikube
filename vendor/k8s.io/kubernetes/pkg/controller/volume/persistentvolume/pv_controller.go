@@ -24,15 +24,17 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/v1"
 	storage "k8s.io/kubernetes/pkg/apis/storage/v1beta1"
-	storageutil "k8s.io/kubernetes/pkg/apis/storage/v1beta1/util"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	"k8s.io/kubernetes/pkg/client/record"
+	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
+	storagelisters "k8s.io/kubernetes/pkg/client/listers/storage/v1beta1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/util/goroutinemap"
+	"k8s.io/kubernetes/pkg/util/goroutinemap/exponentialbackoff"
 	vol "k8s.io/kubernetes/pkg/volume"
 
 	"github.com/golang/glog"
@@ -146,14 +148,13 @@ const createProvisionedPVInterval = 10 * time.Second
 // cache.Controllers that watch PersistentVolume and PersistentVolumeClaim
 // changes.
 type PersistentVolumeController struct {
-	volumeController          cache.Controller
-	volumeInformer            cache.Indexer
-	volumeSource              cache.ListerWatcher
-	claimController           cache.Controller
-	claimInformer             cache.Store
-	claimSource               cache.ListerWatcher
-	classReflector            *cache.Reflector
-	classSource               cache.ListerWatcher
+	volumeLister       corelisters.PersistentVolumeLister
+	volumeListerSynced cache.InformerSynced
+	claimLister        corelisters.PersistentVolumeClaimLister
+	claimListerSynced  cache.InformerSynced
+	classLister        storagelisters.StorageClassLister
+	classListerSynced  cache.InformerSynced
+
 	kubeClient                clientset.Interface
 	eventRecorder             record.EventRecorder
 	cloud                     cloudprovider.Interface
@@ -182,7 +183,6 @@ type PersistentVolumeController struct {
 	// have been already written.
 	volumes persistentVolumeOrderedIndex
 	claims  cache.Store
-	classes cache.Store
 
 	// Work queues of claims and volumes to process. Every queue should have
 	// exactly one worker thread, especially syncClaim() is not reentrant.
@@ -243,7 +243,7 @@ func (ctrl *PersistentVolumeController) syncUnboundClaim(claim *v1.PersistentVol
 			glog.V(4).Infof("synchronizing unbound PersistentVolumeClaim[%s]: no volume found", claimToClaimKey(claim))
 			// No PV could be found
 			// OBSERVATION: pvc is "Pending", will retry
-			if storageutil.GetClaimStorageClass(claim) != "" || metav1.HasAnnotation(claim.ObjectMeta, storageutil.AlphaStorageClassAnnotation) {
+			if v1.GetPersistentVolumeClaimClass(claim) != "" || metav1.HasAnnotation(claim.ObjectMeta, v1.AlphaStorageClassAnnotation) {
 				if err = ctrl.provisionClaim(claim); err != nil {
 					return err
 				}
@@ -251,6 +251,7 @@ func (ctrl *PersistentVolumeController) syncUnboundClaim(claim *v1.PersistentVol
 			}
 			// Mark the claim as Pending and try to find a match in the next
 			// periodic syncClaim
+			ctrl.eventRecorder.Event(claim, v1.EventTypeNormal, "FailedBinding", "no persistent volumes available for this claim and no storage class is set")
 			if _, err = ctrl.updateClaimStatus(claim, v1.ClaimPending, nil); err != nil {
 				return err
 			}
@@ -746,7 +747,7 @@ func (ctrl *PersistentVolumeController) bindVolumeToClaim(volume *v1.PersistentV
 		volume.Spec.ClaimRef.Namespace != claim.Namespace ||
 		volume.Spec.ClaimRef.UID != claim.UID {
 
-		claimRef, err := v1.GetReference(claim)
+		claimRef, err := v1.GetReference(api.Scheme, claim)
 		if err != nil {
 			return nil, fmt.Errorf("Unexpected error getting claim reference: %v", err)
 		}
@@ -1016,23 +1017,10 @@ func (ctrl *PersistentVolumeController) recycleVolumeOperation(arg interface{}) 
 
 	// Plugin found
 	recorder := ctrl.newRecyclerEventRecorder(volume)
-	recycler, err := plugin.NewRecycler(volume.Name, spec, recorder)
-	if err != nil {
-		// Cannot create recycler
-		strerr := fmt.Sprintf("Failed to create recycler: %v", err)
-		if _, err = ctrl.updateVolumePhaseWithEvent(volume, v1.VolumeFailed, v1.EventTypeWarning, "VolumeFailedRecycle", strerr); err != nil {
-			glog.V(4).Infof("recycleVolumeOperation [%s]: failed to mark volume as failed: %v", volume.Name, err)
-			// Save failed, retry on the next deletion attempt
-			return
-		}
-		// Despite the volume being Failed, the controller will retry recycling
-		// the volume in every syncVolume() call.
-		return
-	}
 
-	if err = recycler.Recycle(); err != nil {
+	if err = plugin.Recycle(volume.Name, spec, recorder); err != nil {
 		// Recycler failed
-		strerr := fmt.Sprintf("Recycler failed: %s", err)
+		strerr := fmt.Sprintf("Recycle failed: %s", err)
 		if _, err = ctrl.updateVolumePhaseWithEvent(volume, v1.VolumeFailed, v1.EventTypeWarning, "VolumeFailedRecycle", strerr); err != nil {
 			glog.V(4).Infof("recycleVolumeOperation [%s]: failed to mark volume as failed: %v", volume.Name, err)
 			// Save failed, retry on the next deletion attempt
@@ -1235,7 +1223,7 @@ func (ctrl *PersistentVolumeController) provisionClaimOperation(claimObj interfa
 		return
 	}
 
-	claimClass := storageutil.GetClaimStorageClass(claim)
+	claimClass := v1.GetPersistentVolumeClaimClass(claim)
 	glog.V(4).Infof("provisionClaimOperation [%s] started, class: %q", claimToClaimKey(claim), claimClass)
 
 	plugin, storageClass, err := ctrl.findProvisionablePlugin(claim)
@@ -1288,7 +1276,7 @@ func (ctrl *PersistentVolumeController) provisionClaimOperation(claimObj interfa
 
 	// Prepare a claimRef to the claim early (to fail before a volume is
 	// provisioned)
-	claimRef, err := v1.GetReference(claim)
+	claimRef, err := v1.GetReference(api.Scheme, claim)
 	if err != nil {
 		glog.V(3).Infof("unexpected error getting claim reference: %v", err)
 		return
@@ -1329,7 +1317,9 @@ func (ctrl *PersistentVolumeController) provisionClaimOperation(claimObj interfa
 	glog.V(3).Infof("volume %q for claim %q created", volume.Name, claimToClaimKey(claim))
 
 	// Create Kubernetes PV object for the volume.
-	volume.Name = pvName
+	if volume.Name == "" {
+		volume.Name = pvName
+	}
 	// Bind it to the claim
 	volume.Spec.ClaimRef = claimRef
 	volume.Status.Phase = v1.VolumeBound
@@ -1341,7 +1331,7 @@ func (ctrl *PersistentVolumeController) provisionClaimOperation(claimObj interfa
 	// by storage.AlphaStorageClassAnnotation
 	// TODO: remove this check in 1.5, storage.StorageClassAnnotation will be always non-empty there.
 	if claimClass != "" {
-		metav1.SetMetaDataAnnotation(&volume.ObjectMeta, storageutil.StorageClassAnnotation, claimClass)
+		volume.Spec.StorageClassName = claimClass
 	}
 
 	// Try to create the PV object several times
@@ -1424,10 +1414,13 @@ func (ctrl *PersistentVolumeController) scheduleOperation(operationName string, 
 
 	err := ctrl.runningOperations.Run(operationName, operation)
 	if err != nil {
-		if goroutinemap.IsAlreadyExists(err) {
+		switch {
+		case goroutinemap.IsAlreadyExists(err):
 			glog.V(4).Infof("operation %q is already running, skipping", operationName)
-		} else {
-			glog.Errorf("error scheduling operaion %q: %v", operationName, err)
+		case exponentialbackoff.IsExponentialBackoff(err):
+			glog.V(4).Infof("operation %q postponed due to exponential backoff", operationName)
+		default:
+			glog.Errorf("error scheduling operation %q: %v", operationName, err)
 		}
 	}
 }
@@ -1445,12 +1438,12 @@ func (ctrl *PersistentVolumeController) newRecyclerEventRecorder(volume *v1.Pers
 // provisioner is requested.
 func (ctrl *PersistentVolumeController) findProvisionablePlugin(claim *v1.PersistentVolumeClaim) (vol.ProvisionableVolumePlugin, *storage.StorageClass, error) {
 	// TODO: remove this alpha behavior in 1.5
-	alpha := metav1.HasAnnotation(claim.ObjectMeta, storageutil.AlphaStorageClassAnnotation)
-	beta := metav1.HasAnnotation(claim.ObjectMeta, storageutil.BetaStorageClassAnnotation)
-	if alpha && beta {
-		// Both Alpha and Beta annotations are set. Do beta.
+	alpha := metav1.HasAnnotation(claim.ObjectMeta, v1.AlphaStorageClassAnnotation)
+	if alpha && v1.PersistentVolumeClaimHasClass(claim) {
+		// Both Alpha annotation and storage class name is set. Use the storage
+		// class name.
 		alpha = false
-		msg := fmt.Sprintf("both %q and %q annotations are present, using %q", storageutil.AlphaStorageClassAnnotation, storageutil.BetaStorageClassAnnotation, storageutil.BetaStorageClassAnnotation)
+		msg := fmt.Sprintf("both %q annotation and storageClassName are present, using storageClassName", v1.AlphaStorageClassAnnotation)
 		ctrl.eventRecorder.Event(claim, v1.EventTypeNormal, "ProvisioningIgnoreAlpha", msg)
 	}
 	if alpha {
@@ -1460,17 +1453,10 @@ func (ctrl *PersistentVolumeController) findProvisionablePlugin(claim *v1.Persis
 
 	// provisionClaim() which leads here is never called with claimClass=="", we
 	// can save some checks.
-	claimClass := storageutil.GetClaimStorageClass(claim)
-	classObj, found, err := ctrl.classes.GetByKey(claimClass)
+	claimClass := v1.GetPersistentVolumeClaimClass(claim)
+	class, err := ctrl.classLister.Get(claimClass)
 	if err != nil {
 		return nil, nil, err
-	}
-	if !found {
-		return nil, nil, fmt.Errorf("StorageClass %q not found", claimClass)
-	}
-	class, ok := classObj.(*storage.StorageClass)
-	if !ok {
-		return nil, nil, fmt.Errorf("Cannot convert object to StorageClass: %+v", classObj)
 	}
 
 	// Find a plugin for the class

@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/client/record"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/events"
 	"k8s.io/kubernetes/pkg/kubelet/eviction"
@@ -291,9 +291,9 @@ func killPodNow(podWorkers PodWorkers, recorder record.EventRecorder) eviction.K
 		}
 
 		// we timeout and return an error if we don't get a callback within a reasonable time.
-		// the default timeout is relative to the grace period (we settle on 2s to wait for kubelet->runtime traffic to complete in sigkill)
+		// the default timeout is relative to the grace period (we settle on 10s to wait for kubelet->runtime traffic to complete in sigkill)
 		timeout := int64(gracePeriod + (gracePeriod / 2))
-		minTimeout := int64(2)
+		minTimeout := int64(10)
 		if timeout < minTimeout {
 			timeout = minTimeout
 		}

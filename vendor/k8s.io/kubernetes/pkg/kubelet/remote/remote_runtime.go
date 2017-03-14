@@ -17,12 +17,14 @@ limitations under the License.
 package remote
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/golang/glog"
 	"google.golang.org/grpc"
+
 	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	utilexec "k8s.io/kubernetes/pkg/util/exec"
@@ -62,13 +64,19 @@ func (r *RemoteRuntimeService) Version(apiVersion string) (*runtimeapi.VersionRe
 		return nil, err
 	}
 
+	if typedVersion.Version == "" || typedVersion.RuntimeName == "" || typedVersion.RuntimeApiVersion == "" || typedVersion.RuntimeVersion == "" {
+		return nil, fmt.Errorf("not all fields are set in VersionResponse (%q)", *typedVersion)
+	}
+
 	return typedVersion, err
 }
 
 // RunPodSandbox creates and starts a pod-level sandbox. Runtimes should ensure
 // the sandbox is in ready state.
 func (r *RemoteRuntimeService) RunPodSandbox(config *runtimeapi.PodSandboxConfig) (string, error) {
-	ctx, cancel := getContextWithTimeout(r.timeout)
+	// Use 2 times longer timeout for sandbox operation (4 mins by default)
+	// TODO: Make the pod sandbox timeout configurable.
+	ctx, cancel := getContextWithTimeout(r.timeout * 2)
 	defer cancel()
 
 	resp, err := r.runtimeClient.RunPodSandbox(ctx, &runtimeapi.RunPodSandboxRequest{
@@ -77,6 +85,12 @@ func (r *RemoteRuntimeService) RunPodSandbox(config *runtimeapi.PodSandboxConfig
 	if err != nil {
 		glog.Errorf("RunPodSandbox from runtime service failed: %v", err)
 		return "", err
+	}
+
+	if resp.PodSandboxId == "" {
+		errorMessage := fmt.Sprintf("PodSandboxId is not set for sandbox %q", config.GetMetadata())
+		glog.Errorf("RunPodSandbox failed: %s", errorMessage)
+		return "", errors.New(errorMessage)
 	}
 
 	return resp.PodSandboxId, nil
@@ -125,8 +139,13 @@ func (r *RemoteRuntimeService) PodSandboxStatus(podSandBoxID string) (*runtimeap
 		PodSandboxId: podSandBoxID,
 	})
 	if err != nil {
-		glog.Errorf("PodSandboxStatus %q from runtime service failed: %v", podSandBoxID, err)
 		return nil, err
+	}
+
+	if resp.Status != nil {
+		if err := verifySandboxStatus(resp.Status); err != nil {
+			return nil, err
+		}
 	}
 
 	return resp.Status, nil
@@ -161,6 +180,12 @@ func (r *RemoteRuntimeService) CreateContainer(podSandBoxID string, config *runt
 	if err != nil {
 		glog.Errorf("CreateContainer in sandbox %q from runtime service failed: %v", podSandBoxID, err)
 		return "", err
+	}
+
+	if resp.ContainerId == "" {
+		errorMessage := fmt.Sprintf("ContainerId is not set for container %q", config.GetMetadata())
+		glog.Errorf("CreateContainer failed: %s", errorMessage)
+		return "", errors.New(errorMessage)
 	}
 
 	return resp.ContainerId, nil
@@ -245,13 +270,24 @@ func (r *RemoteRuntimeService) ContainerStatus(containerID string) (*runtimeapi.
 		return nil, err
 	}
 
+	if resp.Status != nil {
+		if err := verifyContainerStatus(resp.Status); err != nil {
+			glog.Errorf("ContainerStatus of %q failed: %v", containerID, err)
+			return nil, err
+		}
+	}
+
 	return resp.Status, nil
 }
 
 // ExecSync executes a command in the container, and returns the stdout output.
 // If command exits with a non-zero exit code, an error is returned.
 func (r *RemoteRuntimeService) ExecSync(containerID string, cmd []string, timeout time.Duration) (stdout []byte, stderr []byte, err error) {
-	ctx, cancel := getContextWithTimeout(r.timeout)
+	ctx, cancel := getContextWithTimeout(timeout)
+	if timeout == 0 {
+		// Do not set timeout when timeout is 0.
+		ctx, cancel = getContextWithCancel()
+	}
 	defer cancel()
 
 	timeoutSeconds := int64(timeout.Seconds())
@@ -288,6 +324,12 @@ func (r *RemoteRuntimeService) Exec(req *runtimeapi.ExecRequest) (*runtimeapi.Ex
 		return nil, err
 	}
 
+	if resp.Url == "" {
+		errorMessage := "URL is not set"
+		glog.Errorf("Exec failed: %s", errorMessage)
+		return nil, errors.New(errorMessage)
+	}
+
 	return resp, nil
 }
 
@@ -302,6 +344,11 @@ func (r *RemoteRuntimeService) Attach(req *runtimeapi.AttachRequest) (*runtimeap
 		return nil, err
 	}
 
+	if resp.Url == "" {
+		errorMessage := "URL is not set"
+		glog.Errorf("Exec failed: %s", errorMessage)
+		return nil, errors.New(errorMessage)
+	}
 	return resp, nil
 }
 
@@ -314,6 +361,12 @@ func (r *RemoteRuntimeService) PortForward(req *runtimeapi.PortForwardRequest) (
 	if err != nil {
 		glog.Errorf("PortForward %s from runtime service failed: %v", req.PodSandboxId, err)
 		return nil, err
+	}
+
+	if resp.Url == "" {
+		errorMessage := "URL is not set"
+		glog.Errorf("Exec failed: %s", errorMessage)
+		return nil, errors.New(errorMessage)
 	}
 
 	return resp, nil
@@ -349,6 +402,12 @@ func (r *RemoteRuntimeService) Status() (*runtimeapi.RuntimeStatus, error) {
 	if err != nil {
 		glog.Errorf("Status from runtime service failed: %v", err)
 		return nil, err
+	}
+
+	if resp.Status == nil || len(resp.Status.Conditions) < 2 {
+		errorMessage := "RuntimeReady or NetworkReady condition are not set"
+		glog.Errorf("Status failed: %s", errorMessage)
+		return nil, errors.New(errorMessage)
 	}
 
 	return resp.Status, nil

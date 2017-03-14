@@ -17,10 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/util/intstr"
 )
 
 // describes the attributes of a scale subresource
@@ -73,28 +73,6 @@ type ReplicationControllerDummy struct {
 	metav1.TypeMeta `json:",inline"`
 }
 
-// SubresourceReference contains enough information to let you inspect or modify the referred subresource.
-type SubresourceReference struct {
-	// Kind of the referent; More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#types-kinds
-	// +optional
-	Kind string `json:"kind,omitempty" protobuf:"bytes,1,opt,name=kind"`
-	// Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names
-	// +optional
-	Name string `json:"name,omitempty" protobuf:"bytes,2,opt,name=name"`
-	// API version of the referent
-	// +optional
-	APIVersion string `json:"apiVersion,omitempty" protobuf:"bytes,3,opt,name=apiVersion"`
-	// Subresource name of the referent
-	// +optional
-	Subresource string `json:"subresource,omitempty" protobuf:"bytes,4,opt,name=subresource"`
-}
-
-type CPUTargetUtilization struct {
-	// fraction of the requested CPU that should be utilized/used,
-	// e.g. 70 means that 70% of the requested CPU should be in use.
-	TargetPercentage int32 `json:"targetPercentage" protobuf:"varint,1,opt,name=targetPercentage"`
-}
-
 // Alpha-level support for Custom Metrics in HPA (as annotations).
 type CustomMetricTarget struct {
 	// Custom Metric name.
@@ -116,72 +94,6 @@ type CustomMetricCurrentStatus struct {
 
 type CustomMetricCurrentStatusList struct {
 	Items []CustomMetricCurrentStatus `json:"items" protobuf:"bytes,1,rep,name=items"`
-}
-
-// specification of a horizontal pod autoscaler.
-type HorizontalPodAutoscalerSpec struct {
-	// reference to Scale subresource; horizontal pod autoscaler will learn the current resource consumption from its status,
-	// and will set the desired number of pods by modifying its spec.
-	ScaleRef SubresourceReference `json:"scaleRef" protobuf:"bytes,1,opt,name=scaleRef"`
-	// lower limit for the number of pods that can be set by the autoscaler, default 1.
-	// +optional
-	MinReplicas *int32 `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
-	// upper limit for the number of pods that can be set by the autoscaler; cannot be smaller than MinReplicas.
-	MaxReplicas int32 `json:"maxReplicas" protobuf:"varint,3,opt,name=maxReplicas"`
-	// target average CPU utilization (represented as a percentage of requested CPU) over all the pods;
-	// if not specified it defaults to the target CPU utilization at 80% of the requested resources.
-	// +optional
-	CPUUtilization *CPUTargetUtilization `json:"cpuUtilization,omitempty" protobuf:"bytes,4,opt,name=cpuUtilization"`
-}
-
-// current status of a horizontal pod autoscaler
-type HorizontalPodAutoscalerStatus struct {
-	// most recent generation observed by this autoscaler.
-	// +optional
-	ObservedGeneration *int64 `json:"observedGeneration,omitempty" protobuf:"varint,1,opt,name=observedGeneration"`
-
-	// last time the HorizontalPodAutoscaler scaled the number of pods;
-	// used by the autoscaler to control how often the number of pods is changed.
-	// +optional
-	LastScaleTime *metav1.Time `json:"lastScaleTime,omitempty" protobuf:"bytes,2,opt,name=lastScaleTime"`
-
-	// current number of replicas of pods managed by this autoscaler.
-	CurrentReplicas int32 `json:"currentReplicas" protobuf:"varint,3,opt,name=currentReplicas"`
-
-	// desired number of replicas of pods managed by this autoscaler.
-	DesiredReplicas int32 `json:"desiredReplicas" protobuf:"varint,4,opt,name=desiredReplicas"`
-
-	// current average CPU utilization over all pods, represented as a percentage of requested CPU,
-	// e.g. 70 means that an average pod is using now 70% of its requested CPU.
-	// +optional
-	CurrentCPUUtilizationPercentage *int32 `json:"currentCPUUtilizationPercentage,omitempty" protobuf:"varint,5,opt,name=currentCPUUtilizationPercentage"`
-}
-
-// configuration of a horizontal pod autoscaler.
-type HorizontalPodAutoscaler struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object metadata. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// behaviour of autoscaler. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status.
-	// +optional
-	Spec HorizontalPodAutoscalerSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
-
-	// current information about the autoscaler.
-	// +optional
-	Status HorizontalPodAutoscalerStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
-}
-
-// list of horizontal pod autoscaler objects.
-type HorizontalPodAutoscalerList struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard list metadata.
-	// +optional
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-
-	// list of horizontal pod autoscaler objects.
-	Items []HorizontalPodAutoscaler `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
 // +genclient=true
@@ -457,20 +369,20 @@ type DeploymentList struct {
 	Items []Deployment `json:"items" protobuf:"bytes,2,rep,name=items"`
 }
 
-// TODO(madhusudancs): Uncomment while implementing DaemonSet updates.
-/* Commenting out for v1.2. We are planning to bring these types back with a more robust DaemonSet update implementation in v1.3, hence not deleting but just commenting the types out.
 type DaemonSetUpdateStrategy struct {
-	// Type of daemon set update. Only "RollingUpdate" is supported at this time. Default is RollingUpdate.
-// +optional
-	Type DaemonSetUpdateStrategyType `json:"type,omitempty"`
+	// Type of daemon set update. Can be "RollingUpdate" or "OnDelete".
+	// Default is OnDelete.
+	// +optional
+	Type DaemonSetUpdateStrategyType `json:"type,omitempty" protobuf:"bytes,1,opt,name=type"`
 
 	// Rolling update config params. Present only if DaemonSetUpdateStrategy =
 	// RollingUpdate.
 	//---
 	// TODO: Update this to follow our convention for oneOf, whatever we decide it
 	// to be. Same as DeploymentStrategy.RollingUpdate.
-// +optional
-	RollingUpdate *RollingUpdateDaemonSet `json:"rollingUpdate,omitempty"`
+	// See https://github.com/kubernetes/kubernetes/issues/35345
+	// +optional
+	RollingUpdate *RollingUpdateDaemonSet `json:"rollingUpdate,omitempty" protobuf:"bytes,2,opt,name=rollingUpdate"`
 }
 
 type DaemonSetUpdateStrategyType string
@@ -478,6 +390,9 @@ type DaemonSetUpdateStrategyType string
 const (
 	// Replace the old daemons by new ones using rolling update i.e replace them on each node one after the other.
 	RollingUpdateDaemonSetStrategyType DaemonSetUpdateStrategyType = "RollingUpdate"
+
+	// Replace the old daemons only when it's killed
+	OnDeleteDaemonSetStrategyType DaemonSetUpdateStrategyType = "OnDelete"
 )
 
 // Spec to control the desired behavior of daemon set rolling update.
@@ -495,17 +410,9 @@ type RollingUpdateDaemonSet struct {
 	// it then proceeds onto other DaemonSet pods, thus ensuring that at least
 	// 70% of original number of DaemonSet pods are available at all times
 	// during the update.
-// +optional
-	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty"`
-
-	// Minimum number of seconds for which a newly created DaemonSet pod should
-	// be ready without any of its container crashing, for it to be considered
-	// available. Defaults to 0 (pod will be considered available as soon as it
-	// is ready).
-// +optional
-	MinReadySeconds int32 `json:"minReadySeconds,omitempty"`
+	// +optional
+	MaxUnavailable *intstr.IntOrString `json:"maxUnavailable,omitempty" protobuf:"bytes,1,opt,name=maxUnavailable"`
 }
-*/
 
 // DaemonSetSpec is the specification of a daemon set.
 type DaemonSetSpec struct {
@@ -523,30 +430,22 @@ type DaemonSetSpec struct {
 	// More info: http://kubernetes.io/docs/user-guide/replication-controller#pod-template
 	Template v1.PodTemplateSpec `json:"template" protobuf:"bytes,2,opt,name=template"`
 
-	// TODO(madhusudancs): Uncomment while implementing DaemonSet updates.
-	/* Commenting out for v1.2. We are planning to bring these fields back with a more robust DaemonSet update implementation in v1.3, hence not deleting but just commenting these fields out.
-		// Update strategy to replace existing DaemonSet pods with new pods.
+	// UpdateStrategy to replace existing DaemonSet pods with new pods.
 	// +optional
-		UpdateStrategy DaemonSetUpdateStrategy `json:"updateStrategy,omitempty"`
+	UpdateStrategy DaemonSetUpdateStrategy `json:"updateStrategy,omitempty" protobuf:"bytes,3,opt,name=updateStrategy"`
 
-		// Label key that is added to DaemonSet pods to distinguish between old and
-		// new pod templates during DaemonSet update.
-		// Users can set this to an empty string to indicate that the system should
-		// not add any label. If unspecified, system uses
-		// DefaultDaemonSetUniqueLabelKey("daemonset.kubernetes.io/podTemplateHash").
-		// Value of this key is hash of DaemonSetSpec.PodTemplateSpec.
-		// No label is added if this is set to empty string.
+	// MinReadySeconds minimum number of seconds for which a newly created DaemonSet pod should
+	// be ready without any of its container crashing, for it to be considered
+	// available. Defaults to 0 (pod will be considered available as soon as it
+	// is ready).
 	// +optional
-		UniqueLabelKey *string `json:"uniqueLabelKey,omitempty"`
-	*/
+	MinReadySeconds int32 `json:"minReadySeconds,omitempty" protobuf:"varint,4,opt,name=minReadySeconds"`
+
+	// A sequence number representing a specific generation of the template.
+	// Populated by the system. It can be set only during the creation.
+	// +optional
+	TemplateGeneration int64 `json:"templateGeneration,omitempty" protobuf:"varint,5,opt,name=templateGeneration"`
 }
-
-const (
-	// DefaultDaemonSetUniqueLabelKey is the default key of the labels that is added
-	// to daemon set pods to distinguish between old and new pod templates during
-	// DaemonSet update. See DaemonSetSpec's UniqueLabelKey field for more information.
-	DefaultDaemonSetUniqueLabelKey string = "daemonset.kubernetes.io/podTemplateHash"
-)
 
 // DaemonSetStatus represents the current status of a daemon set.
 type DaemonSetStatus struct {
@@ -572,6 +471,23 @@ type DaemonSetStatus struct {
 	// ObservedGeneration is the most recent generation observed by the daemon set controller.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty" protobuf:"varint,5,opt,name=observedGeneration"`
+
+	// UpdatedNumberScheduled is the total number of nodes that are running updated
+	// daemon pod
+	// +optional
+	UpdatedNumberScheduled int32 `json:"updatedNumberScheduled,omitempty" protobuf:"varint,6,opt,name=updatedNumberScheduled"`
+
+	// NumberAvailable is the number of nodes that should be running the
+	// daemon pod and have one or more of the daemon pod running and
+	// available (ready for at least minReadySeconds)
+	// +optional
+	NumberAvailable int32 `json:"numberAvailable,omitempty" protobuf:"varint,7,opt,name=numberAvailable"`
+
+	// NumberUnavailable is the number of nodes that should be running the
+	// daemon pod and have none of the daemon pod running and available
+	// (ready for at least minReadySeconds)
+	// +optional
+	NumberUnavailable int32 `json:"numberUnavailable,omitempty" protobuf:"varint,8,opt,name=numberUnavailable"`
 }
 
 // +genclient=true
@@ -597,6 +513,13 @@ type DaemonSet struct {
 	// +optional
 	Status DaemonSetStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
+
+const (
+	// DaemonSetTemplateGenerationKey is the key of the labels that is added
+	// to daemon set pods to distinguish between old and new pod templates
+	// during DaemonSet template update.
+	DaemonSetTemplateGenerationKey string = "pod-template-generation"
+)
 
 // DaemonSetList is a collection of daemon sets.
 type DaemonSetList struct {

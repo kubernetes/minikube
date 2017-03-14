@@ -23,9 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/kubernetes/pkg/api"
 	v1 "k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/apis/autoscaling"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 )
 
@@ -40,13 +38,10 @@ func addConversionFuncs(scheme *runtime.Scheme) error {
 		Convert_v1beta1_DeploymentStrategy_To_extensions_DeploymentStrategy,
 		Convert_extensions_RollingUpdateDeployment_To_v1beta1_RollingUpdateDeployment,
 		Convert_v1beta1_RollingUpdateDeployment_To_extensions_RollingUpdateDeployment,
+		Convert_extensions_RollingUpdateDaemonSet_To_v1beta1_RollingUpdateDaemonSet,
+		Convert_v1beta1_RollingUpdateDaemonSet_To_extensions_RollingUpdateDaemonSet,
 		Convert_extensions_ReplicaSetSpec_To_v1beta1_ReplicaSetSpec,
 		Convert_v1beta1_ReplicaSetSpec_To_extensions_ReplicaSetSpec,
-		// autoscaling
-		Convert_autoscaling_CrossVersionObjectReference_To_v1beta1_SubresourceReference,
-		Convert_v1beta1_SubresourceReference_To_autoscaling_CrossVersionObjectReference,
-		Convert_autoscaling_HorizontalPodAutoscalerSpec_To_v1beta1_HorizontalPodAutoscalerSpec,
-		Convert_v1beta1_HorizontalPodAutoscalerSpec_To_autoscaling_HorizontalPodAutoscalerSpec,
 	)
 	if err != nil {
 		return err
@@ -55,7 +50,7 @@ func addConversionFuncs(scheme *runtime.Scheme) error {
 	// Add field label conversions for kinds having selectable nothing but ObjectMeta fields.
 	for _, k := range []string{"DaemonSet", "Deployment", "Ingress"} {
 		kind := k // don't close over range variables
-		err = api.Scheme.AddFieldLabelConversionFunc("extensions/v1beta1", kind,
+		err = scheme.AddFieldLabelConversionFunc("extensions/v1beta1", kind,
 			func(label, value string) (string, string, error) {
 				switch label {
 				case "metadata.name", "metadata.namespace":
@@ -226,6 +221,23 @@ func Convert_v1beta1_RollingUpdateDeployment_To_extensions_RollingUpdateDeployme
 	return nil
 }
 
+func Convert_extensions_RollingUpdateDaemonSet_To_v1beta1_RollingUpdateDaemonSet(in *extensions.RollingUpdateDaemonSet, out *RollingUpdateDaemonSet, s conversion.Scope) error {
+	if out.MaxUnavailable == nil {
+		out.MaxUnavailable = &intstr.IntOrString{}
+	}
+	if err := s.Convert(&in.MaxUnavailable, out.MaxUnavailable, 0); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Convert_v1beta1_RollingUpdateDaemonSet_To_extensions_RollingUpdateDaemonSet(in *RollingUpdateDaemonSet, out *extensions.RollingUpdateDaemonSet, s conversion.Scope) error {
+	if err := s.Convert(in.MaxUnavailable, &out.MaxUnavailable, 0); err != nil {
+		return err
+	}
+	return nil
+}
+
 func Convert_extensions_ReplicaSetSpec_To_v1beta1_ReplicaSetSpec(in *extensions.ReplicaSetSpec, out *ReplicaSetSpec, s conversion.Scope) error {
 	out.Replicas = new(int32)
 	*out.Replicas = int32(in.Replicas)
@@ -245,56 +257,6 @@ func Convert_v1beta1_ReplicaSetSpec_To_extensions_ReplicaSetSpec(in *ReplicaSetS
 	out.Selector = in.Selector
 	if err := v1.Convert_v1_PodTemplateSpec_To_api_PodTemplateSpec(&in.Template, &out.Template, s); err != nil {
 		return err
-	}
-	return nil
-}
-
-func Convert_autoscaling_CrossVersionObjectReference_To_v1beta1_SubresourceReference(in *autoscaling.CrossVersionObjectReference, out *SubresourceReference, s conversion.Scope) error {
-	out.Kind = in.Kind
-	out.Name = in.Name
-	out.APIVersion = in.APIVersion
-	out.Subresource = "scale"
-	return nil
-}
-
-func Convert_v1beta1_SubresourceReference_To_autoscaling_CrossVersionObjectReference(in *SubresourceReference, out *autoscaling.CrossVersionObjectReference, s conversion.Scope) error {
-	out.Kind = in.Kind
-	out.Name = in.Name
-	out.APIVersion = in.APIVersion
-	return nil
-}
-
-func Convert_autoscaling_HorizontalPodAutoscalerSpec_To_v1beta1_HorizontalPodAutoscalerSpec(in *autoscaling.HorizontalPodAutoscalerSpec, out *HorizontalPodAutoscalerSpec, s conversion.Scope) error {
-	if err := Convert_autoscaling_CrossVersionObjectReference_To_v1beta1_SubresourceReference(&in.ScaleTargetRef, &out.ScaleRef, s); err != nil {
-		return err
-	}
-	if in.MinReplicas != nil {
-		out.MinReplicas = new(int32)
-		*out.MinReplicas = *in.MinReplicas
-	} else {
-		out.MinReplicas = nil
-	}
-	out.MaxReplicas = in.MaxReplicas
-	if in.TargetCPUUtilizationPercentage != nil {
-		out.CPUUtilization = &CPUTargetUtilization{TargetPercentage: *in.TargetCPUUtilizationPercentage}
-	}
-	return nil
-}
-
-func Convert_v1beta1_HorizontalPodAutoscalerSpec_To_autoscaling_HorizontalPodAutoscalerSpec(in *HorizontalPodAutoscalerSpec, out *autoscaling.HorizontalPodAutoscalerSpec, s conversion.Scope) error {
-	if err := Convert_v1beta1_SubresourceReference_To_autoscaling_CrossVersionObjectReference(&in.ScaleRef, &out.ScaleTargetRef, s); err != nil {
-		return err
-	}
-	if in.MinReplicas != nil {
-		out.MinReplicas = new(int32)
-		*out.MinReplicas = int32(*in.MinReplicas)
-	} else {
-		out.MinReplicas = nil
-	}
-	out.MaxReplicas = int32(in.MaxReplicas)
-	if in.CPUUtilization != nil {
-		out.TargetCPUUtilizationPercentage = new(int32)
-		*out.TargetCPUUtilizationPercentage = int32(in.CPUUtilization.TargetPercentage)
 	}
 	return nil
 }
