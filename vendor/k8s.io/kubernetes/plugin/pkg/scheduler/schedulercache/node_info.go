@@ -83,11 +83,15 @@ func (r *Resource) ResourceList() v1.ResourceList {
 }
 
 func (r *Resource) AddOpaque(name v1.ResourceName, quantity int64) {
+	r.SetOpaque(name, r.OpaqueIntResources[name]+quantity)
+}
+
+func (r *Resource) SetOpaque(name v1.ResourceName, quantity int64) {
 	// Lazily allocate opaque integer resource map.
 	if r.OpaqueIntResources == nil {
 		r.OpaqueIntResources = map[v1.ResourceName]int64{}
 	}
-	r.OpaqueIntResources[name] += quantity
+	r.OpaqueIntResources[name] = quantity
 }
 
 // NewNodeInfo returns a ready to use empty NodeInfo object.
@@ -217,7 +221,7 @@ func (n *NodeInfo) String() string {
 }
 
 func hasPodAffinityConstraints(pod *v1.Pod) bool {
-	affinity := pod.Spec.Affinity
+	affinity := ReconcileAffinity(pod)
 	return affinity != nil && (affinity.PodAffinity != nil || affinity.PodAntiAffinity != nil)
 }
 
@@ -333,11 +337,11 @@ func (n *NodeInfo) SetNode(node *v1.Node) error {
 			n.allowedPodNumber = int(rQuant.Value())
 		default:
 			if v1.IsOpaqueIntResourceName(rName) {
-				n.allocatableResource.AddOpaque(rName, rQuant.Value())
+				n.allocatableResource.SetOpaque(rName, rQuant.Value())
 			}
 		}
 	}
-	n.taints, n.taintsErr = v1.GetTaintsFromNodeAnnotations(node.Annotations)
+	n.taints = node.Spec.Taints
 	for i := range node.Status.Conditions {
 		cond := &node.Status.Conditions[i]
 		switch cond.Type {

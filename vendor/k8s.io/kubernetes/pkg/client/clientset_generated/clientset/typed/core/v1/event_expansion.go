@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/v1"
 )
 
@@ -35,7 +34,7 @@ type EventExpansion interface {
 	UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error)
 	PatchWithEventNamespace(event *v1.Event, data []byte) (*v1.Event, error)
 	// Search finds events about the specified object
-	Search(objOrRef runtime.Object) (*v1.EventList, error)
+	Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v1.EventList, error)
 	// Returns the appropriate field selector based on the API version being used to communicate with the server.
 	// The returned field selector can be used with List and Watch to filter desired events.
 	GetFieldSelector(involvedObjectName, involvedObjectNamespace, involvedObjectKind, involvedObjectUID *string) fields.Selector
@@ -99,8 +98,8 @@ func (e *events) PatchWithEventNamespace(incompleteEvent *v1.Event, data []byte)
 // Search finds events about the specified object. The namespace of the
 // object must match this event's client namespace unless the event client
 // was made with the "" namespace.
-func (e *events) Search(objOrRef runtime.Object) (*v1.EventList, error) {
-	ref, err := api.GetReference(objOrRef)
+func (e *events) Search(scheme *runtime.Scheme, objOrRef runtime.Object) (*v1.EventList, error) {
+	ref, err := v1.GetReference(scheme, objOrRef)
 	if err != nil {
 		return nil, err
 	}

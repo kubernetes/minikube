@@ -23,9 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/admission"
+	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/genericapiserver/registry/rest"
 	kubeapiserveradmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
 )
 
@@ -53,7 +53,7 @@ type denyExec struct {
 	privileged bool
 }
 
-var _ = kubeapiserveradmission.WantsInternalClientSet(&denyExec{})
+var _ = kubeapiserveradmission.WantsInternalKubeClientSet(&denyExec{})
 
 // NewDenyEscalatingExec creates a new admission controller that denies an exec operation on a pod
 // using host based configurations.
@@ -110,7 +110,7 @@ func (d *denyExec) Admit(a admission.Attributes) (err error) {
 // isPrivileged will return true a pod has any privileged containers
 func isPrivileged(pod *api.Pod) bool {
 	for _, c := range pod.Spec.InitContainers {
-		if c.SecurityContext == nil {
+		if c.SecurityContext == nil || c.SecurityContext.Privileged == nil {
 			continue
 		}
 		if *c.SecurityContext.Privileged {
@@ -118,7 +118,7 @@ func isPrivileged(pod *api.Pod) bool {
 		}
 	}
 	for _, c := range pod.Spec.Containers {
-		if c.SecurityContext == nil {
+		if c.SecurityContext == nil || c.SecurityContext.Privileged == nil {
 			continue
 		}
 		if *c.SecurityContext.Privileged {
@@ -128,7 +128,7 @@ func isPrivileged(pod *api.Pod) bool {
 	return false
 }
 
-func (d *denyExec) SetInternalClientSet(client internalclientset.Interface) {
+func (d *denyExec) SetInternalKubeClientSet(client internalclientset.Interface) {
 	d.client = client
 }
 

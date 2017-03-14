@@ -132,7 +132,7 @@ func (m *kubeGenericRuntimeManager) startContainer(podSandboxID string, podSandb
 
 // generateContainerConfig generates container config for kubelet runtime v1.
 func (m *kubeGenericRuntimeManager) generateContainerConfig(container *v1.Container, pod *v1.Pod, restartCount int, podIP, imageRef string) (*runtimeapi.ContainerConfig, error) {
-	opts, err := m.runtimeHelper.GenerateRunContainerOptions(pod, container, podIP)
+	opts, _, err := m.runtimeHelper.GenerateRunContainerOptions(pod, container, podIP)
 	if err != nil {
 		return nil, err
 	}
@@ -302,9 +302,7 @@ func (m *kubeGenericRuntimeManager) makeMounts(opts *kubecontainer.RunContainerO
 // The boolean parameter specifies whether returns all containers including
 // those already exited and dead containers (used for garbage collection).
 func (m *kubeGenericRuntimeManager) getKubeletContainers(allContainers bool) ([]*runtimeapi.Container, error) {
-	filter := &runtimeapi.ContainerFilter{
-		LabelSelector: map[string]string{kubernetesManagedLabel: "true"},
-	}
+	filter := &runtimeapi.ContainerFilter{}
 	if !allContainers {
 		runningState := runtimeapi.ContainerState_CONTAINER_RUNNING
 		filter.State = &runtimeapi.ContainerStateValue{

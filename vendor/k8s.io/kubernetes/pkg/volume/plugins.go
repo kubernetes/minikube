@@ -42,8 +42,10 @@ type VolumeOptions struct {
 
 	// Reclamation policy for a persistent volume
 	PersistentVolumeReclaimPolicy v1.PersistentVolumeReclaimPolicy
-	// PV.Name of the appropriate PersistentVolume. Used to generate cloud
-	// volume name.
+	// Suggested PV.Name of the PersistentVolume to provision.
+	// This is a generated name guaranteed to be unique in Kubernetes cluster.
+	// If you choose not to use it as volume name, ensure uniqueness by either
+	// combining it with your value or create unique values of your own.
 	PVName string
 	// PVC is reference to the claim that lead to provisioning of a new PV.
 	// Provisioners *must* create a PV that would be matched by this PVC,
@@ -105,6 +107,16 @@ type VolumePlugin interface {
 	// information from input. This function is used by volume manager to reconstruct
 	// volume spec by reading the volume directories from disk
 	ConstructVolumeSpec(volumeName, mountPath string) (*Spec, error)
+
+	// SupportsMountOption returns true if volume plugins supports Mount options
+	// Specifying mount options in a volume plugin that doesn't support
+	// user specified mount options will result in error creating persistent volumes
+	SupportsMountOption() bool
+
+	// SupportsBulkVolumeVerification checks if volume plugin type is capable
+	// of enabling bulk polling of all nodes. This can speed up verification of
+	// attached volumes by quite a bit, but underlying pluging must support it.
+	SupportsBulkVolumeVerification() bool
 }
 
 // PersistentVolumePlugin is an extended interface of VolumePlugin and is used
@@ -120,12 +132,13 @@ type PersistentVolumePlugin interface {
 // again to new claims
 type RecyclableVolumePlugin interface {
 	VolumePlugin
-	// NewRecycler creates a new volume.Recycler which knows how to reclaim this
-	// resource after the volume's release from a PersistentVolumeClaim. The
-	// recycler will use the provided recorder to write any events that might be
+
+	// Recycle knows how to reclaim this
+	// resource after the volume's release from a PersistentVolumeClaim.
+	// Recycle will use the provided recorder to write any events that might be
 	// interesting to user. It's expected that caller will pass these events to
 	// the PV being recycled.
-	NewRecycler(pvName string, spec *Spec, eventRecorder RecycleEventRecorder) (Recycler, error)
+	Recycle(pvName string, spec *Spec, eventRecorder RecycleEventRecorder) error
 }
 
 // DeletableVolumePlugin is an extended interface of VolumePlugin and is used
@@ -143,6 +156,8 @@ const (
 	// Name of a volume in external cloud that is being provisioned and thus
 	// should be ignored by rest of Kubernetes.
 	ProvisionedVolumeName = "placeholder-for-provisioning"
+	// Mount options annotations
+	MountOptionAnnotation = "volume.beta.kubernetes.io/mount-options"
 )
 
 // ProvisionableVolumePlugin is an extended interface of VolumePlugin and is

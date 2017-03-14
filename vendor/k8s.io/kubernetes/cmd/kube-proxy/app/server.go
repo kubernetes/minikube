@@ -32,14 +32,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apimachinery/pkg/util/wait"
+	clientgoclientset "k8s.io/client-go/kubernetes"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	clientv1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/cmd/kube-proxy/app/options"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/v1"
 	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	unversionedcore "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
-	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/proxy"
 	proxyconfig "k8s.io/kubernetes/pkg/proxy/config"
 	"k8s.io/kubernetes/pkg/proxy/iptables"
@@ -56,12 +57,14 @@ import (
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 
 	"github.com/golang/glog"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
 type ProxyServer struct {
 	Client       clientset.Interface
+	EventClient  v1core.EventsGetter
 	Config       *options.ProxyServerConfig
 	IptInterface utiliptables.Interface
 	Proxier      proxy.ProxyProvider
@@ -86,6 +89,7 @@ func checkKnownProxyMode(proxyMode string) bool {
 
 func NewProxyServer(
 	client clientset.Interface,
+	eventClient v1core.EventsGetter,
 	config *options.ProxyServerConfig,
 	iptInterface utiliptables.Interface,
 	proxier proxy.ProxyProvider,
@@ -96,6 +100,7 @@ func NewProxyServer(
 ) (*ProxyServer, error) {
 	return &ProxyServer{
 		Client:       client,
+		EventClient:  eventClient,
 		Config:       config,
 		IptInterface: iptInterface,
 		Proxier:      proxier,
@@ -202,10 +207,15 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		glog.Fatalf("Invalid API configuration: %v", err)
 	}
 
+	eventClient, err := clientgoclientset.NewForConfig(kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create event recorder
 	hostname := nodeutil.GetHostname(config.HostnameOverride)
 	eventBroadcaster := record.NewBroadcaster()
-	recorder := eventBroadcaster.NewRecorder(v1.EventSource{Component: "kube-proxy", Host: hostname})
+	recorder := eventBroadcaster.NewRecorder(api.Scheme, clientv1.EventSource{Component: "kube-proxy", Host: hostname})
 
 	var proxier proxy.ProxyProvider
 	var endpointsHandler proxyconfig.EndpointsConfigHandler
@@ -240,15 +250,15 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		userspace.CleanupLeftovers(iptInterface)
 	} else {
 		glog.V(0).Info("Using userspace Proxier.")
-		// This is a proxy.LoadBalancer which NewProxier needs but has methods we don't need for
-		// our config.EndpointsConfigHandler.
-		loadBalancer := userspace.NewLoadBalancerRR()
-		// set EndpointsConfigHandler to our loadBalancer
-		endpointsHandler = loadBalancer
 
 		var proxierUserspace proxy.ProxyProvider
 
 		if runtime.GOOS == "windows" {
+			// This is a proxy.LoadBalancer which NewProxier needs but has methods we don't need for
+			// our config.EndpointsConfigHandler.
+			loadBalancer := winuserspace.NewLoadBalancerRR()
+			// set EndpointsConfigHandler to our loadBalancer
+			endpointsHandler = loadBalancer
 			proxierUserspace, err = winuserspace.NewProxier(
 				loadBalancer,
 				net.ParseIP(config.BindAddress),
@@ -259,10 +269,16 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 				config.UDPIdleTimeout.Duration,
 			)
 		} else {
+			// This is a proxy.LoadBalancer which NewProxier needs but has methods we don't need for
+			// our config.EndpointsConfigHandler.
+			loadBalancer := userspace.NewLoadBalancerRR()
+			// set EndpointsConfigHandler to our loadBalancer
+			endpointsHandler = loadBalancer
 			proxierUserspace, err = userspace.NewProxier(
 				loadBalancer,
 				net.ParseIP(config.BindAddress),
 				iptInterface,
+				execer,
 				*utilnet.ParsePortRangeOrDie(config.PortRange),
 				config.IPTablesSyncPeriod.Duration,
 				config.IPTablesMinSyncPeriod.Duration,
@@ -302,7 +318,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 		endpointsConfig.Channel("api"),
 	)
 
-	config.NodeRef = &v1.ObjectReference{
+	config.NodeRef = &clientv1.ObjectReference{
 		Kind:      "Node",
 		Name:      hostname,
 		UID:       types.UID(hostname),
@@ -311,7 +327,7 @@ func NewProxyServerDefault(config *options.ProxyServerConfig) (*ProxyServer, err
 
 	conntracker := realConntracker{}
 
-	return NewProxyServer(client, config, iptInterface, proxier, eventBroadcaster, recorder, conntracker, proxyMode)
+	return NewProxyServer(client, eventClient, config, iptInterface, proxier, eventBroadcaster, recorder, conntracker, proxyMode)
 }
 
 // Run runs the specified ProxyServer.  This should never exit (unless CleanupAndExit is set).
@@ -326,13 +342,14 @@ func (s *ProxyServer) Run() error {
 		return nil
 	}
 
-	s.Broadcaster.StartRecordingToSink(&unversionedcore.EventSinkImpl{Interface: s.Client.Core().Events("")})
+	s.Broadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: s.EventClient.Events("")})
 
 	// Start up a webserver if requested
 	if s.Config.HealthzPort > 0 {
 		http.HandleFunc("/proxyMode", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "%s", s.ProxyMode)
 		})
+		http.Handle("/metrics", prometheus.Handler())
 		configz.InstallHandler(http.DefaultServeMux)
 		go wait.Until(func() {
 			err := http.ListenAndServe(s.Config.HealthzBindAddress+":"+strconv.Itoa(int(s.Config.HealthzPort)), nil)

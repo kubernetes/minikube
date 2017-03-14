@@ -50,6 +50,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/envvars"
 	"k8s.io/kubernetes/pkg/kubelet/images"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
+	"k8s.io/kubernetes/pkg/kubelet/server/portforward"
 	"k8s.io/kubernetes/pkg/kubelet/server/remotecommand"
 	"k8s.io/kubernetes/pkg/kubelet/status"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
@@ -83,20 +84,23 @@ func (kl *Kubelet) getActivePods() []*v1.Pod {
 }
 
 // makeDevices determines the devices for the given container.
-// Experimental. For now, we hardcode /dev/nvidia0 no matter what the user asks for
-// (we only support one device per node).
-// TODO: add support for more than 1 GPU after #28216.
-func makeDevices(container *v1.Container) []kubecontainer.DeviceInfo {
-	nvidiaGPULimit := container.Resources.Limits.NvidiaGPU()
-	if nvidiaGPULimit.Value() != 0 {
-		return []kubecontainer.DeviceInfo{
-			{PathOnHost: "/dev/nvidia0", PathInContainer: "/dev/nvidia0", Permissions: "mrw"},
-			{PathOnHost: "/dev/nvidiactl", PathInContainer: "/dev/nvidiactl", Permissions: "mrw"},
-			{PathOnHost: "/dev/nvidia-uvm", PathInContainer: "/dev/nvidia-uvm", Permissions: "mrw"},
-		}
+// Experimental.
+func (kl *Kubelet) makeDevices(pod *v1.Pod, container *v1.Container) ([]kubecontainer.DeviceInfo, error) {
+	if container.Resources.Limits.NvidiaGPU().IsZero() {
+		return nil, nil
 	}
 
-	return nil
+	nvidiaGPUPaths, err := kl.gpuManager.AllocateGPU(pod, container)
+	if err != nil {
+		return nil, err
+	}
+	var devices []kubecontainer.DeviceInfo
+	for _, path := range nvidiaGPUPaths {
+		// Devices have to be mapped one to one because of nvidia CUDA library requirements.
+		devices = append(devices, kubecontainer.DeviceInfo{PathOnHost: path, PathInContainer: path, Permissions: "mrw"})
+	}
+
+	return devices, nil
 }
 
 // makeMounts determines the mount points for the given container.
@@ -137,10 +141,10 @@ func makeMounts(pod *v1.Pod, podDir string, container *v1.Container, hostName, h
 		// Docker Volume Mounts fail on Windows if it is not of the form C:/
 		containerPath := mount.MountPath
 		if runtime.GOOS == "windows" {
-			if strings.HasPrefix(hostPath, "/") && !strings.Contains(hostPath, ":") {
+			if (strings.HasPrefix(hostPath, "/") || strings.HasPrefix(hostPath, "\\")) && !strings.Contains(hostPath, ":") {
 				hostPath = "c:" + hostPath
 			}
-			if strings.HasPrefix(containerPath, "/") && !strings.Contains(containerPath, ":") {
+			if (strings.HasPrefix(containerPath, "/") || strings.HasPrefix(containerPath, "\\")) && !strings.Contains(containerPath, ":") {
 				containerPath = "c:" + containerPath
 			}
 		}
@@ -200,36 +204,6 @@ func ensureHostsFile(fileName, hostIP, hostName, hostDomainName string) error {
 		buffer.WriteString(fmt.Sprintf("%s\t%s\n", hostIP, hostName))
 	}
 	return ioutil.WriteFile(fileName, buffer.Bytes(), 0644)
-}
-
-func makePortMappings(container *v1.Container) (ports []kubecontainer.PortMapping) {
-	names := make(map[string]struct{})
-	for _, p := range container.Ports {
-		pm := kubecontainer.PortMapping{
-			HostPort:      int(p.HostPort),
-			ContainerPort: int(p.ContainerPort),
-			Protocol:      p.Protocol,
-			HostIP:        p.HostIP,
-		}
-
-		// We need to create some default port name if it's not specified, since
-		// this is necessary for rkt.
-		// http://issue.k8s.io/7710
-		if p.Name == "" {
-			pm.Name = fmt.Sprintf("%s-%s:%d", container.Name, p.Protocol, p.ContainerPort)
-		} else {
-			pm.Name = fmt.Sprintf("%s-%s", container.Name, p.Name)
-		}
-
-		// Protect against exposing the same protocol-port more than once in a container.
-		if _, ok := names[pm.Name]; ok {
-			glog.Warningf("Port name conflicted, %q is defined more than once", pm.Name)
-			continue
-		}
-		ports = append(ports, pm)
-		names[pm.Name] = struct{}{}
-	}
-	return
 }
 
 // truncatePodHostnameIfNeeded truncates the pod hostname if it's longer than 63 chars.
@@ -292,31 +266,42 @@ func (kl *Kubelet) GeneratePodHostNameAndDomain(pod *v1.Pod) (string, string, er
 	return hostname, hostDomain, nil
 }
 
+// GetPodCgroupParent gets pod cgroup parent from container manager.
+func (kl *Kubelet) GetPodCgroupParent(pod *v1.Pod) string {
+	pcm := kl.containerManager.NewPodContainerManager()
+	_, cgroupParent := pcm.GetPodContainerName(pod)
+	return cgroupParent
+}
+
 // GenerateRunContainerOptions generates the RunContainerOptions, which can be used by
 // the container runtime to set parameters for launching a container.
-func (kl *Kubelet) GenerateRunContainerOptions(pod *v1.Pod, container *v1.Container, podIP string) (*kubecontainer.RunContainerOptions, error) {
+func (kl *Kubelet) GenerateRunContainerOptions(pod *v1.Pod, container *v1.Container, podIP string) (*kubecontainer.RunContainerOptions, bool, error) {
 	var err error
-	pcm := kl.containerManager.NewPodContainerManager()
-	_, podContainerName := pcm.GetPodContainerName(pod)
-	opts := &kubecontainer.RunContainerOptions{CgroupParent: podContainerName}
+	useClusterFirstPolicy := false
+	cgroupParent := kl.GetPodCgroupParent(pod)
+	opts := &kubecontainer.RunContainerOptions{CgroupParent: cgroupParent}
 	hostname, hostDomainName, err := kl.GeneratePodHostNameAndDomain(pod)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	opts.Hostname = hostname
 	podName := volumehelper.GetUniquePodName(pod)
 	volumes := kl.volumeManager.GetMountedVolumesForPod(podName)
 
-	opts.PortMappings = makePortMappings(container)
-	opts.Devices = makeDevices(container)
+	opts.PortMappings = kubecontainer.MakePortMappings(container)
+	// TODO(random-liu): Move following convert functions into pkg/kubelet/container
+	opts.Devices, err = kl.makeDevices(pod, container)
+	if err != nil {
+		return nil, false, err
+	}
 
 	opts.Mounts, err = makeMounts(pod, kl.getPodDir(pod.UID), container, hostname, hostDomainName, podIP, volumes)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	opts.Envs, err = kl.makeEnvironmentVariables(pod, container, podIP)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// Disabling adding TerminationMessagePath on Windows as these files would be mounted as docker volume and
@@ -330,9 +315,9 @@ func (kl *Kubelet) GenerateRunContainerOptions(pod *v1.Pod, container *v1.Contai
 		}
 	}
 
-	opts.DNS, opts.DNSSearch, err = kl.GetClusterDNS(pod)
+	opts.DNS, opts.DNSSearch, useClusterFirstPolicy, err = kl.GetClusterDNS(pod)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	// only do this check if the experimental behavior is enabled, otherwise allow it to default to false
@@ -340,7 +325,7 @@ func (kl *Kubelet) GenerateRunContainerOptions(pod *v1.Pod, container *v1.Contai
 		opts.EnableHostUserNamespace = kl.enableHostUserNamespace(pod)
 	}
 
-	return opts, nil
+	return opts, useClusterFirstPolicy, nil
 }
 
 var masterServices = sets.NewString("kubernetes")
@@ -644,34 +629,16 @@ func (kl *Kubelet) killPod(pod *v1.Pod, runningPod *kubecontainer.Pod, status *k
 		p = *runningPod
 	} else if status != nil {
 		p = kubecontainer.ConvertPodStatusToRunningPod(kl.GetRuntime().Type(), status)
-	}
-
-	// cache the pod cgroup Name for reducing the cpu resource limits of the pod cgroup once the pod is killed
-	pcm := kl.containerManager.NewPodContainerManager()
-	var podCgroup cm.CgroupName
-	reduceCpuLimts := true
-	if pod != nil {
-		podCgroup, _ = pcm.GetPodContainerName(pod)
 	} else {
-		// If the pod is nil then cgroup limit must have already
-		// been decreased earlier
-		reduceCpuLimts = false
+		return fmt.Errorf("one of the two arguments must be non-nil: runningPod, status")
 	}
 
 	// Call the container runtime KillPod method which stops all running containers of the pod
 	if err := kl.containerRuntime.KillPod(pod, p, gracePeriodOverride); err != nil {
 		return err
 	}
-	// At this point the pod might not completely free up cpu and memory resources.
-	// In such a case deleting the pod's cgroup might cause the pod's charges to be transferred
-	// to the parent cgroup. There might be various kinds of pod charges at this point.
-	// For example, any volume used by the pod that was backed by memory will have its
-	// pages charged to the pod cgroup until those volumes are removed by the kubelet.
-	// Hence we only reduce the cpu resource limits of the pod's cgroup
-	// and defer the responsibilty of destroying the pod's cgroup to the
-	// cleanup method and the housekeeping loop.
-	if reduceCpuLimts {
-		pcm.ReduceCPULimits(podCgroup)
+	if err := kl.containerManager.UpdateQOSCgroups(); err != nil {
+		glog.V(2).Infof("Failed to update QoS cgroups while killing pod: %v", err)
 	}
 	return nil
 }
@@ -720,11 +687,46 @@ func (kl *Kubelet) podIsTerminated(pod *v1.Pod) bool {
 		// restarted.
 		status = pod.Status
 	}
-	if status.Phase == v1.PodFailed || status.Phase == v1.PodSucceeded {
-		return true
-	}
+	return status.Phase == v1.PodFailed || status.Phase == v1.PodSucceeded || (pod.DeletionTimestamp != nil && notRunning(status.ContainerStatuses))
+}
 
-	return false
+// OkToDeletePod returns true if all required node-level resources that a pod was consuming have
+// been reclaimed by the kubelet.  Reclaiming resources is a prerequisite to deleting a pod from the
+// API server.
+func (kl *Kubelet) OkToDeletePod(pod *v1.Pod) bool {
+	if pod.DeletionTimestamp == nil {
+		// We shouldnt delete pods whose DeletionTimestamp is not set
+		return false
+	}
+	if !notRunning(pod.Status.ContainerStatuses) {
+		// We shouldnt delete pods that still have running containers
+		glog.V(3).Infof("Pod %q is terminated, but some containers are still running", format.Pod(pod))
+		return false
+	}
+	if kl.podVolumesExist(pod.UID) && !kl.kubeletConfiguration.KeepTerminatedPodVolumes {
+		// We shouldnt delete pods whose volumes have not been cleaned up if we are not keeping terminated pod volumes
+		glog.V(3).Infof("Pod %q is terminated, but some volumes have not been cleaned up", format.Pod(pod))
+		return false
+	}
+	if kl.kubeletConfiguration.CgroupsPerQOS {
+		pcm := kl.containerManager.NewPodContainerManager()
+		if pcm.Exists(pod) {
+			glog.V(3).Infof("Pod %q is terminated, but pod cgroup sandbox has not been cleaned up", format.Pod(pod))
+			return false
+		}
+	}
+	return true
+}
+
+// notRunning returns true if every status is terminated or waiting, or the status list
+// is empty.
+func notRunning(statuses []v1.ContainerStatus) bool {
+	for _, status := range statuses {
+		if status.State.Terminated == nil && status.State.Waiting == nil {
+			return false
+		}
+	}
+	return true
 }
 
 // filterOutTerminatedPods returns the given pods which the status manager
@@ -840,9 +842,9 @@ func (kl *Kubelet) HandlePodCleanups() error {
 		glog.Errorf("Failed cleaning up bandwidth limits: %v", err)
 	}
 
-	// Remove any cgroups in the hierarchy for pods that should no longer exist
+	// Remove any cgroups in the hierarchy for pods that are no longer running.
 	if kl.cgroupsPerQOS {
-		kl.cleanupOrphanedPodCgroups(cgroupPods, allPods, runningPods)
+		kl.cleanupOrphanedPodCgroups(cgroupPods, activePods)
 	}
 
 	kl.backOff.GC()
@@ -1001,6 +1003,12 @@ func (kl *Kubelet) GetKubeletContainerLogs(podFullName, containerName string, lo
 		return err
 	}
 
+	if kl.dockerLegacyService != nil {
+		// dockerLegacyService should only be non-nil when we actually need it, so
+		// inject it into the runtimeService.
+		// TODO(random-liu): Remove this hack after deprecating unsupported log driver.
+		return kl.dockerLegacyService.GetContainerLogs(pod, containerID, logOptions, stdout, stderr)
+	}
 	return kl.containerRuntime.GetContainerLogs(pod, containerID, logOptions, stdout, stderr)
 }
 
@@ -1209,6 +1217,13 @@ func (kl *Kubelet) convertToAPIContainerStatuses(pod *v1.Pod, podStatus *kubecon
 		switch cs.State {
 		case kubecontainer.ContainerStateRunning:
 			status.State.Running = &v1.ContainerStateRunning{StartedAt: metav1.NewTime(cs.StartedAt)}
+		case kubecontainer.ContainerStateCreated:
+			// Treat containers in the "created" state as if they are exited.
+			// The pod workers are supposed start all containers it creates in
+			// one sync (syncPod) iteration. There should not be any normal
+			// "created" containers when the pod worker generates the status at
+			// the beginning of a sync iteration.
+			fallthrough
 		case kubecontainer.ContainerStateExited:
 			status.State.Terminated = &v1.ContainerStateTerminated{
 				ExitCode:    int32(cs.ExitCode),
@@ -1394,7 +1409,7 @@ func (kl *Kubelet) AttachContainer(podFullName string, podUID types.UID, contain
 
 // PortForward connects to the pod's port and copies data between the port
 // and the stream.
-func (kl *Kubelet) PortForward(podFullName string, podUID types.UID, port uint16, stream io.ReadWriteCloser) error {
+func (kl *Kubelet) PortForward(podFullName string, podUID types.UID, port int32, stream io.ReadWriteCloser) error {
 	streamingRuntime, ok := kl.containerRuntime.(kubecontainer.DirectStreamingRuntime)
 	if !ok {
 		return fmt.Errorf("streaming methods not supported by runtime")
@@ -1467,7 +1482,7 @@ func (kl *Kubelet) GetAttach(podFullName string, podUID types.UID, containerName
 }
 
 // GetPortForward gets the URL the port-forward will be served from, or nil if the Kubelet will serve it.
-func (kl *Kubelet) GetPortForward(podName, podNamespace string, podUID types.UID) (*url.URL, error) {
+func (kl *Kubelet) GetPortForward(podName, podNamespace string, podUID types.UID, portForwardOpts portforward.V4Options) (*url.URL, error) {
 	switch streamingRuntime := kl.containerRuntime.(type) {
 	case kubecontainer.DirectStreamingRuntime:
 		// Kubelet will serve the attach directly.
@@ -1484,37 +1499,39 @@ func (kl *Kubelet) GetPortForward(podName, podNamespace string, podUID types.UID
 			return nil, fmt.Errorf("pod not found (%q)", podFullName)
 		}
 
-		return streamingRuntime.GetPortForward(podName, podNamespace, podUID)
+		return streamingRuntime.GetPortForward(podName, podNamespace, podUID, portForwardOpts.Ports)
 	default:
 		return nil, fmt.Errorf("container runtime does not support port-forward")
 	}
 }
 
-// cleanupOrphanedPodCgroups removes the Cgroups of pods that should not be
-// running and whose volumes have been cleaned up.
-func (kl *Kubelet) cleanupOrphanedPodCgroups(
-	cgroupPods map[types.UID]cm.CgroupName,
-	pods []*v1.Pod, runningPods []*kubecontainer.Pod) error {
-	// Add all running and existing terminated pods to a set allPods
-	allPods := sets.NewString()
-	for _, pod := range pods {
-		allPods.Insert(string(pod.UID))
+// cleanupOrphanedPodCgroups removes cgroups that should no longer exist.
+// it reconciles the cached state of cgroupPods with the specified list of runningPods
+func (kl *Kubelet) cleanupOrphanedPodCgroups(cgroupPods map[types.UID]cm.CgroupName, activePods []*v1.Pod) {
+	// Add all running pods to the set that we want to preserve
+	podSet := sets.NewString()
+	for _, pod := range activePods {
+		podSet.Insert(string(pod.UID))
 	}
-	for _, pod := range runningPods {
-		allPods.Insert(string(pod.ID))
-	}
-
 	pcm := kl.containerManager.NewPodContainerManager()
 
 	// Iterate over all the found pods to verify if they should be running
 	for uid, val := range cgroupPods {
-		if allPods.Has(string(uid)) {
+		// if the pod is in the running set, its not a candidate for cleanup
+		if podSet.Has(string(uid)) {
 			continue
 		}
 
-		// If volumes have not been unmounted/detached, do not delete the cgroup in case so the charge does not go to the parent.
-		if podVolumesExist := kl.podVolumesExist(uid); podVolumesExist {
-			glog.V(3).Infof("Orphaned pod %q found, but volumes are not cleaned up, Skipping cgroups deletion: %v", uid)
+		// If volumes have not been unmounted/detached, do not delete the cgroup
+		// so any memory backed volumes don't have their charges propagated to the
+		// parent croup.  If the volumes still exist, reduce the cpu shares for any
+		// process in the cgroup to the minimum value while we wait.  if the kubelet
+		// is configured to keep terminated volumes, we will delete the cgroup and not block.
+		if podVolumesExist := kl.podVolumesExist(uid); podVolumesExist && !kl.kubeletConfiguration.KeepTerminatedPodVolumes {
+			glog.V(3).Infof("Orphaned pod %q found, but volumes not yet removed.  Reducing cpu to minimum", uid)
+			if err := pcm.ReduceCPULimits(val); err != nil {
+				glog.Warningf("Failed to reduce cpu time for pod %q pending volume cleanup due to %v", uid, err)
+			}
 			continue
 		}
 		glog.V(3).Infof("Orphaned pod %q found, removing pod cgroups", uid)
@@ -1524,7 +1541,6 @@ func (kl *Kubelet) cleanupOrphanedPodCgroups(
 		// again try to delete these unwanted pod cgroups
 		go pcm.Destroy(val)
 	}
-	return nil
 }
 
 // enableHostUserNamespace determines if the host user namespace should be used by the container runtime.

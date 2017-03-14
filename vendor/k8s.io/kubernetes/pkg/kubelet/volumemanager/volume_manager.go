@@ -26,13 +26,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	"k8s.io/kubernetes/pkg/client/record"
 	"k8s.io/kubernetes/pkg/kubelet/config"
 	"k8s.io/kubernetes/pkg/kubelet/container"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/pod"
+	"k8s.io/kubernetes/pkg/kubelet/status"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
 	"k8s.io/kubernetes/pkg/kubelet/volumemanager/cache"
 	"k8s.io/kubernetes/pkg/kubelet/volumemanager/populator"
@@ -151,6 +152,7 @@ func NewVolumeManager(
 	controllerAttachDetachEnabled bool,
 	nodeName k8stypes.NodeName,
 	podManager pod.Manager,
+	podStatusProvider status.PodStatusProvider,
 	kubeClient clientset.Interface,
 	volumePluginMgr *volume.VolumePluginMgr,
 	kubeContainerRuntime kubecontainer.Runtime,
@@ -191,6 +193,7 @@ func NewVolumeManager(
 		desiredStateOfWorldPopulatorLoopSleepPeriod,
 		desiredStateOfWorldPopulatorGetPodStatusRetryDuration,
 		podManager,
+		podStatusProvider,
 		vm.desiredStateOfWorld,
 		kubeContainerRuntime,
 		keepTerminatedPodVolumes)
@@ -299,8 +302,10 @@ func (vm *volumeManager) GetVolumesInUse() []v1.UniqueVolumeName {
 
 	for _, volume := range desiredVolumes {
 		if volume.PluginIsAttachable {
-			desiredVolumesMap[volume.VolumeName] = true
-			volumesToReportInUse = append(volumesToReportInUse, volume.VolumeName)
+			if _, exists := desiredVolumesMap[volume.VolumeName]; !exists {
+				desiredVolumesMap[volume.VolumeName] = true
+				volumesToReportInUse = append(volumesToReportInUse, volume.VolumeName)
+			}
 		}
 	}
 

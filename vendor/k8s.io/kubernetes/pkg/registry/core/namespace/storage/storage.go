@@ -23,13 +23,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/generic"
+	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
+	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/apiserver/pkg/storage"
+	storageerr "k8s.io/apiserver/pkg/storage/errors"
 	"k8s.io/kubernetes/pkg/api"
-	storageerr "k8s.io/kubernetes/pkg/api/errors/storage"
-	"k8s.io/kubernetes/pkg/genericapiserver/registry/generic"
-	genericregistry "k8s.io/kubernetes/pkg/genericapiserver/registry/generic/registry"
-	"k8s.io/kubernetes/pkg/genericapiserver/registry/rest"
+	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/core/namespace"
-	"k8s.io/kubernetes/pkg/storage"
 )
 
 // rest implements a RESTStorage for namespaces
@@ -59,6 +60,7 @@ func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, *Finaliz
 		},
 		PredicateFunc:     namespace.MatchNamespace,
 		QualifiedResource: api.Resource("namespaces"),
+		WatchCacheSize:    cachesize.GetWatchCacheSizeByResource("namespaces"),
 
 		CreateStrategy:      namespace.Strategy,
 		UpdateStrategy:      namespace.Strategy,
@@ -80,10 +82,10 @@ func NewREST(optsGetter generic.RESTOptionsGetter) (*REST, *StatusREST, *Finaliz
 }
 
 // Delete enforces life-cycle rules for namespace termination
-func (r *REST) Delete(ctx genericapirequest.Context, name string, options *metav1.DeleteOptions) (runtime.Object, error) {
+func (r *REST) Delete(ctx genericapirequest.Context, name string, options *metav1.DeleteOptions) (runtime.Object, bool, error) {
 	nsObj, err := r.Get(ctx, name, &metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	namespace := nsObj.(*api.Namespace)
@@ -103,7 +105,7 @@ func (r *REST) Delete(ctx genericapirequest.Context, name string, options *metav
 			name,
 			fmt.Errorf("Precondition failed: UID in precondition: %v, UID in object meta: %v", *options.Preconditions.UID, namespace.UID),
 		)
-		return nil, err
+		return nil, false, err
 	}
 
 	// upon first request to delete, we switch the phase to start namespace termination
@@ -111,7 +113,7 @@ func (r *REST) Delete(ctx genericapirequest.Context, name string, options *metav
 	if namespace.DeletionTimestamp.IsZero() {
 		key, err := r.Store.KeyFunc(ctx, name)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 
 		preconditions := storage.Preconditions{UID: options.Preconditions.UID}
@@ -141,7 +143,7 @@ func (r *REST) Delete(ctx genericapirequest.Context, name string, options *metav
 					newFinalizers := []string{}
 					for i := range existingNamespace.ObjectMeta.Finalizers {
 						finalizer := existingNamespace.ObjectMeta.Finalizers[i]
-						if string(finalizer) != api.FinalizerOrphan {
+						if string(finalizer) != metav1.FinalizerOrphanDependents {
 							newFinalizers = append(newFinalizers, finalizer)
 						}
 					}
@@ -157,18 +159,26 @@ func (r *REST) Delete(ctx genericapirequest.Context, name string, options *metav
 			if _, ok := err.(*apierrors.StatusError); !ok {
 				err = apierrors.NewInternalError(err)
 			}
-			return nil, err
+			return nil, false, err
 		}
 
-		return out, nil
+		return out, false, nil
 	}
 
 	// prior to final deletion, we must ensure that finalizers is empty
 	if len(namespace.Spec.Finalizers) != 0 {
 		err = apierrors.NewConflict(api.Resource("namespaces"), namespace.Name, fmt.Errorf("The system is ensuring all content is removed from this namespace.  Upon completion, this namespace will automatically be purged by the system."))
-		return nil, err
+		return nil, false, err
 	}
 	return r.Store.Delete(ctx, name, options)
+}
+
+// Implement ShortNamesProvider
+var _ rest.ShortNamesProvider = &REST{}
+
+// ShortNames implements the ShortNamesProvider interface. Returns a list of short names for a resource.
+func (r *REST) ShortNames() []string {
+	return []string{"ns"}
 }
 
 func (r *StatusREST) New() runtime.Object {
