@@ -76,6 +76,12 @@ func setElement(e reflect.Value, v string) error {
 				return fmt.Errorf("Error converting input %s to an IP.", v)
 			}
 			e.Set(reflect.ValueOf(ip))
+		case net.IPNet:
+			_, cidr, err := net.ParseCIDR(v)
+			if err != nil {
+				return fmt.Errorf("Error converting input %s to a CIDR: %s", v, err)
+			}
+			e.Set(reflect.ValueOf(*cidr))
 		case utilnet.PortRange:
 			pr, err := utilnet.ParsePortRange(v)
 			if err != nil {
