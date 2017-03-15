@@ -29,7 +29,7 @@ import (
 
 // Kill any running instances.
 
-var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false --node-ip={{.NodeIP}} --apiserver-name={{.APIServerName}}"
+var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false --node-ip={{.NodeIP}}"
 
 var startCommandB2DTemplate = `
 # Run with nohup so it stays up. Redirect logs to useful places.
@@ -152,6 +152,10 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 
 	if kubernetesConfig.FeatureGates != "" {
 		flagVals = append(flagVals, "--feature-gates="+kubernetesConfig.FeatureGates)
+	}
+
+	if kubernetesConfig.APIServerName != "" {
+		flagVals = append(flagVals, "--apiserver-name="+kubernetesConfig.APIServerName)
 	}
 
 	for _, e := range kubernetesConfig.ExtraOptions {
