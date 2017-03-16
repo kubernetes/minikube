@@ -61,39 +61,37 @@ metadata:
   name: nginx-ingress-controller
   namespace: kube-system
   labels:
-    app: nginx-ingress-lb
+    app: nginx-ingress-controller
     kubernetes.io/cluster-service: "true"
 spec:
   replicas: 1
   selector:
-    app: nginx-ingress-lb
+    app: nginx-ingress-controller
     kubernetes.io/cluster-service: "true"
   template:
     metadata:
       labels:
-        app: nginx-ingress-lb
-        name: nginx-ingress-lb
+        app: nginx-ingress-controller
+        name: nginx-ingress-controller
         kubernetes.io/cluster-service: "true"
     spec:
       terminationGracePeriodSeconds: 60
       containers:
-        # TODO(r2d4): Use official k8s/ingress controller 
-      - image: gcr.io/k8s-minikube/nginx-ingress-controller:0.8.4
-        name: nginx-ingress-lb
+      - image: gcr.io/google_containers/nginx-ingress-controller:0.9.0-beta.3
+        name: nginx-ingress-controller
         imagePullPolicy: IfNotPresent
         readinessProbe:
           httpGet:
-            path: /ingress-controller-healthz
-            port: 80
+            path: /healthz
+            port: 10254
             scheme: HTTP
         livenessProbe:
           httpGet:
-            path: /ingress-controller-healthz
-            port: 80
+            path: /healthz
+            port: 10254
             scheme: HTTP
           initialDelaySeconds: 10
           timeoutSeconds: 1
-        # use downward API
         env:
           - name: POD_NAME
             valueFrom:
@@ -115,4 +113,4 @@ spec:
         args:
         - /nginx-ingress-controller
         - --default-backend-service=$(POD_NAMESPACE)/default-http-backend
-        - --nginx-configmap=$(POD_NAMESPACE)/nginx-load-balancer-conf
+        - --configmap=$(POD_NAMESPACE)/nginx-load-balancer-conf
