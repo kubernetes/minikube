@@ -22,15 +22,15 @@ import (
 
 	"github.com/golang/glog"
 
-	admission "k8s.io/kubernetes/pkg/admission"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	admission "k8s.io/apiserver/pkg/admission"
 	api "k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/errors"
 	"k8s.io/kubernetes/pkg/apis/storage"
 	storageutil "k8s.io/kubernetes/pkg/apis/storage/util"
-	"k8s.io/kubernetes/pkg/client/cache"
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/watch"
+	informers "k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion"
+	storagelisters "k8s.io/kubernetes/pkg/client/listers/storage/internalversion"
+	kubeapiserveradmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
 )
 
 const (
@@ -38,9 +38,8 @@ const (
 )
 
 func init() {
-	admission.RegisterPlugin(PluginName, func(client clientset.Interface, config io.Reader) (admission.Interface, error) {
-		plugin := newPlugin(client)
-		plugin.Run()
+	admission.RegisterPlugin(PluginName, func(config io.Reader) (admission.Interface, error) {
+		plugin := newPlugin()
 		return plugin, nil
 	})
 }
@@ -48,51 +47,32 @@ func init() {
 // claimDefaulterPlugin holds state for and implements the admission plugin.
 type claimDefaulterPlugin struct {
 	*admission.Handler
-	client clientset.Interface
 
-	reflector *cache.Reflector
-	stopChan  chan struct{}
-	store     cache.Store
+	lister storagelisters.StorageClassLister
 }
 
 var _ admission.Interface = &claimDefaulterPlugin{}
+var _ = kubeapiserveradmission.WantsInternalKubeInformerFactory(&claimDefaulterPlugin{})
 
 // newPlugin creates a new admission plugin.
-func newPlugin(kclient clientset.Interface) *claimDefaulterPlugin {
-	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
-	reflector := cache.NewReflector(
-		&cache.ListWatch{
-			ListFunc: func(options api.ListOptions) (runtime.Object, error) {
-				return kclient.Storage().StorageClasses().List(options)
-			},
-			WatchFunc: func(options api.ListOptions) (watch.Interface, error) {
-				return kclient.Storage().StorageClasses().Watch(options)
-			},
-		},
-		&storage.StorageClass{},
-		store,
-		0,
-	)
-
+func newPlugin() *claimDefaulterPlugin {
 	return &claimDefaulterPlugin{
-		Handler:   admission.NewHandler(admission.Create),
-		client:    kclient,
-		store:     store,
-		reflector: reflector,
+		Handler: admission.NewHandler(admission.Create),
 	}
 }
 
-func (a *claimDefaulterPlugin) Run() {
-	if a.stopChan == nil {
-		a.stopChan = make(chan struct{})
-	}
-	a.reflector.RunUntil(a.stopChan)
+func (a *claimDefaulterPlugin) SetInternalKubeInformerFactory(f informers.SharedInformerFactory) {
+	informer := f.Storage().InternalVersion().StorageClasses()
+	a.lister = informer.Lister()
+	a.SetReadyFunc(informer.Informer().HasSynced)
 }
-func (a *claimDefaulterPlugin) Stop() {
-	if a.stopChan != nil {
-		close(a.stopChan)
-		a.stopChan = nil
+
+// Validate ensures an authorizer is set.
+func (a *claimDefaulterPlugin) Validate() error {
+	if a.lister == nil {
+		return fmt.Errorf("missing lister")
 	}
+	return nil
 }
 
 // Admit sets the default value of a PersistentVolumeClaim's storage class, in case the user did
@@ -116,14 +96,14 @@ func (c *claimDefaulterPlugin) Admit(a admission.Attributes) error {
 		return nil
 	}
 
-	if storageutil.HasStorageClassAnnotation(pvc.ObjectMeta) {
+	if api.PersistentVolumeClaimHasClass(pvc) {
 		// The user asked for a class.
 		return nil
 	}
 
 	glog.V(4).Infof("no storage class for claim %s (generate: %s)", pvc.Name, pvc.GenerateName)
 
-	def, err := getDefaultClass(c.store)
+	def, err := getDefaultClass(c.lister)
 	if err != nil {
 		return admission.NewForbidden(a, err)
 	}
@@ -133,21 +113,19 @@ func (c *claimDefaulterPlugin) Admit(a admission.Attributes) error {
 	}
 
 	glog.V(4).Infof("defaulting storage class for claim %s (generate: %s) to %s", pvc.Name, pvc.GenerateName, def.Name)
-	if pvc.ObjectMeta.Annotations == nil {
-		pvc.ObjectMeta.Annotations = map[string]string{}
-	}
-	pvc.Annotations[storageutil.StorageClassAnnotation] = def.Name
+	pvc.Spec.StorageClassName = &def.Name
 	return nil
 }
 
 // getDefaultClass returns the default StorageClass from the store, or nil.
-func getDefaultClass(store cache.Store) (*storage.StorageClass, error) {
+func getDefaultClass(lister storagelisters.StorageClassLister) (*storage.StorageClass, error) {
+	list, err := lister.List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
 	defaultClasses := []*storage.StorageClass{}
-	for _, c := range store.List() {
-		class, ok := c.(*storage.StorageClass)
-		if !ok {
-			return nil, errors.NewInternalError(fmt.Errorf("error converting stored object to StorageClass: %v", c))
-		}
+	for _, class := range list {
 		if storageutil.IsDefaultAnnotation(class.ObjectMeta) {
 			defaultClasses = append(defaultClasses, class)
 			glog.V(4).Infof("getDefaultClass added: %s", class.Name)

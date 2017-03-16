@@ -19,10 +19,10 @@ package internalversion
 import (
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/batch"
-	"k8s.io/kubernetes/pkg/labels"
 )
 
 // JobListerExpansion allows custom methods to be added to
@@ -47,7 +47,7 @@ func (l *jobLister) GetPodJobs(pod *api.Pod) (jobs []batch.Job, err error) {
 		return
 	}
 	for _, job := range list {
-		selector, _ := unversioned.LabelSelectorAsSelector(job.Spec.Selector)
+		selector, _ := metav1.LabelSelectorAsSelector(job.Spec.Selector)
 		if !selector.Matches(labels.Set(pod.Labels)) {
 			continue
 		}

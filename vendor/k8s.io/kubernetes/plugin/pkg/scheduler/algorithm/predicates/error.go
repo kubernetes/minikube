@@ -19,7 +19,7 @@ package predicates
 import (
 	"fmt"
 
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 var (
@@ -46,13 +46,13 @@ var (
 // hit and caused the unfitting failure.
 type InsufficientResourceError struct {
 	// resourceName is the name of the resource that is insufficient
-	ResourceName api.ResourceName
+	ResourceName v1.ResourceName
 	requested    int64
 	used         int64
 	capacity     int64
 }
 
-func NewInsufficientResourceError(resourceName api.ResourceName, requested, used, capacity int64) *InsufficientResourceError {
+func NewInsufficientResourceError(resourceName v1.ResourceName, requested, used, capacity int64) *InsufficientResourceError {
 	return &InsufficientResourceError{
 		ResourceName: resourceName,
 		requested:    requested,
@@ -68,6 +68,10 @@ func (e *InsufficientResourceError) Error() string {
 
 func (e *InsufficientResourceError) GetReason() string {
 	return fmt.Sprintf("Insufficient %v", e.ResourceName)
+}
+
+func (e *InsufficientResourceError) GetInsufficientAmount() int64 {
+	return e.requested - (e.capacity - e.used)
 }
 
 type PredicateFailureError struct {

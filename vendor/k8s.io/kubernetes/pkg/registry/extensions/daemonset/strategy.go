@@ -20,25 +20,34 @@ import (
 	"fmt"
 	"reflect"
 
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/generic"
+	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/apiserver/pkg/storage"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/extensions/validation"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/registry/generic"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 // daemonSetStrategy implements verification logic for daemon sets.
 type daemonSetStrategy struct {
 	runtime.ObjectTyper
-	api.NameGenerator
+	names.NameGenerator
 }
 
 // Strategy is the default logic that applies when creating and updating DaemonSet objects.
-var Strategy = daemonSetStrategy{api.Scheme, api.SimpleNameGenerator}
+var Strategy = daemonSetStrategy{api.Scheme, names.SimpleNameGenerator}
+
+// DefaultGarbageCollectionPolicy returns Orphan because that was the default
+// behavior before the server-side garbage collection was implemented.
+func (daemonSetStrategy) DefaultGarbageCollectionPolicy() rest.GarbageCollectionPolicy {
+	return rest.OrphanDependents
+}
 
 // NamespaceScoped returns true because all DaemonSets need to be within a namespace.
 func (daemonSetStrategy) NamespaceScoped() bool {
@@ -46,20 +55,26 @@ func (daemonSetStrategy) NamespaceScoped() bool {
 }
 
 // PrepareForCreate clears the status of a daemon set before creation.
-func (daemonSetStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
+func (daemonSetStrategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
 	daemonSet := obj.(*extensions.DaemonSet)
 	daemonSet.Status = extensions.DaemonSetStatus{}
 
 	daemonSet.Generation = 1
+	if daemonSet.Spec.TemplateGeneration < 1 {
+		daemonSet.Spec.TemplateGeneration = 1
+	}
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (daemonSetStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
+func (daemonSetStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
 	newDaemonSet := obj.(*extensions.DaemonSet)
 	oldDaemonSet := old.(*extensions.DaemonSet)
 
 	// update is not allowed to set status
 	newDaemonSet.Status = oldDaemonSet.Status
+
+	// update is not allowed to set TemplateGeneration
+	newDaemonSet.Spec.TemplateGeneration = oldDaemonSet.Spec.TemplateGeneration
 
 	// Any changes to the spec increment the generation number, any changes to the
 	// status should reflect the generation number of the corresponding object. We push
@@ -72,13 +87,18 @@ func (daemonSetStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Obje
 	//
 	// TODO: Any changes to a part of the object that represents desired state (labels,
 	// annotations etc) should also increment the generation.
+	if !reflect.DeepEqual(oldDaemonSet.Spec.Template, newDaemonSet.Spec.Template) {
+		newDaemonSet.Spec.TemplateGeneration = oldDaemonSet.Spec.TemplateGeneration + 1
+		newDaemonSet.Generation = oldDaemonSet.Generation + 1
+		return
+	}
 	if !reflect.DeepEqual(oldDaemonSet.Spec, newDaemonSet.Spec) {
 		newDaemonSet.Generation = oldDaemonSet.Generation + 1
 	}
 }
 
 // Validate validates a new daemon set.
-func (daemonSetStrategy) Validate(ctx api.Context, obj runtime.Object) field.ErrorList {
+func (daemonSetStrategy) Validate(ctx genericapirequest.Context, obj runtime.Object) field.ErrorList {
 	daemonSet := obj.(*extensions.DaemonSet)
 	return validation.ValidateDaemonSet(daemonSet)
 }
@@ -94,7 +114,7 @@ func (daemonSetStrategy) AllowCreateOnUpdate() bool {
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (daemonSetStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
+func (daemonSetStrategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
 	validationErrorList := validation.ValidateDaemonSet(obj.(*extensions.DaemonSet))
 	updateErrorList := validation.ValidateDaemonSetUpdate(obj.(*extensions.DaemonSet), old.(*extensions.DaemonSet))
 	return append(validationErrorList, updateErrorList...)
@@ -110,20 +130,23 @@ func DaemonSetToSelectableFields(daemon *extensions.DaemonSet) fields.Set {
 	return generic.ObjectMetaFieldsSet(&daemon.ObjectMeta, true)
 }
 
+// GetAttrs returns labels and fields of a given object for filtering purposes.
+func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
+	ds, ok := obj.(*extensions.DaemonSet)
+	if !ok {
+		return nil, nil, fmt.Errorf("given object is not a ds.")
+	}
+	return labels.Set(ds.ObjectMeta.Labels), DaemonSetToSelectableFields(ds), nil
+}
+
 // MatchSetDaemon is the filter used by the generic etcd backend to route
 // watch events from etcd to clients of the apiserver only interested in specific
 // labels/fields.
 func MatchDaemonSet(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
 	return storage.SelectionPredicate{
-		Label: label,
-		Field: field,
-		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {
-			ds, ok := obj.(*extensions.DaemonSet)
-			if !ok {
-				return nil, nil, fmt.Errorf("given object is not a ds.")
-			}
-			return labels.Set(ds.ObjectMeta.Labels), DaemonSetToSelectableFields(ds), nil
-		},
+		Label:    label,
+		Field:    field,
+		GetAttrs: GetAttrs,
 	}
 }
 
@@ -133,12 +156,12 @@ type daemonSetStatusStrategy struct {
 
 var StatusStrategy = daemonSetStatusStrategy{Strategy}
 
-func (daemonSetStatusStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
+func (daemonSetStatusStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
 	newDaemonSet := obj.(*extensions.DaemonSet)
 	oldDaemonSet := old.(*extensions.DaemonSet)
 	newDaemonSet.Spec = oldDaemonSet.Spec
 }
 
-func (daemonSetStatusStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
+func (daemonSetStatusStrategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
 	return validation.ValidateDaemonSetStatusUpdate(obj.(*extensions.DaemonSet), old.(*extensions.DaemonSet))
 }

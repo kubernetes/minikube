@@ -19,30 +19,36 @@ package deployment
 import (
 	"fmt"
 	"reflect"
-	"time"
 
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/generic"
+	"k8s.io/apiserver/pkg/registry/rest"
+	apistorage "k8s.io/apiserver/pkg/storage"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/extensions/validation"
-	"k8s.io/kubernetes/pkg/controller/deployment/util"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/registry/generic"
-	"k8s.io/kubernetes/pkg/runtime"
-	apistorage "k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 // deploymentStrategy implements behavior for Deployments.
 type deploymentStrategy struct {
 	runtime.ObjectTyper
-	api.NameGenerator
+	names.NameGenerator
 }
 
 // Strategy is the default logic that applies when creating and updating Deployment
 // objects via the REST API.
-var Strategy = deploymentStrategy{api.Scheme, api.SimpleNameGenerator}
+var Strategy = deploymentStrategy{api.Scheme, names.SimpleNameGenerator}
+
+// DefaultGarbageCollectionPolicy returns Orphan because that's the default
+// behavior before the server-side garbage collection is implemented.
+func (deploymentStrategy) DefaultGarbageCollectionPolicy() rest.GarbageCollectionPolicy {
+	return rest.OrphanDependents
+}
 
 // NamespaceScoped is true for deployment.
 func (deploymentStrategy) NamespaceScoped() bool {
@@ -50,14 +56,14 @@ func (deploymentStrategy) NamespaceScoped() bool {
 }
 
 // PrepareForCreate clears fields that are not allowed to be set by end users on creation.
-func (deploymentStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
+func (deploymentStrategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
 	deployment := obj.(*extensions.Deployment)
 	deployment.Status = extensions.DeploymentStatus{}
 	deployment.Generation = 1
 }
 
 // Validate validates a new deployment.
-func (deploymentStrategy) Validate(ctx api.Context, obj runtime.Object) field.ErrorList {
+func (deploymentStrategy) Validate(ctx genericapirequest.Context, obj runtime.Object) field.ErrorList {
 	deployment := obj.(*extensions.Deployment)
 	return validation.ValidateDeployment(deployment)
 }
@@ -72,7 +78,7 @@ func (deploymentStrategy) AllowCreateOnUpdate() bool {
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (deploymentStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
+func (deploymentStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
 	newDeployment := obj.(*extensions.Deployment)
 	oldDeployment := old.(*extensions.Deployment)
 	newDeployment.Status = oldDeployment.Status
@@ -84,19 +90,10 @@ func (deploymentStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Obj
 		!reflect.DeepEqual(newDeployment.Annotations, oldDeployment.Annotations) {
 		newDeployment.Generation = oldDeployment.Generation + 1
 	}
-
-	// Records timestamp on selector updates in annotation
-	if !reflect.DeepEqual(newDeployment.Spec.Selector, oldDeployment.Spec.Selector) {
-		if newDeployment.Annotations == nil {
-			newDeployment.Annotations = make(map[string]string)
-		}
-		now := unversioned.Now()
-		newDeployment.Annotations[util.SelectorUpdateAnnotation] = now.Format(time.RFC3339)
-	}
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (deploymentStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
+func (deploymentStrategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
 	return validation.ValidateDeploymentUpdate(obj.(*extensions.Deployment), old.(*extensions.Deployment))
 }
 
@@ -111,7 +108,7 @@ type deploymentStatusStrategy struct {
 var StatusStrategy = deploymentStatusStrategy{Strategy}
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update of status
-func (deploymentStatusStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
+func (deploymentStatusStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
 	newDeployment := obj.(*extensions.Deployment)
 	oldDeployment := old.(*extensions.Deployment)
 	newDeployment.Spec = oldDeployment.Spec
@@ -119,7 +116,7 @@ func (deploymentStatusStrategy) PrepareForUpdate(ctx api.Context, obj, old runti
 }
 
 // ValidateUpdate is the default update validation for an end user updating status
-func (deploymentStatusStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
+func (deploymentStatusStrategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
 	return validation.ValidateDeploymentStatusUpdate(obj.(*extensions.Deployment), old.(*extensions.Deployment))
 }
 
@@ -128,19 +125,22 @@ func DeploymentToSelectableFields(deployment *extensions.Deployment) fields.Set 
 	return generic.ObjectMetaFieldsSet(&deployment.ObjectMeta, true)
 }
 
+// GetAttrs returns labels and fields of a given object for filtering purposes.
+func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
+	deployment, ok := obj.(*extensions.Deployment)
+	if !ok {
+		return nil, nil, fmt.Errorf("given object is not a deployment.")
+	}
+	return labels.Set(deployment.ObjectMeta.Labels), DeploymentToSelectableFields(deployment), nil
+}
+
 // MatchDeployment is the filter used by the generic etcd backend to route
 // watch events from etcd to clients of the apiserver only interested in specific
 // labels/fields.
 func MatchDeployment(label labels.Selector, field fields.Selector) apistorage.SelectionPredicate {
 	return apistorage.SelectionPredicate{
-		Label: label,
-		Field: field,
-		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {
-			deployment, ok := obj.(*extensions.Deployment)
-			if !ok {
-				return nil, nil, fmt.Errorf("given object is not a deployment.")
-			}
-			return labels.Set(deployment.ObjectMeta.Labels), DeploymentToSelectableFields(deployment), nil
-		},
+		Label:    label,
+		Field:    field,
+		GetAttrs: GetAttrs,
 	}
 }

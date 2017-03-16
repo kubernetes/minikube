@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@ limitations under the License.
 package v1
 
 import (
-	api "k8s.io/client-go/pkg/api"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 	v1 "k8s.io/client-go/pkg/api/v1"
-	watch "k8s.io/client-go/pkg/watch"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -33,12 +35,12 @@ type SecretsGetter interface {
 type SecretInterface interface {
 	Create(*v1.Secret) (*v1.Secret, error)
 	Update(*v1.Secret) (*v1.Secret, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string) (*v1.Secret, error)
-	List(opts v1.ListOptions) (*v1.SecretList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1.Secret, err error)
+	Delete(name string, options *meta_v1.DeleteOptions) error
+	DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error
+	Get(name string, options meta_v1.GetOptions) (*v1.Secret, error)
+	List(opts meta_v1.ListOptions) (*v1.SecretList, error)
+	Watch(opts meta_v1.ListOptions) (watch.Interface, error)
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Secret, err error)
 	SecretExpansion
 }
 
@@ -82,7 +84,7 @@ func (c *secrets) Update(secret *v1.Secret) (result *v1.Secret, err error) {
 }
 
 // Delete takes name of the secret and deletes it. Returns an error if one occurs.
-func (c *secrets) Delete(name string, options *v1.DeleteOptions) error {
+func (c *secrets) Delete(name string, options *meta_v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("secrets").
@@ -93,52 +95,53 @@ func (c *secrets) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *secrets) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *secrets) DeleteCollection(options *meta_v1.DeleteOptions, listOptions meta_v1.ListOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("secrets").
-		VersionedParams(&listOptions, api.ParameterCodec).
+		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Body(options).
 		Do().
 		Error()
 }
 
 // Get takes name of the secret, and returns the corresponding secret object, and an error if there is any.
-func (c *secrets) Get(name string) (result *v1.Secret, err error) {
+func (c *secrets) Get(name string, options meta_v1.GetOptions) (result *v1.Secret, err error) {
 	result = &v1.Secret{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("secrets").
 		Name(name).
+		VersionedParams(&options, scheme.ParameterCodec).
 		Do().
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Secrets that match those selectors.
-func (c *secrets) List(opts v1.ListOptions) (result *v1.SecretList, err error) {
+func (c *secrets) List(opts meta_v1.ListOptions) (result *v1.SecretList, err error) {
 	result = &v1.SecretList{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("secrets").
-		VersionedParams(&opts, api.ParameterCodec).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Do().
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested secrets.
-func (c *secrets) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *secrets) Watch(opts meta_v1.ListOptions) (watch.Interface, error) {
+	opts.Watch = true
 	return c.client.Get().
-		Prefix("watch").
 		Namespace(c.ns).
 		Resource("secrets").
-		VersionedParams(&opts, api.ParameterCodec).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch()
 }
 
 // Patch applies the patch and returns the patched secret.
-func (c *secrets) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1.Secret, err error) {
+func (c *secrets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1.Secret, err error) {
 	result = &v1.Secret{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).

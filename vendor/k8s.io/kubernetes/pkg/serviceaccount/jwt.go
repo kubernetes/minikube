@@ -26,9 +26,11 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/auth/authenticator"
-	"k8s.io/kubernetes/pkg/auth/user"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
+	apiserverserviceaccount "k8s.io/apiserver/pkg/authentication/serviceaccount"
+	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/client-go/util/cert"
+	"k8s.io/kubernetes/pkg/api/v1"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/golang/glog"
@@ -47,14 +49,14 @@ const (
 
 // ServiceAccountTokenGetter defines functions to retrieve a named service account and secret
 type ServiceAccountTokenGetter interface {
-	GetServiceAccount(namespace, name string) (*api.ServiceAccount, error)
-	GetSecret(namespace, name string) (*api.Secret, error)
+	GetServiceAccount(namespace, name string) (*v1.ServiceAccount, error)
+	GetSecret(namespace, name string) (*v1.Secret, error)
 }
 
 type TokenGenerator interface {
 	// GenerateToken generates a token which will identify the given ServiceAccount.
 	// The returned token will be stored in the given (and yet-unpersisted) Secret.
-	GenerateToken(serviceAccount api.ServiceAccount, secret api.Secret) (string, error)
+	GenerateToken(serviceAccount v1.ServiceAccount, secret v1.Secret) (string, error)
 }
 
 // ReadPrivateKey is a helper function for reading a private key from a PEM-encoded file
@@ -63,22 +65,11 @@ func ReadPrivateKey(file string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	key, err := ReadPrivateKeyFromPEM(data)
+	key, err := cert.ParsePrivateKeyPEM(data)
 	if err != nil {
 		return nil, fmt.Errorf("error reading private key file %s: %v", file, err)
 	}
 	return key, nil
-}
-
-// ReadPrivateKeyFromPEM is a helper function for reading a private key from a PEM-encoded file
-func ReadPrivateKeyFromPEM(data []byte) (interface{}, error) {
-	if key, err := jwt.ParseRSAPrivateKeyFromPEM(data); err == nil {
-		return key, nil
-	}
-	if key, err := jwt.ParseECPrivateKeyFromPEM(data); err == nil {
-		return key, nil
-	}
-	return nil, fmt.Errorf("data does not contain a valid RSA or ECDSA private key")
 }
 
 // ReadPublicKeys is a helper function for reading an array of rsa.PublicKey or ecdsa.PublicKey from a PEM-encoded file.
@@ -148,7 +139,7 @@ type jwtTokenGenerator struct {
 	privateKey interface{}
 }
 
-func (j *jwtTokenGenerator) GenerateToken(serviceAccount api.ServiceAccount, secret api.Secret) (string, error) {
+func (j *jwtTokenGenerator) GenerateToken(serviceAccount v1.ServiceAccount, secret v1.Secret) (string, error) {
 	var method jwt.SigningMethod
 	switch privateKey := j.privateKey.(type) {
 	case *rsa.PrivateKey:
@@ -176,7 +167,7 @@ func (j *jwtTokenGenerator) GenerateToken(serviceAccount api.ServiceAccount, sec
 	claims[IssuerClaim] = Issuer
 
 	// Username
-	claims[SubjectClaim] = MakeUsername(serviceAccount.Namespace, serviceAccount.Name)
+	claims[SubjectClaim] = apiserverserviceaccount.MakeUsername(serviceAccount.Namespace, serviceAccount.Name)
 
 	// Persist enough structured info for the authenticator to be able to look up the service account and secret
 	claims[NamespaceClaim] = serviceAccount.Namespace
@@ -287,7 +278,7 @@ func (j *jwtTokenAuthenticator) AuthenticateToken(token string) (user.Info, bool
 			return nil, false, errors.New("serviceAccountUID claim is missing")
 		}
 
-		subjectNamespace, subjectName, err := SplitUsername(sub)
+		subjectNamespace, subjectName, err := apiserverserviceaccount.SplitUsername(sub)
 		if err != nil || subjectNamespace != namespace || subjectName != serviceAccountName {
 			return nil, false, errors.New("sub claim is invalid")
 		}
@@ -299,7 +290,7 @@ func (j *jwtTokenAuthenticator) AuthenticateToken(token string) (user.Info, bool
 				glog.V(4).Infof("Could not retrieve token %s/%s for service account %s/%s: %v", namespace, secretName, namespace, serviceAccountName, err)
 				return nil, false, errors.New("Token has been invalidated")
 			}
-			if bytes.Compare(secret.Data[api.ServiceAccountTokenKey], []byte(token)) != 0 {
+			if bytes.Compare(secret.Data[v1.ServiceAccountTokenKey], []byte(token)) != 0 {
 				glog.V(4).Infof("Token contents no longer matches %s/%s for service account %s/%s", namespace, secretName, namespace, serviceAccountName)
 				return nil, false, errors.New("Token does not match server's copy")
 			}
