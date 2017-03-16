@@ -21,17 +21,19 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
-	apierrs "k8s.io/kubernetes/pkg/api/errors"
-	"k8s.io/kubernetes/pkg/api/meta"
-	"k8s.io/kubernetes/pkg/client/cache"
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
+	"k8s.io/kubernetes/pkg/client/legacylisters"
 	"k8s.io/kubernetes/pkg/controller/informers"
-	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/util/metrics"
-	utilruntime "k8s.io/kubernetes/pkg/util/runtime"
-	"k8s.io/kubernetes/pkg/util/wait"
-	"k8s.io/kubernetes/pkg/util/workqueue"
 )
 
 // nameIndexFunc is an index function that indexes based on an object's name
@@ -46,7 +48,7 @@ func nameIndexFunc(obj interface{}) ([]string, error) {
 // ServiceAccountsControllerOptions contains options for running a ServiceAccountsController
 type ServiceAccountsControllerOptions struct {
 	// ServiceAccounts is the list of service accounts to ensure exist in every namespace
-	ServiceAccounts []api.ServiceAccount
+	ServiceAccounts []v1.ServiceAccount
 
 	// ServiceAccountResync is the interval between full resyncs of ServiceAccounts.
 	// If non-zero, all service accounts will be re-listed this often.
@@ -61,8 +63,8 @@ type ServiceAccountsControllerOptions struct {
 
 func DefaultServiceAccountsControllerOptions() ServiceAccountsControllerOptions {
 	return ServiceAccountsControllerOptions{
-		ServiceAccounts: []api.ServiceAccount{
-			{ObjectMeta: api.ObjectMeta{Name: "default"}},
+		ServiceAccounts: []v1.ServiceAccount{
+			{ObjectMeta: metav1.ObjectMeta{Name: "default"}},
 		},
 	}
 }
@@ -99,13 +101,13 @@ func NewServiceAccountsController(saInformer informers.ServiceAccountInformer, n
 // ServiceAccountsController manages ServiceAccount objects inside Namespaces
 type ServiceAccountsController struct {
 	client                  clientset.Interface
-	serviceAccountsToEnsure []api.ServiceAccount
+	serviceAccountsToEnsure []v1.ServiceAccount
 
 	// To allow injection for testing.
 	syncHandler func(key string) error
 
-	saLister *cache.StoreToServiceAccountLister
-	nsLister *cache.IndexerToNamespaceLister
+	saLister *listers.StoreToServiceAccountLister
+	nsLister *listers.IndexerToNamespaceLister
 
 	saSynced cache.InformerSynced
 	nsSynced cache.InformerSynced
@@ -133,14 +135,14 @@ func (c *ServiceAccountsController) Run(workers int, stopCh <-chan struct{}) {
 
 // serviceAccountDeleted reacts to a ServiceAccount deletion by recreating a default ServiceAccount in the namespace if needed
 func (c *ServiceAccountsController) serviceAccountDeleted(obj interface{}) {
-	sa, ok := obj.(*api.ServiceAccount)
+	sa, ok := obj.(*v1.ServiceAccount)
 	if !ok {
 		tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 		if !ok {
 			utilruntime.HandleError(fmt.Errorf("Couldn't get object from tombstone %#v", obj))
 			return
 		}
-		sa, ok = tombstone.Obj.(*api.ServiceAccount)
+		sa, ok = tombstone.Obj.(*v1.ServiceAccount)
 		if !ok {
 			utilruntime.HandleError(fmt.Errorf("Tombstone contained object that is not a ServiceAccount %#v", obj))
 			return
@@ -151,13 +153,13 @@ func (c *ServiceAccountsController) serviceAccountDeleted(obj interface{}) {
 
 // namespaceAdded reacts to a Namespace creation by creating a default ServiceAccount object
 func (c *ServiceAccountsController) namespaceAdded(obj interface{}) {
-	namespace := obj.(*api.Namespace)
+	namespace := obj.(*v1.Namespace)
 	c.queue.Add(namespace.Name)
 }
 
 // namespaceUpdated reacts to a Namespace update (or re-list) by creating a default ServiceAccount in the namespace if needed
 func (c *ServiceAccountsController) namespaceUpdated(oldObj interface{}, newObj interface{}) {
-	newNamespace := newObj.(*api.Namespace)
+	newNamespace := newObj.(*v1.Namespace)
 	c.queue.Add(newNamespace.Name)
 }
 
@@ -198,7 +200,7 @@ func (c *ServiceAccountsController) syncNamespace(key string) error {
 	if err != nil {
 		return err
 	}
-	if ns.Status.Phase != api.NamespaceActive {
+	if ns.Status.Phase != v1.NamespaceActive {
 		// If namespace is not active, we shouldn't try to create anything
 		return nil
 	}

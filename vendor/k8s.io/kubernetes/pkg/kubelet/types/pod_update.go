@@ -19,7 +19,8 @@ package types
 import (
 	"fmt"
 
-	"k8s.io/kubernetes/pkg/api"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 const ConfigSourceAnnotationKey = "kubernetes.io/config.source"
@@ -64,7 +65,7 @@ const (
 	// Updates from all sources
 	AllSource = "*"
 
-	NamespaceDefault = api.NamespaceDefault
+	NamespaceDefault = metav1.NamespaceDefault
 )
 
 // PodUpdate defines an operation sent on the channel. You can add or remove single services by
@@ -77,7 +78,7 @@ const (
 // functionally similar, this helps our unit tests properly check that the correct PodUpdates
 // are generated.
 type PodUpdate struct {
-	Pods   []*api.Pod
+	Pods   []*v1.Pod
 	Op     PodOperation
 	Source string
 }
@@ -102,7 +103,7 @@ func GetValidatedSources(sources []string) ([]string, error) {
 }
 
 // GetPodSource returns the source of the pod based on the annotation.
-func GetPodSource(pod *api.Pod) (string, error) {
+func GetPodSource(pod *v1.Pod) (string, error) {
 	if pod.Annotations != nil {
 		if source, ok := pod.Annotations[ConfigSourceAnnotationKey]; ok {
 			return source, nil
@@ -144,7 +145,7 @@ func (sp SyncPodType) String() string {
 // IsCriticalPod returns true if the pod bears the critical pod annotation
 // key. Both the rescheduler and the kubelet use this key to make admission
 // and scheduling decisions.
-func IsCriticalPod(pod *api.Pod) bool {
+func IsCriticalPod(pod *v1.Pod) bool {
 	_, ok := pod.Annotations[CriticalPodAnnotationKey]
 	return ok
 }
