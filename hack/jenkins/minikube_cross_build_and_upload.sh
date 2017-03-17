@@ -27,7 +27,7 @@ gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprb
 
 # If there are ISO changes, build and upload the ISO
 # then set the default to the newly built ISO for testing
-if out="$(git diff origin/master --name-only | grep deploy/iso/minikube)" &> /dev/null; then
+if out="$(git diff ${ghprbActualCommit} --name-only $(git merge-base origin/master ${ghprbActualCommit}) | grep deploy/iso/minikube)" &> /dev/null; then
 	echo "ISO changes detected ... rebuilding ISO"
 	export ISO_BUCKET="minikube-builds/${ghprbPullId}"
 	export ISO_VERSION="testing"
