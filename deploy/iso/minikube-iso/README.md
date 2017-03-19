@@ -30,10 +30,12 @@ The following configurations are known to have issues currently:
 
 * Linux
 ```
-sudo apt-get install gnupg2 p7zip-full
+sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
+	unzip bc gcc-multilib automake libtool locales
 ```
 
 Either import your private key or generate a sign-only key using `gpg2 --gen-key`.
+Also be sure to have an UTF-8 locale set up in order to build the ISO.
 
 ### Build instructions
 
