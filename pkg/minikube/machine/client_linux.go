@@ -17,16 +17,20 @@ limitations under the License.
 package machine
 
 import (
+	"encoding/json"
+
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/cluster/local"
 )
 
 var driverMap = map[string]driverGetter{
 	"kvm":        getKVMDriver,
 	"virtualbox": getVirtualboxDriver,
+	"local":      getLocalDriver,
 }
 
 func getKVMDriver(rawDriver []byte) (drivers.Driver, error) {
@@ -34,6 +38,15 @@ func getKVMDriver(rawDriver []byte) (drivers.Driver, error) {
 The KVM driver is not included in minikube yet.  Please follow the direction at
 https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#kvm-driver
 `)
+}
+
+func getLocalDriver(rawDriver []byte) (drivers.Driver, error) {
+	var driver drivers.Driver
+	driver = &local.Driver{}
+	if err := json.Unmarshal(rawDriver, &driver); err != nil {
+		return nil, errors.Wrap(err, "Error unmarshalling local driver")
+	}
+	return driver, nil
 }
 
 // StartDriver starts the desired machine driver if necessary.

@@ -23,7 +23,10 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/mcnutils"
+	"k8s.io/minikube/pkg/minikube/cluster/local"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -69,5 +72,19 @@ func getVMHostIP(host *host.Host) (net.IP, error) {
 		return net.ParseIP("192.168.42.1"), nil
 	default:
 		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
+	}
+}
+
+func createLocalHost(config MachineConfig) *local.Driver {
+	return &local.Driver{
+		EnginePort: engine.DefaultPort,
+		BaseDriver: &drivers.BaseDriver{
+			MachineName: constants.MachineName,
+			StorePath:   constants.GetMinipath(),
+			IPAddress:   "127.0.0.1",
+			SSHUser:     mcnutils.GetUsername(),
+			SSHPort:     22,
+			SSHKeyPath:  filepath.Join(mcnutils.GetHomeDir(), ".ssh", "id_rsa"),
+		},
 	}
 }

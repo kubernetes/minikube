@@ -284,6 +284,7 @@ func engineOptions(config MachineConfig) *engine.Options {
 		Env:              config.DockerEnv,
 		InsecureRegistry: config.InsecureRegistry,
 		RegistryMirror:   config.RegistryMirror,
+		InstallURL:       drivers.DefaultEngineInstallURL,
 	}
 	return &o
 }
@@ -301,8 +302,10 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	var driver interface{}
 
-	if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
-		return nil, errors.Wrap(err, "Error attempting to cache minikube ISO from URL")
+	if config.VMDriver != "local" {
+		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
+			return nil, errors.Wrap(err, "Error attempting to cache minikube ISO from URL")
+		}
 	}
 
 	switch config.VMDriver {
@@ -314,6 +317,8 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		driver = createKVMHost(config)
 	case "xhyve":
 		driver = createXhyveHost(config)
+	case "local":
+		driver = createLocalHost(config)
 	case "hyperv":
 		driver = createHypervHost(config)
 	default:
