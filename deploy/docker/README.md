@@ -23,9 +23,14 @@ $ docker run -d \
     gcr.io/k8s-minikube/localkube-amd64:LOCALKUBE_VERSION \
     /localkube start \
     --apiserver-insecure-address=0.0.0.0 \
-    --apiserver-insecure-port=8080 \
+    --apiserver-insecure-port=1234 \
     --logtostderr=true \
-    --containerized
+    --containerized \
+    --extra-config=kubelet.DockerEndpoint=http://127.0.0.1:2375 \
+    --extra-config=kubelet.HealthzPort=10247 \
+    --extra-config=kubelet.CAdvisorPort=4193 \
+    --extra-config=kubelet.ReadOnlyPort=10254 \
+    --extra-config=kubelet.PodManifestPath="/etc/kubernetes/manifests2"
 ```
 Then to setup `kubectl` to use this cluster:
 ```console
