@@ -7,7 +7,7 @@
 * Added external hostpath provisioner to localkube
 * Added unit test coverage
 * Added API Name as configuration option
-* Etcd is now accesible to pods
+* Etcd is now accessible to pods
 * Always use native golang SSH
 * Added a deprecation warning to boot2docker provisioner
 * Added MINIKUBE_HOME environment variable
