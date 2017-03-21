@@ -487,12 +487,34 @@ func TestHostGetLogs(t *testing.T) {
 	}
 	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
 
-	if _, err := GetHostLogs(api); err != nil {
-		t.Fatalf("Error getting host logs: %s", err)
+	tests := []struct {
+		description string
+		follow      bool
+	}{
+		{
+			description: "logs",
+			follow:      false,
+		},
+		{
+			description: "logs -f",
+			follow:      true,
+		},
 	}
 
-	if _, ok := s.Commands[logsCommand]; !ok {
-		t.Fatalf("Expected command not run: %s", logsCommand)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			cmd, err := GetLogsCommand(test.follow)
+			if err != nil {
+				t.Errorf("Error getting the logs command: %s", err)
+			}
+			if _, err = GetHostLogs(api, test.follow); err != nil {
+				t.Errorf("Error getting host logs: %s", err)
+			}
+			if _, ok := s.Commands[cmd]; !ok {
+				t.Errorf("Expected command to run but did not: %s", cmd)
+			}
+		})
 	}
 }
 
