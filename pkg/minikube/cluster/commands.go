@@ -180,13 +180,39 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 	return buf.String(), nil
 }
 
-var logsCommand = fmt.Sprintf(`
+const logsTemplate = `
 if which systemctl 2>&1 1>/dev/null; then
-  sudo journalctl -u localkube
+  sudo journalctl {{.Flags}} -u localkube
 else
-  tail -n +1 %s %s
+  tail -n +1 {{.Flags}} {{.RemoteLocalkubeErrPath}} {{.RemoteLocalkubeOutPath}} %s
 fi
-`, constants.RemoteLocalKubeErrPath, constants.RemoteLocalKubeOutPath)
+`
+
+func GetLogsCommand(follow bool) (string, error) {
+	t, err := template.New("logsTemplate").Parse(logsTemplate)
+	if err != nil {
+		return "", err
+	}
+	var flags []string
+	if follow {
+		flags = append(flags, "-f")
+	}
+
+	buf := bytes.Buffer{}
+	data := struct {
+		RemoteLocalkubeErrPath string
+		RemoteLocalkubeOutPath string
+		Flags                  string
+	}{
+		RemoteLocalkubeErrPath: constants.RemoteLocalKubeErrPath,
+		RemoteLocalkubeOutPath: constants.RemoteLocalKubeOutPath,
+		Flags: strings.Join(flags, " "),
+	}
+	if err := t.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
 
 var localkubeStatusCommand = fmt.Sprintf(`
 if which systemctl 2>&1 1>/dev/null; then

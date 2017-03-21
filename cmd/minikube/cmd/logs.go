@@ -27,6 +27,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
+var (
+	follow bool
+)
+
 // logsCmd represents the logs command
 var logsCmd = &cobra.Command{
 	Use:   "logs",
@@ -39,7 +43,7 @@ var logsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		s, err := cluster.GetHostLogs(api)
+		s, err := cluster.GetHostLogs(api, follow)
 		if err != nil {
 			log.Println("Error getting machine logs:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
@@ -49,5 +53,6 @@ var logsCmd = &cobra.Command{
 }
 
 func init() {
+	logsCmd.Flags().BoolVarP(&follow, "follow", "f", false, "Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.")
 	RootCmd.AddCommand(logsCmd)
 }
