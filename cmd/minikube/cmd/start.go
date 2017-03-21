@@ -59,6 +59,7 @@ const (
 var (
 	registryMirror   []string
 	dockerEnv        []string
+	dockerOpt        []string
 	insecureRegistry []string
 	extraOptions     util.ExtraOptionSlice
 )
@@ -97,6 +98,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		DiskSize:            diskSizeMB,
 		VMDriver:            viper.GetString(vmDriver),
 		DockerEnv:           dockerEnv,
+		DockerOpt:           dockerOpt,
 		InsecureRegistry:    insecureRegistry,
 		RegistryMirror:      registryMirror,
 		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
@@ -213,6 +215,7 @@ func init() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
