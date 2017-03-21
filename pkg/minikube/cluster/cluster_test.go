@@ -227,6 +227,7 @@ func TestStartHostConfig(t *testing.T) {
 	config := MachineConfig{
 		VMDriver:   constants.DefaultVMDriver,
 		DockerEnv:  []string{"FOO=BAR"},
+		DockerOpt:  []string{"param=value"},
 		Downloader: MockDownloader{},
 	}
 
@@ -240,6 +241,13 @@ func TestStartHostConfig(t *testing.T) {
 			t.Fatal("Docker env variables were not set!")
 		}
 	}
+
+	for i := range h.HostOptions.EngineOptions.ArbitraryFlags {
+		if h.HostOptions.EngineOptions.ArbitraryFlags[i] != config.DockerOpt[i] {
+			t.Fatal("Docker flags were not set!")
+		}
+	}
+
 }
 
 func TestStopHostError(t *testing.T) {

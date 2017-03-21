@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-func TestDockerEnv(t *testing.T) {
+func TestDocker(t *testing.T) {
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,
@@ -34,7 +34,7 @@ func TestDockerEnv(t *testing.T) {
 
 	minikubeRunner.RunCommand("delete", false)
 
-	startCmd := fmt.Sprintf("start %s %s", minikubeRunner.Args, "--docker-env=FOO=BAR --docker-env=BAZ=BAT")
+	startCmd := fmt.Sprintf("start %s %s", minikubeRunner.Args, "--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
 	minikubeRunner.RunCommand(startCmd, true)
 	minikubeRunner.EnsureRunning()
 
@@ -51,6 +51,11 @@ func TestDockerEnv(t *testing.T) {
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
 		if !strings.Contains(profileContents, envVar) {
 			t.Fatalf("Env var %s missing from file: %s.", envVar, profileContents)
+		}
+	}
+	for _, opt := range []string{"--debug", "--icc=true"} {
+		if !strings.Contains(profileContents, opt) {
+			t.Fatalf("Option %s missing from file: %s.", opt, profileContents)
 		}
 	}
 }
