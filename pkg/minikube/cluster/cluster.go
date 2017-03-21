@@ -370,10 +370,26 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 }
 
 // GetHostLogs gets the localkube logs of the host VM.
-func GetHostLogs(api libmachine.API) (string, error) {
+// If follow is specified, it will tail the logs
+func GetHostLogs(api libmachine.API, follow bool) (string, error) {
 	h, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return "", errors.Wrap(err, "Error checking that api exists and loading it")
+	}
+	logsCommand, err := GetLogsCommand(follow)
+	if err != nil {
+		return "", errors.Wrap(err, "Error getting logs command")
+	}
+	if follow {
+		c, err := h.CreateSSHClient()
+		if err != nil {
+			return "", errors.Wrap(err, "Error creating ssh client")
+		}
+		err = c.Shell(logsCommand)
+		if err != nil {
+			return "", errors.Wrap(err, "error ssh shell")
+		}
+		return "", err
 	}
 	s, err := h.RunSSHCommand(logsCommand)
 	if err != nil {

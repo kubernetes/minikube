@@ -11,6 +11,12 @@ Gets the logs of the running localkube instance, used for debugging minikube, no
 minikube logs
 ```
 
+### Options
+
+```
+  -f, --follow   Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
+```
+
 ### Options inherited from parent commands
 
 ```
