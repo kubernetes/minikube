@@ -58,6 +58,6 @@ func registerDriver(driverName string) {
 	case "vmwarefusion":
 		plugin.RegisterDriver(vmwarefusion.NewDriver("", ""))
 	default:
-		glog.Exitf("Unsupported driver: %s\n", driverName)
+		glog.Infof("Unsupported driver - not registered: %s\n", driverName)
 	}
 }
