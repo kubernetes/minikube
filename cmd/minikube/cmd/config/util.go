@@ -204,6 +204,7 @@ func EnableOrDisableAddon(name string, val string) error {
 		// Cleanup existing secrets
 		service.DeleteSecret("kube-system", "registry-creds-ecr")
 		service.DeleteSecret("kube-system", "registry-creds-gcr")
+		service.DeleteSecret("kube-system", "registry-creds-dpr")
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
