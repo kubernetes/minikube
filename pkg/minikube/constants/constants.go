@@ -63,6 +63,9 @@ const MinikubeContext = "minikube"
 // MinikubeEnvPrefix is the prefix for the environmental variables
 const MinikubeEnvPrefix = "MINIKUBE"
 
+// The name of the default storage class provisioner
+const DefaultStorageClassProvisioner = "standard"
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
 	args := []string{GetMinipath()}

@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/sshutil"
+	"k8s.io/minikube/pkg/minikube/storageclass"
 )
 
 // Runs all the validation or callback functions and collects errors
@@ -253,4 +254,20 @@ func transferAddonViaDriver(addon *assets.Addon, d drivers.Driver) error {
 		return err
 	}
 	return nil
+}
+
+func EnableOrDisableDefaultStorageClass(name, val string) error {
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrap(err, "Error parsing boolean")
+	}
+
+	// Special logic to disable the default storage class
+	if !enable {
+		err := storageclass.DisableDefaultStorageClass()
+		if err != nil {
+			return errors.Wrap(err, "Error disabling default storage class")
+		}
+	}
+	return EnableOrDisableAddon(name, val)
 }
