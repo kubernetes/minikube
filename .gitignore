@@ -33,6 +33,7 @@ deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 
 /pkg/minikube/assets/assets.go
 /minikube
+.localkube-image
 
 .DS_Store
 

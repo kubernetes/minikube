@@ -59,6 +59,9 @@ LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldfla
 LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
+ADDON_DIRECTORY ?= deploy/addons
+ADDON_FILES := $(shell find $(ADDON_DIRECTORY) -type f)
+
 ifeq ($(GOOS),windows)
 	IS_EXE = ".exe"
 endif
@@ -106,7 +109,7 @@ integration: out/minikube
 test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
 	./test.sh
 
-pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
+pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata $(ADDON_FILES)
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/addons/...
 
 $(GOPATH)/bin/go-bindata: $(GOPATH)/src/$(ORG)
@@ -178,12 +181,11 @@ release-localkube: out/localkube checksum
 update-releases: 
 	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
 
-out/localkube-image: out/localkube
-	# TODO(aprindle) make addons placed into container configurable
-	docker build -t $(REGISTRY)/localkube-image:$(TAG) -f deploy/docker/Dockerfile .
-	@echo ""
-	@echo "${REGISTRY}/localkube-image:$(TAG) succesfully built"
-	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instrucions on how to run image"
+localkube-image: .localkube-image
+.localkube-image: out/localkube deploy/docker/Dockerfile $(ADDON_FILES)
+	@echo  "container: $(REGISTRY)/localkube-image:$(TAG)"
+	@docker build -t $(REGISTRY)/localkube-image:$(TAG) -f deploy/docker/Dockerfile .
+	@docker images -q $(REGISTRY)/localkube-image:$(TAG) > $@
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum
