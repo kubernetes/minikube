@@ -109,6 +109,9 @@ func EnableOrDisableAddon(name string, val string) error {
 			awsRegion := "changeme"
 			awsAccount := "changeme"
 			gcrApplicationDefaultCredentials := "changeme"
+			dockerServer := "changeme"
+			dockerUser := "changeme"
+			dockerPass := "changeme"
 
 			enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
 			if enableAWSECR {
@@ -130,6 +133,13 @@ func EnableOrDisableAddon(name string, val string) error {
 				} else {
 					gcrApplicationDefaultCredentials = string(dat)
 				}
+			}
+
+			enableDR := AskForYesNoConfirmation("\nDo you want to enable Docker Registry?", posResponses, negResponses)
+			if enableDR {
+				dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
+				dockerUser = AskForStaticValue("-- Enter docker registry username: ")
+				dockerPass = AskForStaticValue("-- Enter docker registry password: ")
 			}
 
 			// Create ECR Secret
@@ -169,12 +179,32 @@ func EnableOrDisableAddon(name string, val string) error {
 				fmt.Println("ERROR creating `registry-creds-gcr` secret")
 			}
 
+			// Create Docker Secret
+			err = service.CreateSecret(
+				"kube-system",
+				"registry-creds-dpr",
+				map[string]string{
+					"DOCKER_PRIVATE_REGISTRY_SERVER":   dockerServer,
+					"DOCKER_PRIVATE_REGISTRY_USER":     dockerUser,
+					"DOCKER_PRIVATE_REGISTRY_PASSWORD": dockerPass,
+				},
+				map[string]string{
+					"app":   "registry-creds",
+					"cloud": "dpr",
+					"kubernetes.io/minikube-addons": "registry-creds",
+				})
+
+			if err != nil {
+				fmt.Println("ERROR creating `registry-creds-dpr` secret")
+			}
+
 			break
 		}
 	} else {
 		// Cleanup existing secrets
 		service.DeleteSecret("kube-system", "registry-creds-ecr")
 		service.DeleteSecret("kube-system", "registry-creds-gcr")
+		service.DeleteSecret("kube-system", "registry-creds-dpr")
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
