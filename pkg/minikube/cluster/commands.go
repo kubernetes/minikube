@@ -154,7 +154,7 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 		flagVals = append(flagVals, "--feature-gates="+kubernetesConfig.FeatureGates)
 	}
 
-	if kubernetesConfig.APIServerName != "" {
+	if kubernetesConfig.APIServerName != constants.APIServerName {
 		flagVals = append(flagVals, "--apiserver-name="+kubernetesConfig.APIServerName)
 	}
 
