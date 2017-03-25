@@ -180,7 +180,7 @@ func (lk LocalkubeServer) shouldGenerateCACerts() bool {
 }
 
 func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
-	ips := []net.IP{lk.ServiceClusterIPRange.IP}
+	ips := []net.IP{net.ParseIP(util.DefaultServiceClusterIP)}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return nil, err
