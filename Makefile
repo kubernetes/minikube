@@ -22,6 +22,7 @@ INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2016.08
 REGISTRY?=gcr.io/k8s-minikube
 DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
+ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
 ISO_VERSION ?= v1.0.7
 ISO_BUCKET ?= minikube/iso
@@ -85,7 +86,7 @@ out/minikube-linux-amd64: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go $(s
 out/minikube-windows-amd64.exe: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-windows-amd64.exe k8s.io/minikube/cmd/minikube
 
-minikube_iso:
+minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
@@ -94,6 +95,15 @@ minikube_iso:
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
+
+out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
+ifeq ($(IN_DOCKER),1)
+	$(MAKE) minikube_iso
+else
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt \
+		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
+		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
+endif
 
 test-iso:
 	go test -v $(REPOPATH)/test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
@@ -175,15 +185,21 @@ release-localkube: out/localkube checksum
 	gsutil cp out/localkube.sha256 $(LOCALKUBE_BUCKET)/$(LOCALKUBE_VERSION)/localkube-linux-amd64.sha256
 
 .PHONY: update-releases
-update-releases: 
+update-releases:
 	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
 
-out/localkube-image: out/localkube
+localkube-image: out/localkube
 	# TODO(aprindle) make addons placed into container configurable
 	docker build -t $(REGISTRY)/localkube-image:$(TAG) -f deploy/docker/Dockerfile .
 	@echo ""
 	@echo "${REGISTRY}/localkube-image:$(TAG) succesfully built"
 	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instrucions on how to run image"
+
+buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
+$(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
+	docker build -t $@ -f $< $(dir $<)
+	@echo ""
+	@echo "$(@) succesfully built"
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum

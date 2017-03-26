@@ -42,9 +42,12 @@ Also be sure to have an UTF-8 locale set up in order to build the ISO.
 ```
 $ git clone https://github.com/kubernetes/minikube
 $ cd minikube
-$ make minikube_iso
+$ make buildroot-image
+$ make out/minikube.iso
 ```
 
+The build will occurs inside a docker container, if you want to do this
+baremetal, replace `make out/minikube.iso` with `IN_DOCKER=1 make out/minikube.iso`.
 The bootable ISO image will be available in `out/minikube.iso`.
 
 ### Testing local minikube-iso changes
