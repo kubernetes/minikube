@@ -511,7 +511,6 @@ func TestHostGetLogs(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
 			cmd, err := GetLogsCommand(test.follow)
 			if err != nil {
 				t.Errorf("Error getting the logs command: %s", err)
