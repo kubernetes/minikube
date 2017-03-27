@@ -6,6 +6,6 @@ metadata:
   annotations:
     storageclass.beta.kubernetes.io/is-default-class: "true"
   labels:
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
 
 provisioner: k8s.io/minikube-hostpath

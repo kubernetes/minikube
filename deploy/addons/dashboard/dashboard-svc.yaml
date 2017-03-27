@@ -20,7 +20,7 @@ metadata:
   namespace: kube-system
   labels:
     app: kubernetes-dashboard
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: dashboard
     kubernetes.io/minikube-addons-endpoint: dashboard
 spec:
