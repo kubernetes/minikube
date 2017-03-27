@@ -111,9 +111,7 @@ Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine l
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
-		glog.Exitln(err)
-	}
+	RootCmd.Execute()
 }
 
 // Handle config values for flags used in external packages (e.g. glog)
