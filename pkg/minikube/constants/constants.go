@@ -116,7 +116,6 @@ const AddonsPath = "/etc/kubernetes/addons"
 const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
-	LocalkubePIDPath       = "/var/run/localkube.pid"
 )
 
 const (
