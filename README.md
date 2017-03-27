@@ -132,7 +132,7 @@ $ minikube start \
 See [DRIVERS](./DRIVERS.md) for details on supported drivers and how to install
 plugins, if required.
 
-To start using the the driver, you'll need to configure minikube: `minikube config set vm-driver kvm`.
+To start using the driver, you'll need to configure minikube: `minikube config set vm-driver kvm`.
 
 ### Reusing the Docker daemon
 
