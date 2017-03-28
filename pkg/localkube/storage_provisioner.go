@@ -24,14 +24,14 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/kubernetes-incubator/external-storage/lib/controller"
-	"github.com/kubernetes-incubator/external-storage/lib/leaderelection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/types"
 	"k8s.io/client-go/pkg/util/uuid"
 	"k8s.io/client-go/pkg/util/wait"
 	"k8s.io/client-go/rest"
+	"k8s.io/minikube/pkg/localkube/provisioner/controller"
+	"k8s.io/minikube/pkg/localkube/provisioner/leaderelection"
 )
 
 const (
