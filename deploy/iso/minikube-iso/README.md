@@ -59,6 +59,22 @@ $ ./out/minikube start \
     --iso-url=file:///$GOPATH/k8s.io/minikube/out/buildroot/output/images/rootfs.iso9660
 ```
 
+When testing a custom image and something goes bad, you will have to delete the
+VM and start it again. The start command does not delete the VM if the creation
+fails, and if you don't do it, you will end up starting the same incorrect
+VM over and over.
+
+```
+$ ./out/minikube start --iso-url=file://...
+# a wild error appears...
+
+$ ./out/minikube delete
+Deleting local Kubernetes cluster...
+Machine deleted.
+
+$ ./out/minikube start --iso-url=file://...
+```
+
 
 ### Buildroot configuration
 
