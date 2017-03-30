@@ -112,6 +112,10 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
+		name: config.MachineName,
+		set:  SetString,
+	},
+	{
 		name:        "dashboard",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},

@@ -32,6 +32,7 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -50,7 +51,7 @@ var defaultMachineConfig = MachineConfig{
 func TestCreateHost(t *testing.T) {
 	api := tests.NewMockAPI()
 
-	exists, _ := api.Exists(constants.MachineName)
+	exists, _ := api.Exists(config.GetMachineName())
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
@@ -58,12 +59,12 @@ func TestCreateHost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, _ = api.Exists(constants.MachineName)
+	exists, _ = api.Exists(config.GetMachineName())
 	if !exists {
 		t.Fatal("Machine does not exist, but should.")
 	}
 
-	h, err := api.Load(constants.MachineName)
+	h, err := api.Load(config.GetMachineName())
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}
@@ -146,7 +147,7 @@ func TestStartHostExists(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != constants.MachineName {
+	if h.Name != config.GetMachineName() {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
@@ -174,7 +175,7 @@ func TestStartStoppedHost(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != constants.MachineName {
+	if h.Name != config.GetMachineName() {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 
@@ -201,7 +202,7 @@ func TestStartHost(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != constants.MachineName {
+	if h.Name != config.GetMachineName() {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 	if exists, _ := api.Exists(h.Name); !exists {
@@ -315,7 +316,7 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 		t.Fatal("Expected error deleting host, didn't get one.")
 	}
 
-	expectedErrors := []string{"Error removing " + constants.MachineName, "Error deleting machine"}
+	expectedErrors := []string{"Error removing " + config.GetMachineName(), "Error deleting machine"}
 	for _, expectedError := range expectedErrors {
 		if !strings.Contains(err.Error(), expectedError) {
 			t.Fatalf("Error %s expected to contain: %s.", err, expectedError)
@@ -361,7 +362,7 @@ func TestGetLocalkubeStatus(t *testing.T) {
 			SSHKeyPath: "",
 		},
 	}
-	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
+	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
 
 	s.SetCommandToOutput(map[string]string{
 		localkubeStatusCommand: state.Running.String(),
@@ -493,7 +494,7 @@ func TestHostGetLogs(t *testing.T) {
 			SSHKeyPath: "",
 		},
 	}
-	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
+	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
 
 	tests := []struct {
 		description string
@@ -542,7 +543,7 @@ func TestCreateSSHShell(t *testing.T) {
 			SSHKeyPath: "",
 		},
 	}
-	api.Hosts[constants.MachineName] = &host.Host{Driver: d}
+	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
 
 	cliArgs := []string{"exit"}
 	if err := CreateSSHShell(api, cliArgs); err != nil {
