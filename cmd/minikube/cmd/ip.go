@@ -22,7 +22,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -38,7 +38,7 @@ var ipCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		host, err := api.Load(constants.MachineName)
+		host, err := api.Load(config.GetMachineName())
 		if err != nil {
 			glog.Errorln("Error getting IP: ", err)
 			os.Exit(1)
