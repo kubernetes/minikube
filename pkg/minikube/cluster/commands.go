@@ -31,11 +31,6 @@ import (
 
 var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false --node-ip={{.NodeIP}}"
 
-var startCommandB2DTemplate = `
-# Run with nohup so it stays up. Redirect logs to useful places.
-sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup {{.LocalkubeStartCmd}} > {{.Stdout}} 2> {{.Stderr}} < /dev/null & echo $! > {{.Pidfile}} &'
-`
-
 var localkubeSystemdTmpl = `[Unit]
 Description=Localkube
 Documentation=https://github.com/kubernetes/minikube/tree/master/pkg/localkube
@@ -57,23 +52,14 @@ WantedBy=multi-user.target
 `
 
 var startCommandTemplate = `
-if which systemctl 2>&1 1>/dev/null; then
   {{.StartCommandSystemd}}
   sudo systemctl daemon-reload
   sudo systemctl enable localkube.service
   sudo systemctl restart localkube.service || true
-else
-  sudo killall localkube || true
-  {{.StartCommandB2D}}
-fi
 `
 
 func GetStartCommand(kubernetesConfig KubernetesConfig) (string, error) {
 	localkubeStartCommand, err := GenLocalkubeStartCmd(kubernetesConfig)
-	if err != nil {
-		return "", err
-	}
-	startCommandB2D, err := GetStartCommandB2D(kubernetesConfig, localkubeStartCommand)
 	if err != nil {
 		return "", err
 	}
@@ -84,31 +70,9 @@ func GetStartCommand(kubernetesConfig KubernetesConfig) (string, error) {
 	t := template.Must(template.New("startCommand").Parse(startCommandTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
-		StartCommandB2D     string
 		StartCommandSystemd string
 	}{
-		StartCommandB2D:     startCommandB2D,
 		StartCommandSystemd: startCommandSystemd,
-	}
-	if err := t.Execute(&buf, data); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}
-
-func GetStartCommandB2D(kubernetesConfig KubernetesConfig, localkubeStartCmd string) (string, error) {
-	t := template.Must(template.New("startCommand").Parse(startCommandB2DTemplate))
-	buf := bytes.Buffer{}
-	data := struct {
-		LocalkubeStartCmd string
-		Stdout            string
-		Stderr            string
-		Pidfile           string
-	}{
-		LocalkubeStartCmd: localkubeStartCmd,
-		Stdout:            constants.RemoteLocalKubeOutPath,
-		Stderr:            constants.RemoteLocalKubeErrPath,
-		Pidfile:           constants.LocalkubePIDPath,
 	}
 	if err := t.Execute(&buf, data); err != nil {
 		return "", err
@@ -180,13 +144,7 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 	return buf.String(), nil
 }
 
-const logsTemplate = `
-if which systemctl 2>&1 1>/dev/null; then
-  sudo journalctl {{.Flags}} -u localkube
-else
-  tail -n +1 {{.Flags}} {{.RemoteLocalkubeErrPath}} {{.RemoteLocalkubeOutPath}} %s
-fi
-`
+const logsTemplate = "sudo journalctl {{.Flags}} -u localkube"
 
 func GetLogsCommand(follow bool) (string, error) {
 	t, err := template.New("logsTemplate").Parse(logsTemplate)
@@ -214,17 +172,7 @@ func GetLogsCommand(follow bool) (string, error) {
 	return buf.String(), nil
 }
 
-var localkubeStatusCommand = fmt.Sprintf(`
-if which systemctl 2>&1 1>/dev/null; then
-  sudo systemctl is-active localkube 2>&1 1>/dev/null && echo "Running" || echo "Stopped"
-else
-  if ps $(cat %s) 2>&1 1>/dev/null; then
-    echo "Running"
-  else
-    echo "Stopped"
-  fi
-fi
-`, constants.LocalkubePIDPath)
+var localkubeStatusCommand = `sudo systemctl is-active localkube 2>&1 1>/dev/null && echo "Running" || echo "Stopped"`
 
 func GetMount9pCommand(ip net.IP) string {
 	return fmt.Sprintf(`
