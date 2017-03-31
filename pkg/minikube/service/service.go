@@ -232,7 +232,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		if urlMode || !strings.HasPrefix(url, "http") {
 			fmt.Fprintln(os.Stdout, url)
 		} else {
-			fmt.Fprintln(os.Stdout, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
+			fmt.Fprintln(os.Stderr, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
 			browser.OpenURL(url)
 		}
 	}
