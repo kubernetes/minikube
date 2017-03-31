@@ -462,7 +462,7 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 		os.Exit(1)
 	}
 	if s != state.Running.String() {
-		fmt.Fprintln(os.Stdout, "minikube is not currently running so the service cannot be accessed")
+		fmt.Fprintln(os.Stderr, "minikube is not currently running so the service cannot be accessed")
 		os.Exit(exitStatus)
 	}
 }
