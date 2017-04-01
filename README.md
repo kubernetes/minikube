@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/kubernetes/minikube.svg?branch=master)](https://travis-ci.org/kubernetes/minikube)
 [![codecov](https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg)](https://codecov.io/gh/kubernetes/minikube)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fkubernetes%2Fminikube.svg?size=small)](https://app.fossa.io/projects/git%2Bhttps%3A%2F%2Fgithub.com%2Fkubernetes%2Fminikube?ref=badge_small)
 
 <img src="https://github.com/kubernetes/minikube/raw/master/logo/logo.png" width="100">
 
