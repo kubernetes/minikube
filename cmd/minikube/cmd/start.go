@@ -54,6 +54,7 @@ const (
 	keepContext           = "keep-context"
 	featureGates          = "feature-gates"
 	apiServerName         = "apiserver-name"
+	dnsDomain             = "dns-domain"
 )
 
 var (
@@ -131,6 +132,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		KubernetesVersion: viper.GetString(kubernetesVersion),
 		NodeIP:            ip,
 		APIServerName:     viper.GetString(apiServerName),
+		DNSDomain:         viper.GetString(dnsDomain),
 		FeatureGates:      viper.GetString(featureGates),
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
@@ -217,6 +219,7 @@ func init() {
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().String(dnsDomain, "", "The cluster dns domain name used in the kubernetes cluster")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
