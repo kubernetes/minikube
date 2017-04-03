@@ -122,6 +122,10 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 		flagVals = append(flagVals, "--apiserver-name="+kubernetesConfig.APIServerName)
 	}
 
+	if kubernetesConfig.DNSDomain != "" {
+		flagVals = append(flagVals, "--dns-domain="+kubernetesConfig.DNSDomain)
+	}
+
 	for _, e := range kubernetesConfig.ExtraOptions {
 		flagVals = append(flagVals, fmt.Sprintf("--extra-config=%s", e.String()))
 	}

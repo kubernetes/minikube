@@ -40,6 +40,7 @@ type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
 	APIServerName     string
+	DNSDomain         string
 	ContainerRuntime  string
 	NetworkPlugin     string
 	FeatureGates      string
