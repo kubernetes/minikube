@@ -5,7 +5,7 @@ Starts a local kubernetes cluster.
 ### Synopsis
 
 
-Starts a local kubernetes cluster using VM driver. This command assumes you have already installed one of the VM driver (virtualbox/vmwarefusion/kvm/xhyve/hyperv).
+Starts a local kubernetes cluster using Virtualbox. This command assumes you already have Virtualbox installed.
 
 ```
 minikube start
