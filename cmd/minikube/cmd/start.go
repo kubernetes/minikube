@@ -69,8 +69,8 @@ var (
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a local kubernetes cluster.",
-	Long: `Starts a local kubernetes cluster using Virtualbox. This command
-assumes you already have Virtualbox installed.`,
+	Long: `Starts a local kubernetes cluster using VM. This command
+assumes you have already installed one of the VM drivers: virtualbox/vmwarefusion/kvm/xhyve/hyperv.`,
 	Run: runStart,
 }
 
