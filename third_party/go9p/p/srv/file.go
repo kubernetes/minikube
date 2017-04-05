@@ -5,10 +5,11 @@
 package srv
 
 import (
-	"k8s.io/minikube/third_party/go9p/p"
 	"log"
 	"sync"
 	"time"
+
+	"k8s.io/minikube/third_party/go9p/p"
 )
 
 // The FStatOp interface provides a single operation (Stat) that will be

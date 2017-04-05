@@ -42,6 +42,15 @@ var mountCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, errText)
 			os.Exit(1)
 		}
+		if _, err := os.Stat(args[0]); err != nil {
+			if os.IsNotExist(err) {
+				errText := fmt.Sprintf("Cannot find directory %s for mount", args[0])
+				fmt.Fprintln(os.Stderr, errText)
+			} else {
+				errText := fmt.Sprintf("Error accesssing directory %s for mount", args[0])
+				fmt.Fprintln(os.Stderr, errText)
+			}
+		}
 		var debugVal int
 		if glog.V(1) {
 			debugVal = 1 // ufs.StartServer takes int debug param
