@@ -69,6 +69,17 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	return string(stdout)
 }
 
+func (m *MinikubeRunner) RunDaemon(command string) *exec.Cmd {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command(path, commandArr...)
+	err := cmd.Start()
+	if err != nil {
+		m.T.Fatalf("Error running command: %s %s", command, err)
+	}
+	return cmd
+}
+
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
