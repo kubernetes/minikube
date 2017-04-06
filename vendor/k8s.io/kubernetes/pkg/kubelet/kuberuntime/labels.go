@@ -21,31 +21,28 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
+	kubetypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
-	kubetypes "k8s.io/kubernetes/pkg/types"
 )
 
 const (
-	// TODO: move those label definitions to kubelet/types/labels.go
 	// TODO: change those label names to follow kubernetes's format
 	podDeletionGracePeriodLabel    = "io.kubernetes.pod.deletionGracePeriod"
 	podTerminationGracePeriodLabel = "io.kubernetes.pod.terminationGracePeriod"
 
-	containerHashLabel                   = "io.kubernetes.container.hash"
-	containerRestartCountLabel           = "io.kubernetes.container.restartCount"
-	containerTerminationMessagePathLabel = "io.kubernetes.container.terminationMessagePath"
-	containerPreStopHandlerLabel         = "io.kubernetes.container.preStopHandler"
-	containerPortsLabel                  = "io.kubernetes.container.ports"
-
-	// kubernetesManagedLabel is used to distinguish whether a container/sandbox is managed by kubelet or not
-	kubernetesManagedLabel = "io.kubernetes.managed"
+	containerHashLabel                     = "io.kubernetes.container.hash"
+	containerRestartCountLabel             = "io.kubernetes.container.restartCount"
+	containerTerminationMessagePathLabel   = "io.kubernetes.container.terminationMessagePath"
+	containerTerminationMessagePolicyLabel = "io.kubernetes.container.terminationMessagePolicy"
+	containerPreStopHandlerLabel           = "io.kubernetes.container.preStopHandler"
+	containerPortsLabel                    = "io.kubernetes.container.ports"
 )
 
 type labeledPodSandboxInfo struct {
-	// Labels from api.Pod
+	// Labels from v1.Pod
 	Labels       map[string]string
 	PodName      string
 	PodNamespace string
@@ -53,7 +50,7 @@ type labeledPodSandboxInfo struct {
 }
 
 type annotatedPodSandboxInfo struct {
-	// Annotations from api.Pod
+	// Annotations from v1.Pod
 	Annotations map[string]string
 }
 
@@ -70,15 +67,16 @@ type annotatedContainerInfo struct {
 	PodDeletionGracePeriod    *int64
 	PodTerminationGracePeriod *int64
 	TerminationMessagePath    string
-	PreStopHandler            *api.Handler
-	ContainerPorts            []api.ContainerPort
+	TerminationMessagePolicy  v1.TerminationMessagePolicy
+	PreStopHandler            *v1.Handler
+	ContainerPorts            []v1.ContainerPort
 }
 
-// newPodLabels creates pod labels from api.Pod.
-func newPodLabels(pod *api.Pod) map[string]string {
+// newPodLabels creates pod labels from v1.Pod.
+func newPodLabels(pod *v1.Pod) map[string]string {
 	labels := map[string]string{}
 
-	// Get labels from api.Pod
+	// Get labels from v1.Pod
 	for k, v := range pod.Labels {
 		labels[k] = v
 	}
@@ -86,34 +84,33 @@ func newPodLabels(pod *api.Pod) map[string]string {
 	labels[types.KubernetesPodNameLabel] = pod.Name
 	labels[types.KubernetesPodNamespaceLabel] = pod.Namespace
 	labels[types.KubernetesPodUIDLabel] = string(pod.UID)
-	labels[kubernetesManagedLabel] = "true"
 
 	return labels
 }
 
-// newPodAnnotations creates pod annotations from api.Pod.
-func newPodAnnotations(pod *api.Pod) map[string]string {
+// newPodAnnotations creates pod annotations from v1.Pod.
+func newPodAnnotations(pod *v1.Pod) map[string]string {
 	return pod.Annotations
 }
 
-// newContainerLabels creates container labels from api.Container and api.Pod.
-func newContainerLabels(container *api.Container, pod *api.Pod) map[string]string {
+// newContainerLabels creates container labels from v1.Container and v1.Pod.
+func newContainerLabels(container *v1.Container, pod *v1.Pod) map[string]string {
 	labels := map[string]string{}
 	labels[types.KubernetesPodNameLabel] = pod.Name
 	labels[types.KubernetesPodNamespaceLabel] = pod.Namespace
 	labels[types.KubernetesPodUIDLabel] = string(pod.UID)
 	labels[types.KubernetesContainerNameLabel] = container.Name
-	labels[kubernetesManagedLabel] = "true"
 
 	return labels
 }
 
-// newContainerAnnotations creates container annotations from api.Container and api.Pod.
-func newContainerAnnotations(container *api.Container, pod *api.Pod, restartCount int) map[string]string {
+// newContainerAnnotations creates container annotations from v1.Container and v1.Pod.
+func newContainerAnnotations(container *v1.Container, pod *v1.Pod, restartCount int) map[string]string {
 	annotations := map[string]string{}
 	annotations[containerHashLabel] = strconv.FormatUint(kubecontainer.HashContainer(container), 16)
 	annotations[containerRestartCountLabel] = strconv.Itoa(restartCount)
 	annotations[containerTerminationMessagePathLabel] = container.TerminationMessagePath
+	annotations[containerTerminationMessagePolicyLabel] = string(container.TerminationMessagePolicy)
 
 	if pod.DeletionGracePeriodSeconds != nil {
 		annotations[podDeletionGracePeriodLabel] = strconv.FormatInt(*pod.DeletionGracePeriodSeconds, 10)
@@ -153,9 +150,9 @@ func getPodSandboxInfoFromLabels(labels map[string]string) *labeledPodSandboxInf
 		PodUID:       kubetypes.UID(getStringValueFromLabel(labels, types.KubernetesPodUIDLabel)),
 	}
 
-	// Remain only labels from api.Pod
+	// Remain only labels from v1.Pod
 	for k, v := range labels {
-		if k != types.KubernetesPodNameLabel && k != types.KubernetesPodNamespaceLabel && k != types.KubernetesPodUIDLabel && k != kubernetesManagedLabel {
+		if k != types.KubernetesPodNameLabel && k != types.KubernetesPodNamespaceLabel && k != types.KubernetesPodUIDLabel {
 			podSandboxInfo.Labels[k] = v
 		}
 	}
@@ -180,20 +177,12 @@ func getContainerInfoFromLabels(labels map[string]string) *labeledContainerInfo 
 	}
 }
 
-// isManagedByKubelet returns true is the sandbox/container is managed by kubelet.
-func isManagedByKubelet(labels map[string]string) bool {
-	if _, ok := labels[kubernetesManagedLabel]; ok {
-		return true
-	}
-
-	return false
-}
-
 // getContainerInfoFromAnnotations gets annotatedContainerInfo from annotations.
 func getContainerInfoFromAnnotations(annotations map[string]string) *annotatedContainerInfo {
 	var err error
 	containerInfo := &annotatedContainerInfo{
-		TerminationMessagePath: getStringValueFromLabel(annotations, containerTerminationMessagePathLabel),
+		TerminationMessagePath:   getStringValueFromLabel(annotations, containerTerminationMessagePathLabel),
+		TerminationMessagePolicy: v1.TerminationMessagePolicy(getStringValueFromLabel(annotations, containerTerminationMessagePolicyLabel)),
 	}
 
 	if containerInfo.Hash, err = getUint64ValueFromLabel(annotations, containerHashLabel); err != nil {
@@ -209,14 +198,14 @@ func getContainerInfoFromAnnotations(annotations map[string]string) *annotatedCo
 		glog.Errorf("Unable to get %q from annotations %q: %v", podTerminationGracePeriodLabel, annotations, err)
 	}
 
-	preStopHandler := &api.Handler{}
+	preStopHandler := &v1.Handler{}
 	if found, err := getJSONObjectFromLabel(annotations, containerPreStopHandlerLabel, preStopHandler); err != nil {
 		glog.Errorf("Unable to get %q from annotations %q: %v", containerPreStopHandlerLabel, annotations, err)
 	} else if found {
 		containerInfo.PreStopHandler = preStopHandler
 	}
 
-	containerPorts := []api.ContainerPort{}
+	containerPorts := []v1.ContainerPort{}
 	if found, err := getJSONObjectFromLabel(annotations, containerPortsLabel, &containerPorts); err != nil {
 		glog.Errorf("Unable to get %q from annotations %q: %v", containerPortsLabel, annotations, err)
 	} else if found {

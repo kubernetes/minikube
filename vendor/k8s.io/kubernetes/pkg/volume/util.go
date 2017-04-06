@@ -20,10 +20,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"k8s.io/kubernetes/pkg/api"
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/watch"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 
 	"hash/fnv"
 	"math/rand"
@@ -31,10 +32,10 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api/errors"
-	"k8s.io/kubernetes/pkg/api/resource"
-	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	volutil "k8s.io/kubernetes/pkg/volume/util"
 )
 
@@ -53,13 +54,13 @@ type RecycleEventRecorder func(eventtype, message string)
 //  pod - the pod designed by a volume plugin to recycle the volume. pod.Name
 //        will be overwritten with unique name based on PV.Name.
 //	client - kube client for API operations.
-func RecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *api.Pod, kubeClient clientset.Interface, recorder RecycleEventRecorder) error {
+func RecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *v1.Pod, kubeClient clientset.Interface, recorder RecycleEventRecorder) error {
 	return internalRecycleVolumeByWatchingPodUntilCompletion(pvName, pod, newRecyclerClient(kubeClient, recorder))
 }
 
 // same as above func comments, except 'recyclerClient' is a narrower pod API
 // interface to ease testing
-func internalRecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *api.Pod, recyclerClient recyclerClient) error {
+func internalRecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *v1.Pod, recyclerClient recyclerClient) error {
 	glog.V(5).Infof("creating recycler pod for volume %s\n", pod.Name)
 
 	// Generate unique name for the recycler pod - we need to get "already
@@ -85,7 +86,7 @@ func internalRecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *api.P
 			return fmt.Errorf("unexpected error creating recycler pod:  %+v\n", err)
 		}
 	}
-	defer func(pod *api.Pod) {
+	defer func(pod *v1.Pod) {
 		glog.V(2).Infof("deleting recycler pod %s/%s", pod.Namespace, pod.Name)
 		if err := recyclerClient.DeletePod(pod.Name, pod.Namespace); err != nil {
 			glog.Errorf("failed to delete recycler pod %s/%s: %v", pod.Namespace, pod.Name, err)
@@ -95,19 +96,22 @@ func internalRecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *api.P
 	// Now only the old pod or the new pod run. Watch it until it finishes
 	// and send all events on the pod to the PV
 	for {
-		event := <-podCh
+		event, ok := <-podCh
+		if !ok {
+			return fmt.Errorf("recycler pod %q watch channel had been closed", pod.Name)
+		}
 		switch event.Object.(type) {
-		case *api.Pod:
+		case *v1.Pod:
 			// POD changed
-			pod := event.Object.(*api.Pod)
+			pod := event.Object.(*v1.Pod)
 			glog.V(4).Infof("recycler pod update received: %s %s/%s %s", event.Type, pod.Namespace, pod.Name, pod.Status.Phase)
 			switch event.Type {
 			case watch.Added, watch.Modified:
-				if pod.Status.Phase == api.PodSucceeded {
+				if pod.Status.Phase == v1.PodSucceeded {
 					// Recycle succeeded.
 					return nil
 				}
-				if pod.Status.Phase == api.PodFailed {
+				if pod.Status.Phase == v1.PodFailed {
 					if pod.Status.Message != "" {
 						return fmt.Errorf(pod.Status.Message)
 					} else {
@@ -122,9 +126,9 @@ func internalRecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *api.P
 				return fmt.Errorf("recycler pod watcher failed")
 			}
 
-		case *api.Event:
+		case *v1.Event:
 			// Event received
-			podEvent := event.Object.(*api.Event)
+			podEvent := event.Object.(*v1.Event)
 			glog.V(4).Infof("recycler event received: %s %s/%s %s/%s %s", event.Type, podEvent.Namespace, podEvent.Name, podEvent.InvolvedObject.Namespace, podEvent.InvolvedObject.Name, podEvent.Message)
 			if event.Type == watch.Added {
 				recyclerClient.Event(podEvent.Type, podEvent.Message)
@@ -136,8 +140,8 @@ func internalRecycleVolumeByWatchingPodUntilCompletion(pvName string, pod *api.P
 // recyclerClient abstracts access to a Pod by providing a narrower interface.
 // This makes it easier to mock a client for testing.
 type recyclerClient interface {
-	CreatePod(pod *api.Pod) (*api.Pod, error)
-	GetPod(name, namespace string) (*api.Pod, error)
+	CreatePod(pod *v1.Pod) (*v1.Pod, error)
+	GetPod(name, namespace string) (*v1.Pod, error)
 	DeletePod(name, namespace string) error
 	// WatchPod returns a ListWatch for watching a pod.  The stopChannel is used
 	// to close the reflector backing the watch.  The caller is responsible for
@@ -159,12 +163,12 @@ type realRecyclerClient struct {
 	recorder RecycleEventRecorder
 }
 
-func (c *realRecyclerClient) CreatePod(pod *api.Pod) (*api.Pod, error) {
+func (c *realRecyclerClient) CreatePod(pod *v1.Pod) (*v1.Pod, error) {
 	return c.client.Core().Pods(pod.Namespace).Create(pod)
 }
 
-func (c *realRecyclerClient) GetPod(name, namespace string) (*api.Pod, error) {
-	return c.client.Core().Pods(namespace).Get(name)
+func (c *realRecyclerClient) GetPod(name, namespace string) (*v1.Pod, error) {
+	return c.client.Core().Pods(namespace).Get(name, metav1.GetOptions{})
 }
 
 func (c *realRecyclerClient) DeletePod(name, namespace string) error {
@@ -177,8 +181,8 @@ func (c *realRecyclerClient) Event(eventtype, message string) {
 
 func (c *realRecyclerClient) WatchPod(name, namespace string, stopChannel chan struct{}) (<-chan watch.Event, error) {
 	podSelector, _ := fields.ParseSelector("metadata.name=" + name)
-	options := api.ListOptions{
-		FieldSelector: podSelector,
+	options := metav1.ListOptions{
+		FieldSelector: podSelector.String(),
 		Watch:         true,
 	}
 
@@ -188,8 +192,8 @@ func (c *realRecyclerClient) WatchPod(name, namespace string, stopChannel chan s
 	}
 
 	eventSelector, _ := fields.ParseSelector("involvedObject.name=" + name)
-	eventWatch, err := c.client.Core().Events(namespace).Watch(api.ListOptions{
-		FieldSelector: eventSelector,
+	eventWatch, err := c.client.Core().Events(namespace).Watch(metav1.ListOptions{
+		FieldSelector: eventSelector.String(),
 		Watch:         true,
 	})
 	if err != nil {
@@ -197,13 +201,14 @@ func (c *realRecyclerClient) WatchPod(name, namespace string, stopChannel chan s
 		return nil, err
 	}
 
-	eventCh := make(chan watch.Event, 0)
+	eventCh := make(chan watch.Event, 30)
 
 	go func() {
 		defer eventWatch.Stop()
 		defer podWatch.Stop()
 		defer close(eventCh)
-
+		var podWatchChannelClosed bool
+		var eventWatchChannelClosed bool
 		for {
 			select {
 			case _ = <-stopChannel:
@@ -211,15 +216,19 @@ func (c *realRecyclerClient) WatchPod(name, namespace string, stopChannel chan s
 
 			case podEvent, ok := <-podWatch.ResultChan():
 				if !ok {
-					return
+					podWatchChannelClosed = true
+				} else {
+					eventCh <- podEvent
 				}
-				eventCh <- podEvent
-
 			case eventEvent, ok := <-eventWatch.ResultChan():
 				if !ok {
-					return
+					eventWatchChannelClosed = true
+				} else {
+					eventCh <- eventEvent
 				}
-				eventCh <- eventEvent
+			}
+			if podWatchChannelClosed && eventWatchChannelClosed {
+				break
 			}
 		}
 	}()
@@ -231,9 +240,9 @@ func (c *realRecyclerClient) WatchPod(name, namespace string, stopChannel chan s
 // recycle operation. The calculation and return value is either the
 // minimumTimeout or the timeoutIncrement per Gi of storage size, whichever is
 // greater.
-func CalculateTimeoutForVolume(minimumTimeout, timeoutIncrement int, pv *api.PersistentVolume) int64 {
+func CalculateTimeoutForVolume(minimumTimeout, timeoutIncrement int, pv *v1.PersistentVolume) int64 {
 	giQty := resource.MustParse("1Gi")
-	pvQty := pv.Spec.Capacity[api.ResourceStorage]
+	pvQty := pv.Spec.Capacity[v1.ResourceStorage]
 	giSize := giQty.Value()
 	pvSize := pvQty.Value()
 	timeout := (pvSize / giSize) * int64(timeoutIncrement)
@@ -299,16 +308,34 @@ func ChooseZoneForVolume(zones sets.String, pvcName string) string {
 
 		// Heuristic to make sure that volumes in a StatefulSet are spread across zones
 		// StatefulSet PVCs are (currently) named ClaimName-StatefulSetName-Id,
-		// where Id is an integer index
+		// where Id is an integer index.
+		// Note though that if a StatefulSet pod has multiple claims, we need them to be
+		// in the same zone, because otherwise the pod will be unable to mount both volumes,
+		// and will be unschedulable.  So we hash _only_ the "StatefulSetName" portion when
+		// it looks like `ClaimName-StatefulSetName-Id`.
+		// We continue to round-robin volume names that look like `Name-Id` also; this is a useful
+		// feature for users that are creating statefulset-like functionality without using statefulsets.
 		lastDash := strings.LastIndexByte(pvcName, '-')
 		if lastDash != -1 {
-			petIDString := pvcName[lastDash+1:]
-			petID, err := strconv.ParseUint(petIDString, 10, 32)
+			statefulsetIDString := pvcName[lastDash+1:]
+			statefulsetID, err := strconv.ParseUint(statefulsetIDString, 10, 32)
 			if err == nil {
-				// Offset by the pet id, so we round-robin across zones
-				index = uint32(petID)
-				// We still hash the volume name, but only the base
+				// Offset by the statefulsetID, so we round-robin across zones
+				index = uint32(statefulsetID)
+				// We still hash the volume name, but only the prefix
 				hashString = pvcName[:lastDash]
+
+				// In the special case where it looks like `ClaimName-StatefulSetName-Id`,
+				// hash only the StatefulSetName, so that different claims on the same StatefulSet
+				// member end up in the same zone.
+				// Note that StatefulSetName (and ClaimName) might themselves both have dashes.
+				// We actually just take the portion after the final - of ClaimName-StatefulSetName.
+				// For our purposes it doesn't much matter (just suboptimal spreading).
+				lastDash := strings.LastIndexByte(hashString, '-')
+				if lastDash != -1 {
+					hashString = hashString[lastDash+1:]
+				}
+
 				glog.V(2).Infof("Detected StatefulSet-style volume name %q; index=%d", pvcName, index)
 			}
 		}
@@ -352,4 +379,34 @@ func UnmountViaEmptyDir(dir string, host VolumeHost, volName string, volSpec Spe
 		return err
 	}
 	return wrapped.TearDownAt(dir)
+}
+
+// MountOptionFromSpec extracts and joins mount options from volume spec with supplied options
+func MountOptionFromSpec(spec *Spec, options ...string) []string {
+	pv := spec.PersistentVolume
+
+	if pv != nil {
+		if mo, ok := pv.Annotations[MountOptionAnnotation]; ok {
+			moList := strings.Split(mo, ",")
+			return JoinMountOptions(moList, options)
+		}
+
+	}
+	return options
+}
+
+// JoinMountOptions joins mount options eliminating duplicates
+func JoinMountOptions(userOptions []string, systemOptions []string) []string {
+	allMountOptions := sets.NewString()
+
+	for _, mountOption := range userOptions {
+		if len(mountOption) > 0 {
+			allMountOptions.Insert(mountOption)
+		}
+	}
+
+	for _, mountOption := range systemOptions {
+		allMountOptions.Insert(mountOption)
+	}
+	return allMountOptions.UnsortedList()
 }

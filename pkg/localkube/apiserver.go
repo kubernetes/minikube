@@ -17,10 +17,11 @@ limitations under the License.
 package localkube
 
 import (
+	apiserveroptions "k8s.io/apiserver/pkg/server/options"
+	"k8s.io/apiserver/pkg/storage/storagebackend"
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
-
-	"k8s.io/kubernetes/pkg/storage/storagebackend"
+	kubeapioptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 )
 
 func (lk LocalkubeServer) NewAPIServer() Server {
@@ -30,30 +31,39 @@ func (lk LocalkubeServer) NewAPIServer() Server {
 func StartAPIServer(lk LocalkubeServer) func() error {
 	config := options.NewServerRunOptions()
 
-	config.GenericServerRunOptions.BindAddress = lk.APIServerAddress
-	config.GenericServerRunOptions.SecurePort = lk.APIServerPort
-	config.GenericServerRunOptions.InsecureBindAddress = lk.APIServerInsecureAddress
-	config.GenericServerRunOptions.InsecurePort = lk.APIServerInsecurePort
+	config.SecureServing.ServingOptions.BindAddress = lk.APIServerAddress
+	config.SecureServing.ServingOptions.BindPort = lk.APIServerPort
 
-	config.GenericServerRunOptions.ClientCAFile = lk.GetCAPublicKeyCertPath()
-	config.GenericServerRunOptions.TLSCertFile = lk.GetPublicKeyCertPath()
-	config.GenericServerRunOptions.TLSPrivateKeyFile = lk.GetPrivateKeyCertPath()
+	config.InsecureServing.BindAddress = lk.APIServerInsecureAddress
+	config.InsecureServing.BindPort = lk.APIServerInsecurePort
+
+	config.Authentication.ClientCert.ClientCA = lk.GetCAPublicKeyCertPath()
+
+	config.SecureServing.ServerCert.CertKey.CertFile = lk.GetPublicKeyCertPath()
+	config.SecureServing.ServerCert.CertKey.KeyFile = lk.GetPrivateKeyCertPath()
 	config.GenericServerRunOptions.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
 
 	// use localkube etcd
-	config.GenericServerRunOptions.StorageConfig = storagebackend.Config{ServerList: KubeEtcdClientURLs}
+
+	config.Etcd.StorageConfig.ServerList = KubeEtcdClientURLs
+	config.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD2
 
 	// set Service IP range
-	config.GenericServerRunOptions.ServiceClusterIPRange = lk.ServiceClusterIPRange
+	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
+	config.Etcd.EnableWatchCache = true
+
+	config.Features = &apiserveroptions.FeatureOptions{
+		EnableProfiling: true,
+	}
 
 	// defaults from apiserver command
-	config.GenericServerRunOptions.EnableProfiling = true
-	config.GenericServerRunOptions.EnableWatchCache = true
 	config.GenericServerRunOptions.MinRequestTimeout = 1800
 
 	config.AllowPrivileged = true
 
-	config.GenericServerRunOptions.RuntimeConfig = lk.RuntimeConfig
+	config.APIEnablement = &kubeapioptions.APIEnablementOptions{
+		RuntimeConfig: lk.RuntimeConfig,
+	}
 
 	lk.SetExtraConfigForComponent("apiserver", &config)
 

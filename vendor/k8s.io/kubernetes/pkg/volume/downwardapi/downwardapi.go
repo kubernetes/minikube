@@ -22,10 +22,10 @@ import (
 	"sort"
 	"strings"
 
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/fieldpath"
-	"k8s.io/kubernetes/pkg/types"
-	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 	utilstrings "k8s.io/kubernetes/pkg/util/strings"
 	"k8s.io/kubernetes/pkg/volume"
 	volumeutil "k8s.io/kubernetes/pkg/volume/util"
@@ -51,7 +51,7 @@ var _ volume.VolumePlugin = &downwardAPIPlugin{}
 
 func wrappedVolumeSpec() volume.Spec {
 	return volume.Spec{
-		Volume: &api.Volume{VolumeSource: api.VolumeSource{EmptyDir: &api.EmptyDirVolumeSource{Medium: api.StorageMediumMemory}}},
+		Volume: &v1.Volume{VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{Medium: v1.StorageMediumMemory}}},
 	}
 }
 
@@ -82,7 +82,15 @@ func (plugin *downwardAPIPlugin) RequiresRemount() bool {
 	return true
 }
 
-func (plugin *downwardAPIPlugin) NewMounter(spec *volume.Spec, pod *api.Pod, opts volume.VolumeOptions) (volume.Mounter, error) {
+func (plugin *downwardAPIPlugin) SupportsMountOption() bool {
+	return false
+}
+
+func (plugin *downwardAPIPlugin) SupportsBulkVolumeVerification() bool {
+	return false
+}
+
+func (plugin *downwardAPIPlugin) NewMounter(spec *volume.Spec, pod *v1.Pod, opts volume.VolumeOptions) (volume.Mounter, error) {
 	v := &downwardAPIVolume{
 		volName: spec.Name(),
 		items:   spec.Volume.DownwardAPI.Items,
@@ -108,10 +116,10 @@ func (plugin *downwardAPIPlugin) NewUnmounter(volName string, podUID types.UID) 
 }
 
 func (plugin *downwardAPIPlugin) ConstructVolumeSpec(volumeName, mountPath string) (*volume.Spec, error) {
-	downwardAPIVolume := &api.Volume{
+	downwardAPIVolume := &v1.Volume{
 		Name: volumeName,
-		VolumeSource: api.VolumeSource{
-			DownwardAPI: &api.DownwardAPIVolumeSource{},
+		VolumeSource: v1.VolumeSource{
+			DownwardAPI: &v1.DownwardAPIVolumeSource{},
 		},
 	}
 	return volume.NewSpecFromVolume(downwardAPIVolume), nil
@@ -120,9 +128,9 @@ func (plugin *downwardAPIPlugin) ConstructVolumeSpec(volumeName, mountPath strin
 // downwardAPIVolume retrieves downward API data and placing them into the volume on the host.
 type downwardAPIVolume struct {
 	volName string
-	items   []api.DownwardAPIVolumeFile
-	pod     *api.Pod
-	podUID  types.UID // TODO: remove this redundancy as soon NewUnmounter func will have *api.POD and not only types.UID
+	items   []v1.DownwardAPIVolumeFile
+	pod     *v1.Pod
+	podUID  types.UID // TODO: remove this redundancy as soon NewUnmounter func will have *v1.POD and not only types.UID
 	plugin  *downwardAPIPlugin
 	volume.MetricsNil
 }
@@ -131,7 +139,7 @@ type downwardAPIVolume struct {
 // and dumps it in files
 type downwardAPIVolumeMounter struct {
 	*downwardAPIVolume
-	source api.DownwardAPIVolumeSource
+	source v1.DownwardAPIVolumeSource
 	opts   *volume.VolumeOptions
 }
 
@@ -175,7 +183,7 @@ func (b *downwardAPIVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 		return err
 	}
 
-	data, err := b.collectData(b.source.DefaultMode)
+	data, err := CollectData(b.source.Items, b.pod, b.plugin.host, b.source.DefaultMode)
 	if err != nil {
 		glog.Errorf("Error preparing data for downwardAPI volume %v for pod %v/%v: %s", b.volName, b.pod.Namespace, b.pod.Name, err.Error())
 		return err
@@ -203,17 +211,19 @@ func (b *downwardAPIVolumeMounter) SetUpAt(dir string, fsGroup *int64) error {
 	return nil
 }
 
-// collectData collects requested downwardAPI in data map.
+// CollectData collects requested downwardAPI in data map.
 // Map's key is the requested name of file to dump
 // Map's value is the (sorted) content of the field to be dumped in the file.
-func (d *downwardAPIVolume) collectData(defaultMode *int32) (map[string]volumeutil.FileProjection, error) {
+//
+// Note: this function is exported so that it can be called from the projection volume driver
+func CollectData(items []v1.DownwardAPIVolumeFile, pod *v1.Pod, host volume.VolumeHost, defaultMode *int32) (map[string]volumeutil.FileProjection, error) {
 	if defaultMode == nil {
 		return nil, fmt.Errorf("No defaultMode used, not even the default value for it")
 	}
 
 	errlist := []error{}
 	data := make(map[string]volumeutil.FileProjection)
-	for _, fileInfo := range d.items {
+	for _, fileInfo := range items {
 		var fileProjection volumeutil.FileProjection
 		fPath := path.Clean(fileInfo.Path)
 		if fileInfo.Mode != nil {
@@ -223,7 +233,7 @@ func (d *downwardAPIVolume) collectData(defaultMode *int32) (map[string]volumeut
 		}
 		if fileInfo.FieldRef != nil {
 			// TODO: unify with Kubelet.podFieldSelectorRuntimeValue
-			if values, err := fieldpath.ExtractFieldPathAsString(d.pod, fileInfo.FieldRef.FieldPath); err != nil {
+			if values, err := fieldpath.ExtractFieldPathAsString(pod, fileInfo.FieldRef.FieldPath); err != nil {
 				glog.Errorf("Unable to extract field %s: %s", fileInfo.FieldRef.FieldPath, err.Error())
 				errlist = append(errlist, err)
 			} else {
@@ -231,10 +241,10 @@ func (d *downwardAPIVolume) collectData(defaultMode *int32) (map[string]volumeut
 			}
 		} else if fileInfo.ResourceFieldRef != nil {
 			containerName := fileInfo.ResourceFieldRef.ContainerName
-			nodeAllocatable, err := d.plugin.host.GetNodeAllocatable()
+			nodeAllocatable, err := host.GetNodeAllocatable()
 			if err != nil {
 				errlist = append(errlist, err)
-			} else if values, err := fieldpath.ExtractResourceValueByContainerNameAndNodeAllocatable(fileInfo.ResourceFieldRef, d.pod, containerName, nodeAllocatable); err != nil {
+			} else if values, err := fieldpath.ExtractResourceValueByContainerNameAndNodeAllocatable(fileInfo.ResourceFieldRef, pod, containerName, nodeAllocatable); err != nil {
 				glog.Errorf("Unable to extract field %s: %s", fileInfo.ResourceFieldRef.Resource, err.Error())
 				errlist = append(errlist, err)
 			} else {
@@ -279,9 +289,9 @@ func (b *downwardAPIVolumeMounter) getMetaDir() string {
 	return path.Join(b.plugin.host.GetPodPluginDir(b.podUID, utilstrings.EscapeQualifiedNameForDisk(downwardAPIPluginName)), b.volName)
 }
 
-func getVolumeSource(spec *volume.Spec) (*api.DownwardAPIVolumeSource, bool) {
+func getVolumeSource(spec *volume.Spec) (*v1.DownwardAPIVolumeSource, bool) {
 	var readOnly bool
-	var volumeSource *api.DownwardAPIVolumeSource
+	var volumeSource *v1.DownwardAPIVolumeSource
 
 	if spec.Volume != nil && spec.Volume.DownwardAPI != nil {
 		volumeSource = spec.Volume.DownwardAPI

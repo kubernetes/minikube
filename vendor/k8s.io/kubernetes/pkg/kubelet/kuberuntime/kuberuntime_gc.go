@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	internalApi "k8s.io/kubernetes/pkg/kubelet/api"
-	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
+	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	"k8s.io/kubernetes/pkg/types"
 )
 
 // sandboxMinGCAge is the minimum age for an empty sandbox before it is garbage collected.
@@ -46,13 +46,13 @@ const sandboxMinGCAge time.Duration = 30 * time.Second
 
 // containerGC is the manager of garbage collection.
 type containerGC struct {
-	client    internalApi.RuntimeService
+	client    internalapi.RuntimeService
 	manager   *kubeGenericRuntimeManager
 	podGetter podGetter
 }
 
 // NewContainerGC creates a new containerGC.
-func NewContainerGC(client internalApi.RuntimeService, podGetter podGetter, manager *kubeGenericRuntimeManager) *containerGC {
+func NewContainerGC(client internalapi.RuntimeService, podGetter podGetter, manager *kubeGenericRuntimeManager) *containerGC {
 	return &containerGC{
 		client:    client,
 		manager:   manager,
@@ -161,21 +161,21 @@ func (cgc *containerGC) evictableContainers(minAge time.Duration) (containersByE
 	newestGCTime := time.Now().Add(-minAge)
 	for _, container := range containers {
 		// Prune out running containers.
-		if container.GetState() == runtimeApi.ContainerState_CONTAINER_RUNNING {
+		if container.State == runtimeapi.ContainerState_CONTAINER_RUNNING {
 			continue
 		}
 
-		createdAt := time.Unix(0, container.GetCreatedAt())
+		createdAt := time.Unix(0, container.CreatedAt)
 		if newestGCTime.Before(createdAt) {
 			continue
 		}
 
 		labeledInfo := getContainerInfoFromLabels(container.Labels)
 		containerInfo := containerGCInfo{
-			id:         container.GetId(),
-			name:       container.Metadata.GetName(),
+			id:         container.Id,
+			name:       container.Metadata.Name,
 			createTime: createdAt,
-			sandboxID:  container.GetPodSandboxId(),
+			sandboxID:  container.PodSandboxId,
 		}
 		key := evictUnit{
 			uid:  labeledInfo.PodUID,
@@ -256,15 +256,15 @@ func (cgc *containerGC) evictSandboxes(minAge time.Duration) error {
 	newestGCTime := time.Now().Add(-minAge)
 	for _, sandbox := range sandboxes {
 		// Prune out ready sandboxes.
-		if sandbox.GetState() == runtimeApi.PodSandboxState_SANDBOX_READY {
+		if sandbox.State == runtimeapi.PodSandboxState_SANDBOX_READY {
 			continue
 		}
 
 		// Prune out sandboxes that still have containers.
 		found := false
-		sandboxID := sandbox.GetId()
+		sandboxID := sandbox.Id
 		for _, container := range containers {
-			if container.GetPodSandboxId() == sandboxID {
+			if container.PodSandboxId == sandboxID {
 				found = true
 				break
 			}
@@ -274,11 +274,11 @@ func (cgc *containerGC) evictSandboxes(minAge time.Duration) error {
 		}
 
 		// Only garbage collect sandboxes older than sandboxMinGCAge.
-		createdAt := time.Unix(0, sandbox.GetCreatedAt())
+		createdAt := time.Unix(0, sandbox.CreatedAt)
 		if createdAt.After(newestGCTime) {
 			continue
 		}
-
+		glog.V(4).Infof("PodSandbox %q is eligible for garbage collection since it was created before %v: %+v", sandboxID, newestGCTime, sandbox)
 		evictSandboxes = append(evictSandboxes, sandboxID)
 	}
 

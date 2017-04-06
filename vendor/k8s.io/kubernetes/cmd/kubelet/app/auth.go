@@ -21,34 +21,28 @@ import (
 	"fmt"
 	"reflect"
 
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
+	"k8s.io/apiserver/pkg/authentication/authenticatorfactory"
+	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/apiserver/pkg/authorization/authorizerfactory"
+	clientset "k8s.io/client-go/kubernetes"
+	authenticationclient "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
+	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1beta1"
+
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
-	"k8s.io/kubernetes/pkg/auth/authenticator"
-	"k8s.io/kubernetes/pkg/auth/authenticator/bearertoken"
-	"k8s.io/kubernetes/pkg/auth/authorizer"
-	"k8s.io/kubernetes/pkg/auth/group"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	authenticationclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authentication/internalversion"
-	authorizationclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/authorization/internalversion"
-	alwaysallowauthorizer "k8s.io/kubernetes/pkg/genericapiserver/authorizer"
 	"k8s.io/kubernetes/pkg/kubelet/server"
-	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util/cert"
-	"k8s.io/kubernetes/plugin/pkg/auth/authenticator/request/anonymous"
-	unionauth "k8s.io/kubernetes/plugin/pkg/auth/authenticator/request/union"
-	"k8s.io/kubernetes/plugin/pkg/auth/authenticator/request/x509"
-	webhooktoken "k8s.io/kubernetes/plugin/pkg/auth/authenticator/token/webhook"
-	webhooksar "k8s.io/kubernetes/plugin/pkg/auth/authorizer/webhook"
 )
 
-func buildAuth(nodeName types.NodeName, client internalclientset.Interface, config componentconfig.KubeletConfiguration) (server.AuthInterface, error) {
+func buildAuth(nodeName types.NodeName, client clientset.Interface, config componentconfig.KubeletConfiguration) (server.AuthInterface, error) {
 	// Get clients, if provided
 	var (
 		tokenClient authenticationclient.TokenReviewInterface
 		sarClient   authorizationclient.SubjectAccessReviewInterface
 	)
 	if client != nil && !reflect.ValueOf(client).IsNil() {
-		tokenClient = client.Authentication().TokenReviews()
-		sarClient = client.Authorization().SubjectAccessReviews()
+		tokenClient = client.AuthenticationV1beta1().TokenReviews()
+		sarClient = client.AuthorizationV1beta1().SubjectAccessReviews()
 	}
 
 	authenticator, err := buildAuthn(tokenClient, config.Authentication)
@@ -67,59 +61,38 @@ func buildAuth(nodeName types.NodeName, client internalclientset.Interface, conf
 }
 
 func buildAuthn(client authenticationclient.TokenReviewInterface, authn componentconfig.KubeletAuthentication) (authenticator.Request, error) {
-	authenticators := []authenticator.Request{}
-
-	// x509 client cert auth
-	if len(authn.X509.ClientCAFile) > 0 {
-		clientCAs, err := cert.NewPool(authn.X509.ClientCAFile)
-		if err != nil {
-			return nil, fmt.Errorf("unable to load client CA file %s: %v", authn.X509.ClientCAFile, err)
-		}
-		verifyOpts := x509.DefaultVerifyOptions()
-		verifyOpts.Roots = clientCAs
-		authenticators = append(authenticators, x509.New(verifyOpts, x509.CommonNameUserConversion))
+	authenticatorConfig := authenticatorfactory.DelegatingAuthenticatorConfig{
+		Anonymous:    authn.Anonymous.Enabled,
+		CacheTTL:     authn.Webhook.CacheTTL.Duration,
+		ClientCAFile: authn.X509.ClientCAFile,
 	}
 
-	// bearer token auth that uses authentication.k8s.io TokenReview to determine userinfo
 	if authn.Webhook.Enabled {
 		if client == nil {
 			return nil, errors.New("no client provided, cannot use webhook authentication")
 		}
-		tokenAuth, err := webhooktoken.NewFromInterface(client, authn.Webhook.CacheTTL.Duration)
-		if err != nil {
-			return nil, err
-		}
-		authenticators = append(authenticators, bearertoken.New(tokenAuth))
+		authenticatorConfig.TokenAccessReviewClient = client
 	}
 
-	if len(authenticators) == 0 {
-		if authn.Anonymous.Enabled {
-			return anonymous.NewAuthenticator(), nil
-		}
-		return nil, errors.New("No authentication method configured")
-	}
-
-	authenticator := group.NewGroupAdder(unionauth.New(authenticators...), []string{"system:authenticated"})
-	if authn.Anonymous.Enabled {
-		authenticator = unionauth.NewFailOnError(authenticator, anonymous.NewAuthenticator())
-	}
-	return authenticator, nil
+	authenticator, _, err := authenticatorConfig.New()
+	return authenticator, err
 }
 
 func buildAuthz(client authorizationclient.SubjectAccessReviewInterface, authz componentconfig.KubeletAuthorization) (authorizer.Authorizer, error) {
 	switch authz.Mode {
 	case componentconfig.KubeletAuthorizationModeAlwaysAllow:
-		return alwaysallowauthorizer.NewAlwaysAllowAuthorizer(), nil
+		return authorizerfactory.NewAlwaysAllowAuthorizer(), nil
 
 	case componentconfig.KubeletAuthorizationModeWebhook:
 		if client == nil {
 			return nil, errors.New("no client provided, cannot use webhook authorization")
 		}
-		return webhooksar.NewFromInterface(
-			client,
-			authz.Webhook.CacheAuthorizedTTL.Duration,
-			authz.Webhook.CacheUnauthorizedTTL.Duration,
-		)
+		authorizerConfig := authorizerfactory.DelegatingAuthorizerConfig{
+			SubjectAccessReviewClient: client,
+			AllowCacheTTL:             authz.Webhook.CacheAuthorizedTTL.Duration,
+			DenyCacheTTL:              authz.Webhook.CacheUnauthorizedTTL.Duration,
+		}
+		return authorizerConfig.New()
 
 	case "":
 		return nil, fmt.Errorf("No authorization mode specified")

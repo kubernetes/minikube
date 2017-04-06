@@ -19,26 +19,28 @@ package configmap
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/generic"
+	"k8s.io/apiserver/pkg/registry/rest"
+	apistorage "k8s.io/apiserver/pkg/storage"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/api/validation"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/registry/generic"
-	"k8s.io/kubernetes/pkg/runtime"
-	apistorage "k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 // strategy implements behavior for ConfigMap objects
 type strategy struct {
 	runtime.ObjectTyper
-	api.NameGenerator
+	names.NameGenerator
 }
 
 // Strategy is the default logic that applies when creating and updating ConfigMap
 // objects via the REST API.
-var Strategy = strategy{api.Scheme, api.SimpleNameGenerator}
+var Strategy = strategy{api.Scheme, names.SimpleNameGenerator}
 
 // Strategy should implement rest.RESTCreateStrategy
 var _ rest.RESTCreateStrategy = Strategy
@@ -50,11 +52,11 @@ func (strategy) NamespaceScoped() bool {
 	return true
 }
 
-func (strategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
+func (strategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
 	_ = obj.(*api.ConfigMap)
 }
 
-func (strategy) Validate(ctx api.Context, obj runtime.Object) field.ErrorList {
+func (strategy) Validate(ctx genericapirequest.Context, obj runtime.Object) field.ErrorList {
 	cfg := obj.(*api.ConfigMap)
 
 	return validation.ValidateConfigMap(cfg)
@@ -68,7 +70,7 @@ func (strategy) AllowCreateOnUpdate() bool {
 	return false
 }
 
-func (strategy) PrepareForUpdate(ctx api.Context, newObj, oldObj runtime.Object) {
+func (strategy) PrepareForUpdate(ctx genericapirequest.Context, newObj, oldObj runtime.Object) {
 	_ = oldObj.(*api.ConfigMap)
 	_ = newObj.(*api.ConfigMap)
 }
@@ -77,7 +79,7 @@ func (strategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
-func (strategy) ValidateUpdate(ctx api.Context, newObj, oldObj runtime.Object) field.ErrorList {
+func (strategy) ValidateUpdate(ctx genericapirequest.Context, newObj, oldObj runtime.Object) field.ErrorList {
 	oldCfg, newCfg := oldObj.(*api.ConfigMap), newObj.(*api.ConfigMap)
 
 	return validation.ValidateConfigMapUpdate(newCfg, oldCfg)
@@ -88,18 +90,20 @@ func ConfigMapToSelectableFields(cfg *api.ConfigMap) fields.Set {
 	return generic.ObjectMetaFieldsSet(&cfg.ObjectMeta, true)
 }
 
+// GetAttrs returns labels and fields of a given object for filtering purposes.
+func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
+	cfg, ok := obj.(*api.ConfigMap)
+	if !ok {
+		return nil, nil, fmt.Errorf("given object is not a ConfigMap")
+	}
+	return labels.Set(cfg.ObjectMeta.Labels), ConfigMapToSelectableFields(cfg), nil
+}
+
 // MatchConfigMap returns a generic matcher for a given label and field selector.
 func MatchConfigMap(label labels.Selector, field fields.Selector) apistorage.SelectionPredicate {
 	return apistorage.SelectionPredicate{
-		Label: label,
-		Field: field,
-		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {
-			cfg, ok := obj.(*api.ConfigMap)
-			if !ok {
-				return nil, nil, fmt.Errorf("given object is not of type ConfigMap")
-			}
-
-			return labels.Set(cfg.ObjectMeta.Labels), ConfigMapToSelectableFields(cfg), nil
-		},
+		Label:    label,
+		Field:    field,
+		GetAttrs: GetAttrs,
 	}
 }

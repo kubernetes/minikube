@@ -18,10 +18,11 @@ package dockershim
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 
-	runtimeApi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
+	runtimeapi "k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/runtime"
 	"k8s.io/kubernetes/pkg/kubelet/dockertools"
 	"k8s.io/kubernetes/pkg/kubelet/leaky"
 )
@@ -55,27 +56,35 @@ const (
 	DockerPullableImageIDPrefix = dockertools.DockerPullablePrefix
 )
 
-func makeSandboxName(s *runtimeApi.PodSandboxConfig) string {
+func makeSandboxName(s *runtimeapi.PodSandboxConfig) string {
 	return strings.Join([]string{
-		kubePrefix,                                 // 0
-		sandboxContainerName,                       // 1
-		s.Metadata.GetName(),                       // 2
-		s.Metadata.GetNamespace(),                  // 3
-		s.Metadata.GetUid(),                        // 4
-		fmt.Sprintf("%d", s.Metadata.GetAttempt()), // 5
+		kubePrefix,                            // 0
+		sandboxContainerName,                  // 1
+		s.Metadata.Name,                       // 2
+		s.Metadata.Namespace,                  // 3
+		s.Metadata.Uid,                        // 4
+		fmt.Sprintf("%d", s.Metadata.Attempt), // 5
 	}, nameDelimiter)
 }
 
-func makeContainerName(s *runtimeApi.PodSandboxConfig, c *runtimeApi.ContainerConfig) string {
+func makeContainerName(s *runtimeapi.PodSandboxConfig, c *runtimeapi.ContainerConfig) string {
 	return strings.Join([]string{
-		kubePrefix,                                 // 0
-		c.Metadata.GetName(),                       // 1:
-		s.Metadata.GetName(),                       // 2: sandbox name
-		s.Metadata.GetNamespace(),                  // 3: sandbox namesapce
-		s.Metadata.GetUid(),                        // 4  sandbox uid
-		fmt.Sprintf("%d", c.Metadata.GetAttempt()), // 5
+		kubePrefix,                            // 0
+		c.Metadata.Name,                       // 1:
+		s.Metadata.Name,                       // 2: sandbox name
+		s.Metadata.Namespace,                  // 3: sandbox namesapce
+		s.Metadata.Uid,                        // 4  sandbox uid
+		fmt.Sprintf("%d", c.Metadata.Attempt), // 5
 	}, nameDelimiter)
+}
 
+// randomizeName randomizes the container name. This should only be used when we hit the
+// docker container name conflict bug.
+func randomizeName(name string) string {
+	return strings.Join([]string{
+		name,
+		fmt.Sprintf("%08x", rand.Uint32()),
+	}, nameDelimiter)
 }
 
 func parseUint32(s string) (uint32, error) {
@@ -87,12 +96,14 @@ func parseUint32(s string) (uint32, error) {
 }
 
 // TODO: Evaluate whether we should rely on labels completely.
-func parseSandboxName(name string) (*runtimeApi.PodSandboxMetadata, error) {
+func parseSandboxName(name string) (*runtimeapi.PodSandboxMetadata, error) {
 	// Docker adds a "/" prefix to names. so trim it.
 	name = strings.TrimPrefix(name, "/")
 
 	parts := strings.Split(name, nameDelimiter)
-	if len(parts) != 6 {
+	// Tolerate the random suffix.
+	// TODO(random-liu): Remove 7 field case when docker 1.11 is deprecated.
+	if len(parts) != 6 && len(parts) != 7 {
 		return nil, fmt.Errorf("failed to parse the sandbox name: %q", name)
 	}
 	if parts[0] != kubePrefix {
@@ -104,21 +115,23 @@ func parseSandboxName(name string) (*runtimeApi.PodSandboxMetadata, error) {
 		return nil, fmt.Errorf("failed to parse the sandbox name %q: %v", name, err)
 	}
 
-	return &runtimeApi.PodSandboxMetadata{
-		Name:      &parts[2],
-		Namespace: &parts[3],
-		Uid:       &parts[4],
-		Attempt:   &attempt,
+	return &runtimeapi.PodSandboxMetadata{
+		Name:      parts[2],
+		Namespace: parts[3],
+		Uid:       parts[4],
+		Attempt:   attempt,
 	}, nil
 }
 
 // TODO: Evaluate whether we should rely on labels completely.
-func parseContainerName(name string) (*runtimeApi.ContainerMetadata, error) {
+func parseContainerName(name string) (*runtimeapi.ContainerMetadata, error) {
 	// Docker adds a "/" prefix to names. so trim it.
 	name = strings.TrimPrefix(name, "/")
 
 	parts := strings.Split(name, nameDelimiter)
-	if len(parts) != 6 {
+	// Tolerate the random suffix.
+	// TODO(random-liu): Remove 7 field case when docker 1.11 is deprecated.
+	if len(parts) != 6 && len(parts) != 7 {
 		return nil, fmt.Errorf("failed to parse the container name: %q", name)
 	}
 	if parts[0] != kubePrefix {
@@ -130,8 +143,8 @@ func parseContainerName(name string) (*runtimeApi.ContainerMetadata, error) {
 		return nil, fmt.Errorf("failed to parse the container name %q: %v", name, err)
 	}
 
-	return &runtimeApi.ContainerMetadata{
-		Name:    &parts[1],
-		Attempt: &attempt,
+	return &runtimeapi.ContainerMetadata{
+		Name:    parts[1],
+		Attempt: attempt,
 	}, nil
 }

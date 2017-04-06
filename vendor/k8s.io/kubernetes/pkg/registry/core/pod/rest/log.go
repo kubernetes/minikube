@@ -19,21 +19,22 @@ package rest
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
+	genericrest "k8s.io/apiserver/pkg/registry/generic/rest"
+	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/errors"
-	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/api/validation"
 	"k8s.io/kubernetes/pkg/kubelet/client"
 	"k8s.io/kubernetes/pkg/registry/core/pod"
-	"k8s.io/kubernetes/pkg/registry/generic/registry"
-	genericrest "k8s.io/kubernetes/pkg/registry/generic/rest"
-	"k8s.io/kubernetes/pkg/runtime"
 )
 
 // LogREST implements the log endpoint for a Pod
 type LogREST struct {
 	KubeletConn client.ConnectionInfoGetter
-	Store       *registry.Store
+	Store       *genericregistry.Store
 }
 
 // LogREST implements GetterWithOptions
@@ -61,7 +62,7 @@ func (r *LogREST) ProducesObject(verb string) interface{} {
 }
 
 // Get retrieves a runtime.Object that will stream the contents of the pod log
-func (r *LogREST) Get(ctx api.Context, name string, opts runtime.Object) (runtime.Object, error) {
+func (r *LogREST) Get(ctx genericapirequest.Context, name string, opts runtime.Object) (runtime.Object, error) {
 	logOpts, ok := opts.(*api.PodLogOptions)
 	if !ok {
 		return nil, fmt.Errorf("invalid options object: %#v", opts)

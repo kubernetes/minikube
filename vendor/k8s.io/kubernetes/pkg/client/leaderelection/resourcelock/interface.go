@@ -17,8 +17,8 @@ limitations under the License.
 package resourcelock
 
 import (
-	"k8s.io/kubernetes/pkg/api/unversioned"
-	"k8s.io/kubernetes/pkg/client/record"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 )
 
 const (
@@ -30,11 +30,11 @@ const (
 // with a random string (e.g. UUID) with only slight modification of this code.
 // TODO(mikedanese): this should potentially be versioned
 type LeaderElectionRecord struct {
-	HolderIdentity       string           `json:"holderIdentity"`
-	LeaseDurationSeconds int              `json:"leaseDurationSeconds"`
-	AcquireTime          unversioned.Time `json:"acquireTime"`
-	RenewTime            unversioned.Time `json:"renewTime"`
-	LeaderTransitions    int              `json:"leaderTransitions"`
+	HolderIdentity       string      `json:"holderIdentity"`
+	LeaseDurationSeconds int         `json:"leaseDurationSeconds"`
+	AcquireTime          metav1.Time `json:"acquireTime"`
+	RenewTime            metav1.Time `json:"renewTime"`
+	LeaderTransitions    int         `json:"leaderTransitions"`
 }
 
 // ResourceLockConfig common data that exists across different

@@ -21,15 +21,15 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubetypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/stats"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
 	"k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/leaky"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/kubelet/types"
-	kubetypes "k8s.io/kubernetes/pkg/types"
 
 	"github.com/golang/glog"
 
@@ -100,7 +100,7 @@ func (sp *summaryProviderImpl) Get() (*stats.Summary, error) {
 // summaryBuilder aggregates the datastructures provided by cadvisor into a Summary result
 type summaryBuilder struct {
 	fsResourceAnalyzer fsResourceAnalyzerInterface
-	node               *api.Node
+	node               *v1.Node
 	nodeConfig         cm.NodeConfig
 	rootFsInfo         cadvisorapiv2.FsInfo
 	imageFsInfo        cadvisorapiv2.FsInfo
@@ -128,12 +128,14 @@ func (sb *summaryBuilder) build() (*stats.Summary, error) {
 	}
 
 	rootStats := sb.containerInfoV2ToStats("", &rootInfo)
+	cStats, _ := sb.latestContainerStats(&rootInfo)
 	nodeStats := stats.NodeStats{
 		NodeName: sb.node.Name,
 		CPU:      rootStats.CPU,
 		Memory:   rootStats.Memory,
 		Network:  sb.containerInfoV2ToNetworkStats("node:"+sb.node.Name, &rootInfo),
 		Fs: &stats.FsStats{
+			Time:           metav1.NewTime(cStats.Timestamp),
 			AvailableBytes: &sb.rootFsInfo.Available,
 			CapacityBytes:  &sb.rootFsInfo.Capacity,
 			UsedBytes:      &sb.rootFsInfo.Usage,
@@ -144,6 +146,7 @@ func (sb *summaryBuilder) build() (*stats.Summary, error) {
 		StartTime: rootStats.StartTime,
 		Runtime: &stats.RuntimeStats{
 			ImageFs: &stats.FsStats{
+				Time:           metav1.NewTime(cStats.Timestamp),
 				AvailableBytes: &sb.imageFsInfo.Available,
 				CapacityBytes:  &sb.imageFsInfo.Capacity,
 				UsedBytes:      &sb.imageStats.TotalStorageBytes,
@@ -181,8 +184,14 @@ func (sb *summaryBuilder) containerInfoV2FsStats(
 	info *cadvisorapiv2.ContainerInfo,
 	cs *stats.ContainerStats) {
 
+	lcs, found := sb.latestContainerStats(info)
+	if !found {
+		return
+	}
+
 	// The container logs live on the node rootfs device
 	cs.Logs = &stats.FsStats{
+		Time:           metav1.NewTime(lcs.Timestamp),
 		AvailableBytes: &sb.rootFsInfo.Available,
 		CapacityBytes:  &sb.rootFsInfo.Capacity,
 		InodesFree:     sb.rootFsInfo.InodesFree,
@@ -196,14 +205,11 @@ func (sb *summaryBuilder) containerInfoV2FsStats(
 
 	// The container rootFs lives on the imageFs devices (which may not be the node root fs)
 	cs.Rootfs = &stats.FsStats{
+		Time:           metav1.NewTime(lcs.Timestamp),
 		AvailableBytes: &sb.imageFsInfo.Available,
 		CapacityBytes:  &sb.imageFsInfo.Capacity,
 		InodesFree:     sb.imageFsInfo.InodesFree,
 		Inodes:         sb.imageFsInfo.Inodes,
-	}
-	lcs, found := sb.latestContainerStats(info)
-	if !found {
-		return
 	}
 	cfs := lcs.Filesystem
 
@@ -266,7 +272,7 @@ func (sb *summaryBuilder) buildSummaryPods() []stats.PodStats {
 		if containerName == leaky.PodInfraContainerName {
 			// Special case for infrastructure container which is hidden from the user and has network stats
 			podStats.Network = sb.containerInfoV2ToNetworkStats("pod:"+ref.Namespace+"_"+ref.Name, &cinfo)
-			podStats.StartTime = unversioned.NewTime(cinfo.Spec.CreationTime)
+			podStats.StartTime = metav1.NewTime(cinfo.Spec.CreationTime)
 		} else {
 			podStats.Containers = append(podStats.Containers, sb.containerInfoV2ToStats(containerName, &cinfo))
 		}
@@ -310,7 +316,7 @@ func (sb *summaryBuilder) containerInfoV2ToStats(
 	name string,
 	info *cadvisorapiv2.ContainerInfo) stats.ContainerStats {
 	cStats := stats.ContainerStats{
-		StartTime: unversioned.NewTime(info.Spec.CreationTime),
+		StartTime: metav1.NewTime(info.Spec.CreationTime),
 		Name:      name,
 	}
 	cstat, found := sb.latestContainerStats(info)
@@ -319,7 +325,7 @@ func (sb *summaryBuilder) containerInfoV2ToStats(
 	}
 	if info.Spec.HasCpu {
 		cpuStats := stats.CPUStats{
-			Time: unversioned.NewTime(cstat.Timestamp),
+			Time: metav1.NewTime(cstat.Timestamp),
 		}
 		if cstat.CpuInst != nil {
 			cpuStats.UsageNanoCores = &cstat.CpuInst.Usage.Total
@@ -333,7 +339,7 @@ func (sb *summaryBuilder) containerInfoV2ToStats(
 		pageFaults := cstat.Memory.ContainerData.Pgfault
 		majorPageFaults := cstat.Memory.ContainerData.Pgmajfault
 		cStats.Memory = &stats.MemoryStats{
-			Time:            unversioned.NewTime(cstat.Timestamp),
+			Time:            metav1.NewTime(cstat.Timestamp),
 			UsageBytes:      &cstat.Memory.Usage,
 			WorkingSetBytes: &cstat.Memory.WorkingSet,
 			RSSBytes:        &cstat.Memory.RSS,
@@ -372,7 +378,7 @@ func (sb *summaryBuilder) containerInfoV2ToNetworkStats(name string, info *cadvi
 	for _, inter := range cstat.Network.Interfaces {
 		if inter.Name == network.DefaultInterfaceName {
 			return &stats.NetworkStats{
-				Time:     unversioned.NewTime(cstat.Timestamp),
+				Time:     metav1.NewTime(cstat.Timestamp),
 				RxBytes:  &inter.RxBytes,
 				RxErrors: &inter.RxErrors,
 				TxBytes:  &inter.TxBytes,
@@ -426,7 +432,7 @@ func (sb *summaryBuilder) containerInfoV2ToUserDefinedMetrics(info *cadvisorapiv
 	for _, specVal := range udmMap {
 		udm = append(udm, stats.UserDefinedMetric{
 			UserDefinedMetricDescriptor: specVal.ref,
-			Time:  unversioned.NewTime(specVal.time),
+			Time:  metav1.NewTime(specVal.time),
 			Value: specVal.value,
 		})
 	}

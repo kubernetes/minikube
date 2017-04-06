@@ -17,8 +17,8 @@ limitations under the License.
 package cm
 
 import (
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 // ResourceConfig holds information about all the supported cgroup resource parameters.
@@ -47,6 +47,18 @@ type CgroupConfig struct {
 	ResourceParameters *ResourceConfig
 }
 
+// MemoryStats holds the on-demand stastistics from the memory cgroup
+type MemoryStats struct {
+	// Memory usage (in bytes).
+	Usage int64
+}
+
+// ResourceStats holds on-demand stastistics from various cgroup subsystems
+type ResourceStats struct {
+	// Memory statistics.
+	MemoryStats *MemoryStats
+}
+
 // CgroupManager allows for cgroup management.
 // Supports Cgroup Creation ,Deletion and Updates.
 type CgroupManager interface {
@@ -72,6 +84,8 @@ type CgroupManager interface {
 	Pids(name CgroupName) []int
 	// ReduceCPULimits reduces the CPU CFS values to the minimum amount of shares.
 	ReduceCPULimits(cgroupName CgroupName) error
+	// GetResourceStats returns statistics of the specified cgroup as read from the cgroup fs.
+	GetResourceStats(name CgroupName) (*ResourceStats, error)
 }
 
 // QOSContainersInfo stores the names of containers per qos
@@ -86,15 +100,15 @@ type QOSContainersInfo struct {
 // containers for the pod.
 type PodContainerManager interface {
 	// GetPodContainerName returns the CgroupName identifer, and its literal cgroupfs form on the host.
-	GetPodContainerName(*api.Pod) (CgroupName, string)
+	GetPodContainerName(*v1.Pod) (CgroupName, string)
 
 	// EnsureExists takes a pod as argument and makes sure that
 	// pod cgroup exists if qos cgroup hierarchy flag is enabled.
 	// If the pod cgroup doesen't already exist this method creates it.
-	EnsureExists(*api.Pod) error
+	EnsureExists(*v1.Pod) error
 
 	// Exists returns true if the pod cgroup exists.
-	Exists(*api.Pod) bool
+	Exists(*v1.Pod) bool
 
 	// Destroy takes a pod Cgroup name as argument and destroys the pod's container.
 	Destroy(name CgroupName) error

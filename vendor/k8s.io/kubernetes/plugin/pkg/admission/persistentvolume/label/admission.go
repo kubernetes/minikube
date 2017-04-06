@@ -17,23 +17,23 @@ limitations under the License.
 package label
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"sync"
 
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-
-	"k8s.io/kubernetes/pkg/admission"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/gce"
+	kubeapiserveradmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
 	vol "k8s.io/kubernetes/pkg/volume"
 )
 
 func init() {
-	admission.RegisterPlugin("PersistentVolumeLabel", func(client clientset.Interface, config io.Reader) (admission.Interface, error) {
+	admission.RegisterPlugin("PersistentVolumeLabel", func(config io.Reader) (admission.Interface, error) {
 		persistentVolumeLabelAdmission := NewPersistentVolumeLabel()
 		return persistentVolumeLabelAdmission, nil
 	})
@@ -46,8 +46,11 @@ type persistentVolumeLabel struct {
 
 	mutex            sync.Mutex
 	ebsVolumes       aws.Volumes
+	cloudConfig      []byte
 	gceCloudProvider *gce.GCECloud
 }
+
+var _ kubeapiserveradmission.WantsCloudConfig = &persistentVolumeLabel{}
 
 // NewPersistentVolumeLabel returns an admission.Interface implementation which adds labels to PersistentVolume CREATE requests,
 // based on the labels provided by the underlying cloud provider.
@@ -57,6 +60,10 @@ func NewPersistentVolumeLabel() *persistentVolumeLabel {
 	return &persistentVolumeLabel{
 		Handler: admission.NewHandler(admission.Create),
 	}
+}
+
+func (l *persistentVolumeLabel) SetCloudConfig(cloudConfig []byte) {
+	l.cloudConfig = cloudConfig
 }
 
 func (l *persistentVolumeLabel) Admit(a admission.Attributes) (err error) {
@@ -124,7 +131,7 @@ func (l *persistentVolumeLabel) findAWSEBSLabels(volume *api.PersistentVolume) (
 		return nil, err
 	}
 
-	return labels, err
+	return labels, nil
 }
 
 // getEBSVolumes returns the AWS Volumes interface for ebs
@@ -133,7 +140,11 @@ func (l *persistentVolumeLabel) getEBSVolumes() (aws.Volumes, error) {
 	defer l.mutex.Unlock()
 
 	if l.ebsVolumes == nil {
-		cloudProvider, err := cloudprovider.GetCloudProvider("aws", nil)
+		var cloudConfigReader io.Reader
+		if len(l.cloudConfig) > 0 {
+			cloudConfigReader = bytes.NewReader(l.cloudConfig)
+		}
+		cloudProvider, err := cloudprovider.GetCloudProvider("aws", cloudConfigReader)
 		if err != nil || cloudProvider == nil {
 			return nil, err
 		}
@@ -162,14 +173,14 @@ func (l *persistentVolumeLabel) findGCEPDLabels(volume *api.PersistentVolume) (m
 	}
 
 	// If the zone is already labeled, honor the hint
-	zone := volume.Labels[unversioned.LabelZoneFailureDomain]
+	zone := volume.Labels[metav1.LabelZoneFailureDomain]
 
 	labels, err := provider.GetAutoLabelsForPD(volume.Spec.GCEPersistentDisk.PDName, zone)
 	if err != nil {
 		return nil, err
 	}
 
-	return labels, err
+	return labels, nil
 }
 
 // getGCECloudProvider returns the GCE cloud provider, for use for querying volume labels
@@ -178,7 +189,11 @@ func (l *persistentVolumeLabel) getGCECloudProvider() (*gce.GCECloud, error) {
 	defer l.mutex.Unlock()
 
 	if l.gceCloudProvider == nil {
-		cloudProvider, err := cloudprovider.GetCloudProvider("gce", nil)
+		var cloudConfigReader io.Reader
+		if len(l.cloudConfig) > 0 {
+			cloudConfigReader = bytes.NewReader(l.cloudConfig)
+		}
+		cloudProvider, err := cloudprovider.GetCloudProvider("gce", cloudConfigReader)
 		if err != nil || cloudProvider == nil {
 			return nil, err
 		}

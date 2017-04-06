@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	utilnet "k8s.io/kubernetes/pkg/util/net"
+	utilnet "k8s.io/apimachinery/pkg/util/net"
 )
 
 // findNestedElement uses reflection to find the element corresponding to the dot-separated string parameter.

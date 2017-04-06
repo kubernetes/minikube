@@ -19,23 +19,30 @@ package scheduler
 import (
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/client/record"
-	"k8s.io/kubernetes/pkg/util/wait"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/kubernetes/pkg/api/v1"
+	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
+	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
+	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/metrics"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/schedulercache"
+	"k8s.io/kubernetes/plugin/pkg/scheduler/util"
 
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/client-go/tools/cache"
 )
 
 // Binder knows how to write a binding.
 type Binder interface {
-	Bind(binding *api.Binding) error
+	Bind(binding *v1.Binding) error
 }
 
 type PodConditionUpdater interface {
-	Update(pod *api.Pod, podCondition *api.PodCondition) error
+	Update(pod *v1.Pod, podCondition *v1.PodCondition) error
 }
 
 // Scheduler watches for new unscheduled pods. It attempts to find
@@ -44,6 +51,37 @@ type Scheduler struct {
 	config *Config
 }
 
+func (sched *Scheduler) StopEverything() {
+	close(sched.config.StopEverything)
+}
+
+// These are the functions which need to be provided in order to build a Scheduler configuration.
+// An implementation of this can be seen in factory.go.
+type Configurator interface {
+	GetPriorityFunctionConfigs(priorityKeys sets.String) ([]algorithm.PriorityConfig, error)
+	GetPriorityMetadataProducer() (algorithm.MetadataProducer, error)
+	GetPredicateMetadataProducer() (algorithm.MetadataProducer, error)
+	GetPredicates(predicateKeys sets.String) (map[string]algorithm.FitPredicate, error)
+	GetHardPodAffinitySymmetricWeight() int
+	GetSchedulerName() string
+	MakeDefaultErrorFunc(backoff *util.PodBackoff, podQueue *cache.FIFO) func(pod *v1.Pod, err error)
+
+	// Probably doesn't need to be public.  But exposed for now in case.
+	ResponsibleForPod(pod *v1.Pod) bool
+
+	// Needs to be exposed for things like integration tests where we want to make fake nodes.
+	GetNodeLister() corelisters.NodeLister
+	GetClient() clientset.Interface
+	GetScheduledPodLister() corelisters.PodLister
+	Run()
+
+	Create() (*Config, error)
+	CreateFromProvider(providerName string) (*Config, error)
+	CreateFromConfig(policy schedulerapi.Policy) (*Config, error)
+	CreateFromKeys(predicateKeys, priorityKeys sets.String, extenders []algorithm.SchedulerExtender) (*Config, error)
+}
+
+// TODO over time we should make this struct a hidden implementation detail of the scheduler.
 type Config struct {
 	// It is expected that changes made via SchedulerCache will be observed
 	// by NodeLister and Algorithm.
@@ -60,11 +98,11 @@ type Config struct {
 	// is available. We don't use a channel for this, because scheduling
 	// a pod may take some amount of time and we don't want pods to get
 	// stale while they sit in a channel.
-	NextPod func() *api.Pod
+	NextPod func() *v1.Pod
 
 	// Error is called if there is an error. It is passed the pod in
 	// question, and the error
-	Error func(*api.Pod, error)
+	Error func(*v1.Pod, error)
 
 	// Recorder is the EventRecorder to use
 	Recorder record.EventRecorder
@@ -74,12 +112,32 @@ type Config struct {
 }
 
 // New returns a new scheduler.
+// TODO replace this with NewFromConfigurator.
 func New(c *Config) *Scheduler {
 	s := &Scheduler{
 		config: c,
 	}
 	metrics.Register()
 	return s
+}
+
+// NewFromConfigurator returns a new scheduler that is created entirely by the Configurator.  Assumes Create() is implemented.
+// Supports intermediate Config mutation for now if you provide modifier functions which will run after Config is created.
+func NewFromConfigurator(c Configurator, modifiers ...func(c *Config)) (*Scheduler, error) {
+	cfg, err := c.Create()
+	if err != nil {
+		return nil, err
+	}
+	// Mutate it if any functions were provided, changes might be required for certain types of tests (i.e. change the recorder).
+	for _, modifier := range modifiers {
+		modifier(cfg)
+	}
+	// From this point on the config is immutable to the outside.
+	s := &Scheduler{
+		config: cfg,
+	}
+	metrics.Register()
+	return s, nil
 }
 
 // Run begins watching and scheduling. It starts a goroutine and returns immediately.
@@ -89,6 +147,11 @@ func (s *Scheduler) Run() {
 
 func (s *Scheduler) scheduleOne() {
 	pod := s.config.NextPod()
+	if pod.DeletionTimestamp != nil {
+		s.config.Recorder.Eventf(pod, v1.EventTypeWarning, "FailedScheduling", "skip schedule deleting pod: %v/%v", pod.Namespace, pod.Name)
+		glog.V(3).Infof("Skip schedule deleting pod: %v/%v", pod.Namespace, pod.Name)
+		return
+	}
 
 	glog.V(3).Infof("Attempting to schedule pod: %v/%v", pod.Namespace, pod.Name)
 	start := time.Now()
@@ -96,11 +159,12 @@ func (s *Scheduler) scheduleOne() {
 	if err != nil {
 		glog.V(1).Infof("Failed to schedule pod: %v/%v", pod.Namespace, pod.Name)
 		s.config.Error(pod, err)
-		s.config.Recorder.Eventf(pod, api.EventTypeWarning, "FailedScheduling", "%v", err)
-		s.config.PodConditionUpdater.Update(pod, &api.PodCondition{
-			Type:   api.PodScheduled,
-			Status: api.ConditionFalse,
-			Reason: api.PodReasonUnschedulable,
+		s.config.Recorder.Eventf(pod, v1.EventTypeWarning, "FailedScheduling", "%v", err)
+		s.config.PodConditionUpdater.Update(pod, &v1.PodCondition{
+			Type:    v1.PodScheduled,
+			Status:  v1.ConditionFalse,
+			Reason:  v1.PodReasonUnschedulable,
+			Message: err.Error(),
 		})
 		return
 	}
@@ -126,9 +190,9 @@ func (s *Scheduler) scheduleOne() {
 	go func() {
 		defer metrics.E2eSchedulingLatency.Observe(metrics.SinceInMicroseconds(start))
 
-		b := &api.Binding{
-			ObjectMeta: api.ObjectMeta{Namespace: pod.Namespace, Name: pod.Name},
-			Target: api.ObjectReference{
+		b := &v1.Binding{
+			ObjectMeta: metav1.ObjectMeta{Namespace: pod.Namespace, Name: pod.Name},
+			Target: v1.ObjectReference{
 				Kind: "Node",
 				Name: dest,
 			},
@@ -138,21 +202,24 @@ func (s *Scheduler) scheduleOne() {
 		// If binding succeeded then PodScheduled condition will be updated in apiserver so that
 		// it's atomic with setting host.
 		err := s.config.Binder.Bind(b)
+		if err := s.config.SchedulerCache.FinishBinding(&assumed); err != nil {
+			glog.Errorf("scheduler cache FinishBinding failed: %v", err)
+		}
 		if err != nil {
 			glog.V(1).Infof("Failed to bind pod: %v/%v", pod.Namespace, pod.Name)
 			if err := s.config.SchedulerCache.ForgetPod(&assumed); err != nil {
 				glog.Errorf("scheduler cache ForgetPod failed: %v", err)
 			}
 			s.config.Error(pod, err)
-			s.config.Recorder.Eventf(pod, api.EventTypeNormal, "FailedScheduling", "Binding rejected: %v", err)
-			s.config.PodConditionUpdater.Update(pod, &api.PodCondition{
-				Type:   api.PodScheduled,
-				Status: api.ConditionFalse,
+			s.config.Recorder.Eventf(pod, v1.EventTypeNormal, "FailedScheduling", "Binding rejected: %v", err)
+			s.config.PodConditionUpdater.Update(pod, &v1.PodCondition{
+				Type:   v1.PodScheduled,
+				Status: v1.ConditionFalse,
 				Reason: "BindingRejected",
 			})
 			return
 		}
 		metrics.BindingLatency.Observe(metrics.SinceInMicroseconds(bindingStart))
-		s.config.Recorder.Eventf(pod, api.EventTypeNormal, "Scheduled", "Successfully assigned %v to %v", pod.Name, dest)
+		s.config.Recorder.Eventf(pod, v1.EventTypeNormal, "Scheduled", "Successfully assigned %v to %v", pod.Name, dest)
 	}()
 }
