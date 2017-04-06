@@ -1,5 +1,21 @@
 # Minikube Release Notes
 
+## Version 0.18.0 - 4/6/2017
+* Upgraded default kubernetes version to v1.6.0
+* Mount command on macOS xhyve
+* Pods can now write to files mounted by `minikube mount` 
+* Added `addon configure` command
+* Made DNS domain configurable with `--dns-domain` flag to `minikube start`
+* Upgraded Kubernetes Dashboard to 1.6.0
+* Removed Boot2Docker ISO support
+* Added `addons disable default-storageclass` command to disable default dynamic provisioner
+* Added support for private docker registry in registry-creds addon
+* Added `--f` flag to `minikube logs` to stream logs
+* Added `--docker-opts` flag to `minikube start` to propagate docker options to the daemon
+* Updated heapster addon to v1.3.0
+* Updated ingress addon to v0.9-beta.3
+* Made localkube versions backwards compatible for versions without `--apiserver-name`
+
 ## Version 0.17.1 - 3/2/2017
 * Removed vendored KVM driver so minikube doesn't have a dependency on libvirt-bin
 
