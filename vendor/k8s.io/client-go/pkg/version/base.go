@@ -29,7 +29,7 @@ package version
 // works for GitHub tar downloads.
 //
 // When releasing a new Kubernetes version, this file is updated by
-// build-tools/mark_new_version.sh to reflect the new version, and then a
+// build/mark_new_version.sh to reflect the new version, and then a
 // git annotated tag (using format vX.Y where X == Major version and Y
 // == Minor version) is created to point to the commit that updates
 // pkg/version/base.go
@@ -39,8 +39,8 @@ var (
 	// them irrelevant. (Next we'll take it out, which may muck with
 	// scripts consuming the kubectl version output - but most of
 	// these should be looking at gitVersion already anyways.)
-	gitMajor string = "" // major version, always numeric
-	gitMinor string = "" // minor version, numeric possibly followed by "+"
+	gitMajor string = "1"  // major version, always numeric
+	gitMinor string = "6+" // minor version, numeric possibly followed by "+"
 
 	// semantic version, derived by build scripts (see
 	// https://github.com/kubernetes/kubernetes/blob/master/docs/design/versioning.md
@@ -51,7 +51,7 @@ var (
 	// semantic version is a git hash, but the version itself is no
 	// longer the direct output of "git describe", but a slight
 	// translation to be semver compliant.
-	gitVersion   string = "v0.0.0-master+$Format:%h$"
+	gitVersion   string = "v1.6.0-rc.1+$Format:%h$"
 	gitCommit    string = "$Format:%H$"    // sha1 from git, output of $(git rev-parse HEAD)
 	gitTreeState string = "not a git tree" // state of git tree, either "clean" or "dirty"
 

@@ -22,14 +22,15 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	utilyaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/api/validation"
-	"k8s.io/kubernetes/pkg/apimachinery/registered"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
-	"k8s.io/kubernetes/pkg/runtime"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/hash"
-	utilyaml "k8s.io/kubernetes/pkg/util/yaml"
 
 	"github.com/golang/glog"
 )
@@ -57,7 +58,7 @@ func applyDefaults(pod *api.Pod, source string, isFile bool, nodeName types.Node
 	glog.V(5).Infof("Generated Name %q for UID %q from URL %s", pod.Name, pod.UID, source)
 
 	if pod.Namespace == "" {
-		pod.Namespace = kubetypes.NamespaceDefault
+		pod.Namespace = metav1.NamespaceDefault
 	}
 	glog.V(5).Infof("Using namespace %q for pod %q from %s", pod.Namespace, pod.Name, source)
 
@@ -72,6 +73,15 @@ func applyDefaults(pod *api.Pod, source string, isFile bool, nodeName types.Node
 	// The generated UID is the hash of the file.
 	pod.Annotations[kubetypes.ConfigHashAnnotationKey] = string(pod.UID)
 
+	if isFile {
+		// Applying the default Taint tolerations to static pods,
+		// so they are not evicted when there are node problems.
+		api.AddOrUpdateTolerationInPod(pod, &api.Toleration{
+			Operator: "Exists",
+			Effect:   api.TaintEffectNoExecute,
+		})
+	}
+
 	// Set the default status to pending.
 	pod.Status.Phase = api.PodPending
 	return nil
@@ -80,15 +90,15 @@ func applyDefaults(pod *api.Pod, source string, isFile bool, nodeName types.Node
 func getSelfLink(name, namespace string) string {
 	var selfLink string
 	if len(namespace) == 0 {
-		namespace = api.NamespaceDefault
+		namespace = metav1.NamespaceDefault
 	}
-	selfLink = fmt.Sprintf("/api/"+registered.GroupOrDie(api.GroupName).GroupVersion.Version+"/pods/namespaces/%s/%s", name, namespace)
+	selfLink = fmt.Sprintf("/api/"+api.Registry.GroupOrDie(api.GroupName).GroupVersion.Version+"/pods/namespaces/%s/%s", name, namespace)
 	return selfLink
 }
 
 type defaultFunc func(pod *api.Pod) error
 
-func tryDecodeSinglePod(data []byte, defaultFn defaultFunc) (parsed bool, pod *api.Pod, err error) {
+func tryDecodeSinglePod(data []byte, defaultFn defaultFunc) (parsed bool, pod *v1.Pod, err error) {
 	// JSON is valid YAML, so this should work for everything.
 	json, err := utilyaml.ToJSON(data)
 	if err != nil {
@@ -112,10 +122,14 @@ func tryDecodeSinglePod(data []byte, defaultFn defaultFunc) (parsed bool, pod *a
 		err = fmt.Errorf("invalid pod: %v", errs)
 		return true, pod, err
 	}
-	return true, newPod, nil
+	v1Pod := &v1.Pod{}
+	if err := v1.Convert_api_Pod_To_v1_Pod(newPod, v1Pod, nil); err != nil {
+		return true, nil, err
+	}
+	return true, v1Pod, nil
 }
 
-func tryDecodePodList(data []byte, defaultFn defaultFunc) (parsed bool, pods api.PodList, err error) {
+func tryDecodePodList(data []byte, defaultFn defaultFunc) (parsed bool, pods v1.PodList, err error) {
 	obj, err := runtime.Decode(api.Codecs.UniversalDecoder(), data)
 	if err != nil {
 		return false, pods, err
@@ -137,5 +151,9 @@ func tryDecodePodList(data []byte, defaultFn defaultFunc) (parsed bool, pods api
 			return true, pods, err
 		}
 	}
-	return true, *newPods, err
+	v1Pods := &v1.PodList{}
+	if err := v1.Convert_api_PodList_To_v1_PodList(newPods, v1Pods, nil); err != nil {
+		return true, pods, err
+	}
+	return true, *v1Pods, err
 }

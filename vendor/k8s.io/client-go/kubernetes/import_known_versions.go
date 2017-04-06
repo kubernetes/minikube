@@ -20,8 +20,8 @@ package kubernetes
 import (
 	"fmt"
 
+	"k8s.io/client-go/pkg/api"
 	_ "k8s.io/client-go/pkg/api/install"
-	"k8s.io/client-go/pkg/apimachinery/registered"
 	_ "k8s.io/client-go/pkg/apis/apps/install"
 	_ "k8s.io/client-go/pkg/apis/authentication/install"
 	_ "k8s.io/client-go/pkg/apis/authorization/install"
@@ -31,11 +31,12 @@ import (
 	_ "k8s.io/client-go/pkg/apis/extensions/install"
 	_ "k8s.io/client-go/pkg/apis/policy/install"
 	_ "k8s.io/client-go/pkg/apis/rbac/install"
+	_ "k8s.io/client-go/pkg/apis/settings/install"
 	_ "k8s.io/client-go/pkg/apis/storage/install"
 )
 
 func init() {
-	if missingVersions := registered.ValidateEnvRequestedVersions(); len(missingVersions) != 0 {
+	if missingVersions := api.Registry.ValidateEnvRequestedVersions(); len(missingVersions) != 0 {
 		panic(fmt.Sprintf("KUBE_API_VERSIONS contains versions that are not installed: %q.", missingVersions))
 	}
 }

@@ -17,23 +17,21 @@ limitations under the License.
 package kuberuntime
 
 import (
-	"io/ioutil"
 	"net/http"
 	"time"
 
 	cadvisorapi "github.com/google/cadvisor/info/v1"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/client/record"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/flowcontrol"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/credentialprovider"
-	internalApi "k8s.io/kubernetes/pkg/kubelet/api"
+	internalapi "k8s.io/kubernetes/pkg/kubelet/api"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/images"
 	"k8s.io/kubernetes/pkg/kubelet/lifecycle"
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	proberesults "k8s.io/kubernetes/pkg/kubelet/prober/results"
-	"k8s.io/kubernetes/pkg/types"
-	kubetypes "k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util/flowcontrol"
 )
 
 type fakeHTTP struct {
@@ -46,52 +44,20 @@ func (f *fakeHTTP) Get(url string) (*http.Response, error) {
 	return nil, f.err
 }
 
-// fakeRuntimeHelper implements kubecontainer.RuntimeHelper interfaces for testing purposes.
-type fakeRuntimeHelper struct{}
-
-func (f *fakeRuntimeHelper) GenerateRunContainerOptions(pod *api.Pod, container *api.Container, podIP string) (*kubecontainer.RunContainerOptions, error) {
-	var opts kubecontainer.RunContainerOptions
-	if len(container.TerminationMessagePath) != 0 {
-		testPodContainerDir, err := ioutil.TempDir("", "fooPodContainerDir")
-		if err != nil {
-			return nil, err
-		}
-		opts.PodContainerDir = testPodContainerDir
-	}
-	return &opts, nil
-}
-
-func (f *fakeRuntimeHelper) GetClusterDNS(pod *api.Pod) ([]string, []string, error) {
-	return nil, nil, nil
-}
-
-// This is not used by docker runtime.
-func (f *fakeRuntimeHelper) GeneratePodHostNameAndDomain(pod *api.Pod) (string, string, error) {
-	return "", "", nil
-}
-
-func (f *fakeRuntimeHelper) GetPodDir(kubetypes.UID) string {
-	return ""
-}
-
-func (f *fakeRuntimeHelper) GetExtraSupplementalGroupsForPod(pod *api.Pod) []int64 {
-	return nil
-}
-
 type fakePodGetter struct {
-	pods map[types.UID]*api.Pod
+	pods map[types.UID]*v1.Pod
 }
 
 func newFakePodGetter() *fakePodGetter {
-	return &fakePodGetter{make(map[types.UID]*api.Pod)}
+	return &fakePodGetter{make(map[types.UID]*v1.Pod)}
 }
 
-func (f *fakePodGetter) GetPodByUID(uid types.UID) (*api.Pod, bool) {
+func (f *fakePodGetter) GetPodByUID(uid types.UID) (*v1.Pod, bool) {
 	pod, found := f.pods[uid]
 	return pod, found
 }
 
-func NewFakeKubeRuntimeManager(runtimeService internalApi.RuntimeService, imageService internalApi.ImageManagerService, machineInfo *cadvisorapi.MachineInfo, networkPlugin network.NetworkPlugin, osInterface kubecontainer.OSInterface) (*kubeGenericRuntimeManager, error) {
+func NewFakeKubeRuntimeManager(runtimeService internalapi.RuntimeService, imageService internalapi.ImageManagerService, machineInfo *cadvisorapi.MachineInfo, networkPlugin network.NetworkPlugin, osInterface kubecontainer.OSInterface, runtimeHelper kubecontainer.RuntimeHelper) (*kubeGenericRuntimeManager, error) {
 	recorder := &record.FakeRecorder{}
 	kubeRuntimeManager := &kubeGenericRuntimeManager{
 		recorder:            recorder,
@@ -101,7 +67,7 @@ func NewFakeKubeRuntimeManager(runtimeService internalApi.RuntimeService, imageS
 		machineInfo:         machineInfo,
 		osInterface:         osInterface,
 		networkPlugin:       networkPlugin,
-		runtimeHelper:       &fakeRuntimeHelper{},
+		runtimeHelper:       runtimeHelper,
 		runtimeService:      runtimeService,
 		imageService:        imageService,
 		keyring:             credentialprovider.NewDockerKeyring(),
@@ -113,7 +79,7 @@ func NewFakeKubeRuntimeManager(runtimeService internalApi.RuntimeService, imageS
 	}
 
 	kubeRuntimeManager.containerGC = NewContainerGC(runtimeService, newFakePodGetter(), kubeRuntimeManager)
-	kubeRuntimeManager.runtimeName = typedVersion.GetRuntimeName()
+	kubeRuntimeManager.runtimeName = typedVersion.RuntimeName
 	kubeRuntimeManager.imagePuller = images.NewImageManager(
 		kubecontainer.FilterEventRecorder(recorder),
 		kubeRuntimeManager,

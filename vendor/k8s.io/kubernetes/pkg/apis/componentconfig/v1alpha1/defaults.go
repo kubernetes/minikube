@@ -21,12 +21,12 @@ import (
 	"runtime"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/unversioned"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/master/ports"
-	kruntime "k8s.io/kubernetes/pkg/runtime"
 )
 
 const (
@@ -48,7 +48,11 @@ const (
 	defaultIPTablesDropBit       = 15
 )
 
-var zeroDuration = unversioned.Duration{}
+var (
+	zeroDuration = metav1.Duration{}
+	// Refer to [Node Allocatable](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/node-allocatable.md) doc for more information.
+	defaultNodeAllocatableEnforcement = []string{"pods"}
+)
 
 func addDefaultingFuncs(scheme *kruntime.Scheme) error {
 	RegisterDefaults(scheme)
@@ -78,11 +82,11 @@ func SetDefaults_KubeProxyConfiguration(obj *KubeProxyConfiguration) {
 		obj.ResourceContainer = "/kube-proxy"
 	}
 	if obj.IPTablesSyncPeriod.Duration == 0 {
-		obj.IPTablesSyncPeriod = unversioned.Duration{Duration: 30 * time.Second}
+		obj.IPTablesSyncPeriod = metav1.Duration{Duration: 30 * time.Second}
 	}
-	zero := unversioned.Duration{}
+	zero := metav1.Duration{}
 	if obj.UDPIdleTimeout == zero {
-		obj.UDPIdleTimeout = unversioned.Duration{Duration: 250 * time.Millisecond}
+		obj.UDPIdleTimeout = metav1.Duration{Duration: 250 * time.Millisecond}
 	}
 	// If ConntrackMax is set, respect it.
 	if obj.ConntrackMax == 0 {
@@ -99,7 +103,7 @@ func SetDefaults_KubeProxyConfiguration(obj *KubeProxyConfiguration) {
 		obj.IPTablesMasqueradeBit = &temp
 	}
 	if obj.ConntrackTCPEstablishedTimeout == zero {
-		obj.ConntrackTCPEstablishedTimeout = unversioned.Duration{Duration: 24 * time.Hour} // 1 day (1/5 default)
+		obj.ConntrackTCPEstablishedTimeout = metav1.Duration{Duration: 24 * time.Hour} // 1 day (1/5 default)
 	}
 	if obj.ConntrackTCPCloseWaitTimeout == zero {
 		// See https://github.com/kubernetes/kubernetes/issues/32551.
@@ -122,7 +126,7 @@ func SetDefaults_KubeProxyConfiguration(obj *KubeProxyConfiguration) {
 		//
 		// We set CLOSE_WAIT to one hour by default to better match
 		// typical server timeouts.
-		obj.ConntrackTCPCloseWaitTimeout = unversioned.Duration{Duration: 1 * time.Hour}
+		obj.ConntrackTCPCloseWaitTimeout = metav1.Duration{Duration: 1 * time.Hour}
 	}
 }
 
@@ -157,15 +161,15 @@ func SetDefaults_KubeSchedulerConfiguration(obj *KubeSchedulerConfiguration) {
 }
 
 func SetDefaults_LeaderElectionConfiguration(obj *LeaderElectionConfiguration) {
-	zero := unversioned.Duration{}
+	zero := metav1.Duration{}
 	if obj.LeaseDuration == zero {
-		obj.LeaseDuration = unversioned.Duration{Duration: 15 * time.Second}
+		obj.LeaseDuration = metav1.Duration{Duration: 15 * time.Second}
 	}
 	if obj.RenewDeadline == zero {
-		obj.RenewDeadline = unversioned.Duration{Duration: 10 * time.Second}
+		obj.RenewDeadline = metav1.Duration{Duration: 10 * time.Second}
 	}
 	if obj.RetryPeriod == zero {
-		obj.RetryPeriod = unversioned.Duration{Duration: 2 * time.Second}
+		obj.RetryPeriod = metav1.Duration{Duration: 2 * time.Second}
 	}
 }
 
@@ -177,16 +181,16 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.Authentication.Webhook.Enabled = boolVar(false)
 	}
 	if obj.Authentication.Webhook.CacheTTL == zeroDuration {
-		obj.Authentication.Webhook.CacheTTL = unversioned.Duration{Duration: 2 * time.Minute}
+		obj.Authentication.Webhook.CacheTTL = metav1.Duration{Duration: 2 * time.Minute}
 	}
 	if obj.Authorization.Mode == "" {
 		obj.Authorization.Mode = KubeletAuthorizationModeAlwaysAllow
 	}
 	if obj.Authorization.Webhook.CacheAuthorizedTTL == zeroDuration {
-		obj.Authorization.Webhook.CacheAuthorizedTTL = unversioned.Duration{Duration: 5 * time.Minute}
+		obj.Authorization.Webhook.CacheAuthorizedTTL = metav1.Duration{Duration: 5 * time.Minute}
 	}
 	if obj.Authorization.Webhook.CacheUnauthorizedTTL == zeroDuration {
-		obj.Authorization.Webhook.CacheUnauthorizedTTL = unversioned.Duration{Duration: 30 * time.Second}
+		obj.Authorization.Webhook.CacheUnauthorizedTTL = metav1.Duration{Duration: 30 * time.Second}
 	}
 
 	if obj.Address == "" {
@@ -199,19 +203,19 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.CAdvisorPort = 4194
 	}
 	if obj.VolumeStatsAggPeriod == zeroDuration {
-		obj.VolumeStatsAggPeriod = unversioned.Duration{Duration: time.Minute}
+		obj.VolumeStatsAggPeriod = metav1.Duration{Duration: time.Minute}
 	}
 	if obj.CertDirectory == "" {
 		obj.CertDirectory = "/var/run/kubernetes"
-	}
-	if obj.ExperimentalCgroupsPerQOS == nil {
-		obj.ExperimentalCgroupsPerQOS = boolVar(false)
 	}
 	if obj.ContainerRuntime == "" {
 		obj.ContainerRuntime = "docker"
 	}
 	if obj.RuntimeRequestTimeout == zeroDuration {
-		obj.RuntimeRequestTimeout = unversioned.Duration{Duration: 2 * time.Minute}
+		obj.RuntimeRequestTimeout = metav1.Duration{Duration: 2 * time.Minute}
+	}
+	if obj.ImagePullProgressDeadline == zeroDuration {
+		obj.ImagePullProgressDeadline = metav1.Duration{Duration: 1 * time.Minute}
 	}
 	if obj.CPUCFSQuota == nil {
 		obj.CPUCFSQuota = boolVar(true)
@@ -239,7 +243,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.EnableServer = boolVar(true)
 	}
 	if obj.FileCheckFrequency == zeroDuration {
-		obj.FileCheckFrequency = unversioned.Duration{Duration: 20 * time.Second}
+		obj.FileCheckFrequency = metav1.Duration{Duration: 20 * time.Second}
 	}
 	if obj.HealthzBindAddress == "" {
 		obj.HealthzBindAddress = "127.0.0.1"
@@ -257,10 +261,10 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.HostIPCSources = []string{kubetypes.AllSource}
 	}
 	if obj.HTTPCheckFrequency == zeroDuration {
-		obj.HTTPCheckFrequency = unversioned.Duration{Duration: 20 * time.Second}
+		obj.HTTPCheckFrequency = metav1.Duration{Duration: 20 * time.Second}
 	}
 	if obj.ImageMinimumGCAge == zeroDuration {
-		obj.ImageMinimumGCAge = unversioned.Duration{Duration: 2 * time.Minute}
+		obj.ImageMinimumGCAge = metav1.Duration{Duration: 2 * time.Minute}
 	}
 	if obj.ImageGCHighThresholdPercent == nil {
 		temp := int32(90)
@@ -274,7 +278,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.LowDiskSpaceThresholdMB = 256
 	}
 	if obj.MasterServiceNamespace == "" {
-		obj.MasterServiceNamespace = api.NamespaceDefault
+		obj.MasterServiceNamespace = metav1.NamespaceDefault
 	}
 	if obj.MaxContainerCount == nil {
 		temp := int32(-1)
@@ -290,7 +294,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.MaxPods = 110
 	}
 	if obj.MinimumGCAge == zeroDuration {
-		obj.MinimumGCAge = unversioned.Duration{Duration: 0}
+		obj.MinimumGCAge = metav1.Duration{Duration: 0}
 	}
 	if obj.NonMasqueradeCIDR == "" {
 		obj.NonMasqueradeCIDR = "10.0.0.0/8"
@@ -299,7 +303,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.VolumePluginDir = "/usr/libexec/kubernetes/kubelet-plugins/volume/exec/"
 	}
 	if obj.NodeStatusUpdateFrequency == zeroDuration {
-		obj.NodeStatusUpdateFrequency = unversioned.Duration{Duration: 10 * time.Second}
+		obj.NodeStatusUpdateFrequency = metav1.Duration{Duration: 10 * time.Second}
 	}
 	if obj.OOMScoreAdj == nil {
 		temp := int32(qos.KubeletOOMScoreAdj)
@@ -343,13 +347,10 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.SeccompProfileRoot = filepath.Join(defaultRootDir, "seccomp")
 	}
 	if obj.StreamingConnectionIdleTimeout == zeroDuration {
-		obj.StreamingConnectionIdleTimeout = unversioned.Duration{Duration: 4 * time.Hour}
+		obj.StreamingConnectionIdleTimeout = metav1.Duration{Duration: 4 * time.Hour}
 	}
 	if obj.SyncFrequency == zeroDuration {
-		obj.SyncFrequency = unversioned.Duration{Duration: 1 * time.Minute}
-	}
-	if obj.ReconcileCIDR == nil {
-		obj.ReconcileCIDR = boolVar(true)
+		obj.SyncFrequency = metav1.Duration{Duration: 1 * time.Minute}
 	}
 	if obj.ContentType == "" {
 		obj.ContentType = "application/vnd.kubernetes.protobuf"
@@ -362,7 +363,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.KubeAPIBurst = 10
 	}
 	if obj.OutOfDiskTransitionFrequency == zeroDuration {
-		obj.OutOfDiskTransitionFrequency = unversioned.Duration{Duration: 5 * time.Minute}
+		obj.OutOfDiskTransitionFrequency = metav1.Duration{Duration: 5 * time.Minute}
 	}
 	if string(obj.HairpinMode) == "" {
 		obj.HairpinMode = PromiscuousBridge
@@ -372,7 +373,7 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		obj.EvictionHard = &temp
 	}
 	if obj.EvictionPressureTransitionPeriod == zeroDuration {
-		obj.EvictionPressureTransitionPeriod = unversioned.Duration{Duration: 5 * time.Minute}
+		obj.EvictionPressureTransitionPeriod = metav1.Duration{Duration: 5 * time.Minute}
 	}
 	if obj.ExperimentalKernelMemcgNotification == nil {
 		obj.ExperimentalKernelMemcgNotification = boolVar(false)
@@ -382,6 +383,9 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 	}
 	if obj.KubeReserved == nil {
 		obj.KubeReserved = make(map[string]string)
+	}
+	if obj.ExperimentalQOSReserved == nil {
+		obj.ExperimentalQOSReserved = make(map[string]string)
 	}
 	if obj.MakeIPTablesUtilChains == nil {
 		obj.MakeIPTablesUtilChains = boolVar(true)
@@ -394,22 +398,18 @@ func SetDefaults_KubeletConfiguration(obj *KubeletConfiguration) {
 		temp := int32(defaultIPTablesDropBit)
 		obj.IPTablesDropBit = &temp
 	}
-	if obj.ExperimentalCgroupsPerQOS == nil {
-		temp := false
-		obj.ExperimentalCgroupsPerQOS = &temp
+	if obj.CgroupsPerQOS == nil {
+		temp := true
+		obj.CgroupsPerQOS = &temp
 	}
 	if obj.CgroupDriver == "" {
 		obj.CgroupDriver = "cgroupfs"
 	}
-	// NOTE: this is for backwards compatibility with earlier releases where cgroup-root was optional.
-	// if cgroups per qos is not enabled, and cgroup-root is not specified, we need to default to the
-	// container runtime default and not default to the root cgroup.
-	if obj.ExperimentalCgroupsPerQOS != nil {
-		if *obj.ExperimentalCgroupsPerQOS {
-			if obj.CgroupRoot == "" {
-				obj.CgroupRoot = "/"
-			}
-		}
+	if obj.EnforceNodeAllocatable == nil {
+		obj.EnforceNodeAllocatable = defaultNodeAllocatableEnforcement
+	}
+	if obj.EnableCRI == nil {
+		obj.EnableCRI = boolVar(true)
 	}
 }
 

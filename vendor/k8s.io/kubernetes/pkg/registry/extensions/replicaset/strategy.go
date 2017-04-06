@@ -23,26 +23,28 @@ import (
 	"reflect"
 	"strconv"
 
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/generic"
+	"k8s.io/apiserver/pkg/registry/rest"
+	apistorage "k8s.io/apiserver/pkg/storage"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/rest"
 	"k8s.io/kubernetes/pkg/apis/extensions"
 	"k8s.io/kubernetes/pkg/apis/extensions/validation"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/registry/generic"
-	"k8s.io/kubernetes/pkg/runtime"
-	apistorage "k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 // rsStrategy implements verification logic for ReplicaSets.
 type rsStrategy struct {
 	runtime.ObjectTyper
-	api.NameGenerator
+	names.NameGenerator
 }
 
 // Strategy is the default logic that applies when creating and updating ReplicaSet objects.
-var Strategy = rsStrategy{api.Scheme, api.SimpleNameGenerator}
+var Strategy = rsStrategy{api.Scheme, names.SimpleNameGenerator}
 
 // DefaultGarbageCollectionPolicy returns Orphan because that's the default
 // behavior before the server-side garbage collection is implemented.
@@ -56,7 +58,7 @@ func (rsStrategy) NamespaceScoped() bool {
 }
 
 // PrepareForCreate clears the status of a ReplicaSet before creation.
-func (rsStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
+func (rsStrategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
 	rs := obj.(*extensions.ReplicaSet)
 	rs.Status = extensions.ReplicaSetStatus{}
 
@@ -64,7 +66,7 @@ func (rsStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (rsStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
+func (rsStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
 	newRS := obj.(*extensions.ReplicaSet)
 	oldRS := old.(*extensions.ReplicaSet)
 	// update is not allowed to set status
@@ -84,7 +86,7 @@ func (rsStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
 }
 
 // Validate validates a new ReplicaSet.
-func (rsStrategy) Validate(ctx api.Context, obj runtime.Object) field.ErrorList {
+func (rsStrategy) Validate(ctx genericapirequest.Context, obj runtime.Object) field.ErrorList {
 	rs := obj.(*extensions.ReplicaSet)
 	return validation.ValidateReplicaSet(rs)
 }
@@ -100,7 +102,7 @@ func (rsStrategy) AllowCreateOnUpdate() bool {
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (rsStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
+func (rsStrategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
 	validationErrorList := validation.ValidateReplicaSet(obj.(*extensions.ReplicaSet))
 	updateErrorList := validation.ValidateReplicaSetUpdate(obj.(*extensions.ReplicaSet), old.(*extensions.ReplicaSet))
 	return append(validationErrorList, updateErrorList...)
@@ -119,20 +121,23 @@ func ReplicaSetToSelectableFields(rs *extensions.ReplicaSet) fields.Set {
 	return generic.MergeFieldsSets(objectMetaFieldsSet, rsSpecificFieldsSet)
 }
 
+// GetAttrs returns labels and fields of a given object for filtering purposes.
+func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
+	rs, ok := obj.(*extensions.ReplicaSet)
+	if !ok {
+		return nil, nil, fmt.Errorf("Given object is not a ReplicaSet.")
+	}
+	return labels.Set(rs.ObjectMeta.Labels), ReplicaSetToSelectableFields(rs), nil
+}
+
 // MatchReplicaSet is the filter used by the generic etcd backend to route
 // watch events from etcd to clients of the apiserver only interested in specific
 // labels/fields.
 func MatchReplicaSet(label labels.Selector, field fields.Selector) apistorage.SelectionPredicate {
 	return apistorage.SelectionPredicate{
-		Label: label,
-		Field: field,
-		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {
-			rs, ok := obj.(*extensions.ReplicaSet)
-			if !ok {
-				return nil, nil, fmt.Errorf("Given object is not a ReplicaSet.")
-			}
-			return labels.Set(rs.ObjectMeta.Labels), ReplicaSetToSelectableFields(rs), nil
-		},
+		Label:    label,
+		Field:    field,
+		GetAttrs: GetAttrs,
 	}
 }
 
@@ -142,13 +147,13 @@ type rsStatusStrategy struct {
 
 var StatusStrategy = rsStatusStrategy{Strategy}
 
-func (rsStatusStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
+func (rsStatusStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
 	newRS := obj.(*extensions.ReplicaSet)
 	oldRS := old.(*extensions.ReplicaSet)
 	// update is not allowed to set spec
 	newRS.Spec = oldRS.Spec
 }
 
-func (rsStatusStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
+func (rsStatusStrategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
 	return validation.ValidateReplicaSetStatusUpdate(obj.(*extensions.ReplicaSet), old.(*extensions.ReplicaSet))
 }

@@ -18,8 +18,9 @@ package storageclass
 
 import (
 	"github.com/pkg/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
+
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -38,7 +39,7 @@ func DisableDefaultStorageClass() error {
 		return errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
 
-	err = client.StorageClasses().Delete(constants.DefaultStorageClassProvisioner, &v1.DeleteOptions{})
+	err = client.Storage().StorageClasses().Delete(constants.DefaultStorageClassProvisioner, &meta_v1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting default storage class %s", constants.DefaultStorageClassProvisioner)
 	}

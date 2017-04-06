@@ -27,6 +27,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api/v1"
@@ -34,7 +35,7 @@ import (
 
 	"text/template"
 
-	"k8s.io/client-go/pkg/labels"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/util"
 )
@@ -94,7 +95,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 	serviceInterface := client.Services(namespace)
 
-	svcs, err := serviceInterface.List(v1.ListOptions{})
+	svcs, err := serviceInterface.List(meta_v1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +139,7 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 	}
 
 	s := c.Services(namespace)
-	svc, err := s.Get(service)
+	svc, err := s.Get(service, meta_v1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "service '%s' could not be found running", service)
 	}
@@ -191,14 +192,14 @@ func CheckService(namespace string, service string) error {
 }
 
 func validateService(s corev1.ServiceInterface, service string) error {
-	if _, err := s.Get(service); err != nil {
+	if _, err := s.Get(service, meta_v1.GetOptions{}); err != nil {
 		return errors.Wrapf(err, "Error getting service %s", service)
 	}
 	return nil
 }
 
 func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) error {
-	endpoint, err := endpoints.Get(service)
+	endpoint, err := endpoints.Get(service, meta_v1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Error getting endpoints for service %s", service)
 	}
@@ -253,7 +254,7 @@ func GetServiceListByLabel(namespace string, key string, value string) (*v1.Serv
 
 func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
-	serviceList, err := services.List(v1.ListOptions{LabelSelector: selector.String()})
+	serviceList, err := services.List(meta_v1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}
@@ -272,7 +273,7 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 		return &util.RetriableError{Err: err}
 	}
 
-	secret, _ := secrets.Get(name)
+	secret, _ := secrets.Get(name, meta_v1.GetOptions{})
 
 	// Delete existing secret
 	if len(secret.Name) > 0 {
@@ -290,7 +291,7 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 
 	// Create Secret
 	secretObj := &v1.Secret{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta_v1.ObjectMeta{
 			Name:   name,
 			Labels: labels,
 		},
@@ -319,7 +320,7 @@ func DeleteSecret(namespace, name string) error {
 		return &util.RetriableError{Err: err}
 	}
 
-	err = secrets.Delete(name, &v1.DeleteOptions{})
+	err = secrets.Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}

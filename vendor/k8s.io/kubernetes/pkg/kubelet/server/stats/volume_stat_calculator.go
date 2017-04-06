@@ -21,10 +21,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/kubelet/api/v1alpha1/stats"
 	"k8s.io/kubernetes/pkg/kubelet/util/format"
-	"k8s.io/kubernetes/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/volume"
 
 	"github.com/golang/glog"
@@ -34,7 +34,7 @@ import (
 type volumeStatCalculator struct {
 	statsProvider StatsProvider
 	jitterPeriod  time.Duration
-	pod           *api.Pod
+	pod           *v1.Pod
 	stopChannel   chan struct{}
 	startO        sync.Once
 	stopO         sync.Once
@@ -47,7 +47,7 @@ type PodVolumeStats struct {
 }
 
 // newVolumeStatCalculator creates a new VolumeStatCalculator
-func newVolumeStatCalculator(statsProvider StatsProvider, jitterPeriod time.Duration, pod *api.Pod) *volumeStatCalculator {
+func newVolumeStatCalculator(statsProvider StatsProvider, jitterPeriod time.Duration, pod *v1.Pod) *volumeStatCalculator {
 	return &volumeStatCalculator{
 		statsProvider: statsProvider,
 		jitterPeriod:  jitterPeriod,
@@ -120,7 +120,7 @@ func (s *volumeStatCalculator) parsePodVolumeStats(podName string, metric *volum
 	inodesUsed := uint64(metric.InodesUsed.Value())
 	return stats.VolumeStats{
 		Name: podName,
-		FsStats: stats.FsStats{AvailableBytes: &available, CapacityBytes: &capacity, UsedBytes: &used,
-			Inodes: &inodes, InodesFree: &inodesFree, InodesUsed: &inodesUsed},
+		FsStats: stats.FsStats{Time: metric.Time, AvailableBytes: &available, CapacityBytes: &capacity,
+			UsedBytes: &used, Inodes: &inodes, InodesFree: &inodesFree, InodesUsed: &inodesUsed},
 	}
 }

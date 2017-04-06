@@ -25,8 +25,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/aws/aws-sdk-go/service/elb"
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/types"
-	"k8s.io/kubernetes/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 const ProxyProtocolPolicyName = "k8s-proxyprotocol-enabled"
@@ -55,9 +55,14 @@ func (c *Cloud) ensureLoadBalancer(namespacedName types.NamespacedName, loadBala
 
 		createRequest.SecurityGroups = stringPointerArray(securityGroupIDs)
 
-		createRequest.Tags = []*elb.Tag{
-			{Key: aws.String(TagNameKubernetesCluster), Value: aws.String(c.getClusterName())},
-			{Key: aws.String(TagNameKubernetesService), Value: aws.String(namespacedName.String())},
+		tags := c.tagging.buildTags(ResourceLifecycleOwned, map[string]string{
+			TagNameKubernetesService: namespacedName.String(),
+		})
+
+		for k, v := range tags {
+			createRequest.Tags = append(createRequest.Tags, &elb.Tag{
+				Key: aws.String(k), Value: aws.String(v),
+			})
 		}
 
 		glog.Infof("Creating load balancer for %v with name: %s", namespacedName, loadBalancerName)
@@ -293,7 +298,7 @@ func (c *Cloud) ensureLoadBalancer(namespacedName types.NamespacedName, loadBala
 
 		// Update attributes if they're dirty
 		if !reflect.DeepEqual(loadBalancerAttributes, foundAttributes) {
-			glog.V(2).Info("Updating load-balancer attributes for %q", loadBalancerName)
+			glog.V(2).Infof("Updating load-balancer attributes for %q", loadBalancerName)
 
 			modifyAttributesRequest := &elb.ModifyLoadBalancerAttributesInput{}
 			modifyAttributesRequest.LoadBalancerName = aws.String(loadBalancerName)
@@ -319,6 +324,8 @@ func (c *Cloud) ensureLoadBalancer(namespacedName types.NamespacedName, loadBala
 
 // Makes sure that the health check for an ELB matches the configured listeners
 func (c *Cloud) ensureLoadBalancerHealthCheck(loadBalancer *elb.LoadBalancerDescription, listeners []*elb.Listener) error {
+	name := aws.StringValue(loadBalancer.LoadBalancerName)
+
 	actual := loadBalancer.HealthCheck
 
 	// Default AWS settings
@@ -338,7 +345,7 @@ func (c *Cloud) ensureLoadBalancerHealthCheck(loadBalancer *elb.LoadBalancerDesc
 	}
 
 	if expectedTarget == "" {
-		return fmt.Errorf("unable to determine health check port (no valid listeners)")
+		return fmt.Errorf("unable to determine health check port for %q (no valid listeners)", name)
 	}
 
 	if expectedTarget == orEmpty(actual.Target) &&
@@ -349,7 +356,7 @@ func (c *Cloud) ensureLoadBalancerHealthCheck(loadBalancer *elb.LoadBalancerDesc
 		return nil
 	}
 
-	glog.V(2).Info("Updating load-balancer health-check")
+	glog.V(2).Infof("Updating load-balancer health-check for %q", name)
 
 	healthCheck := &elb.HealthCheck{}
 	healthCheck.HealthyThreshold = &expectedHealthyThreshold
@@ -364,7 +371,7 @@ func (c *Cloud) ensureLoadBalancerHealthCheck(loadBalancer *elb.LoadBalancerDesc
 
 	_, err := c.elb.ConfigureHealthCheck(request)
 	if err != nil {
-		return fmt.Errorf("error configuring load-balancer health-check: %v", err)
+		return fmt.Errorf("error configuring load-balancer health-check for %q: %v", name, err)
 	}
 
 	return nil

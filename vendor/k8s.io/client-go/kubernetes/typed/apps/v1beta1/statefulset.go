@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors.
+Copyright 2017 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@ limitations under the License.
 package v1beta1
 
 import (
-	api "k8s.io/client-go/pkg/api"
-	v1 "k8s.io/client-go/pkg/api/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	types "k8s.io/apimachinery/pkg/types"
+	watch "k8s.io/apimachinery/pkg/watch"
+	scheme "k8s.io/client-go/kubernetes/scheme"
 	v1beta1 "k8s.io/client-go/pkg/apis/apps/v1beta1"
-	watch "k8s.io/client-go/pkg/watch"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -37,10 +38,10 @@ type StatefulSetInterface interface {
 	UpdateStatus(*v1beta1.StatefulSet) (*v1beta1.StatefulSet, error)
 	Delete(name string, options *v1.DeleteOptions) error
 	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string) (*v1beta1.StatefulSet, error)
+	Get(name string, options v1.GetOptions) (*v1beta1.StatefulSet, error)
 	List(opts v1.ListOptions) (*v1beta1.StatefulSetList, error)
 	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1beta1.StatefulSet, err error)
+	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.StatefulSet, err error)
 	StatefulSetExpansion
 }
 
@@ -83,6 +84,9 @@ func (c *statefulSets) Update(statefulSet *v1beta1.StatefulSet) (result *v1beta1
 	return
 }
 
+// UpdateStatus was generated because the type contains a Status member.
+// Add a +genclientstatus=false comment above the type to avoid generating UpdateStatus().
+
 func (c *statefulSets) UpdateStatus(statefulSet *v1beta1.StatefulSet) (result *v1beta1.StatefulSet, err error) {
 	result = &v1beta1.StatefulSet{}
 	err = c.client.Put().
@@ -112,19 +116,20 @@ func (c *statefulSets) DeleteCollection(options *v1.DeleteOptions, listOptions v
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("statefulsets").
-		VersionedParams(&listOptions, api.ParameterCodec).
+		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Body(options).
 		Do().
 		Error()
 }
 
 // Get takes name of the statefulSet, and returns the corresponding statefulSet object, and an error if there is any.
-func (c *statefulSets) Get(name string) (result *v1beta1.StatefulSet, err error) {
+func (c *statefulSets) Get(name string, options v1.GetOptions) (result *v1beta1.StatefulSet, err error) {
 	result = &v1beta1.StatefulSet{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("statefulsets").
 		Name(name).
+		VersionedParams(&options, scheme.ParameterCodec).
 		Do().
 		Into(result)
 	return
@@ -136,7 +141,7 @@ func (c *statefulSets) List(opts v1.ListOptions) (result *v1beta1.StatefulSetLis
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("statefulsets").
-		VersionedParams(&opts, api.ParameterCodec).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Do().
 		Into(result)
 	return
@@ -144,16 +149,16 @@ func (c *statefulSets) List(opts v1.ListOptions) (result *v1beta1.StatefulSetLis
 
 // Watch returns a watch.Interface that watches the requested statefulSets.
 func (c *statefulSets) Watch(opts v1.ListOptions) (watch.Interface, error) {
+	opts.Watch = true
 	return c.client.Get().
-		Prefix("watch").
 		Namespace(c.ns).
 		Resource("statefulsets").
-		VersionedParams(&opts, api.ParameterCodec).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch()
 }
 
 // Patch applies the patch and returns the patched statefulSet.
-func (c *statefulSets) Patch(name string, pt api.PatchType, data []byte, subresources ...string) (result *v1beta1.StatefulSet, err error) {
+func (c *statefulSets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.StatefulSet, err error) {
 	result = &v1beta1.StatefulSet{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).

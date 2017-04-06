@@ -24,10 +24,10 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/types"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
-	"k8s.io/kubernetes/pkg/types"
-	utilerrors "k8s.io/kubernetes/pkg/util/errors"
 )
 
 const (
@@ -38,8 +38,6 @@ const (
 // It is the general implementation which allows pod level container
 // management if qos Cgroup is enabled.
 type podContainerManagerImpl struct {
-	// nodeInfo stores information about the node resource capacity
-	nodeInfo *api.Node
 	// qosContainersInfo hold absolute paths of the top level qos containers
 	qosContainersInfo QOSContainersInfo
 	// Stores the mounted cgroup subsystems
@@ -54,14 +52,14 @@ var _ PodContainerManager = &podContainerManagerImpl{}
 
 // applyLimits sets pod cgroup resource limits
 // It also updates the resource limits on top level qos containers.
-func (m *podContainerManagerImpl) applyLimits(pod *api.Pod) error {
+func (m *podContainerManagerImpl) applyLimits(pod *v1.Pod) error {
 	// This function will house the logic for setting the resource parameters
 	// on the pod container config and updating top level qos container configs
 	return nil
 }
 
 // Exists checks if the pod's cgroup already exists
-func (m *podContainerManagerImpl) Exists(pod *api.Pod) bool {
+func (m *podContainerManagerImpl) Exists(pod *v1.Pod) bool {
 	podContainerName, _ := m.GetPodContainerName(pod)
 	return m.cgroupManager.Exists(podContainerName)
 }
@@ -69,7 +67,7 @@ func (m *podContainerManagerImpl) Exists(pod *api.Pod) bool {
 // EnsureExists takes a pod as argument and makes sure that
 // pod cgroup exists if qos cgroup hierarchy flag is enabled.
 // If the pod level container doesen't already exist it is created.
-func (m *podContainerManagerImpl) EnsureExists(pod *api.Pod) error {
+func (m *podContainerManagerImpl) EnsureExists(pod *v1.Pod) error {
 	podContainerName, _ := m.GetPodContainerName(pod)
 	// check if container already exist
 	alreadyExists := m.Exists(pod)
@@ -94,16 +92,16 @@ func (m *podContainerManagerImpl) EnsureExists(pod *api.Pod) error {
 }
 
 // GetPodContainerName returns the CgroupName identifer, and its literal cgroupfs form on the host.
-func (m *podContainerManagerImpl) GetPodContainerName(pod *api.Pod) (CgroupName, string) {
+func (m *podContainerManagerImpl) GetPodContainerName(pod *v1.Pod) (CgroupName, string) {
 	podQOS := qos.GetPodQOS(pod)
 	// Get the parent QOS container name
 	var parentContainer string
 	switch podQOS {
-	case qos.Guaranteed:
+	case v1.PodQOSGuaranteed:
 		parentContainer = m.qosContainersInfo.Guaranteed
-	case qos.Burstable:
+	case v1.PodQOSBurstable:
 		parentContainer = m.qosContainersInfo.Burstable
-	case qos.BestEffort:
+	case v1.PodQOSBestEffort:
 		parentContainer = m.qosContainersInfo.BestEffort
 	}
 	podContainer := podCgroupNamePrefix + string(pod.UID)
@@ -194,27 +192,37 @@ func (m *podContainerManagerImpl) GetAllPodsFromCgroups() (map[types.UID]CgroupN
 			qc := path.Join(val, qcConversion)
 			dirInfo, err := ioutil.ReadDir(qc)
 			if err != nil {
+				if os.IsNotExist(err) {
+					continue
+				}
 				return nil, fmt.Errorf("failed to read the cgroup directory %v : %v", qc, err)
 			}
 			for i := range dirInfo {
-				// note: we do a contains check because on systemd, the literal cgroupfs name will prefix the qos as well.
-				if dirInfo[i].IsDir() && strings.Contains(dirInfo[i].Name(), podCgroupNamePrefix) {
-					// we need to convert the name to an internal identifier
-					internalName := m.cgroupManager.CgroupName(dirInfo[i].Name())
-					// we then split the name on the pod prefix to determine the uid
-					parts := strings.Split(string(internalName), podCgroupNamePrefix)
-					// the uid is missing, so we log the unexpected cgroup not of form pod<uid>
-					if len(parts) != 2 {
-						location := path.Join(qc, dirInfo[i].Name())
-						glog.Errorf("pod cgroup manager ignoring unexpected cgroup %v because it is not a pod", location)
-						continue
-					}
-					podUID := parts[1]
-					// because the literal cgroupfs name could encode the qos tier (on systemd), we avoid double encoding
-					// by just rebuilding the fully qualified CgroupName according to our internal convention.
-					cgroupName := CgroupName(path.Join(qosContainerName, podCgroupNamePrefix+podUID))
-					foundPods[types.UID(podUID)] = cgroupName
+				// its not a directory, so continue on...
+				if !dirInfo[i].IsDir() {
+					continue
 				}
+				// convert the concrete cgroupfs name back to an internal identifier
+				// this is needed to handle path conversion for systemd environments.
+				// we pass the fully qualified path so decoding can work as expected
+				// since systemd encodes the path in each segment.
+				cgroupfsPath := path.Join(qcConversion, dirInfo[i].Name())
+				internalPath := m.cgroupManager.CgroupName(cgroupfsPath)
+				// we only care about base segment of the converted path since that
+				// is what we are reading currently to know if it is a pod or not.
+				basePath := path.Base(string(internalPath))
+				if !strings.Contains(basePath, podCgroupNamePrefix) {
+					continue
+				}
+				// we then split the name on the pod prefix to determine the uid
+				parts := strings.Split(basePath, podCgroupNamePrefix)
+				// the uid is missing, so we log the unexpected cgroup not of form pod<uid>
+				if len(parts) != 2 {
+					glog.Errorf("pod cgroup manager ignoring unexpected cgroup %v because it is not a pod", cgroupfsPath)
+					continue
+				}
+				podUID := parts[1]
+				foundPods[types.UID(podUID)] = internalPath
 			}
 		}
 	}
@@ -233,19 +241,19 @@ type podContainerManagerNoop struct {
 // Make sure that podContainerManagerStub implements the PodContainerManager interface
 var _ PodContainerManager = &podContainerManagerNoop{}
 
-func (m *podContainerManagerNoop) Exists(_ *api.Pod) bool {
+func (m *podContainerManagerNoop) Exists(_ *v1.Pod) bool {
 	return true
 }
 
-func (m *podContainerManagerNoop) EnsureExists(_ *api.Pod) error {
+func (m *podContainerManagerNoop) EnsureExists(_ *v1.Pod) error {
 	return nil
 }
 
-func (m *podContainerManagerNoop) GetPodContainerName(_ *api.Pod) (CgroupName, string) {
+func (m *podContainerManagerNoop) GetPodContainerName(_ *v1.Pod) (CgroupName, string) {
 	return m.cgroupRoot, string(m.cgroupRoot)
 }
 
-func (m *podContainerManagerNoop) GetPodContainerNameForDriver(_ *api.Pod) string {
+func (m *podContainerManagerNoop) GetPodContainerNameForDriver(_ *v1.Pod) string {
 	return ""
 }
 

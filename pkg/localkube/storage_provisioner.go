@@ -24,13 +24,14 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/kubernetes-incubator/external-storage/lib/controller"
-	"github.com/kubernetes-incubator/external-storage/lib/leaderelection"
+	"github.com/r2d4/external-storage/lib/controller"
+	"github.com/r2d4/external-storage/lib/leaderelection"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/types"
-	"k8s.io/client-go/pkg/util/uuid"
-	"k8s.io/client-go/pkg/util/wait"
 	"k8s.io/client-go/rest"
 )
 
@@ -72,7 +73,7 @@ func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*v1.P
 	}
 
 	pv := &v1.PersistentVolume{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: meta_v1.ObjectMeta{
 			Name: options.PVName,
 			Annotations: map[string]string{
 				"hostPathProvisionerIdentity": string(p.identity),

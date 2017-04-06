@@ -22,11 +22,12 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
 	"golang.org/x/exp/inotify"
 
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/kubernetes/pkg/api/v1"
 	kubetypes "k8s.io/kubernetes/pkg/kubelet/types"
 )
 
@@ -45,7 +46,7 @@ func (s *sourceFile) watch() error {
 			return err
 		}
 		// Emit an update with an empty PodList to allow FileSource to be marked as seen
-		s.updates <- kubetypes.PodUpdate{Pods: []*api.Pod{}, Op: kubetypes.SET, Source: kubetypes.FileSource}
+		s.updates <- kubetypes.PodUpdate{Pods: []*v1.Pod{}, Op: kubetypes.SET, Source: kubetypes.FileSource}
 		return fmt.Errorf("path does not exist, ignoring")
 	}
 
@@ -79,6 +80,11 @@ func (s *sourceFile) watch() error {
 }
 
 func (s *sourceFile) processEvent(e *inotify.Event) error {
+	// Ignore file start with dots
+	if strings.HasPrefix(e.Name, ".") {
+		glog.V(4).Infof("Ignored pod manifest: %s, because it starts with dots", e.Name)
+		return nil
+	}
 	var eventType podEventType
 	switch {
 	case (e.Mask & inotify.IN_ISDIR) > 0:

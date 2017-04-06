@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/proxy"
-	"k8s.io/kubernetes/pkg/types"
 	"k8s.io/kubernetes/pkg/util/slice"
 )
 
@@ -118,6 +118,16 @@ func isSessionAffinity(affinity *affinityPolicy) bool {
 		return false
 	}
 	return true
+}
+
+// ServiceHasEndpoints checks whether a service entry has endpoints.
+func (lb *LoadBalancerRR) ServiceHasEndpoints(svcPort proxy.ServicePortName) bool {
+	lb.lock.Lock()
+	defer lb.lock.Unlock()
+	state, exists := lb.services[svcPort]
+	// TODO: while nothing ever assigns nil to the map, *some* of the code using the map
+	// checks for it.  The code should all follow the same convention.
+	return exists && state != nil && len(state.endpoints) > 0
 }
 
 // NextEndpoint returns a service endpoint.

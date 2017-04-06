@@ -19,26 +19,28 @@ package endpoint
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
+	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
+	"k8s.io/apiserver/pkg/registry/generic"
+	pkgstorage "k8s.io/apiserver/pkg/storage"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/kubernetes/pkg/api"
 	endptspkg "k8s.io/kubernetes/pkg/api/endpoints"
 	"k8s.io/kubernetes/pkg/api/validation"
-	"k8s.io/kubernetes/pkg/fields"
-	"k8s.io/kubernetes/pkg/labels"
-	"k8s.io/kubernetes/pkg/registry/generic"
-	"k8s.io/kubernetes/pkg/runtime"
-	pkgstorage "k8s.io/kubernetes/pkg/storage"
-	"k8s.io/kubernetes/pkg/util/validation/field"
 )
 
 // endpointsStrategy implements behavior for Endpoints
 type endpointsStrategy struct {
 	runtime.ObjectTyper
-	api.NameGenerator
+	names.NameGenerator
 }
 
 // Strategy is the default logic that applies when creating and updating Endpoint
 // objects via the REST API.
-var Strategy = endpointsStrategy{api.Scheme, api.SimpleNameGenerator}
+var Strategy = endpointsStrategy{api.Scheme, names.SimpleNameGenerator}
 
 // NamespaceScoped is true for endpoints.
 func (endpointsStrategy) NamespaceScoped() bool {
@@ -46,15 +48,15 @@ func (endpointsStrategy) NamespaceScoped() bool {
 }
 
 // PrepareForCreate clears fields that are not allowed to be set by end users on creation.
-func (endpointsStrategy) PrepareForCreate(ctx api.Context, obj runtime.Object) {
+func (endpointsStrategy) PrepareForCreate(ctx genericapirequest.Context, obj runtime.Object) {
 }
 
 // PrepareForUpdate clears fields that are not allowed to be set by end users on update.
-func (endpointsStrategy) PrepareForUpdate(ctx api.Context, obj, old runtime.Object) {
+func (endpointsStrategy) PrepareForUpdate(ctx genericapirequest.Context, obj, old runtime.Object) {
 }
 
 // Validate validates a new endpoints.
-func (endpointsStrategy) Validate(ctx api.Context, obj runtime.Object) field.ErrorList {
+func (endpointsStrategy) Validate(ctx genericapirequest.Context, obj runtime.Object) field.ErrorList {
 	return validation.ValidateEndpoints(obj.(*api.Endpoints))
 }
 
@@ -70,7 +72,7 @@ func (endpointsStrategy) AllowCreateOnUpdate() bool {
 }
 
 // ValidateUpdate is the default update validation for an end user.
-func (endpointsStrategy) ValidateUpdate(ctx api.Context, obj, old runtime.Object) field.ErrorList {
+func (endpointsStrategy) ValidateUpdate(ctx genericapirequest.Context, obj, old runtime.Object) field.ErrorList {
 	errorList := validation.ValidateEndpoints(obj.(*api.Endpoints))
 	return append(errorList, validation.ValidateEndpointsUpdate(obj.(*api.Endpoints), old.(*api.Endpoints))...)
 }
@@ -79,27 +81,21 @@ func (endpointsStrategy) AllowUnconditionalUpdate() bool {
 	return true
 }
 
+// GetAttrs returns labels and fields of a given object for filtering purposes.
+func GetAttrs(obj runtime.Object) (labels.Set, fields.Set, error) {
+	endpoints, ok := obj.(*api.Endpoints)
+	if !ok {
+		return nil, nil, fmt.Errorf("invalid object type %#v", obj)
+	}
+	return endpoints.Labels, EndpointsToSelectableFields(endpoints), nil
+}
+
 // MatchEndpoints returns a generic matcher for a given label and field selector.
 func MatchEndpoints(label labels.Selector, field fields.Selector) pkgstorage.SelectionPredicate {
 	return pkgstorage.SelectionPredicate{
-		Label: label,
-		Field: field,
-		GetAttrs: func(obj runtime.Object) (labels.Set, fields.Set, error) {
-			endpoints, ok := obj.(*api.Endpoints)
-			if !ok {
-				return nil, nil, fmt.Errorf("invalid object type %#v", obj)
-			}
-
-			// Compute fields only if field selectors is non-empty
-			// (otherwise those won't be used).
-			// Those are generally also not needed if label selector does
-			// not match labels, but additional computation of it is expensive.
-			var endpointsFields fields.Set
-			if !field.Empty() {
-				endpointsFields = EndpointsToSelectableFields(endpoints)
-			}
-			return endpoints.Labels, endpointsFields, nil
-		},
+		Label:    label,
+		Field:    field,
+		GetAttrs: GetAttrs,
 	}
 }
 
