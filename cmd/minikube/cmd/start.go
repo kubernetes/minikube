@@ -75,7 +75,7 @@ assumes you already have Virtualbox installed.`,
 }
 
 func runStart(cmd *cobra.Command, args []string) {
-	fmt.Println("Starting local Kubernetes cluster...")
+	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
 	api, err := machine.NewAPIClient(clientType)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
