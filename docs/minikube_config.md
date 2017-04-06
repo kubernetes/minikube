@@ -28,6 +28,7 @@ Configurable fields:
  * heapster
  * ingress
  * registry-creds
+ * default-storageclass
  * hyperv-virtual-switch
  * use-vendored-driver
 
