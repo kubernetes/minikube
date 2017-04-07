@@ -1,5 +1,14 @@
 # Minikube ISO Release Notes
 
+## Version 0.18.0 - 4/6/2017
+* ISO will now be versioned the same as minikube
+* Added timezone data
+* Added `jq` and `coreutils` packages
+* Enabled RDB Kernel module
+* Added dockerized build for iso image
+* Enabled NFS_v4_2 in kernel
+* Added CIFS-utils
+
 ## Version 1.0.7 - 3/2/2017
 * Added ethtool
 * Added bootlocal.sh script for custom startup options

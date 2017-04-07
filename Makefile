@@ -14,8 +14,8 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 17
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 18
+VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -24,7 +24,8 @@ REGISTRY?=gcr.io/k8s-minikube
 DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v1.0.7
+# The iso will be versioned the same as minikube
+ISO_VERSION ?= $(VERSION)
 ISO_BUCKET ?= minikube/iso
 
 GOOS ?= $(shell go env GOOS)
