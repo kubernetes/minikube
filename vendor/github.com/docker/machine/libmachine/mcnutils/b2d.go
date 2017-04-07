@@ -33,8 +33,7 @@ var (
 )
 
 var (
-	errGitHubAPIResponse = errors.New(`Error getting a version tag from the Github API response.
-You may be getting rate limited by Github.`)
+	errGitHubAPIResponse = errors.New(`failure getting a version tag from the Github API response (are you getting rate limited by Github?)`)
 )
 
 var (

@@ -19,35 +19,11 @@ import (
 
 var (
 	ErrUnknownYumOsRelease = errors.New("unknown OS for Yum repository")
-
-	packageListTemplate = `[docker]
-name=Docker Stable Repository
-baseurl=https://yum.dockerproject.org/repo/main/{{.OsRelease}}/{{.OsReleaseVersion}}
-priority=1
-enabled=1
-gpgkey=https://yum.dockerproject.org/gpg
-`
-	engineConfigTemplate = `[Unit]
-Description=Docker Application Container Engine
-After=network.target
-
-[Service]
-Type=notify
-ExecStart=/usr/bin/docker daemon -H tcp://0.0.0.0:{{.DockerPort}} -H unix:///var/run/docker.sock --storage-driver {{.EngineOptions.StorageDriver}} --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
-ExecReload=/bin/kill -s HUP $MAINPID
-MountFlags=slave
-LimitNOFILE=infinity
-LimitNPROC=infinity
-LimitCORE=infinity
-TimeoutStartSec=0
-Delegate=yes
-KillMode=process
+	engineConfigTemplate   = `[Service]
+ExecStart=
+ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:{{.DockerPort}} -H unix:///var/run/docker.sock --storage-driver {{.EngineOptions.StorageDriver}} --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
 Environment={{range .EngineOptions.Env}}{{ printf "%q" . }} {{end}}
-
-[Install]
-WantedBy=multi-user.target
 `
-
 	majorVersionRE = regexp.MustCompile(`^(\d+)(\..*)?`)
 )
 
@@ -91,7 +67,6 @@ func (provisioner *RedHatProvisioner) SetHostname(hostname string) error {
 		return err
 	}
 
-	// ubuntu/debian use 127.0.1.1 for non "localhost" loopback hostnames: https://www.debian.org/doc/manuals/debian-reference/ch05.en.html#_the_hostname_resolution
 	if _, err := provisioner.SSHCommand(fmt.Sprintf(
 		"if grep -xq 127.0.1.1.* /etc/hosts; then sudo sed -i 's/^127.0.1.1.*/127.0.1.1 %s/g' /etc/hosts; else echo '127.0.1.1 %s' | sudo tee -a /etc/hosts; fi",
 		hostname,
@@ -110,6 +85,8 @@ func (provisioner *RedHatProvisioner) Package(name string, action pkgaction.Pack
 	case pkgaction.Install:
 		packageAction = "install"
 	case pkgaction.Remove:
+		packageAction = "remove"
+	case pkgaction.Purge:
 		packageAction = "remove"
 	case pkgaction.Upgrade:
 		packageAction = "upgrade"
@@ -178,7 +155,7 @@ func (provisioner *RedHatProvisioner) Provision(swarmOptions swarm.Options, auth
 	}
 
 	// update OS -- this is needed for libdevicemapper and the docker install
-	if _, err := provisioner.SSHCommand("sudo -E yum -y update"); err != nil {
+	if _, err := provisioner.SSHCommand("sudo -E yum -y update -x docker-*"); err != nil {
 		return err
 	}
 

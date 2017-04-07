@@ -428,7 +428,7 @@ func (d *Driver) generateDiskImage() (string, error) {
 	diskImage := d.ResolveStorePath("disk.vhd")
 	fixed := d.ResolveStorePath("fixed.vhd")
 
-	// Resizing vhds requires administrator priviledges
+	// Resizing vhds requires administrator privileges
 	// incase the user is only a hyper-v admin then create the disk at the target size to avoid resizing.
 	isWindowsAdmin, err := isWindowsAdministrator()
 	if err != nil {

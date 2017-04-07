@@ -319,7 +319,7 @@ func (d *Driver) Create() error {
 	d.IPAddress = ip
 
 	// Do not execute the rest of boot2docker specific configuration
-	// The uplaod of the public ssh key uses a ssh connection,
+	// The upload of the public ssh key uses a ssh connection,
 	// this works without installed vmware client tools
 	if d.ConfigDriveURL != "" {
 		var keyfh *os.File
@@ -564,7 +564,7 @@ func (d *Driver) getIPfromVmnetConfigurationFile(conffile, macaddr string) (stri
 			continue
 		}
 
-		// we are only in intressted in endings if we in a block. Otherwise we will count
+		// we are only in interested in endings if we in a block. Otherwise we will count
 		// ending of non host blocks as well
 		if matches := hostend.FindStringSubmatch(line); blockdepth > 0 && matches != nil {
 			blockdepth = blockdepth - 1

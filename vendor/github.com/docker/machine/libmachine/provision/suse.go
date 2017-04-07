@@ -1,9 +1,8 @@
 package provision
 
 import (
-	"bytes"
 	"fmt"
-	"text/template"
+	"strings"
 
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
@@ -27,82 +26,34 @@ func init() {
 	})
 }
 
-func NewOpenSUSEProvisioner(d drivers.Driver) Provisioner {
-	return &SUSEProvisioner{
-		GenericProvisioner{
-			SSHCommander:      GenericSSHCommander{Driver: d},
-			DockerOptionsDir:  "/etc/docker",
-			DaemonOptionsFile: "/etc/sysconfig/docker",
-			OsReleaseID:       "opensuse",
-			Packages: []string{
-				"curl",
-			},
-			Driver: d,
-		},
-	}
-}
-
 func NewSLEDProvisioner(d drivers.Driver) Provisioner {
 	return &SUSEProvisioner{
-		GenericProvisioner{
-			SSHCommander:      GenericSSHCommander{Driver: d},
-			DockerOptionsDir:  "/etc/docker",
-			DaemonOptionsFile: "/etc/sysconfig/docker",
-			OsReleaseID:       "sled",
-			Packages: []string{
-				"curl",
-			},
-			Driver: d,
-		},
+		NewSystemdProvisioner("sled", d),
 	}
 }
 
 func NewSLESProvisioner(d drivers.Driver) Provisioner {
 	return &SUSEProvisioner{
-		GenericProvisioner{
-			SSHCommander:      GenericSSHCommander{Driver: d},
-			DockerOptionsDir:  "/etc/docker",
-			DaemonOptionsFile: "/etc/sysconfig/docker",
-			OsReleaseID:       "sles",
-			Packages: []string{
-				"curl",
-			},
-			Driver: d,
-		},
+		NewSystemdProvisioner("sles", d),
+	}
+}
+
+func NewOpenSUSEProvisioner(d drivers.Driver) Provisioner {
+	return &SUSEProvisioner{
+		NewSystemdProvisioner("openSUSE", d),
 	}
 }
 
 type SUSEProvisioner struct {
-	GenericProvisioner
+	SystemdProvisioner
+}
+
+func (provisioner *SUSEProvisioner) CompatibleWithHost() bool {
+	return strings.ToLower(provisioner.OsReleaseInfo.ID) == strings.ToLower(provisioner.OsReleaseID)
 }
 
 func (provisioner *SUSEProvisioner) String() string {
-	return "suse"
-}
-
-func (provisioner *SUSEProvisioner) Service(name string, action serviceaction.ServiceAction) error {
-	reloadDaemon := false
-	switch action {
-	case serviceaction.Start, serviceaction.Restart:
-		reloadDaemon = true
-	}
-
-	// systemd needs reloaded when config changes on disk; we cannot
-	// be sure exactly when it changes from the provisioner so
-	// we call a reload on every restart to be safe
-	if reloadDaemon {
-		if _, err := provisioner.SSHCommand("sudo systemctl daemon-reload"); err != nil {
-			return err
-		}
-	}
-
-	command := fmt.Sprintf("sudo systemctl %s %s", action.String(), name)
-
-	if _, err := provisioner.SSHCommand(command); err != nil {
-		return err
-	}
-
-	return nil
+	return "openSUSE"
 }
 
 func (provisioner *SUSEProvisioner) Package(name string, action pkgaction.PackageAction) error {
@@ -110,14 +61,16 @@ func (provisioner *SUSEProvisioner) Package(name string, action pkgaction.Packag
 
 	switch action {
 	case pkgaction.Install:
-		packageAction = "install"
+		packageAction = "in"
 	case pkgaction.Remove:
-		packageAction = "remove"
+		packageAction = "rm"
 	case pkgaction.Upgrade:
-		packageAction = "upgrade"
+		packageAction = "up"
 	}
 
 	command := fmt.Sprintf("sudo -E zypper -n %s %s", packageAction, name)
+
+	log.Debugf("zypper: action=%s name=%s", action.String(), name)
 
 	if _, err := provisioner.SSHCommand(command); err != nil {
 		return err
@@ -145,96 +98,97 @@ func (provisioner *SUSEProvisioner) Provision(swarmOptions swarm.Options, authOp
 	provisioner.EngineOptions = engineOptions
 	swarmOptions.Env = engineOptions.Env
 
+	// figure out the filesystem used by /var/lib
+	fs, err := provisioner.SSHCommand("stat -f -c %T /var/lib/")
+	if err != nil {
+		return err
+	}
+	graphDriver := "overlay"
+	if strings.Contains(fs, "btrfs") {
+		graphDriver = "btrfs"
+	}
+
+	storageDriver, err := decideStorageDriver(provisioner, graphDriver, engineOptions.StorageDriver)
+	if err != nil {
+		return err
+	}
+	provisioner.EngineOptions.StorageDriver = storageDriver
+
+	log.Debug("Setting hostname")
 	if err := provisioner.SetHostname(provisioner.Driver.GetMachineName()); err != nil {
 		return err
 	}
 
+	if strings.ToLower(provisioner.OsReleaseInfo.ID) != "opensuse" {
+		// This is a SLE machine, enable the containers module to have access
+		// to the docker packages
+		if _, err := provisioner.SSHCommand("sudo -E SUSEConnect -p sle-module-containers/12/$(uname -m) -r ''"); err != nil {
+			return fmt.Errorf(
+				"Error while adding the 'containers' module, make sure this machine is registered either against SUSE Customer Center (SCC) or to a local Subscription Management Tool (SMT): %v",
+				err)
+		}
+	}
+
+	log.Debug("Installing base packages")
 	for _, pkg := range provisioner.Packages {
 		if err := provisioner.Package(pkg, pkgaction.Install); err != nil {
 			return err
 		}
 	}
 
-	// update OS -- this is needed for libdevicemapper and the docker install
-	if _, err := provisioner.SSHCommand("sudo zypper ref"); err != nil {
-		return err
-	}
-	if _, err := provisioner.SSHCommand("sudo zypper -n update"); err != nil {
+	log.Debug("Installing docker")
+	if err := provisioner.Package("docker", pkgaction.Install); err != nil {
 		return err
 	}
 
-	if err := installDockerGeneric(provisioner, engineOptions.InstallURL); err != nil {
+	// create symlinks for containerd, containerd-shim and runc.
+	// We have to do that because machine overrides the openSUSE systemd
+	// unit of docker
+	if _, err := provisioner.SSHCommand("sudo -E ln -s /usr/sbin/runc /usr/sbin/docker-runc"); err != nil {
+		return err
+	}
+	if _, err := provisioner.SSHCommand("sudo -E ln -s /usr/sbin/containerd /usr/sbin/docker-containerd"); err != nil {
+		return err
+	}
+	if _, err := provisioner.SSHCommand("sudo -E ln -s /usr/sbin/containerd-shim /usr/sbin/docker-containerd-shim"); err != nil {
 		return err
 	}
 
-	if _, err := provisioner.SSHCommand("sudo systemctl start docker"); err != nil {
+	// Is yast2 firewall installed?
+	if _, installed := provisioner.SSHCommand("rpm -q yast2-firewall"); installed == nil {
+		// Open the firewall port required by docker
+		if _, err := provisioner.SSHCommand("sudo -E /sbin/yast2 firewall services add ipprotocol=tcp tcpport=2376 zone=EXT"); err != nil {
+			return err
+		}
+	}
+
+	log.Debug("Starting systemd docker service")
+	if err := provisioner.Service("docker", serviceaction.Start); err != nil {
 		return err
 	}
 
+	log.Debug("Waiting for docker daemon")
 	if err := mcnutils.WaitFor(provisioner.dockerDaemonResponding); err != nil {
-		return err
-	}
-
-	if _, err := provisioner.SSHCommand("sudo systemctl stop docker"); err != nil {
-		return err
-	}
-
-	// open firewall port required by docker
-	if _, err := provisioner.SSHCommand("sudo /sbin/yast2 firewall services add ipprotocol=tcp tcpport=2376 zone=EXT"); err != nil {
-		return err
-	}
-
-	if err := makeDockerOptionsDir(provisioner); err != nil {
 		return err
 	}
 
 	provisioner.AuthOptions = setRemoteAuthOptions(provisioner)
 
+	log.Debug("Configuring auth")
 	if err := ConfigureAuth(provisioner); err != nil {
 		return err
 	}
 
+	log.Debug("Configuring swarm")
 	if err := configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions); err != nil {
 		return err
 	}
 
+	// enable in systemd
+	log.Debug("Enabling docker in systemd")
+	if err := provisioner.Service("docker", serviceaction.Enable); err != nil {
+		return err
+	}
+
 	return nil
-}
-
-func (provisioner *SUSEProvisioner) GenerateDockerOptions(dockerPort int) (*DockerOptions, error) {
-	var (
-		engineCfg  bytes.Buffer
-		configPath = provisioner.DaemonOptionsFile
-	)
-
-	// remove existing
-	if _, err := provisioner.SSHCommand(fmt.Sprintf("sudo rm %s", configPath)); err != nil {
-		return nil, err
-	}
-
-	driverNameLabel := fmt.Sprintf("provider=%s", provisioner.Driver.DriverName())
-	provisioner.EngineOptions.Labels = append(provisioner.EngineOptions.Labels, driverNameLabel)
-
-	engineConfigTmpl := `# File automatically generated by docker-machine
-DOCKER_OPTS=' -H tcp://0.0.0.0:{{.DockerPort}} {{ if .EngineOptions.StorageDriver }} --storage-driver {{.EngineOptions.StorageDriver}} {{ end }} --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}'
-`
-	t, err := template.New("engineConfig").Parse(engineConfigTmpl)
-	if err != nil {
-		return nil, err
-	}
-
-	engineConfigContext := EngineConfigContext{
-		DockerPort:       dockerPort,
-		AuthOptions:      provisioner.AuthOptions,
-		EngineOptions:    provisioner.EngineOptions,
-		DockerOptionsDir: provisioner.DockerOptionsDir,
-	}
-
-	t.Execute(&engineCfg, engineConfigContext)
-
-	daemonOptsDir := configPath
-	return &DockerOptions{
-		EngineOptions:     engineCfg.String(),
-		EngineOptionsPath: daemonOptsDir,
-	}, nil
 }
