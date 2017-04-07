@@ -60,15 +60,18 @@ func (provisioner *UbuntuSystemdProvisioner) Package(name string, action pkgacti
 	case pkgaction.Remove:
 		packageAction = "remove"
 		updateMetadata = false
+	case pkgaction.Purge:
+		packageAction = "purge"
+		updateMetadata = false
 	}
 
 	switch name {
 	case "docker":
-		name = "docker-engine"
+		name = "docker-ce"
 	}
 
 	if updateMetadata {
-		if _, err := provisioner.SSHCommand("sudo apt-get update"); err != nil {
+		if err := waitForLockAptGetUpdate(provisioner); err != nil {
 			return err
 		}
 	}
