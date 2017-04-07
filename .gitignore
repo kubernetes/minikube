@@ -37,3 +37,5 @@ deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 .DS_Store
 
 /.idea
+
+/.vscode
