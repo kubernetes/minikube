@@ -5,7 +5,6 @@
 package go9p
 
 import (
-	"flag"
 	"io"
 	"log"
 	"os"
@@ -478,4 +477,11 @@ func lookup(uid string, group bool) (uint32, *Error) {
 /* enables "Akaros" capabilities, which right now means
  * a sane error message format.
  */
-var Akaros = flag.Bool("akaros", false, "Akaros extensions")
+
+// (r2d4): We don't want this exposed in minikube right now
+// var Akaros = flag.Bool("akaros", false, "Akaros extensions")
+var Akaros = boolPointer(false)
+
+func boolPointer(b bool) *bool {
+	return &b
+}

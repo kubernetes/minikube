@@ -237,6 +237,33 @@ __handle_word()
     __handle_word
 }
 
+_minikube_addons_configure()
+{
+    last_command="minikube_addons_configure"
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--alsologtostderr")
+    flags+=("--log_backtrace_at=")
+    flags+=("--log_dir=")
+    flags+=("--logtostderr")
+    flags+=("--show-libmachine-logs")
+    flags+=("--stderrthreshold=")
+    flags+=("--use-vendored-driver")
+    flags+=("--v=")
+    two_word_flags+=("-v")
+    flags+=("--vmodule=")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _minikube_addons_disable()
 {
     last_command="minikube_addons_disable"
@@ -354,6 +381,7 @@ _minikube_addons()
 {
     last_command="minikube_addons"
     commands=()
+    commands+=("configure")
     commands+=("disable")
     commands+=("enable")
     commands+=("list")
@@ -865,6 +893,8 @@ _minikube_start()
     local_nonpersistent_flags+=("--cpus=")
     flags+=("--disk-size=")
     local_nonpersistent_flags+=("--disk-size=")
+    flags+=("--dns-domain=")
+    local_nonpersistent_flags+=("--dns-domain=")
     flags+=("--docker-env=")
     local_nonpersistent_flags+=("--docker-env=")
     flags+=("--docker-opt=")

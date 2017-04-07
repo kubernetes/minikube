@@ -19,6 +19,7 @@ minikube start
       --container-runtime string        The container runtime to be used
       --cpus int                        Number of CPUs allocated to the minikube VM (default 2)
       --disk-size string                Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g) (default "20g")
+      --dns-domain string               The cluster dns domain name used in the kubernetes cluster
       --docker-env stringArray          Environment variables to pass to the Docker daemon. (format: key=value)
       --docker-opt stringArray          Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --extra-config ExtraOption        A set of key=value pairs that describe configuration that may be passed to different components.
