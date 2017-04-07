@@ -8,7 +8,7 @@ go:
 go_import_path: k8s.io/minikube
 
 install:
-  - sudo apt-get -qqy install libvirt-dev
+  - echo "Don't run anything."
 script:
   - make test
 after_success:
