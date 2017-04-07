@@ -38,7 +38,7 @@ func TestDocker(t *testing.T) {
 	minikubeRunner.RunCommand(startCmd, true)
 	minikubeRunner.EnsureRunning()
 
-	dockerdEnvironment := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=Environment", true)
+	dockerdEnvironment := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=Environment --no-pager", true)
 	fmt.Println(dockerdEnvironment)
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
 		if !strings.Contains(dockerdEnvironment, envVar) {
@@ -46,7 +46,7 @@ func TestDocker(t *testing.T) {
 		}
 	}
 
-	dockerdExecStart := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=ExecStart", true)
+	dockerdExecStart := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=ExecStart --no-pager", true)
 	fmt.Println(dockerdExecStart)
 	for _, opt := range []string{"--debug", "--icc=true"} {
 		if !strings.Contains(dockerdExecStart, opt) {
