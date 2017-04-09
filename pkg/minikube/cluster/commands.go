@@ -178,16 +178,30 @@ func GetLogsCommand(follow bool) (string, error) {
 
 var localkubeStatusCommand = `sudo systemctl is-active localkube 2>&1 1>/dev/null && echo "Running" || echo "Stopped"`
 
-func GetMount9pCleanupCommand() string {
-	return `
-sudo umount /mount-9p;
-sudo rm -rf /mount-9p;
-`
+func GetMountCleanupCommand(path string) string {
+	return fmt.Sprintf(`
+sudo umount %s;
+sudo rm -rf %s;
+`, path, path)
 }
 
-func GetMount9pCommand(ip net.IP) string {
-	return fmt.Sprintf(`
-sudo mkdir /mount-9p;
-sudo mount -t 9p -o trans=tcp -o port=5640 -o uid=1001 -o gid=1001 %s /mount-9p;
-sudo chmod 775 /mount-9p;`, ip)
+var mountTemplate = `
+sudo mkdir -p {{.Path}};
+sudo mount -t 9p -o trans=tcp -o port=5640 -o uid=1001 -o gid=1001 {{.IP}} {{.Path}};
+sudo chmod 775 {{.Path}};`
+
+func GetMountCommand(ip net.IP, path string) (string, error) {
+	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
+	buf := bytes.Buffer{}
+	data := struct {
+		IP   string
+		Path string
+	}{
+		IP:   ip.String(),
+		Path: path,
+	}
+	if err := t.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
