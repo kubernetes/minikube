@@ -44,7 +44,7 @@ func testMounting(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	mountCmd := fmt.Sprintf("mount %s", tempDir)
+	mountCmd := fmt.Sprintf("mount %s:/mount-9p", tempDir)
 	cmd := minikubeRunner.RunDaemon(mountCmd)
 	defer cmd.Process.Kill()
 

@@ -398,8 +398,8 @@ func GetHostLogs(api libmachine.API, follow bool) (string, error) {
 	return s, nil
 }
 
-// Mount9pHost runs the mount command from the 9p client on the VM to the 9p server on the host
-func Mount9pHost(api libmachine.API) error {
+// MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
+func MountHost(api libmachine.API, path string) error {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
@@ -408,8 +408,12 @@ func Mount9pHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "Error getting the host IP address to use from within the VM")
 	}
-	host.RunSSHCommand(GetMount9pCleanupCommand())
-	_, err = host.RunSSHCommand(GetMount9pCommand(ip))
+	host.RunSSHCommand(GetMountCleanupCommand(path))
+	mountCmd, err := GetMountCommand(ip, path)
+	if err != nil {
+		return errors.Wrap(err, "Error getting mount command")
+	}
+	_, err = host.RunSSHCommand(mountCmd)
 	if err != nil {
 		return err
 	}
