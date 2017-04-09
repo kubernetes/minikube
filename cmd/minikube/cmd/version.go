@@ -31,8 +31,6 @@ var versionCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Explicitly disable update checking for the version command
 		enableUpdateNotification = false
-
-		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(command *cobra.Command, args []string) {
 

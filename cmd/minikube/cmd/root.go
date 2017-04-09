@@ -84,27 +84,6 @@ var RootCmd = &cobra.Command{
 Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine logs
 `)
 		}
-
-		//TODO(r2d4): config should not reference API
-		clientType = configCmd.GetClientType()
-
-		// Log level 3 or greater enables libmachine logs
-		if !glog.V(3) {
-			log.SetOutWriter(ioutil.Discard)
-			log.SetErrWriter(ioutil.Discard)
-		}
-
-		// Log level 7 or greater enables debug level logs
-		if glog.V(7) {
-			log.SetDebug(true)
-		}
-
-		if enableUpdateNotification {
-			notify.MaybePrintUpdateTextFromGithub(os.Stderr)
-		}
-		if enableKubectlDownloadMsg {
-			util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
-		}
 	},
 }
 
@@ -143,6 +122,27 @@ func init() {
 	}
 	viper.BindPFlags(RootCmd.PersistentFlags())
 	cobra.OnInitialize(initConfig)
+
+	//TODO(r2d4): config should not reference API
+	clientType = configCmd.GetClientType()
+
+	// Log level 3 or greater enables libmachine logs
+	if !glog.V(3) {
+		log.SetOutWriter(ioutil.Discard)
+		log.SetErrWriter(ioutil.Discard)
+	}
+
+	// Log level 7 or greater enables debug level logs
+	if glog.V(7) {
+		log.SetDebug(true)
+	}
+
+	if enableUpdateNotification {
+		notify.MaybePrintUpdateTextFromGithub(os.Stderr)
+	}
+	if enableKubectlDownloadMsg {
+		util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.
