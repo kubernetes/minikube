@@ -17,6 +17,10 @@ var (
 	detector     Detector = &StandardDetector{}
 )
 
+const (
+	LastReleaseBeforeCEVersioning = "1.13.1"
+)
+
 type SSHCommander interface {
 	// Short-hand for accessing an SSH command from the driver.
 	SSHCommand(args string) (string, error)

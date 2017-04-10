@@ -140,13 +140,13 @@ func listHostOnlyAdapters(vbox VBoxManager) (map[string]*hostOnlyNetwork, error)
 			n.NetworkName = val
 
 			if _, present := byName[n.NetworkName]; present {
-				return fmt.Errorf("VirtualBox is configured with multiple host-only adapters with the same name %q. Please remove one.", n.NetworkName)
+				return fmt.Errorf("VirtualBox is configured with multiple host-only adapters with the same name %q. Please remove one", n.NetworkName)
 			}
 			byName[n.NetworkName] = n
 
 			if len(n.IPv4.IP) != 0 {
 				if _, present := byIP[n.IPv4.IP.String()]; present {
-					return fmt.Errorf("VirtualBox is configured with multiple host-only adapters with the same IP %q. Please remove one.", n.IPv4.IP)
+					return fmt.Errorf("VirtualBox is configured with multiple host-only adapters with the same IP %q. Please remove one", n.IPv4.IP)
 				}
 				byIP[n.IPv4.IP.String()] = n
 			}

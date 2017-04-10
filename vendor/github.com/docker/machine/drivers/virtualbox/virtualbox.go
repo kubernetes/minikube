@@ -69,6 +69,7 @@ type Driver struct {
 	NoShare             bool
 	DNSProxy            bool
 	NoVTXCheck          bool
+	ShareFolder         string
 }
 
 // NewDriver creates a new VirtualBox driver with default settings.
@@ -190,6 +191,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Usage:  "Disable checking for the availability of hardware virtualization before the vm is started",
 			EnvVar: "VIRTUALBOX_NO_VTX_CHECK",
 		},
+		mcnflag.StringFlag{
+			EnvVar: "VIRTUALBOX_SHARE_FOLDER",
+			Name:   "virtualbox-share-folder",
+			Usage:  "Mount the specified directory instead of the default home location. Format: dir:name",
+		},
 	}
 }
 
@@ -242,6 +248,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.NoShare = flags.Bool("virtualbox-no-share")
 	d.DNSProxy = !flags.Bool("virtualbox-no-dns-proxy")
 	d.NoVTXCheck = flags.Bool("virtualbox-no-vtx-check")
+	d.ShareFolder = flags.String("virtualbox-share-folder")
 
 	return nil
 }
@@ -448,8 +455,12 @@ func (d *Driver) CreateVM() error {
 
 	shareName, shareDir := getShareDriveAndName()
 
+	if d.ShareFolder != "" {
+		shareDir, shareName = parseShareFolder(d.ShareFolder)
+	}
+
 	if shareDir != "" && !d.NoShare {
-		log.Debugf("setting up shareDir")
+		log.Debugf("setting up shareDir '%s' -> '%s'", shareDir, shareName)
 		if _, err := os.Stat(shareDir); err != nil && !os.IsNotExist(err) {
 			return err
 		} else if !os.IsNotExist(err) {
@@ -473,6 +484,13 @@ func (d *Driver) CreateVM() error {
 	}
 
 	return nil
+}
+
+func parseShareFolder(shareFolder string) (string, string) {
+	split := strings.Split(shareFolder, ":")
+	shareDir := strings.Join(split[:len(split)-1], ":")
+	shareName := split[len(split)-1]
+	return shareDir, shareName
 }
 
 func (d *Driver) hostOnlyIPAvailable() bool {
@@ -833,14 +851,15 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 		return nil, err
 	}
 
-	log.Debugf("Adding/Modifying DHCP server %q...", dhcpAddr)
-	nAddr := network.IP.To4()
+	lowerIP, upperIP := getDHCPAddressRange(dhcpAddr, network)
+
+	log.Debugf("Adding/Modifying DHCP server %q with address range %q - %q...", dhcpAddr, lowerIP, upperIP)
 
 	dhcp := dhcpServer{}
 	dhcp.IPv4.IP = dhcpAddr
 	dhcp.IPv4.Mask = network.Mask
-	dhcp.LowerIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(100))
-	dhcp.UpperIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(254))
+	dhcp.LowerIP = lowerIP
+	dhcp.UpperIP = upperIP
 	dhcp.Enabled = !d.HostOnlyNoDHCP
 	if err := addHostOnlyDHCPServer(hostOnlyAdapter.Name, dhcp, d.VBoxManager); err != nil {
 		return nil, err
@@ -856,6 +875,30 @@ func (d *Driver) setupHostOnlyNetwork(machineName string) (*hostOnlyNetwork, err
 	}
 
 	return hostOnlyAdapter, nil
+}
+
+func getDHCPAddressRange(dhcpAddr net.IP, network *net.IPNet) (lowerIP net.IP, upperIP net.IP) {
+	nAddr := network.IP.To4()
+	ones, bits := network.Mask.Size()
+
+	if ones <= 24 {
+		// For a /24 subnet, use the original behavior of allowing the address range
+		// between x.x.x.100 and x.x.x.254.
+		lowerIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(100))
+		upperIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(254))
+		return
+	}
+
+	// Start the lowerIP range one address above the selected DHCP address.
+	lowerIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], dhcpAddr.To4()[3]+1)
+
+	// The highest D-part of the address A.B.C.D in this subnet is at 2^n - 1,
+	// where n is the number of available bits in the subnet. Since the highest
+	// address is reserved for subnet broadcast, the highest *assignable* address
+	// is at (2^n - 1) - 1 == 2^n - 2.
+	maxAssignableSubnetAddress := (byte)((1 << (uint)(bits-ones)) - 2)
+	upperIP = net.IPv4(nAddr[0], nAddr[1], nAddr[2], maxAssignableSubnetAddress)
+	return
 }
 
 func parseAndValidateCIDR(hostOnlyCIDR string) (net.IP, *net.IPNet, error) {
