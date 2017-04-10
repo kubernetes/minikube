@@ -40,7 +40,7 @@ func BootstrapCertificates(authOptions *auth.Options) error {
 
 		// check if the key path exists; if so, error
 		if _, err := os.Stat(caPrivateKeyPath); err == nil {
-			return errors.New("The CA key already exists.  Please remove it or specify a different key/cert.")
+			return errors.New("certificate authority key already exists")
 		}
 
 		if err := GenerateCACertificate(caCertPath, caPrivateKeyPath, caOrg, bits); err != nil {
@@ -54,7 +54,7 @@ func BootstrapCertificates(authOptions *auth.Options) error {
 		if _, err := os.Stat(certDir); err != nil {
 			if os.IsNotExist(err) {
 				if err := os.Mkdir(certDir, 0700); err != nil {
-					return fmt.Errorf("Creating machine client cert dir failed: %s", err)
+					return fmt.Errorf("failure creating machine client cert dir: %s", err)
 				}
 			} else {
 				return err
@@ -63,7 +63,7 @@ func BootstrapCertificates(authOptions *auth.Options) error {
 
 		// check if the key path exists; if so, error
 		if _, err := os.Stat(clientKeyPath); err == nil {
-			return errors.New("The client key already exists.  Please remove it or specify a different key/cert.")
+			return errors.New("client key already exists")
 		}
 
 		// Used to generate the client certificate.
@@ -79,7 +79,7 @@ func BootstrapCertificates(authOptions *auth.Options) error {
 		}
 
 		if err := GenerateCert(certOptions); err != nil {
-			return fmt.Errorf("Generating client certificate failed: %s", err)
+			return fmt.Errorf("failure generating client certificate: %s", err)
 		}
 	}
 

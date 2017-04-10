@@ -38,18 +38,19 @@ func TestDocker(t *testing.T) {
 	minikubeRunner.RunCommand(startCmd, true)
 	minikubeRunner.EnsureRunning()
 
-	filename := "/etc/systemd/system/docker.service"
-
-	profileContents := minikubeRunner.RunCommand(fmt.Sprintf("ssh sudo cat %s", filename), true)
-	fmt.Println(profileContents)
+	dockerdEnvironment := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=Environment --no-pager", true)
+	fmt.Println(dockerdEnvironment)
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
-		if !strings.Contains(profileContents, envVar) {
-			t.Fatalf("Env var %s missing from file: %s.", envVar, profileContents)
+		if !strings.Contains(dockerdEnvironment, envVar) {
+			t.Fatalf("Env var %s missing from Environment: %s.", envVar, dockerdEnvironment)
 		}
 	}
+
+	dockerdExecStart := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=ExecStart --no-pager", true)
+	fmt.Println(dockerdExecStart)
 	for _, opt := range []string{"--debug", "--icc=true"} {
-		if !strings.Contains(profileContents, opt) {
-			t.Fatalf("Option %s missing from file: %s.", opt, profileContents)
+		if !strings.Contains(dockerdExecStart, opt) {
+			t.Fatalf("Option %s missing from ExecStart: %s.", opt, dockerdExecStart)
 		}
 	}
 }

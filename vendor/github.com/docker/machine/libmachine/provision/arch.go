@@ -43,16 +43,16 @@ func (provisioner *ArchProvisioner) Package(name string, action pkgaction.Packag
 	updateMetadata := true
 
 	switch action {
-	case pkgaction.Install:
+	case pkgaction.Install, pkgaction.Upgrade:
 		packageAction = "S"
 	case pkgaction.Remove:
 		packageAction = "R"
 		updateMetadata = false
-	case pkgaction.Upgrade:
-		packageAction = "U"
 	}
 
 	switch name {
+	case "docker-engine":
+		name = "docker"
 	case "docker":
 		name = "docker"
 	}

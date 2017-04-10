@@ -213,10 +213,11 @@ func (c *RPCClientDriver) close() error {
 	log.Debug("Making call to close driver server")
 
 	if err := c.Client.Call(CloseMethod, struct{}{}, nil); err != nil {
-		return err
+		log.Debugf("Failed to make call to close driver server: %s", err)
+	} else {
+		log.Debug("Successfully made call to close driver server")
 	}
 
-	log.Debug("Successfully made call to close driver server")
 	log.Debug("Making call to close connection to plugin binary")
 
 	return c.plugin.Close()
