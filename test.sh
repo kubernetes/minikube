@@ -67,21 +67,5 @@ if [[ ! -z ${files} ]]; then
 	exit 1
 fi
 
-# Check that cobra docs are up to date
-# This is done by generating new docs and then seeing if they are different than the committed docs
-echo "Checking help documentation..."
-if [[ $(git diff) ]]; then
-  echo "Skipping help text check because the git state is dirty."
-else
-  make gendocs
-  files=$(git diff)
-  if [[ $files ]]; then
-    echo "Help text is out of date: $files \n Please run \"make gendocs\"\n and make sure that those doc changes are committed"
-    exit 1
-  else
-    echo "Help text is up to date"
-  fi
-fi
-
 echo "Checking releases.json schema"
 go run deploy/minikube/schema_check.go
