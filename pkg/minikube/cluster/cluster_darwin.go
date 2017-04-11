@@ -55,6 +55,8 @@ type xhyveDriver struct {
 	DiskNumber     int
 	Virtio9p       bool
 	Virtio9pFolder string
+	QCow2          bool
+	RawDisk        bool
 }
 
 func createXhyveHost(config MachineConfig) *xhyveDriver {
@@ -69,7 +71,8 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=" + cfg.GetMachineName(),
 		DiskSize:       int64(config.DiskSize),
 		Virtio9p:       true,
-		Virtio9pFolder: "/Users",
+		QCow2:          false,
+		RawDisk:        config.DiskDriver == "virtio-blk",
 	}
 }
 
