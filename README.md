@@ -377,10 +377,10 @@ hello from pod
 
 Some drivers themselves provide host-folder sharing options, but we plan to deprecate these in the future as they are all implemented differently and they are not configurable through minikube.
 
-## Private Container Registries
-**GCR/ECR**: Minikube has an addon, `registry-creds` which maps credentials into Minikube to support pulling from Google Container Registry (GCR) and Amazon's EC2 Container Registry (ECR).  To use the addon, you will need to configure it using `minikube addons configure registry-creds` and then enable it via `minikube addons enable registry-creds`.  If you need to automate this process, you can see the required secrets for the addon here: https://github.com/upmc-enterprises/registry-creds
+## Private Container Registries 
+**GCR/ECR/Docker**: Minikube has an addon, `registry-creds` which maps credentials into Minikube to support pulling from Google Container Registry (GCR), Amazon's EC2 Container Registry (ECR), and Private Docker registries.  Simply run `minikube addons enable registry-creds` and follow the prompts.  This will make it so that you can reference your private images in minikube and they will be pulled down properly.
 
-For other private container registries, follow the steps on [this page](http://kubernetes.io/docs/user-guide/images/).
+For additional information on private container registries, see [this page](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
 
 We recommend you use ImagePullSecrets, but if you would like to configure access on the minikube VM you can place the `.dockercfg` in the `/home/docker` directory or the `config.json` in the `/home/docker/.docker` directory.
 
