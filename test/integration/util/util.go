@@ -33,7 +33,7 @@ import (
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
-const kubectlBinary = "kubectl-v1.6.0-alpha.1"
+const kubectlBinary = "kubectl"
 
 type MinikubeRunner struct {
 	T          *testing.T
