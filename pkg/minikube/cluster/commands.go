@@ -35,9 +35,6 @@ var localkubeSystemdTmpl = `[Unit]
 Description=Localkube
 Documentation=https://github.com/kubernetes/minikube/tree/master/pkg/localkube
 
-Wants=network-online.target
-After=network-online.target
-
 [Service]
 Type=notify
 Restart=always
