@@ -30,8 +30,6 @@ Investigate and fix any failures.
 ## Bump the version in the Makefile and Update Docs to reflect this
 
 See [this PR](https://github.com/kubernetes/minikube/pull/165) for an example.
-Also run `make gendocs` once this change has been made
-
 
 ##Send an initial commit with the Makefile change:
 
