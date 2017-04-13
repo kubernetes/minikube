@@ -354,12 +354,12 @@ $ kubectl run -i --rm --tty ubuntu --overrides='
 }
 '  --image=ubuntu:14.04 --restart=Never -- bash
 
-Waiting for pod default/ubuntu to be running, status is Pending, pod ready: false 
+Waiting for pod default/ubuntu to be running, status is Pending, pod ready: false
 Waiting for pod default/ubuntu to be running, status is Running, pod ready: false
 # ======================================================================================
 # We are now in the pod
-#======================================================================================= 
-root@ubuntu:/mount-9p# cat hello-from-host 
+#=======================================================================================
+root@ubuntu:/mount-9p# cat hello-from-host
 hello from host
 root@ubuntu:/mount-9p# echo "hello from pod" > /mount-9p/hello-from-pod
 root@ubuntu:/mount-9p# ls
@@ -370,14 +370,14 @@ Waiting for pod default/ubuntu to terminate, status is Running
 pod "ubuntu" deleted
 # ======================================================================================
 # We are back on the host
-#======================================================================================= 
+#=======================================================================================
 $ cat ~/mount-dir/hello-from-pod
 hello from pod
 ```
 
 Some drivers themselves provide host-folder sharing options, but we plan to deprecate these in the future as they are all implemented differently and they are not configurable through minikube.
 
-## Private Container Registries 
+## Private Container Registries
 **GCR/ECR/Docker**: Minikube has an addon, `registry-creds` which maps credentials into Minikube to support pulling from Google Container Registry (GCR), Amazon's EC2 Container Registry (ECR), and Private Docker registries.  Simply run `minikube addons enable registry-creds` and follow the prompts.  This will make it so that you can reference your private images in minikube and they will be pulled down properly.
 
 For additional information on private container registries, see [this page](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
@@ -499,4 +499,4 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 
 ## Community
 
-Contributions, questions, and comments are all welcomed and encouraged! minkube developers hang out on [Slack](https://kubernetes.slack.com) in the #minikube channel (get an invitation [here](http://slack.kubernetes.io/)). We also have the [kubernetes-dev Google Groups mailing list](https://groups.google.com/forum/#!forum/kubernetes-dev). If you are posting to the list please prefix your subject with "minikube: ".
+Contributions, questions, and comments are all welcomed and encouraged! minikube developers hang out on [Slack](https://kubernetes.slack.com) in the #minikube channel (get an invitation [here](http://slack.kubernetes.io/)). We also have the [kubernetes-dev Google Groups mailing list](https://groups.google.com/forum/#!forum/kubernetes-dev). If you are posting to the list please prefix your subject with "minikube: ".
