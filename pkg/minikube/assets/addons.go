@@ -83,9 +83,14 @@ var Addons = map[string]*Addon{
 	}, true, "default-storageclass"),
 	"kube-dns": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-rc.yaml",
+			"deploy/addons/kube-dns/kube-dns-controller.yaml",
 			constants.AddonsPath,
-			"kube-dns-rc.yaml",
+			"kube-dns-controller.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/kube-dns/kube-dns-cm.yaml",
+			constants.AddonsPath,
+			"kube-dns-cm.yaml",
 			"0640"),
 		NewMemoryAsset(
 			"deploy/addons/kube-dns/kube-dns-svc.yaml",
