@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -45,6 +46,10 @@ associated files.`,
 			os.Exit(1)
 		}
 		fmt.Println("Machine deleted.")
+
+		if err := cmdUtil.KillMountProcess(); err != nil {
+			fmt.Println("Errors occurred deleting mount process: ", err)
+		}
 	},
 }
 

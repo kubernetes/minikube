@@ -46,6 +46,10 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 		fmt.Println("Machine stopped.")
+
+		if err := cmdUtil.KillMountProcess(); err != nil {
+			fmt.Println("Errors occurred deleting mount process: ", err)
+		}
 	},
 }
 
