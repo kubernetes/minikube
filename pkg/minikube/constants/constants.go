@@ -48,7 +48,6 @@ func GetMinipath() string {
 }
 
 var DefaultMountTarget = "/hostmount"
-var DefaultMountDir = homedir.HomeDir()
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 // KubeconfigPath is the path to the Kubernetes client config
@@ -75,6 +74,8 @@ func MakeMiniPath(fileName ...string) string {
 	args = append(args, fileName...)
 	return filepath.Join(args...)
 }
+
+var MountProcessFileName = ".mount-process"
 
 // Only pass along these flags to localkube.
 var LogFlags = [...]string{
@@ -130,4 +131,5 @@ const (
 const (
 	DefaultUfsPort     = "5640"
 	DefaultUfsDebugLvl = 0
+	DefaultNoMount     = false
 )

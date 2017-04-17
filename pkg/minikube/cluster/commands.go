@@ -184,18 +184,20 @@ sudo rm -rf %s;
 
 var mountTemplate = `
 sudo mkdir -p {{.Path}};
-sudo mount -t 9p -o trans=tcp -o port=5640 -o uid=1001 -o gid=1001 {{.IP}} {{.Path}};
+sudo mount -t 9p -o trans=tcp -o port={{.Port}} -o uid=1001 -o gid=1001 {{.IP}} {{.Path}};
 sudo chmod 775 {{.Path}};`
 
-func GetMountCommand(ip net.IP, path string) (string, error) {
+func GetMountCommand(ip net.IP, path string, port string) (string, error) {
 	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
 		IP   string
 		Path string
+		Port string
 	}{
 		IP:   ip.String(),
 		Path: path,
+		Port: port,
 	}
 	if err := t.Execute(&buf, data); err != nil {
 		return "", err

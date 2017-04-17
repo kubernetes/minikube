@@ -19,12 +19,17 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -209,4 +214,75 @@ minikube config set WantKubectlDownloadMsg false
 `,
 			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, goos, runtime.GOARCH))
 	}
+}
+
+type SX map[string]interface{}
+
+func StoreProcessToFile(p os.Process, filename string) error {
+	encoded := ToGOB64(map[string]interface{}{
+		filepath.Base(filename): p,
+	})
+	return ioutil.WriteFile(filename, []byte(encoded), 0644)
+}
+
+func ReadProcessFromFile(filename string) (os.Process, error) {
+	encoded, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return os.Process{}, errors.Wrapf(err, "Error reading file %s", filename)
+	}
+	decoded := FromGOB64(string(encoded))
+	process, ok := decoded[filepath.Base(filename)].(os.Process)
+	if !ok {
+		return os.Process{}, errors.Errorf("Error decoding %s process for deletion", filepath.Base(filename))
+	}
+	return process, nil
+}
+
+// go binary encoder
+func ToGOB64(m SX) string {
+	gob.Register(SX{})
+	gob.Register(os.Process{})
+
+	b := bytes.Buffer{}
+	e := gob.NewEncoder(&b)
+	err := e.Encode(m)
+	if err != nil {
+		fmt.Println(`failed gob Encode`, err)
+	}
+	return base64.StdEncoding.EncodeToString(b.Bytes())
+}
+
+// go binary decoder
+func FromGOB64(str string) SX {
+	gob.Register(SX{})
+	gob.Register(os.Process{})
+
+	m := SX{}
+	by, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		fmt.Println(`failed base64 Decode`, err)
+	}
+	b := bytes.Buffer{}
+	b.Write(by)
+	d := gob.NewDecoder(&b)
+	err = d.Decode(&m)
+	if err != nil {
+		fmt.Println(`failed gob Decode`, err)
+	}
+	return m
+}
+
+// Ask the kernel for a free open port that is ready to use
+func GetPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

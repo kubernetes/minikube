@@ -17,12 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -51,19 +50,11 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 		}
 		fmt.Println("Machine stopped.")
 
-		gob.Register(SX{})
-		gob.Register(os.Process{})
-		encoded, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), ".mount-process"))
+		mountProc, err := cmdUtil.ReadProcessFromFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName))
 		if err != nil {
-			fmt.Println("Error stopping mount daemon: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			glog.Errorf("Error reading mount process from file: ", err)
 		}
-		decoded := FromGOB64(string(encoded))
-		original, ok := decoded["mountProcess"].(os.Process)
-		if !ok {
-			fmt.Println("Error decoding mount process for deletion")
-		}
-		original.Kill()
+		mountProc.Kill()
 	},
 }
 
