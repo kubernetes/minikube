@@ -21,6 +21,8 @@ import (
 	"os"
 	"sync"
 
+	"strings"
+
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -36,26 +38,41 @@ var mountCmd = &cobra.Command{
 	Long:  `Mounts the specified directory into minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			errText := `Please specify a driver name and a directory to be mounted:
-\tminikube mount MOUNT_DIRECTORY(ex:"/home")
+			errText := `Please specify the directory to be mounted: 
+\tminikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")
 `
 			fmt.Fprintln(os.Stderr, errText)
 			os.Exit(1)
 		}
-		if _, err := os.Stat(args[0]); err != nil {
+		mountString := args[0]
+		idx := strings.LastIndex(mountString, ":")
+		if idx == -1 { // no ":" was present
+			errText := `Mount directory must be in the form: 
+			\tHOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`
+			fmt.Fprintln(os.Stderr, errText)
+			os.Exit(1)
+		}
+		hostPath := mountString[:idx]
+		vmPath := mountString[idx+1:]
+		if _, err := os.Stat(hostPath); err != nil {
 			if os.IsNotExist(err) {
-				errText := fmt.Sprintf("Cannot find directory %s for mount", args[0])
+				errText := fmt.Sprintf("Cannot find directory %s for mount", hostPath)
 				fmt.Fprintln(os.Stderr, errText)
 			} else {
-				errText := fmt.Sprintf("Error accesssing directory %s for mount", args[0])
+				errText := fmt.Sprintf("Error accesssing directory %s for mount", hostPath)
 				fmt.Fprintln(os.Stderr, errText)
 			}
+			os.Exit(1)
+		}
+		if len(vmPath) == 0 || !strings.HasPrefix(vmPath, "/") {
+			errText := fmt.Sprintf("The :VM_MOUNT_DIRECTORY must be an absolute path")
+			fmt.Fprintln(os.Stderr, errText)
+			os.Exit(1)
 		}
 		var debugVal int
 		if glog.V(1) {
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
-		mountDir := args[0]
 		api, err := machine.NewAPIClient(clientType)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
@@ -63,15 +80,15 @@ var mountCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		fmt.Printf("Mounting %s into /mount-9p on the minikubeVM\n", mountDir)
+		fmt.Printf("Mounting %s into %s on the minikubeVM\n", hostPath, vmPath)
 		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			ufs.StartServer(constants.DefaultUfsAddress, debugVal, mountDir)
+			ufs.StartServer(constants.DefaultUfsAddress, debugVal, hostPath)
 			wg.Done()
 		}()
-		err = cluster.Mount9pHost(api)
+		err = cluster.MountHost(api, vmPath)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)

@@ -302,12 +302,12 @@ spec:
 You can also achieve persistence by creating a PV in a mounted host folder.
 
 ## Mounting Host Folders
-`minikube mount /path/to/dir/to/mount` is the recommended way to mount directories into minikube so that they can be used in your local kubernetes cluster.  The command works on all supported platforms.  Below is an example workflow for using `minikube mount`:
+`minikube mount /path/to/dir/to/mount:/vm-mount-path` is the recommended way to mount directories into minikube so that they can be used in your local kubernetes cluster.  The command works on all supported platforms.  Below is an example workflow for using `minikube mount`:
 
 ```
 # terminal 1
 $ mkdir ~/mount-dir
-$ minikube mount ~/mount-dir
+$ minikube mount ~/mount-dir:/mount-9p
 Mounting /home/user/mount-dir/ into /mount-9p on the minikubeVM
 This daemon process needs to stay alive for the mount to still be accessible...
 ufs starting
