@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -32,6 +33,7 @@ const (
 	WantReportError           = "WantReportError"
 	WantReportErrorPrompt     = "WantReportErrorPrompt"
 	WantKubectlDownloadMsg    = "WantKubectlDownloadMsg"
+	MachineName               = "name"
 )
 
 type MinikubeConfig map[string]interface{}
@@ -73,4 +75,12 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 	var data MinikubeConfig
 	err := json.NewDecoder(r).Decode(&data)
 	return data, err
+}
+
+// GetMachineName gets the machine name for the VM
+func GetMachineName() string {
+	if viper.GetString(MachineName) == "" {
+		return constants.DefaultMachineName
+	}
+	return viper.GetString(MachineName)
 }

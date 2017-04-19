@@ -36,6 +36,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/assets"
+	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
@@ -56,16 +57,16 @@ func init() {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	exists, err := api.Exists(constants.MachineName)
+	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking if host exists: %s", constants.MachineName)
+		return nil, errors.Wrapf(err, "Error checking if host exists: %s", cfg.GetMachineName())
 	}
 	if !exists {
 		return createHost(api, config)
 	}
 
 	glog.Infoln("Machine exists!")
-	h, err := api.Load(constants.MachineName)
+	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
@@ -93,42 +94,42 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 
 // StopHost stops the host VM.
 func StopHost(api libmachine.API) error {
-	host, err := api.Load(constants.MachineName)
+	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return errors.Wrapf(err, "Error loading host: %s", constants.MachineName)
+		return errors.Wrapf(err, "Error loading host: %s", cfg.GetMachineName())
 	}
 	if err := host.Stop(); err != nil {
-		return errors.Wrapf(err, "Error stopping host: %s", constants.MachineName)
+		return errors.Wrapf(err, "Error stopping host: %s", cfg.GetMachineName())
 	}
 	return nil
 }
 
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API) error {
-	host, err := api.Load(constants.MachineName)
+	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting host: %s", constants.MachineName)
+		return errors.Wrapf(err, "Error deleting host: %s", cfg.GetMachineName())
 	}
 	m := util.MultiError{}
 	m.Collect(host.Driver.Remove())
-	m.Collect(api.Remove(constants.MachineName))
+	m.Collect(api.Remove(cfg.GetMachineName()))
 	return m.ToError()
 }
 
 // GetHostStatus gets the status of the host VM.
 func GetHostStatus(api libmachine.API) (string, error) {
 	dne := "Does Not Exist"
-	exists, err := api.Exists(constants.MachineName)
+	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		return "", errors.Wrapf(err, "Error checking that api exists for: %s", constants.MachineName)
+		return "", errors.Wrapf(err, "Error checking that api exists for: %s", cfg.GetMachineName())
 	}
 	if !exists {
 		return dne, nil
 	}
 
-	host, err := api.Load(constants.MachineName)
+	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return "", errors.Wrapf(err, "Error loading api for: %s", constants.MachineName)
+		return "", errors.Wrapf(err, "Error loading api for: %s", cfg.GetMachineName())
 	}
 
 	s, err := host.Driver.GetState()
@@ -290,7 +291,7 @@ func engineOptions(config MachineConfig) *engine.Options {
 }
 
 func createVirtualboxHost(config MachineConfig) drivers.Driver {
-	d := virtualbox.NewDriver(constants.MachineName, constants.GetMinipath())
+	d := virtualbox.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
@@ -421,17 +422,17 @@ func MountHost(api libmachine.API, path string) error {
 }
 
 func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
-	exists, err := api.Exists(constants.MachineName)
+	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking that api exists for: %s", constants.MachineName)
+		return nil, errors.Wrapf(err, "Error checking that api exists for: %s", cfg.GetMachineName())
 	}
 	if !exists {
-		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", constants.MachineName)
+		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", cfg.GetMachineName())
 	}
 
-	host, err := api.Load(constants.MachineName)
+	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading api for: %s", constants.MachineName)
+		return nil, errors.Wrapf(err, "Error loading api for: %s", cfg.GetMachineName())
 	}
 	return host, nil
 }
@@ -448,7 +449,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	}
 
 	if currentState != state.Running {
-		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", constants.MachineName)
+		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", cfg.GetMachineName())
 	}
 
 	client, err := host.CreateSSHClient()

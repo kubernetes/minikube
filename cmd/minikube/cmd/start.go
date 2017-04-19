@@ -32,6 +32,7 @@ import (
 
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -177,7 +178,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
-		ClusterName:          constants.MinikubeContext,
+		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: kubeHost,
 		ClientCertificate:    constants.MakeMiniPath("apiserver.crt"),
 		ClientKey:            constants.MakeMiniPath("apiserver.key"),

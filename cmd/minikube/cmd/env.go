@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -160,7 +161,7 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	if noProxy {
-		host, err := api.Load(constants.MachineName)
+		host, err := api.Load(config.GetMachineName())
 		if err != nil {
 			return nil, errors.Wrap(err, "Error getting IP")
 		}

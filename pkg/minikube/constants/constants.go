@@ -27,9 +27,6 @@ import (
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
-// MachineName is the name to use for the VM.
-const MachineName = "minikube"
-
 // APIServerPort is the port that the API server should listen on.
 const (
 	APIServerPort = 8443
@@ -62,6 +59,9 @@ const MinikubeContext = "minikube"
 
 // MinikubeEnvPrefix is the prefix for the environmental variables
 const MinikubeEnvPrefix = "MINIKUBE"
+
+// DefaultMachineName is the default name for the VM
+const DefaultMachineName = "minikube"
 
 // The name of the default storage class provisioner
 const DefaultStorageClassProvisioner = "standard"

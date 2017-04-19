@@ -23,11 +23,12 @@ import (
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
+	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func createVMwareFusionHost(config MachineConfig) drivers.Driver {
-	d := vmwarefusion.NewDriver(constants.MachineName, constants.GetMinipath()).(*vmwarefusion.Driver)
+	d := vmwarefusion.NewDriver(cfg.GetMachineName(), constants.GetMinipath()).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
@@ -59,13 +60,13 @@ type xhyveDriver struct {
 func createXhyveHost(config MachineConfig) *xhyveDriver {
 	return &xhyveDriver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: constants.MachineName,
+			MachineName: cfg.GetMachineName(),
 			StorePath:   constants.GetMinipath(),
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
-		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=" + constants.MachineName,
+		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 base host=" + cfg.GetMachineName(),
 		DiskSize:       int64(config.DiskSize),
 		Virtio9p:       true,
 		Virtio9pFolder: "/Users",

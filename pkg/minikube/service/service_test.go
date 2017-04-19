@@ -29,7 +29,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -277,8 +277,8 @@ func TestPrintURLsForService(t *testing.T) {
 func TestGetServiceURLs(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		Hosts: map[string]*host.Host{
-			constants.MachineName: {
-				Name:   constants.MachineName,
+			config.GetMachineName(): {
+				Name:   config.GetMachineName(),
 				Driver: &tests.MockDriver{},
 			},
 		},
@@ -344,8 +344,8 @@ func TestGetServiceURLs(t *testing.T) {
 func TestGetServiceURLsForService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		Hosts: map[string]*host.Host{
-			constants.MachineName: {
-				Name:   constants.MachineName,
+			config.GetMachineName(): {
+				Name:   config.GetMachineName(),
 				Driver: &tests.MockDriver{},
 			},
 		},
