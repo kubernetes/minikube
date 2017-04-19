@@ -113,6 +113,8 @@ func setFlagsUsingViper() {
 func init() {
 	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Deprecated: To enable libmachine logs, set --v=3 or higher")
 	RootCmd.PersistentFlags().Bool(useVendoredDriver, false, "Use the vendored in drivers instead of RPC")
+	RootCmd.PersistentFlags().String(config.MachineName, constants.DefaultMachineName, `The name of the minikube VM being used.  
+	This can be modified to allow for multiple minikube instances to be run independently`)
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)

@@ -26,11 +26,12 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
+	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func createHypervHost(config MachineConfig) drivers.Driver {
-	d := hyperv.NewDriver(constants.MachineName, constants.GetMinipath())
+	d := hyperv.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch
 	d.MemSize = config.Memory
