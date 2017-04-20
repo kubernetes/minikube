@@ -125,6 +125,6 @@ const (
 )
 
 const (
-	DefaultUfsAddress  = ":5640"
+	DefaultUfsPort     = "5640"
 	DefaultUfsDebugLvl = 0
 )

@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"sync"
 
@@ -26,6 +27,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/third_party/go9p/ufs"
@@ -79,13 +81,23 @@ var mountCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
+		host, err := api.Load(config.GetMachineName())
+		if err != nil {
+			glog.Errorln("Error loading api: ", err)
+			os.Exit(1)
+		}
+		ip, err := cluster.GetVMHostIP(host)
+		if err != nil {
+			glog.Errorln("Error getting the host IP address to use from within the VM: ", err)
+			os.Exit(1)
+		}
 
 		fmt.Printf("Mounting %s into %s on the minikubeVM\n", hostPath, vmPath)
 		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			ufs.StartServer(constants.DefaultUfsAddress, debugVal, hostPath)
+			ufs.StartServer(net.JoinHostPort(ip.String(), constants.DefaultUfsPort), debugVal, hostPath)
 			wg.Done()
 		}()
 		err = cluster.MountHost(api, vmPath)
