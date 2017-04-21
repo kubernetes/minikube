@@ -186,11 +186,9 @@ https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl.e
 Add kubectl to your system PATH`
 	}
 
-	var err error
-	if goos == "windows" {
+	_, err := lookPath("kubectl")
+	if err != nil && goos == "windows" {
 		_, err = lookPath("kubectl.exe")
-	} else {
-		_, err = lookPath("kubectl")
 	}
 	if err != nil {
 		fmt.Fprintf(out,
