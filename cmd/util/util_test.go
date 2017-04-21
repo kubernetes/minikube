@@ -24,9 +24,11 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/version"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 func TestFormatError(t *testing.T) {
@@ -93,35 +95,47 @@ func fakeLookPathError(string) (string, error) { return "", errors.New("") }
 
 func TestKubectlDownloadMsg(t *testing.T) {
 	var tests = []struct {
-		description string
-		lp          LookPath
-		goos        string
-		matches     string
-		noOutput    bool
+		description    string
+		lp             LookPath
+		goos           string
+		matches        string
+		noOutput       bool
+		warningEnabled bool
 	}{
 		{
-			description: "No output when binary is found windows",
-			goos:        "windows",
-			lp:          fakeLookPathFound,
-			noOutput:    true,
+			description:    "No output when binary is found windows",
+			goos:           "windows",
+			lp:             fakeLookPathFound,
+			noOutput:       true,
+			warningEnabled: true,
 		},
 		{
-			description: "No output when binary is found darwin",
-			goos:        "darwin",
-			lp:          fakeLookPathFound,
-			noOutput:    true,
+			description:    "No output when binary is found darwin",
+			goos:           "darwin",
+			lp:             fakeLookPathFound,
+			noOutput:       true,
+			warningEnabled: true,
 		},
 		{
-			description: "windows kubectl not found, has .exe in output",
-			goos:        "windows",
-			lp:          fakeLookPathError,
-			matches:     ".exe",
+			description:    "windows kubectl not found, has .exe in output",
+			goos:           "windows",
+			lp:             fakeLookPathError,
+			matches:        ".exe",
+			warningEnabled: true,
 		},
 		{
-			description: "linux kubectl not found",
-			goos:        "linux",
-			lp:          fakeLookPathError,
-			matches:     "WantKubectlDownloadMsg",
+			description:    "linux kubectl not found",
+			goos:           "linux",
+			lp:             fakeLookPathError,
+			matches:        "WantKubectlDownloadMsg",
+			warningEnabled: true,
+		},
+		{
+			description:    "warning disabled",
+			goos:           "linux",
+			lp:             fakeLookPathError,
+			noOutput:       true,
+			warningEnabled: false,
 		},
 	}
 
@@ -129,6 +143,13 @@ func TestKubectlDownloadMsg(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			defer revertLookPath(lookPath)
+
+			// Remember the original config value and revert to it.
+			origConfig := viper.GetBool(config.WantKubectlDownloadMsg)
+			defer func() {
+				viper.Set(config.WantKubectlDownloadMsg, origConfig)
+			}()
+			viper.Set(config.WantKubectlDownloadMsg, test.warningEnabled)
 			lookPath = test.lp
 			var b bytes.Buffer
 			MaybePrintKubectlDownloadMsg(test.goos, &b)
