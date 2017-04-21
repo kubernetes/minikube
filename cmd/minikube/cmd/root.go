@@ -78,6 +78,17 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
+		// Log level 3 or greater enables libmachine logs
+		if !glog.V(3) {
+			log.SetOutWriter(ioutil.Discard)
+			log.SetErrWriter(ioutil.Discard)
+		}
+
+		// Log level 7 or greater enables debug level logs
+		if glog.V(7) {
+			log.SetDebug(true)
+		}
+
 		if viper.GetBool(showLibmachineLogs) {
 			fmt.Println(`
 --show-libmachine-logs is deprecated.
@@ -127,17 +138,6 @@ func init() {
 
 	//TODO(r2d4): config should not reference API
 	clientType = configCmd.GetClientType()
-
-	// Log level 3 or greater enables libmachine logs
-	if !glog.V(3) {
-		log.SetOutWriter(ioutil.Discard)
-		log.SetErrWriter(ioutil.Discard)
-	}
-
-	// Log level 7 or greater enables debug level logs
-	if glog.V(7) {
-		log.SetDebug(true)
-	}
 
 	if enableUpdateNotification {
 		notify.MaybePrintUpdateTextFromGithub(os.Stderr)
