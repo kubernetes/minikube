@@ -56,7 +56,6 @@ const (
 
 var (
 	enableUpdateNotification = true
-	enableKubectlDownloadMsg = true
 	clientType               machine.ClientType
 )
 
@@ -142,9 +141,7 @@ func init() {
 	if enableUpdateNotification {
 		notify.MaybePrintUpdateTextFromGithub(os.Stderr)
 	}
-	if enableKubectlDownloadMsg {
-		util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
-	}
+	util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
 }
 
 // initConfig reads in config file and ENV variables if set.

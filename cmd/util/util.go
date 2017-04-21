@@ -177,6 +177,10 @@ func PromptUserForAccept(r io.Reader) bool {
 }
 
 func MaybePrintKubectlDownloadMsg(goos string, out io.Writer) {
+	if !viper.GetBool(config.WantKubectlDownloadMsg) {
+		return
+	}
+
 	verb := "run"
 	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/"
 	if goos == "windows" {
