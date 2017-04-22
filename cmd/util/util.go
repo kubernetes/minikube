@@ -87,7 +87,7 @@ func FormatError(err error) (string, error) {
 
 	if err, ok := err.(stackTracer); ok {
 		for _, f := range err.StackTrace() {
-			errOutput = append(errOutput, fmt.Sprintf("\tat %n(%v)", f, f))
+			errOutput = append(errOutput, fmt.Sprintf("\tat %v", f))
 		}
 	} else {
 		return "", errors.New("Error msg with no stack trace cannot be reported")
