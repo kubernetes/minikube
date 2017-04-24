@@ -116,7 +116,7 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 }
 
 func (lk LocalkubeServer) NewStorageProvisionerServer() Server {
-	return NewSimpleServer("storage-provisioner", serverInterval, StartStorageProvisioner(lk))
+	return NewSimpleServer("storage-provisioner", serverInterval, StartStorageProvisioner(lk), noop)
 }
 
 func StartStorageProvisioner(lk LocalkubeServer) func() error {
