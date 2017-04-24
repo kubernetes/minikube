@@ -46,7 +46,7 @@ const (
 	cpus                  = "cpus"
 	humanReadableDiskSize = "disk-size"
 	vmDriver              = "vm-driver"
-	diskDriver            = "disk-driver"
+	xhyveDiskDriver       = "xhyve-disk-driver"
 	kubernetesVersion     = "kubernetes-version"
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
@@ -100,7 +100,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		CPUs:                viper.GetInt(cpus),
 		DiskSize:            diskSizeMB,
 		VMDriver:            viper.GetString(vmDriver),
-		DiskDriver:          viper.GetString(diskDriver),
+		XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
 		DockerEnv:           dockerEnv,
 		DockerOpt:           dockerOpt,
 		InsecureRegistry:    insecureRegistry,
@@ -219,7 +219,7 @@ func init() {
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
-	startCmd.Flags().String(diskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
+	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")

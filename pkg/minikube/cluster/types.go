@@ -25,7 +25,7 @@ type MachineConfig struct {
 	CPUs                int
 	DiskSize            int
 	VMDriver            string
-	DiskDriver          string   // Only used by the xhyve driver
+	XhyveDiskDriver     string   // Only used by the xhyve driver
 	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry    []string
 	RegistryMirror      []string

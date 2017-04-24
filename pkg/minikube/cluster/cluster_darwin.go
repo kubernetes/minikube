@@ -72,7 +72,7 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		DiskSize:       int64(config.DiskSize),
 		Virtio9p:       true,
 		QCow2:          false,
-		RawDisk:        config.DiskDriver == "virtio-blk",
+		RawDisk:        config.XhyveDiskDriver == "virtio-blk",
 	}
 }
 
