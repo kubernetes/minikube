@@ -5,20 +5,20 @@ metadata:
   namespace: kube-system
   labels:
     version: v1.7
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: registry-creds
 spec:
   replicas: 1
   selector:
     name: registry-creds
     version: v1.7
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         name: registry-creds
         version: v1.7
-        kubernetes.io/cluster-service: "true"
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
       - image: upmcenterprises/registry-creds:1.7

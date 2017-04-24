@@ -18,17 +18,17 @@ metadata:
   name: default-http-backend
   namespace: kube-system
   labels:
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
   selector:
     app: default-http-backend
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         app: default-http-backend
-        kubernetes.io/cluster-service: "true"
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       terminationGracePeriodSeconds: 60
       containers:
@@ -62,18 +62,18 @@ metadata:
   namespace: kube-system
   labels:
     app: nginx-ingress-controller
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
   selector:
     app: nginx-ingress-controller
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         app: nginx-ingress-controller
         name: nginx-ingress-controller
-        kubernetes.io/cluster-service: "true"
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       terminationGracePeriodSeconds: 60
       containers:

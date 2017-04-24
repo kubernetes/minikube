@@ -14,5 +14,5 @@ spec:
   - port: 80
     targetPort: 3000
   selector:
-    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
     name: influxGrafana
