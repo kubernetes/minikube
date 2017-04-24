@@ -20,7 +20,7 @@ metadata:
   namespace: kube-system
   labels:
     k8s-app: kube-dns
-    kubernetes.io/cluster-service: "true"
+    version: v20
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
