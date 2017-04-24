@@ -23,6 +23,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -405,7 +406,7 @@ func MountHost(api libmachine.API, path string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
 	}
-	ip, err := getVMHostIP(host)
+	ip, err := GetVMHostIP(host)
 	if err != nil {
 		return errors.Wrap(err, "Error getting the host IP address to use from within the VM")
 	}
@@ -419,6 +420,47 @@ func MountHost(api libmachine.API, path string) error {
 		return err
 	}
 	return nil
+}
+
+// GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
+func GetVMHostIP(host *host.Host) (net.IP, error) {
+	switch host.DriverName {
+	case "kvm":
+		return net.ParseIP("192.168.42.1"), nil
+	case "hyperv":
+		re := regexp.MustCompile("\"VSwitch\": \"(.*?)\",")
+		// TODO(aprindle) Change this to deserialize the driver instead
+		hypervVirtualSwitch := re.FindStringSubmatch(string(host.RawDriver))[1]
+		ip, err := getIPForInterface(fmt.Sprintf("vEthernet (%s)", hypervVirtualSwitch))
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
+		}
+		return ip, nil
+	case "virtualbox":
+		ip, err := getIPForInterface("vboxnet0")
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
+		}
+		return ip, nil
+	case "xhyve":
+		return net.ParseIP("192.168.64.1"), nil
+	default:
+		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
+	}
+}
+
+// Based on code from http://stackoverflow.com/questions/23529663/how-to-get-all-addresses-and-masks-from-local-interfaces-in-go
+func getIPForInterface(name string) (net.IP, error) {
+	i, _ := net.InterfaceByName(name)
+	addrs, _ := i.Addrs()
+	for _, a := range addrs {
+		if ipnet, ok := a.(*net.IPNet); ok {
+			if ip := ipnet.IP.To4(); ip != nil {
+				return ip, nil
+			}
+		}
+	}
+	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
 }
 
 func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
