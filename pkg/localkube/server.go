@@ -34,6 +34,8 @@ type Server interface {
 
 	// Name returns a unique identifier for the component.
 	Name() string
+
+	Ready() (bool, error)
 }
 
 // SimpleServer provides a minimal implementation of Server.
@@ -43,15 +45,17 @@ type SimpleServer struct {
 
 	serverRoutine func() error
 	stopChannel   chan struct{}
+	readyFunc     func() bool
 }
 
-func NewSimpleServer(componentName string, msInterval int32, serverRoutine func() error) *SimpleServer {
+func NewSimpleServer(componentName string, msInterval int32, serverRoutine func() error, ready HealthCheck) *SimpleServer {
 	return &SimpleServer{
 		ComponentName: componentName,
 		Interval:      time.Duration(msInterval) * time.Millisecond,
 
 		serverRoutine: serverRoutine,
 		stopChannel:   make(chan struct{}),
+		readyFunc:     ready,
 	}
 }
 
@@ -68,4 +72,8 @@ func (s *SimpleServer) Stop() {
 // Name returns the name of the service.
 func (s SimpleServer) Name() string {
 	return s.ComponentName
+}
+
+func (s SimpleServer) Ready() (bool, error) {
+	return s.readyFunc(), nil
 }

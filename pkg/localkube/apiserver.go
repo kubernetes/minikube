@@ -17,15 +17,20 @@ limitations under the License.
 package localkube
 
 import (
+	"net"
+	"path"
+	"strconv"
+
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
+
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	kubeapioptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 )
 
 func (lk LocalkubeServer) NewAPIServer() Server {
-	return NewSimpleServer("apiserver", serverInterval, StartAPIServer(lk))
+	return NewSimpleServer("apiserver", serverInterval, StartAPIServer(lk), readyFunc(lk))
 }
 
 func StartAPIServer(lk LocalkubeServer) func() error {
@@ -70,4 +75,10 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	return func() error {
 		return apiserver.Run(config)
 	}
+}
+
+func readyFunc(lk LocalkubeServer) HealthCheck {
+	hostport := net.JoinHostPort(lk.APIServerInsecureAddress.String(), strconv.Itoa(lk.APIServerInsecurePort))
+	addr := "http://" + path.Join(hostport, "healthz")
+	return healthCheck(addr)
 }

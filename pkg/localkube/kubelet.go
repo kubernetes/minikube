@@ -22,7 +22,7 @@ import (
 )
 
 func (lk LocalkubeServer) NewKubeletServer() Server {
-	return NewSimpleServer("kubelet", serverInterval, StartKubeletServer(lk))
+	return NewSimpleServer("kubelet", serverInterval, StartKubeletServer(lk), noop)
 }
 
 func StartKubeletServer(lk LocalkubeServer) func() error {

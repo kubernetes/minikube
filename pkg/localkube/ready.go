@@ -17,26 +17,33 @@ limitations under the License.
 package localkube
 
 import (
-	scheduler "k8s.io/kubernetes/plugin/cmd/kube-scheduler/app"
-	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
+	"io/ioutil"
+	"net/http"
+
+	"github.com/golang/glog"
 )
 
-func (lk LocalkubeServer) NewSchedulerServer() Server {
-	return NewSimpleServer("scheduler", serverInterval, StartSchedulerServer(lk), noop)
+type HealthCheck func() bool
+
+func healthCheck(addr string) HealthCheck {
+	return func() bool {
+		glog.Infof("Performing healthcheck on %s\n", addr)
+		resp, err := http.Get(addr)
+		if err != nil {
+			glog.Errorf("Error performing healthcheck: %s", err)
+			return false
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			glog.Errorf("Error reading healthcheck response: %s", err)
+			return false
+		}
+		glog.Infof("Got healthcheck response: %s", body)
+		return string(body) == "ok"
+	}
 }
 
-func StartSchedulerServer(lk LocalkubeServer) func() error {
-	config := options.NewSchedulerServer()
-
-	// master details
-	config.Master = lk.GetAPIServerInsecureURL()
-
-	// defaults from command
-	config.EnableProfiling = true
-
-	lk.SetExtraConfigForComponent("scheduler", &config)
-
-	return func() error {
-		return scheduler.Run(config)
-	}
+func noop() bool {
+	return true
 }
