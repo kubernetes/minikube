@@ -56,7 +56,6 @@ import (
 type ControllerParameters struct {
 	KubeClient                clientset.Interface
 	SyncPeriod                time.Duration
-	AlphaProvisioner          vol.ProvisionableVolumePlugin
 	VolumePlugins             []vol.VolumePlugin
 	Cloud                     cloudprovider.Interface
 	ClusterName               string
@@ -68,7 +67,7 @@ type ControllerParameters struct {
 }
 
 // NewController creates a new PersistentVolume controller
-func NewController(p ControllerParameters) *PersistentVolumeController {
+func NewController(p ControllerParameters) (*PersistentVolumeController, error) {
 	eventRecorder := p.EventRecorder
 	if eventRecorder == nil {
 		broadcaster := record.NewBroadcaster()
@@ -87,16 +86,12 @@ func NewController(p ControllerParameters) *PersistentVolumeController {
 		clusterName:                   p.ClusterName,
 		createProvisionedPVRetryCount: createProvisionedPVRetryCount,
 		createProvisionedPVInterval:   createProvisionedPVInterval,
-		alphaProvisioner:              p.AlphaProvisioner,
 		claimQueue:                    workqueue.NewNamed("claims"),
 		volumeQueue:                   workqueue.NewNamed("volumes"),
 	}
 
-	controller.volumePluginMgr.InitPlugins(p.VolumePlugins, controller)
-	if controller.alphaProvisioner != nil {
-		if err := controller.alphaProvisioner.Init(controller); err != nil {
-			glog.Errorf("PersistentVolumeController: error initializing alpha provisioner plugin: %v", err)
-		}
+	if err := controller.volumePluginMgr.InitPlugins(p.VolumePlugins, controller); err != nil {
+		return nil, fmt.Errorf("Could not initialize volume plugins for PersistentVolume Controller: %v", err)
 	}
 
 	p.VolumeInformer.Informer().AddEventHandlerWithResyncPeriod(
@@ -123,7 +118,7 @@ func NewController(p ControllerParameters) *PersistentVolumeController {
 
 	controller.classLister = p.ClassInformer.Lister()
 	controller.classListerSynced = p.ClassInformer.Informer().HasSynced
-	return controller
+	return controller, nil
 }
 
 // initializeCaches fills all controller caches with initial data from etcd in
@@ -145,7 +140,9 @@ func (ctrl *PersistentVolumeController) initializeCaches(volumeLister corelister
 				continue
 			}
 			volumeClone := clone.(*v1.PersistentVolume)
-			ctrl.storeVolumeUpdate(volumeClone)
+			if _, err = ctrl.storeVolumeUpdate(volumeClone); err != nil {
+				glog.Errorf("error updating volume cache: %v", err)
+			}
 		}
 	}
 
@@ -161,7 +158,9 @@ func (ctrl *PersistentVolumeController) initializeCaches(volumeLister corelister
 			continue
 		}
 		claimClone := clone.(*v1.PersistentVolumeClaim)
-		ctrl.storeClaimUpdate(claimClone)
+		if _, err = ctrl.storeClaimUpdate(claimClone); err != nil {
+			glog.Errorf("error updating claim cache: %v", err)
+		}
 	}
 	glog.V(4).Infof("controller initialized")
 }
@@ -274,19 +273,23 @@ func (ctrl *PersistentVolumeController) deleteClaim(claim *v1.PersistentVolumeCl
 
 // Run starts all of this controller's control loops
 func (ctrl *PersistentVolumeController) Run(stopCh <-chan struct{}) {
-	glog.V(1).Infof("starting PersistentVolumeController")
-	if !cache.WaitForCacheSync(stopCh, ctrl.volumeListerSynced, ctrl.claimListerSynced, ctrl.classListerSynced) {
-		utilruntime.HandleError(fmt.Errorf("timed out waiting for volume caches to sync"))
+	defer utilruntime.HandleCrash()
+	defer ctrl.claimQueue.ShutDown()
+	defer ctrl.volumeQueue.ShutDown()
+
+	glog.Infof("Starting persistent volume controller")
+	defer glog.Infof("Shutting down peristent volume controller")
+
+	if !controller.WaitForCacheSync("persistent volume", stopCh, ctrl.volumeListerSynced, ctrl.claimListerSynced, ctrl.classListerSynced) {
 		return
 	}
+
 	ctrl.initializeCaches(ctrl.volumeLister, ctrl.claimLister)
+
 	go wait.Until(ctrl.volumeWorker, time.Second, stopCh)
 	go wait.Until(ctrl.claimWorker, time.Second, stopCh)
 
 	<-stopCh
-
-	ctrl.claimQueue.ShutDown()
-	ctrl.volumeQueue.ShutDown()
 }
 
 // volumeWorker processes items from volumeQueue. It must run only once,
@@ -445,7 +448,7 @@ func (ctrl *PersistentVolumeController) upgradeVolumeFrom1_2(volume *v1.Persiste
 // setClaimProvisioner saves
 // claim.Annotations[annStorageProvisioner] = class.Provisioner
 func (ctrl *PersistentVolumeController) setClaimProvisioner(claim *v1.PersistentVolumeClaim, class *storage.StorageClass) (*v1.PersistentVolumeClaim, error) {
-	if val, ok := claim.Annotations[annDynamicallyProvisioned]; ok && val == class.Provisioner {
+	if val, ok := claim.Annotations[annStorageProvisioner]; ok && val == class.Provisioner {
 		// annotation is already set, nothing to do
 		return claim, nil
 	}
