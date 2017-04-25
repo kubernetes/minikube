@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: influxdb
-        image: kubernetes/heapster_influxdb:v0.6
+        image: gcr.io/google_containers/heapster_influxdb:v0.6
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /data
