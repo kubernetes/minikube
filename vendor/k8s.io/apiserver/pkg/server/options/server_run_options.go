@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/server"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
@@ -45,16 +46,18 @@ type ServerRunOptions struct {
 	MinRequestTimeout           int
 	TargetRAMMB                 int
 	WatchCacheSizes             []string
+
+	AdmissionPlugins *admission.Plugins
 }
 
-func NewServerRunOptions() *ServerRunOptions {
-	defaults := server.NewConfig()
-
+func NewServerRunOptions(admissionPlugins *admission.Plugins) *ServerRunOptions {
+	defaults := server.NewConfig(serializer.CodecFactory{})
 	return &ServerRunOptions{
 		AdmissionControl:            "AlwaysAdmit",
 		MaxRequestsInFlight:         defaults.MaxRequestsInFlight,
 		MaxMutatingRequestsInFlight: defaults.MaxMutatingRequestsInFlight,
 		MinRequestTimeout:           defaults.MinRequestTimeout,
+		AdmissionPlugins:            admissionPlugins,
 	}
 }
 
@@ -70,29 +73,19 @@ func (s *ServerRunOptions) ApplyTo(c *server.Config) error {
 	return nil
 }
 
-// DefaultAdvertiseAddress sets the field AdvertiseAddress if
-// unset. The field will be set based on the SecureServingOptions. If
-// the SecureServingOptions is not present, DefaultExternalAddress
-// will fall back to the insecure ServingOptions.
-func (s *ServerRunOptions) DefaultAdvertiseAddress(secure *SecureServingOptions, insecure *ServingOptions) error {
-	if s.AdvertiseAddress == nil || s.AdvertiseAddress.IsUnspecified() {
-		switch {
-		case secure != nil:
-			hostIP, err := secure.ServingOptions.DefaultExternalAddress()
-			if err != nil {
-				return fmt.Errorf("Unable to find suitable network address.error='%v'. "+
-					"Try to set the AdvertiseAddress directly or provide a valid BindAddress to fix this.", err)
-			}
-			s.AdvertiseAddress = hostIP
+// DefaultAdvertiseAddress sets the field AdvertiseAddress if unset. The field will be set based on the SecureServingOptions.
+func (s *ServerRunOptions) DefaultAdvertiseAddress(secure *SecureServingOptions) error {
+	if secure == nil {
+		return nil
+	}
 
-		case insecure != nil:
-			hostIP, err := insecure.DefaultExternalAddress()
-			if err != nil {
-				return fmt.Errorf("Unable to find suitable network address.error='%v'. "+
-					"Try to set the AdvertiseAddress directly or provide a valid BindAddress to fix this.", err)
-			}
-			s.AdvertiseAddress = hostIP
+	if s.AdvertiseAddress == nil || s.AdvertiseAddress.IsUnspecified() {
+		hostIP, err := secure.DefaultExternalAddress()
+		if err != nil {
+			return fmt.Errorf("Unable to find suitable network address.error='%v'. "+
+				"Try to set the AdvertiseAddress directly or provide a valid BindAddress to fix this.", err)
 		}
+		s.AdvertiseAddress = hostIP
 	}
 
 	return nil
@@ -105,7 +98,7 @@ func (s *ServerRunOptions) AddUniversalFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&s.AdmissionControl, "admission-control", s.AdmissionControl, ""+
 		"Ordered list of plug-ins to do admission control of resources into cluster. "+
-		"Comma-delimited list of: "+strings.Join(admission.GetPlugins(), ", ")+".")
+		"Comma-delimited list of: "+strings.Join(s.AdmissionPlugins.Registered(), ", ")+".")
 
 	fs.StringVar(&s.AdmissionControlConfigFile, "admission-control-config-file", s.AdmissionControlConfigFile,
 		"File with admission control configuration.")
