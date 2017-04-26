@@ -27,14 +27,14 @@ godep::ensure_godep_version v79
 # We can't 'go get kubernetes' so this hack is here
 mkdir -p ${K8S_ORG_ROOT}
 if [ ! -d "${KUBE_ROOT}" ]; then
-  pushd ${#GOPATH} >/dev/null
+  pushd ${K8S_ORG_ROOT} >/dev/null
     git clone https://github.com/kubernetes/kubernetes.git
   popd >/dev/null
 fi
 
 pushd ${KUBE_ROOT} >/dev/null
   git checkout ${KUBE_VERSION}
-  godep restore ./...
+  ./hack/godep-restore.sh
 popd >/dev/null
 
 godep::sync_staging
