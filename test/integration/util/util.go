@@ -202,10 +202,8 @@ func (k *KubectlRunner) DeleteNamespace(namespace string) error {
 	return err
 }
 
-func (k *KubectlRunner) GetPod(name, namespace string) *api.Pod {
+func (k *KubectlRunner) GetPod(name, namespace string) (*api.Pod, error) {
 	p := &api.Pod{}
-	if err := k.RunCommandParseOutput([]string{"get", "pod", name, "--namespace=" + namespace}, p); err != nil {
-		k.T.Fatalf("Error checking pod status: %s", err)
-	}
-	return p
+	err := k.RunCommandParseOutput([]string{"get", "pod", name, "--namespace=" + namespace}, p)
+	return p, err
 }

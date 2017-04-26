@@ -47,7 +47,11 @@ func testClusterDNS(t *testing.T) {
 
 		p := &api.Pod{}
 		for p.Status.Phase != "Running" {
-			p = kubectlRunner.GetPod(podName, podNamespace)
+			var err error
+			p, err = kubectlRunner.GetPod(podName, podNamespace)
+			if err != nil {
+				return &commonutil.RetriableError{Err: err}
+			}
 		}
 
 		dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName, "--namespace=" + podNamespace,
