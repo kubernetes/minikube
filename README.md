@@ -32,7 +32,7 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [Hyper-V](./DRIVERS.md#hyperv-driver) installation
 * VT-x/AMD-v virtualization must be enabled in BIOS
 * `kubectl` must be on your path. Minikube currently supports any version of `kubectl` greater than 1.0, but we recommend using the most recent version.
-  You can install kubectl with [these steps](http://kubernetes.io/docs/getting-started-guides/kubectl/).
+  You can install kubectl with [these steps](https://kubernetes.io/docs/tasks/kubectl/install/).
 * Internet connection
     * You will need a decent internet connection running `minikube start` for the first time for Minikube to pull its Docker images.
     * It might take Minikube sometime to start. It would be as fast as your internet connection with Minikube image pulling the Docker images needed.
