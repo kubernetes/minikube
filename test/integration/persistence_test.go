@@ -47,7 +47,10 @@ func TestPersistence(t *testing.T) {
 	}
 
 	checkPod := func() error {
-		p := kubectlRunner.GetPod(podName, podNamespace)
+		p, err := kubectlRunner.GetPod(podName, podNamespace)
+		if err != nil {
+			return &commonutil.RetriableError{Err: err}
+		}
 		if kubectlRunner.IsPodReady(p) {
 			return nil
 		}
