@@ -70,7 +70,10 @@ func testMounting(t *testing.T) {
 
 		p := &api.Pod{}
 		for p.Status.Phase != "Running" {
-			p = kubectlRunner.GetPod(podName, "default")
+			p, err = kubectlRunner.GetPod(podName, "default")
+			if err != nil {
+				return &commonutil.RetriableError{Err: err}
+			}
 		}
 
 		path := filepath.Join(tempDir, "frompod")
