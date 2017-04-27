@@ -49,7 +49,7 @@ func testMounting(t *testing.T) {
 	defer cmd.Process.Kill()
 
 	kubectlRunner := util.NewKubectlRunner(t)
-	podName := "busybox"
+	podName := "busybox-mount"
 	podPath, _ := filepath.Abs("testdata/busybox-mount-test.yaml")
 
 	// Write file in mounted dir from host
@@ -62,12 +62,23 @@ func testMounting(t *testing.T) {
 			t.Fatalf("Unexpected error while writing file %s: %s.", path, err)
 		}
 	}
-	mountTest := func() error {
+
+	// Create the pods we need outside the main test loop.
+	setupTest := func() error {
 		if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
 			return err
 		}
-		defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
+		return nil
+	}
+	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
 
+	if err := commonutil.RetryAfter(40, setupTest, 5*time.Second); err != nil {
+		t.Fatal("mountTest failed with error:", err)
+	}
+
+	mountTest := func() error {
+
+		// Wait for the pod to actually startup.
 		p := &api.Pod{}
 		for p.Status.Phase != "Running" {
 			p, err = kubectlRunner.GetPod(podName, "default")
