@@ -31,12 +31,15 @@ func TestFunctional(t *testing.T) {
 		T:          t}
 	minikubeRunner.EnsureRunning()
 
+	// This one is not parallel, and ensures the cluster comes up
+	// before we run any other tests.
+	t.Run("Status", testClusterStatus)
+
 	t.Run("DNS", testClusterDNS)
 	t.Run("EnvVars", testClusterEnv)
 	t.Run("Logs", testClusterLogs)
 	t.Run("SSH", testClusterSSH)
 	t.Run("Systemd", testVMSystemd)
-	t.Run("Status", testClusterStatus)
 	t.Run("Addons", testAddons)
 	t.Run("Dashboard", testDashboard)
 	t.Run("ServicesList", testServicesList)

@@ -29,7 +29,6 @@ import (
 )
 
 func testClusterStatus(t *testing.T) {
-	t.Parallel()
 	kubectlRunner := util.NewKubectlRunner(t)
 	cs := api.ComponentStatusList{}
 
