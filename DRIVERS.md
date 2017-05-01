@@ -15,14 +15,10 @@ the host PATH:
 
 #### KVM driver
 
-Minikube is currently tested against `docker-machine-driver-kvm` 0.7.0.
+Minikube is currently tested against [`docker-machine-driver-kvm` v0.10.0](https://github.com/dhiltgen/docker-machine-kvm/releases).
 
-From https://github.com/dhiltgen/docker-machine-kvm#quick-start-instructions:
-
+After following the instructions on the KVM driver releases page, you need to make sure that have the necessary packages and permissions by following these instructions:
 ```
-$ sudo curl -L https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.7.0/docker-machine-driver-kvm -o /usr/local/bin/docker-machine-driver-kvm
-$ sudo chmod +x /usr/local/bin/docker-machine-driver-kvm
-
 # Install libvirt and qemu-kvm on your system, e.g.
 # Debian/Ubuntu
 $ sudo apt install libvirt-bin qemu-kvm
