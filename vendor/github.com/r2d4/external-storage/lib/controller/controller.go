@@ -37,6 +37,7 @@ import (
 	core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/api/v1/ref"
 	storage_v1 "k8s.io/client-go/pkg/apis/storage/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -539,7 +540,7 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 
 	// Prepare a claimRef to the claim early (to fail before a volume is
 	// provisioned)
-	claimRef, err := v1.GetReference(api.Scheme, claim)
+	claimRef, err := ref.GetReference(api.Scheme, claim)
 	if err != nil {
 		glog.Errorf("Unexpected error getting claim reference to claim %q: %v", claimToClaimKey(claim), err)
 		return nil

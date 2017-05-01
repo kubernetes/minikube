@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/kubernetes/pkg/api/v1/ref"
 	batchv1 "k8s.io/kubernetes/pkg/apis/batch/v1"
 	batchv2alpha1 "k8s.io/kubernetes/pkg/apis/batch/v2alpha1"
 )
@@ -86,7 +87,7 @@ func getParentUIDFromJob(j batchv1.Job) (types.UID, bool) {
 
 // groupJobsByParent groups jobs into a map keyed by the job parent UID (e.g. scheduledJob).
 // It has no receiver, to facilitate testing.
-func groupJobsByParent(sjs []batchv2alpha1.CronJob, js []batchv1.Job) map[types.UID][]batchv1.Job {
+func groupJobsByParent(js []batchv1.Job) map[types.UID][]batchv1.Job {
 	jobsBySj := make(map[types.UID][]batchv1.Job)
 	for _, job := range js {
 		parentUID, found := getParentUIDFromJob(job)
@@ -216,7 +217,7 @@ func getTimeHash(scheduledTime time.Time) int64 {
 
 // makeCreatedByRefJson makes a json string with an object reference for use in "created-by" annotation value
 func makeCreatedByRefJson(object runtime.Object) (string, error) {
-	createdByRef, err := v1.GetReference(api.Scheme, object)
+	createdByRef, err := ref.GetReference(api.Scheme, object)
 	if err != nil {
 		return "", fmt.Errorf("unable to get controller reference: %v", err)
 	}
