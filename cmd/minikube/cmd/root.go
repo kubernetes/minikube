@@ -94,6 +94,19 @@ var RootCmd = &cobra.Command{
 Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine logs
 `)
 		}
+
+		//TODO(r2d4): config should not reference API
+		clientType = configCmd.GetClientType()
+
+		logDir := pflag.Lookup("log_dir")
+		if !logDir.Changed {
+			logDir.Value.Set(constants.MakeMiniPath("logs"))
+		}
+
+		if enableUpdateNotification {
+			notify.MaybePrintUpdateTextFromGithub(os.Stderr)
+		}
+		util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
 	},
 }
 
@@ -128,20 +141,10 @@ func init() {
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
-	logDir := pflag.Lookup("log_dir")
-	if !logDir.Changed {
-		logDir.Value.Set(constants.MakeMiniPath("logs"))
-	}
 	viper.BindPFlags(RootCmd.PersistentFlags())
+
 	cobra.OnInitialize(initConfig)
 
-	//TODO(r2d4): config should not reference API
-	clientType = configCmd.GetClientType()
-
-	if enableUpdateNotification {
-		notify.MaybePrintUpdateTextFromGithub(os.Stderr)
-	}
-	util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
 }
 
 // initConfig reads in config file and ENV variables if set.
