@@ -36,8 +36,8 @@ func (lk LocalkubeServer) NewAPIServer() Server {
 func StartAPIServer(lk LocalkubeServer) func() error {
 	config := options.NewServerRunOptions()
 
-	config.SecureServing.ServingOptions.BindAddress = lk.APIServerAddress
-	config.SecureServing.ServingOptions.BindPort = lk.APIServerPort
+	config.SecureServing.BindAddress = lk.APIServerAddress
+	config.SecureServing.BindPort = lk.APIServerPort
 
 	config.InsecureServing.BindAddress = lk.APIServerInsecureAddress
 	config.InsecureServing.BindPort = lk.APIServerInsecurePort
@@ -73,7 +73,8 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	lk.SetExtraConfigForComponent("apiserver", &config)
 
 	return func() error {
-		return apiserver.Run(config)
+		stop := make(chan struct{})
+		return apiserver.Run(config, stop)
 	}
 }
 
