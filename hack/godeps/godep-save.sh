@@ -31,3 +31,5 @@ godep save ./...
 
 godep::remove_staging_from_json
 git checkout -- ${MINIKUBE_ROOT}/vendor/golang.org/x/sys/windows
+
+git apply ${MINIKUBE_ROOT}/hack/tpr-patch.diff
