@@ -17,8 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/gob"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -29,6 +33,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"io/ioutil"
 
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -194,11 +200,67 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Printf("Setting up hostmount on %s:%s...\n", constants.DefaultMountDir,
+		constants.DefaultMountTarget)
+	// start 9p server mount
+	gob.Register(SX{})
+	gob.Register(os.Process{})
+
+	path := os.Args[0]
+	mountCmd := exec.Command(path, "mount", "/usr/local/google/home/aprindle/mount-test:/hostmount", "--v=100")
+	mountCmd.Env = append(os.Environ(), constants.MinikubeMountChildProcess+"=true")
+	err = mountCmd.Start()
+	if err != nil {
+		glog.Errorf("Error running command minikube mount %s", err)
+		cmdUtil.MaybeReportErrorAndExit(err)
+	}
+	encoded := ToGOB64(map[string]interface{}{
+		"mountProcess": mountCmd.Process,
+	})
+	ioutil.WriteFile(filepath.Join(constants.GetMinipath(), ".mount-process"), []byte(encoded), 0644)
+	//
+	decoded := FromGOB64(encoded)
+	original, ok := decoded["mountProcess"].(os.Process)
+	if ok {
+		fmt.Println(original.Pid)
+	}
+	//
+
 	if kubeCfgSetup.KeepContext {
 		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", kubeCfgSetup.ClusterName)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
 	}
+}
+
+type SX map[string]interface{}
+
+// go binary encoder
+func ToGOB64(m SX) string {
+	b := bytes.Buffer{}
+	e := gob.NewEncoder(&b)
+	err := e.Encode(m)
+	if err != nil {
+		fmt.Println(`failed gob Encode`, err)
+	}
+	return base64.StdEncoding.EncodeToString(b.Bytes())
+}
+
+// go binary decoder
+func FromGOB64(str string) SX {
+	m := SX{}
+	by, err := base64.StdEncoding.DecodeString(str)
+	if err != nil {
+		fmt.Println(`failed base64 Decode`, err)
+	}
+	b := bytes.Buffer{}
+	b.Write(by)
+	d := gob.NewDecoder(&b)
+	err = d.Decode(&m)
+	if err != nil {
+		fmt.Println(`failed gob Decode`, err)
+	}
+	return m
 }
 
 func calculateDiskSizeInMB(humanReadableDiskSize string) int {

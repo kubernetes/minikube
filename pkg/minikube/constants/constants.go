@@ -34,6 +34,7 @@ const (
 )
 
 const MinikubeHome = "MINIKUBE_HOME"
+const MinikubeMountChildProcess = "IS_MINIKUBE_MOUNT_CHILD_PROCESS"
 
 // Minipath is the path to the user's minikube dir
 func GetMinipath() string {
@@ -46,6 +47,8 @@ func GetMinipath() string {
 	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
 }
 
+var DefaultMountTarget = "/hostmount"
+var DefaultMountDir = homedir.HomeDir()
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 // KubeconfigPath is the path to the Kubernetes client config

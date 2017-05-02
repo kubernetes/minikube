@@ -39,6 +39,7 @@ var mountCmd = &cobra.Command{
 	Short: "Mounts the specified directory into minikube.",
 	Long:  `Mounts the specified directory into minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("0")
 		if len(args) != 1 {
 			errText := `Please specify the directory to be mounted: 
 \tminikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")
@@ -46,6 +47,7 @@ var mountCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, errText)
 			os.Exit(1)
 		}
+		fmt.Println("1")
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
@@ -71,6 +73,7 @@ var mountCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, errText)
 			os.Exit(1)
 		}
+		fmt.Println("2")
 		var debugVal int
 		if glog.V(1) {
 			debugVal = 1 // ufs.StartServer takes int debug param
@@ -92,6 +95,7 @@ var mountCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		fmt.Println("4")
 		fmt.Printf("Mounting %s into %s on the minikubeVM\n", hostPath, vmPath)
 		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
 		var wg sync.WaitGroup

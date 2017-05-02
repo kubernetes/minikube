@@ -25,9 +25,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/constants"
-
-	"github.com/docker/machine/drivers/virtualbox"
+  "github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/cert"
@@ -42,6 +40,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 type driverGetter func([]byte) (drivers.Driver, error)
@@ -181,7 +180,10 @@ func (api *LocalClient) Create(h *host.Host) error {
 }
 
 func StartDriver() {
-	cert.SetCertGenerator(&CertGenerator{})
+	// if os.Getenv("IS_MINIKUBE_MOUNT") != "" {
+	// 	return
+	// }
+ 	cert.SetCertGenerator(&CertGenerator{})
 	check.DefaultConnChecker = &ConnChecker{}
 	if os.Getenv(localbinary.PluginEnvKey) == localbinary.PluginEnvVal {
 		registerDriver(os.Getenv(localbinary.PluginEnvDriverName))

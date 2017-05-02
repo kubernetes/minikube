@@ -17,11 +17,16 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/gob"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -45,6 +50,20 @@ associated files.`,
 			os.Exit(1)
 		}
 		fmt.Println("Machine deleted.")
+
+		gob.Register(SX{})
+		gob.Register(os.Process{})
+		encoded, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), ".mount-process"))
+		if err != nil {
+			fmt.Println("Error stopping mount daemon: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+		decoded := FromGOB64(string(encoded))
+		original, ok := decoded["mountProcess"].(os.Process)
+		if !ok {
+			fmt.Println("Error decoding mount process for deletion")
+		}
+		original.Kill()
 	},
 }
 
