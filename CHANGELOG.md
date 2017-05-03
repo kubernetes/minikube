@@ -16,8 +16,23 @@
 * Updated ingress addon to v0.9-beta.3
 * Made localkube versions backwards compatible for versions without `--apiserver-name`
 
+* [Minikube ISO] ISO will now be versioned the same as minikube
+* [Minikube ISO] Added timezone data
+* [Minikube ISO] Added `jq` and `coreutils` packages
+* [Minikube ISO] Enabled RDB Kernel module
+* [Minikube ISO] Added dockerized build for iso image
+* [Minikube ISO] Enabled NFS_v4_2 in kernel
+* [Minikube ISO] Added CIFS-utils
+
 ## Version 0.17.1 - 3/2/2017
 * Removed vendored KVM driver so minikube doesn't have a dependency on libvirt-bin
+
+* [Minikube ISO] Added ethtool
+* [Minikube ISO] Added bootlocal.sh script for custom startup options
+* [Minikube ISO] Added version info in /etc/VERSION
+* [Minikube ISO] Bumped rkt to v1.24.0
+* [Minikube ISO] Enabled user namespaces in kernel
+* [Minikube ISO] `/tmp/hostpath_pv` and `/tmp/hostpath-provisioner` are now persisted
 
 ## Version 0.17.0 - 3/2/2017
 * Added external hostpath provisioner to localkube
@@ -34,6 +49,16 @@
 * Updated Registry Creds addon to v1.5
 * Added check for minimum disk size
 * Updated kubernetes to v1.5.2
+
+* [Minikube ISO] Added back in curl, git, and rsync
+* [Minikube ISO] Enabled CONFIG_TUN in kernel
+* [Minikube ISO] Added NFS packages
+* [Minikube ISO] Enabled swapon on start/stop
+* [Minikube ISO] Updated CNI to v0.4.0
+* [Minikube ISO] Fix permissions for /data directory
+* [Minikube ISO] Updated RKT to v1.23.0
+* [Minikube ISO] Added in CoreOS toolbox binary
+* [Minikube ISO] Fixed vboxFS permission error
 
 ## Version 0.15.0 - 1/10/2017
 * Update Dashboard to v1.5.1, fixes a CSRF vulnerability in the dashboard
