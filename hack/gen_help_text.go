@@ -25,10 +25,11 @@ import (
 )
 
 func main() {
+	os.MkdirAll("./out/docs", os.FileMode(0755))
 	cmd.RootCmd.DisableAutoGenTag = true
-	doc.GenMarkdownTree(cmd.RootCmd, "./docs")
+	doc.GenMarkdownTree(cmd.RootCmd, "./out/docs")
 
-	f, err := os.Create("./docs/bash-completion")
+	f, err := os.Create("./out/docs/bash-completion")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
