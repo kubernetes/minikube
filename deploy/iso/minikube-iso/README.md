@@ -118,8 +118,8 @@ To save any kernel configuration changes made with `make linux-menuconfig`, exec
 ```
 $ cd out/buildroot
 $ make linux-savedefconfig
-$ cp output/build/linux-4.7.2/defconfig \
-    ../../deploy/iso/minikube-iso/board/coreos/minikube/linux-4.7_defconfig
+$ cp output/build/linux-4.9.13/defconfig \
+    ../../deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
 ```
 
 The changes will be reflected in the `deploy/iso/minikube-iso/configs/minikube_defconfig` file.

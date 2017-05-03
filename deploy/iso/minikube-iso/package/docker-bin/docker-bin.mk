@@ -36,11 +36,11 @@ endef
 
 define DOCKER_BIN_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL)/package/docker-bin/docker.service \
+		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/docker-bin/docker.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/docker.service
 
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL)/package/docker-bin/docker.socket \
+		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/docker-bin/docker.socket \
 		$(TARGET_DIR)/usr/lib/systemd/system/docker.socket
 
 	ln -fs /usr/lib/systemd/system/docker.service \

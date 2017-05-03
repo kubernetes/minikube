@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-VBOX_GUEST_VERSION = 5.1.6
+VBOX_GUEST_VERSION = 5.1.18
 VBOX_GUEST_SITE = http://download.virtualbox.org/virtualbox/$(VBOX_GUEST_VERSION)
 VBOX_GUEST_LICENSE = GPLv2
 VBOX_GUEST_LICENSE_FILES = COPYING
@@ -28,7 +28,7 @@ endef
 
 define VBOX_GUEST_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL)/package/vbox-guest/vboxservice.service \
+		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/vbox-guest/vboxservice.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/vboxservice.service
 
 	ln -fs /usr/lib/systemd/system/vboxservice.service \

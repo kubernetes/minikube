@@ -20,7 +20,7 @@ endef
 
 define HV_KVP_DAEMON_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL)/package/hv-kvp-daemon/hv_kvp_daemon.service \
+		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hv-kvp-daemon/hv_kvp_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_kvp_daemon.service
 
 	ln -fs /usr/lib/systemd/system/hv_kvp_daemon.service \
