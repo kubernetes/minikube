@@ -141,10 +141,10 @@ clean:
 	rm -f pkg/minikube/assets/assets.go
 
 .PHONY: gendocs
-gendocs: docs/minikube.md
+gendocs: out/docs/minikube.md
 
-docs/minikube.md: $(GOPATH)/src/$(ORG) $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
-	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs gen_help_text.go
+out/docs/minikube.md: $(GOPATH)/src/$(ORG) $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
+	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs hack/gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
