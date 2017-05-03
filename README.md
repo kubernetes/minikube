@@ -32,7 +32,7 @@ We also released a Debian package and Windows installer on our [releases page](h
 If you maintain a minikube package, please feel free to add it here.
 
 ### Requirements
-* [kubectl](http://kubernetes.io/docs/getting-started-guides/kubectl/)
+* [kubectl](https://kubernetes.io/docs/tasks/kubectl/install/)
 * macOS
     * [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion)
 * Linux
