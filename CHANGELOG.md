@@ -1,5 +1,13 @@
 # Minikube Release Notes
 
+## Version 0.19.0 - 5/3/2017
+* Updated nginx ingress to v0.9-beta.4
+* Updated kube-dns to 1.14.1
+* Added optional `--profile` flag to all `minikube` commands to support multiple minikube instances
+* Increased localkube boot speed by removing dependency on the network being up
+* Improved integration tests to be more stable
+* Fixed issue where using TPRs could cause localkube to crash
+
 ## Version 0.18.0 - 4/6/2017
 * Upgraded default kubernetes version to v1.6.0
 * Mount command on macOS xhyve
