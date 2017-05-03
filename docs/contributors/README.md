@@ -1,6 +1,6 @@
 ## Contributing
 
-* **New contributors** ([contributors.md](./contributing.md)): Process for new contributors, CLA instructions
+* **New contributors** ([contributors.md](https://github.com/kubernetes/minikube/blob/master/CONTRIBUTING.md)): Process for new contributors, CLA instructions
 
 * **Roadmap** ([roadmap.md](roadmap.md)): The roadmap for future minikube development
 
