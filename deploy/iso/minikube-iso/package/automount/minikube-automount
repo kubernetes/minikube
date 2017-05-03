@@ -52,7 +52,7 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                 sleep 0.5
             done
             BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
-            mkfs.ext4 -i 8192 -L $LABEL $BOOT2DOCKER_DATA
+            mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
         fi
 
         DISK_VENDOR=$(cat /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/vendor /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/model | tr -d "\n")
@@ -75,7 +75,7 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                     # Add the data partition
                     (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
                     BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
-                    mkfs.ext4 -i 8192 -L $LABEL $BOOT2DOCKER_DATA
+                    mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
                 else
                     echo "Disk unpartitioned but something is there... not doing anything"
                 fi
