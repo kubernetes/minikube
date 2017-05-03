@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/provision"
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
@@ -37,8 +38,10 @@ import (
 	"github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/persist"
 	"github.com/docker/machine/libmachine/ssh"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
@@ -172,12 +175,51 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 
 func (api *LocalClient) Close() error { return nil }
 
-// TODO(r2d4): We can rewrite the create function,
-// for now, just defer to libmachine's implementation
 func (api *LocalClient) Create(h *host.Host) error {
-	c := libmachine.NewClient(api.storePath, api.certsDir)
-	c.SSHClientType = ssh.Native
-	return c.Create(h)
+	steps := []struct {
+		name string
+		f    func() error
+	}{
+		{
+			"Bootstrapping certs.",
+			func() error { return cert.BootstrapCertificates(h.AuthOptions()) },
+		},
+		{
+			"Running precreate checks.",
+			h.Driver.PreCreateCheck,
+		},
+		{
+			"Saving driver.",
+			func() error {
+				return api.Save(h)
+			},
+		},
+		{
+			"Creating VM.",
+			h.Driver.Create,
+		},
+		{
+			"Waiting for VM to start.",
+			func() error {
+				return mcnutils.WaitFor(drivers.MachineInState(h.Driver, state.Running))
+			},
+		},
+		{
+			"Provisioning VM.",
+			func() error {
+				pv := provision.NewBuildrootProvisioner(h.Driver)
+				return pv.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
+			},
+		},
+	}
+
+	for _, step := range steps {
+		if err := step.f(); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Error executing step: %s\n", step.name))
+		}
+	}
+
+	return nil
 }
 
 func StartDriver() {
@@ -190,11 +232,6 @@ func StartDriver() {
 	localbinary.CurrentBinaryIsDockerMachine = true
 }
 
-// CertGenerator is used to override the default machine CertGenerator with a longer timeout.
-type CertGenerator struct {
-	cert.X509CertGenerator
-}
-
 type ConnChecker struct {
 }
 
@@ -205,6 +242,11 @@ func (cc *ConnChecker) Check(h *host.Host, swarm bool) (string, *auth.Options, e
 		return "", &auth.Options{}, err
 	}
 	return dockerHost, authOptions, nil
+}
+
+// CertGenerator is used to override the default machine CertGenerator with a longer timeout.
+type CertGenerator struct {
+	cert.X509CertGenerator
 }
 
 // ValidateCertificate is a reimplementation of the default generator with a longer timeout.
