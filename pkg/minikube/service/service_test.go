@@ -242,7 +242,7 @@ func TestPrintURLsForService(t *testing.T) {
 			serviceName:    "mock-dashboard",
 			namespace:      "default",
 			tmpl:           defaultTemplate,
-			expectedOutput: []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+			expectedOutput: []string{"https://127.0.0.1:1111", "https://127.0.0.1:2222"},
 		},
 		{
 			description:    "empty slice for no node ports",
@@ -307,7 +307,7 @@ func TestGetServiceURLs(t *testing.T) {
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard",
-					URLs:      []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+					URLs:      []string{"https://127.0.0.1:1111", "https://127.0.0.1:2222"},
 				},
 				{
 					Namespace: "default",
