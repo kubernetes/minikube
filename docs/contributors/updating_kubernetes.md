@@ -16,7 +16,7 @@ This isn't strictly necessary, but it usually helps.
 
  ```shell
  cd minikube
- godep restore ./...
+ ./hack/godep/godep-restore.sh
  ```
 
 3. Kubernetes should now be on your GOPATH. Check it out to the right version.
@@ -44,7 +44,7 @@ Make sure to also fetch tags, as Godep relies on these.
 
  ```shell
  git checkout $DESIREDTAG
- godep restore ./...
+ ./hack/godep-restore.sh
  ```
 
 4. Build and test minikube, making any manual changes necessary to build.
@@ -53,8 +53,7 @@ Make sure to also fetch tags, as Godep relies on these.
 
  ```shell
  cd $GOPATH/src/k8s.io/minikube
- rm -rf Godeps/ vendor/
- godep save ./...
+ ./hack/godep/godep-save.sh
  ```
 
  6. Verify that the correct tag is marked in the Godeps.json file by running this script:
@@ -86,8 +85,4 @@ git add --all
 git commit -m "Manual changes to update Kubernetes to foo"
 ```
 
-As a final part of updating kubernetes, a new version of localkube should be uploaded to GCS so that users can select this version of kubernetes/localkube in later minikube/localkube builds.  For instructions on how to do this, see [LOCALKUBE_RELEASING.md](https://github.com/kubernetes/minikube/blob/master/LOCALKUBE_RELEASING.md)
-
-#### Note on bugfix from Kubernetes
-
-In case that specific bugfix patches have been applied to the k8s vendor tree, the patches could be at some point overwritten by next Kubernetes updates. So contributors should check if the vendor tree still contains the bugfixes even after having updated the vendor tree.
+As a final part of updating kubernetes, a new version of localkube should be uploaded to GCS so that users can select this version of kubernetes/localkube in later minikube/localkube builds.  For instructions on how to do this, see [releasing_localkube.md](https://github.com/kubernetes/minikube/blob/master/docs/contributing/releasing_localkube.md)
