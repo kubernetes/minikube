@@ -127,7 +127,7 @@ $(GOPATH)/bin/go-bindata: $(GOPATH)/src/$(ORG)
 cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
 
 .PHONY: checksum
-checksum: cross
+checksum:
 	for f in out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
