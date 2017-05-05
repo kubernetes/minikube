@@ -31,7 +31,7 @@ JOB_NAME="Linux-KVM-Alt"
 
 # Use a checksum here instead of a released version
 # until the driver is stable
-SHA="1039171a1cfcb82e94e6fe3c977b3ebe14b3c8d3"
+SHA="ba50f204ccf62c2f1f521fd60aa8eb68c39bcd2f"
 
 pushd "$GOPATH/src/github.com/r2d4/docker-machine-driver-kvm" >/dev/null
     git fetch origin
