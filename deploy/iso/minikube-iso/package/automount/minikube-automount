@@ -6,111 +6,10 @@ echo "automount ...";
 LABEL=boot2docker-data
 MAGIC="boot2docker, please format-me"
 
-# This function will unbind and rebind the driver for the block device
-# in question. This has the same effect of rebooting (in terms of forcing
-# the kernel to re-read the partition table synchronously), but without
-# the cost of actually rebooting.
-#
-# Rather than arbitrarily sleep, this function blocks on the readiness of the block device,
-# specifically, that all partitions are present and acknowledged by the kernel.
-#
-# Note: that this is not safe to do if a disk is mounted or in use,
-# but should be safe otherwise
-rebind_block_device()
-{
-  device=$(basename $1)
-
-  # Try and force partition sync's before doing anything
-  sync
-  partprobe
-  blockdev_path="/sys/class/block/${device}/device/"
-  driver_dir=$(cd ${blockdev_path} && cd $(readlink "driver") && pwd)
-  device_path=$(find ${blockdev_path}/driver/* -type l)
-  device_id=$(basename ${device_path})
-  pci_device_relative_id=$(readlink ${device_path})
-  pci_device_id="/sys/${pci_device_relative_id#"../../../../"}"
-
-  echo ${device_id} > "${driver_dir}/unbind"
-  wait_for 5 block_dev_not_exists ${pci_device_id}
-  echo ${device_id} > "${driver_dir}/bind"
-  wait_for 5 block_dev_exists ${pci_device_id}
-  wait_for 5 block_dev_partitions_exist ${pci_device_id}
-  wait_for 5 device_partitions_exist ${device}
-
-  # Forcefully partprobe again but these are likely not necessary, and are just for good meassure.
-  wait_for 5 sync
-  wait_for 5 partprobe
-}
-
-# Check if any block device exists for this PCI device
-# First arg: path to PCI device.
-# Return: true if PCI device exists
-block_dev_exists()
-{
-  block_dev="${1}/block"
-  [ -d "${block_dev}" ] && [ -n $( ls "${block_dev}" ) ]
-}
-
-# Check if any block device, at a particular PCI path, exists.
-# First arg: path to PCI device.
-# Return: true if there are no block devices for this PCI device
-block_dev_not_exists()
-{
-  block_dev="${1}/block"
-  [ ! -d "${block_dev}" ]
-}
-
-# Further examines a block device, to determine if it has exactly 2 partitions
-# First arg: path to PCI device.
-# Return: true if both partitions present
-block_dev_partitions_exist()
-{
-  block_dev="${1}/block"
-  block_dev_id=$(ls "${1}/block" | head -n 1) # there should only ever be able to be one block device per PCI id
-  [ -d "${block_dev}/${block_dev_id}/${block_dev_id}1" ] && # first partition
-  [ -d "${block_dev}/${block_dev_id}/${block_dev_id}2" ] # second partition
-}
-
-# It is possible for the block device to be initialized in /sys but not /dev, check there
-# and ensure that poth partitions are present
-# First arg: the block device root name (eg, sda / vda)
-# Return: true if both partitions present in /dev
-device_partitions_exist()
-{
-  device="${1}"
-  [ -b "/dev/${device}1" ] && # first partition
-  [ -b "/dev/${device}2" ] # second partition
-}
-
-# DRY up polling
-# First arg: Max seconds to wait for a condition to be true
-# Remaining arg: A condition (preferably a function handle that evaluates a contition) with
-# any further args passed to the function being called, if any.
-# Return: none
-wait_for()
-{
-  max_wait="${1}"
-  shift
-
-  echo "Waiting for '$@' to be true"
-  local timer=0
-  until $@ || [ "$timer" -gt "$(( $max_wait * 2 ))" ]; do
-      timer=$((timer + 1))
-      sleep 0.5
-  done
-}
-
-# Helper to ensure that this global variable is current / correct
-find_b2d_device()
-{
-  # If there is a partition with `boot2docker-data` as its label, use it and be
-  # very happy. Thus, you can come along if you feel like a room without a roof.
-  BOOT2DOCKER_DATA=`blkid -o device -l -t LABEL=$LABEL`
-  UNPARTITIONED_HD="/dev/$(lsblk | grep disk | cut -f1 -d' ')"
-}
-
-find_b2d_device
-
+# If there is a partition with `boot2docker-data` as its label, use it and be
+# very happy. Thus, you can come along if you feel like a room without a roof.
+BOOT2DOCKER_DATA=`blkid -o device -l -t LABEL=$LABEL`
+UNPARTITIONED_HD="/dev/$(lsblk | grep disk | cut -f1 -d' ')"
 echo $BOOT2DOCKER_DATA
 if [ ! -n "$BOOT2DOCKER_DATA" ]; then
     echo "Is the disk unpartitioned?, test for the 'boot2docker format-me' string"
@@ -127,24 +26,33 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
             dd if=$UNPARTITIONED_HD of=/userdata.tar bs=1 count=4096 2>/dev/null
             # Create the partition, format it and then mount it
             echo "NEW boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
+
             # Add a swap partition (so Docker doesn't complain about it missing)
             (echo n; echo p; echo 2; echo ; echo +1000M ; echo w) | fdisk $UNPARTITIONED_HD
-            # Set the type of the disk
+            # Let kernel re-read partition table
+            partprobe
             (echo t; echo 82; echo w) | fdisk $UNPARTITIONED_HD
+            # Let kernel re-read partition table
+            partprobe
+            # wait for the partition to actually exist, timeout after about 5 seconds
+            local timer=0
+            while [ "$timer" -lt 10 -a ! -b "${UNPARTITIONED_HD}2" ]; do
+                timer=$((timer + 1))
+                sleep 0.5
+            done
+            mkswap "${UNPARTITIONED_HD}2"
             # Add the data partition
             (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
-
-            # Force the device state to be in sync by rebinding the driver for it
-            rebind_block_device "${UNPARTITIONED_HD}"
-
-            BOOT2DOCKER_DATA="${UNPARTITIONED_HD}1"
-            BOOT2DOCKER_SWAP="${UNPARTITIONED_HD}2"
-
-            # Format the swap partition
-            wait_for 5 mkswap "${BOOT2DOCKER_SWAP}"
-
-            # Format the ext4 partition
-            wait_for 5 mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
+            # Let kernel re-read partition table
+            partprobe
+            # wait for the partition to actually exist, timeout after about 5 seconds
+            timer=0
+            while [ "$timer" -lt 10 -a ! -b "${UNPARTITIONED_HD}1" ]; do
+                timer=$((timer + 1))
+                sleep 0.5
+            done
+            BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
+            mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
         fi
 
         DISK_VENDOR=$(cat /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/vendor /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/model | tr -d "\n")
@@ -156,7 +64,7 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                 # As there are no partitions, let's make sure the disk is empty for real
                 dd if=$UNPARTITIONED_HD of=device_test_file bs=1k count=256 > /dev/null 2>&1
                 NON_NUL=$(<device_test_file tr -d '\0\n' | wc -c)
-                if [ $NON_NUL == 0 ]; then
+                if [ $NON_NUL == 0 ]; then                    
                     # Create the partition, format it and then mount it
                     echo "NEW VMware boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
 
