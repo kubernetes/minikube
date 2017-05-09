@@ -33,7 +33,7 @@ const (
 	WantReportError           = "WantReportError"
 	WantReportErrorPrompt     = "WantReportErrorPrompt"
 	WantKubectlDownloadMsg    = "WantKubectlDownloadMsg"
-	MachineName               = "name"
+	MachineProfile            = "profile"
 )
 
 type MinikubeConfig map[string]interface{}
@@ -79,8 +79,8 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 
 // GetMachineName gets the machine name for the VM
 func GetMachineName() string {
-	if viper.GetString(MachineName) == "" {
+	if viper.GetString(MachineProfile) == "" {
 		return constants.DefaultMachineName
 	}
-	return viper.GetString(MachineName)
+	return viper.GetString(MachineProfile)
 }

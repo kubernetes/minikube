@@ -112,7 +112,7 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
-		name: config.MachineName,
+		name: config.MachineProfile,
 		set:  SetString,
 	},
 	{
