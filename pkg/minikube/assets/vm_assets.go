@@ -18,13 +18,11 @@ package assets
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
-	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -157,31 +155,30 @@ func CopyFileLocal(f CopyableFile) error {
 		return errors.Wrap(err, "Error changing file permissions")
 	}
 
-	if os.Getenv("KEEP_SUDO_FOR_MINIKUBE_NONE") == "" {
-		username := os.Getenv("SUDO_USER")
-		fmt.Println(username)
-		command := fmt.Sprintf("/bin/chown %s %s", username, targetPath)
-		fmt.Println(command)
-		args := strings.Split(command, " ")
-		binary := args[0]
-		args = append(args[:0], args[1:]...)
-		cmd := exec.Command(binary, args...)
-		if err := cmd.Start(); err != nil {
-			return err
-		}
-		command = fmt.Sprintf("/bin/chgrp %s %s", username, targetPath)
-		fmt.Println(command)
-		args = strings.Split(command, " ")
-		binary = args[0]
-		args = append(args[:0], args[1:]...)
-		cmd = exec.Command(binary, args...)
-		if err := cmd.Start(); err != nil {
-			return err
-		}
+	_, err = io.Copy(target, f)
+	if err != nil {
+		return errors.Wrap(err, "Error copying file to target location")
+	}
 
-		_, err = io.Copy(target, f)
+	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") != "" {
+		username := os.Getenv("SUDO_USER")
+		if username == "" {
+			return nil
+		}
+		usr, err := user.Lookup(username)
 		if err != nil {
-			return errors.Wrap(err, "Error copying file to target location")
+			return errors.Wrap(err, "Error looking up user")
+		}
+		uid, err := strconv.Atoi(usr.Uid)
+		if err != nil {
+			return errors.Wrapf(err, "Error parsing uid for user: %s", username)
+		}
+		gid, err := strconv.Atoi(usr.Gid)
+		if err != nil {
+			return errors.Wrapf(err, "Error parsing gid for user: %s", username)
+		}
+		if err := os.Chown(targetPath, uid, gid); err != nil {
+			return errors.Wrapf(err, "Error changing ownership for: %s", targetPath)
 		}
 	}
 	return nil

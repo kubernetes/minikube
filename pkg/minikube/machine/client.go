@@ -204,12 +204,18 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"Waiting for VM to start.",
 			func() error {
+				if h.Driver.DriverName() == "none" {
+					return nil
+				}
 				return mcnutils.WaitFor(drivers.MachineInState(h.Driver, state.Running))
 			},
 		},
 		{
 			"Provisioning VM.",
-			func() error {==
+			func() error {
+				if h.Driver.DriverName() == "none" {
+					return nil
+				}
 				pv := provision.NewBuildrootProvisioner(h.Driver)
 				return pv.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
 			},

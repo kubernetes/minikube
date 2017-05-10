@@ -17,19 +17,18 @@ limitations under the License.
 package drivers
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"strings"
-
-	"k8s.io/minikube/pkg/minikube/constants"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 const driverName = "none"
@@ -49,12 +48,21 @@ func NewDriver(hostName, storePath string) *Driver {
 	}
 }
 
+// PreCreateCheck checks that VBoxManage exists and works
+func (d *Driver) PreCreateCheck() error {
+	// check that systemd is installed as it is a requirement
+	if _, err := exec.LookPath("systemctl"); err != nil {
+		return errors.New("systemd is a requirement in order to use the none driver")
+	}
+	return nil
+}
+
 func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{}
 }
 
 func (d *Driver) Create() error {
-	// creation is handled by commands.go
+	// creation for the none driver is handled by commands.go
 	return nil
 }
 
@@ -68,7 +76,7 @@ func (d *Driver) GetIP() (string, error) {
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "", nil
+	return "", fmt.Errorf("driver does not support ssh commands")
 }
 
 func (d *Driver) GetSSHKeyPath() string {
@@ -76,12 +84,11 @@ func (d *Driver) GetSSHKeyPath() string {
 }
 
 func (d *Driver) GetSSHPort() (int, error) {
-	return 22, nil
+	return 0, fmt.Errorf("driver does not support ssh commands")
 }
 
 func (d *Driver) GetSSHUsername() string {
-	usr, _ := user.Current()
-	return usr.Username
+	return ""
 }
 
 func (d *Driver) GetURL() (string, error) {

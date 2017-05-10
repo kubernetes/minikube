@@ -33,7 +33,7 @@ func TestDocker(t *testing.T) {
 		T:          t}
 
 	if strings.Contains(*args, "--vm-driver=none") {
-		t.Skip("skipping test for none driver as it does not bundle docker")
+		t.Skip("skipping test as none driver does not bundle docker")
 	}
 
 	minikubeRunner.RunCommand("delete", false)
