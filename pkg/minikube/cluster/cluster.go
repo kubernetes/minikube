@@ -165,12 +165,13 @@ func GetLocalkubeStatus(api libmachine.API) (string, error) {
 	}
 }
 
-type sshAble interface {
-	RunSSHCommand(string) (string, error)
-}
-
 // StartCluster starts a k8s cluster on the specified Host.
-func StartClusterLocal(h *host.Host, kubernetesConfig KubernetesConfig) error {
+func StartCluster(api libmachine.API, kubernetesConfig KubernetesConfig) error {
+	h, err := CheckIfApiExistsAndLoad(api)
+	if err != nil {
+		return errors.Wrap(err, "Error checking that api exists and loading it")
+	}
+
 	startCommand, err := GetStartCommand(kubernetesConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Error generating start command: %s", err)
@@ -181,42 +182,10 @@ func StartClusterLocal(h *host.Host, kubernetesConfig KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
 	}
-
-	checkRunning := func() error {
-		s, err := h.Driver.GetState()
-		glog.Infoln("Machine state: ", s)
-		if err != nil {
-			return errors.Wrap(err, "Error getting state for host")
-		}
-		if s != state.Running {
-			return fmt.Errorf("Machine is in the wrong state: %s, expected  %s", s, state.Running)
-		}
-		return nil
-	}
-
-	if err := util.RetryAfter(6, checkRunning, 5*time.Second); err != nil {
-		return err
-	}
-
 	return nil
 }
 
-// StartCluster starts a k8s cluster on the specified Host.
-func StartClusterSSH(h sshAble, kubernetesConfig KubernetesConfig) error {
-	startCommand, err := GetStartCommand(kubernetesConfig)
-	if err != nil {
-		return errors.Wrapf(err, "Error generating start command: %s", err)
-	}
-	glog.Infoln(startCommand)
-	output, err := h.RunSSHCommand(startCommand)
-	glog.Infoln(output)
-	if err != nil {
-		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
-	}
-	return nil
-}
-
-func UpdateCluster(h sshAble, d drivers.Driver, config KubernetesConfig) error {
+func UpdateCluster(d drivers.Driver, config KubernetesConfig) error {
 	copyableFiles := []assets.CopyableFile{}
 	var localkubeFile assets.CopyableFile
 	var err error

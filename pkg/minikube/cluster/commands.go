@@ -130,8 +130,7 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 		flagVals = append(flagVals, fmt.Sprintf("--extra-config=%s", e.String()))
 	}
 	flags := strings.Join(flagVals, " ")
-	localkubeTemplate := localkubeStartCmdTemplate
-	t := template.Must(template.New("localkubeStartCmd").Parse(localkubeTemplate))
+	t := template.Must(template.New("localkubeStartCmd").Parse(localkubeStartCmdTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
 		Flags         string

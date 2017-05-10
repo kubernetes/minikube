@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -150,7 +149,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Moving files into cluster...")
-	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
+	if err := cluster.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -162,16 +161,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Starting cluster components...")
-	if host.DriverName == "none" {
-		if err := cluster.StartClusterLocal(host, kubernetesConfig); err != nil {
-			glog.Errorln("Error starting cluster: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
-		}
-	} else {
-		if err := cluster.StartClusterSSH(host, kubernetesConfig); err != nil {
-			glog.Errorln("Error starting cluster: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
-		}
+
+	if err := cluster.StartCluster(api, kubernetesConfig); err != nil {
+		glog.Errorln("Error starting cluster: ", err)
+		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Connecting to cluster...")
@@ -189,9 +182,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	var kubeConfigFile string
 	if kubeConfigEnv == "" {
 		kubeConfigFile = constants.KubeconfigPath
-		if config.VMDriver == "none" {
-			kubeConfigFile = path.Join(os.Getenv(constants.MinikubeHome), ".kube", "config")
-		}
 	} else {
 		kubeConfigFile = filepath.SplitList(kubeConfigEnv)[0]
 	}
@@ -246,15 +236,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if config.VMDriver == "none" {
-		username := os.Getenv("SUDO_USER")
-		fmt.Println("username: ", username)
-		command := fmt.Sprintf("/bin/chown -R %s %s; /bin/chown -R %s %s", username, constants.GetMinipath(),
-			username, path.Join(os.Getenv(constants.MinikubeHome), ".kube"))
-		_, err := exec.Command("bash", "-c", command).Output()
-		if err != nil {
-			glog.Errorln("Error modifying priveleges for none driver: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
-		}
+		fmt.Println(`===================
+WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
+	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks
+
+When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
+You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
+	sudo mv /root/.kube $HOME/.kube # this will overwrite any config you have.  You may have to append the file contents manually
+	sudo chown -R $USER $HOME/.kube
+	sudo chgrp -R $USER $HOME/.kube
+	
+    sudo mv /root/.minikube $HOME/.minikube # this will overwrite any config you have.  You may have to append the file contents manually
+	sudo chown -R $USER $HOME/.minikube
+	sudo chgrp -R $USER $HOME/.minikube 
+This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 	}
 }
 
