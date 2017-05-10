@@ -123,11 +123,11 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 	}()
 
 	// Lets don't assume that we have sudo on every platform.
+	scpcmd := fmt.Sprintf("sudo scp -t %s", remotedir)
 	if runtime.GOOS == "windows" {
-		scpcmd := fmt.Sprintf("scp -t %s", remotedir)
-	} else {
-		scpcmd := fmt.Sprintf("sudo scp -t %s", remotedir)
+		scpcmd = fmt.Sprintf("scp -t %s", remotedir)
 	}
+
 	if err := s.Run(scpcmd); err != nil {
 		return errors.Wrap(err, "Error running scp command")
 	}
