@@ -18,6 +18,7 @@ package cluster
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -57,4 +58,12 @@ func createKVMHost(config MachineConfig) *kvmDriver {
 		CacheMode:      "default",
 		IOMode:         "threads",
 	}
+}
+
+func detectVBoxManageCmd() string {
+	cmd := "VBoxManage"
+	if path, err := exec.LookPath(cmd); err == nil {
+		return path
+	}
+	return cmd
 }
