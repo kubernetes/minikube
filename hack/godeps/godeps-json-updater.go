@@ -33,6 +33,9 @@ var ignoredPrefixes = []string{
 	"k8s.io/client-go",
 	"k8s.io/apimachinery",
 	"k8s.io/apiserver",
+	"k8s.io/kube-aggregator",
+	"k8s.io/kube-apiextensions-server",
+	"k8s.io/metrics",
 }
 
 type Dependency struct {
