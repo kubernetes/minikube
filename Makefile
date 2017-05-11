@@ -50,7 +50,8 @@ PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd)
 BUILD_OS := $(shell uname -s)
 
 LOCALKUBE_VERSION := $(shell $(PYTHON) hack/get_k8s_version.py --k8s-version-only 2>&1)
-LOCALKUBE_BUCKET := gs://minikube/k8sReleases
+LOCALKUBE_BUCKET ?= minikube/k8sReleases
+LOCALKUBE_UPLOAD_LOCATION := gs://${LOCALKUBE_BUCKET}
 TAG ?= $(LOCALKUBE_VERSION)
 
 # Set the version information for the Kubernetes servers, and build localkube statically
@@ -182,8 +183,8 @@ check-release:
 
 .PHONY: release-localkube
 release-localkube: out/localkube checksum
-	gsutil cp out/localkube $(LOCALKUBE_BUCKET)/$(LOCALKUBE_VERSION)/localkube-linux-amd64
-	gsutil cp out/localkube.sha256 $(LOCALKUBE_BUCKET)/$(LOCALKUBE_VERSION)/localkube-linux-amd64.sha256
+	gsutil cp out/localkube $(LOCALKUBE_UPLOAD_LOCATION)/$(LOCALKUBE_VERSION)/localkube-linux-amd64
+	gsutil cp out/localkube.sha256 $(LOCALKUBE_UPLOAD_LOCATION)/$(LOCALKUBE_VERSION)/localkube-linux-amd64.sha256
 
 .PHONY: update-releases
 update-releases:
