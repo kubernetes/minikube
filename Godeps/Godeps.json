@@ -2526,91 +2526,6 @@
 			"Rev": "c2ac40f1adf8c42a79badddb2a2acd673cae3bcb"
 		},
 		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/apis/apiregistration",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/apis/apiregistration/install",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1alpha1",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/apis/apiregistration/validation",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/apiserver",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/clientset_generated/internalclientset",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/clientset_generated/internalclientset/scheme",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/clientset_generated/internalclientset/typed/apiregistration/internalversion",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/informers/internalversion",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/informers/internalversion/apiregistration",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/informers/internalversion/apiregistration/internalversion",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/informers/internalversion/internalinterfaces",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/client/listers/apiregistration/internalversion",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/controllers",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/controllers/autoregister",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/registry/apiservice",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
-			"ImportPath": "k8s.io/kube-aggregator/pkg/registry/apiservice/etcd",
-			"Comment": "v1.7.0-alpha.2",
-			"Rev": "f2c354df71bb9ea6267595cd3852fc44185e9941"
-		},
-		{
 			"ImportPath": "k8s.io/kubernetes/cmd/kube-apiserver/app",
 			"Comment": "v1.7.0-alpha.2",
 			"Rev": "9c17779924ec849dc16e8fd17d121572c9b5c8ba"
@@ -5579,42 +5494,6 @@
 			"ImportPath": "k8s.io/kubernetes/third_party/forked/golang/expansion",
 			"Comment": "v1.7.0-alpha.2",
 			"Rev": "9c17779924ec849dc16e8fd17d121572c9b5c8ba"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics/install",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics/v1alpha1",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/metrics",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/metrics/install",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/metrics/v1alpha1",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/client/clientset_generated/clientset/scheme",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/client/clientset_generated/clientset/typed/metrics/v1alpha1",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/client/custom_metrics",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
 		}
 	]
 }
