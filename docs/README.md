@@ -23,7 +23,7 @@
 
 #### Storage
 
-* **Persistent Volumes** ([persistent_volumes.md](persistent_volumes.md)): Persistent Volumes in Minikube and persistented locations in the VM
+* **Persistent Volumes** ([persistent_volumes.md](persistent_volumes.md)): Persistent Volumes in Minikube and persisted locations in the VM
 
 * **Host Folder Mounting** ([host_folder_mount.md](host_folder_mount.md)): How to mount your files from your host into the minikube VM
 
