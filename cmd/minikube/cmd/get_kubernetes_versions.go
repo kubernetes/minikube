@@ -26,7 +26,7 @@ import (
 // getK8sVersionsCmd represents the ip command
 var getK8sVersionsCmd = &cobra.Command{
 	Use:   "get-k8s-versions",
-	Short: "Gets the list of available kubernetes versions available for minikube.",
+	Short: "Gets the list of available kubernetes versions available for minikube",
 	Long:  `Gets the list of available kubernetes versions available for minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		kubernetes_versions.PrintKubernetesVersionsFromGCS(os.Stdout)

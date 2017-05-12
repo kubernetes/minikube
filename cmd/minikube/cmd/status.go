@@ -40,7 +40,7 @@ type Status struct {
 // statusCmd represents the status command
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Gets the status of a local kubernetes cluster.",
+	Short: "Gets the status of a local kubernetes cluster",
 	Long:  `Gets the status of a local kubernetes cluster.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient(clientType)
