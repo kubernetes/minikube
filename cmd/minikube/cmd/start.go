@@ -35,6 +35,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -77,7 +78,6 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
-	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
 	api, err := machine.NewAPIClient(clientType)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
@@ -93,6 +93,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error parsing disk size:", err)
 		os.Exit(1)
 	}
+
+	validateK8sVersion(viper.GetString(kubernetesVersion))
 
 	config := cluster.MachineConfig{
 		MinikubeISO:         viper.GetString(isoURL),
@@ -111,6 +113,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		Downloader:          pkgutil.DefaultDownloader{},
 	}
 
+	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
 	fmt.Println("Starting VM...")
 	var host *host.Host
 	start := func() (err error) {
@@ -198,6 +201,19 @@ func runStart(cmd *cobra.Command, args []string) {
 		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n", kubeCfgSetup.ClusterName)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
+	}
+}
+
+func validateK8sVersion(version string) {
+	validVersion, err := kubernetes_versions.IsValidLocalkubeVersion(version, constants.KubernetesVersionGCSURL)
+	if err != nil {
+		glog.Errorln("Error getting valid kubernetes versions", err)
+		os.Exit(1)
+	}
+	if !validVersion {
+		fmt.Println("Invalid Kubernetes version.")
+		kubernetes_versions.PrintKubernetesVersionsFromGCS(os.Stdout)
+		os.Exit(1)
 	}
 }
 

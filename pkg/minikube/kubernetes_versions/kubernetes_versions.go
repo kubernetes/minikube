@@ -61,7 +61,13 @@ func getJson(url string, target *K8sReleases) error {
 	return json.NewDecoder(r.Body).Decode(target)
 }
 
+var cachedK8sVersions = make(K8sReleases, 0)
+
 func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
+	if len(cachedK8sVersions) != 0 {
+		glog.Infof("Using cached localkube versions: %v", cachedK8sVersions)
+		return cachedK8sVersions, nil
+	}
 	var k8sVersions K8sReleases
 	if err := getJson(url, &k8sVersions); err != nil {
 		return K8sReleases{}, errors.Wrapf(err, "Error getting json via http with url: %s", url)
@@ -69,5 +75,26 @@ func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
 	if len(k8sVersions) == 0 {
 		return K8sReleases{}, errors.Errorf("There were no json k8s Releases at the url specified: %s", url)
 	}
+
+	glog.Infoln("Caching localkube versions")
+	cachedK8sVersions = k8sVersions
 	return k8sVersions, nil
+}
+
+func IsValidLocalkubeVersion(v string, url string) (bool, error) {
+	k8sReleases, err := GetK8sVersionsFromURL(url)
+	glog.Infoln(k8sReleases)
+	if err != nil {
+		return false, errors.Wrap(err, "Error getting the localkube versions")
+	}
+
+	isValidVersion := false
+	for _, version := range k8sReleases {
+		if version.Version == v {
+			isValidVersion = true
+			break
+		}
+	}
+
+	return isValidVersion, nil
 }
