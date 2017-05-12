@@ -26,8 +26,8 @@ import (
 
 var ProfileCmd = &cobra.Command{
 	Use:   "profile MINIKUBE_PROFILE_NAME.  You can return the the default minikube name by running `minikube profile default`",
-	Short: "profile sets the current minikube profile.  This is used to run and manage multiple minikube instance.  You can return the the default minikube name by running `minikube profile default`",
-	Long:  "profile sets the current minikube profile.  This is used to run and manage multiple minikube instance.  You can return the the default minikube name by running `minikube profile default`",
+	Short: "Profile sets the current minikube profile",
+	Long:  "profile sets the current minikube profile.  This is used to run and manage multiple minikube instance.  You can return to the default minikube name by running `minikube profile default`",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
 			fmt.Fprintln(os.Stderr, "usage: minikube profile MINIKUBE_PROFILE_NAME")
