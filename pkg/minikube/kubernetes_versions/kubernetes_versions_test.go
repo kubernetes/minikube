@@ -40,6 +40,8 @@ func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestGetK8sVersionsFromURLCorrect(t *testing.T) {
+	cachedK8sVersions = nil
+
 	// test that the version is correctly parsed if returned if valid JSON is returned the url endpoint
 	version0 := "0.0.0"
 	version1 := "1.0.0"
@@ -47,6 +49,7 @@ func TestGetK8sVersionsFromURLCorrect(t *testing.T) {
 		K8sReleases: []K8sRelease{{Version: version0}, {Version: version1}},
 	}
 	server := httptest.NewServer(handler)
+	defer server.Close()
 
 	k8sVersions, err := GetK8sVersionsFromURL(server.URL)
 	if err != nil {
@@ -58,12 +61,66 @@ func TestGetK8sVersionsFromURLCorrect(t *testing.T) {
 	}
 }
 
+func TestIsValidLocalkubeVersion(t *testing.T) {
+	version0 := "0.0.0"
+	version1 := "1.0.0"
+	correctHandler := &URLHandlerCorrect{
+		K8sReleases: []K8sRelease{{Version: version0}, {Version: version1}},
+	}
+
+	var tests = []struct {
+		description    string
+		version        string
+		handler        http.Handler
+		shouldErr      bool
+		isValidVersion bool
+	}{
+		{
+			description:    "correct version",
+			version:        version0,
+			handler:        correctHandler,
+			isValidVersion: true,
+		},
+		{
+			description:    "bad version",
+			version:        "2.0.0",
+			handler:        correctHandler,
+			isValidVersion: false,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			cachedK8sVersions = nil
+
+			server := httptest.NewServer(test.handler)
+			defer server.Close()
+			isValid, err := IsValidLocalkubeVersion(test.version, server.URL)
+			if err != nil && !test.shouldErr {
+				t.Errorf("Got unexpected error: %v", err)
+				return
+			}
+			if err == nil && test.shouldErr {
+				t.Error("Got no error but expected an error")
+				return
+			}
+			if isValid != test.isValidVersion {
+				t.Errorf("Expected version to be %t, but was %t", test.isValidVersion, isValid)
+			}
+		})
+	}
+
+}
+
 type URLHandlerNone struct{}
 
 func (h *URLHandlerNone) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestGetK8sVersionsFromURLNone(t *testing.T) {
+	cachedK8sVersions = nil
+
 	// test that an error is returned if nothing is returned at the url endpoint
 	handler := &URLHandlerNone{}
 	server := httptest.NewServer(handler)
@@ -82,6 +139,8 @@ func (h *URLHandlerMalformed) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 func TestGetK8sVersionsFromURLMalformed(t *testing.T) {
+	cachedK8sVersions = nil
+
 	// test that an error is returned if malformed JSON is at the url endpoint
 	handler := &URLHandlerMalformed{}
 	server := httptest.NewServer(handler)
@@ -93,6 +152,8 @@ func TestGetK8sVersionsFromURLMalformed(t *testing.T) {
 }
 
 func TestPrintKubernetesVersions(t *testing.T) {
+	cachedK8sVersions = nil
+
 	// test that no kubernetes version text is printed if there are no versions being served
 	// TODO(aprindle) or should this be an error?!?!
 	handlerNone := &URLHandlerNone{}
