@@ -24,7 +24,7 @@ godep::ensure_godep_version() {
     return
   fi
   go get -d -u github.com/tools/godep 2>/dev/null
-  pushd "${GOPATH}/github.com/tools/godep" >/dev/null
+  pushd "${GOPATH}/src/github.com/tools/godep" >/dev/null
     git checkout "${GODEP_VERSION}"
     go install .
   popd >/dev/null
