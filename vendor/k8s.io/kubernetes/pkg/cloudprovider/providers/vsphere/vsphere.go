@@ -24,9 +24,11 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"gopkg.in/gcfg.v1"
 
@@ -49,23 +51,33 @@ import (
 )
 
 const (
-	ProviderName              = "vsphere"
-	ActivePowerState          = "poweredOn"
-	SCSIControllerType        = "scsi"
-	LSILogicControllerType    = "lsiLogic"
-	BusLogicControllerType    = "busLogic"
-	PVSCSIControllerType      = "pvscsi"
-	LSILogicSASControllerType = "lsiLogic-sas"
-	SCSIControllerLimit       = 4
-	SCSIControllerDeviceLimit = 15
-	SCSIDeviceSlots           = 16
-	SCSIReservedSlot          = 7
-	ThinDiskType              = "thin"
-	PreallocatedDiskType      = "preallocated"
-	EagerZeroedThickDiskType  = "eagerZeroedThick"
-	ZeroedThickDiskType       = "zeroedThick"
-	VolDir                    = "kubevols"
-	RoundTripperDefaultCount  = 3
+	ProviderName                     = "vsphere"
+	ActivePowerState                 = "poweredOn"
+	SCSIControllerType               = "scsi"
+	LSILogicControllerType           = "lsiLogic"
+	BusLogicControllerType           = "busLogic"
+	PVSCSIControllerType             = "pvscsi"
+	LSILogicSASControllerType        = "lsiLogic-sas"
+	SCSIControllerLimit              = 4
+	SCSIControllerDeviceLimit        = 15
+	SCSIDeviceSlots                  = 16
+	SCSIReservedSlot                 = 7
+	ThinDiskType                     = "thin"
+	PreallocatedDiskType             = "preallocated"
+	EagerZeroedThickDiskType         = "eagerZeroedThick"
+	ZeroedThickDiskType              = "zeroedThick"
+	VolDir                           = "kubevols"
+	RoundTripperDefaultCount         = 3
+	DummyVMPrefixName                = "vsphere-k8s"
+	VSANDatastoreType                = "vsan"
+	MAC_OUI_VC                       = "00:50:56"
+	MAC_OUI_ESX                      = "00:0c:29"
+	DiskNotFoundErrMsg               = "No vSphere disk ID found"
+	NoDiskUUIDFoundErrMsg            = "No disk UUID found"
+	NoDevicesFoundErrMsg             = "No devices found"
+	NonSupportedControllerTypeErrMsg = "Disk is attached to non-supported controller type"
+	FileAlreadyExistErrMsg           = "File requested already exist"
+	CleanUpDummyVMRoutine_Interval   = 5
 )
 
 // Controller types that are currently supported for hot attach of disks
@@ -85,14 +97,17 @@ var diskFormatValidType = map[string]string{
 }
 
 var DiskformatValidOptions = generateDiskFormatValidOptions()
+var cleanUpRoutineInitialized = false
 
-var ErrNoDiskUUIDFound = errors.New("No disk UUID found")
-var ErrNoDiskIDFound = errors.New("No vSphere disk ID found")
-var ErrNoDevicesFound = errors.New("No devices found")
-var ErrNonSupportedControllerType = errors.New("Disk is attached to non-supported controller type")
-var ErrFileAlreadyExist = errors.New("File requested already exist")
+var ErrNoDiskUUIDFound = errors.New(NoDiskUUIDFoundErrMsg)
+var ErrNoDiskIDFound = errors.New(DiskNotFoundErrMsg)
+var ErrNoDevicesFound = errors.New(NoDevicesFoundErrMsg)
+var ErrNonSupportedControllerType = errors.New(NonSupportedControllerTypeErrMsg)
+var ErrFileAlreadyExist = errors.New(FileAlreadyExistErrMsg)
 
 var clientLock sync.Mutex
+var cleanUpRoutineInitLock sync.Mutex
+var cleanUpDummyVMLock sync.RWMutex
 
 // VSphere is an implementation of cloud provider Interface for VSphere.
 type VSphere struct {
@@ -166,11 +181,12 @@ type Volumes interface {
 
 // VolumeOptions specifies capacity, tags, name and diskFormat for a volume.
 type VolumeOptions struct {
-	CapacityKB int
-	Tags       map[string]string
-	Name       string
-	DiskFormat string
-	Datastore  string
+	CapacityKB         int
+	Tags               map[string]string
+	Name               string
+	DiskFormat         string
+	Datastore          string
+	StorageProfileData string
 }
 
 // Generates Valid Options for Diskformat
@@ -687,6 +703,8 @@ func cleanUpController(ctx context.Context, newSCSIController types.BaseVirtualD
 
 // Attaches given virtual disk volume to the compute running kubelet.
 func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName k8stypes.NodeName) (diskID string, diskUUID string, err error) {
+	var newSCSIController types.BaseVirtualDevice
+
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -722,50 +740,24 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName k8stypes.NodeName) (di
 
 	var diskControllerType = vs.cfg.Disk.SCSIControllerType
 	// find SCSI controller of particular type from VM devices
-	allSCSIControllers := getSCSIControllers(vmDevices)
 	scsiControllersOfRequiredType := getSCSIControllersOfType(vmDevices, diskControllerType)
 	scsiController := getAvailableSCSIController(scsiControllersOfRequiredType)
-
-	var newSCSICreated = false
-	var newSCSIController types.BaseVirtualDevice
-
-	// creating a scsi controller as there is none found of controller type defined
+	newSCSICreated := false
 	if scsiController == nil {
-		if len(allSCSIControllers) >= SCSIControllerLimit {
-			// we reached the maximum number of controllers we can attach
-			return "", "", fmt.Errorf("SCSI Controller Limit of %d has been reached, cannot create another SCSI controller", SCSIControllerLimit)
-		}
-		glog.V(1).Infof("Creating a SCSI controller of %v type", diskControllerType)
-		newSCSIController, err := vmDevices.CreateSCSIController(diskControllerType)
+		newSCSIController, err = createAndAttachSCSIControllerToVM(ctx, vm, diskControllerType)
 		if err != nil {
-			k8runtime.HandleError(fmt.Errorf("error creating new SCSI controller: %v", err))
-			return "", "", err
-		}
-		configNewSCSIController := newSCSIController.(types.BaseVirtualSCSIController).GetVirtualSCSIController()
-		hotAndRemove := true
-		configNewSCSIController.HotAddRemove = &hotAndRemove
-		configNewSCSIController.SharedBus = types.VirtualSCSISharing(types.VirtualSCSISharingNoSharing)
-
-		// add the scsi controller to virtual machine
-		err = vm.AddDevice(context.TODO(), newSCSIController)
-		if err != nil {
-			glog.V(1).Infof("cannot add SCSI controller to vm - %v", err)
-			// attempt clean up of scsi controller
-			if vmDevices, err := vm.Device(ctx); err == nil {
-				cleanUpController(ctx, newSCSIController, vmDevices, vm)
-			}
+			glog.Errorf("Failed to create SCSI controller for VM :%q with err: %+v", vm.Name(), err)
 			return "", "", err
 		}
 
 		// verify scsi controller in virtual machine
-		vmDevices, err = vm.Device(ctx)
+		vmDevices, err := vm.Device(ctx)
 		if err != nil {
-			// cannot cleanup if there is no device list
 			return "", "", err
 		}
 
 		// Get VM device list
-		_, vmDevices, _, err := getVirtualMachineDevices(ctx, vs.cfg, vs.client, vSphereInstance)
+		_, vmDevices, _, err = getVirtualMachineDevices(ctx, vs.cfg, vs.client, vSphereInstance)
 		if err != nil {
 			glog.Errorf("cannot get vmDevices for VM err=%s", err)
 			return "", "", fmt.Errorf("cannot get vmDevices for VM err=%s", err)
@@ -798,7 +790,7 @@ func (vs *VSphere) AttachDisk(vmDiskPath string, nodeName k8stypes.NodeName) (di
 		glog.Errorf("Failed while searching for datastore %+q. err %s", datastorePathObj.Datastore, err)
 		return "", "", err
 	}
-
+	vmDiskPath = removeClusterFromVDiskPath(vmDiskPath)
 	disk := vmDevices.CreateDisk(scsiController, ds.Reference(), vmDiskPath)
 	unitNumber, err := getNextUnitNumber(vmDevices, scsiController)
 	if err != nil {
@@ -1045,6 +1037,7 @@ func checkDiskAttached(volPath string, vmdevices object.VirtualDeviceList, dc *o
 
 // Returns the object key that denotes the controller object to which vmdk is attached.
 func getVirtualDiskControllerKey(volPath string, vmDevices object.VirtualDeviceList, dc *object.Datacenter, client *govmomi.Client) (int32, error) {
+	volPath = removeClusterFromVDiskPath(volPath)
 	volumeUUID, err := getVirtualDiskUUIDByPath(volPath, dc, client)
 
 	if err != nil {
@@ -1175,7 +1168,7 @@ func (vs *VSphere) DetachDisk(volPath string, nodeName k8stypes.NodeName) error 
 	if err != nil {
 		return err
 	}
-
+	volPath = removeClusterFromVDiskPath(volPath)
 	diskID, err := getVirtualDiskID(volPath, vmDevices, dc, vs.client)
 	if err != nil {
 		glog.Warningf("disk ID not found for %v ", volPath)
@@ -1200,8 +1193,8 @@ func (vs *VSphere) DetachDisk(volPath string, nodeName k8stypes.NodeName) error 
 // CreateVolume creates a volume of given size (in KiB).
 func (vs *VSphere) CreateVolume(volumeOptions *VolumeOptions) (volumePath string, err error) {
 
-	var diskFormat string
 	var datastore string
+	var destVolPath string
 
 	// Default datastore is the datastore in the vSphere config file that is used initialize vSphere cloud provider.
 	if volumeOptions.Datastore == "" {
@@ -1219,8 +1212,6 @@ func (vs *VSphere) CreateVolume(volumeOptions *VolumeOptions) (volumePath string
 		return "", fmt.Errorf("Cannot create disk. Error diskformat %+q."+
 			" Valid options are %s.", volumeOptions.DiskFormat, DiskformatValidOptions)
 	}
-
-	diskFormat = diskFormatValidType[volumeOptions.DiskFormat]
 
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1246,43 +1237,105 @@ func (vs *VSphere) CreateVolume(volumeOptions *VolumeOptions) (volumePath string
 		return "", err
 	}
 
-	// vmdks will be created inside kubevols directory
-	kubeVolsPath := filepath.Clean(ds.Path(VolDir)) + "/"
-	err = makeDirectoryInDatastore(vs.client, dc, kubeVolsPath, false)
-	if err != nil && err != ErrFileAlreadyExist {
-		glog.Errorf("Cannot create dir %#v. err %s", kubeVolsPath, err)
-		return "", err
+	// Create a disk with the VSAN storage capabilities specified in the volumeOptions.StorageProfileData.
+	// This is achieved by following steps:
+	// 1. Create dummy VM if not already present.
+	// 2. Add a new disk to the VM by performing VM reconfigure.
+	// 3. Detach the new disk from the dummy VM.
+	// 4. Delete the dummy VM.
+	if volumeOptions.StorageProfileData != "" {
+		// Check if the datastore is VSAN if any capability requirements are specified.
+		// VSphere cloud provider now only supports VSAN capabilities requirements
+		ok, err := checkIfDatastoreTypeIsVSAN(vs.client, ds)
+		if err != nil {
+			return "", fmt.Errorf("Failed while determining whether the datastore: %q"+
+				" is VSAN or not.", datastore)
+		}
+		if !ok {
+			return "", fmt.Errorf("The specified datastore: %q is not a VSAN datastore."+
+				" The policy parameters will work only with VSAN Datastore."+
+				" So, please specify a valid VSAN datastore in Storage class definition.", datastore)
+		}
+
+		// Acquire a read lock to ensure multiple PVC requests can be processed simultaneously.
+		cleanUpDummyVMLock.RLock()
+		defer cleanUpDummyVMLock.RUnlock()
+
+		// Create a new background routine that will delete any dummy VM's that are left stale.
+		// This routine will get executed for every 5 minutes and gets initiated only once in its entire lifetime.
+		cleanUpRoutineInitLock.Lock()
+		if !cleanUpRoutineInitialized {
+			go vs.cleanUpDummyVMs(DummyVMPrefixName)
+			cleanUpRoutineInitialized = true
+		}
+		cleanUpRoutineInitLock.Unlock()
+
+		// Check if the VM exists in kubernetes cluster folder.
+		// The kubernetes cluster folder - vs.cfg.Global.WorkingDir is where all the nodes in the kubernetes cluster are created.
+		dummyVMFullName := DummyVMPrefixName + "-" + volumeOptions.Name
+		vmRegex := vs.cfg.Global.WorkingDir + dummyVMFullName
+		dummyVM, err := f.VirtualMachine(ctx, vmRegex)
+		if err != nil {
+			// 1. Create a dummy VM and return the VM reference.
+			dummyVM, err = vs.createDummyVM(ctx, dc, ds, dummyVMFullName)
+			if err != nil {
+				return "", err
+			}
+		}
+
+		// 2. Reconfigure the VM to attach the disk with the VSAN policy configured.
+		vmDiskPath, err := vs.createVirtualDiskWithPolicy(ctx, dc, ds, dummyVM, volumeOptions)
+		fileAlreadyExist := false
+		if err != nil {
+			vmDiskPath = filepath.Clean(ds.Path(VolDir)) + "/" + volumeOptions.Name + ".vmdk"
+			errorMessage := fmt.Sprintf("Cannot complete the operation because the file or folder %s already exists", vmDiskPath)
+			if errorMessage == err.Error() {
+				//Skip error and continue to detach the disk as the disk was already created on the datastore.
+				fileAlreadyExist = true
+				glog.V(1).Infof("File: %v already exists", vmDiskPath)
+			} else {
+				glog.Errorf("Failed to attach the disk to VM: %q with err: %+v", dummyVMFullName, err)
+				return "", err
+			}
+		}
+
+		dummyVMNodeName := vmNameToNodeName(dummyVMFullName)
+		// 3. Detach the disk from the dummy VM.
+		err = vs.DetachDisk(vmDiskPath, dummyVMNodeName)
+		if err != nil {
+			if DiskNotFoundErrMsg == err.Error() && fileAlreadyExist {
+				// Skip error if disk was already detached from the dummy VM but still present on the datastore.
+				glog.V(1).Infof("File: %v is already detached", vmDiskPath)
+			} else {
+				glog.Errorf("Failed to detach the disk: %q from VM: %q with err: %+v", vmDiskPath, dummyVMFullName, err)
+				return "", fmt.Errorf("Failed to create the volume: %q with err: %+v", volumeOptions.Name, err)
+			}
+		}
+
+		// 4. Delete the dummy VM
+		err = deleteVM(ctx, dummyVM)
+		if err != nil {
+			return "", fmt.Errorf("Failed to destroy the vm: %q with err: %+v", dummyVMFullName, err)
+		}
+		destVolPath = vmDiskPath
+	} else {
+		// Create a virtual disk directly if no VSAN storage capabilities are specified by the user.
+		destVolPath, err = createVirtualDisk(ctx, vs.client, dc, ds, volumeOptions)
+		if err != nil {
+			return "", fmt.Errorf("Failed to create the virtual disk having name: %+q with err: %+v", destVolPath, err)
+		}
 	}
-	glog.V(4).Infof("Created dir with path as %+q", kubeVolsPath)
 
-	vmDiskPath := kubeVolsPath + volumeOptions.Name + ".vmdk"
-
-	// Create a virtual disk manager
-	virtualDiskManager := object.NewVirtualDiskManager(vs.client.Client)
-
-	// Create specification for new virtual disk
-	vmDiskSpec := &types.FileBackedVirtualDiskSpec{
-		VirtualDiskSpec: types.VirtualDiskSpec{
-			AdapterType: LSILogicControllerType,
-			DiskType:    diskFormat,
-		},
-		CapacityKb: int64(volumeOptions.CapacityKB),
+	if filepath.Base(datastore) != datastore {
+		// If Datastore is within cluster, add cluster path to the destVolPath
+		destVolPath = strings.Replace(destVolPath, filepath.Base(datastore), datastore, 1)
 	}
-
-	// Create virtual disk
-	task, err := virtualDiskManager.CreateVirtualDisk(ctx, vmDiskPath, dc, vmDiskSpec)
-	if err != nil {
-		return "", err
-	}
-	err = task.Wait(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	return vmDiskPath, nil
+	glog.V(1).Infof("VM Disk path is %+q", destVolPath)
+	return destVolPath, nil
 }
 
 // DeleteVolume deletes a volume given volume name.
+// Also, deletes the folder where the volume resides.
 func (vs *VSphere) DeleteVolume(vmDiskPath string) error {
 	// Create context
 	ctx, cancel := context.WithCancel(context.Background())
@@ -1308,7 +1361,24 @@ func (vs *VSphere) DeleteVolume(vmDiskPath string) error {
 	if filepath.Ext(vmDiskPath) != ".vmdk" {
 		vmDiskPath += ".vmdk"
 	}
+
+	// Get the vmDisk Name
+	diskNameWithExt := path.Base(vmDiskPath)
+	diskName := strings.TrimSuffix(diskNameWithExt, filepath.Ext(diskNameWithExt))
+
+	// Search for the dummyVM if present and delete it.
+	dummyVMFullName := DummyVMPrefixName + "-" + diskName
+	vmRegex := vs.cfg.Global.WorkingDir + dummyVMFullName
+	dummyVM, err := f.VirtualMachine(ctx, vmRegex)
+	if err == nil {
+		err = deleteVM(ctx, dummyVM)
+		if err != nil {
+			return fmt.Errorf("Failed to destroy the vm: %q with err: %+v", dummyVMFullName, err)
+		}
+	}
+
 	// Delete virtual disk
+	vmDiskPath = removeClusterFromVDiskPath(vmDiskPath)
 	task, err := virtualDiskManager.DeleteVirtualDisk(ctx, vmDiskPath, dc)
 	if err != nil {
 		return err
@@ -1356,6 +1426,341 @@ func (vs *VSphere) NodeExists(c *govmomi.Client, nodeName k8stypes.NodeName) (bo
 	return false, nil
 }
 
+// A background routine which will be responsible for deleting stale dummy VM's.
+func (vs *VSphere) cleanUpDummyVMs(dummyVMPrefix string) {
+	// Create context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	for {
+		time.Sleep(CleanUpDummyVMRoutine_Interval * time.Minute)
+		// Ensure client is logged in and session is valid
+		err := vSphereLogin(ctx, vs)
+		if err != nil {
+			glog.V(4).Infof("[cleanUpDummyVMs] Unable to login to vSphere with err: %+v", err)
+			continue
+		}
+
+		// Create a new finder
+		f := find.NewFinder(vs.client.Client, true)
+
+		// Fetch and set data center
+		dc, err := f.Datacenter(ctx, vs.cfg.Global.Datacenter)
+		if err != nil {
+			glog.V(4).Infof("[cleanUpDummyVMs] Unable to fetch the datacenter: %q with err: %+v", vs.cfg.Global.Datacenter, err)
+			continue
+		}
+		f.SetDatacenter(dc)
+
+		// Get the folder reference for global working directory where the dummy VM needs to be created.
+		vmFolder, err := getFolder(ctx, vs.client, vs.cfg.Global.Datacenter, vs.cfg.Global.WorkingDir)
+		if err != nil {
+			glog.V(4).Infof("[cleanUpDummyVMs] Unable to get the kubernetes folder: %q reference with err: %+v", vs.cfg.Global.WorkingDir, err)
+			continue
+		}
+
+		// A write lock is acquired to make sure the cleanUp routine doesn't delete any VM's created by ongoing PVC requests.
+		cleanUpDummyVMLock.Lock()
+		dummyVMRefList, err := getDummyVMList(ctx, vs.client, vmFolder, dummyVMPrefix)
+		if err != nil {
+			glog.V(4).Infof("[cleanUpDummyVMs] Unable to get dummy VM list in the kubernetes cluster: %q reference with err: %+v", vs.cfg.Global.WorkingDir, err)
+			cleanUpDummyVMLock.Unlock()
+			continue
+		}
+		for _, dummyVMRef := range dummyVMRefList {
+			err = deleteVM(ctx, dummyVMRef)
+			if err != nil {
+				glog.V(4).Infof("[cleanUpDummyVMs] Unable to delete dummy VM: %q with err: %+v", dummyVMRef.Name(), err)
+				continue
+			}
+		}
+		cleanUpDummyVMLock.Unlock()
+	}
+}
+
+// Get the dummy VM list from the kubernetes working directory.
+func getDummyVMList(ctx context.Context, c *govmomi.Client, vmFolder *object.Folder, dummyVMPrefix string) ([]*object.VirtualMachine, error) {
+	vmFolders, err := vmFolder.Children(ctx)
+	if err != nil {
+		glog.V(4).Infof("Unable to retrieve the virtual machines from the kubernetes cluster: %+v", vmFolder)
+		return nil, err
+	}
+
+	var dummyVMRefList []*object.VirtualMachine
+	pc := property.DefaultCollector(c.Client)
+	for _, vmFolder := range vmFolders {
+		if vmFolder.Reference().Type == "VirtualMachine" {
+			var vmRefs []types.ManagedObjectReference
+			var vmMorefs []mo.VirtualMachine
+			vmRefs = append(vmRefs, vmFolder.Reference())
+			err = pc.Retrieve(ctx, vmRefs, []string{"name"}, &vmMorefs)
+			if err != nil {
+				return nil, err
+			}
+			if strings.HasPrefix(vmMorefs[0].Name, dummyVMPrefix) {
+				dummyVMRefList = append(dummyVMRefList, object.NewVirtualMachine(c.Client, vmRefs[0]))
+			}
+		}
+	}
+	return dummyVMRefList, nil
+}
+
+func (vs *VSphere) createDummyVM(ctx context.Context, datacenter *object.Datacenter, datastore *object.Datastore, vmName string) (*object.VirtualMachine, error) {
+	// Create a virtual machine config spec with 1 SCSI adapter.
+	virtualMachineConfigSpec := types.VirtualMachineConfigSpec{
+		Name: vmName,
+		Files: &types.VirtualMachineFileInfo{
+			VmPathName: "[" + datastore.Name() + "]",
+		},
+		NumCPUs:  1,
+		MemoryMB: 4,
+		DeviceChange: []types.BaseVirtualDeviceConfigSpec{
+			&types.VirtualDeviceConfigSpec{
+				Operation: types.VirtualDeviceConfigSpecOperationAdd,
+				Device: &types.ParaVirtualSCSIController{
+					VirtualSCSIController: types.VirtualSCSIController{
+						SharedBus: types.VirtualSCSISharingNoSharing,
+						VirtualController: types.VirtualController{
+							BusNumber: 0,
+							VirtualDevice: types.VirtualDevice{
+								Key: 1000,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Get the resource pool for current node. This is where dummy VM will be created.
+	resourcePool, err := vs.getCurrentNodeResourcePool(ctx, datacenter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the folder reference for global working directory where the dummy VM needs to be created.
+	vmFolder, err := getFolder(ctx, vs.client, vs.cfg.Global.Datacenter, vs.cfg.Global.WorkingDir)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to get the folder reference for %q with err: %+v", vs.cfg.Global.WorkingDir, err)
+	}
+
+	task, err := vmFolder.CreateVM(ctx, virtualMachineConfigSpec, resourcePool, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	dummyVMTaskInfo, err := task.WaitForResult(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	vmRef := dummyVMTaskInfo.Result.(object.Reference)
+	dummyVM := object.NewVirtualMachine(vs.client.Client, vmRef.Reference())
+	return dummyVM, nil
+}
+
+func (vs *VSphere) getCurrentNodeResourcePool(ctx context.Context, datacenter *object.Datacenter) (*object.ResourcePool, error) {
+	// Create a new finder
+	f := find.NewFinder(vs.client.Client, true)
+	f.SetDatacenter(datacenter)
+
+	vmRegex := vs.cfg.Global.WorkingDir + vs.localInstanceID
+	currentVM, err := f.VirtualMachine(ctx, vmRegex)
+	if err != nil {
+		return nil, err
+	}
+
+	currentVMHost, err := currentVM.HostSystem(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the resource pool for the current node.
+	// We create the dummy VM in the same resource pool as current node.
+	resourcePool, err := currentVMHost.ResourcePool(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return resourcePool, nil
+}
+
+// Creates a virtual disk with the policy configured to the disk.
+// A call to this function is made only when a user specifies VSAN storage capabilties in the storage class definition.
+func (vs *VSphere) createVirtualDiskWithPolicy(ctx context.Context, datacenter *object.Datacenter, datastore *object.Datastore, virtualMachine *object.VirtualMachine, volumeOptions *VolumeOptions) (string, error) {
+	var diskFormat string
+	diskFormat = diskFormatValidType[volumeOptions.DiskFormat]
+
+	vmDevices, err := virtualMachine.Device(ctx)
+	if err != nil {
+		return "", err
+	}
+	var diskControllerType = vs.cfg.Disk.SCSIControllerType
+	// find SCSI controller of particular type from VM devices
+	scsiControllersOfRequiredType := getSCSIControllersOfType(vmDevices, diskControllerType)
+	scsiController := scsiControllersOfRequiredType[0]
+
+	kubeVolsPath := filepath.Clean(datastore.Path(VolDir)) + "/"
+	// Create a kubevols directory in the datastore if one doesn't exist.
+	err = makeDirectoryInDatastore(vs.client, datacenter, kubeVolsPath, false)
+	if err != nil && err != ErrFileAlreadyExist {
+		glog.Errorf("Cannot create dir %#v. err %s", kubeVolsPath, err)
+		return "", err
+	}
+
+	glog.V(4).Infof("Created dir with path as %+q", kubeVolsPath)
+
+	vmDiskPath := kubeVolsPath + volumeOptions.Name + ".vmdk"
+	disk := vmDevices.CreateDisk(scsiController, datastore.Reference(), vmDiskPath)
+	unitNumber, err := getNextUnitNumber(vmDevices, scsiController)
+	if err != nil {
+		glog.Errorf("cannot attach disk to VM, limit reached - %v.", err)
+		return "", err
+	}
+	*disk.UnitNumber = unitNumber
+	disk.CapacityInKB = int64(volumeOptions.CapacityKB)
+
+	backing := disk.Backing.(*types.VirtualDiskFlatVer2BackingInfo)
+	backing.DiskMode = string(types.VirtualDiskModeIndependent_persistent)
+
+	switch diskFormat {
+	case ThinDiskType:
+		backing.ThinProvisioned = types.NewBool(true)
+	case EagerZeroedThickDiskType:
+		backing.EagerlyScrub = types.NewBool(true)
+	default:
+		backing.ThinProvisioned = types.NewBool(false)
+	}
+
+	// Reconfigure VM
+	virtualMachineConfigSpec := types.VirtualMachineConfigSpec{}
+	deviceConfigSpec := &types.VirtualDeviceConfigSpec{
+		Device:        disk,
+		Operation:     types.VirtualDeviceConfigSpecOperationAdd,
+		FileOperation: types.VirtualDeviceConfigSpecFileOperationCreate,
+	}
+
+	storageProfileSpec := &types.VirtualMachineDefinedProfileSpec{
+		ProfileId: "",
+		ProfileData: &types.VirtualMachineProfileRawData{
+			ExtensionKey: "com.vmware.vim.sps",
+			ObjectData:   volumeOptions.StorageProfileData,
+		},
+	}
+
+	deviceConfigSpec.Profile = append(deviceConfigSpec.Profile, storageProfileSpec)
+	virtualMachineConfigSpec.DeviceChange = append(virtualMachineConfigSpec.DeviceChange, deviceConfigSpec)
+	task, err := virtualMachine.Reconfigure(ctx, virtualMachineConfigSpec)
+	if err != nil {
+		glog.Errorf("Failed to reconfigure the VM with the disk with err - %v.", err)
+		return "", err
+	}
+
+	err = task.Wait(ctx)
+	if err != nil {
+		glog.Errorf("Failed to reconfigure the VM with the disk with err - %v.", err)
+		return "", err
+	}
+
+	return vmDiskPath, nil
+}
+
+// creating a scsi controller as there is none found.
+func createAndAttachSCSIControllerToVM(ctx context.Context, vm *object.VirtualMachine, diskControllerType string) (types.BaseVirtualDevice, error) {
+	// Get VM device list
+	vmDevices, err := vm.Device(ctx)
+	if err != nil {
+		return nil, err
+	}
+	allSCSIControllers := getSCSIControllers(vmDevices)
+	if len(allSCSIControllers) >= SCSIControllerLimit {
+		// we reached the maximum number of controllers we can attach
+		return nil, fmt.Errorf("SCSI Controller Limit of %d has been reached, cannot create another SCSI controller", SCSIControllerLimit)
+	}
+	newSCSIController, err := vmDevices.CreateSCSIController(diskControllerType)
+	if err != nil {
+		k8runtime.HandleError(fmt.Errorf("error creating new SCSI controller: %v", err))
+		return nil, err
+	}
+	configNewSCSIController := newSCSIController.(types.BaseVirtualSCSIController).GetVirtualSCSIController()
+	hotAndRemove := true
+	configNewSCSIController.HotAddRemove = &hotAndRemove
+	configNewSCSIController.SharedBus = types.VirtualSCSISharing(types.VirtualSCSISharingNoSharing)
+
+	// add the scsi controller to virtual machine
+	err = vm.AddDevice(context.TODO(), newSCSIController)
+	if err != nil {
+		glog.V(1).Infof("cannot add SCSI controller to vm - %v", err)
+		// attempt clean up of scsi controller
+		if vmDevices, err := vm.Device(ctx); err == nil {
+			cleanUpController(ctx, newSCSIController, vmDevices, vm)
+		}
+		return nil, err
+	}
+	return newSCSIController, nil
+}
+
+// Create a virtual disk.
+func createVirtualDisk(ctx context.Context, c *govmomi.Client, dc *object.Datacenter, ds *object.Datastore, volumeOptions *VolumeOptions) (string, error) {
+	kubeVolsPath := filepath.Clean(ds.Path(VolDir)) + "/"
+	// Create a kubevols directory in the datastore if one doesn't exist.
+	err := makeDirectoryInDatastore(c, dc, kubeVolsPath, false)
+	if err != nil && err != ErrFileAlreadyExist {
+		glog.Errorf("Cannot create dir %#v. err %s", kubeVolsPath, err)
+		return "", err
+	}
+
+	glog.V(4).Infof("Created dir with path as %+q", kubeVolsPath)
+	vmDiskPath := kubeVolsPath + volumeOptions.Name + ".vmdk"
+
+	diskFormat := diskFormatValidType[volumeOptions.DiskFormat]
+
+	// Create a virtual disk manager
+	virtualDiskManager := object.NewVirtualDiskManager(c.Client)
+
+	// Create specification for new virtual disk
+	vmDiskSpec := &types.FileBackedVirtualDiskSpec{
+		VirtualDiskSpec: types.VirtualDiskSpec{
+			AdapterType: LSILogicControllerType,
+			DiskType:    diskFormat,
+		},
+		CapacityKb: int64(volumeOptions.CapacityKB),
+	}
+
+	// Create virtual disk
+	task, err := virtualDiskManager.CreateVirtualDisk(ctx, vmDiskPath, dc, vmDiskSpec)
+	if err != nil {
+		return "", err
+	}
+	return vmDiskPath, task.Wait(ctx)
+}
+
+// Check if the provided datastore is VSAN
+func checkIfDatastoreTypeIsVSAN(c *govmomi.Client, datastore *object.Datastore) (bool, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	pc := property.DefaultCollector(c.Client)
+
+	// Convert datastores into list of references
+	var dsRefs []types.ManagedObjectReference
+	dsRefs = append(dsRefs, datastore.Reference())
+
+	// Retrieve summary property for the given datastore
+	var dsMorefs []mo.Datastore
+	err := pc.Retrieve(ctx, dsRefs, []string{"summary"}, &dsMorefs)
+	if err != nil {
+		return false, err
+	}
+
+	for _, ds := range dsMorefs {
+		if ds.Summary.Type == VSANDatastoreType {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // Creates a folder using the specified name.
 // If the intermediate level folders do not exist,
 // and the parameter createParents is true,
@@ -1377,4 +1782,71 @@ func makeDirectoryInDatastore(c *govmomi.Client, dc *object.Datacenter, path str
 	}
 
 	return err
+}
+
+// Get the folder for a given VM
+func getFolder(ctx context.Context, c *govmomi.Client, datacenterName string, folderName string) (*object.Folder, error) {
+	f := find.NewFinder(c.Client, true)
+
+	// Fetch and set data center
+	dc, err := f.Datacenter(ctx, datacenterName)
+	if err != nil {
+		return nil, err
+	}
+	f.SetDatacenter(dc)
+
+	folderName = strings.TrimSuffix(folderName, "/")
+	dcFolders, err := dc.Folders(ctx)
+	vmFolders, _ := dcFolders.VmFolder.Children(ctx)
+
+	var vmFolderRefs []types.ManagedObjectReference
+	for _, vmFolder := range vmFolders {
+		vmFolderRefs = append(vmFolderRefs, vmFolder.Reference())
+	}
+
+	// Get only references of type folder.
+	var folderRefs []types.ManagedObjectReference
+	for _, vmFolder := range vmFolderRefs {
+		if vmFolder.Type == "Folder" {
+			folderRefs = append(folderRefs, vmFolder)
+		}
+	}
+
+	// Find the specific folder reference matching the folder name.
+	var resultFolder *object.Folder
+	pc := property.DefaultCollector(c.Client)
+	for _, folderRef := range folderRefs {
+		var refs []types.ManagedObjectReference
+		var folderMorefs []mo.Folder
+		refs = append(refs, folderRef)
+		err = pc.Retrieve(ctx, refs, []string{"name"}, &folderMorefs)
+		for _, fref := range folderMorefs {
+			if fref.Name == folderName {
+				resultFolder = object.NewFolder(c.Client, folderRef)
+			}
+		}
+	}
+
+	return resultFolder, nil
+}
+
+// Delete the VM.
+func deleteVM(ctx context.Context, vm *object.VirtualMachine) error {
+	destroyTask, err := vm.Destroy(ctx)
+	if err != nil {
+		return err
+	}
+	return destroyTask.Wait(ctx)
+}
+
+// Remove the cluster or folder path from the vDiskPath
+// for vDiskPath [DatastoreCluster/sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk, return value is [sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk
+// for vDiskPath [sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk, return value remains same [sharedVmfs-0] kubevols/e2e-vmdk-1234.vmdk
+
+func removeClusterFromVDiskPath(vDiskPath string) string {
+	datastore := regexp.MustCompile("\\[(.*?)\\]").FindStringSubmatch(vDiskPath)[1]
+	if filepath.Base(datastore) != datastore {
+		vDiskPath = strings.Replace(vDiskPath, datastore, filepath.Base(datastore), 1)
+	}
+	return vDiskPath
 }
