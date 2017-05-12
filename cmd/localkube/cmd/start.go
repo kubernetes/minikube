@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/coreos/pkg/capnslog"
 	"github.com/golang/glog"
 	"k8s.io/apiserver/pkg/util/feature"
 
@@ -46,11 +45,6 @@ func StartLocalkube() {
 		fmt.Println("localkube host ip: ", hostIP.String())
 		os.Exit(0)
 	}
-
-	// Get the etcd logger for the api repo
-	apiRepoLogger := capnslog.MustRepoLogger("github.com/coreos/etcd/etcdserver/api")
-	// Set the logging level to NOTICE as there is an INFO lvl log statement that runs every few seconds -> log spam
-	apiRepoLogger.SetRepoLogLevel(capnslog.NOTICE)
 
 	// TODO: Require root
 
