@@ -36,7 +36,7 @@ import (
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
 	Use:   "mount [flags] MOUNT_DIRECTORY(ex:\"/home\")",
-	Short: "Mounts the specified directory into minikube.",
+	Short: "Mounts the specified directory into minikube",
 	Long:  `Mounts the specified directory into minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
