@@ -282,7 +282,7 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 // envCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
-	Short: "sets up docker env variables; similar to '$(docker-machine env)'",
+	Short: "Sets up docker env variables; similar to '$(docker-machine env)'",
 	Long:  `sets up docker env variables; similar to '$(docker-machine env)'`,
 	Run: func(cmd *cobra.Command, args []string) {
 
