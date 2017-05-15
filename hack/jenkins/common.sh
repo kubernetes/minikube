@@ -36,8 +36,9 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.
 chmod +x out/e2e-${OS_ARCH}
 chmod +x out/minikube-${OS_ARCH}
 
-MINIKUBE_WANTREPORTERRORPROMPT=False \
-	./out/minikube-${OS_ARCH} delete || true
+MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
+|| MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
+|| true
 sudo rm -rf $HOME/.minikube || true
 
 # See the default image
@@ -49,8 +50,9 @@ out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10" -test.v -tes
 result=$?
 set -e
 
-MINIKUBE_WANTREPORTERRORPROMPT=False \
-	./out/minikube-${OS_ARCH} delete || true
+MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
+|| MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
+|| true
 sudo rm -rf $HOME/.minikube || true
 
 
