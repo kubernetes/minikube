@@ -65,7 +65,6 @@ var cachedK8sVersions = make(K8sReleases, 0)
 
 func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
 	if len(cachedK8sVersions) != 0 {
-		glog.Infof("Using cached localkube versions: %v", cachedK8sVersions)
 		return cachedK8sVersions, nil
 	}
 	var k8sVersions K8sReleases
@@ -76,7 +75,6 @@ func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
 		return K8sReleases{}, errors.Errorf("There were no json k8s Releases at the url specified: %s", url)
 	}
 
-	glog.Infoln("Caching localkube versions")
 	cachedK8sVersions = k8sVersions
 	return k8sVersions, nil
 }
