@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,6 +28,7 @@ import (
 	units "github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -35,9 +37,12 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/mcnflag"
 )
 
 const (
@@ -209,6 +214,154 @@ func calculateDiskSizeInMB(humanReadableDiskSize string) int {
 	return int(diskSize / units.MB)
 }
 
+// Peek into the command line args to see if a driver is set
+func flagHackLookup(flagName string) string {
+	for i, arg := range os.Args {
+		// format '--vm-driver foo'
+		if arg == flagName {
+			if i+1 < len(os.Args) {
+				return os.Args[i+1]
+			}
+		}
+		// format '--vm-driver=foo'
+		if strings.HasPrefix(arg, flagName+"=") {
+			return strings.Split(arg, "=")[1]
+		}
+	}
+	return ""
+}
+
+// Instantiate the specific driver, get the list of flags and add them to the start command
+func initDriverFlags(cmd *cobra.Command) error {
+	const (
+		flagLookupMachineName = "flag-lookup"
+	)
+
+	// We didn't recognize the driver name.
+	driverName := flagHackLookup("--vm-driver")
+	if driverName == "" {
+		//TODO: Check Environment have to include flagHackLookup function.
+		driverName = os.Getenv("MACHINE_DRIVER")
+		if driverName == "" {
+			driverName = "virtualbox"
+		}
+	}
+
+	// TODO: Fix hacky JSON solution
+	rawDriver, err := json.Marshal(&drivers.BaseDriver{
+		MachineName: flagLookupMachineName,
+	})
+	if err != nil {
+		return fmt.Errorf("Error attempting to marshal bare driver data: %s", err)
+	}
+
+	clientType := machine.ClientTypeLocal
+	if configCmd.IsValidDriver("", driverName) != nil {
+		clientType = machine.ClientTypeRPC
+	}
+	api, err := machine.NewAPIClient(clientType)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+		os.Exit(1)
+	}
+	defer api.Close()
+
+	h, err := api.NewHost(driverName, rawDriver)
+	if err != nil {
+		return err
+	}
+
+	// Walk through the flags we get from the driver and add them so they
+	// show up as options under --start command
+	mcnFlags := h.Driver.GetCreateFlags()
+	for _, f := range mcnFlags {
+		switch t := f.(type) {
+		case mcnflag.BoolFlag:
+			f := f.(mcnflag.BoolFlag)
+			val := false
+			if f.EnvVar != "" {
+				for _, envVar := range strings.Split(f.EnvVar, ",") {
+					envVar = strings.TrimSpace(envVar)
+					if envVal := os.Getenv(envVar); envVal != "" {
+						val = cast.ToBool(envVal)
+						break
+					}
+				}
+			}
+			cmd.Flags().Bool(f.Name, val, f.Usage)
+		case mcnflag.IntFlag:
+			f := f.(mcnflag.IntFlag)
+			val := f.Value
+			if f.EnvVar != "" {
+				for _, envVar := range strings.Split(f.EnvVar, ",") {
+					envVar = strings.TrimSpace(envVar)
+					if envVal := os.Getenv(envVar); envVal != "" {
+						val = cast.ToInt(envVal)
+						break
+					}
+				}
+			}
+			cmd.Flags().Int(f.Name, val, f.Usage)
+		case mcnflag.StringFlag:
+			f := f.(mcnflag.StringFlag)
+			val := f.Value
+			if f.EnvVar != "" {
+				for _, envVar := range strings.Split(f.EnvVar, ",") {
+					envVar = strings.TrimSpace(envVar)
+					if envVal := os.Getenv(envVar); envVal != "" {
+						val = envVal
+						break
+					}
+				}
+			}
+			cmd.Flags().String(f.Name, val, f.Usage)
+		case *mcnflag.BoolFlag:
+			f := f.(*mcnflag.BoolFlag)
+			val := false
+			if f.EnvVar != "" {
+				for _, envVar := range strings.Split(f.EnvVar, ",") {
+					envVar = strings.TrimSpace(envVar)
+					if envVal := os.Getenv(envVar); envVal != "" {
+						val = cast.ToBool(envVal)
+						break
+					}
+				}
+			}
+			cmd.Flags().Bool(f.Name, val, f.Usage)
+		case *mcnflag.IntFlag:
+			f := f.(*mcnflag.IntFlag)
+			val := f.Value
+			if f.EnvVar != "" {
+				for _, envVar := range strings.Split(f.EnvVar, ",") {
+					envVar = strings.TrimSpace(envVar)
+					if envVal := os.Getenv(envVar); envVal != "" {
+						val = cast.ToInt(envVal)
+						break
+					}
+				}
+			}
+			cmd.Flags().Int(f.Name, val, f.Usage)
+		case *mcnflag.StringFlag:
+			f := f.(*mcnflag.StringFlag)
+			val := f.Value
+			if f.EnvVar != "" {
+				for _, envVar := range strings.Split(f.EnvVar, ",") {
+					envVar = strings.TrimSpace(envVar)
+					if envVal := os.Getenv(envVar); envVal != "" {
+						val = envVal
+						break
+					}
+				}
+			}
+			cmd.Flags().String(f.Name, val, f.Usage)
+		default:
+			glog.V(10).Infof("Unrecognized flag %#v of type: %T\n", f, t)
+		}
+	}
+
+	return nil
+}
+
 func init() {
 	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().String(isoURL, constants.DefaultIsoUrl, "Location of the minikube iso")
@@ -234,6 +387,9 @@ func init() {
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
+
+	initDriverFlags(startCmd)
 	viper.BindPFlags(startCmd.Flags())
+
 	RootCmd.AddCommand(startCmd)
 }

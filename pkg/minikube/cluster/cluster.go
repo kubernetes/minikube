@@ -36,12 +36,15 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
+	"github.com/docker/machine/libmachine/mcnflag"
+	"github.com/docker/machine/libmachine/drivers/rpc"
 )
 
 var (
@@ -302,6 +305,61 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	return d
 }
 
+func getDriverOpts(mcnflags []mcnflag.Flag) drivers.DriverOptions {
+	// TODO: This function is pretty damn YOLO and would benefit from some
+	// sanity checking around types and assertions.
+	//
+	// But, we need it so that we can actually send the flags for creating
+	// a machine over the wire (cli.Context is a no go since there is so
+	// much stuff in it).
+	driverOpts := rpcdriver.RPCFlags{
+		Values: make(map[string]interface{}),
+	}
+
+	for _, f := range mcnflags {
+		key := f.String()
+		driverOpts.Values[key] = f.Default()
+
+		// Hardcoded logic for boolean... :(
+		if f.Default() == nil {
+			driverOpts.Values[key] = false
+		}
+
+		if viper.IsSet(key) {
+			switch t := f.(type) {
+			case mcnflag.BoolFlag:
+				driverOpts.Values[key] = viper.GetBool(key)
+			case mcnflag.IntFlag:
+				driverOpts.Values[key] = viper.GetInt(key)
+			case mcnflag.StringFlag:
+				driverOpts.Values[key] = viper.GetString(key)
+			case *mcnflag.BoolFlag:
+				driverOpts.Values[key] = viper.GetBool(key)
+			case *mcnflag.IntFlag:
+				driverOpts.Values[key] = viper.GetInt(key)
+			case *mcnflag.StringFlag:
+				driverOpts.Values[key] = viper.GetString(key)
+			default:
+				glog.V(10).Infof("Unrecognized flag %#v of type: %T\n", f, t)
+			}
+		}
+	}
+	return driverOpts
+}
+
+type externalDriver struct {
+	*drivers.BaseDriver
+}
+
+func createExternalDriver() *externalDriver {
+	return &externalDriver{
+		BaseDriver: &drivers.BaseDriver{
+			MachineName: constants.MachineName,
+			StorePath:   constants.GetMinipath(),
+		},
+	}
+}
+
 func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	var driver interface{}
 
@@ -321,7 +379,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	case "hyperv":
 		driver = createHypervHost(config)
 	default:
-		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
+		driver = createExternalDriver()
 	}
 
 	data, err := json.Marshal(driver)
@@ -337,6 +395,16 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	h.HostOptions.AuthOptions.CertDir = constants.GetMinipath()
 	h.HostOptions.AuthOptions.StorePath = constants.GetMinipath()
 	h.HostOptions.EngineOptions = engineOptions(config)
+
+	// driverOpts is the actual data we send over the wire to set the
+	// driver parameters (an interface fulfilling drivers.DriverOptions,
+	// concrete type rpcdriver.RpcFlags).
+	mcnFlags := h.Driver.GetCreateFlags()
+	driverOpts := getDriverOpts(mcnFlags)
+
+	if err := h.Driver.SetConfigFromFlags(driverOpts); err != nil {
+		return nil, fmt.Errorf("Error setting machine configuration from flags provided: %s", err)
+	}
 
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client
