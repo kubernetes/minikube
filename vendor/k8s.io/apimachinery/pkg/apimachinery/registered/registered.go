@@ -286,6 +286,7 @@ func (m *APIRegistrationManager) RESTMapper(versionPatterns ...schema.GroupVersi
 			// TODO(r2d4): hack until tprs are decoupled from restMapper
 			if !found {
 				glog.Warningf("Could not find groupMeta for %s", enabledVersion.Group)
+				continue
 			}
 			unionMapper = append(unionMapper, groupMeta.RESTMapper)
 		}

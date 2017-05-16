@@ -2,7 +2,7 @@ diff --git a/vendor/k8s.io/apimachinery/pkg/apimachinery/registered/registered.g
 index f2e32c88c..f1c96c43d 100644
 --- a/vendor/k8s.io/apimachinery/pkg/apimachinery/registered/registered.go
 +++ b/vendor/k8s.io/apimachinery/pkg/apimachinery/registered/registered.go
-@@ -282,7 +282,11 @@ func (m *APIRegistrationManager) RESTMapper(versionPatterns ...schema.GroupVersi
+@@ -282,7 +282,12 @@ func (m *APIRegistrationManager) RESTMapper(versionPatterns ...schema.GroupVersi
  	for enabledVersion := range m.enabledVersions {
  		if !unionedGroups.Has(enabledVersion.Group) {
  			unionedGroups.Insert(enabledVersion.Group)
@@ -11,6 +11,7 @@ index f2e32c88c..f1c96c43d 100644
 +			// TODO(r2d4): hack until tprs are decoupled from restMapper
 +			if !found {
 +				glog.Warningf("Could not find groupMeta for %s", enabledVersion.Group)
++				continue
 +			}
  			unionMapper = append(unionMapper, groupMeta.RESTMapper)
  		}
