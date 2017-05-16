@@ -17,6 +17,8 @@ limitations under the License.
 package cluster
 
 import (
+	"os/exec"
+
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -71,4 +73,12 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		QCow2:          false,
 		RawDisk:        config.XhyveDiskDriver == "virtio-blk",
 	}
+}
+
+func detectVBoxManageCmd() string {
+	cmd := "VBoxManage"
+	if path, err := exec.LookPath(cmd); err == nil {
+		return path
+	}
+	return cmd
 }

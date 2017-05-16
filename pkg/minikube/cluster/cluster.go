@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -401,14 +402,16 @@ func GetHostLogs(api libmachine.API, follow bool) (string, error) {
 }
 
 // MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
-func MountHost(api libmachine.API, path string) error {
+func MountHost(api libmachine.API, path string, ip net.IP) error {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
 	}
-	ip, err := GetVMHostIP(host)
-	if err != nil {
-		return errors.Wrap(err, "Error getting the host IP address to use from within the VM")
+	if ip == nil {
+		ip, err = GetVMHostIP(host)
+		if err != nil {
+			return errors.Wrap(err, "Error getting the host IP address to use from within the VM")
+		}
 	}
 	host.RunSSHCommand(GetMountCleanupCommand(path))
 	mountCmd, err := GetMountCommand(ip, path)
@@ -428,7 +431,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 	case "kvm":
 		return net.ParseIP("192.168.42.1"), nil
 	case "hyperv":
-		re := regexp.MustCompile("\"VSwitch\": \"(.*?)\",")
+		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
 		// TODO(aprindle) Change this to deserialize the driver instead
 		hypervVirtualSwitch := re.FindStringSubmatch(string(host.RawDriver))[1]
 		ip, err := getIPForInterface(fmt.Sprintf("vEthernet (%s)", hypervVirtualSwitch))
@@ -437,7 +440,13 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 		}
 		return ip, nil
 	case "virtualbox":
-		ip, err := getIPForInterface("vboxnet0")
+		out, err := exec.Command(detectVBoxManageCmd(), "showvminfo", "minikube", "--machinereadable").Output()
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error running vboxmanage command")
+		}
+		re := regexp.MustCompile(`hostonlyadapter2="(.*?)"`)
+		iface := re.FindStringSubmatch(string(out))[1]
+		ip, err := getIPForInterface(iface)
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}

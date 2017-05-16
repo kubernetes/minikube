@@ -33,6 +33,8 @@ import (
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
+var mountIP string
+
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
 	Use:   "mount [flags] MOUNT_DIRECTORY(ex:\"/home\")",
@@ -50,7 +52,7 @@ var mountCmd = &cobra.Command{
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
 			errText := `Mount directory must be in the form: 
-			\tHOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`
+\tHOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`
 			fmt.Fprintln(os.Stderr, errText)
 			os.Exit(1)
 		}
@@ -86,12 +88,20 @@ var mountCmd = &cobra.Command{
 			glog.Errorln("Error loading api: ", err)
 			os.Exit(1)
 		}
-		ip, err := cluster.GetVMHostIP(host)
-		if err != nil {
-			glog.Errorln("Error getting the host IP address to use from within the VM: ", err)
-			os.Exit(1)
+		var ip net.IP
+		if mountIP == "" {
+			ip, err = cluster.GetVMHostIP(host)
+			if err != nil {
+				glog.Errorln("Error getting the host IP address to use from within the VM: ", err)
+				os.Exit(1)
+			}
+		} else {
+			ip = net.ParseIP(mountIP)
+			if ip == nil {
+				glog.Errorln("error parsing the input ip address for mount")
+				os.Exit(1)
+			}
 		}
-
 		fmt.Printf("Mounting %s into %s on the minikubeVM\n", hostPath, vmPath)
 		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
 		var wg sync.WaitGroup
@@ -100,7 +110,7 @@ var mountCmd = &cobra.Command{
 			ufs.StartServer(net.JoinHostPort(ip.String(), constants.DefaultUfsPort), debugVal, hostPath)
 			wg.Done()
 		}()
-		err = cluster.MountHost(api, vmPath)
+		err = cluster.MountHost(api, vmPath, ip)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
@@ -110,5 +120,6 @@ var mountCmd = &cobra.Command{
 }
 
 func init() {
+	mountCmd.Flags().StringVar(&mountIP, "ip", "", "Specify the ip that the mount should be setup on")
 	RootCmd.AddCommand(mountCmd)
 }
