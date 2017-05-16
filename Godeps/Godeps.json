@@ -5377,42 +5377,6 @@
 			"ImportPath": "k8s.io/kubernetes/third_party/forked/golang/expansion",
 			"Comment": "v1.6.3",
 			"Rev": "0480917b552be33e2dba47386e51decb1a211df6"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics/install",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics/v1alpha1",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/metrics",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/metrics/install",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/apis/metrics/v1alpha1",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/client/clientset_generated/clientset/scheme",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/client/clientset_generated/clientset/typed/metrics/v1alpha1",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
-		},
-		{
-			"ImportPath": "k8s.io/metrics/pkg/client/custom_metrics",
-			"Rev": "fd2415bb9381a6731027b48a8c6b78f28e13f876"
 		}
 	]
 }
