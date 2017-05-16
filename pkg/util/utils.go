@@ -113,6 +113,9 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 		versionOrURL = "v" + versionOrURL
 	}
 	isValidVersion, err := kubernetes_versions.IsValidLocalkubeVersion(versionOrURL, constants.KubernetesVersionGCSURL)
+	if err != nil {
+		return "", errors.Wrap(err, "Error getting valid localkube versions")
+	}
 	if !isValidVersion {
 		return "", errors.New("Not a valid localkube version to download")
 	}
