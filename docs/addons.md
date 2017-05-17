@@ -27,4 +27,4 @@ The currently supported addons include:
 
 If you would like to have minikube properly start/restart custom addons, place the addon(s) you wish to be launched with minikube in the `.minikube/addons` directory.  Addons in this folder will be moved to the minikubeVM and launched each time minikube is started/restarted.
 
-If you have a request for an addon in minikube, please open an issue with the name and preferably a link to the addon with a description of its purpose and why it should be added.  You can also attempt to add the addon to minikube by following the guide at [ADD_ADDON.md](./ADD_ADDON.md)
+If you have a request for an addon in minikube, please open an issue with the name and preferably a link to the addon with a description of its purpose and why it should be added.  You can also attempt to add the addon to minikube by following the guide at [Adding an Addon](contributors/adding_an_addon.md)
