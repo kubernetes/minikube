@@ -22,12 +22,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
+
+	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -209,4 +214,35 @@ minikube config set WantKubectlDownloadMsg false
 `,
 			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, goos, runtime.GOARCH))
 	}
+}
+
+// Ask the kernel for a free open port that is ready to use
+func GetPort() (string, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return "", errors.Errorf("Error accessing port %d", addr.Port)
+	}
+	defer l.Close()
+	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
+}
+
+func KillMountProcess() error {
+	out, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName))
+	if err != nil {
+		return errors.Wrap(err, "error reading mount process from file")
+	}
+	pid, err := strconv.Atoi(string(out))
+	if err != nil {
+		return errors.Wrap(err, "error converting mount string to pid")
+	}
+	mountProc, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "error converting mount string to pid")
+	}
+	return mountProc.Kill()
 }
