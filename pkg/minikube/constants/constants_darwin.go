@@ -23,3 +23,6 @@ var SupportedVMDrivers = [...]string{
 	"xhyve",
 	"vmwarefusion",
 }
+
+var DefaultMountDir = "/Users"
+var DefaultMountEndpoint = "/Users"

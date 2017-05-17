@@ -26,14 +26,15 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
 var mountIP string
+var isKill bool
 
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
@@ -41,6 +42,14 @@ var mountCmd = &cobra.Command{
 	Short: "Mounts the specified directory into minikube",
 	Long:  `Mounts the specified directory into minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if isKill {
+			if err := cmdUtil.KillMountProcess(); err != nil {
+				fmt.Println("Errors occurred deleting mount process: ", err)
+				os.Exit(1)
+			}
+			os.Exit(0)
+		}
+
 		if len(args) != 1 {
 			errText := `Please specify the directory to be mounted: 
 \tminikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")
@@ -104,13 +113,18 @@ var mountCmd = &cobra.Command{
 		}
 		fmt.Printf("Mounting %s into %s on the minikubeVM\n", hostPath, vmPath)
 		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
+		port, err := cmdUtil.GetPort()
+		if err != nil {
+			glog.Errorln("Error finding port for mount: ", err)
+			os.Exit(1)
+		}
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			ufs.StartServer(net.JoinHostPort(ip.String(), constants.DefaultUfsPort), debugVal, hostPath)
+			ufs.StartServer(net.JoinHostPort(ip.String(), port), debugVal, hostPath)
 			wg.Done()
 		}()
-		err = cluster.MountHost(api, vmPath, ip)
+		err = cluster.MountHost(api, vmPath, ip, port)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
@@ -121,5 +135,6 @@ var mountCmd = &cobra.Command{
 
 func init() {
 	mountCmd.Flags().StringVar(&mountIP, "ip", "", "Specify the ip that the mount should be setup on")
+	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
 	RootCmd.AddCommand(mountCmd)
 }

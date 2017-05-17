@@ -46,7 +46,7 @@ sudo rm -rf $HOME/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
-out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
+out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10 --no-mount" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
 result=$?
 set -e
 
