@@ -58,7 +58,7 @@ const (
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
 	keepContext           = "keep-context"
-	noMount               = "no-mount"
+	createMount           = "mount"
 	featureGates          = "feature-gates"
 	apiServerName         = "apiserver-name"
 	dnsDomain             = "dns-domain"
@@ -202,9 +202,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	fmt.Printf("Setting up hostmount on %s...\n", viper.GetString(mountString))
 	// start 9p server mount
-	if !viper.GetBool(noMount) || cfg.GetMachineName() != constants.DefaultMachineName {
+	if viper.GetBool(createMount) {
+		fmt.Printf("Setting up hostmount on %s...\n", viper.GetString(mountString))
+
 		path := os.Args[0]
 		mountDebugVal := 0
 		if glog.V(8) {
@@ -259,7 +260,7 @@ func calculateDiskSizeInMB(humanReadableDiskSize string) int {
 
 func init() {
 	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().Bool(noMount, constants.DefaultNoMount, "This will not start the mount daemon and automatically mount files into minikube")
+	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
 	startCmd.Flags().String(isoURL, constants.DefaultIsoUrl, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))

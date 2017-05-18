@@ -28,4 +28,3 @@ var SupportedVMDrivers = [...]string{
 }
 
 var DefaultMountDir = homedir.HomeDir()
-var DefaultMountEndpoint = "/hosthome"
