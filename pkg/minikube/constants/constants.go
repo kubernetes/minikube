@@ -91,10 +91,11 @@ const (
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikubeVM: {{.MinikubeStatus}}\n" +
 		"localkube: {{.LocalkubeStatus}}\n"
-	DefaultAddonListFormat    = "- {{.AddonName}}: {{.AddonStatus}}\n"
-	DefaultConfigViewFormat   = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
-	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
-	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
+	DefaultAddonListFormat         = "- {{.AddonName}}: {{.AddonStatus}}\n"
+	DefaultConfigViewFormat        = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
+	GithubMinikubeStableReleaseURL = "https://storage.googleapis.com/minikube/releases/stable.txt"
+	GithubMinikubeReleasesURL      = "https://storage.googleapis.com/minikube/releases.json"
+	KubernetesVersionGCSURL        = "https://storage.googleapis.com/minikube/k8s_releases.json"
 )
 
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())

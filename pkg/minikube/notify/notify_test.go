@@ -18,7 +18,6 @@ package notify
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -68,24 +67,19 @@ func TestShouldCheckURL(t *testing.T) {
 }
 
 type URLHandlerCorrect struct {
-	releases Releases
+	stableVersion string
 }
 
 func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	b, err := json.Marshal(h.releases)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	w.Header().Set("Content-Type", "application/javascript")
-	fmt.Fprintf(w, string(b))
+	w.Header().Set("Content-Type", "text/plain")
+	fmt.Fprint(w, h.stableVersion)
 }
 
 func TestGetLatestVersionFromURLCorrect(t *testing.T) {
 	// test that the version is correctly parsed if returned if valid JSON is returned the url endpoint
 	latestVersionFromURL := "0.0.0-dev"
 	handler := &URLHandlerCorrect{
-		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
+		stableVersion: version.VersionPrefix + latestVersionFromURL,
 	}
 	server := httptest.NewServer(handler)
 
@@ -146,7 +140,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	// test that no update text is printed if the latest version is lower/equal to the current version
 	latestVersionFromURL := "0.0.0-dev"
 	handler := &URLHandlerCorrect{
-		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
+		stableVersion: version.VersionPrefix + latestVersionFromURL,
 	}
 	server := httptest.NewServer(handler)
 	defer server.Close()
@@ -160,7 +154,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	// test that update text is printed if the latest version is greater than the current version
 	latestVersionFromURL = "100.0.0-dev"
 	handler = &URLHandlerCorrect{
-		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
+		stableVersion: version.VersionPrefix + latestVersionFromURL,
 	}
 	server = httptest.NewServer(handler)
 	defer server.Close()
