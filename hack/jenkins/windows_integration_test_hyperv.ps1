@@ -21,7 +21,7 @@ gsutil.cmd cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 ./out/minikube-windows-amd64.exe delete
 Remove-Item -Recurse -Force C:\Users\jenkins\.minikube
 
-out/e2e-windows-amd64.exe --% -minikube-args="--vm-driver=hyperv --hyperv-virtual-switch=Minikube --cpus=4 $env:EXTRA_BUILD_ARGS --no-mount" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
+out/e2e-windows-amd64.exe --% -minikube-args="--vm-driver=hyperv --hyperv-virtual-switch=Minikube --v=10 $env:EXTRA_BUILD_ARGS" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
 
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
