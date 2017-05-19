@@ -176,14 +176,11 @@ func GetLogsCommand(follow bool) (string, error) {
 var localkubeStatusCommand = `sudo systemctl is-active localkube 2>&1 1>/dev/null && echo "Running" || echo "Stopped"`
 
 func GetMountCleanupCommand(path string) string {
-	return fmt.Sprintf(`
-sudo umount %s;
-sudo rm -rf %s;
-`, path, path)
+	return fmt.Sprintf("sudo umount %s;", path)
 }
 
 var mountTemplate = `
-sudo mkdir -p {{.Path}};
+sudo mkdir -p {{.Path}} || true;
 sudo mount -t 9p -o trans=tcp -o port={{.Port}} -o uid=1001 -o gid=1001 {{.IP}} {{.Path}};
 sudo chmod 775 {{.Path}};`
 
