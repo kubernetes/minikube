@@ -234,7 +234,7 @@ func GetPort() (string, error) {
 func KillMountProcess() error {
 	out, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName))
 	if err != nil {
-		return errors.Wrap(err, "error reading mount process from file")
+		return nil // no mount process to kill
 	}
 	pid, err := strconv.Atoi(string(out))
 	if err != nil {

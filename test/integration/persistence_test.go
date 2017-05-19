@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	"k8s.io/kubernetes/pkg/api"
 	commonutil "k8s.io/minikube/pkg/util"
-
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -87,8 +87,8 @@ func TestPersistence(t *testing.T) {
 	minikubeRunner.RunCommand("stop", true)
 	minikubeRunner.CheckStatus("Stopped")
 
-	minikubeRunner.RunCommand("start", true)
-	minikubeRunner.CheckStatus("Running")
+	minikubeRunner.Start()
+	minikubeRunner.CheckStatus(state.Running.String())
 
 	if err := commonutil.RetryAfter(5, checkPod, 3*time.Second); err != nil {
 		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)

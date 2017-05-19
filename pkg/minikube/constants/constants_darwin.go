@@ -25,4 +25,3 @@ var SupportedVMDrivers = [...]string{
 }
 
 var DefaultMountDir = "/Users"
-var DefaultMountEndpoint = "/Users"
