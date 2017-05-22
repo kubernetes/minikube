@@ -114,6 +114,10 @@ test-iso:
 integration: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)"
 
+.PHONY: integration-versioned
+integration-versioned: out/minikube
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)" --versioned=true
+
 .PHONY: test
 test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
 	./test.sh
