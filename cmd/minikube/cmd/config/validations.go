@@ -24,9 +24,11 @@ import (
 	"strconv"
 
 	units "github.com/docker/go-units"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 func IsValidDriver(string, driver string) error {
@@ -87,8 +89,17 @@ func IsValidPath(name string, path string) error {
 }
 
 func IsValidAddon(name string, val string) error {
-	if _, ok := assets.Addons[name]; ok {
-		return nil
+	addon, ok := assets.Addons[name]
+	if !ok {
+		return errors.Errorf("Addon %s does not exist", name)
 	}
-	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
+	k8sVersion, err := util.GetKubernetesVersion()
+	if err != nil {
+		glog.Fatal(err.Error())
+	}
+	if addon.MinVersion.Compare(k8sVersion) > 0 {
+		return errors.Errorf("Addon %s is not compatible with current k8s version: %s",
+			name, k8sVersion)
+	}
+	return nil
 }

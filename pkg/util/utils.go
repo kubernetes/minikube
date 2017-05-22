@@ -23,10 +23,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
@@ -36,6 +39,8 @@ import (
 type RetriableError struct {
 	Err error
 }
+
+var VERSION semver.Version = semver.MustParse("0.0.0")
 
 func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
 
@@ -170,4 +175,21 @@ func IsDirectory(path string) (bool, error) {
 		return false, errors.Wrapf(err, "Error calling os.Stat on file %s", path)
 	}
 	return fileInfo.IsDir(), nil
+}
+
+func GetKubernetesVersion() (semver.Version, error) {
+	if VERSION.Compare(semver.MustParse("0.0.0")) != 0 {
+		return VERSION, nil
+	}
+	r, _ := regexp.Compile(".*\nServer Version: v")
+	versions, err := exec.Command("kubectl", "version", "--short").Output()
+	if err != nil {
+		glog.Errorf("Error when retrieving kubectl version: %s", err.Error())
+	}
+	versionStr := strings.TrimSpace(r.ReplaceAllString(string(versions), ""))
+	VERSION, err = semver.Make(versionStr)
+	if err != nil {
+		return VERSION, err
+	}
+	return VERSION, nil
 }

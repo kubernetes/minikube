@@ -38,6 +38,7 @@ type Setting struct {
 	set         func(config.MinikubeConfig, string, string) error
 	validations []setFn
 	callbacks   []setFn
+	versions    []string
 }
 
 // These are all the settings that are configurable
@@ -134,10 +135,14 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
-		name:        "kube-dns",
+		name:        "kube-dns-v20",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:     "kube-dns",
+		versions: []string{"kube-dns-v20"},
 	},
 	{
 		name:        "heapster",
