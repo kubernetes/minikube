@@ -213,6 +213,15 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
 
+out/docker-machine-driver-hyperkit:
+	go build -o $(BUILD_DIR)/hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+
+.PHONY: install-hyperkit-driver
+install-hyperkit-driver: out/docker-machine-driver-hyperkit
+	sudo cp out/hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
+
 .PHONY: check-release
 check-release:
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
