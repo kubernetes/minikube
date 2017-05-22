@@ -57,7 +57,8 @@ Please use this plugin through the main 'docker-machine' binary.
 			continue
 		case <-time.After(heartbeatTimeout):
 			// TODO: Add heartbeat retry logic
-			os.Exit(1)
+			continue
+			// os.Exit(1)
 		}
 	}
 }

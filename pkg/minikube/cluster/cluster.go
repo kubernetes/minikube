@@ -391,6 +391,8 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		driver = createHypervHost(config)
 	case "none":
 		driver = createNoneHost(config)
+	case "hyperkit":
+		driver = createHyperkitHost(config)
 	default:
 		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
 	}
