@@ -135,7 +135,7 @@ func testServicesList(t *testing.T) {
 		}
 		return nil
 	}
-	if err := commonutil.RetryAfter(5, checkServices, 2*time.Second); err != nil {
+	if err := commonutil.RetryAfter(20, checkServices, 2*time.Second); err != nil {
 		t.Fatalf(err.Error())
 	}
 }
