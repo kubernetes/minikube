@@ -99,7 +99,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	validateK8sVersion(viper.GetString(kubernetesVersion))
+	if dv := viper.GetString(kubernetesVersion); dv != constants.DefaultKubernetesVersion {
+		validateK8sVersion(dv)
+	}
 
 	config := cluster.MachineConfig{
 		MinikubeISO:         viper.GetString(isoURL),
