@@ -59,7 +59,7 @@ func testClusterDNS(t *testing.T) {
 		}
 
 		dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName,
-			"nslookup", "kubernetes.default"})
+			"nslookup", "kubernetes"})
 		dnsOutput := string(dnsByteArr)
 		if err != nil {
 			return &commonutil.RetriableError{Err: err}
