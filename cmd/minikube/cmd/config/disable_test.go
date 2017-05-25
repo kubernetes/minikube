@@ -41,7 +41,7 @@ func TestDisableUnknownAddon(t *testing.T) {
 
 func TestDisableValidAddonLocal(t *testing.T) {
 	//set current k8s version to mock out utils.GetKubernetesVersion()
-	util.VERSION = semver.MustParse("1.6.3")
+	util.SetKubernetesVersion(semver.MustParse("1.6.3"))
 
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)

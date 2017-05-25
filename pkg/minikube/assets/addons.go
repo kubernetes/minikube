@@ -28,7 +28,7 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-var ALL_VERSIONS = semver.MustParse("0.0.0")
+var AllVersions = semver.MustParse("0.0.0")
 
 type Addon struct {
 	Assets     []*MemoryAsset
@@ -66,7 +66,7 @@ var Addons = map[string]*Addon{
 			"/etc/kubernetes/manifests/",
 			"addon-manager.yaml",
 			"0640"),
-	}, true, "addon-manager", ALL_VERSIONS),
+	}, true, "addon-manager", AllVersions),
 	"dashboard": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/dashboard/dashboard-rc.yaml",
@@ -78,14 +78,14 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
-	}, true, "dashboard", ALL_VERSIONS),
+	}, true, "dashboard", AllVersions),
 	"default-storageclass": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
 			constants.AddonsPath,
 			"storageclass.yaml",
 			"0640"),
-	}, true, "default-storageclass", ALL_VERSIONS),
+	}, true, "default-storageclass", AllVersions),
 	"kube-dns-v20": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/kube-dns/kube-dns-controller.yaml",
@@ -129,7 +129,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640"),
-	}, false, "heapster", ALL_VERSIONS),
+	}, false, "heapster", AllVersions),
 	"ingress": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/ingress/ingress-configmap.yaml",
@@ -146,14 +146,14 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"ingress-svc.yaml",
 			"0640"),
-	}, false, "ingress", ALL_VERSIONS),
+	}, false, "ingress", AllVersions),
 	"registry-creds": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/registry-creds/registry-creds-rc.yaml",
 			constants.AddonsPath,
 			"registry-creds-rc.yaml",
 			"0640"),
-	}, false, "registry-creds", ALL_VERSIONS),
+	}, false, "registry-creds", AllVersions),
 }
 
 func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {

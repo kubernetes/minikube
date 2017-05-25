@@ -40,7 +40,7 @@ type RetriableError struct {
 	Err error
 }
 
-var VERSION semver.Version = semver.MustParse("0.0.0")
+var k8sVersion *semver.Version
 
 func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
 
@@ -178,8 +178,8 @@ func IsDirectory(path string) (bool, error) {
 }
 
 func GetKubernetesVersion() (semver.Version, error) {
-	if VERSION.Compare(semver.MustParse("0.0.0")) != 0 {
-		return VERSION, nil
+	if k8sVersion != nil {
+		return *k8sVersion, nil
 	}
 	r, _ := regexp.Compile(".*\nServer Version: v")
 	versions, err := exec.Command("kubectl", "version", "--short").Output()
@@ -187,9 +187,14 @@ func GetKubernetesVersion() (semver.Version, error) {
 		glog.Errorf("Error when retrieving kubectl version: %s", err.Error())
 	}
 	versionStr := strings.TrimSpace(r.ReplaceAllString(string(versions), ""))
-	VERSION, err = semver.Make(versionStr)
+	currentVersion, err := semver.Make(versionStr)
+	SetKubernetesVersion(currentVersion)
 	if err != nil {
-		return VERSION, err
+		return *k8sVersion, err
 	}
-	return VERSION, nil
+	return *k8sVersion, nil
+}
+
+func SetKubernetesVersion(version semver.Version) {
+	k8sVersion = &version
 }
