@@ -242,7 +242,7 @@ func TestPrintURLsForService(t *testing.T) {
 			serviceName:    "mock-dashboard",
 			namespace:      "default",
 			tmpl:           defaultTemplate,
-			expectedOutput: []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+			expectedOutput: []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
 		},
 		{
 			description:    "empty slice for no node ports",
@@ -260,7 +260,7 @@ func TestPrintURLsForService(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
+			urls, err := printURLsForService(client, "http://127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
 				t.Errorf("Error: %s", err)
 			}
@@ -268,7 +268,7 @@ func TestPrintURLsForService(t *testing.T) {
 				t.Errorf("Expected error but got none")
 			}
 			if !reflect.DeepEqual(urls, test.expectedOutput) {
-				t.Errorf("Expected %+v \n\n Actual: %+v \n\n")
+				t.Errorf("\nExpected %v \nActual: %v \n\n", urls, test.expectedOutput)
 			}
 		})
 	}
@@ -283,7 +283,7 @@ func TestGetServiceURLs(t *testing.T) {
 			},
 		},
 	}
-	defaultTemplate := template.Must(template.New("svc-template").Parse("{{.IP}}:{{.Port}}"))
+	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 
 	var tests = []struct {
 		description string
@@ -307,7 +307,7 @@ func TestGetServiceURLs(t *testing.T) {
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard",
-					URLs:      []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+					URLs:      []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
 				},
 				{
 					Namespace: "default",
@@ -335,7 +335,7 @@ func TestGetServiceURLs(t *testing.T) {
 				t.Errorf("Test should have failed, but didn't")
 			}
 			if !reflect.DeepEqual(urls, test.expected) {
-				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, urls)
+				t.Errorf("URLs did not match, expected %v \n\n got %v", test.expected, urls)
 			}
 		})
 	}
@@ -372,7 +372,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 			namespace:   "default",
 			service:     "mock-dashboard",
 			api:         defaultAPI,
-			expected:    []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
 		},
 		{
 			description: "correctly return empty serviceURLs",
