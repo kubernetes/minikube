@@ -23,13 +23,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
@@ -177,24 +174,28 @@ func IsDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), nil
 }
 
-func GetKubernetesVersion() (semver.Version, error) {
+func GetKubernetesVersion() (*semver.Version, error) {
 	if k8sVersion != nil {
-		return *k8sVersion, nil
+		return k8sVersion, nil
 	}
-	r, _ := regexp.Compile(".*\nServer Version: v")
-	versions, err := exec.Command("kubectl", "version", "--short").Output()
+	clientset, err := GetClientSet()
 	if err != nil {
-		glog.Errorf("Error when retrieving kubectl version: %s", err.Error())
+		return nil, err
 	}
-	versionStr := strings.TrimSpace(r.ReplaceAllString(string(versions), ""))
+	serverVersion, err := clientset.Discovery().ServerVersion()
+	if err != nil {
+		return nil, err
+	}
+	versionStr := strings.Replace(serverVersion.GitVersion, "v", "", -1)
+
 	currentVersion, err := semver.Make(versionStr)
-	SetKubernetesVersion(currentVersion)
+	SetKubernetesVersion(&currentVersion)
 	if err != nil {
-		return *k8sVersion, err
+		return k8sVersion, err
 	}
-	return *k8sVersion, nil
+	return k8sVersion, nil
 }
 
-func SetKubernetesVersion(version semver.Version) {
-	k8sVersion = &version
+func SetKubernetesVersion(version *semver.Version) {
+	k8sVersion = version
 }

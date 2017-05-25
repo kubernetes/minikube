@@ -28,10 +28,8 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/tools/clientcmd"
 
 	"text/template"
 
@@ -53,16 +51,9 @@ func init() {
 }
 
 func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
+	client, err := util.GetClientSet()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
-	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
+		return nil, err
 	}
 	return client.Core(), nil
 }

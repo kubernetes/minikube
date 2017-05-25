@@ -97,7 +97,7 @@ func IsValidAddon(name string, val string) error {
 	if err != nil {
 		glog.Fatal(err.Error())
 	}
-	if addon.MinVersion.Compare(k8sVersion) > 0 {
+	if addon.MinVersion.Compare(*k8sVersion) > 0 {
 		return errors.Errorf("Addon %s is not compatible with current k8s version: %s",
 			name, k8sVersion)
 	}

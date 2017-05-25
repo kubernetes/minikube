@@ -14,28 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package storageclass
+package util
 
 import (
-	"github.com/pkg/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"fmt"
 
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
+	"github.com/pkg/errors"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
-// DisableDefaultStorageClass disables the default storage class provisioner
-// The addon-manager and kubectl apply cannot delete storageclasses
-func DisableDefaultStorageClass() error {
-	client, err := util.GetClientSet()
+func GetClientSet() (*kubernetes.Clientset, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
 	}
-
-	err = client.Storage().StorageClasses().Delete(constants.DefaultStorageClassProvisioner, &meta_v1.DeleteOptions{})
+	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting default storage class %s", constants.DefaultStorageClassProvisioner)
+		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
-
-	return nil
+	return client, nil
 }
