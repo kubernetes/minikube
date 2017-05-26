@@ -4,6 +4,7 @@ metadata:
   labels:
     kubernetes.io/name: monitoring-influxdb
     kubernetes.io/minikube-addons: heapster
+    addonmanager.kubernetes.io/mode: Reconcile
   name: monitoring-influxdb
   namespace: kube-system
 spec:
