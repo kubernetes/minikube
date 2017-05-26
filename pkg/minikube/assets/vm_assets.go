@@ -20,6 +20,9 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"os/user"
+	"path/filepath"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -134,4 +137,49 @@ func (m *MemoryAsset) GetLength() int {
 
 func (m *MemoryAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
+}
+
+func CopyFileLocal(f CopyableFile) error {
+	os.MkdirAll(f.GetTargetDir(), os.ModePerm)
+	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
+	os.Remove(targetPath)
+	target, err := os.Create(targetPath)
+	defer target.Close()
+
+	perms, err := strconv.Atoi(f.GetPermissions())
+	if err != nil {
+		return errors.Wrap(err, "Error converting permissions to integer")
+	}
+	target.Chmod(os.FileMode(perms))
+	if err != nil {
+		return errors.Wrap(err, "Error changing file permissions")
+	}
+
+	_, err = io.Copy(target, f)
+	if err != nil {
+		return errors.Wrap(err, "Error copying file to target location")
+	}
+
+	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") != "" {
+		username := os.Getenv("SUDO_USER")
+		if username == "" {
+			return nil
+		}
+		usr, err := user.Lookup(username)
+		if err != nil {
+			return errors.Wrap(err, "Error looking up user")
+		}
+		uid, err := strconv.Atoi(usr.Uid)
+		if err != nil {
+			return errors.Wrapf(err, "Error parsing uid for user: %s", username)
+		}
+		gid, err := strconv.Atoi(usr.Gid)
+		if err != nil {
+			return errors.Wrapf(err, "Error parsing gid for user: %s", username)
+		}
+		if err := os.Chown(targetPath, uid, gid); err != nil {
+			return errors.Wrapf(err, "Error changing ownership for: %s", targetPath)
+		}
+	}
+	return nil
 }

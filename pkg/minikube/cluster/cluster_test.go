@@ -87,13 +87,29 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartCluster(t *testing.T) {
-	h := tests.NewMockHost()
-	ip, _ := h.Driver.GetIP()
-	kubernetesConfig := KubernetesConfig{
-		NodeIP: ip,
+	api := tests.NewMockAPI()
+
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	err := StartCluster(h, kubernetesConfig)
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+		CurrentState: state.Running,
+	}
+	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
+
+	kubernetesConfig := KubernetesConfig{
+		NodeIP: "",
+	}
+
+	err = StartCluster(api, kubernetesConfig)
 
 	if err != nil {
 		t.Fatalf("Error starting cluster: %s", err)
@@ -104,21 +120,37 @@ func TestStartCluster(t *testing.T) {
 		t.Fatalf("Error getting start command: %s", err)
 	}
 	for _, cmd := range []string{startCommand} {
-		if _, ok := h.Commands[cmd]; !ok {
-			t.Fatalf("Expected command not run: %s. Commands run: %v", cmd, h.Commands)
+		if _, ok := s.Commands[cmd]; !ok {
+			t.Fatalf("Expected command not run: %s. Commands run: %v", cmd, s.Commands)
 		}
 	}
 }
 
 func TestStartClusterError(t *testing.T) {
-	h := tests.NewMockHost()
-	h.Error = "error"
-	ip, _ := h.Driver.GetIP()
-	kubernetesConfig := KubernetesConfig{
-		NodeIP: ip,
+	api := tests.NewMockAPI()
+
+	s, _ := tests.NewSSHServer()
+	port, err := s.Start()
+	if err != nil {
+		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	err := StartCluster(h, kubernetesConfig)
+	d := &tests.MockDriver{
+		Port: port,
+		BaseDriver: drivers.BaseDriver{
+			IPAddress:  "127.0.0.1",
+			SSHKeyPath: "",
+		},
+		CurrentState: state.Running,
+		HostError:    true,
+	}
+	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
+
+	kubernetesConfig := KubernetesConfig{
+		NodeIP: "192",
+	}
+
+	err = StartCluster(api, kubernetesConfig)
 
 	if err == nil {
 		t.Fatal("Error not thrown starting cluster.")
@@ -337,7 +369,7 @@ func TestGetHostStatus(t *testing.T) {
 		}
 	}
 
-	checkState("Does Not Exist")
+	checkState(state.None.String())
 
 	createHost(api, defaultMachineConfig)
 	checkState(state.Running.String())
@@ -562,7 +594,6 @@ func TestUpdateDefault(t *testing.T) {
 		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	h := tests.NewMockHost()
 	d := &tests.MockDriver{
 		Port: port,
 		BaseDriver: drivers.BaseDriver{
@@ -575,7 +606,7 @@ func TestUpdateDefault(t *testing.T) {
 		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
 
-	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
+	if err := UpdateCluster(d, kubernetesConfig); err != nil {
 		t.Fatalf("Error updating cluster: %s", err)
 	}
 	transferred := s.Transfers.Bytes()
@@ -618,7 +649,6 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	h := tests.NewMockHost()
 	d := &tests.MockDriver{
 		Port: port,
 		BaseDriver: drivers.BaseDriver{
@@ -632,7 +662,7 @@ func TestUpdateKubernetesVersion(t *testing.T) {
 	kubernetesConfig := KubernetesConfig{
 		KubernetesVersion: server.URL,
 	}
-	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
+	if err := UpdateCluster(d, kubernetesConfig); err != nil {
 		t.Fatalf("Error updating cluster: %s", err)
 	}
 	transferred := s.Transfers.Bytes()
@@ -698,7 +728,6 @@ func TestUpdateCustomAddons(t *testing.T) {
 		t.Fatalf("Error starting ssh server: %s", err)
 	}
 
-	h := tests.NewMockHost()
 	d := &tests.MockDriver{
 		Port: port,
 		BaseDriver: drivers.BaseDriver{
@@ -726,7 +755,7 @@ func TestUpdateCustomAddons(t *testing.T) {
 	kubernetesConfig := KubernetesConfig{
 		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
-	if err := UpdateCluster(h, d, kubernetesConfig); err != nil {
+	if err := UpdateCluster(d, kubernetesConfig); err != nil {
 		t.Fatalf("Error updating cluster: %s", err)
 	}
 	transferred := s.Transfers.Bytes()

@@ -97,6 +97,10 @@ var mountCmd = &cobra.Command{
 			glog.Errorln("Error loading api: ", err)
 			os.Exit(1)
 		}
+		if host.Driver.DriverName() == "none" {
+			fmt.Println(`'none' driver does not support 'minikube mount' command`)
+			os.Exit(0)
+		}
 		var ip net.IP
 		if mountIP == "" {
 			ip, err = cluster.GetVMHostIP(host)

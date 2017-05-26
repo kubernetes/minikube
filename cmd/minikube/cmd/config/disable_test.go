@@ -36,7 +36,7 @@ func TestDisableUnknownAddon(t *testing.T) {
 	}
 }
 
-func TestDisableValidAddonNoVM(t *testing.T) {
+func TestDisableValidAddonLocal(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
@@ -60,7 +60,7 @@ func TestDisableValidAddonNoVM(t *testing.T) {
 	}
 }
 
-func TestDeleteAddonViaDriver(t *testing.T) {
+func TestDeleteAddonSSH(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
@@ -76,7 +76,7 @@ func TestDeleteAddonViaDriver(t *testing.T) {
 	}
 
 	dashboard := assets.Addons["dashboard"]
-	if err := deleteAddonViaDriver(dashboard, d); err != nil {
+	if err := deleteAddonSSH(dashboard, d); err != nil {
 		t.Fatalf("Unexpected error %s deleting addon", err)
 	}
 	// check command(s) were run

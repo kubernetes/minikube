@@ -29,6 +29,7 @@ import (
 
 func testClusterEnv(t *testing.T) {
 	t.Parallel()
+
 	minikubeRunner := util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,

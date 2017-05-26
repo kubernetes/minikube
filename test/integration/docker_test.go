@@ -32,8 +32,11 @@ func TestDocker(t *testing.T) {
 		BinaryPath: *binaryPath,
 		T:          t}
 
-	minikubeRunner.RunCommand("delete", false)
+	if strings.Contains(*args, "--vm-driver=none") {
+		t.Skip("skipping test as none driver does not bundle docker")
+	}
 
+	minikubeRunner.RunCommand("delete", false)
 	startCmd := fmt.Sprintf("start %s %s", minikubeRunner.Args, "--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
 	minikubeRunner.RunCommand(startCmd, true)
 	minikubeRunner.EnsureRunning()
