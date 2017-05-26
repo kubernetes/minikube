@@ -17,6 +17,7 @@ kind: ReplicationController
 metadata:
   labels:
     name: influxGrafana
+    addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: heapster
   name: influxdb-grafana
   namespace: kube-system
@@ -25,7 +26,6 @@ spec:
   selector:
     addonmanager.kubernetes.io/mode: Reconcile
     name: influxGrafana
-    #name: influxdb-grafana
   template:
     metadata:
       labels:

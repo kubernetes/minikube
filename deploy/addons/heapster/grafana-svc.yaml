@@ -5,6 +5,7 @@ metadata:
     kubernetes.io/name: monitoring-grafana
     kubernetes.io/minikube-addons: heapster
     kubernetes.io/minikube-addons-endpoint: heapster
+    addonmanager.kubernetes.io/mode: Reconcile
   name: monitoring-grafana
   namespace: kube-system
 spec:
