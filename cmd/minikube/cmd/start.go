@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,9 +31,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"io/ioutil"
-
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -152,8 +150,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		ExtraOptions:      extraOptions,
 	}
 
-	fmt.Println("SSH-ing files into VM...")
-	if err := cluster.UpdateCluster(host, host.Driver, kubernetesConfig); err != nil {
+	fmt.Println("Moving files into cluster...")
+	if err := cluster.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -165,7 +163,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Starting cluster components...")
-	if err := cluster.StartCluster(host, kubernetesConfig); err != nil {
+
+	if err := cluster.StartCluster(api, kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -236,6 +235,23 @@ func runStart(cmd *cobra.Command, args []string) {
 			kubeCfgSetup.ClusterName)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
+	}
+
+	if config.VMDriver == "none" {
+		fmt.Println(`===================
+WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
+	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks
+
+When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
+You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
+	sudo mv /root/.kube $HOME/.kube # this will overwrite any config you have.  You may have to append the file contents manually
+	sudo chown -R $USER $HOME/.kube
+	sudo chgrp -R $USER $HOME/.kube
+	
+    sudo mv /root/.minikube $HOME/.minikube # this will overwrite any config you have.  You may have to append the file contents manually
+	sudo chown -R $USER $HOME/.minikube
+	sudo chgrp -R $USER $HOME/.minikube 
+This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 	}
 }
 

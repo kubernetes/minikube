@@ -28,8 +28,7 @@ import (
 )
 
 // Kill any running instances.
-
-var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false --node-ip={{.NodeIP}}"
+var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false"
 
 var localkubeSystemdTmpl = `[Unit]
 Description=Localkube
@@ -123,20 +122,21 @@ func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
 		flagVals = append(flagVals, "--dns-domain="+kubernetesConfig.DNSDomain)
 	}
 
+	if kubernetesConfig.NodeIP != "127.0.0.1" {
+		flagVals = append(flagVals, "--node-ip="+kubernetesConfig.NodeIP)
+	}
+
 	for _, e := range kubernetesConfig.ExtraOptions {
 		flagVals = append(flagVals, fmt.Sprintf("--extra-config=%s", e.String()))
 	}
 	flags := strings.Join(flagVals, " ")
-
 	t := template.Must(template.New("localkubeStartCmd").Parse(localkubeStartCmdTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
 		Flags         string
-		NodeIP        string
 		APIServerName string
 	}{
 		Flags:         flags,
-		NodeIP:        kubernetesConfig.NodeIP,
 		APIServerName: kubernetesConfig.APIServerName,
 	}
 	if err := t.Execute(&buf, data); err != nil {
