@@ -1,5 +1,14 @@
 # Minikube Release Notes
 
+## Version 0.19.1 - 5/30/2017
+* Fixed issue where using TPRs could cause localkube to crash
+* Added mount daemon that can be started using `minikube start --mount --mount-string="/path/to/mount"`.  Cleanup of mount handled by `minikube delete`
+* Added minikube "none" driver which does not require a VM but instead launches k8s components on the host.  This allows minikube to be used in cloud environments that don't support nested virtualizations.  This can be launched by running `sudo minikube start --vm-driver=none --use-vendored-driver`
+* Update kube-dns to 1.14.2
+* Update kubernetes to 1.6.4
+* Added `minikube ssh-key` command which retrieves the ssh key information for the minikubeVM
+* Fixed vbox interface issue with minikube mount
+
 ## Version 0.19.0 - 5/3/2017
 * Updated nginx ingress to v0.9-beta.4
 * Updated kube-dns to 1.14.1
