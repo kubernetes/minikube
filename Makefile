@@ -116,7 +116,7 @@ integration: out/minikube
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)" --versioned=true
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="integration versioned" --minikube-args="$(MINIKUBE_ARGS)"
 
 .PHONY: test
 test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
