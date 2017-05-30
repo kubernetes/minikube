@@ -86,19 +86,36 @@ var Addons = map[string]*Addon{
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass", AllVersions),
-	"kube-dns-v20": NewAddon([]*MemoryAsset{
+	"kube-dns-v11": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-controller.yaml",
+			"deploy/addons/kube-dns-v11/kube-dns-controller.yaml",
 			constants.AddonsPath,
 			"kube-dns-controller.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-cm.yaml",
+			"deploy/addons/kube-dns-v11/kube-dns-cm.yaml",
 			constants.AddonsPath,
 			"kube-dns-cm.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-svc.yaml",
+			"deploy/addons/kube-dns-v11/kube-dns-svc.yaml",
+			constants.AddonsPath,
+			"kube-dns-svc.yaml",
+			"0640"),
+	}, false, "kube-dns-v11", semver.MustParse("1.6.3")),
+	"kube-dns-v20": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-v20/kube-dns-controller.yaml",
+			constants.AddonsPath,
+			"kube-dns-controller.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-v20/kube-dns-cm.yaml",
+			constants.AddonsPath,
+			"kube-dns-cm.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-v20/kube-dns-svc.yaml",
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),

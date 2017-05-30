@@ -135,6 +135,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "kube-dns-v11",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:        "kube-dns-v20",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
