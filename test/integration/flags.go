@@ -29,4 +29,3 @@ func TestMain(m *testing.M) {
 
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var args = flag.String("minikube-args", "", "Arguments to pass to minikube")
-var versioned = flag.Bool("versioned", false, "Run tests on all supported k8s versions")
