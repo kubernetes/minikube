@@ -34,7 +34,7 @@ var deleteCmd = &cobra.Command{
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("Deleting local Kubernetes cluster...")
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

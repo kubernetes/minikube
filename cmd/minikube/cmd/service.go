@@ -60,7 +60,7 @@ var serviceCmd = &cobra.Command{
 		}
 
 		svc := args[0]
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

@@ -95,9 +95,6 @@ Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine l
 `)
 		}
 
-		//TODO(r2d4): config should not reference API
-		clientType = configCmd.GetClientType()
-
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
 			logDir.Value.Set(constants.MakeMiniPath("logs"))

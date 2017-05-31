@@ -57,7 +57,7 @@ var addonsOpenCmd = &cobra.Command{
 		}
 		addonName := args[0]
 		//TODO(r2d4): config should not reference API, pull this out
-		api, err := machine.NewAPIClient(GetClientType())
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)
