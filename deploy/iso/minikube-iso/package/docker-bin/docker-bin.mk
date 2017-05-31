@@ -49,6 +49,10 @@ define DOCKER_BIN_INSTALL_INIT_SYSTEMD
 
 	ln -fs /usr/lib/systemd/system/docker.service \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/docker.service
+
+	$(INSTALL) -D -m 644 \
+		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/docker-bin/forward.conf \
+		$(TARGET_DIR)/etc/sysctl.d/forward.conf
 endef
 
 $(eval $(generic-package))
