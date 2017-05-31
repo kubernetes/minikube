@@ -43,7 +43,7 @@ var statusCmd = &cobra.Command{
 	Short: "Gets the status of a local kubernetes cluster",
 	Long:  `Gets the status of a local kubernetes cluster.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

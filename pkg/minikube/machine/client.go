@@ -58,9 +58,10 @@ type localClientFactory struct{}
 
 func (*localClientFactory) NewClient(storePath, certsDir string) libmachine.API {
 	return &LocalClient{
-		certsDir:  certsDir,
-		storePath: storePath,
-		Filestore: persist.NewFilestore(storePath, certsDir, certsDir),
+		certsDir:     certsDir,
+		storePath:    storePath,
+		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
+		legacyClient: (&rpcClientFactory{}).NewClient(storePath, certsDir),
 	}
 }
 
@@ -72,30 +73,18 @@ func (*rpcClientFactory) NewClient(storePath, certsDir string) libmachine.API {
 	return c
 }
 
-var clientFactories = map[ClientType]clientFactory{
-	//	ClientTypeNative: &nativeClientFactory{},
-	ClientTypeLocal: &localClientFactory{},
-	ClientTypeRPC:   &rpcClientFactory{},
-}
-
-const (
-	ClientTypeLocal ClientType = iota
-	ClientTypeRPC
-
-//	ClientTypeNative
-)
-
 // Gets a new client depending on the clientType specified
 // defaults to the libmachine client
-func NewAPIClient(clientType ClientType) (libmachine.API, error) {
+func NewAPIClient() (libmachine.API, error) {
 	storePath := constants.GetMinipath()
 	certsDir := constants.MakeMiniPath("certs")
-	newClientFactory, ok := clientFactories[clientType]
-	if !ok {
-		return nil, fmt.Errorf("No implementation for API client type %d", clientType)
-	}
 
-	return newClientFactory.NewClient(storePath, certsDir), nil
+	return &LocalClient{
+		certsDir:     certsDir,
+		storePath:    storePath,
+		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
+		legacyClient: (&rpcClientFactory{}).NewClient(storePath, certsDir),
+	}, nil
 }
 
 func getDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
@@ -131,9 +120,15 @@ type LocalClient struct {
 	certsDir  string
 	storePath string
 	*persist.Filestore
+	legacyClient libmachine.API
 }
 
 func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+	// If not should get Driver, use legacy
+	if _, ok := driverMap[driverName]; !ok {
+		return api.legacyClient.NewHost(driverName, rawDriver)
+	}
+
 	driver, err := getDriver(driverName, rawDriver)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting driver")
@@ -168,6 +163,11 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 		return nil, errors.Wrap(err, "Error loading host from store")
 	}
 
+	// If not should get Driver, use legacy
+	if _, ok := driverMap[h.DriverName]; !ok {
+		return api.legacyClient.Load(name)
+	}
+
 	h.Driver, err = getDriver(h.DriverName, h.RawDriver)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading driver from host")
@@ -176,9 +176,19 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 	return h, nil
 }
 
-func (api *LocalClient) Close() error { return nil }
+func (api *LocalClient) Close() error {
+	if api.legacyClient != nil {
+		return api.legacyClient.Close()
+	}
+	return nil
+}
 
 func (api *LocalClient) Create(h *host.Host) error {
+
+	if _, ok := driverMap[h.Driver.DriverName()]; !ok {
+		return api.legacyClient.Create(h)
+	}
+
 	steps := []struct {
 		name string
 		f    func() error
