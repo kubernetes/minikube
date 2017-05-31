@@ -37,7 +37,7 @@ var serviceListCmd = &cobra.Command{
 	Short: "Lists the URLs for the services in your local cluster",
 	Long:  `Lists the URLs for the services in your local cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

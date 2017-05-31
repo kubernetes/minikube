@@ -33,7 +33,7 @@ var sshCmd = &cobra.Command{
 	Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

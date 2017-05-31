@@ -286,7 +286,7 @@ var dockerEnvCmd = &cobra.Command{
 	Long:  `sets up docker env variables; similar to '$(docker-machine env)'`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

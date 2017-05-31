@@ -81,7 +81,7 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
-	api, err := machine.NewAPIClient(clientType)
+	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 		os.Exit(1)
