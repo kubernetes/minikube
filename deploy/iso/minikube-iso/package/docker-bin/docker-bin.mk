@@ -36,6 +36,10 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
 		$(@D)/dockerd \
 		$(TARGET_DIR)/bin/dockerd
+
+	$(INSTALL) -D -m 0755 \
+		$(@D)/docker-proxy \
+		$(TARGET_DIR)/bin/docker-proxy
 endef
 
 define DOCKER_BIN_INSTALL_INIT_SYSTEMD
