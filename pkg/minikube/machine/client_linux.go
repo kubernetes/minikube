@@ -24,7 +24,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	pkgDrivers "k8s.io/minikube/pkg/minikube/machine/drivers"
+	"k8s.io/minikube/pkg/minikube/machine/drivers/none"
 )
 
 var driverMap = map[string]driverGetter{
@@ -42,7 +42,7 @@ https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#kvm-driver
 
 func getNoneDriver(rawDriver []byte) (drivers.Driver, error) {
 	var driver drivers.Driver
-	driver = &pkgDrivers.Driver{}
+	driver = &none.Driver{}
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
 		return nil, errors.Wrap(err, "Error unmarshalling none driver")
 	}
@@ -55,7 +55,7 @@ func registerDriver(driverName string) {
 	case "virtualbox":
 		plugin.RegisterDriver(virtualbox.NewDriver("", ""))
 	case "none":
-		plugin.RegisterDriver(pkgDrivers.NewDriver("", ""))
+		plugin.RegisterDriver(none.NewDriver("", ""))
 	default:
 		glog.Exitf("Unsupported driver: %s\n", driverName)
 	}
