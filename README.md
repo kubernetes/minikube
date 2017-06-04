@@ -73,9 +73,11 @@ Creating machine...
 Starting local Kubernetes cluster...
 
 $ kubectl run hello-minikube --image=gcr.io/google_containers/echoserver:1.4 --port=8080
-deployment "hello-minikube" created
-$ kubectl expose deployment hello-minikube --type=NodePort
-service "hello-minikube" exposed
+CONTROLLER       CONTAINER(S)     IMAGE(S)                                  SELECTOR             REPLICAS
+hello-minikube   hello-minikube   gcr.io/google_containers/echoserver:1.4   run=hello-minikube   1
+$ kubectl expose rc hello-minikube --type=NodePort
+NAME             LABELS               SELECTOR             IP(S)     PORT(S)
+hello-minikube   run=hello-minikube   run=hello-minikube             8080/TCP
 
 # We have now launched an echoserver pod but we have to wait until the pod is up before curling/accessing it
 # via the exposed service.
