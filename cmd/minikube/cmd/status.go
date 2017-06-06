@@ -35,6 +35,7 @@ var statusFormat string
 type Status struct {
 	MinikubeStatus  string
 	LocalkubeStatus string
+	KubectlStatus   string
 }
 
 // statusCmd represents the status command
@@ -64,7 +65,9 @@ var statusCmd = &cobra.Command{
 				cmdUtil.MaybeReportErrorAndExit(err)
 			}
 		}
-		status := Status{ms, ls}
+		con := "Insert future config status message here."
+
+		status := Status{ms, ls, con}
 
 		tmpl, err := template.New("status").Parse(statusFormat)
 		if err != nil {
