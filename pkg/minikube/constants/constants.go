@@ -90,7 +90,7 @@ const (
 	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikube: {{.MinikubeStatus}}\n" +
-		"localkube: {{.LocalkubeStatus}}\n"
+		"localkube: {{.LocalkubeStatus}}\n" + "kubectl: {{.KubeconfigStatus}}\n"
 	DefaultAddonListFormat    = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	DefaultConfigViewFormat   = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
