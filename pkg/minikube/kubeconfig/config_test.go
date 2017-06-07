@@ -17,6 +17,7 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -33,6 +34,28 @@ clusters:
 - cluster:
     certificate-authority: /home/la-croix/apiserver.crt
     server: 192.168.1.1:8080
+  name: la-croix
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+current-context: la-croix
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
+`)
+
+var fakeKubeCfg2 = []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: https://192.168.10.100:8443
   name: la-croix
 contexts:
 - context:
@@ -123,6 +146,69 @@ func TestSetupKubeConfig(t *testing.T) {
 			}
 
 			os.RemoveAll(tmpDir)
+		})
+
+	}
+}
+
+func TestGetKubeConfigStatus(t *testing.T) {
+
+	expectedCfgFilename := tempFile(t, fakeKubeCfg2)
+	defer os.Remove(expectedCfgFilename)
+	var tests = []struct {
+		description string
+		ip          string
+		existing    []byte
+	}{
+		// {
+		// 	description: "empty ip",
+		// 	ip:          "",
+		// 	existing:    fakeKubeCfg2,
+		// },
+		{
+			description: "exactly matching ip",
+			ip:          "https://192.168.10.100:8080",
+			existing:    fakeKubeCfg2,
+		},
+		{
+			description: "matching ip without https or port",
+			ip:          "192.168.10.100",
+			existing:    fakeKubeCfg2,
+		},
+		{
+			description: "matching ip without https",
+			ip:          "192.168.10.100:8443",
+			existing:    fakeKubeCfg2,
+		},
+		{
+			description: "different ips",
+			ip:          "192.168.10.100",
+			existing:    fakeKubeCfg,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			configFilename := tempFile(t, test.existing)
+			defer os.Remove(configFilename)
+			_, err := GetKubeConfigStatus(test.ip, configFilename)
+			fmt.Println(err)
+			// if err != nil {
+			// 	t.Errorf("Got unexpected error: %s", err)
+			// }
+			// if err == nil && test.err {
+			// 	t.Errorf("Expected error but got none")
+			// }
+			actual, err := ReadConfigOrNew(configFilename)
+
+			if err != nil {
+				t.Errorf("Error reading kubeconfig file: %s", err)
+			}
+			expectedCfg, err := ReadConfigOrNew(expectedCfgFilename)
+			if !configEquals(expectedCfg, actual) {
+				t.Errorf("Did not yield expected config file")
+			}
 		})
 
 	}

@@ -20,13 +20,17 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync/atomic"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 type KubeConfigSetup struct {
@@ -177,4 +181,33 @@ func decode(data []byte) (*api.Config, error) {
 	}
 
 	return config.(*api.Config), nil
+}
+
+// GetKubeConfigStatus verifys the ip stored in kubeconfig.
+// If incorrect, the ip is overwritten.
+func GetKubeConfigStatus(ip string, filename string) (string, error) {
+	// if ip == "" {
+	// 	return "", fmt.Errorf("Error, empty ip passed")
+	// }
+	ks := state.None.String()
+	kip := state.None.String()
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return "", err
+		// return "", errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	kip = con.Clusters["minikube"].Server
+
+	if strings.Contains(kip, ip) {
+		ks = "Correctly configured"
+	} else {
+		con.Clusters["minikube"].Server = "https://" + ip + ":" + strconv.Itoa(constants.APIServerPort)
+		err = WriteConfig(con, filename)
+		if err != nil {
+			ks = "VM IP incorrectly configured, unable to reconfigure"
+		} else {
+			ks = "VM IP incorrectly configured, reconfigured"
+		}
+	}
+	return ks, nil
 }
