@@ -73,8 +73,7 @@ func (*rpcClientFactory) NewClient(storePath, certsDir string) libmachine.API {
 	return c
 }
 
-// Gets a new client depending on the clientType specified
-// defaults to the libmachine client
+// NewAPIClient gets a new client.
 func NewAPIClient() (libmachine.API, error) {
 	storePath := constants.GetMinipath()
 	certsDir := constants.MakeMiniPath("certs")
