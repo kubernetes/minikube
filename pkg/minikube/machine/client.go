@@ -49,25 +49,7 @@ import (
 
 type driverGetter func([]byte) (drivers.Driver, error)
 
-type ClientType int
-type clientFactory interface {
-	NewClient(string, string) libmachine.API
-}
-
-type localClientFactory struct{}
-
-func (*localClientFactory) NewClient(storePath, certsDir string) libmachine.API {
-	return &LocalClient{
-		certsDir:     certsDir,
-		storePath:    storePath,
-		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
-		legacyClient: (&rpcClientFactory{}).NewClient(storePath, certsDir),
-	}
-}
-
-type rpcClientFactory struct{}
-
-func (*rpcClientFactory) NewClient(storePath, certsDir string) libmachine.API {
+func NewRPCClient(storePath, certsDir string) libmachine.API {
 	c := libmachine.NewClient(storePath, certsDir)
 	c.SSHClientType = ssh.Native
 	return c
@@ -82,7 +64,7 @@ func NewAPIClient() (libmachine.API, error) {
 		certsDir:     certsDir,
 		storePath:    storePath,
 		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
-		legacyClient: (&rpcClientFactory{}).NewClient(storePath, certsDir),
+		legacyClient: NewRPCClient(storePath, certsDir),
 	}, nil
 }
 

@@ -116,7 +116,10 @@ func TestGetDriver(t *testing.T) {
 }
 
 func TestLocalClientNewHost(t *testing.T) {
-	c := (&localClientFactory{}).NewClient("", "")
+	c, err := NewAPIClient()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var tests = []struct {
 		description string
