@@ -33,7 +33,6 @@ import (
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/notify"
 )
 
@@ -56,7 +55,6 @@ const (
 
 var (
 	enableUpdateNotification = true
-	clientType               machine.ClientType
 )
 
 var viperWhiteList = []string{
