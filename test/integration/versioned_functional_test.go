@@ -28,7 +28,6 @@ import (
 )
 
 func TestVersionedFunctional(t *testing.T) {
-	t.Logf("Running versioned integration tests")
 	k8sVersions, err := kubernetes_versions.GetK8sVersionsFromURL(constants.KubernetesVersionGCSURL)
 	if err != nil {
 		t.Fatalf(err.Error())
