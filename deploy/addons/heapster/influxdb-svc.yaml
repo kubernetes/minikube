@@ -2,9 +2,9 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    kubernetes.io/cluster-service: 'true'
     kubernetes.io/name: monitoring-influxdb
     kubernetes.io/minikube-addons: heapster
+    addonmanager.kubernetes.io/mode: Reconcile
   name: monitoring-influxdb
   namespace: kube-system
 spec:
