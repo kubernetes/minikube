@@ -33,7 +33,7 @@ clusters:
 - cluster:
     certificate-authority: /home/la-croix/apiserver.crt
     server: 192.168.1.1:8080
-  name: la-croix
+  name: minikube
 contexts:
 - context:
     cluster: la-croix
@@ -55,7 +55,7 @@ clusters:
 - cluster:
     certificate-authority: /home/la-croix/apiserver.crt
     server: https://192.168.10.100:8443
-  name: la-croix
+  name: minikube
 contexts:
 - context:
     cluster: la-croix
@@ -169,7 +169,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 		},
 		{
 			description: "exactly matching ip",
-			ip:          "https://192.168.10.100:8080",
+			ip:          "https://192.168.10.100:8443",
 			existing:    fakeKubeCfg2,
 			status:      "Correctly configured",
 		},
