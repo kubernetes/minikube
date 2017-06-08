@@ -193,21 +193,47 @@ func GetKubeConfigStatus(ip string, filename string) (string, error) {
 	kip := ""
 	con, err := ReadConfigOrNew(filename)
 	if err != nil {
-		// return "", err
 		return "", errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	if con.Clusters["minikube"] == nil {
+		return "", errors.Wrap(err, "Kubeconfig does not have a record of a minikube cluster")
 	}
 	kip = con.Clusters["minikube"].Server
 
 	if strings.Contains(kip, ip) {
 		ks = "Correctly configured"
 	} else {
+		ks = "Kubeconfig IP incorrectly configured.  Run minikube update-context to correct."
+	}
+	return ks, nil
+}
+
+// UpdateKubeconfigIP overwrites the IP stored in kubeconfig with the provided IP.
+func UpdateKubeconfigIP(ip string, filename string) (string, error) {
+	if ip == "" {
+		return "", fmt.Errorf("Error, empty ip passed")
+	}
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return "", errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	if con.Clusters["minikube"] == nil {
+		return "", errors.Wrap(err, "Kubeconfig does not have a record of a minikube cluster")
+	}
+
+	kip := con.Clusters["minikube"].Server
+	ks := ""
+	if strings.Contains(kip, ip) {
+		ks = "Correctly configured"
+	} else {
 		con.Clusters["minikube"].Server = "https://" + ip + ":" + strconv.Itoa(constants.APIServerPort)
 		err = WriteConfig(con, filename)
 		if err != nil {
-			ks = "VM IP incorrectly configured, unable to reconfigure"
+			ks = "Unable to reconfigure Kubeconfig IP"
 		} else {
-			ks = "VM IP incorrectly configured, reconfigured"
+			ks = "Kubeconfig IP reconfigured"
 		}
 	}
-	return ks, nil
+
+	return ks, err
 }
