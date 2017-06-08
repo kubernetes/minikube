@@ -165,6 +165,20 @@ func GetLocalkubeStatus(api libmachine.API) (string, error) {
 	}
 }
 
+// GetHostDriverIP gets the ip address of the current minikube cluster
+func GetHostDriverIP(api libmachine.API) (string, error) {
+	host, err := CheckIfApiExistsAndLoad(api)
+	if err != nil {
+		return "", err
+	}
+
+	ip, err := host.Driver.GetIP()
+	if err != nil {
+		return "", errors.Wrap(err, "Error getting IP")
+	}
+	return ip, nil
+}
+
 // StartCluster starts a k8s cluster on the specified Host.
 func StartCluster(api libmachine.API, kubernetesConfig KubernetesConfig) error {
 	h, err := CheckIfApiExistsAndLoad(api)
