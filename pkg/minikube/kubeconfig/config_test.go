@@ -17,7 +17,6 @@ limitations under the License.
 package kubeconfig
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -152,56 +151,64 @@ func TestSetupKubeConfig(t *testing.T) {
 }
 
 func TestGetKubeConfigStatus(t *testing.T) {
-
 	expectedCfgFilename := tempFile(t, fakeKubeCfg2)
 	defer os.Remove(expectedCfgFilename)
+
 	var tests = []struct {
 		description string
 		ip          string
 		existing    []byte
+		err         bool
+		status      string
 	}{
-		// {
-		// 	description: "empty ip",
-		// 	ip:          "",
-		// 	existing:    fakeKubeCfg2,
-		// },
+		{
+			description: "empty ip",
+			ip:          "",
+			existing:    fakeKubeCfg2,
+			err:         true,
+		},
 		{
 			description: "exactly matching ip",
 			ip:          "https://192.168.10.100:8080",
 			existing:    fakeKubeCfg2,
+			status:      "Correctly configured",
 		},
 		{
 			description: "matching ip without https or port",
 			ip:          "192.168.10.100",
 			existing:    fakeKubeCfg2,
+			status:      "Correctly configured",
 		},
 		{
 			description: "matching ip without https",
 			ip:          "192.168.10.100:8443",
 			existing:    fakeKubeCfg2,
+			status:      "Correctly configured",
 		},
 		{
 			description: "different ips",
 			ip:          "192.168.10.100",
 			existing:    fakeKubeCfg,
+			status:      "VM IP incorrectly configured, reconfigured",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
+			// t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			defer os.Remove(configFilename)
-			_, err := GetKubeConfigStatus(test.ip, configFilename)
-			fmt.Println(err)
-			// if err != nil {
-			// 	t.Errorf("Got unexpected error: %s", err)
-			// }
-			// if err == nil && test.err {
-			// 	t.Errorf("Expected error but got none")
-			// }
-			actual, err := ReadConfigOrNew(configFilename)
+			statusActual, err := GetKubeConfigStatus(test.ip, configFilename)
+			if err != nil && !test.err {
+				t.Errorf("Got unexpected error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Expected error but got none: %s", err)
+			}
+			if test.status != statusActual {
+				t.Errorf("Expected status message %s, but got %s", test.status, statusActual)
+			}
 
+			actual, err := ReadConfigOrNew(configFilename)
 			if err != nil {
 				t.Errorf("Error reading kubeconfig file: %s", err)
 			}
@@ -209,6 +216,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 			if !configEquals(expectedCfg, actual) {
 				t.Errorf("Did not yield expected config file")
 			}
+			defer os.Remove(configFilename)
 		})
 
 	}
