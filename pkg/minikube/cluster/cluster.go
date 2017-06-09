@@ -534,7 +534,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error creating ssh client")
 	}
-	return client.Shell(strings.Join(args, " "))
+	return client.Shell(args...)
 }
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
