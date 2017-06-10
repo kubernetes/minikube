@@ -35,6 +35,8 @@ import (
 
 var mountIP string
 var isKill bool
+var uid int
+var gid int
 
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
@@ -52,7 +54,7 @@ var mountCmd = &cobra.Command{
 
 		if len(args) != 1 {
 			errText := `Please specify the directory to be mounted: 
-\tminikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")
+	minikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")
 `
 			fmt.Fprintln(os.Stderr, errText)
 			os.Exit(1)
@@ -128,7 +130,7 @@ var mountCmd = &cobra.Command{
 			ufs.StartServer(net.JoinHostPort(ip.String(), port), debugVal, hostPath)
 			wg.Done()
 		}()
-		err = cluster.MountHost(api, vmPath, ip, port)
+		err = cluster.MountHost(api, vmPath, ip, port, uid, gid)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
@@ -140,5 +142,7 @@ var mountCmd = &cobra.Command{
 func init() {
 	mountCmd.Flags().StringVar(&mountIP, "ip", "", "Specify the ip that the mount should be setup on")
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
+	mountCmd.Flags().IntVar(&uid, "uid", 1001, "Default user id used for the mount")
+	mountCmd.Flags().IntVar(&gid, "gid", 1001, "Default group id used for the mount")
 	RootCmd.AddCommand(mountCmd)
 }
