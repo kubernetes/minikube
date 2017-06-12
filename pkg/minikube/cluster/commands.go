@@ -21,6 +21,7 @@ import (
 	gflag "flag"
 	"fmt"
 	"net"
+    "os"
 	"strings"
 	"text/template"
 
@@ -90,7 +91,7 @@ func GetStartCommandSystemd(kubernetesConfig KubernetesConfig, localkubeStartCmd
 	if err := t.Execute(&buf, data); err != nil {
 		return "", err
 	}
-    os.Mkdir("/usr/lib/systemd/system/",os.FileMode(0755))
+    Mkdir("/usr/lib/systemd/system/",FileMode(0755))
 	return fmt.Sprintf("printf %%s \"%s\" | sudo tee %s", buf.String(),
 		constants.LocalkubeServicePath), nil
 }
