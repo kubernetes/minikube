@@ -166,15 +166,19 @@ func GetLocalkubeStatus(api libmachine.API) (string, error) {
 }
 
 // GetHostDriverIP gets the ip address of the current minikube cluster
-func GetHostDriverIP(api libmachine.API) (string, error) {
+func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	ip, err := host.Driver.GetIP()
+	ipStr, err := host.Driver.GetIP()
 	if err != nil {
-		return "", errors.Wrap(err, "Error getting IP")
+		return nil, errors.Wrap(err, "Error getting IP")
+	}
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return nil, errors.Wrap(err, "Error parsing IP")
 	}
 	return ip, nil
 }

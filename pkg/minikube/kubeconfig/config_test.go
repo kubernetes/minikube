@@ -18,6 +18,7 @@ package kubeconfig
 
 import (
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -33,7 +34,7 @@ clusters:
 - cluster:
     certificate-authority: /home/la-croix/apiserver.crt
     server: 192.168.1.1:8080
-  name: minikube
+  name: la-croix
 contexts:
 - context:
     cluster: la-croix
@@ -55,6 +56,28 @@ clusters:
 - cluster:
     certificate-authority: /home/la-croix/apiserver.crt
     server: https://192.168.10.100:8443
+  name: minikube
+contexts:
+- context:
+    cluster: la-croix
+    user: la-croix
+  name: la-croix
+current-context: la-croix
+kind: Config
+preferences: {}
+users:
+- name: la-croix
+  user:
+    client-certificate: /home/la-croix/apiserver.crt
+    client-key: /home/la-croix/apiserver.key
+`)
+
+var fakeKubeCfg3 = []byte(`
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/la-croix/apiserver.crt
+    server: https://192.168.1.1:8443
   name: minikube
 contexts:
 - context:
@@ -151,53 +174,105 @@ func TestSetupKubeConfig(t *testing.T) {
 }
 
 func TestGetKubeConfigStatus(t *testing.T) {
-	expectedCfgFilename := tempFile(t, fakeKubeCfg2)
-	defer os.Remove(expectedCfgFilename)
 
 	var tests = []struct {
 		description string
-		ip          string
+		ip          net.IP
 		existing    []byte
 		err         bool
 		status      string
 	}{
 		{
 			description: "empty ip",
-			ip:          "",
-			existing:    fakeKubeCfg2,
+			ip:          nil,
+			existing:    fakeKubeCfg,
+			err:         true,
+		},
+		{
+			description: "no minikube cluster",
+			ip:          net.ParseIP("192.168.10.100"),
+			existing:    fakeKubeCfg,
+			status:      "Kubeconfig does not have a record of a minikube cluster",
 			err:         true,
 		},
 		{
 			description: "exactly matching ip",
-			ip:          "https://192.168.10.100:8443",
+			ip:          net.ParseIP("192.168.10.100"),
 			existing:    fakeKubeCfg2,
-			status:      "Correctly configured",
-		},
-		{
-			description: "matching ip without https or port",
-			ip:          "192.168.10.100",
-			existing:    fakeKubeCfg2,
-			status:      "Correctly configured",
-		},
-		{
-			description: "matching ip without https",
-			ip:          "192.168.10.100:8443",
-			existing:    fakeKubeCfg2,
-			status:      "Correctly configured",
+			status:      "Correctly Configured: pointing to minikube-vm at 192.168.10.100",
 		},
 		{
 			description: "different ips",
-			ip:          "192.168.10.100",
-			existing:    fakeKubeCfg,
-			status:      "VM IP incorrectly configured, reconfigured",
+			ip:          net.ParseIP("192.168.10.100"),
+			existing:    fakeKubeCfg3,
+			status: "Misconfigured: pointing to stale minikube-vm at 192.168.1.1" +
+				"\nTo fix the kubectl context, run minikube update-context",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			configFilename := tempFile(t, test.existing)
 			statusActual, err := GetKubeConfigStatus(test.ip, configFilename)
+			if err != nil && !test.err {
+				t.Errorf("Got unexpected error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Expected error but got none: %s", err)
+			}
+			if test.status != statusActual {
+				t.Errorf("Expected status message %s, but got %s", test.status, statusActual)
+			}
+		})
+
+	}
+}
+
+func TestUpdateKubeconfigIP(t *testing.T) {
+
+	var tests = []struct {
+		description string
+		ip          net.IP
+		existing    []byte
+		err         bool
+		status      string
+		expCfg      []byte
+	}{
+		{
+			description: "empty ip",
+			ip:          nil,
+			existing:    fakeKubeCfg2,
+			err:         true,
+			expCfg:      fakeKubeCfg2,
+		},
+		{
+			description: "no minikube cluster",
+			ip:          net.ParseIP("192.168.10.100"),
+			existing:    fakeKubeCfg,
+			err:         true,
+			expCfg:      fakeKubeCfg,
+		},
+		{
+			description: "same IP",
+			ip:          net.ParseIP("192.168.10.100"),
+			existing:    fakeKubeCfg2,
+			status:      "Correctly Configured: pointing to minikube-vm at 192.168.10.100",
+			expCfg:      fakeKubeCfg2,
+		},
+		{
+			description: "different IP",
+			ip:          net.ParseIP("192.168.10.100"),
+			existing:    fakeKubeCfg3,
+			status:      "Reconfigured: pointing to minikube-vm at 192.168.10.100",
+			expCfg:      fakeKubeCfg2,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			configFilename := tempFile(t, test.existing)
+			statusActual, err := UpdateKubeconfigIP(test.ip, configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %s", err)
 			}
@@ -212,14 +287,16 @@ func TestGetKubeConfigStatus(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error reading kubeconfig file: %s", err)
 			}
+			expectedCfgFilename := tempFile(t, test.expCfg)
 			expectedCfg, err := ReadConfigOrNew(expectedCfgFilename)
 			if !configEquals(expectedCfg, actual) {
 				t.Errorf("Did not yield expected config file")
 			}
 			defer os.Remove(configFilename)
+			defer os.Remove(expectedCfgFilename)
 		})
-
 	}
+
 }
 
 func TestEmptyConfig(t *testing.T) {
@@ -269,6 +346,42 @@ func TestNewConfig(t *testing.T) {
 
 	if !configEquals(actual, expected) {
 		t.Fatal("configs did not match")
+	}
+}
+
+func TestGetIPFromKubeConfig(t *testing.T) {
+
+	var tests = []struct {
+		description string
+		cfg         []byte
+		ip          net.IP
+		err         bool
+	}{
+		{
+			description: "normal IP",
+			cfg:         fakeKubeCfg2,
+			ip:          net.ParseIP("192.168.10.100"),
+		},
+		{
+			description: "no minikube cluster",
+			cfg:         fakeKubeCfg,
+			err:         true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			configFilename := tempFile(t, test.cfg)
+			ip, err := getIPFromKubeConfig(configFilename)
+			if err != nil && !test.err {
+				t.Errorf("Got unexpected error: %s", err)
+			}
+			if err == nil && test.err {
+				t.Errorf("Expected error but got none: %s", err)
+			}
+			if !ip.Equal(test.ip) {
+				t.Errorf("IP returned: %s does not match ip given: %s", ip, test.ip)
+			}
+		})
 	}
 }
 

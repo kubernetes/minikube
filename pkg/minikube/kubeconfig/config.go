@@ -19,10 +19,11 @@ package kubeconfig
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync/atomic"
 
 	"github.com/golang/glog"
@@ -184,30 +185,58 @@ func decode(data []byte) (*api.Config, error) {
 }
 
 // GetKubeConfigStatus verifys the ip stored in kubeconfig.
-// If incorrect, the ip is overwritten.
-func GetKubeConfigStatus(ip string, filename string) (string, error) {
-	if ip == "" {
+func GetKubeConfigStatus(ip net.IP, filename string) (string, error) {
+	if ip == nil {
 		return "", fmt.Errorf("Error, empty ip passed")
 	}
-	ks := ""
-	kip := ""
+	kip, err := getIPFromKubeConfig(filename)
+	if err != nil {
+		return "", err
+	}
+	if kip.Equal(ip) {
+		return "Correctly Configured: pointing to minikube-vm at " + kip.String(), nil
+	}
+	return "Misconfigured: pointing to stale minikube-vm at " + kip.String() +
+		"\nTo fix the kubectl context, run minikube update-context", nil
+
+}
+
+// UpdateKubeconfigIP overwrites the IP stored in kubeconfig with the provided IP.
+func UpdateKubeconfigIP(ip net.IP, filename string) (string, error) {
+	if ip == nil {
+		return "", fmt.Errorf("Error, empty ip passed")
+	}
+	kip, err := getIPFromKubeConfig(filename)
+	if err != nil {
+		return "", err
+	}
+	if kip.Equal(ip) {
+		return "Correctly Configured: pointing to minikube-vm at " + kip.String(), nil
+	}
 	con, err := ReadConfigOrNew(filename)
 	if err != nil {
-		// return "", err
 		return "", errors.Wrap(err, "Error getting kubeconfig status")
 	}
-	kip = con.Clusters["minikube"].Server
-
-	if strings.Contains(kip, ip) {
-		ks = "Correctly configured"
-	} else {
-		con.Clusters["minikube"].Server = "https://" + ip + ":" + strconv.Itoa(constants.APIServerPort)
-		err = WriteConfig(con, filename)
-		if err != nil {
-			ks = "VM IP incorrectly configured, unable to reconfigure"
-		} else {
-			ks = "VM IP incorrectly configured, reconfigured"
-		}
+	con.Clusters["minikube"].Server = "https://" + ip.String() + ":" + strconv.Itoa(constants.APIServerPort)
+	err = WriteConfig(con, filename)
+	if err != nil {
+		return "Unable to reconfigure Kubeconfig IP", nil
 	}
-	return ks, nil
+	return "Reconfigured: pointing to minikube-vm at " + ip.String(), nil
+}
+
+// getIPFromKubeConfig returns the IP address stored for minikube in the kubeconfig specified
+func getIPFromKubeConfig(filename string) (net.IP, error) {
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	cluster, ok := con.Clusters["minikube"]
+	if !ok {
+		return nil, errors.Errorf("Kubeconfig does not have a record of a minikube cluster")
+	}
+	kurl, _ := url.Parse(cluster.Server)
+	kip, _, _ := net.SplitHostPort(kurl.Host)
+	ip := net.ParseIP(kip)
+	return ip, nil
 }
