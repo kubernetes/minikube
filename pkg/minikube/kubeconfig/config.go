@@ -235,8 +235,14 @@ func getIPFromKubeConfig(filename string) (net.IP, error) {
 	if !ok {
 		return nil, errors.Errorf("Kubeconfig does not have a record of a minikube cluster")
 	}
-	kurl, _ := url.Parse(cluster.Server)
-	kip, _, _ := net.SplitHostPort(kurl.Host)
+	kurl, err := url.Parse(cluster.Server)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to parse current IP as a url")
+	}
+	kip, _, err := net.SplitHostPort(kurl.Host)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to split host and port")
+	}
 	ip := net.ParseIP(kip)
 	return ip, nil
 }
