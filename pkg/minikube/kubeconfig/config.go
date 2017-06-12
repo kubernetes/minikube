@@ -17,9 +17,13 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
 	"io/ioutil"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync/atomic"
 
 	"github.com/golang/glog"
@@ -27,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 type KubeConfigSetup struct {
@@ -177,4 +182,67 @@ func decode(data []byte) (*api.Config, error) {
 	}
 
 	return config.(*api.Config), nil
+}
+
+// GetKubeConfigStatus verifys the ip stored in kubeconfig.
+func GetKubeConfigStatus(ip net.IP, filename string) (string, error) {
+	if ip == nil {
+		return "", fmt.Errorf("Error, empty ip passed")
+	}
+	kip, err := getIPFromKubeConfig(filename)
+	if err != nil {
+		return "", err
+	}
+	if kip.Equal(ip) {
+		return "Correctly Configured: pointing to minikube-vm at " + kip.String(), nil
+	}
+	return "Misconfigured: pointing to stale minikube-vm at " + kip.String() +
+		"\nTo fix the kubectl context, run minikube update-context", nil
+
+}
+
+// UpdateKubeconfigIP overwrites the IP stored in kubeconfig with the provided IP.
+func UpdateKubeconfigIP(ip net.IP, filename string) (string, error) {
+	if ip == nil {
+		return "", fmt.Errorf("Error, empty ip passed")
+	}
+	kip, err := getIPFromKubeConfig(filename)
+	if err != nil {
+		return "", err
+	}
+	if kip.Equal(ip) {
+		return "Correctly Configured: pointing to minikube-vm at " + kip.String(), nil
+	}
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return "", errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	con.Clusters["minikube"].Server = "https://" + ip.String() + ":" + strconv.Itoa(constants.APIServerPort)
+	err = WriteConfig(con, filename)
+	if err != nil {
+		return "Unable to reconfigure Kubeconfig IP", nil
+	}
+	return "Reconfigured: pointing to minikube-vm at " + ip.String(), nil
+}
+
+// getIPFromKubeConfig returns the IP address stored for minikube in the kubeconfig specified
+func getIPFromKubeConfig(filename string) (net.IP, error) {
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	cluster, ok := con.Clusters["minikube"]
+	if !ok {
+		return nil, errors.Errorf("Kubeconfig does not have a record of a minikube cluster")
+	}
+	kurl, err := url.Parse(cluster.Server)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to parse current IP as a url")
+	}
+	kip, _, err := net.SplitHostPort(kurl.Host)
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to split host and port")
+	}
+	ip := net.ParseIP(kip)
+	return ip, nil
 }

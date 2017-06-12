@@ -27,14 +27,16 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
+	kcfg "k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 var statusFormat string
 
 type Status struct {
-	MinikubeStatus  string
-	LocalkubeStatus string
+	MinikubeStatus   string
+	LocalkubeStatus  string
+	KubeconfigStatus string
 }
 
 // statusCmd represents the status command
@@ -57,14 +59,26 @@ var statusCmd = &cobra.Command{
 		}
 
 		ls := state.None.String()
+		ks := state.None.String()
 		if ms == state.Running.String() {
 			ls, err = cluster.GetLocalkubeStatus(api)
 			if err != nil {
 				glog.Errorln("Error localkube status:", err)
 				cmdUtil.MaybeReportErrorAndExit(err)
 			}
+			ip, err := cluster.GetHostDriverIP(api)
+			if err != nil {
+				glog.Errorln("Error host driver ip status:", err)
+				cmdUtil.MaybeReportErrorAndExit(err)
+			}
+			ks, err = kcfg.GetKubeConfigStatus(ip, constants.KubeconfigPath)
+			if err != nil {
+				glog.Errorln("Error kubeconfig status:", err)
+				cmdUtil.MaybeReportErrorAndExit(err)
+			}
 		}
-		status := Status{ms, ls}
+
+		status := Status{ms, ls, ks}
 
 		tmpl, err := template.New("status").Parse(statusFormat)
 		if err != nil {
