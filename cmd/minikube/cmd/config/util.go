@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -90,7 +91,6 @@ func GetClientType() machine.ClientType {
 }
 
 func EnableOrDisableAddon(name string, val string) error {
-
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
@@ -204,4 +204,25 @@ func transferAddonLocal(addon *assets.Addon, d drivers.Driver) error {
 		}
 	}
 	return err
+}
+
+// given an addon name, find the most recent compatible version
+// based on the current k8s version, and return its name
+func getCompatibleAddonVersion(name string) (string, error) {
+	setting, err := findSetting(name)
+	if err != nil {
+		return "", err
+	}
+	if setting.versions == nil {
+		return name, nil
+	}
+	for _, version := range setting.versions {
+		err := IsValidAddon(version, "")
+		if err == nil {
+			// TODO(nkubala): pick the latest version instead of the first compatible one found?
+			return version, nil
+		}
+		glog.Error(err.Error())
+	}
+	return "", errors.Errorf("No compatible version found for addon %s", name)
 }

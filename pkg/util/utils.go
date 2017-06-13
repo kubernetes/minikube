@@ -37,6 +37,8 @@ type RetriableError struct {
 	Err error
 }
 
+var k8sVersion *semver.Version
+
 func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
 
 // Until endlessly loops the provided function until a message is received on the done channel.
@@ -170,4 +172,30 @@ func IsDirectory(path string) (bool, error) {
 		return false, errors.Wrapf(err, "Error calling os.Stat on file %s", path)
 	}
 	return fileInfo.IsDir(), nil
+}
+
+func GetKubernetesVersion() (*semver.Version, error) {
+	if k8sVersion != nil {
+		return k8sVersion, nil
+	}
+	clientset, err := GetClientSet()
+	if err != nil {
+		return nil, err
+	}
+	serverVersion, err := clientset.Discovery().ServerVersion()
+	if err != nil {
+		return nil, err
+	}
+	versionStr := strings.Replace(serverVersion.GitVersion, "v", "", -1)
+
+	currentVersion, err := semver.Make(versionStr)
+	SetKubernetesVersion(&currentVersion)
+	if err != nil {
+		return k8sVersion, err
+	}
+	return k8sVersion, nil
+}
+
+func SetKubernetesVersion(version *semver.Version) {
+	k8sVersion = version
 }

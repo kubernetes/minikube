@@ -21,23 +21,28 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
+var AllVersions = semver.MustParse("0.0.0")
+
 type Addon struct {
-	Assets    []*MemoryAsset
-	enabled   bool
-	addonName string
+	Assets     []*MemoryAsset
+	enabled    bool
+	addonName  string
+	MinVersion semver.Version
 }
 
-func NewAddon(assets []*MemoryAsset, enabled bool, addonName string) *Addon {
+func NewAddon(assets []*MemoryAsset, enabled bool, addonName string, version semver.Version) *Addon {
 	a := &Addon{
-		Assets:    assets,
-		enabled:   enabled,
-		addonName: addonName,
+		Assets:     assets,
+		enabled:    enabled,
+		addonName:  addonName,
+		MinVersion: version,
 	}
 	return a
 }
@@ -61,7 +66,7 @@ var Addons = map[string]*Addon{
 			"/etc/kubernetes/manifests/",
 			"addon-manager.yaml",
 			"0640"),
-	}, true, "addon-manager"),
+	}, true, "addon-manager", AllVersions),
 	"dashboard": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/dashboard/dashboard-rc.yaml",
@@ -73,31 +78,48 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
-	}, true, "dashboard"),
+	}, true, "dashboard", AllVersions),
 	"default-storageclass": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
 			constants.AddonsPath,
 			"storageclass.yaml",
 			"0640"),
-	}, true, "default-storageclass"),
-	"kube-dns": NewAddon([]*MemoryAsset{
+	}, true, "default-storageclass", AllVersions),
+	"kube-dns-v11": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-controller.yaml",
+			"deploy/addons/kube-dns-v11/kube-dns-controller.yaml",
 			constants.AddonsPath,
 			"kube-dns-controller.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-cm.yaml",
+			"deploy/addons/kube-dns-v11/kube-dns-cm.yaml",
 			constants.AddonsPath,
 			"kube-dns-cm.yaml",
 			"0640"),
 		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-svc.yaml",
+			"deploy/addons/kube-dns-v11/kube-dns-svc.yaml",
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
-	}, true, "kube-dns"),
+	}, false, "kube-dns-v11", semver.MustParse("1.6.3")),
+	"kube-dns-v20": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-v20/kube-dns-controller.yaml",
+			constants.AddonsPath,
+			"kube-dns-controller.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-v20/kube-dns-cm.yaml",
+			constants.AddonsPath,
+			"kube-dns-cm.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/kube-dns-v20/kube-dns-svc.yaml",
+			constants.AddonsPath,
+			"kube-dns-svc.yaml",
+			"0640"),
+	}, false, "kube-dns-v20", semver.MustParse("1.6.3")),
 	"heapster": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/heapster/influxGrafana-rc.yaml",
@@ -124,7 +146,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640"),
-	}, false, "heapster"),
+	}, false, "heapster", AllVersions),
 	"ingress": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/ingress/ingress-configmap.yaml",
@@ -141,14 +163,14 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"ingress-svc.yaml",
 			"0640"),
-	}, false, "ingress"),
+	}, false, "ingress", AllVersions),
 	"registry-creds": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/registry-creds/registry-creds-rc.yaml",
 			constants.AddonsPath,
 			"registry-creds-rc.yaml",
 			"0640"),
-	}, false, "registry-creds"),
+	}, false, "registry-creds", AllVersions),
 }
 
 func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {

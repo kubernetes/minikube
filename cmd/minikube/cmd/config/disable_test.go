@@ -23,11 +23,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/tests"
+
+	"k8s.io/minikube/pkg/util"
 )
 
 func TestDisableUnknownAddon(t *testing.T) {
@@ -37,6 +40,10 @@ func TestDisableUnknownAddon(t *testing.T) {
 }
 
 func TestDisableValidAddonLocal(t *testing.T) {
+	//set current k8s version to mock out utils.GetKubernetesVersion()
+	k8sVersion := semver.MustParse("1.6.3")
+	util.SetKubernetesVersion(&k8sVersion)
+
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 

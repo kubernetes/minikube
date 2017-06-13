@@ -34,7 +34,13 @@ var addonsEnableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
-		err := Set(addon, "true")
+		versionedAddon, err := getCompatibleAddonVersion(addon)
+		if err != nil {
+			fmt.Fprintln(os.Stdout, err)
+			// need to exit here so set isn't called
+			return
+		}
+		err = Set(versionedAddon, "true")
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
 		} else {
