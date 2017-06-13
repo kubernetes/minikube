@@ -1,4 +1,5 @@
-// +build integration versioned
+// +build integration
+// +build versioned
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
