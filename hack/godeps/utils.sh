@@ -53,5 +53,5 @@ done
 }
 
 godep::remove_staging_from_json() {
-  go run ${MINIKUBE_ROOT}/hack/godeps/godeps-json-updater.go --godeps-file ${MINIKUBE_ROOT}/Godeps/Godeps.json
+  go run ${MINIKUBE_ROOT}/hack/godeps/godeps-json-updater.go --godeps-file ${MINIKUBE_ROOT}/Godeps/Godeps.json --kubernetes-dir ${KUBE_ROOT}
 }

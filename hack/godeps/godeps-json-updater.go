@@ -18,25 +18,19 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strings"
 
 	flag "github.com/spf13/pflag"
 )
 
 var (
-	godepsFile = flag.String("godeps-file", "", "absolute path to Godeps.json")
+	godepsFile     = flag.String("godeps-file", "", "absolute path to Godeps.json")
+	kubernetesPath = flag.String("kubernetes-dir", "", "absolute path to the kubernetes folder")
 )
-
-var ignoredPrefixes = []string{
-	"k8s.io/client-go",
-	"k8s.io/apimachinery",
-	"k8s.io/apiserver",
-	"k8s.io/kube-aggregator",
-	"k8s.io/kube-apiextensions-server",
-	"k8s.io/metrics",
-}
 
 type Dependency struct {
 	ImportPath string
@@ -55,7 +49,7 @@ type Godeps struct {
 func main() {
 	flag.Parse()
 	var g Godeps
-	if len(*godepsFile) == 0 {
+	if godepsFile == nil || kubernetesPath == nil {
 		log.Fatalf("absolute path to Godeps.json is required")
 	}
 	f, err := os.OpenFile(*godepsFile, os.O_RDWR, 0666)
@@ -68,11 +62,18 @@ func main() {
 		log.Fatalf("Unable to parse %q: %v", *godepsFile, err)
 	}
 
+	k8sStagingDir := path.Join(*kubernetesPath, "staging", "src", "k8s.io")
+	stagedRepos, err := ioutil.ReadDir(k8sStagingDir)
+	if err != nil {
+		log.Fatalf("Couldn't read kubernetes staging repo: %v", err)
+	}
+
 	i := 0
 	for _, dep := range g.Deps {
 		ignored := false
-		for _, ignoredPrefix := range ignoredPrefixes {
-			if strings.HasPrefix(dep.ImportPath, ignoredPrefix) {
+		for _, stagedRepo := range stagedRepos {
+			importPrefix := path.Join("k8s.io", stagedRepo.Name())
+			if strings.HasPrefix(dep.ImportPath, importPrefix) {
 				ignored = true
 			}
 		}
