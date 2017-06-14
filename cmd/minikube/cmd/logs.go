@@ -37,7 +37,7 @@ var logsCmd = &cobra.Command{
 	Short: "Gets the logs of the running localkube instance, used for debugging minikube, not user code",
 	Long:  `Gets the logs of the running localkube instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

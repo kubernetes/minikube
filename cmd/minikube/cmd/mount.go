@@ -86,7 +86,7 @@ var mountCmd = &cobra.Command{
 		if glog.V(1) {
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

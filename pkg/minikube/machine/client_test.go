@@ -116,8 +116,10 @@ func TestGetDriver(t *testing.T) {
 }
 
 func TestLocalClientNewHost(t *testing.T) {
-	f := clientFactories[ClientTypeLocal]
-	c := f.NewClient("", "")
+	c, err := NewAPIClient()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	var tests = []struct {
 		description string
@@ -152,42 +154,6 @@ func TestLocalClientNewHost(t *testing.T) {
 					t.Errorf("Host name is not correct.  Expected :%s, got: %s", host.Driver.GetMachineName(), host.Name)
 				}
 			}
-			if err != nil && !test.err {
-				t.Errorf("Unexpected error: %s", err)
-			}
-			if err == nil && test.err {
-				t.Errorf("No error returned, but expected err")
-			}
-		})
-	}
-}
-
-func TestNewAPIClient(t *testing.T) {
-	var tests = []struct {
-		description string
-		clientType  ClientType
-		err         bool
-	}{
-		{
-			description: "Client type local",
-			clientType:  ClientTypeLocal,
-		},
-		{
-			description: "Client type RPC",
-			clientType:  ClientTypeRPC,
-		},
-		{
-			description: "Incorrect client type",
-			clientType:  -1,
-			err:         true,
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
-			_, err := NewAPIClient(test.clientType)
 			if err != nil && !test.err {
 				t.Errorf("Unexpected error: %s", err)
 			}
