@@ -33,7 +33,6 @@ import (
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/notify"
 )
 
@@ -56,7 +55,6 @@ const (
 
 var (
 	enableUpdateNotification = true
-	clientType               machine.ClientType
 )
 
 var viperWhiteList = []string{
@@ -94,9 +92,6 @@ var RootCmd = &cobra.Command{
 Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine logs
 `)
 		}
-
-		//TODO(r2d4): config should not reference API
-		clientType = configCmd.GetClientType()
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {

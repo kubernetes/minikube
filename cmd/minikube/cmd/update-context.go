@@ -20,39 +20,47 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
+	kcfg "k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
-// stopCmd represents the stop command
-var stopCmd = &cobra.Command{
-	Use:   "stop",
-	Short: "Stops a running local kubernetes cluster",
-	Long: `Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
-itself, leaving all files intact. The cluster can be started again with the "start" command.`,
+// updateContextCmd represents the update-context command
+var updateContextCmd = &cobra.Command{
+	Use:   "update-context",
+	Short: "Verify the IP address of the running cluster in kubeconfig.",
+	Long: `Retrieves the IP address of the running cluster, checks it
+			with IP in kubeconfig, and corrects kubeconfig if incorrect.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Stopping local Kubernetes cluster...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()
-
-		if err = cluster.StopHost(api); err != nil {
-			fmt.Println("Error stopping machine: ", err)
+		ip, err := cluster.GetHostDriverIP(api)
+		if err != nil {
+			glog.Errorln("Error host driver ip status:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		fmt.Println("Machine stopped.")
-
-		if err := cmdUtil.KillMountProcess(); err != nil {
-			fmt.Println("Errors occurred deleting mount process: ", err)
+		kstatus, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath)
+		if err != nil {
+			glog.Errorln("Error kubeconfig status:", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
 		}
+		if kstatus {
+			fmt.Println("Reconfigured kubeconfig IP, now pointing at " + ip.String())
+		} else {
+			fmt.Println("Kubeconfig IP correctly configured, pointing at " + ip.String())
+		}
+
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(stopCmd)
+	RootCmd.AddCommand(updateContextCmd)
 }

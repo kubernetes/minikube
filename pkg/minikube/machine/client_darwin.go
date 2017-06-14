@@ -29,7 +29,6 @@ import (
 
 var driverMap = map[string]driverGetter{
 	"vmwarefusion": getVMWareFusionDriver,
-	"xhyve":        getXhyveDriver,
 	"virtualbox":   getVirtualboxDriver,
 }
 

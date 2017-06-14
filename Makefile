@@ -25,7 +25,7 @@ DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
 # The iso will be versioned the same as minikube
-ISO_VERSION ?= v0.18.0
+ISO_VERSION ?= v0.19.1
 ISO_BUCKET ?= minikube/iso
 
 GOOS ?= $(shell go env GOOS)
@@ -113,6 +113,10 @@ test-iso:
 .PHONY: integration
 integration: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)"
+
+.PHONY: integration-versioned
+integration-versioned: out/minikube
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="integration versioned" --minikube-args="$(MINIKUBE_ARGS)"
 
 .PHONY: test
 test: $(GOPATH)/src/$(ORG) pkg/minikube/assets/assets.go
