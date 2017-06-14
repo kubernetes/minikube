@@ -31,6 +31,7 @@ import (
 const (
 	APIServerPort = 8443
 	APIServerName = "minikubeCA"
+	ClusterDNSDomain = "cluster.local"
 )
 
 const MinikubeHome = "MINIKUBE_HOME"
