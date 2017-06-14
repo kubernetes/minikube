@@ -17,17 +17,15 @@ limitations under the License.
 package none
 
 import (
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -50,10 +48,6 @@ func NewDriver(hostName, storePath string) *Driver {
 
 // PreCreateCheck checks that VBoxManage exists and works
 func (d *Driver) PreCreateCheck() error {
-	// check that systemd is installed as it is a requirement
-	if _, err := exec.LookPath("systemctl"); err != nil {
-		return errors.New("systemd is a requirement in order to use the none driver")
-	}
 	return nil
 }
 
@@ -96,17 +90,22 @@ func (d *Driver) GetURL() (string, error) {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	command := `sudo systemctl is-active localkube 2>&1 1>/dev/null && echo "Running" || echo "Stopped"`
+	var statuscmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; "+`then
+  sudo systemctl is-active localkube &>/dev/null && echo "Running" || echo "Stopped"
+else
+  if ps $(cat %s) &>/dev/null; then
+    echo "Running"
+  else
+    echo "Stopped"
+  fi
+fi
+`, constants.LocalkubePIDPath)
 
-	path := filepath.Join(constants.GetMinipath(), "tmp-cmd")
-	ioutil.WriteFile(filepath.Join(constants.GetMinipath(), "tmp-cmd"), []byte(command), os.FileMode(0644))
-	defer os.Remove(path)
-	cmd := exec.Command("sudo", "/bin/sh", path)
-	out, err := cmd.CombinedOutput()
+	out, err := runCommand(statuscmd, true)
 	if err != nil {
 		return state.None, err
 	}
-	s := strings.TrimSpace(string(out))
+	s := strings.TrimSpace(out)
 	if state.Running.String() == s {
 		return state.Running, nil
 	} else if state.Stopped.String() == s {
@@ -162,11 +161,16 @@ func (d *Driver) Start() error {
 }
 
 func (d *Driver) Stop() error {
-	cmd := exec.Command("sudo", "systemctl", "stop", "localkube.service")
-	if err := cmd.Start(); err != nil {
+	var stopcmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; "+`then
+  sudo systemctl stop localkube.service
+else
+	sudo kill $(cat %s)
+fi
+`, constants.LocalkubePIDPath)
+	_, err := runCommand(stopcmd, true)
+	if err != nil {
 		return err
 	}
-
 	for {
 		s, err := d.GetState()
 		if err != nil {
@@ -181,4 +185,16 @@ func (d *Driver) Stop() error {
 
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support ssh commands")
+}
+
+func runCommand(command string, sudo bool) (string, error) {
+	cmd := exec.Command("/bin/bash", "-c", command)
+	if sudo {
+		cmd = exec.Command("sudo", "/bin/bash", "-c", command)
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", errors.Wrap(err, string(out))
+	}
+	return string(out), nil
 }

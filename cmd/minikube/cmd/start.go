@@ -241,8 +241,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		fmt.Println(`===================
 WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
 	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks
+`)
 
-When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
+		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") != "" {
+			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
 You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
 	sudo mv /root/.kube $HOME/.kube # this will overwrite any config you have.  You may have to append the file contents manually
 	sudo chown -R $USER $HOME/.kube
@@ -252,6 +254,12 @@ You will need to move the files to the appropriate location and then set the cor
 	sudo chown -R $USER $HOME/.minikube
 	sudo chgrp -R $USER $HOME/.minikube 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
+		}
+		if err := cmdUtil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
+			glog.Errorf("Error recursively changing ownership of directory %s: %s",
+				constants.GetMinipath(), err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 }
 

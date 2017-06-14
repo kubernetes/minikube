@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strconv"
 
@@ -157,29 +156,7 @@ func CopyFileLocal(f CopyableFile) error {
 
 	_, err = io.Copy(target, f)
 	if err != nil {
-		return errors.Wrap(err, "Error copying file to target location")
-	}
-
-	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") != "" {
-		username := os.Getenv("SUDO_USER")
-		if username == "" {
-			return nil
-		}
-		usr, err := user.Lookup(username)
-		if err != nil {
-			return errors.Wrap(err, "Error looking up user")
-		}
-		uid, err := strconv.Atoi(usr.Uid)
-		if err != nil {
-			return errors.Wrapf(err, "Error parsing uid for user: %s", username)
-		}
-		gid, err := strconv.Atoi(usr.Gid)
-		if err != nil {
-			return errors.Wrapf(err, "Error parsing gid for user: %s", username)
-		}
-		if err := os.Chown(targetPath, uid, gid); err != nil {
-			return errors.Wrapf(err, "Error changing ownership for: %s", targetPath)
-		}
+		return errors.Wrap(err, "Error copying file to target location, do you have the correct permissions?")
 	}
 	return nil
 }
