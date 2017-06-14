@@ -36,7 +36,7 @@ var updateContextCmd = &cobra.Command{
 	Long: `Retrieves the IP address of the running cluster, checks it
 			with IP in kubeconfig, and corrects kubeconfig if incorrect.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)
