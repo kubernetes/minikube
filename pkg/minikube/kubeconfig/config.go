@@ -17,9 +17,13 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
 	"io/ioutil"
+	"net"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync/atomic"
 
 	"github.com/golang/glog"
@@ -27,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 type KubeConfigSetup struct {
@@ -177,4 +183,69 @@ func decode(data []byte) (*api.Config, error) {
 	}
 
 	return config.(*api.Config), nil
+}
+
+// GetKubeConfigStatus verifys the ip stored in kubeconfig.
+func GetKubeConfigStatus(ip net.IP, filename string) (bool, error) {
+	if ip == nil {
+		return false, fmt.Errorf("Error, empty ip passed")
+	}
+	kip, err := getIPFromKubeConfig(filename)
+	if err != nil {
+		return false, err
+	}
+	if kip.Equal(ip) {
+		return true, nil
+	}
+	// Kubeconfig IP misconfigured
+	return false, nil
+
+}
+
+// UpdateKubeconfigIP overwrites the IP stored in kubeconfig with the provided IP.
+func UpdateKubeconfigIP(ip net.IP, filename string) (bool, error) {
+	if ip == nil {
+		return false, fmt.Errorf("Error, empty ip passed")
+	}
+	kip, err := getIPFromKubeConfig(filename)
+	if err != nil {
+		return false, err
+	}
+	if kip.Equal(ip) {
+		return false, nil
+	}
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return false, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
+	con.Clusters[cfg.GetMachineName()].Server = "https://" + ip.String() + ":" + strconv.Itoa(constants.APIServerPort)
+	err = WriteConfig(con, filename)
+	if err != nil {
+		return false, err
+	}
+	// Kubeconfig IP reconfigured
+	return true, nil
+}
+
+// getIPFromKubeConfig returns the IP address stored for minikube in the kubeconfig specified
+func getIPFromKubeConfig(filename string) (net.IP, error) {
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	cluster, ok := con.Clusters[cfg.GetMachineName()]
+	if !ok {
+		return nil, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+	}
+	kurl, err := url.Parse(cluster.Server)
+	if err != nil {
+		return net.ParseIP(cluster.Server), nil
+	}
+	kip, _, err := net.SplitHostPort(kurl.Host)
+	if err != nil {
+		return net.ParseIP(kurl.Host), nil
+	}
+	ip := net.ParseIP(kip)
+	return ip, nil
 }
