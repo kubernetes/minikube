@@ -3,6 +3,15 @@
 * If you're not on Linux, you'll need a Docker installation
 * Minikube requires at least 4GB of RAM to compile, which can be problematic when using docker-machine
 
+#### Prerequisites for different GNU/Linux distributions
+
+##### Fedora
+On Fedora you need to install glibc-static
+
+```shell
+$ sudo dnf install -y glibc-static
+```
+
 ### Build Instructions
 
 ```shell
