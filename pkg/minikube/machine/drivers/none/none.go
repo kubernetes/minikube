@@ -51,9 +51,16 @@ func NewDriver(hostName, storePath string) *Driver {
 // PreCreateCheck checks that VBoxManage exists and works
 func (d *Driver) PreCreateCheck() error {
 	// check that systemd is installed as it is a requirement
-	if _, err := exec.LookPath("systemctl"); err != nil {
+	if _, err := exec.LookPath("systemd"); err != nil {
 		return errors.New("systemd is a requirement in order to use the none driver")
 	}
+	if _, err := exec.LookPath("systemctl"); err != nil {
+		return errors.New("systemctl is a requirement in order to use the none driver")
+	}
+	if _, err := exec.LookPath("journalctl"); err != nil {
+		return errors.New("journalctl is a requirement in order to use the none driver")
+	}
+
 	return nil
 }
 
