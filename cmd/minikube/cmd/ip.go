@@ -29,7 +29,7 @@ import (
 // ipCmd represents the ip command
 var ipCmd = &cobra.Command{
 	Use:   "ip",
-	Short: "Retrieve the IP address of the running cluster.",
+	Short: "Retrieves the IP address of the running cluster",
 	Long:  `Retrieves the IP address of the running cluster, and writes it to STDOUT.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()

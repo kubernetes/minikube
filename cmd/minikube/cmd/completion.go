@@ -40,7 +40,7 @@ const longDescription = `
 		$ source /etc/bash-completion
 		$ source <(minikube completion bash)
 
-	Additionally, you may want to output completion to a file and source in your .bashrc
+	Additionally, you may want to output the completion to a file and source in your .bashrc
 `
 
 const boilerPlate = `

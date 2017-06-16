@@ -205,7 +205,7 @@ buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker conta
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	docker build -t $@ -f $< $(dir $<)
 	@echo ""
-	@echo "$(@) succesfully built"
+	@echo "$(@) successfully built"
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum

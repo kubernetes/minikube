@@ -1,5 +1,5 @@
 ### Debugging Issues With Minikube
-To debug issues with minikube (not kubernetes but minikube itself), you can use the -v flag to see debug level info.  The specified values for v will do the following (the values are all encompassing in that higher values will give you all lower value outputs as well):
+To debug issues with minikube (not Kubernetes but minikube itself), you can use the -v flag to see debug level info.  The specified values for v will do the following (the values are all encompassing in that higher values will give you all lower value outputs as well):
 * --v=0 INFO level logs
 * --v=1 WARNING level logs
 * --v=2 ERROR level logs

@@ -74,7 +74,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 		}
 	}
 
-	//Set feature gates
+	// Set feature gates
 	if s.FeatureGates != "" {
 		glog.Infof("Setting Feature Gates: %s", s.FeatureGates)
 		err := feature.DefaultFeatureGate.Set(s.FeatureGates)
