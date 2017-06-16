@@ -9,10 +9,11 @@ metadata:
 spec:
   replicas: 1
   selector:
-    addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/minikube-addons: registry
   template:
     metadata:
       labels:
+        kubernetes.io/minikube-addons: registry
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
