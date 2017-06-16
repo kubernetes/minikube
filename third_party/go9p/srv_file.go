@@ -6,6 +6,7 @@ package go9p
 
 import (
 	"log"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -132,7 +133,13 @@ func (f *srvFile) Add(dir *srvFile, name string, uid User, gid Group, mode uint3
 	f.Qid.Version = 0
 	f.Qid.Path = qpath
 	f.Mode = mode
-	f.Atime = uint32(time.Now().Unix())
+	// macOS filesystem st_mtime values are only accurate to the second
+	// without truncating, 9p will invent a changing fractional time #1375
+	if runtime.GOOS == "darwin" {
+		f.Atime = uint32(time.Now().Truncate(time.Second).Unix())
+	} else {
+		f.Atime = uint32(time.Now().Unix())
+	}
 	f.Mtime = f.Atime
 	f.Length = 0
 	f.Name = name
