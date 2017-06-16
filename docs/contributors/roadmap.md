@@ -13,7 +13,7 @@ Here are some specific features that align with our goal:
 * Becoming the default local-cluster setup for Kubernetes
 
 ## Non-Goals
-* Simplifying kubernetes production deployment experience. Kube-deploy is attempting to tackle this problem.
+* Simplifying Kubernetes production deployment experience. Kube-deploy is attempting to tackle this problem.
 * Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
 
 ## Priorities

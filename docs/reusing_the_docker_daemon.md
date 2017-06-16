@@ -28,4 +28,4 @@ The fix is to update /etc/sysconfig/docker to ensure that minikube's environment
 > fi
 ```
 
-Remember to turn off the imagePullPolicy:Always, as otherwise kubernetes won't use images you built locally.
+Remember to turn off the _imagePullPolicy:Always_, as otherwise Kubernetes won't use images you built locally.

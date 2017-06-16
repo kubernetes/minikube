@@ -57,7 +57,7 @@ var defaultAPI = &tests.MockAPI{
 	},
 }
 
-//Most of the shell cfg isn't configurable
+// Most of the shell cfg isn't configurable
 func newShellCfg(shell, prefix, suffix, delim string) *ShellConfig {
 	return &ShellConfig{
 		DockerCertPath:   constants.MakeMiniPath("certs"),
