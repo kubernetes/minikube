@@ -1,6 +1,6 @@
 ## Add-ons
 
-Minikube has a set of built in addons that can be used enabled, disabled, and opened inside of the local k8s environment.  Below is an exampe of this functionality for the `heapster` addon:
+Minikube has a set of built in addons that can be used enabled, disabled, and opened inside of the local k8s environment. Below is an example of this functionality for the `heapster` addon:
 ```shell
 $ minikube addons list
 - addon-manager: enabled
@@ -25,6 +25,6 @@ The currently supported addons include:
 * [Heapster](https://github.com/kubernetes/heapster): [Troubleshooting Guide](https://github.com/kubernetes/heapster/blob/master/docs/influxdb.md) Note:You will need to login to Grafana as admin/admin in order to access the console
 * [Registry Credentials](https://github.com/upmc-enterprises/registry-creds)
 
-If you would like to have minikube properly start/restart custom addons, place the addon(s) you wish to be launched with minikube in the `.minikube/addons` directory.  Addons in this folder will be moved to the minikubeVM and launched each time minikube is started/restarted.
+If you would like to have minikube properly start/restart custom addons, place the addon(s) you wish to be launched with minikube in the `.minikube/addons` directory. Addons in this folder will be moved to the minikube VM and launched each time minikube is started/restarted.
 
 If you have a request for an addon in minikube, please open an issue with the name and preferably a link to the addon with a description of its purpose and why it should be added.  You can also attempt to add the addon to minikube by following the guide at [Adding an Addon](contributors/adding_an_addon.md)

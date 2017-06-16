@@ -72,7 +72,7 @@ var mountCmd = &cobra.Command{
 				errText := fmt.Sprintf("Cannot find directory %s for mount", hostPath)
 				fmt.Fprintln(os.Stderr, errText)
 			} else {
-				errText := fmt.Sprintf("Error accesssing directory %s for mount", hostPath)
+				errText := fmt.Sprintf("Error accessing directory %s for mount", hostPath)
 				fmt.Fprintln(os.Stderr, errText)
 			}
 			os.Exit(1)
@@ -115,7 +115,7 @@ var mountCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
-		fmt.Printf("Mounting %s into %s on the minikubeVM\n", hostPath, vmPath)
+		fmt.Printf("Mounting %s into %s on the minikube VM\n", hostPath, vmPath)
 		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
 		port, err := cmdUtil.GetPort()
 		if err != nil {
