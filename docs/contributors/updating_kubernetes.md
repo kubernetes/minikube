@@ -76,7 +76,7 @@ Server Version: version.Info{Major:"1", Minor:"3+", GitVersion:"v1.3.0-beta.2", 
 The Server Version should contain the right tag in `version.Info.GitVersion`.
 
 If any manual changes were required, please commit the vendor changes separately.
-This makes the change easier to view in Github.
+This makes the change easier to view in GitHub.
 
 ```shell
 git add vendor/
@@ -85,4 +85,4 @@ git add --all
 git commit -m "Manual changes to update Kubernetes to foo"
 ```
 
-As a final part of updating kubernetes, a new version of localkube should be uploaded to GCS so that users can select this version of kubernetes/localkube in later minikube/localkube builds.  For instructions on how to do this, see [releasing_localkube.md](https://github.com/kubernetes/minikube/blob/master/docs/contributors/releasing_localkube.md)
+As a final part of updating Kubernetes, a new version of localkube should be uploaded to GCS so that users can select this version of Kubernetes/localkube in later minikube/localkube builds. For instructions on how to do this, see [releasing_localkube.md](https://github.com/kubernetes/minikube/blob/master/docs/contributors/releasing_localkube.md)

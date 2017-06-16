@@ -97,8 +97,8 @@ func runCommand(f func(*cobra.Command, []string)) {
 	f(&cmd, args)
 }
 
-// Temporarily unsets the env variables for the test cases
-// returns a function to reset them to their initial values
+// Temporarily unsets the env variables for the test cases.
+// Returns a function to reset them to their initial values.
 func hideEnv(t *testing.T) func(t *testing.T) {
 	envs := make(map[string]string)
 	for _, env := range os.Environ() {
