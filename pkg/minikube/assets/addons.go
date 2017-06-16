@@ -142,6 +142,18 @@ var Addons = map[string]*Addon{
 			"ingress-svc.yaml",
 			"0640"),
 	}, false, "ingress"),
+	"registry": NewAddon([]*MemoryAsset{
+		NewMemoryAsset(
+			"deploy/addons/registry/registry-rc.yaml",
+			constants.AddonsPath,
+			"registry-rc.yaml",
+			"0640"),
+		NewMemoryAsset(
+			"deploy/addons/registry/registry-svc.yaml",
+			constants.AddonsPath,
+			"registry-svc.yaml",
+			"0640"),
+	}, false, "registry"),
 	"registry-creds": NewAddon([]*MemoryAsset{
 		NewMemoryAsset(
 			"deploy/addons/registry-creds/registry-creds-rc.yaml",
