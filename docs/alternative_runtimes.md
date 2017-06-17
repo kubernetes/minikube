@@ -5,5 +5,5 @@ To use [rkt](https://github.com/coreos/rkt) as the container runtime run:
 ```shell
 $ minikube start \
     --network-plugin=cni \
-    --container-runtime=rkt \
+    --container-runtime=rkt
 ```
