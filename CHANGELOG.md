@@ -1,5 +1,23 @@
 # Minikube Release Notes
 
+## Version 0.20.0 - 6/17/2017
+* Updated default Kubernetes version to 1.6.4
+* Added Local Registry Addon `minikube addons enable registry` [#1583](https://github.com/kubernetes/minikube/pull/1583)
+* Fixed kube-DNS addon failures
+* Bumped default ISO version to 0.20.0
+* Fixed mtime issue on macOS [#1594](https://github.com/kubernetes/minikube/pull/1594)
+* Use --dns-domain for k8s API server cert generation [#1589](https://github.com/kubernetes/minikube/pull/1589)
+* Added `minikube update-context` command [#1578](https://github.com/kubernetes/minikube/pull/1578)
+* Added kubeconfig context and minikube ip to `minikube status` [#1578](https://github.com/kubernetes/minikube/pull/1578)
+* Use native golang ssh [#1571](https://github.com/kubernetes/minikube/pull/1571)
+* Don't treat stopping stoppped hosts as error [#1606](https://github.com/kubernetes/minikube/pull/1606)
+* Bumped ingress addon to 0.9-beta.8
+* Removed systemd dependency for None driver [#1592](https://github.com/kubernetes/minikube/pull/1592)
+
+* [Minikube ISO] Enabled IP_VS, MACVLAN, and VXLAN Kernel modules
+* [Minikube ISO] Increase number of inodes
+* [Minikube ISO] Use buildroot branch 2017-02
+
 ## Version 0.19.1 - 5/30/2017
 * Fixed issue where using TPRs could cause localkube to crash
 * Added mount daemon that can be started using `minikube start --mount --mount-string="/path/to/mount"`.  Cleanup of mount handled by `minikube delete`
