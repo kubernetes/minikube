@@ -23,8 +23,8 @@ import (
 	"net"
 	"strings"
 
-	"text/template"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"text/template"
 )
 
 // Kill any running instances.
