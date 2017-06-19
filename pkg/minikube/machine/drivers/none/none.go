@@ -153,6 +153,9 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 }
 
 func (d *Driver) Start() error {
+	if err := os.MkdirAll("/usr/lib/systemd/system/", os.FileMode(0755)); err != nil {
+		return err
+	}
 	d.IPAddress = "127.0.0.1"
 	d.URL = "127.0.0.1:8080"
 	return nil
