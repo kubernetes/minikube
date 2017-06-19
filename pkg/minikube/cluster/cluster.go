@@ -33,6 +33,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -103,6 +104,10 @@ func StopHost(api libmachine.API) error {
 		return errors.Wrapf(err, "Error loading host: %s", cfg.GetMachineName())
 	}
 	if err := host.Stop(); err != nil {
+		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
+		if ok && alreadyInStateError.State == state.Stopped {
+			return nil
+		}
 		return errors.Wrapf(err, "Error stopping host: %s", cfg.GetMachineName())
 	}
 	return nil
