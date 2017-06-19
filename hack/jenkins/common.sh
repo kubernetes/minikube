@@ -43,6 +43,12 @@ virsh -c qemu:///system list --all \
 vboxmanage list vms \
       | cut -d "{" -f2 \
       | cut -d "}" -f1 \
+      | xargs -I {} sh -c "vboxmanage controlvm {} poweroff" \
+      || true
+
+vboxmanage list vms \
+      | cut -d "{" -f2 \
+      | cut -d "}" -f1 \
       | xargs -I {} sh -c "vboxmanage unregistervm {} --delete" \
       || true
 
