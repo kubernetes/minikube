@@ -21,7 +21,7 @@ DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2017.02
 REGISTRY?=gcr.io/k8s-minikube
-DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.7.3
+DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.8.3
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
 # The iso will be versioned the same as minikube
