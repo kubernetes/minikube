@@ -153,10 +153,7 @@ func GetLocalkubeStatus(api libmachine.API) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	statusCmd := localkubeStatusCommand
-
-	s, err := RunCommand(h, statusCmd, false)
+	s, err := RunCommand(h, localkubeStatusCommand, false)
 	if err != nil {
 		return "", err
 	}
@@ -446,7 +443,7 @@ func GetHostLogs(api libmachine.API, follow bool) (string, error) {
 	s, err := RunCommand(h, logsCommand, false)
 
 	if err != nil {
-		return "", err
+		return s, err
 	}
 	return s, nil
 }
@@ -577,15 +574,20 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 // RunCommand executes commands for both the local and driver implementations
 func RunCommand(h *host.Host, command string, sudo bool) (string, error) {
 	if h.Driver.DriverName() == "none" {
-		cmd := exec.Command("/bin/sh", "-c", command)
+		cmd := exec.Command("/bin/bash", "-c", command)
 		if sudo {
-			cmd = exec.Command("sudo", "/bin/sh", "-c", command)
+			cmd = exec.Command("sudo", "/bin/bash", "-c", command)
 		}
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, string(out))
 		}
-		return string(out), nil
+		return string(out), err
 	}
-	return h.RunSSHCommand(command)
+	out, err := h.RunSSHCommand(command)
+	if err != nil {
+		return "", errors.Wrap(err, string(out))
+	}
+	return string(out), err
+
 }
