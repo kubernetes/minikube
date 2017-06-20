@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	cmdUtil "k8s.io/minikube/cmd/util"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -166,6 +167,10 @@ func WriteConfig(config *api.Config, filename string) error {
 	if err := ioutil.WriteFile(filename, data, 0600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", filename)
 	}
+	if err := cmdUtil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
+		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
+	}
+
 	return nil
 }
 
