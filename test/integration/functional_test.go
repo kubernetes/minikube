@@ -19,7 +19,6 @@ limitations under the License.
 package integration
 
 import (
-	"runtime"
 	"strings"
 	"testing"
 
@@ -46,10 +45,6 @@ func TestFunctional(t *testing.T) {
 	if !strings.Contains(*args, "--vm-driver=none") {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
-		if runtime.GOOS != "windows" {
-			t.Run("Systemd", testVMSystemd)
-
-		}
 		// t.Run("Mounting", testMounting)
 	}
 }
