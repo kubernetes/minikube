@@ -23,11 +23,14 @@
 
 set -e
 
+MINIKUBE_DIR=${GOPATH}/src/k8s.io/minikube
+FILES_CHANGED=$(git diff ${ghprbActualCommit} --name-only $(git merge-base origin/master ${ghprbActualCommit}))
+
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
 # If there are ISO changes, build and upload the ISO
 # then set the default to the newly built ISO for testing
-if out="$(git diff ${ghprbActualCommit} --name-only $(git merge-base origin/master ${ghprbActualCommit}) | grep deploy/iso/minikube)" &> /dev/null; then
+if out="$(${FILES_CHANGED} | grep deploy/iso/minikube)" &> /dev/null; then
 	echo "ISO changes detected ... rebuilding ISO"
 	export ISO_BUCKET="minikube-builds/${ghprbPullId}"
 	export ISO_VERSION="testing"
@@ -35,6 +38,12 @@ if out="$(git diff ${ghprbActualCommit} --name-only $(git merge-base origin/mast
 	make release-iso
 fi
 
+# If there godep or vendor changes, make sure they are reproducible.
+if out="$(${FILES_CHANGED} | grep 'vendor/|Godeps')" &> /dev/null; then
+	echo "Godeps changes detected...verifying Godeps"
+    ${MINIKUBE_DIR}/hack/godeps/godep-restore.sh
+    ${MINIKUBE_DIR}/hack/godeps/godep-save.sh
+fi
 
 # Build all platforms (Windows, Linux, OSX)
 make cross
