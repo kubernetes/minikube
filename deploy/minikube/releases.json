@@ -2,9 +2,9 @@
   {
       "name": "v0.20.0",
       "checksums": {
-          "darwin": "c09b3ff9045a9b4c2bc9dab85b981f7846b77417bcfeb3248fc50cd985a5c5fe",
-          "linux": "804cc26ac40542314d0076a3818333010bb5a6d1c57873854ca566a18dede080",
-          "windows": "f43deb5a63ca3402a9bdd7032cf050629cb0128a78e4e6a93637cffbbdf81203"
+          "darwin": "591737b728745dbf01f634bf714353c416c2e56c39e2e0431910fa51783b7a19",
+          "linux": "f7d51f0b94f88650ced3ddb6e079f560e7ef142b8e4d53a5aee511ca1c2e3df4",
+          "windows": "d4be02e5e7075943d6b4efca44c0ff56286f72236e2640d82010b944646612b7"
       }
   },
   {
