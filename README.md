@@ -53,7 +53,7 @@ the following drivers:
 * vmwarefusion
 * [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
 * [xhyve](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
-* [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
+* [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver) (`--vm-driver=hyperv`)
 
 
 ```shell
