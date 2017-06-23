@@ -68,8 +68,6 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
 		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
 		DiskSize:       int64(config.DiskSize),
-		Virtio9p:       true,
-		Virtio9pFolder: "/Users",
 		QCow2:          false,
 		RawDisk:        config.XhyveDiskDriver == "virtio-blk",
 	}
