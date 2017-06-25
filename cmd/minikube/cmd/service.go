@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -35,6 +36,8 @@ var (
 	serviceURLMode     bool
 	serviceURLFormat   string
 	serviceURLTemplate *template.Template
+	wait               int
+	interval           int
 )
 
 // serviceCmd represents the service command
@@ -68,7 +71,8 @@ var serviceCmd = &cobra.Command{
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
-		err = service.WaitAndMaybeOpenService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https)
+		err = service.WaitAndMaybeOpenService(api, namespace, svc,
+			serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening service: %s\n", err)
 			os.Exit(1)
@@ -80,6 +84,8 @@ func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
+	serviceCmd.Flags().IntVar(&wait, "wait", constants.DefaultWait, "Amount of time to wait for a service in seconds")
+	serviceCmd.Flags().IntVar(&interval, "interval", constants.DefaultWait, "The time interval for each check that wait performs in seconds")
 
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 
