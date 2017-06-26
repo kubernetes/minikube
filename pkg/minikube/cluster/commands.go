@@ -233,7 +233,7 @@ func GetMountCleanupCommand(path string) string {
 
 var mountTemplate = `
 sudo mkdir -p {{.Path}} || true;
-sudo mount -t 9p -o trans=tcp -o port={{.Port}} -o uid={{.UID}} -o gid={{.GID}} {{.IP}} {{.Path}};
+sudo mount -t 9p -o trans=tcp -o port={{.Port}} -o dfltuid={{.UID}} -o dfltgid={{.GID}} {{.IP}} {{.Path}};
 sudo chmod 775 {{.Path}};`
 
 func GetMountCommand(ip net.IP, path, port string, uid, gid int) (string, error) {
