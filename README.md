@@ -23,6 +23,34 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/miniku
 ### Windows
 Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path
 
+### Linux CI Installation Which Supports Running in a VM (example w/ kubectl installation)
+```shell
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
+curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl
+
+export MINIKUBE_WANTUPDATENOTIFICATION=false
+export MINIKUBE_WANTREPORTERRORPROMPT=false
+export MINIKUBE_HOME=$HOME
+export CHANGE_MINIKUBE_NONE_USER=true
+mkdir $HOME/.kube || true
+touch $HOME/.kube/config
+
+export KUBECONFIG=$HOME/.kube/config
+sudo -E ./minikube start --vm-driver=none --use-vendored-driver
+
+# this for loop waits until kubectl can access the api server that minikube has created
+for i in {1..150} # timeout for 5 minutes
+do
+   ./kubectl get po &> /dev/null
+   if [ $? -ne 1 ]; then
+      break
+  fi
+  sleep 2
+done
+
+# kubectl commands are now able to interact with minikube cluster
+```
+
 ### Other ways to install:
 
 * [Linux] [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
