@@ -98,7 +98,7 @@ out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube_iso
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
 endif
@@ -191,7 +191,7 @@ localkube-image: out/localkube
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
-	docker build $(DOCKER_EXTRA_ARGS) -t $@ -f $< $(dir $<)
+	docker build $(ISO_DOCKER_EXTRA_ARGS) -t $@ -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
