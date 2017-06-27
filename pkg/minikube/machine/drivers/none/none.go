@@ -46,8 +46,15 @@ func NewDriver(hostName, storePath string) *Driver {
 	}
 }
 
-// PreCreateCheck checks that VBoxManage exists and works
+// PreCreateCheck checks for correct priviledges and dependencies
 func (d *Driver) PreCreateCheck() error {
+	// check that docker is on path
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return errors.Wrap(err, "docker cannot be found on the path for this machine. "+
+			"A docker installation is a requirement for using the none driver")
+	}
+
 	return nil
 }
 
