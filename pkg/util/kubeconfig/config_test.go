@@ -445,7 +445,6 @@ func configEquals(a, b *api.Config) bool {
 
 		if aCluster.LocationOfOrigin != bCluster.LocationOfOrigin ||
 			aCluster.Server != bCluster.Server ||
-			aCluster.APIVersion != bCluster.APIVersion ||
 			aCluster.InsecureSkipTLSVerify != bCluster.InsecureSkipTLSVerify ||
 			aCluster.CertificateAuthority != bCluster.CertificateAuthority ||
 			len(aCluster.CertificateAuthorityData) != len(bCluster.CertificateAuthorityData) ||
