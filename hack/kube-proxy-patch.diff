@@ -1,0 +1,13 @@
+diff --git a/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server.go b/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server.go
+index 8d1ae7774..8745a176f 100644
+--- a/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server.go
++++ b/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server.go
+@@ -422,7 +422,7 @@ func NewProxyServer(config *componentconfig.KubeProxyConfiguration, cleanupAndEx
+ 	if c, err := configz.New("componentconfig"); err == nil {
+ 		c.Set(config)
+ 	} else {
+-		return nil, fmt.Errorf("unable to register configz: %s", err)
++		glog.Errorf("unable to register configz: %s", err)
+ 	}
+ 
+ 	protocol := utiliptables.ProtocolIpv4

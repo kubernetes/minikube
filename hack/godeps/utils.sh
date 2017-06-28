@@ -52,6 +52,15 @@ for repo in $(ls ${KUBE_ROOT}/staging/src/k8s.io); do
 done
 }
 
+godep::restore_kubernetes() {
+  pushd ${KUBE_ROOT} >/dev/null
+    git checkout ${KUBE_VERSION}
+    ./hack/godep-restore.sh
+    bazel build //pkg/generated/openapi:zz_generated.openapi
+  popd >/dev/null
+  godep::sync_staging
+}
+
 godep::remove_staging_from_json() {
-  go run ${MINIKUBE_ROOT}/hack/godeps/godeps-json-updater.go --godeps-file ${MINIKUBE_ROOT}/Godeps/Godeps.json
+  go run ${MINIKUBE_ROOT}/hack/godeps/godeps-json-updater.go --godeps-file ${MINIKUBE_ROOT}/Godeps/Godeps.json --kubernetes-dir ${KUBE_ROOT}
 }

@@ -14,27 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -o errexit
-set -o nounset
-set -o pipefail
-
-MINIKUBE_ROOT=${GOPATH}/src/k8s.io/minikube
-KUBE_ROOT=${GOPATH}/src/k8s.io/kubernetes
+K8S_ORG_ROOT=${GOPATH}/src/k8s.io
+MINIKUBE_ROOT=${K8S_ORG_ROOT}/minikube
+KUBE_ROOT=${K8S_ORG_ROOT}/kubernetes
+KUBE_VERSION=${KUBE_VERSION:=$(python ${MINIKUBE_ROOT}/hack/get_k8s_version.py --k8s-version-only 2>&1)}
 
 source ${MINIKUBE_ROOT}/hack/godeps/utils.sh
 
-godep::ensure_godep_version v79
-godep::sync_staging
-
-rm -rf ${MINIKUBE_ROOT}/vendor ${MINIKUBE_ROOT}/Godeps
-godep save ./...
-cp ${KUBE_ROOT}/pkg/generated/openapi/zz_generated.openapi.go ${MINIKUBE_ROOT}/vendor/k8s.io/kubernetes/pkg/generated/openapi
-
-godep::remove_staging_from_json
-git checkout -- ${MINIKUBE_ROOT}/vendor/golang.org/x/sys/windows
-
-pushd ${MINIKUBE_ROOT} >/dev/null
-    git apply ${MINIKUBE_ROOT}/hack/tpr-patch.diff
-    git apply ${MINIKUBE_ROOT}/hack/kube-proxy-patch.diff
-popd >/dev/null
-
+godep::restore_kubernetes
+${MINIKUBE_ROOT}/hack/godeps/godep-save.sh

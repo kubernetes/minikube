@@ -32,12 +32,8 @@ if [ ! -d "${KUBE_ROOT}" ]; then
   popd >/dev/null
 fi
 
-pushd ${KUBE_ROOT} >/dev/null
-  git checkout ${KUBE_VERSION}
-  ./hack/godep-restore.sh
-popd >/dev/null
+godep::restore_kubernetes
 
-godep::sync_staging
 pushd ${MINIKUBE_ROOT} >/dev/null
     godep restore ./...
 popd >/dev/null
