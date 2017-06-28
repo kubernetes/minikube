@@ -62,6 +62,7 @@ func GetAllFSTypesAsSet() sets.String {
 		string(extensions.Quobyte),
 		string(extensions.AzureDisk),
 		string(extensions.PhotonPersistentDisk),
+		string(extensions.StorageOS),
 		string(extensions.Projected),
 		string(extensions.PortworxVolume),
 		string(extensions.ScaleIO),
@@ -118,6 +119,8 @@ func GetVolumeFSType(v api.Volume) (extensions.FSType, error) {
 		return extensions.AzureDisk, nil
 	case v.PhotonPersistentDisk != nil:
 		return extensions.PhotonPersistentDisk, nil
+	case v.StorageOS != nil:
+		return extensions.StorageOS, nil
 	case v.Projected != nil:
 		return extensions.Projected, nil
 	case v.PortworxVolume != nil:
@@ -129,7 +132,7 @@ func GetVolumeFSType(v api.Volume) (extensions.FSType, error) {
 	return "", fmt.Errorf("unknown volume type for volume: %#v", v)
 }
 
-// fsTypeToStringSet converts an FSType slice to a string set.
+// FSTypeToStringSet converts an FSType slice to a string set.
 func FSTypeToStringSet(fsTypes []extensions.FSType) sets.String {
 	set := sets.NewString()
 	for _, v := range fsTypes {
@@ -158,7 +161,12 @@ func PSPAllowsFSType(psp *extensions.PodSecurityPolicy, fsType extensions.FSType
 	return false
 }
 
-// FallsInRange is a utility to determine it the id falls in the valid range.
-func FallsInRange(id int64, rng extensions.IDRange) bool {
+// UserFallsInRange is a utility to determine it the id falls in the valid range.
+func UserFallsInRange(id int64, rng extensions.UserIDRange) bool {
+	return id >= rng.Min && id <= rng.Max
+}
+
+// GroupFallsInRange is a utility to determine it the id falls in the valid range.
+func GroupFallsInRange(id int64, rng extensions.GroupIDRange) bool {
 	return id >= rng.Min && id <= rng.Max
 }
