@@ -14,8 +14,6 @@ import (
 	"unsafe"
 )
 
-//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -output zsyscall_windows.go eventlog.go service.go syscall_windows.go security_windows.go
-
 type Handle uintptr
 
 const InvalidHandle = ^Handle(0)
@@ -84,6 +82,7 @@ func NewCallbackCDecl(fn interface{}) uintptr
 
 //sys	GetLastError() (lasterr error)
 //sys	LoadLibrary(libname string) (handle Handle, err error) = LoadLibraryW
+//sys	LoadLibraryEx(libname string, zero Handle, flags uintptr) (handle Handle, err error) = LoadLibraryExW
 //sys	FreeLibrary(handle Handle) (err error)
 //sys	GetProcAddress(module Handle, procname string) (proc uintptr, err error)
 //sys	GetVersion() (ver uint32, err error)
@@ -105,6 +104,7 @@ func NewCallbackCDecl(fn interface{}) uintptr
 //sys	RemoveDirectory(path *uint16) (err error) = RemoveDirectoryW
 //sys	DeleteFile(path *uint16) (err error) = DeleteFileW
 //sys	MoveFile(from *uint16, to *uint16) (err error) = MoveFileW
+//sys	MoveFileEx(from *uint16, to *uint16, flags uint32) (err error) = MoveFileExW
 //sys	GetComputerName(buf *uint16, n *uint32) (err error) = GetComputerNameW
 //sys	GetComputerNameEx(nametype uint32, buf *uint16, n *uint32) (err error) = GetComputerNameExW
 //sys	SetEndOfFile(handle Handle) (err error)
@@ -369,7 +369,7 @@ func Rename(oldpath, newpath string) (err error) {
 	if err != nil {
 		return err
 	}
-	return MoveFile(from, to)
+	return MoveFileEx(from, to, MOVEFILE_REPLACE_EXISTING)
 }
 
 func ComputerName() (name string, err error) {
@@ -528,6 +528,9 @@ const socket_error = uintptr(^uint32(0))
 //sys	GetAdaptersInfo(ai *IpAdapterInfo, ol *uint32) (errcode error) = iphlpapi.GetAdaptersInfo
 //sys	SetFileCompletionNotificationModes(handle Handle, flags uint8) (err error) = kernel32.SetFileCompletionNotificationModes
 //sys	WSAEnumProtocols(protocols *int32, protocolBuffer *WSAProtocolInfo, bufferLength *uint32) (n int32, err error) [failretval==-1] = ws2_32.WSAEnumProtocolsW
+//sys	GetAdaptersAddresses(family uint32, flags uint32, reserved uintptr, adapterAddresses *IpAdapterAddresses, sizePointer *uint32) (errcode error) = iphlpapi.GetAdaptersAddresses
+//sys	GetACP() (acp uint32) = kernel32.GetACP
+//sys	MultiByteToWideChar(codePage uint32, dwFlags uint32, str *byte, nstr int32, wchar *uint16, nwchar int32) (nwrite int32, err error) = kernel32.MultiByteToWideChar
 
 // For testing: clients can set this flag to force
 // creation of IPv6 sockets to return EAFNOSUPPORT.
