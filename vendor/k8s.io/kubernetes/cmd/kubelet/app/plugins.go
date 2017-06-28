@@ -22,6 +22,7 @@ import (
 	_ "k8s.io/kubernetes/pkg/credentialprovider/aws"
 	_ "k8s.io/kubernetes/pkg/credentialprovider/azure"
 	_ "k8s.io/kubernetes/pkg/credentialprovider/gcp"
+	_ "k8s.io/kubernetes/pkg/credentialprovider/rancher"
 	// Network plugins
 	"k8s.io/kubernetes/pkg/kubelet/network"
 	"k8s.io/kubernetes/pkg/kubelet/network/cni"
@@ -44,6 +45,7 @@ import (
 	"k8s.io/kubernetes/pkg/volume/glusterfs"
 	"k8s.io/kubernetes/pkg/volume/host_path"
 	"k8s.io/kubernetes/pkg/volume/iscsi"
+	"k8s.io/kubernetes/pkg/volume/local"
 	"k8s.io/kubernetes/pkg/volume/nfs"
 	"k8s.io/kubernetes/pkg/volume/photon_pd"
 	"k8s.io/kubernetes/pkg/volume/portworx"
@@ -52,6 +54,7 @@ import (
 	"k8s.io/kubernetes/pkg/volume/rbd"
 	"k8s.io/kubernetes/pkg/volume/scaleio"
 	"k8s.io/kubernetes/pkg/volume/secret"
+	"k8s.io/kubernetes/pkg/volume/storageos"
 	"k8s.io/kubernetes/pkg/volume/vsphere_volume"
 	// Cloud providers
 	_ "k8s.io/kubernetes/pkg/cloudprovider/providers"
@@ -94,6 +97,8 @@ func ProbeVolumePlugins(pluginDir string) []volume.VolumePlugin {
 	allPlugins = append(allPlugins, projected.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, portworx.ProbeVolumePlugins()...)
 	allPlugins = append(allPlugins, scaleio.ProbeVolumePlugins()...)
+	allPlugins = append(allPlugins, local.ProbeVolumePlugins()...)
+	allPlugins = append(allPlugins, storageos.ProbeVolumePlugins()...)
 	return allPlugins
 }
 
@@ -105,9 +110,14 @@ func ProbeNetworkPlugins(pluginDir, cniConfDir, cniBinDir string) []network.Netw
 	if cniConfDir == "" {
 		cniConfDir = pluginDir
 	}
+
+	binDir := cniBinDir
+	if binDir == "" {
+		binDir = pluginDir
+	}
 	// for each existing plugin, add to the list
-	allPlugins = append(allPlugins, cni.ProbeNetworkPlugins(cniConfDir, cniBinDir)...)
-	allPlugins = append(allPlugins, kubenet.NewPlugin(pluginDir))
+	allPlugins = append(allPlugins, cni.ProbeNetworkPlugins(cniConfDir, binDir)...)
+	allPlugins = append(allPlugins, kubenet.NewPlugin(binDir))
 
 	return allPlugins
 }

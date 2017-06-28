@@ -26,7 +26,6 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -37,6 +36,7 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/api/v1"
+	v1helper "k8s.io/kubernetes/pkg/api/v1/helper"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	coreinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions/core/v1"
 	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
@@ -46,9 +46,9 @@ import (
 )
 
 const (
-	// Interval of synchoronizing service status from apiserver
+	// Interval of synchronizing service status from apiserver
 	serviceSyncPeriod = 30 * time.Second
-	// Interval of synchoronizing node status from apiserver
+	// Interval of synchronizing node status from apiserver
 	nodeSyncPeriod = 100 * time.Second
 
 	// How long to wait before retrying the processing of a service change.
@@ -85,7 +85,6 @@ type ServiceController struct {
 	kubeClient          clientset.Interface
 	clusterName         string
 	balancer            cloudprovider.LoadBalancer
-	zone                cloudprovider.Zone
 	cache               *serviceCache
 	serviceLister       corelisters.ServiceLister
 	serviceListerSynced cache.InformerSynced
@@ -175,9 +174,9 @@ func (s *ServiceController) Run(stopCh <-chan struct{}, workers int) {
 	defer s.workingQueue.ShutDown()
 
 	glog.Info("Starting service controller")
+	defer glog.Info("Shutting down service controller")
 
-	if !cache.WaitForCacheSync(stopCh, s.serviceListerSynced, s.nodeListerSynced) {
-		runtime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
+	if !controller.WaitForCacheSync("service", stopCh, s.serviceListerSynced, s.nodeListerSynced) {
 	}
 
 	for i := 0; i < workers; i++ {
@@ -187,7 +186,6 @@ func (s *ServiceController) Run(stopCh <-chan struct{}, workers int) {
 	go wait.Until(s.nodeSyncLoop, nodeSyncPeriod, stopCh)
 
 	<-stopCh
-	glog.Info("Stopping service controller")
 }
 
 // worker runs a worker thread that just dequeues items, processes them, and marks them done.
@@ -219,15 +217,6 @@ func (s *ServiceController) init() error {
 	}
 	s.balancer = balancer
 
-	zones, ok := s.cloud.Zones()
-	if !ok {
-		return fmt.Errorf("the cloud provider does not support zone enumeration, which is required for creating load balancers.")
-	}
-	zone, err := zones.GetZone()
-	if err != nil {
-		return fmt.Errorf("failed to get zone from cloud provider, will not be able to create load balancers: %v", err)
-	}
-	s.zone = zone
 	return nil
 }
 
@@ -268,7 +257,7 @@ func (s *ServiceController) createLoadBalancerIfNeeded(key string, service *v1.S
 	// which may involve service interruption.  Also, we would like user-friendly events.
 
 	// Save the state so we can avoid a write if it doesn't change
-	previousState := v1.LoadBalancerStatusDeepCopy(&service.Status.LoadBalancer)
+	previousState := v1helper.LoadBalancerStatusDeepCopy(&service.Status.LoadBalancer)
 	var newState *v1.LoadBalancerStatus
 	var err error
 
@@ -308,7 +297,7 @@ func (s *ServiceController) createLoadBalancerIfNeeded(key string, service *v1.S
 
 	// Write the state if changed
 	// TODO: Be careful here ... what if there were other changes to the service?
-	if !v1.LoadBalancerStatusEqual(previousState, newState) {
+	if !v1helper.LoadBalancerStatusEqual(previousState, newState) {
 		// Make a copy so we don't mutate the shared informer cache
 		copy, err := api.Scheme.DeepCopy(service)
 		if err != nil {
@@ -358,22 +347,15 @@ func (s *ServiceController) persistUpdate(service *v1.Service) error {
 }
 
 func (s *ServiceController) createLoadBalancer(service *v1.Service) (*v1.LoadBalancerStatus, error) {
-	nodes, err := s.nodeLister.List(labels.Everything())
+	nodes, err := s.nodeLister.ListWithPredicate(getNodeConditionPredicate())
 	if err != nil {
 		return nil, err
-	}
-
-	lbNodes := []*v1.Node{}
-	for ix := range nodes {
-		if includeNodeFromNodeList(nodes[ix]) {
-			lbNodes = append(lbNodes, nodes[ix])
-		}
 	}
 
 	// - Only one protocol supported per service
 	// - Not all cloud providers support all protocols and the next step is expected to return
 	//   an error for unsupported protocols
-	return s.balancer.EnsureLoadBalancer(s.clusterName, service, lbNodes)
+	return s.balancer.EnsureLoadBalancer(s.clusterName, service, nodes)
 }
 
 // ListKeys implements the interface required by DeltaFIFO to list the keys we
@@ -484,6 +466,16 @@ func (s *ServiceController) needsUpdate(oldService *v1.Service, newService *v1.S
 			oldService.UID, newService.UID)
 		return true
 	}
+	if oldService.Spec.ExternalTrafficPolicy != newService.Spec.ExternalTrafficPolicy {
+		s.eventRecorder.Eventf(newService, v1.EventTypeNormal, "ExternalTrafficPolicy", "%v -> %v",
+			oldService.Spec.ExternalTrafficPolicy, newService.Spec.ExternalTrafficPolicy)
+		return true
+	}
+	if oldService.Spec.HealthCheckNodePort != newService.Spec.HealthCheckNodePort {
+		s.eventRecorder.Eventf(newService, v1.EventTypeNormal, "HealthCheckNodePort", "%v -> %v",
+			oldService.Spec.HealthCheckNodePort, newService.Spec.HealthCheckNodePort)
+		return true
+	}
 
 	return false
 }
@@ -572,24 +564,6 @@ func nodeSlicesEqualForLB(x, y []*v1.Node) bool {
 		return false
 	}
 	return stringSlicesEqual(nodeNames(x), nodeNames(y))
-}
-
-func intSlicesEqual(x, y []int) bool {
-	if len(x) != len(y) {
-		return false
-	}
-	if !sort.IntsAreSorted(x) {
-		sort.Ints(x)
-	}
-	if !sort.IntsAreSorted(y) {
-		sort.Ints(y)
-	}
-	for i := range x {
-		if x[i] != y[i] {
-			return false
-		}
-	}
-	return true
 }
 
 func stringSlicesEqual(x, y []string) bool {

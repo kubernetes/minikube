@@ -17,7 +17,7 @@ limitations under the License.
 package iscsi
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -31,37 +31,97 @@ import (
 	"k8s.io/kubernetes/pkg/volume"
 )
 
+var (
+	chap_st = []string{
+		"discovery.sendtargets.auth.username",
+		"discovery.sendtargets.auth.password",
+		"discovery.sendtargets.auth.username_in",
+		"discovery.sendtargets.auth.password_in"}
+	chap_sess = []string{
+		"node.session.auth.username",
+		"node.session.auth.password",
+		"node.session.auth.username_in",
+		"node.session.auth.password_in"}
+)
+
+func updateISCSIDiscoverydb(b iscsiDiskMounter, tp string) error {
+	if b.chap_discovery {
+		out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "discoverydb", "-t", "sendtargets", "-p", tp, "-I", b.Iface, "-o", "update", "-n", "discovery.sendtargets.auth.authmethod", "-v", "CHAP"})
+		if err != nil {
+			return fmt.Errorf("iscsi: failed to update discoverydb with CHAP, output: %v", string(out))
+		}
+
+		for _, k := range chap_st {
+			v := b.secret[k]
+			if len(v) > 0 {
+				out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "discoverydb", "-t", "sendtargets", "-p", tp, "-I", b.Iface, "-o", "update", "-n", k, "-v", v})
+				if err != nil {
+					return fmt.Errorf("iscsi: failed to update discoverydb key %q with value %q error: %v", k, v, string(out))
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func updateISCSINode(b iscsiDiskMounter, tp string) error {
+	if b.chap_session {
+		out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", tp, "-T", b.Iqn, "-I", b.Iface, "-o", "update", "-n", "node.session.auth.authmethod", "-v", "CHAP"})
+		if err != nil {
+			return fmt.Errorf("iscsi: failed to update node with CHAP, output: %v", string(out))
+		}
+
+		for _, k := range chap_sess {
+			v := b.secret[k]
+			if len(v) > 0 {
+				out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", tp, "-T", b.Iqn, "-I", b.Iface, "-o", "update", "-n", k, "-v", v})
+				if err != nil {
+					return fmt.Errorf("iscsi: failed to update node session key %q with value %q error: %v", k, v, string(out))
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // stat a path, if not exists, retry maxRetries times
 // when iscsi transports other than default are used,  use glob instead as pci id of device is unknown
 type StatFunc func(string) (os.FileInfo, error)
 type GlobFunc func(string) ([]string, error)
 
-func waitForPathToExist(devicePath string, maxRetries int, deviceTransport string) bool {
+func waitForPathToExist(devicePath *string, maxRetries int, deviceTransport string) bool {
 	// This makes unit testing a lot easier
 	return waitForPathToExistInternal(devicePath, maxRetries, deviceTransport, os.Stat, filepath.Glob)
 }
 
-func waitForPathToExistInternal(devicePath string, maxRetries int, deviceTransport string, osStat StatFunc, filepathGlob GlobFunc) bool {
-	for i := 0; i < maxRetries; i++ {
-		var err error
-		if deviceTransport == "tcp" {
-			_, err = osStat(devicePath)
-		} else {
-			fpath, _ := filepathGlob(devicePath)
-			if fpath == nil {
-				err = os.ErrNotExist
+func waitForPathToExistInternal(devicePath *string, maxRetries int, deviceTransport string, osStat StatFunc, filepathGlob GlobFunc) bool {
+	if devicePath != nil {
+		for i := 0; i < maxRetries; i++ {
+			var err error
+			if deviceTransport == "tcp" {
+				_, err = osStat(*devicePath)
+			} else {
+				fpath, _ := filepathGlob(*devicePath)
+				if fpath == nil {
+					err = os.ErrNotExist
+				} else {
+					// There might be a case that fpath contains multiple device paths if
+					// multiple PCI devices connect to same iscsi target. We handle this
+					// case at subsequent logic. Pick up only first path here.
+					*devicePath = fpath[0]
+				}
 			}
+			if err == nil {
+				return true
+			}
+			if err != nil && !os.IsNotExist(err) {
+				return false
+			}
+			if i == maxRetries-1 {
+				break
+			}
+			time.Sleep(time.Second)
 		}
-		if err == nil {
-			return true
-		}
-		if err != nil && !os.IsNotExist(err) {
-			return false
-		}
-		if i == maxRetries-1 {
-			break
-		}
-		time.Sleep(time.Second)
 	}
 	return false
 }
@@ -98,56 +158,106 @@ func makePDNameInternal(host volume.VolumeHost, portal string, iqn string, lun s
 type ISCSIUtil struct{}
 
 func (util *ISCSIUtil) MakeGlobalPDName(iscsi iscsiDisk) string {
-	return makePDNameInternal(iscsi.plugin.host, iscsi.portals[0], iscsi.iqn, iscsi.lun, iscsi.iface)
+	return makePDNameInternal(iscsi.plugin.host, iscsi.Portals[0], iscsi.Iqn, iscsi.lun, iscsi.Iface)
+}
+
+func (util *ISCSIUtil) persistISCSI(conf iscsiDisk, mnt string) error {
+	file := path.Join(mnt, "iscsi.json")
+	fp, err := os.Create(file)
+	if err != nil {
+		return fmt.Errorf("iscsi: create %s err %s", file, err)
+	}
+	defer fp.Close()
+	encoder := json.NewEncoder(fp)
+	if err = encoder.Encode(conf); err != nil {
+		return fmt.Errorf("iscsi: encode err: %v.", err)
+	}
+	return nil
+}
+
+func (util *ISCSIUtil) loadISCSI(conf *iscsiDisk, mnt string) error {
+	// NOTE: The iscsi config json is not deleted after logging out from target portals.
+	file := path.Join(mnt, "iscsi.json")
+	fp, err := os.Open(file)
+	if err != nil {
+		return fmt.Errorf("iscsi: open %s err %s", file, err)
+	}
+	defer fp.Close()
+	decoder := json.NewDecoder(fp)
+	if err = decoder.Decode(conf); err != nil {
+		return fmt.Errorf("iscsi: decode err: %v.", err)
+	}
+	return nil
 }
 
 func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter) error {
 	var devicePath string
 	var devicePaths []string
 	var iscsiTransport string
+	var lastErr error
 
-	out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "iface", "-I", b.iface, "-o", "show"})
+	out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "iface", "-I", b.Iface, "-o", "show"})
 	if err != nil {
-		glog.Errorf("iscsi: could not read iface %s error: %s", b.iface, string(out))
+		glog.Errorf("iscsi: could not read iface %s error: %s", b.Iface, string(out))
 		return err
 	}
 
 	iscsiTransport = extractTransportname(string(out))
 
-	bkpPortal := b.portals
+	bkpPortal := b.Portals
 	for _, tp := range bkpPortal {
 		// Rescan sessions to discover newly mapped LUNs. Do not specify the interface when rescanning
 		// to avoid establishing additional sessions to the same target.
-		out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", tp, "-T", b.iqn, "-R"})
+		out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", tp, "-T", b.Iqn, "-R"})
 		if err != nil {
 			glog.Errorf("iscsi: failed to rescan session with error: %s (%v)", string(out), err)
 		}
 
 		if iscsiTransport == "" {
-			glog.Errorf("iscsi: could not find transport name in iface %s", b.iface)
-			return errors.New(fmt.Sprintf("Could not parse iface file for %s", b.iface))
+			glog.Errorf("iscsi: could not find transport name in iface %s", b.Iface)
+			return fmt.Errorf("Could not parse iface file for %s", b.Iface)
 		} else if iscsiTransport == "tcp" {
-			devicePath = strings.Join([]string{"/dev/disk/by-path/ip", tp, "iscsi", b.iqn, "lun", b.lun}, "-")
+			devicePath = strings.Join([]string{"/dev/disk/by-path/ip", tp, "iscsi", b.Iqn, "lun", b.lun}, "-")
 		} else {
-			devicePath = strings.Join([]string{"/dev/disk/by-path/pci", "*", "ip", tp, "iscsi", b.iqn, "lun", b.lun}, "-")
+			devicePath = strings.Join([]string{"/dev/disk/by-path/pci", "*", "ip", tp, "iscsi", b.Iqn, "lun", b.lun}, "-")
 		}
-		exist := waitForPathToExist(devicePath, 1, iscsiTransport)
+		exist := waitForPathToExist(&devicePath, 1, iscsiTransport)
 		if exist == false {
-			// discover iscsi target
-			out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "discovery", "-t", "sendtargets", "-p", tp, "-I", b.iface})
+			// build discoverydb and discover iscsi target
+			b.plugin.execCommand("iscsiadm", []string{"-m", "discoverydb", "-t", "sendtargets", "-p", tp, "-I", b.Iface, "-o", "new"})
+			// update discoverydb with CHAP secret
+			err = updateISCSIDiscoverydb(b, tp)
 			if err != nil {
-				glog.Errorf("iscsi: failed to sendtargets to portal %s error: %s", tp, string(out))
+				lastErr = fmt.Errorf("iscsi: failed to update discoverydb to portal %s error: %v", tp, err)
+				continue
+			}
+			out, err := b.plugin.execCommand("iscsiadm", []string{"-m", "discoverydb", "-t", "sendtargets", "-p", tp, "-I", b.Iface, "--discover"})
+			if err != nil {
+				// delete discoverydb record
+				b.plugin.execCommand("iscsiadm", []string{"-m", "discoverydb", "-t", "sendtargets", "-p", tp, "-I", b.Iface, "-o", "delete"})
+				lastErr = fmt.Errorf("iscsi: failed to sendtargets to portal %s output: %s, err %v", tp, string(out), err)
+				continue
+			}
+			err = updateISCSINode(b, tp)
+			if err != nil {
+				// failure to update node db is rare. But deleting record will likely impact those who already start using it.
+				lastErr = fmt.Errorf("iscsi: failed to update iscsi node to portal %s error: %v", tp, err)
 				continue
 			}
 			// login to iscsi target
-			out, err = b.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", tp, "-T", b.iqn, "-I", b.iface, "--login"})
+			out, err = b.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", tp, "-T", b.Iqn, "-I", b.Iface, "--login"})
 			if err != nil {
-				glog.Errorf("iscsi: failed to attach disk:Error: %s (%v)", string(out), err)
+				// delete the node record from database
+				b.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", tp, "-I", b.Iface, "-T", b.Iqn, "-o", "delete"})
+				lastErr = fmt.Errorf("iscsi: failed to attach disk: Error: %s (%v)", string(out), err)
 				continue
 			}
-			exist = waitForPathToExist(devicePath, 10, iscsiTransport)
+			exist = waitForPathToExist(&devicePath, 10, iscsiTransport)
 			if !exist {
 				glog.Errorf("Could not attach disk: Timeout after 10s")
+				// update last error
+				lastErr = fmt.Errorf("Could not attach disk: Timeout after 10s")
+				continue
 			} else {
 				devicePaths = append(devicePaths, devicePath)
 			}
@@ -158,8 +268,8 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter) error {
 	}
 
 	if len(devicePaths) == 0 {
-		glog.Errorf("iscsi: failed to get any path for iscsi disk")
-		return errors.New("failed to get any path for iscsi disk")
+		glog.Errorf("iscsi: failed to get any path for iscsi disk, last err seen:\n%v", lastErr)
+		return fmt.Errorf("failed to get any path for iscsi disk, last err seen:\n%v", lastErr)
 	}
 
 	//Make sure we use a valid devicepath to find mpio device.
@@ -177,6 +287,9 @@ func (util *ISCSIUtil) AttachDisk(b iscsiDiskMounter) error {
 		glog.Errorf("iscsi: failed to mkdir %s, error", globalPDPath)
 		return err
 	}
+
+	// Persist iscsi disk config to json file for DetachDisk path
+	util.persistISCSI(*(b.iscsiDisk), globalPDPath)
 
 	for _, path := range devicePaths {
 		// There shouldnt be any empty device paths. However adding this check
@@ -217,27 +330,44 @@ func (util *ISCSIUtil) DetachDisk(c iscsiDiskUnmounter, mntPath string) error {
 		}
 		refCount, err := getDevicePrefixRefCount(c.mounter, prefix)
 		if err == nil && refCount == 0 {
-			// This portal/iqn/iface is no longer referenced, log out.
-			// Extract the portal and iqn from device path.
-			portal, iqn, err := extractPortalAndIqn(device)
-			if err != nil {
-				return err
+			var bkpPortal []string
+			var iqn, iface string
+			found := true
+
+			// load iscsi disk config from json file
+			if err := util.loadISCSI(c.iscsiDisk, mntPath); err == nil {
+				bkpPortal, iqn, iface = c.iscsiDisk.Portals, c.iscsiDisk.Iqn, c.iscsiDisk.Iface
+			} else {
+				// If the iscsi disk config is not found, fall back to the original behavior.
+				// This portal/iqn/iface is no longer referenced, log out.
+				// Extract the portal and iqn from device path.
+				bkpPortal = make([]string, 1)
+				bkpPortal[0], iqn, err = extractPortalAndIqn(device)
+				if err != nil {
+					return err
+				}
+				// Extract the iface from the mountPath and use it to log out. If the iface
+				// is not found, maintain the previous behavior to facilitate kubelet upgrade.
+				// Logout may fail as no session may exist for the portal/IQN on the specified interface.
+				iface, found = extractIface(mntPath)
 			}
-			// Extract the iface from the mountPath and use it to log out. If the iface
-			// is not found, maintain the previous behavior to facilitate kubelet upgrade.
-			// Logout may fail as no session may exist for the portal/IQN on the specified interface.
-			iface, found := extractIface(mntPath)
-			if found {
+			for _, portal := range removeDuplicate(bkpPortal) {
+				logout := []string{"-m", "node", "-p", portal, "-T", iqn, "--logout"}
+				delete := []string{"-m", "node", "-p", portal, "-T", iqn, "-o", "delete"}
+				if found {
+					logout = append(logout, []string{"-I", iface}...)
+					delete = append(delete, []string{"-I", iface}...)
+				}
 				glog.Infof("iscsi: log out target %s iqn %s iface %s", portal, iqn, iface)
-				out, err := c.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", portal, "-T", iqn, "-I", iface, "--logout"})
+				out, err := c.plugin.execCommand("iscsiadm", logout)
 				if err != nil {
 					glog.Errorf("iscsi: failed to detach disk Error: %s", string(out))
 				}
-			} else {
-				glog.Infof("iscsi: log out target %s iqn %s", portal, iqn)
-				out, err := c.plugin.execCommand("iscsiadm", []string{"-m", "node", "-p", portal, "-T", iqn, "--logout"})
+				// Delete the node record
+				glog.Infof("iscsi: delete node record target %s iqn %s", portal, iqn)
+				out, err = c.plugin.execCommand("iscsiadm", delete)
 				if err != nil {
-					glog.Errorf("iscsi: failed to detach disk Error: %s", string(out))
+					glog.Errorf("iscsi: failed to delete node record Error: %s", string(out))
 				}
 			}
 		}
@@ -304,4 +434,17 @@ func extractPortalAndIqn(device string) (string, string, error) {
 	ind := strings.LastIndex(device, "-lun-")
 	iqn := device[ind2:ind]
 	return portal, iqn, nil
+}
+
+// Remove duplicates or string
+func removeDuplicate(s []string) []string {
+	m := map[string]bool{}
+	for _, v := range s {
+		if v != "" && !m[v] {
+			s[len(m)] = v
+			m[v] = true
+		}
+	}
+	s = s[:len(m)]
+	return s
 }

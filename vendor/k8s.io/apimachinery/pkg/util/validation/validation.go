@@ -197,16 +197,16 @@ const (
 	maxGroupID = math.MaxInt32
 )
 
-// IsValidGroupId tests that the argument is a valid Unix GID.
-func IsValidGroupId(gid int64) []string {
+// IsValidGroupID tests that the argument is a valid Unix GID.
+func IsValidGroupID(gid int64) []string {
 	if minGroupID <= gid && gid <= maxGroupID {
 		return nil
 	}
 	return []string{InclusiveRangeError(minGroupID, maxGroupID)}
 }
 
-// IsValidUserId tests that the argument is a valid Unix UID.
-func IsValidUserId(uid int64) []string {
+// IsValidUserID tests that the argument is a valid Unix UID.
+func IsValidUserID(uid int64) []string {
 	if minUserID <= uid && uid <= maxUserID {
 		return nil
 	}
