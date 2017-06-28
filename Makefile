@@ -23,7 +23,7 @@ BUILDROOT_BRANCH ?= 2017.02
 REGISTRY?=gcr.io/k8s-minikube
 
 MINIKUBE_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
-LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.7.1-0
+LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.8.3-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
 ISO_VERSION ?= v0.22.0
