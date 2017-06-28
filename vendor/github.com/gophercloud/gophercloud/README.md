@@ -74,7 +74,7 @@ import (
 
 // Option 1: Pass in the values yourself
 opts := gophercloud.AuthOptions{
-  IdentityEndpoint: "https://my-openstack.com:5000/v2.0",
+  IdentityEndpoint: "https://openstack.example.com:5000/v2.0",
   Username: "{username}",
   Password: "{password}",
 }
@@ -124,6 +124,10 @@ server, err := servers.Create(client, servers.CreateOpts{
 The above code sample creates a new server with the parameters, and embodies the
 new resource in the `server` variable (a
 [`servers.Server`](http://godoc.org/github.com/gophercloud/gophercloud) struct).
+
+## Advanced Usage
+
+Have a look at the [FAQ](./FAQ.md) for some tips on customizing the way Gophercloud works.
 
 ## Backwards-Compatibility Guarantees
 

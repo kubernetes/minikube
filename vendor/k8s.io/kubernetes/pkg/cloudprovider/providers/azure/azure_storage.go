@@ -64,7 +64,17 @@ func (az *Cloud) AttachDisk(diskName, diskURI string, nodeName types.NodeName, l
 		},
 	}
 	vmName := mapNodeNameToVMName(nodeName)
-	_, err = az.VirtualMachinesClient.CreateOrUpdate(az.ResourceGroup, vmName, newVM, nil)
+	glog.V(2).Infof("create(%s): vm(%s)", az.ResourceGroup, vmName)
+	az.operationPollRateLimiter.Accept()
+	resp, err := az.VirtualMachinesClient.CreateOrUpdate(az.ResourceGroup, vmName, newVM, nil)
+	if az.CloudProviderBackoff && shouldRetryAPIRequest(resp, err) {
+		glog.V(2).Infof("create(%s) backing off: vm(%s)", az.ResourceGroup, vmName)
+		retryErr := az.CreateOrUpdateVMWithRetry(vmName, newVM)
+		if retryErr != nil {
+			err = retryErr
+			glog.V(2).Infof("create(%s) abort backoff: vm(%s)", az.ResourceGroup, vmName)
+		}
+	}
 	if err != nil {
 		glog.Errorf("azure attach failed, err: %v", err)
 		detail := err.Error()
@@ -135,7 +145,17 @@ func (az *Cloud) DetachDiskByName(diskName, diskURI string, nodeName types.NodeN
 		},
 	}
 	vmName := mapNodeNameToVMName(nodeName)
-	_, err = az.VirtualMachinesClient.CreateOrUpdate(az.ResourceGroup, vmName, newVM, nil)
+	glog.V(2).Infof("create(%s): vm(%s)", az.ResourceGroup, vmName)
+	az.operationPollRateLimiter.Accept()
+	resp, err := az.VirtualMachinesClient.CreateOrUpdate(az.ResourceGroup, vmName, newVM, nil)
+	if az.CloudProviderBackoff && shouldRetryAPIRequest(resp, err) {
+		glog.V(2).Infof("create(%s) backing off: vm(%s)", az.ResourceGroup, vmName)
+		retryErr := az.CreateOrUpdateVMWithRetry(vmName, newVM)
+		if retryErr != nil {
+			err = retryErr
+			glog.V(2).Infof("create(%s) abort backoff: vm(%s)", az.ResourceGroup, vmName)
+		}
+	}
 	if err != nil {
 		glog.Errorf("azure disk detach failed, err: %v", err)
 	} else {
@@ -248,6 +268,53 @@ func (az *Cloud) DeleteVolume(name, uri string) error {
 		return fmt.Errorf("failed to delete vhd %v, account %s, blob %s, err: %v", uri, accountName, blob, err)
 	}
 	glog.V(4).Infof("blob %s deleted", uri)
+	return nil
+
+}
+
+// CreateFileShare creates a file share, using a matching storage account
+func (az *Cloud) CreateFileShare(name, storageAccount, storageType, location string, requestGB int) (string, string, error) {
+	var err error
+	accounts := []accountWithLocation{}
+	if len(storageAccount) > 0 {
+		accounts = append(accounts, accountWithLocation{Name: storageAccount})
+	} else {
+		// find a storage account
+		accounts, err = az.getStorageAccounts()
+		if err != nil {
+			// TODO: create a storage account and container
+			return "", "", err
+		}
+	}
+	for _, account := range accounts {
+		glog.V(4).Infof("account %s type %s location %s", account.Name, account.StorageType, account.Location)
+		if ((storageType == "" || account.StorageType == storageType) && (location == "" || account.Location == location)) || len(storageAccount) > 0 {
+			// find the access key with this account
+			key, err := az.getStorageAccesskey(account.Name)
+			if err != nil {
+				glog.V(2).Infof("no key found for storage account %s", account.Name)
+				continue
+			}
+
+			err = az.createFileShare(account.Name, key, name, requestGB)
+			if err != nil {
+				glog.V(2).Infof("failed to create share in account %s: %v", account.Name, err)
+				continue
+			}
+			glog.V(4).Infof("created share %s in account %s", name, account.Name)
+			return account.Name, key, err
+		}
+	}
+	return "", "", fmt.Errorf("failed to find a matching storage account")
+}
+
+// DeleteFileShare deletes a file share using storage account name and key
+func (az *Cloud) DeleteFileShare(accountName, key, name string) error {
+	err := az.deleteFileShare(accountName, key, name)
+	if err != nil {
+		return err
+	}
+	glog.V(4).Infof("share %s deleted", name)
 	return nil
 
 }
