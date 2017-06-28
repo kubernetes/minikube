@@ -46,8 +46,13 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 
 	config.SecureServing.ServerCert.CertKey.CertFile = lk.GetPublicKeyCertPath()
 	config.SecureServing.ServerCert.CertKey.KeyFile = lk.GetPrivateKeyCertPath()
-	config.GenericServerRunOptions.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
-
+	config.Admission.PluginNames = []string{
+		"NamespaceLifecycle",
+		"LimitRanger",
+		"ServiceAccount",
+		"DefaultStorageClass",
+		"ResourceQuota",
+	}
 	// use localkube etcd
 
 	config.Etcd.StorageConfig.ServerList = KubeEtcdClientURLs
