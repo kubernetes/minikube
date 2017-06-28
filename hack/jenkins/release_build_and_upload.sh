@@ -38,7 +38,7 @@ cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR
 cat Makefile | grep "VERSION_BUILD ?=" | grep $VERSION_BUILD
 
 # Build and upload
-make cross checksum
+BUILD_IN_DOCKER=y make cross checksum
 
 gsutil cp out/minikube-linux-amd64 gs://$BUCKET/releases/$TAGNAME/
 gsutil cp out/minikube-linux-amd64.sha256 gs://$BUCKET/releases/$TAGNAME/

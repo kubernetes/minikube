@@ -38,7 +38,7 @@ fi
 export GOPATH=~/go
 
 # Build all platforms (Windows, Linux, OSX)
-make cross
+BUILD_IN_DOCKER=y make cross
 
 # Build the e2e test target for Darwin and Linux. We don't run tests on Windows yet.
 # We build these on Linux, but run the tests on different platforms.
