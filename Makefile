@@ -21,10 +21,11 @@ DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2017.02
 REGISTRY?=gcr.io/k8s-minikube
-DARWIN_BUILD_IMAGE ?= karalabe/xgo-1.8.3
+
+MINIKUBE_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
+LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.8.3-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-# The iso will be versioned the same as minikube
 ISO_VERSION ?= v0.20.0
 ISO_BUCKET ?= minikube/iso
 
@@ -33,13 +34,6 @@ GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
-BUILD_IMAGE ?= gcr.io/google_containers/kube-cross:v1.7.1-0
-IS_EXE ?=
-
-ifeq ($(IN_DOCKER),1)
-	GOPATH := /go
-	export GOPATH
-endif
 
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
@@ -58,31 +52,57 @@ LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldfla
 LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
+MINIKUBE_ENV_LINUX   := CGO_ENABLED=1 GOARCH=amd64 GOOS=linux
+MINIKUBE_ENV_DARWIN  := CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin
+MINIKUBE_ENV_WINDOWS := CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
+
+MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
+KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) --entrypoint /bin/bash $(LOCALKUBE_BUILD_IMAGE) -c
+
+# $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
+define MINIKUBE_GO_BUILD_CMD
+	$($(shell echo MINIKUBE_ENV_$(2) | tr a-z A-Z)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -o $(1) k8s.io/minikube/cmd/minikube
+endef
+
+LOCALKUBE_BUILD_CMD := CGO_ENABLED=1 go build -tags static_build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+
+ifeq ($(BUILD_IN_DOCKER),y)
+	MINIKUBE_BUILD_IN_DOCKER=y
+	LOCALKUBE_BUILD_IN_DOCKER=y
+endif
+
+# If not on linux, localkube must be built in docker
+ifneq ($(BUILD_OS),Linux)
+	LOCALKUBE_BUILD_IN_DOCKER=y
+endif
+
+ifeq ($(IN_DOCKER),1)
+	MINIKUBE_BUILD_IN_DOCKER=n
+	LOCALKUBE_BUILD_IN_DOCKER=n
+endif
+
 ifeq ($(GOOS),windows)
 	IS_EXE = ".exe"
 endif
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
-	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH)$(IS_EXE) $(BUILD_DIR)/minikube$(IS_EXE)
+	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube$(IS_EXE)
 
 out/localkube: $(shell $(LOCALKUBEFILES))
-ifeq ($(BUILD_OS),Linux)
-	CGO_ENABLED=1 go build -tags static_build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
+	$(KUBE_CROSS_DOCKER_CMD) '$(LOCALKUBE_BUILD_CMD)'
 else
-	docker run -w /go/src/$(REPOPATH) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(BUILD_IMAGE) make out/localkube
+	$(LOCALKUBE_BUILD_CMD)
 endif
 
-out/minikube-darwin-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
-ifeq ($(IN_DOCKER),1)
-	CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-darwin-amd64 k8s.io/minikube/cmd/minikube
+out/minikube-windows-amd64.exe: out/minikube-windows-amd64
+	mv out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+
+out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(MINIKUBE_DOCKER_CMD) '$(call MINIKUBE_GO_BUILD_CMD,$@,$*)'
 else
-	docker run -e IN_DOCKER=1 --workdir /go/src/$(REPOPATH) --entrypoint /usr/bin/make -v $(PWD):/go/src/$(REPOPATH) $(DARWIN_BUILD_IMAGE) out/minikube-darwin-amd64
+	$(call MINIKUBE_GO_BUILD_CMD,$@,$*)
 endif
-
-out/minikube-linux-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
-	CGO_ENABLED=1 GOARCH=amd64 GOOS=linux go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-linux-amd64 k8s.io/minikube/cmd/minikube
-
-out/minikube-windows-amd64.exe: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(BUILD_DIR)/minikube-windows-amd64.exe k8s.io/minikube/cmd/minikube
 
 minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
@@ -98,7 +118,7 @@ out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube_iso
 else
-	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt \
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
 endif
@@ -191,7 +211,7 @@ localkube-image: out/localkube
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
-	docker build $(ISO_DOCKER_EXTRA_ARGS) -t $@ -f $< $(dir $<)
+	docker build -t $@ -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
