@@ -225,7 +225,7 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 }
 
 func TestPrintURLsForService(t *testing.T) {
-	defaultTemplate := template.Must(template.New("svc-template").Parse("{{.IP}}:{{.Port}}"))
+	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 	client := &MockCoreClient{
 		servicesMap: serviceNamespaces,
 	}
@@ -350,7 +350,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 			},
 		},
 	}
-	defaultTemplate := template.Must(template.New("svc-template").Parse("{{.IP}}:{{.Port}}"))
+	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 
 	var tests = []struct {
 		description string
