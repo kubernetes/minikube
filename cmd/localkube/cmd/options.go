@@ -63,7 +63,7 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.StringVar(&s.APIServerName, "apiserver-name", s.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the API server available from outside the machine")
 
 	flag.BoolVar(&s.ShouldGenerateCerts, "generate-certs", s.ShouldGenerateCerts, "If localkube should generate it's own certificates")
-	flag.BoolVar(&s.ShowVersion, "version", s.ShowVersion, "If localkube should just print the version and exit.")
+	flag.BoolVar(&s.ShowVersion, "show-version", s.ShowVersion, "If localkube should just print the version and exit.")
 	flag.BoolVar(&s.ShowHostIP, "host-ip", s.ShowHostIP, "If localkube should just print the host IP and exit.")
 	flag.Var(&s.RuntimeConfig, "runtime-config", "A set of key=value pairs that describe runtime configuration that may be passed to apiserver. apis/<groupVersion> key can be used to turn on/off specific api versions. apis/<groupVersion>/<resource> can be used to turn on/off specific resources. api/all and api/legacy are special keys to control all and legacy api versions respectively.")
 	flag.IPVar(&s.NodeIP, "node-ip", s.NodeIP, "IP address of the node. If set, kubelet will use this IP address for the node.")
