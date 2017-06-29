@@ -31,9 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
-	cmdUtil "k8s.io/minikube/cmd/util"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 type KubeConfigSetup struct {
@@ -167,7 +165,7 @@ func WriteConfig(config *api.Config, filename string) error {
 	if err := ioutil.WriteFile(filename, data, 0600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", filename)
 	}
-	if err := cmdUtil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
+	if err := util.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
 		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
 	}
 
@@ -191,11 +189,11 @@ func decode(data []byte) (*api.Config, error) {
 }
 
 // GetKubeConfigStatus verifys the ip stored in kubeconfig.
-func GetKubeConfigStatus(ip net.IP, filename string) (bool, error) {
+func GetKubeConfigStatus(ip net.IP, filename string, machineName string) (bool, error) {
 	if ip == nil {
 		return false, fmt.Errorf("Error, empty ip passed")
 	}
-	kip, err := getIPFromKubeConfig(filename)
+	kip, err := getIPFromKubeConfig(filename, machineName)
 	if err != nil {
 		return false, err
 	}
@@ -208,11 +206,11 @@ func GetKubeConfigStatus(ip net.IP, filename string) (bool, error) {
 }
 
 // UpdateKubeconfigIP overwrites the IP stored in kubeconfig with the provided IP.
-func UpdateKubeconfigIP(ip net.IP, filename string) (bool, error) {
+func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, error) {
 	if ip == nil {
 		return false, fmt.Errorf("Error, empty ip passed")
 	}
-	kip, err := getIPFromKubeConfig(filename)
+	kip, err := getIPFromKubeConfig(filename, machineName)
 	if err != nil {
 		return false, err
 	}
@@ -224,7 +222,7 @@ func UpdateKubeconfigIP(ip net.IP, filename string) (bool, error) {
 		return false, errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
-	con.Clusters[cfg.GetMachineName()].Server = "https://" + ip.String() + ":" + strconv.Itoa(constants.APIServerPort)
+	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(util.APIServerPort)
 	err = WriteConfig(con, filename)
 	if err != nil {
 		return false, err
@@ -234,12 +232,12 @@ func UpdateKubeconfigIP(ip net.IP, filename string) (bool, error) {
 }
 
 // getIPFromKubeConfig returns the IP address stored for minikube in the kubeconfig specified
-func getIPFromKubeConfig(filename string) (net.IP, error) {
+func getIPFromKubeConfig(filename, machineName string) (net.IP, error) {
 	con, err := ReadConfigOrNew(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting kubeconfig status")
 	}
-	cluster, ok := con.Clusters[cfg.GetMachineName()]
+	cluster, ok := con.Clusters[machineName]
 	if !ok {
 		return nil, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
 	}

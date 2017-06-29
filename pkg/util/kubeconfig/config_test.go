@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 var fakeKubeCfg = []byte(`
@@ -211,7 +211,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := GetKubeConfigStatus(test.ip, configFilename)
+			statusActual, err := GetKubeConfigStatus(test.ip, configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %s", err)
 			}
@@ -268,7 +268,7 @@ func TestUpdateKubeconfigIP(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := UpdateKubeconfigIP(test.ip, configFilename)
+			statusActual, err := UpdateKubeconfigIP(test.ip, configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %s", err)
 			}
@@ -355,7 +355,7 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			configFilename := tempFile(t, test.cfg)
-			ip, err := getIPFromKubeConfig(configFilename)
+			ip, err := getIPFromKubeConfig(configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %s", err)
 			}
@@ -395,7 +395,7 @@ func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"
 	cluster := api.NewCluster()
-	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(constants.APIServerPort)
+	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(util.APIServerPort)
 	cluster.CertificateAuthority = "/home/tux/.minikube/apiserver.crt"
 	config.Clusters[clusterName] = cluster
 
