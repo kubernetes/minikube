@@ -37,7 +37,7 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 		LocalkubeDirectory:       util.DefaultLocalkubeDirectory,
 		ServiceClusterIPRange:    *defaultServiceClusterIPRange,
 		APIServerAddress:         net.ParseIP("0.0.0.0"),
-		APIServerPort:            constants.APIServerPort,
+		APIServerPort:            util.APIServerPort,
 		APIServerInsecureAddress: net.ParseIP("127.0.0.1"),
 		APIServerInsecurePort:    8080,
 		APIServerName:            constants.APIServerName,
