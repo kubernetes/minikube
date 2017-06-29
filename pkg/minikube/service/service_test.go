@@ -260,7 +260,7 @@ func TestPrintURLsForService(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			urls, err := printURLsForService(client, "http://127.0.0.1", test.serviceName, test.namespace, test.tmpl)
+			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
 				t.Errorf("Error: %s", err)
 			}
@@ -268,7 +268,7 @@ func TestPrintURLsForService(t *testing.T) {
 				t.Errorf("Expected error but got none")
 			}
 			if !reflect.DeepEqual(urls, test.expectedOutput) {
-				t.Errorf("\nExpected %v \nActual: %v \n\n", urls, test.expectedOutput)
+				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, urls)
 			}
 		})
 	}
