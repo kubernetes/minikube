@@ -35,11 +35,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
 const (
@@ -177,7 +177,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error connecting to cluster: ", err)
 	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(constants.APIServerPort), -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
 
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
@@ -257,7 +257,7 @@ You will need to move the files to the appropriate location and then set the cor
 	sudo chgrp -R $USER $HOME/.minikube 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 		}
-		if err := cmdUtil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
+		if err := util.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
 			glog.Errorf("Error recursively changing ownership of directory %s: %s",
 				constants.GetMinipath(), err)
 			cmdUtil.MaybeReportErrorAndExit(err)

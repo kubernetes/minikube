@@ -18,6 +18,7 @@ package util
 
 // These constants are used by both minikube and localkube
 const (
+	APIServerPort             = 8443
 	DefaultLocalkubeDirectory = "/var/lib/localkube"
 	DefaultCertPath           = DefaultLocalkubeDirectory + "/certs/"
 	DefaultServiceClusterIP   = "10.0.0.1"

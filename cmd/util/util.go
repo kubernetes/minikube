@@ -27,7 +27,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -246,35 +245,4 @@ func KillMountProcess() error {
 		return errors.Wrap(err, "error converting mount string to pid")
 	}
 	return mountProc.Kill()
-}
-
-func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
-	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") != "" && os.Getenv("SUDO_USER") != "" {
-		username := os.Getenv("SUDO_USER")
-		usr, err := user.Lookup(username)
-		if err != nil {
-			return errors.Wrap(err, "Error looking up user")
-		}
-		uid, err := strconv.Atoi(usr.Uid)
-		if err != nil {
-			return errors.Wrapf(err, "Error parsing uid for user: %s", username)
-		}
-		gid, err := strconv.Atoi(usr.Gid)
-		if err != nil {
-			return errors.Wrapf(err, "Error parsing gid for user: %s", username)
-		}
-		if err := ChownR(dir, uid, gid); err != nil {
-			return errors.Wrapf(err, "Error changing ownership for: %s", dir)
-		}
-	}
-	return nil
-}
-
-func ChownR(path string, uid, gid int) error {
-	return filepath.Walk(path, func(name string, info os.FileInfo, err error) error {
-		if err == nil {
-			err = os.Chown(name, uid, gid)
-		}
-		return err
-	})
 }
