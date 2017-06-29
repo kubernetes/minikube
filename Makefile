@@ -152,7 +152,7 @@ cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/mini
 checksum:
 	for f in out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso; do \
 		if [ -f "$${f}" ]; then \
-			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
+			shasum -a 256 "$${f}" > "$${f}.sha256" ; \
 		fi ; \
 	done
 
