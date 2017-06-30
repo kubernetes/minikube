@@ -34,6 +34,7 @@ type MachineConfig struct {
 	KvmNetwork          string // Only used by the KVM driver
 	Downloader          util.ISODownloader
 	DockerOpt           []string // Each entry is formatted as KEY=VALUE.
+	DisableDriverMounts bool     // Only used by virtualbox and xhyve
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
