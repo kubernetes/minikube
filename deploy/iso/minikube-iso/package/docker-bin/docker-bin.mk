@@ -42,17 +42,4 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/bin/docker-proxy
 endef
 
-define DOCKER_BIN_INSTALL_INIT_SYSTEMD
-	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/docker-bin/docker.service \
-		$(TARGET_DIR)/usr/lib/systemd/system/docker.service
-
-	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/docker-bin/docker.socket \
-		$(TARGET_DIR)/usr/lib/systemd/system/docker.socket
-
-	ln -fs /usr/lib/systemd/system/docker.service \
-		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/docker.service
-endef
-
 $(eval $(generic-package))
