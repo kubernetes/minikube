@@ -139,24 +139,32 @@ func (m *MemoryAsset) Read(p []byte) (int, error) {
 }
 
 func CopyFileLocal(f CopyableFile) error {
-	os.MkdirAll(f.GetTargetDir(), os.ModePerm)
+	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
+		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
+	}
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
-	os.Remove(targetPath)
-	target, err := os.Create(targetPath)
-	defer target.Close()
+	if _, err := os.Stat(targetPath); err == nil {
+		if err := os.Remove(targetPath); err != nil {
+			return errors.Wrapf(err, "error removing file %s", targetPath)
+		}
 
+	}
+	target, err := os.Create(targetPath)
+	if err != nil {
+		return errors.Wrapf(err, "error creating file at %s", targetPath)
+	}
 	perms, err := strconv.Atoi(f.GetPermissions())
 	if err != nil {
-		return errors.Wrap(err, "Error converting permissions to integer")
+		return errors.Wrapf(err, "error converting permissions %s to integer", perms)
 	}
-	target.Chmod(os.FileMode(perms))
-	if err != nil {
-		return errors.Wrap(err, "Error changing file permissions")
+	if err := target.Chmod(os.FileMode(perms)); err != nil {
+		return errors.Wrapf(err, "error changing file permissions for %s", targetPath)
 	}
 
-	_, err = io.Copy(target, f)
-	if err != nil {
-		return errors.Wrap(err, "Error copying file to target location, do you have the correct permissions?")
+	if _, err = io.Copy(target, f); err != nil {
+		return errors.Wrapf(err, `error copying file %s to target location:
+do you have the correct permissions?  The none driver requires sudo for the "start" command`,
+			targetPath)
 	}
-	return nil
+	return target.Close()
 }
