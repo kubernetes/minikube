@@ -341,6 +341,7 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	d.CPU = config.CPUs
 	d.DiskSize = int(config.DiskSize)
 	d.HostOnlyCIDR = config.HostOnlyCIDR
+	d.NoShare = config.DisableDriverMounts
 	return d
 }
 

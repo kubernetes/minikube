@@ -177,6 +177,10 @@ var settings = []Setting{
 		name: useVendoredDriver,
 		set:  SetBool,
 	},
+	{
+		name: "disable-driver-mounts",
+		set:  SetBool,
+	},
 }
 
 var ConfigCmd = &cobra.Command{
