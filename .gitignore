@@ -34,6 +34,8 @@ deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 /pkg/minikube/assets/assets.go
 /minikube
 
+*.tar
+
 .DS_Store
 
 /.idea

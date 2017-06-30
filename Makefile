@@ -108,7 +108,7 @@ else
 	$(call MINIKUBE_GO_BUILD_CMD,$@,$*)
 endif
 
-minikube_iso: # old target kept for making tests happy
+minikube_iso: $(shell find deploy/iso/minikube-iso -type f) image-bundle
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
@@ -118,7 +118,7 @@ minikube_iso: # old target kept for making tests happy
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
-out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
+out/minikube.iso:
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube_iso
 else
@@ -126,6 +126,17 @@ else
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
 endif
+
+.PHONY: image-bundle
+image-bundle: out/puller.par deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/images
+	PULLER=$(BUILD_DIR)/puller.par TARBALL_LOCATION=deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/images ./hack/make-image-bundle.sh
+
+deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/images:
+	mkdir -p deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/images
+
+out/puller.par:
+	gsutil cp gs://containerregistry-releases/v0.0.11/puller.par $(BUILD_DIR)/puller.par
+	chmod +x $(BUILD_DIR)/puller.par
 
 test-iso:
 	go test -v $(REPOPATH)/test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
