@@ -18,6 +18,7 @@ package localkube
 
 import (
 	kubeproxy "k8s.io/kubernetes/cmd/kube-proxy/app"
+	"k8s.io/minikube/pkg/util"
 
 	"time"
 
@@ -40,8 +41,9 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 	config := &componentconfig.KubeProxyConfiguration{
 		OOMScoreAdj: &OOMScoreAdj,
 		ClientConnection: componentconfig.ClientConnectionConfiguration{
-			Burst: 10,
-			QPS:   5,
+			Burst:          10,
+			QPS:            5,
+			KubeConfigFile: util.DefaultKubeConfigPath,
 		},
 		ConfigSyncPeriod: v1.Duration{Duration: 15 * time.Minute},
 		IPTables: componentconfig.KubeProxyIPTablesConfiguration{
@@ -49,7 +51,7 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 			SyncPeriod:    v1.Duration{Duration: 30 * time.Second},
 			MinSyncPeriod: v1.Duration{Duration: 5 * time.Second},
 		},
-		BindAddress:  lk.APIServerInsecureAddress.String(),
+		BindAddress:  lk.APIServerAddress.String(),
 		Mode:         componentconfig.ProxyModeIPTables,
 		FeatureGates: lk.FeatureGates,
 		// Disable the healthz check
@@ -60,7 +62,7 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 
 	return func() error {
 		// Creating this config requires the API Server to be up, so do it in the start function itself.
-		server, err := kubeproxy.NewProxyServer(config, false, runtime.NewScheme(), lk.GetAPIServerInsecureURL())
+		server, err := kubeproxy.NewProxyServer(config, false, runtime.NewScheme(), "")
 		if err != nil {
 			panic(err)
 		}

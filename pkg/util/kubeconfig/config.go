@@ -66,7 +66,35 @@ func (k *KubeConfigSetup) GetKubeConfigFile() string {
 	return k.kubeConfigFile.Load().(string)
 }
 
-// SetupKubeconfig reads config from disk, adds the minikube settings, and writes it back.
+// PopulateKubeConfig populates an api.Config object.
+func PopulateKubeConfig(cfg *KubeConfigSetup, kubecfg *api.Config) {
+	clusterName := cfg.ClusterName
+	cluster := api.NewCluster()
+	cluster.Server = cfg.ClusterServerAddress
+	cluster.CertificateAuthority = cfg.CertificateAuthority
+	kubecfg.Clusters[clusterName] = cluster
+
+	// user
+	userName := cfg.ClusterName
+	user := api.NewAuthInfo()
+	user.ClientCertificate = cfg.ClientCertificate
+	user.ClientKey = cfg.ClientKey
+	kubecfg.AuthInfos[userName] = user
+
+	// context
+	contextName := cfg.ClusterName
+	context := api.NewContext()
+	context.Cluster = cfg.ClusterName
+	context.AuthInfo = userName
+	kubecfg.Contexts[contextName] = context
+
+	// Only set current context to minikube if the user has not used the keepContext flag
+	if !cfg.KeepContext {
+		kubecfg.CurrentContext = cfg.ClusterName
+	}
+}
+
+// SetupKubeConfig reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
 func SetupKubeConfig(cfg *KubeConfigSetup) error {
@@ -78,30 +106,7 @@ func SetupKubeConfig(cfg *KubeConfigSetup) error {
 		return err
 	}
 
-	clusterName := cfg.ClusterName
-	cluster := api.NewCluster()
-	cluster.Server = cfg.ClusterServerAddress
-	cluster.CertificateAuthority = cfg.CertificateAuthority
-	config.Clusters[clusterName] = cluster
-
-	// user
-	userName := cfg.ClusterName
-	user := api.NewAuthInfo()
-	user.ClientCertificate = cfg.ClientCertificate
-	user.ClientKey = cfg.ClientKey
-	config.AuthInfos[userName] = user
-
-	// context
-	contextName := cfg.ClusterName
-	context := api.NewContext()
-	context.Cluster = cfg.ClusterName
-	context.AuthInfo = userName
-	config.Contexts[contextName] = context
-
-	// Only set current context to minikube if the user has not used the keepContext flag
-	if !cfg.KeepContext {
-		config.CurrentContext = contextName
-	}
+	PopulateKubeConfig(cfg, config)
 
 	// write back to disk
 	if err := WriteConfig(config, cfg.GetKubeConfigFile()); err != nil {

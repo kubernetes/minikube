@@ -75,6 +75,9 @@ ${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10
 result=$?
 set -e
 
+# See the KUBECONFIG file for debugging
+sudo cat $KUBECONFIG
+
 MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
 || MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
 || true

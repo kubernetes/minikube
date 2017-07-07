@@ -93,7 +93,7 @@ func (d *Driver) GetSSHUsername() string {
 }
 
 func (d *Driver) GetURL() (string, error) {
-	return "127.0.0.1:8080", nil
+	return "tcp://127.0.0.1:2376", nil
 }
 
 func (d *Driver) GetState() (state.State, error) {
