@@ -106,8 +106,35 @@ type MemoryAsset struct {
 	BaseAsset
 }
 
-func NewMemoryAsset(assetName, targetDir, targetName, permissions string) *MemoryAsset {
+func (m *MemoryAsset) GetLength() int {
+	return m.Length
+}
+
+func (m *MemoryAsset) Read(p []byte) (int, error) {
+	return m.reader.Read(p)
+}
+
+func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *MemoryAsset {
 	m := &MemoryAsset{
+		BaseAsset{
+			TargetDir:   targetDir,
+			TargetName:  targetName,
+			Permissions: permissions,
+		},
+	}
+
+	m.data = d
+	m.Length = len(m.data)
+	m.reader = bytes.NewReader(m.data)
+	return m
+}
+
+type BinDataAsset struct {
+	BaseAsset
+}
+
+func NewBinDataAsset(assetName, targetDir, targetName, permissions string) *BinDataAsset {
+	m := &BinDataAsset{
 		BaseAsset{
 			AssetName:   assetName,
 			TargetDir:   targetDir,
@@ -119,7 +146,7 @@ func NewMemoryAsset(assetName, targetDir, targetName, permissions string) *Memor
 	return m
 }
 
-func (m *MemoryAsset) loadData() error {
+func (m *BinDataAsset) loadData() error {
 	contents, err := Asset(m.AssetName)
 	if err != nil {
 		return err
@@ -130,11 +157,11 @@ func (m *MemoryAsset) loadData() error {
 	return nil
 }
 
-func (m *MemoryAsset) GetLength() int {
+func (m *BinDataAsset) GetLength() int {
 	return m.Length
 }
 
-func (m *MemoryAsset) Read(p []byte) (int, error) {
+func (m *BinDataAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
 }
 
