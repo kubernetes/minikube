@@ -19,6 +19,7 @@ package localkube
 import (
 	controllerManager "k8s.io/kubernetes/cmd/kube-controller-manager/app"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
+	"k8s.io/minikube/pkg/util"
 )
 
 func (lk LocalkubeServer) NewControllerManagerServer() Server {
@@ -28,7 +29,7 @@ func (lk LocalkubeServer) NewControllerManagerServer() Server {
 func StartControllerManagerServer(lk LocalkubeServer) func() error {
 	config := options.NewCMServer()
 
-	config.Master = lk.GetAPIServerInsecureURL()
+	config.Kubeconfig = util.DefaultKubeConfigPath
 
 	// defaults from command
 	config.DeletingPodsQps = 0.1

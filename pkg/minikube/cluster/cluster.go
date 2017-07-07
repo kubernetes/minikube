@@ -38,12 +38,16 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/tools/clientcmd/api/latest"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
 var (
@@ -221,7 +225,7 @@ func UpdateCluster(d drivers.Driver, config KubernetesConfig) error {
 			return errors.Wrap(err, "Error updating localkube from uri")
 		}
 	} else {
-		localkubeFile = assets.NewMemoryAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
+		localkubeFile = assets.NewBinDataAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
 	}
 	copyableFiles = append(copyableFiles, localkubeFile)
 
@@ -300,6 +304,23 @@ func SetupCerts(d drivers.Driver, apiServerName string, clusterDnsDomain string)
 		}
 		copyableFiles = append(copyableFiles, certFile)
 	}
+
+	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
+		ClusterName:          cfg.GetMachineName(),
+		ClusterServerAddress: "https://localhost:8443",
+		ClientCertificate:    filepath.Join(util.DefaultCertPath, "apiserver.crt"),
+		ClientKey:            filepath.Join(util.DefaultCertPath, "apiserver.key"),
+		CertificateAuthority: filepath.Join(util.DefaultCertPath, "ca.crt"),
+		KeepContext:          false,
+	}
+
+	kubeCfg := api.NewConfig()
+	kubeconfig.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
+	data, err := runtime.Encode(latest.Codec, kubeCfg)
+
+	kubeCfgFile := assets.NewMemoryAsset(data,
+		util.DefaultLocalkubeDirectory, "kubeconfig", "0644")
+	copyableFiles = append(copyableFiles, kubeCfgFile)
 
 	if d.DriverName() == "none" {
 		// transfer files to correct place on filesystem

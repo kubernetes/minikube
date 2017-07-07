@@ -20,11 +20,14 @@
 # the cluster state.
 set +e
 
+env
+${SUDO_PREFIX} cat $KUBECONFIG
+
 kubectl get pods --all-namespaces
 kubectl cluster-info dump
 
 # For the none driver
-journalctl -u localkube
+journalctl -u localkube -n 500
 ${SUDO_PREFIX}cat $KUBECONFIG
 
 cat $HOME/.kube/config
