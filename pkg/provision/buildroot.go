@@ -20,16 +20,23 @@ import (
 	"bytes"
 	"fmt"
 	"path"
+	"path/filepath"
 	"text/template"
 	"time"
 
 	"github.com/docker/machine/libmachine/auth"
+	"github.com/docker/machine/libmachine/cert"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/log"
+	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/pkgaction"
+	"github.com/docker/machine/libmachine/provision/serviceaction"
 	"github.com/docker/machine/libmachine/swarm"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -119,7 +126,7 @@ WantedBy=multi-user.target
 
 	return &provision.DockerOptions{
 		EngineOptions:     engineCfg.String(),
-		EngineOptionsPath: p.DaemonOptionsFile,
+		EngineOptionsPath: "/lib/systemd/system/docker.service",
 	}, nil
 }
 
@@ -143,7 +150,7 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	log.Debugf("setting up certificates")
 
 	configureAuth := func() error {
-		if err := provision.ConfigureAuth(p); err != nil {
+		if err := configureAuth(p); err != nil {
 			return &util.RetriableError{Err: err}
 		}
 		return nil
@@ -169,4 +176,91 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 	authOptions.ServerKeyRemotePath = path.Join(dockerDir, "server-key.pem")
 
 	return authOptions
+}
+
+func configureAuth(p *BuildrootProvisioner) error {
+	driver := p.GetDriver()
+	machineName := driver.GetMachineName()
+	authOptions := p.GetAuthOptions()
+	org := mcnutils.GetUsername() + "." + machineName
+	bits := 2048
+
+	ip, err := driver.GetIP()
+	if err != nil {
+		return errors.Wrap(err, "error getting ip during provisioning")
+	}
+
+	if err := util.CopyFile(authOptions.CaCertPath, filepath.Join(authOptions.StorePath, "ca.pem")); err != nil {
+		return fmt.Errorf("Copying ca.pem to machine dir failed: %s", err)
+	}
+
+	if err := util.CopyFile(authOptions.ClientCertPath, filepath.Join(authOptions.StorePath, "cert.pem")); err != nil {
+		return fmt.Errorf("Copying cert.pem to machine dir failed: %s", err)
+	}
+
+	if err := util.CopyFile(authOptions.ClientKeyPath, filepath.Join(authOptions.StorePath, "key.pem")); err != nil {
+		return fmt.Errorf("Copying key.pem to machine dir failed: %s", err)
+	}
+
+	// The Host IP is always added to the certificate's SANs list
+	hosts := append(authOptions.ServerCertSANs, ip, "localhost")
+	log.Debugf("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
+		authOptions.ServerCertPath,
+		authOptions.CaCertPath,
+		authOptions.CaPrivateKeyPath,
+		org,
+		hosts,
+	)
+
+	err = cert.GenerateCert(&cert.Options{
+		Hosts:     hosts,
+		CertFile:  authOptions.ServerCertPath,
+		KeyFile:   authOptions.ServerKeyPath,
+		CAFile:    authOptions.CaCertPath,
+		CAKeyFile: authOptions.CaPrivateKeyPath,
+		Org:       org,
+		Bits:      bits,
+	})
+
+	if err != nil {
+		return fmt.Errorf("error generating server cert: %s", err)
+	}
+
+	certs := map[string]string{
+		authOptions.CaCertPath:     authOptions.CaCertRemotePath,
+		authOptions.ServerCertPath: authOptions.ServerCertRemotePath,
+		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
+	}
+
+	sshClient, err := sshutil.NewSSHClient(driver)
+	if err != nil {
+		return errors.Wrap(err, "provisioning: error getting ssh client")
+	}
+
+	for src, dst := range certs {
+		f, err := assets.NewFileAsset(src, filepath.Dir(dst), filepath.Base(dst), "0640")
+		if err != nil {
+			return errors.Wrapf(err, "error copying %s to %s", src, dst)
+		}
+		if err := sshutil.TransferFile(f, sshClient); err != nil {
+			return errors.Wrapf(err, "transfering file to machine %v", f)
+		}
+	}
+
+	dockerCfg, err := p.GenerateDockerOptions(engine.DefaultPort)
+	if err != nil {
+		return errors.Wrap(err, "generating docker options")
+	}
+
+	log.Info("Setting Docker configuration on the remote daemon...")
+
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dockerCfg.EngineOptionsPath), dockerCfg.EngineOptions, dockerCfg.EngineOptionsPath)); err != nil {
+		return err
+	}
+
+	if err := p.Service("docker", serviceaction.Start); err != nil {
+		return err
+	}
+
+	return nil
 }

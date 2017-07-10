@@ -42,4 +42,10 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/bin/docker-proxy
 endef
 
+define DOCKER_BIN_INSTALL_INIT_SYSTEMD
+	$(INSTALL) -D -m 644 \
+		$(BR2_EXTERNAL)/package/docker-bin/docker.socket \
+		$(TARGET_DIR)/usr/lib/systemd/system/docker.socket
+endef
+
 $(eval $(generic-package))
