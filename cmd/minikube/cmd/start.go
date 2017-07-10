@@ -136,9 +136,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Println("Getting VM IP address...")
 	ip, err := host.Driver.GetIP()
 	if err != nil {
-		glog.Errorln("Error starting host: ", err)
+		glog.Errorln("Error getting VM IP address: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 	kubernetesConfig := cluster.KubernetesConfig{
