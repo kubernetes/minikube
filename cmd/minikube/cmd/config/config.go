@@ -29,8 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-const useVendoredDriver = "use-vendored-driver"
-
 type setFn func(string, string) error
 
 type Setting struct {
@@ -172,10 +170,6 @@ var settings = []Setting{
 	{
 		name: "hyperv-virtual-switch",
 		set:  SetString,
-	},
-	{
-		name: useVendoredDriver,
-		set:  SetBool,
 	},
 	{
 		name: "disable-driver-mounts",
