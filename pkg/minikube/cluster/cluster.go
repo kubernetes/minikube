@@ -211,13 +211,12 @@ func UpdateCluster(d drivers.Driver, config KubernetesConfig) error {
 	var err error
 
 	//add url/file/bundled localkube to file list
-	if localkubeURIWasSpecified(config) {
+	if localkubeURIWasSpecified(config) && config.KubernetesVersion != constants.DefaultKubernetesVersion {
 		lCacher := localkubeCacher{config}
 		localkubeFile, err = lCacher.fetchLocalkubeFromURI()
 		if err != nil {
 			return errors.Wrap(err, "Error updating localkube from uri")
 		}
-
 	} else {
 		localkubeFile = assets.NewMemoryAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
 	}
