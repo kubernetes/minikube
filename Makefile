@@ -53,8 +53,11 @@ LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/local
 MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
 MINIKUBE_ENV_LINUX   := CGO_ENABLED=1 GOARCH=amd64 GOOS=linux
-MINIKUBE_ENV_DARWIN  := CC=o64-clang CXX=o64-clang++ CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin
+MINIKUBE_ENV_DARWIN  := CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin
 MINIKUBE_ENV_WINDOWS := CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
+
+# extra env vars that need to be set in cross build container
+MINIKUBE_ENV_DARWIN_DOCKER := CC=o64-clang CXX=o64-clang++
 
 MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
 KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(LOCALKUBE_BUILD_IMAGE)
@@ -100,7 +103,7 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 
 out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(MINIKUBE_DOCKER_CMD) '$(call MINIKUBE_GO_BUILD_CMD,$@,$*)'
+	$(MINIKUBE_DOCKER_CMD) '$($(shell echo MINIKUBE_ENV_$*_DOCKER | tr a-z A-Z)) $(call MINIKUBE_GO_BUILD_CMD,$@,$*)'
 else
 	$(call MINIKUBE_GO_BUILD_CMD,$@,$*)
 endif
