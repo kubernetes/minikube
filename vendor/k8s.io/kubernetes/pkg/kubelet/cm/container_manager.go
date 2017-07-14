@@ -51,7 +51,7 @@ type ContainerManager interface {
 	// Returns a noop implementation if qos cgroup hierarchy is not enabled
 	NewPodContainerManager() PodContainerManager
 
-	// GetMountedSubsystems returns the mounted cgroup subsytems on the node
+	// GetMountedSubsystems returns the mounted cgroup subsystems on the node
 	GetMountedSubsystems() *CgroupSubsystems
 
 	// GetQOSContainersInfo returns the names of top level QoS containers
@@ -59,6 +59,9 @@ type ContainerManager interface {
 
 	// GetNodeAllocatable returns the amount of compute resources that have to be reserved from scheduling.
 	GetNodeAllocatableReservation() v1.ResourceList
+
+	// GetCapacity returns the amount of compute resources tracked by container manager available on the node.
+	GetCapacity() v1.ResourceList
 
 	// UpdateQOSCgroups performs housekeeping updates to ensure that the top
 	// level QoS containers have their desired state in a thread-safe way
@@ -74,7 +77,6 @@ type NodeConfig struct {
 	CgroupRoot            string
 	CgroupDriver          string
 	ProtectKernelDefaults bool
-	EnableCRI             bool
 	NodeAllocatableConfig
 	ExperimentalQOSReserved map[v1.ResourceName]int64
 }

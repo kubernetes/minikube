@@ -28,8 +28,13 @@ godep::sync_staging
 
 rm -rf ${MINIKUBE_ROOT}/vendor ${MINIKUBE_ROOT}/Godeps
 godep save ./...
+cp ${KUBE_ROOT}/pkg/generated/openapi/zz_generated.openapi.go ${MINIKUBE_ROOT}/vendor/k8s.io/kubernetes/pkg/generated/openapi
 
 godep::remove_staging_from_json
 git checkout -- ${MINIKUBE_ROOT}/vendor/golang.org/x/sys/windows
 
-git apply ${MINIKUBE_ROOT}/hack/tpr-patch.diff
+pushd ${MINIKUBE_ROOT} >/dev/null
+    git apply ${MINIKUBE_ROOT}/hack/tpr-patch.diff
+    git apply ${MINIKUBE_ROOT}/hack/kube-proxy-patch.diff
+popd >/dev/null
+
