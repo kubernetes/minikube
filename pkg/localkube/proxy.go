@@ -19,6 +19,9 @@ package localkube
 import (
 	kubeproxy "k8s.io/kubernetes/cmd/kube-proxy/app"
 
+	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	"k8s.io/kubernetes/pkg/kubelet/qos"
@@ -36,8 +39,15 @@ func (lk LocalkubeServer) NewProxyServer() Server {
 func StartProxyServer(lk LocalkubeServer) func() error {
 	config := &componentconfig.KubeProxyConfiguration{
 		OOMScoreAdj: &OOMScoreAdj,
+		ClientConnection: componentconfig.ClientConnectionConfiguration{
+			Burst: 10,
+			QPS:   5,
+		},
+		ConfigSyncPeriod: v1.Duration{Duration: 15 * time.Minute},
 		IPTables: componentconfig.KubeProxyIPTablesConfiguration{
 			MasqueradeBit: &MasqueradeBit,
+			SyncPeriod:    v1.Duration{Duration: 30 * time.Second},
+			MinSyncPeriod: v1.Duration{Duration: 5 * time.Second},
 		},
 		BindAddress:  lk.APIServerInsecureAddress.String(),
 		Mode:         componentconfig.ProxyModeIPTables,
