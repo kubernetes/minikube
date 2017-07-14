@@ -134,6 +134,9 @@ func validateDaemonSetStatus(status *extensions.DaemonSetStatus, fldPath *field.
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(status.UpdatedNumberScheduled), fldPath.Child("updatedNumberScheduled"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(status.NumberAvailable), fldPath.Child("numberAvailable"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(status.NumberUnavailable), fldPath.Child("numberUnavailable"))...)
+	if status.CollisionCount != nil {
+		allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(*status.CollisionCount), fldPath.Child("collisionCount"))...)
+	}
 	return allErrs
 }
 
@@ -141,6 +144,13 @@ func validateDaemonSetStatus(status *extensions.DaemonSetStatus, fldPath *field.
 func ValidateDaemonSetStatusUpdate(ds, oldDS *extensions.DaemonSet) field.ErrorList {
 	allErrs := apivalidation.ValidateObjectMetaUpdate(&ds.ObjectMeta, &oldDS.ObjectMeta, field.NewPath("metadata"))
 	allErrs = append(allErrs, validateDaemonSetStatus(&ds.Status, field.NewPath("status"))...)
+	if isDecremented(ds.Status.CollisionCount, oldDS.Status.CollisionCount) {
+		value := int64(0)
+		if ds.Status.CollisionCount != nil {
+			value = *ds.Status.CollisionCount
+		}
+		allErrs = append(allErrs, field.Invalid(field.NewPath("status").Child("collisionCount"), value, "cannot be decremented"))
+	}
 	return allErrs
 }
 
@@ -165,10 +175,17 @@ func ValidateDaemonSetSpec(spec *extensions.DaemonSetSpec, fldPath *field.Path) 
 	if spec.Template.Spec.RestartPolicy != api.RestartPolicyAlways {
 		allErrs = append(allErrs, field.NotSupported(fldPath.Child("template", "spec", "restartPolicy"), spec.Template.Spec.RestartPolicy, []string{string(api.RestartPolicyAlways)}))
 	}
+	if spec.Template.Spec.ActiveDeadlineSeconds != nil {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("template", "spec", "activeDeadlineSeconds"), spec.Template.Spec.ActiveDeadlineSeconds, "must not be specified"))
+	}
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(spec.MinReadySeconds), fldPath.Child("minReadySeconds"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(spec.TemplateGeneration), fldPath.Child("templateGeneration"))...)
 
 	allErrs = append(allErrs, ValidateDaemonSetUpdateStrategy(&spec.UpdateStrategy, fldPath.Child("updateStrategy"))...)
+	if spec.RevisionHistoryLimit != nil {
+		// zero is a valid RevisionHistoryLimit
+		allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(*spec.RevisionHistoryLimit), fldPath.Child("revisionHistoryLimit"))...)
+	}
 	return allErrs
 }
 
@@ -343,6 +360,9 @@ func ValidateDeploymentStatus(status *extensions.DeploymentStatus, fldPath *fiel
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(status.ReadyReplicas), fldPath.Child("readyReplicas"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(status.AvailableReplicas), fldPath.Child("availableReplicas"))...)
 	allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(int64(status.UnavailableReplicas), fldPath.Child("unavailableReplicas"))...)
+	if status.CollisionCount != nil {
+		allErrs = append(allErrs, apivalidation.ValidateNonnegativeField(*status.CollisionCount, fldPath.Child("collisionCount"))...)
+	}
 	msg := "cannot be greater than status.replicas"
 	if status.UpdatedReplicas > status.Replicas {
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("updatedReplicas"), status.UpdatedReplicas, msg))
@@ -369,8 +389,27 @@ func ValidateDeploymentUpdate(update, old *extensions.Deployment) field.ErrorLis
 
 func ValidateDeploymentStatusUpdate(update, old *extensions.Deployment) field.ErrorList {
 	allErrs := apivalidation.ValidateObjectMetaUpdate(&update.ObjectMeta, &old.ObjectMeta, field.NewPath("metadata"))
-	allErrs = append(allErrs, ValidateDeploymentStatus(&update.Status, field.NewPath("status"))...)
+	fldPath := field.NewPath("status")
+	allErrs = append(allErrs, ValidateDeploymentStatus(&update.Status, fldPath)...)
+	if isDecremented(update.Status.CollisionCount, old.Status.CollisionCount) {
+		value := int64(0)
+		if update.Status.CollisionCount != nil {
+			value = *update.Status.CollisionCount
+		}
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("collisionCount"), value, "cannot be decremented"))
+	}
 	return allErrs
+}
+
+// TODO: Move in "k8s.io/kubernetes/pkg/api/validation"
+func isDecremented(update, old *int64) bool {
+	if update == nil && old != nil {
+		return true
+	}
+	if update == nil || old == nil {
+		return false
+	}
+	return *update < *old
 }
 
 func ValidateDeployment(obj *extensions.Deployment) field.ErrorList {
@@ -648,6 +687,9 @@ func ValidatePodTemplateSpecForReplicaSet(template *api.PodTemplateSpec, selecto
 		if template.Spec.RestartPolicy != api.RestartPolicyAlways {
 			allErrs = append(allErrs, field.NotSupported(fldPath.Child("spec", "restartPolicy"), template.Spec.RestartPolicy, []string{string(api.RestartPolicyAlways)}))
 		}
+		if template.Spec.ActiveDeadlineSeconds != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath.Child("spec", "activeDeadlineSeconds"), template.Spec.ActiveDeadlineSeconds, "must not be specified"))
+		}
 	}
 	return allErrs
 }
@@ -744,7 +786,7 @@ func validatePSPRunAsUser(fldPath *field.Path, runAsUser *extensions.RunAsUserSt
 
 	// validate range settings
 	for idx, rng := range runAsUser.Ranges {
-		allErrs = append(allErrs, validateIDRanges(fldPath.Child("ranges").Index(idx), rng)...)
+		allErrs = append(allErrs, validateUserIDRange(fldPath.Child("ranges").Index(idx), rng)...)
 	}
 
 	return allErrs
@@ -763,7 +805,7 @@ func validatePSPFSGroup(fldPath *field.Path, groupOptions *extensions.FSGroupStr
 	}
 
 	for idx, rng := range groupOptions.Ranges {
-		allErrs = append(allErrs, validateIDRanges(fldPath.Child("ranges").Index(idx), rng)...)
+		allErrs = append(allErrs, validateGroupIDRange(fldPath.Child("ranges").Index(idx), rng)...)
 	}
 	return allErrs
 }
@@ -781,7 +823,7 @@ func validatePSPSupplementalGroup(fldPath *field.Path, groupOptions *extensions.
 	}
 
 	for idx, rng := range groupOptions.Ranges {
-		allErrs = append(allErrs, validateIDRanges(fldPath.Child("ranges").Index(idx), rng)...)
+		allErrs = append(allErrs, validateGroupIDRange(fldPath.Child("ranges").Index(idx), rng)...)
 	}
 	return allErrs
 }
@@ -831,20 +873,28 @@ func validatePodSecurityPolicySysctls(fldPath *field.Path, sysctls []string) fie
 	return allErrs
 }
 
+func validateUserIDRange(fldPath *field.Path, rng extensions.UserIDRange) field.ErrorList {
+	return validateIDRanges(fldPath, int64(rng.Min), int64(rng.Max))
+}
+
+func validateGroupIDRange(fldPath *field.Path, rng extensions.GroupIDRange) field.ErrorList {
+	return validateIDRanges(fldPath, int64(rng.Min), int64(rng.Max))
+}
+
 // validateIDRanges ensures the range is valid.
-func validateIDRanges(fldPath *field.Path, rng extensions.IDRange) field.ErrorList {
+func validateIDRanges(fldPath *field.Path, min, max int64) field.ErrorList {
 	allErrs := field.ErrorList{}
 
 	// if 0 <= Min <= Max then we do not need to validate max.  It is always greater than or
 	// equal to 0 and Min.
-	if rng.Min < 0 {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("min"), rng.Min, "min cannot be negative"))
+	if min < 0 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("min"), min, "min cannot be negative"))
 	}
-	if rng.Max < 0 {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("max"), rng.Max, "max cannot be negative"))
+	if max < 0 {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("max"), max, "max cannot be negative"))
 	}
-	if rng.Min > rng.Max {
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("min"), rng.Min, "min cannot be greater than max"))
+	if min > max {
+		allErrs = append(allErrs, field.Invalid(fldPath.Child("min"), min, "min cannot be greater than max"))
 	}
 
 	return allErrs
@@ -915,7 +965,6 @@ func ValidateNetworkPolicySpec(spec *extensions.NetworkPolicySpec, fldPath *fiel
 				}
 			}
 		}
-		// TODO: Update From to be a pointer to slice as soon as auto-generation supports it.
 		for i, from := range ingress.From {
 			fromPath := ingressPath.Child("from").Index(i)
 			numFroms := 0
