@@ -117,6 +117,8 @@ const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/project
 
 const AddonsPath = "/etc/kubernetes/addons"
 
+var UserAddonsPath = MakeMiniPath("user-addons")
+
 const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
 	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"

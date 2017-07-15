@@ -53,5 +53,8 @@ gsutil cp out/minikube-installer.exe gs://$BUCKET/releases/$TAGNAME/
 make out/minikube_${DEB_VERSION}.deb
 gsutil cp out/minikube_${DEB_VERSION}.deb gs://$BUCKET/releases/$TAGNAME/
 
+make out/minikube_${DEB_VERSION}.tar
+gsutil cp out/minikube_${DEB_VERSION}.tar gs://$BUCKET/releases/$TAGNAME/
+
 # Bump latest
 gsutil cp -r gs://$BUCKET/releases/$TAGNAME/* gs://$BUCKET/releases/latest/
