@@ -19,6 +19,8 @@ package config
 import (
 	"bufio"
 	"fmt"
+	"golang.org/x/crypto/ssh/terminal"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -73,6 +75,50 @@ func AskForStaticValue(s string) string {
 		}
 		return response
 	}
+}
+
+func concealableAskForStaticValue(readWriter io.ReadWriter, promptString string, hidden bool) (string, error) {
+	for {
+		var (
+			response string
+			err      error
+			term     *terminal.Terminal
+		)
+
+		if hidden {
+			term = terminal.NewTerminal(readWriter, "")
+			response, err = term.ReadPassword(promptString)
+		} else {
+			term = terminal.NewTerminal(readWriter, promptString)
+			response, err = term.ReadLine()
+		}
+
+		if err != nil {
+			return "", err
+		}
+		response = strings.TrimSpace(response)
+		if len(response) == 0 {
+			fmt.Println("--Error, please enter a value:")
+			return concealableAskForStaticValue(readWriter, promptString, hidden)
+		}
+		return response, nil
+	}
+}
+
+func AskForPasswordValue(s string) string {
+
+	stdInFd := int(os.Stdin.Fd())
+	oldState, err := terminal.MakeRaw(stdInFd)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer terminal.Restore(stdInFd, oldState)
+
+	result, err := concealableAskForStaticValue(os.Stdin, s, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return result
 }
 
 // posString returns the first index of element in slice.
