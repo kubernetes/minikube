@@ -449,7 +449,7 @@ func GetHostLogs(api libmachine.API, follow bool) (string, error) {
 }
 
 // MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
-func MountHost(api libmachine.API, path string, ip net.IP, port string, uid, gid int) error {
+func MountHost(api libmachine.API, ip net.IP, path, mountVersion, port string, uid, gid, msize int) error {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
@@ -461,7 +461,7 @@ func MountHost(api libmachine.API, path string, ip net.IP, port string, uid, gid
 		}
 	}
 	host.RunSSHCommand(GetMountCleanupCommand(path))
-	mountCmd, err := GetMountCommand(ip, path, port, uid, gid)
+	mountCmd, err := GetMountCommand(ip, path, port, mountVersion, uid, gid, msize)
 	if err != nil {
 		return errors.Wrap(err, "Error getting mount command")
 	}

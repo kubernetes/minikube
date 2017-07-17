@@ -133,6 +133,8 @@ const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
 	DefaultMountEndpoint = "/minikube-host"
+	DefaultMsize         = 262144
+	DefaultMountVersion  = "9p2000.u"
 )
 
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
