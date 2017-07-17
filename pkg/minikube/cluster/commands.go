@@ -233,24 +233,28 @@ func GetMountCleanupCommand(path string) string {
 
 var mountTemplate = `
 sudo mkdir -p {{.Path}} || true;
-sudo mount -t 9p -o trans=tcp -o port={{.Port}} -o dfltuid={{.UID}} -o dfltgid={{.GID}} {{.IP}} {{.Path}};
+sudo mount -t 9p -o trans=tcp,port={{.Port}},dfltuid={{.UID}},dfltgid={{.GID}},version={{.Version}},msize={{.Msize}} {{.IP}} {{.Path}};
 sudo chmod 775 {{.Path}};`
 
-func GetMountCommand(ip net.IP, path, port string, uid, gid int) (string, error) {
+func GetMountCommand(ip net.IP, path, port, mountVersion string, uid, gid, msize int) (string, error) {
 	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
-		IP   string
-		Path string
-		Port string
-		UID  int
-		GID  int
+		IP      string
+		Path    string
+		Port    string
+		Version string
+		UID     int
+		GID     int
+		Msize   int
 	}{
-		IP:   ip.String(),
-		Path: path,
-		Port: port,
-		UID:  uid,
-		GID:  gid,
+		IP:      ip.String(),
+		Path:    path,
+		Port:    port,
+		Version: mountVersion,
+		UID:     uid,
+		GID:     gid,
+		Msize:   msize,
 	}
 	if err := t.Execute(&buf, data); err != nil {
 		return "", err
