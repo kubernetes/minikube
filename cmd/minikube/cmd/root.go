@@ -152,5 +152,6 @@ func setupViper() {
 	viper.SetDefault(config.WantReportError, false)
 	viper.SetDefault(config.WantReportErrorPrompt, true)
 	viper.SetDefault(config.WantKubectlDownloadMsg, true)
+	viper.SetDefault("network-plugin", "kubenet")
 	setFlagsUsingViper()
 }
