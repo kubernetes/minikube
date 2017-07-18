@@ -29,14 +29,17 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
 var mountIP string
+var mountVersion string
 var isKill bool
 var uid int
 var gid int
+var msize int
 
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
@@ -130,7 +133,7 @@ var mountCmd = &cobra.Command{
 			ufs.StartServer(net.JoinHostPort(ip.String(), port), debugVal, hostPath)
 			wg.Done()
 		}()
-		err = cluster.MountHost(api, vmPath, ip, port, uid, gid)
+		err = cluster.MountHost(api, ip, vmPath, port, mountVersion, uid, gid, msize)
 		if err != nil {
 			fmt.Println(err.Error())
 			os.Exit(1)
@@ -141,8 +144,9 @@ var mountCmd = &cobra.Command{
 
 func init() {
 	mountCmd.Flags().StringVar(&mountIP, "ip", "", "Specify the ip that the mount should be setup on")
+	mountCmd.Flags().StringVar(&mountVersion, "9p-version", constants.DefaultMountVersion, "Specify the 9p version that the mount should use")
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
 	mountCmd.Flags().IntVar(&uid, "uid", 1001, "Default user id used for the mount")
 	mountCmd.Flags().IntVar(&gid, "gid", 1001, "Default group id used for the mount")
-	RootCmd.AddCommand(mountCmd)
+	mountCmd.Flags().IntVar(&msize, "msize", constants.DefaultMsize, "The number of bytes to use for 9p packet payload")
 }
