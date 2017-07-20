@@ -149,4 +149,5 @@ func init() {
 	mountCmd.Flags().IntVar(&uid, "uid", 1001, "Default user id used for the mount")
 	mountCmd.Flags().IntVar(&gid, "gid", 1001, "Default group id used for the mount")
 	mountCmd.Flags().IntVar(&msize, "msize", constants.DefaultMsize, "The number of bytes to use for 9p packet payload")
+	RootCmd.AddCommand(mountCmd)
 }
