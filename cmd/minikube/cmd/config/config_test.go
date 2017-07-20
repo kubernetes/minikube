@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 )
 
@@ -55,6 +56,32 @@ var configTestCases = []configTestCase{
 			"ReminderWaitPeriodInHours": 99,
 		},
 	},
+}
+
+func TestHiddenPrint(t *testing.T) {
+	testString := "gabbagabbahey"
+	b := new(bytes.Buffer)
+	_, err := b.WriteString(fmt.Sprintf("%s\r\n", testString)) // you need the \r!
+	if err != nil {
+		t.Errorf("Could not prepare bytestring")
+	}
+	result, err := concealableAskForStaticValue(b, "hello", true)
+	if result != testString {
+		t.Errorf("Result %s not match %s", result, testString)
+	}
+}
+
+func TestVerbosePrint(t *testing.T) {
+	testString := "gabbagabbahey"
+	b := new(bytes.Buffer)
+	_, err := b.WriteString(fmt.Sprintf("%s\r\n", testString)) // you need the \r!
+	if err != nil {
+		t.Errorf("Could not prepare bytestring")
+	}
+	result, err := concealableAskForStaticValue(b, "hello", false)
+	if result != testString {
+		t.Errorf("Result %s not match %s", result, testString)
+	}
 }
 
 func TestWriteConfig(t *testing.T) {
