@@ -4,24 +4,24 @@ metadata:
   name: registry-creds
   namespace: kube-system
   labels:
-    version: v1.7
+    version: v1.8
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: registry-creds
 spec:
   replicas: 1
   selector:
     name: registry-creds
-    version: v1.7
+    version: v1.8
     addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         name: registry-creds
-        version: v1.7
+        version: v1.8
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - image: upmcenterprises/registry-creds:1.7
+      - image: upmcenterprises/registry-creds:1.8
         name: registry-creds
         imagePullPolicy: Always
         env:
@@ -40,11 +40,16 @@ spec:
               secretKeyRef:
                 name: registry-creds-ecr
                 key: aws-account
-          - name: awsregion
+          - name: aws_assume_role
             valueFrom:
               secretKeyRef:
                 name: registry-creds-ecr
-                key: aws-region
+                key: aws-assume-role
+          - name: awsaccount
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: aws-account
           - name: DOCKER_PRIVATE_REGISTRY_PASSWORD
             valueFrom:
               secretKeyRef:
