@@ -33,6 +33,11 @@ var deleteCmd = &cobra.Command{
 	Long: `Deletes a local kubernetes cluster. This command deletes the VM, and removes all
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) > 0 {
+			fmt.Fprintln(os.Stderr, "usage: minikube delete")
+			os.Exit(1)
+		}
+
 		fmt.Println("Deleting local Kubernetes cluster...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
