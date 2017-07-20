@@ -79,7 +79,7 @@ var addonsConfigureCmd = &cobra.Command{
 			if enableDR {
 				dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
 				dockerUser = AskForStaticValue("-- Enter docker registry username: ")
-				dockerPass = AskForStaticValue("-- Enter docker registry password: ")
+				dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
 			}
 
 			// Create ECR Secret
