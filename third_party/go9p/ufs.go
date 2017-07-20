@@ -369,18 +369,20 @@ func (*Ufs) Read(req *SrvReq) {
 			count = len(fid.dirents[tc.Offset:])
 		}
 
+		wasExact := false
 		if !*Akaros {
 			nextend := sort.SearchInts(fid.direntends, int(tc.Offset)+count)
 			if nextend < len(fid.direntends) {
 				if fid.direntends[nextend] > int(tc.Offset)+count {
 					if nextend > 0 {
 						count = fid.direntends[nextend-1] - int(tc.Offset)
+						wasExact = true
 					} else {
 						count = 0
 					}
 				}
 			}
-			if count == 0 && int(tc.Offset) < len(fid.dirents) && len(fid.dirents) > 0 {
+			if !wasExact && count == 0 && int(tc.Offset) < len(fid.dirents) && len(fid.dirents) > 0 {
 				req.RespondError(&Error{"too small read size for dir entry", EINVAL})
 				return
 			}
