@@ -21,6 +21,8 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/coreos/etcd/embed"
+
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 
@@ -55,8 +57,8 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	}
 	// use localkube etcd
 
-	config.Etcd.StorageConfig.ServerList = KubeEtcdClientURLs
-	config.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD2
+	config.Etcd.StorageConfig.ServerList = []string{embed.DefaultListenClientURLs}
+	config.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD3
 
 	// set Service IP range
 	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
