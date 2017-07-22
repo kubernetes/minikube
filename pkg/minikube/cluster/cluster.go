@@ -34,6 +34,7 @@ import (
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -56,6 +57,8 @@ const fileScheme = "file"
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs/logs.go#L32-34
 func init() {
 	flag.Set("logtostderr", "false")
+	// Setting the default client to native gives much better performance.
+	ssh.SetDefaultClient(ssh.Native)
 }
 
 // StartHost starts a host VM.
