@@ -88,7 +88,7 @@ endif
 ifeq ($(GOOS),windows)
 	IS_EXE = ".exe"
 endif
-out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
+out/minikube$(IS_EXE): gopath out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube$(IS_EXE)
 
 out/localkube: $(shell $(LOCALKUBEFILES))
@@ -141,6 +141,12 @@ integration-versioned: out/minikube
 .PHONY: test
 test: pkg/minikube/assets/assets.go
 	./test.sh
+
+.PHONY: gopath
+gopath:
+ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
+	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
+endif
 
 pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/addons/...
