@@ -107,6 +107,7 @@ github-release release \
     --description "${DESCRIPTION}"
 
 # Uploading the files into github
+github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube.tar.gz" --file out/minikube_${DEB_VERSION}.tar.gz
 github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-linux-amd64" --file out/minikube-linux-amd64
 github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-linux-amd64.sha256" --file out/minikube-linux-amd64.sha256
 github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-darwin-amd64" --file out/minikube-darwin-amd64

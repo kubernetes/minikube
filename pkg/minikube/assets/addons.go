@@ -28,12 +28,12 @@ import (
 )
 
 type Addon struct {
-	Assets    []*MemoryAsset
+	Assets    []*FileAsset
 	enabled   bool
 	addonName string
 }
 
-func NewAddon(assets []*MemoryAsset, enabled bool, addonName string) *Addon {
+func NewAddon(assets []*FileAsset, enabled bool, addonName string) *Addon {
 	a := &Addon{
 		Assets:    assets,
 		enabled:   enabled,
@@ -54,122 +54,143 @@ func (a *Addon) IsEnabled() (bool, error) {
 	return a.enabled, nil
 }
 
+// TODO(aaron-prindle) fix this to correctly generate from dirs
 var Addons = map[string]*Addon{
-	"addon-manager": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/addon-manager.yaml",
+	"addon-manager": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons"), "addon-manager.yaml"),
 			"/etc/kubernetes/manifests/",
 			"addon-manager.yaml",
 			"0640"),
 	}, true, "addon-manager"),
-	"dashboard": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/dashboard/dashboard-rc.yaml",
+	"dashboard": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "dashboard"), "dashboard-rc.yaml"),
 			constants.AddonsPath,
 			"dashboard-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/dashboard/dashboard-svc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "dashboard"), "dashboard-svc.yaml"),
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
-	"default-storageclass": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/storageclass/storageclass.yaml",
+	"default-storageclass": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "storageclass"), "storageclass.yaml"),
 			constants.AddonsPath,
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass"),
-	"kube-dns": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-controller.yaml",
+	"kube-dns": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "kube-dns"), "kube-dns-controller.yaml"),
 			constants.AddonsPath,
 			"kube-dns-controller.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-cm.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "kube-dns"), "kube-dns-cm.yaml"),
 			constants.AddonsPath,
 			"kube-dns-cm.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/kube-dns/kube-dns-svc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "kube-dns"), "kube-dns-svc.yaml"),
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
 	}, true, "kube-dns"),
-	"heapster": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/heapster/influxGrafana-rc.yaml",
+	"heapster": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "heapster"), "influxGrafana-rc.yaml"),
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/heapster/grafana-svc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "heapster"), "grafana-svc.yaml"),
 			constants.AddonsPath,
 			"grafana-svc.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/heapster/influxdb-svc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "heapster"), "influxdb-svc.yaml"),
 			constants.AddonsPath,
 			"influxdb-svc.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/heapster/heapster-rc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "heapster"), "heapster-rc.yaml"),
 			constants.AddonsPath,
 			"heapster-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/heapster/heapster-svc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "heapster"), "heapster-svc.yaml"),
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640"),
 	}, false, "heapster"),
-	"ingress": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/ingress/ingress-configmap.yaml",
+	"ingress": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "ingress"), "ingress-configmap.yaml"),
 			constants.AddonsPath,
 			"ingress-configmap.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/ingress/ingress-rc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "ingress"), "ingress-rc.yaml"),
 			constants.AddonsPath,
 			"ingress-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/ingress/ingress-svc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "ingress"), "ingress-svc.yaml"),
 			constants.AddonsPath,
 			"ingress-svc.yaml",
 			"0640"),
 	}, false, "ingress"),
-	"registry": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/registry/registry-rc.yaml",
+	"registry": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "registry"), "registry-rc.yaml"),
 			constants.AddonsPath,
 			"registry-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
-			"deploy/addons/registry/registry-svc.yaml",
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "registry"), "registry-svc.yaml"),
 			constants.AddonsPath,
 			"registry-svc.yaml",
 			"0640"),
 	}, false, "registry"),
-	"registry-creds": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
-			"deploy/addons/registry-creds/registry-creds-rc.yaml",
+	"registry-creds": NewAddon([]*FileAsset{
+		NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("addons", "registry-creds"), "registry-creds-rc.yaml"),
 			constants.AddonsPath,
 			"registry-creds-rc.yaml",
 			"0640"),
 	}, false, "registry-creds"),
 }
 
-func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
+func CreateAddonsMap(assetList *[]CopyableFile) {
 	// loop over .minikube/addons and add them to assets
 	searchDir := constants.MakeMiniPath("addons")
 	err := filepath.Walk(searchDir, func(addonFile string, f os.FileInfo, err error) error {
 		isDir, err := util.IsDirectory(addonFile)
 		if err == nil && !isDir {
 			f, err := NewFileAsset(addonFile, constants.AddonsPath, filepath.Base(addonFile), "0640")
+			if err == nil {
+				*assetList = append(*assetList, f)
+			}
+		} else if err != nil {
+			glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+		}
+		return nil
+	})
+	if err != nil {
+		glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+	}
+}
+
+func AddMinikubeUserAddonsDirToAssets(assetList *[]CopyableFile) {
+	// loop over .minikube/addons and add them to assets
+	searchDir := constants.MakeMiniPath("user-addons")
+	err := filepath.Walk(searchDir, func(addonFile string, f os.FileInfo, err error) error {
+		isDir, err := util.IsDirectory(addonFile)
+		if err == nil && !isDir {
+			f, err := NewFileAsset(addonFile, constants.UserAddonsPath, filepath.Base(addonFile), "0640")
 			if err == nil {
 				*assetList = append(*assetList, f)
 			}

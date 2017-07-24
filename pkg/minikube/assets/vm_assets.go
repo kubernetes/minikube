@@ -17,7 +17,6 @@ limitations under the License.
 package assets
 
 import (
-	"bytes"
 	"io"
 	"os"
 	"path/filepath"
@@ -82,6 +81,23 @@ func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAs
 	return f, nil
 }
 
+func NewFileAssetNoErr(assetName, targetDir, targetName, permissions string) *FileAsset {
+	f := &FileAsset{
+		BaseAsset{
+			AssetName:   assetName,
+			TargetDir:   targetDir,
+			TargetName:  targetName,
+			Permissions: permissions,
+		},
+	}
+	file, err := os.Open(f.AssetName)
+	if err != nil {
+		return nil
+	}
+	f.reader = file
+	return f
+}
+
 func (f *FileAsset) GetLength() int {
 	file, err := os.Open(f.AssetName)
 	defer file.Close()
@@ -100,42 +116,6 @@ func (f *FileAsset) Read(p []byte) (int, error) {
 		return 0, errors.New("Error attempting FileAsset.Read, FileAsset.reader uninitialized")
 	}
 	return f.reader.Read(p)
-}
-
-type MemoryAsset struct {
-	BaseAsset
-}
-
-func NewMemoryAsset(assetName, targetDir, targetName, permissions string) *MemoryAsset {
-	m := &MemoryAsset{
-		BaseAsset{
-			AssetName:   assetName,
-			TargetDir:   targetDir,
-			TargetName:  targetName,
-			Permissions: permissions,
-		},
-	}
-	m.loadData()
-	return m
-}
-
-func (m *MemoryAsset) loadData() error {
-	contents, err := Asset(m.AssetName)
-	if err != nil {
-		return err
-	}
-	m.data = contents
-	m.Length = len(contents)
-	m.reader = bytes.NewReader(m.data)
-	return nil
-}
-
-func (m *MemoryAsset) GetLength() int {
-	return m.Length
-}
-
-func (m *MemoryAsset) Read(p []byte) (int, error) {
-	return m.reader.Read(p)
 }
 
 func CopyFileLocal(f CopyableFile) error {

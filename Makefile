@@ -20,7 +20,7 @@ VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2017.02
-REGISTRY?=gcr.io/k8s-minikube
+REGISTRY ?= gcr.io/k8s-minikube
 
 MINIKUBE_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
 LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.8.3-1
@@ -34,6 +34,8 @@ GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
+
+KVM_DISTRO ?= ubuntu14.04
 
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
@@ -101,7 +103,7 @@ endif
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	mv out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
-out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
+out/minikube-%-amd64: $(shell $(MINIKUBEFILES))
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(MINIKUBE_DOCKER_CMD) '$($(shell echo MINIKUBE_ENV_$*_DOCKER | tr a-z A-Z)) $(call MINIKUBE_GO_BUILD_CMD,$@,$*)'
 else
@@ -139,14 +141,8 @@ integration-versioned: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="integration versioned" --minikube-args="$(MINIKUBE_ARGS)"
 
 .PHONY: test
-test: pkg/minikube/assets/assets.go
+test: 
 	./test.sh
-
-pkg/minikube/assets/assets.go: out/localkube $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
-	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets ./out/localkube deploy/addons/...
-
-$(GOPATH)/bin/go-bindata:
-	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
 cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
@@ -162,12 +158,11 @@ checksum:
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -f pkg/minikube/assets/assets.go
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md
 
-out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
+out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants)
 	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs hack/gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
@@ -177,6 +172,21 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
 	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin/minikube
 	dpkg-deb --build out/minikube_$(DEB_VERSION)
+	rm -rf out/minikube_$(DEB_VERSION)
+
+out/minikube_$(DEB_VERSION).tar.gz: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+	rm -rf out/minikube_$(DEB_VERSION)
+	mkdir -p out/minikube_$(DEB_VERSION)/bin
+	mkdir out/minikube_$(DEB_VERSION)/iso
+	mkdir out/minikube_$(DEB_VERSION)/localkube
+	cp installers/scripts/* out/minikube_$(DEB_VERSION)/
+	cp out/minikube-* out/minikube_$(DEB_VERSION)/bin
+	cp -r deploy/addons out/minikube_$(DEB_VERSION)
+	curl -Lo out/minikube_$(DEB_VERSION)/iso/minikube-$(ISO_VERSION).iso https://storage.googleapis.com/minikube/iso/minikube-$(ISO_VERSION).iso
+	curl -Lo out/minikube_$(DEB_VERSION)/bin/docker-machine-driver-kvm-$KVM_DISTRO https://github.com/dhiltgen/docker-machine-kvm/releases/download/v0.10.0/docker-machine-driver-kvm-$KVM_DISTRO
+	cp -r out/localkube out/minikube_$(DEB_VERSION)/localkube/
+	cp installers/path.bash.inc out/minikube_$(DEB_VERSION)
+	tar -C out/ -czf out/minikube_$(DEB_VERSION).tar.gz minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe

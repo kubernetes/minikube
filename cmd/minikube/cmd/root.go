@@ -44,6 +44,7 @@ var dirs = [...]string{
 	constants.MakeMiniPath("cache", "localkube"),
 	constants.MakeMiniPath("config"),
 	constants.MakeMiniPath("addons"),
+	constants.MakeMiniPath("user-addons"),
 	constants.MakeMiniPath("logs"),
 }
 

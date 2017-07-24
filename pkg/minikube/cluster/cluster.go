@@ -218,13 +218,17 @@ func UpdateCluster(d drivers.Driver, config KubernetesConfig) error {
 			return errors.Wrap(err, "Error updating localkube from uri")
 		}
 	} else {
-		localkubeFile = assets.NewMemoryAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
+		localkubeFile = assets.NewFileAssetNoErr(
+			filepath.Join(constants.MakeMiniPath("cache"), "localkube"),
+			"/usr/local/bin",
+			"localkube",
+			"0777")
 	}
 	copyableFiles = append(copyableFiles, localkubeFile)
 
 	// add addons to file list
 	// custom addons
-	assets.AddMinikubeAddonsDirToAssets(&copyableFiles)
+	assets.AddMinikubeUserAddonsDirToAssets(&copyableFiles)
 	// bundled addons
 	for _, addonBundle := range assets.Addons {
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
