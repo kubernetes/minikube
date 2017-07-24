@@ -246,3 +246,11 @@ func KillMountProcess() error {
 	}
 	return mountProc.Kill()
 }
+
+func GetKubeConfigPath() string {
+	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
+	if kubeConfigEnv == "" {
+		return constants.KubeconfigPath
+	}
+	return filepath.SplitList(kubeConfigEnv)[0]
+}
