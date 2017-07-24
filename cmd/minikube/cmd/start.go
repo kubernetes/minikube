@@ -183,13 +183,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
 
-	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
-	var kubeConfigFile string
-	if kubeConfigEnv == "" {
-		kubeConfigFile = constants.KubeconfigPath
-	} else {
-		kubeConfigFile = filepath.SplitList(kubeConfigEnv)[0]
-	}
+	kubeConfigFile := cmdUtil.GetKubeConfigPath()
 
 	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
 		ClusterName:          cfg.GetMachineName(),
