@@ -66,7 +66,7 @@ var mountCmd = &cobra.Command{
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
 			errText := `Mount directory must be in the form: 
-\tHOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`
+	HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`
 			fmt.Fprintln(os.Stderr, errText)
 			os.Exit(1)
 		}
