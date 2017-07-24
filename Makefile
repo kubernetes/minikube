@@ -35,6 +35,11 @@ BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
 
+TAR_TARGETS_LINUX   := out/minikube-linux-amd64
+TAR_TARGETS_DARWIN  := out/minikube-darwin-amd64
+TAR_TARGETS_WINDOWS := out/minikube-windows-amd64.exe
+TAR_TARGET_ALL      :=  $(TAR_TARGETS_LINUX) $(TAR_TARGETS_DARWIN) $(TAR_TARGETS_WINDOWS) 
+
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
@@ -185,6 +190,11 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	dpkg-deb --build out/minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
 
+
+out/minikube-%-amd64.tar.gz:
+	$(MAKE) $($(shell echo TAR_TARGETS_$* | tr a-z A-Z))
+	tar -cvf $@ $($(shell echo TAR_TARGETS_$* | tr a-z A-Z))
+	
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 	cp -r installers/windows/ out/windows_tmp
