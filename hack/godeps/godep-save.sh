@@ -28,7 +28,8 @@ godep::sync_staging
 
 rm -rf ${MINIKUBE_ROOT}/vendor ${MINIKUBE_ROOT}/Godeps
 godep save ./...
-cp ${KUBE_ROOT}/pkg/generated/openapi/zz_generated.openapi.go ${MINIKUBE_ROOT}/vendor/k8s.io/kubernetes/pkg/generated/openapi
+
+cp -r ${KUBE_ROOT}/pkg/generated/openapi ${MINIKUBE_ROOT}/vendor/k8s.io/kubernetes/pkg/generated/
 
 godep::remove_staging_from_json
 git checkout -- ${MINIKUBE_ROOT}/vendor/golang.org/x/sys/windows
