@@ -23,6 +23,12 @@ set +e
 kubectl get pods --all-namespaces
 kubectl cluster-info dump
 
+# For the none driver
+journalctl -u localkube
+${SUDO_PREFIX}cat $KUBECONFIG
+
+cat $HOME/.kube/config
+
 docker ps
 
 MINIKUBE=${SUDO_PREFIX}out/minikube-${OS_ARCH}
