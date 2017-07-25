@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -ex
+
 K8S_ORG_ROOT=${GOPATH}/src/k8s.io
 MINIKUBE_ROOT=${K8S_ORG_ROOT}/minikube
 KUBE_ROOT=${K8S_ORG_ROOT}/kubernetes
