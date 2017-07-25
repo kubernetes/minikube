@@ -35,11 +35,6 @@ BUILD_DIR ?= ./out
 ORG := k8s.io
 REPOPATH ?= $(ORG)/minikube
 
-TAR_TARGETS_LINUX   := out/minikube-linux-amd64
-TAR_TARGETS_DARWIN  := out/minikube-darwin-amd64
-TAR_TARGETS_WINDOWS := out/minikube-windows-amd64.exe
-TAR_TARGET_ALL      :=  $(TAR_TARGETS_LINUX) $(TAR_TARGETS_DARWIN) $(TAR_TARGETS_WINDOWS) 
-
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
@@ -57,19 +52,19 @@ LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldfla
 LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
-MINIKUBE_ENV_LINUX   := CGO_ENABLED=1 GOARCH=amd64 GOOS=linux
-MINIKUBE_ENV_DARWIN  := CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin
-MINIKUBE_ENV_WINDOWS := CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
+MINIKUBE_ENV_linux  		:= CGO_ENABLED=1 GOARCH=amd64 GOOS=linux
+MINIKUBE_ENV_darwin  		:= CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin
+MINIKUBE_ENV_windows 		:= CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
 
 # extra env vars that need to be set in cross build container
-MINIKUBE_ENV_DARWIN_DOCKER := CC=o64-clang CXX=o64-clang++
+MINIKUBE_ENV_darwin_DOCKER 	:= CC=o64-clang CXX=o64-clang++
 
 MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
 KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(LOCALKUBE_BUILD_IMAGE)
 
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
 define MINIKUBE_GO_BUILD_CMD
-	$($(shell echo MINIKUBE_ENV_$(2) | tr a-z A-Z)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
+	$(MINIKUBE_ENV_$(2)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -108,7 +103,7 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 
 out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(MINIKUBE_DOCKER_CMD) '$($(shell echo MINIKUBE_ENV_$*_DOCKER | tr a-z A-Z)) $(call MINIKUBE_GO_BUILD_CMD,$@,$*)'
+	$(MINIKUBE_DOCKER_CMD) '$(MINIKUBE_ENV_$*_DOCKER) $(call MINIKUBE_GO_BUILD_CMD,$@,$*)'
 else
 	$(call MINIKUBE_GO_BUILD_CMD,$@,$*)
 endif
@@ -190,10 +185,13 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	dpkg-deb --build out/minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
 
-
-out/minikube-%-amd64.tar.gz:
-	$(MAKE) $($(shell echo TAR_TARGETS_$* | tr a-z A-Z))
-	tar -cvf $@ $($(shell echo TAR_TARGETS_$* | tr a-z A-Z))
+.SECONDEXPANSION:
+TAR_TARGETS_linux   := out/minikube-linux-amd64
+TAR_TARGETS_darwin  := out/minikube-darwin-amd64
+TAR_TARGETS_windows := out/minikube-windows-amd64.exe
+TAR_TARGETS_ALL     := $(shell find deploy/addons -type f)
+out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
+	tar -cvf $@ $^
 	
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
