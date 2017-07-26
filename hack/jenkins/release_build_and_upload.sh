@@ -28,6 +28,7 @@ set -e
 
 export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}-${VERSION_BUILD}
+export GOPATH=~/go
 
 # Sanity checks
 git status
