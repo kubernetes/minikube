@@ -19,11 +19,12 @@ package config
 import (
 	"bufio"
 	"fmt"
-	"golang.org/x/crypto/ssh/terminal"
 	"io"
 	"log"
 	"os"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // AskForYesNoConfirmation asks the user for confirmation. A user must type in "yes" or "no" and
@@ -59,22 +60,34 @@ func AskForStaticValue(s string) string {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Printf("%s", s)
-
-		response, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		response = strings.TrimSpace(response)
+		response := getStaticValue(reader, s)
 
 		// Can't have zero length
 		if len(response) == 0 {
 			fmt.Println("--Error, please enter a value:")
-			return AskForStaticValue(s)
+			continue
 		}
 		return response
 	}
+}
+
+// AskForStaticValueOptional asks for a optional single value to enter, can just skip enter
+func AskForStaticValueOptional(s string) string {
+	reader := bufio.NewReader(os.Stdin)
+
+	return getStaticValue(reader, s)
+}
+
+func getStaticValue(reader *bufio.Reader, s string) string {
+	fmt.Printf("%s", s)
+
+	response, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	response = strings.TrimSpace(response)
+	return response
 }
 
 func concealableAskForStaticValue(readWriter io.ReadWriter, promptString string, hidden bool) (string, error) {
