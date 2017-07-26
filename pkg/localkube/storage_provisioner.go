@@ -19,8 +19,10 @@ package localkube
 import (
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/golang/glog"
@@ -123,7 +125,7 @@ func StartStorageProvisioner(lk LocalkubeServer) func() error {
 
 	// Create an InClusterConfig and use it to create a client for the controller
 	// to use to communicate with Kubernetes
-	config := rest.Config{Host: "http://localhost:8080"}
+	config := rest.Config{Host: net.JoinHostPort("localhost", strconv.Itoa(lk.APIServerInsecurePort))}
 	return func() error {
 
 		clientset, err := kubernetes.NewForConfig(&config)
