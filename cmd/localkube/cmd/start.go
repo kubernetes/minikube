@@ -90,7 +90,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	capabilities.Initialize(c)
 
 	// setup etcd
-	etcd, err := s.NewEtcd(localkube.KubeEtcdClientURLs, localkube.KubeEtcdPeerURLs, "kubeetcd", s.GetEtcdDataDirectory())
+	etcd, err := s.NewEtcd(s.GetEtcdDataDirectory())
 	if err != nil {
 		panic(err)
 	}
