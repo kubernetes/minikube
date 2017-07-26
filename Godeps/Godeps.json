@@ -370,6 +370,10 @@
 			"Rev": "2b8b7259d3139c96c4a6871031355808ab3fd3b3"
 		},
 		{
+			"ImportPath": "github.com/cockroachdb/cmux",
+			"Rev": "30d10be492927e2dcae0089c374c455d42414fcb"
+		},
+		{
 			"ImportPath": "github.com/codedellemc/goscaleio",
 			"Rev": "8ed64a07d23f79bab973f1630651841ccc656887"
 		},
@@ -443,6 +447,11 @@
 			"Rev": "20490caaf0dcd96bb4a95e40625559def8ef5b04"
 		},
 		{
+			"ImportPath": "github.com/coreos/etcd/embed",
+			"Comment": "v3.1.5",
+			"Rev": "20490caaf0dcd96bb4a95e40625559def8ef5b04"
+		},
+		{
 			"ImportPath": "github.com/coreos/etcd/error",
 			"Comment": "v3.1.5",
 			"Rev": "20490caaf0dcd96bb4a95e40625559def8ef5b04"
@@ -464,6 +473,11 @@
 		},
 		{
 			"ImportPath": "github.com/coreos/etcd/etcdserver/api/v2http/httptypes",
+			"Comment": "v3.1.5",
+			"Rev": "20490caaf0dcd96bb4a95e40625559def8ef5b04"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/etcdserver/api/v3rpc",
 			"Comment": "v3.1.5",
 			"Rev": "20490caaf0dcd96bb4a95e40625559def8ef5b04"
 		},
@@ -529,6 +543,11 @@
 		},
 		{
 			"ImportPath": "github.com/coreos/etcd/pkg/contention",
+			"Comment": "v3.1.5",
+			"Rev": "20490caaf0dcd96bb4a95e40625559def8ef5b04"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/pkg/cors",
 			"Comment": "v3.1.5",
 			"Rev": "20490caaf0dcd96bb4a95e40625559def8ef5b04"
 		},
