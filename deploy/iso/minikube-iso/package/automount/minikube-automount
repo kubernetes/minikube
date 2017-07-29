@@ -35,24 +35,31 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
             # Let kernel re-read partition table
             partprobe
             # wait for the partition to actually exist, timeout after about 5 seconds
-            local timer=0
-            while [ "$timer" -lt 10 -a ! -b "${UNPARTITIONED_HD}2" ]; do
+            timer=0
+            while [ "$timer" -lt 10 ]; do
+                if [ -b "${UNPARTITIONED_HD}2" ]; then
+                    mkswap "${UNPARTITIONED_HD}2" && break
+                fi
+                echo "Waiting for ${UNPARTITIONED_HD}2 to exist."
                 timer=$((timer + 1))
                 sleep 0.5
             done
-            mkswap "${UNPARTITIONED_HD}2"
+
             # Add the data partition
             (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
             # Let kernel re-read partition table
             partprobe
             # wait for the partition to actually exist, timeout after about 5 seconds
             timer=0
-            while [ "$timer" -lt 10 -a ! -b "${UNPARTITIONED_HD}1" ]; do
+            while [ "$timer" -lt 10 ]; do
+                if [ -b "${UNPARTITIONED_HD}1" ]; then
+                    BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
+                    mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA && break
+                fi
+                echo "Waiting for ${UNPARTITIONED_HD}1 to exist."
                 timer=$((timer + 1))
                 sleep 0.5
             done
-            BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
-            mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
         fi
 
         DISK_VENDOR=$(cat /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/vendor /sys/class/block/$(basename $UNPARTITIONED_HD /dev/)/device/model | tr -d "\n")
