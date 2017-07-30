@@ -31,10 +31,10 @@ type MachineConfig struct {
 	RegistryMirror      []string
 	HostOnlyCIDR        string // Only used by the virtualbox driver
 	HypervVirtualSwitch string
-	KvmNetwork          string // Only used by the KVM driver
-	Downloader          util.ISODownloader
-	DockerOpt           []string // Each entry is formatted as KEY=VALUE.
-	DisableDriverMounts bool     // Only used by virtualbox and xhyve
+	KvmNetwork          string             // Only used by the KVM driver
+	Downloader          util.ISODownloader `json:"-"`
+	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
+	DisableDriverMounts bool               // Only used by virtualbox and xhyve
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
@@ -47,4 +47,10 @@ type KubernetesConfig struct {
 	NetworkPlugin     string
 	FeatureGates      string
 	ExtraOptions      util.ExtraOptionSlice
+}
+
+// Config contains machine and k8s config
+type Config struct {
+	MachineConfig    MachineConfig
+	KubernetesConfig KubernetesConfig
 }

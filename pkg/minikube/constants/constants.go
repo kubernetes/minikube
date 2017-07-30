@@ -107,6 +107,11 @@ var DefaultKubernetesVersion = version.Get().GitVersion
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
 
+// GetProfileFile returns the Minikube profile config file
+func GetProfileFile(profile string) string {
+	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
+}
+
 var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sReleases/"
 var LocalkubeLinuxFilename = "localkube-linux-amd64"
 
