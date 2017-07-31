@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-DOCKER_BIN_VERSION = 17.05.0-ce
-DOCKER_BIN_SITE = https://get.docker.com/builds/Linux/x86_64
+DOCKER_BIN_VERSION = 17.06.0-ce
+DOCKER_BIN_SITE = https://download.docker.com/linux/static/stable/x86_64/
 DOCKER_BIN_SOURCE = docker-$(DOCKER_BIN_VERSION).tgz
 
 define DOCKER_BIN_USERS
