@@ -18,7 +18,6 @@ package cmd
 
 import (
 	goflag "flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -33,7 +32,6 @@ import (
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/notify"
 )
 
@@ -49,14 +47,8 @@ var dirs = [...]string{
 	constants.MakeMiniPath("logs"),
 }
 
-const (
-	showLibmachineLogs = "show-libmachine-logs"
-	useVendoredDriver  = "use-vendored-driver"
-)
-
 var (
 	enableUpdateNotification = true
-	clientType               machine.ClientType
 )
 
 var viperWhiteList = []string{
@@ -87,16 +79,6 @@ var RootCmd = &cobra.Command{
 		if glog.V(7) {
 			log.SetDebug(true)
 		}
-
-		if viper.GetBool(showLibmachineLogs) {
-			fmt.Println(`
---show-libmachine-logs is deprecated.
-Please use --v=3 to show libmachine logs, and --v=7 for debug level libmachine logs
-`)
-		}
-
-		//TODO(r2d4): config should not reference API
-		clientType = configCmd.GetClientType()
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
@@ -134,8 +116,6 @@ func setFlagsUsingViper() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().Bool(showLibmachineLogs, false, "Deprecated: To enable libmachine logs, set --v=3 or higher")
-	RootCmd.PersistentFlags().Bool(useVendoredDriver, false, "Use the vendored in drivers instead of RPC")
 	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used.  
 	This can be modified to allow for multiple minikube instances to be run independently`)
 	RootCmd.AddCommand(configCmd.ConfigCmd)

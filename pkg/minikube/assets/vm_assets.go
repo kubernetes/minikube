@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strconv"
 
@@ -107,8 +106,35 @@ type MemoryAsset struct {
 	BaseAsset
 }
 
-func NewMemoryAsset(assetName, targetDir, targetName, permissions string) *MemoryAsset {
+func (m *MemoryAsset) GetLength() int {
+	return m.Length
+}
+
+func (m *MemoryAsset) Read(p []byte) (int, error) {
+	return m.reader.Read(p)
+}
+
+func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *MemoryAsset {
 	m := &MemoryAsset{
+		BaseAsset{
+			TargetDir:   targetDir,
+			TargetName:  targetName,
+			Permissions: permissions,
+		},
+	}
+
+	m.data = d
+	m.Length = len(m.data)
+	m.reader = bytes.NewReader(m.data)
+	return m
+}
+
+type BinDataAsset struct {
+	BaseAsset
+}
+
+func NewBinDataAsset(assetName, targetDir, targetName, permissions string) *BinDataAsset {
+	m := &BinDataAsset{
 		BaseAsset{
 			AssetName:   assetName,
 			TargetDir:   targetDir,
@@ -120,7 +146,7 @@ func NewMemoryAsset(assetName, targetDir, targetName, permissions string) *Memor
 	return m
 }
 
-func (m *MemoryAsset) loadData() error {
+func (m *BinDataAsset) loadData() error {
 	contents, err := Asset(m.AssetName)
 	if err != nil {
 		return err
@@ -131,55 +157,41 @@ func (m *MemoryAsset) loadData() error {
 	return nil
 }
 
-func (m *MemoryAsset) GetLength() int {
+func (m *BinDataAsset) GetLength() int {
 	return m.Length
 }
 
-func (m *MemoryAsset) Read(p []byte) (int, error) {
+func (m *BinDataAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
 }
 
 func CopyFileLocal(f CopyableFile) error {
-	os.MkdirAll(f.GetTargetDir(), os.ModePerm)
+	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
+		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
+	}
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
-	os.Remove(targetPath)
-	target, err := os.Create(targetPath)
-	defer target.Close()
+	if _, err := os.Stat(targetPath); err == nil {
+		if err := os.Remove(targetPath); err != nil {
+			return errors.Wrapf(err, "error removing file %s", targetPath)
+		}
 
+	}
+	target, err := os.Create(targetPath)
+	if err != nil {
+		return errors.Wrapf(err, "error creating file at %s", targetPath)
+	}
 	perms, err := strconv.Atoi(f.GetPermissions())
 	if err != nil {
-		return errors.Wrap(err, "Error converting permissions to integer")
+		return errors.Wrapf(err, "error converting permissions %s to integer", perms)
 	}
-	target.Chmod(os.FileMode(perms))
-	if err != nil {
-		return errors.Wrap(err, "Error changing file permissions")
-	}
-
-	_, err = io.Copy(target, f)
-	if err != nil {
-		return errors.Wrap(err, "Error copying file to target location")
+	if err := target.Chmod(os.FileMode(perms)); err != nil {
+		return errors.Wrapf(err, "error changing file permissions for %s", targetPath)
 	}
 
-	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") != "" {
-		username := os.Getenv("SUDO_USER")
-		if username == "" {
-			return nil
-		}
-		usr, err := user.Lookup(username)
-		if err != nil {
-			return errors.Wrap(err, "Error looking up user")
-		}
-		uid, err := strconv.Atoi(usr.Uid)
-		if err != nil {
-			return errors.Wrapf(err, "Error parsing uid for user: %s", username)
-		}
-		gid, err := strconv.Atoi(usr.Gid)
-		if err != nil {
-			return errors.Wrapf(err, "Error parsing gid for user: %s", username)
-		}
-		if err := os.Chown(targetPath, uid, gid); err != nil {
-			return errors.Wrapf(err, "Error changing ownership for: %s", targetPath)
-		}
+	if _, err = io.Copy(target, f); err != nil {
+		return errors.Wrapf(err, `error copying file %s to target location:
+do you have the correct permissions?  The none driver requires sudo for the "start" command`,
+			targetPath)
 	}
-	return nil
+	return target.Close()
 }

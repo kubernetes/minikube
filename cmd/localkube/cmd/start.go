@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/coreos/pkg/capnslog"
 	"github.com/golang/glog"
 	"k8s.io/apiserver/pkg/util/feature"
 
@@ -47,11 +46,6 @@ func StartLocalkube() {
 		os.Exit(0)
 	}
 
-	// Get the etcd logger for the api repo
-	apiRepoLogger := capnslog.MustRepoLogger("github.com/coreos/etcd/etcdserver/api")
-	// Set the logging level to NOTICE as there is an INFO lvl log statement that runs every few seconds -> log spam
-	apiRepoLogger.SetRepoLogLevel(capnslog.NOTICE)
-
 	// TODO: Require root
 
 	SetupServer(Server)
@@ -74,7 +68,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 		}
 	}
 
-	//Set feature gates
+	// Set feature gates
 	if s.FeatureGates != "" {
 		glog.Infof("Setting Feature Gates: %s", s.FeatureGates)
 		err := feature.DefaultFeatureGate.Set(s.FeatureGates)
@@ -96,7 +90,7 @@ func SetupServer(s *localkube.LocalkubeServer) {
 	capabilities.Initialize(c)
 
 	// setup etcd
-	etcd, err := s.NewEtcd(localkube.KubeEtcdClientURLs, localkube.KubeEtcdPeerURLs, "kubeetcd", s.GetEtcdDataDirectory())
+	etcd, err := s.NewEtcd(s.GetEtcdDataDirectory())
 	if err != nil {
 		panic(err)
 	}

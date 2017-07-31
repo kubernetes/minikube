@@ -55,7 +55,7 @@ type ScaleStatus struct {
 	Replicas int32
 
 	// label query over pods that should match the replicas count.
-	// More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
 	// +optional
 	Selector *metav1.LabelSelector
 }
@@ -66,15 +66,15 @@ type ScaleStatus struct {
 // represents a scaling request for a resource.
 type Scale struct {
 	metav1.TypeMeta
-	// Standard object metadata; More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata.
+	// Standard object metadata; More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata.
 	// +optional
 	metav1.ObjectMeta
 
-	// defines the behavior of the scale. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status.
+	// defines the behavior of the scale. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status.
 	// +optional
 	Spec ScaleSpec
 
-	// current status of the scale. More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status. Read-only.
+	// current status of the scale. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status. Read-only.
 	// +optional
 	Status ScaleStatus
 }
@@ -234,7 +234,7 @@ type DeploymentRollback struct {
 }
 
 type RollbackConfig struct {
-	// The revision to rollback to. If set to 0, rollbck to the last revision.
+	// The revision to rollback to. If set to 0, rollback to the last revision.
 	// +optional
 	Revision int64
 }
@@ -326,6 +326,12 @@ type DeploymentStatus struct {
 
 	// Represents the latest available observations of a deployment's current state.
 	Conditions []DeploymentCondition
+
+	// Count of hash collisions for the Deployment. The Deployment controller uses this
+	// field as a collision avoidance mechanism when it needs to create the name for the
+	// newest ReplicaSet.
+	// +optional
+	CollisionCount *int64
 }
 
 type DeploymentConditionType string
@@ -379,7 +385,7 @@ type DaemonSetUpdateStrategy struct {
 	// Rolling update config params. Present only if type = "RollingUpdate".
 	//---
 	// TODO: Update this to follow our convention for oneOf, whatever we decide it
-	// to be. Same as DeploymentStrategy.RollingUpdate.
+	// to be. Same as Deployment `strategy.rollingUpdate`.
 	// See https://github.com/kubernetes/kubernetes/issues/35345
 	// +optional
 	RollingUpdate *RollingUpdateDaemonSet
@@ -420,7 +426,7 @@ type DaemonSetSpec struct {
 	// A label query over pods that are managed by the daemon set.
 	// Must match in order to be controlled.
 	// If empty, defaulted to labels on Pod template.
-	// More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
 	// +optional
 	Selector *metav1.LabelSelector
 
@@ -428,7 +434,7 @@ type DaemonSetSpec struct {
 	// The DaemonSet will create exactly one copy of this pod on every node
 	// that matches the template's node selector (or on every node if no node
 	// selector is specified).
-	// More info: http://kubernetes.io/docs/user-guide/replication-controller#pod-template
+	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/replicationcontroller#pod-template
 	Template api.PodTemplateSpec
 
 	// An update strategy to replace existing DaemonSet pods with new pods.
@@ -442,10 +448,17 @@ type DaemonSetSpec struct {
 	// +optional
 	MinReadySeconds int32
 
+	// DEPRECATED.
 	// A sequence number representing a specific generation of the template.
 	// Populated by the system. It can be set only during the creation.
 	// +optional
 	TemplateGeneration int64
+
+	// The number of old history to retain to allow rollback.
+	// This is a pointer to distinguish between explicit zero and not specified.
+	// Defaults to 10.
+	// +optional
+	RevisionHistoryLimit *int32
 }
 
 // DaemonSetStatus represents the current status of a daemon set.
@@ -485,6 +498,12 @@ type DaemonSetStatus struct {
 	// (ready for at least spec.minReadySeconds)
 	// +optional
 	NumberUnavailable int32
+
+	// Count of hash collisions for the DaemonSet. The DaemonSet controller
+	// uses this field as a collision avoidance mechanism when it needs to
+	// create the name for the newest ControllerRevision.
+	// +optional
+	CollisionCount *int64
 }
 
 // +genclient=true
@@ -493,12 +512,12 @@ type DaemonSetStatus struct {
 type DaemonSet struct {
 	metav1.TypeMeta
 	// Standard object's metadata.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
 	metav1.ObjectMeta
 
 	// The desired behavior of this daemon set.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
 	// +optional
 	Spec DaemonSetSpec
 
@@ -506,12 +525,13 @@ type DaemonSet struct {
 	// out of date by some window of time.
 	// Populated by the system.
 	// Read-only.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
 	// +optional
 	Status DaemonSetStatus
 }
 
 const (
+	// DEPRECATED: DefaultDaemonSetUniqueLabelKey is used instead.
 	// DaemonSetTemplateGenerationKey is the key of the labels that is added
 	// to daemon set pods to distinguish between old and new pod templates
 	// during DaemonSet template update.
@@ -522,7 +542,7 @@ const (
 type DaemonSetList struct {
 	metav1.TypeMeta
 	// Standard list metadata.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
 	metav1.ListMeta
 
@@ -533,7 +553,7 @@ type DaemonSetList struct {
 type ThirdPartyResourceDataList struct {
 	metav1.TypeMeta
 	// Standard list metadata
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
 	metav1.ListMeta
 	// Items is a list of third party objects
@@ -549,17 +569,17 @@ type ThirdPartyResourceDataList struct {
 type Ingress struct {
 	metav1.TypeMeta
 	// Standard object's metadata.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
 	metav1.ObjectMeta
 
 	// Spec is the desired state of the Ingress.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
 	// +optional
 	Spec IngressSpec
 
 	// Status is the current state of the Ingress.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#spec-and-status
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status
 	// +optional
 	Status IngressStatus
 }
@@ -568,7 +588,7 @@ type Ingress struct {
 type IngressList struct {
 	metav1.TypeMeta
 	// Standard object's metadata.
-	// More info: http://releases.k8s.io/HEAD/docs/devel/api-conventions.md#metadata
+	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
 	metav1.ListMeta
 
@@ -749,7 +769,7 @@ type ReplicaSetSpec struct {
 	// Selector is a label query over pods that should match the replica count.
 	// Must match in order to be controlled.
 	// If empty, defaulted to labels on pod template.
-	// More info: http://kubernetes.io/docs/user-guide/labels#label-selectors
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
 	// +optional
 	Selector *metav1.LabelSelector
 
@@ -915,6 +935,7 @@ var (
 	Quobyte               FSType = "quobyte"
 	AzureDisk             FSType = "azureDisk"
 	PhotonPersistentDisk  FSType = "photonPersistentDisk"
+	StorageOS             FSType = "storageos"
 	Projected             FSType = "projected"
 	PortworxVolume        FSType = "portworxVolume"
 	ScaleIO               FSType = "scaleIO"
@@ -926,7 +947,7 @@ type SELinuxStrategyOptions struct {
 	// Rule is the strategy that will dictate the allowable labels that may be set.
 	Rule SELinuxStrategy
 	// seLinuxOptions required to run as; required for MustRunAs
-	// More info: http://releases.k8s.io/HEAD/docs/design/security_context.md#security-context
+	// More info: https://git.k8s.io/community/contributors/design-proposals/security_context.md
 	// +optional
 	SELinuxOptions *api.SELinuxOptions
 }
@@ -948,11 +969,19 @@ type RunAsUserStrategyOptions struct {
 	Rule RunAsUserStrategy
 	// Ranges are the allowed ranges of uids that may be used.
 	// +optional
-	Ranges []IDRange
+	Ranges []UserIDRange
 }
 
-// IDRange provides a min/max of an allowed range of IDs.
-type IDRange struct {
+// UserIDRange provides a min/max of an allowed range of UserIDs.
+type UserIDRange struct {
+	// Min is the start of the range, inclusive.
+	Min int64
+	// Max is the end of the range, inclusive.
+	Max int64
+}
+
+// GroupIDRange provides a min/max of an allowed range of GroupIDs.
+type GroupIDRange struct {
 	// Min is the start of the range, inclusive.
 	Min int64
 	// Max is the end of the range, inclusive.
@@ -980,7 +1009,7 @@ type FSGroupStrategyOptions struct {
 	// Ranges are the allowed ranges of fs groups.  If you would like to force a single
 	// fs group then supply a single range with the same start and end.
 	// +optional
-	Ranges []IDRange
+	Ranges []GroupIDRange
 }
 
 // FSGroupStrategyType denotes strategy types for generating FSGroup values for a
@@ -1002,7 +1031,7 @@ type SupplementalGroupsStrategyOptions struct {
 	// Ranges are the allowed ranges of supplemental groups.  If you would like to force a single
 	// supplemental group then supply a single range with the same start and end.
 	// +optional
-	Ranges []IDRange
+	Ranges []GroupIDRange
 }
 
 // SupplementalGroupsStrategyType denotes strategy types for determining valid supplemental
@@ -1027,6 +1056,7 @@ type PodSecurityPolicyList struct {
 
 // +genclient=true
 
+// NetworkPolicy describes what network traffic is allowed for a set of Pods
 type NetworkPolicy struct {
 	metav1.TypeMeta
 	// +optional
@@ -1046,13 +1076,12 @@ type NetworkPolicySpec struct {
 	PodSelector metav1.LabelSelector
 
 	// List of ingress rules to be applied to the selected pods.
-	// Traffic is allowed to a pod if namespace.networkPolicy.ingress.isolation is undefined and cluster policy allows it,
+	// Traffic is allowed to a pod if there are no NetworkPolicies selecting the pod
 	// OR if the traffic source is the pod's local node,
 	// OR if the traffic matches at least one ingress rule across all of the NetworkPolicy
 	// objects whose podSelector matches the pod.
-	// If this field is empty then this NetworkPolicy does not affect ingress isolation.
-	// If this field is present and contains at least one rule, this policy allows any traffic
-	// which matches at least one of the ingress rules in this list.
+	// If this field is empty then this NetworkPolicy does not allow any traffic
+	// (and serves solely to ensure that the pods it selects are isolated by default).
 	// +optional
 	Ingress []NetworkPolicyIngressRule
 }
@@ -1061,21 +1090,17 @@ type NetworkPolicySpec struct {
 type NetworkPolicyIngressRule struct {
 	// List of ports which should be made accessible on the pods selected for this rule.
 	// Each item in this list is combined using a logical OR.
-	// If this field is not provided, this rule matches all ports (traffic not restricted by port).
-	// If this field is empty, this rule matches no ports (no traffic matches).
+	// If this field is empty or missing, this rule matches all ports (traffic not restricted by port).
 	// If this field is present and contains at least one item, then this rule allows traffic
 	// only if the traffic matches at least one port in the list.
-	// TODO: Update this to be a pointer to slice as soon as auto-generation supports it.
 	// +optional
 	Ports []NetworkPolicyPort
 
 	// List of sources which should be able to access the pods selected for this rule.
 	// Items in this list are combined using a logical OR operation.
-	// If this field is not provided, this rule matches all sources (traffic not restricted by source).
-	// If this field is empty, this rule matches no sources (no traffic matches).
+	// If this field is empty or missing, this rule matches all sources (traffic not restricted by source).
 	// If this field is present and contains at least on item, this rule allows traffic only if the
 	// traffic matches at least one item in the from list.
-	// TODO: Update this to be a pointer to slice as soon as auto-generation supports it.
 	// +optional
 	From []NetworkPolicyPeer
 }
@@ -1100,7 +1125,6 @@ type NetworkPolicyPeer struct {
 
 	// This is a label selector which selects Pods in this namespace.
 	// This field follows standard label selector semantics.
-	// If not provided, this selector selects no pods.
 	// If present but empty, this selector selects all pods in this namespace.
 	// +optional
 	PodSelector *metav1.LabelSelector
@@ -1108,7 +1132,6 @@ type NetworkPolicyPeer struct {
 	// Selects Namespaces using cluster scoped-labels.  This
 	// matches all pods in all namespaces selected by this label selector.
 	// This field follows standard label selector semantics.
-	// If omitted, this selector selects no namespaces.
 	// If present but empty, this selector selects all namespaces.
 	// +optional
 	NamespaceSelector *metav1.LabelSelector

@@ -178,7 +178,7 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 		case noProxyValue == "":
 			noProxyValue = ip
 		case strings.Contains(noProxyValue, ip):
-		//ip already in no_proxy list, nothing to do
+		// ip already in no_proxy list, nothing to do
 		default:
 			noProxyValue = fmt.Sprintf("%s,%s", noProxyValue, ip)
 		}
@@ -283,10 +283,10 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
 	Short: "Sets up docker env variables; similar to '$(docker-machine env)'",
-	Long:  `sets up docker env variables; similar to '$(docker-machine env)'`,
+	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		api, err := machine.NewAPIClient(clientType)
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)

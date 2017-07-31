@@ -39,7 +39,7 @@ The bootable ISO image will be available in `out/minikube.iso`.
 $ ./out/minikube start \
     --container-runtime=rkt \
     --network-plugin=cni \
-    --iso-url=file:///$GOPATH/k8s.io/minikube/out/minikube.iso
+    --iso-url=file://$GOPATH/src/k8s.io/minikube/out/minikube.iso
 ```
 
 ### Buildroot configuration
@@ -74,7 +74,7 @@ $ make savedefconfig
 The changes will be reflected in the `minikube-iso/configs/minikube_defconfig` file.
 
 ```
-$ git stat
+$ git status
 ## master
  M deploy/iso/minikube-iso/configs/minikube_defconfig
 ```

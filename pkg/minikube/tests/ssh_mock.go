@@ -106,26 +106,37 @@ func (s *SSHServer) Start() (int, error) {
 						return
 					}
 
-					req := <-requests
-					req.Reply(true, nil)
+					for req := range requests {
+						glog.Infoln("Got Req: ", req.Type)
+						// Store anything that comes in over stdin.
+						go func() {
+							io.Copy(s.Transfers, channel)
+							channel.Close()
+						}()
+						switch req.Type {
+						case "exec":
+							req.Reply(true, nil)
 
-					//Note: string(req.Payload) adds additional characters to start of input, execRequest used to solve this issue
-					var cmd execRequest
-					if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
-						glog.Errorln("Unmarshall encountered error: %s", err)
-						return
+							// Note: string(req.Payload) adds additional characters to start of input.
+							var cmd execRequest
+							if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
+								glog.Errorf("Unmarshall encountered error: %s with req: %v", err, req.Type)
+								return
+							}
+							s.Commands[cmd.Command] = 1
+
+							// Write specified command output as mocked ssh output
+							if val, err := s.GetCommandToOutput(cmd.Command); err == nil {
+								channel.Write([]byte(val))
+							}
+							channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+
+						case "pty-req":
+							req.Reply(true, nil)
+
+							channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+						}
 					}
-					s.Commands[cmd.Command] = 1
-
-					// Write specified command output as mocked ssh output
-					if val, err := s.GetCommandToOutput(cmd.Command); err == nil {
-						channel.Write([]byte(val))
-					}
-					channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
-
-					// Store anything that comes in over stdin.
-					io.Copy(s.Transfers, channel)
-					channel.Close()
 				}
 			}()
 		}

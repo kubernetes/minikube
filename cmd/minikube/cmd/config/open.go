@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -34,6 +35,8 @@ var (
 	addonsURLMode     bool
 	addonsURLFormat   string
 	addonsURLTemplate *template.Template
+	wait              int
+	interval          int
 )
 
 const defaultAddonsFormatTemplate = "http://{{.IP}}:{{.Port}}"
@@ -57,7 +60,7 @@ var addonsOpenCmd = &cobra.Command{
 		}
 		addonName := args[0]
 		//TODO(r2d4): config should not reference API, pull this out
-		api, err := machine.NewAPIClient(GetClientType())
+		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 			os.Exit(1)
@@ -101,7 +104,8 @@ You can add one by annotating a service with the label %s:%s
 		}
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
-			service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https)
+			service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate,
+				addonsURLMode, https, wait, interval)
 
 		}
 	},
@@ -110,7 +114,8 @@ You can add one by annotating a service with the label %s:%s
 func init() {
 	addonsOpenCmd.Flags().BoolVar(&addonsURLMode, "url", false, "Display the kubernetes addons URL in the CLI instead of opening it in the default browser")
 	addonsOpenCmd.Flags().BoolVar(&https, "https", false, "Open the addons URL with https instead of http")
-
+	addonsOpenCmd.Flags().IntVar(&wait, "wait", constants.DefaultWait, "Amount of time to wait for service in seconds")
+	addonsOpenCmd.Flags().IntVar(&interval, "interval", constants.DefaultInterval, "The time interval for each check that wait performs in seconds")
 	addonsOpenCmd.PersistentFlags().StringVar(&addonsURLFormat, "format", defaultAddonsFormatTemplate, "Format to output addons URL in.  This format will be applied to each url individually and they will be printed one at a time.")
 	AddonsCmd.AddCommand(addonsOpenCmd)
 }

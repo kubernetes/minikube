@@ -2,7 +2,7 @@
 
 When using a single VM of kubernetes it's really handy to reuse the Docker daemon inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
 
-To be able to work with the docker daemon on your mac/linux host use the [docker-env command](./docs/minikube_docker-env.md) in your shell:
+To be able to work with the docker daemon on your mac/linux host use the docker-env command in your shell:
 
 ```
 eval $(minikube docker-env)
@@ -28,4 +28,4 @@ The fix is to update /etc/sysconfig/docker to ensure that minikube's environment
 > fi
 ```
 
-Remember to turn off the imagePullPolicy:Always, as otherwise kubernetes won't use images you built locally.
+Remember to turn off the _imagePullPolicy:Always_, as otherwise Kubernetes won't use images you built locally.

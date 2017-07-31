@@ -32,6 +32,30 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testda
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
 
+# Linux cleanup
+virsh -c qemu:///system list --all \
+      | sed -n '3,$ p' \
+      | cut -d' ' -f 7 \
+      | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}"  \
+      || true
+
+# Clean up virtualbox VMs
+vboxmanage list vms \
+      | cut -d "{" -f2 \
+      | cut -d "}" -f1 \
+      | xargs -I {} sh -c "vboxmanage unregistervm {} --delete" \
+      || true
+
+# Clean up xhyve disks
+hdiutil info \
+      | grep -v /dev/disk0 \
+      | grep /dev/ \
+      | xargs -I {} sh -c "hdiutil detach {}" \
+      || true
+
+# Clean up xhyve processes
+pgrep xhyve | xargs kill || true
+
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}
 chmod +x out/minikube-${OS_ARCH}
@@ -47,9 +71,12 @@ sudo rm -rf $HOME/.kube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
-${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
+${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10 --logtostderr" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
 result=$?
 set -e
+
+# See the KUBECONFIG file for debugging
+sudo cat $KUBECONFIG
 
 MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
 || MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
@@ -61,6 +88,7 @@ if [[ $result -eq 0 ]]; then
   status="success"
 else
   status="failure"
+  source print-debug-info.sh
 fi
 
 set +x

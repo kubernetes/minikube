@@ -173,7 +173,7 @@ func PromptUserForAccept(r io.Reader) bool {
 		} else if response == "n" || response == "no" {
 			return false
 		} else {
-			fmt.Println("Invalid response, error reporting remains disabled.  Must be in form [Y/n]")
+			fmt.Println("Invalid response, error reporting remains disabled. Must be in form [Y/n]")
 			return false
 		}
 	case <-time.After(30 * time.Second):
@@ -202,7 +202,7 @@ Add kubectl to your system PATH`
 	if err != nil {
 		fmt.Fprintf(out,
 			`========================================
-kubectl could not be found on your path.  kubectl is a requirement for using minikube
+kubectl could not be found on your path. kubectl is a requirement for using minikube
 To install kubectl, please %s the following:
 
 %s
@@ -245,4 +245,12 @@ func KillMountProcess() error {
 		return errors.Wrap(err, "error converting mount string to pid")
 	}
 	return mountProc.Kill()
+}
+
+func GetKubeConfigPath() string {
+	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
+	if kubeConfigEnv == "" {
+		return constants.KubeconfigPath
+	}
+	return filepath.SplitList(kubeConfigEnv)[0]
 }

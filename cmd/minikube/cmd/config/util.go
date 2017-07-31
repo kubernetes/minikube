@@ -24,7 +24,6 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -82,13 +81,6 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
-func GetClientType() machine.ClientType {
-	if viper.GetBool(useVendoredDriver) {
-		return machine.ClientTypeLocal
-	}
-	return machine.ClientTypeRPC
-}
-
 func EnableOrDisableAddon(name string, val string) error {
 
 	enable, err := strconv.ParseBool(val)
@@ -97,7 +89,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
-	api, err := machine.NewAPIClient(GetClientType())
+	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 		os.Exit(1)

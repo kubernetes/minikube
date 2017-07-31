@@ -30,7 +30,8 @@ OS_ARCH="linux-amd64"
 VM_DRIVER="none"
 JOB_NAME="Linux-None"
 EXTRA_BUILD_ARGS="$EXTRA_BUILD_ARGS --use-vendored-driver"
-SUDO_PREFIX="sudo "
+SUDO_PREFIX="sudo -E "
+export KUBECONFIG="/root/.kube/config"
 
 # Download files and set permissions
 source common.sh
