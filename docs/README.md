@@ -8,7 +8,7 @@
 
 * **Minikube Addons** ([addons.md](addons.md)): Information on configuring addons to be run on minikube
 
-* **Configuring Kubernetes** ([configuring_kubernetes.md](configuring_kubernetes.md)): Configuring different kubernetes components in minikube
+* **Configuring Kubernetes** ([configuring_kubernetes.md](configuring_kubernetes.md)): Configuring different Kubernetes components in minikube
 
 
 ### Installation and debugging

@@ -48,10 +48,12 @@ var addonsConfigureCmd = &cobra.Command{
 			awsAccessKey := "changeme"
 			awsRegion := "changeme"
 			awsAccount := "changeme"
+			awsRole := "changeme"
 			gcrApplicationDefaultCredentials := "changeme"
 			dockerServer := "changeme"
 			dockerUser := "changeme"
 			dockerPass := "changeme"
+			gcrURL := "https://gcr.io"
 
 			enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
 			if enableAWSECR {
@@ -59,11 +61,17 @@ var addonsConfigureCmd = &cobra.Command{
 				awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
 				awsRegion = AskForStaticValue("-- Enter AWS Region: ")
 				awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID: ")
+				awsRole = AskForStaticValue("-- (Optional) Enter ARN of AWS role to assume: ")
 			}
 
 			enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
 			if enableGCR {
 				gcrPath := AskForStaticValue("-- Enter path to credentials (e.g. /home/user/.config/gcloud/application_default_credentials.json):")
+				gcrchangeURL := AskForYesNoConfirmation("-- Do you want to change the GCR URL (Default https://gcr.io)?", posResponses, negResponses)
+
+				if gcrchangeURL {
+					gcrURL = AskForStaticValue("-- Enter GCR URL (e.g. https://asia.gcr.io):")
+				}
 
 				// Read file from disk
 				dat, err := ioutil.ReadFile(gcrPath)
@@ -79,7 +87,7 @@ var addonsConfigureCmd = &cobra.Command{
 			if enableDR {
 				dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
 				dockerUser = AskForStaticValue("-- Enter docker registry username: ")
-				dockerPass = AskForStaticValue("-- Enter docker registry password: ")
+				dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
 			}
 
 			// Create ECR Secret
@@ -91,6 +99,7 @@ var addonsConfigureCmd = &cobra.Command{
 					"AWS_SECRET_ACCESS_KEY": awsAccessKey,
 					"aws-account":           awsAccount,
 					"aws-region":            awsRegion,
+					"aws-assume-role":       awsRole,
 				},
 				map[string]string{
 					"app":   "registry-creds",
@@ -108,6 +117,7 @@ var addonsConfigureCmd = &cobra.Command{
 				"registry-creds-gcr",
 				map[string]string{
 					"application_default_credentials.json": gcrApplicationDefaultCredentials,
+					"gcrurl": gcrURL,
 				},
 				map[string]string{
 					"app":   "registry-creds",

@@ -1,6 +1,15 @@
 [
   {
+    "version": "v1.7.0"
+  },
+  {
+    "version": "v1.7.0-rc.1"
+  },
+  {
     "version": "v1.7.0-alpha.2"
+  },
+  {
+    "version": "v1.6.4"
   },
   {
     "version": "v1.6.3"

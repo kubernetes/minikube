@@ -40,7 +40,7 @@ Send a PR for the Makefile change and wait until it is merged.  Once the commit 
 Run this command:
 
 ```shell
-make cross checksum
+BUILD_IN_DOCKER=y make cross checksum
 ```
 
 ## Add the version to the releases.json file

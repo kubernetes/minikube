@@ -28,12 +28,12 @@ import (
 )
 
 type Addon struct {
-	Assets    []*MemoryAsset
+	Assets    []*BinDataAsset
 	enabled   bool
 	addonName string
 }
 
-func NewAddon(assets []*MemoryAsset, enabled bool, addonName string) *Addon {
+func NewAddon(assets []*BinDataAsset, enabled bool, addonName string) *Addon {
 	a := &Addon{
 		Assets:    assets,
 		enabled:   enabled,
@@ -55,95 +55,107 @@ func (a *Addon) IsEnabled() (bool, error) {
 }
 
 var Addons = map[string]*Addon{
-	"addon-manager": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
+	"addon-manager": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
 			"deploy/addons/addon-manager.yaml",
 			"/etc/kubernetes/manifests/",
 			"addon-manager.yaml",
 			"0640"),
 	}, true, "addon-manager"),
-	"dashboard": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
+	"dashboard": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
 			"deploy/addons/dashboard/dashboard-rc.yaml",
 			constants.AddonsPath,
 			"dashboard-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/dashboard/dashboard-svc.yaml",
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
-	"default-storageclass": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
+	"default-storageclass": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
 			constants.AddonsPath,
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass"),
-	"kube-dns": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
+	"kube-dns": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-controller.yaml",
 			constants.AddonsPath,
 			"kube-dns-controller.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-cm.yaml",
 			constants.AddonsPath,
 			"kube-dns-cm.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-svc.yaml",
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
 	}, true, "kube-dns"),
-	"heapster": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
+	"heapster": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
 			"deploy/addons/heapster/influxGrafana-rc.yaml",
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/heapster/grafana-svc.yaml",
 			constants.AddonsPath,
 			"grafana-svc.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/heapster/influxdb-svc.yaml",
 			constants.AddonsPath,
 			"influxdb-svc.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/heapster/heapster-rc.yaml",
 			constants.AddonsPath,
 			"heapster-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/heapster/heapster-svc.yaml",
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640"),
 	}, false, "heapster"),
-	"ingress": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
+	"ingress": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
 			"deploy/addons/ingress/ingress-configmap.yaml",
 			constants.AddonsPath,
 			"ingress-configmap.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/ingress/ingress-rc.yaml",
 			constants.AddonsPath,
 			"ingress-rc.yaml",
 			"0640"),
-		NewMemoryAsset(
+		NewBinDataAsset(
 			"deploy/addons/ingress/ingress-svc.yaml",
 			constants.AddonsPath,
 			"ingress-svc.yaml",
 			"0640"),
 	}, false, "ingress"),
-	"registry-creds": NewAddon([]*MemoryAsset{
-		NewMemoryAsset(
+	"registry": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/registry/registry-rc.yaml",
+			constants.AddonsPath,
+			"registry-rc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/registry/registry-svc.yaml",
+			constants.AddonsPath,
+			"registry-svc.yaml",
+			"0640"),
+	}, false, "registry"),
+	"registry-creds": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
 			"deploy/addons/registry-creds/registry-creds-rc.yaml",
 			constants.AddonsPath,
 			"registry-creds-rc.yaml",

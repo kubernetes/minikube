@@ -18,13 +18,16 @@ package util
 
 // These constants are used by both minikube and localkube
 const (
+	APIServerPort             = 8443
 	DefaultLocalkubeDirectory = "/var/lib/localkube"
 	DefaultCertPath           = DefaultLocalkubeDirectory + "/certs/"
+	DefaultKubeConfigPath     = DefaultLocalkubeDirectory + "/kubeconfig"
 	DefaultServiceClusterIP   = "10.0.0.1"
 	DefaultDNSDomain          = "cluster.local"
 	DefaultDNSIP              = "10.0.0.10"
+	DefaultInsecureRegistry   = "10.0.0.0/24"
 )
 
 func GetAlternateDNS(domain string) []string {
-	return []string{"kubernetes.default.svc." + domain, "kubernetes.default.svc", "kubernetes.default", "kubernetes"}
+	return []string{"kubernetes.default.svc." + domain, "kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
 }

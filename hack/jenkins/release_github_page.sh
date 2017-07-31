@@ -21,7 +21,7 @@
 # VERSION_MAJOR: The major version of the tag to be released.
 # VERSION_MINOR: The minor version of the tag to be released.
 # VERSION_BUILD: The build version of the tag to be released.
-# ISO_SHA256: The sha 256 of the minikube-iso for the current release
+# ISO_SHA256: The sha 256 of the minikube-iso for the current release.
 # GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider.
 
 set -e
@@ -41,7 +41,7 @@ export DESCRIPTION="# Minikube ${TAGNAME}
 Minikube is still under active development, and features may change at any time. Release notes are available [here](https://github.com/kubernetes/minikube/blob/${TAGNAME}/CHANGELOG.md).
 
 ## Distribution
-Minikube is distrubuted in binary form for Linux, OSX, and Windows systems for the ${TAGNAME} release. Please note that Windows support is currently experimental and may have issues.  Binaries are available through Github or on Google Cloud Storage. The direct GCS links are:
+Minikube is distributed in binary form for Linux, OSX, and Windows systems for the ${TAGNAME} release. Please note that Windows support is currently experimental and may have issues.  Binaries are available through GitHub or on Google Cloud Storage. The direct GCS links are:
 [Darwin/amd64](https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-darwin-amd64)
 [Linux/amd64](https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-linux-amd64)
 [Windows/amd64](https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-windows-amd64.exe)
@@ -63,14 +63,13 @@ Feel free to leave off the \`\`\`sudo mv minikube /usr/local/bin\`\`\` if you wo
 Download the \`minikube_${DEB_VERSION}.deb\` file, and install it using \`sudo dpkg -i minikube_$(DEB_VERSION).deb\`
 
 ### Windows [Experimental]
-Download the \`minikube-windows-amd64.exe\` file, rename it to \`minikube.exe\` and add it to your path
+Download the \`minikube-windows-amd64.exe\` file, rename it to \`minikube.exe\` and add it to your path.
 
 ### Windows Installer [Experimental]
 Download the \`minikube-installer.exe\` file, and execute the installer.  This will automatically add minikube.exe to your path with an uninstaller available as well.
 
 ## Usage
 Documentation is available [here](https://github.com/kubernetes/minikube/blob/${TAGNAME}/README.md).
-
 
 ## Checksums
 Minikube consists of a binary executable and a VM image in ISO format. To verify the contents of your distribution, you can compare sha256 hashes with these values:

@@ -28,16 +28,8 @@ import (
 )
 
 var driverMap = map[string]driverGetter{
-	"kvm":        getKVMDriver,
 	"virtualbox": getVirtualboxDriver,
 	"none":       getNoneDriver,
-}
-
-func getKVMDriver(rawDriver []byte) (drivers.Driver, error) {
-	return nil, errors.New(`
-The KVM driver is not included in minikube yet.  Please follow the direction at
-https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#kvm-driver
-`)
 }
 
 func getNoneDriver(rawDriver []byte) (drivers.Driver, error) {

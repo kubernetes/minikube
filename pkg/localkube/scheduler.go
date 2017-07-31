@@ -19,6 +19,7 @@ package localkube
 import (
 	scheduler "k8s.io/kubernetes/plugin/cmd/kube-scheduler/app"
 	"k8s.io/kubernetes/plugin/cmd/kube-scheduler/app/options"
+	"k8s.io/minikube/pkg/util"
 )
 
 func (lk LocalkubeServer) NewSchedulerServer() Server {
@@ -29,7 +30,7 @@ func StartSchedulerServer(lk LocalkubeServer) func() error {
 	config := options.NewSchedulerServer()
 
 	// master details
-	config.Master = lk.GetAPIServerInsecureURL()
+	config.Kubeconfig = util.DefaultKubeConfigPath
 
 	// defaults from command
 	config.EnableProfiling = true

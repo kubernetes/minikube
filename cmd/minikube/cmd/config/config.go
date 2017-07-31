@@ -29,8 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-const useVendoredDriver = "use-vendored-driver"
-
 type setFn func(string, string) error
 
 type Setting struct {
@@ -152,6 +150,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "registry",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:        "registry-creds",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
@@ -168,7 +172,7 @@ var settings = []Setting{
 		set:  SetString,
 	},
 	{
-		name: useVendoredDriver,
+		name: "disable-driver-mounts",
 		set:  SetBool,
 	},
 }

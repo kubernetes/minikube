@@ -228,7 +228,9 @@ func (u *Ufs) Wstat(req *SrvReq) {
 				//at = time.Time(0)//atime(st.Sys().(*syscall.Stat_t))
 			}
 		}
-		e := os.Chtimes(fid.path, at, mt)
+		// macOS filesystem st_mtime values are only accurate to the second
+		// this ensures, 9p will only write mtime to the second #1375
+		e := os.Chtimes(fid.path, at.Truncate(time.Second), mt.Truncate(time.Second))
 		if e != nil {
 			req.RespondError(toError(e))
 			return

@@ -21,6 +21,8 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/coreos/etcd/embed"
+
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 
@@ -36,22 +38,27 @@ func (lk LocalkubeServer) NewAPIServer() Server {
 func StartAPIServer(lk LocalkubeServer) func() error {
 	config := options.NewServerRunOptions()
 
-	config.SecureServing.ServingOptions.BindAddress = lk.APIServerAddress
-	config.SecureServing.ServingOptions.BindPort = lk.APIServerPort
+	config.SecureServing.BindAddress = lk.APIServerAddress
+	config.SecureServing.BindPort = lk.APIServerPort
 
-	config.InsecureServing.BindAddress = lk.APIServerInsecureAddress
-	config.InsecureServing.BindPort = lk.APIServerInsecurePort
+	// 0 turns off insecure serving.
+	config.InsecureServing.BindPort = 0
 
 	config.Authentication.ClientCert.ClientCA = lk.GetCAPublicKeyCertPath()
 
 	config.SecureServing.ServerCert.CertKey.CertFile = lk.GetPublicKeyCertPath()
 	config.SecureServing.ServerCert.CertKey.KeyFile = lk.GetPrivateKeyCertPath()
-	config.GenericServerRunOptions.AdmissionControl = "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota"
-
+	config.Admission.PluginNames = []string{
+		"NamespaceLifecycle",
+		"LimitRanger",
+		"ServiceAccount",
+		"DefaultStorageClass",
+		"ResourceQuota",
+	}
 	// use localkube etcd
 
-	config.Etcd.StorageConfig.ServerList = KubeEtcdClientURLs
-	config.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD2
+	config.Etcd.StorageConfig.ServerList = []string{embed.DefaultListenClientURLs}
+	config.Etcd.StorageConfig.Type = storagebackend.StorageTypeETCD3
 
 	// set Service IP range
 	config.ServiceClusterIPRange = lk.ServiceClusterIPRange
@@ -73,12 +80,13 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	lk.SetExtraConfigForComponent("apiserver", &config)
 
 	return func() error {
-		return apiserver.Run(config)
+		stop := make(chan struct{})
+		return apiserver.Run(config, stop)
 	}
 }
 
 func readyFunc(lk LocalkubeServer) HealthCheck {
-	hostport := net.JoinHostPort(lk.APIServerInsecureAddress.String(), strconv.Itoa(lk.APIServerInsecurePort))
-	addr := "http://" + path.Join(hostport, "healthz")
-	return healthCheck(addr)
+	hostport := net.JoinHostPort("localhost", strconv.Itoa(lk.APIServerPort))
+	addr := "https://" + path.Join(hostport, "healthz")
+	return healthCheck(addr, lk)
 }

@@ -76,7 +76,7 @@ func (s *mustRunAs) Validate(pod *api.Pod, container *api.Container) field.Error
 
 func (s *mustRunAs) isValidUID(id int64) bool {
 	for _, rng := range s.opts.Ranges {
-		if psputil.FallsInRange(id, rng) {
+		if psputil.UserFallsInRange(id, rng) {
 			return true
 		}
 	}

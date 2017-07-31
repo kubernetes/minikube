@@ -4,34 +4,26 @@
 #
 ################################################################################
 
-CNI_BIN_VERSION = 0.4.0
-CNI_BIN_SITE = https://github.com/containernetworking/cni/releases/download/v$(CNI_BIN_VERSION)
-CNI_BIN_SOURCE = cni-v$(CNI_BIN_VERSION).tgz
+CNI_BIN_VERSION = v0.6.0-rc1
+CNI_BIN_SITE = https://github.com/containernetworking/cni/releases/download/$(CNI_BIN_VERSION)
+CNI_BIN_SOURCE = cni-amd64-$(CNI_BIN_VERSION).tgz
 
 define CNI_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
-		$(@D)/bridge \
-		$(TARGET_DIR)/opt/cni/bin/bridge
+		$(@D)/noop \
+		$(TARGET_DIR)/opt/cni/bin/noop
 
 	ln -sf \
-		../../opt/cni/bin/bridge \
-		$(TARGET_DIR)/usr/bin/bridge
+		../../opt/cni/bin/noop \
+		$(TARGET_DIR)/usr/bin/noop
 
 	$(INSTALL) -D -m 0755 \
-		$(@D)/host-local \
-		$(TARGET_DIR)/opt/cni/bin/host-local
+		$(@D)/noop \
+		$(TARGET_DIR)/opt/cni/bin/cnitool
 
 	ln -sf \
-		../../opt/cni/bin/host-local \
-		$(TARGET_DIR)/usr/bin/host-local
-
-	$(INSTALL) -D -m 0755 \
-		$(@D)/loopback \
-		$(TARGET_DIR)/opt/cni/bin/loopback
-
-	ln -sf \
-		../../opt/cni/bin/loopback \
-		$(TARGET_DIR)/usr/bin/loopback
+		../../opt/cni/bin/cnitool \
+		$(TARGET_DIR)/usr/bin/cnitool
 endef
 
 $(eval $(generic-package))

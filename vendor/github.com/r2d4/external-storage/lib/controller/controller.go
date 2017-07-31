@@ -37,6 +37,7 @@ import (
 	core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/api/v1/ref"
 	storage_v1 "k8s.io/client-go/pkg/apis/storage/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -164,6 +165,9 @@ func NewProvisionController(
 	gitVersion, _ := semver.Parse(serverGitVersion)
 	gitVersion1dot5, _ := semver.Parse("1.5.0")
 	is1dot4 := gitVersion.LT(gitVersion1dot5)
+
+	// TODO(r2d4): GetReference fails otherwise
+	v1.AddToScheme(api.Scheme)
 
 	controller := &ProvisionController{
 		client:                        client,
@@ -539,7 +543,7 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 
 	// Prepare a claimRef to the claim early (to fail before a volume is
 	// provisioned)
-	claimRef, err := v1.GetReference(api.Scheme, claim)
+	claimRef, err := ref.GetReference(api.Scheme, claim)
 	if err != nil {
 		glog.Errorf("Unexpected error getting claim reference to claim %q: %v", claimToClaimKey(claim), err)
 		return nil

@@ -35,11 +35,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
 const (
@@ -61,6 +61,7 @@ const (
 	apiServerName         = "apiserver-name"
 	dnsDomain             = "dns-domain"
 	mountString           = "mount-string"
+	disableDriverMounts   = "disable-driver-mounts"
 )
 
 var (
@@ -81,7 +82,7 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
-	api, err := machine.NewAPIClient(clientType)
+	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 		os.Exit(1)
@@ -116,6 +117,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
 		KvmNetwork:          viper.GetString(kvmNetwork),
 		Downloader:          pkgutil.DefaultDownloader{},
+		DisableDriverMounts: viper.GetBool(disableDriverMounts),
 	}
 
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
@@ -134,9 +136,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Println("Getting VM IP address...")
 	ip, err := host.Driver.GetIP()
 	if err != nil {
-		glog.Errorln("Error starting host: ", err)
+		glog.Errorln("Error getting VM IP address: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 	kubernetesConfig := cluster.KubernetesConfig{
@@ -157,7 +160,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := cluster.SetupCerts(host.Driver, kubernetesConfig.APIServerName); err != nil {
+	if err := cluster.SetupCerts(host.Driver, kubernetesConfig.APIServerName, kubernetesConfig.DNSDomain); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -175,18 +178,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error connecting to cluster: ", err)
 	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(constants.APIServerPort), -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
 
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
 
-	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
-	var kubeConfigFile string
-	if kubeConfigEnv == "" {
-		kubeConfigFile = constants.KubeconfigPath
-	} else {
-		kubeConfigFile = filepath.SplitList(kubeConfigEnv)[0]
-	}
+	kubeConfigFile := cmdUtil.GetKubeConfigPath()
 
 	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
 		ClusterName:          cfg.GetMachineName(),
@@ -241,8 +238,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		fmt.Println(`===================
 WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
 	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks
+`)
 
-When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
+		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
+			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
 You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
 	sudo mv /root/.kube $HOME/.kube # this will overwrite any config you have.  You may have to append the file contents manually
 	sudo chown -R $USER $HOME/.kube
@@ -252,6 +251,12 @@ You will need to move the files to the appropriate location and then set the cor
 	sudo chown -R $USER $HOME/.minikube
 	sudo chgrp -R $USER $HOME/.minikube 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
+		}
+		if err := util.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
+			glog.Errorf("Error recursively changing ownership of directory %s: %s",
+				constants.GetMinipath(), err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 }
 
@@ -280,6 +285,7 @@ func init() {
 	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
+	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
 	startCmd.Flags().String(isoURL, constants.DefaultIsoUrl, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM")
@@ -292,8 +298,8 @@ func init() {
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().String(dnsDomain, "", "The cluster dns domain name used in the kubernetes cluster")
-	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon")
+	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
+	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", []string{pkgutil.DefaultInsecureRegistry}, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")

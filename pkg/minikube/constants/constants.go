@@ -29,8 +29,8 @@ import (
 
 // APIServerPort is the port that the API server should listen on.
 const (
-	APIServerPort = 8443
-	APIServerName = "minikubeCA"
+	APIServerName    = "minikubeCA"
+	ClusterDNSDomain = "cluster.local"
 )
 
 const MinikubeHome = "MINIKUBE_HOME"
@@ -90,11 +90,13 @@ const (
 	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikube: {{.MinikubeStatus}}\n" +
-		"localkube: {{.LocalkubeStatus}}\n"
+		"localkube: {{.LocalkubeStatus}}\n" + "kubectl: {{.KubeconfigStatus}}\n"
 	DefaultAddonListFormat    = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	DefaultConfigViewFormat   = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
+	DefaultWait               = 20
+	DefaultInterval           = 6
 )
 
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
@@ -131,6 +133,8 @@ const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
 	DefaultMountEndpoint = "/minikube-host"
+	DefaultMsize         = 262144
+	DefaultMountVersion  = "9p2000.u"
 )
 
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"

@@ -17,15 +17,21 @@ limitations under the License.
 package localkube
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestBasicHealthCheck(t *testing.T) {
 
-	tests := []struct {
+	tcs := []struct {
 		body          string
 		statusCode    int
 		shouldSucceed bool
@@ -34,17 +40,43 @@ func TestBasicHealthCheck(t *testing.T) {
 		{"notok", 200, false},
 	}
 
-	for _, tc := range tests {
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+	lk := LocalkubeServer{LocalkubeDirectory: tempDir}
+	lk.GenerateCerts()
+
+	cert, err := tls.LoadX509KeyPair(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
+	if err != nil {
+		t.Fatalf("Unable to load server certs.")
+	}
+
+	caCert, err := ioutil.ReadFile(lk.GetCAPublicKeyCertPath())
+	if err != nil {
+		t.Fatalf("Unable to load CA certs.")
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	tls := tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientCAs:    caCertPool,
+	}
+
+	tls.BuildNameToCertificate()
+
+	for _, tc := range tcs {
 		// Do this in a func so we can use defer.
 		doTest := func() {
 			handler := func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(tc.statusCode)
 				io.WriteString(w, tc.body)
 			}
-			server := httptest.NewServer(http.HandlerFunc(handler))
+			server := httptest.NewUnstartedServer(http.HandlerFunc(handler))
 			defer server.Close()
+			server.TLS = &tls
+			server.StartTLS()
 
-			hcFunc := healthCheck(server.URL)
+			hcFunc := healthCheck(server.URL, lk)
 			result := hcFunc()
 			if result != tc.shouldSucceed {
 				t.Errorf("Expected healthcheck to return %v. Got %v", result, tc.shouldSucceed)

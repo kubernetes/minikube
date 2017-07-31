@@ -217,8 +217,9 @@ func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) err
 	return nil
 }
 
-func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool) error {
-	if err := util.RetryAfter(20, func() error { return CheckService(namespace, service) }, 6*time.Second); err != nil {
+func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
+	wait int, interval int) error {
+	if err := util.RetryAfter(wait, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
 		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
 	}
 

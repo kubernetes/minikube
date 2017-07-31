@@ -16,8 +16,8 @@ apiVersion: v1
 kind: ReplicationController
 metadata:
   labels:
-    kubernetes.io/cluster-service: 'true'
     name: influxGrafana
+    addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: heapster
   name: influxdb-grafana
   namespace: kube-system
@@ -29,8 +29,8 @@ spec:
   template:
     metadata:
       labels:
-        kubernetes.io/cluster-service: 'true'
         name: influxGrafana
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
       - name: influxdb

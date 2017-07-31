@@ -33,15 +33,21 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/tools/clientcmd/api/latest"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
 var (
@@ -55,6 +61,8 @@ const fileScheme = "file"
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs/logs.go#L32-34
 func init() {
 	flag.Set("logtostderr", "false")
+	// Setting the default client to native gives much better performance.
+	ssh.SetDefaultClient(ssh.Native)
 }
 
 // StartHost starts a host VM.
@@ -103,6 +111,10 @@ func StopHost(api libmachine.API) error {
 		return errors.Wrapf(err, "Error loading host: %s", cfg.GetMachineName())
 	}
 	if err := host.Stop(); err != nil {
+		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
+		if ok && alreadyInStateError.State == state.Stopped {
+			return nil
+		}
 		return errors.Wrapf(err, "Error stopping host: %s", cfg.GetMachineName())
 	}
 	return nil
@@ -148,10 +160,7 @@ func GetLocalkubeStatus(api libmachine.API) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	statusCmd := localkubeStatusCommand
-
-	s, err := RunCommand(h, statusCmd, false)
+	s, err := RunCommand(h, localkubeStatusCommand, false)
 	if err != nil {
 		return "", err
 	}
@@ -163,6 +172,24 @@ func GetLocalkubeStatus(api libmachine.API) (string, error) {
 	} else {
 		return "", fmt.Errorf("Error: Unrecognize output from GetLocalkubeStatus: %s", s)
 	}
+}
+
+// GetHostDriverIP gets the ip address of the current minikube cluster
+func GetHostDriverIP(api libmachine.API) (net.IP, error) {
+	host, err := CheckIfApiExistsAndLoad(api)
+	if err != nil {
+		return nil, err
+	}
+
+	ipStr, err := host.Driver.GetIP()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting IP")
+	}
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return nil, errors.Wrap(err, "Error parsing IP")
+	}
+	return ip, nil
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
@@ -191,15 +218,14 @@ func UpdateCluster(d drivers.Driver, config KubernetesConfig) error {
 	var err error
 
 	//add url/file/bundled localkube to file list
-	if localkubeURIWasSpecified(config) {
+	if localkubeURIWasSpecified(config) && config.KubernetesVersion != constants.DefaultKubernetesVersion {
 		lCacher := localkubeCacher{config}
 		localkubeFile, err = lCacher.fetchLocalkubeFromURI()
 		if err != nil {
 			return errors.Wrap(err, "Error updating localkube from uri")
 		}
-
 	} else {
-		localkubeFile = assets.NewMemoryAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
+		localkubeFile = assets.NewBinDataAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
 	}
 	copyableFiles = append(copyableFiles, localkubeFile)
 
@@ -247,7 +273,7 @@ func localkubeURIWasSpecified(config KubernetesConfig) bool {
 }
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(d drivers.Driver, apiServerName string) error {
+func SetupCerts(d drivers.Driver, apiServerName string, clusterDnsDomain string) error {
 	localPath := constants.GetMinipath()
 	ipStr, err := d.GetIP()
 	if err != nil {
@@ -260,7 +286,7 @@ func SetupCerts(d drivers.Driver, apiServerName string) error {
 	caKey := filepath.Join(localPath, "ca.key")
 	publicPath := filepath.Join(localPath, "apiserver.crt")
 	privatePath := filepath.Join(localPath, "apiserver.key")
-	if err := GenerateCerts(caCert, caKey, publicPath, privatePath, ip, apiServerName); err != nil {
+	if err := GenerateCerts(caCert, caKey, publicPath, privatePath, ip, apiServerName, clusterDnsDomain); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
 
@@ -278,6 +304,23 @@ func SetupCerts(d drivers.Driver, apiServerName string) error {
 		}
 		copyableFiles = append(copyableFiles, certFile)
 	}
+
+	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
+		ClusterName:          cfg.GetMachineName(),
+		ClusterServerAddress: "https://localhost:8443",
+		ClientCertificate:    filepath.Join(util.DefaultCertPath, "apiserver.crt"),
+		ClientKey:            filepath.Join(util.DefaultCertPath, "apiserver.key"),
+		CertificateAuthority: filepath.Join(util.DefaultCertPath, "ca.crt"),
+		KeepContext:          false,
+	}
+
+	kubeCfg := api.NewConfig()
+	kubeconfig.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
+	data, err := runtime.Encode(latest.Codec, kubeCfg)
+
+	kubeCfgFile := assets.NewMemoryAsset(data,
+		util.DefaultLocalkubeDirectory, "kubeconfig", "0644")
+	copyableFiles = append(copyableFiles, kubeCfgFile)
 
 	if d.DriverName() == "none" {
 		// transfer files to correct place on filesystem
@@ -321,6 +364,7 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	d.CPU = config.CPUs
 	d.DiskSize = int(config.DiskSize)
 	d.HostOnlyCIDR = config.HostOnlyCIDR
+	d.NoShare = config.DisableDriverMounts
 	return d
 }
 
@@ -423,13 +467,13 @@ func GetHostLogs(api libmachine.API, follow bool) (string, error) {
 	s, err := RunCommand(h, logsCommand, false)
 
 	if err != nil {
-		return "", err
+		return s, err
 	}
 	return s, nil
 }
 
 // MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
-func MountHost(api libmachine.API, path string, ip net.IP, port string) error {
+func MountHost(api libmachine.API, ip net.IP, path, port, mountVersion string, uid, gid, msize int) error {
 	host, err := CheckIfApiExistsAndLoad(api)
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
@@ -441,7 +485,7 @@ func MountHost(api libmachine.API, path string, ip net.IP, port string) error {
 		}
 	}
 	host.RunSSHCommand(GetMountCleanupCommand(path))
-	mountCmd, err := GetMountCommand(ip, path, port)
+	mountCmd, err := GetMountCommand(ip, path, port, mountVersion, uid, gid, msize)
 	if err != nil {
 		return errors.Wrap(err, "Error getting mount command")
 	}
@@ -534,7 +578,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error creating ssh client")
 	}
-	return client.Shell(strings.Join(args, " "))
+	return client.Shell(args...)
 }
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
@@ -554,15 +598,20 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 // RunCommand executes commands for both the local and driver implementations
 func RunCommand(h *host.Host, command string, sudo bool) (string, error) {
 	if h.Driver.DriverName() == "none" {
-		cmd := exec.Command("/bin/sh", "-c", command)
+		cmd := exec.Command("/bin/bash", "-c", command)
 		if sudo {
-			cmd = exec.Command("sudo", "/bin/sh", "-c", command)
+			cmd = exec.Command("sudo", "/bin/bash", "-c", command)
 		}
 		out, err := cmd.CombinedOutput()
 		if err != nil {
-			return "", err
+			return "", errors.Wrap(err, string(out))
 		}
-		return string(out), nil
+		return string(out), err
 	}
-	return h.RunSSHCommand(command)
+	out, err := h.RunSSHCommand(command)
+	if err != nil {
+		return "", errors.Wrap(err, string(out))
+	}
+	return string(out), err
+
 }

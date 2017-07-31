@@ -1,5 +1,52 @@
 # Minikube Release Notes
 
+# Version 0.21.0 - 7/25/2017
+* Added check for extra arguments to minikube delete [#1718](https://github.com/kubernetes/minikube/pull/1718)
+* Add GCR URL Env Var to Registry-Creds addon [#1436](https://github.com/kubernetes/minikube/pull/1436)
+* Bump version of Registry-Creds addon to v1.8 [#1711](https://github.com/kubernetes/minikube/pull/1711)
+* Add duration as a configurable type for the configurator [#1715](https://github.com/kubernetes/minikube/pull/1715)
+* Added msize and 9p-version flags to mount [#1705](https://github.com/kubernetes/minikube/pull/1705)
+* Fixed password shown in plaintext when configuring Registry-Creds addon [#1708](https://github.com/kubernetes/minikube/pull/1708)
+* Updated Ingress controller addon to v0.9-beta.11 [#1703](https://github.com/kubernetes/minikube/pull/1703)
+* Set kube-proxy sync defaults to reduce localkube CPU load [#1699](https://github.com/kubernetes/minikube/pull/1699)
+* Updated default kubernetes version to v1.7.0 [#1693](https://github.com/kubernetes/minikube/pull/1693)
+* Updated kube-dns to v1.14.2 [#1693](https://github.com/kubernetes/minikube/pull/1693)
+* Updated addon-manager to v6.4-beta.2 [#1693](https://github.com/kubernetes/minikube/pull/1693)
+* Fix fetching localkube from internet when the default version is specified [#1688](https://github.com/kubernetes/minikube/pull/1688)
+* Removed show-libmachine-logs and use-vendored-driver flags from minikube [#1685](https://github.com/kubernetes/minikube/pull/1685)
+* Added logging message before waiting for the VM IP address [#1681](https://github.com/kubernetes/minikube/pull/1681)
+* Added a --disable-driver-mounts flag to `minikube start` to disable xhyve and vbox fs mounts [#1646](https://github.com/kubernetes/minikube/pull/1646)
+* Added dockerized builds for minikube and localkube with `BUILD_IN_DOCKER=y make` [#1656](https://github.com/kubernetes/minikube/pull/1656)
+* Added script to automatically update Arch AUR and brew cask [#1642](https://github.com/kubernetes/minikube/pull/1642)
+* Added wait and interval time flags to minikube service command [#1651](https://github.com/kubernetes/minikube/pull/1651)
+* Fixed flags to use 9p syntax for uid and gid [#1643](https://github.com/kubernetes/minikube/pull/1643)
+
+* [Minikube ISO] Bump ISO Version to v0.23.0
+* [Minikube ISO] Added optional makefile variable `$ISO_DOCKER_EXTRA_ARGS` passed into `make out/minikube.iso` [#1657](https://github.com/kubernetes/minikube/pull/1657)
+* [Minikube ISO] Upgraded docker to v1.12.6 [#1658](https://github.com/kubernetes/minikube/pull/1658)
+* [Minikube ISO] Added CephFS kernel modules [#1669](https://github.com/kubernetes/minikube/pull/1669)
+* [Minikube ISO] Enabled VSOCK kernel modules [#1686](https://github.com/kubernetes/minikube/pull/1686)
+* [Minikube ISO] Enable IPSET kernel module [#1697](https://github.com/kubernetes/minikube/pull/1697)
+* [Minikube ISO] Add ebtables util and enable kernel module [#1713](https://github.com/kubernetes/minikube/pull/1713)
+
+## Version 0.20.0 - 6/17/2017
+* Updated default Kubernetes version to 1.6.4
+* Added Local Registry Addon `minikube addons enable registry` [#1583](https://github.com/kubernetes/minikube/pull/1583)
+* Fixed kube-DNS addon failures
+* Bumped default ISO version to 0.20.0
+* Fixed mtime issue on macOS [#1594](https://github.com/kubernetes/minikube/pull/1594)
+* Use --dns-domain for k8s API server cert generation [#1589](https://github.com/kubernetes/minikube/pull/1589)
+* Added `minikube update-context` command [#1578](https://github.com/kubernetes/minikube/pull/1578)
+* Added kubeconfig context and minikube ip to `minikube status` [#1578](https://github.com/kubernetes/minikube/pull/1578)
+* Use native golang ssh [#1571](https://github.com/kubernetes/minikube/pull/1571)
+* Don't treat stopping stoppped hosts as error [#1606](https://github.com/kubernetes/minikube/pull/1606)
+* Bumped ingress addon to 0.9-beta.8
+* Removed systemd dependency for None driver [#1592](https://github.com/kubernetes/minikube/pull/1592)
+
+* [Minikube ISO] Enabled IP_VS, MACVLAN, and VXLAN Kernel modules
+* [Minikube ISO] Increase number of inodes
+* [Minikube ISO] Use buildroot branch 2017-02
+
 ## Version 0.19.1 - 5/30/2017
 * Fixed issue where using TPRs could cause localkube to crash
 * Added mount daemon that can be started using `minikube start --mount --mount-string="/path/to/mount"`.  Cleanup of mount handled by `minikube delete`

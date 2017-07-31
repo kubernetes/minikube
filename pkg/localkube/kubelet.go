@@ -17,8 +17,10 @@ limitations under the License.
 package localkube
 
 import (
+	"k8s.io/apiserver/pkg/util/flag"
 	kubelet "k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
+	"k8s.io/minikube/pkg/util"
 )
 
 func (lk LocalkubeServer) NewKubeletServer() Server {
@@ -29,7 +31,8 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	config := options.NewKubeletServer()
 
 	// Master details
-	config.APIServerList = []string{lk.GetAPIServerInsecureURL()}
+	config.KubeConfig = flag.NewStringFlag(util.DefaultKubeConfigPath)
+	config.RequireKubeConfig = true
 
 	// Set containerized based on the flag
 	config.Containerized = lk.Containerized

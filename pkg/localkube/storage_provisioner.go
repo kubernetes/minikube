@@ -32,7 +32,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -121,12 +122,12 @@ func (lk LocalkubeServer) NewStorageProvisionerServer() Server {
 
 func StartStorageProvisioner(lk LocalkubeServer) func() error {
 
-	// Create an InClusterConfig and use it to create a client for the controller
-	// to use to communicate with Kubernetes
-	config := rest.Config{Host: "http://localhost:8080"}
 	return func() error {
-
-		clientset, err := kubernetes.NewForConfig(&config)
+		config, err := clientcmd.BuildConfigFromFlags("", util.DefaultKubeConfigPath)
+		if err != nil {
+			return err
+		}
+		clientset, err := kubernetes.NewForConfig(config)
 		if err != nil {
 			glog.Fatalf("Failed to create client: %v", err)
 		}
