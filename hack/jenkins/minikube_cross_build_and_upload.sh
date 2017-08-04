@@ -23,6 +23,9 @@
 
 set -e
 
+# Clean up exited containers
+docker rm $(docker ps -q -f status=exited)
+
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
 # If there are ISO changes, build and upload the ISO
