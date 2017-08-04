@@ -79,6 +79,10 @@ const (
 	bashUnsetPfx   = "unset "
 	bashUnsetSfx   = "\n"
 	bashUnsetDelim = ""
+
+	nonePfx   = ""
+	noneSfx   = "\n"
+	noneDelim = "="
 )
 
 var usageHintMap = map[string]string{
@@ -204,6 +208,11 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 		shellCfg.Prefix = emacsSetPfx
 		shellCfg.Suffix = emacsSetSfx
 		shellCfg.Delimiter = emacsSetDelim
+	case "none":
+		shellCfg.Prefix = nonePfx
+		shellCfg.Suffix = noneSfx
+		shellCfg.Delimiter = noneDelim
+		shellCfg.UsageHint = ""
 	default:
 		shellCfg.Prefix = bashSetPfx
 		shellCfg.Suffix = bashSetSfx
@@ -245,6 +254,11 @@ func shellCfgUnset() (*ShellConfig, error) {
 		shellCfg.Prefix = emacsUnsetPfx
 		shellCfg.Suffix = emacsUnsetSfx
 		shellCfg.Delimiter = emacsUnsetDelim
+	case "none":
+		shellCfg.Prefix = nonePfx
+		shellCfg.Suffix = noneSfx
+		shellCfg.Delimiter = noneDelim
+		shellCfg.UsageHint = ""
 	default:
 		shellCfg.Prefix = bashUnsetPfx
 		shellCfg.Suffix = bashUnsetSfx
