@@ -32,8 +32,8 @@ explain why.
 
 **What you expected to happen**:
 
-
 **How to reproduce it** (as minimally and precisely as possible):
 
+**Output of `minikube logs` (if applicable)**:
 
 **Anything else do we need to know**:
