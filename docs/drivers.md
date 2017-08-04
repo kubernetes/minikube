@@ -11,7 +11,7 @@ the host PATH:
 
 * [KVM](#kvm-driver)
 * [xhyve](#xhyve-driver)
-* [HyperV](#HyperV-driver)
+* [HyperV](#hyperv-driver)
 
 #### KVM driver
 
