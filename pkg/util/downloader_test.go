@@ -85,7 +85,7 @@ func TestShouldCacheMinikubeISO(t *testing.T) {
 
 	for input, expected := range tests {
 		if out := dler.ShouldCacheMinikubeISO(input); out != expected {
-			t.Fatalf("Expected ShouldCacheMinikubeISO with input %s to return %d but instead got: %t", input, expected, out)
+			t.Fatalf("Expected ShouldCacheMinikubeISO with input %s to return %t but instead got: %t", input, expected, out)
 		}
 	}
 }
@@ -100,14 +100,14 @@ func TestIsMinikubeISOCached(t *testing.T) {
 	expected := false
 
 	if out := dler.IsMinikubeISOCached(testFileURI); out != expected {
-		t.Fatalf("Expected IsMinikubeISOCached with input to return %s but instead got: %s", testFileURI, expected, out)
+		t.Fatalf("Expected IsMinikubeISOCached with input %s to return %t but instead got: %t", testFileURI, expected, out)
 	}
 
 	ioutil.WriteFile(filepath.Join(constants.GetMinipath(), "cache", "iso", "minikube-test.iso"), []byte(testISOString), os.FileMode(int(0644)))
 
 	expected = true
 	if out := dler.IsMinikubeISOCached(testFileURI); out != expected {
-		t.Fatalf("Expected IsMinikubeISOCached with input to return %s but instead got: %s", testFileURI, expected, out)
+		t.Fatalf("Expected IsMinikubeISOCached with input %s to return %t but instead got: %t", testFileURI, expected, out)
 	}
 
 }
