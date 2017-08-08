@@ -40,6 +40,8 @@ type MachineConfig struct {
 	DisableDriverMounts bool               // Only used by virtualbox and xhyve
 	XhyveNFSShares      []string
 	XhyveNFSSharesRoot  string
+	XhyveVirtio9p       []string
+	XhyveVirtio9pRoot   string
 }
 
 // Config contains machine and k8s config
