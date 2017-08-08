@@ -52,6 +52,8 @@ const (
 	humanReadableDiskSize = "disk-size"
 	vmDriver              = "vm-driver"
 	xhyveDiskDriver       = "xhyve-disk-driver"
+	xhyveNFSSharesRoot    = "xhyve-nfs-shares-root"
+	xhyveNFSShare         = "xhyve-nfs-share"
 	kubernetesVersion     = "kubernetes-version"
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
@@ -121,6 +123,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		KvmNetwork:          viper.GetString(kvmNetwork),
 		Downloader:          pkgutil.DefaultDownloader{},
 		DisableDriverMounts: viper.GetBool(disableDriverMounts),
+		XhyveNFSShares:      viper.GetStringSlice(xhyveNFSShare),
+		XhyveNFSSharesRoot:  viper.GetString(xhyveNFSSharesRoot),
 	}
 
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
@@ -348,6 +352,8 @@ func init() {
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
+	startCmd.Flags().StringSlice(xhyveNFSShare, []string{}, "Local folders to share with the Guest via NFS mounts")
+	startCmd.Flags().String(xhyveNFSSharesRoot, "/xhyve-nfsshares", "Where to root the NFS Shares")
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }

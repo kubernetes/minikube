@@ -49,7 +49,9 @@ type xhyveDriver struct {
 	Memory         int
 	PrivateKeyPath string
 	UUID           string
-	NFSShare       bool
+	NFSShareEnable bool
+	NFSShares      []string
+	NFSSharesRoot  string
 	DiskNumber     int
 	Virtio9p       bool
 	Virtio9pFolder string
@@ -71,6 +73,9 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		DiskSize:       int64(config.DiskSize),
 		Virtio9p:       useVirtio9p,
 		Virtio9pFolder: "/Users",
+		NFSShareEnable: true,
+		NFSSharesRoot:  config.XhyveNFSSharesRoot,
+		NFSShares:      config.XhyveNFSShares,
 		QCow2:          false,
 		RawDisk:        config.XhyveDiskDriver == "virtio-blk",
 	}
