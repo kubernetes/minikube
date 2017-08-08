@@ -24,7 +24,7 @@ After following the instructions on the KVM driver releases page, you need to ma
 # Debian/Ubuntu
 $ sudo apt install libvirt-bin qemu-kvm
 # Fedora/CentOS/RHEL
-$ sudo yum install libvirt-daemon-kvm kvm
+$ sudo yum install libvirt-daemon-kvm qemu-kvm
 
 # Add yourself to the libvirtd group (use libvirt group for rpm based distros) so you don't need to sudo
 # Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
