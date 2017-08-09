@@ -1,7 +1,17 @@
 # Minikube
 
-[![Build Status](https://travis-ci.org/kubernetes/minikube.svg?branch=master)](https://travis-ci.org/kubernetes/minikube)
-[![codecov](https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg)](https://codecov.io/gh/kubernetes/minikube)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/minikube)](https://goreportcard.com/report/github.com/kubernetes/minikube)
+[![BuildStatus Widget]][BuildStatus Result]
+[![CodeCovWidget]][CodeCovResult]
+[![GoReport Widget]][GoReport Status]
+
+[BuildStatus Result]: https://travis-ci.org/kubernetes/minikube
+[BuildStatus Widget]: https://travis-ci.org/kubernetes/minikube.svg?branch=master
+
+[GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
+[GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
+
+[CodeCovResult]: https://codecov.io/gh/kubernetes/minikube 
+[CodeCovWidget]: https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg
 
 <img src="https://github.com/kubernetes/minikube/raw/master/logo/logo.png" width="100">
 
