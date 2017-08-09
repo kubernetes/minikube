@@ -59,28 +59,33 @@ var configTestCases = []configTestCase{
 }
 
 func TestHiddenPrint(t *testing.T) {
-	testString := "gabbagabbahey"
-	b := new(bytes.Buffer)
-	_, err := b.WriteString(fmt.Sprintf("%s\r\n", testString)) // you need the \r!
-	if err != nil {
-		t.Errorf("Could not prepare bytestring")
+	testCases := []struct {
+		TestString  string
+		Verbose     bool
+		ShouldError bool
+	}{
+		{
+			TestString: "gabbagabbahey",
+		},
+		{
+			TestString: "gabbagabbahey",
+			Verbose:    true,
+		},
 	}
-	result, err := concealableAskForStaticValue(b, "hello", true)
-	if result != testString {
-		t.Errorf("Result %s not match %s", result, testString)
-	}
-}
-
-func TestVerbosePrint(t *testing.T) {
-	testString := "gabbagabbahey"
-	b := new(bytes.Buffer)
-	_, err := b.WriteString(fmt.Sprintf("%s\r\n", testString)) // you need the \r!
-	if err != nil {
-		t.Errorf("Could not prepare bytestring")
-	}
-	result, err := concealableAskForStaticValue(b, "hello", false)
-	if result != testString {
-		t.Errorf("Result %s not match %s", result, testString)
+	for _, test := range testCases {
+		b := new(bytes.Buffer)
+		_, err := b.WriteString(fmt.Sprintf("%s\r\n", test.TestString)) // you need the \r!
+		if err != nil {
+			t.Errorf("Could not prepare bytestring")
+		}
+		result, err := concealableAskForStaticValue(b, "hello", false)
+		if err != nil && !test.ShouldError {
+			t.Errorf("Error asking for concealable static value: %s", err)
+			continue
+		}
+		if result != test.TestString {
+			t.Errorf("Result %s not match %s", result, test.TestString)
+		}
 	}
 }
 

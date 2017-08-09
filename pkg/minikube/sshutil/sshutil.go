@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/util"
 )
 
 // SSHSession provides methods for running commands on a host.
@@ -63,23 +64,23 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 }
 
 func DeleteAddon(a *assets.Addon, client *ssh.Client) error {
-	var err error
+	m := util.MultiError{}
 	for _, f := range a.Assets {
 		if err := DeleteFile(f, client); err != nil {
-			err = errors.Wrap(err, "")
+			m.Collect(err)
 		}
 	}
-	return err
+	return m.ToError()
 }
 
 func TransferAddon(a *assets.Addon, client *ssh.Client) error {
-	var err error
+	m := util.MultiError{}
 	for _, f := range a.Assets {
 		if err := TransferFile(f, client); err != nil {
-			errors.Wrap(err, "")
+			m.Collect(err)
 		}
 	}
-	return err
+	return m.ToError()
 }
 
 func TransferFile(f assets.CopyableFile, client *ssh.Client) error {
