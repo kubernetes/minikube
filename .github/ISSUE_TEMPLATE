@@ -16,19 +16,32 @@ might close your issue.  If we're wrong, PLEASE feel free to reopen it and
 explain why.
 -->
 
-**Minikube version** (use `minikube version`):
-
+Please provide the following details:
 
 **Environment**:
+
+**Minikube version** (use `minikube version`):
 - **OS** (e.g. from /etc/os-release):
 - **VM Driver** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep DriverName`):
 - **ISO version** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep -i ISO` or `minikube ssh cat /etc/VERSION`):
 - **Install tools**:
 - **Others**:
+The above can be generated in one go with the following commands (can be copied and pasted directly into your terminal):
+```
+minikube version
+echo "";
+echo "OS:";
+cat /etc/os-release
+echo "";
+echo "VM driver": 
+grep DriverName ~/.minikube/machines/minikube/config.json
+```
 
+echo "";
+echo "ISO version";
+grep -i ISO ~/.minikube/machines/minikube/config.json
 
 **What happened**:
-
 
 **What you expected to happen**:
 
