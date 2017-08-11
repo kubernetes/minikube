@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	units "github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
@@ -40,6 +42,7 @@ import (
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
+	"k8s.io/minikube/pkg/version"
 )
 
 const (
@@ -142,8 +145,37 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error getting VM IP address: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
+
+	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
+
+	// Load profile cluster config from file
+	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Println("No existing profile config found. A new profile config would be created.")
+		} else {
+			glog.Errorln("Error loading profile config: ", err)
+		}
+	} else {
+		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(cc.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
+		if err != nil {
+			glog.Errorln("Error parsing version semver: ", err)
+		}
+
+		newKubernetesVersion, err := semver.Make(strings.TrimPrefix(viper.GetString(kubernetesVersion), version.VersionPrefix))
+		if err != nil {
+			glog.Errorln("Error parsing version semver: ", err)
+		}
+
+		// Check if it's an attempt to downgrade version. Avoid version downgrad.
+		if newKubernetesVersion.LT(oldKubernetesVersion) {
+			selectedKubernetesVersion = version.VersionPrefix + oldKubernetesVersion.String()
+			fmt.Println("Kubernetes version downgrade is not supported. Using version:", selectedKubernetesVersion)
+		}
+	}
+
 	kubernetesConfig := cluster.KubernetesConfig{
-		KubernetesVersion: viper.GetString(kubernetesVersion),
+		KubernetesVersion: selectedKubernetesVersion,
 		NodeIP:            ip,
 		APIServerName:     viper.GetString(apiServerName),
 		DNSDomain:         viper.GetString(dnsDomain),
@@ -151,6 +183,16 @@ func runStart(cmd *cobra.Command, args []string) {
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
+	}
+
+	// Write profile cluster configuration to file
+	clusterConfig := cluster.Config{
+		MachineConfig:    config,
+		KubernetesConfig: kubernetesConfig,
+	}
+
+	if err := saveConfig(clusterConfig); err != nil {
+		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
 	fmt.Println("Moving files into cluster...")
@@ -311,4 +353,74 @@ func init() {
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
+}
+
+// saveConfig saves profile cluster configuration in
+// $MINIKUBE_HOME/profiles/<profilename>/config.json
+func saveConfig(clusterConfig cluster.Config) error {
+	data, err := json.MarshalIndent(clusterConfig, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	profileConfigFile := constants.GetProfileFile(viper.GetString(cfg.MachineProfile))
+
+	if err := os.MkdirAll(filepath.Dir(profileConfigFile), 0700); err != nil {
+		return err
+	}
+
+	if err := saveConfigToFile(data, profileConfigFile); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func saveConfigToFile(data []byte, file string) error {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return ioutil.WriteFile(file, data, 0600)
+	}
+
+	tmpfi, err := ioutil.TempFile(filepath.Dir(file), "config.json.tmp")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpfi.Name())
+
+	if err = ioutil.WriteFile(tmpfi.Name(), data, 0600); err != nil {
+		return err
+	}
+
+	if err = tmpfi.Close(); err != nil {
+		return err
+	}
+
+	if err = os.Remove(file); err != nil {
+		return err
+	}
+
+	if err = os.Rename(tmpfi.Name(), file); err != nil {
+		return err
+	}
+	return nil
+}
+
+func loadConfigFromFile(profile string) (cluster.Config, error) {
+	var cc cluster.Config
+
+	profileConfigFile := constants.GetProfileFile(profile)
+
+	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
+		return cc, err
+	}
+
+	data, err := ioutil.ReadFile(profileConfigFile)
+	if err != nil {
+		return cc, err
+	}
+
+	if err := json.Unmarshal(data, &cc); err != nil {
+		return cc, err
+	}
+	return cc, nil
 }
