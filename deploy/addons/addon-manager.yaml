@@ -46,5 +46,5 @@ spec:
       path: /etc/kubernetes/
     name: addons
   - hostPath:
-      path: /var/lib/localkube
+      path: /var/lib/localkube/
     name: kubeconfig
