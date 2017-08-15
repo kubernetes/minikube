@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
+	"github.com/moby/moby/pkg/term"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -141,6 +143,19 @@ func RunCommand(c *ssh.Client, cmd string) error {
 	return s.Run(cmd)
 }
 
+func RunCommandOutput(c *ssh.Client, cmd string) (string, error) {
+	s, err := c.NewSession()
+	defer s.Close()
+	if err != nil {
+		return "", errors.Wrap(err, "Error creating new session for ssh client")
+	}
+	b, err := s.CombinedOutput(cmd)
+	if err != nil {
+		return "", errors.Wrap(err, "Running ssh command")
+	}
+	return string(b), nil
+}
+
 type sshHost struct {
 	IP         string
 	Port       int
@@ -172,4 +187,41 @@ func DeleteFile(f assets.CopyableFile, client *ssh.Client) error {
 
 func GetDeleteFileCommand(f assets.CopyableFile) string {
 	return fmt.Sprintf("sudo rm %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
+}
+
+func GetShell(session *ssh.Session, cmd string) error {
+	var (
+		termWidth, termHeight int
+	)
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+	session.Stdin = os.Stdin
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO: 1,
+	}
+	fd := os.Stdin.Fd()
+	if term.IsTerminal(fd) {
+		oldState, err := term.MakeRaw(fd)
+		if err != nil {
+			return err
+		}
+
+		defer term.RestoreTerminal(fd, oldState)
+
+		winsize, err := term.GetWinsize(fd)
+		if err != nil {
+			termWidth = 80
+			termHeight = 24
+		} else {
+			termWidth = int(winsize.Width)
+			termHeight = int(winsize.Height)
+		}
+	}
+	if err := session.RequestPty("xterm", termHeight, termWidth, modes); err != nil {
+		return err
+	}
+	session.Run(cmd)
+
+	return nil
 }

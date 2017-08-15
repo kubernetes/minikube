@@ -29,8 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-const fileScheme = "file"
-
 type ISODownloader interface {
 	GetISOFileURI(isoURL string) string
 	CacheMinikubeISOFromURL(isoURL string) error
@@ -43,7 +41,7 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 	if err != nil {
 		return isoURL
 	}
-	if urlObj.Scheme == fileScheme {
+	if urlObj.Scheme == constants.FileScheme {
 		return isoURL
 	}
 	isoPath := filepath.Join(constants.GetMinipath(), "cache", "iso", filepath.Base(isoURL))
@@ -87,7 +85,7 @@ func (f DefaultDownloader) ShouldCacheMinikubeISO(isoURL string) bool {
 	if err != nil {
 		return false
 	}
-	if urlObj.Scheme == fileScheme {
+	if urlObj.Scheme == constants.FileScheme {
 		return false
 	}
 	if f.IsMinikubeISOCached(isoURL) {

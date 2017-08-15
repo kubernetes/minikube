@@ -33,7 +33,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -174,7 +176,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubernetesConfig := cluster.KubernetesConfig{
+	kubernetesConfig := bootstrapper.KubernetesConfig{
 		KubernetesVersion: selectedKubernetesVersion,
 		NodeIP:            ip,
 		APIServerName:     viper.GetString(apiServerName),
@@ -183,6 +185,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
+	}
+
+	clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+	if err != nil {
+		glog.Exitf("Error getting cluster bootstrapper: %s", err)
 	}
 
 	// Write profile cluster configuration to file
@@ -196,7 +203,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Moving files into cluster...")
-	if err := cluster.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
+	if err := clusterBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -209,7 +216,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Starting cluster components...")
 
-	if err := cluster.StartCluster(api, kubernetesConfig); err != nil {
+	if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
