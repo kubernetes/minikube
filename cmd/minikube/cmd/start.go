@@ -94,6 +94,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	defer api.Close()
 
+	exists, err := api.Exists(cfg.GetMachineName())
+	if err != nil {
+		glog.Exitf("checking if machine exists: %s", err)
+	}
+
 	diskSize := viper.GetString(humanReadableDiskSize)
 	diskSizeMB := calculateDiskSizeInMB(diskSize)
 
@@ -179,6 +184,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubernetesConfig := bootstrapper.KubernetesConfig{
 		KubernetesVersion: selectedKubernetesVersion,
 		NodeIP:            ip,
+		NodeName:          cfg.GetMachineName(),
 		APIServerName:     viper.GetString(apiServerName),
 		DNSDomain:         viper.GetString(dnsDomain),
 		FeatureGates:      viper.GetString(featureGates),
@@ -216,9 +222,16 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Starting cluster components...")
 
-	if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
-		glog.Errorln("Error starting cluster: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+	if !exists {
+		if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+	} else {
+		if err := clusterBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error restarting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 
 	fmt.Println("Connecting to cluster...")

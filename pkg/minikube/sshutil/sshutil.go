@@ -27,6 +27,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
+	"github.com/golang/glog"
 	"github.com/moby/moby/pkg/term"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -97,6 +98,7 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 	deleteCmd := fmt.Sprintf("sudo rm -f %s", filepath.Join(remotedir, filename))
 	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", remotedir)
 	for _, cmd := range []string{deleteCmd, mkdirCmd} {
+		glog.Infoln("Running: ", cmd)
 		if err := RunCommand(c, cmd); err != nil {
 			return errors.Wrapf(err, "Error running command: %s", cmd)
 		}
@@ -126,7 +128,7 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 
 	scpcmd := fmt.Sprintf("sudo scp -t %s", remotedir)
 	if err := s.Run(scpcmd); err != nil {
-		return errors.Wrap(err, "Error running scp command")
+		return errors.Wrapf(err, "Error running scp command: %s", scpcmd)
 	}
 	wg.Wait()
 
@@ -136,6 +138,7 @@ func Transfer(reader io.Reader, readerLen int, remotedir, filename string, perm 
 func RunCommand(c *ssh.Client, cmd string) error {
 	s, err := c.NewSession()
 	defer s.Close()
+	glog.Infoln("Running command: %s", cmd)
 	if err != nil {
 		return errors.Wrap(err, "Error creating new session for ssh client")
 	}
@@ -146,6 +149,7 @@ func RunCommand(c *ssh.Client, cmd string) error {
 func RunCommandOutput(c *ssh.Client, cmd string) (string, error) {
 	s, err := c.NewSession()
 	defer s.Close()
+	glog.Infoln("Running command: %s", cmd)
 	if err != nil {
 		return "", errors.Wrap(err, "Error creating new session for ssh client")
 	}
@@ -153,6 +157,7 @@ func RunCommandOutput(c *ssh.Client, cmd string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "Running ssh command")
 	}
+	glog.Infoln("Command output: %s", string(b))
 	return string(b), nil
 }
 

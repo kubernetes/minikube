@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -136,9 +137,10 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 		return err
 	}
 
+	glog.Infoln("running cmd: %s", b.String())
 	_, err := sshutil.RunCommandOutput(k.c, b.String())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "regenerating kubeadm certs, running cmd: %s", b.String())
 	}
 
 	dsts := []string{"admin.conf", "controller-manager.conf", "kubelet.conf", "scheduler.conf"}
@@ -146,7 +148,7 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 		cmd := fmt.Sprintf("sudo cp %s %s", tmpFile, filepath.Join("/etc", "kubernetes", dst))
 		_, err := sshutil.RunCommandOutput(k.c, cmd)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "copying conf files, running cmd: %s", cmd)
 		}
 	}
 
@@ -199,21 +201,21 @@ sudo systemctl start kubelet
 }
 
 func maybeDownloadAndCache(binary, version string) (string, error) {
-	path := constants.MakeMiniPath("cache", version)
-	_, err := os.Stat(path)
+	targetDir := constants.MakeMiniPath("cache", version)
+	targetFilepath := filepath.Join(targetDir, binary)
+
+	_, err := os.Stat(targetDir)
 	// If it exists, do no verification and continue
 	if err == nil {
-		return path, nil
+		return targetFilepath, nil
 	}
 	if !os.IsNotExist(err) {
-		return "", errors.Wrapf(err, "stat %s version %s at %s", binary, version, path)
+		return "", errors.Wrapf(err, "stat %s version %s at %s", binary, version, targetDir)
 	}
 
-	if err = os.MkdirAll(path, 0777); err != nil {
-		return "", errors.Wrapf(err, "mkdir %s", path)
+	if err = os.MkdirAll(targetDir, 0777); err != nil {
+		return "", errors.Wrapf(err, "mkdir %s", targetDir)
 	}
-
-	targetPath := filepath.Join(path, binary)
 
 	url := constants.GetKubernetesReleaseURL(binary, version)
 	options := download.FileOptions{
@@ -224,9 +226,10 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 	options.ChecksumHash = crypto.SHA1
 
 	fmt.Printf("Downloading %s %s\n", binary, version)
-	if err := download.ToFile(url, targetPath, options); err != nil {
+	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
+	fmt.Printf("Finished Downloading %s %s\n", binary, version)
 
-	return targetPath, nil
+	return targetFilepath, nil
 }
