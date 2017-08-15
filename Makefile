@@ -158,7 +158,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/docker-machine-driver-hyperkit
 
 .PHONY: cross-e2e
 e2e-cross: out/e2e-linux-amd64 out/e2e-darwin-amd64 out/e2e-windows-amd64
@@ -214,11 +214,15 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 
 out/docker-machine-driver-hyperkit:
-	go build -o $(BUILD_DIR)/hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(MINIKUBE_DOCKER_CMD) '$(MINIKUBE_ENV_darwin_DOCKER) $(MINIKUBE_ENV_darwin) go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit'
+else
+	$(MINIKUBE_ENV_darwin) go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+endif
 
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit
-	sudo cp out/hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
 
