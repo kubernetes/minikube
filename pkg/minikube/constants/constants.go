@@ -143,6 +143,14 @@ const (
 	DefaultMountVersion  = "9p2000.u"
 )
 
+func GetKubernetesReleaseURL(binaryName, version string) string {
+	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
+}
+
+func GetKubernetesReleaseURLSha1(binaryName, version string) string {
+	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
+}
+
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 
 const DriverNone = "none"

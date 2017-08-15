@@ -42,4 +42,5 @@ type KubernetesConfig struct {
 
 const (
 	BootstrapperTypeLocalkube = "localkube"
+	BootstrapperTypeKubeadm   = "kubeadm"
 )

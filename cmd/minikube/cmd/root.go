@@ -34,6 +34,7 @@ import (
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/localkube"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -165,13 +166,18 @@ func setupViper() {
 func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
 	var b bootstrapper.Bootstrapper
 	var err error
-	if bootstrapperName == bootstrapper.BootstrapperTypeLocalkube {
+	switch bootstrapperName {
+	case bootstrapper.BootstrapperTypeLocalkube:
 		b, err = localkube.NewLocalkubeBootstrapper(api)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting localkube bootstrapper")
 		}
-	} else {
-		// For now, exit if we're using a bootstrapper other than localkube
+	case bootstrapper.BootstrapperTypeKubeadm:
+		b, err = kubeadm.NewKubeadmBootstrapper(api)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting kubeadm bootstrapper")
+		}
+	default:
 		return nil, fmt.Errorf("Unknown bootstrapper: %s", bootstrapperName)
 	}
 

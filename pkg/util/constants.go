@@ -25,7 +25,7 @@ const (
 	DefaultServiceClusterIP   = "10.0.0.1"
 	DefaultDNSDomain          = "cluster.local"
 	DefaultDNSIP              = "10.0.0.10"
-	DefaultInsecureRegistry   = "10.0.0.0/24"
+	DefaultServiceCIDR        = "10.0.0.0/24"
 )
 
 func GetAlternateDNS(domain string) []string {
