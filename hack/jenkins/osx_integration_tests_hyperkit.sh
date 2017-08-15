@@ -14,32 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Prints some debug info about the state of the cluster
-#
-# We don't check the error on these commands, since they might fail depending on
-# the cluster state.
-set +e
 
-env
-${SUDO_PREFIX} cat $KUBECONFIG
+# This script runs the integration tests on an OSX machine for the Hyperkit Driver
 
-kubectl get pods --all-namespaces
-kubectl cluster-info dump
+# The script expects the following env variables:
+# MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
+# COMMIT: Actual commit ID from upstream build
+# EXTRA_BUILD_ARGS (optional): Extra args to be passed into the minikube integrations tests
+# access_token: The Github API access token. Injected by the Jenkins credential provider. 
 
-# For the none driver
-journalctl -u localkube -n 500
-${SUDO_PREFIX}cat $KUBECONFIG
-
-cat $HOME/.kube/config
-echo $PATH
-
-docker ps
-
-MINIKUBE=${SUDO_PREFIX}out/minikube-${OS_ARCH}
-${MINIKUBE} status
-${MINIKUBE} ip
-${MINIKUBE} ssh -- cat /etc/VERSION
-${MINIKUBE} ssh -- docker ps
-${MINIKUBE} logs
 
 set -e
+
+OS_ARCH="darwin-amd64"
+VM_DRIVER="hyperkit"
+JOB_NAME="OSX-Hyperkit"
+
+
+# Download files and set permissions
+source common.sh

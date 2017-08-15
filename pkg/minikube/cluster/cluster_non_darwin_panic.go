@@ -27,3 +27,7 @@ func createVMwareFusionHost(config MachineConfig) drivers.Driver {
 func createXhyveHost(config MachineConfig) drivers.Driver {
 	panic("xhyve not supported")
 }
+
+func createHyperkitHost(config MachineConfig) drivers.Driver {
+	panic("hyperkit not supported")
+}

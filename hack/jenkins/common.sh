@@ -27,10 +27,14 @@
 # Copy only the files we need to this workspace
 mkdir -p out/ testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
+gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
+
+# Add the out/ directory to the PATH, for using new drivers.
+export PATH=$PATH:"$(pwd)/out/"
 
 # Linux cleanup
 virsh -c qemu:///system list --all \
@@ -59,6 +63,12 @@ pgrep xhyve | xargs kill || true
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}
 chmod +x out/minikube-${OS_ARCH}
+chmod +x out/docker-machine-driver-*
+
+if [ -e out/docker-machine-driver-hyperkit ]; then
+  sudo chown root:wheel out/docker-machine-driver-hyperkit || true
+  sudo chmod u+s out/docker-machine-driver-hyperkit || true
+fi
 
 MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
 || MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
