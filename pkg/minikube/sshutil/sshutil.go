@@ -25,10 +25,10 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/docker/docker/pkg/term"
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
-	"github.com/moby/moby/pkg/term"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/minikube/assets"
