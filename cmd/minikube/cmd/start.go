@@ -220,20 +220,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	fmt.Println("Starting cluster components...")
-
-	if !exists {
-		if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
-			glog.Errorln("Error starting cluster: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
-		}
-	} else {
-		if err := clusterBootstrapper.RestartCluster(kubernetesConfig); err != nil {
-			glog.Errorln("Error restarting cluster: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
-		}
-	}
-
 	fmt.Println("Connecting to cluster...")
 	kubeHost, err := host.Driver.GetURL()
 	if err != nil {
@@ -260,6 +246,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
+	}
+
+	fmt.Println("Starting cluster components...")
+
+	if !exists {
+		if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+	} else {
+		if err := clusterBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error restarting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 
 	// start 9p server mount

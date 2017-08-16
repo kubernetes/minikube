@@ -46,10 +46,10 @@ type K8sClient interface {
 
 type K8sClientGetter struct{}
 
-var k8s K8sClient
+var K8s K8sClient
 
 func init() {
-	k8s = &K8sClientGetter{}
+	K8s = &K8sClientGetter{}
 }
 
 func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
@@ -88,7 +88,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 		return nil, err
 	}
 
-	client, err := k8s.GetCoreClient()
+	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func GetServiceURLsForService(api libmachine.API, namespace, service string, t *
 		return nil, errors.Wrap(err, "Error getting ip from host")
 	}
 
-	client, err := k8s.GetCoreClient()
+	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 // CheckService waits for the specified service to be ready by returning an error until the service is up
 // The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
 func CheckService(namespace string, service string) error {
-	client, err := k8s.GetCoreClient()
+	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
@@ -242,7 +242,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 }
 
 func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
-	client, err := k8s.GetCoreClient()
+	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}
@@ -265,7 +265,7 @@ func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key str
 
 // CreateSecret creates or modifies secrets
 func CreateSecret(namespace, name string, dataValues map[string]string, labels map[string]string) error {
-	client, err := k8s.GetCoreClient()
+	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
@@ -311,7 +311,7 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 
 // DeleteSecret deletes a secret from a namespace
 func DeleteSecret(namespace, name string) error {
-	client, err := k8s.GetCoreClient()
+	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}

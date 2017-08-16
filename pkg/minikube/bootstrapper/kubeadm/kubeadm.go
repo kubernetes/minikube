@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	download "github.com/jimmidyson/go-download"
@@ -101,6 +102,12 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 	_, err := sshutil.RunCommandOutput(k.c, b.String())
 	if err != nil {
 		return err
+	}
+
+	//TODO(r2d4): get rid of global here
+	master = k8s.NodeName
+	if err := util.RetryAfter(100, unmarkMaster, time.Millisecond*500); err != nil {
+		return errors.Wrap(err, "timed out waiting to unmark master")
 	}
 
 	return nil
