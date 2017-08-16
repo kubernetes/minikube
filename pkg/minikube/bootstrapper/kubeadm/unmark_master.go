@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	clientv1 "k8s.io/client-go/pkg/api/v1"
+	rbacv1beta1 "k8s.io/client-go/pkg/apis/rbac/v1beta1"
 	"k8s.io/minikube/pkg/minikube/service"
 )
 
@@ -59,5 +60,34 @@ func unmarkMaster() error {
 		return errors.Wrap(err, "applying strategic patch")
 	}
 
+	return nil
+}
+
+// elevateKubeSystemPrivileges gives the kube-system service account
+// cluster admin privileges to work with RBAC.
+func elevateKubeSystemPrivileges() error {
+	k8s := service.K8s
+	client, err := k8s.GetClientset()
+	clusterRoleBinding := &rbacv1beta1.ClusterRoleBinding{
+		ObjectMeta: v1.ObjectMeta{
+			Name: "minikube-rbac",
+		},
+		Subjects: []rbacv1beta1.Subject{
+			rbacv1beta1.Subject{
+				Kind:      "ServiceAccount",
+				Name:      "default",
+				Namespace: "kube-system",
+			},
+		},
+		RoleRef: rbacv1beta1.RoleRef{
+			Kind: "ClusterRole",
+			Name: "cluster-admin",
+		},
+	}
+
+	_, err = client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding)
+	if err != nil {
+		return errors.Wrap(err, "creating clusterrolebinding")
+	}
 	return nil
 }

@@ -25,6 +25,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	bootstrapper_util "k8s.io/minikube/pkg/minikube/bootstrapper/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -32,7 +33,6 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -62,22 +62,11 @@ func (lk *LocalkubeBootstrapper) GetClusterLogs(follow bool) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "Error getting logs command")
 	}
-	sess, err := lk.c.NewSession()
+	logs, err := bootstrapper_util.GetLogsGeneric(lk.c, follow, logsCommand, lk.driver)
 	if err != nil {
-		return "", errors.Wrap(err, "getting ssh session")
+		return "", errors.Wrap(err, "getting cluster logs")
 	}
-	defer sess.Close()
-	if follow {
-		err := sshutil.GetShell(sess, logsCommand)
-		return "", errors.Wrap(err, "error getting shell")
-	}
-	fmt.Println("running cmd")
-	s, err := cluster.RunCommand(lk.c, lk.driver, logsCommand, false)
-	fmt.Println("ended running cmd")
-	if err != nil {
-		return "", errors.Wrap(err, "error running logs command")
-	}
-	return s, nil
+	return logs, nil
 }
 
 // GetClusterStatus gets the status of localkube from the host VM.
@@ -102,9 +91,7 @@ func (lk *LocalkubeBootstrapper) StartCluster(kubernetesConfig bootstrapper.Kube
 	if err != nil {
 		return errors.Wrapf(err, "Error generating start command: %s", err)
 	}
-	glog.Infoln(startCommand)
-	output, err := cluster.RunCommand(lk.c, lk.driver, startCommand, true)
-	glog.Infoln(output)
+	_, err = cluster.RunCommand(lk.c, lk.driver, startCommand, true)
 	if err != nil {
 		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
 	}

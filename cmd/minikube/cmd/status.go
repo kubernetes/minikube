@@ -38,7 +38,7 @@ var statusFormat string
 
 type Status struct {
 	MinikubeStatus   string
-	LocalkubeStatus  string
+	ClusterStatus    string
 	KubeconfigStatus string
 }
 
@@ -61,14 +61,14 @@ var statusCmd = &cobra.Command{
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 
-		ls := state.None.String()
+		cs := state.None.String()
 		ks := state.None.String()
 		if ms == state.Running.String() {
 			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
 				glog.Exitf("Error getting cluster bootstrapper: %s", err)
 			}
-			ls, err = clusterBootstrapper.GetClusterStatus()
+			cs, err = clusterBootstrapper.GetClusterStatus()
 			if err != nil {
 				glog.Errorln("Error cluster status:", err)
 				cmdUtil.MaybeReportErrorAndExit(err)
@@ -91,7 +91,7 @@ var statusCmd = &cobra.Command{
 			}
 		}
 
-		status := Status{ms, ls, ks}
+		status := Status{ms, cs, ks}
 
 		tmpl, err := template.New("status").Parse(statusFormat)
 		if err != nil {

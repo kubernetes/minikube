@@ -42,6 +42,7 @@ import (
 
 type K8sClient interface {
 	GetCoreClient() (corev1.CoreV1Interface, error)
+	GetClientset() (*kubernetes.Clientset, error)
 }
 
 type K8sClientGetter struct{}
@@ -52,7 +53,15 @@ func init() {
 	K8s = &K8sClientGetter{}
 }
 
-func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+	client, err := k.GetClientset()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting clientset")
+	}
+	return client.Core(), nil
+}
+
+func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -64,7 +73,8 @@ func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
-	return client.Core(), nil
+
+	return client, nil
 }
 
 type ServiceURL struct {

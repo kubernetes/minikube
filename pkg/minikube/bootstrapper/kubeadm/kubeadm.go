@@ -7,15 +7,19 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/state"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	bootstrapper_util "k8s.io/minikube/pkg/minikube/bootstrapper/util"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -83,16 +87,40 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	}, nil
 }
 
+//TODO(r2d4): This should most likely check the health of the apiserver
 func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
-	return "", nil
+	statusCmd := `sudo systemctl is-active kubelet &>/dev/null && echo "Running" || echo "Stopped"`
+	status, err := cluster.RunCommand(k.c, k.driver, statusCmd, false)
+	if err != nil {
+		return "", errors.Wrap(err, "getting status")
+	}
+	status = strings.TrimSpace(status)
+	if status == state.Running.String() || status == state.Stopped.String() {
+		return status, nil
+	}
+	return "", fmt.Errorf("Error: Unrecognized output from ClusterStatus: %s", status)
 }
 
+//TODO(r2d4): Should this aggregate all the logs from the control plane?
+// Maybe subcommands for each component? minikube logs apiserver?
 func (k *KubeadmBootstrapper) GetClusterLogs(follow bool) (string, error) {
-	return "", nil
+	var flags []string
+	if follow {
+		flags = append(flags, "-f")
+	}
+	logsCommand := fmt.Sprintf("sudo journalctl %s -u kubelet", strings.Join(flags, " "))
+	logs, err := bootstrapper_util.GetLogsGeneric(k.c, follow, logsCommand, k.driver)
+	if err != nil {
+		return "", errors.Wrap(err, "getting cluster logs")
+	}
+
+	return logs, nil
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) error {
-	kubeadmTmpl := "sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}}"
+	// We use --skip-preflight-checks since we have our own custom addons
+	// that we also stick in /etc/kubernetes/manifests
+	kubeadmTmpl := "sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} --skip-preflight-checks"
 	t := template.Must(template.New("kubeadmTmpl").Parse(kubeadmTmpl))
 	b := bytes.Buffer{}
 	if err := t.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
@@ -101,13 +129,41 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 
 	_, err := sshutil.RunCommandOutput(k.c, b.String())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "kubeadm init error running command: %s", b.String())
 	}
 
 	//TODO(r2d4): get rid of global here
 	master = k8s.NodeName
 	if err := util.RetryAfter(100, unmarkMaster, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to unmark master")
+	}
+
+	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
+		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	}
+
+	return nil
+}
+
+//TODO(r2d4): Split out into shared function between localkube and kubeadm
+func addAddons(files *[]assets.CopyableFile) error {
+	// add addons to file list
+	// custom addons
+	assets.AddMinikubeAddonsDirToAssets(files)
+	// bundled addons
+	for addonName, addonBundle := range assets.Addons {
+		// TODO(r2d4): Kubeadm ignores the kube-dns addon and uses its own.
+		// expose this in a better way
+		if addonName == "kube-dns" {
+			continue
+		}
+		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
+			for _, addon := range addonBundle.Assets {
+				*files = append(*files, addon)
+			}
+		} else if err != nil {
+			return nil
+		}
 	}
 
 	return nil
@@ -119,6 +175,7 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 	}
 
 	restoreTmpl := `
+	sudo kubeadm alpha phase certs all --config {{.KubeadmConfigFile}} &&
 	sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} --node-name {{.NodeName}} &&
 	sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile}} &&
 	sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
@@ -157,7 +214,12 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
 	}
 
+	if err := addAddons(&files); err != nil {
+		return errors.Wrap(err, "adding addons to copyable files")
+	}
+
 	for _, f := range files {
+		//TODO(r2d4): handle none driver case
 		if err := sshutil.TransferFile(f, k.c); err != nil {
 			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
 		}
@@ -174,6 +236,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 			if err != nil {
 				return errors.Wrap(err, "making new file asset")
 			}
+			//TODO(r2d4): handle none driver case
 			if err := sshutil.TransferFile(f, k.c); err != nil {
 				return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
 			}
@@ -212,7 +275,7 @@ func (k *KubeadmBootstrapper) generateConfig(k8s bootstrapper.KubernetesConfig) 
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     util.APIServerPort,
 		KubernetesVersion: k8s.KubernetesVersion,
-		EtcdDataDir:       "/data", //TODO(r2d$): change to something else persisted
+		EtcdDataDir:       "/data", //TODO(r2d4): change to something else persisted
 	}
 
 	b := bytes.Buffer{}
