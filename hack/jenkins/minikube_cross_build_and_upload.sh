@@ -24,7 +24,7 @@
 set -e
 
 # Clean up exited containers
-docker rm $(docker ps -q -f status=exited)
+docker rm $(docker ps -q -f status=exited) || true
 
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
