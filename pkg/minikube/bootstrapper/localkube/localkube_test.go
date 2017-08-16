@@ -21,7 +21,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -236,31 +235,6 @@ type K8sVersionHandlerCorrect struct{}
 
 func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, testLocalkubeBin)
-}
-
-func TestUpdateKubernetesVersion(t *testing.T) {
-	api, s := setupSSHServerAndAPI(t)
-	lk, err := NewLocalkubeBootstrapper(api)
-	if err != nil {
-		t.Fatalf("Error getting bootstrapper: %s", err)
-	}
-
-	handler := &K8sVersionHandlerCorrect{}
-	server := httptest.NewServer(handler)
-
-	kubernetesConfig := bootstrapper.KubernetesConfig{
-		KubernetesVersion: server.URL,
-	}
-	if err := lk.UpdateCluster(kubernetesConfig); err != nil {
-		t.Fatalf("Error updating cluster: %s", err)
-	}
-	transferred := s.Transfers.Bytes()
-
-	//test that localkube is transferred properly
-	contents := []byte(testLocalkubeBin)
-	if !bytes.Contains(transferred, contents) {
-		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
-	}
 }
 
 func TestUpdateCustomAddons(t *testing.T) {
