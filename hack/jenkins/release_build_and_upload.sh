@@ -56,3 +56,16 @@ gsutil cp out/minikube_${DEB_VERSION}.deb gs://$BUCKET/releases/$TAGNAME/
 
 # Bump latest
 gsutil cp -r gs://$BUCKET/releases/$TAGNAME/* gs://$BUCKET/releases/latest/
+
+# Build and upload localkube containers
+make localkube-image
+TAG="$(docker images "gcr.io/k8s-minikube/localkube-image" --format="{{.Tag}}" | head -n 1)"
+gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$TAG
+
+make localkube-dind-image
+TAG="$(docker images "gcr.io/k8s-minikube/localkube-dind-image" --format="{{.Tag}}" | head -n 1)"
+gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$TAG
+
+make localkube-dind-image-devshell
+TAG="$(docker images "gcr.io/k8s-minikube/localkube-dind-image-devshell" --format="{{.Tag}}" | head -n 1)"
+gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$TAG
