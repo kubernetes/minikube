@@ -95,7 +95,7 @@ out/localkube: $(shell $(LOCALKUBEFILES))
 ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
 	$(KUBE_CROSS_DOCKER_CMD) make $@
 else
-	CGO_ENABLED=1 go build -tags static_build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=1 go build -tags static_build,netgo -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
