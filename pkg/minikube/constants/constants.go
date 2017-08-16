@@ -136,6 +136,12 @@ const (
 )
 
 const (
+	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
+	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
+)
+
+const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
 	DefaultMountEndpoint = "/minikube-host"

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -54,6 +53,20 @@ RestartSec=10
 WantedBy=multi-user.target
 `
 
+const kubeadmConfigTmpl = `
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  advertiseAddress: {{.AdvertiseAddress}}
+  bindPort: {{.APIServerPort}}
+kubernetesVersion: {{.KubernetesVersion}}
+certificatesDir: {{.CertDir}}
+networking:
+  serviceSubnet: {{.ServiceCIDR}}
+etcd:
+  dataDir: {{.EtcdDataDir}}
+`
+
 func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	h, err := api.Load(config.GetMachineName())
 	if err != nil {
@@ -78,27 +91,10 @@ func (k *KubeadmBootstrapper) GetClusterLogs(follow bool) (string, error) {
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) error {
-	kubeadmTmpl := "sudo /usr/bin/kubeadm init"
-	kubeadmTmpl += " --cert-dir {{.CertDir}}"
-	kubeadmTmpl += " --service-cidr {{.ServiceCIDR}}"
-	kubeadmTmpl += " --apiserver-advertise-address {{.AdvertiseAddress}}"
-	kubeadmTmpl += " --apiserver-bind-port {{.APIServerPort}}"
+	kubeadmTmpl := "sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}}"
 	t := template.Must(template.New("kubeadmTmpl").Parse(kubeadmTmpl))
-
-	opts := struct {
-		CertDir          string
-		ServiceCIDR      string
-		AdvertiseAddress string
-		APIServerPort    int
-	}{
-		CertDir:          util.DefaultCertPath,
-		ServiceCIDR:      util.DefaultServiceCIDR,
-		AdvertiseAddress: k8s.NodeIP,
-		APIServerPort:    util.APIServerPort,
-	}
-
 	b := bytes.Buffer{}
-	if err := t.Execute(&b, opts); err != nil {
+	if err := t.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
 		return err
 	}
 
@@ -111,25 +107,23 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 }
 
 func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) error {
-	tmpFile := "/tmp/cert.conf"
+	if err := sshutil.RunCommand(k.c, "rm -rf /etc/kubernets/*.conf"); err != nil {
+		return errors.Wrap(err, "cleaning up prior component conf")
+	}
 
-	restartTmpl := "sudo /usr/bin/kubeadm alpha phase kubeconfig client-certs"
-	restartTmpl += " --cert-dir {{.CertDir}}"
-	restartTmpl += " --server {{.IP}}"
-	restartTmpl += " --client-name {{.MachineName}}"
-
-	// Output to temp file, since we will have to write this file to a few places.
-	restartTmpl += " > " + tmpFile
-	t := template.Must(template.New("restartTmpl").Parse(restartTmpl))
+	restoreTmpl := `
+	sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} --node-name {{.NodeName}} &&
+	sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile}} &&
+	sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
+	`
+	t := template.Must(template.New("restoreTmpl").Parse(restoreTmpl))
 
 	opts := struct {
-		CertDir     string
-		IP          string
-		MachineName string
+		KubeadmConfigFile string
+		NodeName          string
 	}{
-		CertDir:     util.DefaultCertPath,
-		IP:          k8s.NodeIP,
-		MachineName: k8s.NodeName,
+		KubeadmConfigFile: constants.KubeadmConfigFile,
+		NodeName:          k8s.NodeName,
 	}
 
 	b := bytes.Buffer{}
@@ -137,28 +131,23 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 		return err
 	}
 
-	glog.Infoln("running cmd: %s", b.String())
-	_, err := sshutil.RunCommandOutput(k.c, b.String())
-	if err != nil {
-		return errors.Wrapf(err, "regenerating kubeadm certs, running cmd: %s", b.String())
-	}
-
-	dsts := []string{"admin.conf", "controller-manager.conf", "kubelet.conf", "scheduler.conf"}
-	for _, dst := range dsts {
-		cmd := fmt.Sprintf("sudo cp %s %s", tmpFile, filepath.Join("/etc", "kubernetes", dst))
-		_, err := sshutil.RunCommandOutput(k.c, cmd)
-		if err != nil {
-			return errors.Wrapf(err, "copying conf files, running cmd: %s", cmd)
-		}
+	if err := sshutil.RunCommand(k.c, b.String()); err != nil {
+		return errors.Wrapf(err, "running cmd: %s", b.String())
 	}
 
 	return nil
 }
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) error {
+	kubeadmCfg, err := k.generateConfig(cfg)
+	if err != nil {
+		return errors.Wrap(err, "generating kubeadm cfg")
+	}
+
 	files := []assets.CopyableFile{
-		assets.NewMemoryAsset([]byte(kubeletService), "/lib/systemd/system", "kubelet.service", "0640"),
-		assets.NewMemoryAsset([]byte(kubeletSystemdConf), "/etc/systemd/system/kubelet.service.d/", "10-kubeadm.conf", "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeletSystemdConf), constants.KubeletSystemdConfFile, "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
 	}
 
 	for _, f := range files {
@@ -188,7 +177,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	_, err := sshutil.RunCommandOutput(k.c, `
+	_, err = sshutil.RunCommandOutput(k.c, `
 sudo systemctl daemon-reload &&
 sudo systemctl enable kubelet &&
 sudo systemctl start kubelet
@@ -198,6 +187,33 @@ sudo systemctl start kubelet
 	}
 
 	return nil
+}
+
+func (k *KubeadmBootstrapper) generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
+	t := template.Must(template.New("kubeadmConfigTmpl").Parse(kubeadmConfigTmpl))
+
+	opts := struct {
+		CertDir           string
+		ServiceCIDR       string
+		AdvertiseAddress  string
+		APIServerPort     int
+		KubernetesVersion string
+		EtcdDataDir       string
+	}{
+		CertDir:           util.DefaultCertPath,
+		ServiceCIDR:       util.DefaultServiceCIDR,
+		AdvertiseAddress:  k8s.NodeIP,
+		APIServerPort:     util.APIServerPort,
+		KubernetesVersion: k8s.KubernetesVersion,
+		EtcdDataDir:       "/data", //TODO(r2d$): change to something else persisted
+	}
+
+	b := bytes.Buffer{}
+	if err := t.Execute(&b, opts); err != nil {
+		return "", err
+	}
+
+	return b.String(), nil
 }
 
 func maybeDownloadAndCache(binary, version string) (string, error) {

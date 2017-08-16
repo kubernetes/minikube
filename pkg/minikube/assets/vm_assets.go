@@ -129,6 +129,10 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 	return m
 }
 
+func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset {
+	return NewMemoryAsset(d, filepath.Dir(targetPath), filepath.Base(targetPath), permissions)
+}
+
 type BinDataAsset struct {
 	BaseAsset
 }
