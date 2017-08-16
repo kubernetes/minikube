@@ -79,6 +79,9 @@ sudo rm -rf $HOME/.kube || true
 # See the default image
 ./out/minikube-${OS_ARCH} start -h | grep iso
 
+# see what driver we are using
+which docker-machine-driver-${VM_DRIVER} || true
+
 # Allow this to fail, we'll switch on the return code below.
 set +e
 ${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10 --logtostderr" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
