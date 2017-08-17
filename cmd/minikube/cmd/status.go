@@ -24,6 +24,8 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -36,7 +38,7 @@ var statusFormat string
 
 type Status struct {
 	MinikubeStatus   string
-	LocalkubeStatus  string
+	ClusterStatus    string
 	KubeconfigStatus string
 }
 
@@ -59,12 +61,16 @@ var statusCmd = &cobra.Command{
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 
-		ls := state.None.String()
+		cs := state.None.String()
 		ks := state.None.String()
 		if ms == state.Running.String() {
-			ls, err = cluster.GetLocalkubeStatus(api)
+			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
-				glog.Errorln("Error localkube status:", err)
+				glog.Exitf("Error getting cluster bootstrapper: %s", err)
+			}
+			cs, err = clusterBootstrapper.GetClusterStatus()
+			if err != nil {
+				glog.Errorln("Error cluster status:", err)
 				cmdUtil.MaybeReportErrorAndExit(err)
 			}
 			ip, err := cluster.GetHostDriverIP(api)
@@ -85,7 +91,7 @@ var statusCmd = &cobra.Command{
 			}
 		}
 
-		status := Status{ms, ls, ks}
+		status := Status{ms, cs, ks}
 
 		tmpl, err := template.New("status").Parse(statusFormat)
 		if err != nil {

@@ -90,13 +90,14 @@ const (
 	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikube: {{.MinikubeStatus}}\n" +
-		"localkube: {{.LocalkubeStatus}}\n" + "kubectl: {{.KubeconfigStatus}}\n"
-	DefaultAddonListFormat    = "- {{.AddonName}}: {{.AddonStatus}}\n"
-	DefaultConfigViewFormat   = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
-	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
-	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
-	DefaultWait               = 20
-	DefaultInterval           = 6
+		"cluster: {{.ClusterStatus}}\n" + "kubectl: {{.KubeconfigStatus}}\n"
+	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
+	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
+	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
+	KubernetesVersionGCSURL    = "https://storage.googleapis.com/minikube/k8s_releases.json"
+	DefaultWait                = 20
+	DefaultInterval            = 6
+	DefaultClusterBootstrapper = "localkube"
 )
 
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
@@ -135,6 +136,12 @@ const (
 )
 
 const (
+	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
+	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
+)
+
+const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
 	DefaultMountEndpoint = "/minikube-host"
@@ -142,4 +149,18 @@ const (
 	DefaultMountVersion  = "9p2000.u"
 )
 
+func GetKubernetesReleaseURL(binaryName, version string) string {
+	// TODO(r2d4): change this to official releases when the alpha controlplane commands are released.
+	// We are working with unreleased kubeadm changes at HEAD.
+	return fmt.Sprintf("https://storage.googleapis.com/minikube-builds/v1.7.3/%s", binaryName)
+	// return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
+}
+
+func GetKubernetesReleaseURLSha1(binaryName, version string) string {
+	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
+}
+
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
+
+const DriverNone = "none"
+const FileScheme = "file"

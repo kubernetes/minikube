@@ -17,7 +17,6 @@ limitations under the License.
 package sshutil
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -25,34 +24,36 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-func TestNewSSHClient(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-	c, err := NewSSHClient(d)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
+//TODO(r2d4): Move this test to bootstrapper package
 
-	cmd := "foo"
-	RunCommand(c, cmd)
-	if !s.Connected {
-		t.Fatalf("Error!")
-	}
+// func TestNewSSHClient(t *testing.T) {
+// 	s, _ := tests.NewSSHServer()
+// 	port, err := s.Start()
+// 	if err != nil {
+// 		t.Fatalf("Error starting ssh server: %s", err)
+// 	}
+// 	d := &tests.MockDriver{
+// 		Port: port,
+// 		BaseDriver: drivers.BaseDriver{
+// 			IPAddress:  "127.0.0.1",
+// 			SSHKeyPath: "",
+// 		},
+// 	}
+// 	c, err := NewSSHClient(d)
+// 	if err != nil {
+// 		t.Fatalf("Unexpected error: %s", err)
+// 	}
 
-	if _, ok := s.Commands[cmd]; !ok {
-		t.Fatalf("Expected command: %s", cmd)
-	}
-}
+// 	cmd := "foo"
+// 	RunCommand(c, cmd)
+// 	if !s.Connected {
+// 		t.Fatalf("Error!")
+// 	}
+
+// 	if _, ok := s.Commands[cmd]; !ok {
+// 		t.Fatalf("Expected command: %s", cmd)
+// 	}
+// }
 
 func TestNewSSHHost(t *testing.T) {
 	sshKeyPath := "mypath"
@@ -88,30 +89,5 @@ func TestNewSSHHostError(t *testing.T) {
 	_, err := newSSHHost(&d)
 	if err == nil {
 		t.Fatal("Expected error creating host, got nil")
-	}
-}
-
-func TestTransfer(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-	c, err := NewSSHClient(d)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
-	dest := "bar"
-	contents := []byte("testcontents")
-	if err := Transfer(bytes.NewReader(contents), len(contents), "/tmp", dest, "0777", c); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
 	}
 }

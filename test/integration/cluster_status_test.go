@@ -52,7 +52,7 @@ func testClusterStatus(t *testing.T) {
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(10, healthy, 1*time.Second); err != nil {
+	if err := commonutil.RetryAfter(30, healthy, 1*time.Second); err != nil {
 		t.Fatalf("Cluster is not healthy: %s", err)
 	}
 }

@@ -33,7 +33,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -91,6 +93,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	defer api.Close()
+
+	exists, err := api.Exists(cfg.GetMachineName())
+	if err != nil {
+		glog.Exitf("checking if machine exists: %s", err)
+	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
 	diskSizeMB := calculateDiskSizeInMB(diskSize)
@@ -174,15 +181,21 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubernetesConfig := cluster.KubernetesConfig{
+	kubernetesConfig := bootstrapper.KubernetesConfig{
 		KubernetesVersion: selectedKubernetesVersion,
 		NodeIP:            ip,
+		NodeName:          cfg.GetMachineName(),
 		APIServerName:     viper.GetString(apiServerName),
 		DNSDomain:         viper.GetString(dnsDomain),
 		FeatureGates:      viper.GetString(featureGates),
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
+	}
+
+	clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+	if err != nil {
+		glog.Exitf("Error getting cluster bootstrapper: %s", err)
 	}
 
 	// Write profile cluster configuration to file
@@ -196,21 +209,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Moving files into cluster...")
-	if err := cluster.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
+	if err := clusterBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := cluster.SetupCerts(host.Driver, kubernetesConfig.APIServerName, kubernetesConfig.DNSDomain); err != nil {
+	if err := clusterBootstrapper.SetupCerts(kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
-	}
-
-	fmt.Println("Starting cluster components...")
-
-	if err := cluster.StartCluster(api, kubernetesConfig); err != nil {
-		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
@@ -240,6 +246,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
+	}
+
+	fmt.Println("Starting cluster components...")
+
+	if !exists {
+		if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+	} else {
+		if err := clusterBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error restarting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 
 	// start 9p server mount
@@ -341,7 +361,7 @@ func init() {
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
-	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", []string{pkgutil.DefaultInsecureRegistry}, "Insecure Docker registries to pass to the Docker daemon")
+	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", []string{pkgutil.DefaultServiceCIDR}, "Insecure Docker registries to pass to the Docker daemon")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3) \n OR a URI which contains a localkube binary (ex: https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64)")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")

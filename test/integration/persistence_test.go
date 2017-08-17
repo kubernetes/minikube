@@ -57,7 +57,7 @@ func TestPersistence(t *testing.T) {
 		return &commonutil.RetriableError{Err: fmt.Errorf("Pod %s is not ready yet.", podName)}
 	}
 
-	if err := commonutil.RetryAfter(20, checkPod, 6*time.Second); err != nil {
+	if err := commonutil.RetryAfter(100, checkPod, 6*time.Second); err != nil {
 		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
 	}
 
@@ -98,7 +98,7 @@ func TestPersistence(t *testing.T) {
 	minikubeRunner.Start()
 	minikubeRunner.CheckStatus(state.Running.String())
 
-	if err := commonutil.RetryAfter(5, checkPod, 3*time.Second); err != nil {
+	if err := commonutil.RetryAfter(100, checkPod, 10*time.Second); err != nil {
 		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
 	}
 
