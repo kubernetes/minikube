@@ -38,6 +38,15 @@ func testClusterLogs(t *testing.T) {
 	logWords := []string{"minikube", ".go"}
 	for _, logWord := range logWords {
 		if !strings.Contains(logsCmdOutput, logWord) {
+			debugCmds := []string{
+				"journalctl --verify",
+				"journalctl",
+				"systemctl status",
+				"systemctl status systemd-journald",
+			}
+			for _, cmd := range debugCmds {
+				t.Logf("Command: %s\nOutput: %s", cmd, minikubeRunner.RunCommand(cmd, false))
+			}
 			t.Fatalf("Error in logsCmdOutput, expected to find: %s. Output: %s", logWord, logsCmdOutput)
 		}
 	}
