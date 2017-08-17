@@ -17,8 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"bytes"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -300,37 +298,6 @@ func TestGetHostStatus(t *testing.T) {
 
 	StopHost(api)
 	checkState(state.Stopped.String())
-}
-
-func TestSetupCerts(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	if err := SetupCerts(d, constants.APIServerName, constants.ClusterDNSDomain); err != nil {
-		t.Fatalf("Error starting cluster: %s", err)
-	}
-
-	for _, cert := range certs {
-		contents, _ := ioutil.ReadFile(cert)
-		transferred := s.Transfers.Bytes()
-		if !bytes.Contains(transferred, contents) {
-			t.Fatalf("Certificate not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
-		}
-	}
 }
 
 func TestGetHostDockerEnv(t *testing.T) {

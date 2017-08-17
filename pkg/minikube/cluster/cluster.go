@@ -38,11 +38,9 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -382,27 +380,6 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 		fmt.Fprintln(os.Stderr, "minikube is not currently running so the service cannot be accessed")
 		os.Exit(exitStatus)
 	}
-}
-
-// RunCommand executes commands for both the local and driver implementations
-func RunCommand(c *ssh.Client, driver, command string, sudo bool) (string, error) {
-	if driver == constants.DriverNone {
-		cmd := exec.Command("/bin/bash", "-c", command)
-		if sudo {
-			cmd = exec.Command("sudo", "/bin/bash", "-c", command)
-		}
-		out, err := cmd.CombinedOutput()
-		if err != nil {
-			return "", errors.Wrap(err, string(out))
-		}
-		return string(out), err
-	}
-	out, err := sshutil.RunCommandOutput(c, command)
-	if err != nil {
-		return "", errors.Wrap(err, string(out))
-	}
-	return string(out), err
-
 }
 
 func GetMountCleanupCommand(path string) string {
