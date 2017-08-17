@@ -150,13 +150,10 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Load profile cluster config from file
 	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println("No existing profile config found. A new profile config would be created.")
-		} else {
-			glog.Errorln("Error loading profile config: ", err)
-		}
-	} else {
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorln("Error loading profile config: ", err)
+	}
+	if err == nil {
 		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(cc.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 		if err != nil {
 			glog.Errorln("Error parsing version semver: ", err)

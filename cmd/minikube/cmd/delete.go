@@ -21,8 +21,11 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -54,6 +57,11 @@ associated files.`,
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
 			fmt.Println("Errors occurred deleting mount process: ", err)
+		}
+
+		if err := os.Remove(constants.GetProfileFile(viper.GetString(pkg_config.MachineProfile))); err != nil {
+			fmt.Println("Error deleting machine profile config")
+			os.Exit(1)
 		}
 	},
 }
