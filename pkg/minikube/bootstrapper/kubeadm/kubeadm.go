@@ -30,12 +30,9 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	bootstrapper_util "k8s.io/minikube/pkg/minikube/bootstrapper/util"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -43,8 +40,7 @@ import (
 )
 
 type KubeadmBootstrapper struct {
-	c      *ssh.Client
-	driver string // TODO(r2d4): get rid of this dependency
+	c bootstrapper.CommandRunner
 }
 
 // TODO(r2d4): template this with bootstrapper.KubernetesConfig
@@ -93,20 +89,26 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
-	client, err := sshutil.NewSSHClient(h.Driver)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting ssh client")
+	var cmd bootstrapper.CommandRunner
+	// The none driver executes commands directly on the host
+	if h.Driver.DriverName() == constants.DriverNone {
+		cmd = &bootstrapper.ExecRunner{}
+	} else {
+		client, err := sshutil.NewSSHClient(h.Driver)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting ssh client")
+		}
+		cmd = bootstrapper.NewSSHRunner(client)
 	}
 	return &KubeadmBootstrapper{
-		c:      client,
-		driver: h.Driver.DriverName(),
+		c: cmd,
 	}, nil
 }
 
 //TODO(r2d4): This should most likely check the health of the apiserver
 func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
 	statusCmd := `sudo systemctl is-active kubelet &>/dev/null && echo "Running" || echo "Stopped"`
-	status, err := cluster.RunCommand(k.c, k.driver, statusCmd, false)
+	status, err := k.c.CombinedOutput(statusCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "getting status")
 	}
@@ -117,7 +119,7 @@ func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
 	return "", fmt.Errorf("Error: Unrecognized output from ClusterStatus: %s", status)
 }
 
-//TODO(r2d4): Should this aggregate all the logs from the control plane?
+// TODO(r2d4): Should this aggregate all the logs from the control plane?
 // Maybe subcommands for each component? minikube logs apiserver?
 func (k *KubeadmBootstrapper) GetClusterLogs(follow bool) (string, error) {
 	var flags []string
@@ -125,7 +127,14 @@ func (k *KubeadmBootstrapper) GetClusterLogs(follow bool) (string, error) {
 		flags = append(flags, "-f")
 	}
 	logsCommand := fmt.Sprintf("sudo journalctl %s -u kubelet", strings.Join(flags, " "))
-	logs, err := bootstrapper_util.GetLogsGeneric(k.c, follow, logsCommand, k.driver)
+
+	if follow {
+		if err := k.c.Shell(logsCommand); err != nil {
+			return "", errors.Wrap(err, "getting shell")
+		}
+	}
+
+	logs, err := k.c.CombinedOutput(logsCommand)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cluster logs")
 	}
@@ -143,7 +152,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 		return err
 	}
 
-	_, err := sshutil.RunCommandOutput(k.c, b.String())
+	err := k.c.Run(b.String())
 	if err != nil {
 		return errors.Wrapf(err, "kubeadm init error running command: %s", b.String())
 	}
@@ -186,7 +195,7 @@ func addAddons(files *[]assets.CopyableFile) error {
 }
 
 func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) error {
-	if err := sshutil.RunCommand(k.c, "rm -rf /etc/kubernets/*.conf"); err != nil {
+	if err := k.c.Run("rm -rf /etc/kubernets/*.conf"); err != nil {
 		return errors.Wrap(err, "cleaning up prior component conf")
 	}
 
@@ -211,11 +220,15 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 		return err
 	}
 
-	if err := sshutil.RunCommand(k.c, b.String()); err != nil {
+	if err := k.c.Run(b.String()); err != nil {
 		return errors.Wrapf(err, "running cmd: %s", b.String())
 	}
 
 	return nil
+}
+
+func (k *KubeadmBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) error {
+	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) error {
@@ -235,8 +248,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 	}
 
 	for _, f := range files {
-		//TODO(r2d4): handle none driver case
-		if err := sshutil.TransferFile(f, k.c); err != nil {
+		if err := k.c.TransferFile(f); err != nil {
 			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
 		}
 	}
@@ -252,8 +264,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 			if err != nil {
 				return errors.Wrap(err, "making new file asset")
 			}
-			//TODO(r2d4): handle none driver case
-			if err := sshutil.TransferFile(f, k.c); err != nil {
+			if err := k.c.TransferFile(f); err != nil {
 				return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
 			}
 			return nil
@@ -263,7 +274,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	_, err = sshutil.RunCommandOutput(k.c, `
+	err = k.c.Run(`
 sudo systemctl daemon-reload &&
 sudo systemctl enable kubelet &&
 sudo systemctl start kubelet

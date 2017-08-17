@@ -215,7 +215,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := cluster.SetupCerts(host.Driver, kubernetesConfig.APIServerName, kubernetesConfig.DNSDomain); err != nil {
+	if err := clusterBootstrapper.SetupCerts(kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}

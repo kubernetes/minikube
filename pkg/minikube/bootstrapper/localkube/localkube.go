@@ -21,12 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/crypto/ssh"
-
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	bootstrapper_util "k8s.io/minikube/pkg/minikube/bootstrapper/util"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -37,8 +33,7 @@ import (
 )
 
 type LocalkubeBootstrapper struct {
-	c      *ssh.Client
-	driver string // TODO(r2d4): get rid of this dependency
+	cmd bootstrapper.CommandRunner
 }
 
 func NewLocalkubeBootstrapper(api libmachine.API) (*LocalkubeBootstrapper, error) {
@@ -46,13 +41,19 @@ func NewLocalkubeBootstrapper(api libmachine.API) (*LocalkubeBootstrapper, error
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
-	client, err := sshutil.NewSSHClient(h.Driver)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting ssh client")
+	var cmd bootstrapper.CommandRunner
+	// The none driver executes commands directly on the host
+	if h.Driver.DriverName() == constants.DriverNone {
+		cmd = &bootstrapper.ExecRunner{}
+	} else {
+		client, err := sshutil.NewSSHClient(h.Driver)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting ssh client")
+		}
+		cmd = bootstrapper.NewSSHRunner(client)
 	}
 	return &LocalkubeBootstrapper{
-		c:      client,
-		driver: h.Driver.DriverName(),
+		cmd: cmd,
 	}, nil
 }
 
@@ -62,16 +63,24 @@ func (lk *LocalkubeBootstrapper) GetClusterLogs(follow bool) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "Error getting logs command")
 	}
-	logs, err := bootstrapper_util.GetLogsGeneric(lk.c, follow, logsCommand, lk.driver)
+
+	if follow {
+		if err := lk.cmd.Shell(logsCommand); err != nil {
+			return "", errors.Wrap(err, "getting shell")
+		}
+	}
+
+	logs, err := lk.cmd.CombinedOutput(logsCommand)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cluster logs")
 	}
+
 	return logs, nil
 }
 
 // GetClusterStatus gets the status of localkube from the host VM.
 func (lk *LocalkubeBootstrapper) GetClusterStatus() (string, error) {
-	s, err := cluster.RunCommand(lk.c, lk.driver, localkubeStatusCommand, false)
+	s, err := lk.cmd.CombinedOutput(localkubeStatusCommand)
 	if err != nil {
 		return "", err
 	}
@@ -91,7 +100,7 @@ func (lk *LocalkubeBootstrapper) StartCluster(kubernetesConfig bootstrapper.Kube
 	if err != nil {
 		return errors.Wrapf(err, "Error generating start command: %s", err)
 	}
-	_, err = cluster.RunCommand(lk.c, lk.driver, startCommand, true)
+	err = lk.cmd.Run(startCommand) //needs to be sudo for none driver
 	if err != nil {
 		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
 	}
@@ -133,20 +142,14 @@ func (lk *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesCon
 		}
 	}
 
-	if lk.driver == constants.DriverNone {
-		// transfer files to correct place on filesystem
-		for _, f := range copyableFiles {
-			if err := assets.CopyFileLocal(f); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
 	for _, f := range copyableFiles {
-		if err := sshutil.TransferFile(f, lk.c); err != nil {
+		if err := lk.cmd.TransferFile(f); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (lk *LocalkubeBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) error {
+	return bootstrapper.SetupCerts(lk.cmd, k8s)
 }

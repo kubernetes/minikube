@@ -25,9 +25,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
@@ -41,16 +39,11 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/client-go/tools/clientcmd/api/latest"
 
-	"k8s.io/minikube/pkg/minikube/assets"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
 var (
@@ -171,80 +164,6 @@ func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 		return nil, errors.Wrap(err, "Error parsing IP")
 	}
 	return ip, nil
-}
-
-// SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(d drivers.Driver, apiServerName string, clusterDnsDomain string) error {
-	localPath := constants.GetMinipath()
-	ipStr, err := d.GetIP()
-	if err != nil {
-		return errors.Wrap(err, "Error getting ip from driver")
-	}
-	glog.Infoln("Setting up certificates for IP: %s", ipStr)
-
-	ip := net.ParseIP(ipStr)
-	caCert := filepath.Join(localPath, "ca.crt")
-	caKey := filepath.Join(localPath, "ca.key")
-	publicPath := filepath.Join(localPath, "apiserver.crt")
-	privatePath := filepath.Join(localPath, "apiserver.key")
-	if err := GenerateCerts(caCert, caKey, publicPath, privatePath, ip, apiServerName, clusterDnsDomain); err != nil {
-		return errors.Wrap(err, "Error generating certs")
-	}
-
-	copyableFiles := []assets.CopyableFile{}
-
-	for _, cert := range certs {
-		p := filepath.Join(localPath, cert)
-		perms := "0644"
-		if strings.HasSuffix(cert, ".key") {
-			perms = "0600"
-		}
-		certFile, err := assets.NewFileAsset(p, util.DefaultCertPath, cert, perms)
-		if err != nil {
-			return err
-		}
-		copyableFiles = append(copyableFiles, certFile)
-	}
-
-	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
-		ClusterName:          cfg.GetMachineName(),
-		ClusterServerAddress: "https://localhost:8443",
-		ClientCertificate:    filepath.Join(util.DefaultCertPath, "apiserver.crt"),
-		ClientKey:            filepath.Join(util.DefaultCertPath, "apiserver.key"),
-		CertificateAuthority: filepath.Join(util.DefaultCertPath, "ca.crt"),
-		KeepContext:          false,
-	}
-
-	kubeCfg := api.NewConfig()
-	kubeconfig.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
-	data, err := runtime.Encode(latest.Codec, kubeCfg)
-
-	kubeCfgFile := assets.NewMemoryAsset(data,
-		util.DefaultLocalkubeDirectory, "kubeconfig", "0644")
-	copyableFiles = append(copyableFiles, kubeCfgFile)
-
-	if d.DriverName() == "none" {
-		// transfer files to correct place on filesystem
-		for _, f := range copyableFiles {
-			if err := assets.CopyFileLocal(f); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	// transfer files to vm via SSH
-	client, err := sshutil.NewSSHClient(d)
-	if err != nil {
-		return errors.Wrap(err, "Error creating new ssh client")
-	}
-
-	for _, f := range copyableFiles {
-		if err := sshutil.TransferFile(f, client); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func engineOptions(config MachineConfig) *engine.Options {

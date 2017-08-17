@@ -19,17 +19,18 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/storageclass"
+	"k8s.io/minikube/pkg/util"
 )
 
 // Runs all the validation or callback functions and collects errors
@@ -82,7 +83,6 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 }
 
 func EnableOrDisableAddon(name string, val string) error {
-
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
@@ -102,61 +102,33 @@ func EnableOrDisableAddon(name string, val string) error {
 		return err
 	}
 	host, err := cluster.CheckIfApiExistsAndLoad(api)
+
+	// TODO(r2d4): This is probably not the best way to do this.
+	// Ideally, the addon information should be passed through
+	// bootstrapper.KubernetesConfig
+	// There shouldn't be any instances of getting a CommandRunner outside
+	// the bootstrapper
+	var b bootstrapper.CommandRunner
+	if host.DriverName == constants.DriverNone {
+		b = &bootstrapper.ExecRunner{}
+	} else {
+		client, err := sshutil.NewSSHClient(host.Driver)
+		if err != nil {
+			return errors.Wrap(err, "getting ssh client")
+		}
+		b = bootstrapper.NewSSHRunner(client)
+	}
+	m := util.MultiError{}
 	if enable {
-		if err = transferAddon(addon, host.Driver); err != nil {
-			return errors.Wrapf(err, "Error transferring addon %s to VM", name)
+		for _, a := range addon.Assets {
+			m.Collect(b.TransferFile(a))
 		}
 	} else {
-		if err = deleteAddon(addon, host.Driver); err != nil {
-			return errors.Wrapf(err, "Error deleting addon %s from VM", name)
+		for _, a := range addon.Assets {
+			m.Collect(b.DeleteFile(a))
 		}
 	}
-	return nil
-}
-
-func deleteAddonSSH(addon *assets.Addon, d drivers.Driver) error {
-	client, err := sshutil.NewSSHClient(d)
-	if err != nil {
-		return err
-	}
-	if err := sshutil.DeleteAddon(addon, client); err != nil {
-		return err
-	}
-	return nil
-}
-
-func deleteAddon(addon *assets.Addon, d drivers.Driver) error {
-	if d.DriverName() == "none" {
-		if err := deleteAddonLocal(addon, d); err != nil {
-			return err
-		}
-	} else {
-		if err := deleteAddonSSH(addon, d); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func deleteAddonLocal(addon *assets.Addon, d drivers.Driver) error {
-	var err error
-	for _, f := range addon.Assets {
-		if err = os.Remove(filepath.Join(f.GetTargetDir(), f.GetTargetName())); err != nil {
-			return err
-		}
-	}
-	return err
-}
-
-func transferAddonSSH(addon *assets.Addon, d drivers.Driver) error {
-	client, err := sshutil.NewSSHClient(d)
-	if err != nil {
-		return err
-	}
-	if err := sshutil.TransferAddon(addon, client); err != nil {
-		return err
-	}
-	return nil
+	return m.ToError()
 }
 
 func EnableOrDisableDefaultStorageClass(name, val string) error {
@@ -173,27 +145,4 @@ func EnableOrDisableDefaultStorageClass(name, val string) error {
 		}
 	}
 	return EnableOrDisableAddon(name, val)
-}
-
-func transferAddon(addon *assets.Addon, d drivers.Driver) error {
-	if d.DriverName() == "none" {
-		if err := transferAddonLocal(addon, d); err != nil {
-			return err
-		}
-	} else {
-		if err := transferAddonSSH(addon, d); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func transferAddonLocal(addon *assets.Addon, d drivers.Driver) error {
-	var err error
-	for _, f := range addon.Assets {
-		if err = assets.CopyFileLocal(f); err != nil {
-			return err
-		}
-	}
-	return err
 }

@@ -26,6 +26,7 @@ type Bootstrapper interface {
 	UpdateCluster(cfg KubernetesConfig) error
 	RestartCluster(cfg KubernetesConfig) error
 	GetClusterLogs(follow bool) (string, error)
+	SetupCerts(cfg KubernetesConfig) error
 	GetClusterStatus() (string, error)
 }
 
