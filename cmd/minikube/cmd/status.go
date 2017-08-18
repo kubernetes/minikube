@@ -64,11 +64,11 @@ var statusCmd = &cobra.Command{
 		if ms == state.Running.String() {
 			h, err := api.Load(config.GetMachineName())
 			if err != nil {
-				glog.Errorln("Error getting host")
+				glog.Exitln("Error getting host")
 			}
 			cmdRunner, err := machine.GetCommandRunner(h)
 			if err != nil {
-				glog.Errorln("Error getting command runner interface")
+				glog.Exitln("Error getting command runner interface")
 			}
 			cs, err = cluster.GetLocalkubeStatus(cmdRunner)
 			if err != nil {

@@ -195,7 +195,7 @@ func StartCluster(cmd bootstrapper.CommandRunner, kubernetesConfig KubernetesCon
 		return errors.Wrapf(err, "Error generating start command: %s", err)
 	}
 	if err := cmd.Run(startCommand); err != nil {
-		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
+		return errors.Wrapf(err, "Error running start command: %s", startCommand)
 	}
 	return nil
 }
@@ -232,6 +232,7 @@ func UpdateCluster(cmd bootstrapper.CommandRunner, config KubernetesConfig) erro
 	}
 
 	for _, f := range copyableFiles {
+		// fmt.Println(f.GetAssetName())
 		if err := cmd.Copy(f); err != nil {
 			return err
 		}

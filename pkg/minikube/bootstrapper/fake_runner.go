@@ -103,3 +103,11 @@ func (f *FakeCommandRunner) GetFileToContents(fpath string) (string, error) {
 func (f *FakeCommandRunner) SetFileToContents(fileToContents map[string]string) {
 	f.fileToContents.Store(fileToContents)
 }
+
+func (f *FakeCommandRunner) DumpMaps(w io.Writer) {
+	fmt.Fprint(w, "Commands: \n", f.cmdMap)
+	fmt.Fprintln(w, "Filenames: ")
+	for k := range f.fileMap {
+		fmt.Fprintln(w, k)
+	}
+}
