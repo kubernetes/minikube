@@ -62,7 +62,15 @@ var statusCmd = &cobra.Command{
 		cs := state.None.String()
 		ks := state.None.String()
 		if ms == state.Running.String() {
-			cs, err = cluster.GetLocalkubeStatus(api)
+			h, err := api.Load(config.GetMachineName())
+			if err != nil {
+				glog.Errorln("Error getting host")
+			}
+			cmdRunner, err := machine.GetCommandRunner(h)
+			if err != nil {
+				glog.Errorln("Error getting command runner interface")
+			}
+			cs, err = cluster.GetLocalkubeStatus(cmdRunner)
 			if err != nil {
 				glog.Errorln("Error localkube status:", err)
 				cmdUtil.MaybeReportErrorAndExit(err)

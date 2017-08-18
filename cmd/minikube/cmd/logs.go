@@ -21,9 +21,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -43,7 +45,15 @@ var logsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		s, err := cluster.GetHostLogs(api, follow)
+		h, err := api.Load(config.GetMachineName())
+		if err != nil {
+			glog.Errorln("Error getting host")
+		}
+		cmdRunner, err := machine.GetCommandRunner(h)
+		if err != nil {
+			glog.Errorln("Error getting command runner interface")
+		}
+		s, err := cluster.GetHostLogs(cmdRunner, follow)
 		if err != nil {
 			log.Println("Error getting machine logs:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)

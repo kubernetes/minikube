@@ -17,7 +17,6 @@ limitations under the License.
 package sshutil
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -44,7 +43,15 @@ func TestNewSSHClient(t *testing.T) {
 	}
 
 	cmd := "foo"
-	RunCommand(c, cmd)
+	sess, err := c.NewSession()
+	defer sess.Close()
+	if err != nil {
+		t.Fatal("Error creating new session for ssh client")
+	}
+
+	if err := sess.Run(cmd); err != nil {
+		t.Fatalf("Error running command: %s", cmd)
+	}
 	if !s.Connected {
 		t.Fatalf("Error!")
 	}
@@ -88,30 +95,5 @@ func TestNewSSHHostError(t *testing.T) {
 	_, err := newSSHHost(&d)
 	if err == nil {
 		t.Fatal("Expected error creating host, got nil")
-	}
-}
-
-func TestTransfer(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-	c, err := NewSSHClient(d)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
-	dest := "bar"
-	contents := []byte("testcontents")
-	if err := Transfer(bytes.NewReader(contents), len(contents), "/tmp", dest, "0777", c); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
 	}
 }

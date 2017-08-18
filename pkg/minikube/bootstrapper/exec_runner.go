@@ -1,0 +1,86 @@
+/*
+Copyright 2016 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package bootstrapper
+
+import (
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+)
+
+type ExecRunner struct{}
+
+func (*ExecRunner) Run(cmd string) error {
+	glog.Infoln("Run:", cmd)
+	c := exec.Command("/bin/bash", "-c", cmd)
+	if err := c.Run(); err != nil {
+		return errors.Wrapf(err, "running command: %s", cmd)
+	}
+	return nil
+}
+
+func (*ExecRunner) CombinedOutput(cmd string) (string, error) {
+	glog.Infoln("Run with output:", cmd)
+	c := exec.Command("/bin/bash", "-c", cmd)
+	out, err := c.CombinedOutput()
+	if err != nil {
+		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, out)
+	}
+	return string(out), nil
+}
+
+func (*ExecRunner) Copy(f assets.CopyableFile) error {
+	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
+		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
+	}
+	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
+	if _, err := os.Stat(targetPath); err == nil {
+		if err := os.Remove(targetPath); err != nil {
+			return errors.Wrapf(err, "error removing file %s", targetPath)
+		}
+
+	}
+	target, err := os.Create(targetPath)
+	if err != nil {
+		return errors.Wrapf(err, "error creating file at %s", targetPath)
+	}
+	perms, err := strconv.Atoi(f.GetPermissions())
+	if err != nil {
+		return errors.Wrapf(err, "error converting permissions %s to integer", perms)
+	}
+	if err := target.Chmod(os.FileMode(perms)); err != nil {
+		return errors.Wrapf(err, "error changing file permissions for %s", targetPath)
+	}
+
+	if _, err = io.Copy(target, f); err != nil {
+		return errors.Wrapf(err, `error copying file %s to target location:
+do you have the correct permissions?  The none driver requires sudo for the "start" command`,
+			targetPath)
+	}
+	return target.Close()
+}
+
+func (e *ExecRunner) Remove(f assets.CopyableFile) error {
+	cmd := getDeleteFileCommand(f)
+	return e.Run(cmd)
+}

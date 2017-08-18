@@ -14,12 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package bootstrapper
 
-import "testing"
+import (
+	"fmt"
+	"path/filepath"
 
-func TestEnableUnknownAddon(t *testing.T) {
-	if err := Set("InvalidAddon", "false"); err == nil {
-		t.Fatalf("Enable did not return error for unknown addon")
-	}
+	"k8s.io/minikube/pkg/minikube/assets"
+)
+
+type CommandRunner interface {
+	Run(cmd string) error
+	CombinedOutput(cmd string) (string, error)
+
+	Copy(assets.CopyableFile) error
+	Remove(assets.CopyableFile) error
+}
+
+func getDeleteFileCommand(f assets.CopyableFile) string {
+	return fmt.Sprintf("sudo rm %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
 }

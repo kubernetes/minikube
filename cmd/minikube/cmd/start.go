@@ -192,21 +192,26 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
+	cmdRunner, err := machine.GetCommandRunner(host)
+	if err != nil {
+		glog.Errorln("Error getting command runner interface")
+	}
+
 	fmt.Println("Moving files into cluster...")
-	if err := cluster.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
+	if err := cluster.UpdateCluster(cmdRunner, kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := cluster.SetupCerts(host.Driver, kubernetesConfig.APIServerName, kubernetesConfig.DNSDomain); err != nil {
+	if err := cluster.SetupCerts(cmdRunner, kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Starting cluster components...")
 
-	if err := cluster.StartCluster(api, kubernetesConfig); err != nil {
+	if err := cluster.StartCluster(cmdRunner, kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
