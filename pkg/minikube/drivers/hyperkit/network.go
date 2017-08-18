@@ -38,7 +38,11 @@ type DHCPEntry struct {
 }
 
 func GetIPAddressByMACAddress(mac string) (string, error) {
-	file, err := os.Open(DHCPLeasesFile)
+	return getIpAddressFromFile(mac, DHCPLeasesFile)
+}
+
+func getIpAddressFromFile(mac, path string) (string, error) {
+	file, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
@@ -74,6 +78,9 @@ func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
 		}
 
 		split := strings.SplitN(line, "=", 2)
+		if len(split) != 2 {
+			return nil, fmt.Errorf("invalid line in dhcp leases file: %s", line)
+		}
 		key, val := split[0], split[1]
 		switch key {
 		case "name":
