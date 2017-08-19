@@ -86,6 +86,7 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
+	go machine.CacheImagesForBootstrapper(viper.GetString(cmdcfg.Bootstrapper))
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
