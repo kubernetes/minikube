@@ -67,7 +67,11 @@ KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u)
 
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
 define MINIKUBE_GO_BUILD_CMD
+<<<<<<< HEAD
 	$(MINIKUBE_ENV_$(2)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
+=======
+	$(MINIKUBE_ENV_$(2)) go build -tags "container_image_ostree_stub containers_image_openpgp" --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
+>>>>>>> a98f9553f... Vendor changes
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
