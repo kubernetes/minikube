@@ -38,7 +38,7 @@ spec:
     - mountPath: /etc/kubernetes/
       name: addons
       readOnly: true
-    - mountPath: /var/lib/localkube
+    - mountPath: /var/lib/localkube/
       name: kubeconfig
       readOnly: true
   volumes:
