@@ -23,11 +23,19 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// CommandRunner represents an interface to run commands.
 type CommandRunner interface {
+	// Run starts the specified command and waits for it to complete.
 	Run(cmd string) error
+
+	// CombinedOutput runs the command and returns its combined standard
+	// output and standard error.
 	CombinedOutput(cmd string) (string, error)
 
+	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
+
+	//Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
 }
 

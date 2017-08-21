@@ -27,6 +27,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// FakeCommandRunner mocks command output without running the Commands
+//
+// It implements the CommandRunner interface and is used for testing.
 type FakeCommandRunner struct {
 	commandToOutput atomic.Value
 	cmdMap          map[string]string
@@ -35,6 +38,9 @@ type FakeCommandRunner struct {
 	fileMap        map[string]string
 }
 
+// NewFakeCommandRunner returns a new FakeCommandRunner
+//
+// The expected output of commands should be set with SetCommandToOutput
 func NewFakeCommandRunner() *FakeCommandRunner {
 	f := &FakeCommandRunner{
 		cmdMap:  make(map[string]string),
@@ -46,19 +52,18 @@ func NewFakeCommandRunner() *FakeCommandRunner {
 	return f
 }
 
+// Run returns nil if output has been set for the given command text.
 func (f *FakeCommandRunner) Run(cmd string) error {
 	_, err := f.GetCommandToOutput(cmd)
 	return err
 }
 
+// CombinedOutput returns the set output for a given command text.
 func (f *FakeCommandRunner) CombinedOutput(cmd string) (string, error) {
 	return f.GetCommandToOutput(cmd)
 }
 
-func (f *FakeCommandRunner) Shell(cmd string) error {
-	return f.Run(cmd)
-}
-
+// Copy adds the filename, file contents key value pair to the stored map.
 func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	fileMap := f.fileToContents.Load().(map[string]string)
 	var b bytes.Buffer
@@ -71,6 +76,7 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	return nil
 }
 
+// Remove removes the filename, file contents key value pair from the stored map
 func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
 	fileMap := f.fileToContents.Load().(map[string]string)
 	delete(fileMap, file.GetAssetName())
@@ -78,6 +84,7 @@ func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
 	return nil
 }
 
+// GetCommandToOutput retrieves the stored output for a given command from the stored command map
 func (f *FakeCommandRunner) GetCommandToOutput(cmd string) (string, error) {
 	cmdMap := f.commandToOutput.Load().(map[string]string)
 	val, ok := cmdMap[cmd]
@@ -87,10 +94,12 @@ func (f *FakeCommandRunner) GetCommandToOutput(cmd string) (string, error) {
 	return val, nil
 }
 
+// SetCommandToOutput stores the command to output map for the FakeCommandRunner
 func (f *FakeCommandRunner) SetCommandToOutput(cmdToOutput map[string]string) {
 	f.commandToOutput.Store(cmdToOutput)
 }
 
+// GetFileToContents returns the value for the stored filename key
 func (f *FakeCommandRunner) GetFileToContents(fpath string) (string, error) {
 	fileMap := f.fileToContents.Load().(map[string]string)
 	val, ok := fileMap[fpath]
@@ -100,10 +109,12 @@ func (f *FakeCommandRunner) GetFileToContents(fpath string) (string, error) {
 	return val, nil
 }
 
+// SetFileToContents stores the file to contents map for the FakeCommandRunner
 func (f *FakeCommandRunner) SetFileToContents(fileToContents map[string]string) {
 	f.fileToContents.Store(fileToContents)
 }
 
+// DumpMaps prints out the list of stored commands and stored filenames.
 func (f *FakeCommandRunner) DumpMaps(w io.Writer) {
 	fmt.Fprint(w, "Commands: \n", f.cmdMap)
 	fmt.Fprintln(w, "Filenames: ")

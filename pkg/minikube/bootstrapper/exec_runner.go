@@ -28,8 +28,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// ExecRunner runs commands using the os/exec package.
+//
+// It implements the CommandRunner interface.
 type ExecRunner struct{}
 
+// Run starts the specified command in a bash shell and waits for it to complete.
 func (*ExecRunner) Run(cmd string) error {
 	glog.Infoln("Run:", cmd)
 	c := exec.Command("/bin/bash", "-c", cmd)
@@ -39,6 +43,8 @@ func (*ExecRunner) Run(cmd string) error {
 	return nil
 }
 
+// CombinedOutput runs the command  in a bash shell and returns its
+// combined standard output and standard error.
 func (*ExecRunner) CombinedOutput(cmd string) (string, error) {
 	glog.Infoln("Run with output:", cmd)
 	c := exec.Command("/bin/bash", "-c", cmd)
@@ -49,6 +55,7 @@ func (*ExecRunner) CombinedOutput(cmd string) (string, error) {
 	return string(out), nil
 }
 
+// Copy copies a file and its permissions
 func (*ExecRunner) Copy(f assets.CopyableFile) error {
 	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
 		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
@@ -74,12 +81,13 @@ func (*ExecRunner) Copy(f assets.CopyableFile) error {
 
 	if _, err = io.Copy(target, f); err != nil {
 		return errors.Wrapf(err, `error copying file %s to target location:
-do you have the correct permissions?  The none driver requires sudo for the "start" command`,
+do you have the correct permissions?`,
 			targetPath)
 	}
 	return target.Close()
 }
 
+// Remove removes a file
 func (e *ExecRunner) Remove(f assets.CopyableFile) error {
 	cmd := getDeleteFileCommand(f)
 	return e.Run(cmd)
