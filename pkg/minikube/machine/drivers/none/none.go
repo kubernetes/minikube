@@ -17,6 +17,7 @@ limitations under the License.
 package none
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -199,9 +200,13 @@ func runCommand(command string, sudo bool) (string, error) {
 	if sudo {
 		cmd = exec.Command("sudo", "/bin/bash", "-c", command)
 	}
-	out, err := cmd.CombinedOutput()
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &stderr
+	err := cmd.Run()
 	if err != nil {
-		return "", errors.Wrap(err, string(out))
+		return "", errors.Wrap(err, stderr.String())
 	}
-	return string(out), nil
+	return out.String(), nil
 }
