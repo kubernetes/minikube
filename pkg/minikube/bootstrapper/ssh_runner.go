@@ -28,14 +28,20 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// SSHRunner runs commands through SSH.
+//
+// It implements the CommandRunner interface.
 type SSHRunner struct {
 	c *ssh.Client
 }
 
+// NewSSHRunner returns a new SSHRunner that will run commands
+// through the ssh.Client provided.
 func NewSSHRunner(c *ssh.Client) *SSHRunner {
 	return &SSHRunner{c}
 }
 
+// Remove runs a command to delete a file on the remote.
 func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	sess, err := s.c.NewSession()
 	if err != nil {
@@ -46,6 +52,7 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	return sess.Run(cmd)
 }
 
+// Run starts a command on the remote and waits for it to return.
 func (s *SSHRunner) Run(cmd string) error {
 	glog.Infoln("Run:", cmd)
 	sess, err := s.c.NewSession()
@@ -56,6 +63,8 @@ func (s *SSHRunner) Run(cmd string) error {
 	return sess.Run(cmd)
 }
 
+// CombinedOutput runs the command on the remote and returns its combined
+// standard output and standard error.
 func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 	glog.Infoln("Run with output:", cmd)
 	sess, err := s.c.NewSession()
@@ -70,6 +79,7 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 	return string(out), nil
 }
 
+// Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	deleteCmd := fmt.Sprintf("sudo rm -f %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
 	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", f.GetTargetDir())
