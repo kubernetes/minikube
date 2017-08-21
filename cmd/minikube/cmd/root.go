@@ -95,7 +95,10 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	_ = RootCmd.Execute()
+	if err := RootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
+
 }
 
 // Handle config values for flags used in external packages (e.g. glog)
