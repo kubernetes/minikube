@@ -1,0 +1,3 @@
+config BR2_PACKAGE_LOAD_IMAGES
+	bool "automount"
+	default y

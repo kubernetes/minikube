@@ -1,0 +1,9 @@
+[Unit]
+Description=load docker images
+After=docker.service
+BindsTo=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/load-images
+RemainAfterExit=true
