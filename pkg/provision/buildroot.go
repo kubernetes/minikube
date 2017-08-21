@@ -262,7 +262,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return err
 	}
 
-	if err := p.Service("docker", serviceaction.Start); err != nil {
+	if err := p.Service("docker", serviceaction.Restart); err != nil {
 		return err
 	}
 
