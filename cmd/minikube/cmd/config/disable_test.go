@@ -18,9 +18,6 @@ package config
 
 import (
 	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -33,30 +30,6 @@ import (
 func TestDisableUnknownAddon(t *testing.T) {
 	if err := Set("InvalidAddon", "false"); err == nil {
 		t.Fatalf("Disable did not return error for unknown addon")
-	}
-}
-
-func TestDisableValidAddonLocal(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	addonName := "dashboard"
-	expected := "false"
-	if err := Set(addonName, expected); err != nil {
-		//check that setting was changed in temp dir
-		conf, _ := ioutil.ReadFile(filepath.Join(tempDir, "config", "config.json"))
-		strConf := string(conf)
-		if !strings.Contains(strConf, addonName) {
-			t.Fatalf("Expected %s, in %s after running disable", addonName, strConf)
-		}
-		if !strings.Contains(strConf, expected) {
-			t.Fatalf("Expected %s, in %s after running disable", expected, strConf)
-		}
-		//check that nothing was transferred?
-	} else {
-		if err != nil {
-			t.Fatalf("Disable returned error for known addon")
-		}
 	}
 }
 
