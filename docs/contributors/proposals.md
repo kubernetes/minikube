@@ -22,7 +22,6 @@ tasks:
 * Link to the minikube docs/project 
 * Spin up a deployment/etc by loading a folder/yaml file
 
-
 ### App Design 
 The app will be a native Swift application and will be added to a new folder 
 inside `./installers/darwin/menubar_app/`
