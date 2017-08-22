@@ -47,10 +47,6 @@ func TestStartStop(t *testing.T) {
 		t.Fatalf("IP command returned an invalid address: %s", ip)
 	}
 
-	// TODO:r2d4 The KVM driver can't handle
-	// starting and stopping immediately
-	time.Sleep(30 * time.Second)
-
 	checkStop := func() error {
 		runner.RunCommand("stop", true)
 		return runner.CheckStatusNoFail(state.Stopped.String())
