@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -602,11 +603,15 @@ func RunCommand(h *host.Host, command string, sudo bool) (string, error) {
 		if sudo {
 			cmd = exec.Command("sudo", "/bin/bash", "-c", command)
 		}
-		out, err := cmd.CombinedOutput()
+		var out bytes.Buffer
+		var stderr bytes.Buffer
+		cmd.Stdout = &out
+		cmd.Stderr = &stderr
+		err := cmd.Run()
 		if err != nil {
-			return "", errors.Wrap(err, string(out))
+			return "", errors.Wrap(err, stderr.String())
 		}
-		return string(out), err
+		return out.String(), err
 	}
 	out, err := h.RunSSHCommand(command)
 	if err != nil {
