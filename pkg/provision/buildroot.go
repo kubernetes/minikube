@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -190,6 +191,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
+	execRunner := &bootstrapper.ExecRunner{}
 	hostCerts := map[string]string{
 		authOptions.CaCertPath:     filepath.Join(authOptions.StorePath, "ca.pem"),
 		authOptions.ClientCertPath: filepath.Join(authOptions.StorePath, "cert.pem"),
@@ -201,7 +203,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		if err != nil {
 			return errors.Wrapf(err, "open cert file: %s", src)
 		}
-		if err := assets.CopyFileLocal(f); err != nil {
+		if err := execRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring file: %+v", f)
 		}
 	}
@@ -240,13 +242,13 @@ func configureAuth(p *BuildrootProvisioner) error {
 	if err != nil {
 		return errors.Wrap(err, "provisioning: error getting ssh client")
 	}
-
+	sshRunner := bootstrapper.NewSSHRunner(sshClient)
 	for src, dst := range remoteCerts {
 		f, err := assets.NewFileAsset(src, filepath.Dir(dst), filepath.Base(dst), "0640")
 		if err != nil {
 			return errors.Wrapf(err, "error copying %s to %s", src, dst)
 		}
-		if err := sshutil.TransferFile(f, sshClient); err != nil {
+		if err := sshRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transfering file to machine %v", f)
 		}
 	}
