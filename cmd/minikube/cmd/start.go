@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	units "github.com/docker/go-units"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -93,7 +92,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	defer api.Close()
 
 	diskSize := viper.GetString(humanReadableDiskSize)
-	diskSizeMB := calculateDiskSizeInMB(diskSize)
+	diskSizeMB := util.CalculateDiskSizeInMB(diskSize)
 
 	if diskSizeMB < constants.MinimumDiskSizeMB {
 		err := fmt.Errorf("Disk Size %dMB (%s) is too small, the minimum disk size is %dMB", diskSizeMB, diskSize, constants.MinimumDiskSizeMB)
@@ -315,14 +314,6 @@ func validateK8sVersion(version string) {
 		kubernetes_versions.PrintKubernetesVersionsFromGCS(os.Stdout)
 		os.Exit(1)
 	}
-}
-
-func calculateDiskSizeInMB(humanReadableDiskSize string) int {
-	diskSize, err := units.FromHumanSize(humanReadableDiskSize)
-	if err != nil {
-		glog.Errorf("Invalid disk size: %s", err)
-	}
-	return int(diskSize / units.MB)
 }
 
 func init() {

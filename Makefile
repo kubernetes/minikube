@@ -275,3 +275,16 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
+
+out/docker-machine-driver-kvm: $(KVM_DRIVER_FILES)
+	go build 																		\
+		-installsuffix "static" 													\
+		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
+		-tags libvirt.1.2.2 														\
+		-o $(BUILD_DIR)/docker-machine-driver-kvm 									\
+		k8s.io/minikube/cmd/drivers/kvm
+	chmod +X $@
+
+.PHONY: install-kvm
+install-kvm: out/docker-machine-driver-kvm
+	cp out/docker-machine-driver-kvm $(GOBIN)/docker-machine-driver-kvm
