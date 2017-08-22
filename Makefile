@@ -26,7 +26,7 @@ MINIKUBE_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
 LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.8.3-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.23.1
+ISO_VERSION ?= v0.23.2
 ISO_BUCKET ?= minikube/iso
 
 GOOS ?= $(shell go env GOOS)
