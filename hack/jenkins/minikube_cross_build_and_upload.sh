@@ -40,15 +40,10 @@ fi
 
 export GOPATH=~/go
 
-# Build all platforms (Windows, Linux, OSX)
-BUILD_IN_DOCKER=y make cross
-
-# Build the e2e test target for Darwin and Linux. We don't run tests on Windows yet.
+# Cross build the binary and test binary for all platforms (Windows, Linux, OSX).
 # We build these on Linux, but run the tests on different platforms.
 # This makes it easier to provision slaves, since they don't need to have a go toolchain.'
-GOOS=darwin GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-darwin-amd64
-GOOS=linux GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-linux-amd64
-GOOS=windows GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-windows-amd64.exe
+BUILD_IN_DOCKER=y make cross e2e-cross
 cp -r test/integration/testdata out/
 
 # Don't upload the buildroot artifacts if they exist
