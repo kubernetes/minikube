@@ -35,6 +35,7 @@ func TestFunctional(t *testing.T) {
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
 	t.Run("Status", testClusterStatus)
+
 	t.Run("DNS", testClusterDNS)
 	t.Run("Logs", testClusterLogs)
 	t.Run("Addons", testAddons)

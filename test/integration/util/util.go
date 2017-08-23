@@ -207,3 +207,15 @@ func (k *KubectlRunner) GetPod(name, namespace string) (*api.Pod, error) {
 	err := k.RunCommandParseOutput([]string{"get", "pod", name, "--namespace=" + namespace}, p)
 	return p, err
 }
+
+func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (err error) {
+	for i := 0; i < attempts; i++ {
+		err = callback()
+		if err == nil {
+			return nil
+		}
+		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
+		time.Sleep(d)
+	}
+	return err
+}
