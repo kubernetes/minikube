@@ -27,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -79,17 +79,16 @@ func testMounting(t *testing.T) {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
+	client, err := util.GetClient()
+	if err != nil {
+		t.Fatalf("getting kubernetes client: %s", err)
+	}
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
+	if err := util.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		t.Fatalf("Error waiting for busybox mount pod to be up: %s", err)
+	}
+
 	mountTest := func() error {
-
-		// Wait for the pod to actually startup.
-		p := &api.Pod{}
-		for p.Status.Phase != "Running" {
-			p, err = kubectlRunner.GetPod(podName, "default")
-			if err != nil {
-				return err
-			}
-		}
-
 		path := filepath.Join(tempDir, "frompod")
 		out, err := ioutil.ReadFile(path)
 		if err != nil {
