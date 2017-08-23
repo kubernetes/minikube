@@ -68,7 +68,8 @@ var statusCmd = &cobra.Command{
 			}
 			cmdRunner, err := machine.GetCommandRunner(h)
 			if err != nil {
-				glog.Exitln("Error getting command runner interface")
+				glog.Errorln("Error getting command runner interface")
+				cmdUtil.MaybeReportErrorAndExit(err)
 			}
 			cs, err = cluster.GetLocalkubeStatus(cmdRunner)
 			if err != nil {
