@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -76,7 +75,7 @@ func testMounting(t *testing.T) {
 	}
 	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
 
-	if err := commonutil.RetryAfter(40, setupTest, 5*time.Second); err != nil {
+	if err := util.Retry(t, setupTest, 5*time.Second, 40); err != nil {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
@@ -87,14 +86,14 @@ func testMounting(t *testing.T) {
 		for p.Status.Phase != "Running" {
 			p, err = kubectlRunner.GetPod(podName, "default")
 			if err != nil {
-				return &commonutil.RetriableError{Err: err}
+				return err
 			}
 		}
 
 		path := filepath.Join(tempDir, "frompod")
 		out, err := ioutil.ReadFile(path)
 		if err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 		// test that file written from pod can be read from host echo test > /mount-9p/frompod; in pod
 		if string(out) != expected {
@@ -103,7 +102,7 @@ func testMounting(t *testing.T) {
 
 		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
 		if out, err = kubectlRunner.RunCommand([]string{"logs", podName}); err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 		if string(out) != expected {
 			t.Fatalf("Expected file %s to contain text %s, was %s.", path, expected, out)
@@ -123,7 +122,7 @@ func testMounting(t *testing.T) {
 
 		return nil
 	}
-	if err := commonutil.RetryAfter(40, mountTest, 5*time.Second); err != nil {
+	if err := util.Retry(t, mountTest, 5*time.Second, 40); err != nil {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
