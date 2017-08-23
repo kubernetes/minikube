@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -148,13 +149,15 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 
-	// Load profile cluster config from file
-	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
-	if err != nil && !os.IsNotExist(err) {
+	// Read profile minikube config
+	profilecfg, err := ReadProfileConfig(viper.GetString(cfg.MachineProfile))
+	if err != nil {
 		glog.Errorln("Error loading profile config: ", err)
 	}
-	if err == nil {
-		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(cc.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
+
+	// Only if kubernetes version is found in profile config, perform version checks
+	if _, ok := profilecfg[kubernetesVersion]; ok && err == nil {
+		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(profilecfg[kubernetesVersion].(string), version.VersionPrefix))
 		if err != nil {
 			glog.Errorln("Error parsing version semver: ", err)
 		}
@@ -182,15 +185,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		ExtraOptions:      extraOptions,
 	}
 
-	// Write profile cluster configuration to file
-	clusterConfig := cluster.Config{
-		MachineConfig:    config,
-		KubernetesConfig: kubernetesConfig,
+	minikubecfg := cfg.MinikubeConfig{
+		kubernetesVersion: selectedKubernetesVersion,
 	}
 
-	if err := saveConfig(clusterConfig); err != nil {
-		glog.Errorln("Error saving profile cluster configuration: ", err)
-	}
+	WriteProfileConfig(minikubecfg, viper.GetString(cfg.MachineProfile))
 
 	fmt.Println("Moving files into cluster...")
 	if err := cluster.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
@@ -352,76 +351,6 @@ func init() {
 	RootCmd.AddCommand(startCmd)
 }
 
-// saveConfig saves profile cluster configuration in
-// $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig cluster.Config) error {
-	data, err := json.MarshalIndent(clusterConfig, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	profileConfigFile := constants.GetProfileFile(viper.GetString(cfg.MachineProfile))
-
-	if err := os.MkdirAll(filepath.Dir(profileConfigFile), 0700); err != nil {
-		return err
-	}
-
-	if err := saveConfigToFile(data, profileConfigFile); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func saveConfigToFile(data []byte, file string) error {
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return ioutil.WriteFile(file, data, 0600)
-	}
-
-	tmpfi, err := ioutil.TempFile(filepath.Dir(file), "config.json.tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmpfi.Name())
-
-	if err = ioutil.WriteFile(tmpfi.Name(), data, 0600); err != nil {
-		return err
-	}
-
-	if err = tmpfi.Close(); err != nil {
-		return err
-	}
-
-	if err = os.Remove(file); err != nil {
-		return err
-	}
-
-	if err = os.Rename(tmpfi.Name(), file); err != nil {
-		return err
-	}
-	return nil
-}
-
-func loadConfigFromFile(profile string) (cluster.Config, error) {
-	var cc cluster.Config
-
-	profileConfigFile := constants.GetProfileFile(profile)
-
-	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
-		return cc, err
-	}
-
-	data, err := ioutil.ReadFile(profileConfigFile)
-	if err != nil {
-		return cc, err
-	}
-
-	if err := json.Unmarshal(data, &cc); err != nil {
-		return cc, err
-	}
-	return cc, nil
-}
-
 // loadMachineConfig loads only the configs defined in config in the provided machine config object
 func loadMachineConfig(machineConfig cluster.MachineConfig, config cfg.MinikubeConfig) cluster.MachineConfig {
 	// Iterate through the config and load the defined configs
@@ -489,4 +418,54 @@ func loadKubernetesConfig(kubernetesConfig cluster.KubernetesConfig, config cfg.
 	}
 
 	return kubernetesConfig
+}
+
+// ReadProfileConfig reads in the JSON minikube profile config
+func ReadProfileConfig(profile string) (cfg.MinikubeConfig, error) {
+	profileConfigFile := constants.GetProfileFile(profile)
+	f, err := os.Open(profileConfigFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return make(map[string]interface{}), nil
+		}
+		return nil, fmt.Errorf("Could not open file %s: %s", profileConfigFile, err)
+	}
+	m, err := decode(f)
+	if err != nil {
+		return nil, fmt.Errorf("Could not decode config %s: %s", profileConfigFile, err)
+	}
+
+	return m, nil
+}
+
+func decode(r io.Reader) (cfg.MinikubeConfig, error) {
+	var data cfg.MinikubeConfig
+	err := json.NewDecoder(r).Decode(&data)
+	return data, err
+}
+
+// WriteProfileConfig writes a minikube profile config.
+func WriteProfileConfig(m cfg.MinikubeConfig, profile string) error {
+	profileConfigFile := constants.GetProfileFile(profile)
+	f, err := os.Create(profileConfigFile)
+	if err != nil {
+		return fmt.Errorf("Coult not open file %s: %s", profileConfigFile, err)
+	}
+	defer f.Close()
+	err = encode(f, m)
+	if err != nil {
+		return fmt.Errorf("Error encoding config %s: %s", profileConfigFile, err)
+	}
+	return nil
+}
+
+func encode(w io.Writer, m cfg.MinikubeConfig) error {
+	b, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(b)
+
+	return err
 }
