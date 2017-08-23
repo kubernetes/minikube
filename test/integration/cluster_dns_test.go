@@ -19,58 +19,39 @@ limitations under the License.
 package integration
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
-	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func testClusterDNS(t *testing.T) {
 	t.Parallel()
+	if err := util.WaitForDNSRunning(t); err != nil {
+		t.Fatalf("Waiting for DNS to be running: %s", err)
+	}
+
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox"
 	podPath, _ := filepath.Abs("testdata/busybox.yaml")
 	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
 
-	setupTest := func() error {
-		if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
-			return err
-		}
-		return nil
+	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
+		t.Fatalf("creating busybox pod: %s", err)
 	}
 
-	if err := util.Retry(t, setupTest, 2*time.Second, 20); err != nil {
-		t.Fatal("Error setting up DNS test.")
+	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
+		t.Fatalf("Waiting for busybox pod to be up: %s", err)
 	}
 
-	dnsTest := func() error {
-		p := &api.Pod{}
-		for p.Status.Phase != "Running" {
-			var err error
-			p, err = kubectlRunner.GetPod(podName, "default")
-			if err != nil {
-				return err
-			}
-		}
-
-		dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName,
-			"nslookup", "kubernetes"})
-		dnsOutput := string(dnsByteArr)
-		if err != nil {
-			return err
-		}
-
-		if !strings.Contains(dnsOutput, "10.0.0.1") || !strings.Contains(dnsOutput, "10.0.0.10") {
-			return fmt.Errorf("DNS lookup failed, could not find both 10.0.0.1 and 10.0.0.10.  Output: %s", dnsOutput)
-		}
-		return nil
+	dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName,
+		"nslookup", "kubernetes"})
+	if err != nil {
+		t.Fatalf("running nslookup in pod:%s", err)
 	}
-
-	if err := util.Retry(t, dnsTest, 5*time.Second, 20); err != nil {
-		t.Fatal("DNS lookup failed with error:", err)
+	dnsOutput := string(dnsByteArr)
+	if !strings.Contains(dnsOutput, "10.0.0.1") || !strings.Contains(dnsOutput, "10.0.0.10") {
+		t.Errorf("DNS lookup failed, could not find both 10.0.0.1 and 10.0.0.10.  Output: %s", dnsOutput)
 	}
 }

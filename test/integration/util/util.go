@@ -29,7 +29,9 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
+	"github.com/pkg/errors"
+
+	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -39,20 +41,6 @@ type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
 	Args       string
-}
-
-func (k *KubectlRunner) IsPodReady(p *api.Pod) bool {
-	for _, cond := range p.Status.Conditions {
-		if cond.Type == "Ready" {
-			if cond.Status == "True" {
-				return true
-			}
-			k.T.Logf("Pod %s not ready. Ready: %s. Reason: %s", p.Name, cond.Status, cond.Reason)
-			return false /**/
-		}
-	}
-	k.T.Logf("Unable to find ready pod condition: %v", p.Status.Conditions)
-	return false
 }
 
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
@@ -202,10 +190,51 @@ func (k *KubectlRunner) DeleteNamespace(namespace string) error {
 	return err
 }
 
-func (k *KubectlRunner) GetPod(name, namespace string) (*api.Pod, error) {
-	p := &api.Pod{}
-	err := k.RunCommandParseOutput([]string{"get", "pod", name, "--namespace=" + namespace}, p)
-	return p, err
+func WaitForBusyboxRunning(t *testing.T, namespace string) error {
+	client, err := GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
+	return WaitForPodsWithLabelRunning(client, namespace, selector)
+}
+
+func WaitForDNSRunning(t *testing.T) error {
+	client, err := GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "kube-dns"}))
+	if err := WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for kube-dns pods")
+	}
+
+	if err := WaitForService(t, client, "kube-system", "kube-dns", true, time.Millisecond*500, time.Minute*10); err != nil {
+		t.Errorf("Error waiting for kube-dns service to be up")
+	}
+
+	return nil
+}
+
+func WaitForDashboardRunning(t *testing.T) error {
+	client, err := GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+	if err := WaitForRCToStabilize(t, client, "kube-system", "kubernetes-dashboard", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for dashboard RC to stabilize")
+	}
+
+	if err := WaitForService(t, client, "kube-system", "kubernetes-dashboard", true, time.Millisecond*500, time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for dashboard service to be up")
+	}
+
+	if err := WaitForServiceEndpointsNum(t, client, "kube-system", "kubernetes-dashboard", 1, time.Second*3, time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for one dashboard endpoint to be up")
+	}
+
+	return nil
 }
 
 func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (err error) {
