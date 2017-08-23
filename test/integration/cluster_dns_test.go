@@ -34,7 +34,7 @@ func testClusterDNS(t *testing.T) {
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox"
-	podPath, _ := filepath.Abs("testdata/busybox.yaml")
+	podPath := filepath.Join(*testdataDir, "busybox.yaml")
 	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
 
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
