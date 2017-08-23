@@ -26,7 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/mcnutils"
 )
 
-func createDiskImage(sshKeyPath, diskPath string, diskSize int) error {
+func createDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 	tarBuf, err := mcnutils.MakeDiskImage(sshKeyPath)
 	if err != nil {
 		return err
@@ -44,7 +44,7 @@ func createDiskImage(sshKeyPath, diskPath string, diskSize int) error {
 	}
 	file.Close()
 
-	if err := os.Truncate(diskPath, int64(diskSize*1048576)); err != nil {
+	if err := os.Truncate(diskPath, int64(diskSizeMb*1000000)); err != nil {
 		return err
 	}
 	return nil

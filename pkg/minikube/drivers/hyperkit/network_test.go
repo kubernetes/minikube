@@ -38,6 +38,13 @@ var validLeases = []byte(`{
 	hw_address=1,a4:b5:c6:d7:e8:f9
 	identifier=1,a0:b0:c0:d0:e0:f0
 	lease=0x597e1267
+}
+{
+	name=bar
+	ip_address=192.168.64.4
+	hw_address=1,a5:b6:c7:d8:e9:f1
+	identifier=1,a5:b6:c7:d8:e9:f1
+	lease=0x597e1268
 }`)
 
 func Test_getIpAddressFromFile(t *testing.T) {
@@ -64,6 +71,12 @@ func Test_getIpAddressFromFile(t *testing.T) {
 			"valid",
 			args{"a1:b2:c3:d4:e5:f6", dhcpFile},
 			"1.2.3.4",
+			false,
+		},
+		{
+			"duplicate",
+			args{"a4:b5:c6:d7:e8:f9", dhcpFile},
+			"192.168.64.3",
 			false,
 		},
 		{
