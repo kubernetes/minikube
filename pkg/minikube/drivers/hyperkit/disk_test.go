@@ -34,7 +34,7 @@ func Test_createDiskImage(t *testing.T) {
 	diskPath := filepath.Join(tmpdir, "disk")
 
 	sizeInMb := 100
-	sizeInBytes := int64(sizeInMb) * 1048576
+	sizeInBytes := int64(sizeInMb) * 1000000
 	if err := createDiskImage(sshPath, diskPath, sizeInMb); err != nil {
 		t.Errorf("createDiskImage() error = %v", err)
 	}

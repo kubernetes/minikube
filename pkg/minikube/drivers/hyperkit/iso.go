@@ -76,11 +76,12 @@ func ReadFile(isoPath, srcPath string) (string, error) {
 }
 
 func findFile(r *iso9660.Reader, path string) (os.FileInfo, error) {
+	// Look through the ISO for a file with a matching path.
 	for f, err := r.Next(); err != io.EOF; f, err = r.Next() {
-		// Some files get an extra ',' at the end.
+		// For some reason file paths in the ISO sometimes contain a '.' character at the end, so strip that off.
 		if strings.TrimSuffix(f.Name(), ".") == path {
 			return f, nil
 		}
 	}
-	return nil, fmt.Errorf("Unable to find file %s.", path)
+	return nil, fmt.Errorf("unable to find file %s", path)
 }

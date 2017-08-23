@@ -34,7 +34,7 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
 
 # Add the out/ directory to the PATH, for using new drivers.
-export PATH=$PATH:"$(pwd)/out/"
+export PATH="$(pwd)/out/":$PATH
 
 # Linux cleanup
 virsh -c qemu:///system list --all \
