@@ -30,7 +30,6 @@ import (
 
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
-	commonutil "k8s.io/minikube/pkg/util"
 
 	"k8s.io/minikube/test/integration/util"
 )
@@ -48,7 +47,7 @@ func testAddons(t *testing.T) {
 	checkAddon := func() error {
 		pods := v1.PodList{}
 		if err := kubectlRunner.RunCommandParseOutput(addonManagerCmd, &pods); err != nil {
-			return &commonutil.RetriableError{Err: errors.Wrap(err, "Error parsing kubectl output")}
+			return errors.Wrap(err, "Error parsing kubectl output")
 		}
 
 		for _, p := range pods.Items {
@@ -56,14 +55,14 @@ func testAddons(t *testing.T) {
 				if p.Status.Phase == "Running" {
 					return nil
 				}
-				return &commonutil.RetriableError{Err: fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)}
+				return fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)
 			}
 		}
 
-		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %v", pods)}
+		return fmt.Errorf("Addon manager not found. Found pods: %v", pods)
 	}
 
-	if err := commonutil.RetryAfter(25, checkAddon, 20*time.Second); err != nil {
+	if err := util.Retry(t, checkAddon, 5*time.Second, 60); err != nil {
 		t.Fatalf("Addon Manager pod is unhealthy: %s", err)
 	}
 }
@@ -80,15 +79,15 @@ func testDashboard(t *testing.T) {
 		rc := api.ReplicationController{}
 		svc := api.Service{}
 		if err := kubectlRunner.RunCommandParseOutput(dashboardRcCmd, &rc); err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 
 		if err := kubectlRunner.RunCommandParseOutput(dashboardSvcCmd, &svc); err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 
 		if rc.Status.Replicas != rc.Status.FullyLabeledReplicas {
-			return &commonutil.RetriableError{Err: fmt.Errorf("Not enough pods running. Expected %d, got %d.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)}
+			return fmt.Errorf("Not enough pods running. Expected %d, got %d.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)
 		}
 
 		if svc.Spec.Ports[0].NodePort != 30000 {
@@ -98,7 +97,7 @@ func testDashboard(t *testing.T) {
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(60, checkDashboard, 5*time.Second); err != nil {
+	if err := util.Retry(t, checkDashboard, 5*time.Second, 60); err != nil {
 		t.Fatalf("Dashboard is unhealthy: %s", err)
 	}
 
@@ -129,13 +128,11 @@ func testServicesList(t *testing.T) {
 	checkServices := func() error {
 		output := minikubeRunner.RunCommand("service list", false)
 		if !strings.Contains(output, "kubernetes") {
-			return &commonutil.RetriableError{
-				Err: fmt.Errorf("Error, kubernetes service missing from output %s", output),
-			}
+			return fmt.Errorf("Error, kubernetes service missing from output %s", output)
 		}
 		return nil
 	}
-	if err := commonutil.RetryAfter(5, checkServices, 2*time.Second); err != nil {
+	if err := util.Retry(t, checkServices, 2*time.Second, 5); err != nil {
 		t.Fatalf(err.Error())
 	}
 }

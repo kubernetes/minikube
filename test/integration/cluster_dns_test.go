@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -44,7 +43,7 @@ func testClusterDNS(t *testing.T) {
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(20, setupTest, 2*time.Second); err != nil {
+	if err := util.Retry(t, setupTest, 2*time.Second, 20); err != nil {
 		t.Fatal("Error setting up DNS test.")
 	}
 
@@ -54,7 +53,7 @@ func testClusterDNS(t *testing.T) {
 			var err error
 			p, err = kubectlRunner.GetPod(podName, "default")
 			if err != nil {
-				return &commonutil.RetriableError{Err: err}
+				return err
 			}
 		}
 
@@ -62,7 +61,7 @@ func testClusterDNS(t *testing.T) {
 			"nslookup", "kubernetes"})
 		dnsOutput := string(dnsByteArr)
 		if err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 
 		if !strings.Contains(dnsOutput, "10.0.0.1") || !strings.Contains(dnsOutput, "10.0.0.10") {
@@ -71,7 +70,7 @@ func testClusterDNS(t *testing.T) {
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(40, dnsTest, 5*time.Second); err != nil {
+	if err := util.Retry(t, dnsTest, 5*time.Second, 20); err != nil {
 		t.Fatal("DNS lookup failed with error:", err)
 	}
 }

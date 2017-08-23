@@ -26,7 +26,6 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/kubernetes/pkg/api"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -49,15 +48,15 @@ func TestPersistence(t *testing.T) {
 	checkPod := func() error {
 		p, err := kubectlRunner.GetPod(podName, podNamespace)
 		if err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 		if kubectlRunner.IsPodReady(p) {
 			return nil
 		}
-		return &commonutil.RetriableError{Err: fmt.Errorf("Pod %s is not ready yet.", podName)}
+		return fmt.Errorf("Pod %s is not ready yet.", podName)
 	}
 
-	if err := commonutil.RetryAfter(20, checkPod, 6*time.Second); err != nil {
+	if err := util.Retry(t, checkPod, 6*time.Second, 20); err != nil {
 		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
 	}
 
@@ -68,18 +67,18 @@ func TestPersistence(t *testing.T) {
 			return err
 		}
 		if len(pods.Items) < 1 {
-			return &commonutil.RetriableError{Err: fmt.Errorf("No pods found matching query: %v", cmd)}
+			return fmt.Errorf("No pods found matching query: %v", cmd)
 		}
 		db := pods.Items[0]
 		if kubectlRunner.IsPodReady(&db) {
 			return nil
 		}
-		return &commonutil.RetriableError{Err: fmt.Errorf("Dashboard pod is not ready yet.")}
+		return fmt.Errorf("Dashboard pod is not ready yet.")
 	}
 
 	// Make sure the dashboard is running before we stop the VM.
 	// On slow networks it can take several minutes to pull the addon-manager then the dashboard image.
-	if err := commonutil.RetryAfter(25, checkDashboard, 20*time.Second); err != nil {
+	if err := util.Retry(t, checkDashboard, 20*time.Second, 25); err != nil {
 		t.Fatalf("Dashboard pod is not healthy: %s", err)
 	}
 
@@ -91,19 +90,19 @@ func TestPersistence(t *testing.T) {
 		return minikubeRunner.CheckStatusNoFail(state.Stopped.String())
 	}
 
-	if err := commonutil.RetryAfter(6, checkStop, 5*time.Second); err != nil {
+	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 		t.Fatalf("timed out while checking stopped status: %s", err)
 	}
 
 	minikubeRunner.Start()
 	minikubeRunner.CheckStatus(state.Running.String())
 
-	if err := commonutil.RetryAfter(5, checkPod, 3*time.Second); err != nil {
+	if err := util.Retry(t, checkPod, 3*time.Second, 5); err != nil {
 		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
 	}
 
 	// Now make sure it's still running after.
-	if err := commonutil.RetryAfter(5, checkDashboard, 3*time.Second); err != nil {
+	if err := util.Retry(t, checkDashboard, 3*time.Second, 5); err != nil {
 		t.Fatalf("Dashboard pod is not healthy: %s", err)
 	}
 }

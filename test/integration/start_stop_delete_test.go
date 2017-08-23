@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -52,7 +51,7 @@ func TestStartStop(t *testing.T) {
 		return runner.CheckStatusNoFail(state.Stopped.String())
 	}
 
-	if err := commonutil.RetryAfter(6, checkStop, 5*time.Second); err != nil {
+	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 		t.Fatalf("timed out while checking stopped status: %s", err)
 	}
 
