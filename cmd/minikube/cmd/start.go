@@ -421,3 +421,72 @@ func loadConfigFromFile(profile string) (cluster.Config, error) {
 	}
 	return cc, nil
 }
+
+// loadMachineConfig loads only the configs defined in config in the provided machine config object
+func loadMachineConfig(machineConfig cluster.MachineConfig, config cfg.MinikubeConfig) cluster.MachineConfig {
+	// Iterate through the config and load the defined configs
+	for prop, val := range config {
+		switch prop {
+		case isoURL:
+			machineConfig.MinikubeISO = val.(string)
+		case memory:
+			machineConfig.Memory = val.(int)
+		case cpus:
+			machineConfig.CPUs = val.(int)
+		case humanReadableDiskSize:
+			machineConfig.DiskSize = calculateDiskSizeInMB(val.(string))
+		case vmDriver:
+			machineConfig.VMDriver = val.(string)
+		case xhyveDiskDriver:
+			machineConfig.XhyveDiskDriver = val.(string)
+		case "docker-env":
+			machineConfig.DockerEnv = val.([]string)
+		case "docker-opt":
+			machineConfig.DockerOpt = val.([]string)
+		case "insecure-registry":
+			machineConfig.InsecureRegistry = val.([]string)
+		case "registry-mirror":
+			machineConfig.RegistryMirror = val.([]string)
+		case hostOnlyCIDR:
+			machineConfig.HostOnlyCIDR = val.(string)
+		case hypervVirtualSwitch:
+			machineConfig.HypervVirtualSwitch = val.(string)
+		case kvmNetwork:
+			machineConfig.KvmNetwork = val.(string)
+		// case "":
+		// machineConfig.Downloader =
+		case disableDriverMounts:
+			machineConfig.DisableDriverMounts = val.(bool)
+		default:
+			// unknown config
+		}
+	}
+
+	return machineConfig
+}
+
+// loadKubernetesConfig loads only the configs defined in config in the provided kubernetes config object
+func loadKubernetesConfig(kubernetesConfig cluster.KubernetesConfig, config cfg.MinikubeConfig) cluster.KubernetesConfig {
+	for prop, val := range config {
+		switch prop {
+		case kubernetesVersion:
+			kubernetesConfig.KubernetesVersion = val.(string)
+		// case "":
+		//  kubernetesConfig.NodeIP =
+		case apiServerName:
+			kubernetesConfig.APIServerName = val.(string)
+		case dnsDomain:
+			kubernetesConfig.DNSDomain = val.(string)
+		case featureGates:
+			kubernetesConfig.FeatureGates = val.(string)
+		case containerRuntime:
+			kubernetesConfig.ContainerRuntime = val.(string)
+		// case "":
+		// 	kubernetesConfig.ExtraOptions =
+		default:
+			// unknown config
+		}
+	}
+
+	return kubernetesConfig
+}
