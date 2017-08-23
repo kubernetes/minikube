@@ -108,6 +108,9 @@ else
 	$(call MINIKUBE_GO_BUILD_CMD,$@,$*)
 endif
 
+out/e2e-%-amd64:
+	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o $@
+
 minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
@@ -156,6 +159,9 @@ $(GOPATH)/bin/go-bindata:
 
 .PHONY: cross
 cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+
+.PHONY: cross-e2e
+e2e-cross: out/e2e-linux-amd64 out/e2e-darwin-amd64 out/e2e-windows-amd64
 
 .PHONY: checksum
 checksum:
