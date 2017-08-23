@@ -19,13 +19,11 @@ limitations under the License.
 package integration
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -34,7 +32,6 @@ func TestPersistence(t *testing.T) {
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
-	podName := "busybox"
 	podPath, _ := filepath.Abs("testdata/busybox.yaml")
 
 	podNamespace := kubectlRunner.CreateRandomNamespace()
@@ -45,42 +42,19 @@ func TestPersistence(t *testing.T) {
 		t.Fatalf("Error creating test pod: %s", err)
 	}
 
-	checkPod := func() error {
-		p, err := kubectlRunner.GetPod(podName, podNamespace)
-		if err != nil {
-			return err
+	verify := func(t *testing.T) {
+		if err := util.WaitForDashboardRunning(t); err != nil {
+			t.Fatalf("waiting for dashboard to be up: %s", err)
 		}
-		if kubectlRunner.IsPodReady(p) {
-			return nil
+
+		if err := util.WaitForBusyboxRunning(t, podNamespace); err != nil {
+			t.Fatalf("waiting for busybox to be up: %s", err)
 		}
-		return fmt.Errorf("Pod %s is not ready yet.", podName)
+
 	}
 
-	if err := util.Retry(t, checkPod, 6*time.Second, 20); err != nil {
-		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
-	}
-
-	checkDashboard := func() error {
-		pods := api.PodList{}
-		cmd := []string{"get", "pods", "--namespace=kube-system", "--selector=app=kubernetes-dashboard"}
-		if err := kubectlRunner.RunCommandParseOutput(cmd, &pods); err != nil {
-			return err
-		}
-		if len(pods.Items) < 1 {
-			return fmt.Errorf("No pods found matching query: %v", cmd)
-		}
-		db := pods.Items[0]
-		if kubectlRunner.IsPodReady(&db) {
-			return nil
-		}
-		return fmt.Errorf("Dashboard pod is not ready yet.")
-	}
-
-	// Make sure the dashboard is running before we stop the VM.
-	// On slow networks it can take several minutes to pull the addon-manager then the dashboard image.
-	if err := util.Retry(t, checkDashboard, 20*time.Second, 25); err != nil {
-		t.Fatalf("Dashboard pod is not healthy: %s", err)
-	}
+	// Make sure everything is up before we stop.
+	verify(t)
 
 	// Now restart minikube and make sure the pod is still there.
 	// minikubeRunner.RunCommand("stop", true)
@@ -97,12 +71,6 @@ func TestPersistence(t *testing.T) {
 	minikubeRunner.Start()
 	minikubeRunner.CheckStatus(state.Running.String())
 
-	if err := util.Retry(t, checkPod, 3*time.Second, 5); err != nil {
-		t.Fatalf("Error checking the status of pod %s. Err: %s", podName, err)
-	}
-
-	// Now make sure it's still running after.
-	if err := util.Retry(t, checkDashboard, 3*time.Second, 5); err != nil {
-		t.Fatalf("Dashboard pod is not healthy: %s", err)
-	}
+	// Make sure the same things come up after we've restarted.
+	verify(t)
 }
