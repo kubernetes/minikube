@@ -29,3 +29,4 @@ func TestMain(m *testing.M) {
 
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var args = flag.String("minikube-args", "", "Arguments to pass to minikube")
+var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")

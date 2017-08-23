@@ -59,7 +59,7 @@ func testProvisioning(t *testing.T) {
 	}
 
 	// Now create the PVC
-	pvcPath, _ := filepath.Abs("testdata/pvc.yaml")
+	pvcPath := filepath.Join(*testdataDir, "pvc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
 		t.Fatalf("Error creating pvc")
 	}
