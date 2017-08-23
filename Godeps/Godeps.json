@@ -776,12 +776,12 @@
 		},
 		{
 			"ImportPath": "github.com/docker/distribution/digest",
-			"Comment": "v2.4.0-rc.1-38-gcd27f17",
+			"Comment": "v2.4.0-rc.1-38-gcd27f179",
 			"Rev": "cd27f179f2c10c5d300e6d09025b538c475b0d51"
 		},
 		{
 			"ImportPath": "github.com/docker/distribution/reference",
-			"Comment": "v2.4.0-rc.1-38-gcd27f17",
+			"Comment": "v2.4.0-rc.1-38-gcd27f179",
 			"Rev": "cd27f179f2c10c5d300e6d09025b538c475b0d51"
 		},
 		{
@@ -1186,26 +1186,32 @@
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/jsonpb",
+			"Comment": "list-38-g4bd1920",
 			"Rev": "4bd1920723d7b7c925de087aa32e2187708897f7"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
+			"Comment": "list-38-g4bd1920",
 			"Rev": "4bd1920723d7b7c925de087aa32e2187708897f7"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/ptypes",
+			"Comment": "list-38-g4bd1920",
 			"Rev": "4bd1920723d7b7c925de087aa32e2187708897f7"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/ptypes/any",
+			"Comment": "list-38-g4bd1920",
 			"Rev": "4bd1920723d7b7c925de087aa32e2187708897f7"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/ptypes/duration",
+			"Comment": "list-38-g4bd1920",
 			"Rev": "4bd1920723d7b7c925de087aa32e2187708897f7"
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/ptypes/timestamp",
+			"Comment": "list-38-g4bd1920",
 			"Rev": "4bd1920723d7b7c925de087aa32e2187708897f7"
 		},
 		{
@@ -1979,17 +1985,17 @@
 		},
 		{
 			"ImportPath": "github.com/r2d4/external-storage/lib/controller",
-			"Comment": "v1.0.0-20-g066bf161",
+			"Comment": "v1.0.0-20-g066bf16",
 			"Rev": "066bf1613ae2b6e7024ba94fffca35f8b3c83f5b"
 		},
 		{
 			"ImportPath": "github.com/r2d4/external-storage/lib/leaderelection",
-			"Comment": "v1.0.0-20-g066bf161",
+			"Comment": "v1.0.0-20-g066bf16",
 			"Rev": "066bf1613ae2b6e7024ba94fffca35f8b3c83f5b"
 		},
 		{
 			"ImportPath": "github.com/r2d4/external-storage/lib/leaderelection/resourcelock",
-			"Comment": "v1.0.0-20-g066bf161",
+			"Comment": "v1.0.0-20-g066bf16",
 			"Rev": "066bf1613ae2b6e7024ba94fffca35f8b3c83f5b"
 		},
 		{
@@ -2467,6 +2473,10 @@
 		{
 			"ImportPath": "golang.org/x/oauth2/jwt",
 			"Rev": "a6bd8cefa1811bd24b86f8902872e4e8225f74c4"
+		},
+		{
+			"ImportPath": "golang.org/x/sync/syncmap",
+			"Rev": "f52d1811a62927559de87708c8913c1650ce4f26"
 		},
 		{
 			"ImportPath": "golang.org/x/sys/unix",
