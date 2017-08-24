@@ -16,49 +16,10 @@ limitations under the License.
 
 package config
 
-import (
-	"bytes"
-	"io/ioutil"
-	"testing"
-
-	"github.com/docker/machine/libmachine/drivers"
-
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/tests"
-)
+import "testing"
 
 func TestEnableUnknownAddon(t *testing.T) {
 	if err := Set("InvalidAddon", "false"); err == nil {
 		t.Fatalf("Enable did not return error for unknown addon")
-	}
-}
-
-func TestTransferAddonSSH(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-
-	dashboard := assets.Addons["dashboard"]
-	if err := transferAddonSSH(dashboard, d); err != nil {
-		t.Fatalf("Unexpected error %s transferring addon", err)
-	}
-	// check contents
-	for _, addon := range dashboard.Assets {
-		expected, _ := ioutil.ReadFile(addon.GetAssetName())
-		transferred := s.Transfers.Bytes()
-		//test that custom addons are transferred properly
-		if !bytes.Contains(transferred, expected) {
-			t.Fatalf("Expected transfers to contain addon with content: %s. It was: %s", expected, transferred)
-		}
 	}
 }
