@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package localkube
 
 import (
 	gflag "flag"
@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -31,7 +32,7 @@ func TestGetStartCommandCustomValues(t *testing.T) {
 		"vmodule": "cluster*=5",
 	}
 	flagMapToSetFlags(flagMap)
-	startCommand, err := GetStartCommand(KubernetesConfig{})
+	startCommand, err := GetStartCommand(bootstrapper.KubernetesConfig{})
 	if err != nil {
 		t.Fatalf("Error generating start command: %s", err)
 	}
@@ -46,7 +47,7 @@ func TestGetStartCommandCustomValues(t *testing.T) {
 }
 
 func TestGetStartCommandExtraOptions(t *testing.T) {
-	k := KubernetesConfig{
+	k := bootstrapper.KubernetesConfig{
 		ExtraOptions: util.ExtraOptionSlice{
 			util.ExtraOption{Component: "a", Key: "b", Value: "c"},
 			util.ExtraOption{Component: "d", Key: "e.f", Value: "g"},

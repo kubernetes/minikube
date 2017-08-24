@@ -24,6 +24,8 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -62,18 +64,14 @@ var statusCmd = &cobra.Command{
 		cs := state.None.String()
 		ks := state.None.String()
 		if ms == state.Running.String() {
-			h, err := api.Load(config.GetMachineName())
+			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
-				glog.Exitln("Error getting host")
-			}
-			cmdRunner, err := machine.GetCommandRunner(h)
-			if err != nil {
-				glog.Errorln("Error getting command runner interface")
+				glog.Errorf("Error getting cluster bootstrapper: %s", err)
 				cmdUtil.MaybeReportErrorAndExit(err)
 			}
-			cs, err = cluster.GetLocalkubeStatus(cmdRunner)
+			cs, err = clusterBootstrapper.GetClusterStatus()
 			if err != nil {
-				glog.Errorln("Error localkube status:", err)
+				glog.Errorln("Error cluster status:", err)
 				cmdUtil.MaybeReportErrorAndExit(err)
 			}
 			ip, err := cluster.GetHostDriverIP(api)
