@@ -499,5 +499,20 @@ func getDefaultConfig() cfg.MinikubeConfig {
 		containerRuntime:      "",
 		networkPlugin:         "",
 		featureGates:          "",
+
+		cfg.WantUpdateNotification:    true,
+		cfg.ReminderWaitPeriodInHours: true,
+		cfg.WantReportError:           true,
+		cfg.WantReportErrorPrompt:     true,
+		cfg.WantKubectlDownloadMsg:    true,
+
+		cfg.Dashboard:           true,
+		cfg.AddonManager:        false,
+		cfg.DefaultStorageclass: false,
+		cfg.KubeDNS:             false,
+		cfg.Heapster:            false,
+		cfg.Ingress:             false,
+		cfg.Registry:            false,
+		cfg.RegistryCreds:       false,
 	}
 }

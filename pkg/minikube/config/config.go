@@ -34,6 +34,15 @@ const (
 	WantReportErrorPrompt     = "WantReportErrorPrompt"
 	WantKubectlDownloadMsg    = "WantKubectlDownloadMsg"
 	MachineProfile            = "profile"
+
+	Dashboard           = "dashboard"
+	AddonManager        = "addon-manager"
+	DefaultStorageclass = "default-storageclass"
+	KubeDNS             = "kube-dns"
+	Heapster            = "heapster"
+	Ingress             = "ingress"
+	Registry            = "registry"
+	RegistryCreds       = "registry-creds"
 )
 
 type MinikubeConfig map[string]interface{}
