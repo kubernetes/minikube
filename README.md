@@ -94,7 +94,7 @@ the following drivers:
 * [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
 * [xhyve](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
 * [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
-* none - (LINUX ONLY) - the 'none' driver can be used to run the kubernetes cluster componenets on the host instead of in a VM.  This can be useful for CI workloads which do not support nested virtualization.
+* none - (LINUX ONLY) - the 'none' driver can be used to run the kubernetes cluster components on the host instead of in a VM.  This can be useful for CI workloads which do not support nested virtualization.
 
 ```shell
 $ minikube start
