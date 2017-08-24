@@ -23,6 +23,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/drivers/hyperkit"
 )
 
 func createVMwareFusionHost(config MachineConfig) drivers.Driver {
@@ -55,6 +56,21 @@ type xhyveDriver struct {
 	Virtio9pFolder string
 	QCow2          bool
 	RawDisk        bool
+}
+
+func createHyperkitHost(config MachineConfig) *hyperkit.Driver {
+	return &hyperkit.Driver{
+		BaseDriver: &drivers.BaseDriver{
+			MachineName: cfg.GetMachineName(),
+			StorePath:   constants.GetMinipath(),
+			SSHUser:     "docker",
+		},
+		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
+		DiskSize:       config.DiskSize,
+		Memory:         config.Memory,
+		CPU:            config.CPUs,
+		Cmdline:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
+	}
 }
 
 func createXhyveHost(config MachineConfig) *xhyveDriver {

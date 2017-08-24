@@ -1,5 +1,3 @@
-// +build !darwin
-
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -16,18 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package main
 
-import "github.com/docker/machine/libmachine/drivers"
+import (
+	"github.com/docker/machine/libmachine/drivers/plugin"
+	"k8s.io/minikube/pkg/minikube/drivers/hyperkit"
+)
 
-func createVMwareFusionHost(config MachineConfig) drivers.Driver {
-	panic("vmwarefusion not supported")
-}
-
-func createXhyveHost(config MachineConfig) drivers.Driver {
-	panic("xhyve not supported")
-}
-
-func createHyperkitHost(config MachineConfig) drivers.Driver {
-	panic("hyperkit not supported")
+func main() {
+	plugin.RegisterDriver(hyperkit.NewDriver("", ""))
 }
