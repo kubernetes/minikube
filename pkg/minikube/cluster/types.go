@@ -16,7 +16,10 @@ limitations under the License.
 
 package cluster
 
-import "k8s.io/minikube/pkg/util"
+import (
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/util"
+)
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
@@ -37,20 +40,8 @@ type MachineConfig struct {
 	DisableDriverMounts bool               // Only used by virtualbox and xhyve
 }
 
-// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
-type KubernetesConfig struct {
-	KubernetesVersion string
-	NodeIP            string
-	APIServerName     string
-	DNSDomain         string
-	ContainerRuntime  string
-	NetworkPlugin     string
-	FeatureGates      string
-	ExtraOptions      util.ExtraOptionSlice
-}
-
 // Config contains machine and k8s config
 type Config struct {
 	MachineConfig    MachineConfig
-	KubernetesConfig KubernetesConfig
+	KubernetesConfig bootstrapper.KubernetesConfig
 }

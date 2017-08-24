@@ -14,17 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package localkube
 
 import (
 	"bytes"
 	gflag "flag"
 	"fmt"
-	"net"
 	"strings"
 
 	"text/template"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -65,7 +65,7 @@ else
 fi
 `
 
-func GetStartCommand(kubernetesConfig KubernetesConfig) (string, error) {
+func GetStartCommand(kubernetesConfig bootstrapper.KubernetesConfig) (string, error) {
 	localkubeStartCommand, err := GenLocalkubeStartCmd(kubernetesConfig)
 	if err != nil {
 		return "", err
@@ -93,7 +93,7 @@ func GetStartCommand(kubernetesConfig KubernetesConfig) (string, error) {
 	return buf.String(), nil
 }
 
-func GetStartCommandNoSystemd(kubernetesConfig KubernetesConfig, localkubeStartCmd string) (string, error) {
+func GetStartCommandNoSystemd(kubernetesConfig bootstrapper.KubernetesConfig, localkubeStartCmd string) (string, error) {
 	t := template.Must(template.New("startCommand").Parse(startCommandNoSystemdTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
@@ -113,7 +113,7 @@ func GetStartCommandNoSystemd(kubernetesConfig KubernetesConfig, localkubeStartC
 	return buf.String(), nil
 }
 
-func GetStartCommandSystemd(kubernetesConfig KubernetesConfig, localkubeStartCmd string) (string, error) {
+func GetStartCommandSystemd(kubernetesConfig bootstrapper.KubernetesConfig, localkubeStartCmd string) (string, error) {
 	t, err := template.New("localkubeConfig").Parse(localkubeSystemdTmpl)
 	if err != nil {
 		return "", err
@@ -131,7 +131,7 @@ func GetStartCommandSystemd(kubernetesConfig KubernetesConfig, localkubeStartCmd
 		constants.LocalkubeServicePath), nil
 }
 
-func GenLocalkubeStartCmd(kubernetesConfig KubernetesConfig) (string, error) {
+func GenLocalkubeStartCmd(kubernetesConfig bootstrapper.KubernetesConfig) (string, error) {
 	flagVals := make([]string, len(constants.LogFlags))
 	for _, logFlag := range constants.LogFlags {
 		if logVal := gflag.Lookup(logFlag); logVal != nil && logVal.Value.String() != logVal.DefValue {
@@ -226,38 +226,3 @@ else
   fi
 fi
 `, constants.LocalkubePIDPath)
-
-func GetMountCleanupCommand(path string) string {
-	return fmt.Sprintf("sudo umount %s;", path)
-}
-
-var mountTemplate = `
-sudo mkdir -p {{.Path}} || true;
-sudo mount -t 9p -o trans=tcp,port={{.Port}},dfltuid={{.UID}},dfltgid={{.GID}},version={{.Version}},msize={{.Msize}} {{.IP}} {{.Path}};
-sudo chmod 775 {{.Path}};`
-
-func GetMountCommand(ip net.IP, path, port, mountVersion string, uid, gid, msize int) (string, error) {
-	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
-	buf := bytes.Buffer{}
-	data := struct {
-		IP      string
-		Path    string
-		Port    string
-		Version string
-		UID     int
-		GID     int
-		Msize   int
-	}{
-		IP:      ip.String(),
-		Path:    path,
-		Port:    port,
-		Version: mountVersion,
-		UID:     uid,
-		GID:     gid,
-		Msize:   msize,
-	}
-	if err := t.Execute(&buf, data); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
-}

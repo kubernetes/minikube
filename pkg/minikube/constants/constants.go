@@ -91,12 +91,13 @@ const (
 	DefaultVMDriver     = "virtualbox"
 	DefaultStatusFormat = "minikube: {{.MinikubeStatus}}\n" +
 		"cluster: {{.ClusterStatus}}\n" + "kubectl: {{.KubeconfigStatus}}\n"
-	DefaultAddonListFormat    = "- {{.AddonName}}: {{.AddonStatus}}\n"
-	DefaultConfigViewFormat   = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
-	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
-	KubernetesVersionGCSURL   = "https://storage.googleapis.com/minikube/k8s_releases.json"
-	DefaultWait               = 20
-	DefaultInterval           = 6
+	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
+	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
+	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
+	KubernetesVersionGCSURL    = "https://storage.googleapis.com/minikube/k8s_releases.json"
+	DefaultWait                = 20
+	DefaultInterval            = 6
+	DefaultClusterBootstrapper = "localkube"
 )
 
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
@@ -144,3 +145,4 @@ const (
 
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 const DriverNone = "none"
+const FileScheme = "file"

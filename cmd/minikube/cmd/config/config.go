@@ -29,6 +29,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+const Bootstrapper = "bootstrapper"
+
 type setFn func(string, string) error
 
 type Setting struct {
@@ -112,6 +114,10 @@ var settings = []Setting{
 	{
 		name: config.MachineProfile,
 		set:  SetString,
+	},
+	{
+		name: Bootstrapper,
+		set:  SetString, //TODO(r2d4): more validation here?
 	},
 	{
 		name:        "dashboard",
