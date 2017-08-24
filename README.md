@@ -76,6 +76,7 @@ If you maintain a minikube package, please feel free to add it here.
     * [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion)
 * Linux
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
+    * NOTE: minikube also supports a '--vm-driver=none' option that runs the kubernetes components on the host and not in a VM.  docker is required to use this driver but no hypervisor.
 * Windows
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
 * VT-x/AMD-v virtualization must be enabled in BIOS
@@ -93,7 +94,7 @@ the following drivers:
 * [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
 * [xhyve](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
 * [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
-
+* none - (LINUX ONLY) - the 'none' driver can be used to run the kubernetes cluster componenets on the host instead of in a VM.  This can be useful for CI workloads which do not support nested virtualization.
 
 ```shell
 $ minikube start
