@@ -143,3 +143,4 @@ const (
 )
 
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
+const DriverNone = "none"

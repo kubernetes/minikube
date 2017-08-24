@@ -17,11 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"bytes"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,7 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -87,73 +82,220 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartCluster(t *testing.T) {
-	api := tests.NewMockAPI()
-
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
+	expectedStartCmd, err := GetStartCommand(KubernetesConfig{})
 	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
+		t.Fatalf("generating start command: %s", err)
 	}
 
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
+	cases := []struct {
+		description string
+		startCmd    string
+	}{
+		{
+			description: "start cluster success",
+			startCmd:    expectedStartCmd,
 		},
-		CurrentState: state.Running,
-	}
-	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
-
-	kubernetesConfig := KubernetesConfig{
-		NodeIP: "",
+		{
+			description: "start cluster failure",
+			startCmd:    "something else",
+		},
 	}
 
-	err = StartCluster(api, kubernetesConfig)
-
-	if err != nil {
-		t.Fatalf("Error starting cluster: %s", err)
-	}
-
-	startCommand, err := GetStartCommand(kubernetesConfig)
-	if err != nil {
-		t.Fatalf("Error getting start command: %s", err)
-	}
-	for _, cmd := range []string{startCommand} {
-		if _, ok := s.Commands[cmd]; !ok {
-			t.Fatalf("Expected command not run: %s. Commands run: %v", cmd, s.Commands)
-		}
+	for _, test := range cases {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			f := bootstrapper.NewFakeCommandRunner()
+			f.SetCommandToOutput(map[string]string{test.startCmd: "ok"})
+			err := StartCluster(f, KubernetesConfig{})
+			if err != nil && test.startCmd == expectedStartCmd {
+				t.Errorf("Error starting cluster: %s", err)
+			}
+		})
 	}
 }
 
-func TestStartClusterError(t *testing.T) {
-	api := tests.NewMockAPI()
-
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
+func TestUpdateCluster(t *testing.T) {
+	defaultCfg := KubernetesConfig{
+		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
+	defaultAddons := []string{
+		"deploy/addons/kube-dns/kube-dns-cm.yaml",
+		"deploy/addons/kube-dns/kube-dns-svc.yaml",
+		"deploy/addons/addon-manager.yaml",
+		"deploy/addons/dashboard/dashboard-rc.yaml",
+		"deploy/addons/dashboard/dashboard-svc.yaml",
+		"deploy/addons/storageclass/storageclass.yaml",
+		"deploy/addons/kube-dns/kube-dns-controller.yaml",
+	}
+	cases := []struct {
+		description   string
+		k8s           KubernetesConfig
+		expectedFiles []string
+		shouldErr     bool
+	}{
+		{
+			description:   "transfer localkube correct",
+			k8s:           defaultCfg,
+			expectedFiles: []string{"out/localkube"},
 		},
-		CurrentState: state.Running,
-		HostError:    true,
+		{
+			description:   "addons are transferred",
+			k8s:           defaultCfg,
+			expectedFiles: defaultAddons,
+		},
+		{
+			description: "no localkube version",
+			k8s:         KubernetesConfig{},
+			shouldErr:   true,
+		},
 	}
-	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
 
-	kubernetesConfig := KubernetesConfig{
-		NodeIP: "192",
+	for _, test := range cases {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			f := bootstrapper.NewFakeCommandRunner()
+			err := UpdateCluster(f, test.k8s)
+			if err != nil && !test.shouldErr {
+				t.Errorf("Error updating cluster: %s", err)
+				return
+			}
+			if err == nil && test.shouldErr {
+				t.Error("Didn't get error, but expected to")
+				return
+			}
+			for _, expectedFile := range test.expectedFiles {
+				_, err := f.GetFileToContents(expectedFile)
+				if err != nil {
+					t.Errorf("Expected file %s, but was not present", expectedFile)
+				}
+			}
+		})
+	}
+}
+
+func TestGetLocalkubeStatus(t *testing.T) {
+	cases := []struct {
+		description    string
+		statusCmdMap   map[string]string
+		expectedStatus string
+		shouldErr      bool
+	}{
+		{
+			description:    "get status running",
+			statusCmdMap:   map[string]string{localkubeStatusCommand: "Running"},
+			expectedStatus: "Running",
+		},
+		{
+			description:    "get status stopped",
+			statusCmdMap:   map[string]string{localkubeStatusCommand: "Stopped"},
+			expectedStatus: "Stopped",
+		},
+		{
+			description:  "get status unknown status",
+			statusCmdMap: map[string]string{localkubeStatusCommand: "Recalculating..."},
+			shouldErr:    true,
+		},
+		{
+			description:  "get status error",
+			statusCmdMap: map[string]string{"a": "b"},
+			shouldErr:    true,
+		},
 	}
 
-	err = StartCluster(api, kubernetesConfig)
+	for _, test := range cases {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			f := bootstrapper.NewFakeCommandRunner()
+			f.SetCommandToOutput(test.statusCmdMap)
+			actualStatus, err := GetLocalkubeStatus(f)
+			if err != nil && !test.shouldErr {
+				t.Errorf("Error getting localkube status: %s", err)
+				return
+			}
+			if err == nil && test.shouldErr {
+				t.Error("Didn't get error, but expected to")
+				return
+			}
+			if test.expectedStatus != actualStatus {
+				t.Errorf("Expected status: %s, Actual status: %s", test.expectedStatus, actualStatus)
+			}
+		})
+	}
+}
 
-	if err == nil {
-		t.Fatal("Error not thrown starting cluster.")
+func TestGetHostLogs(t *testing.T) {
+	logs, err := GetLogsCommand(false)
+	if err != nil {
+		t.Fatalf("Error getting logs command: %s", err)
+	}
+	logsf, err := GetLogsCommand(true)
+	if err != nil {
+		t.Fatalf("Error gettings logs -f command: %s", err)
+	}
+
+	cases := []struct {
+		description string
+		logsCmdMap  map[string]string
+		follow      bool
+		shouldErr   bool
+	}{
+		{
+			description: "get logs correct",
+			logsCmdMap:  map[string]string{logs: "fee"},
+		},
+		{
+			description: "follow logs correct",
+			logsCmdMap:  map[string]string{logsf: "fi"},
+			follow:      true,
+		},
+		{
+			description: "get logs incorrect",
+			logsCmdMap:  map[string]string{"fo": "fum"},
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range cases {
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			f := bootstrapper.NewFakeCommandRunner()
+			f.SetCommandToOutput(test.logsCmdMap)
+			_, err := GetHostLogs(f, test.follow)
+			if err != nil && !test.shouldErr {
+				t.Errorf("Error getting localkube logs: %s", err)
+				return
+			}
+			if err == nil && test.shouldErr {
+				t.Error("Didn't get error, but expected to")
+				return
+			}
+		})
+	}
+}
+
+func TestSetupCerts(t *testing.T) {
+	tempDir := tests.MakeTempDir()
+	defer os.RemoveAll(tempDir)
+
+	f := bootstrapper.NewFakeCommandRunner()
+	k8s := KubernetesConfig{
+		APIServerName: constants.APIServerName,
+		DNSDomain:     constants.ClusterDNSDomain,
+	}
+
+	var filesToBeTransferred []string
+	for _, cert := range certs {
+		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), cert))
+	}
+
+	if err := SetupCerts(f, k8s); err != nil {
+		t.Fatalf("Error starting cluster: %s", err)
+	}
+	for _, cert := range filesToBeTransferred {
+		_, err := f.GetFileToContents(cert)
+		if err != nil {
+			t.Errorf("Cert not generated: %s", cert)
+		}
 	}
 }
 
@@ -378,77 +520,6 @@ func TestGetHostStatus(t *testing.T) {
 	checkState(state.Stopped.String())
 }
 
-func TestGetLocalkubeStatus(t *testing.T) {
-	api := tests.NewMockAPI()
-
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
-
-	s.SetCommandToOutput(map[string]string{
-		localkubeStatusCommand: state.Running.String(),
-	})
-	if _, err := GetLocalkubeStatus(api); err != nil {
-		t.Fatalf("Error getting localkube status: %s", err)
-	}
-
-	s.SetCommandToOutput(map[string]string{
-		localkubeStatusCommand: state.Stopped.String(),
-	})
-	if _, err := GetLocalkubeStatus(api); err != nil {
-		t.Fatalf("Error getting localkube status: %s", err)
-	}
-
-	s.SetCommandToOutput(map[string]string{
-		localkubeStatusCommand: "Bad Output",
-	})
-	if _, err := GetLocalkubeStatus(api); err == nil {
-		t.Fatalf("Expected error in getting localkube status as ssh returned bad output")
-	}
-}
-
-func TestSetupCerts(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	if err := SetupCerts(d, constants.APIServerName, constants.ClusterDNSDomain); err != nil {
-		t.Fatalf("Error starting cluster: %s", err)
-	}
-
-	for _, cert := range certs {
-		contents, _ := ioutil.ReadFile(cert)
-		transferred := s.Transfers.Bytes()
-		if !bytes.Contains(transferred, contents) {
-			t.Fatalf("Certificate not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
-		}
-	}
-}
-
 func TestGetHostDockerEnv(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
@@ -510,54 +581,6 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 	}
 }
 
-func TestHostGetLogs(t *testing.T) {
-	api := tests.NewMockAPI()
-
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
-
-	tests := []struct {
-		description string
-		follow      bool
-	}{
-		{
-			description: "logs",
-			follow:      false,
-		},
-		{
-			description: "logs -f",
-			follow:      true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			cmd, err := GetLogsCommand(test.follow)
-			if err != nil {
-				t.Errorf("Error getting the logs command: %s", err)
-			}
-			if _, err = GetHostLogs(api, test.follow); err != nil {
-				t.Errorf("Error getting host logs: %s", err)
-			}
-			if _, ok := s.Commands[cmd]; !ok {
-				t.Errorf("Expected command to run but did not: %s", cmd)
-			}
-		})
-	}
-}
-
 func TestCreateSSHShell(t *testing.T) {
 	api := tests.NewMockAPI()
 
@@ -584,93 +607,6 @@ func TestCreateSSHShell(t *testing.T) {
 
 	if !s.IsSessionRequested() {
 		t.Fatalf("Expected ssh session to be run")
-	}
-}
-
-func TestUpdateDefault(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-
-	kubernetesConfig := KubernetesConfig{
-		KubernetesVersion: constants.DefaultKubernetesVersion,
-	}
-
-	if err := UpdateCluster(d, kubernetesConfig); err != nil {
-		t.Fatalf("Error updating cluster: %s", err)
-	}
-	transferred := s.Transfers.Bytes()
-
-	for _, addonBundle := range assets.Addons {
-		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
-			for _, addon := range addonBundle.Assets {
-				contents, _ := assets.Asset(addon.GetAssetName())
-				if !bytes.Contains(transferred, contents) {
-					t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
-				}
-			}
-		} else if err != nil {
-			t.Fatalf("File not copied. Unexpected error while attempting to check transferred addons: %s", err)
-		}
-	}
-
-	//test that localkube is transferred properly
-	contents, _ := assets.Asset("out/localkube")
-	if !bytes.Contains(transferred, contents) {
-		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
-	}
-}
-
-var testLocalkubeBin = "hello"
-
-type K8sVersionHandlerCorrect struct{}
-
-func (h *K8sVersionHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, testLocalkubeBin)
-}
-
-func TestUpdateKubernetesVersion(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-	handler := &K8sVersionHandlerCorrect{}
-	server := httptest.NewServer(handler)
-
-	kubernetesConfig := KubernetesConfig{
-		KubernetesVersion: server.URL,
-	}
-	if err := UpdateCluster(d, kubernetesConfig); err != nil {
-		t.Fatalf("Error updating cluster: %s", err)
-	}
-	transferred := s.Transfers.Bytes()
-
-	//test that localkube is transferred properly
-	contents := []byte(testLocalkubeBin)
-	if !bytes.Contains(transferred, contents) {
-		t.Fatalf("File not copied. Expected transfers to contain: %s. It was: %s", contents, transferred)
 	}
 }
 
@@ -714,58 +650,5 @@ func TestIsLocalkubeCached(t *testing.T) {
 	}
 	for _, input := range inputArr {
 		inner(input)
-	}
-}
-
-func TestUpdateCustomAddons(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	os.Mkdir(constants.MakeMiniPath("addons", "subdir"), 0777)
-	defer os.RemoveAll(tempDir)
-
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-
-	//write a file into ~/.minikube/addons
-	path := filepath.Join(constants.MakeMiniPath("addons"), "dir-addon.yaml")
-	testContent1 := []byte("CUSTOM ADDON TEST STRING#1, In Addons Dir")
-	err = ioutil.WriteFile(path, testContent1, 0644)
-	if err != nil {
-		t.Fatalf("Error writing custom addon: %s", err)
-	}
-
-	path = filepath.Join(constants.MakeMiniPath("addons", "subdir"), "subdir-addon.yaml")
-	testContent2 := []byte("CUSTOM ADDON TEST STRING#2, In Addons SubDir")
-	err = ioutil.WriteFile(path, testContent2, 0644)
-	if err != nil {
-		t.Fatalf("Error writing custom addon: %s", err)
-	}
-
-	//run update
-	kubernetesConfig := KubernetesConfig{
-		KubernetesVersion: constants.DefaultKubernetesVersion,
-	}
-	if err := UpdateCluster(d, kubernetesConfig); err != nil {
-		t.Fatalf("Error updating cluster: %s", err)
-	}
-	transferred := s.Transfers.Bytes()
-
-	//test that custom addons are transferred properly
-	if !bytes.Contains(transferred, testContent1) {
-		t.Fatalf("Custom addon not copied. Expected transfers to contain custom addon with content: %s. It was: %s", testContent1, transferred)
-	}
-
-	if !bytes.Contains(transferred, testContent2) {
-		t.Fatalf("Custom addon not copied. Expected transfers to contain custom addon with content: %s. It was: %s", testContent2, transferred)
 	}
 }

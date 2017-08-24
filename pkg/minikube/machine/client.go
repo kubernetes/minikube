@@ -25,7 +25,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/provision"
 
 	"github.com/docker/machine/drivers/virtualbox"
@@ -155,6 +157,18 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 	}
 
 	return h, nil
+}
+
+func GetCommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
+	if h.DriverName != constants.DriverNone {
+		client, err := sshutil.NewSSHClient(h.Driver)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
+		}
+		return bootstrapper.NewSSHRunner(client), nil
+	}
+
+	return &bootstrapper.ExecRunner{}, nil
 }
 
 func (api *LocalClient) Close() error {

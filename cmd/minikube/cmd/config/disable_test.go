@@ -16,47 +16,10 @@ limitations under the License.
 
 package config
 
-import (
-	"io/ioutil"
-	"testing"
-
-	"github.com/docker/machine/libmachine/drivers"
-
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/sshutil"
-	"k8s.io/minikube/pkg/minikube/tests"
-)
+import "testing"
 
 func TestDisableUnknownAddon(t *testing.T) {
 	if err := Set("InvalidAddon", "false"); err == nil {
 		t.Fatalf("Disable did not return error for unknown addon")
-	}
-}
-
-func TestDeleteAddonSSH(t *testing.T) {
-	s, _ := tests.NewSSHServer()
-	port, err := s.Start()
-	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
-	}
-
-	d := &tests.MockDriver{
-		Port: port,
-		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
-		},
-	}
-
-	dashboard := assets.Addons["dashboard"]
-	if err := deleteAddonSSH(dashboard, d); err != nil {
-		t.Fatalf("Unexpected error %s deleting addon", err)
-	}
-	// check command(s) were run
-	for _, addon := range dashboard.Assets {
-		expected, _ := ioutil.ReadFile(addon.GetAssetName())
-		if _, ok := s.Commands[sshutil.GetDeleteFileCommand(addon)]; !ok {
-			t.Fatalf("Error: Expected delete addon ssh command to be run: %s.", expected)
-		}
 	}
 }
