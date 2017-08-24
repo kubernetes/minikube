@@ -93,42 +93,58 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	defer api.Close()
 
-	diskSize := viper.GetString(humanReadableDiskSize)
-	diskSizeMB := calculateDiskSizeInMB(diskSize)
+	// Load default minikube config
+	minikubeConfig := getDefaultConfig()
 
-	if diskSizeMB < constants.MinimumDiskSizeMB {
-		err := fmt.Errorf("Disk Size %dMB (%s) is too small, the minimum disk size is %dMB", diskSizeMB, diskSize, constants.MinimumDiskSizeMB)
+	// Override with global config
+	globalConfig, err := cfg.ReadConfig()
+	if err != nil {
+		glog.Errorln("Error reading global config:", err)
+	}
+
+	for k, v := range globalConfig {
+		minikubeConfig[k] = v
+	}
+
+	// Override with profile config
+	profileConfig, err := ReadProfileConfig(viper.GetString(cfg.MachineProfile))
+	if err != nil {
+		glog.Errorln("Error reading profile config:", err)
+	}
+
+	for k, v := range profileConfig {
+		minikubeConfig[k] = v
+	}
+
+	// Override environment variables
+
+	// Override with flags
+
+	// Generate Machine and Kubernetes configs
+	machineConfig := loadMachineConfig(cluster.MachineConfig{}, minikubeConfig)
+	kubernetesConfig := loadKubernetesConfig(cluster.KubernetesConfig{}, minikubeConfig)
+
+	if machineConfig.DiskSize < constants.MinimumDiskSizeMB {
+		err := fmt.Errorf("Disk Size %dMB (%s) is too small, the minimum disk size is %dMB", machineConfig.DiskSize, minikubeConfig[humanReadableDiskSize].(string), constants.MinimumDiskSizeMB)
 		glog.Errorln("Error parsing disk size:", err)
 		os.Exit(1)
 	}
 
-	if dv := viper.GetString(kubernetesVersion); dv != constants.DefaultKubernetesVersion {
-		validateK8sVersion(dv)
+	if kubernetesConfig.KubernetesVersion != constants.DefaultKubernetesVersion {
+		validateK8sVersion(kubernetesConfig.KubernetesVersion)
 	}
 
-	config := cluster.MachineConfig{
-		MinikubeISO:         viper.GetString(isoURL),
-		Memory:              viper.GetInt(memory),
-		CPUs:                viper.GetInt(cpus),
-		DiskSize:            diskSizeMB,
-		VMDriver:            viper.GetString(vmDriver),
-		XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
-		DockerEnv:           dockerEnv,
-		DockerOpt:           dockerOpt,
-		InsecureRegistry:    insecureRegistry,
-		RegistryMirror:      registryMirror,
-		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
-		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
-		KvmNetwork:          viper.GetString(kvmNetwork),
-		Downloader:          pkgutil.DefaultDownloader{},
-		DisableDriverMounts: viper.GetBool(disableDriverMounts),
-	}
+	machineConfig.Downloader = pkgutil.DefaultDownloader{}
+	machineConfig.DockerEnv = dockerEnv
+	machineConfig.DockerOpt = dockerOpt
+	machineConfig.InsecureRegistry = insecureRegistry
+	machineConfig.RegistryMirror = registryMirror
 
-	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
+	fmt.Printf("Starting local Kubernetes %s cluster...\n", kubernetesConfig.KubernetesVersion)
 	fmt.Println("Starting VM...")
 	var host *host.Host
 	start := func() (err error) {
-		host, err = cluster.StartHost(api, config)
+		host, err = cluster.StartHost(api, machineConfig)
 		if err != nil {
 			glog.Errorf("Error starting host: %s.\n\n Retrying.\n", err)
 		}
@@ -147,22 +163,18 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
+	kubernetesConfig.NodeIP = ip
 
-	// Read profile minikube config
-	profilecfg, err := ReadProfileConfig(viper.GetString(cfg.MachineProfile))
-	if err != nil {
-		glog.Errorln("Error loading profile config: ", err)
-	}
+	selectedKubernetesVersion := kubernetesConfig.KubernetesVersion
 
 	// Only if kubernetes version is found in profile config, perform version checks
-	if _, ok := profilecfg[kubernetesVersion]; ok && err == nil {
-		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(profilecfg[kubernetesVersion].(string), version.VersionPrefix))
+	if _, ok := profileConfig[kubernetesVersion]; ok {
+		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(profileConfig[kubernetesVersion].(string), version.VersionPrefix))
 		if err != nil {
 			glog.Errorln("Error parsing version semver: ", err)
 		}
 
-		newKubernetesVersion, err := semver.Make(strings.TrimPrefix(viper.GetString(kubernetesVersion), version.VersionPrefix))
+		newKubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesConfig.KubernetesVersion, version.VersionPrefix))
 		if err != nil {
 			glog.Errorln("Error parsing version semver: ", err)
 		}
@@ -174,22 +186,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubernetesConfig := cluster.KubernetesConfig{
-		KubernetesVersion: selectedKubernetesVersion,
-		NodeIP:            ip,
-		APIServerName:     viper.GetString(apiServerName),
-		DNSDomain:         viper.GetString(dnsDomain),
-		FeatureGates:      viper.GetString(featureGates),
-		ContainerRuntime:  viper.GetString(containerRuntime),
-		NetworkPlugin:     viper.GetString(networkPlugin),
-		ExtraOptions:      extraOptions,
-	}
+	kubernetesConfig.KubernetesVersion = selectedKubernetesVersion
+	profileConfig[kubernetesVersion] = selectedKubernetesVersion
 
-	minikubecfg := cfg.MinikubeConfig{
-		kubernetesVersion: selectedKubernetesVersion,
-	}
-
-	WriteProfileConfig(minikubecfg, viper.GetString(cfg.MachineProfile))
+	// Write the updated profile to config file
+	WriteProfileConfig(profileConfig, viper.GetString(cfg.MachineProfile))
 
 	fmt.Println("Moving files into cluster...")
 	if err := cluster.UpdateCluster(host.Driver, kubernetesConfig); err != nil {
@@ -229,7 +230,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ClientCertificate:    constants.MakeMiniPath("apiserver.crt"),
 		ClientKey:            constants.MakeMiniPath("apiserver.key"),
 		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
-		KeepContext:          viper.GetBool(keepContext),
+		KeepContext:          minikubeConfig["keep-context"].(bool),
 	}
 	kubeCfgSetup.SetKubeConfigFile(kubeConfigFile)
 
@@ -239,15 +240,16 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// start 9p server mount
-	if viper.GetBool(createMount) {
-		fmt.Printf("Setting up hostmount on %s...\n", viper.GetString(mountString))
+	if minikubeConfig[createMount].(bool) {
+		mntString := minikubeConfig[mountString].(string)
+		fmt.Printf("Setting up hostmount on %s...\n", mntString)
 
 		path := os.Args[0]
 		mountDebugVal := 0
 		if glog.V(8) {
 			mountDebugVal = 1
 		}
-		mountCmd := exec.Command(path, "mount", fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
+		mountCmd := exec.Command(path, "mount", fmt.Sprintf("--v=%d", mountDebugVal), mntString)
 		mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
 		if glog.V(8) {
 			mountCmd.Stdout = os.Stdout
@@ -272,7 +274,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		fmt.Println("Kubectl is now configured to use the cluster.")
 	}
 
-	if config.VMDriver == "none" {
+	if machineConfig.VMDriver == "none" {
 		fmt.Println(`===================
 WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
 	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks
@@ -359,7 +361,7 @@ func loadMachineConfig(machineConfig cluster.MachineConfig, config cfg.MinikubeC
 		case isoURL:
 			machineConfig.MinikubeISO = val.(string)
 		case memory:
-			machineConfig.Memory = val.(int)
+			machineConfig.Memory = int(val.(float64))
 		case cpus:
 			machineConfig.CPUs = val.(int)
 		case humanReadableDiskSize:
@@ -369,13 +371,13 @@ func loadMachineConfig(machineConfig cluster.MachineConfig, config cfg.MinikubeC
 		case xhyveDiskDriver:
 			machineConfig.XhyveDiskDriver = val.(string)
 		case "docker-env":
-			machineConfig.DockerEnv = val.([]string)
+			// machineConfig.DockerEnv = val.([]string)
 		case "docker-opt":
-			machineConfig.DockerOpt = val.([]string)
+			// machineConfig.DockerOpt = val.([]string)
 		case "insecure-registry":
-			machineConfig.InsecureRegistry = val.([]string)
+			// machineConfig.InsecureRegistry = val.([]string)
 		case "registry-mirror":
-			machineConfig.RegistryMirror = val.([]string)
+			// machineConfig.RegistryMirror = val.([]string)
 		case hostOnlyCIDR:
 			machineConfig.HostOnlyCIDR = val.(string)
 		case hypervVirtualSwitch:
@@ -410,8 +412,10 @@ func loadKubernetesConfig(kubernetesConfig cluster.KubernetesConfig, config cfg.
 			kubernetesConfig.FeatureGates = val.(string)
 		case containerRuntime:
 			kubernetesConfig.ContainerRuntime = val.(string)
-		// case "":
-		// 	kubernetesConfig.ExtraOptions =
+		case networkPlugin:
+			kubernetesConfig.NetworkPlugin = val.(string)
+		case "extra-config":
+			kubernetesConfig.ExtraOptions = val.(util.ExtraOptionSlice)
 		default:
 			// unknown config
 		}
@@ -468,4 +472,32 @@ func encode(w io.Writer, m cfg.MinikubeConfig) error {
 	_, err = w.Write(b)
 
 	return err
+}
+
+func getDefaultConfig() cfg.MinikubeConfig {
+	return cfg.MinikubeConfig{
+		keepContext:         constants.DefaultKeepContext,
+		createMount:         false,
+		mountString:         constants.DefaultMountDir + ":" + constants.DefaultMountEndpoint,
+		disableDriverMounts: false,
+		isoURL:              constants.DefaultIsoUrl,
+		vmDriver:            constants.DefaultVMDriver,
+		memory:              constants.DefaultMemory,
+		cpus:                constants.DefaultCPUS,
+		humanReadableDiskSize: constants.DefaultDiskSize,
+		hostOnlyCIDR:          "192.168.99.1/24",
+		hypervVirtualSwitch:   "",
+		kvmNetwork:            "default",
+		xhyveDiskDriver:       "ahci-hd",
+		"docker-env":          nil,
+		"docker-opt":          nil,
+		apiServerName:         constants.APIServerName,
+		dnsDomain:             constants.ClusterDNSDomain,
+		"insecure-registry":   []string{pkgutil.DefaultInsecureRegistry},
+		"registry-mirror":     nil,
+		kubernetesVersion:     constants.DefaultKubernetesVersion,
+		containerRuntime:      "",
+		networkPlugin:         "",
+		featureGates:          "",
+	}
 }
