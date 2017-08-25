@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -31,7 +33,13 @@ func TestFunctional(t *testing.T) {
 		Args:       *args,
 		T:          t}
 	minikubeRunner.EnsureRunning()
-
+	integrationTestImages := []string{"busybox:glibc"}
+	if err := machine.CacheImages(integrationTestImages, constants.ImageCacheDir); err != nil {
+		t.Fatalf("caching images: %s", err)
+	}
+	if err := machine.LoadFromCacheBlocking(&minikubeRunner, constants.ImageCacheDir); err != nil {
+		t.Fatalf("loading images: %s", err)
+	}
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
 	t.Run("Status", testClusterStatus)
