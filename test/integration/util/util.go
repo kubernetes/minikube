@@ -32,6 +32,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -41,6 +42,26 @@ type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
 	Args       string
+}
+
+func (m *MinikubeRunner) Run(cmd string) error {
+	_, err := m.SSH(cmd)
+	return err
+}
+
+func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
+	return cmd.Run()
+}
+
+func (m *MinikubeRunner) CombinedOutput(cmd string) (string, error) {
+	return m.SSH(cmd)
+}
+
+func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
+	_, err := m.SSH(fmt.Sprintf("rm -rf %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
+	return err
 }
 
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
