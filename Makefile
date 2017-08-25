@@ -113,7 +113,7 @@ endif
 
 .PHONY: e2e-%-amd64
 e2e-%-amd64:
-	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/$@
+	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="integration container_image_ostree_stub containers_image_openpgp" -o out/$@
 
 e2e-windows-amd64.exe: e2e-windows-amd64
 	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
