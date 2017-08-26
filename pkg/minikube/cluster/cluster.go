@@ -42,6 +42,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 
+	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -231,11 +232,13 @@ func UpdateCluster(cmd bootstrapper.CommandRunner, config KubernetesConfig) erro
 		}
 	}
 
+	var g errgroup.Group
 	for _, f := range copyableFiles {
-		// fmt.Println(f.GetAssetName())
-		if err := cmd.Copy(f); err != nil {
-			return err
-		}
+		f := f
+		g.Go(func() error { return cmd.Copy(f) })
+	}
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "error transferring files")
 	}
 	return nil
 }

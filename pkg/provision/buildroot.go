@@ -35,6 +35,7 @@ import (
 	"github.com/docker/machine/libmachine/provision/serviceaction"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -243,14 +244,23 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "provisioning: error getting ssh client")
 	}
 	sshRunner := bootstrapper.NewSSHRunner(sshClient)
+	var g errgroup.Group
 	for src, dst := range remoteCerts {
-		f, err := assets.NewFileAsset(src, filepath.Dir(dst), filepath.Base(dst), "0640")
-		if err != nil {
-			return errors.Wrapf(err, "error copying %s to %s", src, dst)
-		}
-		if err := sshRunner.Copy(f); err != nil {
-			return errors.Wrapf(err, "transfering file to machine %v", f)
-		}
+		src, dst := src, dst
+		g.Go(func() error {
+			f, err := assets.NewFileAsset(src, filepath.Dir(dst), filepath.Base(dst), "0640")
+			if err != nil {
+				return errors.Wrapf(err, "error copying %s to %s", src, dst)
+			}
+			if err := sshRunner.Copy(f); err != nil {
+				return errors.Wrapf(err, "transfering file to machine %v", f)
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "transferring files")
 	}
 
 	dockerCfg, err := p.GenerateDockerOptions(engine.DefaultPort)
