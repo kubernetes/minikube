@@ -46,6 +46,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -58,13 +59,15 @@ func NewRPCClient(storePath, certsDir string) libmachine.API {
 }
 
 // NewAPIClient gets a new client.
-func NewAPIClient() (libmachine.API, error) {
+func NewAPIClient() (*LocalClient, error) {
 	storePath := constants.GetMinipath()
 	certsDir := constants.MakeMiniPath("certs")
 
 	return &LocalClient{
 		certsDir:     certsDir,
 		storePath:    storePath,
+		EventCh:      make(chan string),
+		ErrorCh:      make(chan error),
 		Filestore:    persist.NewFilestore(storePath, certsDir, certsDir),
 		legacyClient: NewRPCClient(storePath, certsDir),
 	}, nil
@@ -102,6 +105,10 @@ func getDriverRPC(driverName string, rawDriver []byte) (drivers.Driver, error) {
 type LocalClient struct {
 	certsDir  string
 	storePath string
+
+	EventCh chan string
+	ErrorCh chan error
+
 	*persist.Filestore
 	legacyClient libmachine.API
 }
@@ -178,36 +185,61 @@ func (api *LocalClient) Close() error {
 	return nil
 }
 
-func (api *LocalClient) Create(h *host.Host) error {
+const (
+	BootstrapCertsEvent         = "Bootstrapping certs."
+	PreCreateCheckEvent         = "Running precreate checks."
+	SaveConfigBeforeCreateEvent = "Saving driver before create."
+	CreateVMEvent               = "Creating VM."
+	ResumeEvent                 = "Starting VM."
+	WaitForStartEvent           = "Waiting for VM to start."
+	SaveConfigRunningVM         = "Saving driver after creating VM."
+	ProvisionEvent              = "Provisioning VM."
+)
 
-	if _, ok := driverMap[h.Driver.DriverName()]; !ok {
-		return api.legacyClient.Create(h)
+type machineStep struct {
+	name string
+	f    func() error
+}
+
+func provisionStep(h *host.Host) machineStep {
+	return machineStep{
+		name: ProvisionEvent,
+		f: func() error {
+			if h.Driver.DriverName() == "none" {
+				return nil
+			}
+			pv := provision.NewBuildrootProvisioner(h.Driver)
+			return pv.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
+		},
 	}
+}
 
-	steps := []struct {
-		name string
-		f    func() error
-	}{
+// Create runs the steps necessary to create, start, and provision a VM.
+//
+// Create publishes events as they are completed on the api.EventCh,
+// and errors on the api.ErrorCh
+func (api *LocalClient) Create(h *host.Host) error {
+	steps := []machineStep{
 		{
-			"Bootstrapping certs.",
+			BootstrapCertsEvent,
 			func() error { return cert.BootstrapCertificates(h.AuthOptions()) },
 		},
 		{
-			"Running precreate checks.",
+			PreCreateCheckEvent,
 			h.Driver.PreCreateCheck,
 		},
 		{
-			"Saving driver.",
+			SaveConfigBeforeCreateEvent,
 			func() error {
 				return api.Save(h)
 			},
 		},
 		{
-			"Creating VM.",
+			CreateVMEvent,
 			h.Driver.Create,
 		},
 		{
-			"Waiting for VM to start.",
+			WaitForStartEvent,
 			func() error {
 				if h.Driver.DriverName() == "none" {
 					return nil
@@ -216,23 +248,62 @@ func (api *LocalClient) Create(h *host.Host) error {
 			},
 		},
 		{
-			"Provisioning VM.",
+			SaveConfigRunningVM,
 			func() error {
-				if h.Driver.DriverName() == "none" {
-					return nil
-				}
-				pv := provision.NewBuildrootProvisioner(h.Driver)
-				return pv.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
+				return api.Save(h)
 			},
 		},
+		provisionStep(h),
 	}
 
+	if err := api.runSteps(steps); err != nil {
+		return errors.Wrap(err, "Error executing steps")
+	}
+
+	return nil
+}
+
+func (api *LocalClient) runSteps(steps []machineStep) error {
 	for _, step := range steps {
 		if err := step.f(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Error executing step: %s\n", step.name))
+			api.ErrorCh <- err
+			return errors.Wrap(err, fmt.Sprintf("step: %s\n", step.name))
 		}
+		api.EventCh <- step.name
+	}
+	return nil
+}
+
+// Start runs the steps necessary to start and provision a VM that has been created.
+//
+// Start publishes start events as they are completed on the api.EventCh,
+// and errors on the api.ErrorCh
+func (api *LocalClient) Start(h *host.Host) error {
+	var steps []machineStep
+	s, err := h.Driver.GetState()
+	glog.Infoln("Machine state: ", s)
+	if err != nil {
+		return errors.Wrap(err, "Error getting state for host")
 	}
 
+	// If we are not in a running state, add a start event.
+	if s != state.Running {
+		steps = append(steps, machineStep{
+			ResumeEvent,
+			func() error { return h.Driver.Start() },
+		})
+	}
+	steps = append(steps, machineStep{
+		SaveConfigRunningVM,
+		func() error {
+			return api.Save(h)
+		},
+	})
+	steps = append(steps, provisionStep(h))
+
+	if err := api.runSteps(steps); err != nil {
+		return errors.Wrap(err, "Error executing steps")
+	}
 	return nil
 }
 

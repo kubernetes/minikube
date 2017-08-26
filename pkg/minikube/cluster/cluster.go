@@ -47,6 +47,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 )
@@ -67,7 +68,7 @@ func init() {
 }
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
+func StartHost(api *machine.LocalClient, config MachineConfig) (*host.Host, error) {
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking if host exists: %s", cfg.GetMachineName())
@@ -75,32 +76,13 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 	if !exists {
 		return createHost(api, config)
 	}
-
 	glog.Infoln("Machine exists!")
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
-
-	s, err := h.Driver.GetState()
-	glog.Infoln("Machine state: ", s)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error getting state for host")
-	}
-
-	if s != state.Running {
-		if err := h.Driver.Start(); err != nil {
-			return nil, errors.Wrap(err, "Error starting stopped host")
-		}
-		if err := api.Save(h); err != nil {
-			return nil, errors.Wrap(err, "Error saving started host")
-		}
-	}
-
-	if h.Driver.DriverName() != "none" {
-		if err := h.ConfigureAuth(); err != nil {
-			return nil, &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
-		}
+	if err := api.Start(h); err != nil {
+		return nil, errors.Wrap(err, "Starting host")
 	}
 	return h, nil
 }
@@ -375,9 +357,6 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		return nil, errors.Wrap(err, "Error creating host")
 	}
 
-	if err := api.Save(h); err != nil {
-		return nil, errors.Wrap(err, "Error attempting to save")
-	}
 	return h, nil
 }
 
