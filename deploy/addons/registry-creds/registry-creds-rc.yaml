@@ -45,11 +45,11 @@ spec:
               secretKeyRef:
                 name: registry-creds-ecr
                 key: aws-assume-role
-          - name: awsaccount
+          - name: awsregion
             valueFrom:
               secretKeyRef:
                 name: registry-creds-ecr
-                key: aws-account
+                key: aws-region
           - name: DOCKER_PRIVATE_REGISTRY_PASSWORD
             valueFrom:
               secretKeyRef:
