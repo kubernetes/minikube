@@ -52,18 +52,6 @@ $ make menuconfig
 $ make
 ```
 
-To change the kernel configuration, execute:
-
-```
-$ cd out/buildroot
-$ make linux-menuconfig
-$ make
-```
-
-The last commands copies changes made to the kernel configuration to the minikube-iso defconfig.
-
-### Saving buildroot/kernel configuration changes
-
 To save any buildroot configuration changes made with `make menuconfig`, execute:
 
 ```
@@ -79,13 +67,14 @@ $ git status
  M deploy/iso/minikube-iso/configs/minikube_defconfig
 ```
 
-To save any kernel configuration changes made with `make linux-menuconfig`, execute:
+### Saving buildroot/kernel configuration changes
+
+
+To make any kernel configuration changes and save them, execute:
 
 ```
-$ cd out/buildroot
-$ make linux-savedefconfig
-$ cp output/build/linux-4.9.13/defconfig \
-    ../../deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
+$ make linux-menuconfig
 ```
 
-The changes will be reflected in the `deploy/iso/minikube-iso/configs/minikube_defconfig` file.
+This will open the kernel configuration menu, and then save your changes to our
+iso directory after they've been selected.

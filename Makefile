@@ -126,6 +126,13 @@ minikube_iso: # old target kept for making tests happy
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
+# Change the kernel configuration for the minikube ISO
+.PHONY: linux-menuconfig
+linux-menuconfig:
+	$(MAKE) -C $(BUILD_DIR)/buildroot linux-menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot linux-savedefconfig
+	cp $(BUILD_DIR)/buildroot/output/build/linux-4.9.13/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
+
 out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube_iso
