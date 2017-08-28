@@ -142,6 +142,10 @@ test-iso:
 integration: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)"
 
+.PHONY: integration-none-driver
+integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
+	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-args="--vm-driver=none --alsologtostderr" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64
+
 .PHONY: integration-versioned
 integration-versioned: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="integration versioned" --minikube-args="$(MINIKUBE_ARGS)"
