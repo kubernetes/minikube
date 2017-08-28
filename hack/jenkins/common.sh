@@ -52,8 +52,8 @@ vboxmanage list vms \
 
 # Clean up xhyve disks
 hdiutil info \
-      | grep -v /dev/disk0 \
-      | grep /dev/ \
+      | egrep \/dev\/disk[1-9][^s] \
+      | awk '{print $1}' \
       | xargs -I {} sh -c "hdiutil detach {}" \
       || true
 
