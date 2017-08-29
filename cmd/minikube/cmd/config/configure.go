@@ -61,7 +61,7 @@ var addonsConfigureCmd = &cobra.Command{
 				awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
 				awsRegion = AskForStaticValue("-- Enter AWS Region: ")
 				awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID: ")
-				awsRole = AskForStaticValue("-- (Optional) Enter ARN of AWS role to assume: ")
+				awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
 			}
 
 			enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
