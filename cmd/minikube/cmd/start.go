@@ -29,10 +29,10 @@ import (
 
 	"github.com/blang/semver"
 	units "github.com/docker/go-units"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -125,17 +125,39 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
 	fmt.Println("Starting VM...")
-	var host *host.Host
-	start := func() (err error) {
-		host, err = cluster.StartHost(api, config)
-		if err != nil {
-			glog.Errorf("Error starting host: %s.\n\n Retrying.\n", err)
+	go func() {
+		start := func() (err error) {
+			_, err = cluster.StartHost(api, config)
+			if err != nil {
+				glog.Errorf("Error starting host: %s.\n\n Retrying.\n", err)
+			}
+			return err
 		}
-		return err
+		if err = util.RetryAfter(5, start, 2*time.Second); err != nil {
+			glog.Errorln("Error starting host: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+	}()
+
+	// Wait for the VM to be started and SSH-able.
+	// After this loop breaks, it is safe to load the host configuration.
+waitForVM:
+	for {
+		select {
+		case evt := <-api.EventCh:
+			if evt == machine.SaveConfigRunningVM {
+				break waitForVM
+			}
+		case err := <-api.ErrorCh:
+			// We don't exit here, since the StartHost goroutine will handle
+			// reporting the error and exiting.
+			glog.Errorf("Error starting host: %s.", err)
+		}
 	}
-	err = util.RetryAfter(5, start, 2*time.Second)
+
+	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		glog.Errorln("Error starting host: ", err)
+		glog.Errorf("Error getting host: %s.", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
@@ -198,19 +220,19 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Moving files into cluster...")
-	if err := cluster.UpdateCluster(cmdRunner, kubernetesConfig); err != nil {
+	var g errgroup.Group
+	g.Go(func() error {
+		return cluster.UpdateCluster(cmdRunner, kubernetesConfig)
+	})
+	g.Go(func() error {
+		return cluster.SetupCerts(cmdRunner, kubernetesConfig)
+	})
+	if err := g.Wait(); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
-	fmt.Println("Setting up certs...")
-	if err := cluster.SetupCerts(cmdRunner, kubernetesConfig); err != nil {
-		glog.Errorln("Error configuring authentication: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
-	}
-
 	fmt.Println("Starting cluster components...")
-
 	if err := cluster.StartCluster(cmdRunner, kubernetesConfig); err != nil {
 		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
