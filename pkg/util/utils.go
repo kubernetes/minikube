@@ -30,6 +30,8 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	units "github.com/docker/go-units"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
@@ -41,6 +43,14 @@ type RetriableError struct {
 }
 
 func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
+
+func CalculateDiskSizeInMB(humanReadableDiskSize string) int {
+	diskSize, err := units.FromHumanSize(humanReadableDiskSize)
+	if err != nil {
+		glog.Errorf("Invalid disk size: %s", err)
+	}
+	return int(diskSize / units.MB)
+}
 
 // Until endlessly loops the provided function until a message is received on the done channel.
 // The function will wait the duration provided in sleep between function calls. Errors will be sent on provider Writer.

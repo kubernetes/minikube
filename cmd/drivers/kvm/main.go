@@ -1,4 +1,4 @@
-// +build linux,!gendocs
+// +build linux
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -16,17 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package constants
+package main
 
 import (
-	"k8s.io/client-go/util/homedir"
+	"github.com/docker/machine/libmachine/drivers/plugin"
+	"k8s.io/minikube/pkg/drivers/kvm"
 )
 
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"kvm",
-	"kvm2",
-	"none",
+func main() {
+	plugin.RegisterDriver(kvm.NewDriver("", ""))
 }
-
-var DefaultMountDir = homedir.HomeDir()

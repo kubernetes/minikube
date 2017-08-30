@@ -53,6 +53,8 @@ LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/local
 MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 HYPERKIT_FILES :=  GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' k8s.io/minikube/cmd/drivers/hyperkit | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
+KVM_DRIVER_FILES := $(shell go list -f '{{join .Deps "\n"}}' ./cmd/drivers/kvm/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
+
 MINIKUBE_ENV_linux  		:= CGO_ENABLED=1 GOARCH=amd64 GOOS=linux
 MINIKUBE_ENV_darwin  		:= CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin
 MINIKUBE_ENV_windows 		:= CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
@@ -174,7 +176,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/docker-machine-driver-hyperkit
+cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
@@ -286,3 +288,16 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
+
+out/docker-machine-driver-kvm2: $(KVM_DRIVER_FILES)
+	go build 																		\
+		-installsuffix "static" 													\
+		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
+		-tags libvirt.1.2.2 														\
+		-o $(BUILD_DIR)/docker-machine-driver-kvm2 									\
+		k8s.io/minikube/cmd/drivers/kvm
+	chmod +X $@
+
+.PHONY: install-kvm
+install-kvm: out/docker-machine-driver-kvm2
+	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
