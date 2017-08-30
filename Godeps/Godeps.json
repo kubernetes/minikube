@@ -1759,6 +1759,11 @@
 			"Rev": "6e787003b91ddba85f108b8aede075b1af0d3606"
 		},
 		{
+			"ImportPath": "github.com/libvirt/libvirt-go",
+			"Comment": "v3.4.0",
+			"Rev": "5ba8227244c30438609adcec6ea84dc1e688dfbd"
+		},
+		{
 			"ImportPath": "github.com/lpabon/godbc",
 			"Comment": "v1.0-1-g9577782",
 			"Rev": "9577782540c1398b710ddae1b86268ba03a19b0c"

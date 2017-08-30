@@ -338,7 +338,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		driver = createVirtualboxHost(config)
 	case "vmwarefusion":
 		driver = createVMwareFusionHost(config)
-	case "kvm":
+	case "kvm", "kvm2":
 		driver = createKVMHost(config)
 	case "xhyve":
 		driver = createXhyveHost(config)
