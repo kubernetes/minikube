@@ -54,9 +54,6 @@ $ docker run -d \
 $ docker exec minikube sh -c 'echo 127.0.0.1 ${HOSTNAME} >> /etc/hosts'
 ```
 
-###### Issues
-* kube-proxy will not work until [#1215](https://github.com/kubernetes/minikube/issues/1215) is resolved
-
 ###### Manifests
 Copy manifests to ${HOME}/.minikube/manifests
 * kube-addon-manager
@@ -69,13 +66,13 @@ metadata:
   namespace: kube-system
   labels:
     component: kube-addon-manager
-    version: v6.1
+    version: v6.4
     kubernetes.io/minikube-addons: addon-manager
 spec:
   hostNetwork: true
   containers:
   - name: kube-addon-manager
-    image: gcr.io/google-containers/kube-addon-manager:v6.3
+    image: gcr.io/google-containers/kube-addon-manager:v6.4-beta.2
     imagePullPolicy: IfNotPresent
     resources:
       requests:
@@ -102,29 +99,36 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: kube-apiserver-proxy
+  name: socat
   namespace: kube-system
 spec:
   containers:
-    - name: nginx
-      image: calpicow/kube-apiserver-proxy:latest
+    - name: busybox
+      image: calpicow/alpine-socat:latest
+      imagePullPolicy: IfNotPresent
+      command:
+        - socat
+        - tcp-listen:8001,reuseaddr,fork
+        - tcp:10.0.0.1:443
       ports:
-        - containerPort: 8080
-          hostPort: 8080
-      volumeMounts:
-        - name: localkube-certs
-          mountPath: /mnt
-          readOnly: true
-  volumes:
-    - name: localkube-certs
-      hostPath:
-        path: ${HOME}/.minikube/certs
+        - containerPort: 8001
+          hostPort: 8001
 ```
 
+###### Issues
+* We need to enable `--insecure-skip-tls-verify` since localkube does not generate a cert for localhost
+
+#### kubectl configuration
 Then to setup `kubectl` to use this cluster:
 ```console
 kubectl config set-cluster localkube-image --server=http://127.0.0.1:8080 --api-version=v1
 kubectl config set-context localkube-image --cluster=localkube-image
 kubectl config use-context localkube-image
+```
+Or for Mac/Windows:
+```console
+kubectl config set-cluster localkube-image --server=https://localhost:8001 --insecure-skip-tls-verify=true
+kubectl config set-credentials localkube-image --certificate-authority="${HOME}"/.minikube/certs/ca.crt --client-certificate="${HOME}"/.minikube/certs/apiserver.crt --client-key="${HOME}"/.minikube/certs/apiserver.key
+kubectl config set-context localkube-image --cluster=localkube-image --user=localkube-image
 ```
 Now `kubectl` should be configured to properly access your local k8s environment
