@@ -32,7 +32,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -90,6 +92,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	defer api.Close()
+
+	exists, err := api.Exists(cfg.GetMachineName())
+	if err != nil {
+		glog.Exitf("checking if machine exists: %s", err)
+	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
 	diskSizeMB := util.CalculateDiskSizeInMB(diskSize)
@@ -170,15 +177,21 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubernetesConfig := cluster.KubernetesConfig{
+	kubernetesConfig := bootstrapper.KubernetesConfig{
 		KubernetesVersion: selectedKubernetesVersion,
 		NodeIP:            ip,
+		NodeName:          cfg.GetMachineName(),
 		APIServerName:     viper.GetString(apiServerName),
 		DNSDomain:         viper.GetString(dnsDomain),
 		FeatureGates:      viper.GetString(featureGates),
 		ContainerRuntime:  viper.GetString(containerRuntime),
 		NetworkPlugin:     viper.GetString(networkPlugin),
 		ExtraOptions:      extraOptions,
+	}
+
+	clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+	if err != nil {
+		glog.Exitf("Error getting cluster bootstrapper: %s", err)
 	}
 
 	// Write profile cluster configuration to file
@@ -191,27 +204,15 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
-	cmdRunner, err := machine.GetCommandRunner(host)
-	if err != nil {
-		glog.Errorln("Error getting command runner interface")
-	}
-
 	fmt.Println("Moving files into cluster...")
-	if err := cluster.UpdateCluster(cmdRunner, kubernetesConfig); err != nil {
+	if err := clusterBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := cluster.SetupCerts(cmdRunner, kubernetesConfig); err != nil {
+	if err := clusterBootstrapper.SetupCerts(kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
-	}
-
-	fmt.Println("Starting cluster components...")
-
-	if err := cluster.StartCluster(cmdRunner, kubernetesConfig); err != nil {
-		glog.Errorln("Error starting cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
@@ -241,6 +242,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
+	}
+
+	fmt.Println("Starting cluster components...")
+
+	if !exists {
+		if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error starting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
+	} else {
+		if err := clusterBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+			glog.Errorln("Error restarting cluster: ", err)
+			cmdUtil.MaybeReportErrorAndExit(err)
+		}
 	}
 
 	// start 9p server mount

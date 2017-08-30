@@ -18,18 +18,23 @@ package cmd
 
 import (
 	goflag "flag"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/localkube"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -98,7 +103,6 @@ func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-
 }
 
 // Handle config values for flags used in external packages (e.g. glog)
@@ -121,6 +125,7 @@ func setFlagsUsingViper() {
 func init() {
 	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used.  
 	This can be modified to allow for multiple minikube instances to be run independently`)
+	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	RootCmd.AddCommand(configCmd.ProfileCmd)
@@ -156,4 +161,21 @@ func setupViper() {
 	viper.SetDefault(config.WantReportErrorPrompt, true)
 	viper.SetDefault(config.WantKubectlDownloadMsg, true)
 	setFlagsUsingViper()
+}
+
+// GetClusterBootstrapper returns a new bootstrapper for the cluster
+func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
+	var b bootstrapper.Bootstrapper
+	var err error
+	switch bootstrapperName {
+	case bootstrapper.BootstrapperTypeLocalkube:
+		b, err = localkube.NewLocalkubeBootstrapper(api)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting localkube bootstrapper")
+		}
+	default:
+		return nil, fmt.Errorf("Unknown bootstrapper: %s", bootstrapperName)
+	}
+
+	return b, nil
 }
