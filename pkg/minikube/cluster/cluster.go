@@ -17,15 +17,15 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"html/template"
 	"net"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
@@ -38,16 +38,10 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/client-go/tools/clientcmd/api/latest"
 
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
 var (
@@ -154,22 +148,6 @@ func GetHostStatus(api libmachine.API) (string, error) {
 	return s.String(), nil
 }
 
-// GetLocalkubeStatus gets the status of localkube from the host VM.
-func GetLocalkubeStatus(cmd bootstrapper.CommandRunner) (string, error) {
-	s, err := cmd.CombinedOutput(localkubeStatusCommand)
-	if err != nil {
-		return "", err
-	}
-	s = strings.TrimSpace(s)
-	if state.Running.String() == s {
-		return state.Running.String(), nil
-	} else if state.Stopped.String() == s {
-		return state.Stopped.String(), nil
-	} else {
-		return "", fmt.Errorf("Error: Unrecognize output from GetLocalkubeStatus: %s", s)
-	}
-}
-
 // GetHostDriverIP gets the ip address of the current minikube cluster
 func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 	host, err := CheckIfApiExistsAndLoad(api)
@@ -186,121 +164,6 @@ func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 		return nil, errors.Wrap(err, "Error parsing IP")
 	}
 	return ip, nil
-}
-
-// StartCluster starts a k8s cluster on the specified Host.
-func StartCluster(cmd bootstrapper.CommandRunner, kubernetesConfig KubernetesConfig) error {
-	startCommand, err := GetStartCommand(kubernetesConfig)
-	if err != nil {
-		return errors.Wrapf(err, "Error generating start command: %s", err)
-	}
-	if err := cmd.Run(startCommand); err != nil {
-		return errors.Wrapf(err, "Error running start command: %s", startCommand)
-	}
-	return nil
-}
-
-func UpdateCluster(cmd bootstrapper.CommandRunner, config KubernetesConfig) error {
-	copyableFiles := []assets.CopyableFile{}
-	var localkubeFile assets.CopyableFile
-	var err error
-
-	//add url/file/bundled localkube to file list
-	if localkubeURIWasSpecified(config) && config.KubernetesVersion != constants.DefaultKubernetesVersion {
-		lCacher := localkubeCacher{config}
-		localkubeFile, err = lCacher.fetchLocalkubeFromURI()
-		if err != nil {
-			return errors.Wrap(err, "Error updating localkube from uri")
-		}
-	} else {
-		localkubeFile = assets.NewBinDataAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
-	}
-	copyableFiles = append(copyableFiles, localkubeFile)
-
-	// add addons to file list
-	// custom addons
-	assets.AddMinikubeAddonsDirToAssets(&copyableFiles)
-	// bundled addons
-	for _, addonBundle := range assets.Addons {
-		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
-			for _, addon := range addonBundle.Assets {
-				copyableFiles = append(copyableFiles, addon)
-			}
-		} else if err != nil {
-			return err
-		}
-	}
-
-	for _, f := range copyableFiles {
-		// fmt.Println(f.GetAssetName())
-		if err := cmd.Copy(f); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func localkubeURIWasSpecified(config KubernetesConfig) bool {
-	// see if flag is different than default -> it was passed by user
-	return config.KubernetesVersion != constants.DefaultKubernetesVersion
-}
-
-// SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd bootstrapper.CommandRunner, k8s KubernetesConfig) error {
-	localPath := constants.GetMinipath()
-	ip := net.ParseIP(k8s.NodeIP)
-	glog.Infoln("Setting up certificates for IP: %s", ip)
-
-	caCert := filepath.Join(localPath, "ca.crt")
-	caKey := filepath.Join(localPath, "ca.key")
-	publicPath := filepath.Join(localPath, "apiserver.crt")
-	privatePath := filepath.Join(localPath, "apiserver.key")
-	if err := GenerateCerts(caCert, caKey, publicPath, privatePath, ip, k8s.APIServerName, k8s.DNSDomain); err != nil {
-		return errors.Wrap(err, "Error generating certs")
-	}
-
-	copyableFiles := []assets.CopyableFile{}
-
-	for _, cert := range certs {
-		p := filepath.Join(localPath, cert)
-		perms := "0644"
-		if strings.HasSuffix(cert, ".key") {
-			perms = "0600"
-		}
-		certFile, err := assets.NewFileAsset(p, util.DefaultCertPath, cert, perms)
-		if err != nil {
-			return err
-		}
-		copyableFiles = append(copyableFiles, certFile)
-	}
-
-	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
-		ClusterName:          cfg.GetMachineName(),
-		ClusterServerAddress: "https://localhost:8443",
-		ClientCertificate:    filepath.Join(util.DefaultCertPath, "apiserver.crt"),
-		ClientKey:            filepath.Join(util.DefaultCertPath, "apiserver.key"),
-		CertificateAuthority: filepath.Join(util.DefaultCertPath, "ca.crt"),
-		KeepContext:          false,
-	}
-
-	kubeCfg := api.NewConfig()
-	kubeconfig.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
-	data, err := runtime.Encode(latest.Codec, kubeCfg)
-	if err != nil {
-		return errors.Wrap(err, "setup certs: encoding kubeconfig")
-	}
-
-	kubeCfgFile := assets.NewMemoryAsset(data,
-		util.DefaultLocalkubeDirectory, "kubeconfig", "0644")
-	copyableFiles = append(copyableFiles, kubeCfgFile)
-
-	for _, f := range copyableFiles {
-		if err := cmd.Copy(f); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func engineOptions(config MachineConfig) *engine.Options {
@@ -398,20 +261,6 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 		"DOCKER_CERT_PATH":  constants.MakeMiniPath("certs"),
 	}
 	return envMap, nil
-}
-
-// GetHostLogs gets the localkube logs of the host VM.
-// If follow is specified, it will tail the logs
-func GetHostLogs(cmd bootstrapper.CommandRunner, follow bool) (string, error) {
-	logsCommand, err := GetLogsCommand(follow)
-	if err != nil {
-		return "", errors.Wrap(err, "Error getting logs command")
-	}
-	logs, err := cmd.CombinedOutput(logsCommand)
-	if err != nil {
-		return "", errors.Wrap(err, "running logs command")
-	}
-	return logs, nil
 }
 
 // MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
@@ -535,4 +384,39 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 		fmt.Fprintln(os.Stderr, "minikube is not currently running so the service cannot be accessed")
 		os.Exit(exitStatus)
 	}
+}
+
+func GetMountCleanupCommand(path string) string {
+	return fmt.Sprintf("sudo umount %s;", path)
+}
+
+var mountTemplate = `
+sudo mkdir -p {{.Path}} || true;
+sudo mount -t 9p -o trans=tcp,port={{.Port}},dfltuid={{.UID}},dfltgid={{.GID}},version={{.Version}},msize={{.Msize}} {{.IP}} {{.Path}};
+sudo chmod 775 {{.Path}};`
+
+func GetMountCommand(ip net.IP, path, port, mountVersion string, uid, gid, msize int) (string, error) {
+	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
+	buf := bytes.Buffer{}
+	data := struct {
+		IP      string
+		Path    string
+		Port    string
+		Version string
+		UID     int
+		GID     int
+		Msize   int
+	}{
+		IP:      ip.String(),
+		Path:    path,
+		Port:    port,
+		Version: mountVersion,
+		UID:     uid,
+		GID:     gid,
+		Msize:   msize,
+	}
+	if err := t.Execute(&buf, data); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }

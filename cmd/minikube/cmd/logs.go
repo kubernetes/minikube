@@ -23,9 +23,9 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
-	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -45,15 +45,12 @@ var logsCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		h, err := api.Load(config.GetMachineName())
+		clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
-			glog.Errorln("Error getting host")
+			glog.Exitf("Error getting cluster bootstrapper: %s", err)
 		}
-		cmdRunner, err := machine.GetCommandRunner(h)
-		if err != nil {
-			glog.Errorln("Error getting command runner interface")
-		}
-		s, err := cluster.GetHostLogs(cmdRunner, follow)
+
+		s, err := clusterBootstrapper.GetClusterLogs(follow)
 		if err != nil {
 			log.Println("Error getting machine logs:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
