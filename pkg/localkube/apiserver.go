@@ -46,6 +46,8 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 
 	config.Authentication.ClientCert.ClientCA = lk.GetCAPublicKeyCertPath()
 
+	config.Authorization.Mode = "RBAC"
+
 	config.SecureServing.ServerCert.CertKey.CertFile = lk.GetPublicKeyCertPath()
 	config.SecureServing.ServerCert.CertKey.KeyFile = lk.GetPrivateKeyCertPath()
 	config.Admission.PluginNames = []string{
