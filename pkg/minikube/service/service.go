@@ -30,6 +30,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	rbacv1beta1typed "k8s.io/client-go/kubernetes/typed/rbac/v1beta1"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -52,7 +53,9 @@ func init() {
 	k8s = &K8sClientGetter{}
 }
 
-func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+// getClientset returns the root Kubernetes Clientset from the default loaded
+// configuration
+func (*K8sClientGetter) getClientset() (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
@@ -64,7 +67,27 @@ func (*K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
-	return client.Core(), nil
+	return client, nil
+}
+
+// GetRBACV1Beta1Client returns an RbacV1beta1Interface from the default Kubernetes
+// Clientset
+func (k *K8sClientGetter) GetRBACV1Beta1Client() (rbacv1beta1typed.RbacV1beta1Interface, error) {
+	clientset, err := k.getClientset()
+	if err != nil {
+		return nil, err
+	}
+	return clientset.RbacV1beta1(), nil
+}
+
+// GetCoreClient returns a CoreV1Interface from the default Kubernetes
+// Clientset
+func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+	clientset, err := k.getClientset()
+	if err != nil {
+		return nil, err
+	}
+	return clientset.Core(), nil
 }
 
 type ServiceURL struct {

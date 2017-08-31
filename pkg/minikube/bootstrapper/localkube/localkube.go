@@ -19,6 +19,7 @@ package localkube
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -29,6 +30,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util"
 )
 
 type LocalkubeBootstrapper struct {
@@ -96,6 +98,11 @@ func (lk *LocalkubeBootstrapper) StartCluster(kubernetesConfig bootstrapper.Kube
 	err = lk.cmd.Run(startCommand) //needs to be sudo for none driver
 	if err != nil {
 		return errors.Wrapf(err, "Error running ssh command: %s", startCommand)
+	}
+	// try to elevate kube-system privileges so that the dashboard (among other
+	// components) can execute queries
+	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
+		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 	return nil
 }
