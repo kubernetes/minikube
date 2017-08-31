@@ -131,6 +131,12 @@ const (
 )
 
 const (
+	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
+	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
+)
+
+const (
 	LocalkubeServicePath = "/usr/lib/systemd/system/localkube.service"
 	LocalkubeRunning     = "active"
 	LocalkubeStopped     = "inactive"
@@ -143,6 +149,17 @@ const (
 	DefaultMsize         = 262144
 	DefaultMountVersion  = "9p2000.u"
 )
+
+func GetKubernetesReleaseURL(binaryName, version string) string {
+	// TODO(r2d4): change this to official releases when the alpha controlplane commands are released.
+	// We are working with unreleased kubeadm changes at HEAD.
+	return fmt.Sprintf("https://storage.googleapis.com/minikube-builds/v1.7.3/%s", binaryName)
+	// return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
+}
+
+func GetKubernetesReleaseURLSha1(binaryName, version string) string {
+	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
+}
 
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 const DriverNone = "none"

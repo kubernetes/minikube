@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 )
@@ -61,6 +62,10 @@ func (b *BaseAsset) GetPermissions() string {
 
 type FileAsset struct {
 	BaseAsset
+}
+
+func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset {
+	return NewMemoryAsset(d, filepath.Dir(targetPath), filepath.Base(targetPath), permissions)
 }
 
 func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAsset, error) {
