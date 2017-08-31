@@ -48,6 +48,7 @@ type KubernetesConfig struct {
 
 const (
 	BootstrapperTypeLocalkube = "localkube"
+	BootstrapperTypeKubeadm   = "kubeadm"
 )
 
 var CachedImagesForBootstrapper = map[string][]string{
