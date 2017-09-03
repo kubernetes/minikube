@@ -21,7 +21,7 @@ After following the instructions on the KVM driver releases page, you need to ma
 ```
 
 # Install libvirt and qemu-kvm on your system, e.g.
-# Debian/Ubuntu
+# Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
 $ sudo apt install libvirt-bin qemu-kvm
 # Fedora/CentOS/RHEL
 $ sudo yum install libvirt-daemon-kvm qemu-kvm
