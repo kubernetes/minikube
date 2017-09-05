@@ -35,6 +35,16 @@ spec:
               secretKeyRef:
                 name: registry-creds-ecr
                 key: AWS_SECRET_ACCESS_KEY
+          - name: AWS_SESSION_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: AWS_SESSION_TOKEN
+          - name: awsregion
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: aws-region
           - name: awsaccount
             valueFrom:
               secretKeyRef:
