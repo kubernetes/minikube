@@ -42,6 +42,8 @@ type KubernetesConfig struct {
 	NetworkPlugin     string
 	FeatureGates      string
 	ExtraOptions      util.ExtraOptionSlice
+
+	ShouldLoadCachedImages bool
 }
 
 const (
