@@ -88,8 +88,11 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 
 func runStart(cmd *cobra.Command, args []string) {
 	shouldCacheImages := viper.GetBool(cacheImages)
+	k8sVersion := viper.GetString(kubernetesVersion)
+	clusterBootstrapper := viper.GetString(cmdcfg.Bootstrapper)
+
 	if shouldCacheImages {
-		go machine.CacheImagesForBootstrapper(viper.GetString(cmdcfg.Bootstrapper))
+		go machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
 	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -112,8 +115,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if dv := viper.GetString(kubernetesVersion); dv != constants.DefaultKubernetesVersion {
-		validateK8sVersion(dv)
+	if k8sVersion != constants.DefaultKubernetesVersion {
+		validateK8sVersion(k8sVersion)
 	}
 
 	config := cluster.MachineConfig{
@@ -195,7 +198,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ShouldLoadCachedImages: shouldCacheImages,
 	}
 
-	clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
 	if err != nil {
 		glog.Exitf("Error getting cluster bootstrapper: %s", err)
 	}
@@ -211,13 +214,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Moving files into cluster...")
-	if err := clusterBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
+	if err := k8sBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := clusterBootstrapper.SetupCerts(kubernetesConfig); err != nil {
+	if err := k8sBootstrapper.SetupCerts(kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdUtil.MaybeReportErrorAndExit(err)
 	}
@@ -253,12 +256,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Starting cluster components...")
 
 	if !exists {
-		if err := clusterBootstrapper.StartCluster(kubernetesConfig); err != nil {
+		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 	} else {
-		if err := clusterBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+		if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error restarting cluster: ", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
