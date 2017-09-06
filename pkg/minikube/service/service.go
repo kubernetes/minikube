@@ -201,7 +201,7 @@ func validateService(s corev1.ServiceInterface, service string) error {
 func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) error {
 	endpoint, err := endpoints.Get(service, meta_v1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Error getting endpoints for service %s", service)
+		return &util.RetriableError{Err: errors.Errorf("Error getting endpoints for service %s", service)}
 	}
 	const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
 	if len(endpoint.Subsets) == 0 {
