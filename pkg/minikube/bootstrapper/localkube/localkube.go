@@ -106,8 +106,11 @@ func (lk *LocalkubeBootstrapper) RestartCluster(kubernetesConfig bootstrapper.Ku
 }
 
 func (lk *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesConfig) error {
-	// Make best effort to load any cached images
-	go machine.LoadImages(lk.cmd, constants.LocalkubeCachedImages, constants.ImageCacheDir)
+	if config.ShouldLoadCachedImages {
+		// Make best effort to load any cached images
+		go machine.LoadImages(lk.cmd, constants.LocalkubeCachedImages, constants.ImageCacheDir)
+
+	}
 
 	copyableFiles := []assets.CopyableFile{}
 	var localkubeFile assets.CopyableFile
