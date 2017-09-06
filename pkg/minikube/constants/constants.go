@@ -122,6 +122,7 @@ const DockerAPIVersion = "1.23"
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
 
 const AddonsPath = "/etc/kubernetes/addons"
+const FilesPath = "/files"
 
 const (
 	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"

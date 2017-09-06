@@ -17,6 +17,7 @@ limitations under the License.
 package assets
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -163,22 +164,22 @@ var Addons = map[string]*Addon{
 	}, false, "registry-creds"),
 }
 
-func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
-	// loop over .minikube/addons and add them to assets
-	searchDir := constants.MakeMiniPath("addons")
-	err := filepath.Walk(searchDir, func(addonFile string, f os.FileInfo, err error) error {
-		isDir, err := util.IsDirectory(addonFile)
+func AddMinikubeDirToAssets(minipath string, vmpath string, assetList *[]CopyableFile) {
+	// loop over $MINIKUBE_HOME/minipath and add them to assets
+	searchDir := constants.MakeMiniPath(minipath)
+	err := filepath.Walk(searchDir, func(miniFile string, f os.FileInfo, err error) error {
+		isDir, err := util.IsDirectory(miniFile)
 		if err == nil && !isDir {
-			f, err := NewFileAsset(addonFile, constants.AddonsPath, filepath.Base(addonFile), "0640")
+			f, err := NewFileAsset(miniFile, vmpath, filepath.Base(miniFile), "0640")
 			if err == nil {
 				*assetList = append(*assetList, f)
 			}
 		} else if err != nil {
-			glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+			glog.Infoln(fmt.Sprintf("Error encountered while walking %s: ", searchDir), err)
 		}
 		return nil
 	})
 	if err != nil {
-		glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+		glog.Infoln(fmt.Sprintf("Error encountered while walking %s: ", searchDir), err)
 	}
 }
