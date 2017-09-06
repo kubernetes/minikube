@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -174,7 +175,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 func addAddons(files *[]assets.CopyableFile) error {
 	// add addons to file list
 	// custom addons
-	assets.AddMinikubeAddonsDirToAssets(files)
+	assets.AddMinikubeDirToAssets("addons", constants.AddonsPath, files)
 	// bundled addons
 	for addonName, addonBundle := range assets.Addons {
 		// TODO(r2d4): Kubeadm ignores the kube-dns addon and uses its own.
@@ -228,6 +229,10 @@ func (k *KubeadmBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) erro
 }
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) error {
+	if cfg.ShouldLoadCachedImages {
+		// Make best effort to load any cached images
+		go machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
+	}
 	kubeadmCfg, err := k.generateConfig(cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
