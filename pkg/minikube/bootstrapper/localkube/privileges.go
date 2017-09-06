@@ -2,11 +2,7 @@ package localkube
 
 import (
 	"github.com/pkg/errors"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	clientv1 "k8s.io/client-go/pkg/api/v1"
 	rbacv1beta1 "k8s.io/client-go/pkg/apis/rbac/v1beta1"
 	"k8s.io/minikube/pkg/minikube/service"
 )
