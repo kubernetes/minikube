@@ -77,6 +77,19 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 		RuntimeConfig: lk.RuntimeConfig,
 	}
 
+	config.ProxyClientCertFile = lk.GetProxyClientPublicKeyCertPath()
+	config.ProxyClientKeyFile = lk.GetProxyClientPrivateKeyCertPath()
+	config.Authentication.RequestHeader.AllowedNames =
+		[]string{}
+	config.Authentication.RequestHeader.UsernameHeaders =
+		[]string{"X-Remote-User"}
+	config.Authentication.RequestHeader.GroupHeaders =
+		[]string{"X-Remote-Group"}
+	config.Authentication.RequestHeader.ExtraHeaderPrefixes =
+		[]string{"X-Remote-Extra-"}
+	config.Authentication.RequestHeader.ClientCAFile =
+		lk.GetProxyClientCAPublicKeyCertPath()
+
 	lk.SetExtraConfigForComponent("apiserver", &config)
 
 	return func() error {
