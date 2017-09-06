@@ -79,7 +79,7 @@ fi
 
 # see what driver we are using
 which docker-machine-driver-${VM_DRIVER} || true
-tree ~/.minikube || true
+find ~/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e

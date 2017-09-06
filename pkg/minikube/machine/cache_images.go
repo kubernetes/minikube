@@ -53,6 +53,11 @@ func CacheImagesForBootstrapper(clusterBootstrapper string) error {
 	return nil
 }
 
+// CacheImages will cache images on the host
+//
+// The cache directory currently caches images using the imagename_tag
+// For example, gcr.io/google-containers-kube-addon-manager:v6.4-beta.2 would be
+// stored at $CACHE_DIR/gcr.io/google-containers/kube-addon-manager_v6.4-beta.2
 func CacheImages(images []string, cacheDir string) error {
 	var g errgroup.Group
 	for _, image := range images {
