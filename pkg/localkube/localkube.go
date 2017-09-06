@@ -90,6 +90,19 @@ func (lk LocalkubeServer) GetCAPublicKeyCertPath() string {
 	return path.Join(lk.GetCertificateDirectory(), "ca.crt")
 }
 
+func (lk LocalkubeServer) GetProxyClientPrivateKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client.key")
+}
+func (lk LocalkubeServer) GetProxyClientPublicKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client.crt")
+}
+func (lk LocalkubeServer) GetProxyClientCAPublicKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client-ca.crt")
+}
+func (lk LocalkubeServer) GetProxyClientCAPrivateKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client-ca.key")
+}
+
 func (lk LocalkubeServer) GetAPIServerSecureURL() string {
 	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress.String(), lk.APIServerPort)
 }
@@ -198,11 +211,26 @@ func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
 
 func (lk LocalkubeServer) GenerateCerts() error {
 	if !lk.shouldGenerateCACerts() {
-		fmt.Println("Using these existing CA certs: ", lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath())
+		fmt.Println(
+			"Using these existing CA certs: ", lk.GetCAPublicKeyCertPath(),
+			lk.GetCAPrivateKeyCertPath(), lk.GetProxyClientCAPublicKeyCertPath(),
+			lk.GetProxyClientCAPrivateKeyCertPath(),
+		)
 	} else {
 		fmt.Println("Creating CA cert")
-		if err := util.GenerateCACert(lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath(), lk.APIServerName); err != nil {
-			fmt.Println("Failed to create CA certs: ", err)
+		if err := util.GenerateCACert(
+			lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath(),
+			lk.APIServerName,
+		); err != nil {
+			fmt.Println("Failed to create CA cert: ", err)
+			return err
+		}
+		fmt.Println("Creating proxy client CA cert")
+		if err := util.GenerateCACert(
+			lk.GetProxyClientCAPublicKeyCertPath(),
+			lk.GetProxyClientCAPrivateKeyCertPath(), "proxyClientCA",
+		); err != nil {
+			fmt.Println("Failed to create proxy client CA cert: ", err)
 			return err
 		}
 	}
@@ -213,13 +241,31 @@ func (lk LocalkubeServer) GenerateCerts() error {
 	}
 
 	if !lk.shouldGenerateCerts(ips) {
-		fmt.Println("Using these existing certs: ", lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
+		fmt.Println(
+			"Using these existing certs: ", lk.GetPublicKeyCertPath(),
+			lk.GetPrivateKeyCertPath(), lk.GetProxyClientPublicKeyCertPath(),
+			lk.GetProxyClientPrivateKeyCertPath(),
+		)
 		return nil
 	}
 	fmt.Println("Creating cert with IPs: ", ips)
 
-	if err := util.GenerateSignedCert(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, util.GetAlternateDNS(lk.DNSDomain), lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath()); err != nil {
-		fmt.Println("Failed to create certs: ", err)
+	if err := util.GenerateSignedCert(
+		lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), "minikube", ips,
+		util.GetAlternateDNS(lk.DNSDomain), lk.GetCAPublicKeyCertPath(),
+		lk.GetCAPrivateKeyCertPath(),
+	); err != nil {
+		fmt.Println("Failed to create cert: ", err)
+		return err
+	}
+
+	if err := util.GenerateSignedCert(
+		lk.GetProxyClientPublicKeyCertPath(), lk.GetProxyClientPrivateKeyCertPath(),
+		"aggregator", []net.IP{}, []string{},
+		lk.GetProxyClientCAPublicKeyCertPath(),
+		lk.GetProxyClientCAPrivateKeyCertPath(),
+	); err != nil {
+		fmt.Println("Failed to create proxy client cert: ", err)
 		return err
 	}
 

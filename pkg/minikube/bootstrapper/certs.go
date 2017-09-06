@@ -33,7 +33,10 @@ import (
 )
 
 var (
-	certs = []string{"ca.crt", "ca.key", "apiserver.crt", "apiserver.key"}
+	certs = []string{
+		"ca.crt", "ca.key", "apiserver.crt", "apiserver.key", "proxy-client-ca.crt",
+		"proxy-client-ca.key", "proxy-client.crt", "proxy-client.key",
+	}
 	// This is the internalIP , the API server and other components communicate on.
 	internalIP = net.ParseIP(util.DefaultServiceClusterIP)
 )
@@ -48,7 +51,17 @@ func SetupCerts(cmd CommandRunner, k8s KubernetesConfig) error {
 	caKey := filepath.Join(localPath, "ca.key")
 	publicPath := filepath.Join(localPath, "apiserver.crt")
 	privatePath := filepath.Join(localPath, "apiserver.key")
-	if err := generateCerts(caCert, caKey, publicPath, privatePath, ip, k8s.APIServerName, k8s.DNSDomain); err != nil {
+
+	proxyClientCACert := filepath.Join(localPath, "proxy-client-ca.crt")
+	proxyClientCAKey := filepath.Join(localPath, "proxy-client-ca.key")
+	proxyClientPublicPath := filepath.Join(localPath, "proxy-client.crt")
+	proxyClientPrivatePath := filepath.Join(localPath, "proxy-client.key")
+
+	if err := generateCerts(
+		caCert, caKey, publicPath, privatePath, ip, k8s.APIServerName,
+		k8s.DNSDomain, proxyClientCACert, proxyClientCAKey, proxyClientPublicPath,
+		proxyClientPrivatePath,
+	); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
 
@@ -95,16 +108,38 @@ func SetupCerts(cmd CommandRunner, k8s KubernetesConfig) error {
 	return nil
 }
 
-func generateCerts(caCert, caKey, pub, priv string, ip net.IP, name string, dnsDomain string) error {
+func generateCerts(
+	caCert, caKey, pub, priv string, ip net.IP, name, dnsDomain string,
+	proxyCACert, proxyCAKey, proxyPub, proxyPriv string,
+) error {
 	if !(util.CanReadFile(caCert) && util.CanReadFile(caKey)) {
 		if err := util.GenerateCACert(caCert, caKey, name); err != nil {
-			return errors.Wrap(err, "Error generating certificate")
+			return errors.Wrap(err, "Error generating CA certificate")
 		}
 	}
 
 	ips := []net.IP{ip, internalIP}
-	if err := util.GenerateSignedCert(pub, priv, ips, util.GetAlternateDNS(dnsDomain), caCert, caKey); err != nil {
+	if err := util.GenerateSignedCert(
+		pub, priv, "minikube", ips, util.GetAlternateDNS(dnsDomain),
+		caCert, caKey,
+	); err != nil {
 		return errors.Wrap(err, "Error generating signed cert")
 	}
+
+	if !(util.CanReadFile(proxyCACert) && util.CanReadFile(proxyCAKey)) {
+		if err := util.GenerateCACert(
+			proxyCACert, proxyCAKey, "proxyClientCA",
+		); err != nil {
+			return errors.Wrap(err, "Error generating proxy client CA certificate")
+		}
+	}
+
+	if err := util.GenerateSignedCert(
+		proxyPub, proxyPriv, "aggregator", []net.IP{}, []string{},
+		proxyCACert, proxyCAKey,
+	); err != nil {
+		return errors.Wrap(err, "Error generating signed proxy client cert")
+	}
+
 	return nil
 }

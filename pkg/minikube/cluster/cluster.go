@@ -44,10 +44,6 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-var (
-	certs = []string{"ca.crt", "ca.key", "apiserver.crt", "apiserver.key"}
-)
-
 const fileScheme = "file"
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
