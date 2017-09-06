@@ -62,12 +62,15 @@ MINIKUBE_ENV_windows 		:= CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
 # extra env vars that need to be set in cross build container
 MINIKUBE_ENV_darwin_DOCKER 	:= CC=o64-clang CXX=o64-clang++
 
+MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
+MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
+
 MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
 KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(LOCALKUBE_BUILD_IMAGE)
 
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
 define MINIKUBE_GO_BUILD_CMD
-	$(MINIKUBE_ENV_$(2)) go build -tags "container_image_ostree_stub containers_image_openpgp" --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
+	$(MINIKUBE_ENV_$(2)) go build -tags "$(MINIKUBE_BUILD_TAGS)" --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -113,7 +116,7 @@ endif
 
 .PHONY: e2e-%-amd64
 e2e-%-amd64:
-	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="integration container_image_ostree_stub containers_image_openpgp" -o out/$@
+	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
 
 e2e-windows-amd64.exe: e2e-windows-amd64
 	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
@@ -149,7 +152,7 @@ test-iso:
 
 .PHONY: integration
 integration: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)"
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" --minikube-args="$(MINIKUBE_ARGS)"
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
@@ -157,7 +160,7 @@ integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="integration versioned" --minikube-args="$(MINIKUBE_ARGS)"
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" --minikube-args="$(MINIKUBE_ARGS)"
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go
