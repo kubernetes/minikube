@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 
 	"github.com/docker/machine/libmachine"
@@ -105,6 +106,12 @@ func (lk *LocalkubeBootstrapper) RestartCluster(kubernetesConfig bootstrapper.Ku
 }
 
 func (lk *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesConfig) error {
+	if config.ShouldLoadCachedImages {
+		// Make best effort to load any cached images
+		go machine.LoadImages(lk.cmd, constants.LocalkubeCachedImages, constants.ImageCacheDir)
+
+	}
+
 	copyableFiles := []assets.CopyableFile{}
 	var localkubeFile assets.CopyableFile
 	var err error

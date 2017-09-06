@@ -33,6 +33,10 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testda
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
 
+export MINIKUBE_WANTREPORTERRORPROMPT=False
+sudo ./out/minikube-${OS_ARCH} delete || true
+./out/minikube-${OS_ARCH} delete || true
+
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
 
@@ -70,17 +74,12 @@ if [ -e out/docker-machine-driver-hyperkit ]; then
   sudo chmod u+s out/docker-machine-driver-hyperkit || true
 fi
 
-MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
-|| MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
-|| true
-sudo rm -rf $HOME/.minikube || true
-sudo rm -rf $HOME/.kube || true
-
 # See the default image
 ./out/minikube-${OS_ARCH} start -h | grep iso
 
 # see what driver we are using
 which docker-machine-driver-${VM_DRIVER} || true
+find ~/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
@@ -94,8 +93,6 @@ sudo cat $KUBECONFIG
 MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
 || MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
 || true
-sudo rm -rf $HOME/.minikube || true
-sudo rm -rf $HOME/.kube || true
 
 if [[ $result -eq 0 ]]; then
   status="success"

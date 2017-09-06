@@ -35,7 +35,7 @@ cd ${GOPATH}/src/${REPO_PATH}
 rm -f out/$COV_FILE
 echo "mode: count" > out/$COV_FILE
 for pkg in $(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...); do
-    go test -v $pkg -covermode=count -coverprofile=out/$COV_TMP_FILE 
+    go test -tags "container_image_ostree_stub containers_image_openpgp" -v $pkg -covermode=count -coverprofile=out/$COV_TMP_FILE
     # tail -n +2 skips the first line of the file
     # for coverprofile the first line is the `mode: count` line which we only want once in our file
     tail -n +2 out/$COV_TMP_FILE >> out/$COV_FILE || (echo "Unable to append coverage for $pkg" && exit 1)

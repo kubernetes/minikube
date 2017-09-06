@@ -16,7 +16,10 @@ limitations under the License.
 
 package bootstrapper
 
-import "k8s.io/minikube/pkg/util"
+import (
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
+)
 
 // Bootstrapper contains all the methods needed to bootstrap a kubernetes cluster
 type Bootstrapper interface {
@@ -39,8 +42,14 @@ type KubernetesConfig struct {
 	NetworkPlugin     string
 	FeatureGates      string
 	ExtraOptions      util.ExtraOptionSlice
+
+	ShouldLoadCachedImages bool
 }
 
 const (
 	BootstrapperTypeLocalkube = "localkube"
 )
+
+var CachedImagesForBootstrapper = map[string][]string{
+	BootstrapperTypeLocalkube: constants.LocalkubeCachedImages,
+}

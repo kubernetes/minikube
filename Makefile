@@ -67,7 +67,7 @@ KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u)
 
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
 define MINIKUBE_GO_BUILD_CMD
-	$(MINIKUBE_ENV_$(2)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
+	$(MINIKUBE_ENV_$(2)) go build -tags "container_image_ostree_stub containers_image_openpgp" --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -113,7 +113,7 @@ endif
 
 .PHONY: e2e-%-amd64
 e2e-%-amd64:
-	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/$@
+	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="integration container_image_ostree_stub containers_image_openpgp" -o out/$@
 
 e2e-windows-amd64.exe: e2e-windows-amd64
 	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe

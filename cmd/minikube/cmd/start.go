@@ -66,6 +66,7 @@ const (
 	dnsDomain             = "dns-domain"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
+	cacheImages           = "cache-images"
 )
 
 var (
@@ -86,6 +87,10 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
+	shouldCacheImages := viper.GetBool(cacheImages)
+	if shouldCacheImages {
+		go machine.CacheImagesForBootstrapper(viper.GetString(cmdcfg.Bootstrapper))
+	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
@@ -178,15 +183,16 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	kubernetesConfig := bootstrapper.KubernetesConfig{
-		KubernetesVersion: selectedKubernetesVersion,
-		NodeIP:            ip,
-		NodeName:          cfg.GetMachineName(),
-		APIServerName:     viper.GetString(apiServerName),
-		DNSDomain:         viper.GetString(dnsDomain),
-		FeatureGates:      viper.GetString(featureGates),
-		ContainerRuntime:  viper.GetString(containerRuntime),
-		NetworkPlugin:     viper.GetString(networkPlugin),
-		ExtraOptions:      extraOptions,
+		KubernetesVersion:      selectedKubernetesVersion,
+		NodeIP:                 ip,
+		NodeName:               cfg.GetMachineName(),
+		APIServerName:          viper.GetString(apiServerName),
+		DNSDomain:              viper.GetString(dnsDomain),
+		FeatureGates:           viper.GetString(featureGates),
+		ContainerRuntime:       viper.GetString(containerRuntime),
+		NetworkPlugin:          viper.GetString(networkPlugin),
+		ExtraOptions:           extraOptions,
+		ShouldLoadCachedImages: shouldCacheImages,
 	}
 
 	clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
@@ -355,6 +361,7 @@ func init() {
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
+	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
