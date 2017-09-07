@@ -185,6 +185,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /mnt/$PARTNAME/var/lib/minishift
     mkdir /var/lib/minishift
     mount --bind /mnt/$PARTNAME/var/lib/minishift /var/lib/minishift
+
+    ## make an env file for other services to discover this PARTNAME easier
+    mkdir -p /var/run/minikube
+    echo "PERSISTENT_DIR=\"/mnt/$PARTNAME\"" > /var/run/minikube/env
 fi
 swapon "${UNPARTITIONED_HD}2"
 
