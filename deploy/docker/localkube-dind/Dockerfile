@@ -55,6 +55,18 @@ RUN add-apt-repository \
    stable"
 RUN apt-get update && apt-get install -yy -q docker-ce
 
+# Install sshd
+RUN apt-get update && apt-get install -y openssh-server
+RUN mkdir /var/run/sshd
+
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+# Change SSH Port to not conflict with Devshell
+# TODO(aaron-prindle) make this configurable, perhaps including sshd at all
+RUN sed -i 's/Port 22/Port 26/g' /etc/ssh/sshd_config
+RUN sed -i 's/#AuthorizedKeysFile/AuthorizedKeysFile/g' /etc/ssh/sshd_config
+RUN sed -i 's|authorized_keys|authorized_keys /etc/localkube-ssh/localkube_rsa.pub|g' /etc/ssh/sshd_config
+
 # Copy over important files
 COPY out/localkube /localkube
 COPY deploy/docker/localkube-dind/start.sh /start.sh
@@ -67,4 +79,4 @@ RUN chmod +x /localkube
 RUN chmod +x /start.sh
 RUN chmod +x /dindnet
 
-CMD /start.sh
+CMD /usr/sbin/sshd -D

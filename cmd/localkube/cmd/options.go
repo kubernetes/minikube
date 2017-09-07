@@ -39,8 +39,9 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 		APIServerAddress:         net.ParseIP("0.0.0.0"),
 		APIServerPort:            util.APIServerPort,
 		APIServerInsecureAddress: net.ParseIP("127.0.0.1"),
-		APIServerInsecurePort:    8080,
+		APIServerInsecurePort:    0,
 		APIServerName:            constants.APIServerName,
+		ShouldGenerateKubeconfig: false,
 		ShouldGenerateCerts:      true,
 		ShowVersion:              false,
 		RuntimeConfig:            map[string]string{"api/all": "true"},
@@ -62,6 +63,7 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.IntVar(&s.APIServerInsecurePort, "apiserver-insecure-port", s.APIServerInsecurePort, "The port the apiserver will listen insecurely on")
 	flag.StringVar(&s.APIServerName, "apiserver-name", s.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the API server available from outside the machine")
 
+	flag.BoolVar(&s.ShouldGenerateKubeconfig, "generate-kubeconfig", s.ShouldGenerateKubeconfig, "If localkube should generate its own kubeconfig")
 	flag.BoolVar(&s.ShouldGenerateCerts, "generate-certs", s.ShouldGenerateCerts, "If localkube should generate it's own certificates")
 	flag.BoolVar(&s.ShowVersion, "show-version", s.ShowVersion, "If localkube should just print the version and exit.")
 	flag.BoolVar(&s.ShowHostIP, "host-ip", s.ShowHostIP, "If localkube should just print the host IP and exit.")

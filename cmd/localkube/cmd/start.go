@@ -79,6 +79,12 @@ func SetupServer(s *localkube.LocalkubeServer) {
 			panic(err)
 		}
 	}
+	if s.ShouldGenerateKubeconfig {
+		if err := s.GenerateKubeconfig(); err != nil {
+			fmt.Println("Failed to create kubeconfig!")
+			panic(err)
+		}
+	}
 
 	// Set feature gates
 	if s.FeatureGates != "" {
