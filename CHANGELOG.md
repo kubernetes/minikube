@@ -1,5 +1,16 @@
 # Minikube Release Notes
 
+# Version 0.22.0 - 9/6/2017
+* Made secure serving the default for all components and disabled insecure serving [#1694](https://github.com/kubernetes/minikube/pull/1694)
+* Increased minikube boot speed by caching docker images [#1881](https://github.com/kubernetes/minikube/pull/1881)
+* Added .minikube/files directory which gets moved into the VM at /files each VM start[#1917](https://github.com/kubernetes/minikube/pull/1917)
+* Update kubernetes to v1.7.5[1912](https://github.com/kubernetes/minikube/pull/1912)
+* Update etcd to v3 [#1720](https://github.com/kubernetes/minikube/pull/1720)
+* Added experimental hyperkit driver in tree[#1776](https://github.com/kubernetes/minikube/pull/1776)
+* Added experimental kvm driver in tree[#1828](https://github.com/kubernetes/minikube/pull/1828)
+
+* [MINIKUBE ISO] Update cni-bin to v0.6.0-rc1 [#1760](https://github.com/kubernetes/minikube/pull/1760)
+
 # Version 0.21.0 - 7/25/2017
 * Added check for extra arguments to minikube delete [#1718](https://github.com/kubernetes/minikube/pull/1718)
 * Add GCR URL Env Var to Registry-Creds addon [#1436](https://github.com/kubernetes/minikube/pull/1436)
