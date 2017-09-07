@@ -17,17 +17,21 @@ limitations under the License.
 package localkube
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"path"
+	"strconv"
 
 	"github.com/golang/glog"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/util/flag"
+	"k8s.io/minikube/pkg/util/kubeconfig"
 
 	"k8s.io/minikube/pkg/util"
 )
@@ -52,6 +56,7 @@ type LocalkubeServer struct {
 	APIServerInsecurePort    int
 	APIServerName            string
 	ShouldGenerateCerts      bool
+	ShouldGenerateKubeconfig bool
 	ShowVersion              bool
 	ShowHostIP               bool
 	RuntimeConfig            flag.ConfigurationMap
@@ -110,7 +115,43 @@ func (lk LocalkubeServer) GetAPIServerSecureURL() string {
 }
 
 func (lk LocalkubeServer) GetAPIServerInsecureURL() string {
-	return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress.String(), lk.APIServerInsecurePort)
+	if lk.APIServerInsecurePort != 0 {
+		return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress.String(), lk.APIServerInsecurePort)
+	}
+	return ""
+}
+
+func (lk LocalkubeServer) GetAPIServerProtocol() string {
+	if lk.APIServerInsecurePort != 0 {
+		return "http://"
+	}
+	return "https://"
+}
+
+func (lk LocalkubeServer) GetTransport() (*http.Transport, error) {
+	if lk.APIServerInsecurePort != 0 {
+		return &http.Transport{}, nil
+	}
+	cert, err := tls.LoadX509KeyPair(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
+	if err != nil {
+		glog.Error(err)
+		return &http.Transport{}, err
+	}
+
+	// Load CA cert
+	caCert, err := ioutil.ReadFile(lk.GetCAPublicKeyCertPath())
+	if err != nil {
+		glog.Warning(err)
+		return &http.Transport{}, err
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+	}
+	tlsConfig.BuildNameToCertificate()
+	return &http.Transport{TLSClientConfig: tlsConfig}, nil
 }
 
 // Get the host's public IP address
@@ -192,6 +233,33 @@ func (lk LocalkubeServer) shouldGenerateCACerts() bool {
 	}
 
 	return false
+}
+
+func (lk LocalkubeServer) GenerateKubeconfig() error {
+	if !lk.ShouldGenerateKubeconfig {
+		return nil
+	}
+
+	// setup kubeconfig
+	kubeConfigFile := util.DefaultKubeConfigPath
+	glog.Infof("Setting up kubeconfig at: %s", kubeConfigFile)
+	kubeHost := "http://127.0.0.1:" + strconv.Itoa(lk.APIServerInsecurePort)
+
+	//TODO(aaron-prindle) configure this so that it can generate secure certs as well
+	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
+		ClusterName:          lk.APIServerName,
+		ClusterServerAddress: kubeHost,
+		KeepContext:          false,
+	}
+
+	kubeCfgSetup.SetKubeConfigFile(kubeConfigFile)
+
+	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
+		glog.Errorln("Error setting up kubeconfig: ", err)
+		return err
+	}
+
+	return nil
 }
 
 func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
