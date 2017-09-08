@@ -44,11 +44,7 @@ func testAddons(t *testing.T) {
 
 func testDashboard(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t,
-	}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	if err := util.WaitForDashboardRunning(t); err != nil {
 		t.Fatalf("waiting for dashboard to be up: %s", err)
@@ -73,10 +69,7 @@ func testDashboard(t *testing.T) {
 
 func testServicesList(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	checkServices := func() error {
 		output := minikubeRunner.RunCommand("service list", false)

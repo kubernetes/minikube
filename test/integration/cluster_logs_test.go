@@ -21,19 +21,14 @@ package integration
 import (
 	"strings"
 	"testing"
-
-	"k8s.io/minikube/test/integration/util"
 )
 
 func testClusterLogs(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
+	logsCmdOutput := minikubeRunner.GetLogs()
 
-	logsCmdOutput := minikubeRunner.RunCommand("logs", true)
 	//check for # of lines or check for strings
 	logWords := []string{"minikube", ".go"}
 	for _, logWord := range logWords {

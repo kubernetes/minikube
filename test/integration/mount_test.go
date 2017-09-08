@@ -36,10 +36,7 @@ func testMounting(t *testing.T) {
 	if strings.Contains(*args, "--vm-driver=none") {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
