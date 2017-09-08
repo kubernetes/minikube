@@ -36,8 +36,21 @@ Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikub
 ### Linux Continous Integration with VM support
 Example with `kubectl` installation:
 ```shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
-curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl
+#!/bin/bash
+# MiniKube
+#
+# Download and give permisions to Minikube bin
+if [ ! -f /usr/local/bin/minikube ]; then
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+	&& chmod +x minikube \
+	&& sudo mv minikube /usr/local/bin/
+fi
+# Download Kubectl
+if [ ! -f /usr/local/bin/kubectl ]; then
+curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl \
+       && chmod +x kubectl \
+       && sudo mv kubectl /usr/local/bin/
+fi
 
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -52,7 +65,7 @@ sudo -E ./minikube start --vm-driver=none
 # this for loop waits until kubectl can access the api server that minikube has created
 for i in {1..150} # timeout for 5 minutes
 do
-   ./kubectl get po &> /dev/null
+   ./kubectl get pop &> /dev/null
    if [ $? -ne 1 ]; then
       break
   fi
