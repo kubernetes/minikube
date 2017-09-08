@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -76,12 +77,12 @@ func testMounting(t *testing.T) {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
-	client, err := util.GetClient()
+	client, err := pkgutil.GetClient()
 	if err != nil {
 		t.Fatalf("getting kubernetes client: %s", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
-	if err := util.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+	if err := pkgutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		t.Fatalf("Error waiting for busybox mount pod to be up: %s", err)
 	}
 
