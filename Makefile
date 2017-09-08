@@ -152,15 +152,15 @@ test-iso:
 
 .PHONY: integration
 integration: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" --minikube-args="$(MINIKUBE_ARGS)"
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
-	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-args="--vm-driver=none --alsologtostderr" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64
+	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" --minikube-args="$(MINIKUBE_ARGS)"
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go

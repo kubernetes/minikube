@@ -28,7 +28,7 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
+	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)

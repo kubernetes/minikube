@@ -36,10 +36,7 @@ func TestVersionedFunctional(t *testing.T) {
 	var minikubeRunner util.MinikubeRunner
 	for _, version := range k8sVersions {
 		vArgs := fmt.Sprintf("%s --kubernetes-version %s", *args, version.Version)
-		minikubeRunner = util.MinikubeRunner{
-			BinaryPath: *binaryPath,
-			Args:       vArgs,
-			T:          t}
+		minikubeRunner = NewMinikubeRunner(t)
 		minikubeRunner.EnsureRunning()
 
 		t.Run("Status", testClusterStatus)

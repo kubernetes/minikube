@@ -30,10 +30,7 @@ import (
 
 func TestStartStop(t *testing.T) {
 
-	runner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
+	runner := NewMinikubeRunner(t)
 	runner.RunCommand("delete", false)
 	runner.CheckStatus(state.None.String())
 

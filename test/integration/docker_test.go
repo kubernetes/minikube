@@ -22,22 +22,17 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-
-	"k8s.io/minikube/test/integration/util"
 )
 
 func TestDocker(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
-	if strings.Contains(*args, "--vm-driver=none") {
+	if strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
 
 	minikubeRunner.RunCommand("delete", false)
-	startCmd := fmt.Sprintf("start %s %s", minikubeRunner.Args, "--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
+	startCmd := fmt.Sprintf("start %s %s %s", minikubeRunner.StartArgs, minikubeRunner.Args, "--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
 	minikubeRunner.RunCommand(startCmd, true)
 	minikubeRunner.EnsureRunning()
 

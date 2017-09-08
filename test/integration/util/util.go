@@ -42,6 +42,7 @@ type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
 	Args       string
+	StartArgs  string
 }
 
 func (m *MinikubeRunner) Run(cmd string) error {
@@ -103,7 +104,7 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 func (m *MinikubeRunner) Start() {
-	m.RunCommand(fmt.Sprintf("start %s", m.Args), true)
+	m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
 }
 
 func (m *MinikubeRunner) EnsureRunning() {
@@ -129,7 +130,11 @@ func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
 }
 
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand("status --format={{.MinikubeStatus}}", true)
+	return m.RunCommand(fmt.Sprintf("status --format={{.MinikubeStatus}} %s", m.Args), true)
+}
+
+func (m *MinikubeRunner) GetLogs() string {
+	return m.RunCommand(fmt.Sprintf("logs %s", m.Args), true)
 }
 
 func (m *MinikubeRunner) CheckStatus(desired string) {
