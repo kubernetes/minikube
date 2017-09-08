@@ -83,6 +83,7 @@ networking:
   serviceSubnet: {{.ServiceCIDR}}
 etcd:
   dataDir: {{.EtcdDataDir}}
+nodeName: {{.NodeName}}
 `
 
 func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
@@ -198,7 +199,7 @@ func addAddons(files *[]assets.CopyableFile) error {
 func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) error {
 	restoreTmpl := `
 	sudo kubeadm alpha phase certs all --config {{.KubeadmConfigFile}} &&
-	sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} --node-name {{.NodeName}} &&
+	sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} &&
 	sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile}} &&
 	sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
 	`
@@ -206,10 +207,8 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 
 	opts := struct {
 		KubeadmConfigFile string
-		NodeName          string
 	}{
 		KubeadmConfigFile: constants.KubeadmConfigFile,
-		NodeName:          k8s.NodeName,
 	}
 
 	b := bytes.Buffer{}
@@ -219,6 +218,10 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 
 	if err := k.c.Run(b.String()); err != nil {
 		return errors.Wrapf(err, "running cmd: %s", b.String())
+	}
+
+	if err := restartKubeProxy(k8s); err != nil {
+		return errors.Wrap(err, "restarting kube-proxy")
 	}
 
 	return nil
@@ -297,6 +300,7 @@ func (k *KubeadmBootstrapper) generateConfig(k8s bootstrapper.KubernetesConfig) 
 		APIServerPort     int
 		KubernetesVersion string
 		EtcdDataDir       string
+		NodeName          string
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultInsecureRegistry,
@@ -304,6 +308,7 @@ func (k *KubeadmBootstrapper) generateConfig(k8s bootstrapper.KubernetesConfig) 
 		APIServerPort:     util.APIServerPort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data", //TODO(r2d4): change to something else persisted
+		NodeName:          k8s.NodeName,
 	}
 
 	b := bytes.Buffer{}
@@ -318,7 +323,7 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 	targetDir := constants.MakeMiniPath("cache", version)
 	targetFilepath := filepath.Join(targetDir, binary)
 
-	_, err := os.Stat(targetDir)
+	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
 	if err == nil {
 		return targetFilepath, nil

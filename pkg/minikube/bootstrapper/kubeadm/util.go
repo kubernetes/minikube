@@ -17,16 +17,22 @@ limitations under the License.
 package kubeadm
 
 import (
+	"bytes"
 	"encoding/json"
+	"html/template"
 
 	"github.com/pkg/errors"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	clientv1 "k8s.io/client-go/pkg/api/v1"
 	rbacv1beta1 "k8s.io/client-go/pkg/apis/rbac/v1beta1"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/minikube/pkg/util"
 )
 
 const masterTaint = "node-role.kubernetes.io/master"
@@ -105,5 +111,82 @@ func elevateKubeSystemPrivileges() error {
 	if err != nil {
 		return errors.Wrap(err, "creating clusterrolebinding")
 	}
+	return nil
+}
+
+const (
+	kubeconfigConf         = "kubeconfig.conf"
+	kubeProxyConfigmapTmpl = `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    server: https://{{.AdvertiseAddress}}:{{.APIServerPort}}
+  name: default
+contexts:
+- context:
+    cluster: default
+    namespace: default
+    user: default
+  name: default
+current-context: default
+users:
+- name: default
+  user:
+    tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+`
+)
+
+func restartKubeProxy(k8s bootstrapper.KubernetesConfig) error {
+	client, err := util.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting k8s client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "kube-proxy"}))
+	if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for kube-proxy to be up for configmap update")
+	}
+
+	cfgMap, err := client.CoreV1().ConfigMaps("kube-system").Get("kube-proxy", metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrap(err, "getting kube-proxy configmap")
+	}
+
+	t := template.Must(template.New("kubeProxyTmpl").Parse(kubeProxyConfigmapTmpl))
+	opts := struct {
+		AdvertiseAddress string
+		APIServerPort    int
+	}{
+		AdvertiseAddress: k8s.NodeIP,
+		APIServerPort:    util.APIServerPort,
+	}
+
+	kubeconfig := bytes.Buffer{}
+	if err := t.Execute(&kubeconfig, opts); err != nil {
+		return errors.Wrap(err, "executing kube proxy configmap template")
+	}
+
+	data := map[string]string{
+		kubeconfigConf: kubeconfig.String(),
+	}
+
+	cfgMap.Data = data
+	if _, err := client.CoreV1().ConfigMaps("kube-system").Update(cfgMap); err != nil {
+		return errors.Wrap(err, "updating configmap")
+	}
+
+	pods, err := client.CoreV1().Pods("kube-system").List(metav1.ListOptions{
+		LabelSelector: "k8s-app=kube-proxy",
+	})
+	if err != nil {
+		return errors.Wrap(err, "listing kube-proxy pods")
+	}
+	for _, pod := range pods.Items {
+		if err := client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
+			return errors.Wrapf(err, "deleting pod %+v", pod)
+		}
+	}
+
 	return nil
 }
