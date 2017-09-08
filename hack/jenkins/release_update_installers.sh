@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-git config user.name "minikube-bot"
-git config user.email "minikube-bot@google.com"
+git config --global user.name "minikube-bot"
+git config --global user.email "minikube-bot@google.com"
 
 REPLACE_PKG_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 REPLACE_MINIKUBE_LINUX_SHA256=$(awk '{ print $1 }' out/minikube-linux-amd64.sha256)
@@ -29,7 +29,7 @@ REPLACE_CASK_CHECKPOINT=$(curl \
                         | shasum -a 256 | awk '{ print $1 }')
 MINIKUBE_ROOT=$PWD
 
-GIT_SSH_COMMAND='ssh -i $ARCH_SSH_KEY' git clone ssh://aur@aur.archlinux.org/minikube.git aur-minikube
+git clone ssh://aur@aur.archlinux.org/minikube.git aur-minikube
 pushd aur-minikube >/dev/null
     sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
         -e "s/\$MINIKUBE_LINUX_SHA256/${REPLACE_MINIKUBE_LINUX_SHA256}/g" \
@@ -40,7 +40,7 @@ pushd aur-minikube >/dev/null
     git add PKGBUILD .SRCINFO
     git commit -m "Upgrade to version ${REPLACE_PKG_VERSION}"
 
-    GIT_SSH_COMMAND='ssh -i $ARCH_SSH_KEY' git push origin master
+    git push origin master
 
 popd >/dev/null
 
