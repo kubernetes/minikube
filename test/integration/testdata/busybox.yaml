@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: busybox
+  generateName: busybox-
   labels:
     integration-test: busybox
 spec:
