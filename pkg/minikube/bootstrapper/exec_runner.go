@@ -75,7 +75,7 @@ func (*ExecRunner) Copy(f assets.CopyableFile) error {
 	if err != nil {
 		return errors.Wrapf(err, "error converting permissions %s to integer", perms)
 	}
-	if err := target.Chmod(os.FileMode(perms)); err != nil {
+	if err := os.Chmod(targetPath, os.FileMode(perms)); err != nil {
 		return errors.Wrapf(err, "error changing file permissions for %s", targetPath)
 	}
 
