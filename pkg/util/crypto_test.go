@@ -123,7 +123,10 @@ func TestGenerateSignedCert(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
-			err := GenerateSignedCert(certPath, keyPath, ips, alternateDNS, test.signerCertPath, test.signerKeyPath)
+			err := GenerateSignedCert(
+				certPath, keyPath, "minikube", ips, alternateDNS, test.signerCertPath,
+				test.signerKeyPath,
+			)
 			if err != nil && !test.err {
 				t.Errorf("GenerateSignedCert() error = %v", err)
 			}
