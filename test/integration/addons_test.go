@@ -27,17 +27,18 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func testAddons(t *testing.T) {
 	t.Parallel()
-	client, err := util.GetClient()
+	client, err := pkgutil.GetClient()
 	if err != nil {
 		t.Fatalf("Could not get kubernetes client: %s", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
-	if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		t.Errorf("Error waiting for addon manager to be up")
 	}
 }
