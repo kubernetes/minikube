@@ -238,8 +238,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
 		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: kubeHost,
-		ClientCertificate:    constants.MakeMiniPath("apiserver.crt"),
-		ClientKey:            constants.MakeMiniPath("apiserver.key"),
+		ClientCertificate:    constants.MakeMiniPath("client.crt"),
+		ClientKey:            constants.MakeMiniPath("client.key"),
 		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
 	}
