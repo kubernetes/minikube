@@ -76,10 +76,7 @@ func shouldCheckURLVersion(filePath string) bool {
 		return false
 	}
 	lastUpdateTime := getTimeFromFileIfExists(filePath)
-	if time.Since(lastUpdateTime).Hours() < viper.GetFloat64(config.ReminderWaitPeriodInHours) {
-		return false
-	}
-	return true
+	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
 }
 
 type Release struct {

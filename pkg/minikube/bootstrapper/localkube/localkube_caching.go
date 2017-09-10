@@ -55,7 +55,6 @@ func (l *localkubeCacher) isLocalkubeCached() bool {
 }
 
 func (l *localkubeCacher) downloadAndCacheLocalkube() error {
-	err := errors.New("")
 	url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion, constants.LocalkubeLinuxFilename)
 	if err != nil {
 		return errors.Wrap(err, "Error getting localkube download url")

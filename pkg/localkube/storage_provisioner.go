@@ -17,13 +17,13 @@ limitations under the License.
 package localkube
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/r2d4/external-storage/lib/controller"
 	"github.com/r2d4/external-storage/lib/leaderelection"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,7 +110,7 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 
 	path := path.Join(p.pvDir, volume.Name)
 	if err := os.RemoveAll(path); err != nil {
-		return err
+		return errors.Wrap(err, "removing hostpath PV")
 	}
 
 	return nil

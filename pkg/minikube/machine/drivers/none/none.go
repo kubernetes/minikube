@@ -126,11 +126,11 @@ fi
 func (d *Driver) Kill() error {
 	cmd := exec.Command("sudo", "systemctl", "stop", "localkube.service")
 	if err := cmd.Start(); err != nil {
-		return err
+		return errors.Wrap(err, "stopping the localkube service")
 	}
 	cmd = exec.Command("sudo", "rm", "-rf", "/var/lib/localkube")
 	if err := cmd.Start(); err != nil {
-		return err
+		return errors.Wrap(err, "removing localkube")
 	}
 	return nil
 }
@@ -138,11 +138,11 @@ func (d *Driver) Kill() error {
 func (d *Driver) Remove() error {
 	cmd := exec.Command("sudo", "systemctl", "stop", "localkube.service")
 	if err := cmd.Start(); err != nil {
-		return err
+		return errors.Wrap(err, "stopping localkube service")
 	}
 	cmd = exec.Command("sudo", "rm", "-rf", "/var/lib/localkube")
 	if err := cmd.Start(); err != nil {
-		return err
+		return errors.Wrap(err, "removing localkube")
 	}
 	return nil
 }
