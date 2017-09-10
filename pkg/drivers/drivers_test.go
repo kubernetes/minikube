@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hyperkit
+package drivers
 
 import (
 	"io/ioutil"
@@ -35,7 +35,7 @@ func Test_createDiskImage(t *testing.T) {
 
 	sizeInMb := 100
 	sizeInBytes := int64(sizeInMb) * 1000000
-	if err := createDiskImage(sshPath, diskPath, sizeInMb); err != nil {
+	if err := createRawDiskImage(sshPath, diskPath, sizeInMb); err != nil {
 		t.Errorf("createDiskImage() error = %v", err)
 	}
 	fi, err := os.Lstat(diskPath)

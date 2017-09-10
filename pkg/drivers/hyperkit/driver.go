@@ -28,13 +28,12 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/mcnutils"
-	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pborman/uuid"
+	"github.com/pkg/errors"
 	vmnet "github.com/zchee/go-vmnet"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -46,6 +45,7 @@ const (
 
 type Driver struct {
 	*drivers.BaseDriver
+	*pkgdrivers.CommonDriver
 	Boot2DockerURL string
 	DiskSize       int
 	CPU            int
@@ -58,19 +58,16 @@ func NewDriver(hostName, storePath string) *Driver {
 		BaseDriver: &drivers.BaseDriver{
 			SSHUser: "docker",
 		},
+		CommonDriver: &pkgdrivers.CommonDriver{},
 	}
 }
 
 func (d *Driver) Create() error {
-	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
-
-	if err := ssh.GenerateSSHKey(d.GetSSHKeyPath()); err != nil {
-		return err
+	// TODO: handle different disk types.
+	if err := pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
+		return errors.Wrap(err, "making disk image")
 	}
 
-	if err := b2dutils.CopyIsoToMachineDir(d.Boot2DockerURL, d.MachineName); err != nil {
-		return err
-	}
 	isoPath := d.ResolveStorePath(isoFilename)
 	if err := d.extractKernel(isoPath); err != nil {
 		return err
@@ -82,12 +79,6 @@ func (d *Driver) Create() error {
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
 	return "hyperkit"
-}
-
-// GetCreateFlags returns the mcnflag.Flag slice representing the flags
-// that can be set, their descriptions and defaults.
-func (d *Driver) GetCreateFlags() []mcnflag.Flag {
-	return nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -131,11 +122,6 @@ func (d *Driver) Kill() error {
 	return d.sendSignal(syscall.SIGKILL)
 }
 
-// PreCreateCheck allows for pre-create operations to make sure a driver is ready for creation
-func (d *Driver) PreCreateCheck() error {
-	return nil
-}
-
 // Remove a host
 func (d *Driver) Remove() error {
 	s, err := d.GetState()
@@ -150,37 +136,12 @@ func (d *Driver) Remove() error {
 	return nil
 }
 
-// Restart a host. This may just call Stop(); Start() if the provider does not
-// have any special restart behaviour.
 func (d *Driver) Restart() error {
-	for _, f := range []func() error{d.Stop, d.Start} {
-		if err := f(); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// SetConfigFromFlags configures the driver with the object that was returned
-// by RegisterCreateFlags
-func (d *Driver) SetConfigFromFlags(opts drivers.DriverOptions) error {
-	return nil
+	return pkgdrivers.Restart(d)
 }
 
 // Start a host
 func (d *Driver) Start() error {
-
-	// TODO: handle different disk types.
-	diskPath := filepath.Join(d.ResolveStorePath("."), d.MachineName+".rawdisk")
-	if _, err := os.Stat(diskPath); os.IsNotExist(err) {
-		if err := createDiskImage(d.publicSSHKeyPath(), diskPath, d.DiskSize); err != nil {
-			return err
-		}
-		if err := fixPermissions(d.ResolveStorePath(".")); err != nil {
-			return err
-		}
-	}
-
 	h, err := hyperkit.New("", "", filepath.Join(d.StorePath, "machines", d.MachineName))
 	if err != nil {
 		return err
@@ -206,10 +167,9 @@ func (d *Driver) Start() error {
 	// Need to strip 0's
 	mac = trimMacAddress(mac)
 	log.Infof("Generated MAC %s", mac)
-
 	h.Disks = []hyperkit.DiskConfig{
 		{
-			Path:   diskPath,
+			Path:   pkgdrivers.GetDiskPath(d.BaseDriver),
 			Size:   d.DiskSize,
 			Driver: "virtio-blk",
 		},
@@ -254,10 +214,6 @@ func (d *Driver) extractKernel(isoPath string) error {
 		}
 	}
 	return nil
-}
-
-func (d *Driver) publicSSHKeyPath() string {
-	return d.GetSSHKeyPath() + ".pub"
 }
 
 func (d *Driver) sendSignal(s os.Signal) error {

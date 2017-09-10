@@ -24,9 +24,9 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -35,6 +35,7 @@ const driverName = "none"
 // none Driver is a driver designed to run localkube w/o a VM
 type Driver struct {
 	*drivers.BaseDriver
+	*pkgdrivers.CommonDriver
 	URL string
 }
 
@@ -59,10 +60,6 @@ func (d *Driver) PreCreateCheck() error {
 	return nil
 }
 
-func (d *Driver) GetCreateFlags() []mcnflag.Flag {
-	return []mcnflag.Flag{}
-}
-
 func (d *Driver) Create() error {
 	// creation for the none driver is handled by commands.go
 	return nil
@@ -81,16 +78,8 @@ func (d *Driver) GetSSHHostname() (string, error) {
 	return "", fmt.Errorf("driver does not support ssh commands")
 }
 
-func (d *Driver) GetSSHKeyPath() string {
-	return ""
-}
-
 func (d *Driver) GetSSHPort() (int, error) {
 	return 0, fmt.Errorf("driver does not support ssh commands")
-}
-
-func (d *Driver) GetSSHUsername() string {
-	return ""
 }
 
 func (d *Driver) GetURL() (string, error) {
@@ -152,10 +141,6 @@ func (d *Driver) Restart() error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	return nil
-}
-
-func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
 }
 
