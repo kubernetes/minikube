@@ -307,13 +307,15 @@ WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
 		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
 			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
 You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
-	sudo mv /root/.kube $HOME/.kube # this will overwrite any config you have.  You may have to append the file contents manually
+
+	sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
 	sudo chown -R $USER $HOME/.kube
 	sudo chgrp -R $USER $HOME/.kube
 	
-    sudo mv /root/.minikube $HOME/.minikube # this will overwrite any config you have.  You may have to append the file contents manually
+	sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
 	sudo chown -R $USER $HOME/.minikube
 	sudo chgrp -R $USER $HOME/.minikube 
+
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 		}
 		if err := util.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
