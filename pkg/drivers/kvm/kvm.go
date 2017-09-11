@@ -362,8 +362,11 @@ func (d *Driver) Remove() error {
 	defer conn.Close()
 
 	//Tear down network and disk if they exist
-	network, _ := conn.LookupNetworkByName(d.PrivateNetwork)
 	log.Debug("Checking if the network needs to be deleted")
+	network, err := conn.LookupNetworkByName(d.PrivateNetwork)
+	if err != nil {
+		log.Warn("Network %s does not exist, nothing to clean up...", d.PrivateNetwork)
+	}
 	if network != nil {
 		log.Infof("Network %s exists, removing...", d.PrivateNetwork)
 		network.Destroy()
@@ -372,6 +375,9 @@ func (d *Driver) Remove() error {
 
 	log.Debug("Checking if the domain needs to be deleted")
 	dom, err := conn.LookupDomainByName(d.MachineName)
+	if err != nil {
+		log.Warn("Domain %s does not exist, nothing to clean up...", d.MachineName)
+	}
 	if dom != nil {
 		log.Infof("Domain %s exists, removing...", d.MachineName)
 		dom.Destroy()

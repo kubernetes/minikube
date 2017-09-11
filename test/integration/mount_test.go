@@ -110,7 +110,7 @@ func testMounting(t *testing.T) {
 		// test that fromhostremove was deleted by the pod from the mount via rm /mount-9p/fromhostremove
 		path = filepath.Join(tempDir, "fromhostremove")
 		if _, err := os.Stat(path); err == nil {
-			t.Fatalf("Expected file %s to be removed", path, expected, out)
+			t.Fatalf("Expected file %s to be removed", path)
 		}
 
 		// test that frompodremove can be deleted on the host

@@ -30,7 +30,6 @@ import (
 )
 
 var (
-	namespace         string
 	https             bool
 	addonsURLMode     bool
 	addonsURLFormat   string

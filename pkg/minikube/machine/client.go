@@ -37,7 +37,6 @@ import (
 	"github.com/docker/machine/libmachine/check"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	rpcdriver "github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -91,10 +90,6 @@ func getVirtualboxDriver(rawDriver []byte) (drivers.Driver, error) {
 		return nil, errors.Wrapf(err, "Error unmarshalling virtualbox driver %s", string(rawDriver))
 	}
 	return driver, nil
-}
-
-func getDriverRPC(driverName string, rawDriver []byte) (drivers.Driver, error) {
-	return rpcdriver.NewRPCClientDriverFactory().NewRPCClientDriver(driverName, rawDriver)
 }
 
 // LocalClient is a non-RPC implemenation

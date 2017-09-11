@@ -29,12 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
-var jsonExampleConfig = []byte(`{
-    "v": "100",
-    "alsologtostderr": "true",
-    "log_dir": "/etc/hosts",
-}`)
-
 type configTest struct {
 	Name          string
 	EnvValue      string

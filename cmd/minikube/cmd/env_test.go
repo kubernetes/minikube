@@ -35,10 +35,6 @@ func (f FakeShellDetector) GetShell(_ string) (string, error) {
 	return f.Shell, nil
 }
 
-type FakeUsageHinter struct{}
-
-func (FakeUsageHinter) GenerateUsageHint(_ string) string { return "" }
-
 type FakeNoProxyGetter struct {
 	NoProxyVar   string
 	NoProxyValue string

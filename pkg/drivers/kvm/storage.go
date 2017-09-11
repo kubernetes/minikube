@@ -20,6 +20,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math"
 	"os"
@@ -47,7 +48,6 @@ func createRawDiskImage(dest string, size int) error {
 
 func (d *Driver) buildDiskImage() error {
 	diskPath := d.ResolveStorePath(fmt.Sprintf("%s.img", d.MachineName))
-	err := createRawDiskImage(diskPath, d.DiskSize)
 	if err := createRawDiskImage(diskPath, d.DiskSize); err != nil {
 		return errors.Wrap(err, "creating raw disk image")
 	}
@@ -61,7 +61,7 @@ func (d *Driver) buildDiskImage() error {
 	}
 	defer f.Close()
 
-	f.Seek(0, os.SEEK_SET)
+	f.Seek(0, io.SeekStart)
 	_, err = f.Write(tarBuf.Bytes())
 	if err != nil {
 		return errors.Wrap(err, "wrting cert bundle to disk image")

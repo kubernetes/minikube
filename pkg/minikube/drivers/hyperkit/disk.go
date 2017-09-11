@@ -17,6 +17,7 @@ limitations under the License.
 package hyperkit
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/cloudflare/cfssl/log"
 	"github.com/docker/machine/libmachine/mcnutils"
+	"github.com/pkg/errors"
 )
 
 func createDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
@@ -37,7 +39,7 @@ func createDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 		return err
 	}
 	defer file.Close()
-	file.Seek(0, os.SEEK_SET)
+	file.Seek(0, io.SeekStart)
 
 	if _, err := file.Write(tarBuf.Bytes()); err != nil {
 		return err
@@ -45,7 +47,7 @@ func createDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 	file.Close()
 
 	if err := os.Truncate(diskPath, int64(diskSizeMb*1000000)); err != nil {
-		return err
+		return errors.Wrap(err, "creating disk")
 	}
 	return nil
 }
