@@ -1,5 +1,8 @@
 # Minikube Release Notes
 
+# Version 0.22.1 - 9/6/2017
+* Fix for chmod error on windows [1933](https://github.com/kubernetes/minikube/pull/1933)
+
 # Version 0.22.0 - 9/6/2017
 * Made secure serving the default for all components and disabled insecure serving [#1694](https://github.com/kubernetes/minikube/pull/1694)
 * Increased minikube boot speed by caching docker images [#1881](https://github.com/kubernetes/minikube/pull/1881)
