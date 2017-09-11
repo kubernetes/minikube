@@ -59,12 +59,11 @@ func (d *Driver) createNetwork() error {
 	}
 
 	//Check if network already exists
-	network, err := conn.LookupNetworkByName(d.PrivateNetwork)
-	if err == nil {
+	if _, err := conn.LookupNetworkByName(d.PrivateNetwork); err == nil {
 		return nil
 	}
 
-	network, err = conn.NetworkDefineXML(networkXML.String())
+	network, err := conn.NetworkDefineXML(networkXML.String())
 	if err != nil {
 		return errors.Wrapf(err, "defining network from xml: %s", networkXML.String())
 	}

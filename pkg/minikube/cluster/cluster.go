@@ -45,8 +45,6 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-const fileScheme = "file"
-
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/util/logs/logs.go#L32-34
@@ -279,7 +277,7 @@ func MountHost(api libmachine.API, ip net.IP, path, port, mountVersion string, u
 	}
 	_, err = host.RunSSHCommand(mountCmd)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "running mount host command")
 	}
 	return nil
 }

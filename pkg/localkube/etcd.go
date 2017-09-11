@@ -71,5 +71,5 @@ func (e *EtcdServer) Stop() {
 
 // Name returns the servers unique name
 func (e EtcdServer) Name() string {
-	return e.Name()
+	return e.Config.Name
 }
