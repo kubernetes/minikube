@@ -28,17 +28,14 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{BinaryPath: *binaryPath, T: t}
+	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podPath, _ := filepath.Abs("testdata/busybox.yaml")
 
-	podNamespace := kubectlRunner.CreateRandomNamespace()
-	defer kubectlRunner.DeleteNamespace(podNamespace)
-
 	// Create a pod and wait for it to be running.
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath, "--namespace=" + podNamespace}); err != nil {
+	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
 		t.Fatalf("Error creating test pod: %s", err)
 	}
 
@@ -47,7 +44,7 @@ func TestPersistence(t *testing.T) {
 			t.Fatalf("waiting for dashboard to be up: %s", err)
 		}
 
-		if err := util.WaitForBusyboxRunning(t, podNamespace); err != nil {
+		if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
 			t.Fatalf("waiting for busybox to be up: %s", err)
 		}
 

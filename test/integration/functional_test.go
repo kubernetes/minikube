@@ -24,14 +24,10 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/test/integration/util"
 )
 
 func TestFunctional(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
 	integrationTestImages := []string{"busybox:glibc"}
 	if err := machine.CacheImages(integrationTestImages, constants.ImageCacheDir); err != nil {
@@ -51,7 +47,7 @@ func TestFunctional(t *testing.T) {
 	t.Run("ServicesList", testServicesList)
 	t.Run("Provisioning", testProvisioning)
 
-	if !strings.Contains(*args, "--vm-driver=none") {
+	if !strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
 		// t.Run("Mounting", testMounting)

@@ -23,6 +23,9 @@ import (
 	"strings"
 	"testing"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	pkgutil "k8s.io/minikube/pkg/util"
+
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -33,9 +36,12 @@ func testClusterDNS(t *testing.T) {
 	}
 
 	kubectlRunner := util.NewKubectlRunner(t)
-	podName := "busybox"
 	podPath := filepath.Join(*testdataDir, "busybox.yaml")
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
+
+	client, err := pkgutil.GetClient()
+	if err != nil {
+		t.Fatalf("Error getting kubernetes client %s", err)
+	}
 
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
 		t.Fatalf("creating busybox pod: %s", err)
@@ -44,6 +50,14 @@ func testClusterDNS(t *testing.T) {
 	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
 		t.Fatalf("Waiting for busybox pod to be up: %s", err)
 	}
+	listOpts := metav1.ListOptions{LabelSelector: "integration-test=busybox"}
+	pods, err := client.CoreV1().Pods("default").List(listOpts)
+	if len(pods.Items) == 0 {
+		t.Fatal("Expected a busybox pod to be running")
+	}
+
+	podName := pods.Items[0].Name
+	defer kubectlRunner.RunCommand([]string{"delete", "po", podName})
 
 	dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName,
 		"nslookup", "kubernetes"})
