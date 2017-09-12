@@ -18,7 +18,6 @@ package util
 
 import (
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/pkg/errors"
@@ -30,11 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 
+	"github.com/golang/glog"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -109,31 +110,36 @@ func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunn
 // Wait up to 10 minutes for all matching pods to become Running and at least one
 // matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
-	running := false
-	PodStore := NewPodStore(c, ns, label, fields.Everything())
-	defer PodStore.Stop()
-waitLoop:
-	for start := time.Now(); time.Since(start) < 10*time.Minute; time.Sleep(250 * time.Millisecond) {
-		pods := PodStore.List()
-		if len(pods) == 0 {
-			continue waitLoop
+	lastKnownPodNumber := -1
+	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
+		listOpts := metav1.ListOptions{LabelSelector: label.String()}
+		pods, err := c.CoreV1().Pods(ns).List(listOpts)
+		if err != nil {
+			glog.Infof("error getting Pods with label selector %q [%v]\n", label.String(), err)
+			return false, nil
 		}
-		for _, p := range pods {
-			if p.Status.Phase != v1.PodRunning {
-				continue waitLoop
+
+		if lastKnownPodNumber != len(pods.Items) {
+			glog.Infof("Found %d Pods for label selector %s\n", len(pods.Items), label.String())
+			lastKnownPodNumber = len(pods.Items)
+		}
+
+		if len(pods.Items) == 0 {
+			return false, nil
+		}
+
+		for _, pod := range pods.Items {
+			if pod.Status.Phase != v1.PodRunning {
+				return false, nil
 			}
 		}
-		running = true
-		break
-	}
-	if !running {
-		return fmt.Errorf("Timeout while waiting for pods with labels %q to be running", label.String())
-	}
-	return nil
+
+		return true, nil
+	})
 }
 
 // WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status.
-func WaitForRCToStabilize(t *testing.T, c kubernetes.Interface, ns, name string, timeout time.Duration) error {
+func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
 	options := metav1.ListOptions{FieldSelector: fields.Set{
 		"metadata.name":      name,
 		"metadata.namespace": ns,
@@ -154,7 +160,7 @@ func WaitForRCToStabilize(t *testing.T, c kubernetes.Interface, ns, name string,
 				*(rc.Spec.Replicas) == rc.Status.Replicas {
 				return true, nil
 			}
-			t.Logf("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+			glog.Infof("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
 				name, rc.Generation, rc.Status.ObservedGeneration, *(rc.Spec.Replicas), rc.Status.Replicas)
 		}
 		return false, nil
@@ -163,21 +169,21 @@ func WaitForRCToStabilize(t *testing.T, c kubernetes.Interface, ns, name string,
 }
 
 // WaitForService waits until the service appears (exist == true), or disappears (exist == false)
-func WaitForService(t *testing.T, c kubernetes.Interface, namespace, name string, exist bool, interval, timeout time.Duration) error {
+func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, interval, timeout time.Duration) error {
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
 		_, err := c.Core().Services(namespace).Get(name, metav1.GetOptions{})
 		switch {
 		case err == nil:
-			t.Logf("Service %s in namespace %s found.", name, namespace)
+			glog.Infof("Service %s in namespace %s found.", name, namespace)
 			return exist, nil
 		case apierrs.IsNotFound(err):
-			t.Logf("Service %s in namespace %s disappeared.", name, namespace)
+			glog.Infof("Service %s in namespace %s disappeared.", name, namespace)
 			return !exist, nil
 		case !IsRetryableAPIError(err):
-			t.Logf("Non-retryable failure while getting service.")
+			glog.Infof("Non-retryable failure while getting service.")
 			return false, err
 		default:
-			t.Logf("Get service %s in namespace %s failed: %v", name, namespace, err)
+			glog.Infof("Get service %s in namespace %s failed: %v", name, namespace, err)
 			return false, nil
 		}
 	})
@@ -189,9 +195,9 @@ func WaitForService(t *testing.T, c kubernetes.Interface, namespace, name string
 }
 
 //WaitForServiceEndpointsNum waits until the amount of endpoints that implement service to expectNum.
-func WaitForServiceEndpointsNum(t *testing.T, c kubernetes.Interface, namespace, serviceName string, expectNum int, interval, timeout time.Duration) error {
+func WaitForServiceEndpointsNum(c kubernetes.Interface, namespace, serviceName string, expectNum int, interval, timeout time.Duration) error {
 	return wait.Poll(interval, timeout, func() (bool, error) {
-		t.Logf("Waiting for amount of service:%s endpoints to be %d", serviceName, expectNum)
+		glog.Infof("Waiting for amount of service:%s endpoints to be %d", serviceName, expectNum)
 		list, err := c.Core().Endpoints(namespace).List(metav1.ListOptions{})
 		if err != nil {
 			return false, err

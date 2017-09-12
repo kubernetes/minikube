@@ -27,28 +27,25 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func testAddons(t *testing.T) {
 	t.Parallel()
-	client, err := util.GetClient()
+	client, err := pkgutil.GetClient()
 	if err != nil {
 		t.Fatalf("Could not get kubernetes client: %s", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
-	if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		t.Errorf("Error waiting for addon manager to be up")
 	}
 }
 
 func testDashboard(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t,
-	}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	if err := util.WaitForDashboardRunning(t); err != nil {
 		t.Fatalf("waiting for dashboard to be up: %s", err)
@@ -73,10 +70,7 @@ func testDashboard(t *testing.T) {
 
 func testServicesList(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	checkServices := func() error {
 		output := minikubeRunner.RunCommand("service list", false)

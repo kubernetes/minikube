@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -36,10 +37,7 @@ func testMounting(t *testing.T) {
 	if strings.Contains(*args, "--vm-driver=none") {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
@@ -79,12 +77,12 @@ func testMounting(t *testing.T) {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
-	client, err := util.GetClient()
+	client, err := pkgutil.GetClient()
 	if err != nil {
 		t.Fatalf("getting kubernetes client: %s", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
-	if err := util.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+	if err := pkgutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		t.Fatalf("Error waiting for busybox mount pod to be up: %s", err)
 	}
 
