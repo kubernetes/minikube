@@ -21,9 +21,9 @@ import (
 
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/drivers/hyperkit"
 )
 
 func createVMwareFusionHost(config MachineConfig) drivers.Driver {

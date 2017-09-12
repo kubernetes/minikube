@@ -28,11 +28,10 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
-	"github.com/docker/machine/libmachine/mcnflag"
-	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/state"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
 const (
@@ -42,6 +41,7 @@ const (
 
 type Driver struct {
 	*drivers.BaseDriver
+	*pkgdrivers.CommonDriver
 
 	// How much memory, in MB, to allocate to the VM
 	Memory int
@@ -73,26 +73,18 @@ func NewDriver(hostName, storePath string) *Driver {
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
 			StorePath:   storePath,
+			SSHUser:     "docker",
 		},
+		CommonDriver:   &pkgdrivers.CommonDriver{},
 		Boot2DockerURL: constants.DefaultIsoUrl,
 		CPU:            constants.DefaultCPUS,
-		PrivateNetwork: defaultPrivateNetworkName,
 		DiskSize:       util.CalculateDiskSizeInMB(constants.DefaultDiskSize),
 		Memory:         constants.DefaultMemory,
+		PrivateNetwork: defaultPrivateNetworkName,
 		Network:        defaultNetworkName,
-		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), fmt.Sprintf("%s.img", config.GetMachineName())),
+		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), fmt.Sprintf("%s.rawdisk", config.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), "boot2docker.iso"),
 	}
-}
-
-//Not implemented yet
-func (d *Driver) GetCreateFlags() []mcnflag.Flag {
-	return nil
-}
-
-//Not implemented yet
-func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
-	return nil
 }
 
 func (d *Driver) PreCommandCheck() error {
@@ -171,28 +163,8 @@ func (d *Driver) GetIP() (string, error) {
 	return ip, nil
 }
 
-func (d *Driver) GetMachineName() string {
-	return d.MachineName
-}
-
 func (d *Driver) GetSSHHostname() (string, error) {
 	return d.GetIP()
-}
-
-func (d *Driver) GetSSHUsername() string {
-	return "docker"
-}
-
-func (d *Driver) GetSSHKeyPath() string {
-	return d.ResolveStorePath("id_rsa")
-}
-
-func (d *Driver) GetSSHPort() (int, error) {
-	if d.SSHPort == 0 {
-		d.SSHPort = 22
-	}
-
-	return d.SSHPort, nil
 }
 
 func (d *Driver) DriverName() string {
@@ -210,16 +182,7 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) Restart() error {
-	dom, conn, err := d.getDomain()
-	if err != nil {
-		return errors.Wrap(err, "getting connection")
-	}
-	defer closeDomain(dom, conn)
-
-	if err := d.Stop(); err != nil {
-		return errors.Wrap(err, "stopping VM:")
-	}
-	return d.Start()
+	return pkgdrivers.Restart(d)
 }
 
 func (d *Driver) Start() error {
@@ -269,13 +232,6 @@ func (d *Driver) Start() error {
 
 func (d *Driver) Create() error {
 	log.Info("Creating machine...")
-
-	//TODO(r2d4): rewrite this, not using b2dutils
-	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
-	if err := b2dutils.CopyIsoToMachineDir(d.Boot2DockerURL, d.MachineName); err != nil {
-		return errors.Wrap(err, "Error copying ISO to machine dir")
-	}
-
 	log.Info("Creating network...")
 	err := d.createNetwork()
 	if err != nil {
@@ -301,8 +257,7 @@ func (d *Driver) Create() error {
 	}
 
 	log.Info("Building disk image...")
-	err = d.buildDiskImage()
-	if err != nil {
+	if err = pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "Error creating disk")
 	}
 

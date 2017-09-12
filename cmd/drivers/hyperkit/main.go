@@ -18,7 +18,7 @@ package main
 
 import (
 	"github.com/docker/machine/libmachine/drivers/plugin"
-	"k8s.io/minikube/pkg/minikube/drivers/hyperkit"
+	"k8s.io/minikube/pkg/drivers/hyperkit"
 )
 
 func main() {
