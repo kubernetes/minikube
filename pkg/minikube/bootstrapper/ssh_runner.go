@@ -19,7 +19,7 @@ package bootstrapper
 import (
 	"fmt"
 	"io"
-	"path/filepath"
+	"path"
 	"sync"
 
 	"github.com/golang/glog"
@@ -81,7 +81,7 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
-	deleteCmd := fmt.Sprintf("sudo rm -f %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
+	deleteCmd := fmt.Sprintf("sudo rm -f %s", path.Join(f.GetTargetDir(), f.GetTargetName()))
 	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", f.GetTargetDir())
 	for _, cmd := range []string{deleteCmd, mkdirCmd} {
 		if err := s.Run(cmd); err != nil {
