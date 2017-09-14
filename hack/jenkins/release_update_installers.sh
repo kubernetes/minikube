@@ -47,6 +47,9 @@ popd >/dev/null
 git clone --depth 1 git@github.com:minikube-bot/homebrew-cask.git # dont't pull entire history
 
 pushd homebrew-cask >/dev/null
+    git remote add upstream https://github.com/caskroom/homebrew-cask.git
+    git fetch upstream
+    git checkout upstream/master
     git checkout -b ${REPLACE_PKG_VERSION}
     sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
         -e "s/\$MINIKUBE_DARWIN_SHA256/${REPLACE_MINIKUBE_DARWIN_SHA256}/g" \
