@@ -6,6 +6,9 @@ ConditionVirtualization=microsoft
 
 [Service]
 Type=simple
+Restart=always
+RestartSec=3
+
 ExecStart=/usr/sbin/hv_kvp_daemon -n
 
 [Install]
