@@ -48,8 +48,16 @@ type KubernetesConfig struct {
 
 const (
 	BootstrapperTypeLocalkube = "localkube"
+	BootstrapperTypeKubeadm   = "kubeadm"
 )
 
-var CachedImagesForBootstrapper = map[string][]string{
-	BootstrapperTypeLocalkube: constants.LocalkubeCachedImages,
+func GetCachedImageList(version string, bootstrapper string) []string {
+	switch bootstrapper {
+	case BootstrapperTypeLocalkube:
+		return constants.LocalkubeCachedImages
+	case BootstrapperTypeKubeadm:
+		return constants.GetKubeadmCachedImages(version)
+	default:
+		return []string{}
+	}
 }

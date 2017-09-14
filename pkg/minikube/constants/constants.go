@@ -131,6 +131,12 @@ const (
 )
 
 const (
+	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
+	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
+)
+
+const (
 	LocalkubeServicePath = "/usr/lib/systemd/system/localkube.service"
 	LocalkubeRunning     = "active"
 	LocalkubeStopped     = "inactive"
@@ -143,6 +149,17 @@ const (
 	DefaultMsize         = 262144
 	DefaultMountVersion  = "9p2000.u"
 )
+
+func GetKubernetesReleaseURL(binaryName, version string) string {
+	// TODO(r2d4): change this to official releases when the alpha controlplane commands are released.
+	// We are working with unreleased kubeadm changes at HEAD.
+	return fmt.Sprintf("https://storage.googleapis.com/minikube-builds/v1.7.3/%s", binaryName)
+	// return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
+}
+
+func GetKubernetesReleaseURLSha1(binaryName, version string) string {
+	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
+}
 
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 const DriverNone = "none"
@@ -162,6 +179,32 @@ var LocalkubeCachedImages = []string{
 
 	// Pause
 	"gcr.io/google_containers/pause-amd64:3.0",
+}
+
+func GetKubeadmCachedImages(version string) []string {
+	return []string{
+		// Dashboard
+		"gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.3",
+
+		// Addon Manager
+		"gcr.io/google-containers/kube-addon-manager:v6.4-beta.2",
+
+		// Pause
+		"gcr.io/google_containers/pause-amd64:3.0",
+
+		// DNS
+		"gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.4",
+		"gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.4",
+		"gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.4",
+
+		// etcd
+		"gcr.io/google_containers/etcd-amd64:3.0.17",
+
+		"gcr.io/google_containers/kube-proxy-amd64:" + version,
+		"gcr.io/google_containers/kube-scheduler-amd64:" + version,
+		"gcr.io/google_containers/kube-controller-manager-amd64:" + version,
+		"gcr.io/google_containers/kube-apiserver-amd64:" + version,
+	}
 }
 
 var ImageCacheDir = MakeMiniPath("cache", "images")

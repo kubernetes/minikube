@@ -26,6 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/pkg/api/v1"
@@ -41,6 +42,10 @@ func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	return &MockCoreClient{
 		servicesMap: m.servicesMap,
 	}, nil
+}
+
+func (m *MockClientGetter) GetClientset() (*kubernetes.Clientset, error) {
+	return nil, nil
 }
 
 type MockCoreClient struct {
@@ -318,13 +323,13 @@ func TestGetServiceURLs(t *testing.T) {
 		},
 	}
 
-	defer revertK8sClient(k8s)
+	defer revertK8sClient(K8s)
 	for _, test := range tests {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 
-			k8s = &MockClientGetter{
+			K8s = &MockClientGetter{
 				servicesMap: serviceNamespaces,
 			}
 			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
@@ -383,11 +388,11 @@ func TestGetServiceURLsForService(t *testing.T) {
 		},
 	}
 
-	defer revertK8sClient(k8s)
+	defer revertK8sClient(K8s)
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			k8s = &MockClientGetter{
+			K8s = &MockClientGetter{
 				servicesMap: serviceNamespaces,
 			}
 			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
@@ -405,5 +410,5 @@ func TestGetServiceURLsForService(t *testing.T) {
 }
 
 func revertK8sClient(k K8sClient) {
-	k8s = k
+	K8s = k
 }
