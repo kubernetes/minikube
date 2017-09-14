@@ -39,12 +39,8 @@ import (
 
 const tempLoadDir = "/tmp"
 
-func CacheImagesForBootstrapper(clusterBootstrapper string) error {
-	images, ok := bootstrapper.CachedImagesForBootstrapper[clusterBootstrapper]
-	if !ok {
-		glog.Infoln("Could not find list of images to cache for bootstrapper %s", clusterBootstrapper)
-		return nil
-	}
+func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
+	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
 
 	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
