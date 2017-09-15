@@ -115,7 +115,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if k8sVersion != constants.DefaultKubernetesVersion {
+	// Don't verify version for kubeadm bootstrapped clusters
+	if k8sVersion != constants.DefaultKubernetesVersion && clusterBootstrapper != bootstrapper.BootstrapperTypeKubeadm {
 		validateK8sVersion(k8sVersion)
 	}
 
