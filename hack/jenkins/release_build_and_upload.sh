@@ -30,6 +30,9 @@ export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}-${VERSION_BUILD}
 export GOPATH=~/go
 
+# Build all binaries in docker
+export BUILD_IN_DOCKER=y
+
 # Sanity checks
 git status
 
@@ -39,7 +42,7 @@ cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR
 cat Makefile | grep "VERSION_BUILD ?=" | grep $VERSION_BUILD
 
 # Build and upload
-BUILD_IN_DOCKER=y make cross checksum
+make cross checksum
 
 gsutil cp out/minikube-linux-amd64 gs://$BUCKET/releases/$TAGNAME/
 gsutil cp out/minikube-linux-amd64.sha256 gs://$BUCKET/releases/$TAGNAME/

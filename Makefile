@@ -105,7 +105,7 @@ else
 endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
-	mv out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
 out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
