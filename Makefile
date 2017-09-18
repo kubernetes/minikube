@@ -15,7 +15,7 @@
 # Bump these on release
 VERSION_MAJOR ?= 0
 VERSION_MINOR ?= 22
-VERSION_BUILD ?= 1
+VERSION_BUILD ?= 2
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -26,7 +26,7 @@ MINIKUBE_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
 LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.8.3-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.23.3
+ISO_VERSION ?= v0.23.4
 ISO_BUCKET ?= minikube/iso
 
 GOOS ?= $(shell go env GOOS)

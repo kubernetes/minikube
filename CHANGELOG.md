@@ -1,5 +1,10 @@
 # Minikube Release Notes
 
+# Version 0.22.2 - 9/15/2017
+* Fix path issue on windows [1954](https://github.com/kubernetes/minikube/pull/1959)
+* Added experimental kubeadm bootstrapper [1903](https://github.com/kubernetes/minikube/pull/1903)
+* Fixed Hyper-V KVP daemon [1958](https://github.com/kubernetes/minikube/pull/1958)
+
 # Version 0.22.1 - 9/6/2017
 * Fix for chmod error on windows [1933](https://github.com/kubernetes/minikube/pull/1933)
 
