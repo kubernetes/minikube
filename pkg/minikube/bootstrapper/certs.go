@@ -18,6 +18,7 @@ package bootstrapper
 
 import (
 	"net"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -44,7 +45,7 @@ var (
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd CommandRunner, k8s KubernetesConfig) error {
 	localPath := constants.GetMinipath()
-	glog.Infoln("Setting up certificates for IP: %s", k8s.NodeIP)
+	glog.Infof("Setting up certificates for IP: %s\n", k8s.NodeIP)
 
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
@@ -68,9 +69,9 @@ func SetupCerts(cmd CommandRunner, k8s KubernetesConfig) error {
 	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: "https://localhost:8443",
-		ClientCertificate:    filepath.Join(util.DefaultCertPath, "apiserver.crt"),
-		ClientKey:            filepath.Join(util.DefaultCertPath, "apiserver.key"),
-		CertificateAuthority: filepath.Join(util.DefaultCertPath, "ca.crt"),
+		ClientCertificate:    path.Join(util.DefaultCertPath, "apiserver.crt"),
+		ClientKey:            path.Join(util.DefaultCertPath, "apiserver.key"),
+		CertificateAuthority: path.Join(util.DefaultCertPath, "ca.crt"),
 		KeepContext:          false,
 	}
 
