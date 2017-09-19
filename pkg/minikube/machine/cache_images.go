@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"golang.org/x/sync/errgroup"
@@ -96,7 +97,29 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 
 // # ParseReference cannot have a : in the directory path
 func sanitizeCacheDir(image string) string {
+	if hasWindowsDriveLetter(image) {
+		// not sanitize Windows drive letter.
+		return image[:2] + strings.Replace(image[2:], ":", "_", -1)
+	}
 	return strings.Replace(image, ":", "_", -1)
+}
+
+func hasWindowsDriveLetter(s string) bool {
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	if len(s) < 3 {
+		return false
+	}
+
+	drive := s[:3]
+	for _, b := range "CDEFGHIJKLMNOPQRSTUVWXYZAB" {
+		if d := string(b) + ":"; drive == d+`\` || drive == d+`/` {
+			return true
+		}
+	}
+
+	return false
 }
 
 func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
@@ -154,6 +177,13 @@ func CacheImage(image, dst string) error {
 
 	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
+	}
+
+	// TODO: support Windows drive letter.
+	// L:164 ParseReference does not support Windows drive letter.
+	// If contains Windows drive letter, it disable cache image for now.
+	if hasWindowsDriveLetter(dst) {
+		return nil
 	}
 
 	srcRef, err := getSrcRef(image)
