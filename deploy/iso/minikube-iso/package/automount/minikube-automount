@@ -71,7 +71,7 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                 # As there are no partitions, let's make sure the disk is empty for real
                 dd if=$UNPARTITIONED_HD of=device_test_file bs=1k count=256 > /dev/null 2>&1
                 NON_NUL=$(<device_test_file tr -d '\0\n' | wc -c)
-                if [ $NON_NUL == 0 ]; then                    
+                if [ $NON_NUL == 0 ]; then
                     # Create the partition, format it and then mount it
                     echo "NEW VMware boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
 
@@ -117,35 +117,44 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /var/lib
 
     mkdir -p /mnt/$PARTNAME/var/lib/boot2docker
-    ln -s /mnt/$PARTNAME/var/lib/boot2docker /var/lib/boot2docker
+    mkdir /var/lib/boot2docker
+    mount --bind /mnt/$PARTNAME/var/lib/boot2docker /var/lib/boot2docker
 
     mkdir -p /mnt/$PARTNAME/var/lib/docker
-    ln -s /mnt/$PARTNAME/var/lib/docker /var/lib/docker
+    mkdir -p /var/lib/docker
+    mount --bind /mnt/$PARTNAME/var/lib/docker /var/lib/docker
 
     mkdir -p /mnt/$PARTNAME/var/log
-    ln -s /mnt/$PARTNAME/var/log /var/log
+    mkdir /var/log
+    mount --bind /mnt/$PARTNAME/var/log /var/log
 
     mkdir -p /mnt/$PARTNAME/var/lib/kubelet
-    ln -s /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
+    mkdir /var/lib/kubelet
+    mount --bind /mnt/$PARTNAME/var/lib/kubelet /var/lib/kubelet
 
     mkdir -p /mnt/$PARTNAME/var/lib/cni
-    ln -s /mnt/$PARTNAME/var/lib/cni /var/lib/cni
+    mkdir /var/lib/cni
+    mount --bind /mnt/$PARTNAME/var/lib/cni /var/lib/cni
 
     mkdir -p /mnt/$PARTNAME/data
-    ln -s /mnt/$PARTNAME/data /data
+    mkdir /data
+    mount --bind /mnt/$PARTNAME/data /data
 
     mkdir -p /mnt/$PARTNAME/hostpath_pv
-    ln -s /mnt/$PARTNAME/hostpath_pv /tmp/hostpath_pv
+    mkdir /tmp/hostpath_pv
+    mount --bind /mnt/$PARTNAME/hostpath_pv /tmp/hostpath_pv
 
     mkdir -p /mnt/$PARTNAME/hostpath-provisioner
-    ln -s /mnt/$PARTNAME/hostpath-provisioner /tmp/hostpath-provisioner
+    mkdir /tmp/hostpath-provisioner
+    mount --bind /mnt/$PARTNAME/hostpath-provisioner /tmp/hostpath-provisioner
 
     rm -rf /var/lib/rkt
     if [ ! -d /mnt/$PARTNAME/var/lib/rkt ]; then
         mkdir -p /mnt/$PARTNAME/var/lib/rkt
         chown root:rkt /mnt/$PARTNAME/var/lib/rkt
     fi
-    ln -s /mnt/$PARTNAME/var/lib/rkt /var/lib/rkt
+    mkdir /var/lib/rkt
+    mount --bind /mnt/$PARTNAME/var/lib/rkt /var/lib/rkt
 
     if [ ! -d /mnt/$PARTNAME/var/lib/rkt-etc ]; then
         mkdir -p /mnt/$PARTNAME/var/lib/rkt-etc
@@ -154,7 +163,8 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
         chmod ug+rw /mnt/$PARTNAME/var/lib/rkt-etc
     fi
     rm -rf /etc/rkt
-    ln -s /mnt/$PARTNAME/var/lib/rkt-etc /etc/rkt
+    mkdir /etc/rkt
+    mount --bind /mnt/$PARTNAME/var/lib/rkt-etc /etc/rkt
 
     if [ ! -d /var/lib/rkt/pods ]; then
         systemd-tmpfiles --create rkt.conf
@@ -169,7 +179,8 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     rm -f '/home/docker/boot2docker, please format-me'
 
     mkdir -p /mnt/$PARTNAME/var/lib/localkube
-    ln -s /mnt/$PARTNAME/var/lib/localkube /var/lib/localkube
+    mkdir /var/lib/localkube
+    mount --bind /mnt/$PARTNAME/var/lib/localkube /var/lib/localkube
 fi
 swapon "${UNPARTITIONED_HD}2"
 
@@ -184,17 +195,17 @@ if modprobe vboxguest &> /dev/null && modprobe vboxsf &> /dev/null; then
 	if grep -q '^docker:' /etc/passwd; then
 		mountOptions="${mountOptions},uid=$(id -u docker),gid=$(id -g docker)"
 	fi
-	
+
 	# try mounting "$name" (which defaults to "$dir") at "$dir",
 	# but quietly clean up empty directories if it fails
 	try_mount_share() {
 		dir="$1"
 		name="${2:-$dir}"
-		
+
 		# normalize "dir" to be definitively root-relative
 		# ie, "/Users" and "Users" will both translate to "/Users" explicitly
 		dir="/${dir#/}"
-		
+
 		mkdir -p "$dir" 2>/dev/null
 		if ! mount -t vboxsf -o "$mountOptions" "$name" "$dir" 2>/dev/null; then
 			rmdir "$dir" 2>/dev/null || true
@@ -202,13 +213,13 @@ if modprobe vboxguest &> /dev/null && modprobe vboxsf &> /dev/null; then
 				dir="$(dirname "$dir")"
 				rmdir "$dir" 2>/dev/null || break
 			done
-			
+
 			return 1
 		fi
-		
+
 		return 0
 	}
-	
+
 	for line in $(VBoxControl --nologo sharedfolder list -automount | tail -n+3 | cut  -d ' ' -f 3); do
 		try_mount_share "$line"
 	done
