@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"crypto"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,48 +42,6 @@ import (
 type KubeadmBootstrapper struct {
 	c bootstrapper.CommandRunner
 }
-
-// TODO(r2d4): template this with bootstrapper.KubernetesConfig
-const kubeletSystemdConf = `
-[Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--kubeconfig=/etc/kubernetes/kubelet.conf --require-kubeconfig=true"
-Environment="KUBELET_SYSTEM_PODS_ARGS=--pod-manifest-path=/etc/kubernetes/manifests --allow-privileged=true"
-Environment="KUBELET_DNS_ARGS=--cluster-dns=10.0.0.10 --cluster-domain=cluster.local"
-Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"
-Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"
-ExecStart=
-ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_SYSTEM_PODS_ARGS $KUBELET_DNS_ARGS $KUBELET_CADVISOR_ARGS $KUBELET_CGROUP_ARGS $KUBELET_EXTRA_ARGS
-`
-
-const kubeletService = `
-[Unit]
-Description=kubelet: The Kubernetes Node Agent
-Documentation=http://kubernetes.io/docs/
-
-[Service]
-ExecStart=/usr/bin/kubelet
-Restart=always
-StartLimitInterval=0
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-`
-
-const kubeadmConfigTmpl = `
-apiVersion: kubeadm.k8s.io/v1alpha1
-kind: MasterConfiguration
-api:
-  advertiseAddress: {{.AdvertiseAddress}}
-  bindPort: {{.APIServerPort}}
-kubernetesVersion: {{.KubernetesVersion}}
-certificatesDir: {{.CertDir}}
-networking:
-  serviceSubnet: {{.ServiceCIDR}}
-etcd:
-  dataDir: {{.EtcdDataDir}}
-nodeName: {{.NodeName}}
-`
 
 func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	h, err := api.Load(config.GetMachineName())
@@ -147,10 +104,8 @@ func (k *KubeadmBootstrapper) GetClusterLogs(follow bool) (string, error) {
 func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) error {
 	// We use --skip-preflight-checks since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
-	kubeadmTmpl := "sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} --skip-preflight-checks"
-	t := template.Must(template.New("kubeadmTmpl").Parse(kubeadmTmpl))
 	b := bytes.Buffer{}
-	if err := t.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
+	if err := kubeadmInitTemplate.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
 		return err
 	}
 
@@ -197,14 +152,6 @@ func addAddons(files *[]assets.CopyableFile) error {
 }
 
 func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) error {
-	restoreTmpl := `
-	sudo kubeadm alpha phase certs all --config {{.KubeadmConfigFile}} &&
-	sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} &&
-	sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile}} &&
-	sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
-	`
-	t := template.Must(template.New("restoreTmpl").Parse(restoreTmpl))
-
 	opts := struct {
 		KubeadmConfigFile string
 	}{
@@ -212,7 +159,7 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 	}
 
 	b := bytes.Buffer{}
-	if err := t.Execute(&b, opts); err != nil {
+	if err := kubeadmRestoreTemplate.Execute(&b, opts); err != nil {
 		return err
 	}
 
@@ -231,19 +178,44 @@ func (k *KubeadmBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) erro
 	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
+func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing kubernetes version")
+	}
+
+	extraOpts, err := ExtraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
+	if err != nil {
+		return "", errors.Wrap(err, "generating extra configuration for kubelet")
+	}
+
+	extraFlags := convertToFlags(extraOpts)
+	b := bytes.Buffer{}
+	if err := kubeletSystemdTemplate.Execute(&b, map[string]string{"ExtraOptions": extraFlags}); err != nil {
+		return "", err
+	}
+
+	return b.String(), nil
+}
+
 func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
 		// Make best effort to load any cached images
 		go machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
 	}
-	kubeadmCfg, err := k.generateConfig(cfg)
+	kubeadmCfg, err := generateConfig(cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
+	kubeletCfg, err := NewKubeletConfig(cfg)
+	if err != nil {
+		return errors.Wrap(err, "generating kubelet config")
+	}
+
 	files := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
-		assets.NewMemoryAssetTarget([]byte(kubeletSystemdConf), constants.KubeletSystemdConfFile, "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeletCfg), constants.KubeletSystemdConfFile, "0640"),
 		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
 	}
 
@@ -290,9 +262,17 @@ sudo systemctl start kubelet
 	return nil
 }
 
-func (k *KubeadmBootstrapper) generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
-	t := template.Must(template.New("kubeadmConfigTmpl").Parse(kubeadmConfigTmpl))
+func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return "", errors.Wrap(err, "parsing kubernetes version")
+	}
 
+	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
+	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version)
+	if err != nil {
+		return "", errors.Wrap(err, "generating extra component config for kubeadm")
+	}
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
@@ -301,6 +281,7 @@ func (k *KubeadmBootstrapper) generateConfig(k8s bootstrapper.KubernetesConfig) 
 		KubernetesVersion string
 		EtcdDataDir       string
 		NodeName          string
+		ExtraArgs         []ComponentExtraArgs
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultInsecureRegistry,
@@ -309,10 +290,11 @@ func (k *KubeadmBootstrapper) generateConfig(k8s bootstrapper.KubernetesConfig) 
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
+		ExtraArgs:         extraComponentConfig,
 	}
 
 	b := bytes.Buffer{}
-	if err := t.Execute(&b, opts); err != nil {
+	if err := kubeadmConfigTemplate.Execute(&b, opts); err != nil {
 		return "", err
 	}
 
