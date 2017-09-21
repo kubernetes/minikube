@@ -9,9 +9,9 @@ data:
   Corefile: |
     .:53 {
         errors
-        log stdout
+        log
         health
-        kubernetes cluster.local
+        kubernetes cluster.local 10.0.0.0/24
         prometheus
         proxy . /etc/resolv.conf
         cache 30
