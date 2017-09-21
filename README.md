@@ -165,7 +165,7 @@ minikube service [-n NAMESPACE] [--url] NAME
 
 Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmachine) for provisioning VMs, and [localkube](https://github.com/kubernetes/minikube/tree/master/pkg/localkube) (originally written and donated to this project by [RedSpread](https://redspread.com/)) for running the cluster.
 
-For more information about minikube, see the [proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/local-cluster-ux.md).
+For more information about minikube, see the [proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/local-cluster-ux.md).
 
 ## Additional Links:
 * [**Advanced Topics and Tutorials**](https://github.com/kubernetes/minikube/blob/master/docs/README.md)
