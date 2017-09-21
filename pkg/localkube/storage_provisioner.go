@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"syscall"
 	"time"
 
 	"github.com/golang/glog"
@@ -70,11 +69,12 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
 	path := path.Join(p.pvDir, options.PVName)
 
-	// Drop our umask to 0 temporarily, so we can actually create the hostpath directory as 0777
-	// Otherwise it just gets created as 0755, since default umask is 022
-	oldMask := syscall.Umask(0)
-	defer syscall.Umask(oldMask)
 	if err := os.MkdirAll(path, 0777); err != nil {
+		return nil, err
+	}
+
+	// Explictly chmod created dir, so we know mode is set to 0777 regardless of umask
+	if err := os.Chmod(path, 0777); err != nil {
 		return nil, err
 	}
 
