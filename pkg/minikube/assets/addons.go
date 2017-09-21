@@ -84,32 +84,32 @@ var Addons = map[string]*Addon{
 	}, true, "default-storageclass"),
 	"coredns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/coreDNS/coreDNS-controller.yaml",
+			"deploy/addons/coredns/coreDNS-controller.yaml",
 			constants.AddonsPath,
 			"coreDNS-controller.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coreDNS/coreDNS-configmap.yaml",
+			"deploy/addons/coredns/coreDNS-configmap.yaml",
 			constants.AddonsPath,
 			"coreDNS-configmap.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coreDNS/coreDNS-svc.yaml",
+			"deploy/addons/coredns/coreDNS-svc.yaml",
 			constants.AddonsPath,
 			"coreDNS-svc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coreDNS/coreDNS-crbinding.yaml",
+			"deploy/addons/coredns/coreDNS-crbinding.yaml",
 			constants.AddonsPath,
 			"coreDNS-crbinding.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coreDNS/coreDNS-sa.yaml",
+			"deploy/addons/coredns/coreDNS-sa.yaml",
 			constants.AddonsPath,
 			"coreDNS-sa.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coreDNS/coreDNS-clusterrole.yaml",
+			"deploy/addons/coredns/coreDNS-clusterrole.yaml",
 			constants.AddonsPath,
 			"coreDNS-clusterrole.yaml",
 			"0640"),
