@@ -82,6 +82,38 @@ var Addons = map[string]*Addon{
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass"),
+	"coredns": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/coreDNS/coreDNS-controller.yaml",
+			constants.AddonsPath,
+			"coreDNS-controller.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coreDNS/coreDNS-configmap.yaml",
+			constants.AddonsPath,
+			"coreDNS-configmap.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coreDNS/coreDNS-svc.yaml",
+			constants.AddonsPath,
+			"coreDNS-svc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coreDNS/coreDNS-crbinding.yaml",
+			constants.AddonsPath,
+			"coreDNS-crbinding.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coreDNS/coreDNS-sa.yaml",
+			constants.AddonsPath,
+			"coreDNS-sa.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coreDNS/coreDNS-clusterrole.yaml",
+			constants.AddonsPath,
+			"coreDNS-clusterrole.yaml",
+			"0640"),
+	}, false, "coredns"),
 	"kube-dns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-controller.yaml",
