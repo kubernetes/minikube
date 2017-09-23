@@ -181,6 +181,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /mnt/$PARTNAME/var/lib/localkube
     mkdir /var/lib/localkube
     mount --bind /mnt/$PARTNAME/var/lib/localkube /var/lib/localkube
+
+    mkdir -p /mnt/$PARTNAME/var/lib/minishift
+    mkdir /var/lib/minishift
+    mount --bind /mnt/$PARTNAME/var/lib/minishift /var/lib/minishift
 fi
 swapon "${UNPARTITIONED_HD}2"
 
