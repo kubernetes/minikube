@@ -68,6 +68,8 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.Var(&s.RuntimeConfig, "runtime-config", "A set of key=value pairs that describe runtime configuration that may be passed to apiserver. apis/<groupVersion> key can be used to turn on/off specific api versions. apis/<groupVersion>/<resource> can be used to turn on/off specific resources. api/all and api/legacy are special keys to control all and legacy api versions respectively.")
 	flag.IPVar(&s.NodeIP, "node-ip", s.NodeIP, "IP address of the node. If set, kubelet will use this IP address for the node.")
 	flag.StringVar(&s.ContainerRuntime, "container-runtime", "", "The container runtime to be used")
+	flag.StringVar(&s.RemoteRuntimeEndpoint, "remote-runtime-endpoint", "", "The container runtime endpoint (CRI) to be used (if this is set, then --container-runtime is forced as 'remote')")
+	flag.StringVar(&s.RemoteImageEndpoint, "remote-image-endpoint", "", "The container image endpoint (CRI) to be used (if this is set, then --container-runtime is forced as 'remote')")
 	flag.StringVar(&s.NetworkPlugin, "network-plugin", "", "The name of the network plugin")
 	flag.StringVar(&s.FeatureGates, "feature-gates", "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	flag.Var(&s.ExtraConfig, "extra-config", "A set of key=value pairs that describe configuration that may be passed to different components. The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.")
