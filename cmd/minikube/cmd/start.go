@@ -33,14 +33,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	cmdUtil "k8s.io/minikube/cmd/util"
+	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 	"k8s.io/minikube/pkg/version"
@@ -74,7 +73,7 @@ var (
 	dockerEnv        []string
 	dockerOpt        []string
 	insecureRegistry []string
-	extraOptions     util.ExtraOptionSlice
+	extraOptions     pkgutil.ExtraOptionSlice
 )
 
 // startCmd represents the start command
@@ -107,7 +106,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
-	diskSizeMB := util.CalculateDiskSizeInMB(diskSize)
+	diskSizeMB := pkgutil.CalculateDiskSizeInMB(diskSize)
 
 	if diskSizeMB < constants.MinimumDiskSizeMB {
 		err := fmt.Errorf("Disk Size %dMB (%s) is too small, the minimum disk size is %dMB", diskSizeMB, diskSize, constants.MinimumDiskSizeMB)
@@ -148,17 +147,17 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 		return err
 	}
-	err = util.RetryAfter(5, start, 2*time.Second)
+	err = pkgutil.RetryAfter(5, start, 2*time.Second)
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Getting VM IP address...")
 	ip, err := host.Driver.GetIP()
 	if err != nil {
 		glog.Errorln("Error getting VM IP address: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
@@ -217,13 +216,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Moving files into cluster...")
 	if err := k8sBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Setting up certs...")
 	if err := k8sBootstrapper.SetupCerts(kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Connecting to cluster...")
@@ -237,7 +236,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
 
-	kubeConfigFile := cmdUtil.GetKubeConfigPath()
+	kubeConfigFile := cmdutil.GetKubeConfigPath()
 
 	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
 		ClusterName:          cfg.GetMachineName(),
@@ -251,7 +250,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
-		cmdUtil.MaybeReportErrorAndExit(err)
+		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Starting cluster components...")
@@ -259,12 +258,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	if !exists {
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
 		if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error restarting cluster: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}
 
@@ -286,12 +285,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		err = mountCmd.Start()
 		if err != nil {
 			glog.Errorf("Error running command minikube mount %s", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 		err = ioutil.WriteFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644)
 		if err != nil {
 			glog.Errorf("Error writing mount process pid to file: %s", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}
 
@@ -322,10 +321,10 @@ You will need to move the files to the appropriate location and then set the cor
 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 		}
-		if err := util.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
+		if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
 			glog.Errorf("Error recursively changing ownership of directory %s: %s",
 				constants.GetMinipath(), err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}
 }
