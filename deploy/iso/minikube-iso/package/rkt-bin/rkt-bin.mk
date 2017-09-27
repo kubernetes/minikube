@@ -52,18 +52,21 @@ define RKT_BIN_INSTALL_INIT_SYSTEMD
 		$(@D)/init/systemd/tmpfiles.d/rkt.conf \
 		$(TARGET_DIR)/usr/lib/tmpfiles.d/rkt.conf
 
-	$(call install-service,rkt-api.service)
-	$(call install-service,rkt-gc.timer)
-	$(call install-service,rkt-gc.service)
-	$(call install-service,rkt-metadata.socket)
-	$(call install-service,rkt-metadata.service)
+	$(call rkt-install-service,rkt-api.service)
+	$(call rkt-install-service,rkt-gc.timer)
+	$(call rkt-install-service,rkt-gc.service)
+	$(call rkt-install-service,rkt-metadata.socket)
+	$(call rkt-install-service,rkt-metadata.service)
 endef
 
-define install-service
+define rkt-install-service
 	$(INSTALL) -D -m 644 \
 		$(@D)/init/systemd/$(1) \
 		$(TARGET_DIR)/usr/lib/systemd/system/$(1)
+	$(call link-service,$(1))
+endef
 
+define link-service
 	ln -fs /usr/lib/systemd/system/$(1) \
 		$(TARGET_DIR)/etc/systemd/system/multi-user.target.wants/$(1)
 endef

@@ -57,6 +57,8 @@ type LocalkubeServer struct {
 	RuntimeConfig            flag.ConfigurationMap
 	NodeIP                   net.IP
 	ContainerRuntime         string
+	RemoteRuntimeEndpoint    string
+	RemoteImageEndpoint      string
 	NetworkPlugin            string
 	FeatureGates             string
 	ExtraConfig              util.ExtraOptionSlice
