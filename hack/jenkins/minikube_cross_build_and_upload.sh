@@ -52,3 +52,13 @@ rm -r out/buildroot || true
 
 # Upload everything we built to Cloud Storage.
 gsutil -m cp -r out/* gs://minikube-builds/${ghprbPullId}/
+
+# Upload containers for the PR:
+TAG=$ghprbActualCommit make localkube-image
+gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$ghprbActualCommit
+
+TAG=$ghprbActualCommit make localkube-dind-image
+gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$ghprbActualCommit
+
+TAG=$ghprbActualCommit make localkube-dind-image-devshell
+gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$ghprbActualCommit
