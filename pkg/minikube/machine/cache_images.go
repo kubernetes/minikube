@@ -41,6 +41,8 @@ import (
 
 const tempLoadDir = "/tmp"
 
+var getWindowsVolumeName = getWindowsVolumeNameCmd
+
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
 
@@ -98,7 +100,7 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 
 // # ParseReference cannot have a : in the directory path
 func sanitizeCacheDir(image string) string {
-	if hasWindowsDriveLetter(image) {
+	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
 		// not sanitize Windows drive letter.
 		return image[:2] + strings.Replace(image[2:], ":", "_", -1)
 	}
@@ -106,9 +108,6 @@ func sanitizeCacheDir(image string) string {
 }
 
 func hasWindowsDriveLetter(s string) bool {
-	if runtime.GOOS != "windows" {
-		return false
-	}
 	if len(s) < 3 {
 		return false
 	}
@@ -123,7 +122,21 @@ func hasWindowsDriveLetter(s string) bool {
 	return false
 }
 
-func getWindowsVolumeName(d string) (string, error) {
+// Replace a drive letter to a volume name.
+func replaceWinDriveLetterToVolumeName(s string) (string, error) {
+	vname, err := getWindowsVolumeName(s[:1])
+	if err != nil {
+		return "", err
+	}
+	path := vname + s[3:]
+	if _, err := os.Stat(filepath.Dir(path)); err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
+func getWindowsVolumeNameCmd(d string) (string, error) {
 	cmd := exec.Command("wmic", "volume", "where", "DriveLetter = '"+d+":'", "get", "DeviceID")
 
 	stdout, err := cmd.Output()
@@ -189,18 +202,19 @@ func getSrcRef(image string) (types.ImageReference, error) {
 }
 
 func getDstRef(image, dst string) (types.ImageReference, error) {
-	if hasWindowsDriveLetter(dst) {
+	if runtime.GOOS == "windows" && hasWindowsDriveLetter(dst) {
 		// ParseReference does not support a Windows drive letter.
-		// Therefore, will change the drive letter to a volume name.
-		vname, err := getWindowsVolumeName(dst[:1])
-		if err != nil {
-			return nil, errors.Wrap(err, "parsing docker archive dst ref: get Windows volume name")
-		}
-		dst = vname + dst[3:]
-		if _, err := os.Stat(filepath.Dir(dst)); err != nil {
-			return nil, errors.Wrap(err, "parsing docker archive dst ref: get Windows volume name")
+		// Therefore, will replace the drive letter to a volume name.
+		var err error
+		if dst, err = replaceWinDriveLetterToVolumeName(dst); err != nil {
+			return nil, errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
 		}
 	}
+
+	return _getDstRef(image, dst)
+}
+
+func _getDstRef(image, dst string) (types.ImageReference, error) {
 	dstRef, err := archive.ParseReference(dst + ":" + image)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing docker archive dst ref")
