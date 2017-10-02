@@ -27,10 +27,10 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"text/template"

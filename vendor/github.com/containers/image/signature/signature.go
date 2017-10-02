@@ -180,13 +180,9 @@ func (s *untrustedSignature) strictUnmarshalJSON(data []byte) error {
 	}
 	s.UntrustedDockerManifestDigest = digest.Digest(digestString)
 
-	if err := paranoidUnmarshalJSONObjectExactFields(identity, map[string]interface{}{
+	return paranoidUnmarshalJSONObjectExactFields(identity, map[string]interface{}{
 		"docker-reference": &s.UntrustedDockerReference,
-	}); err != nil {
-		return err
-	}
-
-	return nil
+	})
 }
 
 // Sign formats the signature and returns a blob signed using mech and keyIdentity

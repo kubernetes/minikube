@@ -38,7 +38,6 @@ import (
 	"k8s.io/kubernetes/pkg/printers"
 	printersinternal "k8s.io/kubernetes/pkg/printers/internalversion"
 	printerstorage "k8s.io/kubernetes/pkg/printers/storage"
-	"k8s.io/kubernetes/pkg/registry/cachesize"
 	"k8s.io/kubernetes/pkg/registry/core/pod"
 	podrest "k8s.io/kubernetes/pkg/registry/core/pod/rest"
 )
@@ -66,12 +65,11 @@ type REST struct {
 func NewStorage(optsGetter generic.RESTOptionsGetter, k client.ConnectionInfoGetter, proxyTransport http.RoundTripper, podDisruptionBudgetClient policyclient.PodDisruptionBudgetsGetter) PodStorage {
 
 	store := &genericregistry.Store{
-		Copier:            api.Scheme,
-		NewFunc:           func() runtime.Object { return &api.Pod{} },
-		NewListFunc:       func() runtime.Object { return &api.PodList{} },
-		PredicateFunc:     pod.MatchPod,
-		QualifiedResource: api.Resource("pods"),
-		WatchCacheSize:    cachesize.GetWatchCacheSizeByResource("pods"),
+		Copier:                   api.Scheme,
+		NewFunc:                  func() runtime.Object { return &api.Pod{} },
+		NewListFunc:              func() runtime.Object { return &api.PodList{} },
+		PredicateFunc:            pod.MatchPod,
+		DefaultQualifiedResource: api.Resource("pods"),
 
 		CreateStrategy:      pod.Strategy,
 		UpdateStrategy:      pod.Strategy,

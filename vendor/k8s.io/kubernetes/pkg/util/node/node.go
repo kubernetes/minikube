@@ -25,12 +25,13 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	clientset "k8s.io/client-go/kubernetes"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 )
 
@@ -41,8 +42,9 @@ const (
 	NodeUnreachablePodMessage = "Node %v which was running pod %v is unresponsive"
 )
 
+// GetHostname returns OS's hostname if 'hostnameOverride' is empty; otherwise, return 'hostnameOverride'.
 func GetHostname(hostnameOverride string) string {
-	var hostname string = hostnameOverride
+	hostname := hostnameOverride
 	if hostname == "" {
 		nodename, err := os.Hostname()
 		if err != nil {
@@ -109,8 +111,8 @@ func InternalGetNodeHostIP(node *api.Node) (net.IP, error) {
 	return nil, fmt.Errorf("host IP unknown; known addresses: %v", addresses)
 }
 
-// Helper function that builds a string identifier that is unique per failure-zone
-// Returns empty-string for no zone
+// GetZoneKey is a helper function that builds a string identifier that is unique per failure-zone;
+// it returns empty-string for no zone.
 func GetZoneKey(node *v1.Node) string {
 	labels := node.Labels
 	if labels == nil {
@@ -149,7 +151,7 @@ func SetNodeCondition(c clientset.Interface, node types.NodeName, condition v1.N
 }
 
 // PatchNodeStatus patches node status.
-func PatchNodeStatus(c clientset.Interface, nodeName types.NodeName, oldNode *v1.Node, newNode *v1.Node) (*v1.Node, error) {
+func PatchNodeStatus(c v1core.CoreV1Interface, nodeName types.NodeName, oldNode *v1.Node, newNode *v1.Node) (*v1.Node, error) {
 	oldData, err := json.Marshal(oldNode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal old node %#v for node %q: %v", oldNode, nodeName, err)
@@ -170,7 +172,7 @@ func PatchNodeStatus(c clientset.Interface, nodeName types.NodeName, oldNode *v1
 		return nil, fmt.Errorf("failed to create patch for node %q: %v", nodeName, err)
 	}
 
-	updatedNode, err := c.Core().Nodes().Patch(string(nodeName), types.StrategicMergePatchType, patchBytes, "status")
+	updatedNode, err := c.Nodes().Patch(string(nodeName), types.StrategicMergePatchType, patchBytes, "status")
 	if err != nil {
 		return nil, fmt.Errorf("failed to patch status %q for node %q: %v", patchBytes, nodeName, err)
 	}

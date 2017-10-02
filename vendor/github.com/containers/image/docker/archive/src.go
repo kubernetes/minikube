@@ -1,9 +1,9 @@
 package archive
 
 import (
-	"github.com/Sirupsen/logrus"
 	"github.com/containers/image/docker/tarfile"
 	"github.com/containers/image/types"
+	"github.com/sirupsen/logrus"
 )
 
 type archiveImageSource struct {

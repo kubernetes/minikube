@@ -39,7 +39,7 @@ import (
 // Converter is an interface for converting between interface{}
 // and map[string]interface representation.
 type Converter interface {
-	ToUnstructured(obj interface{}, u *map[string]interface{}) error
+	ToUnstructured(obj interface{}) (map[string]interface{}, error)
 	FromUnstructured(u map[string]interface{}, obj interface{}) error
 }
 
@@ -388,12 +388,13 @@ func interfaceFromUnstructured(sv, dv reflect.Value) error {
 	return nil
 }
 
-func (c *converterImpl) ToUnstructured(obj interface{}, u *map[string]interface{}) error {
+func (c *converterImpl) ToUnstructured(obj interface{}) (map[string]interface{}, error) {
 	t := reflect.TypeOf(obj)
 	value := reflect.ValueOf(obj)
 	if t.Kind() != reflect.Ptr || value.IsNil() {
-		return fmt.Errorf("ToUnstructured requires a non-nil pointer to an object, got %v", t)
+		return nil, fmt.Errorf("ToUnstructured requires a non-nil pointer to an object, got %v", t)
 	}
+	u := &map[string]interface{}{}
 	err := toUnstructured(value.Elem(), reflect.ValueOf(u).Elem())
 	if c.mismatchDetection {
 		newUnstr := &map[string]interface{}{}
@@ -405,7 +406,10 @@ func (c *converterImpl) ToUnstructured(obj interface{}, u *map[string]interface{
 			glog.Fatalf("ToUnstructured mismatch for %#v, diff: %v", u, diff.ObjectReflectDiff(u, newUnstr))
 		}
 	}
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return *u, nil
 }
 
 func toUnstructuredViaJSON(obj interface{}, u *map[string]interface{}) error {
@@ -416,51 +420,95 @@ func toUnstructuredViaJSON(obj interface{}, u *map[string]interface{}) error {
 	return json.Unmarshal(data, u)
 }
 
-func toUnstructured(sv, dv reflect.Value) error {
-	st, dt := sv.Type(), dv.Type()
+var (
+	nullBytes  = []byte("null")
+	trueBytes  = []byte("true")
+	falseBytes = []byte("false")
+)
 
+func getMarshaler(v reflect.Value) (encodingjson.Marshaler, bool) {
+	// Check value receivers if v is not a pointer and pointer receivers if v is a pointer
+	if v.Type().Implements(marshalerType) {
+		return v.Interface().(encodingjson.Marshaler), true
+	}
+	// Check pointer receivers if v is not a pointer
+	if v.Kind() != reflect.Ptr && v.CanAddr() {
+		v = v.Addr()
+		if v.Type().Implements(marshalerType) {
+			return v.Interface().(encodingjson.Marshaler), true
+		}
+	}
+	return nil, false
+}
+
+func toUnstructured(sv, dv reflect.Value) error {
 	// Check if the object has a custom JSON marshaller/unmarshaller.
-	if st.Implements(marshalerType) {
+	if marshaler, ok := getMarshaler(sv); ok {
 		if sv.Kind() == reflect.Ptr && sv.IsNil() {
 			// We're done - we don't need to store anything.
 			return nil
 		}
 
-		marshaler := sv.Interface().(encodingjson.Marshaler)
 		data, err := marshaler.MarshalJSON()
 		if err != nil {
 			return err
 		}
-		if bytes.Equal(data, []byte("null")) {
+		switch {
+		case len(data) == 0:
+			return fmt.Errorf("error decoding from json: empty value")
+
+		case bytes.Equal(data, nullBytes):
 			// We're done - we don't need to store anything.
-		} else {
-			switch {
-			case len(data) > 0 && data[0] == '"':
-				var result string
-				err := json.Unmarshal(data, &result)
-				if err != nil {
-					return fmt.Errorf("error decoding from json: %v", err)
-				}
-				dv.Set(reflect.ValueOf(result))
-			case len(data) > 0 && data[0] == '{':
-				result := make(map[string]interface{})
-				err := json.Unmarshal(data, &result)
-				if err != nil {
-					return fmt.Errorf("error decoding from json: %v", err)
-				}
-				dv.Set(reflect.ValueOf(result))
-			default:
-				var result int64
-				err := json.Unmarshal(data, &result)
-				if err != nil {
-					return fmt.Errorf("error decoding from json: %v", err)
-				}
-				dv.Set(reflect.ValueOf(result))
+
+		case bytes.Equal(data, trueBytes):
+			dv.Set(reflect.ValueOf(true))
+
+		case bytes.Equal(data, falseBytes):
+			dv.Set(reflect.ValueOf(false))
+
+		case data[0] == '"':
+			var result string
+			err := json.Unmarshal(data, &result)
+			if err != nil {
+				return fmt.Errorf("error decoding string from json: %v", err)
+			}
+			dv.Set(reflect.ValueOf(result))
+
+		case data[0] == '{':
+			result := make(map[string]interface{})
+			err := json.Unmarshal(data, &result)
+			if err != nil {
+				return fmt.Errorf("error decoding object from json: %v", err)
+			}
+			dv.Set(reflect.ValueOf(result))
+
+		case data[0] == '[':
+			result := make([]interface{}, 0)
+			err := json.Unmarshal(data, &result)
+			if err != nil {
+				return fmt.Errorf("error decoding array from json: %v", err)
+			}
+			dv.Set(reflect.ValueOf(result))
+
+		default:
+			var (
+				resultInt   int64
+				resultFloat float64
+				err         error
+			)
+			if err = json.Unmarshal(data, &resultInt); err == nil {
+				dv.Set(reflect.ValueOf(resultInt))
+			} else if err = json.Unmarshal(data, &resultFloat); err == nil {
+				dv.Set(reflect.ValueOf(resultFloat))
+			} else {
+				return fmt.Errorf("error decoding number from json: %v", err)
 			}
 		}
+
 		return nil
 	}
 
+	st, dt := sv.Type(), dv.Type()
 	switch st.Kind() {
 	case reflect.String:
 		if dt.Kind() == reflect.Interface && dv.NumMethod() == 0 {

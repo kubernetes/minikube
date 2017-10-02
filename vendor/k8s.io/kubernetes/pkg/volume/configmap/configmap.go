@@ -20,10 +20,10 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/api/v1"
 	ioutil "k8s.io/kubernetes/pkg/util/io"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
@@ -92,7 +92,7 @@ func (plugin *configMapPlugin) NewMounter(spec *volume.Spec, pod *v1.Pod, opts v
 			spec.Name(),
 			pod.UID,
 			plugin,
-			plugin.host.GetMounter(),
+			plugin.host.GetMounter(plugin.GetPluginName()),
 			plugin.host.GetWriter(),
 			volume.MetricsNil{},
 		},
@@ -109,7 +109,7 @@ func (plugin *configMapPlugin) NewUnmounter(volName string, podUID types.UID) (v
 			volName,
 			podUID,
 			plugin,
-			plugin.host.GetMounter(),
+			plugin.host.GetMounter(plugin.GetPluginName()),
 			plugin.host.GetWriter(),
 			volume.MetricsNil{},
 		},
@@ -266,9 +266,7 @@ func MakePayload(mappings []v1.KeyToPath, configMap *v1.ConfigMap, defaultMode *
 				if optional {
 					continue
 				}
-				err_msg := "references non-existent config key"
-				glog.Errorf(err_msg)
-				return nil, fmt.Errorf(err_msg)
+				return nil, fmt.Errorf("configmap references non-existent config key: %s", ktp.Key)
 			}
 
 			fileProjection.Data = []byte(content)

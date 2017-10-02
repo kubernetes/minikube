@@ -23,7 +23,7 @@ type Image struct {
 // a client to the registry hosting the given image.
 // The caller must call .Close() on the returned Image.
 func newImage(ctx *types.SystemContext, ref dockerReference) (types.Image, error) {
-	s, err := newImageSource(ctx, ref, nil)
+	s, err := newImageSource(ctx, ref)
 	if err != nil {
 		return nil, err
 	}

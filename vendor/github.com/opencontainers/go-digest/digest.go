@@ -1,17 +1,3 @@
-// Copyright 2017 Docker, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     https://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package digest
 
 import (
@@ -45,21 +31,16 @@ func NewDigest(alg Algorithm, h hash.Hash) Digest {
 // functions. This is also useful for rebuilding digests from binary
 // serializations.
 func NewDigestFromBytes(alg Algorithm, p []byte) Digest {
-	return NewDigestFromEncoded(alg, alg.Encode(p))
+	return Digest(fmt.Sprintf("%s:%x", alg, p))
 }
 
-// NewDigestFromHex is deprecated. Please use NewDigestFromEncoded.
+// NewDigestFromHex returns a Digest from alg and a the hex encoded digest.
 func NewDigestFromHex(alg, hex string) Digest {
-	return NewDigestFromEncoded(Algorithm(alg), hex)
-}
-
-// NewDigestFromEncoded returns a Digest from alg and the encoded digest.
-func NewDigestFromEncoded(alg Algorithm, encoded string) Digest {
-	return Digest(fmt.Sprintf("%s:%s", alg, encoded))
+	return Digest(fmt.Sprintf("%s:%s", alg, hex))
 }
 
 // DigestRegexp matches valid digest types.
-var DigestRegexp = regexp.MustCompile(`[a-z0-9]+(?:[.+_-][a-z0-9]+)*:[a-zA-Z0-9=_-]+`)
+var DigestRegexp = regexp.MustCompile(`[a-zA-Z0-9-_+.]+:[a-fA-F0-9]+`)
 
 // DigestRegexpAnchored matches valid digest types, anchored to the start and end of the match.
 var DigestRegexpAnchored = regexp.MustCompile(`^` + DigestRegexp.String() + `$`)
@@ -101,18 +82,26 @@ func FromString(s string) Digest {
 // error if not.
 func (d Digest) Validate() error {
 	s := string(d)
+
 	i := strings.Index(s, ":")
-	if i <= 0 || i+1 == len(s) {
+
+	// validate i then run through regexp
+	if i < 0 || i+1 == len(s) || !DigestRegexpAnchored.MatchString(s) {
 		return ErrDigestInvalidFormat
 	}
-	algorithm, encoded := Algorithm(s[:i]), s[i+1:]
+
+	algorithm := Algorithm(s[:i])
 	if !algorithm.Available() {
-		if !DigestRegexpAnchored.MatchString(s) {
-			return ErrDigestInvalidFormat
-		}
 		return ErrDigestUnsupported
 	}
-	return algorithm.Validate(encoded)
+
+	// Digests much always be hex-encoded, ensuring that their hex portion will
+	// always be size*2
+	if algorithm.Size()*2 != len(s[i+1:]) {
+		return ErrDigestInvalidLength
+	}
+
+	return nil
 }
 
 // Algorithm returns the algorithm portion of the digest. This will panic if
@@ -130,15 +119,10 @@ func (d Digest) Verifier() Verifier {
 	}
 }
 
-// Encoded returns the encoded portion of the digest. This will panic if the
+// Hex returns the hex digest portion of the digest. This will panic if the
 // underlying digest is not in a valid format.
-func (d Digest) Encoded() string {
-	return string(d[d.sepIndex()+1:])
-}
-
-// Hex is deprecated. Please use Digest.Encoded.
 func (d Digest) Hex() string {
-	return d.Encoded()
+	return string(d[d.sepIndex()+1:])
 }
 
 func (d Digest) String() string {

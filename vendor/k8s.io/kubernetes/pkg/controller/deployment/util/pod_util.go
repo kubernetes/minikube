@@ -19,12 +19,11 @@ package util
 import (
 	"github.com/golang/glog"
 
+	"k8s.io/api/core/v1"
 	errorsutil "k8s.io/apimachinery/pkg/util/errors"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/v1"
-	v1core "k8s.io/kubernetes/pkg/client/clientset_generated/clientset/typed/core/v1"
-	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
-	"k8s.io/kubernetes/pkg/client/retry"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/util/retry"
 )
 
 // TODO: use client library instead when it starts to support update retries
@@ -42,11 +41,7 @@ func UpdatePodWithRetries(podClient v1core.PodInterface, podLister corelisters.P
 		if err != nil {
 			return err
 		}
-		obj, deepCopyErr := api.Scheme.DeepCopy(pod)
-		if deepCopyErr != nil {
-			return deepCopyErr
-		}
-		pod = obj.(*v1.Pod)
+		pod = pod.DeepCopy()
 		// Apply the update, then attempt to push it to the apiserver.
 		if applyErr := applyUpdate(pod); applyErr != nil {
 			return applyErr

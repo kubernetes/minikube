@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/docker/distribution/context"
-	"github.com/docker/distribution/digest"
 	"github.com/docker/distribution/reference"
+	"github.com/opencontainers/go-digest"
 )
 
 var (
@@ -69,6 +69,9 @@ type Descriptor struct {
 	// against against this digest.
 	Digest digest.Digest `json:"digest,omitempty"`
 
+	// URLs contains the source URLs of this content.
+	URLs []string `json:"urls,omitempty"`
+
 	// NOTE: Before adding a field here, please ensure that all
 	// other options have been exhausted. Much of the type relationships
 	// depend on the simplicity of this type.
@@ -124,6 +127,11 @@ type BlobDescriptorService interface {
 	Clear(ctx context.Context, dgst digest.Digest) error
 }
 
+// BlobDescriptorServiceFactory creates middleware for BlobDescriptorService.
+type BlobDescriptorServiceFactory interface {
+	BlobAccessController(svc BlobDescriptorService) BlobDescriptorService
+}
+
 // ReadSeekCloser is the primary reader type for blob data, combining
 // io.ReadSeeker with io.Closer.
 type ReadSeekCloser interface {
@@ -144,7 +152,7 @@ type BlobProvider interface {
 
 // BlobServer can serve blobs via http.
 type BlobServer interface {
-	// ServeBlob attempts to serve the blob, identifed by dgst, via http. The
+	// ServeBlob attempts to serve the blob, identified by dgst, via http. The
 	// service may decide to redirect the client elsewhere or serve the data
 	// directly.
 	//
@@ -182,6 +190,18 @@ type BlobIngester interface {
 // TODO (brianbland): unify this with ManifestServiceOption in the future
 type BlobCreateOption interface {
 	Apply(interface{}) error
+}
+
+// CreateOptions is a collection of blob creation modifiers relevant to general
+// blob storage intended to be configured by the BlobCreateOption.Apply method.
+type CreateOptions struct {
+	Mount struct {
+		ShouldMount bool
+		From        reference.Canonical
+		// Stat allows to pass precalculated descriptor to link and return.
+		// Blob access check will be skipped if set.
+		Stat *Descriptor
+	}
 }
 
 // BlobWriter provides a handle for inserting data into a blob store.

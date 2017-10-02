@@ -17,6 +17,7 @@ limitations under the License.
 package storage
 
 import (
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,6 +27,48 @@ import (
 // In any failure to parse given object, it returns error.
 type AttrFunc func(obj runtime.Object) (labels.Set, fields.Set, bool, error)
 
+// FieldMutationFunc allows the mutation of the field selection fields.  It is mutating to
+// avoid the extra allocation on this common path
+type FieldMutationFunc func(obj runtime.Object, fieldSet fields.Set) error
+
+func DefaultClusterScopedAttr(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
+	metadata, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	fieldSet := fields.Set{
+		"metadata.name": metadata.GetName(),
+	}
+
+	return labels.Set(metadata.GetLabels()), fieldSet, metadata.GetInitializers() != nil, nil
+}
+
+func DefaultNamespaceScopedAttr(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
+	metadata, err := meta.Accessor(obj)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	fieldSet := fields.Set{
+		"metadata.name":      metadata.GetName(),
+		"metadata.namespace": metadata.GetNamespace(),
+	}
+
+	return labels.Set(metadata.GetLabels()), fieldSet, metadata.GetInitializers() != nil, nil
+}
+
+func (f AttrFunc) WithFieldMutation(fieldMutator FieldMutationFunc) AttrFunc {
+	return func(obj runtime.Object) (labels.Set, fields.Set, bool, error) {
+		labelSet, fieldSet, initialized, err := f(obj)
+		if err != nil {
+			return nil, nil, false, err
+		}
+		if err := fieldMutator(obj, fieldSet); err != nil {
+			return nil, nil, false, err
+		}
+		return labelSet, fieldSet, initialized, nil
+	}
+}
+
 // SelectionPredicate is used to represent the way to select objects from api storage.
 type SelectionPredicate struct {
 	Label                labels.Selector
@@ -33,6 +76,8 @@ type SelectionPredicate struct {
 	IncludeUninitialized bool
 	GetAttrs             AttrFunc
 	IndexFields          []string
+	Limit                int64
+	Continue             string
 }
 
 // Matches returns true if the given object's labels and fields (as
@@ -75,6 +120,9 @@ func (s *SelectionPredicate) MatchesObjectAttributes(l labels.Set, f fields.Set,
 // MatchesSingle will return (name, true) if and only if s.Field matches on the object's
 // name.
 func (s *SelectionPredicate) MatchesSingle() (string, bool) {
+	if len(s.Continue) > 0 {
+		return "", false
+	}
 	// TODO: should be namespace.name
 	if name, ok := s.Field.RequiresExactMatch("metadata.name"); ok {
 		return name, true

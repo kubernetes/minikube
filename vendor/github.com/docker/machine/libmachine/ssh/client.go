@@ -151,8 +151,9 @@ func NewNativeConfig(user string, auth *Auth) (ssh.ClientConfig, error) {
 	}
 
 	return ssh.ClientConfig{
-		User: user,
-		Auth: authMethods,
+		User:            user,
+		Auth:            authMethods,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}, nil
 }
 
@@ -201,7 +202,7 @@ func (client *NativeClient) OutputWithPty(command string) (string, error) {
 	defer closeConn(conn)
 	defer session.Close()
 
-	fd := int(os.Stdin.Fd())
+	fd := int(os.Stdout.Fd())
 
 	termWidth, termHeight, err := terminal.GetSize(fd)
 	if err != nil {
