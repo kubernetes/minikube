@@ -32,8 +32,6 @@ import (
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/server"
 	utilflag "k8s.io/apiserver/pkg/util/flag"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
 	certutil "k8s.io/client-go/util/cert"
 )
 
@@ -83,6 +81,10 @@ func (s *SecureServingOptions) DefaultExternalAddress() (net.IP, error) {
 }
 
 func (s *SecureServingOptions) Validate() []error {
+	if s == nil {
+		return nil
+	}
+
 	errors := []error{}
 
 	if s.BindPort < 0 || s.BindPort > 65535 {
@@ -93,6 +95,10 @@ func (s *SecureServingOptions) Validate() []error {
 }
 
 func (s *SecureServingOptions) AddFlags(fs *pflag.FlagSet) {
+	if s == nil {
+		return
+	}
+
 	fs.IPVar(&s.BindAddress, "bind-address", s.BindAddress, ""+
 		"The IP address on which to listen for the --secure-port port. The "+
 		"associated interface(s) must be reachable by the rest of the cluster, and by CLI/web "+
@@ -136,7 +142,12 @@ func (s *SecureServingOptions) AddDeprecatedFlags(fs *pflag.FlagSet) {
 	fs.MarkDeprecated("public-address-override", "see --bind-address instead.")
 }
 
+// ApplyTo fills up serving information in the server configuration.
 func (s *SecureServingOptions) ApplyTo(c *server.Config) error {
+	if s == nil {
+		return nil
+	}
+
 	if s.BindPort <= 0 {
 		return nil
 	}
@@ -168,13 +179,6 @@ func (s *SecureServingOptions) ApplyTo(c *server.Config) error {
 		c.LoopbackClientConfig = secureLoopbackClientConfig
 		c.SecureServingInfo.SNICerts[server.LoopbackClientServerNameOverride] = &tlsCert
 	}
-
-	// create shared informers
-	clientset, err := kubernetes.NewForConfig(c.LoopbackClientConfig)
-	if err != nil {
-		return err
-	}
-	c.SharedInformerFactory = informers.NewSharedInformerFactory(clientset, c.LoopbackClientConfig.Timeout)
 
 	return nil
 }

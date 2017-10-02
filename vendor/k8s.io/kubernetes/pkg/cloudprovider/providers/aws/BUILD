@@ -1,7 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])
-
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_library",
@@ -26,15 +24,14 @@ go_library(
         "tags.go",
         "volumes.go",
     ],
-    tags = ["automanaged"],
     deps = [
-        "//pkg/api/v1:go_default_library",
         "//pkg/api/v1/service:go_default_library",
         "//pkg/cloudprovider:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/credentialprovider/aws:go_default_library",
         "//pkg/kubelet/apis:go_default_library",
         "//pkg/volume:go_default_library",
+        "//pkg/volume/util:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/awserr:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws/credentials:go_default_library",
@@ -45,9 +42,11 @@ go_library(
         "//vendor/github.com/aws/aws-sdk-go/service/autoscaling:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/ec2:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/elb:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/service/kms:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/github.com/prometheus/client_golang/prometheus:go_default_library",
         "//vendor/gopkg.in/gcfg.v1:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/wait:go_default_library",
@@ -66,17 +65,17 @@ go_test(
         "tags_test.go",
     ],
     library = ":go_default_library",
-    tags = ["automanaged"],
     deps = [
-        "//pkg/api/v1:go_default_library",
         "//pkg/kubelet/apis:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/aws:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/autoscaling:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/ec2:go_default_library",
         "//vendor/github.com/aws/aws-sdk-go/service/elb:go_default_library",
+        "//vendor/github.com/aws/aws-sdk-go/service/kms:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",
         "//vendor/github.com/stretchr/testify/mock:go_default_library",
+        "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",

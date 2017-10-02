@@ -35,7 +35,7 @@ var DefaultRequestedManifestMIMETypes = []string{
 	DockerV2Schema2MediaType,
 	DockerV2Schema1SignedMediaType,
 	DockerV2Schema1MediaType,
-	DockerV2ListMediaType,
+	// DockerV2ListMediaType, // FIXME: Restore this ASAP
 }
 
 // GuessMIMEType guesses MIME type of a manifest and returns it _if it is recognized_, or "" if unknown or unrecognized.

@@ -56,7 +56,7 @@ func (m *manifestOCI1) manifestMIMEType() string {
 // ConfigInfo returns a complete BlobInfo for the separate config object, or a BlobInfo{Digest:""} if there isn't a separate object.
 // Note that the config object may not exist in the underlying storage in the return value of UpdatedImage! Use ConfigBlob() below.
 func (m *manifestOCI1) ConfigInfo() types.BlobInfo {
-	return types.BlobInfo{Digest: m.ConfigDescriptor.Digest, Size: m.ConfigDescriptor.Size}
+	return types.BlobInfo{Digest: m.ConfigDescriptor.Digest, Size: m.ConfigDescriptor.Size, Annotations: m.ConfigDescriptor.Annotations}
 }
 
 // ConfigBlob returns the blob described by ConfigInfo, iff ConfigInfo().Digest != ""; nil otherwise.
@@ -109,7 +109,7 @@ func (m *manifestOCI1) OCIConfig() (*imgspecv1.Image, error) {
 func (m *manifestOCI1) LayerInfos() []types.BlobInfo {
 	blobs := []types.BlobInfo{}
 	for _, layer := range m.LayersDescriptors {
-		blobs = append(blobs, types.BlobInfo{Digest: layer.Digest, Size: layer.Size})
+		blobs = append(blobs, types.BlobInfo{Digest: layer.Digest, Size: layer.Size, Annotations: layer.Annotations, URLs: layer.URLs})
 	}
 	return blobs
 }
@@ -159,6 +159,8 @@ func (m *manifestOCI1) UpdatedImage(options types.ManifestUpdateOptions) (types.
 			copy.LayersDescriptors[i].MediaType = m.LayersDescriptors[i].MediaType
 			copy.LayersDescriptors[i].Digest = info.Digest
 			copy.LayersDescriptors[i].Size = info.Size
+			copy.LayersDescriptors[i].Annotations = info.Annotations
+			copy.LayersDescriptors[i].URLs = info.URLs
 		}
 	}
 	// Ignore options.EmbeddedDockerReference: it may be set when converting from schema1, but we really don't care.

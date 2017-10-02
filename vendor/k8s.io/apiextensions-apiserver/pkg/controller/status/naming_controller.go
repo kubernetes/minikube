@@ -26,7 +26,6 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -40,8 +39,6 @@ import (
 	informers "k8s.io/apiextensions-apiserver/pkg/client/informers/internalversion/apiextensions/internalversion"
 	listers "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/internalversion"
 )
-
-var cloner = conversion.NewCloner()
 
 // This controller is reserving names. To avoid conflicts, be sure to run only one instance of the worker at a time.
 // This could eventually be lifted, but starting simple.
@@ -251,11 +248,7 @@ func (c *NamingConditionController) sync(key string) error {
 		return nil
 	}
 
-	crd := &apiextensions.CustomResourceDefinition{}
-	if err := apiextensions.DeepCopy_apiextensions_CustomResourceDefinition(inCustomResourceDefinition, crd, cloner); err != nil {
-		return err
-	}
-
+	crd := inCustomResourceDefinition.DeepCopy()
 	crd.Status.AcceptedNames = acceptedNames
 	apiextensions.SetCRDCondition(crd, namingCondition)
 	apiextensions.SetCRDCondition(crd, establishedCondition)

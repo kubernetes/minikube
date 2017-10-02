@@ -18,17 +18,18 @@ package volumemanager
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	"k8s.io/kubernetes/pkg/kubelet/config"
 	"k8s.io/kubernetes/pkg/kubelet/container"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
@@ -156,7 +157,7 @@ func NewVolumeManager(
 	kubeletPodsDir string,
 	recorder record.EventRecorder,
 	checkNodeCapabilitiesBeforeMount bool,
-	keepTerminatedPodVolumes bool) (VolumeManager, error) {
+	keepTerminatedPodVolumes bool) VolumeManager {
 
 	vm := &volumeManager{
 		kubeClient:          kubeClient,
@@ -195,7 +196,7 @@ func NewVolumeManager(
 		volumePluginMgr,
 		kubeletPodsDir)
 
-	return vm, nil
+	return vm
 }
 
 // volumeManager implements the VolumeManager interface
@@ -286,15 +287,8 @@ func (vm *volumeManager) GetVolumesInUse() []v1.UniqueVolumeName {
 	// volume *should* be attached to this node until it is safely unmounted.
 	desiredVolumes := vm.desiredStateOfWorld.GetVolumesToMount()
 	mountedVolumes := vm.actualStateOfWorld.GetGloballyMountedVolumes()
-	volumesToReportInUse :=
-		make(
-			[]v1.UniqueVolumeName,
-			0, /* len */
-			len(desiredVolumes)+len(mountedVolumes) /* cap */)
-	desiredVolumesMap :=
-		make(
-			map[v1.UniqueVolumeName]bool,
-			len(desiredVolumes)+len(mountedVolumes) /* cap */)
+	volumesToReportInUse := make([]v1.UniqueVolumeName, 0, len(desiredVolumes)+len(mountedVolumes))
+	desiredVolumesMap := make(map[v1.UniqueVolumeName]bool, len(desiredVolumes)+len(mountedVolumes))
 
 	for _, volume := range desiredVolumes {
 		if volume.PluginIsAttachable {
@@ -313,6 +307,9 @@ func (vm *volumeManager) GetVolumesInUse() []v1.UniqueVolumeName {
 		}
 	}
 
+	sort.Slice(volumesToReportInUse, func(i, j int) bool {
+		return string(volumesToReportInUse[i]) < string(volumesToReportInUse[j])
+	})
 	return volumesToReportInUse
 }
 

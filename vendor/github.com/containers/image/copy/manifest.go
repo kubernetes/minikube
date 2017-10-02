@@ -3,10 +3,10 @@ package copy
 import (
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/containers/image/manifest"
 	"github.com/containers/image/types"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // preferredManifestMIMETypes lists manifest MIME types in order of our preference, if we can't use the original manifest and need to convert.

@@ -8,7 +8,7 @@ machine:
 
   post:
   # go
-    - gvm install go1.6 --prefer-binary --name=stable
+    - gvm install go1.8 --prefer-binary --name=stable
 
   environment:
   # Convenient shortcuts to "common" locations
@@ -34,7 +34,7 @@ dependencies:
 
   override:
   # Install dependencies for every copied clone/go version
-    - gvm use stable && go get github.com/tools/godep:
+    - gvm use stable && go get github.com/lk4d4/vndr:
         pwd: $BASE_STABLE
 
   post:
@@ -50,12 +50,14 @@ test:
     - gvm use stable && go version
 
   # Ensure validation of dependencies
-    - gvm use stable && if test -n "`git diff --stat=1000 master | grep -Ei \"vendor|godeps\"`"; then make dep-validate; fi:
+    - git fetch origin:
+        pwd: $BASE_STABLE
+    - gvm use stable && if test -n "`git diff --stat=1000 origin/master | grep -E \"^[[:space:]]*vendor\"`"; then make dep-validate; fi:
         pwd: $BASE_STABLE
 
   # First thing: build everything. This will catch compile errors, and it's
   # also necessary for go vet to work properly (see #807).
-    - gvm use stable && godep go install $(go list ./... | grep -v "/vendor/"):
+    - gvm use stable && go install $(go list ./... | grep -v "/vendor/"):
         pwd: $BASE_STABLE
 
   # FMT
@@ -72,17 +74,20 @@ test:
 
   override:
   # Test stable, and report
-     - gvm use stable; export ROOT_PACKAGE=$(go list .); go list -tags "$DOCKER_BUILDTAGS" ./... | grep -v "/vendor/" | xargs -L 1 -I{} bash -c 'export PACKAGE={}; godep go test -tags "$DOCKER_BUILDTAGS" -test.short -coverprofile=$GOPATH/src/$PACKAGE/coverage.out -coverpkg=$(./coverpkg.sh $PACKAGE $ROOT_PACKAGE) $PACKAGE':
-         timeout: 600
+     - gvm use stable; export ROOT_PACKAGE=$(go list .); go list -tags "$DOCKER_BUILDTAGS" ./... | grep -v "/vendor/" | xargs -L 1 -I{} bash -c 'export PACKAGE={}; go test -tags "$DOCKER_BUILDTAGS" -test.short -coverprofile=$GOPATH/src/$PACKAGE/coverage.out -coverpkg=$(./coverpkg.sh $PACKAGE $ROOT_PACKAGE) $PACKAGE':
+         timeout: 1000
          pwd: $BASE_STABLE
 
+  # Test stable with race
+     - gvm use stable; export ROOT_PACKAGE=$(go list .); go list -tags "$DOCKER_BUILDTAGS" ./... | grep -v "/vendor/" | grep -v "registry/handlers" | grep -v "registry/storage/driver" | xargs -L 1 -I{} bash -c 'export PACKAGE={}; go test -race -tags "$DOCKER_BUILDTAGS" -test.short $PACKAGE':
+         timeout: 1000
+         pwd: $BASE_STABLE
   post:
   # Report to codecov
     - bash <(curl -s https://codecov.io/bash):
         pwd: $BASE_STABLE
 
   ## Notes
-  # Disabled the -race detector due to massive memory usage.
   # Do we want these as well?
   # - go get code.google.com/p/go.tools/cmd/goimports
   # - test -z "$(goimports -l -w ./... | tee /dev/stderr)"

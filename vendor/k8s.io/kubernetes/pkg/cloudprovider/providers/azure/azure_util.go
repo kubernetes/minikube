@@ -24,7 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
@@ -46,7 +46,7 @@ const (
 	securityRuleIDTemplate      = "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/networkSecurityGroups/%s/securityRules/%s"
 )
 
-var providerIDRE = regexp.MustCompile(`^` + CloudProviderName + `://(.+)$`)
+var providerIDRE = regexp.MustCompile(`^` + CloudProviderName + `://(?:.*)/Microsoft.Compute/virtualMachines/(.+)$`)
 
 // returns the full identifier of a machine
 func (az *Cloud) getMachineID(machineName string) string {
@@ -249,6 +249,7 @@ outer:
 }
 
 func (az *Cloud) getIPForMachine(nodeName types.NodeName) (string, error) {
+	az.operationPollRateLimiter.Accept()
 	machine, exists, err := az.getVirtualMachine(nodeName)
 	if !exists {
 		return "", cloudprovider.InstanceNotFound
@@ -271,7 +272,9 @@ func (az *Cloud) getIPForMachine(nodeName types.NodeName) (string, error) {
 	}
 
 	az.operationPollRateLimiter.Accept()
+	glog.V(10).Infof("InterfacesClient.Get(%q): start", nicName)
 	nic, err := az.InterfacesClient.Get(az.ResourceGroup, nicName, "")
+	glog.V(10).Infof("InterfacesClient.Get(%q): end", nicName)
 	if err != nil {
 		glog.Errorf("error: az.getIPForMachine(%s), az.InterfacesClient.Get(%s, %s, %s), err=%v", nodeName, az.ResourceGroup, nicName, "", err)
 		return "", err

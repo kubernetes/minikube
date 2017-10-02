@@ -34,6 +34,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/quota"
+	_ "k8s.io/kubernetes/pkg/util/reflector/prometheus" // for reflector metric registration
 	_ "k8s.io/kubernetes/pkg/util/workqueue/prometheus" // for workqueue metric registration
 	resourcequotaapi "k8s.io/kubernetes/plugin/pkg/admission/resourcequota/apis/resourcequota"
 )
@@ -319,11 +320,7 @@ func (e *quotaEvaluator) checkQuotas(quotas []api.ResourceQuota, admissionAttrib
 func copyQuotas(in []api.ResourceQuota) ([]api.ResourceQuota, error) {
 	out := make([]api.ResourceQuota, 0, len(in))
 	for _, quota := range in {
-		copied, err := api.Scheme.Copy(&quota)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, *copied.(*api.ResourceQuota))
+		out = append(out, *quota.DeepCopy())
 	}
 
 	return out, nil
@@ -374,8 +371,7 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 		return quotas, nil
 	}
 
-	op := a.GetOperation()
-	if !evaluator.Handles(op) {
+	if !evaluator.Handles(a) {
 		return quotas, nil
 	}
 
@@ -447,7 +443,6 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 			accessor.SetNamespace(namespace)
 		}
 	}
-
 	// there is at least one quota that definitely matches our object
 	// as a result, we need to measure the usage of this object for quota
 	// on updates, we need to subtract the previous measured usage
@@ -462,7 +457,7 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 		return nil, admission.NewForbidden(a, fmt.Errorf("quota usage is negative for resource(s): %s", prettyPrintResourceNames(negativeUsage)))
 	}
 
-	if admission.Update == op {
+	if admission.Update == a.GetOperation() {
 		prevItem := a.GetOldObject()
 		if prevItem == nil {
 			return nil, admission.NewForbidden(a, fmt.Errorf("unable to get previous usage since prior version of object was not found"))
@@ -476,9 +471,10 @@ func (e *quotaEvaluator) checkRequest(quotas []api.ResourceQuota, a admission.At
 			if innerErr != nil {
 				return quotas, innerErr
 			}
-			deltaUsage = quota.Subtract(deltaUsage, prevUsage)
+			deltaUsage = quota.SubtractWithNonNegativeResult(deltaUsage, prevUsage)
 		}
 	}
+
 	if quota.IsZero(deltaUsage) {
 		return quotas, nil
 	}
@@ -528,8 +524,7 @@ func (e *quotaEvaluator) Evaluate(a admission.Attributes) error {
 	}
 	// for this kind, check if the operation could mutate any quota resources
 	// if no resources tracked by quota are impacted, then just return
-	op := a.GetOperation()
-	if !evaluator.Handles(op) {
+	if !evaluator.Handles(a) {
 		return nil
 	}
 

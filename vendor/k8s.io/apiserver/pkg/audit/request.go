@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -35,8 +34,8 @@ import (
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/apis/audit"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
-	authenticationv1 "k8s.io/client-go/pkg/apis/authentication/v1"
 )
 
 func NewEventFromRequest(req *http.Request, level auditinternal.Level, attribs authorizer.Attributes) (*auditinternal.Event, error) {
@@ -50,9 +49,9 @@ func NewEventFromRequest(req *http.Request, level auditinternal.Level, attribs a
 
 	// prefer the id from the headers. If not available, create a new one.
 	// TODO(audit): do we want to forbid the header for non-front-proxy users?
-	ids := req.Header[auditinternal.HeaderAuditID]
-	if len(ids) > 0 {
-		ev.AuditID = types.UID(ids[0])
+	ids := req.Header.Get(auditinternal.HeaderAuditID)
+	if ids != "" {
+		ev.AuditID = types.UID(ids)
 	} else {
 		ev.AuditID = types.UID(uuid.NewRandom().String())
 	}
@@ -73,35 +72,34 @@ func NewEventFromRequest(req *http.Request, level auditinternal.Level, attribs a
 		ev.User.UID = user.GetUID()
 	}
 
-	if asuser := req.Header.Get(authenticationv1.ImpersonateUserHeader); len(asuser) > 0 {
-		ev.ImpersonatedUser = &auditinternal.UserInfo{
-			Username: asuser,
-		}
-		if requestedGroups := req.Header[authenticationv1.ImpersonateGroupHeader]; len(requestedGroups) > 0 {
-			ev.ImpersonatedUser.Groups = requestedGroups
-		}
-
-		ev.ImpersonatedUser.Extra = map[string]auditinternal.ExtraValue{}
-		for k, v := range req.Header {
-			if !strings.HasPrefix(k, authenticationv1.ImpersonateUserExtraHeaderPrefix) {
-				continue
-			}
-			k = k[len(authenticationv1.ImpersonateUserExtraHeaderPrefix):]
-			ev.ImpersonatedUser.Extra[k] = auditinternal.ExtraValue(v)
-		}
-	}
-
 	if attribs.IsResourceRequest() {
 		ev.ObjectRef = &auditinternal.ObjectReference{
 			Namespace:   attribs.GetNamespace(),
 			Name:        attribs.GetName(),
 			Resource:    attribs.GetResource(),
 			Subresource: attribs.GetSubresource(),
-			APIVersion:  attribs.GetAPIGroup() + "/" + attribs.GetAPIVersion(),
+			APIGroup:    attribs.GetAPIGroup(),
+			APIVersion:  attribs.GetAPIVersion(),
 		}
 	}
 
 	return ev, nil
+}
+
+// LogImpersonatedUser fills in the impersonated user attributes into an audit event.
+func LogImpersonatedUser(ae *auditinternal.Event, user user.Info) {
+	if ae == nil || ae.Level.Less(audit.LevelMetadata) {
+		return
+	}
+	ae.ImpersonatedUser = &auditinternal.UserInfo{
+		Username: user.GetName(),
+	}
+	ae.ImpersonatedUser.Groups = user.GetGroups()
+	ae.ImpersonatedUser.UID = user.GetUID()
+	ae.ImpersonatedUser.Extra = map[string]auditinternal.ExtraValue{}
+	for k, v := range user.GetExtra() {
+		ae.ImpersonatedUser.Extra[k] = auditinternal.ExtraValue(v)
+	}
 }
 
 // LogRequestObject fills in the request object into an audit event. The passed runtime.Object
@@ -132,6 +130,7 @@ func LogRequestObject(ae *audit.Event, obj runtime.Object, gvr schema.GroupVersi
 	}
 	// TODO: ObjectRef should include the API group.
 	if len(ae.ObjectRef.APIVersion) == 0 {
+		ae.ObjectRef.APIGroup = gvr.Group
 		ae.ObjectRef.APIVersion = gvr.Version
 	}
 	if len(ae.ObjectRef.Resource) == 0 {
@@ -170,14 +169,16 @@ func LogRequestPatch(ae *audit.Event, patch []byte) {
 // LogResponseObject fills in the response object into an audit event. The passed runtime.Object
 // will be converted to the given gv.
 func LogResponseObject(ae *audit.Event, obj runtime.Object, gv schema.GroupVersion, s runtime.NegotiatedSerializer) {
-	if ae == nil || ae.Level.Less(audit.LevelRequestResponse) {
+	if ae == nil || ae.Level.Less(audit.LevelMetadata) {
 		return
 	}
-
 	if status, ok := obj.(*metav1.Status); ok {
 		ae.ResponseStatus = status
 	}
 
+	if ae.Level.Less(audit.LevelRequestResponse) {
+		return
+	}
 	// TODO(audit): hook into the serializer to avoid double conversion
 	var err error
 	ae.ResponseObject, err = encodeObject(obj, gv, s)

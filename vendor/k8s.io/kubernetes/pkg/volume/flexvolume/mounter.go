@@ -19,9 +19,8 @@ package flexvolume
 import (
 	"strconv"
 
-	"k8s.io/kubernetes/pkg/util/exec"
-	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
+	"k8s.io/utils/exec"
 )
 
 // FlexVolumeMounter is the disk that will be exposed by this plugin.
@@ -29,9 +28,6 @@ type flexVolumeMounter struct {
 	*flexVolume
 	// Runner used to setup the volume.
 	runner exec.Interface
-	// blockDeviceMounter provides the interface to create filesystem if the
-	// filesystem doesn't exist.
-	blockDeviceMounter mount.Interface
 	// the considered volume spec
 	spec     *volume.Spec
 	readOnly bool

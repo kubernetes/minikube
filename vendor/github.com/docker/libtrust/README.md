@@ -1,9 +1,5 @@
 # libtrust
 
-> **WARNING** this library is no longer actively developed, and will be integrated
-> in the [docker/distribution][https://www.github.com/docker/distribution]
-> repository in future.
-
 Libtrust is library for managing authentication and authorization using public key cryptography.
 
 Authentication is handled using the identity attached to the public key.

@@ -26,12 +26,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/r2d4/external-storage/lib/controller"
 	"github.com/r2d4/external-storage/lib/leaderelection"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/minikube/pkg/util"
 )

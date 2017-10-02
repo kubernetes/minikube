@@ -20,17 +20,16 @@ import (
 	"fmt"
 	"strings"
 
+	apps "k8s.io/api/apps/v1beta1"
+	"k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	errorutils "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
+	clientset "k8s.io/client-go/kubernetes"
+	appslisters "k8s.io/client-go/listers/apps/v1beta1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/api/v1"
-	apps "k8s.io/kubernetes/pkg/apis/apps/v1beta1"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	appslisters "k8s.io/kubernetes/pkg/client/listers/apps/v1beta1"
-	corelisters "k8s.io/kubernetes/pkg/client/listers/core/v1"
-	"k8s.io/kubernetes/pkg/client/retry"
+	"k8s.io/client-go/util/retry"
 )
 
 // StatefulPodControlInterface defines the interface that StatefulSetController uses to create, update, and delete Pods,
@@ -121,11 +120,7 @@ func (spc *realStatefulPodControl) UpdateStatefulPod(set *apps.StatefulSet, pod 
 
 		if updated, err := spc.podLister.Pods(set.Namespace).Get(pod.Name); err == nil {
 			// make a copy so we don't mutate the shared cache
-			if copy, err := scheme.Scheme.DeepCopy(updated); err == nil {
-				pod = copy.(*v1.Pod)
-			} else {
-				utilruntime.HandleError(fmt.Errorf("error copying updated Pod: %v", err))
-			}
+			pod = updated.DeepCopy()
 		} else {
 			utilruntime.HandleError(fmt.Errorf("error getting updated Pod %s/%s from lister: %v", set.Namespace, pod.Name, err))
 		}
