@@ -1,5 +1,15 @@
 # Minikube Release Notes
 
+# Version 0.22.3 - 10/3/2017
+* Update dnsmasq to 1.14.5 [2022](https://github.com/kubernetes/minikube/pull/2022)
+* Windows cache path fix [2000] (https://github.com/kubernetes/minikube/pull/2000)
+* Windows path fix [1981](https://github.com/kubernetes/minikube/pull/1982)
+* Components (apiserver, controller-manager, scheduler, kubelet) can now be configured in the kubeadm bootstrapper can now be configured with the --extra-config flag [1985](https://github.com/kubernetes/minikube/pull/1985)
+* Kubeadm bootstrapper updated to work with Kubernetes v1.8.0 [1985](https://github.com/kubernetes/minikube/pull/1985)
+* OpenAPI registration fix cherry-picked for compatibility with kubectl v1.8.0 [2031](https://github.com/kubernetes/minikube/pull/2031)
+
+* [MINIKUBE ISO] Added cri-o runtime [1998](https://github.com/kubernetes/minikube/pull/1998)
+
 # Version 0.22.2 - 9/15/2017
 * Fix path issue on windows [1954](https://github.com/kubernetes/minikube/pull/1959)
 * Added experimental kubeadm bootstrapper [1903](https://github.com/kubernetes/minikube/pull/1903)
@@ -86,7 +96,7 @@
 ## Version 0.18.0 - 4/6/2017
 * Upgraded default kubernetes version to v1.6.0
 * Mount command on macOS xhyve
-* Pods can now write to files mounted by `minikube mount` 
+* Pods can now write to files mounted by `minikube mount`
 * Added `addon configure` command
 * Made DNS domain configurable with `--dns-domain` flag to `minikube start`
 * Upgraded Kubernetes Dashboard to 1.6.0
@@ -147,7 +157,7 @@
 * Update Dashboard to v1.5.1, fixes a CSRF vulnerability in the dashboard
 * Updated Kube-DNS addon to v1.9
 * Now supports kubenet as a network plugin
-* Added --feature-gates flag to enable alpha and experimental features in kube components 
+* Added --feature-gates flag to enable alpha and experimental features in kube components
 * Added --keep-context flag to keep the current kubectl context when starting minikube
 * Added environment variable to enable trace profiling in minikube binary
 * Updated default ISO to buildroot based minikube.iso v1.0.2
@@ -208,7 +218,7 @@
 * Added support for IPv6 addresses in docker env
 
 ## Version 0.11.0 - 10/6/2016
-* Added a "configurator" allowing users to configure the Kubernetes components with arbitrary values.  
+* Added a "configurator" allowing users to configure the Kubernetes components with arbitrary values.
 * Made Kubernetes v1.4.0 the default version in minikube
 * Pre-built binaries are now built with go 1.7.1
 * Added opt-in error reporting
