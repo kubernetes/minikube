@@ -19,6 +19,7 @@ package machine
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -39,6 +40,8 @@ import (
 )
 
 const tempLoadDir = "/tmp"
+
+var getWindowsVolumeName = getWindowsVolumeNameCmd
 
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
@@ -97,7 +100,7 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 
 // # ParseReference cannot have a : in the directory path
 func sanitizeCacheDir(image string) string {
-	if hasWindowsDriveLetter(image) {
+	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
 		// not sanitize Windows drive letter.
 		return image[:2] + strings.Replace(image[2:], ":", "_", -1)
 	}
@@ -105,9 +108,6 @@ func sanitizeCacheDir(image string) string {
 }
 
 func hasWindowsDriveLetter(s string) bool {
-	if runtime.GOOS != "windows" {
-		return false
-	}
 	if len(s) < 3 {
 		return false
 	}
@@ -120,6 +120,46 @@ func hasWindowsDriveLetter(s string) bool {
 	}
 
 	return false
+}
+
+// Replace a drive letter to a volume name.
+func replaceWinDriveLetterToVolumeName(s string) (string, error) {
+	vname, err := getWindowsVolumeName(s[:1])
+	if err != nil {
+		return "", err
+	}
+	path := vname + s[3:]
+	if _, err := os.Stat(filepath.Dir(path)); err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
+func getWindowsVolumeNameCmd(d string) (string, error) {
+	cmd := exec.Command("wmic", "volume", "where", "DriveLetter = '"+d+":'", "get", "DeviceID")
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
+
+	var vname string
+	for _, l := range outs {
+		s := strings.TrimSpace(l)
+		if strings.HasPrefix(s, `\\?\Volume{`) && strings.HasSuffix(s, `}\`) {
+			vname = s
+			break
+		}
+	}
+
+	if vname == "" {
+		return "", errors.New("failed to get a volume GUID")
+	}
+
+	return vname, nil
 }
 
 func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
@@ -162,6 +202,19 @@ func getSrcRef(image string) (types.ImageReference, error) {
 }
 
 func getDstRef(image, dst string) (types.ImageReference, error) {
+	if runtime.GOOS == "windows" && hasWindowsDriveLetter(dst) {
+		// ParseReference does not support a Windows drive letter.
+		// Therefore, will replace the drive letter to a volume name.
+		var err error
+		if dst, err = replaceWinDriveLetterToVolumeName(dst); err != nil {
+			return nil, errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
+		}
+	}
+
+	return _getDstRef(image, dst)
+}
+
+func _getDstRef(image, dst string) (types.ImageReference, error) {
 	dstRef, err := archive.ParseReference(dst + ":" + image)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing docker archive dst ref")
@@ -177,13 +230,6 @@ func CacheImage(image, dst string) error {
 
 	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
-	}
-
-	// TODO: support Windows drive letter.
-	// L:164 ParseReference does not support Windows drive letter.
-	// If contains Windows drive letter, it disable cache image for now.
-	if hasWindowsDriveLetter(dst) {
-		return nil
 	}
 
 	srcRef, err := getSrcRef(image)
