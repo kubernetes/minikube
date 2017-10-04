@@ -31,9 +31,9 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/miniku
 ```
 
 ### Windows
-Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path
+Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
 
-### Linux Continous Integration with VM support
+### Linux Continuous Integration with VM Support
 Example with `kubectl` installation:
 ```shell
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
@@ -49,7 +49,7 @@ touch $HOME/.kube/config
 export KUBECONFIG=$HOME/.kube/config
 sudo -E ./minikube start --vm-driver=none
 
-# this for loop waits until kubectl can access the api server that minikube has created
+# this for loop waits until kubectl can access the api server that Minikube has created
 for i in {1..150} # timeout for 5 minutes
 do
    ./kubectl get po &> /dev/null
@@ -59,16 +59,16 @@ do
   sleep 2
 done
 
-# kubectl commands are now able to interact with minikube cluster
+# kubectl commands are now able to interact with Minikube cluster
 ```
 
-### Other ways to install:
+### Other Ways to Install
 
 * [Linux] [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
 * [Windows] [Chocolatey](https://chocolatey.org/packages/Minikube)
 
 We also released a Debian package and Windows installer on our [releases page](https://github.com/kubernetes/minikube/releases)
-If you maintain a minikube package, please feel free to add it here.
+If you maintain a Minikube package, please feel free to add it here.
 
 ### Requirements
 * [kubectl](https://kubernetes.io/docs/tasks/kubectl/install/)
@@ -76,17 +76,16 @@ If you maintain a minikube package, please feel free to add it here.
     * [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion)
 * Linux
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
-    * NOTE: minikube also supports a '--vm-driver=none' option that runs the kubernetes components on the host and not in a VM.  docker is required to use this driver but no hypervisor.
+    * **NOTE:** Minikube also supports a '--vm-driver=none' option that runs the Kubernetes components on the host and not in a VM. Docker is required to use this driver but no hypervisor.
 * Windows
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
 * VT-x/AMD-v virtualization must be enabled in BIOS
 * Internet connection on first run
 
-
 ## Quickstart
 
-Here's a brief demo of minikube usage.
-If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube Supports
+Here's a brief demo of Minikube usage.
+If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube supports
 the following drivers:
 
 * virtualbox
@@ -94,7 +93,7 @@ the following drivers:
 * [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
 * [xhyve](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
 * [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
-* none - (LINUX ONLY) - the 'none' driver can be used to run the kubernetes cluster components on the host instead of in a VM.  This can be useful for CI workloads which do not support nested virtualization.
+* none (**Linux-only**) - the 'none' driver can be used to run the Kubernetes cluster components on the host instead of in a VM. This can be useful for CI workloads which do not support nested virtualization.
 
 ```shell
 $ minikube start
@@ -134,12 +133,12 @@ Stopping local Kubernetes cluster...
 Machine stopped.
 ```
 
-## Interacting With your Cluster
+## Interacting With Your Cluster
 
-### Kubectl
+### kubectl
 
 The `minikube start` command creates a "[kubectl context](https://kubernetes.io/docs/user-guide/kubectl/v1.6/#-em-set-context-em-)" called "minikube".
-This context contains the configuration to communicate with your minikube cluster.
+This context contains the configuration to communicate with your Minikube cluster.
 
 Minikube sets this context to default automatically, but if you need to switch back to it in the future, run:
 
@@ -149,23 +148,23 @@ or pass the context on each command like this: `kubectl get pods --context=minik
 
 ### Dashboard
 
-To access the [Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/), run this command in a shell after starting minikube to get the address:
+To access the [Kubernetes Dashboard](http://kubernetes.io/docs/user-guide/ui/), run this command in a shell after starting Minikube to get the address:
 ```shell
 minikube dashboard
 ```
 
 ### Services
 
-To access a service exposed via a node port, run this command in a shell after starting minikube to get the address:
+To access a service exposed via a node port, run this command in a shell after starting Minikube to get the address:
 ```shell
 minikube service [-n NAMESPACE] [--url] NAME
 ```
 
 ## Design
 
-Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmachine) for provisioning VMs, and [localkube](https://github.com/kubernetes/minikube/tree/master/pkg/localkube) (originally written and donated to this project by [RedSpread](https://redspread.com/)) for running the cluster.
+Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmachine) for provisioning VMs, and [localkube](https://github.com/kubernetes/minikube/tree/master/pkg/localkube) (originally written and donated to this project by [Redspread](https://redspread.com/)) for running the cluster.
 
-For more information about minikube, see the [proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/local-cluster-ux.md).
+For more information about Minikube, see the [proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/local-cluster-ux.md).
 
 ## Additional Links:
 * [**Advanced Topics and Tutorials**](https://github.com/kubernetes/minikube/blob/master/docs/README.md)
@@ -176,4 +175,4 @@ For more information about minikube, see the [proposal](https://github.com/kuber
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com)
 * [**kubernetes-dev mailing list** ](https://groups.google.com/forum/#!forum/kubernetes-dev)
-(If you are posting to the list please prefix your subject with "minikube: ")
+(If you are posting to the list, please prefix your subject with "minikube: ")
