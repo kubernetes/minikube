@@ -31,6 +31,8 @@ import (
 )
 
 const driverName = "none"
+const dockerkillcmd = `docker rm $(docker kill $(docker ps -a --filter="name=k8s_" --format="{{.ID}}"))`
+const dockerstopcmd = `docker stop $(docker ps -a --filter="name=k8s_" --format="{{.ID}}")`
 
 // none Driver is a driver designed to run localkube w/o a VM
 type Driver struct {
@@ -132,7 +134,10 @@ func (d *Driver) Remove() error {
 	cmd = exec.Command("sudo", "rm", "-rf", "/var/lib/localkube")
 	if err := cmd.Start(); err != nil {
 		return errors.Wrap(err, "removing localkube")
+
 	}
+	runCommand(dockerkillcmd, false)
+
 	return nil
 }
 
@@ -160,7 +165,7 @@ else
 	sudo kill $(cat %s)
 fi
 `, constants.LocalkubePIDPath)
-	_, err := runCommand(stopcmd, true)
+	_, err := runCommand(stopcmd, false)
 	if err != nil {
 		return err
 	}
@@ -173,6 +178,7 @@ fi
 			break
 		}
 	}
+	runCommand(dockerstopcmd, false)
 	return nil
 }
 
