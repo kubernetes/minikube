@@ -34,7 +34,7 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/miniku
 Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
 
 ### Linux Continuous Integration with VM Support
-Example with `kubectl` installation:
+Example with kubectl installation:
 ```shell
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
 curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl
@@ -67,8 +67,7 @@ done
 * [Linux] [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
 * [Windows] [Chocolatey](https://chocolatey.org/packages/Minikube)
 
-We also released a Debian package and Windows installer on our [releases page](https://github.com/kubernetes/minikube/releases)
-If you maintain a Minikube package, please feel free to add it here.
+We also released a Debian package and Windows installer on our [releases page](https://github.com/kubernetes/minikube/releases). If you maintain a Minikube package, please feel free to add it here.
 
 ### Requirements
 * [kubectl](https://kubernetes.io/docs/tasks/kubectl/install/)
@@ -76,7 +75,7 @@ If you maintain a Minikube package, please feel free to add it here.
     * [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion)
 * Linux
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
-    * **NOTE:** Minikube also supports a '--vm-driver=none' option that runs the Kubernetes components on the host and not in a VM. Docker is required to use this driver but no hypervisor.
+    * **NOTE:** Minikube also supports a `--vm-driver=none` option that runs the Kubernetes components on the host and not in a VM. Docker is required to use this driver but no hypervisor.
 * Windows
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
 * VT-x/AMD-v virtualization must be enabled in BIOS
@@ -93,7 +92,7 @@ the following drivers:
 * [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
 * [xhyve](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
 * [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
-* none (**Linux-only**) - the 'none' driver can be used to run the Kubernetes cluster components on the host instead of in a VM. This can be useful for CI workloads which do not support nested virtualization.
+* none (**Linux-only**) - this driver can be used to run the Kubernetes cluster components on the host instead of in a VM. This can be useful for CI workloads which do not support nested virtualization.
 
 ```shell
 $ minikube start
@@ -166,7 +165,8 @@ Minikube uses [libmachine](https://github.com/docker/machine/tree/master/libmach
 
 For more information about Minikube, see the [proposal](https://github.com/kubernetes/community/blob/master/contributors/design-proposals/cluster-lifecycle/local-cluster-ux.md).
 
-## Additional Links:
+## Additional Links
+
 * [**Advanced Topics and Tutorials**](https://github.com/kubernetes/minikube/blob/master/docs/README.md)
 * [**Contributing**](https://github.com/kubernetes/minikube/blob/master/CONTRIBUTING.md)
 * [**Development Guide**](https://github.com/kubernetes/minikube/blob/master/docs/contributors/README.md)
