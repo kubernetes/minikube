@@ -33,9 +33,5 @@ EXTRA_BUILD_ARGS="$EXTRA_BUILD_ARGS --use-vendored-driver"
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 
-# Clean up running docker containers on the test slave
-docker stop $(docker ps -aq) || true
-docker rm $(docker ps -aq) || true
-
 # Download files and set permissions
 source common.sh
