@@ -213,12 +213,15 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	rm -rf out/minikube_$(DEB_VERSION)
 
 .SECONDEXPANSION:
-TAR_TARGETS_linux   := out/minikube-linux-amd64
+TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
 TAR_TARGETS_ALL     := $(shell find deploy/addons -type f)
 out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
 	tar -cvf $@ $^
+
+.PHONY: cross-tars
+cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
 	
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
@@ -296,7 +299,7 @@ out/docker-machine-driver-kvm2: $(KVM_DRIVER_FILES)
 	go build 																		\
 		-installsuffix "static" 													\
 		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
-		-tags libvirt.1.2.2 														\
+		-tags libvirt.1.3.1 														\
 		-o $(BUILD_DIR)/docker-machine-driver-kvm2 									\
 		k8s.io/minikube/cmd/drivers/kvm
 	chmod +X $@
@@ -304,3 +307,7 @@ out/docker-machine-driver-kvm2: $(KVM_DRIVER_FILES)
 .PHONY: install-kvm
 install-kvm: out/docker-machine-driver-kvm2
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
+
+.PHONY: release-kvm-driver
+release-kvm-driver: install-kvm
+	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
