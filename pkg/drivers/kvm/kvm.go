@@ -153,7 +153,7 @@ func (d *Driver) GetIP() (string, error) {
 		return "", errors.Wrap(err, "machine in unknown state")
 	}
 	if s != state.Running {
-		return "", errors.New("host is not running.")
+		return "", errors.New("host is not running")
 	}
 	ip, err := d.lookupIP()
 	if err != nil {
@@ -168,7 +168,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 }
 
 func (d *Driver) DriverName() string {
-	return "kvm"
+	return "kvm2"
 }
 
 func (d *Driver) Kill() error {
