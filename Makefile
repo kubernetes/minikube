@@ -183,7 +183,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
+cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
