@@ -23,8 +23,14 @@
 
 set -e
 
+export BUILD_IN_DOCKER=y
+export TAG=$ghprbActualCommit
+export GOPATH=/var/lib/jenkins/go
+
+make -j 16 all
+
 # Clean up exited containers
-docker rm $(docker ps -q -f status=exited) || true
+docker kill $(docker ps -q) || true
 
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
@@ -38,13 +44,6 @@ if out="$(git diff ${ghprbActualCommit} --name-only $(git merge-base origin/mast
 	make release-iso
 fi
 
-export GOPATH=~/go
-
-# Build the e2e test target for Darwin and Linux. We don't run tests on Windows yet.
-# We build these on Linux, but run the tests on different platforms.
-# This makes it easier to provision slaves, since they don't need to have a go toolchain.'
-# Cross also builds the hyperkit and kvm2 drivers.
-BUILD_IN_DOCKER=y make cross e2e-cross
 cp -r test/integration/testdata out/
 
 # Don't upload the buildroot artifacts if they exist
@@ -52,13 +51,3 @@ rm -r out/buildroot || true
 
 # Upload everything we built to Cloud Storage.
 gsutil -m cp -r out/* gs://minikube-builds/${ghprbPullId}/
-
-# Upload containers for the PR:
-TAG=$ghprbActualCommit make localkube-image
-gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$ghprbActualCommit
-
-TAG=$ghprbActualCommit make localkube-dind-image
-gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$ghprbActualCommit
-
-TAG=$ghprbActualCommit make localkube-dind-image-devshell
-gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$ghprbActualCommit
