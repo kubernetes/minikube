@@ -115,7 +115,7 @@ else
 endif
 
 .PHONY: e2e-%-amd64
-e2e-%-amd64:
+e2e-%-amd64: out/minikube-%-amd64
 	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
 
 e2e-windows-amd64.exe: e2e-windows-amd64
@@ -154,6 +154,18 @@ test-iso:
 test-pkg/%:
 	go test -v -test.timeout=30m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
+.PHONY: all
+all: cross drivers e2e-cross images
+
+.PHONY: drivers
+drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
+
+.PHONY: images
+images: localkube-image localkube-dind-image localkube-dind-image-devshell
+	gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$(TAG)
+	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$(TAG)
+	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$(TAG)
+
 .PHONY: integration
 integration: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
@@ -183,7 +195,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
+cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
