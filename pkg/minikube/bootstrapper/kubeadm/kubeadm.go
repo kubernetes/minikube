@@ -191,7 +191,14 @@ func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 
 	extraFlags := convertToFlags(extraOpts)
 	b := bytes.Buffer{}
-	if err := kubeletSystemdTemplate.Execute(&b, map[string]string{"ExtraOptions": extraFlags}); err != nil {
+	opts := struct {
+		ExtraOptions string
+		FeatureGates string
+	}{
+		ExtraOptions: extraFlags,
+		FeatureGates: k8s.FeatureGates,
+	}
+	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return "", err
 	}
 
@@ -262,6 +269,23 @@ sudo systemctl start kubelet
 	return nil
 }
 
+func parseFeatureGates(featureGates string) (map[string]string, error) {
+	if featureGates == "" {
+		return nil, nil
+	}
+	fgMap := map[string]string{}
+	fg := strings.Split(featureGates, ",")
+	for _, f := range fg {
+		kv := strings.SplitN(f, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("Invalid feature gate format: %s", f)
+		}
+		fgMap[kv[0]] = kv[1]
+	}
+
+	return fgMap, nil
+}
+
 func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -269,10 +293,11 @@ func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 	}
 
 	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
-	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version)
+	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version, k8s.FeatureGates)
 	if err != nil {
 		return "", errors.Wrap(err, "generating extra component config for kubeadm")
 	}
+
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string

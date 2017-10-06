@@ -16,9 +16,15 @@ limitations under the License.
 
 package kubeadm
 
-import "html/template"
+import (
+	"fmt"
+	"html/template"
+	"sort"
+)
 
-var kubeadmConfigTemplate = template.Must(template.New("kubeadmConfigTemplate").Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
+var kubeadmConfigTemplate = template.Must(template.New("kubeadmConfigTemplate").Funcs(template.FuncMap{
+	"printMapInOrder": printMapInOrder,
+}).Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
 api:
   advertiseAddress: {{.AdvertiseAddress}}
@@ -30,9 +36,9 @@ networking:
 etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
-{{range .ExtraArgs}}{{.Component}}:{{range $key, $value := .Options}}
-  {{$key}}: {{$value}}
-{{end}}{{end}}`))
+{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
+  {{$val}}{{end}}
+{{end}}`))
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Service]
@@ -42,7 +48,7 @@ Environment="KUBELET_DNS_ARGS=--cluster-dns=10.0.0.10 --cluster-domain=cluster.l
 Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"
 Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"
 ExecStart=
-ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_SYSTEM_PODS_ARGS $KUBELET_DNS_ARGS $KUBELET_CADVISOR_ARGS $KUBELET_CGROUP_ARGS {{.ExtraOptions}}
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_SYSTEM_PODS_ARGS $KUBELET_DNS_ARGS $KUBELET_CADVISOR_ARGS $KUBELET_CGROUP_ARGS {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
 `))
 
 const kubeletService = `
@@ -68,3 +74,22 @@ sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
 `))
 
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse("sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} --skip-preflight-checks"))
+
+// printMapInOrder sorts the keys and prints the map in order, combining key
+// value pairs with the separator character
+//
+// Note: this is not necessary, but makes testing easy
+func printMapInOrder(m map[string]string, sep string) []string {
+	if m == nil {
+		return nil
+	}
+	keys := []string{}
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for i, k := range keys {
+		keys[i] = fmt.Sprintf("%s%s%s", k, sep, m[k])
+	}
+	return keys
+}

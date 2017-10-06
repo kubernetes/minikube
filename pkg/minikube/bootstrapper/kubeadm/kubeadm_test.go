@@ -17,6 +17,7 @@ limitations under the License.
 package kubeadm
 
 import (
+	"reflect"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -96,6 +97,106 @@ schedulerExtraArgs:
 `,
 		},
 		{
+			description: "two extra args for one component",
+			cfg: bootstrapper.KubernetesConfig{
+				NodeIP:            "192.168.1.101",
+				KubernetesVersion: "v1.8.0-alpha.0",
+				NodeName:          "extra-args-minikube",
+				ExtraOptions: util.ExtraOptionSlice{
+					util.ExtraOption{
+						Component: Apiserver,
+						Key:       "fail-no-swap",
+						Value:     "true",
+					},
+					util.ExtraOption{
+						Component: Apiserver,
+						Key:       "kube-api-burst",
+						Value:     "32",
+					},
+				},
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  advertiseAddress: 192.168.1.101
+  bindPort: 8443
+kubernetesVersion: v1.8.0-alpha.0
+certificatesDir: /var/lib/localkube/certs/
+networking:
+  serviceSubnet: 10.0.0.0/24
+etcd:
+  dataDir: /data
+nodeName: extra-args-minikube
+apiServerExtraArgs:
+  fail-no-swap: true
+  kube-api-burst: 32
+`,
+		},
+		{
+			description: "enable feature gates",
+			cfg: bootstrapper.KubernetesConfig{
+				NodeIP:            "192.168.1.101",
+				KubernetesVersion: "v1.8.0-alpha.0",
+				NodeName:          "extra-args-minikube",
+				FeatureGates:      "HugePages=true,OtherFeature=false",
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  advertiseAddress: 192.168.1.101
+  bindPort: 8443
+kubernetesVersion: v1.8.0-alpha.0
+certificatesDir: /var/lib/localkube/certs/
+networking:
+  serviceSubnet: 10.0.0.0/24
+etcd:
+  dataDir: /data
+nodeName: extra-args-minikube
+apiServerExtraArgs:
+  feature-gates: HugePages=true,OtherFeature=false
+controllerManagerExtraArgs:
+  feature-gates: HugePages=true,OtherFeature=false
+schedulerExtraArgs:
+  feature-gates: HugePages=true,OtherFeature=false
+`,
+		},
+		{
+			description: "enable feature gates and extra config",
+			cfg: bootstrapper.KubernetesConfig{
+				NodeIP:            "192.168.1.101",
+				KubernetesVersion: "v1.8.0-alpha.0",
+				NodeName:          "extra-args-minikube",
+				FeatureGates:      "HugePages=true,OtherFeature=false",
+				ExtraOptions: util.ExtraOptionSlice{
+					util.ExtraOption{
+						Component: Apiserver,
+						Key:       "fail-no-swap",
+						Value:     "true",
+					},
+				},
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+api:
+  advertiseAddress: 192.168.1.101
+  bindPort: 8443
+kubernetesVersion: v1.8.0-alpha.0
+certificatesDir: /var/lib/localkube/certs/
+networking:
+  serviceSubnet: 10.0.0.0/24
+etcd:
+  dataDir: /data
+nodeName: extra-args-minikube
+apiServerExtraArgs:
+  fail-no-swap: true
+  feature-gates: HugePages=true,OtherFeature=false
+controllerManagerExtraArgs:
+  feature-gates: HugePages=true,OtherFeature=false
+schedulerExtraArgs:
+  feature-gates: HugePages=true,OtherFeature=false
+`,
+		},
+		{
 			// Unknown components should fail silently
 			description: "unknown component",
 			cfg: bootstrapper.KubernetesConfig{
@@ -128,6 +229,57 @@ schedulerExtraArgs:
 			if actualCfg != test.expectedCfg {
 				t.Errorf("actual config does not match expected.  actual:\n%sexpected:\n%s", actualCfg, test.expectedCfg)
 				return
+			}
+		})
+	}
+}
+
+func TestParseFeatureGates(t *testing.T) {
+	tests := []struct {
+		description string
+		fg          string
+		expected    map[string]string
+		shouldErr   bool
+	}{
+		{
+			description: "no feature gates",
+		},
+		{
+			description: "one feature gate",
+			fg:          "AppArmor=true",
+			expected: map[string]string{
+				"AppArmor": "true",
+			},
+		},
+		{
+			description: "two feature gates",
+			fg:          "AppArmor=true,HugePages=true",
+			expected: map[string]string{
+				"AppArmor":  "true",
+				"HugePages": "true",
+			},
+		},
+		{
+			description: "missing value pair",
+			fg:          "AppArmor=true,HugePages",
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual, err := parseFeatureGates(test.fg)
+			t.Logf("%+v", actual)
+			if err == nil && test.shouldErr {
+				t.Errorf("Expected error but got none: fg: %v", actual)
+				return
+			}
+			if err != nil && !test.shouldErr {
+				t.Errorf("Unexpected error: %s", err)
+				return
+			}
+			if !reflect.DeepEqual(actual, test.expected) {
+				t.Errorf("Actual not equal expected: Actual: %v Expected: %v", actual, test.expected)
 			}
 		})
 	}
