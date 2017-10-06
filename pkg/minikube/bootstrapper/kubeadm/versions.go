@@ -18,6 +18,7 @@ package kubeadm
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/blang/semver"
@@ -62,24 +63,36 @@ type ComponentExtraArgs struct {
 
 var componentToKubeadmConfigKey = map[string]string{
 	Apiserver:         "apiServerExtraArgs",
-	Scheduler:         "schedulerExtraArgs",
 	ControllerManager: "controllerManagerExtraArgs",
+	Scheduler:         "schedulerExtraArgs",
 }
 
-func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version) ([]ComponentExtraArgs, error) {
+func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
 	var kubeadmExtraArgs []ComponentExtraArgs
 	for _, extraOpt := range opts {
-		kubeadmKey, ok := componentToKubeadmConfigKey[extraOpt.Component]
-		if !ok {
+		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
 			return nil, fmt.Errorf("Unknown component %s.  Valid components and kubeadm config are %v", componentToKubeadmConfigKey, componentToKubeadmConfigKey)
 		}
-		extraConfig, err := ExtraConfigForComponent(extraOpt.Component, opts, version)
+	}
+
+	keys := []string{}
+	for k := range componentToKubeadmConfigKey {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, component := range keys {
+		kubeadmComponentKey := componentToKubeadmConfigKey[component]
+		extraConfig, err := ExtraConfigForComponent(component, opts, version)
 		if err != nil {
-			return nil, errors.Wrapf(err, "getting kubeadm extra args for %s", extraOpt.Component)
+			return nil, errors.Wrapf(err, "getting kubeadm extra args for %s", component)
+		}
+		if featureGates != "" {
+			extraConfig["feature-gates"] = featureGates
 		}
 		if len(extraConfig) > 0 {
 			kubeadmExtraArgs = append(kubeadmExtraArgs, ComponentExtraArgs{
-				Component: kubeadmKey,
+				Component: kubeadmComponentKey,
 				Options:   extraConfig,
 			})
 		}
