@@ -2,7 +2,7 @@
 
 # Version 0.22.3 - 10/3/2017
 * Update dnsmasq to 1.14.5 [2022](https://github.com/kubernetes/minikube/pull/2022)
-* Windows cache path fix [2000] (https://github.com/kubernetes/minikube/pull/2000)
+* Windows cache path fix [2000](https://github.com/kubernetes/minikube/pull/2000)
 * Windows path fix [1981](https://github.com/kubernetes/minikube/pull/1982)
 * Components (apiserver, controller-manager, scheduler, kubelet) can now be configured in the kubeadm bootstrapper can now be configured with the --extra-config flag [1985](https://github.com/kubernetes/minikube/pull/1985)
 * Kubeadm bootstrapper updated to work with Kubernetes v1.8.0 [1985](https://github.com/kubernetes/minikube/pull/1985)
