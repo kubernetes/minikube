@@ -34,7 +34,7 @@ var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-
 
 var startCommandNoSystemdTemplate = `
 # Run with nohup so it stays up. Redirect logs to useful places.
-sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup {{.LocalkubeStartCmd}} > {{.Stdout}} 2> {{.Stderr}} < /dev/null & echo $! > {{.Pidfile}} &'
+sudo sh -c 'PATH=/usr/local/sbin:$PATH nohup GODEBUG=netdns=go {{.LocalkubeStartCmd}} > {{.Stdout}} 2> {{.Stderr}} < /dev/null & echo $! > {{.Pidfile}} &'
 `
 
 var localkubeSystemdTmpl = `[Unit]
@@ -45,6 +45,8 @@ Documentation=https://github.com/kubernetes/minikube/tree/master/pkg/localkube
 Type=notify
 Restart=always
 RestartSec=3
+
+Environment=GODEBUG=netdns=go
 
 ExecStart={{.LocalkubeStartCmd}}
 
