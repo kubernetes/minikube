@@ -27,7 +27,7 @@
 set -e
 set +x
 
-for job in "Linux-KVM-Kubeadm" "OSX-Virtualbox-Kubeadm" "OSX-Virtualbox" "OSX-XHyve" "OSX-Hyperkit" "Linux-Virtualbox" "Linux-KVM" "Linux-KVM-Alt" "Linux-None" "Windows-Virtualbox" "Linux-Container"; do
+for job in "Linux-KVM-Kubeadm" "OSX-Virtualbox-Kubeadm" "OSX-Virtualbox" "OSX-XHyve" "OSX-Hyperkit" "Linux-Virtualbox" "Linux-KVM" "Linux-KVM-Alt" "Linux-None" "Windows-Virtualbox" "Windows-Kubeadm-CRI-O" "Linux-Container"; do
   target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${job}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
     -H "Content-Type: application/json" \
