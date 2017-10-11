@@ -21,7 +21,7 @@ import (
 	"crypto"
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -361,7 +361,7 @@ func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 
 func maybeDownloadAndCache(binary, version string) (string, error) {
 	targetDir := constants.MakeMiniPath("cache", version)
-	targetFilepath := filepath.Join(targetDir, binary)
+	targetFilepath := path.Join(targetDir, binary)
 
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
