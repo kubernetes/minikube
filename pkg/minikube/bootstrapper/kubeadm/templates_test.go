@@ -34,7 +34,7 @@ func TestPrintMapInOrder(t *testing.T) {
 			m: map[string]string{
 				"a": "1",
 			},
-			expected: []string{"a: 1"},
+			expected: []string{`a: "1"`},
 		},
 		{
 			description: "two kv",
@@ -43,7 +43,7 @@ func TestPrintMapInOrder(t *testing.T) {
 				"b": "2",
 				"a": "1",
 			},
-			expected: []string{"a=1", "b=2"},
+			expected: []string{`a="1"`, `b="2"`},
 		},
 		{
 			description: "no kv",
