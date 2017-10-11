@@ -89,11 +89,11 @@ etcd:
   dataDir: /data
 nodeName: extra-args-minikube
 apiServerExtraArgs:
-  fail-no-swap: true
+  fail-no-swap: "true"
 controllerManagerExtraArgs:
-  kube-api-burst: 32
+  kube-api-burst: "32"
 schedulerExtraArgs:
-  scheduler-name: mini-scheduler
+  scheduler-name: "mini-scheduler"
 `,
 		},
 		{
@@ -128,8 +128,8 @@ etcd:
   dataDir: /data
 nodeName: extra-args-minikube
 apiServerExtraArgs:
-  fail-no-swap: true
-  kube-api-burst: 32
+  fail-no-swap: "true"
+  kube-api-burst: "32"
 `,
 		},
 		{
@@ -153,11 +153,11 @@ etcd:
   dataDir: /data
 nodeName: extra-args-minikube
 apiServerExtraArgs:
-  feature-gates: HugePages=true,OtherFeature=false
+  feature-gates: "HugePages=true,OtherFeature=false"
 controllerManagerExtraArgs:
-  feature-gates: HugePages=true,OtherFeature=false
+  feature-gates: "HugePages=true,OtherFeature=false"
 schedulerExtraArgs:
-  feature-gates: HugePages=true,OtherFeature=false
+  feature-gates: "HugePages=true,OtherFeature=false"
 `,
 		},
 		{
@@ -188,12 +188,12 @@ etcd:
   dataDir: /data
 nodeName: extra-args-minikube
 apiServerExtraArgs:
-  fail-no-swap: true
-  feature-gates: HugePages=true,OtherFeature=false
+  fail-no-swap: "true"
+  feature-gates: "HugePages=true,OtherFeature=false"
 controllerManagerExtraArgs:
-  feature-gates: HugePages=true,OtherFeature=false
+  feature-gates: "HugePages=true,OtherFeature=false"
 schedulerExtraArgs:
-  feature-gates: HugePages=true,OtherFeature=false
+  feature-gates: "HugePages=true,OtherFeature=false"
 `,
 		},
 		{

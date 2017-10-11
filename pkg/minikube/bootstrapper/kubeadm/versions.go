@@ -65,6 +65,8 @@ var componentToKubeadmConfigKey = map[string]string{
 	Apiserver:         "apiServerExtraArgs",
 	ControllerManager: "controllerManagerExtraArgs",
 	Scheduler:         "schedulerExtraArgs",
+	// The Kubelet is not configured in kubeadm, only in systemd.
+	Kubelet: "",
 }
 
 func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
@@ -83,6 +85,9 @@ func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, f
 
 	for _, component := range keys {
 		kubeadmComponentKey := componentToKubeadmConfigKey[component]
+		if kubeadmComponentKey == "" {
+			continue
+		}
 		extraConfig, err := ExtraConfigForComponent(component, opts, version)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting kubeadm extra args for %s", component)
