@@ -40,16 +40,30 @@ nodeName: {{.NodeName}}
   {{$val}}{{end}}
 {{end}}`))
 
-var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
+var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Funcs(template.FuncMap{
+	"installWants": installWants,
+}).Parse(`
 [Service]
-Environment="KUBELET_KUBECONFIG_ARGS=--kubeconfig=/etc/kubernetes/kubelet.conf --require-kubeconfig=true"
-Environment="KUBELET_SYSTEM_PODS_ARGS=--pod-manifest-path=/etc/kubernetes/manifests --allow-privileged=true"
-Environment="KUBELET_DNS_ARGS=--cluster-dns=10.0.0.10 --cluster-domain=cluster.local"
-Environment="KUBELET_CADVISOR_ARGS=--cadvisor-port=0"
-Environment="KUBELET_CGROUP_ARGS=--cgroup-driver=cgroupfs"
 ExecStart=
-ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_SYSTEM_PODS_ARGS $KUBELET_DNS_ARGS $KUBELET_CADVISOR_ARGS $KUBELET_CGROUP_ARGS {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
+ExecStart=/usr/bin/kubelet {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
+
+[Install]
+{{installWants .ContainerRuntime}}
 `))
+
+func installWants(containerRuntime string) string {
+	var wants string
+	switch containerRuntime {
+	case "":
+		wants = "docker.socket"
+	case "cri-o", "cri":
+		wants = "crio.service"
+	}
+	if wants != "" {
+		return fmt.Sprintf("Wants=%s", wants)
+	}
+	return ""
+}
 
 const kubeletService = `
 [Unit]
