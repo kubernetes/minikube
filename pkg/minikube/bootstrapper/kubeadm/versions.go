@@ -149,6 +149,17 @@ type VersionedExtraOption struct {
 	GreaterThanOrEqual semver.Version
 }
 
+// NewUnversionedOption returns a VersionedExtraOption that applies to all versions.
+func NewUnversionedOption(component, k, v string) VersionedExtraOption {
+	return VersionedExtraOption{
+		Option: util.ExtraOption{
+			Component: component,
+			Key:       k,
+			Value:     v,
+		},
+	}
+}
+
 var versionSpecificOpts = []VersionedExtraOption{
 	{
 		Option: util.ExtraOption{
@@ -158,6 +169,14 @@ var versionSpecificOpts = []VersionedExtraOption{
 		},
 		GreaterThanOrEqual: semver.MustParse("1.8.0-alpha.0"),
 	},
+	NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
+	NewUnversionedOption(Kubelet, "require-kubeconfig", "true"),
+	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
+	NewUnversionedOption(Kubelet, "allow-privileged", "true"),
+	NewUnversionedOption(Kubelet, "cluster-dns", "10.0.0.10"),
+	NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
+	NewUnversionedOption(Kubelet, "cadvisor-port", "0"),
+	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
 }
 
 func VersionIsBetween(version, gte, lte semver.Version) bool {

@@ -27,6 +27,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -178,6 +179,35 @@ func (k *KubeadmBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) erro
 	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
+// SetContainerRuntime possibly sets the container runtime, if it hasn't already
+// been specified by the extra-config option.  It has a set of defaults known to
+// work for a particular runtime.
+func SetContainerRuntime(cfg map[string]string, runtime string) map[string]string {
+	if _, ok := cfg["container-runtime"]; ok {
+		glog.Infoln("Container runtime already set through extra options, ignoring --container-runtime flag.")
+		return cfg
+	}
+
+	if runtime == "" {
+		glog.Infoln("Container runtime flag provided with no value, using defaults.")
+		return cfg
+	}
+
+	switch runtime {
+	case "crio", "cri-o":
+		cfg["container-runtime"] = "remote"
+		cfg["container-runtime-endpoint"] = "/var/run/crio.sock"
+		cfg["image-service-endpoint"] = "/var/run/crio.sock"
+		cfg["runtime-request-timeout"] = "15m"
+	default:
+		cfg["container-runtime"] = runtime
+	}
+
+	return cfg
+}
+
+// NewKubeletConfig generates a new systemd unit containing a configured kubelet
+// based on the options present in the KubernetesConfig.
 func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -189,14 +219,17 @@ func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra configuration for kubelet")
 	}
 
+	extraOpts = SetContainerRuntime(extraOpts, k8s.ContainerRuntime)
 	extraFlags := convertToFlags(extraOpts)
 	b := bytes.Buffer{}
 	opts := struct {
-		ExtraOptions string
-		FeatureGates string
+		ExtraOptions     string
+		FeatureGates     string
+		ContainerRuntime string
 	}{
-		ExtraOptions: extraFlags,
-		FeatureGates: k8s.FeatureGates,
+		ExtraOptions:     extraFlags,
+		FeatureGates:     k8s.FeatureGates,
+		ContainerRuntime: k8s.ContainerRuntime,
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return "", err
