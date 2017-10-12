@@ -91,7 +91,7 @@ func NewPodStore(c kubernetes.Interface, namespace string, label labels.Selector
 	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
 	stopCh := make(chan struct{})
 	reflector := cache.NewReflector(lw, &v1.Pod{}, store, 0)
-	reflector.RunUntil(stopCh)
+	go reflector.Run(stopCh)
 	return &PodStore{Store: store, stopCh: stopCh, Reflector: reflector}
 }
 

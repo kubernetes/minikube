@@ -28,7 +28,10 @@ func (lk LocalkubeServer) NewKubeletServer() Server {
 }
 
 func StartKubeletServer(lk LocalkubeServer) func() error {
-	config := options.NewKubeletServer()
+	config, err := options.NewKubeletServer()
+	if err != nil {
+		return func() error { return err }
+	}
 
 	// Master details
 	config.KubeConfig = flag.NewStringFlag(util.DefaultKubeConfigPath)
