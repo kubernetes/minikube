@@ -50,8 +50,7 @@ export KUBECONFIG=$HOME/.kube/config
 sudo -E ./minikube start --vm-driver=none
 
 # this for loop waits until kubectl can access the api server that Minikube has created
-for i in {1..150} # timeout for 5 minutes
-do
+for i in {1..150}; do # timeout for 5 minutes
    ./kubectl get po &> /dev/null
    if [ $? -ne 1 ]; then
       break
@@ -100,7 +99,7 @@ the following drivers:
 
 ```shell
 $ minikube start
-Starting local Kubernetes v1.7.0 cluster...
+Starting local Kubernetes v1.7.5 cluster...
 Starting VM...
 SSH-ing files into VM...
 Setting up certs...
