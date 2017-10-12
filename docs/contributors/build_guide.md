@@ -16,7 +16,7 @@ $ sudo dnf install -y glibc-static
 Clone minikube into your go path under `$GOPATH/src/k8s.io`
 
 ```
-$ git clone https://github.com/kubernetes/minikube.git $GOPATH/src/k8s.io
+$ git clone https://github.com/kubernetes/minikube.git $GOPATH/src/k8s.io/minikube
 $ cd $GOPATH/src/k8s.io/minikube
 $ make
 ```
@@ -73,4 +73,3 @@ For example, to run the test `should update annotations on modification [Conform
 ```shell
 go run hack/e2e.go -v --test --test_args="--ginkgo.focus=should\supdate\sannotations\son\smodification" --check_version_skew=false --check_node_count=false
 ```
-
