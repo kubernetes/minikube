@@ -67,12 +67,16 @@ done
 * [Linux] [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
 * [Windows] [Chocolatey](https://chocolatey.org/packages/Minikube)
 
+### Minikube Version Management
+
+The [asdf](https://github.com/asdf-vm/asdf) tool offers version management for a wide range of languages and tools. On macOS, [asdf](https://github.com/asdf-vm/asdf) is available via Homebrew and can be installed with `brew install asdf`. Then, the Minikube plugin itself can be installed with `asdf plugin-add minikube`. A specific version of Minikube can be installed with `asdf install minikune <version>`. The tool allows you to switch versions for projects using a `.tool-versions` file inside the project. An asdf plugin exists for kubectl as well.
+
 We also released a Debian package and Windows installer on our [releases page](https://github.com/kubernetes/minikube/releases). If you maintain a Minikube package, please feel free to add it here.
 
 ### Requirements
 * [kubectl](https://kubernetes.io/docs/tasks/kubectl/install/)
 * macOS
-    * [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [VMware Fusion](https://www.vmware.com/products/fusion)
+    * [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), or [VMware Fusion](https://www.vmware.com/products/fusion)
 * Linux
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
     * **NOTE:** Minikube also supports a `--vm-driver=none` option that runs the Kubernetes components on the host and not in a VM. Docker is required to use this driver but no hypervisor.
@@ -136,7 +140,7 @@ Machine stopped.
 
 ### kubectl
 
-The `minikube start` command creates a "[kubectl context](https://kubernetes.io/docs/user-guide/kubectl/v1.6/#-em-set-context-em-)" called "minikube".
+The `minikube start` command creates a "[kubectl context](https://kubernetes.io/docs/user-guide/kubectl/v1.7/#-em-set-context-em-)" called "minikube".
 This context contains the configuration to communicate with your Minikube cluster.
 
 Minikube sets this context to default automatically, but if you need to switch back to it in the future, run:
