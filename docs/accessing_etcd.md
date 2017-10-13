@@ -9,5 +9,6 @@ You can use the host-ip:`10.0.2.15` to access localkube's resources, for example
 ```shell
 curl -L -X PUT http://10.0.2.15:2379/v2/keys/message -d value="Hello"
 ```
+
 ## Accessing Host Resources From Inside A Pod
 In order to access host resources from inside a pod, IP address `192.168.99.1` must be used.
