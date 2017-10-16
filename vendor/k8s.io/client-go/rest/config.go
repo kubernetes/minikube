@@ -29,10 +29,10 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/version"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	certutil "k8s.io/client-go/util/cert"
@@ -70,6 +70,10 @@ type Config struct {
 	// refresh tokens for an OAuth2 flow.
 	// TODO: demonstrate an OAuth2 compatible client.
 	BearerToken string
+
+	// CacheDir is the directory where we'll store HTTP cached responses.
+	// If set to empty string, no caching mechanism will be used.
+	CacheDir string
 
 	// Impersonate is the configuration that RESTClient will use for impersonation.
 	Impersonate ImpersonationConfig
@@ -110,6 +114,9 @@ type Config struct {
 	// The maximum length of time to wait before giving up on a server request. A value of zero means no timeout.
 	Timeout time.Duration
 
+	// Dial specifies the dial function for creating unencrypted TCP connections.
+	Dial func(network, addr string) (net.Conn, error)
+
 	// Version forces a specific version to be used (if registered)
 	// Do we need this?
 	// Version string
@@ -126,6 +133,7 @@ type ImpersonationConfig struct {
 	Extra map[string][]string
 }
 
+// +k8s:deepcopy-gen=true
 // TLSClientConfig contains settings to enable transport layer security
 type TLSClientConfig struct {
 	// Server should be accessed without verifying the TLS certificate. For testing only.

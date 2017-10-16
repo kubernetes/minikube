@@ -61,6 +61,8 @@ service RuntimeService {
     // ContainerStatus returns status of the container. If the container is not
     // present, returns an error.
     rpc ContainerStatus(ContainerStatusRequest) returns (ContainerStatusResponse) {}
+    // UpdateContainerResources updates ContainerConfig of the container.
+    rpc UpdateContainerResources(UpdateContainerResourcesRequest) returns (UpdateContainerResourcesResponse) {}
 
     // ExecSync runs a command in a container synchronously.
     rpc ExecSync(ExecSyncRequest) returns (ExecSyncResponse) {}
@@ -148,6 +150,16 @@ message PortMapping {
     string host_ip = 4;
 }
 
+enum MountPropagation {
+    // No mount propagation ("private" in Linux terminology).
+    PROPAGATION_PRIVATE = 0;
+    // Mounts get propagated from the host to the container ("rslave" in Linux).
+    PROPAGATION_HOST_TO_CONTAINER = 1;
+    // Mounts get propagated from the host to the container and from the
+    // container to the host ("rshared" in Linux).
+    PROPAGATION_BIDIRECTIONAL = 2;
+}
+
 // Mount specifies a host volume to mount into a container.
 message Mount {
     // Path of the mount within the container.
@@ -158,6 +170,8 @@ message Mount {
     bool readonly = 3;
     // If set, the mount needs SELinux relabeling.
     bool selinux_relabel = 4;
+    // Requested propagation mode.
+    MountPropagation propagation = 5;
 }
 
 // NamespaceOption provides options for Linux namespaces.
@@ -200,6 +214,13 @@ message LinuxSandboxSecurityContext {
     // This allows a sandbox to take additional security precautions if no
     // privileged containers are expected to be run.
     bool privileged = 6;
+    // Seccomp profile for the sandbox, candidate values are:
+    // * docker/default: the default profile for the docker container runtime
+    // * unconfined: unconfined profile, ie, no seccomp sandboxing
+    // * localhost/<full-path-to-profile>: the profile installed on the node.
+    //   <full-path-to-profile> is the full path of the profile.
+    // Default: "", which is identical with unconfined.
+    string seccomp_profile_path = 7;
 }
 
 // LinuxPodSandboxConfig holds platform-specific configurations for Linux
@@ -272,32 +293,12 @@ message PodSandboxConfig {
     //
     // In general, in order to preserve a well-defined interface between the
     // kubelet and the container runtime, annotations SHOULD NOT influence
-    // runtime behaviour. For legacy reasons, there are some annotations which
-    // currently explicitly break this rule, listed below; in future versions
-    // of the interface these will be promoted to typed features.
+    // runtime behaviour.
     //
     // Annotations can also be useful for runtime authors to experiment with
     // new features that are opaque to the Kubernetes APIs (both user-facing
     // and the CRI). Whenever possible, however, runtime authors SHOULD
     // consider proposing new typed fields for any new features instead.
-    //
-    // 1. Seccomp
-    //
-    //      key: security.alpha.kubernetes.io/seccomp/pod
-    //      description: the seccomp profile for the containers of an entire pod.
-    //      value: see below.
-    //
-    //      key: security.alpha.kubernetes.io/seccomp/container/<container name>
-    //      description: the seccomp profile for the container (overrides pod).
-    //      value: see below
-    //
-    //      The value of seccomp is runtime agnostic:
-    //      * runtime/default: the default profile for the container runtime
-    //      * unconfined: unconfined profile, ie, no seccomp sandboxing
-    //      * localhost/<profile-name>: the profile installed to the node's
-    //        local seccomp profile root. Note that profile root is set in
-    //        kubelet, and it is not passed in CRI yet, see https://issues.k8s.io/36997.
-    //
     map<string, string> annotations = 7;
     // Optional configurations specific to Linux hosts.
     LinuxPodSandboxConfig linux = 8;
@@ -459,6 +460,10 @@ message LinuxContainerResources {
     int64 memory_limit_in_bytes = 4;
     // OOMScoreAdj adjusts the oom-killer score. Default: 0 (not specified).
     int64 oom_score_adj = 5;
+    // CpusetCpus constrains the allowed set of logical CPUs. Default: "" (not specified).
+    string cpuset_cpus = 6;
+    // CpusetMems constrains the allowed set of memory nodes. Default: "" (not specified).
+    string cpuset_mems = 7;
 }
 
 // SELinuxOption are the labels to be applied to the container.
@@ -522,6 +527,16 @@ message LinuxContainerSecurityContext {
     //    (localhost) by name. The possible profile names are detailed at
     //    http://wiki.apparmor.net/index.php/AppArmor_Core_Policy_Reference
     string apparmor_profile = 9;
+    // Seccomp profile for the container, candidate values are:
+    // * docker/default: the default profile for the docker container runtime
+    // * unconfined: unconfined profile, ie, no seccomp sandboxing
+    // * localhost/<full-path-to-profile>: the profile installed on the node.
+    //   <full-path-to-profile> is the full path of the profile.
+    // Default: "", which is identical with unconfined.
+    string seccomp_profile_path = 10;
+    // no_new_privs defines if the flag for no_new_privs should be set on the
+    // container.
+    bool no_new_privs = 11;
 }
 
 // LinuxContainerConfig contains platform-specific configuration for
@@ -777,6 +792,15 @@ message ContainerStatusResponse {
     ContainerStatus status = 1;
 }
 
+message UpdateContainerResourcesRequest {
+    // ID of the container to update.
+    string container_id = 1;
+    // Resource configuration specific to Linux containers.
+    LinuxContainerResources linux = 2;
+}
+
+message UpdateContainerResourcesResponse {}
+
 message ExecSyncRequest {
     // ID of the container.
     string container_id = 1;
@@ -990,7 +1014,7 @@ message FilesystemUsage {
     // The underlying storage of the filesystem.
     StorageIdentifier storage_id = 2;
     // UsedBytes represents the bytes used for images on the filesystem.
-    // This may differ from the total bytes used on the filesystem and may not 
+    // This may differ from the total bytes used on the filesystem and may not
     // equal CapacityBytes - AvailableBytes.
     UInt64Value used_bytes = 3;
     // InodesUsed represents the inodes used by the images.

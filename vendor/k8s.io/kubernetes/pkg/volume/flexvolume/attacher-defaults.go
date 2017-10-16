@@ -22,7 +22,6 @@ import (
 	"github.com/golang/glog"
 
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/volume"
 )
@@ -59,7 +58,7 @@ func (a *attacherDefaults) MountDevice(spec *volume.Spec, devicePath string, dev
 		options = append(options, "rw")
 	}
 
-	diskMounter := &mount.SafeFormatAndMount{Interface: mounter, Runner: exec.New()}
+	diskMounter := &mount.SafeFormatAndMount{Interface: mounter, Exec: a.plugin.host.GetExec(a.plugin.GetPluginName())}
 
 	return diskMounter.FormatAndMount(devicePath, deviceMountPath, volSource.FSType, options)
 }

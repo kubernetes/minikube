@@ -17,12 +17,13 @@ limitations under the License.
 package admission
 
 import (
+	"net/http"
 	"net/url"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	informers "k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion"
 	"k8s.io/kubernetes/pkg/quota"
@@ -88,6 +89,12 @@ type ServiceResolver interface {
 	ResolveEndpoint(namespace, name string) (*url.URL, error)
 }
 
+// WantsProxyTransport defines a fuction that accepts a proxy transport for admission
+// plugins that need to make calls to pods.
+type WantsProxyTransport interface {
+	SetProxyTransport(proxyTransport *http.Transport)
+}
+
 type PluginInitializer struct {
 	internalClient  internalclientset.Interface
 	externalClient  clientset.Interface
@@ -99,8 +106,9 @@ type PluginInitializer struct {
 	serviceResolver ServiceResolver
 
 	// for proving we are apiserver in call-outs
-	clientCert []byte
-	clientKey  []byte
+	clientCert     []byte
+	clientKey      []byte
+	proxyTransport *http.Transport
 }
 
 var _ admission.PluginInitializer = &PluginInitializer{}
@@ -139,6 +147,12 @@ func (i *PluginInitializer) SetServiceResolver(s ServiceResolver) *PluginInitial
 func (i *PluginInitializer) SetClientCert(cert, key []byte) *PluginInitializer {
 	i.clientCert = cert
 	i.clientKey = key
+	return i
+}
+
+// SetProxyTransport sets the proxyTransport which is needed by some plugins.
+func (i *PluginInitializer) SetProxyTransport(proxyTransport *http.Transport) *PluginInitializer {
+	i.proxyTransport = proxyTransport
 	return i
 }
 
@@ -185,5 +199,9 @@ func (i *PluginInitializer) Initialize(plugin admission.Interface) {
 			panic("An admission plugin wants a client cert/key, but they were not provided.")
 		}
 		wants.SetClientCert(i.clientCert, i.clientKey)
+	}
+
+	if wants, ok := plugin.(WantsProxyTransport); ok {
+		wants.SetProxyTransport(i.proxyTransport)
 	}
 }

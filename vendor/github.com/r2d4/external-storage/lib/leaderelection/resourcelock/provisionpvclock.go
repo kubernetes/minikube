@@ -21,18 +21,18 @@ import (
 	"errors"
 	"fmt"
 
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 )
 
 // ProvisionPVCLock is a lock on an existing PVC to provision a PV for
 type ProvisionPVCLock struct {
 	// PVCMeta should contain a Name and a Namespace of a PVC
 	// object that the LeaderElector will attempt to lead.
-	PVCMeta    meta_v1.ObjectMeta
+	PVCMeta    metav1.ObjectMeta
 	Client     clientset.Interface
-	LockConfig ResourceLockConfig
+	LockConfig Config
 	p          *v1.PersistentVolumeClaim
 }
 
@@ -40,7 +40,7 @@ type ProvisionPVCLock struct {
 func (pl *ProvisionPVCLock) Get() (*LeaderElectionRecord, error) {
 	var record LeaderElectionRecord
 	var err error
-	pl.p, err = pl.Client.Core().PersistentVolumeClaims(pl.PVCMeta.Namespace).Get(pl.PVCMeta.Name, meta_v1.GetOptions{})
+	pl.p, err = pl.Client.Core().PersistentVolumeClaims(pl.PVCMeta.Namespace).Get(pl.PVCMeta.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -20,32 +20,21 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/r2d4/external-storage/lib/controller"
-	"github.com/r2d4/external-storage/lib/leaderelection"
+	"k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/minikube/pkg/util"
 )
 
-const (
-	resyncPeriod              = 15 * time.Second
-	provisionerName           = "k8s.io/minikube-hostpath"
-	exponentialBackOffOnError = false
-	failedRetryThreshold      = 5
-	leasePeriod               = leaderelection.DefaultLeaseDuration
-	retryPeriod               = leaderelection.DefaultRetryPeriod
-	renewDeadline             = leaderelection.DefaultRenewDeadline
-	termLimit                 = leaderelection.DefaultTermLimit
-)
+const provisionerName = "k8s.io/minikube-hostpath"
 
 type hostPathProvisioner struct {
 	// The directory to create PV-backing directories in
@@ -150,7 +139,7 @@ func StartStorageProvisioner(lk LocalkubeServer) func() error {
 
 		// Start the provision controller which will dynamically provision hostPath
 		// PVs
-		pc := controller.NewProvisionController(clientset, resyncPeriod, provisionerName, hostPathProvisioner, serverVersion.GitVersion, exponentialBackOffOnError, failedRetryThreshold, leasePeriod, renewDeadline, retryPeriod, termLimit)
+		pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
 
 		pc.Run(wait.NeverStop)
 		return nil

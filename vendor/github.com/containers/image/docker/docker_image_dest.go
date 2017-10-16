@@ -13,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/containers/image/docker/reference"
 	"github.com/containers/image/manifest"
 	"github.com/containers/image/types"
@@ -21,23 +20,10 @@ import (
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/client"
 	"github.com/opencontainers/go-digest"
+	imgspecv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
-
-var manifestMIMETypes = []string{
-	// TODO(runcom): we'll add OCI as part of another PR here
-	manifest.DockerV2Schema2MediaType,
-	manifest.DockerV2Schema1SignedMediaType,
-	manifest.DockerV2Schema1MediaType,
-}
-
-func supportedManifestMIMETypesMap() map[string]bool {
-	m := make(map[string]bool, len(manifestMIMETypes))
-	for _, mt := range manifestMIMETypes {
-		m[mt] = true
-	}
-	return m
-}
 
 type dockerImageDestination struct {
 	ref dockerReference
@@ -48,7 +34,7 @@ type dockerImageDestination struct {
 
 // newImageDestination creates a new ImageDestination for the specified image reference.
 func newImageDestination(ctx *types.SystemContext, ref dockerReference) (types.ImageDestination, error) {
-	c, err := newDockerClient(ctx, ref, true, "pull,push")
+	c, err := newDockerClientFromRef(ctx, ref, true, "pull,push")
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +56,12 @@ func (d *dockerImageDestination) Close() error {
 }
 
 func (d *dockerImageDestination) SupportedManifestMIMETypes() []string {
-	return manifestMIMETypes
+	return []string{
+		imgspecv1.MediaTypeImageManifest,
+		manifest.DockerV2Schema2MediaType,
+		manifest.DockerV2Schema1SignedMediaType,
+		manifest.DockerV2Schema1MediaType,
+	}
 }
 
 // SupportsSignatures returns an error (to be displayed to the user) if the destination certainly can't store signatures.

@@ -18,8 +18,9 @@ package core
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
-	informers "k8s.io/kubernetes/pkg/client/informers/informers_generated/externalversions"
+	"k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/client-go/informers"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/pkg/quota"
 	"k8s.io/kubernetes/pkg/quota/generic"
 )
@@ -27,12 +28,12 @@ import (
 // NewRegistry returns a registry that knows how to deal with core kubernetes resources
 // If an informer factory is provided, evaluators will use them.
 func NewRegistry(kubeClient clientset.Interface, f informers.SharedInformerFactory) quota.Registry {
-	pod := NewPodEvaluator(kubeClient, f)
-	service := NewServiceEvaluator(kubeClient)
-	replicationController := NewReplicationControllerEvaluator(kubeClient)
-	resourceQuota := NewResourceQuotaEvaluator(kubeClient)
-	secret := NewSecretEvaluator(kubeClient)
-	configMap := NewConfigMapEvaluator(kubeClient)
+	pod := NewPodEvaluator(kubeClient, f, clock.RealClock{})
+	service := NewServiceEvaluator(kubeClient, f)
+	replicationController := NewReplicationControllerEvaluator(kubeClient, f)
+	resourceQuota := NewResourceQuotaEvaluator(kubeClient, f)
+	secret := NewSecretEvaluator(kubeClient, f)
+	configMap := NewConfigMapEvaluator(kubeClient, f)
 	persistentVolumeClaim := NewPersistentVolumeClaimEvaluator(kubeClient, f)
 	return &generic.GenericRegistry{
 		InternalEvaluators: map[schema.GroupKind]quota.Evaluator{

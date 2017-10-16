@@ -37,8 +37,8 @@ import (
 	"k8s.io/apiserver/pkg/util/webhook"
 	"k8s.io/client-go/rest"
 
+	"k8s.io/api/imagepolicy/v1alpha1"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/imagepolicy/v1alpha1"
 
 	// install the clientgo image policy API for use with api registry
 	_ "k8s.io/kubernetes/pkg/apis/imagepolicy/install"
@@ -184,7 +184,7 @@ func (a *imagePolicyWebhook) admitPod(pod *api.Pod, attributes admission.Attribu
 }
 
 // NewImagePolicyWebhook a new imagePolicyWebhook from the provided config file.
-// The config file is specified by --admission-controller-config-file and has the
+// The config file is specified by --admission-control-config-file and has the
 // following format for a webhook:
 //
 //   {

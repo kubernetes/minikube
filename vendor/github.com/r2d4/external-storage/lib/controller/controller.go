@@ -24,24 +24,26 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/r2d4/external-storage/lib/leaderelection"
 	rl "github.com/r2d4/external-storage/lib/leaderelection/resourcelock"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
+	storagebeta "k8s.io/api/storage/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/api/v1/ref"
-	storage_v1 "k8s.io/client-go/pkg/apis/storage/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/reference"
+	"k8s.io/kubernetes/pkg/api/v1/helper"
 	"k8s.io/kubernetes/pkg/util/goroutinemap"
+	utilversion "k8s.io/kubernetes/pkg/util/version"
 )
 
 // annClass annotation represents the storage class associated with a resource:
@@ -62,21 +64,10 @@ const annDynamicallyProvisioned = "pv.kubernetes.io/provisioned-by"
 
 const annStorageProvisioner = "volume.beta.kubernetes.io/storage-provisioner"
 
-// Number of retries when we create a PV object for a provisioned volume.
-const createProvisionedPVRetryCount = 5
-
-// Interval between retries when we create a PV object for a provisioned volume.
-const createProvisionedPVInterval = 10 * time.Second
-
 // ProvisionController is a controller that provisions PersistentVolumes for
 // PersistentVolumeClaims.
 type ProvisionController struct {
 	client kubernetes.Interface
-
-	// How often the controller relists PVCs, PVs, & storage classes. OnUpdate
-	// will be called even if nothing has changed, meaning failed operations may
-	// be retried on a PVC/PV every resyncPeriod regardless of whether it changed
-	resyncPeriod time.Duration
 
 	// The name of the provisioner for which this controller dynamically
 	// provisions volumes. The value of annDynamicallyProvisioned and
@@ -89,9 +80,13 @@ type ProvisionController struct {
 	// volumes.
 	provisioner Provisioner
 
-	// Whether we are running in a 1.4 cluster before out-of-tree dynamic
-	// provisioning is officially supported
-	is1dot4 bool
+	// Kubernetes cluster server version:
+	// * 1.4: storage classes introduced as beta. Technically out-of-tree dynamic
+	// provisioning is not officially supported, though it works
+	// * 1.5: storage classes stay in beta. Out-of-tree dynamic provisioning is
+	// officially supported
+	// * 1.6: storage classes enter GA
+	kubeVersion *utilversion.Version
 
 	claimSource      cache.ListerWatcher
 	claimController  cache.Controller
@@ -104,105 +99,247 @@ type ProvisionController struct {
 	claims  cache.Store
 	classes cache.Store
 
+	// Identity of this controller, generated at creation time and not persisted
+	// across restarts. Useful only for debugging, for seeing the source of
+	// events. controller.provisioner may have its own, different notion of
+	// identity which may/may not persist across restarts
+	identity      types.UID
 	eventRecorder record.EventRecorder
+
+	resyncPeriod time.Duration
 
 	// Map of scheduled/running operations.
 	runningOperations goroutinemap.GoRoutineMap
 
-	// Number of retries when we create a PV object for a provisioned volume.
 	createProvisionedPVRetryCount int
+	createProvisionedPVInterval   time.Duration
 
-	// Interval between retries when we create a PV object for a provisioned volume.
-	createProvisionedPVInterval time.Duration
+	failedProvisionThreshold, failedDeleteThreshold int
+	// Map of failed claims to provisions/volumes to deletes
+	failedProvisionStats, failedDeleteStats           map[types.UID]int
+	failedProvisionStatsMutex, failedDeleteStatsMutex *sync.Mutex
 
-	// Identity of this controller, generated at creation time.
-	identity types.UID
-
-	// Parameters of LeaderElectionConfig: set to defaults except in tests
+	// Parameters of leaderelection.LeaderElectionConfig. Leader election is for
+	// when multiple controllers are running: they race to lock (lead) every PVC
+	// so that only one calls Provision for it (saving API calls, CPU cycles...)
 	leaseDuration, renewDeadline, retryPeriod, termLimit time.Duration
-
 	// Map of claim UID to LeaderElector: for checking if this controller
 	// is the leader of a given claim
-	leaderElectors map[types.UID]*leaderelection.LeaderElector
+	leaderElectors      map[types.UID]*leaderelection.LeaderElector
+	leaderElectorsMutex *sync.Mutex
 
-	mapMutex *sync.Mutex
+	hasRun     bool
+	hasRunLock *sync.Mutex
+}
 
-	// threshold for max number of retries on failure of provisioner
-	failedRetryThreshold int
+const (
+	// DefaultResyncPeriod is used when option function ResyncPeriod is omitted
+	DefaultResyncPeriod = 15 * time.Second
+	// DefaultExponentialBackOffOnError is used when option function ExponentialBackOffOnError is omitted
+	DefaultExponentialBackOffOnError = true
+	// DefaultCreateProvisionedPVRetryCount is used when option function CreateProvisionedPVRetryCount is omitted
+	DefaultCreateProvisionedPVRetryCount = 5
+	// DefaultCreateProvisionedPVInterval is used when option function CreateProvisionedPVInterval is omitted
+	DefaultCreateProvisionedPVInterval = 10 * time.Second
+	// DefaultFailedProvisionThreshold is used when option function FailedProvisionThreshold is omitted
+	DefaultFailedProvisionThreshold = 15
+	// DefaultFailedDeleteThreshold is used when option function FailedDeleteThreshold is omitted
+	DefaultFailedDeleteThreshold = 15
+	// DefaultLeaseDuration is used when option function LeaseDuration is omitted
+	DefaultLeaseDuration = 15 * time.Second
+	// DefaultRenewDeadline is used when option function RenewDeadline is omitted
+	DefaultRenewDeadline = 10 * time.Second
+	// DefaultRetryPeriod is used when option function RetryPeriod is omitted
+	DefaultRetryPeriod = 2 * time.Second
+	// DefaultTermLimit is used when option function TermLimit is omitted
+	DefaultTermLimit = 30 * time.Second
+)
 
-	// map of failed claims
-	failedClaimsStats map[types.UID]int
+var errRuntime = fmt.Errorf("cannot call option functions after controller has Run")
 
-	failedClaimsStatsMutex *sync.Mutex
+// ResyncPeriod is how often the controller relists PVCs, PVs, & storage
+// classes. OnUpdate will be called even if nothing has changed, meaning failed
+// operations may be retried on a PVC/PV every resyncPeriod regardless of
+// whether it changed. Defaults to 15 seconds.
+func ResyncPeriod(resyncPeriod time.Duration) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.resyncPeriod = resyncPeriod
+		return nil
+	}
+}
+
+// ExponentialBackOffOnError determines whether to exponentially back off from
+// failures of Provision and Delete. Defaults to true.
+func ExponentialBackOffOnError(exponentialBackOffOnError bool) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.runningOperations = goroutinemap.NewGoRoutineMap(exponentialBackOffOnError)
+		return nil
+	}
+}
+
+// CreateProvisionedPVRetryCount is the number of retries when we create a PV
+// object for a provisioned volume. Defaults to 5.
+func CreateProvisionedPVRetryCount(createProvisionedPVRetryCount int) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.createProvisionedPVRetryCount = createProvisionedPVRetryCount
+		return nil
+	}
+}
+
+// CreateProvisionedPVInterval is the interval between retries when we create a
+// PV object for a provisioned volume. Defaults to 10 seconds.
+func CreateProvisionedPVInterval(createProvisionedPVInterval time.Duration) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.createProvisionedPVInterval = createProvisionedPVInterval
+		return nil
+	}
+}
+
+// FailedProvisionThreshold is the threshold for max number of retries on
+// failures of Provision. Defaults to 15.
+func FailedProvisionThreshold(failedProvisionThreshold int) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		c.SetFailedProvisionThreshold(failedProvisionThreshold)
+		return nil
+	}
+}
+
+// FailedDeleteThreshold is the threshold for max number of retries on failures
+// of Delete. Defaults to 15.
+func FailedDeleteThreshold(failedDeleteThreshold int) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		c.SetFailedDeleteThreshold(failedDeleteThreshold)
+		return nil
+	}
+}
+
+// LeaseDuration is the duration that non-leader candidates will
+// wait to force acquire leadership. This is measured against time of
+// last observed ack. Defaults to 15 seconds.
+func LeaseDuration(leaseDuration time.Duration) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.leaseDuration = leaseDuration
+		return nil
+	}
+}
+
+// RenewDeadline is the duration that the acting master will retry
+// refreshing leadership before giving up. Defaults to 10 seconds.
+func RenewDeadline(renewDeadline time.Duration) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.renewDeadline = renewDeadline
+		return nil
+	}
+}
+
+// RetryPeriod is the duration the LeaderElector clients should wait
+// between tries of actions. Defaults to 2 seconds.
+func RetryPeriod(retryPeriod time.Duration) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.retryPeriod = retryPeriod
+		return nil
+	}
+}
+
+// TermLimit is the maximum duration that a leader may remain the leader
+// to complete the task before it must give up its leadership. 0 for forever
+// or indefinite. Defaults to 30 seconds.
+func TermLimit(termLimit time.Duration) func(*ProvisionController) error {
+	return func(c *ProvisionController) error {
+		if c.HasRun() {
+			return errRuntime
+		}
+		c.termLimit = termLimit
+		return nil
+	}
 }
 
 // NewProvisionController creates a new provision controller
 func NewProvisionController(
 	client kubernetes.Interface,
-	resyncPeriod time.Duration,
 	provisionerName string,
 	provisioner Provisioner,
-	serverGitVersion string,
-	exponentialBackOffOnError bool,
-	failedRetryThreshold int,
-	leaseDuration time.Duration,
-	renewDeadline time.Duration,
-	retryPeriod time.Duration,
-	termLimit time.Duration,
+	kubeVersion string,
+	options ...func(*ProvisionController) error,
 ) *ProvisionController {
 	identity := uuid.NewUUID()
-
 	broadcaster := record.NewBroadcaster()
-	broadcaster.StartRecordingToSink(&core_v1.EventSinkImpl{Interface: client.Core().Events(v1.NamespaceAll)})
+	broadcaster.StartRecordingToSink(&corev1.EventSinkImpl{Interface: client.Core().Events(v1.NamespaceAll)})
 	var eventRecorder record.EventRecorder
 	out, err := exec.Command("hostname").Output()
 	if err != nil {
-		eventRecorder = broadcaster.NewRecorder(api.Scheme, v1.EventSource{Component: fmt.Sprintf("%s %s", provisionerName, string(identity))})
+		eventRecorder = broadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: fmt.Sprintf("%s %s", provisionerName, string(identity))})
 	} else {
-		eventRecorder = broadcaster.NewRecorder(api.Scheme, v1.EventSource{Component: fmt.Sprintf("%s %s %s", provisionerName, strings.TrimSpace(string(out)), string(identity))})
+		eventRecorder = broadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: fmt.Sprintf("%s %s %s", provisionerName, strings.TrimSpace(string(out)), string(identity))})
 	}
 
-	gitVersion, _ := semver.Parse(serverGitVersion)
-	gitVersion1dot5, _ := semver.Parse("1.5.0")
-	is1dot4 := gitVersion.LT(gitVersion1dot5)
-
-	// TODO(r2d4): GetReference fails otherwise
-	v1.AddToScheme(api.Scheme)
+	// TODO: GetReference fails otherwise
+	v1.AddToScheme(scheme.Scheme)
 
 	controller := &ProvisionController{
 		client:                        client,
-		resyncPeriod:                  resyncPeriod,
 		provisionerName:               provisionerName,
 		provisioner:                   provisioner,
-		is1dot4:                       is1dot4,
-		eventRecorder:                 eventRecorder,
-		runningOperations:             goroutinemap.NewGoRoutineMap(exponentialBackOffOnError),
-		createProvisionedPVRetryCount: createProvisionedPVRetryCount,
-		createProvisionedPVInterval:   createProvisionedPVInterval,
+		kubeVersion:                   utilversion.MustParseSemantic(kubeVersion),
 		identity:                      identity,
-		leaseDuration:                 leaseDuration,
-		renewDeadline:                 renewDeadline,
-		retryPeriod:                   retryPeriod,
-		termLimit:                     termLimit,
+		eventRecorder:                 eventRecorder,
+		resyncPeriod:                  DefaultResyncPeriod,
+		runningOperations:             goroutinemap.NewGoRoutineMap(DefaultExponentialBackOffOnError),
+		createProvisionedPVRetryCount: DefaultCreateProvisionedPVRetryCount,
+		createProvisionedPVInterval:   DefaultCreateProvisionedPVInterval,
+		failedProvisionThreshold:      DefaultFailedProvisionThreshold,
+		failedDeleteThreshold:         DefaultFailedDeleteThreshold,
+		failedProvisionStats:          make(map[types.UID]int),
+		failedDeleteStats:             make(map[types.UID]int),
+		failedProvisionStatsMutex:     &sync.Mutex{},
+		failedDeleteStatsMutex:        &sync.Mutex{},
+		leaseDuration:                 DefaultLeaseDuration,
+		renewDeadline:                 DefaultRenewDeadline,
+		retryPeriod:                   DefaultRetryPeriod,
+		termLimit:                     DefaultTermLimit,
 		leaderElectors:                make(map[types.UID]*leaderelection.LeaderElector),
-		mapMutex:                      &sync.Mutex{},
-		failedClaimsStats:             make(map[types.UID]int),
-		failedRetryThreshold:          failedRetryThreshold,
-		failedClaimsStatsMutex:        &sync.Mutex{},
+		leaderElectorsMutex:           &sync.Mutex{},
+		hasRun:                        false,
+		hasRunLock:                    &sync.Mutex{},
+	}
+
+	for _, option := range options {
+		option(controller)
 	}
 
 	controller.claimSource = &cache.ListWatch{
-		ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			return client.Core().PersistentVolumeClaims(v1.NamespaceAll).List(options)
 		},
-		WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return client.Core().PersistentVolumeClaims(v1.NamespaceAll).Watch(options)
 		},
 	}
 	controller.claims, controller.claimController = cache.NewInformer(
 		controller.claimSource,
 		&v1.PersistentVolumeClaim{},
-		resyncPeriod,
+		controller.resyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    controller.addClaim,
 			UpdateFunc: controller.updateClaim,
@@ -211,17 +348,17 @@ func NewProvisionController(
 	)
 
 	controller.volumeSource = &cache.ListWatch{
-		ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
+		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 			return client.Core().PersistentVolumes().List(options)
 		},
-		WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
+		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 			return client.Core().PersistentVolumes().Watch(options)
 		},
 	}
 	controller.volumes, controller.volumeController = cache.NewInformer(
 		controller.volumeSource,
 		&v1.PersistentVolume{},
-		resyncPeriod,
+		controller.resyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    nil,
 			UpdateFunc: controller.updateVolume,
@@ -229,21 +366,38 @@ func NewProvisionController(
 		},
 	)
 
-	controller.classSource = &cache.ListWatch{
-		ListFunc: func(options meta_v1.ListOptions) (runtime.Object, error) {
-			return client.Storage().StorageClasses().List(options)
-		},
-		WatchFunc: func(options meta_v1.ListOptions) (watch.Interface, error) {
-			return client.Storage().StorageClasses().Watch(options)
-		},
-	}
 	controller.classes = cache.NewStore(cache.DeletionHandlingMetaNamespaceKeyFunc)
-	controller.classReflector = cache.NewReflector(
-		controller.classSource,
-		&storage_v1.StorageClass{},
-		controller.classes,
-		resyncPeriod,
-	)
+	if controller.kubeVersion.AtLeast(utilversion.MustParseSemantic("v1.6.0")) {
+		controller.classSource = &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.StorageV1().StorageClasses().List(options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return client.StorageV1().StorageClasses().Watch(options)
+			},
+		}
+		controller.classReflector = cache.NewReflector(
+			controller.classSource,
+			&storage.StorageClass{},
+			controller.classes,
+			controller.resyncPeriod,
+		)
+	} else {
+		controller.classSource = &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				return client.StorageV1beta1().StorageClasses().List(options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return client.StorageV1beta1().StorageClasses().Watch(options)
+			},
+		}
+		controller.classReflector = cache.NewReflector(
+			controller.classSource,
+			&storagebeta.StorageClass{},
+			controller.classes,
+			controller.resyncPeriod,
+		)
+	}
 
 	return controller
 }
@@ -251,10 +405,34 @@ func NewProvisionController(
 // Run starts all of this controller's control loops
 func (ctrl *ProvisionController) Run(stopCh <-chan struct{}) {
 	glog.Infof("Starting provisioner controller %s!", string(ctrl.identity))
+	ctrl.hasRunLock.Lock()
+	ctrl.hasRun = true
+	ctrl.hasRunLock.Unlock()
 	go ctrl.claimController.Run(stopCh)
 	go ctrl.volumeController.Run(stopCh)
-	go ctrl.classReflector.RunUntil(stopCh)
+	go ctrl.classReflector.Run(stopCh)
 	<-stopCh
+}
+
+// HasRun returns whether the controller has Run
+func (ctrl *ProvisionController) HasRun() bool {
+	ctrl.hasRunLock.Lock()
+	defer ctrl.hasRunLock.Unlock()
+	return ctrl.hasRun
+}
+
+// SetFailedProvisionThreshold sets the value of failedProvisionThreshold
+func (ctrl *ProvisionController) SetFailedProvisionThreshold(threshold int) {
+	ctrl.failedProvisionStatsMutex.Lock()
+	ctrl.failedProvisionThreshold = threshold
+	ctrl.failedProvisionStatsMutex.Unlock()
+}
+
+// SetFailedDeleteThreshold sets the value of failedDeleteThreshold
+func (ctrl *ProvisionController) SetFailedDeleteThreshold(threshold int) {
+	ctrl.failedDeleteStatsMutex.Lock()
+	ctrl.failedDeleteThreshold = threshold
+	ctrl.failedDeleteStatsMutex.Unlock()
 }
 
 // On add claim, check if the added claim should have a volume provisioned for
@@ -267,14 +445,14 @@ func (ctrl *ProvisionController) addClaim(obj interface{}) {
 	}
 
 	if ctrl.shouldProvision(claim) {
-		ctrl.mapMutex.Lock()
+		ctrl.leaderElectorsMutex.Lock()
 		le, ok := ctrl.leaderElectors[claim.UID]
-		ctrl.mapMutex.Unlock()
+		ctrl.leaderElectorsMutex.Unlock()
 		if ok && le.IsLeader() {
 			opName := fmt.Sprintf("provision-%s[%s]", claimToClaimKey(claim), string(claim.UID))
 			ctrl.scheduleOperation(opName, func() error {
 				err := ctrl.provisionClaimOperation(claim)
-				ctrl.updateStats(claim, err)
+				ctrl.updateProvisionStats(claim, err)
 				return err
 			})
 		} else {
@@ -333,7 +511,9 @@ func (ctrl *ProvisionController) updateVolume(oldObj, newObj interface{}) {
 	if ctrl.shouldDelete(volume) {
 		opName := fmt.Sprintf("delete-%s[%s]", volume.Name, string(volume.UID))
 		ctrl.scheduleOperation(opName, func() error {
-			return ctrl.deleteVolumeOperation(volume)
+			err := ctrl.deleteVolumeOperation(volume)
+			ctrl.updateDeleteStats(volume, err)
+			return err
 		})
 	}
 }
@@ -355,7 +535,7 @@ func (ctrl *ProvisionController) isOnlyRecordUpdate(oldClaim, newClaim *v1.Persi
 // removeRecord returns a claim with its leader election record annotation and
 // ResourceVersion set blank
 func (ctrl *ProvisionController) removeRecord(claim *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {
-	clone, err := api.Scheme.DeepCopy(claim)
+	clone, err := scheme.Scheme.DeepCopy(claim)
 	if err != nil {
 		return nil, fmt.Errorf("Error cloning claim: %v", err)
 	}
@@ -375,23 +555,22 @@ func (ctrl *ProvisionController) removeRecord(claim *v1.PersistentVolumeClaim) (
 }
 
 func (ctrl *ProvisionController) shouldProvision(claim *v1.PersistentVolumeClaim) bool {
+	ctrl.failedProvisionStatsMutex.Lock()
+	if failureCount, exists := ctrl.failedProvisionStats[claim.UID]; exists == true {
+		if failureCount >= ctrl.failedProvisionThreshold && ctrl.failedProvisionThreshold > 0 {
+			glog.Errorf("Exceeded failedProvisionThreshold threshold: %d, for claim %q, provisioner will not attempt retries for this claim", ctrl.failedProvisionThreshold, claimToClaimKey(claim))
+			ctrl.failedProvisionStatsMutex.Unlock()
+			return false
+		}
+	}
+	ctrl.failedProvisionStatsMutex.Unlock()
+
 	if claim.Spec.VolumeName != "" {
 		return false
 	}
 
-	ctrl.failedClaimsStatsMutex.Lock()
-	if failureCount, exists := ctrl.failedClaimsStats[claim.UID]; exists == true {
-
-		if failureCount >= ctrl.failedRetryThreshold {
-			glog.Errorf("Exceeded failedRetryThreshold threshold: %d, for claim %q, provisioner will not attempt retries for this claim", ctrl.failedRetryThreshold, claimToClaimKey(claim))
-			ctrl.failedClaimsStatsMutex.Unlock()
-			return false
-		}
-	}
-	ctrl.failedClaimsStatsMutex.Unlock()
-
-	// Kubernetes 1.5 provisioning with annDynamicallyProvisioned
-	if provisioner, found := claim.Annotations[annDynamicallyProvisioned]; found {
+	// Kubernetes 1.5 provisioning with annStorageProvisioner
+	if provisioner, found := claim.Annotations[annStorageProvisioner]; found {
 		if provisioner == ctrl.provisionerName {
 			return true
 		}
@@ -399,19 +578,33 @@ func (ctrl *ProvisionController) shouldProvision(claim *v1.PersistentVolumeClaim
 	}
 
 	// Kubernetes 1.4 provisioning, evaluating class.Provisioner
-	claimClass := getClaimClass(claim)
-	_, err := ctrl.getStorageClass(claimClass)
+	claimClass := helper.GetPersistentVolumeClaimClass(claim)
+	provisioner, _, err := ctrl.getStorageClassFields(claimClass)
 	if err != nil {
-		glog.Errorf("Claim %q: %v", claimToClaimKey(claim), err)
+		glog.Errorf("Error getting claim %q's StorageClass's fields: %v", claimToClaimKey(claim), err)
 		return false
 	}
+	if provisioner != ctrl.provisionerName {
+		return false
+	}
+
 	return true
 }
 
 func (ctrl *ProvisionController) shouldDelete(volume *v1.PersistentVolume) bool {
+	ctrl.failedDeleteStatsMutex.Lock()
+	if failureCount, exists := ctrl.failedDeleteStats[volume.UID]; exists == true {
+		if failureCount >= ctrl.failedDeleteThreshold && ctrl.failedDeleteThreshold > 0 {
+			glog.Errorf("Exceeded failedDeleteThreshold threshold: %d, for volume %q, provisioner will not attempt retries for this volume", ctrl.failedDeleteThreshold, volume.Name)
+			ctrl.failedDeleteStatsMutex.Unlock()
+			return false
+		}
+	}
+	ctrl.failedDeleteStatsMutex.Unlock()
+
 	// In 1.5+ we delete only if the volume is in state Released. In 1.4 we must
 	// delete if the volume is in state Failed too.
-	if !ctrl.is1dot4 {
+	if ctrl.kubeVersion.AtLeast(utilversion.MustParseSemantic("v1.5.0")) {
 		if volume.Status.Phase != v1.VolumeReleased {
 			return false
 		}
@@ -425,7 +618,7 @@ func (ctrl *ProvisionController) shouldDelete(volume *v1.PersistentVolume) bool 
 		return false
 	}
 
-	if !hasAnnotation(volume.ObjectMeta, annDynamicallyProvisioned) {
+	if !metav1.HasAnnotation(volume.ObjectMeta, annDynamicallyProvisioned) {
 		return false
 	}
 
@@ -446,12 +639,12 @@ func (ctrl *ProvisionController) lockProvisionClaimOperation(claim *v1.Persisten
 	rl := rl.ProvisionPVCLock{
 		PVCMeta: claim.ObjectMeta,
 		Client:  ctrl.client,
-		LockConfig: rl.ResourceLockConfig{
+		LockConfig: rl.Config{
 			Identity:      string(ctrl.identity),
 			EventRecorder: ctrl.eventRecorder,
 		},
 	}
-	le, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
+	le, err := leaderelection.NewLeaderElector(leaderelection.Config{
 		Lock:          &rl,
 		LeaseDuration: ctrl.leaseDuration,
 		RenewDeadline: ctrl.renewDeadline,
@@ -462,9 +655,8 @@ func (ctrl *ProvisionController) lockProvisionClaimOperation(claim *v1.Persisten
 				opName := fmt.Sprintf("provision-%s[%s]", claimToClaimKey(claim), string(claim.UID))
 				ctrl.scheduleOperation(opName, func() error {
 					err := ctrl.provisionClaimOperation(claim)
-					ctrl.updateStats(claim, err)
+					ctrl.updateProvisionStats(claim, err)
 					return err
-
 				})
 			},
 			OnStoppedLeading: func() {
@@ -477,9 +669,9 @@ func (ctrl *ProvisionController) lockProvisionClaimOperation(claim *v1.Persisten
 		return
 	}
 
-	ctrl.mapMutex.Lock()
+	ctrl.leaderElectorsMutex.Lock()
 	ctrl.leaderElectors[claim.UID] = le
-	ctrl.mapMutex.Unlock()
+	ctrl.leaderElectorsMutex.Unlock()
 
 	// To determine when to stop trying to acquire/renew the lock, watch for
 	// provisioning success/failure. (The leader could get the result of its
@@ -501,24 +693,50 @@ func (ctrl *ProvisionController) lockProvisionClaimOperation(claim *v1.Persisten
 		time.Sleep(ctrl.leaseDuration + ctrl.retryPeriod)
 	}
 
-	ctrl.mapMutex.Lock()
+	ctrl.leaderElectorsMutex.Lock()
 	delete(ctrl.leaderElectors, claim.UID)
-	ctrl.mapMutex.Unlock()
+	ctrl.leaderElectorsMutex.Unlock()
 }
 
-func (ctrl *ProvisionController) updateStats(claim *v1.PersistentVolumeClaim, err error) {
-	ctrl.failedClaimsStatsMutex.Lock()
-	defer ctrl.failedClaimsStatsMutex.Unlock()
-	if err != nil {
-		if failureRetryCount, exists := ctrl.failedClaimsStats[claim.UID]; exists == true {
-			failureRetryCount = failureRetryCount + 1
-			ctrl.failedClaimsStats[claim.UID] = failureRetryCount
-		} else {
-			ctrl.failedClaimsStats[claim.UID] = 1
-		}
+func (ctrl *ProvisionController) updateProvisionStats(claim *v1.PersistentVolumeClaim, err error) {
+	ctrl.failedProvisionStatsMutex.Lock()
+	defer ctrl.failedProvisionStatsMutex.Unlock()
 
+	// Do not record the failed claim info when failedProvisionThreshold is not set
+	if ctrl.failedProvisionThreshold <= 0 {
+		return
+	}
+
+	if err != nil {
+		if failureCount, exists := ctrl.failedProvisionStats[claim.UID]; exists == true {
+			failureCount = failureCount + 1
+			ctrl.failedProvisionStats[claim.UID] = failureCount
+		} else {
+			ctrl.failedProvisionStats[claim.UID] = 1
+		}
 	} else {
-		delete(ctrl.failedClaimsStats, claim.UID)
+		delete(ctrl.failedProvisionStats, claim.UID)
+	}
+}
+
+func (ctrl *ProvisionController) updateDeleteStats(volume *v1.PersistentVolume, err error) {
+	ctrl.failedDeleteStatsMutex.Lock()
+	defer ctrl.failedDeleteStatsMutex.Unlock()
+
+	// Do not record the failed volume info when failedDeleteThreshold is not set
+	if ctrl.failedDeleteThreshold <= 0 {
+		return
+	}
+
+	if err != nil {
+		if failureCount, exists := ctrl.failedDeleteStats[volume.UID]; exists == true {
+			failureCount = failureCount + 1
+			ctrl.failedDeleteStats[volume.UID] = failureCount
+		} else {
+			ctrl.failedDeleteStats[volume.UID] = 1
+		}
+	} else {
+		delete(ctrl.failedDeleteStats, volume.UID)
 	}
 }
 
@@ -527,14 +745,14 @@ func (ctrl *ProvisionController) updateStats(claim *v1.PersistentVolumeClaim, er
 // the operation is deleted, else the operation may be retried with expbackoff.
 func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVolumeClaim) error {
 	// Most code here is identical to that found in controller.go of kube's PV controller...
-	claimClass := getClaimClass(claim)
+	claimClass := helper.GetPersistentVolumeClaimClass(claim)
 	glog.V(4).Infof("provisionClaimOperation [%s] started, class: %q", claimToClaimKey(claim), claimClass)
 
 	//  A previous doProvisionClaim may just have finished while we were waiting for
 	//  the locks. Check that PV (with deterministic name) hasn't been provisioned
 	//  yet.
 	pvName := ctrl.getProvisionedVolumeNameForClaim(claim)
-	volume, err := ctrl.client.Core().PersistentVolumes().Get(pvName, meta_v1.GetOptions{})
+	volume, err := ctrl.client.Core().PersistentVolumes().Get(pvName, metav1.GetOptions{})
 	if err == nil && volume != nil {
 		// Volume has been already provisioned, nothing to do.
 		glog.V(4).Infof("provisionClaimOperation [%s]: volume already exists, skipping", claimToClaimKey(claim))
@@ -543,15 +761,22 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 
 	// Prepare a claimRef to the claim early (to fail before a volume is
 	// provisioned)
-	claimRef, err := ref.GetReference(api.Scheme, claim)
+	claimRef, err := reference.GetReference(scheme.Scheme, claim)
 	if err != nil {
 		glog.Errorf("Unexpected error getting claim reference to claim %q: %v", claimToClaimKey(claim), err)
 		return nil
 	}
 
-	storageClass, err := ctrl.getStorageClass(claimClass)
+	provisioner, parameters, err := ctrl.getStorageClassFields(claimClass)
 	if err != nil {
-		glog.Errorf("claim %v: %v", claimToClaimKey(claim), err)
+		glog.Errorf("Error getting claim %q's StorageClass's fields: %v", claimToClaimKey(claim), err)
+		return nil
+	}
+	if provisioner != ctrl.provisionerName {
+		// class.Provisioner has either changed since shouldProvision() or
+		// annDynamicallyProvisioned contains different provisioner than
+		// class.Provisioner.
+		glog.Errorf("Unknown provisioner %q requested in claim %q's StorageClass %q", provisioner, claimToClaimKey(claim), claimClass)
 		return nil
 	}
 
@@ -560,13 +785,20 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 		PersistentVolumeReclaimPolicy: v1.PersistentVolumeReclaimDelete,
 		PVName:     pvName,
 		PVC:        claim,
-		Parameters: storageClass.Parameters,
+		Parameters: parameters,
 	}
+
+	ctrl.eventRecorder.Event(claim, v1.EventTypeNormal, "Provisioning", fmt.Sprintf("External provisioner is provisioning volume for claim %q", claimToClaimKey(claim)))
 
 	volume, err = ctrl.provisioner.Provision(options)
 	if err != nil {
-		strerr := fmt.Sprintf("Failed to provision volume with StorageClass %q: %v", storageClass.Name, err)
-		glog.Errorf("Failed to provision volume for claim %q with StorageClass %q: %v", claimToClaimKey(claim), storageClass.Name, err)
+		if ierr, ok := err.(*IgnoredError); ok {
+			// Provision ignored, do nothing and hope another provisioner will provision it.
+			glog.Infof("provision of claim %q ignored: %v", claimToClaimKey(claim), ierr)
+			return nil
+		}
+		strerr := fmt.Sprintf("Failed to provision volume with StorageClass %q: %v", claimClass, err)
+		glog.Errorf("Failed to provision volume for claim %q with StorageClass %q: %v", claimToClaimKey(claim), claimClass, err)
 		ctrl.eventRecorder.Event(claim, v1.EventTypeWarning, "ProvisioningFailed", strerr)
 		return err
 	}
@@ -576,8 +808,12 @@ func (ctrl *ProvisionController) provisionClaimOperation(claim *v1.PersistentVol
 	// Set ClaimRef and the PV controller will bind and set annBoundByController for us
 	volume.Spec.ClaimRef = claimRef
 
-	setAnnotation(&volume.ObjectMeta, annDynamicallyProvisioned, ctrl.provisionerName)
-	setAnnotation(&volume.ObjectMeta, annClass, claimClass)
+	metav1.SetMetaDataAnnotation(&volume.ObjectMeta, annDynamicallyProvisioned, ctrl.provisionerName)
+	if ctrl.kubeVersion.AtLeast(utilversion.MustParseSemantic("v1.6.0")) {
+		volume.Spec.StorageClassName = claimClass
+	} else {
+		metav1.SetMetaDataAnnotation(&volume.ObjectMeta, annClass, claimClass)
+	}
 
 	// Try to create the PV object several times
 	for i := 0; i < ctrl.createProvisionedPVRetryCount; i++ {
@@ -694,7 +930,7 @@ func (ctrl *ProvisionController) watchProvisioning(claim *v1.PersistentVolumeCla
 // watchPVC returns a watch on the given PVC and ProvisioningFailed &
 // ProvisioningSucceeded events involving it
 func (ctrl *ProvisionController) watchPVC(claim *v1.PersistentVolumeClaim, stopChannel chan struct{}) (<-chan watch.Event, error) {
-	options := meta_v1.ListOptions{
+	options := metav1.ListOptions{
 		FieldSelector:   "metadata.name=" + claim.Name,
 		Watch:           true,
 		ResourceVersion: claim.ResourceVersion,
@@ -762,7 +998,7 @@ func (ctrl *ProvisionController) getPVCEventWatch(claim *v1.PersistentVolumeClai
 	claimUID := string(claim.UID)
 	fieldSelector := ctrl.client.Core().Events(claim.Namespace).GetFieldSelector(&claim.Name, &claim.Namespace, &claimKind, &claimUID).String() + ",type=" + eventType + ",reason=" + reason
 
-	list, err := ctrl.client.Core().Events(claim.Namespace).List(meta_v1.ListOptions{
+	list, err := ctrl.client.Core().Events(claim.Namespace).List(metav1.ListOptions{
 		FieldSelector: fieldSelector,
 	})
 	if err != nil {
@@ -774,7 +1010,7 @@ func (ctrl *ProvisionController) getPVCEventWatch(claim *v1.PersistentVolumeClai
 		resourceVersion = list.Items[len(list.Items)-1].ResourceVersion
 	}
 
-	return ctrl.client.Core().Events(claim.Namespace).Watch(meta_v1.ListOptions{
+	return ctrl.client.Core().Events(claim.Namespace).Watch(metav1.ListOptions{
 		FieldSelector:   fieldSelector,
 		Watch:           true,
 		ResourceVersion: resourceVersion,
@@ -788,7 +1024,7 @@ func (ctrl *ProvisionController) deleteVolumeOperation(volume *v1.PersistentVolu
 	// Our check does not have to be as sophisticated as PV controller's, we can
 	// trust that the PV controller has set the PV to Released/Failed and it's
 	// ours to delete
-	newVolume, err := ctrl.client.Core().PersistentVolumes().Get(volume.Name, meta_v1.GetOptions{})
+	newVolume, err := ctrl.client.Core().PersistentVolumes().Get(volume.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -797,7 +1033,8 @@ func (ctrl *ProvisionController) deleteVolumeOperation(volume *v1.PersistentVolu
 		return nil
 	}
 
-	if err := ctrl.provisioner.Delete(volume); err != nil {
+	err = ctrl.provisioner.Delete(volume)
+	if err != nil {
 		if ierr, ok := err.(*IgnoredError); ok {
 			// Delete ignored, do nothing and hope another provisioner will delete it.
 			glog.Infof("deletion of volume %q ignored: %v", volume.Name, ierr)
@@ -845,56 +1082,25 @@ func (ctrl *ProvisionController) scheduleOperation(operationName string, operati
 	}
 }
 
-func (ctrl *ProvisionController) getStorageClass(name string) (*storage_v1.StorageClass, error) {
+func (ctrl *ProvisionController) getStorageClassFields(name string) (string, map[string]string, error) {
 	classObj, found, err := ctrl.classes.GetByKey(name)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting StorageClass %q: %v", name, err)
+		return "", nil, err
 	}
 	if !found {
-		return nil, fmt.Errorf("StorageClass %q not found", name)
+		return "", nil, fmt.Errorf("StorageClass %q not found", name)
 		// 3. It tries to find a StorageClass instance referenced by annotation
 		//    `claim.Annotations["volume.beta.kubernetes.io/storage-class"]`. If not
 		//    found, it SHOULD report an error (by sending an event to the claim) and it
 		//    SHOULD retry periodically with step i.
 	}
-	storageClass, ok := classObj.(*storage_v1.StorageClass)
-	if !ok {
-		return nil, fmt.Errorf("Cannot convert object to StorageClass: %+v", classObj)
+	switch class := classObj.(type) {
+	case *storage.StorageClass:
+		return class.Provisioner, class.Parameters, nil
+	case *storagebeta.StorageClass:
+		return class.Provisioner, class.Parameters, nil
 	}
-	if storageClass.Provisioner != ctrl.provisionerName {
-		// class.Provisioner has either changed since shouldProvision() or
-		// annDynamicallyProvisioned contains different provisioner than
-		// class.Provisioner.
-		return nil, fmt.Errorf("Unknown provisioner %q requested in storage class %q", storageClass.Provisioner, name)
-	}
-	return storageClass, nil
-}
-
-func hasAnnotation(obj meta_v1.ObjectMeta, ann string) bool {
-	_, found := obj.Annotations[ann]
-	return found
-}
-
-func setAnnotation(obj *meta_v1.ObjectMeta, ann string, value string) {
-	if obj.Annotations == nil {
-		obj.Annotations = make(map[string]string)
-	}
-	obj.Annotations[ann] = value
-}
-
-// getClaimClass returns name of class that is requested by given claim.
-// Request for `nil` class is interpreted as request for class "",
-// i.e. for a classless PV.
-func getClaimClass(claim *v1.PersistentVolumeClaim) string {
-	if class, found := claim.Annotations[annClass]; found {
-		return class
-	}
-
-	if claim.Spec.StorageClassName != nil {
-		return *claim.Spec.StorageClassName
-	}
-
-	return ""
+	return "", nil, fmt.Errorf("Cannot convert object to StorageClass: %+v", classObj)
 }
 
 func claimToClaimKey(claim *v1.PersistentVolumeClaim) string {

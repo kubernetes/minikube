@@ -1,12 +1,9 @@
 /*
 Copyright 2016 The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +14,12 @@ limitations under the License.
 package resourcelock
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 )
 
 const (
+	// LeaderElectionRecordAnnotationKey is the annotation key for records
 	LeaderElectionRecordAnnotationKey = "control-plane.alpha.kubernetes.io/leader"
 )
 
@@ -30,16 +28,16 @@ const (
 // with a random string (e.g. UUID) with only slight modification of this code.
 // TODO(mikedanese): this should potentially be versioned
 type LeaderElectionRecord struct {
-	HolderIdentity       string  `json:"holderIdentity"`
-	LeaseDurationSeconds int     `json:"leaseDurationSeconds"`
-	AcquireTime          v1.Time `json:"acquireTime"`
-	RenewTime            v1.Time `json:"renewTime"`
-	LeaderTransitions    int     `json:"leaderTransitions"`
+	HolderIdentity       string      `json:"holderIdentity"`
+	LeaseDurationSeconds int         `json:"leaseDurationSeconds"`
+	AcquireTime          metav1.Time `json:"acquireTime"`
+	RenewTime            metav1.Time `json:"renewTime"`
+	LeaderTransitions    int         `json:"leaderTransitions"`
 }
 
-// ResourceLockConfig common data that exists across different
+// Config common data that exists across different
 // resource locks
-type ResourceLockConfig struct {
+type Config struct {
 	Identity      string
 	EventRecorder record.EventRecorder
 }

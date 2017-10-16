@@ -31,9 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
+	"k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 
 	"github.com/golang/glog"
 	"k8s.io/client-go/tools/cache"
@@ -91,7 +91,7 @@ func NewPodStore(c kubernetes.Interface, namespace string, label labels.Selector
 	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
 	stopCh := make(chan struct{})
 	reflector := cache.NewReflector(lw, &v1.Pod{}, store, 0)
-	reflector.RunUntil(stopCh)
+	go reflector.Run(stopCh)
 	return &PodStore{Store: store, stopCh: stopCh, Reflector: reflector}
 }
 

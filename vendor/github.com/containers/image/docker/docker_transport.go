@@ -130,12 +130,10 @@ func (ref dockerReference) NewImage(ctx *types.SystemContext) (types.Image, erro
 	return newImage(ctx, ref)
 }
 
-// NewImageSource returns a types.ImageSource for this reference,
-// asking the backend to use a manifest from requestedManifestMIMETypes if possible.
-// nil requestedManifestMIMETypes means manifest.DefaultRequestedManifestMIMETypes.
+// NewImageSource returns a types.ImageSource for this reference.
 // The caller must call .Close() on the returned ImageSource.
-func (ref dockerReference) NewImageSource(ctx *types.SystemContext, requestedManifestMIMETypes []string) (types.ImageSource, error) {
-	return newImageSource(ctx, ref, requestedManifestMIMETypes)
+func (ref dockerReference) NewImageSource(ctx *types.SystemContext) (types.ImageSource, error) {
+	return newImageSource(ctx, ref)
 }
 
 // NewImageDestination returns a types.ImageDestination for this reference.

@@ -33,14 +33,24 @@ type Interface interface {
 	AllocateNext() (net.IP, error)
 	Release(net.IP) error
 	ForEach(func(net.IP))
+
+	// For testing
+	Has(ip net.IP) bool
 }
 
 var (
 	ErrFull              = errors.New("range is full")
-	ErrNotInRange        = errors.New("provided IP is not in the valid range")
 	ErrAllocated         = errors.New("provided IP is already allocated")
 	ErrMismatchedNetwork = errors.New("the provided network does not match the current range")
 )
+
+type ErrNotInRange struct {
+	ValidRange string
+}
+
+func (e *ErrNotInRange) Error() string {
+	return fmt.Sprintf("provided IP is not in the valid range. The range of valid IPs is %s", e.ValidRange)
+}
 
 // Range is a contiguous block of IPs that can be allocated atomically.
 //
@@ -132,7 +142,7 @@ func (r *Range) CIDR() net.IPNet {
 func (r *Range) Allocate(ip net.IP) error {
 	ok, offset := r.contains(ip)
 	if !ok {
-		return ErrNotInRange
+		return &ErrNotInRange{r.net.String()}
 	}
 
 	allocated, err := r.alloc.Allocate(offset)
