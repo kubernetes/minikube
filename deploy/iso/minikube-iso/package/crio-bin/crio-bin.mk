@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = 41372dba703fbf960ef21795d29489956155f903
+CRIO_BIN_VERSION = v1.0.0
 CRIO_BIN_SITE = https://github.com/kubernetes-incubator/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = libgpgme
@@ -59,7 +59,7 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/containers/policy.json
 
 	mkdir -p $(TARGET_DIR)/etc/sysconfig
-	echo 'CRIO_OPTIONS="--storage-driver=overlay2 --debug"' > $(TARGET_DIR)/etc/sysconfig/crio
+	echo 'CRIO_OPTIONS="--storage-driver=overlay2 --log-level=debug"' > $(TARGET_DIR)/etc/sysconfig/crio
 endef
 
 define CRIO_BIN_INSTALL_INIT_SYSTEMD
