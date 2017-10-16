@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/docker/distribution/uuid"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 // Common errors used with this package.
@@ -103,20 +103,22 @@ func GetRequestID(ctx Context) string {
 // WithResponseWriter returns a new context and response writer that makes
 // interesting response statistics available within the context.
 func WithResponseWriter(ctx Context, w http.ResponseWriter) (Context, http.ResponseWriter) {
-	irw := instrumentedResponseWriter{
-		ResponseWriter: w,
-		Context:        ctx,
-	}
-
 	if closeNotifier, ok := w.(http.CloseNotifier); ok {
 		irwCN := &instrumentedResponseWriterCN{
-			instrumentedResponseWriter: irw,
-			CloseNotifier:              closeNotifier,
+			instrumentedResponseWriter: instrumentedResponseWriter{
+				ResponseWriter: w,
+				Context:        ctx,
+			},
+			CloseNotifier: closeNotifier,
 		}
 
 		return irwCN, irwCN
 	}
 
+	irw := instrumentedResponseWriter{
+		ResponseWriter: w,
+		Context:        ctx,
+	}
 	return &irw, &irw
 }
 

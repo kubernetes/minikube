@@ -26,14 +26,14 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
 	"k8s.io/kubernetes/pkg/kubelet/volumemanager/cache"
-	"k8s.io/kubernetes/pkg/util"
+	utilfile "k8s.io/kubernetes/pkg/util/file"
 	"k8s.io/kubernetes/pkg/util/goroutinemap/exponentialbackoff"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
@@ -448,6 +448,19 @@ func (rc *reconciler) reconstructVolume(volume podVolume) (*reconstructedVolume,
 		uniqueVolumeName = volumehelper.GetUniqueVolumeNameForNonAttachableVolume(volume.podName, plugin, volumeSpec)
 	}
 
+	if attachablePlugin != nil {
+		if isNotMount, mountCheckErr := rc.mounter.IsLikelyNotMountPoint(volume.mountPath); mountCheckErr != nil {
+			return nil, fmt.Errorf("Could not check whether the volume %q (spec.Name: %q) pod %q (UID: %q) is mounted with: %v",
+				uniqueVolumeName,
+				volumeSpec.Name(),
+				volume.podName,
+				pod.UID,
+				mountCheckErr)
+		} else if isNotMount {
+			return nil, fmt.Errorf("Volume: %q is not mounted", uniqueVolumeName)
+		}
+	}
+
 	volumeMounter, newMounterErr := plugin.NewMounter(
 		volumeSpec,
 		pod,
@@ -531,7 +544,9 @@ func (rc *reconciler) updateStates(volumesNeedUpdate map[v1.UniqueVolumeName]*re
 				glog.Errorf("Could not mark device is mounted to actual state of world: %v", err)
 				continue
 			}
+			glog.Infof("Volume: %v is mounted", volume.volumeName)
 		}
+
 		_, err = rc.desiredStateOfWorld.AddPodToVolume(volume.podName,
 			volume.pod,
 			volume.volumeSpec,
@@ -569,7 +584,7 @@ func getVolumesFromPodDir(podDir string) ([]podVolume, error) {
 			pluginName := volumeDir.Name()
 			volumePluginPath := path.Join(volumesDir, pluginName)
 
-			volumePluginDirs, err := util.ReadDirNoStat(volumePluginPath)
+			volumePluginDirs, err := utilfile.ReadDirNoStat(volumePluginPath)
 			if err != nil {
 				glog.Errorf("Could not read volume plugin directory %q: %v", volumePluginPath, err)
 				continue

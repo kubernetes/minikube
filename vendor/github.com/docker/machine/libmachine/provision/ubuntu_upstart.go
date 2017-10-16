@@ -76,7 +76,7 @@ func (provisioner *UbuntuProvisioner) Package(name string, action pkgaction.Pack
 	switch action {
 	case pkgaction.Install, pkgaction.Upgrade:
 		packageAction = "install"
-	case pkgaction.Remove:
+	case pkgaction.Remove, pkgaction.Purge:
 		packageAction = "remove"
 		updateMetadata = false
 	}

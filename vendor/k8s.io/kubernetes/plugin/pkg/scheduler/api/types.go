@@ -19,10 +19,10 @@ package api
 import (
 	"time"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	restclient "k8s.io/client-go/rest"
-	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 const (
@@ -32,6 +32,8 @@ const (
 	MaxPriority      = 10
 	MaxWeight        = MaxInt / MaxPriority
 )
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 type Policy struct {
 	metav1.TypeMeta

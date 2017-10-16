@@ -58,8 +58,6 @@ const (
 	optionKeyPodUID       = "kubernetes.io/pod.uid"
 
 	optionKeyServiceAccountName = "kubernetes.io/serviceAccount.name"
-
-	attachCapability = "attach"
 )
 
 const (
@@ -144,7 +142,7 @@ func (dc *DriverCall) Run() (*DriverStatus, error) {
 		if isCmdNotSupportedErr(err) {
 			dc.plugin.unsupported(dc.Command)
 		} else {
-			glog.Warningf("FlexVolume: driver call failed: executable: %s, args: %s, error: %s, output: %s", execPath, dc.args, execErr.Error(), output)
+			glog.Warningf("FlexVolume: driver call failed: executable: %s, args: %s, error: %s, output: %q", execPath, dc.args, execErr.Error(), output)
 		}
 		return nil, err
 	}
@@ -204,7 +202,19 @@ type DriverStatus struct {
 	// Returns capabilities of the driver.
 	// By default we assume all the capabilities are supported.
 	// If the plugin does not support a capability, it can return false for that capability.
-	Capabilities map[string]bool
+	Capabilities *DriverCapabilities `json:",omitempty"`
+}
+
+type DriverCapabilities struct {
+	Attach         bool `json:"attach"`
+	SELinuxRelabel bool `json:"selinuxRelabel"`
+}
+
+func defaultCapabilities() *DriverCapabilities {
+	return &DriverCapabilities{
+		Attach:         true,
+		SELinuxRelabel: true,
+	}
 }
 
 // isCmdNotSupportedErr checks if the error corresponds to command not supported by
@@ -220,9 +230,11 @@ func isCmdNotSupportedErr(err error) bool {
 // handleCmdResponse processes the command output and returns the appropriate
 // error code or message.
 func handleCmdResponse(cmd string, output []byte) (*DriverStatus, error) {
-	var status DriverStatus
+	status := DriverStatus{
+		Capabilities: defaultCapabilities(),
+	}
 	if err := json.Unmarshal(output, &status); err != nil {
-		glog.Errorf("Failed to unmarshal output for command: %s, output: %s, error: %s", cmd, string(output), err.Error())
+		glog.Errorf("Failed to unmarshal output for command: %s, output: %q, error: %s", cmd, string(output), err.Error())
 		return nil, err
 	} else if status.Status == StatusNotSupported {
 		glog.V(5).Infof("%s command is not supported by the driver", cmd)

@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -33,8 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/kubernetes/pkg/api/v1"
-	v1clientset "k8s.io/kubernetes/pkg/client/clientset_generated/clientset/typed/core/v1"
+	v1clientset "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 // Interface to delete a namespace with all resources in it.
@@ -329,7 +329,7 @@ func (d *namespacedResourcesDeleter) finalizeNamespace(namespace *v1.Namespace) 
 // it returns true if the operation was supported on the server.
 // it returns an error if the operation was supported on the server but was unable to complete.
 func (d *namespacedResourcesDeleter) deleteCollection(
-	dynamicClient *dynamic.Client, gvr schema.GroupVersionResource,
+	dynamicClient dynamic.Interface, gvr schema.GroupVersionResource,
 	namespace string) (bool, error) {
 	glog.V(5).Infof("namespace controller - deleteCollection - namespace: %s, gvr: %v", namespace, gvr)
 
@@ -374,7 +374,7 @@ func (d *namespacedResourcesDeleter) deleteCollection(
 //  a boolean if the operation is supported
 //  an error if the operation is supported but could not be completed.
 func (d *namespacedResourcesDeleter) listCollection(
-	dynamicClient *dynamic.Client, gvr schema.GroupVersionResource, namespace string) (*unstructured.UnstructuredList, bool, error) {
+	dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, namespace string) (*unstructured.UnstructuredList, bool, error) {
 	glog.V(5).Infof("namespace controller - listCollection - namespace: %s, gvr: %v", namespace, gvr)
 
 	key := operationKey{operation: operationList, gvr: gvr}
@@ -410,7 +410,7 @@ func (d *namespacedResourcesDeleter) listCollection(
 
 // deleteEachItem is a helper function that will list the collection of resources and delete each item 1 by 1.
 func (d *namespacedResourcesDeleter) deleteEachItem(
-	dynamicClient *dynamic.Client, gvr schema.GroupVersionResource, namespace string) error {
+	dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, namespace string) error {
 	glog.V(5).Infof("namespace controller - deleteEachItem - namespace: %s, gvr: %v", namespace, gvr)
 
 	unstructuredList, listSupported, err := d.listCollection(dynamicClient, gvr, namespace)

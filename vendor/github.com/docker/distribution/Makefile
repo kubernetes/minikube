@@ -13,7 +13,7 @@ endif
 
 GO_LDFLAGS=-ldflags "-X `go list ./version`.Version=$(VERSION)"
 
-.PHONY: clean all fmt vet lint build test binaries
+.PHONY: all build binaries clean dep-restore dep-save dep-validate fmt lint test test-full vet
 .DEFAULT: all
 all: fmt vet lint build test binaries
 
@@ -27,22 +27,25 @@ version/version.go:
 # Required for go 1.5 to build
 GO15VENDOREXPERIMENT := 1
 
+# Go files
+GOFILES=$(shell find . -type f -name '*.go')
+
 # Package list
-PKGS := $(shell go list -tags "${DOCKER_BUILDTAGS}" ./... | grep -v ^github.com/docker/distribution/vendor/)
+PKGS=$(shell go list -tags "${DOCKER_BUILDTAGS}" ./... | grep -v ^github.com/docker/distribution/vendor/)
 
 # Resolving binary dependencies for specific targets
-GOLINT := $(shell which golint || echo '')
-GODEP := $(shell which godep || echo '')
+GOLINT=$(shell which golint || echo '')
+VNDR=$(shell which vndr || echo '')
 
-${PREFIX}/bin/registry: $(wildcard **/*.go)
+${PREFIX}/bin/registry: $(GOFILES)
 	@echo "+ $@"
 	@go build -tags "${DOCKER_BUILDTAGS}" -o $@ ${GO_LDFLAGS}  ${GO_GCFLAGS} ./cmd/registry
 
-${PREFIX}/bin/digest:  $(wildcard **/*.go)
+${PREFIX}/bin/digest:  $(GOFILES)
 	@echo "+ $@"
 	@go build -tags "${DOCKER_BUILDTAGS}" -o $@ ${GO_LDFLAGS}  ${GO_GCFLAGS} ./cmd/digest
 
-${PREFIX}/bin/registry-api-descriptor-template: $(wildcard **/*.go)
+${PREFIX}/bin/registry-api-descriptor-template: $(GOFILES)
 	@echo "+ $@"
 	@go build -o $@ ${GO_LDFLAGS} ${GO_GCFLAGS} ./cmd/registry-api-descriptor-template
 
@@ -83,24 +86,14 @@ clean:
 	@echo "+ $@"
 	@rm -rf "${PREFIX}/bin/registry" "${PREFIX}/bin/digest" "${PREFIX}/bin/registry-api-descriptor-template"
 
-dep-save:
+dep-validate:
 	@echo "+ $@"
-	$(if $(GODEP), , \
-		$(error Please install godep: go get github.com/tools/godep))
-	@$(GODEP) save $(PKGS)
-
-dep-restore:
-	@echo "+ $@"
-	$(if $(GODEP), , \
-		$(error Please install godep: go get github.com/tools/godep))
-	@$(GODEP) restore -v
-
-dep-validate: dep-restore
-	@echo "+ $@"
+	$(if $(VNDR), , \
+		$(error Please install vndr: go get github.com/lk4d4/vndr))
 	@rm -Rf .vendor.bak
 	@mv vendor .vendor.bak
-	@rm -Rf Godeps
-	@$(GODEP) save ./...
+	@$(VNDR)
 	@test -z "$$(diff -r vendor .vendor.bak 2>&1 | tee /dev/stderr)" || \
-		(echo >&2 "+ borked dependencies! what you have in Godeps/Godeps.json does not match with what you have in vendor" && false)
-	@rm -Rf .vendor.bak
+		(echo >&2 "+ inconsistent dependencies! what you have in vendor.conf does not match with what you have in vendor" && false)
+	@rm -Rf vendor
+	@mv .vendor.bak vendor

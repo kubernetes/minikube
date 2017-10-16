@@ -19,7 +19,7 @@ package controller
 import (
 	"fmt"
 
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/api/core/v1"
 )
 
 // Provisioner is an interface that creates templates for PersistentVolumes

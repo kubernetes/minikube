@@ -23,13 +23,13 @@ import (
 	"os/exec"
 	"time"
 
-	dockertypes "github.com/docker/engine-api/types"
+	dockertypes "github.com/docker/docker/api/types"
 	"github.com/golang/glog"
 
 	"k8s.io/client-go/tools/remotecommand"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
-	utilexec "k8s.io/kubernetes/pkg/util/exec"
 	"k8s.io/kubernetes/pkg/util/term"
+	utilexec "k8s.io/utils/exec"
 
 	"k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker"
 )
@@ -166,7 +166,7 @@ func (*NativeExecHandler) ExecInContainer(client libdocker.Interface, container 
 		}
 
 		kubecontainer.HandleResizing(resize, func(size remotecommand.TerminalSize) {
-			client.ResizeExecTTY(execObj.ID, int(size.Height), int(size.Width))
+			client.ResizeExecTTY(execObj.ID, uint(size.Height), uint(size.Width))
 		})
 	}()
 

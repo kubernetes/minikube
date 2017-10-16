@@ -8,9 +8,9 @@ package signature
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/containers/image/types"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // PolicyRequirementError is an explanatory text for rejecting a signature or an image.
