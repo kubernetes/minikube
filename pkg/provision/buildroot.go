@@ -123,7 +123,9 @@ WantedBy=multi-user.target
 		EngineOptions: p.EngineOptions,
 	}
 
-	t.Execute(&engineCfg, engineConfigContext)
+	if err := t.Execute(&engineCfg, engineConfigContext); err != nil {
+		return nil, err
+	}
 
 	return &provision.DockerOptions{
 		EngineOptions:     engineCfg.String(),
@@ -149,17 +151,21 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	log.Debugf("set auth options %+v", p.AuthOptions)
 
 	log.Debugf("setting up certificates")
-
 	configureAuth := func() error {
 		if err := configureAuth(p); err != nil {
 			return &util.RetriableError{Err: err}
 		}
 		return nil
 	}
-
 	err := util.RetryAfter(5, configureAuth, time.Second*10)
 	if err != nil {
 		log.Debugf("Error configuring auth during provisioning %v", err)
+		return err
+	}
+
+	log.Debugf("setting minikube options for container-runtime")
+	if err := setMinikubeOptions(p); err != nil {
+		log.Debugf("Error setting container-runtime options during provisioning %v", err)
 		return err
 	}
 
@@ -177,6 +183,33 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 	authOptions.ServerKeyRemotePath = path.Join(dockerDir, "server-key.pem")
 
 	return authOptions
+}
+
+func setMinikubeOptions(p *BuildrootProvisioner) error {
+	// pass through --insecure-registry
+	var (
+		crioOptsTmpl = `
+CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}'
+`
+		crioOptsPath = "/etc/sysconfig/crio.minikube"
+	)
+	t, err := template.New("crioOpts").Parse(crioOptsTmpl)
+	if err != nil {
+		return err
+	}
+	var crioOptsBuf bytes.Buffer
+	if err := t.Execute(&crioOptsBuf, p); err != nil {
+		return err
+	}
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
+		return err
+	}
+
+	if err := p.Service("crio", serviceaction.Restart); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func configureAuth(p *BuildrootProvisioner) error {
