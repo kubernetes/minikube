@@ -36,8 +36,8 @@ type AddonListTemplate struct {
 
 var addonsListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Lists all available minikube addons as well as there current status (enabled/disabled)",
-	Long:  "Lists all available minikube addons as well as there current status (enabled/disabled)",
+	Short: "Lists all available minikube addons as well as their current statuses (enabled/disabled)",
+	Long:  "Lists all available minikube addons as well as their current statuses (enabled/disabled)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
 			fmt.Fprintln(os.Stderr, "usage: minikube addons list")
