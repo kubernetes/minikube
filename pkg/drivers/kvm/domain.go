@@ -18,7 +18,9 @@ package kvm
 
 import (
 	"bytes"
+	"crypto/rand"
 	"fmt"
+	"net"
 	"text/template"
 
 	libvirt "github.com/libvirt/libvirt-go"
@@ -54,10 +56,12 @@ const domainTmpl = `
     </disk>
     <interface type='network'>
       <source network='{{.Network}}'/>
+      <mac address='{{.MAC}}'/>
       <model type='virtio'/>
     </interface>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
+      <mac address='{{.MAC}}'/>
       <model type='virtio'/>
     </interface>
     <serial type='pty'>
@@ -98,6 +102,25 @@ $ newgrp libvirt
 
 Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver for more information.
 `
+
+func randomMAC() (net.HardwareAddr, error) {
+	buf := make([]byte, 6)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+	// We unset the first and second least significant bits (LSB) of the MAC
+	//
+	// The LSB of the first octet
+	// 0 for unicast
+	// 1 for multicast
+	//
+	// The second LSB of the first octet
+	// 0 for universally administered addresses
+	// 1 for locally administered addresses
+	buf[0] = buf[0] & 0xfc
+	return buf, nil
+}
 
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 	conn, err := getConnection()
