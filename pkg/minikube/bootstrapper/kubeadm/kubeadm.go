@@ -302,23 +302,6 @@ sudo systemctl start kubelet
 	return nil
 }
 
-func parseFeatureGates(featureGates string) (map[string]string, error) {
-	if featureGates == "" {
-		return nil, nil
-	}
-	fgMap := map[string]string{}
-	fg := strings.Split(featureGates, ",")
-	for _, f := range fg {
-		kv := strings.SplitN(f, "=", 2)
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("Invalid feature gate format: %s", f)
-		}
-		fgMap[kv[0]] = kv[1]
-	}
-
-	return fgMap, nil
-}
-
 func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {

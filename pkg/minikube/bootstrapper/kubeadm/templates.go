@@ -40,30 +40,14 @@ nodeName: {{.NodeName}}
   {{$val}}{{end}}
 {{end}}`))
 
-var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Funcs(template.FuncMap{
-	"installWants": installWants,
-}).Parse(`
+var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Service]
 ExecStart=
 ExecStart=/usr/bin/kubelet {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
 
 [Install]
-{{installWants .ContainerRuntime}}
+{{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else}}Wants=docker.socket{{end}}
 `))
-
-func installWants(containerRuntime string) string {
-	var wants string
-	switch containerRuntime {
-	case "":
-		wants = "docker.socket"
-	case "cri-o", "cri":
-		wants = "crio.service"
-	}
-	if wants != "" {
-		return fmt.Sprintf("Wants=%s", wants)
-	}
-	return ""
-}
 
 const kubeletService = `
 [Unit]
