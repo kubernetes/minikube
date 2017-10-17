@@ -151,11 +151,6 @@ const (
 )
 
 func GetKubernetesReleaseURL(binaryName, version string) string {
-	// TODO(r2d4): change this to official releases when the alpha controlplane commands are released.
-	// We are working with unreleased kubeadm changes at HEAD.
-	if binaryName == "kubeadm" {
-		return "https://storage.googleapis.com/minikube/kubeadm/kubeadm"
-	}
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
 }
 

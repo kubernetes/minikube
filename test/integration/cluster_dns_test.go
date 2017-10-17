@@ -65,7 +65,7 @@ func testClusterDNS(t *testing.T) {
 		t.Fatalf("running nslookup in pod:%s", err)
 	}
 	dnsOutput := string(dnsByteArr)
-	if !strings.Contains(dnsOutput, "10.0.0.1") || !strings.Contains(dnsOutput, "10.0.0.10") {
-		t.Errorf("DNS lookup failed, could not find both 10.0.0.1 and 10.0.0.10.  Output: %s", dnsOutput)
+	if !strings.Contains(dnsOutput, "Server") || !strings.Contains(dnsOutput, "Address 1") {
+		t.Errorf("DNS lookup failed, could not find dns server.  Output: %s", dnsOutput)
 	}
 }
