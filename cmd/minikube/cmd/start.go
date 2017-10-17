@@ -86,6 +86,10 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
+	if glog.V(8) {
+		glog.Infoln("Viper configuration:")
+		viper.Debug()
+	}
 	shouldCacheImages := viper.GetBool(cacheImages)
 	k8sVersion := viper.GetString(kubernetesVersion)
 	clusterBootstrapper := viper.GetString(cmdcfg.Bootstrapper)

@@ -61,10 +61,13 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		return nil, errors.Wrapf(err, "Error checking if host exists: %s", cfg.GetMachineName())
 	}
 	if !exists {
+		glog.Infoln("Machine does not exist... provisioning new machine")
+		glog.Infof("Provisioning machine with config: %+v", config)
 		return createHost(api, config)
+	} else {
+		glog.Infoln("Skipping create...Using existing machine configuration")
 	}
 
-	glog.Infoln("Machine exists!")
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
