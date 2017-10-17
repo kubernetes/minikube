@@ -17,7 +17,6 @@ limitations under the License.
 package kubeadm
 
 import (
-	"reflect"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -229,57 +228,6 @@ schedulerExtraArgs:
 			if actualCfg != test.expectedCfg {
 				t.Errorf("actual config does not match expected.  actual:\n%sexpected:\n%s", actualCfg, test.expectedCfg)
 				return
-			}
-		})
-	}
-}
-
-func TestParseFeatureGates(t *testing.T) {
-	tests := []struct {
-		description string
-		fg          string
-		expected    map[string]string
-		shouldErr   bool
-	}{
-		{
-			description: "no feature gates",
-		},
-		{
-			description: "one feature gate",
-			fg:          "AppArmor=true",
-			expected: map[string]string{
-				"AppArmor": "true",
-			},
-		},
-		{
-			description: "two feature gates",
-			fg:          "AppArmor=true,HugePages=true",
-			expected: map[string]string{
-				"AppArmor":  "true",
-				"HugePages": "true",
-			},
-		},
-		{
-			description: "missing value pair",
-			fg:          "AppArmor=true,HugePages",
-			shouldErr:   true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			actual, err := parseFeatureGates(test.fg)
-			t.Logf("%+v", actual)
-			if err == nil && test.shouldErr {
-				t.Errorf("Expected error but got none: fg: %v", actual)
-				return
-			}
-			if err != nil && !test.shouldErr {
-				t.Errorf("Unexpected error: %s", err)
-				return
-			}
-			if !reflect.DeepEqual(actual, test.expected) {
-				t.Errorf("Actual not equal expected: Actual: %v Expected: %v", actual, test.expected)
 			}
 		})
 	}
