@@ -18,4 +18,4 @@ limitations under the License.
 // +k8s:openapi-gen=false
 
 // +groupName=admission.k8s.io
-package v1alpha1
+package v1alpha1 // import "k8s.io/api/admission/v1alpha1"
