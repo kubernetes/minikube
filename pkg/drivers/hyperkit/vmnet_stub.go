@@ -18,8 +18,8 @@ limitations under the License.
 
 package hyperkit
 
-import "fmt"
+import "errors"
 
 func GetMACAddressFromUUID(UUID string) (string, error) {
-	return "", fmt.Error("Function not supported on CGO_ENABLED=0 binaries")
+	return "", errors.New("Function not supported on CGO_ENABLED=0 binaries")
 }
