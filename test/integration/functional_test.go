@@ -21,28 +21,27 @@ package integration
 import (
 	"strings"
 	"testing"
-
-	"k8s.io/minikube/test/integration/util"
 )
 
 func TestFunctional(t *testing.T) {
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
-
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
 	t.Run("Status", testClusterStatus)
+
 	t.Run("DNS", testClusterDNS)
 	t.Run("Logs", testClusterLogs)
 	t.Run("Addons", testAddons)
 	t.Run("Dashboard", testDashboard)
 	t.Run("ServicesList", testServicesList)
-	t.Run("Provisioning", testProvisioning)
 
-	if !strings.Contains(*args, "--vm-driver=none") {
+	// Don't run this test on kubeadm bootstrapper for now.
+	if !strings.Contains(*args, "--bootstrapper=kubeadm") {
+		t.Run("Provisioning", testProvisioning)
+	}
+
+	if !strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
 		// t.Run("Mounting", testMounting)

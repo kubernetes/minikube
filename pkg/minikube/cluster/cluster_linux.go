@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/drivers/none"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/machine/drivers/none"
 )
 
 type kvmDriver struct {
@@ -47,6 +47,7 @@ func createKVMHost(config MachineConfig) *kvmDriver {
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
 			StorePath:   constants.GetMinipath(),
+			SSHUser:     "docker",
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
@@ -54,7 +55,7 @@ func createKVMHost(config MachineConfig) *kvmDriver {
 		PrivateNetwork: "docker-machines",
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
-		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.img", cfg.GetMachineName())),
+		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
 		CacheMode:      "default",
 		IOMode:         "threads",

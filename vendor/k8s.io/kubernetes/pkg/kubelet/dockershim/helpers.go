@@ -17,30 +17,25 @@ limitations under the License.
 package dockershim
 
 import (
-	"bytes"
-	"crypto/md5"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
-	dockertypes "github.com/docker/engine-api/types"
-	dockerfilters "github.com/docker/engine-api/types/filters"
+	dockertypes "github.com/docker/docker/api/types"
+	dockercontainer "github.com/docker/docker/api/types/container"
+	dockerfilters "github.com/docker/docker/api/types/filters"
 	dockernat "github.com/docker/go-connections/nat"
 	"github.com/golang/glog"
 
-	"k8s.io/kubernetes/pkg/api/v1"
+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/kubernetes/pkg/credentialprovider"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker"
 	"k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/pkg/security/apparmor"
-
-	"k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker"
+	"k8s.io/kubernetes/pkg/util/parsers"
 )
 
 const (
@@ -128,37 +123,48 @@ func extractLabels(input map[string]string) (map[string]string, map[string]strin
 
 // generateMountBindings converts the mount list to a list of strings that
 // can be understood by docker.
-// Each element in the string is in the form of:
-// '<HostPath>:<ContainerPath>', or
-// '<HostPath>:<ContainerPath>:ro', if the path is read only, or
-// '<HostPath>:<ContainerPath>:Z', if the volume requires SELinux
-// relabeling and the pod provides an SELinux label
+// '<HostPath>:<ContainerPath>[:options]', where 'options'
+// is a comma-separated list of the following strings:
+// 'ro', if the path is read only
+// 'Z', if the volume requires SELinux relabeling
+// propagation mode such as 'rslave'
 func generateMountBindings(mounts []*runtimeapi.Mount) []string {
 	result := make([]string, 0, len(mounts))
 	for _, m := range mounts {
 		bind := fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
-		readOnly := m.Readonly
-		if readOnly {
-			bind += ":ro"
+		var attrs []string
+		if m.Readonly {
+			attrs = append(attrs, "ro")
 		}
 		// Only request relabeling if the pod provides an SELinux context. If the pod
 		// does not provide an SELinux context relabeling will label the volume with
 		// the container's randomly allocated MCS label. This would restrict access
 		// to the volume to the container which mounts it first.
 		if m.SelinuxRelabel {
-			if readOnly {
-				bind += ",Z"
-			} else {
-				bind += ":Z"
-			}
+			attrs = append(attrs, "Z")
+		}
+		switch m.Propagation {
+		case runtimeapi.MountPropagation_PROPAGATION_PRIVATE:
+			// noop, private is default
+		case runtimeapi.MountPropagation_PROPAGATION_BIDIRECTIONAL:
+			attrs = append(attrs, "rshared")
+		case runtimeapi.MountPropagation_PROPAGATION_HOST_TO_CONTAINER:
+			attrs = append(attrs, "rslave")
+		default:
+			glog.Warningf("unknown propagation mode for hostPath %q", m.HostPath)
+			// Falls back to "private"
+		}
+
+		if len(attrs) > 0 {
+			bind = fmt.Sprintf("%s:%s", bind, strings.Join(attrs, ","))
 		}
 		result = append(result, bind)
 	}
 	return result
 }
 
-func makePortsAndBindings(pm []*runtimeapi.PortMapping) (map[dockernat.Port]struct{}, map[dockernat.Port][]dockernat.PortBinding) {
-	exposedPorts := map[dockernat.Port]struct{}{}
+func makePortsAndBindings(pm []*runtimeapi.PortMapping) (dockernat.PortSet, map[dockernat.Port][]dockernat.PortBinding) {
+	exposedPorts := dockernat.PortSet{}
 	portBindings := map[dockernat.Port][]dockernat.PortBinding{}
 	for _, port := range pm {
 		exteriorPort := port.HostPort
@@ -200,59 +206,6 @@ func makePortsAndBindings(pm []*runtimeapi.PortMapping) (map[dockernat.Port]stru
 		}
 	}
 	return exposedPorts, portBindings
-}
-
-func getSeccompDockerOpts(annotations map[string]string, ctrName, profileRoot string) ([]dockerOpt, error) {
-	profile, profileOK := annotations[v1.SeccompContainerAnnotationKeyPrefix+ctrName]
-	if !profileOK {
-		// try the pod profile
-		profile, profileOK = annotations[v1.SeccompPodAnnotationKey]
-		if !profileOK {
-			// return early the default
-			return defaultSeccompOpt, nil
-		}
-	}
-
-	if profile == "unconfined" {
-		// return early the default
-		return defaultSeccompOpt, nil
-	}
-
-	if profile == "docker/default" {
-		// return nil so docker will load the default seccomp profile
-		return nil, nil
-	}
-
-	if !strings.HasPrefix(profile, "localhost/") {
-		return nil, fmt.Errorf("unknown seccomp profile option: %s", profile)
-	}
-
-	name := strings.TrimPrefix(profile, "localhost/") // by pod annotation validation, name is a valid subpath
-	fname := filepath.Join(profileRoot, filepath.FromSlash(name))
-	file, err := ioutil.ReadFile(fname)
-	if err != nil {
-		return nil, fmt.Errorf("cannot load seccomp profile %q: %v", name, err)
-	}
-
-	b := bytes.NewBuffer(nil)
-	if err := json.Compact(b, file); err != nil {
-		return nil, err
-	}
-	// Rather than the full profile, just put the filename & md5sum in the event log.
-	msg := fmt.Sprintf("%s(md5:%x)", name, md5.Sum(file))
-
-	return []dockerOpt{{"seccomp", b.String(), msg}}, nil
-}
-
-// getSeccompSecurityOpts gets container seccomp options from container and sandbox
-// config, currently from sandbox annotations.
-// It is an experimental feature and may be promoted to official runtime api in the future.
-func getSeccompSecurityOpts(containerName string, sandboxConfig *runtimeapi.PodSandboxConfig, seccompProfileRoot string, separator rune) ([]string, error) {
-	seccompOpts, err := getSeccompDockerOpts(sandboxConfig.GetAnnotations(), containerName, seccompProfileRoot)
-	if err != nil {
-		return nil, err
-	}
-	return fmtDockerOpts(seccompOpts, separator), nil
 }
 
 // getApparmorSecurityOpts gets apparmor options from container config.
@@ -338,7 +291,7 @@ func getUserFromImageUser(imageUser string) (*int64, string) {
 // In that case we have to create the container with a randomized name.
 // TODO(random-liu): Remove this work around after docker 1.11 is deprecated.
 // TODO(#33189): Monitor the tests to see if the fix is sufficient.
-func recoverFromCreationConflictIfNeeded(client libdocker.Interface, createConfig dockertypes.ContainerCreateConfig, err error) (*dockertypes.ContainerCreateResponse, error) {
+func recoverFromCreationConflictIfNeeded(client libdocker.Interface, createConfig dockertypes.ContainerCreateConfig, err error) (*dockercontainer.ContainerCreateCreatedBody, error) {
 	matches := conflictRE.FindStringSubmatch(err.Error())
 	if len(matches) != 2 {
 		return nil, err
@@ -393,11 +346,6 @@ func getSecurityOptSeparator(v *semver.Version) rune {
 
 // ensureSandboxImageExists pulls the sandbox image when it's not present.
 func ensureSandboxImageExists(client libdocker.Interface, image string) error {
-	dockerCfgSearchPath := []string{"/.docker", filepath.Join(os.Getenv("HOME"), ".docker")}
-	return ensureSandboxImageExistsDockerCfg(client, image, dockerCfgSearchPath)
-}
-
-func ensureSandboxImageExistsDockerCfg(client libdocker.Interface, image string, dockerCfgSearchPath []string) error {
 	_, err := client.InspectImageByRef(image)
 	if err == nil {
 		return nil
@@ -406,34 +354,37 @@ func ensureSandboxImageExistsDockerCfg(client libdocker.Interface, image string,
 		return fmt.Errorf("failed to inspect sandbox image %q: %v", image, err)
 	}
 
-	// To support images in private registries, try to read docker config
-	authConfig := dockertypes.AuthConfig{}
-	keyring := &credentialprovider.BasicDockerKeyring{}
-	var cfgLoadErr error
-	if cfg, err := credentialprovider.ReadDockerConfigJSONFile(dockerCfgSearchPath); err == nil {
-		keyring.Add(cfg)
-	} else if cfg, err := credentialprovider.ReadDockercfgFile(dockerCfgSearchPath); err == nil {
-		keyring.Add(cfg)
-	} else {
-		cfgLoadErr = err
-	}
-	if creds, withCredentials := keyring.Lookup(image); withCredentials {
-		// Use the first one that matched our image
-		for _, cred := range creds {
-			authConfig.Username = cred.Username
-			authConfig.Password = cred.Password
-			break
-		}
+	repoToPull, _, _, err := parsers.ParseImageName(image)
+	if err != nil {
+		return err
 	}
 
-	err = client.PullImage(image, authConfig, dockertypes.ImagePullOptions{})
-	if err != nil {
-		if cfgLoadErr != nil {
-			glog.Warningf("Couldn't load Docker cofig. If sandbox image %q is in a private registry, this will cause further errors. Error: %v", image, cfgLoadErr)
+	keyring := credentialprovider.NewDockerKeyring()
+	creds, withCredentials := keyring.Lookup(repoToPull)
+	if !withCredentials {
+		glog.V(3).Infof("Pulling image %q without credentials", image)
+
+		err := client.PullImage(image, dockertypes.AuthConfig{}, dockertypes.ImagePullOptions{})
+		if err != nil {
+			return fmt.Errorf("failed pulling image %q: %v", image, err)
 		}
-		return fmt.Errorf("unable to pull sandbox image %q: %v", image, err)
+
+		return nil
 	}
-	return nil
+
+	var pullErrs []error
+	for _, currentCreds := range creds {
+		authConfig := credentialprovider.LazyProvide(currentCreds)
+		err := client.PullImage(image, authConfig, dockertypes.ImagePullOptions{})
+		// If there was no error, return success
+		if err == nil {
+			return nil
+		}
+
+		pullErrs = append(pullErrs, err)
+	}
+
+	return utilerrors.NewAggregate(pullErrs)
 }
 
 func getAppArmorOpts(profile string) ([]dockerOpt, error) {

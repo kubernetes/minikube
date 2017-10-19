@@ -23,6 +23,15 @@
 
 set -e
 
+export BUILD_IN_DOCKER=y
+export TAG=$ghprbActualCommit
+export GOPATH=/var/lib/jenkins/go
+
+make -j 16 all
+
+# Clean up exited containers
+docker kill $(docker ps -q) || true
+
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
 # If there are ISO changes, build and upload the ISO
@@ -35,17 +44,6 @@ if out="$(git diff ${ghprbActualCommit} --name-only $(git merge-base origin/mast
 	make release-iso
 fi
 
-export GOPATH=~/go
-
-# Build all platforms (Windows, Linux, OSX)
-BUILD_IN_DOCKER=y make cross
-
-# Build the e2e test target for Darwin and Linux. We don't run tests on Windows yet.
-# We build these on Linux, but run the tests on different platforms.
-# This makes it easier to provision slaves, since they don't need to have a go toolchain.'
-GOOS=darwin GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-darwin-amd64
-GOOS=linux GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-linux-amd64
-GOOS=windows GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags=integration -o out/e2e-windows-amd64.exe
 cp -r test/integration/testdata out/
 
 # Don't upload the buildroot artifacts if they exist

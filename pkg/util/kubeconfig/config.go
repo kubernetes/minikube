@@ -110,7 +110,7 @@ func SetupKubeConfig(cfg *KubeConfigSetup) error {
 
 	// write back to disk
 	if err := WriteConfig(config, cfg.GetKubeConfigFile()); err != nil {
-		return err
+		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil
 }

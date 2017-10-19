@@ -158,7 +158,7 @@ func TestKubectlDownloadMsg(t *testing.T) {
 				t.Errorf("Got output, but kubectl binary was found")
 			}
 			if !strings.Contains(actual, test.matches) {
-				t.Errorf("Output did not contain substring expected got output %s")
+				t.Errorf("Output did not contain substring expected got output %s", actual)
 			}
 		})
 	}

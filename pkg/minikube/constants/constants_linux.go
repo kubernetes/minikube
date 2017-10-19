@@ -25,6 +25,7 @@ import (
 var SupportedVMDrivers = [...]string{
 	"virtualbox",
 	"kvm",
+	"kvm2",
 	"none",
 }
 

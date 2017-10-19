@@ -1,0 +1,31 @@
+diff --git a/vendor/k8s.io/apiserver/pkg/endpoints/openapi/openapi.go b/vendor/k8s.io/apiserver/pkg/endpoints/openapi/openapi.go
+index 182c51796..03725947c 100644
+--- a/vendor/k8s.io/apiserver/pkg/endpoints/openapi/openapi.go
++++ b/vendor/k8s.io/apiserver/pkg/endpoints/openapi/openapi.go
+@@ -26,11 +26,12 @@ import (
+ 	"github.com/emicklei/go-restful"
+ 	"github.com/go-openapi/spec"
+ 
++	"sort"
++
+ 	"k8s.io/apimachinery/pkg/apis/meta/v1"
+ 	"k8s.io/apimachinery/pkg/runtime"
+ 	"k8s.io/apimachinery/pkg/runtime/schema"
+ 	"k8s.io/apiserver/pkg/util/trie"
+-	"sort"
+ )
+ 
+ var verbs = trie.New([]string{"get", "log", "read", "replace", "patch", "delete", "deletecollection", "watch", "connect", "proxy", "list", "create", "patch"})
+@@ -135,7 +136,11 @@ func friendlyName(name string) string {
+ }
+ 
+ func typeName(t reflect.Type) string {
+-	return fmt.Sprintf("%s.%s", t.PkgPath(), t.Name())
++	path := t.PkgPath()
++	if strings.Contains(path, "/vendor/") {
++		path = path[strings.Index(path, "/vendor/")+len("/vendor/"):]
++	}
++	return fmt.Sprintf("%s.%s", path, t.Name())
+ }
+ 
+ // NewDefinitionNamer constructs a new DefinitionNamer to be used to customize OpenAPI spec.

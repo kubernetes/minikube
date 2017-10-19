@@ -20,8 +20,7 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"path/filepath"
-	"strconv"
+	"path"
 
 	"github.com/pkg/errors"
 )
@@ -63,6 +62,10 @@ func (b *BaseAsset) GetPermissions() string {
 
 type FileAsset struct {
 	BaseAsset
+}
+
+func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset {
+	return NewMemoryAsset(d, path.Dir(targetPath), path.Base(targetPath), permissions)
 }
 
 func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAsset, error) {
@@ -163,35 +166,4 @@ func (m *BinDataAsset) GetLength() int {
 
 func (m *BinDataAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
-}
-
-func CopyFileLocal(f CopyableFile) error {
-	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
-		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
-	}
-	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
-	if _, err := os.Stat(targetPath); err == nil {
-		if err := os.Remove(targetPath); err != nil {
-			return errors.Wrapf(err, "error removing file %s", targetPath)
-		}
-
-	}
-	target, err := os.Create(targetPath)
-	if err != nil {
-		return errors.Wrapf(err, "error creating file at %s", targetPath)
-	}
-	perms, err := strconv.Atoi(f.GetPermissions())
-	if err != nil {
-		return errors.Wrapf(err, "error converting permissions %s to integer", perms)
-	}
-	if err := target.Chmod(os.FileMode(perms)); err != nil {
-		return errors.Wrapf(err, "error changing file permissions for %s", targetPath)
-	}
-
-	if _, err = io.Copy(target, f); err != nil {
-		return errors.Wrapf(err, `error copying file %s to target location:
-do you have the correct permissions?  The none driver requires sudo for the "start" command`,
-			targetPath)
-	}
-	return target.Close()
 }

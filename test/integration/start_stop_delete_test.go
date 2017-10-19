@@ -25,16 +25,12 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func TestStartStop(t *testing.T) {
 
-	runner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
+	runner := NewMinikubeRunner(t)
 	runner.RunCommand("delete", false)
 	runner.CheckStatus(state.None.String())
 
@@ -47,16 +43,12 @@ func TestStartStop(t *testing.T) {
 		t.Fatalf("IP command returned an invalid address: %s", ip)
 	}
 
-	// TODO:r2d4 The KVM driver can't handle
-	// starting and stopping immediately
-	time.Sleep(30 * time.Second)
-
 	checkStop := func() error {
 		runner.RunCommand("stop", true)
 		return runner.CheckStatusNoFail(state.Stopped.String())
 	}
 
-	if err := commonutil.RetryAfter(6, checkStop, 5*time.Second); err != nil {
+	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 		t.Fatalf("timed out while checking stopped status: %s", err)
 	}
 

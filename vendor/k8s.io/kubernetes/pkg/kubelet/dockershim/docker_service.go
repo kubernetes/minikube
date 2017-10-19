@@ -25,14 +25,14 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	dockertypes "github.com/docker/engine-api/types"
+	dockertypes "github.com/docker/docker/api/types"
 	"github.com/golang/glog"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/apis/componentconfig"
 	internalapi "k8s.io/kubernetes/pkg/kubelet/apis/cri"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
+	"k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
 	kubecm "k8s.io/kubernetes/pkg/kubelet/cm"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/dockershim/cm"
@@ -89,7 +89,7 @@ const (
 // runtime process.
 type NetworkPluginSettings struct {
 	// HairpinMode is best described by comments surrounding the kubelet arg
-	HairpinMode componentconfig.HairpinMode
+	HairpinMode kubeletconfig.HairpinMode
 	// NonMasqueradeCIDR is the range of ips which should *not* be included
 	// in any MASQUERADE rules applied by the plugin
 	NonMasqueradeCIDR string
@@ -146,7 +146,7 @@ type dockerNetworkHost struct {
 var internalLabelKeys []string = []string{containerTypeLabelKey, containerLogPathLabelKey, sandboxIDLabelKey}
 
 // NOTE: Anything passed to DockerService should be eventually handled in another way when we switch to running the shim as a different process.
-func NewDockerService(client libdocker.Interface, seccompProfileRoot string, podSandboxImage string, streamingConfig *streaming.Config,
+func NewDockerService(client libdocker.Interface, podSandboxImage string, streamingConfig *streaming.Config,
 	pluginSettings *NetworkPluginSettings, cgroupsName string, kubeCgroupDriver string, execHandlerName, dockershimRootDir string, disableSharedPID bool) (DockerService, error) {
 	c := libdocker.NewInstrumentedInterface(client)
 	checkpointHandler, err := NewPersistentCheckpointHandler(dockershimRootDir)
@@ -165,10 +165,9 @@ func NewDockerService(client libdocker.Interface, seccompProfileRoot string, pod
 	}
 
 	ds := &dockerService{
-		seccompProfileRoot: seccompProfileRoot,
-		client:             c,
-		os:                 kubecontainer.RealOS{},
-		podSandboxImage:    podSandboxImage,
+		client:          c,
+		os:              kubecontainer.RealOS{},
+		podSandboxImage: podSandboxImage,
 		streamingRuntime: &streamingRuntime{
 			client:      client,
 			execHandler: execHandler,
@@ -244,12 +243,11 @@ type DockerService interface {
 }
 
 type dockerService struct {
-	seccompProfileRoot string
-	client             libdocker.Interface
-	os                 kubecontainer.OSInterface
-	podSandboxImage    string
-	streamingRuntime   *streamingRuntime
-	streamingServer    streaming.Server
+	client           libdocker.Interface
+	os               kubecontainer.OSInterface
+	podSandboxImage  string
+	streamingRuntime *streamingRuntime
+	streamingServer  streaming.Server
 
 	network *network.PluginManager
 	// Map of podSandboxID :: network-is-ready
@@ -455,9 +453,12 @@ func (ds *dockerService) getDockerVersionFromCache() (*dockertypes.Version, erro
 	// We only store on key in the cache.
 	const dummyKey = "version"
 	value, err := ds.versionCache.Get(dummyKey)
-	dv := value.(*dockertypes.Version)
 	if err != nil {
 		return nil, err
+	}
+	dv, ok := value.(*dockertypes.Version)
+	if !ok {
+		return nil, fmt.Errorf("Converted to *dockertype.Version error")
 	}
 	return dv, nil
 }

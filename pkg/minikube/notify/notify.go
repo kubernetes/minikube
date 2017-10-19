@@ -51,12 +51,12 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 	}
 	latestVersion, err := getLatestVersionFromURL(url)
 	if err != nil {
-		glog.Errorln(err)
+		glog.Warning(err)
 		return
 	}
 	localVersion, err := version.GetSemverVersion()
 	if err != nil {
-		glog.Errorln(err)
+		glog.Warning(err)
 		return
 	}
 	if localVersion.Compare(latestVersion) < 0 {
@@ -76,10 +76,7 @@ func shouldCheckURLVersion(filePath string) bool {
 		return false
 	}
 	lastUpdateTime := getTimeFromFileIfExists(filePath)
-	if time.Since(lastUpdateTime).Hours() < viper.GetFloat64(config.ReminderWaitPeriodInHours) {
-		return false
-	}
-	return true
+	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
 }
 
 type Release struct {

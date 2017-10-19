@@ -28,9 +28,10 @@ import (
 	"reflect"
 	"time"
 
-	rl "github.com/r2d4/external-storage/lib/leaderelection/resourcelock"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	rl "github.com/r2d4/external-storage/lib/leaderelection/resourcelock"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -38,15 +39,12 @@ import (
 )
 
 const (
-	JitterFactor         = 1.2
-	DefaultLeaseDuration = 15 * time.Second
-	DefaultRenewDeadline = 10 * time.Second
-	DefaultRetryPeriod   = 2 * time.Second
-	DefaultTermLimit     = 30 * time.Second
+	// JitterFactor is the factor to jitter the RetryPeriod by
+	JitterFactor = 1.2
 )
 
-// NewLeaderElector creates a LeaderElector from a LeaderElecitionConfig
-func NewLeaderElector(lec LeaderElectionConfig) (*LeaderElector, error) {
+// NewLeaderElector creates a LeaderElector from a Config
+func NewLeaderElector(lec Config) (*LeaderElector, error) {
 	if lec.LeaseDuration <= lec.RenewDeadline {
 		return nil, fmt.Errorf("leaseDuration must be greater than renewDeadline")
 	}
@@ -54,14 +52,15 @@ func NewLeaderElector(lec LeaderElectionConfig) (*LeaderElector, error) {
 		return nil, fmt.Errorf("renewDeadline must be greater than retryPeriod*JitterFactor")
 	}
 	if lec.Lock == nil {
-		return nil, fmt.Errorf("Lock must not be nil.")
+		return nil, fmt.Errorf("lock must not be nil")
 	}
 	return &LeaderElector{
 		config: lec,
 	}, nil
 }
 
-type LeaderElectionConfig struct {
+// Config is a configuration for leader election
+type Config struct {
 	// Lock is the resource that will be used for locking
 	Lock rl.Interface
 
@@ -107,7 +106,7 @@ type LeaderCallbacks struct {
 //  * (le *LeaderElector) IsLeader()
 //  * (le *LeaderElector) GetLeader()
 type LeaderElector struct {
-	config LeaderElectionConfig
+	config Config
 	// internal bookkeeping
 	observedRecord rl.LeaderElectionRecord
 	observedTime   time.Time
@@ -176,7 +175,7 @@ func (le *LeaderElector) acquire(task <-chan bool) bool {
 			return
 		}
 		le.config.Lock.RecordEvent("became leader")
-		glog.Infof("sucessfully acquired lease %v", desc)
+		glog.Infof("successfully acquired lease %v", desc)
 		close(stop)
 	}, le.config.RetryPeriod, JitterFactor, true, stop)
 
@@ -184,7 +183,7 @@ func (le *LeaderElector) acquire(task <-chan bool) bool {
 }
 
 // renew loops calling tryAcquireOrRenew and returns immediately when tryAcquireOrRenew fails
-// or the task has either succeeded or failed in which case leadership must be given up
+// or the task has either succeeded or failed in which case leadership must be given up.
 func (le *LeaderElector) renew(task <-chan bool, timeout <-chan bool) {
 	stop := make(chan struct{})
 	wait.Until(func() {
@@ -226,7 +225,7 @@ func (le *LeaderElector) renew(task <-chan bool, timeout <-chan bool) {
 // else it tries to renew the lease if it has already been acquired. Returns true
 // on success else returns false.
 func (le *LeaderElector) tryAcquireOrRenew() bool {
-	now := v1.Now()
+	now := metav1.Now()
 	leaderElectionRecord := rl.LeaderElectionRecord{
 		HolderIdentity:       le.config.Lock.Identity(),
 		LeaseDurationSeconds: int(le.config.LeaseDuration / time.Second),
@@ -279,12 +278,12 @@ func (le *LeaderElector) tryAcquireOrRenew() bool {
 	return true
 }
 
-func (l *LeaderElector) maybeReportTransition() {
-	if l.observedRecord.HolderIdentity == l.reportedLeader {
+func (le *LeaderElector) maybeReportTransition() {
+	if le.observedRecord.HolderIdentity == le.reportedLeader {
 		return
 	}
-	l.reportedLeader = l.observedRecord.HolderIdentity
-	if l.config.Callbacks.OnNewLeader != nil {
-		go l.config.Callbacks.OnNewLeader(l.reportedLeader)
+	le.reportedLeader = le.observedRecord.HolderIdentity
+	if le.config.Callbacks.OnNewLeader != nil {
+		go le.config.Callbacks.OnNewLeader(le.reportedLeader)
 	}
 }

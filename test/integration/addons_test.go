@@ -26,80 +26,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
-	commonutil "k8s.io/minikube/pkg/util"
-
+	"k8s.io/apimachinery/pkg/labels"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
-)
-
-var (
-	addonManagerCmd = []string{"get", "pods", "--namespace=kube-system"}
-	dashboardRcCmd  = []string{"get", "rc", "kubernetes-dashboard", "--namespace=kube-system"}
-	dashboardSvcCmd = []string{"get", "svc", "kubernetes-dashboard", "--namespace=kube-system"}
 )
 
 func testAddons(t *testing.T) {
 	t.Parallel()
-	kubectlRunner := util.NewKubectlRunner(t)
-
-	checkAddon := func() error {
-		pods := v1.PodList{}
-		if err := kubectlRunner.RunCommandParseOutput(addonManagerCmd, &pods); err != nil {
-			return &commonutil.RetriableError{Err: errors.Wrap(err, "Error parsing kubectl output")}
-		}
-
-		for _, p := range pods.Items {
-			if strings.HasPrefix(p.ObjectMeta.Name, "kube-addon-manager-") {
-				if p.Status.Phase == "Running" {
-					return nil
-				}
-				return &commonutil.RetriableError{Err: fmt.Errorf("Pod is not Running. Status: %s", p.Status.Phase)}
-			}
-		}
-
-		return &commonutil.RetriableError{Err: fmt.Errorf("Addon manager not found. Found pods: %v", pods)}
+	client, err := pkgutil.GetClient()
+	if err != nil {
+		t.Fatalf("Could not get kubernetes client: %s", err)
 	}
-
-	if err := commonutil.RetryAfter(25, checkAddon, 20*time.Second); err != nil {
-		t.Fatalf("Addon Manager pod is unhealthy: %s", err)
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
+	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		t.Errorf("Error waiting for addon manager to be up")
 	}
 }
 
 func testDashboard(t *testing.T) {
 	t.Parallel()
-	kubectlRunner := util.NewKubectlRunner(t)
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
-	checkDashboard := func() error {
-		rc := api.ReplicationController{}
-		svc := api.Service{}
-		if err := kubectlRunner.RunCommandParseOutput(dashboardRcCmd, &rc); err != nil {
-			return &commonutil.RetriableError{Err: err}
-		}
-
-		if err := kubectlRunner.RunCommandParseOutput(dashboardSvcCmd, &svc); err != nil {
-			return &commonutil.RetriableError{Err: err}
-		}
-
-		if rc.Status.Replicas != rc.Status.FullyLabeledReplicas {
-			return &commonutil.RetriableError{Err: fmt.Errorf("Not enough pods running. Expected %d, got %d.", rc.Status.Replicas, rc.Status.FullyLabeledReplicas)}
-		}
-
-		if svc.Spec.Ports[0].NodePort != 30000 {
-			return fmt.Errorf("Dashboard is exposed on wrong port, expected 30000, actual %d", svc.Spec.Ports[0].NodePort)
-		}
-
-		return nil
-	}
-
-	if err := commonutil.RetryAfter(60, checkDashboard, 5*time.Second); err != nil {
-		t.Fatalf("Dashboard is unhealthy: %s", err)
+	if err := util.WaitForDashboardRunning(t); err != nil {
+		t.Fatalf("waiting for dashboard to be up: %s", err)
 	}
 
 	dashboardURL := minikubeRunner.RunCommand("dashboard --url", true)
@@ -121,21 +70,16 @@ func testDashboard(t *testing.T) {
 
 func testServicesList(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := util.MinikubeRunner{
-		BinaryPath: *binaryPath,
-		Args:       *args,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	checkServices := func() error {
 		output := minikubeRunner.RunCommand("service list", false)
 		if !strings.Contains(output, "kubernetes") {
-			return &commonutil.RetriableError{
-				Err: fmt.Errorf("Error, kubernetes service missing from output %s", output),
-			}
+			return fmt.Errorf("Error, kubernetes service missing from output %s", output)
 		}
 		return nil
 	}
-	if err := commonutil.RetryAfter(5, checkServices, 2*time.Second); err != nil {
+	if err := util.Retry(t, checkServices, 2*time.Second, 5); err != nil {
 		t.Fatalf(err.Error())
 	}
 }

@@ -24,14 +24,14 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/wait"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	clientv1 "k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/kubernetes/pkg/api/v1"
 	v1qos "k8s.io/kubernetes/pkg/api/v1/helper/qos"
+	apiv1resource "k8s.io/kubernetes/pkg/api/v1/resource"
 	"k8s.io/kubernetes/pkg/features"
 	statsapi "k8s.io/kubernetes/pkg/kubelet/apis/stats/v1alpha1"
 	"k8s.io/kubernetes/pkg/kubelet/cm"
@@ -68,7 +68,7 @@ type managerImpl struct {
 	// captures when a node condition was last observed based on a threshold being met
 	nodeConditionsLastObservedAt nodeConditionsObservedAt
 	// nodeRef is a reference to the node
-	nodeRef *clientv1.ObjectReference
+	nodeRef *v1.ObjectReference
 	// used to record events about the node
 	recorder record.EventRecorder
 	// used to measure usage stats on system
@@ -100,7 +100,7 @@ func NewManager(
 	imageGC ImageGC,
 	containerGC ContainerGC,
 	recorder record.EventRecorder,
-	nodeRef *clientv1.ObjectReference,
+	nodeRef *v1.ObjectReference,
 	clock clock.Clock) (Manager, lifecycle.PodAdmitHandler) {
 	manager := &managerImpl{
 		clock:           clock,
@@ -148,11 +148,11 @@ func (m *managerImpl) Admit(attrs *lifecycle.PodAdmitAttributes) lifecycle.PodAd
 }
 
 // Start starts the control loop to observe and response to low compute resources.
-func (m *managerImpl) Start(diskInfoProvider DiskInfoProvider, podFunc ActivePodsFunc, podCleanedUpFunc PodCleanedUpFunc, nodeProvider NodeProvider, monitoringInterval time.Duration) {
+func (m *managerImpl) Start(diskInfoProvider DiskInfoProvider, podFunc ActivePodsFunc, podCleanedUpFunc PodCleanedUpFunc, capacityProvider CapacityProvider, monitoringInterval time.Duration) {
 	// start the eviction manager monitoring
 	go func() {
 		for {
-			if evictedPods := m.synchronize(diskInfoProvider, podFunc, nodeProvider); evictedPods != nil {
+			if evictedPods := m.synchronize(diskInfoProvider, podFunc, capacityProvider); evictedPods != nil {
 				glog.Infof("eviction manager: pods %s evicted, waiting for pod to be cleaned up", format.Pods(evictedPods))
 				m.waitForPodsCleanup(podCleanedUpFunc, evictedPods)
 			} else {
@@ -211,7 +211,7 @@ func startMemoryThresholdNotifier(thresholds []evictionapi.Threshold, observatio
 
 // synchronize is the main control loop that enforces eviction thresholds.
 // Returns the pod that was killed, or nil if no pod was killed.
-func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc ActivePodsFunc, nodeProvider NodeProvider) []*v1.Pod {
+func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc ActivePodsFunc, capacityProvider CapacityProvider) []*v1.Pod {
 	// if we have nothing to do, just return
 	thresholds := m.config.Thresholds
 	if len(thresholds) == 0 {
@@ -233,7 +233,7 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 
 	activePods := podFunc()
 	// make observations and get a function to derive pod usage stats relative to those observations.
-	observations, statsFunc, err := makeSignalObservations(m.summaryProvider, nodeProvider, activePods, *m.dedicatedImageFs)
+	observations, statsFunc, err := makeSignalObservations(m.summaryProvider, capacityProvider, activePods, *m.dedicatedImageFs)
 	if err != nil {
 		glog.Errorf("eviction manager: unexpected err: %v", err)
 		return nil
@@ -248,7 +248,7 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 		err = startMemoryThresholdNotifier(m.config.Thresholds, observations, false, func(desc string) {
 			glog.Infof("soft memory eviction threshold crossed at %s", desc)
 			// TODO wait grace period for soft memory limit
-			m.synchronize(diskInfoProvider, podFunc, nodeProvider)
+			m.synchronize(diskInfoProvider, podFunc, capacityProvider)
 		})
 		if err != nil {
 			glog.Warningf("eviction manager: failed to create hard memory threshold notifier: %v", err)
@@ -256,7 +256,7 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 		// start hard memory notification
 		err = startMemoryThresholdNotifier(m.config.Thresholds, observations, true, func(desc string) {
 			glog.Infof("hard memory eviction threshold crossed at %s", desc)
-			m.synchronize(diskInfoProvider, podFunc, nodeProvider)
+			m.synchronize(diskInfoProvider, podFunc, capacityProvider)
 		})
 		if err != nil {
 			glog.Warningf("eviction manager: failed to create soft memory threshold notifier: %v", err)
@@ -273,10 +273,6 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 		thresholds = mergeThresholds(thresholds, thresholdsNotYetResolved)
 	}
 	debugLogThresholdsWithObservation("thresholds - reclaim not satisfied", thresholds, observations)
-
-	// determine the set of thresholds whose stats have been updated since the last sync
-	thresholds = thresholdsUpdatedStats(thresholds, observations, m.lastObservations)
-	debugLogThresholdsWithObservation("thresholds - updated stats", thresholds, observations)
 
 	// track when a threshold was first observed
 	now := m.clock.Now()
@@ -307,11 +303,16 @@ func (m *managerImpl) synchronize(diskInfoProvider DiskInfoProvider, podFunc Act
 	m.thresholdsFirstObservedAt = thresholdsFirstObservedAt
 	m.nodeConditionsLastObservedAt = nodeConditionsLastObservedAt
 	m.thresholdsMet = thresholds
+
+	// determine the set of thresholds whose stats have been updated since the last sync
+	thresholds = thresholdsUpdatedStats(thresholds, observations, m.lastObservations)
+	debugLogThresholdsWithObservation("thresholds - updated stats", thresholds, observations)
+
 	m.lastObservations = observations
 	m.Unlock()
 
-	// evict pods if there is a resource uage violation from local volume temporary storage
-	// If eviction happenes in localVolumeEviction function, skip the rest of eviction action
+	// evict pods if there is a resource usage violation from local volume temporary storage
+	// If eviction happens in localVolumeEviction function, skip the rest of eviction action
 	if utilfeature.DefaultFeatureGate.Enabled(features.LocalStorageCapacityIsolation) {
 		if evictedPods := m.localStorageEviction(activePods); len(evictedPods) > 0 {
 			return evictedPods
@@ -435,14 +436,14 @@ func (m *managerImpl) reclaimNodeLevelResources(resourceToReclaim v1.ResourceNam
 		}
 		// update our local observations based on the amount reported to have been reclaimed.
 		// note: this is optimistic, other things could have been still consuming the pressured resource in the interim.
-		signal := resourceToSignal[resourceToReclaim]
-		value, ok := observations[signal]
-		if !ok {
-			glog.Errorf("eviction manager: unable to find value associated with signal %v", signal)
-			continue
+		for _, signal := range resourceClaimToSignal[resourceToReclaim] {
+			value, ok := observations[signal]
+			if !ok {
+				glog.Errorf("eviction manager: unable to find value associated with signal %v", signal)
+				continue
+			}
+			value.available.Add(*reclaimed)
 		}
-		value.available.Add(*reclaimed)
-
 		// evaluate all current thresholds to see if with adjusted observations, we think we have met min reclaim goals
 		if len(thresholdsMet(m.thresholdsMet, observations, true)) == 0 {
 			return true
@@ -473,7 +474,12 @@ func (m *managerImpl) localStorageEviction(pods []*v1.Pod) []*v1.Pod {
 			continue
 		}
 
-		if m.containerOverlayLimitEviction(podStats, pod) {
+		if m.podEphemeralStorageLimitEviction(podStats, pod) {
+			evicted = append(evicted, pod)
+			continue
+		}
+
+		if m.containerEphemeralStorageLimitEviction(podStats, pod) {
 			evicted = append(evicted, pod)
 		}
 	}
@@ -491,29 +497,62 @@ func (m *managerImpl) emptyDirLimitEviction(podStats statsapi.PodStats, pod *v1.
 		if source.EmptyDir != nil {
 			size := source.EmptyDir.SizeLimit
 			used := podVolumeUsed[pod.Spec.Volumes[i].Name]
-			if used != nil && size.Sign() == 1 && used.Cmp(size) > 0 {
+			if used != nil && size != nil && size.Sign() == 1 && used.Cmp(*size) > 0 {
 				// the emptyDir usage exceeds the size limit, evict the pod
 				return m.evictPod(pod, v1.ResourceName("EmptyDir"), fmt.Sprintf("emptyDir usage exceeds the limit %q", size.String()))
 			}
 		}
 	}
+
 	return false
 }
 
-func (m *managerImpl) containerOverlayLimitEviction(podStats statsapi.PodStats, pod *v1.Pod) bool {
+func (m *managerImpl) podEphemeralStorageLimitEviction(podStats statsapi.PodStats, pod *v1.Pod) bool {
+	_, podLimits := apiv1resource.PodRequestsAndLimits(pod)
+	_, found := podLimits[v1.ResourceEphemeralStorage]
+	if !found {
+		return false
+	}
+
+	podEphemeralStorageTotalUsage := &resource.Quantity{}
+	fsStatsSet := []fsStatsType{}
+	if *m.dedicatedImageFs {
+		fsStatsSet = []fsStatsType{fsStatsLogs, fsStatsLocalVolumeSource}
+	} else {
+		fsStatsSet = []fsStatsType{fsStatsRoot, fsStatsLogs, fsStatsLocalVolumeSource}
+	}
+	podEphemeralUsage, err := podLocalEphemeralStorageUsage(podStats, pod, fsStatsSet)
+	if err != nil {
+		glog.Errorf("eviction manager: error getting pod disk usage %v", err)
+		return false
+	}
+
+	podEphemeralStorageTotalUsage.Add(podEphemeralUsage[resourceDisk])
+	if podEphemeralStorageTotalUsage.Cmp(podLimits[v1.ResourceEphemeralStorage]) > 0 {
+		// the total usage of pod exceeds the total size limit of containers, evict the pod
+		return m.evictPod(pod, v1.ResourceEphemeralStorage, fmt.Sprintf("pod ephemeral local storage usage exceeds the total limit of containers %v", podLimits[v1.ResourceEphemeralStorage]))
+	}
+	return false
+}
+
+func (m *managerImpl) containerEphemeralStorageLimitEviction(podStats statsapi.PodStats, pod *v1.Pod) bool {
 	thresholdsMap := make(map[string]*resource.Quantity)
 	for _, container := range pod.Spec.Containers {
-		overlayLimit := container.Resources.Limits.StorageOverlay()
-		if overlayLimit != nil && overlayLimit.Value() != 0 {
-			thresholdsMap[container.Name] = overlayLimit
+		ephemeralLimit := container.Resources.Limits.StorageEphemeral()
+		if ephemeralLimit != nil && ephemeralLimit.Value() != 0 {
+			thresholdsMap[container.Name] = ephemeralLimit
 		}
 	}
 
 	for _, containerStat := range podStats.Containers {
-		rootfs := diskUsage(containerStat.Rootfs)
-		if overlayThreshold, ok := thresholdsMap[containerStat.Name]; ok {
-			if overlayThreshold.Cmp(*rootfs) < 0 {
-				return m.evictPod(pod, v1.ResourceName("containerOverlay"), fmt.Sprintf("container's overlay usage exceeds the limit %q", overlayThreshold.String()))
+		containerUsed := diskUsage(containerStat.Logs)
+		if !*m.dedicatedImageFs {
+			containerUsed.Add(*diskUsage(containerStat.Rootfs))
+		}
+
+		if ephemeralStorageThreshold, ok := thresholdsMap[containerStat.Name]; ok {
+			if ephemeralStorageThreshold.Cmp(*containerUsed) < 0 {
+				return m.evictPod(pod, v1.ResourceEphemeralStorage, fmt.Sprintf("container's ephemeral local storage usage exceeds the limit %q", ephemeralStorageThreshold.String()))
 
 			}
 		}

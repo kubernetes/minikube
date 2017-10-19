@@ -41,8 +41,8 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 	config.SecureServing.BindAddress = lk.APIServerAddress
 	config.SecureServing.BindPort = lk.APIServerPort
 
-	// 0 turns off insecure serving.
-	config.InsecureServing.BindPort = 0
+	config.InsecureServing.BindAddress = lk.APIServerInsecureAddress
+	config.InsecureServing.BindPort = lk.APIServerInsecurePort
 
 	config.Authentication.ClientCert.ClientCA = lk.GetCAPublicKeyCertPath()
 
@@ -77,6 +77,19 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 		RuntimeConfig: lk.RuntimeConfig,
 	}
 
+	config.ProxyClientCertFile = lk.GetProxyClientPublicKeyCertPath()
+	config.ProxyClientKeyFile = lk.GetProxyClientPrivateKeyCertPath()
+	config.Authentication.RequestHeader.AllowedNames =
+		[]string{}
+	config.Authentication.RequestHeader.UsernameHeaders =
+		[]string{"X-Remote-User"}
+	config.Authentication.RequestHeader.GroupHeaders =
+		[]string{"X-Remote-Group"}
+	config.Authentication.RequestHeader.ExtraHeaderPrefixes =
+		[]string{"X-Remote-Extra-"}
+	config.Authentication.RequestHeader.ClientCAFile =
+		lk.GetProxyClientCAPublicKeyCertPath()
+
 	lk.SetExtraConfigForComponent("apiserver", &config)
 
 	return func() error {
@@ -86,7 +99,6 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 }
 
 func readyFunc(lk LocalkubeServer) HealthCheck {
-	hostport := net.JoinHostPort("localhost", strconv.Itoa(lk.APIServerPort))
-	addr := "https://" + path.Join(hostport, "healthz")
-	return healthCheck(addr, lk)
+	return healthCheck(lk.GetAPIServerProtocol()+path.Join(
+		net.JoinHostPort("localhost", strconv.Itoa(lk.APIServerPort)), "healthz"), lk)
 }

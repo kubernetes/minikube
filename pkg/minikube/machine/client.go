@@ -25,7 +25,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/provision"
 
 	"github.com/docker/machine/drivers/virtualbox"
@@ -35,7 +37,6 @@ import (
 	"github.com/docker/machine/libmachine/check"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	rpcdriver "github.com/docker/machine/libmachine/drivers/rpc"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
@@ -89,10 +90,6 @@ func getVirtualboxDriver(rawDriver []byte) (drivers.Driver, error) {
 		return nil, errors.Wrapf(err, "Error unmarshalling virtualbox driver %s", string(rawDriver))
 	}
 	return driver, nil
-}
-
-func getDriverRPC(driverName string, rawDriver []byte) (drivers.Driver, error) {
-	return rpcdriver.NewRPCClientDriverFactory().NewRPCClientDriver(driverName, rawDriver)
 }
 
 // LocalClient is a non-RPC implemenation
@@ -155,6 +152,18 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 	}
 
 	return h, nil
+}
+
+func GetCommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
+	if h.DriverName != constants.DriverNone {
+		client, err := sshutil.NewSSHClient(h.Driver)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
+		}
+		return bootstrapper.NewSSHRunner(client), nil
+	}
+
+	return &bootstrapper.ExecRunner{}, nil
 }
 
 func (api *LocalClient) Close() error {

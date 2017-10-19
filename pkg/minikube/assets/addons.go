@@ -17,6 +17,7 @@ limitations under the License.
 package assets
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -81,6 +82,38 @@ var Addons = map[string]*Addon{
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass"),
+	"coredns": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/coredns/coreDNS-controller.yaml",
+			constants.AddonsPath,
+			"coreDNS-controller.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coredns/coreDNS-configmap.yaml",
+			constants.AddonsPath,
+			"coreDNS-configmap.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coredns/coreDNS-svc.yaml",
+			constants.AddonsPath,
+			"coreDNS-svc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coredns/coreDNS-crbinding.yaml",
+			constants.AddonsPath,
+			"coreDNS-crbinding.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coredns/coreDNS-sa.yaml",
+			constants.AddonsPath,
+			"coreDNS-sa.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/coredns/coreDNS-clusterrole.yaml",
+			constants.AddonsPath,
+			"coreDNS-clusterrole.yaml",
+			"0640"),
+	}, false, "coredns"),
 	"kube-dns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-controller.yaml",
@@ -163,22 +196,22 @@ var Addons = map[string]*Addon{
 	}, false, "registry-creds"),
 }
 
-func AddMinikubeAddonsDirToAssets(assetList *[]CopyableFile) {
-	// loop over .minikube/addons and add them to assets
-	searchDir := constants.MakeMiniPath("addons")
-	err := filepath.Walk(searchDir, func(addonFile string, f os.FileInfo, err error) error {
-		isDir, err := util.IsDirectory(addonFile)
+func AddMinikubeDirToAssets(minipath string, vmpath string, assetList *[]CopyableFile) {
+	// loop over $MINIKUBE_HOME/minipath and add them to assets
+	searchDir := constants.MakeMiniPath(minipath)
+	err := filepath.Walk(searchDir, func(miniFile string, f os.FileInfo, err error) error {
+		isDir, err := util.IsDirectory(miniFile)
 		if err == nil && !isDir {
-			f, err := NewFileAsset(addonFile, constants.AddonsPath, filepath.Base(addonFile), "0640")
+			f, err := NewFileAsset(miniFile, vmpath, filepath.Base(miniFile), "0640")
 			if err == nil {
 				*assetList = append(*assetList, f)
 			}
 		} else if err != nil {
-			glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+			glog.Infoln(fmt.Sprintf("Error encountered while walking %s: ", searchDir), err)
 		}
 		return nil
 	})
 	if err != nil {
-		glog.Infoln("Error encountered while walking .minikube/addons: ", err)
+		glog.Infoln(fmt.Sprintf("Error encountered while walking %s: ", searchDir), err)
 	}
 }

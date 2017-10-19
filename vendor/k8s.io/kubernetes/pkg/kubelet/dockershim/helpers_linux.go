@@ -19,11 +19,17 @@ limitations under the License.
 package dockershim
 
 import (
+	"bytes"
+	"crypto/md5"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 
 	"github.com/blang/semver"
-	dockertypes "github.com/docker/engine-api/types"
-	dockercontainer "github.com/docker/engine-api/types/container"
+	dockertypes "github.com/docker/docker/api/types"
+	dockercontainer "github.com/docker/docker/api/types/container"
 	runtimeapi "k8s.io/kubernetes/pkg/kubelet/apis/cri/v1alpha1/runtime"
 )
 
@@ -31,14 +37,55 @@ func DefaultMemorySwap() int64 {
 	return 0
 }
 
-func (ds *dockerService) getSecurityOpts(containerName string, sandboxConfig *runtimeapi.PodSandboxConfig, separator rune) ([]string, error) {
+func (ds *dockerService) getSecurityOpts(seccompProfile string, separator rune) ([]string, error) {
 	// Apply seccomp options.
-	seccompSecurityOpts, err := getSeccompSecurityOpts(containerName, sandboxConfig, ds.seccompProfileRoot, separator)
+	seccompSecurityOpts, err := getSeccompSecurityOpts(seccompProfile, separator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate seccomp security options for container %q: %v", containerName, err)
+		return nil, fmt.Errorf("failed to generate seccomp security options for container: %v", err)
 	}
 
 	return seccompSecurityOpts, nil
+}
+
+func getSeccompDockerOpts(seccompProfile string) ([]dockerOpt, error) {
+	if seccompProfile == "" || seccompProfile == "unconfined" {
+		// return early the default
+		return defaultSeccompOpt, nil
+	}
+
+	if seccompProfile == "docker/default" {
+		// return nil so docker will load the default seccomp profile
+		return nil, nil
+	}
+
+	if !strings.HasPrefix(seccompProfile, "localhost/") {
+		return nil, fmt.Errorf("unknown seccomp profile option: %s", seccompProfile)
+	}
+
+	fname := strings.TrimPrefix(seccompProfile, "localhost/") // by pod annotation validation, name is a valid subpath
+	file, err := ioutil.ReadFile(filepath.FromSlash(fname))
+	if err != nil {
+		return nil, fmt.Errorf("cannot load seccomp profile %q: %v", fname, err)
+	}
+
+	b := bytes.NewBuffer(nil)
+	if err := json.Compact(b, file); err != nil {
+		return nil, err
+	}
+	// Rather than the full profile, just put the filename & md5sum in the event log.
+	msg := fmt.Sprintf("%s(md5:%x)", fname, md5.Sum(file))
+
+	return []dockerOpt{{"seccomp", b.String(), msg}}, nil
+}
+
+// getSeccompSecurityOpts gets container seccomp options from container seccomp profile.
+// It is an experimental feature and may be promoted to official runtime api in the future.
+func getSeccompSecurityOpts(seccompProfile string, separator rune) ([]string, error) {
+	seccompOpts, err := getSeccompDockerOpts(seccompProfile)
+	if err != nil {
+		return nil, err
+	}
+	return fmtDockerOpts(seccompOpts, separator), nil
 }
 
 func (ds *dockerService) updateCreateConfig(

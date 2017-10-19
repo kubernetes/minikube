@@ -43,6 +43,8 @@ type ContainerManager interface {
 	ListContainers(filter *runtimeapi.ContainerFilter) ([]*runtimeapi.Container, error)
 	// ContainerStatus returns the status of the container.
 	ContainerStatus(containerID string) (*runtimeapi.ContainerStatus, error)
+	// UpdateContainerResources updates the cgroup resources for the container.
+	UpdateContainerResources(containerID string, resources *runtimeapi.LinuxContainerResources) error
 	// ExecSync executes a command in the container, and returns the stdout output.
 	// If command exits with a non-zero exit code, an error is returned.
 	ExecSync(containerID string, cmd []string, timeout time.Duration) (stdout []byte, stderr []byte, err error)
@@ -77,9 +79,9 @@ type PodSandboxManager interface {
 type ContainerStatsManager interface {
 	// ContainerStats returns stats of the container. If the container does not
 	// exist, the call returns an error.
-	ContainerStats(req *runtimeapi.ContainerStatsRequest) (*runtimeapi.ContainerStatsResponse, error)
+	ContainerStats(containerID string) (*runtimeapi.ContainerStats, error)
 	// ListContainerStats returns stats of all running containers.
-	ListContainerStats(req *runtimeapi.ListContainerStatsRequest) (*runtimeapi.ListContainerStatsResponse, error)
+	ListContainerStats(filter *runtimeapi.ContainerStatsFilter) ([]*runtimeapi.ContainerStats, error)
 }
 
 // RuntimeService interface should be implemented by a container runtime.
@@ -109,5 +111,5 @@ type ImageManagerService interface {
 	// RemoveImage removes the image.
 	RemoveImage(image *runtimeapi.ImageSpec) error
 	// ImageFsInfo returns information of the filesystem that is used to store images.
-	ImageFsInfo(req *runtimeapi.ImageFsInfoRequest) (*runtimeapi.ImageFsInfoResponse, error)
+	ImageFsInfo() ([]*runtimeapi.FilesystemUsage, error)
 }

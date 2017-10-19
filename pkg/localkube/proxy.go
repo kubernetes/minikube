@@ -38,6 +38,10 @@ func (lk LocalkubeServer) NewProxyServer() Server {
 }
 
 func StartProxyServer(lk LocalkubeServer) func() error {
+	bindaddress := lk.APIServerAddress.String()
+	if lk.APIServerInsecurePort != 0 {
+		bindaddress = lk.APIServerInsecureAddress.String()
+	}
 	config := &componentconfig.KubeProxyConfiguration{
 		OOMScoreAdj: &OOMScoreAdj,
 		ClientConnection: componentconfig.ClientConnectionConfiguration{
@@ -51,7 +55,7 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 			SyncPeriod:    v1.Duration{Duration: 30 * time.Second},
 			MinSyncPeriod: v1.Duration{Duration: 5 * time.Second},
 		},
-		BindAddress:  lk.APIServerAddress.String(),
+		BindAddress:  bindaddress,
 		Mode:         componentconfig.ProxyModeIPTables,
 		FeatureGates: lk.FeatureGates,
 		// Disable the healthz check
@@ -62,7 +66,7 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 
 	return func() error {
 		// Creating this config requires the API Server to be up, so do it in the start function itself.
-		server, err := kubeproxy.NewProxyServer(config, false, runtime.NewScheme(), "")
+		server, err := kubeproxy.NewProxyServer(config, false, runtime.NewScheme(), lk.GetAPIServerInsecureURL())
 		if err != nil {
 			panic(err)
 		}

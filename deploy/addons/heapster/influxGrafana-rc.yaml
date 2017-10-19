@@ -34,13 +34,18 @@ spec:
     spec:
       containers:
       - name: influxdb
-        image: gcr.io/google_containers/heapster_influxdb:v0.6
+        image: gcr.io/google_containers/heapster-influxdb-amd64:v1.3.3
         imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8083
+        - name: api
+          containerPort: 8086
         volumeMounts:
         - mountPath: /data
           name: influxdb-storage
       - name: grafana
-        image: gcr.io/google_containers/heapster_grafana:v2.6.0-2
+        image: gcr.io/google_containers/heapster-grafana-amd64:v4.4.3
         imagePullPolicy: IfNotPresent
         env:
           - name: INFLUXDB_SERVICE_URL
@@ -57,6 +62,9 @@ spec:
             value: Admin
           - name: GF_SERVER_ROOT_URL
             value: /
+        ports:
+        - name: ui
+          containerPort: 3000
         volumeMounts:
         - mountPath: /var
           name: grafana-storage

@@ -31,6 +31,7 @@ journalctl -u localkube -n 500
 ${SUDO_PREFIX}cat $KUBECONFIG
 
 cat $HOME/.kube/config
+echo $PATH
 
 docker ps
 

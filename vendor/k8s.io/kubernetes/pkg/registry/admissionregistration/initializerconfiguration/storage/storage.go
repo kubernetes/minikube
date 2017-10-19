@@ -23,7 +23,6 @@ import (
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/admissionregistration"
 	"k8s.io/kubernetes/pkg/registry/admissionregistration/initializerconfiguration"
-	"k8s.io/kubernetes/pkg/registry/cachesize"
 )
 
 // rest implements a RESTStorage for pod disruption budgets against etcd
@@ -40,15 +39,13 @@ func NewREST(optsGetter generic.RESTOptionsGetter) *REST {
 		ObjectNameFunc: func(obj runtime.Object) (string, error) {
 			return obj.(*admissionregistration.InitializerConfiguration).Name, nil
 		},
-		PredicateFunc:     initializerconfiguration.MatchInitializerConfiguration,
-		QualifiedResource: admissionregistration.Resource("initializerconfigurations"),
-		WatchCacheSize:    cachesize.GetWatchCacheSizeByResource("initializerconfigurations"),
+		DefaultQualifiedResource: admissionregistration.Resource("initializerconfigurations"),
 
 		CreateStrategy: initializerconfiguration.Strategy,
 		UpdateStrategy: initializerconfiguration.Strategy,
 		DeleteStrategy: initializerconfiguration.Strategy,
 	}
-	options := &generic.StoreOptions{RESTOptions: optsGetter, AttrFunc: initializerconfiguration.GetAttrs}
+	options := &generic.StoreOptions{RESTOptions: optsGetter}
 	if err := store.CompleteWithOptions(options); err != nil {
 		panic(err) // TODO: Propagate error up
 	}

@@ -46,6 +46,7 @@ var addonsConfigureCmd = &cobra.Command{
 			// Default values
 			awsAccessID := "changeme"
 			awsAccessKey := "changeme"
+			awsSessionToken := ""
 			awsRegion := "changeme"
 			awsAccount := "changeme"
 			awsRole := "changeme"
@@ -59,9 +60,10 @@ var addonsConfigureCmd = &cobra.Command{
 			if enableAWSECR {
 				awsAccessID = AskForStaticValue("-- Enter AWS Access Key ID: ")
 				awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
+				awsSessionToken = AskForStaticValueOptional("-- (Optional) Enter AWS Session Token: ")
 				awsRegion = AskForStaticValue("-- Enter AWS Region: ")
 				awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID: ")
-				awsRole = AskForStaticValue("-- (Optional) Enter ARN of AWS role to assume: ")
+				awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
 			}
 
 			enableGCR := AskForYesNoConfirmation("\nDo you want to enable Google Container Registry?", posResponses, negResponses)
@@ -97,6 +99,7 @@ var addonsConfigureCmd = &cobra.Command{
 				map[string]string{
 					"AWS_ACCESS_KEY_ID":     awsAccessID,
 					"AWS_SECRET_ACCESS_KEY": awsAccessKey,
+					"AWS_SESSION_TOKEN":     awsSessionToken,
 					"aws-account":           awsAccount,
 					"aws-region":            awsRegion,
 					"aws-assume-role":       awsRole,

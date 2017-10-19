@@ -19,14 +19,22 @@ package reconciliation
 import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/rbac"
 	core "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/rbac/internalversion"
 )
 
+// +k8s:deepcopy-gen=true
+// +k8s:deepcopy-gen:interfaces=k8s.io/kubernetes/pkg/registry/rbac/reconciliation.RuleOwner
+// +k8s:deepcopy-gen:nonpointer-interfaces=true
 type RoleRuleOwner struct {
 	Role *rbac.Role
+}
+
+func (o RoleRuleOwner) GetObject() runtime.Object {
+	return o.Role
 }
 
 func (o RoleRuleOwner) GetNamespace() string {

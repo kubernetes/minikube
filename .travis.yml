@@ -1,5 +1,6 @@
 language: go
 os: linux
+sudo: required
 
 go:
   - 1.8.3
