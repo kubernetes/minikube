@@ -22,6 +22,7 @@ var SupportedVMDrivers = [...]string{
 	"virtualbox",
 	"xhyve",
 	"vmwarefusion",
+	"hyperkit",
 }
 
 var DefaultMountDir = "/Users"
