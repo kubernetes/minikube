@@ -116,14 +116,10 @@ func (lk *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesCon
 	var err error
 
 	//add url/file/bundled localkube to file list
-	if localkubeURIWasSpecified(config) && config.KubernetesVersion != constants.DefaultKubernetesVersion {
-		lCacher := localkubeCacher{config}
-		localkubeFile, err = lCacher.fetchLocalkubeFromURI()
-		if err != nil {
-			return errors.Wrap(err, "Error updating localkube from uri")
-		}
-	} else {
-		localkubeFile = assets.NewBinDataAsset("out/localkube", "/usr/local/bin", "localkube", "0777")
+	lCacher := localkubeCacher{config}
+	localkubeFile, err = lCacher.fetchLocalkubeFromURI()
+	if err != nil {
+		return errors.Wrap(err, "Error updating localkube from uri")
 	}
 	copyableFiles = append(copyableFiles, localkubeFile)
 
