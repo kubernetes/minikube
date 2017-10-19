@@ -27,11 +27,10 @@ export BUILD_IN_DOCKER=y
 export TAG=$ghprbActualCommit
 export GOPATH=/var/lib/jenkins/go
 
-make -j 16 all
-
-# Clean up exited containers
 docker kill $(docker ps -q) || true
+docker rm $(docker ps -aq) || true
 
+make -j 16 all
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
 # If there are ISO changes, build and upload the ISO
