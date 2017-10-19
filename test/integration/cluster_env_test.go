@@ -23,17 +23,13 @@ import (
 	"testing"
 	"time"
 
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func testClusterEnv(t *testing.T) {
 	t.Parallel()
 
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
+	minikubeRunner := NewMinikubeRunner(t)
 
 	dockerEnvVars := minikubeRunner.RunCommand("docker-env", true)
 	if err := minikubeRunner.SetEnvFromEnvCmdOutput(dockerEnvVars); err != nil {
@@ -46,11 +42,11 @@ func testClusterEnv(t *testing.T) {
 		cmd := exec.Command(path, "ps")
 		output, err = cmd.CombinedOutput()
 		if err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 		return nil
 	}
-	if err := commonutil.RetryAfter(5, dockerPs, 3*time.Second); err != nil {
+	if err := util.Retry(t, dockerPs, 3*time.Second, 5); err != nil {
 		t.Fatalf("Error running command: %s. Error: %s Output: %s", "docker ps", err, output)
 	}
 }

@@ -28,8 +28,8 @@ import (
 
 	"github.com/golang/glog"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/volume"
 	"k8s.io/kubernetes/pkg/volume/util/operationexecutor"
 	"k8s.io/kubernetes/pkg/volume/util/volumehelper"
@@ -125,10 +125,6 @@ type ActualStateOfWorld interface {
 
 	// GetNodesToUpdateStatusFor returns the map of nodeNames to nodeToUpdateStatusFor
 	GetNodesToUpdateStatusFor() map[types.NodeName]nodeToUpdateStatusFor
-
-	// Removes the given node from the record of attach updates. The node's entire
-	// volumesToReportAsAttached list is removed.
-	RemoveNodeFromAttachUpdates(nodeName types.NodeName) error
 }
 
 // AttachedVolume represents a volume that is attached to a node.
@@ -262,19 +258,6 @@ func (asw *actualStateOfWorld) AddVolumeToReportAsAttached(
 	asw.Lock()
 	defer asw.Unlock()
 	asw.addVolumeToReportAsAttached(volumeName, nodeName)
-}
-
-func (asw *actualStateOfWorld) RemoveNodeFromAttachUpdates(nodeName types.NodeName) error {
-	asw.Lock()
-	defer asw.Unlock()
-
-	_, nodeToUpdateExists := asw.nodesToUpdateStatusFor[nodeName]
-	if nodeToUpdateExists {
-		delete(asw.nodesToUpdateStatusFor, nodeName)
-		return nil
-	}
-	return fmt.Errorf("node %q does not exist in volumesToReportAsAttached list",
-		nodeName)
 }
 
 func (asw *actualStateOfWorld) AddVolumeNode(

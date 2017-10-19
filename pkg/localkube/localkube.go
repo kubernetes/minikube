@@ -17,17 +17,21 @@ limitations under the License.
 package localkube
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"path"
+	"strconv"
 
 	"github.com/golang/glog"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/util/flag"
+	"k8s.io/minikube/pkg/util/kubeconfig"
 
 	"k8s.io/minikube/pkg/util"
 )
@@ -52,11 +56,14 @@ type LocalkubeServer struct {
 	APIServerInsecurePort    int
 	APIServerName            string
 	ShouldGenerateCerts      bool
+	ShouldGenerateKubeconfig bool
 	ShowVersion              bool
 	ShowHostIP               bool
 	RuntimeConfig            flag.ConfigurationMap
 	NodeIP                   net.IP
 	ContainerRuntime         string
+	RemoteRuntimeEndpoint    string
+	RemoteImageEndpoint      string
 	NetworkPlugin            string
 	FeatureGates             string
 	ExtraConfig              util.ExtraOptionSlice
@@ -90,12 +97,61 @@ func (lk LocalkubeServer) GetCAPublicKeyCertPath() string {
 	return path.Join(lk.GetCertificateDirectory(), "ca.crt")
 }
 
+func (lk LocalkubeServer) GetProxyClientPrivateKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client.key")
+}
+func (lk LocalkubeServer) GetProxyClientPublicKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client.crt")
+}
+func (lk LocalkubeServer) GetProxyClientCAPublicKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client-ca.crt")
+}
+func (lk LocalkubeServer) GetProxyClientCAPrivateKeyCertPath() string {
+	return path.Join(lk.GetCertificateDirectory(), "proxy-client-ca.key")
+}
+
 func (lk LocalkubeServer) GetAPIServerSecureURL() string {
 	return fmt.Sprintf("https://%s:%d", lk.APIServerAddress.String(), lk.APIServerPort)
 }
 
 func (lk LocalkubeServer) GetAPIServerInsecureURL() string {
-	return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress.String(), lk.APIServerInsecurePort)
+	if lk.APIServerInsecurePort != 0 {
+		return fmt.Sprintf("http://%s:%d", lk.APIServerInsecureAddress.String(), lk.APIServerInsecurePort)
+	}
+	return ""
+}
+
+func (lk LocalkubeServer) GetAPIServerProtocol() string {
+	if lk.APIServerInsecurePort != 0 {
+		return "http://"
+	}
+	return "https://"
+}
+
+func (lk LocalkubeServer) GetTransport() (*http.Transport, error) {
+	if lk.APIServerInsecurePort != 0 {
+		return &http.Transport{}, nil
+	}
+	cert, err := tls.LoadX509KeyPair(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
+	if err != nil {
+		glog.Error(err)
+		return &http.Transport{}, err
+	}
+
+	// Load CA cert
+	caCert, err := ioutil.ReadFile(lk.GetCAPublicKeyCertPath())
+	if err != nil {
+		glog.Warning(err)
+		return &http.Transport{}, err
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+	}
+	tlsConfig.BuildNameToCertificate()
+	return &http.Transport{TLSClientConfig: tlsConfig}, nil
 }
 
 // Get the host's public IP address
@@ -179,6 +235,33 @@ func (lk LocalkubeServer) shouldGenerateCACerts() bool {
 	return false
 }
 
+func (lk LocalkubeServer) GenerateKubeconfig() error {
+	if !lk.ShouldGenerateKubeconfig {
+		return nil
+	}
+
+	// setup kubeconfig
+	kubeConfigFile := util.DefaultKubeConfigPath
+	glog.Infof("Setting up kubeconfig at: %s", kubeConfigFile)
+	kubeHost := "http://127.0.0.1:" + strconv.Itoa(lk.APIServerInsecurePort)
+
+	//TODO(aaron-prindle) configure this so that it can generate secure certs as well
+	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
+		ClusterName:          lk.APIServerName,
+		ClusterServerAddress: kubeHost,
+		KeepContext:          false,
+	}
+
+	kubeCfgSetup.SetKubeConfigFile(kubeConfigFile)
+
+	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
+		glog.Errorln("Error setting up kubeconfig: ", err)
+		return err
+	}
+
+	return nil
+}
+
 func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
 	ips := []net.IP{net.ParseIP(util.DefaultServiceClusterIP)}
 	addrs, err := net.InterfaceAddrs()
@@ -198,11 +281,26 @@ func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
 
 func (lk LocalkubeServer) GenerateCerts() error {
 	if !lk.shouldGenerateCACerts() {
-		fmt.Println("Using these existing CA certs: ", lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath())
+		fmt.Println(
+			"Using these existing CA certs: ", lk.GetCAPublicKeyCertPath(),
+			lk.GetCAPrivateKeyCertPath(), lk.GetProxyClientCAPublicKeyCertPath(),
+			lk.GetProxyClientCAPrivateKeyCertPath(),
+		)
 	} else {
 		fmt.Println("Creating CA cert")
-		if err := util.GenerateCACert(lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath(), lk.APIServerName); err != nil {
-			fmt.Println("Failed to create CA certs: ", err)
+		if err := util.GenerateCACert(
+			lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath(),
+			lk.APIServerName,
+		); err != nil {
+			fmt.Println("Failed to create CA cert: ", err)
+			return err
+		}
+		fmt.Println("Creating proxy client CA cert")
+		if err := util.GenerateCACert(
+			lk.GetProxyClientCAPublicKeyCertPath(),
+			lk.GetProxyClientCAPrivateKeyCertPath(), "proxyClientCA",
+		); err != nil {
+			fmt.Println("Failed to create proxy client CA cert: ", err)
 			return err
 		}
 	}
@@ -213,13 +311,31 @@ func (lk LocalkubeServer) GenerateCerts() error {
 	}
 
 	if !lk.shouldGenerateCerts(ips) {
-		fmt.Println("Using these existing certs: ", lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())
+		fmt.Println(
+			"Using these existing certs: ", lk.GetPublicKeyCertPath(),
+			lk.GetPrivateKeyCertPath(), lk.GetProxyClientPublicKeyCertPath(),
+			lk.GetProxyClientPrivateKeyCertPath(),
+		)
 		return nil
 	}
 	fmt.Println("Creating cert with IPs: ", ips)
 
-	if err := util.GenerateSignedCert(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), ips, util.GetAlternateDNS(lk.DNSDomain), lk.GetCAPublicKeyCertPath(), lk.GetCAPrivateKeyCertPath()); err != nil {
-		fmt.Println("Failed to create certs: ", err)
+	if err := util.GenerateSignedCert(
+		lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath(), "minikube", ips,
+		util.GetAlternateDNS(lk.DNSDomain), lk.GetCAPublicKeyCertPath(),
+		lk.GetCAPrivateKeyCertPath(),
+	); err != nil {
+		fmt.Println("Failed to create cert: ", err)
+		return err
+	}
+
+	if err := util.GenerateSignedCert(
+		lk.GetProxyClientPublicKeyCertPath(), lk.GetProxyClientPrivateKeyCertPath(),
+		"aggregator", []net.IP{}, []string{},
+		lk.GetProxyClientCAPublicKeyCertPath(),
+		lk.GetProxyClientCAPrivateKeyCertPath(),
+	); err != nil {
+		fmt.Println("Failed to create proxy client cert: ", err)
 		return err
 	}
 

@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"k8s.io/kubernetes/pkg/api"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -33,6 +32,7 @@ func testClusterStatus(t *testing.T) {
 	cs := api.ComponentStatusList{}
 
 	healthy := func() error {
+		t.Log("Checking if cluster is healthy.")
 		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "cs"}, &cs); err != nil {
 			return err
 		}
@@ -42,17 +42,19 @@ func testClusterStatus(t *testing.T) {
 				if c.Type != api.ComponentHealthy {
 					continue
 				}
-				fmt.Printf("Component: %s, Healthy: %s.\n", i.GetName(), c.Status)
+				t.Logf("Component: %v, Healthy: %s.\n", i.GetName(), c.Status)
 				status = c.Status
 			}
 			if status != api.ConditionTrue {
-				return &commonutil.RetriableError{Err: fmt.Errorf("Component %s is not Healthy! Status: %s", i.GetName(), status)}
+				err := fmt.Errorf("Component %s is not Healthy! Status: %s", i.GetName(), status)
+				t.Log("Retrying, %s", err)
+				return err
 			}
 		}
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(10, healthy, 1*time.Second); err != nil {
+	if err := util.Retry(t, healthy, 1*time.Second, 5); err != nil {
 		t.Fatalf("Cluster is not healthy: %s", err)
 	}
 }

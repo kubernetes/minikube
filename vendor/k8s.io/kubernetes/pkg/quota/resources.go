@@ -17,10 +17,10 @@ limitations under the License.
 package quota
 
 import (
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 // Equals returns true if the two lists are equivalent
@@ -119,6 +119,32 @@ func Add(a api.ResourceList, b api.ResourceList) api.ResourceList {
 		if _, found := result[key]; !found {
 			quantity := *value.Copy()
 			result[key] = quantity
+		}
+	}
+	return result
+}
+
+// SubtractWithNonNegativeResult - substracts and returns result of a - b but
+// makes sure we don't return negative values to prevent negative resource usage.
+func SubtractWithNonNegativeResult(a api.ResourceList, b api.ResourceList) api.ResourceList {
+	zero := resource.MustParse("0")
+
+	result := api.ResourceList{}
+	for key, value := range a {
+		quantity := *value.Copy()
+		if other, found := b[key]; found {
+			quantity.Sub(other)
+		}
+		if quantity.Cmp(zero) > 0 {
+			result[key] = quantity
+		} else {
+			result[key] = zero
+		}
+	}
+
+	for key := range b {
+		if _, found := result[key]; !found {
+			result[key] = zero
 		}
 	}
 	return result

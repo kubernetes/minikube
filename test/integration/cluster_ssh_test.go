@@ -21,17 +21,11 @@ package integration
 import (
 	"strings"
 	"testing"
-
-	"k8s.io/minikube/test/integration/util"
 )
 
 func testClusterSSH(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := util.MinikubeRunner{
-		Args:       *args,
-		BinaryPath: *binaryPath,
-		T:          t}
-
+	minikubeRunner := NewMinikubeRunner(t)
 	expectedStr := "hello"
 	sshCmdOutput := minikubeRunner.RunCommand("ssh echo "+expectedStr, true)
 	if !strings.Contains(sshCmdOutput, expectedStr) {

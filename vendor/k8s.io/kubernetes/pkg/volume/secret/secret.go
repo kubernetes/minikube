@@ -20,10 +20,10 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/api/v1"
 	ioutil "k8s.io/kubernetes/pkg/util/io"
 	"k8s.io/kubernetes/pkg/util/mount"
 	"k8s.io/kubernetes/pkg/util/strings"
@@ -99,7 +99,7 @@ func (plugin *secretPlugin) NewMounter(spec *volume.Spec, pod *v1.Pod, opts volu
 			spec.Name(),
 			pod.UID,
 			plugin,
-			plugin.host.GetMounter(),
+			plugin.host.GetMounter(plugin.GetPluginName()),
 			plugin.host.GetWriter(),
 			volume.NewCachedMetrics(volume.NewMetricsDu(getPath(pod.UID, spec.Name(), plugin.host))),
 		},
@@ -116,7 +116,7 @@ func (plugin *secretPlugin) NewUnmounter(volName string, podUID types.UID) (volu
 			volName,
 			podUID,
 			plugin,
-			plugin.host.GetMounter(),
+			plugin.host.GetMounter(plugin.GetPluginName()),
 			plugin.host.GetWriter(),
 			volume.NewCachedMetrics(volume.NewMetricsDu(getPath(podUID, volName, plugin.host))),
 		},

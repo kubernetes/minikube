@@ -21,11 +21,11 @@ syntax = 'proto2';
 
 package k8s.io.apiserver.pkg.apis.audit.v1alpha1;
 
+import "k8s.io/api/authentication/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/generated.proto";
 import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 import "k8s.io/apimachinery/pkg/util/intstr/generated.proto";
-import "k8s.io/client-go/pkg/apis/authentication/v1/generated.proto";
 
 // Package-wide variables from generator "generated".
 option go_package = "v1alpha1";
@@ -56,11 +56,11 @@ message Event {
   optional string verb = 7;
 
   // Authenticated user information.
-  optional k8s.io.client_go.pkg.apis.authentication.v1.UserInfo user = 8;
+  optional k8s.io.api.authentication.v1.UserInfo user = 8;
 
   // Impersonated user information.
   // +optional
-  optional k8s.io.client_go.pkg.apis.authentication.v1.UserInfo impersonatedUser = 9;
+  optional k8s.io.api.authentication.v1.UserInfo impersonatedUser = 9;
 
   // Source IPs, from where the request originated and intermediate proxies.
   // +optional
@@ -106,10 +106,18 @@ message GroupResources {
   // +optional
   optional string group = 1;
 
-  // Resources is a list of resources within the API group.
-  // Any empty list implies every resource kind in the API group.
+  // Resources is a list of resources within the API group. Subresources are
+  // matched using a "/" to indicate the subresource. For example, "pods/logs"
+  // would match request to the logs subresource of pods. The top level resource
+  // does not match subresources, "pods" doesn't match "pods/logs".
   // +optional
   repeated string resources = 2;
+
+  // ResourceNames is a list of resource instance names that the policy matches.
+  // Using this field requires Resources to be specified.
+  // An empty list implies that every instance of the resource is matched.
+  // +optional
+  repeated string resourceNames = 3;
 }
 
 // ObjectReference contains enough information to let you inspect or modify the referred object.
@@ -197,5 +205,9 @@ message PolicyRule {
   //  "/healthz*" - Log all health checks
   // +optional
   repeated string nonResourceURLs = 7;
+
+  // OmitStages specify events generated in which stages will not be emitted to backend.
+  // An empty list means no restrictions will apply.
+  repeated string omitStages = 8;
 }
 

@@ -32,10 +32,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-var expectedDrivers = map[string]drivers.Driver{
-	vboxConfig: virtualbox.NewDriver("", ""),
-}
-
 const vboxConfig = `
 {
         "IPAddress": "192.168.99.101",

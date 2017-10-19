@@ -55,8 +55,8 @@ done
 godep::restore_kubernetes() {
   pushd ${KUBE_ROOT} >/dev/null
     git checkout ${KUBE_VERSION}
+    make generated_files
     ./hack/godep-restore.sh
-    bazel build //pkg/generated/openapi:zz_generated.openapi
   popd >/dev/null
   godep::sync_staging
 }

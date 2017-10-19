@@ -19,7 +19,6 @@ limitations under the License.
 package integration
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -27,7 +26,6 @@ import (
 
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/storage"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -53,15 +51,15 @@ func testProvisioning(t *testing.T) {
 		if len(scl.Items) > 0 {
 			return nil
 		}
-		return &commonutil.RetriableError{Err: errors.New("No default StorageClass yet.")}
+		return fmt.Errorf("No default StorageClass yet.")
 	}
 
-	if err := commonutil.RetryAfter(20, checkStorageClass, 5*time.Second); err != nil {
+	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
 		t.Fatalf("No default storage class: %s", err)
 	}
 
 	// Now create the PVC
-	pvcPath, _ := filepath.Abs("testdata/pvc.yaml")
+	pvcPath := filepath.Join(*testdataDir, "pvc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
 		t.Fatalf("Error creating pvc")
 	}
@@ -70,16 +68,16 @@ func testProvisioning(t *testing.T) {
 	checkStorage := func() error {
 		pvc := api.PersistentVolumeClaim{}
 		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return err
 		}
 		// The test passes if the volume claim gets bound.
 		if pvc.Status.Phase == "Bound" {
 			return nil
 		}
-		return &commonutil.RetriableError{Err: fmt.Errorf("PV not attached to PVC: %v", pvc)}
+		return fmt.Errorf("PV not attached to PVC: %v", pvc)
 	}
 
-	if err := commonutil.RetryAfter(5, checkStorage, 2*time.Second); err != nil {
+	if err := util.Retry(t, checkStorage, 2*time.Second, 5); err != nil {
 		t.Fatal("PV Creation failed with error:", err)
 	}
 

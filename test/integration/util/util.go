@@ -29,7 +29,10 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/kubernetes/pkg/api"
+	"github.com/pkg/errors"
+
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -39,20 +42,27 @@ type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
 	Args       string
+	StartArgs  string
 }
 
-func (k *KubectlRunner) IsPodReady(p *api.Pod) bool {
-	for _, cond := range p.Status.Conditions {
-		if cond.Type == "Ready" {
-			if cond.Status == "True" {
-				return true
-			}
-			k.T.Logf("Pod %s not ready. Ready: %s. Reason: %s", p.Name, cond.Status, cond.Reason)
-			return false /**/
-		}
-	}
-	k.T.Logf("Unable to find ready pod condition: %v", p.Status.Conditions)
-	return false
+func (m *MinikubeRunner) Run(cmd string) error {
+	_, err := m.SSH(cmd)
+	return err
+}
+
+func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
+	return cmd.Run()
+}
+
+func (m *MinikubeRunner) CombinedOutput(cmd string) (string, error) {
+	return m.SSH(cmd)
+}
+
+func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
+	_, err := m.SSH(fmt.Sprintf("rm -rf %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
+	return err
 }
 
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
@@ -94,7 +104,7 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 func (m *MinikubeRunner) Start() {
-	m.RunCommand(fmt.Sprintf("start %s", m.Args), true)
+	m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
 }
 
 func (m *MinikubeRunner) EnsureRunning() {
@@ -120,7 +130,11 @@ func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
 }
 
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand("status --format={{.MinikubeStatus}}", true)
+	return m.RunCommand(fmt.Sprintf("status --format={{.MinikubeStatus}} %s", m.Args), true)
+}
+
+func (m *MinikubeRunner) GetLogs() string {
+	return m.RunCommand(fmt.Sprintf("logs %s", m.Args), true)
 }
 
 func (m *MinikubeRunner) CheckStatus(desired string) {
@@ -202,8 +216,61 @@ func (k *KubectlRunner) DeleteNamespace(namespace string) error {
 	return err
 }
 
-func (k *KubectlRunner) GetPod(name, namespace string) (*api.Pod, error) {
-	p := &api.Pod{}
-	err := k.RunCommandParseOutput([]string{"get", "pod", name, "--namespace=" + namespace}, p)
-	return p, err
+func WaitForBusyboxRunning(t *testing.T, namespace string) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
+	return commonutil.WaitForPodsWithLabelRunning(client, namespace, selector)
+}
+
+func WaitForDNSRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "kube-dns"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for kube-dns pods")
+	}
+
+	if err := commonutil.WaitForService(client, "kube-system", "kube-dns", true, time.Millisecond*500, time.Minute*10); err != nil {
+		t.Errorf("Error waiting for kube-dns service to be up")
+	}
+
+	return nil
+}
+
+func WaitForDashboardRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "kubernetes-dashboard", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for dashboard RC to stabilize")
+	}
+
+	if err := commonutil.WaitForService(client, "kube-system", "kubernetes-dashboard", true, time.Millisecond*500, time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for dashboard service to be up")
+	}
+
+	if err := commonutil.WaitForServiceEndpointsNum(client, "kube-system", "kubernetes-dashboard", 1, time.Second*3, time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for one dashboard endpoint to be up")
+	}
+
+	return nil
+}
+
+func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (err error) {
+	for i := 0; i < attempts; i++ {
+		err = callback()
+		if err == nil {
+			return nil
+		}
+		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
+		time.Sleep(d)
+	}
+	return err
 }

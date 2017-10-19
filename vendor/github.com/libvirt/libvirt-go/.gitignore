@@ -1,0 +1,7 @@
+*.sublime-workspace
+*.sublime-project
+.vagrant
+/libvirt-go.test
+*~
+.#*
+\#*

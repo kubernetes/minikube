@@ -14,8 +14,8 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 21
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 22
+VERSION_BUILD ?= 3
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -26,7 +26,7 @@ MINIKUBE_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
 LOCALKUBE_BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.8.3-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.23.0
+ISO_VERSION ?= v0.23.5
 ISO_BUCKET ?= minikube/iso
 
 GOOS ?= $(shell go env GOOS)
@@ -51,6 +51,9 @@ LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldfla
 
 LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+HYPERKIT_FILES :=  GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' k8s.io/minikube/cmd/drivers/hyperkit | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+
+KVM_DRIVER_FILES := $(shell go list -f '{{join .Deps "\n"}}' ./cmd/drivers/kvm/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
 
 MINIKUBE_ENV_linux  		:= CGO_ENABLED=1 GOARCH=amd64 GOOS=linux
 MINIKUBE_ENV_darwin  		:= CGO_ENABLED=1 GOARCH=amd64 GOOS=darwin
@@ -59,12 +62,15 @@ MINIKUBE_ENV_windows 		:= CGO_ENABLED=0 GOARCH=amd64 GOOS=windows
 # extra env vars that need to be set in cross build container
 MINIKUBE_ENV_darwin_DOCKER 	:= CC=o64-clang CXX=o64-clang++
 
+MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
+MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
+
 MINIKUBE_DOCKER_CMD := docker run -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) --workdir /go/src/$(REPOPATH) --entrypoint /bin/bash -v $(PWD):/go/src/$(REPOPATH) $(MINIKUBE_BUILD_IMAGE) -c
 KUBE_CROSS_DOCKER_CMD := docker run -w /go/src/$(REPOPATH) --user $(shell id -u):$(shell id -g) -e IN_DOCKER=1 -v $(shell pwd):/go/src/$(REPOPATH) $(LOCALKUBE_BUILD_IMAGE)
 
 # $(call MINIKUBE_GO_BUILD_CMD, output file, OS)
 define MINIKUBE_GO_BUILD_CMD
-	$(MINIKUBE_ENV_$(2)) go build --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
+	$(MINIKUBE_ENV_$(2)) go build -tags "$(MINIKUBE_BUILD_TAGS)" --installsuffix cgo -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $(1) k8s.io/minikube/cmd/minikube
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -77,7 +83,7 @@ ifneq ($(BUILD_OS),Linux)
 	LOCALKUBE_BUILD_IN_DOCKER=y
 endif
 
-# If we are already running in docker, 
+# If we are already running in docker,
 # prevent recursion by unsetting the BUILD_IN_DOCKER directives.
 # The _BUILD_IN_DOCKER variables should not be modified after this conditional.
 ifeq ($(IN_DOCKER),1)
@@ -99,7 +105,7 @@ else
 endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
-	mv out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
 out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -107,6 +113,13 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 else
 	$(call MINIKUBE_GO_BUILD_CMD,$@,$*)
 endif
+
+.PHONY: e2e-%-amd64
+e2e-%-amd64: out/minikube-%-amd64
+	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
+
+e2e-windows-amd64.exe: e2e-windows-amd64
+	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
 
 minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
@@ -117,6 +130,13 @@ minikube_iso: # old target kept for making tests happy
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
+
+# Change the kernel configuration for the minikube ISO
+.PHONY: linux-menuconfig
+linux-menuconfig:
+	$(MAKE) -C $(BUILD_DIR)/buildroot linux-menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot linux-savedefconfig
+	cp $(BUILD_DIR)/buildroot/output/build/linux-4.9.13/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
 
 out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
@@ -130,13 +150,33 @@ endif
 test-iso:
 	go test -v $(REPOPATH)/test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
+.PHONY: test-pkg
+test-pkg/%:
+	go test -v -test.timeout=30m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
+
+.PHONY: all
+all: cross drivers e2e-cross images
+
+.PHONY: drivers
+drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
+
+.PHONY: images
+images: localkube-image localkube-dind-image localkube-dind-image-devshell
+	gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$(TAG)
+	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$(TAG)
+	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$(TAG)
+
 .PHONY: integration
 integration: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags=integration --minikube-args="$(MINIKUBE_ARGS)"
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+
+.PHONY: integration-none-driver
+integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
+	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="integration versioned" --minikube-args="$(MINIKUBE_ARGS)"
+	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go
@@ -156,6 +196,9 @@ $(GOPATH)/bin/go-bindata:
 
 .PHONY: cross
 cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+
+.PHONY: e2e-cross
+e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
@@ -186,13 +229,16 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	rm -rf out/minikube_$(DEB_VERSION)
 
 .SECONDEXPANSION:
-TAR_TARGETS_linux   := out/minikube-linux-amd64
+TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
 TAR_TARGETS_ALL     := $(shell find deploy/addons -type f)
 out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
 	tar -cvf $@ $^
-	
+
+.PHONY: cross-tars
+cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 	cp -r installers/windows/ out/windows_tmp
@@ -206,6 +252,19 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	makensis out/windows_tmp/minikube.nsi
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
+
+out/docker-machine-driver-hyperkit: $(shell $(HYPERKIT_FILES))
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(MINIKUBE_DOCKER_CMD) '$(MINIKUBE_ENV_darwin_DOCKER) $(MINIKUBE_ENV_darwin) go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit'
+else
+	$(MINIKUBE_ENV_darwin) go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+endif
+
+.PHONY: install-hyperkit-driver
+install-hyperkit-driver: out/docker-machine-driver-hyperkit
+	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
 
 .PHONY: check-release
 check-release:
@@ -227,6 +286,20 @@ localkube-image: out/localkube
 	@echo "${REGISTRY}/localkube-image:$(TAG) succesfully built"
 	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
 
+localkube-dind-image: out/localkube
+	# TODO(aprindle) make addons placed into container configurable
+	docker build -t $(REGISTRY)/localkube-dind-image:$(TAG) -f deploy/docker/localkube-dind/Dockerfile .
+	@echo ""
+	@echo "${REGISTRY}/localkube-dind-image:$(TAG) succesfully built"
+	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
+
+localkube-dind-image-devshell: out/localkube
+	# TODO(aprindle) make addons placed into container configurable
+	docker build -t $(REGISTRY)/localkube-dind-image-devshell:$(TAG) -f deploy/docker/localkube-dind/Dockerfile .
+	@echo ""
+	@echo "${REGISTRY}/localkube-dind-image-devshell:$(TAG) succesfully built"
+	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
+
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	docker build $(ISO_DOCKER_EXTRA_ARGS) -t $@ -f $< $(dir $<)
@@ -237,3 +310,20 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
+
+out/docker-machine-driver-kvm2: $(KVM_DRIVER_FILES)
+	go build 																		\
+		-installsuffix "static" 													\
+		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
+		-tags libvirt.1.3.1 														\
+		-o $(BUILD_DIR)/docker-machine-driver-kvm2 									\
+		k8s.io/minikube/cmd/drivers/kvm
+	chmod +X $@
+
+.PHONY: install-kvm
+install-kvm: out/docker-machine-driver-kvm2
+	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
+
+.PHONY: release-kvm-driver
+release-kvm-driver: install-kvm
+	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: EnsureExists
+data:
+  Corefile: |
+    .:53 {
+        errors
+        log
+        health
+        kubernetes cluster.local 10.0.0.0/24
+        prometheus
+        proxy . /etc/resolv.conf
+        cache 30
+    }

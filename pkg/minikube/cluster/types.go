@@ -16,7 +16,10 @@ limitations under the License.
 
 package cluster
 
-import "k8s.io/minikube/pkg/util"
+import (
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/util"
+)
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
@@ -31,20 +34,14 @@ type MachineConfig struct {
 	RegistryMirror      []string
 	HostOnlyCIDR        string // Only used by the virtualbox driver
 	HypervVirtualSwitch string
-	KvmNetwork          string // Only used by the KVM driver
-	Downloader          util.ISODownloader
-	DockerOpt           []string // Each entry is formatted as KEY=VALUE.
-	DisableDriverMounts bool     // Only used by virtualbox and xhyve
+	KvmNetwork          string             // Only used by the KVM driver
+	Downloader          util.ISODownloader `json:"-"`
+	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
+	DisableDriverMounts bool               // Only used by virtualbox and xhyve
 }
 
-// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
-type KubernetesConfig struct {
-	KubernetesVersion string
-	NodeIP            string
-	APIServerName     string
-	DNSDomain         string
-	ContainerRuntime  string
-	NetworkPlugin     string
-	FeatureGates      string
-	ExtraOptions      util.ExtraOptionSlice
+// Config contains machine and k8s config
+type Config struct {
+	MachineConfig    MachineConfig
+	KubernetesConfig bootstrapper.KubernetesConfig
 }

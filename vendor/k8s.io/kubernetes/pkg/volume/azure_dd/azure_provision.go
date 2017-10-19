@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/api/v1"
 	"k8s.io/kubernetes/pkg/volume"
 )
 
@@ -113,7 +113,7 @@ func (p *azureDiskProvisioner) Provision() (*v1.PersistentVolume, error) {
 			strKind = v
 		case "cachingmode":
 			cachingMode = v1.AzureDataDiskCachingMode(v)
-		case "fstype":
+		case volume.VolumeParameterFSType:
 			fsType = strings.ToLower(v)
 		default:
 			return nil, fmt.Errorf("AzureDisk - invalid option %s in storage class", k)
@@ -198,6 +198,7 @@ func (p *azureDiskProvisioner) Provision() (*v1.PersistentVolume, error) {
 					FSType:      &fsType,
 				},
 			},
+			MountOptions: p.options.MountOptions,
 		},
 	}
 	return pv, nil

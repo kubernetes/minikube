@@ -27,10 +27,18 @@
 # Copy only the files we need to this workspace
 mkdir -p out/ testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
+gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
+
+export MINIKUBE_WANTREPORTERRORPROMPT=False
+sudo ./out/minikube-${OS_ARCH} delete || true
+./out/minikube-${OS_ARCH} delete || true
+
+# Add the out/ directory to the PATH, for using new drivers.
+export PATH="$(pwd)/out/":$PATH
 
 # Linux cleanup
 virsh -c qemu:///system list --all \
@@ -48,8 +56,8 @@ vboxmanage list vms \
 
 # Clean up xhyve disks
 hdiutil info \
-      | grep -v /dev/disk0 \
-      | grep /dev/ \
+      | egrep \/dev\/disk[1-9][^s] \
+      | awk '{print $1}' \
       | xargs -I {} sh -c "hdiutil detach {}" \
       || true
 
@@ -59,19 +67,23 @@ pgrep xhyve | xargs kill || true
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}
 chmod +x out/minikube-${OS_ARCH}
+chmod +x out/docker-machine-driver-*
 
-MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
-|| MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
-|| true
-sudo rm -rf $HOME/.minikube || true
-sudo rm -rf $HOME/.kube || true
+if [ -e out/docker-machine-driver-hyperkit ]; then
+  sudo chown root:wheel out/docker-machine-driver-hyperkit || true
+  sudo chmod u+s out/docker-machine-driver-hyperkit || true
+fi
 
 # See the default image
 ./out/minikube-${OS_ARCH} start -h | grep iso
 
+# see what driver we are using
+which docker-machine-driver-${VM_DRIVER} || true
+find ~/.minikube || true
+
 # Allow this to fail, we'll switch on the return code below.
 set +e
-${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-args="--vm-driver=${VM_DRIVER} --v=10 --logtostderr" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
+${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-start-args="--vm-driver=${VM_DRIVER}" -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
 result=$?
 set -e
 
@@ -81,8 +93,6 @@ sudo cat $KUBECONFIG
 MINIKUBE_WANTREPORTERRORPROMPT=False sudo ./out/minikube-${OS_ARCH} delete \
 || MINIKUBE_WANTREPORTERRORPROMPT=False ./out/minikube-${OS_ARCH} delete \
 || true
-sudo rm -rf $HOME/.minikube || true
-sudo rm -rf $HOME/.kube || true
 
 if [[ $result -eq 0 ]]; then
   status="success"

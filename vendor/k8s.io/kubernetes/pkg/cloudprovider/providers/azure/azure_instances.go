@@ -17,9 +17,10 @@ limitations under the License.
 package azure
 
 import (
+	"errors"
 	"fmt"
 
-	"k8s.io/kubernetes/pkg/api/v1"
+	"k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 
 	"github.com/Azure/azure-sdk-for-go/arm/compute"
@@ -29,10 +30,38 @@ import (
 
 // NodeAddresses returns the addresses of the specified instance.
 func (az *Cloud) NodeAddresses(name types.NodeName) ([]v1.NodeAddress, error) {
+	if az.UseInstanceMetadata {
+		ipAddress := IPAddress{}
+		err := az.metadata.Object("instance/network/interface/0/ipv4/ipAddress/0", &ipAddress)
+		if err != nil {
+			return nil, err
+		}
+		addresses := []v1.NodeAddress{
+			{Type: v1.NodeInternalIP, Address: ipAddress.PrivateIP},
+			{Type: v1.NodeHostName, Address: string(name)},
+		}
+		if len(ipAddress.PublicIP) > 0 {
+			addr := v1.NodeAddress{
+				Type:    v1.NodeExternalIP,
+				Address: ipAddress.PublicIP,
+			}
+			addresses = append(addresses, addr)
+		}
+		return addresses, nil
+	}
 	ip, err := az.getIPForMachine(name)
 	if err != nil {
-		glog.Errorf("error: az.NodeAddresses, az.getIPForMachine(%s), err=%v", name, err)
-		return nil, err
+		if az.CloudProviderBackoff {
+			glog.V(2).Infof("NodeAddresses(%s) backing off", name)
+			ip, err = az.GetIPForMachineWithRetry(name)
+			if err != nil {
+				glog.V(2).Infof("NodeAddresses(%s) abort backoff", name)
+				return nil, err
+			}
+		} else {
+			glog.Errorf("error: az.NodeAddresses, az.getIPForMachine(%s), err=%v", name, err)
+			return nil, err
+		}
 	}
 
 	return []v1.NodeAddress{
@@ -58,9 +87,33 @@ func (az *Cloud) ExternalID(name types.NodeName) (string, error) {
 	return az.InstanceID(name)
 }
 
+// InstanceExistsByProviderID returns true if the instance with the given provider id still exists and is running.
+// If false is returned with no error, the instance will be immediately deleted by the cloud controller manager.
+func (az *Cloud) InstanceExistsByProviderID(providerID string) (bool, error) {
+	return false, errors.New("unimplemented")
+}
+
+func (az *Cloud) isCurrentInstance(name types.NodeName) (bool, error) {
+	nodeName := mapNodeNameToVMName(name)
+	metadataName, err := az.metadata.Text("instance/compute/name")
+	return (metadataName == nodeName), err
+}
+
 // InstanceID returns the cloud provider ID of the specified instance.
 // Note that if the instance does not exist or is no longer running, we must return ("", cloudprovider.InstanceNotFound)
 func (az *Cloud) InstanceID(name types.NodeName) (string, error) {
+	if az.UseInstanceMetadata {
+		isLocalInstance, err := az.isCurrentInstance(name)
+		if err != nil {
+			return "", err
+		}
+		if isLocalInstance {
+			externalInstanceID, err := az.metadata.Text("instance/compute/vmId")
+			if err == nil {
+				return externalInstanceID, nil
+			}
+		}
+	}
 	var machine compute.VirtualMachine
 	var exists bool
 	var err error
@@ -92,7 +145,7 @@ func (az *Cloud) InstanceTypeByProviderID(providerID string) (string, error) {
 		return "", err
 	}
 
-	return az.InstanceID(name)
+	return az.InstanceType(name)
 }
 
 // InstanceType returns the type of the specified instance.
@@ -100,6 +153,18 @@ func (az *Cloud) InstanceTypeByProviderID(providerID string) (string, error) {
 // (Implementer Note): This is used by kubelet. Kubelet will label the node. Real log from kubelet:
 //       Adding node label from cloud provider: beta.kubernetes.io/instance-type=[value]
 func (az *Cloud) InstanceType(name types.NodeName) (string, error) {
+	if az.UseInstanceMetadata {
+		isLocalInstance, err := az.isCurrentInstance(name)
+		if err != nil {
+			return "", err
+		}
+		if isLocalInstance {
+			machineType, err := az.metadata.Text("instance/compute/vmSize")
+			if err == nil {
+				return machineType, nil
+			}
+		}
+	}
 	machine, exists, err := az.getVirtualMachine(name)
 	if err != nil {
 		glog.Errorf("error: az.InstanceType(%s), az.getVirtualMachine(%s) err=%v", name, name, err)
@@ -126,7 +191,9 @@ func (az *Cloud) listAllNodesInResourceGroup() ([]compute.VirtualMachine, error)
 	allNodes := []compute.VirtualMachine{}
 
 	az.operationPollRateLimiter.Accept()
+	glog.V(10).Infof("VirtualMachinesClient.List(%s): start", az.ResourceGroup)
 	result, err := az.VirtualMachinesClient.List(az.ResourceGroup)
+	glog.V(10).Infof("VirtualMachinesClient.List(%s): end", az.ResourceGroup)
 	if err != nil {
 		glog.Errorf("error: az.listAllNodesInResourceGroup(), az.VirtualMachinesClient.List(%s), err=%v", az.ResourceGroup, err)
 		return nil, err
@@ -138,7 +205,9 @@ func (az *Cloud) listAllNodesInResourceGroup() ([]compute.VirtualMachine, error)
 		allNodes = append(allNodes, *result.Value...)
 
 		az.operationPollRateLimiter.Accept()
+		glog.V(10).Infof("VirtualMachinesClient.ListAllNextResults(%v): start", az.ResourceGroup)
 		result, err = az.VirtualMachinesClient.ListAllNextResults(result)
+		glog.V(10).Infof("VirtualMachinesClient.ListAllNextResults(%v): end", az.ResourceGroup)
 		if err != nil {
 			glog.Errorf("error: az.listAllNodesInResourceGroup(), az.VirtualMachinesClient.ListAllNextResults(%v), err=%v", result, err)
 			return nil, err

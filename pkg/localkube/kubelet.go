@@ -28,7 +28,10 @@ func (lk LocalkubeServer) NewKubeletServer() Server {
 }
 
 func StartKubeletServer(lk LocalkubeServer) func() error {
-	config := options.NewKubeletServer()
+	config, err := options.NewKubeletServer()
+	if err != nil {
+		return func() error { return err }
+	}
 
 	// Master details
 	config.KubeConfig = flag.NewStringFlag(util.DefaultKubeConfigPath)
@@ -55,6 +58,12 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	// Runtime
 	if lk.ContainerRuntime != "" {
 		config.ContainerRuntime = lk.ContainerRuntime
+	}
+	if lk.RemoteRuntimeEndpoint != "" {
+		config.RemoteRuntimeEndpoint = lk.RemoteRuntimeEndpoint
+	}
+	if lk.RemoteImageEndpoint != "" {
+		config.RemoteImageEndpoint = lk.RemoteImageEndpoint
 	}
 	lk.SetExtraConfigForComponent("kubelet", &config)
 

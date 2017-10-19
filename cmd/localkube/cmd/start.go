@@ -61,9 +61,27 @@ func StartLocalkube() {
 }
 
 func SetupServer(s *localkube.LocalkubeServer) {
+	if s.ContainerRuntime == "remote" && s.RemoteRuntimeEndpoint == "" {
+		panic("Failed to connect to --container-runtime='remote' with no --container-runtime-endpoint")
+	}
+	// localkube flags can handle `--container-runtime=remote --remote-runtime-endpoint=/var/run/crio.sock --remote-image-endpoint=/var/run/crio.sock`,
+	// but this allows for a convenience of just e.g.`--container-runtime=crio` and the same for minikube
+	switch s.ContainerRuntime {
+	case "crio", "cri-o":
+		s.ContainerRuntime = "remote"
+		s.RemoteRuntimeEndpoint = "unix:///var/run/crio.sock"
+		s.RemoteImageEndpoint = "unix:///var/run/crio.sock"
+	}
+
 	if s.ShouldGenerateCerts {
 		if err := s.GenerateCerts(); err != nil {
 			fmt.Println("Failed to create certificates!")
+			panic(err)
+		}
+	}
+	if s.ShouldGenerateKubeconfig {
+		if err := s.GenerateKubeconfig(); err != nil {
+			fmt.Println("Failed to create kubeconfig!")
 			panic(err)
 		}
 	}

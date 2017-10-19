@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"net"
 
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/kubernetes/pkg/api/v1"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/clientset"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/kubernetes/pkg/cloudprovider"
 	"k8s.io/kubernetes/pkg/kubelet/configmap"
 	"k8s.io/kubernetes/pkg/kubelet/secret"
@@ -41,7 +41,8 @@ func NewInitializedVolumePluginMgr(
 	kubelet *Kubelet,
 	secretManager secret.Manager,
 	configMapManager configmap.Manager,
-	plugins []volume.VolumePlugin) (*volume.VolumePluginMgr, error) {
+	plugins []volume.VolumePlugin,
+	prober volume.DynamicPluginProber) (*volume.VolumePluginMgr, error) {
 	kvh := &kubeletVolumeHost{
 		kubelet:          kubelet,
 		volumePluginMgr:  volume.VolumePluginMgr{},
@@ -49,7 +50,7 @@ func NewInitializedVolumePluginMgr(
 		configMapManager: configMapManager,
 	}
 
-	if err := kvh.volumePluginMgr.InitPlugins(plugins, kvh); err != nil {
+	if err := kvh.volumePluginMgr.InitPlugins(plugins, prober, kvh); err != nil {
 		return nil, fmt.Errorf(
 			"Could not initialize volume plugins for KubeletVolumePluginMgr: %v",
 			err)
@@ -117,7 +118,7 @@ func (kvh *kubeletVolumeHost) GetCloudProvider() cloudprovider.Interface {
 	return kvh.kubelet.cloud
 }
 
-func (kvh *kubeletVolumeHost) GetMounter() mount.Interface {
+func (kvh *kubeletVolumeHost) GetMounter(pluginName string) mount.Interface {
 	return kvh.kubelet.mounter
 }
 
@@ -155,4 +156,8 @@ func (kvh *kubeletVolumeHost) GetNodeLabels() (map[string]string, error) {
 		return nil, fmt.Errorf("error retrieving node: %v", err)
 	}
 	return node.Labels, nil
+}
+
+func (kvh *kubeletVolumeHost) GetExec(pluginName string) mount.Exec {
+	return mount.NewOsExec()
 }

@@ -17,8 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/api/v1"
 )
 
 // ServerAddressByClientCIDR helps the client to determine the server address that they should use, depending on the clientCIDR that they match.
@@ -92,8 +92,9 @@ type ClusterStatus struct {
 	Region string `json:"region,omitempty" protobuf:"bytes,6,opt,name=region"`
 }
 
-// +genclient=true
-// +nonNamespaced=true
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +genclient:nonNamespaced
 
 // Information about a registered cluster in a federated kubernetes setup. Clusters are not namespaced and have unique names in the federation.
 type Cluster struct {
@@ -110,6 +111,8 @@ type Cluster struct {
 	// +optional
 	Status ClusterStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // A list of all the kubernetes clusters registered to the federation
 type ClusterList struct {
@@ -151,4 +154,8 @@ const (
 
 	// FederationClusterSelectorAnnotation is used to determine placement of objects on federated clusters
 	FederationClusterSelectorAnnotation string = "federation.alpha.kubernetes.io/cluster-selector"
+
+	// FederationOnlyClusterSelector is the cluster selector to indicate any object in
+	// federation having this annotation should not be synced to federated clusters.
+	FederationOnlyClusterSelector string = "federation.kubernetes.io/federation-control-plane=true"
 )

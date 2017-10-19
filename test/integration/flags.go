@@ -20,6 +20,8 @@ import (
 	"flag"
 	"os"
 	"testing"
+
+	"k8s.io/minikube/test/integration/util"
 )
 
 func TestMain(m *testing.M) {
@@ -29,3 +31,14 @@ func TestMain(m *testing.M) {
 
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var args = flag.String("minikube-args", "", "Arguments to pass to minikube")
+var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
+var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
+
+func NewMinikubeRunner(t *testing.T) util.MinikubeRunner {
+	return util.MinikubeRunner{
+		Args:       *args,
+		BinaryPath: *binaryPath,
+		StartArgs:  *startArgs,
+		T:          t,
+	}
+}

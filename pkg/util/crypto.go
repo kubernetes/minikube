@@ -60,7 +60,7 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 // The certificate will be created with file mode 0644. The key will be created with file mode 0600.
 // If the certificate or key files already exist, they will be overwritten.
 // Any parent directories of the certPath or keyPath will be created as needed with file mode 0755.
-func GenerateSignedCert(certPath, keyPath string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
+func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
 	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
 	if err != nil {
 		return errors.Wrap(err, "Error reading file: signerCertPath")
@@ -89,7 +89,7 @@ func GenerateSignedCert(certPath, keyPath string, ips []net.IP, alternateDNS []s
 	template := x509.Certificate{
 		SerialNumber: big.NewInt(2),
 		Subject: pkix.Name{
-			CommonName:   "minikube",
+			CommonName:   cn,
 			Organization: []string{"system:masters"},
 		},
 		NotBefore: time.Now(),

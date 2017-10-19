@@ -49,9 +49,8 @@ func Get(name string) (string, error) {
 func get(name string, config MinikubeConfig) (string, error) {
 	if val, ok := config[name]; ok {
 		return fmt.Sprintf("%v", val), nil
-	} else {
-		return "", errors.New("specified key could not be found in config")
 	}
+	return "", errors.New("specified key could not be found in config")
 }
 
 // ReadConfig reads in the JSON minikube config
