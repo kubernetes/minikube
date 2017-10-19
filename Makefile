@@ -249,7 +249,7 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 
 out/docker-machine-driver-hyperkit: $(shell $(HYPERKIT_FILES))
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),/usr/bin/make $@)
+	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
 	GOOS=darwin CGO_ENABLED=1 go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
 endif
