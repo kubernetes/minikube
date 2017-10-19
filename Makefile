@@ -262,9 +262,9 @@ endif
 
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit
-	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
-	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
-	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo cp out/docker-machine-driver-hyperkit $(GOBIN)/docker-machine-driver-hyperkit
+	sudo chown root:wheel $(GOBIN)/docker-machine-driver-hyperkit
+	sudo chmod u+s $(GOBIN)/docker-machine-driver-hyperkit
 
 .PHONY: check-release
 check-release:
