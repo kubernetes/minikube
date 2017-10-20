@@ -41,6 +41,7 @@ type KubernetesConfig struct {
 	ContainerRuntime  string
 	NetworkPlugin     string
 	FeatureGates      string
+	ServiceCIDR       string
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
