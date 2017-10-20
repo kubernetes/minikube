@@ -32,7 +32,6 @@ import (
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
-	vmnet "github.com/zchee/go-vmnet"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	commonutil "k8s.io/minikube/pkg/util"
 )
@@ -159,7 +158,7 @@ func (d *Driver) Start() error {
 	// Set UUID
 	h.UUID = uuid.NewUUID().String()
 	log.Infof("Generated UUID %s", h.UUID)
-	mac, err := vmnet.GetMACAddressFromUUID(h.UUID)
+	mac, err := GetMACAddressFromUUID(h.UUID)
 	if err != nil {
 		return err
 	}
