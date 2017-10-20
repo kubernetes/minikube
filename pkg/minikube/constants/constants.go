@@ -137,7 +137,7 @@ const (
 )
 
 const (
-	LocalkubeServicePath = "/usr/lib/systemd/system/localkube.service"
+	LocalkubeServicePath = "/etc/systemd/system/localkube.service"
 	LocalkubeRunning     = "active"
 	LocalkubeStopped     = "inactive"
 )
