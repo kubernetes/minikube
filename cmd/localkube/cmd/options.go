@@ -27,15 +27,11 @@ import (
 )
 
 func NewLocalkubeServer() *localkube.LocalkubeServer {
-	// net.ParseCIDR returns multiple values. Use the IPNet return value
-	_, defaultServiceClusterIPRange, _ := net.ParseCIDR(util.DefaultServiceClusterIP + "/24")
-
+	_, defaultServiceCIDR, _ := net.ParseCIDR(util.DefaultServiceCIDR)
 	return &localkube.LocalkubeServer{
 		Containerized:            false,
 		DNSDomain:                util.DefaultDNSDomain,
-		DNSIP:                    net.ParseIP(util.DefaultDNSIP),
 		LocalkubeDirectory:       util.DefaultLocalkubeDirectory,
-		ServiceClusterIPRange:    *defaultServiceClusterIPRange,
 		APIServerAddress:         net.ParseIP("0.0.0.0"),
 		APIServerPort:            util.APIServerPort,
 		APIServerInsecureAddress: net.ParseIP("127.0.0.1"),
@@ -44,6 +40,7 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 		ShouldGenerateKubeconfig: false,
 		ShouldGenerateCerts:      true,
 		ShowVersion:              false,
+		ServiceClusterIPRange:    *defaultServiceCIDR,
 		RuntimeConfig:            map[string]string{"api/all": "true"},
 		ExtraConfig:              util.ExtraOptionSlice{},
 	}
@@ -54,7 +51,6 @@ func AddFlags(s *localkube.LocalkubeServer) {
 	flag.BoolVar(&s.Containerized, "containerized", s.Containerized, "If kubelet should run in containerized mode")
 	flag.BoolVar(&s.EnableDNS, "enable-dns", s.EnableDNS, "DEPRECATED: Please run kube-dns as a cluster addon")
 	flag.StringVar(&s.DNSDomain, "dns-domain", s.DNSDomain, "The cluster dns domain")
-	flag.IPVar(&s.DNSIP, "dns-ip", s.DNSIP, "The cluster dns IP")
 	flag.StringVar(&s.LocalkubeDirectory, "localkube-directory", s.LocalkubeDirectory, "The directory localkube will store files in")
 	flag.IPNetVar(&s.ServiceClusterIPRange, "service-cluster-ip-range", s.ServiceClusterIPRange, "The service-cluster-ip-range for the apiserver")
 	flag.IPVar(&s.APIServerAddress, "apiserver-address", s.APIServerAddress, "The address the apiserver will listen securely on")

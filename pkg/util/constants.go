@@ -16,17 +16,43 @@ limitations under the License.
 
 package util
 
+import (
+	"net"
+
+	"github.com/pkg/errors"
+)
+
 // These constants are used by both minikube and localkube
 const (
 	APIServerPort             = 8443
 	DefaultLocalkubeDirectory = "/var/lib/localkube"
 	DefaultCertPath           = DefaultLocalkubeDirectory + "/certs/"
 	DefaultKubeConfigPath     = DefaultLocalkubeDirectory + "/kubeconfig"
-	DefaultServiceClusterIP   = "10.0.0.1"
 	DefaultDNSDomain          = "cluster.local"
-	DefaultDNSIP              = "10.0.0.10"
-	DefaultInsecureRegistry   = "10.0.0.0/24"
+	DefaultServiceCIDR        = "10.96.0.0/12"
 )
+
+// GetServiceClusterIP returns the first IP of the ServiceCIDR
+func GetServiceClusterIP(serviceCIDR string) (net.IP, error) {
+	ip, _, err := net.ParseCIDR(serviceCIDR)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing default service cidr")
+	}
+	ip = ip.To4()
+	ip[3]++
+	return ip, nil
+}
+
+// GetDNSIP returns x.x.x.10 of the service CIDR
+func GetDNSIP(serviceCIDR string) (net.IP, error) {
+	ip, _, err := net.ParseCIDR(serviceCIDR)
+	if err != nil {
+		return nil, errors.Wrap(err, "parsing default service cidr")
+	}
+	ip = ip.To4()
+	ip[3] = 10
+	return ip, nil
+}
 
 func GetAlternateDNS(domain string) []string {
 	return []string{"kubernetes.default.svc." + domain, "kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
