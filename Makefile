@@ -149,7 +149,7 @@ test-pkg/%:
 	go test -v -test.timeout=30m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross images
+all: cross drivers e2e-cross images out/localkube
 
 .PHONY: drivers
 drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
@@ -189,7 +189,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
