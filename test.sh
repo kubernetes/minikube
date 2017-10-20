@@ -32,7 +32,7 @@ COV_TMP_FILE=coverage_tmp.txt
 # Run "go test" on packages that have test files.  Also create coverage profile
 echo "Running go tests..."
 cd ${GOPATH}/src/${REPO_PATH}
-rm -f out/$COV_FILE
+rm -f out/$COV_FILE || true
 echo "mode: count" > out/$COV_FILE
 for pkg in $(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...); do
     go test -tags "container_image_ostree_stub containers_image_openpgp" -v $pkg -covermode=count -coverprofile=out/$COV_TMP_FILE
