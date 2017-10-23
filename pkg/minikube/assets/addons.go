@@ -225,9 +225,14 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 				rPath = filepath.Dir(rPath)
 				vmpath = filepath.Join("/", rPath)
 			}
-			// While not technically correct, we add a leading 0 here (this won't account for the higher order permissions)
-			// Since the leading 0 is stripped when converting to octal.
-			f, err := NewFileAsset(hostpath, vmpath, filepath.Base(hostpath), fmt.Sprintf("0%o", info.Mode().Perm()))
+			permString := fmt.Sprintf("%o", info.Mode().Perm())
+			// The conversion will strip the leading 0 if present, so add it back
+			// if we need to.
+			if len(permString) == 3 {
+				permString = fmt.Sprintf("0%s", permString)
+			}
+
+			f, err := NewFileAsset(hostpath, vmpath, filepath.Base(hostpath), permString)
 			if err != nil {
 				return errors.Wrapf(err, "creating file asset for %s", hostpath)
 			}
