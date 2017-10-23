@@ -132,7 +132,9 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 func addAddons(files *[]assets.CopyableFile) error {
 	// add addons to file list
 	// custom addons
-	assets.AddMinikubeDirToAssets("addons", constants.AddonsPath, files)
+	if err := assets.AddMinikubeDirAssets(files); err != nil {
+		return errors.Wrap(err, "adding minikube dir assets")
+	}
 	// bundled addons
 	for addonName, addonBundle := range assets.Addons {
 		// TODO(r2d4): Kubeadm ignores the kube-dns addon and uses its own.
