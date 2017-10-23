@@ -112,8 +112,9 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	}()
 
 	scpcmd := fmt.Sprintf("sudo scp -t %s", f.GetTargetDir())
-	if err := sess.Run(scpcmd); err != nil {
-		return errors.Wrapf(err, "Error running scp command: %s", scpcmd)
+	out, err := sess.CombinedOutput(scpcmd)
+	if err != nil {
+		return errors.Wrapf(err, "Error running scp command: %s output: %s", scpcmd, out)
 	}
 	wg.Wait()
 
