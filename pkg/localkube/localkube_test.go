@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/util"
 )
 
 var testIPs = []net.IP{net.ParseIP("1.2.3.4")}
@@ -33,7 +34,7 @@ func TestGenerateCerts(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 
-	_, ipRange, _ := net.ParseCIDR("10.0.0.0/24")
+	_, ipRange, _ := net.ParseCIDR(util.DefaultServiceCIDR)
 	lk := LocalkubeServer{
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
@@ -92,7 +93,7 @@ func TestShouldGenerateCertsMismatchedIP(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 
-	_, ipRange, _ := net.ParseCIDR("10.0.0.0/24")
+	_, ipRange, _ := net.ParseCIDR(util.DefaultServiceCIDR)
 	lk := LocalkubeServer{
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
@@ -110,7 +111,7 @@ func TestShouldNotGenerateCerts(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 	os.Mkdir(filepath.Join(tempDir, "certs"), 0777)
 
-	_, ipRange, _ := net.ParseCIDR("10.0.0.0/24")
+	_, ipRange, _ := net.ParseCIDR(util.DefaultServiceCIDR)
 	lk := LocalkubeServer{
 		LocalkubeDirectory:    tempDir,
 		ServiceClusterIPRange: *ipRange,
