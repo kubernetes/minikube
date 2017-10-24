@@ -25,11 +25,13 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/none"
+	"k8s.io/minikube/pkg/drivers/vmware"
 )
 
 var driverMap = map[string]driverGetter{
 	"virtualbox": getVirtualboxDriver,
 	"none":       getNoneDriver,
+	"vmware":     getVMwareDriver,
 }
 
 func getNoneDriver(rawDriver []byte) (drivers.Driver, error) {
@@ -48,6 +50,8 @@ func registerDriver(driverName string) {
 		plugin.RegisterDriver(virtualbox.NewDriver("", ""))
 	case "none":
 		plugin.RegisterDriver(none.NewDriver("", ""))
+	case "vmware":
+		plugin.RegisterDriver(vmware.NewDriver("", ""))
 	default:
 		glog.Exitf("Unsupported driver: %s\n", driverName)
 	}
