@@ -81,7 +81,7 @@ func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
 }
 
 func IsValidLocalkubeVersion(v string, url string) (bool, error) {
-	if strings.HasPrefix(v, "file://") {
+	if strings.HasPrefix(v, "file://") || strings.HasPrefix(v, "http") {
 		return true, nil
 	}
 	k8sReleases, err := GetK8sVersionsFromURL(url)
