@@ -22,8 +22,8 @@ INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2017.02
 REGISTRY?=gcr.io/k8s-minikube
 
-HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.9
-BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.9
+HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
+BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.9.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
 ISO_VERSION ?= v0.23.6
