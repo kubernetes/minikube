@@ -23,6 +23,8 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: dashboard
 spec:
+  replicas: 1
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       k8s-app: kubernetes-dashboard
