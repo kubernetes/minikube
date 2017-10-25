@@ -11,4 +11,9 @@ curl -L -X PUT http://10.0.2.15:2379/v2/keys/message -d value="Hello"
 ```
 
 ## Accessing Host Resources From Inside A Pod
-In order to access host resources from inside a pod, IP address `192.168.99.1` must be used.
+In order to access host resources from inside a pod, run the following command to determine the host IP you can use:
+```shell
+ip addr
+```
+
+The IP address under `vboxnet1` is the IP that you need to access the host from within a pod.
