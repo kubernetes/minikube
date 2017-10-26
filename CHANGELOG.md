@@ -1,5 +1,22 @@
 # Minikube Release Notes
 
+# Version 0.23.0 - 10/26/2017
+* Upgraded to go 1.9 [#2113](https://github.com/kubernetes/minikube/pull/2113)
+* Localkube is no longer packaged in minikube bin-data [#2089](https://github.com/kubernetes/minikube/pull/2089)
+* Upgraded to Kubernetes 1.8 [#2088](https://github.com/kubernetes/minikube/pull/2088)
+* Added more verbose logging to minikube start [#2078](https://github.com/kubernetes/minikube/pull/2078)
+* Added CoreDNS as an Addon
+* Updated Ingress Addon to v0.9.0-beta.15
+* Updated Dashboard to v1.7.0
+* Force the none driver to use netgo [#2074](https://github.com/kubernetes/minikube/pull/2074)
+* [kvm driver] Driver now returns state.Running for DOM_SHUTDOWN [#2109](https://github.com/kubernetes/minikube/pull/2109)
+* [localkube] Added support for CRI-O
+* [kubeadm] Added support for CRI-O [#2052](https://github.com/kubernetes/minikube/pull/2052)
+* [kubeadm] Added support for feature gates [#2037](https://github.com/kubernetes/minikube/pull/2037)
+* [Minikube ISO] Bumped to version v0.23.6 [#2091](https://github.com/kubernetes/minikube/pull/2091)
+* [Minikube ISO] Upgraded to Docker 17.05-ce [#1542](https://github.com/kubernetes/minikube/pull/1542)
+* [Minikube ISO] Upgraded to CRI-O v1.0.0 [#2069](https://github.com/kubernetes/minikube/pull/2069)
+
 # Version 0.22.3 - 10/3/2017
 * Update dnsmasq to 1.14.5 [2022](https://github.com/kubernetes/minikube/pull/2022)
 * Windows cache path fix [2000](https://github.com/kubernetes/minikube/pull/2000)
