@@ -127,6 +127,10 @@ func UploadError(b []byte, url string) error {
 }
 
 func MaybeReportErrorAndExit(errToReport error) {
+	MaybeReportErrorAndExitWithCode(errToReport, 1)
+}
+
+func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
 	var err error
 	if viper.GetBool(config.WantReportError) {
 		err = ReportError(errToReport, constants.ReportingURL)
@@ -146,7 +150,7 @@ To opt out of these messages, run the command:
 	if err != nil {
 		glog.Errorf(err.Error())
 	}
-	os.Exit(1)
+	os.Exit(returnCode)
 }
 
 func getInput(input chan string, r io.Reader) {
