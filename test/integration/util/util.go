@@ -130,7 +130,7 @@ func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
 }
 
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.MinikubeStatus}} %s", m.Args), true)
+	return m.RunCommand(fmt.Sprintf("status --format={{.MinikubeStatus}} %s", m.Args), false)
 }
 
 func (m *MinikubeRunner) GetLogs() string {
