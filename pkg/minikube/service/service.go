@@ -36,6 +36,7 @@ import (
 	"text/template"
 
 	"k8s.io/apimachinery/pkg/labels"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/util"
 )
@@ -63,7 +64,12 @@ func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 
 func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
+	configOverrides := &clientcmd.ConfigOverrides{
+		Context: clientcmdapi.Context{
+			Cluster:  "minikube",
+			AuthInfo: "minikube",
+		},
+	}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
