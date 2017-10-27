@@ -71,7 +71,8 @@ EOF
 {
     "title": "Update minikube to ${REPLACE_PKG_VERSION}",
     "head": "minikube-bot:${REPLACE_PKG_VERSION}",
-    "base": "master"
+    "base": "master",
+    "body": "cc @r2d4"
 }
 
 EOF
