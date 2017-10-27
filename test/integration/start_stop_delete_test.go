@@ -31,6 +31,7 @@ import (
 func TestStartStop(t *testing.T) {
 
 	runner := NewMinikubeRunner(t)
+	runner.RunCommand("config set WantReportErrorPrompt false", true)
 	runner.RunCommand("delete", false)
 	runner.CheckStatus(state.None.String())
 
