@@ -33,6 +33,7 @@ if [ ! -d "${KUBE_ROOT}" ]; then
 fi
 
 godep::restore_kubernetes
+godep::remove_staging_from_json
 
 pushd ${MINIKUBE_ROOT} >/dev/null
     godep restore ./...
