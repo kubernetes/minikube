@@ -107,11 +107,21 @@ github-release release \
     --description "${DESCRIPTION}"
 
 # Uploading the files into github
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-linux-amd64" --file out/minikube-linux-amd64
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-linux-amd64.sha256" --file out/minikube-linux-amd64.sha256
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-darwin-amd64" --file out/minikube-darwin-amd64
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-darwin-amd64.sha256" --file out/minikube-darwin-amd64.sha256
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-windows-amd64" --file out/minikube-windows-amd64.exe
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-windows-amd64.sha256" --file out/minikube-windows-amd64.exe.sha256
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube-installer.exe" --file out/minikube-installer.exe
-github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name "minikube_${DEB_VERSION}.deb" --file out/minikube_${DEB_VERSION}.deb
+FILES_TO_UPLOAD=(
+    'minikube-linux-amd64'
+    'minikube-linux-amd64.sha256'
+    'minikube-darwin-amd64'
+    'minikube-darwin-amd64.sha256'
+    'minikube-windows-amd64'
+    'minikube-installer.exe'
+    "minikube_${DEB_VERSION}.deb"
+    'docker-machine-driver-kvm2'
+    'docker-machine-driver-hyperkit'
+    'localkube'
+    'localkube.sha256'
+)
+
+for UPLOAD in "${FILES_TO_UPLOAD[@]}"
+do
+    github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name $UPLOAD --file out/$UPLOAD
+done

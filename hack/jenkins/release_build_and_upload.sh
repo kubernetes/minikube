@@ -30,45 +30,24 @@ export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}-${VERSION_BUILD}
 export GOPATH=~/go
 
-# Build all binaries in docker
-export BUILD_IN_DOCKER=y
-
-# Sanity checks
-git status
-
 # Make sure the tag matches the Makefile
 cat Makefile | grep "VERSION_MAJOR ?=" | grep $VERSION_MAJOR
 cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR
 cat Makefile | grep "VERSION_BUILD ?=" | grep $VERSION_BUILD
 
 # Build and upload
-make cross checksum
-
-gsutil cp out/minikube-linux-amd64 gs://$BUCKET/releases/$TAGNAME/
-gsutil cp out/minikube-linux-amd64.sha256 gs://$BUCKET/releases/$TAGNAME/
-gsutil cp out/minikube-darwin-amd64 gs://$BUCKET/releases/$TAGNAME/
-gsutil cp out/minikube-darwin-amd64.sha256 gs://$BUCKET/releases/$TAGNAME/
-gsutil cp out/minikube-windows-amd64.exe gs://$BUCKET/releases/$TAGNAME/
-gsutil cp out/minikube-windows-amd64.exe.sha256 gs://$BUCKET/releases/$TAGNAME/
-
-make out/minikube-installer.exe
-gsutil cp out/minikube-installer.exe gs://$BUCKET/releases/$TAGNAME/
-
-make out/minikube_${DEB_VERSION}.deb
-gsutil cp out/minikube_${DEB_VERSION}.deb gs://$BUCKET/releases/$TAGNAME/
+BUILD_IN_DOCKER=y make -j 16 all out/minikube-installer.exe out/minikube_${DEB_VERSION}.deb
+gsutil -m cp out/* gs://$BUCKET/releases/$TAGNAME/
 
 # Bump latest
 gsutil cp -r gs://$BUCKET/releases/$TAGNAME/* gs://$BUCKET/releases/latest/
 
-# Build and upload localkube containers
-make localkube-image
+# Upload localkube containers
 TAG="$(docker images "gcr.io/k8s-minikube/localkube-image" --format="{{.Tag}}" | head -n 1)"
 gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$TAG
 
-make localkube-dind-image
 TAG="$(docker images "gcr.io/k8s-minikube/localkube-dind-image" --format="{{.Tag}}" | head -n 1)"
 gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$TAG
 
-make localkube-dind-image-devshell
 TAG="$(docker images "gcr.io/k8s-minikube/localkube-dind-image-devshell" --format="{{.Tag}}" | head -n 1)"
 gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$TAG
