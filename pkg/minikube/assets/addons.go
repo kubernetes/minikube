@@ -82,6 +82,13 @@ var Addons = map[string]*Addon{
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass"),
+	"storage-provisioner": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/storage-provisioner/storage-provisioner.yaml",
+			constants.AddonsPath,
+			"storage-provisioner.yaml",
+			"0640"),
+	}, true, "storage-provisioner"),
 	"coredns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/coredns/coreDNS-controller.yaml",

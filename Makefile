@@ -300,15 +300,13 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo ""
 	@echo "$(@) successfully built"
 
-out/storage-provisioner-main: cmd/storage-provisioner/main.go
+storage-provisioner-main: cmd/storage-provisioner/main.go
 	go build cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
-storage-provisioner-image: out/storage-provisioner-main
+storage-provisioner-image: storage-provisioner-main
 	docker build -t $(REGISTRY)/storage-provisioner:$(TAG) -f deploy/storage-provisioner/Dockerfile .
 	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(TAG)
-	# docker build -t gcr.io/priya-wadhwa/storage-provisioner:$(TAG) -f deploy/storage-provisioner/Dockerfile .
-	# gcloud docker -- push gcr.io/priya-wadhwa/storage-provisioner:$(TAG)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum
