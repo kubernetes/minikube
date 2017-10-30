@@ -30,8 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/minikube/pkg/util"
+	restclient "k8s.io/client-go/rest"
 )
 
 const provisionerName = "k8s.io/minikube-hostpath"
@@ -115,9 +114,8 @@ func (lk LocalkubeServer) NewStorageProvisionerServer() Server {
 }
 
 func StartStorageProvisioner(lk LocalkubeServer) func() error {
-
 	return func() error {
-		config, err := clientcmd.BuildConfigFromFlags("", util.DefaultKubeConfigPath)
+		config, err := restclient.InClusterConfig()
 		if err != nil {
 			return err
 		}
@@ -141,6 +139,7 @@ func StartStorageProvisioner(lk LocalkubeServer) func() error {
 		// PVs
 		pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
 
+		fmt.Println("wait never stop")
 		pc.Run(wait.NeverStop)
 		return nil
 	}
