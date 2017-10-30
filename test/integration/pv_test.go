@@ -20,12 +20,15 @@ package integration
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/storage"
+	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -56,6 +59,25 @@ func testProvisioning(t *testing.T) {
 
 	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
 		t.Fatalf("No default storage class: %s", err)
+	}
+
+	// Check that the storage provisioner pod is running
+
+	checkPodRunning := func() error {
+		client, err := commonutil.GetClient()
+		if err != nil {
+			return errors.Wrap(err, "getting kubernetes client")
+		}
+		selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "storage-provisioner"}))
+
+		if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	if err := checkPodRunning(); err != nil {
+		t.Fatal("Check storage-provisioner pod running failed with error: ", err)
 	}
 
 	// Now create the PVC
