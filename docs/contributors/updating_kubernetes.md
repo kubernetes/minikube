@@ -44,7 +44,7 @@ Make sure to also fetch tags, as Godep relies on these.
 
  ```shell
  git checkout $DESIREDTAG
- ./hack/godeps/godep-restore.sh
+ ./hack/godep-restore.sh
  ```
 
 4. Build and test minikube, making any manual changes necessary to build.
