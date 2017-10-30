@@ -35,11 +35,7 @@ func TestFunctional(t *testing.T) {
 	t.Run("Addons", testAddons)
 	t.Run("Dashboard", testDashboard)
 	t.Run("ServicesList", testServicesList)
-
-	// Don't run this test on kubeadm bootstrapper for now.
-	if !strings.Contains(*args, "--bootstrapper=kubeadm") {
-		t.Run("Provisioning", testProvisioning)
-	}
+	t.Run("Provisioning", testProvisioning)
 
 	if !strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Run("EnvVars", testClusterEnv)
