@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -38,8 +39,13 @@ var updateCheckCmd = &cobra.Command{
 		url := constants.GithubMinikubeReleasesURL
 		r, err := notify.GetAllVersionsFromURL(url)
 		if err != nil {
-			fmt.Println("Error fetching latest version from internet")
-			return
+			fmt.Fprintf(os.Stderr, "Error fetching latest version from internet")
+			os.Exit(1)
+		}
+
+		if len(r) < 1 {
+			fmt.Fprintf(os.Stderr, "Got empty version list from server")
+			os.Exit(2)
 		}
 
 		fmt.Println("CurrentVersion:", version.GetVersion())
