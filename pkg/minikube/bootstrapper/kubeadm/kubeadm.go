@@ -325,7 +325,7 @@ func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 		ExtraArgs         []ComponentExtraArgs
 	}{
 		CertDir:           util.DefaultCertPath,
-		ServiceCIDR:       util.DefaultInsecureRegistry,
+		ServiceCIDR:       util.DefaultServiceCIDR,
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     util.APIServerPort,
 		KubernetesVersion: k8s.KubernetesVersion,

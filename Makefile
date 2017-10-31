@@ -26,7 +26,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
 BUILD_IMAGE 	?= gcr.io/google_containers/kube-cross:v1.9.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.23.6
+ISO_VERSION ?= v0.23.5
 ISO_BUCKET ?= minikube/iso
 
 GOOS ?= $(shell go env GOOS)
@@ -256,9 +256,9 @@ endif
 
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit
-	sudo cp out/docker-machine-driver-hyperkit $(GOBIN)/docker-machine-driver-hyperkit
-	sudo chown root:wheel $(GOBIN)/docker-machine-driver-hyperkit
-	sudo chmod u+s $(GOBIN)/docker-machine-driver-hyperkit
+	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
+	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
 
 .PHONY: check-release
 check-release:

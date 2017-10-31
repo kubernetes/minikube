@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/util"
 )
 
 func TestSetupCerts(t *testing.T) {
@@ -33,6 +34,7 @@ func TestSetupCerts(t *testing.T) {
 	k8s := KubernetesConfig{
 		APIServerName: constants.APIServerName,
 		DNSDomain:     constants.ClusterDNSDomain,
+		ServiceCIDR:   util.DefaultServiceCIDR,
 	}
 
 	var filesToBeTransferred []string

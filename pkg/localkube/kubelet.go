@@ -32,6 +32,10 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	if err != nil {
 		return func() error { return err }
 	}
+	dnsIP, err := util.GetDNSIP(lk.ServiceClusterIPRange.String())
+	if err != nil {
+		return func() error { return err }
+	}
 
 	// Master details
 	config.KubeConfig = flag.NewStringFlag(util.DefaultKubeConfigPath)
@@ -45,7 +49,7 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 
 	// Networking
 	config.ClusterDomain = lk.DNSDomain
-	config.ClusterDNS = []string{lk.DNSIP.String()}
+	config.ClusterDNS = []string{dnsIP.String()}
 	// For kubenet plugin.
 	config.PodCIDR = "10.180.1.0/24"
 
