@@ -29,7 +29,9 @@ set -e
 OS_ARCH="linux-amd64"
 VM_DRIVER="none"
 JOB_NAME="Linux-None"
-EXTRA_BUILD_ARGS="$EXTRA_BUILD_ARGS --use-vendored-driver"
+EXTRA_ARGS="--bootstrapper=localkube"
+EXTRA_START_ARGS="--kubernetes-version=file://$PWD/out/localkube"
+
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 

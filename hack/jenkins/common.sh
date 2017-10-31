@@ -27,6 +27,7 @@
 # Copy only the files we need to this workspace
 mkdir -p out/ testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
+gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/localkube out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
@@ -83,7 +84,7 @@ find ~/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
-${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-start-args="--vm-driver=${VM_DRIVER}" -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
+${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
 result=$?
 set -e
 
