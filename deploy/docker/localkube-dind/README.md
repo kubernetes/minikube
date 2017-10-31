@@ -17,7 +17,7 @@ $ docker run -it \
   -p 127.0.0.1:8080:8080 \
   -v /boot:/boot \
   -v /lib/modules:/lib/modules \
-  gcr.io/k8s-minikube/localkube-image:v1.7.0 \
+  gcr.io/k8s-minikube/localkube-image:v1.7.5 \
   /start.sh
 ```
 
