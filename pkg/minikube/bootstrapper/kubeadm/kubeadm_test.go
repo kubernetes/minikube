@@ -45,7 +45,7 @@ api:
 kubernetesVersion: v1.8.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
-  serviceSubnet: 10.0.0.0/24
+  serviceSubnet: 10.96.0.0/12
 etcd:
   dataDir: /data
 nodeName: minikube
@@ -83,7 +83,7 @@ api:
 kubernetesVersion: v1.8.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
-  serviceSubnet: 10.0.0.0/24
+  serviceSubnet: 10.96.0.0/12
 etcd:
   dataDir: /data
 nodeName: extra-args-minikube
@@ -122,7 +122,7 @@ api:
 kubernetesVersion: v1.8.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
-  serviceSubnet: 10.0.0.0/24
+  serviceSubnet: 10.96.0.0/12
 etcd:
   dataDir: /data
 nodeName: extra-args-minikube
@@ -147,7 +147,7 @@ api:
 kubernetesVersion: v1.8.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
-  serviceSubnet: 10.0.0.0/24
+  serviceSubnet: 10.96.0.0/12
 etcd:
   dataDir: /data
 nodeName: extra-args-minikube
@@ -182,7 +182,7 @@ api:
 kubernetesVersion: v1.8.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
-  serviceSubnet: 10.0.0.0/24
+  serviceSubnet: 10.96.0.0/12
 etcd:
   dataDir: /data
 nodeName: extra-args-minikube

@@ -18,6 +18,7 @@ package kubeadm
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -169,12 +170,24 @@ var versionSpecificOpts = []VersionedExtraOption{
 		},
 		GreaterThanOrEqual: semver.MustParse("1.8.0-alpha.0"),
 	},
+	// Kubeconfig args
 	NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
+	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
 	NewUnversionedOption(Kubelet, "require-kubeconfig", "true"),
+
+	// System pods args
 	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
 	NewUnversionedOption(Kubelet, "allow-privileged", "true"),
-	NewUnversionedOption(Kubelet, "cluster-dns", "10.0.0.10"),
+
+	// Network args
+	NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
 	NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
+
+	// Auth args
+	NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
+	NewUnversionedOption(Kubelet, "client-ca-file", filepath.Join(util.DefaultCertPath, "ca.crt")),
+
+	// Cgroup args
 	NewUnversionedOption(Kubelet, "cadvisor-port", "0"),
 	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
 }

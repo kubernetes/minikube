@@ -21,12 +21,14 @@ import (
 	"crypto/x509"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/util"
 )
 
 func TestBasicHealthCheck(t *testing.T) {
@@ -42,7 +44,14 @@ func TestBasicHealthCheck(t *testing.T) {
 
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
-	lk := LocalkubeServer{LocalkubeDirectory: tempDir}
+	_, ipnet, err := net.ParseCIDR(util.DefaultServiceCIDR)
+	if err != nil {
+		t.Fatalf("Error parsing default service cidr range: %s", err)
+	}
+	lk := LocalkubeServer{
+		LocalkubeDirectory:    tempDir,
+		ServiceClusterIPRange: *ipnet,
+	}
 	lk.GenerateCerts()
 
 	cert, err := tls.LoadX509KeyPair(lk.GetPublicKeyCertPath(), lk.GetPrivateKeyCertPath())

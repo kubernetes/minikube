@@ -28,6 +28,7 @@ import (
 	"strconv"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/apiserver/pkg/util/flag"
@@ -47,7 +48,6 @@ type LocalkubeServer struct {
 	Containerized            bool
 	EnableDNS                bool
 	DNSDomain                string
-	DNSIP                    net.IP
 	LocalkubeDirectory       string
 	ServiceClusterIPRange    net.IPNet
 	APIServerAddress         net.IP
@@ -263,7 +263,11 @@ func (lk LocalkubeServer) GenerateKubeconfig() error {
 }
 
 func (lk LocalkubeServer) getAllIPs() ([]net.IP, error) {
-	ips := []net.IP{net.ParseIP(util.DefaultServiceClusterIP)}
+	serviceIP, err := util.GetServiceClusterIP(lk.ServiceClusterIPRange.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "getting service cluster ip")
+	}
+	ips := []net.IP{serviceIP}
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return nil, err
