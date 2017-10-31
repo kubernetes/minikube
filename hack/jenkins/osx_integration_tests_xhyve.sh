@@ -29,6 +29,8 @@ set -e
 OS_ARCH="darwin-amd64"
 VM_DRIVER="xhyve"
 JOB_NAME="OSX-Xhyve"
+EXTRA_ARGS="--bootstrapper=localkube"
+EXTRA_START_ARGS="--kubernetes-version=file://$PWD/out/localkube"
 
 
 # Download files and set permissions

@@ -14,15 +14,14 @@
 
 mkdir -p out
 gsutil.cmd cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
+gsutil.cmd cp gs://minikube-builds/$env:MINIKUBE_LOCATION/localkube out/
 gsutil.cmd cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
 gsutil.cmd cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
-
 
 ./out/minikube-windows-amd64.exe delete
 Remove-Item -Recurse -Force C:\Users\jenkins\.minikube
 
-out/e2e-windows-amd64.exe --% -minikube-start-args="--vm-driver=virtualbox" -minikube-args="--v=10 --logtostderr $env:EXTRA_BUILD_ARGS" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
-
+out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=virtualbox --kubernetes-version=https://storage.googleapis.com/minikube-builds/$env:MINIKUBE_LOCATION/localkube" -minikube-args="--v=10 --logtostderr" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=30m
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
 If($env:result -eq 0){$env:status="success"}
