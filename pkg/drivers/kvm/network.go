@@ -42,9 +42,14 @@ const networkTmpl = `
 </network>
 `
 
-const defaultNetworkName = "minikube-net"
-
 func (d *Driver) createNetwork() error {
+	if d.MAC == "" {
+		mac, err := randomMAC()
+		if err != nil {
+			return errors.Wrap(err, "generating mac address")
+		}
+		d.MAC = mac.String()
+	}
 	conn, err := getConnection()
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
@@ -154,7 +159,7 @@ func (d *Driver) lookupIPFromLeasesFile() (string, error) {
 		if len(entry) != 5 {
 			return "", fmt.Errorf("Malformed leases entry: %s", entry)
 		}
-		if entry[3] == d.MachineName {
+		if entry[1] == d.MAC {
 			ipAddress = entry[2]
 		}
 	}

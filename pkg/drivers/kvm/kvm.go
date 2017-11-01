@@ -66,7 +66,13 @@ type Driver struct {
 
 	// The location of the iso to boot from
 	ISO string
+
+	// The randomly generated MAC Address
+	// If empty, a random MAC will be generated.
+	MAC string
 }
+
+const defaultNetworkName = "minikube-net"
 
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
