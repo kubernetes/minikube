@@ -158,6 +158,38 @@ var Addons = map[string]*Addon{
 			"heapster-svc.yaml",
 			"0640"),
 	}, false, "heapster"),
+	"efk": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/efk/elasticsearch-rc.yaml",
+			constants.AddonsPath,
+			"elasticsearch-rc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/efk/elasticsearch-svc.yaml",
+			constants.AddonsPath,
+			"elasticsearch-svc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/efk/fluentd-es-rc.yaml",
+			constants.AddonsPath,
+			"fluentd-es-rc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/efk/fluentd-es-configmap.yaml",
+			constants.AddonsPath,
+			"fluentd-es-configmap.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/efk/kibana-rc.yaml",
+			constants.AddonsPath,
+			"kibana-rc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/efk/kibana-svc.yaml",
+			constants.AddonsPath,
+			"kibana-svc.yaml",
+			"0640"),
+	}, false, "efk"),
 	"ingress": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/ingress/ingress-configmap.yaml",
