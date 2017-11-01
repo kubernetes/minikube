@@ -17,19 +17,16 @@ limitations under the License.
 package main
 
 import (
-	"k8s.io/minikube/cmd/localkube/cmd"
-	"sync"
+	"flag"
+	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/localkube"
 )
 
 func main() {
-	localkubeServer := cmd.NewLocalkubeServer()
-	storageProvisionerServer := localkubeServer.NewStorageProvisionerServer()
+	flag.Parse()
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		storageProvisionerServer.Start()
-	}()
-	wg.Wait()
+	if err := localkube.StartStorageProvisioner(); err != nil {
+		glog.Exit(err)
+	}
+
 }

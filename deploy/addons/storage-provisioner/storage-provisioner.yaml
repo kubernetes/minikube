@@ -20,7 +20,6 @@ metadata:
   labels:
     integration-test: storage-provisioner
     addonmanager.kubernetes.io/mode: EnsureExists
-    kubernetes.io/minikube-addons: storage-provisioner
 spec:
   hostNetwork: true
   containers:

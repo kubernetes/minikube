@@ -109,38 +109,33 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 	return nil
 }
 
-func (lk LocalkubeServer) NewStorageProvisionerServer() Server {
-	return NewSimpleServer("storage-provisioner", serverInterval, StartStorageProvisioner(lk), noop)
-}
-
-func StartStorageProvisioner(lk LocalkubeServer) func() error {
-	return func() error {
-		config, err := restclient.InClusterConfig()
-		if err != nil {
-			return err
-		}
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			glog.Fatalf("Failed to create client: %v", err)
-		}
-
-		// The controller needs to know what the server version is because out-of-tree
-		// provisioners aren't officially supported until 1.5
-		serverVersion, err := clientset.Discovery().ServerVersion()
-		if err != nil {
-			return fmt.Errorf("Error getting server version: %v", err)
-		}
-
-		// Create the provisioner: it implements the Provisioner interface expected by
-		// the controller
-		hostPathProvisioner := NewHostPathProvisioner()
-
-		// Start the provision controller which will dynamically provision hostPath
-		// PVs
-		pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
-
-		fmt.Println("wait never stop")
-		pc.Run(wait.NeverStop)
-		return nil
+// Start storage provisioner server
+func StartStorageProvisioner() error {
+	config, err := restclient.InClusterConfig()
+	if err != nil {
+		return err
 	}
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		glog.Fatalf("Failed to create client: %v", err)
+	}
+
+	// The controller needs to know what the server version is because out-of-tree
+	// provisioners aren't officially supported until 1.5
+	serverVersion, err := clientset.Discovery().ServerVersion()
+	if err != nil {
+		return fmt.Errorf("Error getting server version: %v", err)
+	}
+
+	// Create the provisioner: it implements the Provisioner interface expected by
+	// the controller
+	hostPathProvisioner := NewHostPathProvisioner()
+
+	// Start the provision controller which will dynamically provision hostPath
+	// PVs
+	pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
+
+	glog.Info("Starting storage provisioner server")
+	pc.Run(wait.NeverStop)
+	return nil
 }
