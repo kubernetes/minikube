@@ -54,7 +54,7 @@ LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldfla
 LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 HYPERKIT_FILES :=  GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' k8s.io/minikube/cmd/drivers/hyperkit | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-
+STORAGE_PROVISIONER_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' k8s.io/minikube/cmd/storage-provisioner | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 MINIKUBE_TEST_FILES := go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./... | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
 KVM_DRIVER_FILES := $(shell go list -f '{{join .Deps "\n"}}' ./cmd/drivers/kvm/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
@@ -299,6 +299,14 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	docker build $(ISO_DOCKER_EXTRA_ARGS) -t $@ -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
+
+out/storage-provisioner: $(shell $(STORAGE_PROVISIONER_FILES))
+	go build -o $(BUILD_DIR)/storage-provisioner cmd/storage-provisioner/main.go
+
+.PHONY: storage-provisioner-image
+storage-provisioner-image: out/storage-provisioner
+	docker build -t $(REGISTRY)/storage-provisioner:$(TAG) -f deploy/storage-provisioner/Dockerfile .
+	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(TAG)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum

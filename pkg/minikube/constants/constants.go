@@ -176,6 +176,9 @@ var LocalkubeCachedImages = []string{
 
 	// Pause
 	"gcr.io/google_containers/pause-amd64:3.0",
+
+	//Storage Provisioner
+	"gcr.io/k8s-minikube/storage-provisioner:v1.8.0",
 }
 
 func GetKubeadmCachedImages(version string) []string {
@@ -201,6 +204,9 @@ func GetKubeadmCachedImages(version string) []string {
 		"gcr.io/google_containers/kube-scheduler-amd64:" + version,
 		"gcr.io/google_containers/kube-controller-manager-amd64:" + version,
 		"gcr.io/google_containers/kube-apiserver-amd64:" + version,
+
+		//Storage Provisioner
+		"gcr.io/k8s-minikube/storage-provisioner:v1.8.0",
 	}
 }
 
