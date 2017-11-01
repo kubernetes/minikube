@@ -11,6 +11,7 @@ curl -L -X PUT http://10.0.2.15:2379/v2/keys/message -d value="Hello"
 ```
 
 ## Accessing Host Resources From Inside A Pod
+### When you have a VirtualBox driver
 In order to access host resources from inside a pod, run the following command to determine the host IP you can use:
 ```shell
 ip addr
