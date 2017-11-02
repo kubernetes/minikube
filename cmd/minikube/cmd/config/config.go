@@ -156,6 +156,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "efk",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:        "ingress",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
@@ -192,7 +198,7 @@ var settings = []Setting{
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
 	Short: "Modify minikube config",
-	Long: `config modifies minikube config files using subcommands like "minikube config set vm-driver kvm" 
+	Long: `config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
