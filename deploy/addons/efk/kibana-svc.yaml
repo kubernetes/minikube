@@ -20,10 +20,13 @@ metadata:
   labels:
     k8s-app: kibana-logging
     kubernetes.io/minikube-addons: efk
+    kubernetes.io/minikube-addons-endpoint: efk
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
+  type: NodePort
   ports:
   - port: 5601
+    nodePort: 30003
     protocol: TCP
     targetPort: ui
   selector:
