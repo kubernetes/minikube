@@ -38,9 +38,11 @@ var configGetCmd = &cobra.Command{
 		val, err := config.Get(args[0])
 		if err != nil {
 			fmt.Fprintln(os.Stdout, err)
+			os.Exit(1)
 		}
 		if val != "" {
 			fmt.Fprintln(os.Stdout, val)
+			os.Exit(1)
 		}
 	},
 }
