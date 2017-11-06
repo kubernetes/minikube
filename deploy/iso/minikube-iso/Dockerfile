@@ -40,5 +40,8 @@ RUN wget -O - https://github.com/Yelp/dumb-init/archive/v1.2.0.tar.gz | tar xvzf
 	&& mv dumb-init-1.2.0/dumb-init /usr/bin \
 	&& rm -rf dumb-init-1.2.0
 
+RUN wget -O - https://redirector.gvt1.com/edgedl/go/go1.9.2.linux-amd64.tar.gz | tar -C /usr/local -xvz
+ENV PATH $PATH:/usr/local/go/bin
+
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 CMD ["/bin/bash"]
