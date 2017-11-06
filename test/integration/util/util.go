@@ -248,8 +248,8 @@ func WaitForDashboardRunning(t *testing.T) error {
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
-	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "kubernetes-dashboard", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for dashboard RC to stabilize")
+	if err := commonutil.WaitForDeploymentToStabilize(client, "kube-system", "kubernetes-dashboard", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for dashboard deployment to stabilize")
 	}
 
 	if err := commonutil.WaitForService(client, "kube-system", "kubernetes-dashboard", true, time.Millisecond*500, time.Minute*10); err != nil {

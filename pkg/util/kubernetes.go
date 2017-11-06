@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/golang/glog"
+	"k8s.io/api/apps/v1beta2"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -138,30 +139,30 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 	})
 }
 
-// WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status.
-func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
+// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status.
+func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
 	options := metav1.ListOptions{FieldSelector: fields.Set{
 		"metadata.name":      name,
 		"metadata.namespace": ns,
 	}.AsSelector().String()}
-	w, err := c.Core().ReplicationControllers(ns).Watch(options)
+	w, err := c.AppsV1beta2().Deployments(ns).Watch(options)
 	if err != nil {
 		return err
 	}
 	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
 		switch event.Type {
 		case watch.Deleted:
-			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
+			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}
-		switch rc := event.Object.(type) {
-		case *v1.ReplicationController:
-			if rc.Name == name && rc.Namespace == ns &&
-				rc.Generation <= rc.Status.ObservedGeneration &&
-				*(rc.Spec.Replicas) == rc.Status.Replicas {
+		switch deploy := event.Object.(type) {
+		case *v1beta2.Deployment:
+			if deploy.Name == name && deploy.Namespace == ns &&
+				deploy.Generation <= deploy.Status.ObservedGeneration &&
+				*(deploy.Spec.Replicas) == deploy.Status.Replicas {
 				return true, nil
 			}
-			glog.Infof("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
-				name, rc.Generation, rc.Status.ObservedGeneration, *(rc.Spec.Replicas), rc.Status.Replicas)
+			glog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+				name, deploy.Generation, deploy.Status.ObservedGeneration, *(deploy.Spec.Replicas), deploy.Status.Replicas)
 		}
 		return false, nil
 	})
