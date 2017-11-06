@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.0.0
+CRIO_BIN_VERSION = v1.8.4
 CRIO_BIN_SITE = https://github.com/kubernetes-incubator/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = libgpgme
@@ -34,19 +34,13 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/etc/containers/oci/hooks.d
 
 	$(INSTALL) -Dm755 \
-		$(@D)/crio \
+		$(@D)/bin/crio \
 		$(TARGET_DIR)/usr/bin/crio
 	$(INSTALL) -Dm755 \
-		$(@D)/crioctl \
-		$(TARGET_DIR)/usr/bin/crioctl
-	$(INSTALL) -Dm755 \
-		$(@D)/kpod \
-		$(TARGET_DIR)/usr/bin/kpod
-	$(INSTALL) -Dm755 \
-		$(@D)/conmon/conmon \
+		$(@D)/bin/conmon \
 		$(TARGET_DIR)/usr/libexec/crio/conmon
 	$(INSTALL) -Dm755 \
-		$(@D)/pause/pause \
+		$(@D)/bin/pause \
 		$(TARGET_DIR)/usr/libexec/crio/pause
 	$(INSTALL) -Dm644 \
 		$(@D)/seccomp.json \
