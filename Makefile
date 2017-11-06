@@ -301,11 +301,14 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner: $(shell $(STORAGE_PROVISIONER_FILES))
-	go build -o $(BUILD_DIR)/storage-provisioner cmd/storage-provisioner/main.go
+	go build GOOS=linux -o $(BUILD_DIR)/storage-provisioner -ldflags=$(LOCALKUBE_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
 	docker build -t $(REGISTRY)/storage-provisioner:$(TAG) -f deploy/storage-provisioner/Dockerfile .
+
+.PHONY: push-storage-provisioner-image
+push-storage-provisioner-image: storage-provisioner-image
 	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(TAG)
 
 .PHONY: release-iso
