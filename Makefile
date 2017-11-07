@@ -301,7 +301,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner: $(shell $(STORAGE_PROVISIONER_FILES))
-	go build GOOS=linux -o $(BUILD_DIR)/storage-provisioner -ldflags=$(LOCALKUBE_LDFLAGS) cmd/storage-provisioner/main.go
+	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(LOCALKUBE_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
