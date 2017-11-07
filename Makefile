@@ -45,6 +45,7 @@ LOCALKUBE_VERSION := $(shell $(PYTHON) hack/get_k8s_version.py --k8s-version-onl
 LOCALKUBE_BUCKET ?= minikube/k8sReleases
 LOCALKUBE_UPLOAD_LOCATION := gs://${LOCALKUBE_BUCKET}
 TAG ?= $(LOCALKUBE_VERSION)
+STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers, and build localkube statically
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
@@ -305,11 +306,11 @@ out/storage-provisioner: $(shell $(STORAGE_PROVISIONER_FILES))
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
-	docker build -t $(REGISTRY)/storage-provisioner:$(TAG) -f deploy/storage-provisioner/Dockerfile .
+	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile .
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image
-	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(TAG)
+	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum

@@ -24,5 +24,5 @@ spec:
   hostNetwork: true
   containers:
   - name: storage-provisioner
-    image: gcr.io/k8s-minikube/storage-provisioner:v1.8.0
+    image: gcr.io/k8s-minikube/storage-provisioner:v1.8.1
     imagePullPolicy: IfNotPresent
