@@ -19,6 +19,8 @@ metadata:
   namespace: kube-system
   labels:
     app: default-http-backend
+    kubernetes.io/minikube-addons: ingress
+    kubernetes.io/minikube-addons-endpoint: ingress
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
   type: NodePort
