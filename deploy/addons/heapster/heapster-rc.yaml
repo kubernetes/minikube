@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: heapster
-        image: gcr.io/google_containers/heapster:v1.4.3
+        image: gcr.io/google_containers/heapster-ppc64le:v1.4.3
         imagePullPolicy: IfNotPresent
         command:
         - /heapster
