@@ -145,7 +145,7 @@ func generateCerts(k8s KubernetesConfig) error {
 			certPath:       filepath.Join(localPath, "apiserver.crt"),
 			keyPath:        filepath.Join(localPath, "apiserver.key"),
 			subject:        "minikube",
-			ips:            []net.IP{net.ParseIP(k8s.NodeIP), serviceIP},
+			ips:            []net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")},
 			alternateNames: util.GetAlternateDNS(k8s.DNSDomain),
 			caCertPath:     caCertPath,
 			caKeyPath:      caKeyPath,
