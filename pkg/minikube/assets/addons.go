@@ -140,7 +140,7 @@ var Addons = map[string]*Addon{
 	}, true, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/heapster/influxGrafana-rc.yaml",
+			"deploy/addons/heapster/influx-grafana-rc.yaml",
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640"),
