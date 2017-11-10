@@ -1,4 +1,4 @@
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2017 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,21 +15,21 @@
 apiVersion: v1
 kind: ReplicationController
 metadata:
-  labels:
-    name: influxGrafana
-    addonmanager.kubernetes.io/mode: Reconcile
-    kubernetes.io/minikube-addons: heapster
   name: influxdb-grafana
+  labels:
+    k8s-app: influx-grafana
+    kubernetes.io/minikube-addons: heapster
+    addonmanager.kubernetes.io/mode: Reconcile
   namespace: kube-system
 spec:
   replicas: 1
   selector:
+    k8s-app: influx-grafana
     addonmanager.kubernetes.io/mode: Reconcile
-    name: influxGrafana
   template:
     metadata:
       labels:
-        name: influxGrafana
+        k8s-app: influx-grafana
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
