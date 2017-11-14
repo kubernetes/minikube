@@ -150,7 +150,7 @@ func (d *Driver) Start() error {
 	h.Kernel = d.ResolveStorePath("bzimage")
 	h.Initrd = d.ResolveStorePath("initrd")
 	h.VMNet = true
-	h.ISOImage = d.ResolveStorePath(isoFilename)
+	h.ISOImages = []string{d.ResolveStorePath(isoFilename)}
 	h.Console = hyperkit.ConsoleFile
 	h.CPUs = d.CPU
 	h.Memory = d.Memory
