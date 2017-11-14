@@ -28,6 +28,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -85,14 +86,16 @@ type HyperKit struct {
 	StateDir string `json:"state_dir"`
 	// VPNKitSock is the location of the VPNKit socket used for networking.
 	VPNKitSock string `json:"vpnkit_sock"`
-	// VPNKitKey is a string containing a UUID, it can be used in conjunction with VPNKit to get consistent IP address.
-	VPNKitKey string `json:"vpnkit_key"`
+	// VPNKitUUID is a string containing a UUID, it can be used in conjunction with VPNKit to get consistent IP address.
+	VPNKitUUID string `json:"vpnkit_uuid"`
+	// VPNKitPreferredIPv4 is a string containing an IPv4 address, it can be used to request a specific IP for a UUID from VPNKit.
+	VPNKitPreferredIPv4 string `json:"vpnkit_preferred_ipv4"`
 	// UUID is a string containing a UUID, it sets BIOS DMI UUID for the VM (as found in /sys/class/dmi/id/product_uuid on Linux).
 	UUID string `json:"uuid"`
 	// Disks contains disk images to use/create.
 	Disks []DiskConfig `json:"disks"`
 	// ISOImage is the (optional) path to a ISO image to attach
-	ISOImage string `json:"iso"`
+	ISOImages []string `json:"iso"`
 	// VSock enables the virtio-socket device and exposes it on the host
 	VSock bool `json:"vsock"`
 	// VSockPorts is a list of guest VSock ports that should be exposed as sockets on the host
@@ -110,6 +113,8 @@ type HyperKit struct {
 	Kernel string `json:"kernel"`
 	// Initrd is the path to the initial ramdisk to boot off
 	Initrd string `json:"initrd"`
+	// Bootrom is the path to a boot rom eg for UEFI boot
+	Bootrom string `json:"bootrom"`
 
 	// CPUs is the number CPUs to configure
 	CPUs int `json:"cpus"`
@@ -224,9 +229,9 @@ func (h *HyperKit) execute(cmdline string) error {
 	if h.Console == ConsoleStdio && !isTerminal(os.Stdout) && h.StateDir == "" {
 		return fmt.Errorf("If ConsoleStdio is set but stdio is not a terminal, StateDir must be specified")
 	}
-	if h.ISOImage != "" {
-		if _, err = os.Stat(h.ISOImage); os.IsNotExist(err) {
-			return fmt.Errorf("ISO %s does not exist", h.ISOImage)
+	for _, image := range h.ISOImages {
+		if _, err = os.Stat(image); os.IsNotExist(err) {
+			return fmt.Errorf("ISO %s does not exist", image)
 		}
 	}
 	if h.VSock && h.StateDir == "" {
@@ -235,11 +240,22 @@ func (h *HyperKit) execute(cmdline string) error {
 	if !h.VSock && len(h.VSockPorts) > 0 {
 		return fmt.Errorf("To forward vsock ports vsock must be enabled")
 	}
-	if _, err = os.Stat(h.Kernel); os.IsNotExist(err) {
-		return fmt.Errorf("Kernel %s does not exist", h.Kernel)
+	if h.Bootrom == "" {
+		if _, err = os.Stat(h.Kernel); os.IsNotExist(err) {
+			return fmt.Errorf("Kernel %s does not exist", h.Kernel)
+		}
+		if _, err = os.Stat(h.Initrd); os.IsNotExist(err) {
+			return fmt.Errorf("initrd %s does not exist", h.Initrd)
+		}
+	} else {
+		if _, err = os.Stat(h.Bootrom); os.IsNotExist(err) {
+			return fmt.Errorf("Bootrom %s does not exist", h.Bootrom)
+		}
 	}
-	if _, err = os.Stat(h.Initrd); os.IsNotExist(err) {
-		return fmt.Errorf("initrd %s does not exist", h.Initrd)
+	if h.VPNKitPreferredIPv4 != "" {
+		if ip := net.ParseIP(h.VPNKitPreferredIPv4); ip == nil {
+			return fmt.Errorf("Invalid VPNKit IP: %s", h.VPNKitPreferredIPv4)
+		}
 	}
 
 	// Create files
@@ -379,11 +395,7 @@ func CreateDiskImage(location string, sizeMB int) error {
 	}
 	defer f.Close()
 
-	buf := make([]byte, 1048676)
-	for i := 0; i < sizeMB; i++ {
-		f.Write(buf)
-	}
-	return nil
+	return f.Truncate(int64(sizeMB) * int64(1024) * int64(1024))
 }
 
 func intArrayToString(i []int, sep string) string {
@@ -412,11 +424,15 @@ func (h *HyperKit) buildArgs(cmdline string) {
 	nextSlot := 1
 
 	if h.VPNKitSock != "" {
-		if h.VPNKitKey == "" {
-			a = append(a, "-s", fmt.Sprintf("%d:0,virtio-vpnkit,path=%s", nextSlot, h.VPNKitSock))
-		} else {
-			a = append(a, "-s", fmt.Sprintf("%d:0,virtio-vpnkit,path=%s,uuid=%s", nextSlot, h.VPNKitSock, h.VPNKitKey))
+		var uuid string
+		if h.VPNKitUUID != "" {
+			uuid = fmt.Sprintf(",uuid=%s", h.VPNKitUUID)
 		}
+		var preferredIPv4 string
+		if h.VPNKitPreferredIPv4 != "" {
+			preferredIPv4 = fmt.Sprintf(",preferred_ipv4=%s", h.VPNKitPreferredIPv4)
+		}
+		a = append(a, "-s", fmt.Sprintf("%d:0,virtio-vpnkit,path=%s%s%s", nextSlot, h.VPNKitSock, uuid, preferredIPv4))
 		nextSlot++
 	}
 
@@ -454,8 +470,8 @@ func (h *HyperKit) buildArgs(cmdline string) {
 		nextSlot++
 	}
 
-	if h.ISOImage != "" {
-		a = append(a, "-s", fmt.Sprintf("%d,ahci-cd,%s", nextSlot, h.ISOImage))
+	for _, image := range h.ISOImages {
+		a = append(a, "-s", fmt.Sprintf("%d,ahci-cd,%s", nextSlot, image))
 		nextSlot++
 	}
 
@@ -473,8 +489,13 @@ func (h *HyperKit) buildArgs(cmdline string) {
 		a = append(a, "-l", fmt.Sprintf("com1,autopty=%s/tty,log=%s/console-ring", h.StateDir, h.StateDir))
 	}
 
-	kernArgs := fmt.Sprintf("kexec,%s,%s,earlyprintk=serial %s", h.Kernel, h.Initrd, cmdline)
-	a = append(a, "-f", kernArgs)
+	if h.Bootrom == "" {
+		kernArgs := fmt.Sprintf("kexec,%s,%s,earlyprintk=serial %s", h.Kernel, h.Initrd, cmdline)
+		a = append(a, "-f", kernArgs)
+	} else {
+		kernArgs := fmt.Sprintf("bootrom,%s,,", h.Bootrom)
+		a = append(a, "-f", kernArgs)
+	}
 
 	h.Arguments = a
 	h.CmdLine = h.HyperKit + " " + strings.Join(a, " ")
