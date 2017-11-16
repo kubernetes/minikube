@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/config"
 
+	"errors"
 	"github.com/spf13/cobra"
 )
 
@@ -29,19 +30,23 @@ var configGetCmd = &cobra.Command{
 	Use:   "get PROPERTY_NAME",
 	Short: "Gets the value of PROPERTY_NAME from the minikube config file",
 	Long:  "Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			fmt.Fprintln(os.Stderr, "usage: minikube config get PROPERTY_NAME")
-			os.Exit(1)
+			cmd.SilenceErrors = true
+			return errors.New("usage: minikube config get PROPERTY_NAME")
 		}
 
+		cmd.SilenceUsage = true
 		val, err := config.Get(args[0])
 		if err != nil {
-			fmt.Fprintln(os.Stdout, err)
+			return err
 		}
-		if val != "" {
-			fmt.Fprintln(os.Stdout, val)
+		if val == "" {
+			return fmt.Errorf("no value for key '%s'", args[0])
 		}
+
+		fmt.Fprintln(os.Stdout, val)
+		return nil
 	},
 }
 
