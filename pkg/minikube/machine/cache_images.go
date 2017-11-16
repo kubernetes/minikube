@@ -17,14 +17,13 @@ limitations under the License.
 package machine
 
 import (
+	"golang.org/x/sync/errgroup"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"golang.org/x/sync/errgroup"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -96,6 +95,27 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 	}
 	glog.Infoln("Successfully loaded all cached images.")
 	return nil
+}
+
+// DeleteImages deletes images from local daemon
+func DeleteImages(cmd bootstrapper.CommandRunner, images []string) error {
+	var g errgroup.Group
+	for _, image := range images {
+		image := image
+		g.Go(func() error {
+			dockerDeleteCmd := "docker rmi " + image
+			if err := cmd.Run(dockerDeleteCmd); err != nil {
+				return errors.Wrapf(err, "deleting docker image: %s", image)
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "deleting cached images")
+	}
+	glog.Infoln("Successfully deleted cached images.")
+	return nil
+
 }
 
 // # ParseReference cannot have a : in the directory path
@@ -185,7 +205,7 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
 		return errors.Wrapf(err, "loading docker image: %s", dst)
 	}
 
-	if err := cmd.Run("rm -rf " + dst); err != nil {
+	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
 	}
 
