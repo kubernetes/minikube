@@ -36,6 +36,7 @@ type setFn func(string, string) error
 type Setting struct {
 	name        string
 	set         func(config.MinikubeConfig, string, string) error
+	setArray    func(config.MinikubeConfig, string, []string) error
 	validations []setFn
 	callbacks   []setFn
 }
@@ -193,6 +194,10 @@ var settings = []Setting{
 		name: "disable-driver-mounts",
 		set:  SetBool,
 	},
+	{
+		name:     "cache",
+		setArray: SetStringArray,
+	},
 }
 
 var ConfigCmd = &cobra.Command{
@@ -211,6 +216,72 @@ func configurableFields() string {
 		fields = append(fields, " * "+s.name)
 	}
 	return strings.Join(fields, "\n")
+}
+
+func AddToConfigArray(name string, images []string) error {
+	s, err := findSetting(name)
+	if err != nil {
+		return err
+	}
+
+	// Set the values
+	configFile, err := config.ReadConfig()
+	if err != nil {
+		return err
+	}
+	values := configFile[name]
+
+	if values != nil {
+		for _, v := range values.([]interface{}) {
+			images = append(images, v.(string))
+		}
+	}
+
+	err = s.setArray(configFile, name, images)
+	if err != nil {
+		return err
+	}
+
+	// Write the values
+	return WriteConfig(configFile)
+}
+
+func DeleteFromConfigArray(name string, images []string) error {
+	s, err := findSetting(name)
+	if err != nil {
+		return err
+	}
+	// Set the values
+	configFile, err := config.ReadConfig()
+	if err != nil {
+		return err
+	}
+	values := configFile[name]
+	var finalImages []string
+
+	if values != nil {
+		for _, v := range values.([]interface{}) {
+			addImage := true
+			for _, image := range images {
+				if v.(string) == image {
+					addImage = false
+				}
+			}
+			if addImage {
+				finalImages = append(finalImages, v.(string))
+
+			}
+
+		}
+	}
+
+	err = s.setArray(configFile, name, finalImages)
+	if err != nil {
+		return err
+	}
+
+	// Write the values
+	return WriteConfig(configFile)
 }
 
 // WriteConfig writes a minikube config to the JSON file
