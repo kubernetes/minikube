@@ -60,6 +60,11 @@ func SetString(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+func SetStringArray(m config.MinikubeConfig, name string, val []string) error {
+	m[name] = val
+	return nil
+}
+
 func SetInt(m config.MinikubeConfig, name string, val string) error {
 	i, err := strconv.Atoi(val)
 	if err != nil {
