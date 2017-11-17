@@ -39,7 +39,7 @@ func PrintKubernetesVersions(output io.Writer, url string) {
 		glog.Errorln(err)
 		return
 	}
-	fmt.Fprint(output, "The following Kubernetes versions are available: \n")
+	fmt.Fprint(output, "The following Kubernetes versions are available when using the localkube bootstrapper: \n")
 
 	for _, k8sVersion := range k8sVersions {
 		fmt.Fprintf(output, "\t- %s\n", k8sVersion.Version)
