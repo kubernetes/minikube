@@ -6,6 +6,7 @@ It includes:
 - systemd as the init system
 - rkt
 - docker
+- CRI-O
 
 ## Hacking
 
