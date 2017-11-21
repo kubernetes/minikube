@@ -338,7 +338,6 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	if err != nil {
 		fmt.Println("Unable to load cached images from config file.")
 	}
-
 }
 
 func validateK8sVersion(version string) {
