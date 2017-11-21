@@ -66,6 +66,9 @@ const DefaultMachineName = "minikube"
 // The name of the default storage class provisioner
 const DefaultStorageClassProvisioner = "standard"
 
+// Used to modify the cache field in the config file
+const Cache = "cache"
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
 	args := []string{GetMinipath()}
