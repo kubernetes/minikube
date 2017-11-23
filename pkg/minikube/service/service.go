@@ -35,9 +35,11 @@ import (
 
 	"text/template"
 
+	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/labels"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -64,18 +66,19 @@ func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 
 func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	profile := viper.GetString(config.MachineProfile)
 	configOverrides := &clientcmd.ConfigOverrides{
 		Context: clientcmdapi.Context{
-			Cluster:  "minikube",
-			AuthInfo: "minikube",
+			Cluster:  profile,
+			AuthInfo: profile,
 		},
 	}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
+	clientConfig, err := kubeConfig.ClientConfig()
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
 	}
-	client, err := kubernetes.NewForConfig(config)
+	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
