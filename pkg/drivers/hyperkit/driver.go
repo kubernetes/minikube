@@ -40,6 +40,9 @@ const (
 	isoFilename     = "boot2docker.iso"
 	pidFileName     = "hyperkit.pid"
 	machineFileName = "hyperkit.json"
+	permErr         = "%s needs to run with elevated permissions. " +
+		"Please run the following command, then try again: " +
+		"sudo chown root:wheel %s && sudo chmod u+s %s"
 )
 
 type Driver struct {
@@ -59,6 +62,20 @@ func NewDriver(hostName, storePath string) *Driver {
 		},
 		CommonDriver: &pkgdrivers.CommonDriver{},
 	}
+}
+
+// PreCreateCheck is called to enforce pre-creation steps
+func (d *Driver) PreCreateCheck() error {
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+
+	if syscall.Geteuid() != 0 {
+		return fmt.Errorf(permErr, filepath.Base(exe), exe, exe)
+	}
+
+	return nil
 }
 
 func (d *Driver) Create() error {
