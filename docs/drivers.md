@@ -10,6 +10,7 @@ The following drivers currently require driver plugin binaries to be present in
 the host PATH:
 
 * [KVM](#kvm-driver)
+* [Hyperkit](#hyperkit-driver)
 * [xhyve](#xhyve-driver)
 * [HyperV](#hyperv-driver)
 
@@ -38,6 +39,19 @@ $ newgrp libvirtd
 # Fedora/CentOS/RHEL
 $ newgrp libvirt
 ```
+
+#### Hyperkit driver
+
+The Hyperkit driver will eventually replace the existing xhyve driver.
+It is built from the minikube source tree, and uses [moby/hyperkit](http://github.com/moby/hyperkit) as a Go library.
+
+To install the hyperkit driver:
+
+```
+curl -Lo https://storage.googleapis.com/releases/latest/docker-machine-driver-xhyve && chmod +x docker-machine-driver-xhyve && sudo mv docker-machine-driver-xhyve /usr/local/bin/ && sudo chown root:wheel /usr/local/bin/docker-machine-driver-xhyve && sudo chmod u+s /usr/local/bin/docker-machine-driver-xhyve
+```
+
+The hyperkit driver currently requires running as root to use the vmnet framework to setup networking.
 
 #### xhyve driver
 
