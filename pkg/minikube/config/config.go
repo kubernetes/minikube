@@ -28,12 +28,13 @@ import (
 )
 
 const (
-	WantUpdateNotification    = "WantUpdateNotification"
-	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
-	WantReportError           = "WantReportError"
-	WantReportErrorPrompt     = "WantReportErrorPrompt"
-	WantKubectlDownloadMsg    = "WantKubectlDownloadMsg"
-	MachineProfile            = "profile"
+	WantUpdateNotification            = "WantUpdateNotification"
+	ReminderWaitPeriodInHours         = "ReminderWaitPeriodInHours"
+	WantReportError                   = "WantReportError"
+	WantReportErrorPrompt             = "WantReportErrorPrompt"
+	WantKubectlDownloadMsg            = "WantKubectlDownloadMsg"
+	MachineProfile                    = "profile"
+	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
 )
 
 type MinikubeConfig map[string]interface{}
