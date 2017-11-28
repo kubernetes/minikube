@@ -196,6 +196,7 @@ var settings = []Setting{
 	},
 	{
 		name:   "cache",
+		set:    SetConfigMap,
 		setMap: SetMap,
 	},
 }
