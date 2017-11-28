@@ -212,7 +212,7 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
 		return errors.Wrapf(err, "loading docker image: %s", dst)
 	}
 
-	if err := cmd.Run("rm -rf " + dst); err != nil {
+	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
 	}
 

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -62,6 +63,16 @@ func SetString(m config.MinikubeConfig, name string, val string) error {
 
 func SetMap(m config.MinikubeConfig, name string, val map[string]interface{}) error {
 	m[name] = val
+	return nil
+}
+
+func SetConfigMap(m config.MinikubeConfig, name string, val string) error {
+	list := strings.Split(val, ",")
+	v := make(map[string]interface{})
+	for _, s := range list {
+		v[s] = nil
+	}
+	m[name] = v
 	return nil
 }
 
