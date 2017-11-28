@@ -38,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -206,9 +207,23 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		driver = createVirtualboxHost(config)
 	case "vmwarefusion":
 		driver = createVMwareFusionHost(config)
-	case "kvm", "kvm2":
+	case "kvm":
+		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+			fmt.Fprintln(os.Stderr, `WARNING: The kvm driver is now deprecated and support for it will be removed in a future release.
+				Please consider switching to the kvm2 driver, which is intended to replace the kvm driver.
+				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
+				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+		}
+		driver = createKVMHost(config)
+	case "kvm2":
 		driver = createKVMHost(config)
 	case "xhyve":
+		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+			fmt.Fprintln(os.Stderr, `WARNING: The xhyve driver is now deprecated and support for it will be removed in a future release.
+Please consider switching to the hyperkit driver, which is intended to replace the xhyve driver.
+See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
+To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+		}
 		driver = createXhyveHost(config)
 	case "hyperv":
 		driver = createHypervHost(config)
