@@ -9,10 +9,44 @@ extra binary to be present in the host PATH.
 The following drivers currently require driver plugin binaries to be present in
 the host PATH:
 
+* [KVM2](#kvm2-driver)
 * [KVM](#kvm-driver)
 * [Hyperkit](#hyperkit-driver)
 * [xhyve](#xhyve-driver)
 * [HyperV](#hyperv-driver)
+
+#### KVM2 driver
+
+The KVM2 driver is intended to replace KVM driver.
+The KVM2 driver is maintained by the minikube team, and is built, tested and released with minikube.
+
+To install the KVM2 driver, first install and configure the prereqs:
+
+```
+# Install libvirt and qemu-kvm on your system, e.g.
+# Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
+$ sudo apt install libvirt-bin qemu-kvm
+# Fedora/CentOS/RHEL
+$ sudo yum install libvirt-daemon-kvm qemu-kvm
+
+# Add yourself to the libvirtd group (use libvirt group for rpm based distros) so you don't need to sudo
+# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
+$ sudo usermod -a -G libvirtd $(whoami)
+# Fedora/CentOS/RHEL
+$ sudo usermod -a -G libvirt $(whoami)
+
+# Update your current session for the group change to take effect
+# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
+$ newgrp libvirtd
+# Fedora/CentOS/RHEL
+$ newgrp libvirt
+```
+
+Then install the driver itself:
+
+```
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 && chmod +x docker-machine-driver-kvm2 && sudo mv docker-machine-driver-kvm2 /usr/bin/
+```
 
 #### KVM driver
 
