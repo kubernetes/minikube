@@ -36,6 +36,7 @@ type setFn func(string, string) error
 type Setting struct {
 	name        string
 	set         func(config.MinikubeConfig, string, string) error
+	setMap      func(config.MinikubeConfig, string, map[string]interface{}) error
 	validations []setFn
 	callbacks   []setFn
 }
@@ -193,6 +194,11 @@ var settings = []Setting{
 		name: "disable-driver-mounts",
 		set:  SetBool,
 	},
+	{
+		name:   "cache",
+		set:    SetConfigMap,
+		setMap: SetMap,
+	},
 }
 
 var ConfigCmd = &cobra.Command{
@@ -211,6 +217,58 @@ func configurableFields() string {
 		fields = append(fields, " * "+s.name)
 	}
 	return strings.Join(fields, "\n")
+}
+
+// AddToConfigMap adds entries to a map in the config file
+func AddToConfigMap(name string, images []string) error {
+	s, err := findSetting(name)
+	if err != nil {
+		return err
+	}
+	// Set the values
+	configFile, err := config.ReadConfig()
+	if err != nil {
+		return err
+	}
+	newImages := make(map[string]interface{})
+	for _, image := range images {
+		newImages[image] = nil
+	}
+	if values, ok := configFile[name].(map[string]interface{}); ok {
+		for key := range values {
+			newImages[key] = nil
+		}
+	}
+	if err = s.setMap(configFile, name, newImages); err != nil {
+		return err
+	}
+	// Write the values
+	return WriteConfig(configFile)
+}
+
+// DeleteFromConfigMap deletes entries from a map in the config file
+func DeleteFromConfigMap(name string, images []string) error {
+	s, err := findSetting(name)
+	if err != nil {
+		return err
+	}
+	// Set the values
+	configFile, err := config.ReadConfig()
+	if err != nil {
+		return err
+	}
+	values, ok := configFile[name]
+	if !ok {
+		return nil
+	}
+	for _, image := range images {
+		delete(values.(map[string]interface{}), image)
+	}
+	if err = s.setMap(configFile, name, values.(map[string]interface{})); err != nil {
+		return err
+	}
+	// Write the values
+	return WriteConfig(configFile)
 }
 
 // WriteConfig writes a minikube config to the JSON file
