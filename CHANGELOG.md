@@ -1,5 +1,17 @@
 # Minikube Release Notes
 
+# Version 0.24.0 - 11/29/2017
+* Deprecated xhyve and kvm drivers [#2227](https://github.com/kubernetes/minikube/pull/2227)
+* Added support for a "rootfs" layer in .minikube/files [#2110](https://github.com/kubernetes/minikube/pull/2110)
+* Added a `cache` command to cache non-minikube images [#2203](https://github.com/kubernetes/minikube/pull/2203)
+* Updated Dashboard addon to v1.8.0 [#2223](https://github.com/kubernetes/minikube/pull/2223)
+* Switched the virtualbox driver to use virtio networking [#2211](https://github.com/kubernetes/minikube/pull/2211)
+* Better error message in hyperkit driver [#2215](https://github.com/kubernetes/minikube/pull/2215)
+* Update heapster addon to v1.5.0 [#2182](https://github.com/kubernetes/minikube/pull/2182)
+* Moved the storage provisioner to run in a pod [#2137](https://github.com/kubernetes/minikube/pull/2137)
+* Added support for tcp and udp services to the ingress addon [#2142](https://github.com/kubernetes/minikube/pull/2142)
+* Bug fix to use the minikube context instead of the current kubectl context [#2128](https://github.com/kubernetes/minikube/pull/2128)
+
 # Version 0.23.0 - 10/26/2017
 * Upgraded to go 1.9 [#2113](https://github.com/kubernetes/minikube/pull/2113)
 * Localkube is no longer packaged in minikube bin-data [#2089](https://github.com/kubernetes/minikube/pull/2089)
