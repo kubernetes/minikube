@@ -132,7 +132,9 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 func addAddons(files *[]assets.CopyableFile) error {
 	// add addons to file list
 	// custom addons
-	assets.AddMinikubeDirToAssets("addons", constants.AddonsPath, files)
+	if err := assets.AddMinikubeDirAssets(files); err != nil {
+		return errors.Wrap(err, "adding minikube dir assets")
+	}
 	// bundled addons
 	for addonName, addonBundle := range assets.Addons {
 		// TODO(r2d4): Kubeadm ignores the kube-dns addon and uses its own.
@@ -259,15 +261,6 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
 	}
 
-	if err := addAddons(&files); err != nil {
-		return errors.Wrap(err, "adding addons to copyable files")
-	}
-
-	for _, f := range files {
-		if err := k.c.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
-		}
-	}
 	var g errgroup.Group
 	for _, bin := range []string{"kubelet", "kubeadm"} {
 		bin := bin
@@ -288,6 +281,16 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 	}
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "downloading binaries")
+	}
+
+	if err := addAddons(&files); err != nil {
+		return errors.Wrap(err, "adding addons to copyable files")
+	}
+
+	for _, f := range files {
+		if err := k.c.Copy(f); err != nil {
+			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+		}
 	}
 
 	err = k.c.Run(`

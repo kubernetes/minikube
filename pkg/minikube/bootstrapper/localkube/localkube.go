@@ -123,11 +123,10 @@ func (lk *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesCon
 	}
 	copyableFiles = append(copyableFiles, localkubeFile)
 
-	// user added files
-	assets.AddMinikubeDirToAssets("files", constants.FilesPath, &copyableFiles)
-
 	// custom addons
-	assets.AddMinikubeDirToAssets("addons", constants.AddonsPath, &copyableFiles)
+	if err := assets.AddMinikubeDirAssets(&copyableFiles); err != nil {
+		return errors.Wrap(err, "adding minikube dir assets")
+	}
 	// bundled addons
 	for _, addonBundle := range assets.Addons {
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
