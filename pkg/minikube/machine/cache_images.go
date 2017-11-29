@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"golang.org/x/sync/errgroup"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -24,11 +25,11 @@ import (
 	"runtime"
 	"strings"
 
-	"golang.org/x/sync/errgroup"
-
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 
 	"github.com/containers/image/copy"
 	"github.com/containers/image/docker"
@@ -96,6 +97,32 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 	}
 	glog.Infoln("Successfully loaded all cached images.")
 	return nil
+}
+
+func CacheAndLoadImages(images []string) error {
+	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
+		return err
+	}
+	api, err := NewAPIClient()
+	if err != nil {
+		return err
+	}
+	defer api.Close()
+	h, err := api.Load(config.GetMachineName())
+	if err != nil {
+		return err
+	}
+
+	client, err := sshutil.NewSSHClient(h.Driver)
+	if err != nil {
+		return err
+	}
+	cmdRunner, err := bootstrapper.NewSSHRunner(client), nil
+	if err != nil {
+		return err
+	}
+
+	return LoadImages(cmdRunner, images, constants.ImageCacheDir)
 }
 
 // # ParseReference cannot have a : in the directory path
@@ -185,12 +212,49 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
 		return errors.Wrapf(err, "loading docker image: %s", dst)
 	}
 
-	if err := cmd.Run("rm -rf " + dst); err != nil {
+	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
 	}
 
 	glog.Infof("Successfully loaded image %s from cache", src)
 	return nil
+}
+
+func DeleteFromImageCacheDir(images []string) error {
+	for _, image := range images {
+		path := filepath.Join(constants.ImageCacheDir, image)
+		glog.Infoln("Deleting image in cache at ", path)
+		if err := os.Remove(path); err != nil {
+			return err
+		}
+	}
+	return cleanImageCacheDir()
+}
+
+func cleanImageCacheDir() error {
+	err := filepath.Walk(constants.ImageCacheDir, func(path string, info os.FileInfo, err error) error {
+		// If error is not nil, it's because the path was already deleted and doesn't exist
+		// Move on to next path
+		if err != nil {
+			return nil
+		}
+		// Check if path is directory
+		if !info.IsDir() {
+			return nil
+		}
+		// If directory is empty, delete it
+		entries, err := ioutil.ReadDir(path)
+		if err != nil {
+			return err
+		}
+		if len(entries) == 0 {
+			if err = os.Remove(path); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
 }
 
 func getSrcRef(image string) (types.ImageReference, error) {
