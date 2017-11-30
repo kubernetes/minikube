@@ -17,12 +17,17 @@ limitations under the License.
 package localkube
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 
@@ -42,13 +47,53 @@ func (l *localkubeCacher) getLocalkubeCacheFilepath() string {
 		filepath.Base(url.QueryEscape("localkube-"+l.k8sConf.KubernetesVersion)))
 }
 
+func (l *localkubeCacher) getLocalkubeSha256CacheFilepath() string {
+	return l.getLocalkubeCacheFilepath() + ".sha256"
+}
+
 func localkubeURIWasSpecified(config bootstrapper.KubernetesConfig) bool {
 	// see if flag is different than default -> it was passed by user
 	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }
 
 func (l *localkubeCacher) isLocalkubeCached() bool {
+	url, err := util.GetLocalkubeDownloadURL(l.k8sConf.KubernetesVersion, constants.LocalkubeLinuxFilename)
+	if err != nil {
+		glog.Warningf("Unable to get localkube checksum url...continuing.")
+		return true
+	}
+	opts := download.FileOptions{
+		Mkdirs: download.MkdirAll,
+	}
+
+	if err := download.ToFile(url+".sha256", l.getLocalkubeSha256CacheFilepath(), opts); err != nil {
+		glog.Warningf("Unable to check localkube checksum... continuing.")
+		return true
+	}
+
 	if _, err := os.Stat(l.getLocalkubeCacheFilepath()); os.IsNotExist(err) {
+		return false
+	}
+
+	localkubeSha256, err := ioutil.ReadFile(l.getLocalkubeSha256CacheFilepath())
+	if err != nil {
+		glog.Infof("Error reading localkube checksum: %s", err)
+		return false
+	}
+
+	h := sha256.New()
+	f, err := os.Open(l.getLocalkubeCacheFilepath())
+	if err != nil {
+		glog.Infof("Error opening localkube for checksum verification: %s", err)
+		return false
+	}
+	if _, err := io.Copy(h, f); err != nil {
+		glog.Infof("Error copying contents to hasher: %s", err)
+	}
+
+	actualChecksum := hex.EncodeToString(h.Sum(nil))
+	if strings.TrimSpace(string(localkubeSha256)) != actualChecksum {
+		glog.Infof("Localkube checksums do not match actual: %s expected: %s", actualChecksum, string(localkubeSha256))
 		return false
 	}
 	return true
@@ -68,7 +113,14 @@ func (l *localkubeCacher) downloadAndCacheLocalkube() error {
 		},
 	}
 	fmt.Println("Downloading localkube binary")
-	return download.ToFile(url, l.getLocalkubeCacheFilepath(), opts)
+	if err := download.ToFile(url, l.getLocalkubeCacheFilepath(), opts); err != nil {
+		return errors.Wrap(err, "downloading localkube")
+	}
+	if err := download.ToFile(url+".sha256", l.getLocalkubeSha256CacheFilepath(), opts); err != nil {
+		return errors.Wrap(err, "downloading localkube checksum")
+	}
+
+	return nil
 }
 
 func (l *localkubeCacher) fetchLocalkubeFromURI() (assets.CopyableFile, error) {
@@ -84,9 +136,12 @@ func (l *localkubeCacher) fetchLocalkubeFromURI() (assets.CopyableFile, error) {
 
 func (l *localkubeCacher) genLocalkubeFileFromURL() (assets.CopyableFile, error) {
 	if !l.isLocalkubeCached() {
+		glog.Infoln("Localkube not cached or checksum does not match, downloading...")
 		if err := l.downloadAndCacheLocalkube(); err != nil {
 			return nil, errors.Wrap(err, "Error attempting to download and cache localkube")
 		}
+	} else {
+		glog.Infoln("Using cached localkube")
 	}
 	localkubeFile, err := assets.NewFileAsset(l.getLocalkubeCacheFilepath(), "/usr/local/bin", "localkube", "0777")
 	if err != nil {
