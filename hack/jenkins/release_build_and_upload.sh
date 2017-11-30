@@ -37,6 +37,8 @@ cat Makefile | grep "VERSION_BUILD ?=" | grep $VERSION_BUILD
 
 # Build and upload
 BUILD_IN_DOCKER=y make -j 16 all out/minikube-installer.exe out/minikube_${DEB_VERSION}.deb
+make checksum
+
 gsutil -m cp out/* gs://$BUCKET/releases/$TAGNAME/
 
 # Bump latest
