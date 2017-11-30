@@ -14,5 +14,5 @@ cask 'minikube' do
 
   binary 'minikube-darwin-amd64', target: 'minikube'
 
-  zap delete: '~/.minikube'
+  zap trash: '~/.minikube'
 end
