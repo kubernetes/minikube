@@ -33,6 +33,7 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
+gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-ing.yaml testdata/
 
 export MINIKUBE_WANTREPORTERRORPROMPT=False
 sudo ./out/minikube-${OS_ARCH} delete || true
