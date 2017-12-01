@@ -34,13 +34,13 @@ func TestFunctional(t *testing.T) {
 	t.Run("Logs", testClusterLogs)
 	t.Run("Addons", testAddons)
 	t.Run("Dashboard", testDashboard)
-	t.Run("IngressController", testIngressController)
 	t.Run("ServicesList", testServicesList)
 	t.Run("Provisioning", testProvisioning)
 
 	if !strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
+		t.Run("IngressController", testIngressController)
 		// t.Run("Mounting", testMounting)
 	}
 }
