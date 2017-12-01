@@ -88,15 +88,9 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
 
-	podName := "nginx"
-	args := []string{"run", podName, "--image=nginx:alpine", "--port=80", "--restart=Never"}
-	if _, err := kubectlRunner.RunCommand(args); err != nil {
-		t.Fatalf("failed to create nginx pods: %s", err)
-	}
-
-	args = []string{"expose", "pod", podName, "--target-port=80"}
-	if _, err := kubectlRunner.RunCommand(args); err != nil {
-		t.Fatalf("failed to create nginx service: %s", err)
+	podPath, _ := filepath.Abs("testdata/nginx-pod-svc.yaml")
+	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
+		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
 
 	if err := util.WaitForNginxRunning(t); err != nil {
@@ -110,8 +104,7 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s", expectedStr, sshCmdOutput)
 	}
 
-	defer kubectlRunner.RunCommand([]string{"delete", "pod", podName})
-	defer kubectlRunner.RunCommand([]string{"delete", "svc", podName})
+	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
 	defer kubectlRunner.RunCommand([]string{"delete", "-f", ingressPath})
 	minikubeRunner.RunCommand("addons disable ingress", true)
 }
