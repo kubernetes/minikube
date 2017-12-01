@@ -1,5 +1,9 @@
 # Minikube Release Notes
 
+# Version 0.24.1 - 11/30/2017
+* Add checksum verification for localkube
+* Bump minikube iso to v0.23.6
+
 # Version 0.24.0 - 11/29/2017
 * Deprecated xhyve and kvm drivers [#2227](https://github.com/kubernetes/minikube/pull/2227)
 * Added support for a "rootfs" layer in .minikube/files [#2110](https://github.com/kubernetes/minikube/pull/2110)
