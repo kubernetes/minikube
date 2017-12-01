@@ -17,12 +17,10 @@ limitations under the License.
 package localkube
 
 import (
-	"os"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/tests"
 )
 
 func TestStartCluster(t *testing.T) {
@@ -218,48 +216,5 @@ func TestGetHostLogs(t *testing.T) {
 				return
 			}
 		})
-	}
-}
-
-func TestIsLocalkubeCached(t *testing.T) {
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	inputArr := [...]string{
-		"v1.3.3",
-		"1.3.0",
-		"http://test-url.localkube.com/localkube-binary",
-		"file:///test/dir/to/localkube-binary",
-	}
-
-	localkubeCacher := localkubeCacher{
-		k8sConf: bootstrapper.KubernetesConfig{},
-	}
-
-	inner := func(input string) {
-		localkubeCacher.k8sConf = bootstrapper.KubernetesConfig{
-			KubernetesVersion: input,
-		}
-		if localkubeCacher.isLocalkubeCached() {
-			t.Errorf("IsLocalKubeCached returned true even though %s was not cached",
-				localkubeCacher.getLocalkubeCacheFilepath())
-			return
-		}
-
-		f, err := os.Create(localkubeCacher.getLocalkubeCacheFilepath())
-		if err != nil {
-			t.Errorf("failed to create dummy cache file: %v", err)
-			return
-		}
-		f.Close()
-		defer os.Remove(f.Name())
-		if !localkubeCacher.isLocalkubeCached() {
-			t.Errorf("IsLocalKubeCached returned false even though %s was cached",
-				localkubeCacher.getLocalkubeCacheFilepath())
-		}
-
-	}
-	for _, input := range inputArr {
-		inner(input)
 	}
 }
