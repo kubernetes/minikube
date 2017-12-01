@@ -167,3 +167,7 @@ func (m *BinDataAsset) GetLength() int {
 func (m *BinDataAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
 }
+
+func (m *BinDataAsset) GetData() []byte {
+	return m.data
+}

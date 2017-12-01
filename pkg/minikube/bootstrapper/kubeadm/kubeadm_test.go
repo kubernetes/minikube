@@ -36,6 +36,7 @@ func TestGenerateConfig(t *testing.T) {
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.100",
 				KubernetesVersion: "v1.10.0",
+				ServiceCIDR:       "172.16.0.0/12",
 				NodeName:          "minikube",
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
@@ -48,7 +49,7 @@ api:
 kubernetesVersion: v1.10.0
 certificatesDir: /var/lib/minikube/certs/
 networking:
-  serviceSubnet: 10.96.0.0/12
+  serviceSubnet: 172.16.0.0/12
 etcd:
   dataDir: /data/minikube
 nodeName: minikube
@@ -61,6 +62,7 @@ apiServerExtraArgs:
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.10.0-alpha.0",
+				ServiceCIDR:       "172.16.0.0/12",
 				NodeName:          "extra-args-minikube",
 				ExtraOptions: util.ExtraOptionSlice{
 					util.ExtraOption{
@@ -90,7 +92,7 @@ api:
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/minikube/certs/
 networking:
-  serviceSubnet: 10.96.0.0/12
+  serviceSubnet: 172.16.0.0/12
 etcd:
   dataDir: /data/minikube
 nodeName: extra-args-minikube
@@ -108,6 +110,7 @@ schedulerExtraArgs:
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.10.0-alpha.0",
+				ServiceCIDR:       "172.16.0.0/12",
 				NodeName:          "extra-args-minikube",
 				ExtraOptions: util.ExtraOptionSlice{
 					util.ExtraOption{
@@ -132,7 +135,7 @@ api:
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/minikube/certs/
 networking:
-  serviceSubnet: 10.96.0.0/12
+  serviceSubnet: 172.16.0.0/12
 etcd:
   dataDir: /data/minikube
 nodeName: extra-args-minikube
@@ -147,6 +150,7 @@ apiServerExtraArgs:
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.10.0-alpha.0",
+				ServiceCIDR:       "172.16.0.0/12",
 				NodeName:          "extra-args-minikube",
 				FeatureGates:      "HugePages=true,OtherFeature=false",
 			},
@@ -160,7 +164,7 @@ api:
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/minikube/certs/
 networking:
-  serviceSubnet: 10.96.0.0/12
+  serviceSubnet: 172.16.0.0/12
 etcd:
   dataDir: /data/minikube
 nodeName: extra-args-minikube
@@ -178,6 +182,7 @@ schedulerExtraArgs:
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.10.0-alpha.0",
+				ServiceCIDR:       "172.16.0.0/12",
 				NodeName:          "extra-args-minikube",
 				FeatureGates:      "HugePages=true,OtherFeature=false",
 				ExtraOptions: util.ExtraOptionSlice{
@@ -198,7 +203,7 @@ api:
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/minikube/certs/
 networking:
-  serviceSubnet: 10.96.0.0/12
+  serviceSubnet: 172.16.0.0/12
 etcd:
   dataDir: /data/minikube
 nodeName: extra-args-minikube
@@ -217,6 +222,7 @@ schedulerExtraArgs:
 			description: "unknown component",
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
+				ServiceCIDR:       "172.16.0.0/12",
 				KubernetesVersion: "v1.8.0-alpha.0",
 				NodeName:          "extra-args-minikube",
 				ExtraOptions: util.ExtraOptionSlice{
@@ -236,6 +242,7 @@ schedulerExtraArgs:
 				NodePort:          18443,
 				KubernetesVersion: "v1.10.0",
 				NodeName:          "minikube",
+				ServiceCIDR:       "172.16.0.0/12",
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
@@ -247,7 +254,7 @@ api:
 kubernetesVersion: v1.10.0
 certificatesDir: /var/lib/minikube/certs/
 networking:
-  serviceSubnet: 10.96.0.0/12
+  serviceSubnet: 172.16.0.0/12
 etcd:
   dataDir: /data/minikube
 nodeName: minikube

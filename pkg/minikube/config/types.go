@@ -43,6 +43,7 @@ type MachineConfig struct {
 	InsecureRegistry    []string
 	RegistryMirror      []string
 	HostOnlyCIDR        string // Only used by the virtualbox driver
+	ServiceCIDR         string // Use for insecure registry
 	HypervVirtualSwitch string
 	KvmNetwork          string             // Only used by the KVM driver
 	Downloader          util.ISODownloader `json:"-"`

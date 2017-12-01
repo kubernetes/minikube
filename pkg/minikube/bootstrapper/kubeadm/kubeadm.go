@@ -294,15 +294,22 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 		return "", errors.Wrap(err, "parses feature gate config for kubelet")
 	}
 
+	clusterDNS, err := util.GetDNSIP(k8s.ServiceCIDR)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to fetch cluster DNS IP")
+	}
+
 	b := bytes.Buffer{}
 	opts := struct {
 		ExtraOptions     string
 		FeatureGates     string
 		ContainerRuntime string
+		ClusterDNS       string
 	}{
 		ExtraOptions:     extraFlags,
 		FeatureGates:     kubeletFeatureArgs,
 		ContainerRuntime: k8s.ContainerRuntime,
+		ClusterDNS:       clusterDNS.String(),
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return "", err
@@ -415,9 +422,15 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		nodePort = util.APIServerPort
 	}
 
+	clusterDNS, err := util.GetDNSIP(k8s.ServiceCIDR)
+	if err != nil {
+		return "", errors.Wrap(err, "getting DNS ip")
+	}
+
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
+		ClusterDNS        string
 		AdvertiseAddress  string
 		APIServerPort     int
 		KubernetesVersion string
@@ -429,7 +442,8 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		NoTaintMaster     bool
 	}{
 		CertDir:           util.DefaultCertPath,
-		ServiceCIDR:       util.DefaultServiceCIDR,
+		ServiceCIDR:       k8s.ServiceCIDR,
+		ClusterDNS:        clusterDNS.String(),
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
@@ -439,10 +453,6 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
-	}
-
-	if k8s.ServiceCIDR != "" {
-		opts.ServiceCIDR = k8s.ServiceCIDR
 	}
 
 	if version.GTE(semver.MustParse("1.10.0-alpha.0")) {

@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
@@ -49,7 +50,7 @@ var DefaultAdmissionControllers = []string{
 func GetServiceClusterIP(serviceCIDR string) (net.IP, error) {
 	ip, _, err := net.ParseCIDR(serviceCIDR)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing default service cidr")
+		return nil, errors.Wrap(err, fmt.Sprintf("parsing service cidr (%s)", serviceCIDR))
 	}
 	ip = ip.To4()
 	ip[3]++
@@ -60,7 +61,7 @@ func GetServiceClusterIP(serviceCIDR string) (net.IP, error) {
 func GetDNSIP(serviceCIDR string) (net.IP, error) {
 	ip, _, err := net.ParseCIDR(serviceCIDR)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing default service cidr")
+		return nil, errors.Wrap(err, fmt.Sprintf("parsing service cidr (%s)", serviceCIDR))
 	}
 	ip = ip.To4()
 	ip[3] = 10

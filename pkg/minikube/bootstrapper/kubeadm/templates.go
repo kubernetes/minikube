@@ -101,7 +101,7 @@ var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate"
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
+ExecStart=/usr/bin/kubelet --cluster-dns {{.ClusterDNS}} {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
 
 [Install]
 `))
