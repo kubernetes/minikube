@@ -34,6 +34,7 @@ func TestFunctional(t *testing.T) {
 	t.Run("Logs", testClusterLogs)
 	t.Run("Addons", testAddons)
 	t.Run("Dashboard", testDashboard)
+	t.Run("IngressController", testIngressController)
 	t.Run("ServicesList", testServicesList)
 	t.Run("Provisioning", testProvisioning)
 
