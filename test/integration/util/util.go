@@ -263,6 +263,63 @@ func WaitForDashboardRunning(t *testing.T) error {
 	return nil
 }
 
+func WaitForIngressControllerRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for ingress-controller RC to stabilize")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app": "nginx-ingress-controller"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for ingress-controller pods")
+	}
+
+	return nil
+}
+
+func WaitForIngressDefaultBackendRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "default-http-backend", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for default-http-backend RC to stabilize")
+	}
+
+	if err := commonutil.WaitForService(client, "kube-system", "default-http-backend", true, time.Millisecond*500, time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for default-http-backend service to be up")
+	}
+
+	if err := commonutil.WaitForServiceEndpointsNum(client, "kube-system", "default-http-backend", 1, time.Second*3, time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for one default-http-backend endpoint to be up")
+	}
+
+	return nil
+}
+
+func WaitForNginxRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for nginx pods")
+	}
+
+	if err := commonutil.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
+		t.Errorf("Error waiting for nginx service to be up")
+	}
+	return nil
+}
+
 func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (err error) {
 	for i := 0; i < attempts; i++ {
 		err = callback()
