@@ -26,7 +26,7 @@ Or you can use the extended version:
 $ minikube start \
     --network-plugin=cni \
     --extra-config=kubelet.container-runtime=remote \
-    --extra-config=kubelet.container-runtime-endpoint=/var/run/crio.sock \
-    --extra-config=kubelet.image-service-endpoint=/var/run/crio.sock \
+    --extra-config=kubelet.container-runtime-endpoint=/var/run/crio/crio.sock \
+    --extra-config=kubelet.image-service-endpoint=/var/run/crio/crio.sock \
     --bootstrapper=kubeadm
 ```
