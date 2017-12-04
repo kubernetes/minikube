@@ -29,6 +29,8 @@ ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 ISO_VERSION ?= v0.23.6
 ISO_BUCKET ?= minikube/iso
 
+KERNEL_VERSION ?= 4.9.64
+
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 BUILD_DIR ?= ./out
@@ -131,7 +133,7 @@ minikube_iso: # old target kept for making tests happy
 linux-menuconfig:
 	$(MAKE) -C $(BUILD_DIR)/buildroot linux-menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot linux-savedefconfig
-	cp $(BUILD_DIR)/buildroot/output/build/linux-4.9.13/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
+	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
 
 out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
