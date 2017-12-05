@@ -170,6 +170,7 @@ var LocalkubeCachedImages = []string{
 	"gcr.io/google_containers/kubernetes-dashboard-amd64:v1.8.0",
 
 	// Ingress Controller
+	"nginx:alpine",
 	"gcr.io/google_containers/defaultbackend:1.4",
 	"quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.9.0-beta.17",
 
@@ -194,6 +195,7 @@ func GetKubeadmCachedImages(version string) []string {
 		"gcr.io/google_containers/kubernetes-dashboard-amd64:v1.8.0",
 
 		// Ingress Controller
+		"nginx:alpine",
 		"gcr.io/google_containers/defaultbackend:1.4",
 		"quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.9.0-beta.17",
 
