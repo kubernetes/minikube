@@ -333,7 +333,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return ip, nil
-	case "xhyve":
+	case "xhyve", "hyperkit":
 		return net.ParseIP("192.168.64.1"), nil
 	default:
 		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
