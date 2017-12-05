@@ -21,7 +21,6 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -30,7 +29,7 @@ import (
 const cacheListFormat = "- {{.CacheImageName}}\n"
 
 type CacheListTemplate struct {
-	CacheImageName   string
+	CacheImageName string
 }
 
 // listCacheCmd represents the cache list command
@@ -42,7 +41,7 @@ var listCacheCmd = &cobra.Command{
 		// list images from config file
 		images, err := cmdConfig.ListConfigMap(constants.Cache)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error listing images: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error listing image entries from config: %s\n", err)
 			os.Exit(1)
 		}
 		if err := cacheList(images); err != nil {
@@ -61,13 +60,13 @@ func cacheList(images map[string]interface{}) error {
 	for imageName := range images {
 		tmpl, err := template.New("list").Parse(cacheListFormat)
 		if err != nil {
-			glog.Errorln("Error creating list template:", err)
+			fmt.Fprintf(os.Stderr, "Error creating list template: %s\n", err)
 			os.Exit(1)
 		}
 		listTmplt := CacheListTemplate{imageName}
 		err = tmpl.Execute(os.Stdout, listTmplt)
 		if err != nil {
-			glog.Errorln("Error executing list template:", err)
+			fmt.Fprintf(os.Stderr, "Error executing list template: %s\n", err)
 			os.Exit(1)
 		}
 	}
