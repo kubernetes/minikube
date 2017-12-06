@@ -53,7 +53,6 @@ var listCacheCmd = &cobra.Command{
 
 func init() {
 	cacheCmd.AddCommand(listCacheCmd)
-	RootCmd.AddCommand(cacheCmd)
 }
 
 func cacheList(images map[string]interface{}) error {
