@@ -15,6 +15,7 @@
 * Moved the storage provisioner to run in a pod [#2137](https://github.com/kubernetes/minikube/pull/2137)
 * Added support for tcp and udp services to the ingress addon [#2142](https://github.com/kubernetes/minikube/pull/2142)
 * Bug fix to use the minikube context instead of the current kubectl context [#2128](https://github.com/kubernetes/minikube/pull/2128)
+* Added zsh autocompletion [#2194](https://github.com/kubernetes/minikube/pull/2194)
 
 # Version 0.23.0 - 10/26/2017
 * Upgraded to go 1.9 [#2113](https://github.com/kubernetes/minikube/pull/2113)
