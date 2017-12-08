@@ -48,6 +48,12 @@ Then install the driver itself:
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 && chmod +x docker-machine-driver-kvm2 && sudo mv docker-machine-driver-kvm2 /usr/bin/
 ```
 
+To use the driver you would do:
+
+```
+minikube start --vm-driver kvm2
+```
+
 #### KVM driver
 
 Minikube is currently tested against [`docker-machine-driver-kvm` v0.10.0](https://github.com/dhiltgen/docker-machine-kvm/releases).
@@ -72,6 +78,12 @@ $ sudo usermod -a -G libvirt $(whoami)
 $ newgrp libvirtd
 # Fedora/CentOS/RHEL
 $ newgrp libvirt
+```
+
+To use the driver you would do:
+
+```
+minikube start --vm-driver kvm
 ```
 
 #### Hyperkit driver
