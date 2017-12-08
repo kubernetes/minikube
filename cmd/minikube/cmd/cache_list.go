@@ -26,10 +26,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-const cacheListFormat = "- {{.CacheImageName}}\n"
+var cacheListFormat string
 
 type CacheListTemplate struct {
-	CacheImageName string
+	CacheImage string
 }
 
 // listCacheCmd represents the cache list command
@@ -52,17 +52,20 @@ var listCacheCmd = &cobra.Command{
 }
 
 func init() {
+	listCacheCmd.Flags().StringVar(&cacheListFormat, "format", constants.DefaultCacheListFormat,
+		`Go template format string for the cache list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
+For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#CacheListTemplate`)
 	cacheCmd.AddCommand(listCacheCmd)
 }
 
-func cacheList(images map[string]interface{}) error {
-	for imageName := range images {
+func cacheList(images []string) error {
+	for _, image := range images {
 		tmpl, err := template.New("list").Parse(cacheListFormat)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating list template: %s\n", err)
 			os.Exit(1)
 		}
-		listTmplt := CacheListTemplate{imageName}
+		listTmplt := CacheListTemplate{image}
 		err = tmpl.Execute(os.Stdout, listTmplt)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error executing list template: %s\n", err)

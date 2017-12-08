@@ -220,18 +220,18 @@ func configurableFields() string {
 }
 
 // ListConfigMap list entries from config file
-func ListConfigMap(name string) (map[string]interface{}, error) {
+func ListConfigMap(name string) ([]string, error) {
 	configFile, err := config.ReadConfig()
 	if err != nil {
 		return nil, err
 	}
-	newImages := make(map[string]interface{})
+	var images []string
 	if values, ok := configFile[name].(map[string]interface{}); ok {
 		for key := range values {
-			newImages[key] = nil
+			images = append(images, key)
 		}
 	}
-	return newImages, nil
+	return images, nil
 }
 
 // AddToConfigMap adds entries to a map in the config file
