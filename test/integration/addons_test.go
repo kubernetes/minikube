@@ -97,11 +97,18 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("waiting for nginx to be up: %s", err)
 	}
 
-	expectedStr := "Welcome to nginx!"
-	runCmd := fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")
-	sshCmdOutput, _ := minikubeRunner.SSH(runCmd)
-	if !strings.Contains(sshCmdOutput, expectedStr) {
-		t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s", expectedStr, sshCmdOutput)
+	checkIngress := func() error {
+		expectedStr := "Welcome to nginx!"
+		runCmd := fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")
+		sshCmdOutput, _ := minikubeRunner.SSH(runCmd)
+		if !strings.Contains(sshCmdOutput, expectedStr) {
+			return fmt.Errorf("ExpectedStr sshCmdOutput to be: %s. Output was: %s", expectedStr, sshCmdOutput)
+		}
+		return nil
+	}
+
+	if err := util.Retry(t, checkIngress, 3*time.Second, 5); err != nil {
+		t.Fatalf(err.Error())
 	}
 
 	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
