@@ -132,6 +132,8 @@ client_address=192.168.99.1
 command=GET
 real path=/
 ...
+$ kubectl delete service hello-minikube
+service "hello-minikube" deleted
 $ kubectl delete deployment hello-minikube
 deployment "hello-minikube" deleted
 $ minikube stop
