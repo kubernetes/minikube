@@ -170,6 +170,11 @@ var LocalkubeCachedImages = []string{
 	// Dashboard
 	"gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.3",
 
+	// Ingress Controller
+	"nginx:alpine",
+	"gcr.io/google_containers/defaultbackend:1.4",
+	"quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.9.0",
+
 	// DNS
 	"gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.5",
 	"gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
@@ -189,6 +194,11 @@ func GetKubeadmCachedImages(version string) []string {
 	return []string{
 		// Dashboard
 		"gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.3",
+
+		// Ingress Controller
+		"nginx:alpine",
+		"gcr.io/google_containers/defaultbackend:1.4",
+		"quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.9.0",
 
 		// Addon Manager
 		"gcr.io/google-containers/kube-addon-manager:v6.4-beta.2",
