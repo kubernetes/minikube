@@ -103,6 +103,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-
 
 The hyperkit driver currently requires running as root to use the vmnet framework to setup networking.
 
+If you encountered `Could not find hyperkit executable`, you might need to install [Docker for Mac](https://store.docker.com/editions/community/docker-ce-desktop-mac)
+
 #### xhyve driver
 
 From https://github.com/zchee/docker-machine-driver-xhyve#install:
