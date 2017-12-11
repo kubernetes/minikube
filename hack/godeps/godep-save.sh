@@ -37,6 +37,5 @@ git checkout -- ${MINIKUBE_ROOT}/vendor/golang.org/x/sys/windows
 pushd ${MINIKUBE_ROOT} >/dev/null
     git apply ${MINIKUBE_ROOT}/hack/tpr-patch.diff
     git apply ${MINIKUBE_ROOT}/hack/kube-proxy-patch.diff
-    git apply ${MINIKUBE_ROOT}/hack/openapi.diff
 popd >/dev/null
 
