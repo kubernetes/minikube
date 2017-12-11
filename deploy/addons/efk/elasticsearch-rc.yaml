@@ -58,7 +58,7 @@ spec:
         - name: MINIMUM_MASTER_NODES
           value: "1"
       initContainers:
-      - image: alpine:3.6
+      - image: registry.hub.docker.com/library/alpine:3.6
         command: ["/sbin/sysctl", "-w", "vm.max_map_count=262144"]
         name: elasticsearch-logging-init
         securityContext:
