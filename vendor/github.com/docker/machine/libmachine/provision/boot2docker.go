@@ -255,11 +255,8 @@ func (provisioner *Boot2DockerProvisioner) Provision(swarmOptions swarm.Options,
 		return err
 	}
 
-	if err = configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions); err != nil {
-		return err
-	}
-
-	return nil
+	err = configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions)
+	return err
 }
 
 func (provisioner *Boot2DockerProvisioner) SSHCommand(args string) (string, error) {
