@@ -991,7 +991,7 @@ func getRandomIPinSubnet(d *Driver, baseIP net.IP) (net.IP, error) {
 	// select pseudo-random DHCP addr; make sure not to clash with the host
 	// only try 5 times and bail if no random received
 	for i := 0; i < 5; i++ {
-		n := d.randomInter.RandomInt(25)
+		n := d.randomInter.RandomInt(24) + 1
 		if byte(n) != nAddr[3] {
 			dhcpAddr = net.IPv4(nAddr[0], nAddr[1], nAddr[2], byte(n))
 			break

@@ -217,7 +217,7 @@ func (h *Host) Upgrade() error {
 		provisioner.String() != "rancheros" &&
 		provisioner.String() != "boot2docker" {
 
-		// Name of pacakge 'docker-engine' will fall through in this
+		// Name of package 'docker-engine' will fall through in this
 		// case, so that we execute, e.g.,
 		//
 		// 'sudo apt-get purge -y docker-engine'

@@ -255,7 +255,7 @@ func checkDaemonUp(p Provisioner, dockerPort int) func() bool {
 	reDaemonListening := fmt.Sprintf(":%d\\s+.*:.*", dockerPort)
 	return func() bool {
 		// HACK: Check netstat's output to see if anyone's listening on the Docker API port.
-		netstatOut, err := p.SSHCommand("netstat -tln")
+		netstatOut, err := p.SSHCommand("if ! type netstat 1>/dev/null; then ss -tln; else netstat -tln; fi")
 		if err != nil {
 			log.Warnf("Error running SSH command: %s", err)
 			return false
