@@ -225,11 +225,8 @@ func (d *Driver) PreCreateCheck() error {
 	// Downloading boot2docker to cache should be done here to make sure
 	// that a download failure will not leave a machine half created.
 	b2dutils := mcnutils.NewB2dUtils(d.StorePath)
-	if err := b2dutils.UpdateISOCache(d.Boot2DockerURL); err != nil {
-		return err
-	}
 
-	return nil
+	return b2dutils.UpdateISOCache(d.Boot2DockerURL)
 }
 
 func (d *Driver) Create() error {
@@ -363,7 +360,7 @@ func (d *Driver) Create() error {
 	vmrun("-gu", B2DUser, "-gp", B2DPass, "CopyFileFromHostToGuest", d.vmxPath(), d.ResolveStorePath("userdata.tar"), "/home/docker/userdata.tar")
 
 	// Expand tar file.
-	vmrun("-gu", B2DUser, "-gp", B2DPass, "runScriptInGuest", d.vmxPath(), "/bin/sh", "sudo sh -c \"tar xvf userdata.tar -C /home/docker > /var/log/userdata.log 2>&1 && chown -R docker:staff /home/docker\"")
+	vmrun("-gu", B2DUser, "-gp", B2DPass, "runScriptInGuest", d.vmxPath(), "/bin/sh", "sudo sh -c \"tar xvf /home/docker/userdata.tar -C /home/docker > /var/log/userdata.log 2>&1 && chown -R docker:staff /home/docker\"")
 
 	// copy to /var/lib/boot2docker
 	vmrun("-gu", B2DUser, "-gp", B2DPass, "runScriptInGuest", d.vmxPath(), "/bin/sh", "sudo /bin/mv /home/docker/userdata.tar /var/lib/boot2docker/userdata.tar")
@@ -434,10 +431,7 @@ func (d *Driver) Restart() error {
 		return err
 	}
 	// Start it again and mount shared folder
-	if err := d.Start(); err != nil {
-		return err
-	}
-	return nil
+	return d.Start()
 }
 
 func (d *Driver) Kill() error {
@@ -536,7 +530,7 @@ func (d *Driver) getIPfromVmnetConfigurationFile(conffile, macaddr string) (stri
 		return "", err
 	}
 
-	// find all occurences of 'host .* { .. }' and extract
+	// find all occurrences of 'host .* { .. }' and extract
 	// out of the inner block the MAC and IP addresses
 
 	// key = MAC, value = IP
@@ -727,12 +721,7 @@ func (d *Driver) generateKeyBundle() error {
 	if _, err := tw.Write([]byte(pubKey)); err != nil {
 		return err
 	}
-	if err := tw.Close(); err != nil {
-		return err
-	}
-
-	return nil
-
+	return tw.Close()
 }
 
 // execute command over SSH with user / password authentication

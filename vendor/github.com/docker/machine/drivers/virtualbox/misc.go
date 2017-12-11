@@ -81,13 +81,19 @@ type RandomInter interface {
 }
 
 func NewRandomInter() RandomInter {
-	return &defaultRandomInter{}
+	src := rand.NewSource(time.Now().UnixNano())
+
+	return &defaultRandomInter{
+		rand: rand.New(src),
+	}
 }
 
-type defaultRandomInter struct{}
+type defaultRandomInter struct {
+	rand *rand.Rand
+}
 
 func (d *defaultRandomInter) RandomInt(n int) int {
-	return rand.Intn(n)
+	return d.rand.Intn(n)
 }
 
 // Sleeper sleeps for given duration.

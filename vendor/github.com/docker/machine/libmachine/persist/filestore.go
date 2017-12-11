@@ -53,10 +53,8 @@ func (s Filestore) saveToFile(data []byte, file string) error {
 		return err
 	}
 
-	if err = os.Rename(tmpfi.Name(), file); err != nil {
-		return err
-	}
-	return nil
+	err = os.Rename(tmpfi.Name(), file)
+	return err
 }
 
 func (s Filestore) Save(host *host.Host) error {

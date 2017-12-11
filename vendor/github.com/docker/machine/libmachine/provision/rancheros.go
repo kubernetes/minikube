@@ -118,9 +118,13 @@ func (provisioner *RancherProvisioner) Provision(swarmOptions swarm.Options, aut
 		}
 	}
 
-	log.Debugf("Selecting docker engine: %s", engineOptions.InstallURL)
-	if err := selectDocker(provisioner, engineOptions.InstallURL); err != nil {
-		return err
+	if engineOptions.InstallURL == drivers.DefaultEngineInstallURL {
+		log.Debugf("Skipping docker engine default: %s", engineOptions.InstallURL)
+	} else {
+		log.Debugf("Selecting docker engine: %s", engineOptions.InstallURL)
+		if err := selectDocker(provisioner, engineOptions.InstallURL); err != nil {
+			return err
+		}
 	}
 
 	log.Debugf("Preparing certificates")
@@ -132,11 +136,8 @@ func (provisioner *RancherProvisioner) Provision(swarmOptions swarm.Options, aut
 	}
 
 	log.Debugf("Configuring swarm")
-	if err := configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions); err != nil {
-		return err
-	}
-
-	return nil
+	err := configureSwarm(provisioner, swarmOptions, provisioner.AuthOptions)
+	return err
 }
 
 func (provisioner *RancherProvisioner) SetHostname(hostname string) error {
