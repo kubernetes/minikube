@@ -12,9 +12,9 @@ EnvironmentFile=/var/run/minikube/env
 Environment=GOTRACEBACK=crash
 ExecStartPre=/bin/mkdir -p ${PERSISTENT_DIR}/var/lib/containers
 ExecStart=/usr/bin/crio \
-          $CRIO_OPTIONS \
-	  $CRIO_MINIKUBE_OPTIONS \
-	  --root ${PERSISTENT_DIR}/var/lib/containers
+    $CRIO_OPTIONS \
+    $CRIO_MINIKUBE_OPTIONS \
+    --root ${PERSISTENT_DIR}/var/lib/containers
 ExecReload=/bin/kill -s HUP $MAINPID
 TasksMax=8192
 LimitNOFILE=1048576
