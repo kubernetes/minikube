@@ -2457,7 +2457,6 @@
 		},
 		{
 			"ImportPath": "github.com/spf13/viper",
-			"Comment": "v1.0.0",
 			"Rev": "25b30aa063fc18e48662b86996252eabdcf2f0c7"
 		},
 		{
