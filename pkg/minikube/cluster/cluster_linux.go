@@ -62,6 +62,26 @@ func createKVMHost(config MachineConfig) *kvmDriver {
 	}
 }
 
+func createKVM2Host(config MachineConfig) *kvmDriver {
+	return &kvmDriver{
+		BaseDriver: &drivers.BaseDriver{
+			MachineName: cfg.GetMachineName(),
+			StorePath:   constants.GetMinipath(),
+			SSHUser:     "docker",
+		},
+		Memory:         config.Memory,
+		CPU:            config.CPUs,
+		Network:        config.KvmNetwork,
+		PrivateNetwork: "minikube-net",
+		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
+		DiskSize:       config.DiskSize,
+		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
+		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
+		CacheMode:      "default",
+		IOMode:         "threads",
+	}
+}
+
 func detectVBoxManageCmd() string {
 	cmd := "VBoxManage"
 	if path, err := exec.LookPath(cmd); err == nil {
