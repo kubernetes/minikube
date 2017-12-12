@@ -69,6 +69,8 @@ func createHyperkitHost(config MachineConfig) *hyperkit.Driver {
 		DiskSize:       config.DiskSize,
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
+		NFSShares:      config.HyperkitNFSShare,
+		NFSSharesRoot:  config.HyperkitNFSSharesRoot,
 		Cmdline:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
 	}
 }

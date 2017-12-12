@@ -52,6 +52,8 @@ const (
 	humanReadableDiskSize = "disk-size"
 	vmDriver              = "vm-driver"
 	xhyveDiskDriver       = "xhyve-disk-driver"
+	hyperkitNFSSharesRoot = "hyperkit-nfs-shares-root"
+	hyperkitNFSShare      = "hyperkit-nfs-share"
 	kubernetesVersion     = "kubernetes-version"
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
@@ -124,21 +126,23 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	config := cluster.MachineConfig{
-		MinikubeISO:         viper.GetString(isoURL),
-		Memory:              viper.GetInt(memory),
-		CPUs:                viper.GetInt(cpus),
-		DiskSize:            diskSizeMB,
-		VMDriver:            viper.GetString(vmDriver),
-		XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
-		DockerEnv:           dockerEnv,
-		DockerOpt:           dockerOpt,
-		InsecureRegistry:    insecureRegistry,
-		RegistryMirror:      registryMirror,
-		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
-		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
-		KvmNetwork:          viper.GetString(kvmNetwork),
-		Downloader:          pkgutil.DefaultDownloader{},
-		DisableDriverMounts: viper.GetBool(disableDriverMounts),
+		MinikubeISO:           viper.GetString(isoURL),
+		Memory:                viper.GetInt(memory),
+		CPUs:                  viper.GetInt(cpus),
+		DiskSize:              diskSizeMB,
+		VMDriver:              viper.GetString(vmDriver),
+		XhyveDiskDriver:       viper.GetString(xhyveDiskDriver),
+		HyperkitNFSShare:      viper.GetStringSlice(hyperkitNFSShare),
+		HyperkitNFSSharesRoot: viper.GetString(hyperkitNFSSharesRoot),
+		DockerEnv:             dockerEnv,
+		DockerOpt:             dockerOpt,
+		InsecureRegistry:      insecureRegistry,
+		RegistryMirror:        registryMirror,
+		HostOnlyCIDR:          viper.GetString(hostOnlyCIDR),
+		HypervVirtualSwitch:   viper.GetString(hypervVirtualSwitch),
+		KvmNetwork:            viper.GetString(kvmNetwork),
+		Downloader:            pkgutil.DefaultDownloader{},
+		DisableDriverMounts:   viper.GetBool(disableDriverMounts),
 	}
 
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
@@ -367,6 +371,8 @@ func init() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
 	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
+	startCmd.Flags().StringSlice(hyperkitNFSShare, []string{}, "Local folders to share with Guest via NFS mounts")
+	startCmd.Flags().String(hyperkitNFSSharesRoot, "/hyperkit-nfsshares", "Where to root the NFS Shares")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
