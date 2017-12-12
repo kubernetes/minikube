@@ -312,6 +312,8 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
 	case "kvm":
 		return net.ParseIP("192.168.42.1"), nil
+	case "kvm2":
+		return net.ParseIP("192.168.39.1"), nil
 	case "hyperv":
 		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
 		// TODO(aprindle) Change this to deserialize the driver instead
