@@ -34,11 +34,6 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
-const (
-	qemusystem                = "qemu:///system"
-	defaultPrivateNetworkName = "minikube-net"
-)
-
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -72,7 +67,11 @@ type Driver struct {
 	MAC string
 }
 
-const defaultNetworkName = "minikube-net"
+const (
+	qemusystem                = "qemu:///system"
+	defaultPrivateNetworkName = "minikube-net"
+	defaultNetworkName        = "default"
+)
 
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{

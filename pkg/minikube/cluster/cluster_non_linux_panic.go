@@ -24,6 +24,10 @@ func createKVMHost(config MachineConfig) drivers.Driver {
 	panic("kvm not supported")
 }
 
+func createKVM2Host(config MachineConfig) drivers.Driver {
+	panic("kvm2 not supported")
+}
+
 func createNoneHost(config MachineConfig) drivers.Driver {
 	panic("no-vm not supported")
 }

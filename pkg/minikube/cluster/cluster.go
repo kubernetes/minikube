@@ -216,7 +216,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		}
 		driver = createKVMHost(config)
 	case "kvm2":
-		driver = createKVMHost(config)
+		driver = createKVM2Host(config)
 	case "xhyve":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			fmt.Fprintln(os.Stderr, `WARNING: The xhyve driver is now deprecated and support for it will be removed in a future release.
