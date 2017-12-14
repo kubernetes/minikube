@@ -262,14 +262,15 @@ func (d *Driver) setupNFSShare() error {
 	}
 
 	mountCommands := fmt.Sprintf("#/bin/bash\\n")
+	log.Info(d.IPAddress)
 
 	for _, share := range d.NFSShares {
-		if !path.IsAbs(share[:]) {
-			share = d.ResolveStorePath(share[:])
+		if !path.IsAbs(share) {
+			share = d.ResolveStorePath(share)
 		}
-		nfsConfig := fmt.Sprintf("%s %s -alldirs -mapall=%s", share[:], d.IPAddress, user.Username)
+		nfsConfig := fmt.Sprintf("%s %s -alldirs -mapall=%s", share, d.IPAddress, user.Username)
 
-		if _, err := nfsexports.Add("", d.nfsExportIdentifier(share[:]), nfsConfig); err != nil {
+		if _, err := nfsexports.Add("", d.nfsExportIdentifier(share), nfsConfig); err != nil {
 			if strings.Contains(err.Error(), "conflicts with existing export") {
 				log.Info("Conflicting NFS Share not setup and ignored:", err)
 				continue

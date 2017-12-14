@@ -23,23 +23,23 @@ import (
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
-	MinikubeISO           string
-	Memory                int
-	CPUs                  int
-	DiskSize              int
-	VMDriver              string
-	XhyveDiskDriver       string   // Only used by the xhyve driver
-	DockerEnv             []string // Each entry is formatted as KEY=VALUE.
-	InsecureRegistry      []string
-	RegistryMirror        []string
-	HostOnlyCIDR          string // Only used by the virtualbox driver
-	HypervVirtualSwitch   string
-	KvmNetwork            string             // Only used by the KVM driver
-	Downloader            util.ISODownloader `json:"-"`
-	DockerOpt             []string           // Each entry is formatted as KEY=VALUE.
-	DisableDriverMounts   bool               // Only used by virtualbox and xhyve
-	HyperkitNFSShare      []string
-	HyperkitNFSSharesRoot string
+	MinikubeISO         string
+	Memory              int
+	CPUs                int
+	DiskSize            int
+	VMDriver            string
+	XhyveDiskDriver     string   // Only used by the xhyve driver
+	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
+	InsecureRegistry    []string
+	RegistryMirror      []string
+	HostOnlyCIDR        string // Only used by the virtualbox driver
+	HypervVirtualSwitch string
+	KvmNetwork          string             // Only used by the KVM driver
+	Downloader          util.ISODownloader `json:"-"`
+	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
+	DisableDriverMounts bool               // Only used by virtualbox and xhyve
+	NFSShare            []string
+	NFSSharesRoot       string
 }
 
 // Config contains machine and k8s config
