@@ -23,10 +23,8 @@ metadata:
     kubernetes.io/minikube-addons-endpoint: ingress
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
-  type: NodePort
   ports:
   - port: 80
     targetPort: 8080
-    nodePort: 30001
   selector:
     app: default-http-backend
