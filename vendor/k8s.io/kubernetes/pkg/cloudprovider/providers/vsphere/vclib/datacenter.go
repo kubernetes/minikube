@@ -19,6 +19,7 @@ package vclib
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang/glog"
@@ -48,6 +49,22 @@ func GetDatacenter(ctx context.Context, connection *VSphereConnection, datacente
 	return &dc, nil
 }
 
+// GetAllDatacenter returns all the DataCenter Objects
+func GetAllDatacenter(ctx context.Context, connection *VSphereConnection) ([]*Datacenter, error) {
+	var dc []*Datacenter
+	finder := find.NewFinder(connection.GoVmomiClient.Client, true)
+	datacenters, err := finder.DatacenterList(ctx, "*")
+	if err != nil {
+		glog.Errorf("Failed to find the datacenter. err: %+v", err)
+		return nil, err
+	}
+	for _, datacenter := range datacenters {
+		dc = append(dc, &(Datacenter{datacenter}))
+	}
+
+	return dc, nil
+}
+
 // GetVMByUUID gets the VM object from the given vmUUID
 func (dc *Datacenter) GetVMByUUID(ctx context.Context, vmUUID string) (*VirtualMachine, error) {
 	s := object.NewSearchIndex(dc.Client())
@@ -59,7 +76,7 @@ func (dc *Datacenter) GetVMByUUID(ctx context.Context, vmUUID string) (*VirtualM
 	}
 	if svm == nil {
 		glog.Errorf("Unable to find VM by UUID. VM UUID: %s", vmUUID)
-		return nil, fmt.Errorf("Failed to find VM by UUID: %s", vmUUID)
+		return nil, ErrNoVMFound
 	}
 	virtualMachine := VirtualMachine{object.NewVirtualMachine(dc.Client(), svm.Reference()), dc}
 	return &virtualMachine, nil
@@ -76,6 +93,41 @@ func (dc *Datacenter) GetVMByPath(ctx context.Context, vmPath string) (*VirtualM
 	}
 	virtualMachine := VirtualMachine{vm, dc}
 	return &virtualMachine, nil
+}
+
+// GetAllDatastores gets the datastore URL to DatastoreInfo map for all the datastores in
+// the datacenter.
+func (dc *Datacenter) GetAllDatastores(ctx context.Context) (map[string]*DatastoreInfo, error) {
+	finder := getFinder(dc)
+	datastores, err := finder.DatastoreList(ctx, "*")
+	if err != nil {
+		glog.Errorf("Failed to get all the datastores. err: %+v", err)
+		return nil, err
+	}
+	var dsList []types.ManagedObjectReference
+	for _, ds := range datastores {
+		dsList = append(dsList, ds.Reference())
+	}
+
+	var dsMoList []mo.Datastore
+	pc := property.DefaultCollector(dc.Client())
+	properties := []string{DatastoreInfoProperty}
+	err = pc.Retrieve(ctx, dsList, properties, &dsMoList)
+	if err != nil {
+		glog.Errorf("Failed to get Datastore managed objects from datastore objects."+
+			" dsObjList: %+v, properties: %+v, err: %v", dsList, properties, err)
+		return nil, err
+	}
+
+	dsURLInfoMap := make(map[string]*DatastoreInfo)
+	for _, dsMo := range dsMoList {
+		dsURLInfoMap[dsMo.Info.GetDatastoreInfo().Url] = &DatastoreInfo{
+			&Datastore{object.NewDatastore(dc.Client(), dsMo.Reference()),
+				dc},
+			dsMo.Info.GetDatastoreInfo()}
+	}
+	glog.V(9).Infof("dsURLInfoMap : %+v", dsURLInfoMap)
+	return dsURLInfoMap, nil
 }
 
 // GetDatastoreByPath gets the Datastore object from the given vmDiskPath
@@ -106,6 +158,23 @@ func (dc *Datacenter) GetDatastoreByName(ctx context.Context, name string) (*Dat
 	}
 	datastore := Datastore{ds, dc}
 	return &datastore, nil
+}
+
+// GetResourcePool gets the resource pool for the given path
+func (dc *Datacenter) GetResourcePool(ctx context.Context, computePath string) (*object.ResourcePool, error) {
+	finder := getFinder(dc)
+	var computeResource *object.ComputeResource
+	var err error
+	if computePath == "" {
+		computeResource, err = finder.DefaultComputeResource(ctx)
+	} else {
+		computeResource, err = finder.ComputeResource(ctx, computePath)
+	}
+	if err != nil {
+		glog.Errorf("Failed to get the ResourcePool for computePath '%s'. err: %+v", computePath, err)
+		return nil, err
+	}
+	return computeResource.ResourcePool(ctx)
 }
 
 // GetFolderByPath gets the Folder Object from the given folder path
@@ -142,6 +211,23 @@ func (dc *Datacenter) GetVMMoList(ctx context.Context, vmObjList []*VirtualMachi
 	return vmMoList, nil
 }
 
+// GetVirtualDiskPage83Data gets the virtual disk UUID by diskPath
+func (dc *Datacenter) GetVirtualDiskPage83Data(ctx context.Context, diskPath string) (string, error) {
+	if len(diskPath) > 0 && filepath.Ext(diskPath) != ".vmdk" {
+		diskPath += ".vmdk"
+	}
+	vdm := object.NewVirtualDiskManager(dc.Client())
+	// Returns uuid of vmdk virtual disk
+	diskUUID, err := vdm.QueryVirtualDiskUuid(ctx, diskPath, dc.Datacenter)
+
+	if err != nil {
+		glog.Warningf("QueryVirtualDiskUuid failed for diskPath: %q. err: %+v", diskPath, err)
+		return "", err
+	}
+	diskUUID = formatVirtualDiskUUID(diskUUID)
+	return diskUUID, nil
+}
+
 // GetDatastoreMoList gets the Datastore Managed Objects with the given properties from the datastore objects
 func (dc *Datacenter) GetDatastoreMoList(ctx context.Context, dsObjList []*Datastore, properties []string) ([]mo.Datastore, error) {
 	var dsMoList []mo.Datastore
@@ -161,4 +247,79 @@ func (dc *Datacenter) GetDatastoreMoList(ctx context.Context, dsObjList []*Datas
 		return nil, err
 	}
 	return dsMoList, nil
+}
+
+// CheckDisksAttached checks if the disk is attached to node.
+// This is done by comparing the volume path with the backing.FilePath on the VM Virtual disk devices.
+func (dc *Datacenter) CheckDisksAttached(ctx context.Context, nodeVolumes map[string][]string) (map[string]map[string]bool, error) {
+	attached := make(map[string]map[string]bool)
+	var vmList []*VirtualMachine
+	for nodeName, volPaths := range nodeVolumes {
+		for _, volPath := range volPaths {
+			setNodeVolumeMap(attached, volPath, nodeName, false)
+		}
+		vm, err := dc.GetVMByPath(ctx, nodeName)
+		if err != nil {
+			if IsNotFound(err) {
+				glog.Warningf("Node %q does not exist, vSphere CP will assume disks %v are not attached to it.", nodeName, volPaths)
+			}
+			continue
+		}
+		vmList = append(vmList, vm)
+	}
+	if len(vmList) == 0 {
+		glog.V(2).Infof("vSphere CP will assume no disks are attached to any node.")
+		return attached, nil
+	}
+	vmMoList, err := dc.GetVMMoList(ctx, vmList, []string{"config.hardware.device", "name"})
+	if err != nil {
+		// When there is an error fetching instance information
+		// it is safer to return nil and let volume information not be touched.
+		glog.Errorf("Failed to get VM Managed object for nodes: %+v. err: +%v", vmList, err)
+		return nil, err
+	}
+
+	for _, vmMo := range vmMoList {
+		if vmMo.Config == nil {
+			glog.Errorf("Config is not available for VM: %q", vmMo.Name)
+			continue
+		}
+		for nodeName, volPaths := range nodeVolumes {
+			if nodeName == vmMo.Name {
+				verifyVolumePathsForVM(vmMo, volPaths, attached)
+			}
+		}
+	}
+	return attached, nil
+}
+
+// VerifyVolumePathsForVM verifies if the volume paths (volPaths) are attached to VM.
+func verifyVolumePathsForVM(vmMo mo.VirtualMachine, volPaths []string, nodeVolumeMap map[string]map[string]bool) {
+	// Verify if the volume paths are present on the VM backing virtual disk devices
+	for _, volPath := range volPaths {
+		vmDevices := object.VirtualDeviceList(vmMo.Config.Hardware.Device)
+		for _, device := range vmDevices {
+			if vmDevices.TypeName(device) == "VirtualDisk" {
+				virtualDevice := device.GetVirtualDevice()
+				if backing, ok := virtualDevice.Backing.(*types.VirtualDiskFlatVer2BackingInfo); ok {
+					if backing.FileName == volPath {
+						setNodeVolumeMap(nodeVolumeMap, volPath, vmMo.Name, true)
+					}
+				}
+			}
+		}
+	}
+}
+
+func setNodeVolumeMap(
+	nodeVolumeMap map[string]map[string]bool,
+	volumePath string,
+	nodeName string,
+	check bool) {
+	volumeMap := nodeVolumeMap[nodeName]
+	if volumeMap == nil {
+		volumeMap = make(map[string]bool)
+		nodeVolumeMap[nodeName] = volumeMap
+	}
+	volumeMap[volumePath] = check
 }

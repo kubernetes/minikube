@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -41,10 +40,8 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// A configuration field should go in KubeletFlags instead of KubeletConfiguration if any of these are true:
-// - its value will never, or cannot safely be changed during the lifetime of a node
-// - its value cannot be safely shared between nodes at the same time (e.g. a hostname)
-//   KubeletConfiguration is intended to be shared between nodes
+// A configuration field should go in KubeletFlags instead of KubeletConfiguration if
+// its value cannot be safely shared between nodes at the same time (e.g. a hostname)
 // In general, please try to avoid adding flags or configuration fields,
 // we already have a confusingly large amount of them.
 type KubeletConfiguration struct {
@@ -68,7 +65,7 @@ type KubeletConfiguration struct {
 	ManifestURL string `json:"manifestURL"`
 	// manifestURLHeader is the HTTP header to use when accessing the manifest
 	// URL, with the key separated from the value with a ':', as in 'key:value'
-	ManifestURLHeader string `json:"manifestURLHeader"`
+	ManifestURLHeader map[string][]string `json:"manifestURLHeader"`
 	// enableServer enables the Kubelet's server
 	EnableServer *bool `json:"enableServer"`
 	// address is the IP address for the Kubelet to serve on (set to 0.0.0.0
@@ -92,8 +89,6 @@ type KubeletConfiguration struct {
 	Authentication KubeletAuthentication `json:"authentication"`
 	// authorization specifies how requests to the Kubelet's server are authorized
 	Authorization KubeletAuthorization `json:"authorization"`
-	// seccompProfileRoot is the directory path for seccomp profiles.
-	SeccompProfileRoot string `json:"seccompProfileRoot"`
 	// allowPrivileged enables containers to request privileged mode.
 	// Defaults to false.
 	AllowPrivileged *bool `json:"allowPrivileged"`
@@ -126,15 +121,6 @@ type KubeletConfiguration struct {
 	EnableDebuggingHandlers *bool `json:"enableDebuggingHandlers"`
 	// enableContentionProfiling enables lock contention profiling, if enableDebuggingHandlers is true.
 	EnableContentionProfiling bool `json:"enableContentionProfiling"`
-	// minimumGCAge is the minimum age for a finished container before it is
-	// garbage collected.
-	MinimumGCAge metav1.Duration `json:"minimumGCAge"`
-	// maxPerPodContainerCount is the maximum number of old instances to
-	// retain per container. Each container takes up some disk space.
-	MaxPerPodContainerCount int32 `json:"maxPerPodContainerCount"`
-	// maxContainerCount is the maximum number of old instances of containers
-	// to retain globally. Each container takes up some disk space.
-	MaxContainerCount *int32 `json:"maxContainerCount"`
 	// cAdvisorPort is the port of the localhost cAdvisor endpoint (set to 0 to disable)
 	CAdvisorPort *int32 `json:"cAdvisorPort"`
 	// healthzPort is the port of the localhost healthz endpoint (set to 0 to disable)
@@ -145,15 +131,10 @@ type KubeletConfiguration struct {
 	// oomScoreAdj is The oom-score-adj value for kubelet process. Values
 	// must be within the range [-1000, 1000].
 	OOMScoreAdj *int32 `json:"oomScoreAdj"`
-	// registerNode enables automatic registration with the apiserver.
-	RegisterNode *bool `json:"registerNode"`
 	// clusterDomain is the DNS domain for this cluster. If set, kubelet will
 	// configure all containers to search this domain in addition to the
 	// host's search domains.
 	ClusterDomain string `json:"clusterDomain"`
-	// masterServiceNamespace is The namespace from which the kubernetes
-	// master services should be injected into pods.
-	MasterServiceNamespace string `json:"masterServiceNamespace"`
 	// clusterDNS is a list of IP address for the cluster DNS server.  If set,
 	// kubelet will configure all containers to use this for DNS resolution
 	// instead of the host's DNS servers
@@ -178,13 +159,8 @@ type KubeletConfiguration struct {
 	ImageGCLowThresholdPercent *int32 `json:"imageGCLowThresholdPercent"`
 	// How frequently to calculate and cache volume disk usage for all pods
 	VolumeStatsAggPeriod metav1.Duration `json:"volumeStatsAggPeriod"`
-	// volumePluginDir is the full path of the directory in which to search
-	// for additional third party volume plugins
-	VolumePluginDir string `json:"volumePluginDir"`
 	// kubeletCgroups is the absolute name of cgroups to isolate the kubelet in.
 	KubeletCgroups string `json:"kubeletCgroups"`
-	// runtimeCgroups are cgroups that container runtime is expected to be isolated in.
-	RuntimeCgroups string `json:"runtimeCgroups"`
 	// systemCgroups is absolute name of cgroups in which to place
 	// all non-kernel processes that are not already in a container. Empty
 	// for no container. Rolling back the flag requires a reboot.
@@ -200,12 +176,6 @@ type KubeletConfiguration struct {
 	// driver that the kubelet uses to manipulate cgroups on the host (cgroupfs or systemd)
 	// +optional
 	CgroupDriver string `json:"cgroupDriver,omitempty"`
-	// containerRuntime is the container runtime to use.
-	ContainerRuntime string `json:"containerRuntime"`
-	// remoteRuntimeEndpoint is the endpoint of remote runtime service
-	RemoteRuntimeEndpoint string `json:"remoteRuntimeEndpoint"`
-	// remoteImageEndpoint is the endpoint of remote image service
-	RemoteImageEndpoint string `json:"remoteImageEndpoint"`
 	// CPUManagerPolicy is the name of the policy to use.
 	CPUManagerPolicy string `json:"cpuManagerPolicy"`
 	// CPU Manager reconciliation period.
@@ -213,18 +183,6 @@ type KubeletConfiguration struct {
 	// runtimeRequestTimeout is the timeout for all runtime requests except long running
 	// requests - pull, logs, exec and attach.
 	RuntimeRequestTimeout metav1.Duration `json:"runtimeRequestTimeout"`
-	// experimentalMounterPath is the path to mounter binary. If not set, kubelet will attempt to use mount
-	// binary that is available via $PATH,
-	ExperimentalMounterPath string `json:"experimentalMounterPath,omitempty"`
-	// lockFilePath is the path that kubelet will use to as a lock file.
-	// It uses this file as a lock to synchronize with other kubelet processes
-	// that may be running.
-	LockFilePath *string `json:"lockFilePath"`
-	// ExitOnLockContention is a flag that signifies to the kubelet that it is running
-	// in "bootstrap" mode. This requires that 'LockFilePath' has been set.
-	// This will cause the kubelet to listen to inotify events on the lock file,
-	// releasing it and exiting when another process tries to open that file.
-	ExitOnLockContention bool `json:"exitOnLockContention"`
 	// How should the kubelet configure the container bridge for hairpin packets.
 	// Setting this flag allows endpoints in a Service to loadbalance back to
 	// themselves if they should try to access their own Service. Values:
@@ -240,23 +198,13 @@ type KubeletConfiguration struct {
 	// In cluster mode, this is obtained from the master.
 	PodCIDR string `json:"podCIDR"`
 	// ResolverConfig is the resolver configuration file used as the basis
-	// for the container DNS resolution configuration."), []
+	// for the container DNS resolution configuration.
 	ResolverConfig string `json:"resolvConf"`
 	// cpuCFSQuota is Enable CPU CFS quota enforcement for containers that
 	// specify CPU limits
 	CPUCFSQuota *bool `json:"cpuCFSQuota"`
-	// containerized should be set to true if kubelet is running in a container.
-	Containerized *bool `json:"containerized"`
 	// maxOpenFiles is Number of files that can be opened by Kubelet process.
 	MaxOpenFiles int64 `json:"maxOpenFiles"`
-	// registerSchedulable tells the kubelet to register the node as
-	// schedulable. Won't have any effect if register-node is false.
-	// DEPRECATED: use registerWithTaints instead
-	RegisterSchedulable *bool `json:"registerSchedulable"`
-	// registerWithTaints are an array of taints to add to a node object when
-	// the kubelet registers itself. This only takes effect when registerNode
-	// is true and upon the initial registration of the node.
-	RegisterWithTaints []v1.Taint `json:"registerWithTaints"`
 	// contentType is contentType of requests sent to apiserver.
 	ContentType string `json:"contentType"`
 	// kubeAPIQPS is the QPS to use while talking with kubernetes apiserver
@@ -269,36 +217,30 @@ type KubeletConfiguration struct {
 	// run docker daemon with version  < 1.9 or an Aufs storage backend.
 	// Issue #10959 has more details.
 	SerializeImagePulls *bool `json:"serializeImagePulls"`
-	// nodeLabels to add when registering the node in the cluster.
-	NodeLabels map[string]string `json:"nodeLabels"`
-	// nonMasqueradeCIDR configures masquerading: traffic to IPs outside this range will use IP masquerade.
-	NonMasqueradeCIDR string `json:"nonMasqueradeCIDR"`
-	// enable gathering custom metrics.
-	EnableCustomMetrics bool `json:"enableCustomMetrics"`
-	// Comma-delimited list of hard eviction expressions.  For example, 'memory.available<300Mi'.
-	EvictionHard *string `json:"evictionHard"`
-	// Comma-delimited list of soft eviction expressions.  For example, 'memory.available<300Mi'.
-	EvictionSoft string `json:"evictionSoft"`
-	// Comma-delimeted list of grace periods for each soft eviction signal.  For example, 'memory.available=30s'.
-	EvictionSoftGracePeriod string `json:"evictionSoftGracePeriod"`
+	// Map of signal names to quantities that defines hard eviction thresholds. For example: {"memory.available": "300Mi"}.
+	// +optional
+	EvictionHard map[string]string `json:"evictionHard"`
+	// Map of signal names to quantities that defines soft eviction thresholds.  For example: {"memory.available": "300Mi"}.
+	// +optional
+	EvictionSoft map[string]string `json:"evictionSoft"`
+	// Map of signal names to quantities that defines grace periods for each soft eviction signal. For example: {"memory.available": "30s"}.
+	// +optional
+	EvictionSoftGracePeriod map[string]string `json:"evictionSoftGracePeriod"`
 	// Duration for which the kubelet has to wait before transitioning out of an eviction pressure condition.
 	EvictionPressureTransitionPeriod metav1.Duration `json:"evictionPressureTransitionPeriod"`
 	// Maximum allowed grace period (in seconds) to use when terminating pods in response to a soft eviction threshold being met.
 	EvictionMaxPodGracePeriod int32 `json:"evictionMaxPodGracePeriod"`
-	// Comma-delimited list of minimum reclaims (e.g. imagefs.available=2Gi) that describes the minimum amount of resource the kubelet will reclaim when performing a pod eviction if that resource is under pressure.
-	EvictionMinimumReclaim string `json:"evictionMinimumReclaim"`
-	// If enabled, the kubelet will integrate with the kernel memcg notification to determine if memory eviction thresholds are crossed rather than polling.
-	ExperimentalKernelMemcgNotification *bool `json:"experimentalKernelMemcgNotification"`
+	// Map of signal names to quantities that defines minimum reclaims, which describe the minimum
+	// amount of a given resource the kubelet will reclaim when performing a pod eviction while
+	// that resource is under pressure. For example: {"imagefs.available": "2Gi"}
+	// +optional
+	EvictionMinimumReclaim map[string]string `json:"evictionMinimumReclaim"`
 	// Maximum number of pods per core. Cannot exceed MaxPods
 	PodsPerCore int32 `json:"podsPerCore"`
 	// enableControllerAttachDetach enables the Attach/Detach controller to
 	// manage attachment/detachment of volumes scheduled to this node, and
 	// disables kubelet from executing any attach/detach operations
 	EnableControllerAttachDetach *bool `json:"enableControllerAttachDetach"`
-	// A set of ResourceName=Percentage (e.g. memory=50%) pairs that describe
-	// how pod resource requests are reserved at the QoS level.
-	// Currently only memory is supported. [default=none]"
-	ExperimentalQOSReserved map[string]string `json:"experimentalQOSReserved"`
 	// Default behaviour for kernel tuning
 	ProtectKernelDefaults bool `json:"protectKernelDefaults"`
 	// If true, Kubelet ensures a set of iptables rules are present on host.
@@ -313,22 +255,10 @@ type KubeletConfiguration struct {
 	// iptablesDropBit is the bit of the iptables fwmark space to mark for dropping packets.
 	// Values must be within the range [0, 31]. Must be different from other mark bits.
 	IPTablesDropBit *int32 `json:"iptablesDropBit"`
-	// Whitelist of unsafe sysctls or sysctl patterns (ending in *). Use these at your own risk.
-	// Resource isolation might be lacking and pod might influence each other on the same node.
-	// +optional
-	AllowedUnsafeSysctls []string `json:"allowedUnsafeSysctls,omitempty"`
-	// featureGates is a string of comma-separated key=value pairs that describe feature
-	// gates for alpha/experimental features.
-	FeatureGates string `json:"featureGates,omitempty"`
+	// featureGates is a map of feature names to bools that enable or disable alpha/experimental features.
+	FeatureGates map[string]bool `json:"featureGates,omitempty"`
 	// Tells the Kubelet to fail to start if swap is enabled on the node.
 	FailSwapOn bool `json:"failSwapOn,omitempty"`
-	// This flag, if set, enables a check prior to mount operations to verify that the required components
-	// (binaries, etc.) to mount the volume are available on the underlying node. If the check is enabled
-	// and fails the mount operation fails.
-	ExperimentalCheckNodeCapabilitiesBeforeMount bool `json:"experimentalCheckNodeCapabilitiesBeforeMount,omitempty"`
-	// This flag, if set, instructs the kubelet to keep volumes from terminated pods mounted to the node.
-	// This can be useful for debugging volume related issues.
-	KeepTerminatedPodVolumes bool `json:"keepTerminatedPodVolumes,omitempty"`
 
 	/* following flags are meant for Node Allocatable */
 
@@ -344,18 +274,15 @@ type KubeletConfiguration struct {
 	KubeReserved map[string]string `json:"kubeReserved"`
 
 	// This flag helps kubelet identify absolute name of top level cgroup used to enforce `SystemReserved` compute resource reservation for OS system daemons.
-	// Refer to [Node Allocatable](https://git.k8s.io/community/contributors/design-proposals/node-allocatable.md) doc for more information.
+	// Refer to [Node Allocatable](https://git.k8s.io/community/contributors/design-proposals/node/node-allocatable.md) doc for more information.
 	SystemReservedCgroup string `json:"systemReservedCgroup,omitempty"`
 	// This flag helps kubelet identify absolute name of top level cgroup used to enforce `KubeReserved` compute resource reservation for Kubernetes node system daemons.
-	// Refer to [Node Allocatable](https://git.k8s.io/community/contributors/design-proposals/node-allocatable.md) doc for more information.
+	// Refer to [Node Allocatable](https://git.k8s.io/community/contributors/design-proposals/node/node-allocatable.md) doc for more information.
 	KubeReservedCgroup string `json:"kubeReservedCgroup,omitempty"`
 	// This flag specifies the various Node Allocatable enforcements that Kubelet needs to perform.
 	// This flag accepts a list of options. Acceptible options are `pods`, `system-reserved` & `kube-reserved`.
-	// Refer to [Node Allocatable](https://git.k8s.io/community/contributors/design-proposals/node-allocatable.md) doc for more information.
+	// Refer to [Node Allocatable](https://git.k8s.io/community/contributors/design-proposals/node/node-allocatable.md) doc for more information.
 	EnforceNodeAllocatable []string `json:"enforceNodeAllocatable"`
-	// This flag, if set, will avoid including `EvictionHard` limits while computing Node Allocatable.
-	// Refer to [Node Allocatable](https://git.k8s.io/community/contributors/design-proposals/node-allocatable.md) doc for more information.
-	ExperimentalNodeAllocatableIgnoreEvictionThreshold bool `json:"experimentalNodeAllocatableIgnoreEvictionThreshold,omitempty"`
 }
 
 type KubeletAuthorizationMode string

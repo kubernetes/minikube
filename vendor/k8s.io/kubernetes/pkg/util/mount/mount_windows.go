@@ -22,9 +22,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/golang/glog"
 )
@@ -74,8 +76,24 @@ func (mounter *Mounter) Mount(source string, target string, fstype string, optio
 			return nil
 		}
 
-		// empty implementation for mounting azure file
-		return os.MkdirAll(target, 0755)
+		// currently only cifs mount is supported
+		if strings.ToLower(fstype) != "cifs" {
+			return fmt.Errorf("azureMount: only cifs mount is supported now, fstype: %q, mounting source (%q), target (%q), with options (%q)", fstype, source, target, options)
+		}
+
+		cmdLine := fmt.Sprintf(`$User = "%s";$PWord = ConvertTo-SecureString -String "%s" -AsPlainText -Force;`+
+			`$Credential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $User, $PWord`,
+			options[0], options[1])
+
+		bindSource = source
+		cmdLine += fmt.Sprintf(";New-SmbGlobalMapping -RemotePath %s -Credential $Credential", source)
+
+		if output, err := exec.Command("powershell", "/c", cmdLine).CombinedOutput(); err != nil {
+			// we don't return error here, even though New-SmbGlobalMapping failed, we still make it successful,
+			// will return error when Windows 2016 RS3 is ready on azure
+			glog.Errorf("azureMount: SmbGlobalMapping failed: %v, only SMB mount is supported now, output: %q", err, string(output))
+			return os.MkdirAll(target, 0755)
+		}
 	}
 
 	if output, err := exec.Command("cmd", "/c", "mklink", "/D", target, bindSource).CombinedOutput(); err != nil {
@@ -95,6 +113,16 @@ func (mounter *Mounter) Unmount(target string) error {
 		return err
 	}
 	return nil
+}
+
+// GetMountRefs finds all other references to the device(drive) referenced
+// by mountPath; returns a list of paths.
+func GetMountRefs(mounter Interface, mountPath string) ([]string, error) {
+	refs, err := getAllParentLinks(normalizeWindowsPath(mountPath))
+	if err != nil {
+		return nil, err
+	}
+	return refs, nil
 }
 
 // List returns a list of all mounted filesystems. todo
@@ -131,6 +159,33 @@ func (mounter *Mounter) GetDeviceNameFromMount(mountPath, pluginDir string) (str
 	return getDeviceNameFromMount(mounter, mountPath, pluginDir)
 }
 
+// getDeviceNameFromMount find the device(drive) name in which
+// the mount path reference should match the given plugin directory. In case no mount path reference
+// matches, returns the volume name taken from its given mountPath
+func getDeviceNameFromMount(mounter Interface, mountPath, pluginDir string) (string, error) {
+	refs, err := GetMountRefs(mounter, mountPath)
+	if err != nil {
+		glog.V(4).Infof("GetMountRefs failed for mount path %q: %v", mountPath, err)
+		return "", err
+	}
+	if len(refs) == 0 {
+		return "", fmt.Errorf("directory %s is not mounted", mountPath)
+	}
+	basemountPath := normalizeWindowsPath(path.Join(pluginDir, MountsInGlobalPDPath))
+	for _, ref := range refs {
+		if strings.Contains(ref, basemountPath) {
+			volumeID, err := filepath.Rel(normalizeWindowsPath(basemountPath), ref)
+			if err != nil {
+				glog.Errorf("Failed to get volume id from mount %s - %v", mountPath, err)
+				return "", err
+			}
+			return volumeID, nil
+		}
+	}
+
+	return path.Base(mountPath), nil
+}
+
 // DeviceOpened determines if the device is in use elsewhere
 func (mounter *Mounter) DeviceOpened(pathname string) (bool, error) {
 	return false, nil
@@ -145,6 +200,67 @@ func (mounter *Mounter) PathIsDevice(pathname string) (bool, error) {
 // propagation. Empty implementation here.
 func (mounter *Mounter) MakeRShared(path string) error {
 	return nil
+}
+
+// GetFileType checks for sockets/block/character devices
+func (mounter *Mounter) GetFileType(pathname string) (FileType, error) {
+	var pathType FileType
+	info, err := os.Stat(pathname)
+	if os.IsNotExist(err) {
+		return pathType, fmt.Errorf("path %q does not exist", pathname)
+	}
+	// err in call to os.Stat
+	if err != nil {
+		return pathType, err
+	}
+
+	mode := info.Sys().(*syscall.Win32FileAttributeData).FileAttributes
+	switch mode & syscall.S_IFMT {
+	case syscall.S_IFSOCK:
+		return FileTypeSocket, nil
+	case syscall.S_IFBLK:
+		return FileTypeBlockDev, nil
+	case syscall.S_IFCHR:
+		return FileTypeCharDev, nil
+	case syscall.S_IFDIR:
+		return FileTypeDirectory, nil
+	case syscall.S_IFREG:
+		return FileTypeFile, nil
+	}
+
+	return pathType, fmt.Errorf("only recognise file, directory, socket, block device and character device")
+}
+
+// MakeFile creates a new directory
+func (mounter *Mounter) MakeDir(pathname string) error {
+	err := os.MkdirAll(pathname, os.FileMode(0755))
+	if err != nil {
+		if !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// MakeFile creates an empty file
+func (mounter *Mounter) MakeFile(pathname string) error {
+	f, err := os.OpenFile(pathname, os.O_CREATE, os.FileMode(0644))
+	defer f.Close()
+	if err != nil {
+		if !os.IsExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+// ExistsPath checks whether the path exists
+func (mounter *Mounter) ExistsPath(pathname string) bool {
+	_, err := os.Stat(pathname)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func (mounter *SafeFormatAndMount) formatAndMount(source string, target string, fstype string, options []string) error {
@@ -203,4 +319,31 @@ func getDriveLetterByDiskNumber(diskNum string, exec Exec) (string, error) {
 		return "", fmt.Errorf("azureMount: Get Drive Letter failed, output is empty")
 	}
 	return string(output)[:1], nil
+}
+
+// getAllParentLinks walks all symbolic links and return all the parent targets recursively
+func getAllParentLinks(path string) ([]string, error) {
+	const maxIter = 255
+	links := []string{}
+	for {
+		links = append(links, path)
+		if len(links) > maxIter {
+			return links, fmt.Errorf("unexpected length of parent links: %v", links)
+		}
+
+		fi, err := os.Lstat(path)
+		if err != nil {
+			return links, fmt.Errorf("Lstat: %v", err)
+		}
+		if fi.Mode()&os.ModeSymlink == 0 {
+			break
+		}
+
+		path, err = os.Readlink(path)
+		if err != nil {
+			return links, fmt.Errorf("Readlink error: %v", err)
+		}
+	}
+
+	return links, nil
 }

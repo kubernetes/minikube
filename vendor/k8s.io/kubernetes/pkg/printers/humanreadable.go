@@ -211,7 +211,7 @@ func (h *HumanReadablePrinter) DefaultTableHandler(columnDefinitions []metav1alp
 //  func printFunc(object ObjectType, options PrintOptions) ([]metav1alpha1.TableRow, error)
 // where ObjectType is the type of the object that will be printed, and the first
 // return value is an array of rows, with each row containing a number of cells that
-// match the number of coulmns defined for that printer function.
+// match the number of columns defined for that printer function.
 func ValidateRowPrintHandlerFunc(printFunc reflect.Value) error {
 	if printFunc.Kind() != reflect.Func {
 		return fmt.Errorf("invalid print handler. %#v is not a function", printFunc)
@@ -525,6 +525,16 @@ func (h *HumanReadablePrinter) PrintTable(obj runtime.Object, options PrintOptio
 		ColumnDefinitions: columns,
 		Rows:              results[0].Interface().([]metav1alpha1.TableRow),
 	}
+	if m, err := meta.ListAccessor(obj); err == nil {
+		table.ResourceVersion = m.GetResourceVersion()
+		table.SelfLink = m.GetSelfLink()
+		table.Continue = m.GetContinue()
+	} else {
+		if m, err := meta.CommonAccessor(obj); err == nil {
+			table.ResourceVersion = m.GetResourceVersion()
+			table.SelfLink = m.GetSelfLink()
+		}
+	}
 	if err := DecorateTable(table, options); err != nil {
 		return nil, err
 	}
@@ -535,6 +545,15 @@ func (h *HumanReadablePrinter) PrintTable(obj runtime.Object, options PrintOptio
 // different from lastType) including all the rows in the object. It returns the current type
 // or an error, if any.
 func printRowsForHandlerEntry(output io.Writer, handler *handlerEntry, obj runtime.Object, options PrintOptions, includeHeaders bool) error {
+	var results []reflect.Value
+	if handler.printRows {
+		args := []reflect.Value{reflect.ValueOf(obj), reflect.ValueOf(options)}
+		results = handler.printFunc.Call(args)
+		if !results[1].IsNil() {
+			return results[1].Interface().(error)
+		}
+	}
+
 	if includeHeaders {
 		var headers []string
 		for _, column := range handler.columnDefinitions {
@@ -562,15 +581,12 @@ func printRowsForHandlerEntry(output io.Writer, handler *handlerEntry, obj runti
 		return resultValue.Interface().(error)
 	}
 
-	args := []reflect.Value{reflect.ValueOf(obj), reflect.ValueOf(options)}
-	results := handler.printFunc.Call(args)
 	if results[1].IsNil() {
 		rows := results[0].Interface().([]metav1alpha1.TableRow)
 		printRows(output, rows, options)
 		return nil
 	}
 	return results[1].Interface().(error)
-
 }
 
 // printRows writes the provided rows to output.

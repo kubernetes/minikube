@@ -40,12 +40,16 @@ const (
 	// This is only used by GetKubeletDockerContainers(), and should be removed
 	// along with the function.
 	containerNamePrefix = "k8s"
+
+	// Fake docker endpoint
+	FakeDockerEndpoint = "fake://"
 )
 
 // Interface is an abstract interface for testability.  It abstracts the interface of docker client.
 type Interface interface {
 	ListContainers(options dockertypes.ContainerListOptions) ([]dockertypes.Container, error)
 	InspectContainer(id string) (*dockertypes.ContainerJSON, error)
+	InspectContainerWithSize(id string) (*dockertypes.ContainerJSON, error)
 	CreateContainer(dockertypes.ContainerCreateConfig) (*dockercontainer.ContainerCreateCreatedBody, error)
 	StartContainer(id string) error
 	StopContainer(id string, timeout time.Duration) error
@@ -66,6 +70,7 @@ type Interface interface {
 	AttachToContainer(string, dockertypes.ContainerAttachOptions, StreamOptions) error
 	ResizeContainerTTY(id string, height, width uint) error
 	ResizeExecTTY(id string, height, width uint) error
+	GetContainerStats(id string) (*dockertypes.StatsJSON, error)
 }
 
 // Get a *dockerapi.Client, either using the endpoint passed in, or using
@@ -84,9 +89,18 @@ func getDockerClient(dockerEndpoint string) (*dockerapi.Client, error) {
 // is the timeout for docker requests. If timeout is exceeded, the request
 // will be cancelled and throw out an error. If requestTimeout is 0, a default
 // value will be applied.
-func ConnectToDockerOrDie(dockerEndpoint string, requestTimeout, imagePullProgressDeadline time.Duration) Interface {
-	if dockerEndpoint == "fake://" {
-		return NewFakeDockerClient()
+func ConnectToDockerOrDie(dockerEndpoint string, requestTimeout, imagePullProgressDeadline time.Duration,
+	withTraceDisabled bool, enableSleep bool) Interface {
+	if dockerEndpoint == FakeDockerEndpoint {
+		fakeClient := NewFakeDockerClient()
+		if withTraceDisabled {
+			fakeClient = fakeClient.WithTraceDisabled()
+		}
+
+		if enableSleep {
+			fakeClient.EnableSleep = true
+		}
+		return fakeClient
 	}
 	client, err := getDockerClient(dockerEndpoint)
 	if err != nil {

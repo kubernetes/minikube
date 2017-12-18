@@ -12,11 +12,13 @@ go_library(
         "operation_executor.go",
         "operation_generator.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/volume/util/operationexecutor",
     deps = [
         "//pkg/controller/volume/expand/cache:go_default_library",
         "//pkg/features:go_default_library",
         "//pkg/kubelet/events:go_default_library",
         "//pkg/util/mount:go_default_library",
+        "//pkg/util/resizefs:go_default_library",
         "//pkg/volume:go_default_library",
         "//pkg/volume/util:go_default_library",
         "//pkg/volume/util/nestedpendingoperations:go_default_library",
@@ -27,6 +29,7 @@ go_library(
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/strategicpatch:go_default_library",
         "//vendor/k8s.io/apiserver/pkg/util/feature:go_default_library",
         "//vendor/k8s.io/client-go/kubernetes:go_default_library",
         "//vendor/k8s.io/client-go/tools/record:go_default_library",
@@ -36,6 +39,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = ["operation_executor_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/volume/util/operationexecutor",
     library = ":go_default_library",
     deps = [
         "//pkg/controller/volume/expand/cache:go_default_library",

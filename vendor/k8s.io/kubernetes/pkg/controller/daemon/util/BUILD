@@ -9,9 +9,10 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["daemonset_util.go"],
+    importpath = "k8s.io/kubernetes/pkg/controller/daemon/util",
     deps = [
-        "//pkg/api/v1/helper:go_default_library",
         "//pkg/api/v1/pod:go_default_library",
+        "//pkg/apis/core/v1/helper:go_default_library",
         "//pkg/features:go_default_library",
         "//pkg/kubelet/types:go_default_library",
         "//pkg/util/labels:go_default_library",
@@ -39,6 +40,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["daemonset_util_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/controller/daemon/util",
     library = ":go_default_library",
     deps = [
         "//pkg/api/testapi:go_default_library",

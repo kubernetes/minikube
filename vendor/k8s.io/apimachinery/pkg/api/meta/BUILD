@@ -14,6 +14,7 @@ go_test(
         "priority_test.go",
         "restmapper_test.go",
     ],
+    importpath = "k8s.io/apimachinery/pkg/api/meta",
     library = ":go_default_library",
     deps = [
         "//vendor/github.com/google/gofuzz:go_default_library",
@@ -33,12 +34,14 @@ go_library(
         "firsthit_restmapper.go",
         "help.go",
         "interfaces.go",
+        "lazy.go",
         "meta.go",
         "multirestmapper.go",
         "priority.go",
         "restmapper.go",
         "unstructured.go",
     ],
+    importpath = "k8s.io/apimachinery/pkg/api/meta",
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",

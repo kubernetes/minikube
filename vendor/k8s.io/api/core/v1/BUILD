@@ -12,6 +12,7 @@ go_test(
         "taint_test.go",
         "toleration_test.go",
     ],
+    importpath = "k8s.io/api/core/v1",
     library = ":go_default_library",
 )
 
@@ -31,12 +32,12 @@ go_library(
         "types_swagger_doc_generated.go",
         "zz_generated.deepcopy.go",
     ],
+    importpath = "k8s.io/api/core/v1",
     deps = [
         "//vendor/github.com/gogo/protobuf/proto:go_default_library",
         "//vendor/github.com/gogo/protobuf/sortkeys:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/resource:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/conversion:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/types:go_default_library",

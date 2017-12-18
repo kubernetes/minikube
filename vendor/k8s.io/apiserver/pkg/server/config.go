@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/sets"
+	utilwaitgroup "k8s.io/apimachinery/pkg/util/waitgroup"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/audit"
@@ -67,7 +68,7 @@ import (
 )
 
 const (
-	// DefaultLegacyAPIPrefix is where the the legacy APIs will be located.
+	// DefaultLegacyAPIPrefix is where the legacy APIs will be located.
 	DefaultLegacyAPIPrefix = "/api"
 
 	// APIGroupPrefix is where non-legacy API group will be located.
@@ -128,6 +129,8 @@ type Config struct {
 
 	// BuildHandlerChainFunc allows you to build custom handler chains by decorating the apiHandler.
 	BuildHandlerChainFunc func(apiHandler http.Handler, c *Config) (secure http.Handler)
+	// HandlerChainWaitGroup allows you to wait for all chain handlers exit after the server shutdown.
+	HandlerChainWaitGroup *utilwaitgroup.SafeWaitGroup
 	// DiscoveryAddresses is used to build the IPs pass to discovery. If nil, the ExternalAddress is
 	// always reported
 	DiscoveryAddresses discovery.Addresses
@@ -192,14 +195,16 @@ type RecommendedConfig struct {
 	// RecommendedOptions.CoreAPI.ApplyTo called by RecommendedOptions.ApplyTo. It uses an in-cluster client config
 	// by default, or the kubeconfig given with kubeconfig command line flag.
 	SharedInformerFactory informers.SharedInformerFactory
+
+	// ClientConfig holds the kubernetes client configuration.
+	// This value is set by RecommendedOptions.CoreAPI.ApplyTo called by RecommendedOptions.ApplyTo.
+	// By default in-cluster client config is used.
+	ClientConfig *restclient.Config
 }
 
 type SecureServingInfo struct {
-	// BindAddress is the ip:port to serve on
-	BindAddress string
-	// BindNetwork is the type of network to bind to - defaults to "tcp", accepts "tcp",
-	// "tcp4", and "tcp6".
-	BindNetwork string
+	// Listener is the secure server network listener.
+	Listener net.Listener
 
 	// Cert is the main server cert which is used if SNI does not match. Cert must be non-nil and is
 	// allowed to be in SNICerts.
@@ -231,6 +236,7 @@ func NewConfig(codecs serializer.CodecFactory) *Config {
 		ReadWritePort:                443,
 		RequestContextMapper:         apirequest.NewRequestContextMapper(),
 		BuildHandlerChainFunc:        DefaultBuildHandlerChain,
+		HandlerChainWaitGroup:        new(utilwaitgroup.SafeWaitGroup),
 		LegacyAPIGroupPrefixes:       sets.NewString(DefaultLegacyAPIPrefix),
 		DisabledPostStartHooks:       sets.NewString(),
 		HealthzChecks:                []healthz.HealthzChecker{healthz.PingHealthz},
@@ -441,8 +447,10 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		Serializer:             c.Serializer,
 		AuditBackend:           c.AuditBackend,
 		delegationTarget:       delegationTarget,
+		HandlerChainWaitGroup:  c.HandlerChainWaitGroup,
 
 		minRequestTimeout: time.Duration(c.MinRequestTimeout) * time.Second,
+		ShutdownTimeout:   c.RequestTimeout,
 
 		SecureServingInfo: c.SecureServingInfo,
 		ExternalAddress:   c.ExternalAddress,
@@ -455,6 +463,7 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		openAPIConfig: c.OpenAPIConfig,
 
 		postStartHooks:         map[string]postStartHookEntry{},
+		preShutdownHooks:       map[string]preShutdownHookEntry{},
 		disabledPostStartHooks: c.DisabledPostStartHooks,
 
 		healthzChecks: c.HealthzChecks,
@@ -468,8 +477,12 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 		s.postStartHooks[k] = v
 	}
 
+	for k, v := range delegationTarget.PreShutdownHooks() {
+		s.preShutdownHooks[k] = v
+	}
+
 	genericApiServerHookName := "generic-apiserver-start-informers"
-	if c.SharedInformerFactory != nil && !s.isHookRegistered(genericApiServerHookName) {
+	if c.SharedInformerFactory != nil && !s.isPostStartHookRegistered(genericApiServerHookName) {
 		err := s.AddPostStartHook(genericApiServerHookName, func(context PostStartHookContext) error {
 			c.SharedInformerFactory.Start(context.StopCh)
 			return nil
@@ -478,6 +491,7 @@ func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*G
 			return nil, err
 		}
 	}
+
 	for _, delegateCheck := range delegationTarget.HealthzChecks() {
 		skip := false
 		for _, existingCheck := range c.HealthzChecks {
@@ -525,6 +539,7 @@ func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) http.Handler {
 	handler = genericapifilters.WithAuthentication(handler, c.RequestContextMapper, c.Authenticator, failedHandler)
 	handler = genericfilters.WithCORS(handler, c.CorsAllowedOriginList, nil, nil, nil, "true")
 	handler = genericfilters.WithTimeoutForNonLongRunningRequests(handler, c.RequestContextMapper, c.LongRunningFunc, c.RequestTimeout)
+	handler = genericfilters.WithWaitGroup(handler, c.RequestContextMapper, c.LongRunningFunc, c.HandlerChainWaitGroup)
 	handler = genericapifilters.WithRequestInfo(handler, c.RequestInfoResolver, c.RequestContextMapper)
 	handler = apirequest.WithRequestContext(handler, c.RequestContextMapper)
 	handler = genericfilters.WithPanicRecovery(handler)
