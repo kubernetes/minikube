@@ -2039,6 +2039,10 @@
 			"Rev": "0b12d6b521d83fc7f755e7cfc1b1fbdd35a01a74"
 		},
 		{
+			"ImportPath": "github.com/johanneswuerbach/nfsexports",
+			"Rev": "a9068f3f0daa39616953aec11c3eb1209ebc4086"
+		},
+		{
 			"ImportPath": "github.com/jonboulle/clockwork",
 			"Rev": "72f9bd7c4e0c2a40055ab3d0f09654f730cce982"
 		},
@@ -2457,6 +2461,7 @@
 		},
 		{
 			"ImportPath": "github.com/spf13/viper",
+			"Comment": "v1.0.0",
 			"Rev": "25b30aa063fc18e48662b86996252eabdcf2f0c7"
 		},
 		{
