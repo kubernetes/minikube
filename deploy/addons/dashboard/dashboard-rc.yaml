@@ -18,25 +18,25 @@ metadata:
   name: kubernetes-dashboard
   namespace: kube-system
   labels:
-    version: v1.8.0
+    version: v1.8.1
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: dashboard
 spec:
   replicas: 1
   selector:
     app: kubernetes-dashboard
-    version: v1.8.0
+    version: v1.8.1
     addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         app: kubernetes-dashboard
-        version: v1.8.0
+        version: v1.8.1
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
       - name: kubernetes-dashboard
-        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.8.0
+        image: gcr.io/google_containers/kubernetes-dashboard-amd64:v1.8.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 9090
