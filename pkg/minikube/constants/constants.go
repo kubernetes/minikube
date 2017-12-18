@@ -101,7 +101,7 @@ const (
 	KubernetesVersionGCSURL    = "https://storage.googleapis.com/minikube/k8s_releases.json"
 	DefaultWait                = 20
 	DefaultInterval            = 6
-	DefaultClusterBootstrapper = "localkube"
+	DefaultClusterBootstrapper = "kubeadm"
 )
 
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
