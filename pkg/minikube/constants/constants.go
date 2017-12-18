@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
-	"k8s.io/kubernetes/pkg/version"
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
@@ -107,7 +106,7 @@ const (
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
 var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
-var DefaultKubernetesVersion = version.Get().GitVersion
+var DefaultKubernetesVersion = "v1.9.0"
 
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
