@@ -21,6 +21,7 @@ import (
 	"crypto/sha256"
 	"encoding/base32"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -64,7 +65,7 @@ func (hp *hostport) String() string {
 	return fmt.Sprintf("%s:%d", hp.protocol, hp.port)
 }
 
-//openPodHostports opens all hostport for pod and returns the map of hostport and socket
+// openHostports opens all hostport for pod and returns the map of hostport and socket
 func (h *hostportSyncer) openHostports(podHostportMapping *PodPortMapping) error {
 	var retErr error
 	ports := make(map[hostport]closeable)
@@ -142,7 +143,7 @@ func writeLine(buf *bytes.Buffer, words ...string) {
 // this because IPTables Chain Names must be <= 28 chars long, and the longer
 // they are the harder they are to read.
 func hostportChainName(pm *PortMapping, podFullName string) utiliptables.Chain {
-	hash := sha256.Sum256([]byte(string(pm.HostPort) + string(pm.Protocol) + podFullName))
+	hash := sha256.Sum256([]byte(strconv.Itoa(int(pm.HostPort)) + string(pm.Protocol) + podFullName))
 	encoded := base32.StdEncoding.EncodeToString(hash[:])
 	return utiliptables.Chain(kubeHostportChainPrefix + encoded[:16])
 }

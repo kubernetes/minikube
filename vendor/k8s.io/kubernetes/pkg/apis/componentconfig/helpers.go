@@ -35,6 +35,10 @@ type IPVar struct {
 }
 
 func (v IPVar) Set(s string) error {
+	if len(s) == 0 {
+		v.Val = nil
+		return nil
+	}
 	if net.ParseIP(s) == nil {
 		return fmt.Errorf("%q is not a valid IP address", s)
 	}
@@ -55,22 +59,6 @@ func (v IPVar) String() string {
 
 func (v IPVar) Type() string {
 	return "ip"
-}
-
-func (m *ProxyMode) Set(s string) error {
-	*m = ProxyMode(s)
-	return nil
-}
-
-func (m *ProxyMode) String() string {
-	if m != nil {
-		return string(*m)
-	}
-	return ""
-}
-
-func (m *ProxyMode) Type() string {
-	return "ProxyMode"
 }
 
 type PortRangeVar struct {

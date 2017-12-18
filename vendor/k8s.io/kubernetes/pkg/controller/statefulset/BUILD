@@ -15,6 +15,7 @@ go_library(
         "stateful_set_status_updater.go",
         "stateful_set_utils.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/controller/statefulset",
     deps = [
         "//pkg/api/v1/pod:go_default_library",
         "//pkg/controller:go_default_library",
@@ -53,11 +54,12 @@ go_test(
         "stateful_set_test.go",
         "stateful_set_utils_test.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/controller/statefulset",
     library = ":go_default_library",
     deps = [
-        "//pkg/api/install:go_default_library",
         "//pkg/api/v1/pod:go_default_library",
         "//pkg/apis/apps/install:go_default_library",
+        "//pkg/apis/core/install:go_default_library",
         "//pkg/controller:go_default_library",
         "//pkg/controller/history:go_default_library",
         "//vendor/k8s.io/api/apps/v1beta1:go_default_library",

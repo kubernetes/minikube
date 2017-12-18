@@ -31,8 +31,8 @@ import (
 	cgroupfs "github.com/opencontainers/runc/libcontainer/cgroups/fs"
 	"k8s.io/api/core/v1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	v1qos "k8s.io/kubernetes/pkg/api/v1/helper/qos"
 	"k8s.io/kubernetes/pkg/api/v1/resource"
+	v1qos "k8s.io/kubernetes/pkg/apis/core/v1/helper/qos"
 	kubefeatures "k8s.io/kubernetes/pkg/features"
 )
 
@@ -56,21 +56,21 @@ type qosContainerManagerImpl struct {
 	cgroupManager      CgroupManager
 	activePods         ActivePodsFunc
 	getNodeAllocatable func() v1.ResourceList
-	cgroupRoot         string
+	cgroupRoot         CgroupName
 	qosReserved        map[v1.ResourceName]int64
 }
 
-func NewQOSContainerManager(subsystems *CgroupSubsystems, cgroupRoot string, nodeConfig NodeConfig) (QOSContainerManager, error) {
+func NewQOSContainerManager(subsystems *CgroupSubsystems, cgroupRoot string, nodeConfig NodeConfig, cgroupManager CgroupManager) (QOSContainerManager, error) {
 	if !nodeConfig.CgroupsPerQOS {
 		return &qosContainerManagerNoop{
-			cgroupRoot: CgroupName(nodeConfig.CgroupRoot),
+			cgroupRoot: CgroupName(cgroupRoot),
 		}, nil
 	}
 
 	return &qosContainerManagerImpl{
 		subsystems:    subsystems,
-		cgroupManager: NewCgroupManager(subsystems, nodeConfig.CgroupDriver),
-		cgroupRoot:    cgroupRoot,
+		cgroupManager: cgroupManager,
+		cgroupRoot:    CgroupName(cgroupRoot),
 		qosReserved:   nodeConfig.ExperimentalQOSReserved,
 	}, nil
 }
@@ -81,7 +81,7 @@ func (m *qosContainerManagerImpl) GetQOSContainersInfo() QOSContainersInfo {
 
 func (m *qosContainerManagerImpl) Start(getNodeAllocatable func() v1.ResourceList, activePods ActivePodsFunc) error {
 	cm := m.cgroupManager
-	rootContainer := m.cgroupRoot
+	rootContainer := string(m.cgroupRoot)
 	if !cm.Exists(CgroupName(rootContainer)) {
 		return fmt.Errorf("root container %s doesn't exist", rootContainer)
 	}
@@ -194,9 +194,6 @@ func (m *qosContainerManagerImpl) setCPUCgroupConfig(configs map[v1.PodQOSClass]
 
 	// set burstable shares based on current observe state
 	burstableCPUShares := MilliCPUToShares(burstablePodCPURequest)
-	if burstableCPUShares < uint64(MinShares) {
-		burstableCPUShares = uint64(MinShares)
-	}
 	configs[v1.PodQOSBurstable].ResourceParameters.CpuShares = &burstableCPUShares
 	return nil
 }
@@ -317,7 +314,7 @@ func (m *qosContainerManagerImpl) UpdateCgroups() error {
 		}
 	}
 	if updateSuccess {
-		glog.V(2).Infof("[ContainerManager]: Updated QoS cgroup configuration")
+		glog.V(4).Infof("[ContainerManager]: Updated QoS cgroup configuration")
 		return nil
 	}
 
@@ -334,12 +331,12 @@ func (m *qosContainerManagerImpl) UpdateCgroups() error {
 	for _, config := range qosConfigs {
 		err := m.cgroupManager.Update(config)
 		if err != nil {
-			glog.V(2).Infof("[ContainerManager]: Failed to update QoS cgroup configuration")
+			glog.Errorf("[ContainerManager]: Failed to update QoS cgroup configuration")
 			return err
 		}
 	}
 
-	glog.V(2).Infof("[ContainerManager]: Updated QoS cgroup configuration on retry")
+	glog.V(4).Infof("[ContainerManager]: Updated QoS cgroup configuration on retry")
 	return nil
 }
 

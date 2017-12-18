@@ -1,15 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])
-
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_library",
+    "go_test",
 )
 
 go_library(
     name = "go_default_library",
     srcs = [
+        "conversion.go",
         "doc.go",
         "generated.pb.go",
         "register.go",
@@ -18,7 +18,7 @@ go_library(
         "zz_generated.deepcopy.go",
         "zz_generated.defaults.go",
     ],
-    tags = ["automanaged"],
+    importpath = "k8s.io/apiserver/pkg/apis/audit/v1beta1",
     deps = [
         "//vendor/github.com/gogo/protobuf/proto:go_default_library",
         "//vendor/k8s.io/api/authentication/v1:go_default_library",
@@ -49,4 +49,17 @@ filegroup(
     name = "go_default_library_protos",
     srcs = ["generated.proto"],
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["conversion_test.go"],
+    importpath = "k8s.io/apiserver/pkg/apis/audit/v1beta1",
+    library = ":go_default_library",
+    deps = [
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/runtime/schema:go_default_library",
+        "//vendor/k8s.io/apiserver/pkg/apis/audit:go_default_library",
+    ],
 )

@@ -30,6 +30,7 @@ import (
 	schedulerapi "k8s.io/kubernetes/plugin/pkg/scheduler/api"
 
 	"github.com/golang/glog"
+	"k8s.io/kubernetes/plugin/pkg/scheduler/volumebinder"
 )
 
 // PluginFactoryArgs are passed to all plugin factory functions.
@@ -43,7 +44,9 @@ type PluginFactoryArgs struct {
 	NodeInfo                       predicates.NodeInfo
 	PVInfo                         predicates.PersistentVolumeInfo
 	PVCInfo                        predicates.PersistentVolumeClaimInfo
-	HardPodAffinitySymmetricWeight int
+	StorageClassInfo               predicates.StorageClassInfo
+	VolumeBinder                   *volumebinder.VolumeBinder
+	HardPodAffinitySymmetricWeight int32
 }
 
 // MetadataProducerFactory produces MetadataProducer from the given args.
@@ -73,6 +76,9 @@ type PriorityConfigFactory struct {
 	Weight            int
 }
 
+// EquivalencePodFuncFactory produces a function to get equivalence class for given pod.
+type EquivalencePodFuncFactory func(PluginFactoryArgs) algorithm.GetEquivalencePodFunc
+
 var (
 	schedulerFactoryMutex sync.Mutex
 
@@ -87,7 +93,7 @@ var (
 	predicateMetadataProducer PredicateMetadataProducerFactory
 
 	// get equivalence pod function
-	getEquivalencePodFunc algorithm.GetEquivalencePodFunc
+	getEquivalencePodFuncFactory EquivalencePodFuncFactory
 )
 
 const (
@@ -103,6 +109,66 @@ type AlgorithmProviderConfig struct {
 // registry. Returns the name with which the predicate was registered.
 func RegisterFitPredicate(name string, predicate algorithm.FitPredicate) string {
 	return RegisterFitPredicateFactory(name, func(PluginFactoryArgs) algorithm.FitPredicate { return predicate })
+}
+
+// RemoveFitPredicate removes a fit predicate from factory.
+func RemoveFitPredicate(name string) {
+	schedulerFactoryMutex.Lock()
+	defer schedulerFactoryMutex.Unlock()
+
+	validateAlgorithmNameOrDie(name)
+	delete(fitPredicateMap, name)
+	mandatoryFitPredicates.Delete(name)
+}
+
+// RemovePredicateKeyFromAlgoProvider removes a fit predicate key from algorithmProvider.
+func RemovePredicateKeyFromAlgoProvider(providerName, key string) error {
+	schedulerFactoryMutex.Lock()
+	defer schedulerFactoryMutex.Unlock()
+
+	validateAlgorithmNameOrDie(providerName)
+	provider, ok := algorithmProviderMap[providerName]
+	if !ok {
+		return fmt.Errorf("plugin %v has not been registered", providerName)
+	}
+	provider.FitPredicateKeys.Delete(key)
+	return nil
+}
+
+// RemovePredicateKeyFromAlgoProvider removes a fit predicate key from all algorithmProviders which in algorithmProviderMap.
+func RemovePredicateKeyFromAlgorithmProviderMap(key string) {
+	schedulerFactoryMutex.Lock()
+	defer schedulerFactoryMutex.Unlock()
+
+	for _, provider := range algorithmProviderMap {
+		provider.FitPredicateKeys.Delete(key)
+	}
+	return
+}
+
+// InsertPredicateKeyToAlgoProvider insert a fit predicate key to algorithmProvider.
+func InsertPredicateKeyToAlgoProvider(providerName, key string) error {
+	schedulerFactoryMutex.Lock()
+	defer schedulerFactoryMutex.Unlock()
+
+	validateAlgorithmNameOrDie(providerName)
+	provider, ok := algorithmProviderMap[providerName]
+	if !ok {
+		return fmt.Errorf("plugin %v has not been registered", providerName)
+	}
+	provider.FitPredicateKeys.Insert(key)
+	return nil
+}
+
+// InsertPredicateKeyToAlgorithmProviderMap insert a fit predicate key to all algorithmProviders which in algorithmProviderMap.
+func InsertPredicateKeyToAlgorithmProviderMap(key string) {
+	schedulerFactoryMutex.Lock()
+	defer schedulerFactoryMutex.Unlock()
+
+	for _, provider := range algorithmProviderMap {
+		provider.FitPredicateKeys.Insert(key)
+	}
+	return
 }
 
 // RegisterMandatoryFitPredicate registers a fit predicate with the algorithm registry, the predicate is used by
@@ -276,8 +342,9 @@ func RegisterCustomPriorityFunction(policy schedulerapi.PriorityPolicy) string {
 	return RegisterPriorityConfigFactory(policy.Name, *pcf)
 }
 
-func RegisterGetEquivalencePodFunction(equivalenceFunc algorithm.GetEquivalencePodFunc) {
-	getEquivalencePodFunc = equivalenceFunc
+// RegisterGetEquivalencePodFunction registers equivalenceFuncFactory to produce equivalence class for given pod.
+func RegisterGetEquivalencePodFunction(equivalenceFuncFactory EquivalencePodFuncFactory) {
+	getEquivalencePodFuncFactory = equivalenceFuncFactory
 }
 
 // IsPriorityFunctionRegistered is useful for testing providers.
@@ -369,12 +436,14 @@ func getPriorityFunctionConfigs(names sets.String, args PluginFactoryArgs) ([]al
 		}
 		if factory.Function != nil {
 			configs = append(configs, algorithm.PriorityConfig{
+				Name:     name,
 				Function: factory.Function(args),
 				Weight:   factory.Weight,
 			})
 		} else {
 			mapFunction, reduceFunction := factory.MapReduceFunction(args)
 			configs = append(configs, algorithm.PriorityConfig{
+				Name:   name,
 				Map:    mapFunction,
 				Reduce: reduceFunction,
 				Weight: factory.Weight,

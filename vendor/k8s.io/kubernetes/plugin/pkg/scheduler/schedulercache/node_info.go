@@ -24,7 +24,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	clientcache "k8s.io/client-go/tools/cache"
-	v1helper "k8s.io/kubernetes/pkg/api/v1/helper"
+	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	priorityutil "k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/priorities/util"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/util"
 )
@@ -38,7 +38,7 @@ type NodeInfo struct {
 
 	pods             []*v1.Pod
 	podsWithAffinity []*v1.Pod
-	usedPorts        map[int]bool
+	usedPorts        map[string]bool
 
 	// Total requested resource of all pods on this node.
 	// It includes assumed pods which scheduler sends binding to apiserver but
@@ -70,9 +70,9 @@ type Resource struct {
 	EphemeralStorage int64
 	// We store allowedPodNumber (which is Node.Status.Allocatable.Pods().Value())
 	// explicitly as int, to avoid conversions and improve performance.
-	AllowedPodNumber  int
-	ExtendedResources map[v1.ResourceName]int64
-	HugePages         map[v1.ResourceName]int64
+	AllowedPodNumber int
+	// ScalarResources
+	ScalarResources map[v1.ResourceName]int64
 }
 
 // New creates a Resource from ResourceList
@@ -101,11 +101,8 @@ func (r *Resource) Add(rl v1.ResourceList) {
 		case v1.ResourceEphemeralStorage:
 			r.EphemeralStorage += rQuant.Value()
 		default:
-			if v1helper.IsExtendedResourceName(rName) {
-				r.AddExtended(rName, rQuant.Value())
-			}
-			if v1helper.IsHugePageResourceName(rName) {
-				r.AddHugePages(rName, rQuant.Value())
+			if v1helper.IsScalarResourceName(rName) {
+				r.AddScalar(rName, rQuant.Value())
 			}
 		}
 	}
@@ -119,11 +116,12 @@ func (r *Resource) ResourceList() v1.ResourceList {
 		v1.ResourcePods:             *resource.NewQuantity(int64(r.AllowedPodNumber), resource.BinarySI),
 		v1.ResourceEphemeralStorage: *resource.NewQuantity(r.EphemeralStorage, resource.BinarySI),
 	}
-	for rName, rQuant := range r.ExtendedResources {
-		result[rName] = *resource.NewQuantity(rQuant, resource.DecimalSI)
-	}
-	for rName, rQuant := range r.HugePages {
-		result[rName] = *resource.NewQuantity(rQuant, resource.BinarySI)
+	for rName, rQuant := range r.ScalarResources {
+		if v1helper.IsHugePageResourceName(rName) {
+			result[rName] = *resource.NewQuantity(rQuant, resource.BinarySI)
+		} else {
+			result[rName] = *resource.NewQuantity(rQuant, resource.DecimalSI)
+		}
 	}
 	return result
 }
@@ -136,43 +134,25 @@ func (r *Resource) Clone() *Resource {
 		AllowedPodNumber: r.AllowedPodNumber,
 		EphemeralStorage: r.EphemeralStorage,
 	}
-	if r.ExtendedResources != nil {
-		res.ExtendedResources = make(map[v1.ResourceName]int64)
-		for k, v := range r.ExtendedResources {
-			res.ExtendedResources[k] = v
-		}
-	}
-	if r.HugePages != nil {
-		res.HugePages = make(map[v1.ResourceName]int64)
-		for k, v := range r.HugePages {
-			res.HugePages[k] = v
+	if r.ScalarResources != nil {
+		res.ScalarResources = make(map[v1.ResourceName]int64)
+		for k, v := range r.ScalarResources {
+			res.ScalarResources[k] = v
 		}
 	}
 	return res
 }
 
-func (r *Resource) AddExtended(name v1.ResourceName, quantity int64) {
-	r.SetExtended(name, r.ExtendedResources[name]+quantity)
+func (r *Resource) AddScalar(name v1.ResourceName, quantity int64) {
+	r.SetScalar(name, r.ScalarResources[name]+quantity)
 }
 
-func (r *Resource) SetExtended(name v1.ResourceName, quantity int64) {
-	// Lazily allocate opaque integer resource map.
-	if r.ExtendedResources == nil {
-		r.ExtendedResources = map[v1.ResourceName]int64{}
+func (r *Resource) SetScalar(name v1.ResourceName, quantity int64) {
+	// Lazily allocate scalar resource map.
+	if r.ScalarResources == nil {
+		r.ScalarResources = map[v1.ResourceName]int64{}
 	}
-	r.ExtendedResources[name] = quantity
-}
-
-func (r *Resource) AddHugePages(name v1.ResourceName, quantity int64) {
-	r.SetHugePages(name, r.HugePages[name]+quantity)
-}
-
-func (r *Resource) SetHugePages(name v1.ResourceName, quantity int64) {
-	// Lazily allocate hugepages resource map.
-	if r.HugePages == nil {
-		r.HugePages = map[v1.ResourceName]int64{}
-	}
-	r.HugePages[name] = quantity
+	r.ScalarResources[name] = quantity
 }
 
 // NewNodeInfo returns a ready to use empty NodeInfo object.
@@ -184,7 +164,7 @@ func NewNodeInfo(pods ...*v1.Pod) *NodeInfo {
 		nonzeroRequest:      &Resource{},
 		allocatableResource: &Resource{},
 		generation:          0,
-		usedPorts:           make(map[int]bool),
+		usedPorts:           make(map[string]bool),
 	}
 	for _, pod := range pods {
 		ni.AddPod(pod)
@@ -208,7 +188,7 @@ func (n *NodeInfo) Pods() []*v1.Pod {
 	return n.pods
 }
 
-func (n *NodeInfo) UsedPorts() map[int]bool {
+func (n *NodeInfo) UsedPorts() map[string]bool {
 	if n == nil {
 		return nil
 	}
@@ -275,6 +255,11 @@ func (n *NodeInfo) AllocatableResource() Resource {
 	return *n.allocatableResource
 }
 
+// SetAllocatableResource sets the allocatableResource information of given node.
+func (n *NodeInfo) SetAllocatableResource(allocatableResource *Resource) {
+	n.allocatableResource = allocatableResource
+}
+
 func (n *NodeInfo) Clone() *NodeInfo {
 	clone := &NodeInfo{
 		node:                    n.node,
@@ -284,7 +269,7 @@ func (n *NodeInfo) Clone() *NodeInfo {
 		taintsErr:               n.taintsErr,
 		memoryPressureCondition: n.memoryPressureCondition,
 		diskPressureCondition:   n.diskPressureCondition,
-		usedPorts:               make(map[int]bool),
+		usedPorts:               make(map[string]bool),
 		generation:              n.generation,
 	}
 	if len(n.pods) > 0 {
@@ -326,17 +311,11 @@ func (n *NodeInfo) AddPod(pod *v1.Pod) {
 	n.requestedResource.Memory += res.Memory
 	n.requestedResource.NvidiaGPU += res.NvidiaGPU
 	n.requestedResource.EphemeralStorage += res.EphemeralStorage
-	if n.requestedResource.ExtendedResources == nil && len(res.ExtendedResources) > 0 {
-		n.requestedResource.ExtendedResources = map[v1.ResourceName]int64{}
+	if n.requestedResource.ScalarResources == nil && len(res.ScalarResources) > 0 {
+		n.requestedResource.ScalarResources = map[v1.ResourceName]int64{}
 	}
-	for rName, rQuant := range res.ExtendedResources {
-		n.requestedResource.ExtendedResources[rName] += rQuant
-	}
-	if n.requestedResource.HugePages == nil && len(res.HugePages) > 0 {
-		n.requestedResource.HugePages = map[v1.ResourceName]int64{}
-	}
-	for rName, rQuant := range res.HugePages {
-		n.requestedResource.HugePages[rName] += rQuant
+	for rName, rQuant := range res.ScalarResources {
+		n.requestedResource.ScalarResources[rName] += rQuant
 	}
 	n.nonzeroRequest.MilliCPU += non0_cpu
 	n.nonzeroRequest.Memory += non0_mem
@@ -387,17 +366,11 @@ func (n *NodeInfo) RemovePod(pod *v1.Pod) error {
 			n.requestedResource.MilliCPU -= res.MilliCPU
 			n.requestedResource.Memory -= res.Memory
 			n.requestedResource.NvidiaGPU -= res.NvidiaGPU
-			if len(res.ExtendedResources) > 0 && n.requestedResource.ExtendedResources == nil {
-				n.requestedResource.ExtendedResources = map[v1.ResourceName]int64{}
+			if len(res.ScalarResources) > 0 && n.requestedResource.ScalarResources == nil {
+				n.requestedResource.ScalarResources = map[v1.ResourceName]int64{}
 			}
-			for rName, rQuant := range res.ExtendedResources {
-				n.requestedResource.ExtendedResources[rName] -= rQuant
-			}
-			if len(res.HugePages) > 0 && n.requestedResource.HugePages == nil {
-				n.requestedResource.HugePages = map[v1.ResourceName]int64{}
-			}
-			for rName, rQuant := range res.HugePages {
-				n.requestedResource.HugePages[rName] -= rQuant
+			for rName, rQuant := range res.ScalarResources {
+				n.requestedResource.ScalarResources[rName] -= rQuant
 			}
 			n.nonzeroRequest.MilliCPU -= non0_cpu
 			n.nonzeroRequest.Memory -= non0_mem
@@ -435,7 +408,26 @@ func (n *NodeInfo) updateUsedPorts(pod *v1.Pod, used bool) {
 			// "0" is explicitly ignored in PodFitsHostPorts,
 			// which is the only function that uses this value.
 			if podPort.HostPort != 0 {
-				n.usedPorts[int(podPort.HostPort)] = used
+				// user does not explicitly set protocol, default is tcp
+				portProtocol := podPort.Protocol
+				if podPort.Protocol == "" {
+					portProtocol = v1.ProtocolTCP
+				}
+
+				// user does not explicitly set hostIP, default is 0.0.0.0
+				portHostIP := podPort.HostIP
+				if podPort.HostIP == "" {
+					portHostIP = util.DefaultBindAllHostIP
+				}
+
+				str := fmt.Sprintf("%s/%s/%d", portProtocol, portHostIP, podPort.HostPort)
+
+				if used {
+					n.usedPorts[str] = used
+				} else {
+					delete(n.usedPorts, str)
+				}
+
 			}
 		}
 	}

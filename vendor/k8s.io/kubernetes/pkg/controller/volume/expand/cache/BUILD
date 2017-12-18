@@ -1,7 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])
-
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_library",
@@ -11,7 +9,7 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["volume_resize_map.go"],
-    tags = ["automanaged"],
+    importpath = "k8s.io/kubernetes/pkg/controller/volume/expand/cache",
     deps = [
         "//pkg/controller/volume/expand/util:go_default_library",
         "//pkg/util/strings:go_default_library",
@@ -41,6 +39,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["volume_resize_map_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/controller/volume/expand/cache",
     library = ":go_default_library",
     deps = [
         "//pkg/volume/util/types:go_default_library",

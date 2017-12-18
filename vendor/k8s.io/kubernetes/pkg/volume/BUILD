@@ -25,6 +25,7 @@ go_library(
         ],
         "//conditions:default": [],
     }),
+    importpath = "k8s.io/kubernetes/pkg/volume",
     deps = [
         "//pkg/cloudprovider:go_default_library",
         "//pkg/util/io:go_default_library",
@@ -52,9 +53,10 @@ go_test(
         "plugins_test.go",
         "util_test.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/volume",
     library = ":go_default_library",
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/apis/core:go_default_library",
         "//pkg/util/slice:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
@@ -76,6 +78,7 @@ go_test(
         ],
         "//conditions:default": [],
     }),
+    importpath = "k8s.io/kubernetes/pkg/volume_test",
     deps = [
         ":go_default_library",
         "//pkg/volume/testing:go_default_library",
@@ -105,6 +108,7 @@ filegroup(
         "//pkg/volume/cephfs:all-srcs",
         "//pkg/volume/cinder:all-srcs",
         "//pkg/volume/configmap:all-srcs",
+        "//pkg/volume/csi:all-srcs",
         "//pkg/volume/downwardapi:all-srcs",
         "//pkg/volume/empty_dir:all-srcs",
         "//pkg/volume/fc:all-srcs",

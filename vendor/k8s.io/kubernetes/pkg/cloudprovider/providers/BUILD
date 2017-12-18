@@ -8,6 +8,7 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["providers.go"],
+    importpath = "k8s.io/kubernetes/pkg/cloudprovider/providers",
     deps = [
         "//pkg/cloudprovider/providers/aws:go_default_library",
         "//pkg/cloudprovider/providers/azure:go_default_library",
@@ -16,7 +17,6 @@ go_library(
         "//pkg/cloudprovider/providers/openstack:go_default_library",
         "//pkg/cloudprovider/providers/ovirt:go_default_library",
         "//pkg/cloudprovider/providers/photon:go_default_library",
-        "//pkg/cloudprovider/providers/rackspace:go_default_library",
         "//pkg/cloudprovider/providers/vsphere:go_default_library",
     ],
 )
@@ -40,7 +40,6 @@ filegroup(
         "//pkg/cloudprovider/providers/openstack:all-srcs",
         "//pkg/cloudprovider/providers/ovirt:all-srcs",
         "//pkg/cloudprovider/providers/photon:all-srcs",
-        "//pkg/cloudprovider/providers/rackspace:all-srcs",
         "//pkg/cloudprovider/providers/vsphere:all-srcs",
     ],
     tags = ["automanaged"],

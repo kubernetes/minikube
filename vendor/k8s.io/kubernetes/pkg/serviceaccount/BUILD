@@ -12,8 +12,9 @@ go_library(
         "jwt.go",
         "util.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/serviceaccount",
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/apis/core:go_default_library",
         "//vendor/github.com/dgrijalva/jwt-go:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
@@ -26,6 +27,7 @@ go_library(
 go_test(
     name = "go_default_xtest",
     srcs = ["jwt_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/serviceaccount_test",
     deps = [
         ":go_default_library",
         "//pkg/controller/serviceaccount:go_default_library",
