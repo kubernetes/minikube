@@ -17,12 +17,9 @@ limitations under the License.
 package defaults
 
 import (
-	"os"
-	"strconv"
-
 	"k8s.io/apimachinery/pkg/util/sets"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	"k8s.io/kubernetes/pkg/cloudprovider/providers/aws"
+
 	"k8s.io/kubernetes/pkg/features"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm"
 	"k8s.io/kubernetes/plugin/pkg/scheduler/algorithm/predicates"
@@ -34,19 +31,11 @@ import (
 )
 
 const (
-	// DefaultMaxGCEPDVolumes defines the maximum number of PD Volumes for GCE
-	// GCE instances can have up to 16 PD volumes attached.
-	DefaultMaxGCEPDVolumes = 16
-	// DefaultMaxAzureDiskVolumes defines the maximum number of PD Volumes for Azure
-	// Larger Azure VMs can actually have much more disks attached.
-	// TODO We should determine the max based on VM size
-	DefaultMaxAzureDiskVolumes = 16
+
 	// ClusterAutoscalerProvider defines the default autoscaler provider
 	ClusterAutoscalerProvider = "ClusterAutoscalerProvider"
 	// StatefulSetKind defines the name of 'StatefulSet' kind
 	StatefulSetKind = "StatefulSet"
-	// KubeMaxPDVols defines the maximum number of PD Volumes per kubelet
-	KubeMaxPDVols = "KUBE_MAX_PD_VOLS"
 )
 
 func init() {
@@ -57,15 +46,10 @@ func init() {
 		})
 	factory.RegisterPriorityMetadataProducerFactory(
 		func(args factory.PluginFactoryArgs) algorithm.MetadataProducer {
-			return priorities.PriorityMetadata
+			return priorities.NewPriorityMetadataFactory(args.ServiceLister, args.ControllerLister, args.ReplicaSetLister, args.StatefulSetLister)
 		})
 
-	// Registers algorithm providers. By default we use 'DefaultProvider', but user can specify one to be used
-	// by specifying flag.
-	factory.RegisterAlgorithmProvider(factory.DefaultProvider, defaultPredicates(), defaultPriorities())
-	// Cluster autoscaler friendly scheduling algorithm.
-	factory.RegisterAlgorithmProvider(ClusterAutoscalerProvider, defaultPredicates(),
-		copyAndReplace(defaultPriorities(), "LeastRequestedPriority", "MostRequestedPriority"))
+	registerAlgorithmProvider(defaultPredicates(), defaultPriorities())
 
 	// IMPORTANT NOTES for predicate developers:
 	// We are using cached predicate result for pods belonging to the same equivalence class.
@@ -96,8 +80,12 @@ func init() {
 	// Fit is determined by node selector query.
 	factory.RegisterFitPredicate("MatchNodeSelector", predicates.PodMatchNodeSelector)
 
-	// Use equivalence class to speed up predicates & priorities
-	factory.RegisterGetEquivalencePodFunction(predicates.GetEquivalencePod)
+	// Use equivalence class to speed up heavy predicates phase.
+	factory.RegisterGetEquivalencePodFunction(
+		func(args factory.PluginFactoryArgs) algorithm.GetEquivalencePodFunc {
+			return predicates.NewEquivalencePodGenerator(args.PVCInfo)
+		},
+	)
 
 	// ServiceSpreadingPriority is a priority config factory that spreads pods by minimizing
 	// the number of pods (belonging to the same service) on the same node.
@@ -106,13 +94,12 @@ func init() {
 	factory.RegisterPriorityConfigFactory(
 		"ServiceSpreadingPriority",
 		factory.PriorityConfigFactory{
-			Function: func(args factory.PluginFactoryArgs) algorithm.PriorityFunction {
+			MapReduceFunction: func(args factory.PluginFactoryArgs) (algorithm.PriorityMapFunction, algorithm.PriorityReduceFunction) {
 				return priorities.NewSelectorSpreadPriority(args.ServiceLister, algorithm.EmptyControllerLister{}, algorithm.EmptyReplicaSetLister{}, algorithm.EmptyStatefulSetLister{})
 			},
 			Weight: 1,
 		},
 	)
-
 	// EqualPriority is a prioritizer function that gives an equal weight of one to all nodes
 	// Register the priority function so that its available
 	// but do not include it as part of the default priorities
@@ -123,42 +110,40 @@ func init() {
 	factory.RegisterPriorityFunction2("ImageLocalityPriority", priorities.ImageLocalityPriorityMap, nil, 1)
 	// Optional, cluster-autoscaler friendly priority function - give used nodes higher priority.
 	factory.RegisterPriorityFunction2("MostRequestedPriority", priorities.MostRequestedPriorityMap, nil, 1)
+	// Prioritizes nodes that satisfy pod's resource limits
+	if utilfeature.DefaultFeatureGate.Enabled(features.ResourceLimitsPriorityFunction) {
+		factory.RegisterPriorityFunction2("ResourceLimitsPriority", priorities.ResourceLimitsPriorityMap, nil, 1)
+	}
 }
 
 func defaultPredicates() sets.String {
-	predSet := sets.NewString(
+	return sets.NewString(
 		// Fit is determined by volume zone requirements.
 		factory.RegisterFitPredicateFactory(
 			"NoVolumeZoneConflict",
 			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
-				return predicates.NewVolumeZonePredicate(args.PVInfo, args.PVCInfo)
+				return predicates.NewVolumeZonePredicate(args.PVInfo, args.PVCInfo, args.StorageClassInfo)
 			},
 		),
 		// Fit is determined by whether or not there would be too many AWS EBS volumes attached to the node
 		factory.RegisterFitPredicateFactory(
 			"MaxEBSVolumeCount",
 			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
-				// TODO: allow for generically parameterized scheduler predicates, because this is a bit ugly
-				maxVols := getMaxVols(aws.DefaultMaxEBSVolumes)
-				return predicates.NewMaxPDVolumeCountPredicate(predicates.EBSVolumeFilter, maxVols, args.PVInfo, args.PVCInfo)
+				return predicates.NewMaxPDVolumeCountPredicate(predicates.EBSVolumeFilterType, args.PVInfo, args.PVCInfo)
 			},
 		),
 		// Fit is determined by whether or not there would be too many GCE PD volumes attached to the node
 		factory.RegisterFitPredicateFactory(
 			"MaxGCEPDVolumeCount",
 			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
-				// TODO: allow for generically parameterized scheduler predicates, because this is a bit ugly
-				maxVols := getMaxVols(DefaultMaxGCEPDVolumes)
-				return predicates.NewMaxPDVolumeCountPredicate(predicates.GCEPDVolumeFilter, maxVols, args.PVInfo, args.PVCInfo)
+				return predicates.NewMaxPDVolumeCountPredicate(predicates.GCEPDVolumeFilterType, args.PVInfo, args.PVCInfo)
 			},
 		),
 		// Fit is determined by whether or not there would be too many Azure Disk volumes attached to the node
 		factory.RegisterFitPredicateFactory(
 			"MaxAzureDiskVolumeCount",
 			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
-				// TODO: allow for generically parameterized scheduler predicates, because this is a bit ugly
-				maxVols := getMaxVols(DefaultMaxAzureDiskVolumes)
-				return predicates.NewMaxPDVolumeCountPredicate(predicates.AzureDiskVolumeFilter, maxVols, args.PVInfo, args.PVCInfo)
+				return predicates.NewMaxPDVolumeCountPredicate(predicates.AzureDiskVolumeFilterType, args.PVInfo, args.PVCInfo)
 			},
 		),
 		// Fit is determined by inter-pod affinity.
@@ -182,27 +167,51 @@ func defaultPredicates() sets.String {
 		// Fit is determined by node disk pressure condition.
 		factory.RegisterFitPredicate("CheckNodeDiskPressure", predicates.CheckNodeDiskPressurePredicate),
 
-		// Fit is determined by volume zone requirements.
+		// Fit is determied by node condtions: not ready, network unavailable and out of disk.
+		factory.RegisterMandatoryFitPredicate("CheckNodeCondition", predicates.CheckNodeConditionPredicate),
+
+		// Fit is determined based on whether a pod can tolerate all of the node's taints
+		factory.RegisterFitPredicate("PodToleratesNodeTaints", predicates.PodToleratesNodeTaints),
+
+		// Fit is determined by volume topology requirements.
 		factory.RegisterFitPredicateFactory(
-			"NoVolumeNodeConflict",
+			predicates.CheckVolumeBinding,
 			func(args factory.PluginFactoryArgs) algorithm.FitPredicate {
-				return predicates.NewVolumeNodePredicate(args.PVInfo, args.PVCInfo, nil)
+				return predicates.NewVolumeBindingPredicate(args.VolumeBinder)
 			},
 		),
 	)
+}
+
+// ApplyFeatureGates applies algorithm by feature gates.
+func ApplyFeatureGates() {
 
 	if utilfeature.DefaultFeatureGate.Enabled(features.TaintNodesByCondition) {
-		// Fit is determined based on whether a pod can tolerate all of the node's taints
-		predSet.Insert(factory.RegisterMandatoryFitPredicate("PodToleratesNodeTaints", predicates.PodToleratesNodeTaints))
-		glog.Warningf("TaintNodesByCondition is enabled, PodToleratesNodeTaints predicate is mandatory")
-	} else {
-		// Fit is determied by node condtions: not ready, network unavailable and out of disk.
-		predSet.Insert(factory.RegisterMandatoryFitPredicate("CheckNodeCondition", predicates.CheckNodeConditionPredicate))
-		// Fit is determined based on whether a pod can tolerate all of the node's taints
-		predSet.Insert(factory.RegisterFitPredicate("PodToleratesNodeTaints", predicates.PodToleratesNodeTaints))
-	}
+		// Remove "CheckNodeCondition" predicate
+		factory.RemoveFitPredicate("CheckNodeCondition")
+		// Remove Key "CheckNodeCondition" From All Algorithm Provider
+		// The key will be removed from all providers which in algorithmProviderMap[]
+		// if you just want remove specific provider, call func RemovePredicateKeyFromAlgoProvider()
+		factory.RemovePredicateKeyFromAlgorithmProviderMap("CheckNodeCondition")
 
-	return predSet
+		// Fit is determined based on whether a pod can tolerate all of the node's taints
+		factory.RegisterMandatoryFitPredicate("PodToleratesNodeTaints", predicates.PodToleratesNodeTaints)
+		// Insert Key "PodToleratesNodeTaints" To All Algorithm Provider
+		// The key will insert to all providers which in algorithmProviderMap[]
+		// if you just want insert to specific provider, call func InsertPredicateKeyToAlgoProvider()
+		factory.InsertPredicateKeyToAlgorithmProviderMap("PodToleratesNodeTaints")
+
+		glog.Warningf("TaintNodesByCondition is enabled, PodToleratesNodeTaints predicate is mandatory")
+	}
+}
+
+func registerAlgorithmProvider(predSet, priSet sets.String) {
+	// Registers algorithm providers. By default we use 'DefaultProvider', but user can specify one to be used
+	// by specifying flag.
+	factory.RegisterAlgorithmProvider(factory.DefaultProvider, predSet, priSet)
+	// Cluster autoscaler friendly scheduling algorithm.
+	factory.RegisterAlgorithmProvider(ClusterAutoscalerProvider, predSet,
+		copyAndReplace(priSet, "LeastRequestedPriority", "MostRequestedPriority"))
 }
 
 func defaultPriorities() sets.String {
@@ -211,7 +220,7 @@ func defaultPriorities() sets.String {
 		factory.RegisterPriorityConfigFactory(
 			"SelectorSpreadPriority",
 			factory.PriorityConfigFactory{
-				Function: func(args factory.PluginFactoryArgs) algorithm.PriorityFunction {
+				MapReduceFunction: func(args factory.PluginFactoryArgs) (algorithm.PriorityMapFunction, algorithm.PriorityReduceFunction) {
 					return priorities.NewSelectorSpreadPriority(args.ServiceLister, args.ControllerLister, args.ReplicaSetLister, args.StatefulSetLister)
 				},
 				Weight: 1,
@@ -245,21 +254,6 @@ func defaultPriorities() sets.String {
 		// Prioritizes nodes that marked with taint which pod can tolerate.
 		factory.RegisterPriorityFunction2("TaintTolerationPriority", priorities.ComputeTaintTolerationPriorityMap, priorities.ComputeTaintTolerationPriorityReduce, 1),
 	)
-}
-
-// getMaxVols checks the max PD volumes environment variable, otherwise returning a default value
-func getMaxVols(defaultVal int) int {
-	if rawMaxVols := os.Getenv(KubeMaxPDVols); rawMaxVols != "" {
-		if parsedMaxVols, err := strconv.Atoi(rawMaxVols); err != nil {
-			glog.Errorf("Unable to parse maximum PD volumes value, using default of %v: %v", defaultVal, err)
-		} else if parsedMaxVols <= 0 {
-			glog.Errorf("Maximum PD volumes must be a positive value, using default of %v", defaultVal)
-		} else {
-			return parsedMaxVols
-		}
-	}
-
-	return defaultVal
 }
 
 func copyAndReplace(set sets.String, replaceWhat, replaceWith string) sets.String {

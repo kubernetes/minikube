@@ -41,7 +41,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/kubernetes/pkg/api/v1/helper"
+	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/util/goroutinemap"
 	utilversion "k8s.io/kubernetes/pkg/util/version"
 )
@@ -535,14 +535,8 @@ func (ctrl *ProvisionController) isOnlyRecordUpdate(oldClaim, newClaim *v1.Persi
 // removeRecord returns a claim with its leader election record annotation and
 // ResourceVersion set blank
 func (ctrl *ProvisionController) removeRecord(claim *v1.PersistentVolumeClaim) (*v1.PersistentVolumeClaim, error) {
-	clone, err := scheme.Scheme.DeepCopy(claim)
-	if err != nil {
-		return nil, fmt.Errorf("Error cloning claim: %v", err)
-	}
-	claimClone, ok := clone.(*v1.PersistentVolumeClaim)
-	if !ok {
-		return nil, fmt.Errorf("Unexpected claim cast error: %v", claimClone)
-	}
+	var claimClone *v1.PersistentVolumeClaim
+	claim.DeepCopyInto(claimClone)
 
 	if claimClone.Annotations == nil {
 		claimClone.Annotations = make(map[string]string)

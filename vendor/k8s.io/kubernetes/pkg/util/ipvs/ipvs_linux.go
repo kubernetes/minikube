@@ -30,8 +30,6 @@ import (
 	utilexec "k8s.io/utils/exec"
 )
 
-const cmdIP = "ip"
-
 // runner implements Interface.
 type runner struct {
 	exec       utilexec.Interface
@@ -49,34 +47,6 @@ func New(exec utilexec.Interface) Interface {
 		exec:       exec,
 		ipvsHandle: ihandle,
 	}
-}
-
-// EnsureVirtualServerAddressBind is part of Interface.
-func (runner *runner) EnsureVirtualServerAddressBind(vs *VirtualServer, dummyDev string) (exist bool, err error) {
-	addr := vs.Address.String() + "/32"
-	args := []string{"addr", "add", addr, "dev", dummyDev}
-	out, err := runner.exec.Command(cmdIP, args...).CombinedOutput()
-	if err != nil {
-		// "exit status 2" will be returned if the address is already bound to dummy device
-		if ee, ok := err.(utilexec.ExitError); ok {
-			if ee.Exited() && ee.ExitStatus() == 2 {
-				return true, nil
-			}
-		}
-		return false, fmt.Errorf("error bind address: %s to dummy interface: %s, err: %v: %s", vs.Address.String(), dummyDev, err, out)
-	}
-	return false, nil
-}
-
-// UnbindVirtualServerAddress is part of Interface.
-func (runner *runner) UnbindVirtualServerAddress(vs *VirtualServer, dummyDev string) error {
-	addr := vs.Address.String() + "/32"
-	args := []string{"addr", "del", addr, "dev", dummyDev}
-	out, err := runner.exec.Command(cmdIP, args...).CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("error unbind address: %s from dummy interface: %s, err: %v: %s", vs.Address.String(), dummyDev, err, out)
-	}
-	return nil
 }
 
 // AddVirtualServer is part of Interface.
@@ -142,18 +112,7 @@ func (runner *runner) GetVirtualServers() ([]*VirtualServer, error) {
 
 // Flush is part of Interface.  Currently we delete IPVS services one by one
 func (runner *runner) Flush() error {
-	vss, err := runner.GetVirtualServers()
-	if err != nil {
-		return err
-	}
-	for _, vs := range vss {
-		err := runner.DeleteVirtualServer(vs)
-		// TODO: aggregate errors?
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return runner.ipvsHandle.Flush()
 }
 
 // AddRealServer is part of Interface.
@@ -214,9 +173,16 @@ func toVirtualServer(svc *ipvs.Service) (*VirtualServer, error) {
 		Port:      svc.Port,
 		Scheduler: svc.SchedName,
 		Protocol:  protocolNumbeToString(ProtoType(svc.Protocol)),
-		Flags:     ServiceFlags(svc.Flags),
 		Timeout:   svc.Timeout,
 	}
+
+	// Test Flags >= 0x2, valid Flags ranges [0x2, 0x3]
+	if svc.Flags&FlagHashed == 0 {
+		return nil, fmt.Errorf("Flags of successfully created IPVS service should be >= %d since every service is hashed into the service table", FlagHashed)
+	}
+	// Sub Flags to 0x2
+	// 011 -> 001, 010 -> 000
+	vs.Flags = ServiceFlags(svc.Flags &^ uint32(FlagHashed))
 
 	if vs.Address == nil {
 		if svc.AddressFamily == syscall.AF_INET {

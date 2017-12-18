@@ -29,7 +29,6 @@ type CustomResourceDefinitionSpec struct {
 	// Scope indicates whether this resource is cluster or namespace scoped.  Default is namespaced
 	Scope ResourceScope `json:"scope" protobuf:"bytes,4,opt,name=scope,casttype=ResourceScope"`
 	// Validation describes the validation methods for CustomResources
-	// This field is alpha-level and should only be sent to servers that enable the CustomResourceValidation feature.
 	// +optional
 	Validation *CustomResourceValidation `json:"validation,omitempty" protobuf:"bytes,5,opt,name=validation"`
 }
@@ -49,7 +48,7 @@ type CustomResourceDefinitionNames struct {
 	ListKind string `json:"listKind,omitempty" protobuf:"bytes,5,opt,name=listKind"`
 }
 
-// ResourceScope is an enum defining the different scopes availabe to a custom resource
+// ResourceScope is an enum defining the different scopes available to a custom resource
 type ResourceScope string
 
 const (

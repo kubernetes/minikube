@@ -11,12 +11,14 @@ go_library(
     srcs = [
         "doc.go",
         "exec.go",
+        "exec_mount_unsupported.go",
         "fake.go",
         "mount.go",
         "mount_unsupported.go",
         "nsenter_mount_unsupported.go",
     ] + select({
         "@io_bazel_rules_go//go/platform:linux_amd64": [
+            "exec_mount.go",
             "mount_linux.go",
             "nsenter_mount.go",
         ],
@@ -25,12 +27,14 @@ go_library(
         ],
         "//conditions:default": [],
     }),
+    importpath = "k8s.io/kubernetes/pkg/util/mount",
     deps = [
         "//vendor/github.com/golang/glog:go_default_library",
         "//vendor/k8s.io/utils/exec:go_default_library",
     ] + select({
         "@io_bazel_rules_go//go/platform:linux_amd64": [
             "//pkg/util/io:go_default_library",
+            "//pkg/util/nsenter:go_default_library",
             "//vendor/golang.org/x/sys/unix:go_default_library",
             "//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library",
         ],
@@ -44,6 +48,7 @@ go_test(
         "safe_format_and_mount_test.go",
     ] + select({
         "@io_bazel_rules_go//go/platform:linux_amd64": [
+            "exec_mount_test.go",
             "mount_linux_test.go",
             "nsenter_mount_test.go",
         ],
@@ -52,6 +57,7 @@ go_test(
         ],
         "//conditions:default": [],
     }),
+    importpath = "k8s.io/kubernetes/pkg/util/mount",
     library = ":go_default_library",
     deps = ["//vendor/k8s.io/utils/exec/testing:go_default_library"],
 )

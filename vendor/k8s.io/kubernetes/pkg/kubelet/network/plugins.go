@@ -21,6 +21,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/kubernetes/pkg/kubelet/apis/kubeletconfig"
 	kubecontainer "k8s.io/kubernetes/pkg/kubelet/container"
 	"k8s.io/kubernetes/pkg/kubelet/network/hostport"
+	"k8s.io/kubernetes/pkg/kubelet/network/metrics"
 	utilsysctl "k8s.io/kubernetes/pkg/util/sysctl"
 	utilexec "k8s.io/utils/exec"
 )
@@ -155,6 +157,7 @@ func InitNetworkPlugin(plugins []NetworkPlugin, networkPluginName string, host H
 	if networkPluginName == "" {
 		// default to the no_op plugin
 		plug := &NoopNetworkPlugin{}
+		plug.Sysctl = utilsysctl.New()
 		if err := plug.Init(host, hairpinMode, nonMasqueradeCIDR, mtu); err != nil {
 			return nil, err
 		}
@@ -198,9 +201,11 @@ func UnescapePluginName(in string) string {
 }
 
 type NoopNetworkPlugin struct {
+	Sysctl utilsysctl.Interface
 }
 
 const sysctlBridgeCallIPTables = "net/bridge/bridge-nf-call-iptables"
+const sysctlBridgeCallIP6Tables = "net/bridge/bridge-nf-call-ip6tables"
 
 func (plugin *NoopNetworkPlugin) Init(host Host, hairpinMode kubeletconfig.HairpinMode, nonMasqueradeCIDR string, mtu int) error {
 	// Set bridge-nf-call-iptables=1 to maintain compatibility with older
@@ -212,8 +217,15 @@ func (plugin *NoopNetworkPlugin) Init(host Host, hairpinMode kubeletconfig.Hairp
 	// Ensure the netfilter module is loaded on kernel >= 3.18; previously
 	// it was built-in.
 	utilexec.New().Command("modprobe", "br-netfilter").CombinedOutput()
-	if err := utilsysctl.New().SetSysctl(sysctlBridgeCallIPTables, 1); err != nil {
+	if err := plugin.Sysctl.SetSysctl(sysctlBridgeCallIPTables, 1); err != nil {
 		glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIPTables, err)
+	}
+	if val, err := plugin.Sysctl.GetSysctl(sysctlBridgeCallIP6Tables); err == nil {
+		if val != 1 {
+			if err = plugin.Sysctl.SetSysctl(sysctlBridgeCallIP6Tables, 1); err != nil {
+				glog.Warningf("can't set sysctl %s: %v", sysctlBridgeCallIP6Tables, err)
+			}
+		}
 	}
 
 	return nil
@@ -304,6 +316,7 @@ type PluginManager struct {
 }
 
 func NewPluginManager(plugin NetworkPlugin) *PluginManager {
+	metrics.Register()
 	return &PluginManager{
 		plugin: plugin,
 		pods:   make(map[string]*podLock),
@@ -371,7 +384,13 @@ func (pm *PluginManager) podUnlock(fullPodName string) {
 	}
 }
 
+// recordOperation records operation and duration
+func recordOperation(operation string, start time.Time) {
+	metrics.NetworkPluginOperationsLatency.WithLabelValues(operation).Observe(metrics.SinceInMicroseconds(start))
+}
+
 func (pm *PluginManager) GetPodNetworkStatus(podNamespace, podName string, id kubecontainer.ContainerID) (*PodNetworkStatus, error) {
+	defer recordOperation("get_pod_network_status", time.Now())
 	fullPodName := kubecontainer.BuildPodFullName(podName, podNamespace)
 	pm.podLock(fullPodName).Lock()
 	defer pm.podUnlock(fullPodName)
@@ -385,6 +404,7 @@ func (pm *PluginManager) GetPodNetworkStatus(podNamespace, podName string, id ku
 }
 
 func (pm *PluginManager) SetUpPod(podNamespace, podName string, id kubecontainer.ContainerID, annotations map[string]string) error {
+	defer recordOperation("set_up_pod", time.Now())
 	fullPodName := kubecontainer.BuildPodFullName(podName, podNamespace)
 	pm.podLock(fullPodName).Lock()
 	defer pm.podUnlock(fullPodName)
@@ -398,6 +418,7 @@ func (pm *PluginManager) SetUpPod(podNamespace, podName string, id kubecontainer
 }
 
 func (pm *PluginManager) TearDownPod(podNamespace, podName string, id kubecontainer.ContainerID) error {
+	defer recordOperation("tear_down_pod", time.Now())
 	fullPodName := kubecontainer.BuildPodFullName(podName, podNamespace)
 	pm.podLock(fullPodName).Lock()
 	defer pm.podUnlock(fullPodName)

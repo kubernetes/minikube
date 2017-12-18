@@ -10,13 +10,12 @@ go_library(
         "certificate_controller.go",
         "certificate_controller_utils.go",
     ],
-    visibility = [
-        ":__subpackages__",
-        "//cmd/gke-certificates-controller:__subpackages__",
-    ],
+    importpath = "k8s.io/kubernetes/pkg/controller/certificates",
+    visibility = ["//visibility:public"],
     deps = [
         "//pkg/controller:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
+        "//vendor/github.com/juju/ratelimit:go_default_library",
         "//vendor/k8s.io/api/certificates/v1beta1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/util/runtime:go_default_library",
@@ -43,6 +42,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//pkg/controller/certificates/approver:all-srcs",
+        "//pkg/controller/certificates/cleaner:all-srcs",
         "//pkg/controller/certificates/signer:all-srcs",
     ],
     tags = ["automanaged"],
@@ -54,6 +54,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["certificate_controller_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/controller/certificates",
     library = ":go_default_library",
     deps = [
         "//pkg/controller:go_default_library",

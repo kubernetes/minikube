@@ -203,13 +203,6 @@ type ObjectCreater interface {
 	New(kind schema.GroupVersionKind) (out Object, err error)
 }
 
-// ObjectCopier duplicates an object.
-type ObjectCopier interface {
-	// Copy returns an exact copy of the provided Object, or an error if the
-	// copy could not be completed.
-	Copy(Object) (Object, error)
-}
-
 // ResourceVersioner provides methods for setting and retrieving
 // the resource version from an API object.
 type ResourceVersioner interface {
@@ -240,13 +233,13 @@ type Object interface {
 // Unstructured objects store values as map[string]interface{}, with only values that can be serialized
 // to JSON allowed.
 type Unstructured interface {
-	// IsUnstructuredObject is a marker interface to allow objects that can be serialized but not introspected
-	// to bypass conversion.
-	IsUnstructuredObject()
+	Object
 	// UnstructuredContent returns a non-nil, mutable map of the contents of this object. Values may be
 	// []interface{}, map[string]interface{}, or any primitive type. Contents are typically serialized to
 	// and from JSON.
 	UnstructuredContent() map[string]interface{}
+	// SetUnstructuredContent updates the object content to match the provided map.
+	SetUnstructuredContent(map[string]interface{})
 	// IsList returns true if this type is a list or matches the list convention - has an array called "items".
 	IsList() bool
 	// EachListItem should pass a single item out of the list as an Object to the provided function. Any

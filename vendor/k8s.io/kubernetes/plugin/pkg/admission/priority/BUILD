@@ -1,7 +1,5 @@
 package(default_visibility = ["//visibility:public"])
 
-licenses(["notice"])
-
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_library",
@@ -11,10 +9,10 @@ load(
 go_test(
     name = "go_default_test",
     srcs = ["admission_test.go"],
+    importpath = "k8s.io/kubernetes/plugin/pkg/admission/priority",
     library = ":go_default_library",
-    tags = ["automanaged"],
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/apis/core:go_default_library",
         "//pkg/apis/scheduling:go_default_library",
         "//pkg/client/informers/informers_generated/internalversion:go_default_library",
         "//pkg/controller:go_default_library",
@@ -29,9 +27,9 @@ go_test(
 go_library(
     name = "go_default_library",
     srcs = ["admission.go"],
-    tags = ["automanaged"],
+    importpath = "k8s.io/kubernetes/plugin/pkg/admission/priority",
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/apis/core:go_default_library",
         "//pkg/apis/scheduling:go_default_library",
         "//pkg/client/clientset_generated/internalclientset:go_default_library",
         "//pkg/client/informers/informers_generated/internalversion:go_default_library",

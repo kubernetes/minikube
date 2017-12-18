@@ -27,6 +27,12 @@ const (
 	BackOffStartContainer   = "BackOff"
 	ExceededGracePeriod     = "ExceededGracePeriod"
 
+	// Pod event reason list
+	FailedToKillPod                = "FailedKillPod"
+	FailedToCreatePodContainer     = "FailedCreatePodContainer"
+	FailedToMakePodDataDirectories = "Failed"
+	NetworkNotReady                = "NetworkNotReady"
+
 	// Image event reason list
 	PullingImage            = "Pulling"
 	PulledImage             = "Pulled"
@@ -46,7 +52,11 @@ const (
 	FailedDetachVolume                   = "FailedDetachVolume"
 	FailedMountVolume                    = "FailedMount"
 	VolumeResizeFailed                   = "VolumeResizeFailed"
+	FileSystemResizeFailed               = "FileSystemResizeFailed"
+	FileSystemResizeSuccess              = "FileSystemResizeSuccessful"
 	FailedUnMountVolume                  = "FailedUnMount"
+	FailedMapVolume                      = "FailedMapVolume"
+	FailedUnmapDevice                    = "FailedUnmapDevice"
 	WarnAlreadyMountedVolume             = "AlreadyMountedVolume"
 	SuccessfulDetachVolume               = "SuccessfulDetachVolume"
 	SuccessfulMountVolume                = "SuccessfulMountVolume"
@@ -65,6 +75,7 @@ const (
 	UnsupportedMountOption               = "UnsupportedMountOption"
 	SandboxChanged                       = "SandboxChanged"
 	FailedCreatePodSandBox               = "FailedCreatePodSandBox"
+	FailedStatusPodSandBox               = "FailedPodSandBoxStatus"
 
 	// Image manager event reason list
 	InvalidDiskCapacity = "InvalidDiskCapacity"

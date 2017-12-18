@@ -26,7 +26,7 @@ import (
 
 // ClientPool manages a pool of dynamic clients.
 type ClientPool interface {
-	// ClientForGroupVersionKind returns a client configured for the specified groupVersionResource.
+	// ClientForGroupVersionResource returns a client configured for the specified groupVersionResource.
 	// Resource may be empty.
 	ClientForGroupVersionResource(resource schema.GroupVersionResource) (Interface, error)
 	// ClientForGroupVersionKind returns a client configured for the specified groupVersionKind.
@@ -56,7 +56,7 @@ type clientPoolImpl struct {
 	mapper              meta.RESTMapper
 }
 
-// NewClientPool returns a ClientPool from the specified config. It reuses clients for the the same
+// NewClientPool returns a ClientPool from the specified config. It reuses clients for the same
 // group version. It is expected this type may be wrapped by specific logic that special cases certain
 // resources or groups.
 func NewClientPool(config *restclient.Config, mapper meta.RESTMapper, apiPathResolverFunc APIPathResolverFunc) ClientPool {

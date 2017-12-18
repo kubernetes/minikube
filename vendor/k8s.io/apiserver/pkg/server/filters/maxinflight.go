@@ -19,14 +19,11 @@ package filters
 import (
 	"fmt"
 	"net/http"
-	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/endpoints/metrics"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
-	genericapirequest "k8s.io/apiserver/pkg/endpoints/request"
 
 	"github.com/golang/glog"
 )
@@ -48,7 +45,7 @@ func WithMaxInFlightLimit(
 	handler http.Handler,
 	nonMutatingLimit int,
 	mutatingLimit int,
-	requestContextMapper genericapirequest.RequestContextMapper,
+	requestContextMapper apirequest.RequestContextMapper,
 	longRunningRequestCheck apirequest.LongRunningRequestCheck,
 ) http.Handler {
 	if nonMutatingLimit == 0 && mutatingLimit == 0 {
@@ -108,18 +105,7 @@ func WithMaxInFlightLimit(
 						}
 					}
 				}
-				scope := "cluster"
-				if requestInfo.Namespace != "" {
-					scope = "namespace"
-				}
-				if requestInfo.Name != "" {
-					scope = "resource"
-				}
-				if requestInfo.IsResourceRequest {
-					metrics.MonitorRequest(r, strings.ToUpper(requestInfo.Verb), requestInfo.Resource, requestInfo.Subresource, "", scope, http.StatusTooManyRequests, 0, time.Now())
-				} else {
-					metrics.MonitorRequest(r, strings.ToUpper(requestInfo.Verb), "", requestInfo.Path, "", scope, http.StatusTooManyRequests, 0, time.Now())
-				}
+				metrics.Record(r, requestInfo, "", http.StatusTooManyRequests, 0, 0)
 				tooManyRequests(r, w)
 			}
 		}

@@ -11,6 +11,7 @@ go_library(
         "clientset.go",
         "doc.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset",
     deps = [
         "//pkg/client/clientset_generated/internalclientset/typed/admissionregistration/internalversion:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/typed/apps/internalversion:go_default_library",
@@ -20,6 +21,7 @@ go_library(
         "//pkg/client/clientset_generated/internalclientset/typed/batch/internalversion:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/typed/certificates/internalversion:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/typed/core/internalversion:go_default_library",
+        "//pkg/client/clientset_generated/internalclientset/typed/events/internalversion:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/typed/extensions/internalversion:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/typed/networking/internalversion:go_default_library",
         "//pkg/client/clientset_generated/internalclientset/typed/policy/internalversion:go_default_library",
@@ -55,6 +57,7 @@ filegroup(
         "//pkg/client/clientset_generated/internalclientset/typed/batch/internalversion:all-srcs",
         "//pkg/client/clientset_generated/internalclientset/typed/certificates/internalversion:all-srcs",
         "//pkg/client/clientset_generated/internalclientset/typed/core/internalversion:all-srcs",
+        "//pkg/client/clientset_generated/internalclientset/typed/events/internalversion:all-srcs",
         "//pkg/client/clientset_generated/internalclientset/typed/extensions/internalversion:all-srcs",
         "//pkg/client/clientset_generated/internalclientset/typed/networking/internalversion:all-srcs",
         "//pkg/client/clientset_generated/internalclientset/typed/policy/internalversion:all-srcs",
