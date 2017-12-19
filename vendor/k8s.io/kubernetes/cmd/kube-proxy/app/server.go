@@ -318,6 +318,10 @@ func (o *Options) ApplyDefaults(in *kubeproxyconfig.KubeProxyConfiguration) (*ku
 	return out, nil
 }
 
+func (o *Options) SetConfig(in *kubeproxyconfig.KubeProxyConfiguration) {
+	o.config = in
+}
+
 // NewProxyCommand creates a *cobra.Command object with default parameters
 func NewProxyCommand() *cobra.Command {
 	opts := NewOptions()

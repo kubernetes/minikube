@@ -380,7 +380,7 @@ func NewSchedulerServer(config *componentconfig.KubeSchedulerConfiguration, mast
 	if c, err := configz.New("componentconfig"); err == nil {
 		c.Set(config)
 	} else {
-		return nil, fmt.Errorf("unable to register configz: %s", err)
+		glog.Warningf("unable to register configz: %s", err)
 	}
 
 	// Prepare some Kube clients.
