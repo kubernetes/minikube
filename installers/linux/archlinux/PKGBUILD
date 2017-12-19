@@ -1,5 +1,6 @@
 # vim: ts=2 sts=2 sw=2 et ft=sh
 # Maintainer: Matt Rickard <mrick@google.com> 
+# Contributor: Brad Erhart <brae.04+aur@gmail.com>
 
 pkgname=minikube
 pkgver=$PKG_VERSION
@@ -14,7 +15,7 @@ depends=(
 optdepends=(
   'kubectl-bin: to manage the cluster'
   'virtualbox'
-  'docker-machine-kvm'
+  'docker-machine-driver-kvm2'
 )
 makedepends=()
 

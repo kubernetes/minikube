@@ -1,0 +1,28 @@
+# Maintainer: Brad Erhart <brae.04+aur@gmail.com> 
+# Contributor: Matt Rickard <mrick@google.com>
+pkgname=docker-machine-driver-kvm2
+pkgver=$PKG_VERSION
+pkgrel=1
+pkgdesc="Minikube-maintained KVM driver for docker-machine"
+url="https://github.com/kubernetes/minikube"
+license=('Apache')
+arch=('x86_64')
+depends=(
+  'docker-machine'
+  'libvirt'
+  'ebtables'
+  'dnsmasq'
+)
+optdepends=(
+  'docker: to manage the containers in the machine'
+)
+makedepends=()
+
+source=("https://github.com/kubernetes/minikube/releases/download/v$pkgver/docker-machine-driver-kvm2")
+sha256sums=('$MINIKUBE_DRIVER_KVM_SHA256')
+
+package() {
+  cd "$srcdir"
+  install -d "$pkgdir/usr/bin"
+  install -m755 docker-machine-driver-kvm2 "$pkgdir/usr/bin/docker-machine-driver-kvm2"
+}

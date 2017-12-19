@@ -19,6 +19,7 @@ git config --global user.email "minikube-bot@google.com"
 
 REPLACE_PKG_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 REPLACE_MINIKUBE_LINUX_SHA256=$(awk '{ print $1 }' out/minikube-linux-amd64.sha256)
+REPLACE_MINIKUBE_DRIVER_KVM_SHA256=$(awk '{ print $1 }' out/docker-machine-driver-kvm2.sha256)
 REPLACE_MINIKUBE_DARWIN_SHA256=$(awk '{ print $1 }' out/minikube-darwin-amd64.sha256)
 REPLACE_CASK_CHECKPOINT=$(curl \
                         --compressed \
@@ -37,6 +38,22 @@ pushd aur-minikube >/dev/null
     sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
         -e "s/\$MINIKUBE_LINUX_SHA256/${REPLACE_MINIKUBE_LINUX_SHA256}/g" \
         $MINIKUBE_ROOT/installers/linux/archlinux/.SRCINFO > .SRCINFO
+    git add PKGBUILD .SRCINFO
+    git commit -m "Upgrade to version ${REPLACE_PKG_VERSION}"
+
+    git push origin master
+
+popd >/dev/null
+
+
+git clone ssh://aur@aur.archlinux.org/minikube.git aur-minikube-driver-kvm
+pushd aur-minikube-driver-kvm >/dev/null
+    sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
+    sed -e "s/\$MINIKUBE_DRIVER_KVM_SHA256/${REPLACE_MINIKUBE_DRIVER_KVM_SHA256}/g" \
+    $MINIKUBE_ROOT/installers/linux/archlinux-drivers/
+    sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
+        -e "s/\$MINIKUBE_DRIVER_KVM_SHA256/${REPLACE_MINIKUBE_DRIVER_KVM_SHA256}/g" \
+        $MINIKUBE_ROOT/installers/linux/archlinux-drivers/.SRCINFO > .SRCINFO
     git add PKGBUILD .SRCINFO
     git commit -m "Upgrade to version ${REPLACE_PKG_VERSION}"
 
@@ -78,4 +95,4 @@ EOF
 EOF
 popd >/dev/null
 
-rm -rf aur-minikube homebrew-cask
+rm -rf aur-minikube aur-minikube-driver-kvm homebrew-cask
