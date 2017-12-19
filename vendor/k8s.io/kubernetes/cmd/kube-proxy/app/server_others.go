@@ -72,7 +72,7 @@ func newProxyServer(
 	if c, err := configz.New(proxyconfigapi.GroupName); err == nil {
 		c.Set(config)
 	} else {
-		return nil, fmt.Errorf("unable to register configz: %s", err)
+		glog.Warningf("unable to register configz: %s", err)
 	}
 
 	protocol := utiliptables.ProtocolIpv4
