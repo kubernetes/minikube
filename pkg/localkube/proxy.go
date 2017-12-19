@@ -66,6 +66,7 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 	if err != nil {
 		panic(err)
 	}
+	opts.SetConfig(config)
 
 	lk.SetExtraConfigForComponent("proxy", &config)
 

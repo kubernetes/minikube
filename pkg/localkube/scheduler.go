@@ -27,7 +27,15 @@ func (lk LocalkubeServer) NewSchedulerServer() Server {
 }
 
 func StartSchedulerServer(lk LocalkubeServer) func() error {
-	config := componentconfig.KubeSchedulerConfiguration{}
+	config := &componentconfig.KubeSchedulerConfiguration{}
+	opts, err := scheduler.NewOptions()
+	if err != nil {
+		panic(err)
+	}
+	config, err = opts.ApplyDefaults(config)
+	if err != nil {
+		panic(err)
+	}
 
 	// master details
 	config.ClientConnection.KubeConfigFile = util.DefaultKubeConfigPath
@@ -38,7 +46,7 @@ func StartSchedulerServer(lk LocalkubeServer) func() error {
 	lk.SetExtraConfigForComponent("scheduler", &config)
 
 	return func() error {
-		s, err := scheduler.NewSchedulerServer(&config, "")
+		s, err := scheduler.NewSchedulerServer(config, "")
 		if err != nil {
 			return err
 		}
