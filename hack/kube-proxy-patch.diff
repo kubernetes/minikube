@@ -1,9 +1,9 @@
 diff --git a/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server_others.go b/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server_others.go
-index b0f0eace5..02b631fb6 100644
+index 380e83e2a..51bb09fd0 100644
 --- a/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server_others.go
 +++ b/vendor/k8s.io/kubernetes/cmd/kube-proxy/app/server_others.go
-@@ -60,7 +60,7 @@ func NewProxyServer(config *componentconfig.KubeProxyConfiguration, cleanupAndEx
- 	if c, err := configz.New("componentconfig"); err == nil {
+@@ -72,7 +72,7 @@ func newProxyServer(
+ 	if c, err := configz.New(proxyconfigapi.GroupName); err == nil {
  		c.Set(config)
  	} else {
 -		return nil, fmt.Errorf("unable to register configz: %s", err)
