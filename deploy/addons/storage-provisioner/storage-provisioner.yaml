@@ -25,4 +25,13 @@ spec:
   containers:
   - name: storage-provisioner
     image: gcr.io/k8s-minikube/storage-provisioner:v1.8.1
+    command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - mountPath: /tmp
+      name: tmp
+  volumes:
+  - name: tmp
+    hostPath:
+      path: /tmp
+      type: Directory
