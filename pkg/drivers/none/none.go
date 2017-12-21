@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -72,7 +73,11 @@ func (d *Driver) DriverName() string {
 }
 
 func (d *Driver) GetIP() (string, error) {
-	return "127.0.0.1", nil
+	ip, err := net.ChooseBindAddress(nil)
+	if err != nil {
+		return "", err
+	}
+	return ip.String(), nil
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
@@ -84,7 +89,12 @@ func (d *Driver) GetSSHPort() (int, error) {
 }
 
 func (d *Driver) GetURL() (string, error) {
-	return "tcp://127.0.0.1:2376", nil
+	ip, err := d.GetIP()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
 func (d *Driver) GetState() (state.State, error) {
