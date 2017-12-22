@@ -27,6 +27,12 @@ godep::ensure_godep_version v79
 godep::sync_staging
 
 rm -rf ${MINIKUBE_ROOT}/vendor ${MINIKUBE_ROOT}/Godeps
+
+# We use a different version of viper than Kubernetes.
+pushd ${GOPATH}/src/github.com/spf13/viper >/dev/null
+    git checkout 25b30aa063fc18e48662b86996252eabdcf2f0c7
+popd >/dev/null
+
 godep save ./...
 
 cp -r ${KUBE_ROOT}/pkg/generated/openapi ${MINIKUBE_ROOT}/vendor/k8s.io/kubernetes/pkg/generated/
