@@ -168,18 +168,18 @@ const FileScheme = "file"
 
 var LocalkubeCachedImages = []string{
 	// Dashboard
-	"gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.3",
+	"k8s.gcr.io/kubernetes-dashboard-amd64:v1.6.3",
 
 	// DNS
-	"gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.5",
-	"gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
-	"gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.5",
+	"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.5",
+	"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
+	"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.5",
 
 	// Addon Manager
 	"gcr.io/google-containers/kube-addon-manager:v6.4-beta.2",
 
 	// Pause
-	"gcr.io/google_containers/pause-amd64:3.0",
+	"k8s.gcr.io/pause-amd64:3.0",
 
 	//Storage Provisioner
 	"gcr.io/k8s-minikube/storage-provisioner:v1.8.0",
@@ -188,26 +188,26 @@ var LocalkubeCachedImages = []string{
 func GetKubeadmCachedImages(version string) []string {
 	return []string{
 		// Dashboard
-		"gcr.io/google_containers/kubernetes-dashboard-amd64:v1.6.3",
+		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.6.3",
 
 		// Addon Manager
 		"gcr.io/google-containers/kube-addon-manager:v6.4-beta.2",
 
 		// Pause
-		"gcr.io/google_containers/pause-amd64:3.0",
+		"k8s.gcr.io/pause-amd64:3.0",
 
 		// DNS
-		"gcr.io/google_containers/k8s-dns-kube-dns-amd64:1.14.4",
-		"gcr.io/google_containers/k8s-dns-dnsmasq-nanny-amd64:1.14.4",
-		"gcr.io/google_containers/k8s-dns-sidecar-amd64:1.14.4",
+		"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.4",
+		"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.4",
+		"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.4",
 
 		// etcd
-		"gcr.io/google_containers/etcd-amd64:3.0.17",
+		"k8s.gcr.io/etcd-amd64:3.0.17",
 
-		"gcr.io/google_containers/kube-proxy-amd64:" + version,
-		"gcr.io/google_containers/kube-scheduler-amd64:" + version,
-		"gcr.io/google_containers/kube-controller-manager-amd64:" + version,
-		"gcr.io/google_containers/kube-apiserver-amd64:" + version,
+		"k8s.gcr.io/kube-proxy-amd64:" + version,
+		"k8s.gcr.io/kube-scheduler-amd64:" + version,
+		"k8s.gcr.io/kube-controller-manager-amd64:" + version,
+		"k8s.gcr.io/kube-apiserver-amd64:" + version,
 
 		//Storage Provisioner
 		"gcr.io/k8s-minikube/storage-provisioner:v1.8.0",
