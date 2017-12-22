@@ -2363,18 +2363,18 @@
 		},
 		{
 			"ImportPath": "github.com/r2d4/external-storage/lib/controller",
-			"Comment": "v1.0.0-23-g4ebf52e",
-			"Rev": "4ebf52ebe22099f73d229bf1ddd855d9113981f6"
+			"Comment": "v1.0.0-26-g8c0e860",
+			"Rev": "8c0e8605dc7b85893e144efd8e76d4a473f4bc7d"
 		},
 		{
 			"ImportPath": "github.com/r2d4/external-storage/lib/leaderelection",
-			"Comment": "v1.0.0-23-g4ebf52e",
-			"Rev": "4ebf52ebe22099f73d229bf1ddd855d9113981f6"
+			"Comment": "v1.0.0-26-g8c0e860",
+			"Rev": "8c0e8605dc7b85893e144efd8e76d4a473f4bc7d"
 		},
 		{
 			"ImportPath": "github.com/r2d4/external-storage/lib/leaderelection/resourcelock",
-			"Comment": "v1.0.0-23-g4ebf52e",
-			"Rev": "4ebf52ebe22099f73d229bf1ddd855d9113981f6"
+			"Comment": "v1.0.0-26-g8c0e860",
+			"Rev": "8c0e8605dc7b85893e144efd8e76d4a473f4bc7d"
 		},
 		{
 			"ImportPath": "github.com/rancher/go-rancher/client",
