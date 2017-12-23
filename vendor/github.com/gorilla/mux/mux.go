@@ -5,11 +5,16 @@
 package mux
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"path"
+	"regexp"
+)
 
-	"github.com/gorilla/context"
+var (
+	ErrMethodMismatch = errors.New("method is not allowed")
+	ErrNotFound       = errors.New("no matching route was found")
 )
 
 // NewRouter returns a new router instance.
@@ -38,6 +43,10 @@ func NewRouter() *Router {
 type Router struct {
 	// Configurable Handler to be used when no route matches.
 	NotFoundHandler http.Handler
+
+	// Configurable Handler to be used when the request method does not match the route.
+	MethodNotAllowedHandler http.Handler
+
 	// Parent route, if this is a subrouter.
 	parent parentRoute
 	// Routes to be matched, in order.
@@ -46,17 +55,51 @@ type Router struct {
 	namedRoutes map[string]*Route
 	// See Router.StrictSlash(). This defines the flag for new routes.
 	strictSlash bool
-	// If true, do not clear the request context after handling the request
+	// See Router.SkipClean(). This defines the flag for new routes.
+	skipClean bool
+	// If true, do not clear the request context after handling the request.
+	// This has no effect when go1.7+ is used, since the context is stored
+	// on the request itself.
 	KeepContext bool
+	// see Router.UseEncodedPath(). This defines a flag for all routes.
+	useEncodedPath bool
 }
 
-// Match matches registered routes against the request.
+// Match attempts to match the given request against the router's registered routes.
+//
+// If the request matches a route of this router or one of its subrouters the Route,
+// Handler, and Vars fields of the the match argument are filled and this function
+// returns true.
+//
+// If the request does not match any of this router's or its subrouters' routes
+// then this function returns false. If available, a reason for the match failure
+// will be filled in the match argument's MatchErr field. If the match failure type
+// (eg: not found) has a registered handler, the handler is assigned to the Handler
+// field of the match argument.
 func (r *Router) Match(req *http.Request, match *RouteMatch) bool {
 	for _, route := range r.routes {
 		if route.Match(req, match) {
 			return true
 		}
 	}
+
+	if match.MatchErr == ErrMethodMismatch {
+		if r.MethodNotAllowedHandler != nil {
+			match.Handler = r.MethodNotAllowedHandler
+			return true
+		} else {
+			return false
+		}
+	}
+
+	// Closest match for a router (includes sub-routers)
+	if r.NotFoundHandler != nil {
+		match.Handler = r.NotFoundHandler
+		match.MatchErr = ErrNotFound
+		return true
+	}
+
+	match.MatchErr = ErrNotFound
 	return false
 }
 
@@ -65,35 +108,44 @@ func (r *Router) Match(req *http.Request, match *RouteMatch) bool {
 // When there is a match, the route variables can be retrieved calling
 // mux.Vars(request).
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	// Clean path to canonical form and redirect.
-	if p := cleanPath(req.URL.Path); p != req.URL.Path {
+	if !r.skipClean {
+		path := req.URL.Path
+		if r.useEncodedPath {
+			path = req.URL.EscapedPath()
+		}
+		// Clean path to canonical form and redirect.
+		if p := cleanPath(path); p != path {
 
-		// Added 3 lines (Philip Schlump) - It was droping the query string and #whatever from query.
-		// This matches with fix in go 1.2 r.c. 4 for same problem.  Go Issue:
-		// http://code.google.com/p/go/issues/detail?id=5252
-		url := *req.URL
-		url.Path = p
-		p = url.String()
+			// Added 3 lines (Philip Schlump) - It was dropping the query string and #whatever from query.
+			// This matches with fix in go 1.2 r.c. 4 for same problem.  Go Issue:
+			// http://code.google.com/p/go/issues/detail?id=5252
+			url := *req.URL
+			url.Path = p
+			p = url.String()
 
-		w.Header().Set("Location", p)
-		w.WriteHeader(http.StatusMovedPermanently)
-		return
+			w.Header().Set("Location", p)
+			w.WriteHeader(http.StatusMovedPermanently)
+			return
+		}
 	}
 	var match RouteMatch
 	var handler http.Handler
 	if r.Match(req, &match) {
 		handler = match.Handler
-		setVars(req, match.Vars)
-		setCurrentRoute(req, match.Route)
+		req = setVars(req, match.Vars)
+		req = setCurrentRoute(req, match.Route)
 	}
+
+	if handler == nil && match.MatchErr == ErrMethodMismatch {
+		handler = methodNotAllowedHandler()
+	}
+
 	if handler == nil {
-		handler = r.NotFoundHandler
-		if handler == nil {
-			handler = http.NotFoundHandler()
-		}
+		handler = http.NotFoundHandler()
 	}
+
 	if !r.KeepContext {
-		defer context.Clear(req)
+		defer contextClear(req)
 	}
 	handler.ServeHTTP(w, req)
 }
@@ -112,12 +164,17 @@ func (r *Router) GetRoute(name string) *Route {
 // StrictSlash defines the trailing slash behavior for new routes. The initial
 // value is false.
 //
-// When true, if the route path is "/path/", accessing "/path" will redirect
+// When true, if the route path is "/path/", accessing "/path" will perform a redirect
 // to the former and vice versa. In other words, your application will always
 // see the path as specified in the route.
 //
 // When false, if the route path is "/path", accessing "/path/" will not match
 // this route and vice versa.
+//
+// The re-direct is a HTTP 301 (Moved Permanently). Note that when this is set for
+// routes with a non-idempotent method (e.g. POST, PUT), the subsequent re-directed
+// request will be made as a GET by most clients. Use middleware or client settings
+// to modify this behaviour as needed.
 //
 // Special case: when a route sets a path prefix using the PathPrefix() method,
 // strict slash is ignored for that route because the redirect behavior can't
@@ -128,9 +185,40 @@ func (r *Router) StrictSlash(value bool) *Router {
 	return r
 }
 
+// SkipClean defines the path cleaning behaviour for new routes. The initial
+// value is false. Users should be careful about which routes are not cleaned
+//
+// When true, if the route path is "/path//to", it will remain with the double
+// slash. This is helpful if you have a route like: /fetch/http://xkcd.com/534/
+//
+// When false, the path will be cleaned, so /fetch/http://xkcd.com/534/ will
+// become /fetch/http/xkcd.com/534
+func (r *Router) SkipClean(value bool) *Router {
+	r.skipClean = value
+	return r
+}
+
+// UseEncodedPath tells the router to match the encoded original path
+// to the routes.
+// For eg. "/path/foo%2Fbar/to" will match the path "/path/{var}/to".
+//
+// If not called, the router will match the unencoded path to the routes.
+// For eg. "/path/foo%2Fbar/to" will match the path "/path/foo/bar/to"
+func (r *Router) UseEncodedPath() *Router {
+	r.useEncodedPath = true
+	return r
+}
+
 // ----------------------------------------------------------------------------
 // parentRoute
 // ----------------------------------------------------------------------------
+
+func (r *Router) getBuildScheme() string {
+	if r.parent != nil {
+		return r.parent.getBuildScheme()
+	}
+	return ""
+}
 
 // getNamedRoutes returns the map where named routes are registered.
 func (r *Router) getNamedRoutes() map[string]*Route {
@@ -165,7 +253,7 @@ func (r *Router) buildVars(m map[string]string) map[string]string {
 
 // NewRoute registers an empty route.
 func (r *Router) NewRoute() *Route {
-	route := &Route{parent: r, strictSlash: r.strictSlash}
+	route := &Route{parent: r, strictSlash: r.strictSlash, skipClean: r.skipClean, useEncodedPath: r.useEncodedPath}
 	r.routes = append(r.routes, route)
 	return route
 }
@@ -231,10 +319,57 @@ func (r *Router) Schemes(schemes ...string) *Route {
 	return r.NewRoute().Schemes(schemes...)
 }
 
-// BuildVars registers a new route with a custom function for modifying
+// BuildVarsFunc registers a new route with a custom function for modifying
 // route variables before building a URL.
 func (r *Router) BuildVarsFunc(f BuildVarsFunc) *Route {
 	return r.NewRoute().BuildVarsFunc(f)
+}
+
+// Walk walks the router and all its sub-routers, calling walkFn for each route
+// in the tree. The routes are walked in the order they were added. Sub-routers
+// are explored depth-first.
+func (r *Router) Walk(walkFn WalkFunc) error {
+	return r.walk(walkFn, []*Route{})
+}
+
+// SkipRouter is used as a return value from WalkFuncs to indicate that the
+// router that walk is about to descend down to should be skipped.
+var SkipRouter = errors.New("skip this router")
+
+// WalkFunc is the type of the function called for each route visited by Walk.
+// At every invocation, it is given the current route, and the current router,
+// and a list of ancestor routes that lead to the current route.
+type WalkFunc func(route *Route, router *Router, ancestors []*Route) error
+
+func (r *Router) walk(walkFn WalkFunc, ancestors []*Route) error {
+	for _, t := range r.routes {
+		err := walkFn(t, r, ancestors)
+		if err == SkipRouter {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		for _, sr := range t.matchers {
+			if h, ok := sr.(*Router); ok {
+				ancestors = append(ancestors, t)
+				err := h.walk(walkFn, ancestors)
+				if err != nil {
+					return err
+				}
+				ancestors = ancestors[:len(ancestors)-1]
+			}
+		}
+		if h, ok := t.handler.(*Router); ok {
+			ancestors = append(ancestors, t)
+			err := h.walk(walkFn, ancestors)
+			if err != nil {
+				return err
+			}
+			ancestors = ancestors[:len(ancestors)-1]
+		}
+	}
+	return nil
 }
 
 // ----------------------------------------------------------------------------
@@ -246,6 +381,11 @@ type RouteMatch struct {
 	Route   *Route
 	Handler http.Handler
 	Vars    map[string]string
+
+	// MatchErr is set to appropriate matching error
+	// It is set to ErrMethodMismatch if there is a mismatch in
+	// the request method and route method
+	MatchErr error
 }
 
 type contextKey int
@@ -257,26 +397,30 @@ const (
 
 // Vars returns the route variables for the current request, if any.
 func Vars(r *http.Request) map[string]string {
-	if rv := context.Get(r, varsKey); rv != nil {
+	if rv := contextGet(r, varsKey); rv != nil {
 		return rv.(map[string]string)
 	}
 	return nil
 }
 
 // CurrentRoute returns the matched route for the current request, if any.
+// This only works when called inside the handler of the matched route
+// because the matched route is stored in the request context which is cleared
+// after the handler returns, unless the KeepContext option is set on the
+// Router.
 func CurrentRoute(r *http.Request) *Route {
-	if rv := context.Get(r, routeKey); rv != nil {
+	if rv := contextGet(r, routeKey); rv != nil {
 		return rv.(*Route)
 	}
 	return nil
 }
 
-func setVars(r *http.Request, val interface{}) {
-	context.Set(r, varsKey, val)
+func setVars(r *http.Request, val interface{}) *http.Request {
+	return contextSet(r, varsKey, val)
 }
 
-func setCurrentRoute(r *http.Request, val interface{}) {
-	context.Set(r, routeKey, val)
+func setCurrentRoute(r *http.Request, val interface{}) *http.Request {
+	return contextSet(r, routeKey, val)
 }
 
 // ----------------------------------------------------------------------------
@@ -298,6 +442,7 @@ func cleanPath(p string) string {
 	if p[len(p)-1] == '/' && np != "/" {
 		np += "/"
 	}
+
 	return np
 }
 
@@ -313,16 +458,45 @@ func uniqueVars(s1, s2 []string) error {
 	return nil
 }
 
-// mapFromPairs converts variadic string parameters to a string map.
-func mapFromPairs(pairs ...string) (map[string]string, error) {
+// checkPairs returns the count of strings passed in, and an error if
+// the count is not an even number.
+func checkPairs(pairs ...string) (int, error) {
 	length := len(pairs)
 	if length%2 != 0 {
-		return nil, fmt.Errorf(
+		return length, fmt.Errorf(
 			"mux: number of parameters must be multiple of 2, got %v", pairs)
+	}
+	return length, nil
+}
+
+// mapFromPairsToString converts variadic string parameters to a
+// string to string map.
+func mapFromPairsToString(pairs ...string) (map[string]string, error) {
+	length, err := checkPairs(pairs...)
+	if err != nil {
+		return nil, err
 	}
 	m := make(map[string]string, length/2)
 	for i := 0; i < length; i += 2 {
 		m[pairs[i]] = pairs[i+1]
+	}
+	return m, nil
+}
+
+// mapFromPairsToRegex converts variadic string parameters to a
+// string to regex map.
+func mapFromPairsToRegex(pairs ...string) (map[string]*regexp.Regexp, error) {
+	length, err := checkPairs(pairs...)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[string]*regexp.Regexp, length/2)
+	for i := 0; i < length; i += 2 {
+		regex, err := regexp.Compile(pairs[i+1])
+		if err != nil {
+			return nil, err
+		}
+		m[pairs[i]] = regex
 	}
 	return m, nil
 }
@@ -337,9 +511,8 @@ func matchInArray(arr []string, value string) bool {
 	return false
 }
 
-// matchMap returns true if the given key/value pairs exist in a given map.
-func matchMap(toCheck map[string]string, toMatch map[string][]string,
-	canonicalKey bool) bool {
+// matchMapWithString returns true if the given key/value pairs exist in a given map.
+func matchMapWithString(toCheck map[string]string, toMatch map[string][]string, canonicalKey bool) bool {
 	for k, v := range toCheck {
 		// Check if key exists.
 		if canonicalKey {
@@ -364,3 +537,40 @@ func matchMap(toCheck map[string]string, toMatch map[string][]string,
 	}
 	return true
 }
+
+// matchMapWithRegex returns true if the given key/value pairs exist in a given map compiled against
+// the given regex
+func matchMapWithRegex(toCheck map[string]*regexp.Regexp, toMatch map[string][]string, canonicalKey bool) bool {
+	for k, v := range toCheck {
+		// Check if key exists.
+		if canonicalKey {
+			k = http.CanonicalHeaderKey(k)
+		}
+		if values := toMatch[k]; values == nil {
+			return false
+		} else if v != nil {
+			// If value was defined as an empty string we only check that the
+			// key exists. Otherwise we also check for equality.
+			valueExists := false
+			for _, value := range values {
+				if v.MatchString(value) {
+					valueExists = true
+					break
+				}
+			}
+			if !valueExists {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// methodNotAllowed replies to the request with an HTTP status code 405.
+func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusMethodNotAllowed)
+}
+
+// methodNotAllowedHandler returns a simple request handler
+// that replies to each request with a status code 405.
+func methodNotAllowedHandler() http.Handler { return http.HandlerFunc(methodNotAllowed) }
