@@ -33,6 +33,11 @@ pushd ${GOPATH}/src/github.com/spf13/viper >/dev/null
     git checkout 25b30aa063fc18e48662b86996252eabdcf2f0c7
 popd >/dev/null
 
+# We use a different version of mux than Kubernetes.
+pushd ${GOPATH}/src/github.com/gorilla/mux >/dev/null
+    git checkout 5ab525f4fb1678e197ae59401e9050fa0b6cb5fd
+popd >/dev/null
+
 godep save ./...
 
 cp -r ${KUBE_ROOT}/pkg/generated/openapi ${MINIKUBE_ROOT}/vendor/k8s.io/kubernetes/pkg/generated/

@@ -1888,7 +1888,8 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "8096f47503459bcc74d1f4c487b7e6e42e5746b5"
+			"Comment": "v1.6.0-6-g5ab525f",
+			"Rev": "5ab525f4fb1678e197ae59401e9050fa0b6cb5fd"
 		},
 		{
 			"ImportPath": "github.com/gorilla/websocket",
@@ -2456,7 +2457,8 @@
 		},
 		{
 			"ImportPath": "github.com/spf13/viper",
-			"Rev": "7fb2782df3d83e0036cc89f461ed0422628776f4"
+			"Comment": "v1.0.0",
+			"Rev": "25b30aa063fc18e48662b86996252eabdcf2f0c7"
 		},
 		{
 			"ImportPath": "github.com/square/go-jose",
