@@ -47,7 +47,8 @@ func RunSSHCommandFromDriver(d Driver, command string) (string, error) {
 		return "", fmt.Errorf(`ssh command error:
 command : %s
 err     : %v
-output  : %s`, command, err, output)
+output  : %s
+client  : %v`, command, err, output, client)
 	}
 
 	return output, nil

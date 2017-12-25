@@ -52,6 +52,8 @@ const (
 	humanReadableDiskSize = "disk-size"
 	vmDriver              = "vm-driver"
 	xhyveDiskDriver       = "xhyve-disk-driver"
+	NFSSharesRoot         = "nfs-shares-root"
+	NFSShare              = "nfs-share"
 	kubernetesVersion     = "kubernetes-version"
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
@@ -130,6 +132,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		DiskSize:            diskSizeMB,
 		VMDriver:            viper.GetString(vmDriver),
 		XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
+		NFSShare:            viper.GetStringSlice(NFSShare),
+		NFSSharesRoot:       viper.GetString(NFSSharesRoot),
 		DockerEnv:           dockerEnv,
 		DockerOpt:           dockerOpt,
 		InsecureRegistry:    insecureRegistry,
@@ -367,6 +371,8 @@ func init() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
 	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
+	startCmd.Flags().StringSlice(NFSShare, []string{}, "Local folders to share with Guest via NFS mounts")
+	startCmd.Flags().String(NFSSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")

@@ -22,13 +22,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/user"
+	"path"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
+	nfsexports "github.com/johanneswuerbach/nfsexports"
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
@@ -53,6 +57,8 @@ type Driver struct {
 	CPU            int
 	Memory         int
 	Cmdline        string
+	NFSShares      []string
+	NFSSharesRoot  string
 }
 
 func NewDriver(hostName, storePath string) *Driver {
@@ -207,6 +213,18 @@ func (d *Driver) Start() error {
 	if err := commonutil.RetryAfter(30, getIP, 2*time.Second); err != nil {
 		return fmt.Errorf("IP address never found in dhcp leases file %v", err)
 	}
+
+	if len(d.NFSShares) > 0 {
+		log.Info("Setting up NFS mounts")
+		// takes some time here for ssh / nfsd to work properly
+		time.Sleep(time.Second * 30)
+		err = d.setupNFSShare()
+		if err != nil {
+			log.Errorf("NFS setup failed: %s", err.Error())
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -230,6 +248,56 @@ func (d *Driver) extractKernel(isoPath string) error {
 		}
 	}
 	return nil
+}
+
+func (d *Driver) setupNFSShare() error {
+	user, err := user.Current()
+	if err != nil {
+		return err
+	}
+
+	hostIP, err := GetNetAddr()
+	if err != nil {
+		return err
+	}
+
+	mountCommands := fmt.Sprintf("#/bin/bash\\n")
+	log.Info(d.IPAddress)
+
+	for _, share := range d.NFSShares {
+		if !path.IsAbs(share) {
+			share = d.ResolveStorePath(share)
+		}
+		nfsConfig := fmt.Sprintf("%s %s -alldirs -mapall=%s", share, d.IPAddress, user.Username)
+
+		if _, err := nfsexports.Add("", d.nfsExportIdentifier(share), nfsConfig); err != nil {
+			if strings.Contains(err.Error(), "conflicts with existing export") {
+				log.Info("Conflicting NFS Share not setup and ignored:", err)
+				continue
+			}
+			return err
+		}
+
+		root := d.NFSSharesRoot
+		mountCommands += fmt.Sprintf("sudo mkdir -p %s/%s\\n", root, share)
+		mountCommands += fmt.Sprintf("sudo mount -t nfs -o noacl,async %s:%s %s/%s\\n", hostIP, share, root, share)
+	}
+
+	if err := nfsexports.ReloadDaemon(); err != nil {
+		return err
+	}
+
+	writeScriptCmd := fmt.Sprintf("echo -e \"%s\" | sh", mountCommands)
+
+	if _, err := drivers.RunSSHCommandFromDriver(d, writeScriptCmd); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Driver) nfsExportIdentifier(path string) string {
+	return fmt.Sprintf("docker-machine-driver-hyperkit %s-%s", d.MachineName, path)
 }
 
 func (d *Driver) sendSignal(s os.Signal) error {
