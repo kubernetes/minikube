@@ -67,6 +67,9 @@ hdiutil info \
 # Clean up xhyve processes
 pgrep xhyve | xargs kill || true
 
+# kubeadm cleanup
+sudo kubeadm reset || true
+
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}
 chmod +x out/minikube-${OS_ARCH}
