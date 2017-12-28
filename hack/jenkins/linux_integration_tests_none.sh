@@ -34,5 +34,11 @@ EXTRA_ARGS="--bootstrapper=kubeadm"
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 
+# "none" driver specific cleanup from previous runs.
+# kubeadm
+sudo kubeadm reset || true
+# Cleanup data directory
+sudo rm -rf /data/*
+
 # Download files and set permissions
 source common.sh
