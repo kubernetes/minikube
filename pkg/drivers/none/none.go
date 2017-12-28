@@ -159,8 +159,15 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) Start() error {
-	d.IPAddress = "127.0.0.1"
-	d.URL = "127.0.0.1:8080"
+	var err error
+	d.IPAddress, err = d.GetIP()
+	if err != nil {
+		return err
+	}
+	d.URL, err = d.GetURL()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
