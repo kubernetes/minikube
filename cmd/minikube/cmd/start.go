@@ -354,7 +354,7 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 }
 
 func validateK8sVersion(version string) {
-	validVersion, err := kubernetes_versions.IsValidLocalkubeVersion(version, constants.KubernetesVersionGCSURL)
+	validVersion, err := kubernetes_versions.IsValidLocalkubeVersionFromGCS(version)
 	if err != nil {
 		glog.Errorln("Error getting valid kubernetes versions", err)
 		os.Exit(1)

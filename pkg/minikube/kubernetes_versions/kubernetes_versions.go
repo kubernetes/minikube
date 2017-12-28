@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -29,8 +30,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+func getGCSURL() string {
+	url := os.Getenv("MINIKUBE_LOCALKUBE_GCS")
+	if url == "" {
+		url = constants.KubernetesVersionGCSURL
+	}
+	return url
+}
+
 func PrintKubernetesVersionsFromGCS(output io.Writer) {
-	PrintKubernetesVersions(output, constants.KubernetesVersionGCSURL)
+	PrintKubernetesVersions(output, getGCSURL())
 }
 
 func PrintKubernetesVersions(output io.Writer, url string) {
@@ -78,6 +87,10 @@ func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
 
 	cachedK8sVersions = k8sVersions
 	return k8sVersions, nil
+}
+
+func IsValidLocalkubeVersionFromGCS(v string) (bool, error) {
+	return IsValidLocalkubeVersion(v, getGCSURL())
 }
 
 func IsValidLocalkubeVersion(v string, url string) (bool, error) {

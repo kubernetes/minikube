@@ -125,7 +125,7 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 		// no 'v' prefix in input, need to prepend it to version
 		versionOrURL = "v" + versionOrURL
 	}
-	isValidVersion, err := kubernetes_versions.IsValidLocalkubeVersion(versionOrURL, constants.KubernetesVersionGCSURL)
+	isValidVersion, err := kubernetes_versions.IsValidLocalkubeVersionFromGCS(versionOrURL)
 	if err != nil {
 		return "", errors.Wrap(err, "Error getting valid localkube versions")
 	}
@@ -135,7 +135,11 @@ func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, erro
 	if _, err = semver.Make(strings.TrimPrefix(versionOrURL, version.VersionPrefix)); err != nil {
 		return "", errors.Wrap(err, "Error creating semver version from localkube version input string")
 	}
-	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
+	prefix := os.Getenv("MINIKUBE_LOCALKUBE_URL")
+	if prefix == "" {
+		prefix = constants.LocalkubeDownloadURLPrefix
+	}
+	return fmt.Sprintf("%s%s/%s", prefix, versionOrURL, filename), nil
 }
 
 func ParseSHAFromURL(url string) (string, error) {
