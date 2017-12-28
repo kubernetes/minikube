@@ -99,7 +99,7 @@ func (d *Driver) GetURL() (string, error) {
 
 func (d *Driver) GetState() (state.State, error) {
 	var statuscmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; "+`then
-  sudo systemctl is-active localkube &>/dev/null && echo "Running" || echo "Stopped"
+  sudo systemctl is-active kubelet localkube &>/dev/null && echo "Running" || echo "Stopped"
 else
   if ps $(cat %s) &>/dev/null; then
     echo "Running"
@@ -136,22 +136,28 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) Remove() error {
-	cmd := exec.Command("sudo", "systemctl", "stop", "localkube.service")
-	if err := cmd.Start(); err != nil {
-		return errors.Wrap(err, "stopping localkube service")
-	}
-	cmd = exec.Command("sudo", "rm", "-rf", "/var/lib/localkube")
-	if err := cmd.Start(); err != nil {
-		return errors.Wrap(err, "removing localkube")
+	rmCmd := `for svc in "localkube", "kubelet"; do
+		sudo systemctl stop "$svc".service
+	done
+	sudo rm -rf /var/lib/localkube || true`
 
+	if _, err := runCommand(rmCmd, true); err != nil {
+		return errors.Wrap(err, "stopping minikube")
 	}
+
 	runCommand(dockerkillcmd, false)
 
 	return nil
 }
 
 func (d *Driver) Restart() error {
-	cmd := exec.Command("sudo", "systemctl", "restart", "localkube.service")
+	restartCmd := `for svc in "localkube", "kubelet"; do
+	if systemctl is-active $svc.service; then
+		sudo systemctl restart "$svc".service
+	fi
+done`
+
+	cmd := exec.Command(restartCmd)
 	if err := cmd.Start(); err != nil {
 		return err
 	}
@@ -173,7 +179,9 @@ func (d *Driver) Start() error {
 
 func (d *Driver) Stop() error {
 	var stopcmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; "+`then
-  sudo systemctl stop localkube.service
+	for svc in "localkube", "kubelet"; do
+		sudo systemctl stop "$svc".service
+	done
 else
 	sudo kill $(cat %s)
 fi
