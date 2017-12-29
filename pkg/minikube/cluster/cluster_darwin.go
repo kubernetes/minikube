@@ -50,10 +50,12 @@ type xhyveDriver struct {
 	Memory         int
 	PrivateKeyPath string
 	UUID           string
-	NFSShare       bool
+	NFSShareEnable bool
+	NFSShares      []string
+	NFSSharesRoot  string
 	DiskNumber     int
-	Virtio9p       bool
-	Virtio9pFolder string
+	Virtio9p       []string
+	Virtio9pRoot   string
 	QCow2          bool
 	RawDisk        bool
 }
@@ -74,7 +76,6 @@ func createHyperkitHost(config MachineConfig) *hyperkit.Driver {
 }
 
 func createXhyveHost(config MachineConfig) *xhyveDriver {
-	useVirtio9p := !config.DisableDriverMounts
 	return &xhyveDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
@@ -85,8 +86,11 @@ func createXhyveHost(config MachineConfig) *xhyveDriver {
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
 		BootCmd:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
 		DiskSize:       int64(config.DiskSize),
-		Virtio9p:       useVirtio9p,
-		Virtio9pFolder: "/Users",
+		Virtio9p:       config.XhyveVirtio9p,
+		Virtio9pRoot:   config.XhyveVirtio9pRoot,
+		NFSShareEnable: true,
+		NFSSharesRoot:  config.XhyveNFSSharesRoot,
+		NFSShares:      config.XhyveNFSShares,
 		QCow2:          false,
 		RawDisk:        config.XhyveDiskDriver == "virtio-blk",
 	}
