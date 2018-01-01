@@ -113,6 +113,10 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
+		name: config.WantNoneDriverWarning,
+		set:  SetBool,
+	},
+	{
 		name: config.MachineProfile,
 		set:  SetString,
 	},
