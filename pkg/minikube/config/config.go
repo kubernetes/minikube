@@ -33,6 +33,7 @@ const (
 	WantReportError                   = "WantReportError"
 	WantReportErrorPrompt             = "WantReportErrorPrompt"
 	WantKubectlDownloadMsg            = "WantKubectlDownloadMsg"
+	WantNoneDriverWarning             = "WantNoneDriverWarning"
 	MachineProfile                    = "profile"
 	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
 )

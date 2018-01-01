@@ -162,6 +162,7 @@ func setupViper() {
 	viper.SetDefault(config.WantReportError, false)
 	viper.SetDefault(config.WantReportErrorPrompt, true)
 	viper.SetDefault(config.WantKubectlDownloadMsg, true)
+	viper.SetDefault(config.WantNoneDriverWarning, true)
 	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
 	setFlagsUsingViper()
 }
