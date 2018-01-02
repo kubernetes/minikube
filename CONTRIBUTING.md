@@ -10,7 +10,7 @@ File issues using the standard Github issue tracker for the repo.
 
 We'd love to accept your patches! Before we can take them, we have to jump a couple of legal hurdles.
 
-[Please fill out either the individual or corporate Contributor License Agreement (CLA)](https://github.com/kubernetes/kubernetes/wiki/CLA-FAQ)
+[Please fill out either the individual or corporate Contributor License Agreement (CLA)](http://git.k8s.io/community/CLA.md)
 
 ### Contributing A Patch
 
