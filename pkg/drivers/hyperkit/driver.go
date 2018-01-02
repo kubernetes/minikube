@@ -297,7 +297,7 @@ func (d *Driver) setupNFSShare() error {
 }
 
 func (d *Driver) nfsExportIdentifier(path string) string {
-	return fmt.Sprintf("docker-machine-driver-hyperkit %s-%s", d.MachineName, path)
+	return fmt.Sprintf("minikube-hyperkit %s-%s", d.MachineName, path)
 }
 
 func (d *Driver) sendSignal(s os.Signal) error {
