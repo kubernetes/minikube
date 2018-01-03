@@ -52,6 +52,7 @@ var SupportedVMDrivers = [...]string{
 	"virtualbox",
 	"vmwarefusion",
 	"kvm",
+	"qemu",
 	"xhyve",
 	"hyperv",
 }
