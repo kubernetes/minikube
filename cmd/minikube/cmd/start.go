@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -246,8 +247,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		glog.Errorln("Error connecting to cluster: ", err)
 	}
+	dockerPort := 2376
+	re := regexp.MustCompile(":([0-9]+)$")
+	if matches := re.FindStringSubmatch(kubeHost); matches != nil {
+		dockerPort, err = strconv.Atoi(matches[1])
+	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
+	kubeHost = strings.Replace(kubeHost, ":"+strconv.Itoa(dockerPort), ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
 
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig

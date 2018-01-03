@@ -259,9 +259,17 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting ip from host")
 	}
+	url, err := host.Driver.GetURL()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting url from host")
+	}
 
 	tcpPrefix := "tcp://"
 	port := "2376"
+	re := regexp.MustCompile(":([0-9]+)$")
+	if matches := re.FindStringSubmatch(url); matches != nil {
+		port = matches[1]
+	}
 
 	envMap := map[string]string{
 		"DOCKER_TLS_VERIFY": "1",
