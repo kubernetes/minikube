@@ -18,6 +18,9 @@ set -e
 
 REPO_PATH="k8s.io/minikube"
 
+# The name of the upstream remote
+GIT_REMOTE_NAME=$(git remote -v | grep 'kubernetes/minikube.git (fetch)' | awk '{print $1;}')
+
 # Check for python on host, and use it if possible, otherwise fall back on python dockerized
 if [[ -f $(which python 2>&1) ]]; then
 	PYTHON="python"
@@ -69,3 +72,15 @@ fi
 
 echo "Checking releases.json schema"
 go run deploy/minikube/schema_check.go
+
+if out="$(git diff HEAD --name-only $(git merge-base ${GIT_REMOTE_NAME}/master HEAD) | grep "Godeps\|vendor")" &> /dev/null; then
+  echo "Vendor changes detected"
+  echo "Checking godeps-save/restore reproducibility"
+  ./hack/godeps/godep-restore.sh
+  ./hack/godeps/godep-save.sh
+  files = $(git status --porcelain)
+  if [[ ! -z ${files} ]]; then
+    echo "Godeps not reproducible: check ${files}"
+    exit 1
+  fi
+fi
