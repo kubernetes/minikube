@@ -11,7 +11,10 @@ data:
         errors
         log
         health
-        kubernetes cluster.local 10.0.0.0/24
+        kubernetes cluster.local 10.0.0.0/24 {
+            pods insecure
+            upstream /etc/resolv.conf
+        }
         prometheus
         proxy . /etc/resolv.conf
         cache 30
