@@ -27,6 +27,8 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
+	machinessh "github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
@@ -43,6 +45,8 @@ import (
 
 type KubeadmBootstrapper struct {
 	c bootstrapper.CommandRunner
+	d drivers.Driver
+	x machinessh.Client
 }
 
 func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
@@ -51,6 +55,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 		return nil, errors.Wrap(err, "getting api client")
 	}
 	var cmd bootstrapper.CommandRunner
+	var extclient machinessh.Client
 	// The none driver executes commands directly on the host
 	if h.Driver.DriverName() == constants.DriverNone {
 		cmd = &bootstrapper.ExecRunner{}
@@ -60,9 +65,15 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 			return nil, errors.Wrap(err, "getting ssh client")
 		}
 		cmd = bootstrapper.NewSSHRunner(client)
+		extclient, err = sshutil.NewSSHExternalClient(h.Driver)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting ssh client")
+		}
 	}
 	return &KubeadmBootstrapper{
 		c: cmd,
+		d: h.Driver,
+		x: extclient,
 	}, nil
 }
 
@@ -126,6 +137,13 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	out, err := k.c.CombinedOutput(b.String())
 	if err != nil {
 		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
+	}
+
+	if k.d.DriverName() == "qemu" {
+		// tunnel apiserver
+		k.x.Shell("-f", "-NTL", "8443:localhost:8443")
+		// tunnel dashboard
+		k.x.Shell("-f", "-NTL", "30000:localhost:30000")
 	}
 
 	//TODO(r2d4): get rid of global here
