@@ -230,6 +230,7 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully
 func (d *Driver) Stop() error {
+	d.cleanupNfsExports()
 	return d.sendSignal(syscall.SIGTERM)
 }
 
@@ -326,4 +327,19 @@ func (d *Driver) getPid() int {
 	}
 
 	return config.Pid
+}
+
+func (d *Driver) cleanupNfsExports() {
+	if len(d.NFSShares) > 0 {
+		log.Infof("You must be root to remove NFS shared folders. Please type root password.")
+		for _, share := range d.NFSShares {
+			if _, err := nfsexports.Remove("", d.nfsExportIdentifier(share)); err != nil {
+				log.Errorf("failed removing nfs share (%s): %s", share, err.Error())
+			}
+		}
+
+		if err := nfsexports.ReloadDaemon(); err != nil {
+			log.Errorf("failed to reload the nfs daemon: %s", err.Error())
+		}
+	}
 }
