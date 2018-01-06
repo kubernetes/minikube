@@ -176,7 +176,7 @@ var LocalkubeCachedImages = []string{
 	"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.5",
 
 	// Addon Manager
-	"gcr.io/google-containers/kube-addon-manager:v6.4-beta.2",
+	"gcr.io/google-containers/kube-addon-manager:v6.5",
 
 	// Pause
 	"k8s.gcr.io/pause-amd64:3.0",
@@ -191,7 +191,7 @@ func GetKubeadmCachedImages(version string) []string {
 		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.6.3",
 
 		// Addon Manager
-		"gcr.io/google-containers/kube-addon-manager:v6.4-beta.2",
+		"gcr.io/google-containers/kube-addon-manager:v6.5",
 
 		// Pause
 		"k8s.gcr.io/pause-amd64:3.0",
