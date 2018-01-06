@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -177,7 +176,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 
 	// Load profile cluster config from file
-	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
+	cc, err := cluster.LoadConfigFromFile(viper.GetString(cfg.MachineProfile))
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
 	}
@@ -226,7 +225,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		KubernetesConfig: kubernetesConfig,
 	}
 
-	if err := saveConfig(clusterConfig); err != nil {
+	if err := cluster.SaveConfig(clusterConfig); err != nil {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
@@ -409,72 +408,3 @@ func init() {
 	RootCmd.AddCommand(startCmd)
 }
 
-// saveConfig saves profile cluster configuration in
-// $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig cfg.Config) error {
-	data, err := json.MarshalIndent(clusterConfig, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	profileConfigFile := constants.GetProfileFile(viper.GetString(cfg.MachineProfile))
-
-	if err := os.MkdirAll(filepath.Dir(profileConfigFile), 0700); err != nil {
-		return err
-	}
-
-	if err := saveConfigToFile(data, profileConfigFile); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func saveConfigToFile(data []byte, file string) error {
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return ioutil.WriteFile(file, data, 0600)
-	}
-
-	tmpfi, err := ioutil.TempFile(filepath.Dir(file), "config.json.tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmpfi.Name())
-
-	if err = ioutil.WriteFile(tmpfi.Name(), data, 0600); err != nil {
-		return err
-	}
-
-	if err = tmpfi.Close(); err != nil {
-		return err
-	}
-
-	if err = os.Remove(file); err != nil {
-		return err
-	}
-
-	if err = os.Rename(tmpfi.Name(), file); err != nil {
-		return err
-	}
-	return nil
-}
-
-func loadConfigFromFile(profile string) (cfg.Config, error) {
-	var cc cfg.Config
-
-	profileConfigFile := constants.GetProfileFile(profile)
-
-	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
-		return cc, err
-	}
-
-	data, err := ioutil.ReadFile(profileConfigFile)
-	if err != nil {
-		return cc, err
-	}
-
-	if err := json.Unmarshal(data, &cc); err != nil {
-		return cc, err
-	}
-	return cc, nil
-}
