@@ -361,7 +361,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
 		AdvertiseAddress:  k8s.NodeIP,
-		APIServerPort:     util.APIServerPort,
+		APIServerPort:     util.DefaultAPIServerPort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,

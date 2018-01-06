@@ -33,7 +33,7 @@ func NewLocalkubeServer() *localkube.LocalkubeServer {
 		DNSDomain:                util.DefaultDNSDomain,
 		LocalkubeDirectory:       util.DefaultLocalkubeDirectory,
 		APIServerAddress:         net.ParseIP("0.0.0.0"),
-		APIServerPort:            util.APIServerPort,
+		APIServerPort:            util.DefaultAPIServerPort,
 		APIServerInsecureAddress: net.ParseIP("127.0.0.1"),
 		APIServerInsecurePort:    0,
 		APIServerName:            constants.APIServerName,

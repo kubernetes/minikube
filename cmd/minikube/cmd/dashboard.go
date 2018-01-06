@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"text/template"
@@ -25,7 +26,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 
@@ -53,16 +56,40 @@ var dashboardCmd = &cobra.Command{
 		namespace := "kube-system"
 		svc := "kubernetes-dashboard"
 
-		if err = commonutil.RetryAfter(20, func() error { return service.CheckService(namespace, svc) }, 6*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", svc, err)
-			os.Exit(1)
+		// Load profile cluster config from file
+		cc, err := cluster.LoadConfigFromFile(viper.GetString(config.MachineProfile))
+		if err != nil && !os.IsNotExist(err) {
+			glog.Errorln("Error loading profile config: ", err)
 		}
 
-		urls, err := service.GetServiceURLsForService(api, namespace, svc, template.Must(template.New("dashboardServiceFormat").Parse(defaultServiceFormatTemplate)))
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprintln(os.Stderr, "Check that minikube is running.")
-			os.Exit(1)
+		glog.Infof("DashboardPort: %v", cc.HostConfig.DashboardPort)
+		if cc.HostConfig.DashboardPort == 0 || cc.HostConfig.DashboardPort == commonutil.DefaultDashboardPort {
+			if err = commonutil.RetryAfter(20, func() error { return service.CheckService(namespace, svc) }, 6*time.Second); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", svc, err)
+				os.Exit(1)
+			}
+		}
+
+		var urls []string
+		if cc.HostConfig.DashboardPort != 0 && cc.HostConfig.DashboardPort != commonutil.DefaultDashboardPort {
+			// tunnel created for dashboard
+			var url bytes.Buffer
+			t := template.Must(template.New("dashboardServiceFormat").Parse(defaultServiceFormatTemplate))
+			err = t.Execute(&url, struct {
+				IP   string
+				Port int
+			}{
+				"127.0.0.1",
+				cc.HostConfig.DashboardPort,
+			})
+			urls = []string{url.String()}
+		} else {
+			urls, err = service.GetServiceURLsForService(api, namespace, svc, template.Must(template.New("dashboardServiceFormat").Parse(defaultServiceFormatTemplate)))
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				fmt.Fprintln(os.Stderr, "Check that minikube is running.")
+				os.Exit(1)
+			}
 		}
 		if len(urls) == 0 {
 			errMsg := "There appears to be no url associated with dashboard, this is not expected, exiting"

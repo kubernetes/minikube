@@ -168,7 +168,7 @@ func restartKubeProxy(k8s config.KubernetesConfig) error {
 		APIServerPort    int
 	}{
 		AdvertiseAddress: k8s.NodeIP,
-		APIServerPort:    util.APIServerPort,
+		APIServerPort:    util.DefaultAPIServerPort,
 	}
 
 	kubeconfig := bytes.Buffer{}
