@@ -11,6 +11,10 @@ $ minikube cache add redis:3
 
 # list cached images
 $ minikube cache list
-- redis:3
-- ubuntu:16.04
+redis:3
+ubuntu:16.04
+
+# delete cached images
+$ minikube cache delete ubuntu:16.04
+$ minikube cache delete $(minikube cache list)
 ```
