@@ -198,6 +198,32 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	glog.Infof("APIServerPort %d", cc.HostConfig.APIServerPort)
+	if cc.HostConfig.APIServerPort != 0 {
+		pkgutil.APIServerPort = cc.HostConfig.APIServerPort
+	} else if host.Driver.DriverName() == "qemu" {
+		port, err := cmdutil.GetPort()
+		if err != nil {
+			glog.Errorln("Error getting port number: ", err)
+		}
+		pkgutil.APIServerPort, err = strconv.Atoi(port)
+	}
+	glog.Infof("DashboardPort %d", cc.HostConfig.DashboardPort)
+	if cc.HostConfig.DashboardPort != 0 {
+		pkgutil.DashboardPort = cc.HostConfig.DashboardPort
+	} else if host.Driver.DriverName() == "qemu" {
+		port, err := cmdutil.GetPort()
+		if err != nil {
+			glog.Errorln("Error getting port number: ", err)
+		}
+		pkgutil.DashboardPort, err = strconv.Atoi(port)
+	}
+
+	hostConfig := cfg.HostConfig{
+		APIServerPort: pkgutil.APIServerPort,
+		DashboardPort: pkgutil.DashboardPort,
+	}
+
 	kubernetesConfig := cfg.KubernetesConfig{
 		KubernetesVersion:      selectedKubernetesVersion,
 		NodeIP:                 ip,
@@ -221,6 +247,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Write profile cluster configuration to file
 	clusterConfig := cfg.Config{
+		HostConfig:       hostConfig,
 		MachineConfig:    config,
 		KubernetesConfig: kubernetesConfig,
 	}
@@ -407,4 +434,3 @@ func init() {
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }
-

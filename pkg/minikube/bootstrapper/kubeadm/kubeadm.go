@@ -141,9 +141,9 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	if k.d.DriverName() == "qemu" {
 		// tunnel apiserver
-		k.x.Shell("-f", "-NTL", "8443:localhost:8443")
+		k.x.Shell("-f", "-NTL", fmt.Sprintf("%d:localhost:8443", util.APIServerPort))
 		// tunnel dashboard
-		k.x.Shell("-f", "-NTL", "30000:localhost:30000")
+		k.x.Shell("-f", "-NTL", fmt.Sprintf("%d:localhost:30000", util.DashboardPort))
 	}
 
 	//TODO(r2d4): get rid of global here
