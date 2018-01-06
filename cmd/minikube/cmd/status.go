@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
@@ -93,7 +94,8 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			}
-			kstatus, err := kubeconfig.GetKubeConfigStatus(ip, cmdUtil.GetKubeConfigPath(), config.GetMachineName())
+			port := pkgutil.APIServerPort
+			kstatus, err := kubeconfig.GetKubeConfigStatus(ip, port, cmdUtil.GetKubeConfigPath(), config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)

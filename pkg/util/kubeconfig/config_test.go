@@ -178,31 +178,36 @@ func TestGetKubeConfigStatus(t *testing.T) {
 	var tests = []struct {
 		description string
 		ip          net.IP
+		port        int
 		existing    []byte
 		err         bool
 		status      bool
 	}{
 		{
-			description: "empty ip",
+			description: "empty ip and port",
 			ip:          nil,
+			port:        0,
 			existing:    fakeKubeCfg,
 			err:         true,
 		},
 		{
 			description: "no minikube cluster",
 			ip:          net.ParseIP("192.168.10.100"),
+			port:        8080,
 			existing:    fakeKubeCfg,
 			err:         true,
 		},
 		{
 			description: "exactly matching ip",
 			ip:          net.ParseIP("192.168.10.100"),
+			port:        8443,
 			existing:    fakeKubeCfg2,
 			status:      true,
 		},
 		{
 			description: "different ips",
 			ip:          net.ParseIP("192.168.10.100"),
+			port:        8443,
 			existing:    fakeKubeCfg3,
 		},
 	}
@@ -211,7 +216,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := GetKubeConfigStatus(test.ip, configFilename, "minikube")
+			statusActual, err := GetKubeConfigStatus(test.ip, test.port, configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %s", err)
 			}
@@ -226,19 +231,21 @@ func TestGetKubeConfigStatus(t *testing.T) {
 	}
 }
 
-func TestUpdateKubeconfigIP(t *testing.T) {
+func TestUpdateKubeconfigHost(t *testing.T) {
 
 	var tests = []struct {
 		description string
 		ip          net.IP
+		port        int
 		existing    []byte
 		err         bool
 		status      bool
 		expCfg      []byte
 	}{
 		{
-			description: "empty ip",
+			description: "empty ip and port",
 			ip:          nil,
+			port:        0,
 			existing:    fakeKubeCfg2,
 			err:         true,
 			expCfg:      fakeKubeCfg2,
@@ -246,6 +253,7 @@ func TestUpdateKubeconfigIP(t *testing.T) {
 		{
 			description: "no minikube cluster",
 			ip:          net.ParseIP("192.168.10.100"),
+			port:        8080,
 			existing:    fakeKubeCfg,
 			err:         true,
 			expCfg:      fakeKubeCfg,
@@ -253,12 +261,14 @@ func TestUpdateKubeconfigIP(t *testing.T) {
 		{
 			description: "same IP",
 			ip:          net.ParseIP("192.168.10.100"),
+			port:        8443,
 			existing:    fakeKubeCfg2,
 			expCfg:      fakeKubeCfg2,
 		},
 		{
 			description: "different IP",
 			ip:          net.ParseIP("192.168.10.100"),
+			port:        8443,
 			existing:    fakeKubeCfg3,
 			status:      true,
 			expCfg:      fakeKubeCfg2,
@@ -268,7 +278,7 @@ func TestUpdateKubeconfigIP(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := UpdateKubeconfigIP(test.ip, configFilename, "minikube")
+			statusActual, err := UpdateKubeconfigHost(test.ip, test.port, configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %s", err)
 			}
@@ -333,18 +343,20 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
-func TestGetIPFromKubeConfig(t *testing.T) {
+func TestGetHostFromKubeConfig(t *testing.T) {
 
 	var tests = []struct {
 		description string
 		cfg         []byte
 		ip          net.IP
+		port        int
 		err         bool
 	}{
 		{
 			description: "normal IP",
 			cfg:         fakeKubeCfg2,
 			ip:          net.ParseIP("192.168.10.100"),
+			port:        8443,
 		},
 		{
 			description: "no minikube cluster",
@@ -355,7 +367,7 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			configFilename := tempFile(t, test.cfg)
-			ip, err := getIPFromKubeConfig(configFilename, "minikube")
+			ip, port, err := getHostFromKubeConfig(configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %s", err)
 			}
@@ -364,6 +376,9 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 			}
 			if !ip.Equal(test.ip) {
 				t.Errorf("IP returned: %s does not match ip given: %s", ip, test.ip)
+			}
+			if port != test.port {
+				t.Errorf("Port returned: %d does not match port given: %d", ip, test.port)
 			}
 		})
 	}

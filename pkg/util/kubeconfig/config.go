@@ -193,33 +193,36 @@ func decode(data []byte) (*api.Config, error) {
 	return config.(*api.Config), nil
 }
 
-// GetKubeConfigStatus verifys the ip stored in kubeconfig.
-func GetKubeConfigStatus(ip net.IP, filename string, machineName string) (bool, error) {
+// GetKubeConfigStatus verifys the ip and port stored in kubeconfig.
+func GetKubeConfigStatus(ip net.IP, port int, filename string, machineName string) (bool, error) {
 	if ip == nil {
 		return false, fmt.Errorf("Error, empty ip passed")
 	}
-	kip, err := getIPFromKubeConfig(filename, machineName)
+	kip, kport, err := getHostFromKubeConfig(filename, machineName)
 	if err != nil {
 		return false, err
 	}
-	if kip.Equal(ip) {
+	if kip.Equal(ip) && kport == port {
 		return true, nil
 	}
-	// Kubeconfig IP misconfigured
+	// Kubeconfig IP or port misconfigured
 	return false, nil
 
 }
 
-// UpdateKubeconfigIP overwrites the IP stored in kubeconfig with the provided IP.
-func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, error) {
+// UpdateKubeconfigHost overwrites the IP and port stored in kubeconfig with the provided IP and port.
+func UpdateKubeconfigHost(ip net.IP, port int, filename string, machineName string) (bool, error) {
 	if ip == nil {
 		return false, fmt.Errorf("Error, empty ip passed")
 	}
-	kip, err := getIPFromKubeConfig(filename, machineName)
+	if port == 0 {
+		return false, fmt.Errorf("Error, zero port passed")
+	}
+	kip, kport, err := getHostFromKubeConfig(filename, machineName)
 	if err != nil {
 		return false, err
 	}
-	if kip.Equal(ip) {
+	if kip.Equal(ip) && kport == port {
 		return false, nil
 	}
 	con, err := ReadConfigOrNew(filename)
@@ -227,7 +230,7 @@ func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, e
 		return false, errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
-	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(util.APIServerPort)
+	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(port)
 	err = WriteConfig(con, filename)
 	if err != nil {
 		return false, err
@@ -236,24 +239,28 @@ func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, e
 	return true, nil
 }
 
-// getIPFromKubeConfig returns the IP address stored for minikube in the kubeconfig specified
-func getIPFromKubeConfig(filename, machineName string) (net.IP, error) {
+// getHostFromKubeConfig returns the IP address and port stored for minikube in the kubeconfig specified
+func getHostFromKubeConfig(filename, machineName string) (net.IP, int, error) {
 	con, err := ReadConfigOrNew(filename)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting kubeconfig status")
+		return nil, 0, errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	cluster, ok := con.Clusters[machineName]
 	if !ok {
-		return nil, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+		return nil, 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
 	}
 	kurl, err := url.Parse(cluster.Server)
 	if err != nil {
-		return net.ParseIP(cluster.Server), nil
+		return net.ParseIP(cluster.Server), 0, nil
 	}
-	kip, _, err := net.SplitHostPort(kurl.Host)
+	kip, kport, err := net.SplitHostPort(kurl.Host)
 	if err != nil {
-		return net.ParseIP(kurl.Host), nil
+		return net.ParseIP(kurl.Host), 0, nil
 	}
 	ip := net.ParseIP(kip)
-	return ip, nil
+	port, err := strconv.Atoi(kport)
+	if err != nil {
+		return ip, 0, nil
+	}
+	return ip, port, nil
 }
