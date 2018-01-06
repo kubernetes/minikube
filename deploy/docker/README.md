@@ -66,13 +66,13 @@ metadata:
   namespace: kube-system
   labels:
     component: kube-addon-manager
-    version: v6.4
+    version: v6.5
     kubernetes.io/minikube-addons: addon-manager
 spec:
   hostNetwork: true
   containers:
   - name: kube-addon-manager
-    image: gcr.io/google-containers/kube-addon-manager:v6.4-beta.2
+    image: gcr.io/google-containers/kube-addon-manager:v6.5
     imagePullPolicy: IfNotPresent
     resources:
       requests:
