@@ -169,6 +169,22 @@ func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 	return ip, nil
 }
 
+// GetHostDriverPort gets the port number of the current minikube cluster
+func GetHostDriverPort(api libmachine.API) (int, error) {
+	cc, err := LoadConfigFromFile(viper.GetString(cfg.MachineProfile))
+	if err != nil && !os.IsNotExist(err) {
+		return 0, errors.Wrap(err, "Error loading config")
+	}
+
+	var port int
+	if cc.HostConfig.APIServerPort != 0 {
+		port = cc.HostConfig.APIServerPort
+	} else {
+		port = util.APIServerPort
+	}
+	return port, nil
+}
+
 func engineOptions(config cfg.MachineConfig) *engine.Options {
 	o := engine.Options{
 		Env:              config.DockerEnv,
