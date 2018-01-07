@@ -1,0 +1,5 @@
+config BR2_PACKAGE_CRI_TOOLS
+	bool "cri-tools"
+	default y
+	depends on BR2_PACKAGE_HOST_GO_ARCH_SUPPORTS
+	depends on BR2_PACKAGE_HOST_GO_CGO_LINKING_SUPPORTS
