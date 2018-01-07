@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"html/template"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -175,11 +176,11 @@ func restartKubeProxy(k8s bootstrapper.KubernetesConfig) error {
 		return errors.Wrap(err, "executing kube proxy configmap template")
 	}
 
-	data := map[string]string{
-		kubeconfigConf: kubeconfig.String(),
+	if cfgMap.Data == nil {
+		cfgMap.Data = map[string]string{}
 	}
+	cfgMap.Data[kubeconfigConf] = strings.TrimSuffix(kubeconfig.String(), "\n")
 
-	cfgMap.Data = data
 	if _, err := client.CoreV1().ConfigMaps("kube-system").Update(cfgMap); err != nil {
 		return errors.Wrap(err, "updating configmap")
 	}
