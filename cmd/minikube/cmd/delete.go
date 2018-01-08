@@ -49,7 +49,7 @@ associated files.`,
 		}
 		defer api.Close()
 
-		if err = cluster.DeleteHost(api); err != nil {
+		if err = cluster.DeleteHost(pkg_config.GetMachineName(), api); err != nil {
 			fmt.Println("Errors occurred deleting machine: ", err)
 			os.Exit(1)
 		}

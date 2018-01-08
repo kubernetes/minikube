@@ -23,6 +23,7 @@ import (
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
+	MachineName         string
 	MinikubeISO         string
 	Memory              int
 	CPUs                int
@@ -44,4 +45,9 @@ type MachineConfig struct {
 type Config struct {
 	MachineConfig    MachineConfig
 	KubernetesConfig bootstrapper.KubernetesConfig
+	Nodes            []Node
+}
+
+type Node struct {
+	Name string
 }

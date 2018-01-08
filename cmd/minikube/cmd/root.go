@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	nodeCmd "k8s.io/minikube/cmd/minikube/cmd/node"
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
@@ -125,12 +126,13 @@ func setFlagsUsingViper() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used.  
+	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used.
 	This can be modified to allow for multiple minikube instances to be run independently`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	RootCmd.AddCommand(configCmd.ProfileCmd)
+	RootCmd.AddCommand(nodeCmd.NodeCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	viper.BindPFlags(RootCmd.PersistentFlags())
 

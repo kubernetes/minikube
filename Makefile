@@ -138,7 +138,7 @@ ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube_iso
 else
 	docker run --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
-		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
+		--env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
 endif
 

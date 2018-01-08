@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -32,6 +31,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+    "k8s.io/minikube/cmd/minikube/profile"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -97,17 +97,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	if shouldCacheImages {
 		go machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
 	}
+
+    // NOTE Instantiate docker-machine API
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
 		os.Exit(1)
 	}
 	defer api.Close()
-
-	exists, err := api.Exists(cfg.GetMachineName())
-	if err != nil {
-		glog.Exitf("checking if machine exists: %s", err)
-	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
 	diskSizeMB := pkgutil.CalculateDiskSizeInMB(diskSize)
@@ -123,7 +120,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		validateK8sVersion(k8sVersion)
 	}
 
+    // NOTE Create machine config
 	config := cluster.MachineConfig{
+		MachineName:         cfg.GetMachineName(),
 		MinikubeISO:         viper.GetString(isoURL),
 		Memory:              viper.GetInt(memory),
 		CPUs:                viper.GetInt(cpus),
@@ -141,6 +140,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		DisableDriverMounts: viper.GetBool(disableDriverMounts),
 	}
 
+	// NOTE Check if machine exists
+	exists, err := api.Exists(config.MachineName)
+	if err != nil {
+		glog.Exitf("checking if machine exists: %s", err)
+	}
+
+    // NOTE Start machine
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
 	fmt.Println("Starting VM...")
 	var host *host.Host
@@ -157,6 +163,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
+    // NOTE Get machine IP
 	fmt.Println("Getting VM IP address...")
 	ip, err := host.Driver.GetIP()
 	if err != nil {
@@ -166,8 +173,10 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 
+    // NOTE Load cluster cfg
 	// Load profile cluster config from file
-	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
+    profileName := viper.GetString(cfg.MachineProfile)
+	cc, err := profile.LoadConfigFromFile(profileName)
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
 	}
@@ -203,6 +212,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ShouldLoadCachedImages: shouldCacheImages,
 	}
 
+    // NOTE Get bootstrapper
 	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
 	if err != nil {
 		glog.Exitf("Error getting cluster bootstrapper: %s", err)
@@ -214,10 +224,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		KubernetesConfig: kubernetesConfig,
 	}
 
-	if err := saveConfig(clusterConfig); err != nil {
+	if err := profile.SaveConfig(profileName, clusterConfig); err != nil {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
+    // NOTE Configure machine
 	fmt.Println("Moving files into cluster...")
 	if err := k8sBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
@@ -260,6 +271,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Starting cluster components...")
 
+    // NOTE Start base components
 	if !exists {
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
@@ -319,10 +331,10 @@ You will need to move the files to the appropriate location and then set the cor
 	sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
 	sudo chown -R $USER $HOME/.kube
 	sudo chgrp -R $USER $HOME/.kube
-	
+
 	sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
 	sudo chown -R $USER $HOME/.minikube
-	sudo chgrp -R $USER $HOME/.minikube 
+	sudo chgrp -R $USER $HOME/.minikube
 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 		}
@@ -384,74 +396,4 @@ func init() {
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
-}
-
-// saveConfig saves profile cluster configuration in
-// $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig cluster.Config) error {
-	data, err := json.MarshalIndent(clusterConfig, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	profileConfigFile := constants.GetProfileFile(viper.GetString(cfg.MachineProfile))
-
-	if err := os.MkdirAll(filepath.Dir(profileConfigFile), 0700); err != nil {
-		return err
-	}
-
-	if err := saveConfigToFile(data, profileConfigFile); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func saveConfigToFile(data []byte, file string) error {
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return ioutil.WriteFile(file, data, 0600)
-	}
-
-	tmpfi, err := ioutil.TempFile(filepath.Dir(file), "config.json.tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmpfi.Name())
-
-	if err = ioutil.WriteFile(tmpfi.Name(), data, 0600); err != nil {
-		return err
-	}
-
-	if err = tmpfi.Close(); err != nil {
-		return err
-	}
-
-	if err = os.Remove(file); err != nil {
-		return err
-	}
-
-	if err = os.Rename(tmpfi.Name(), file); err != nil {
-		return err
-	}
-	return nil
-}
-
-func loadConfigFromFile(profile string) (cluster.Config, error) {
-	var cc cluster.Config
-
-	profileConfigFile := constants.GetProfileFile(profile)
-
-	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
-		return cc, err
-	}
-
-	data, err := ioutil.ReadFile(profileConfigFile)
-	if err != nil {
-		return cc, err
-	}
-
-	if err := json.Unmarshal(data, &cc); err != nil {
-		return cc, err
-	}
-	return cc, nil
 }

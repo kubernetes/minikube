@@ -36,6 +36,7 @@ func (d MockDownloader) GetISOFileURI(isoURL string) string          { return ""
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
 var defaultMachineConfig = MachineConfig{
+	MachineName: "test-cluster",
 	VMDriver:    constants.DefaultVMDriver,
 	MinikubeISO: constants.DefaultIsoUrl,
 	Downloader:  MockDownloader{},
@@ -227,7 +228,7 @@ func TestDeleteHost(t *testing.T) {
 	api := tests.NewMockAPI()
 	createHost(api, defaultMachineConfig)
 
-	if err := DeleteHost(api); err != nil {
+	if err := DeleteHost(defaultMachineConfig.MachineName, api); err != nil {
 		t.Fatalf("Unexpected error deleting host: %s", err)
 	}
 }
@@ -240,7 +241,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 
 	h.Driver = d
 
-	if err := DeleteHost(api); err == nil {
+	if err := DeleteHost(defaultMachineConfig.MachineName, api); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -250,7 +251,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	api.RemoveError = true
 	createHost(api, defaultMachineConfig)
 
-	if err := DeleteHost(api); err == nil {
+	if err := DeleteHost(defaultMachineConfig.MachineName, api); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -264,7 +265,7 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 
 	h.Driver = d
 
-	err := DeleteHost(api)
+	err := DeleteHost(defaultMachineConfig.MachineName, api)
 
 	if err == nil {
 		t.Fatal("Expected error deleting host, didn't get one.")
