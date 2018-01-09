@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: ReplicationController
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: kubernetes-dashboard
   namespace: kube-system
@@ -24,9 +24,10 @@ metadata:
 spec:
   replicas: 1
   selector:
-    app: kubernetes-dashboard
-    version: v1.8.1
-    addonmanager.kubernetes.io/mode: Reconcile
+    matchLabels:
+      app: kubernetes-dashboard
+      version: v1.8.1
+      addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
