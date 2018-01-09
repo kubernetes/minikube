@@ -65,9 +65,9 @@ var Addons = map[string]*Addon{
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/dashboard/dashboard-rc.yaml",
+			"deploy/addons/dashboard/dashboard-dp.yaml",
 			constants.AddonsPath,
-			"dashboard-rc.yaml",
+			"dashboard-dp.yaml",
 			"0640"),
 		NewBinDataAsset(
 			"deploy/addons/dashboard/dashboard-svc.yaml",
