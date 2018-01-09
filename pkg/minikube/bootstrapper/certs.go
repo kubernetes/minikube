@@ -114,7 +114,7 @@ func generateCerts(k8s KubernetesConfig) error {
 		{ // client / apiserver CA
 			certPath: caCertPath,
 			keyPath:  caKeyPath,
-			subject:  k8s.APIServerName,
+			subject:  "minikubeCA",
 		},
 		{ // proxy-client CA
 			certPath: proxyClientCACertPath,
@@ -144,7 +144,7 @@ func generateCerts(k8s KubernetesConfig) error {
 		{ // apiserver serving cert
 			certPath:       filepath.Join(localPath, "apiserver.crt"),
 			keyPath:        filepath.Join(localPath, "apiserver.key"),
-			subject:        "minikube",
+			subject:        k8s.APIServerName,
 			ips:            []net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")},
 			alternateNames: util.GetAlternateDNS(k8s.DNSDomain),
 			caCertPath:     caCertPath,
