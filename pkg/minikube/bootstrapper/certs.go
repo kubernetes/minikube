@@ -123,6 +123,14 @@ func generateCerts(k8s KubernetesConfig) error {
 		},
 	}
 
+	apiServerIPs := append(
+		util.GetAPIServerIPs(k8s.APIServerIPs),
+		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")}...)
+	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName)
+	apiServerAlternateNames := append(
+		apiServerNames,
+		util.GetAlternateDNS(k8s.DNSDomain)...)
+
 	signedCertSpecs := []struct {
 		certPath       string
 		keyPath        string
@@ -145,8 +153,8 @@ func generateCerts(k8s KubernetesConfig) error {
 			certPath:       filepath.Join(localPath, "apiserver.crt"),
 			keyPath:        filepath.Join(localPath, "apiserver.key"),
 			subject:        k8s.APIServerName,
-			ips:            []net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")},
-			alternateNames: util.GetAlternateDNS(k8s.DNSDomain),
+			ips:            apiServerIPs,
+			alternateNames: apiServerAlternateNames,
 			caCertPath:     caCertPath,
 			caKeyPath:      caKeyPath,
 		},
