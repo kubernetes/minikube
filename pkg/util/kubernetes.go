@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
@@ -162,6 +163,36 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 			}
 			glog.Infof("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
 				name, rc.Generation, rc.Status.ObservedGeneration, *(rc.Spec.Replicas), rc.Status.Replicas)
+		}
+		return false, nil
+	})
+	return err
+}
+
+// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status.
+func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
+	options := metav1.ListOptions{FieldSelector: fields.Set{
+		"metadata.name":      name,
+		"metadata.namespace": ns,
+	}.AsSelector().String()}
+	w, err := c.AppsV1().Deployments(ns).Watch(options)
+	if err != nil {
+		return err
+	}
+	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+		switch event.Type {
+		case watch.Deleted:
+			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
+		}
+		switch dp := event.Object.(type) {
+		case *appsv1.Deployment:
+			if dp.Name == name && dp.Namespace == ns &&
+				dp.Generation <= dp.Status.ObservedGeneration &&
+				*(dp.Spec.Replicas) == dp.Status.Replicas {
+				return true, nil
+			}
+			glog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+				name, dp.Generation, dp.Status.ObservedGeneration, *(dp.Spec.Replicas), dp.Status.Replicas)
 		}
 		return false, nil
 	})

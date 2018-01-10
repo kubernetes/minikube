@@ -168,7 +168,7 @@ const FileScheme = "file"
 
 var LocalkubeCachedImages = []string{
 	// Dashboard
-	"k8s.gcr.io/kubernetes-dashboard-amd64:v1.6.3",
+	"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
 
 	// DNS
 	"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.5",
@@ -188,7 +188,7 @@ var LocalkubeCachedImages = []string{
 func GetKubeadmCachedImages(version string) []string {
 	return []string{
 		// Dashboard
-		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.6.3",
+		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
 
 		// Addon Manager
 		"gcr.io/google-containers/kube-addon-manager:v6.5",
