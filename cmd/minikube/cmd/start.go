@@ -68,6 +68,7 @@ const (
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
 	cacheImages           = "cache-images"
+	uuid                  = "uuid"
 )
 
 var (
@@ -143,6 +144,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		KvmNetwork:          viper.GetString(kvmNetwork),
 		Downloader:          pkgutil.DefaultDownloader{},
 		DisableDriverMounts: viper.GetBool(disableDriverMounts),
+		UUID:                viper.GetString(uuid),
 	}
 
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
