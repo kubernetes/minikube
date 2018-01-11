@@ -19,7 +19,6 @@ gsutil.cmd cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 
 ./out/minikube-windows-amd64.exe delete
-Remove-Item -Recurse -Force C:\Users\jenkins\.minikube
 
 out/e2e-windows-amd64.exe --% -minikube-start-args="--vm-driver=virtualbox --container-runtime=cri-o" -minikube-args="--v=10 --logtostderr --bootstrapper=kubeadm" -test.v -test.timeout=30m -binary=out/minikube-windows-amd64.exe
 

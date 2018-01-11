@@ -19,7 +19,6 @@ gsutil.cmd cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe 
 gsutil.cmd cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 ./out/minikube-windows-amd64.exe delete
-Remove-Item -Recurse -Force C:\Users\jenkins\.minikube
 
 out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=virtualbox --kubernetes-version=file:///var/jenkins/workspace/Windows_Integration_Tests_hyperv/out/localkube" -minikube-args="--v=10 --logtostderr" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=30m
 $env:result=$lastexitcode
