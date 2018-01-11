@@ -40,6 +40,7 @@ type MachineConfig struct {
 	DisableDriverMounts bool               // Only used by virtualbox and xhyve
 	NFSShare            []string
 	NFSSharesRoot       string
+	UUID                string // Only used by hyperkit to restore the mac address
 }
 
 // Config contains machine and k8s config
