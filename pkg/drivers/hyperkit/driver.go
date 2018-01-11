@@ -34,7 +34,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	nfsexports "github.com/johanneswuerbach/nfsexports"
 	hyperkit "github.com/moby/hyperkit/go"
-	"github.com/pborman/uuid"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	commonutil "k8s.io/minikube/pkg/util"
@@ -59,6 +58,7 @@ type Driver struct {
 	Cmdline        string
 	NFSShares      []string
 	NFSSharesRoot  string
+	UUID           string
 }
 
 func NewDriver(hostName, storePath string) *Driver {
@@ -177,10 +177,9 @@ func (d *Driver) Start() error {
 	h.Console = hyperkit.ConsoleFile
 	h.CPUs = d.CPU
 	h.Memory = d.Memory
+	h.UUID = d.UUID
 
-	// Set UUID
-	h.UUID = uuid.NewUUID().String()
-	log.Infof("Generated UUID %s", h.UUID)
+	log.Infof("Using UUID %s", h.UUID)
 	mac, err := GetMACAddressFromUUID(h.UUID)
 	if err != nil {
 		return err
