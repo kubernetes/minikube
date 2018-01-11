@@ -14,6 +14,7 @@ import (
 
 	"k8s.io/minikube/cmd/minikube/profile"
 	cmdutil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -112,7 +113,6 @@ func startNode(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Starting nodes...")
-	fmt.Printf("Config: %#v\n", cfg)
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -132,6 +132,30 @@ func startNode(cmd *cobra.Command, args []string) {
 			glog.Errorln("Error starting node machine: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
+
+		k8sBootstrapper, err := kubeadm.NewKubeadmBootstrapperForMachine(machineCfg.MachineName, api)
+		if err != nil {
+			glog.Errorln("Error getting kubeadm bootstrapper: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+
+		fmt.Println("Moving assets into node...")
+		if err := k8sBootstrapper.UpdateNode(cfg.KubernetesConfig); err != nil {
+			glog.Errorln("Error updating node: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+		fmt.Println("Setting up certs...")
+		if err := k8sBootstrapper.SetupCerts(cfg.KubernetesConfig); err != nil {
+			glog.Errorln("Error configuring authentication: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+
+		fmt.Println("Joining node to cluster...")
+		if err := k8sBootstrapper.JoinNode(cfg.KubernetesConfig); err != nil {
+			glog.Errorln("Error joining node to cluster: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+
 		ip, err := host.Driver.GetIP()
 		if err != nil {
 			glog.Errorln("Error getting machine IP: ", err)
@@ -139,7 +163,6 @@ func startNode(cmd *cobra.Command, args []string) {
 		}
 		fmt.Printf("Node started. IP: %s\n", ip)
 	}
-
 }
 
 func removeNode(cmd *cobra.Command, args []string) {

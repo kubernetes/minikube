@@ -37,8 +37,9 @@ etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
 {{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
-  {{$val}}{{end}}
-{{end}}`))
+  {{$val}}{{end}}{{end}}
+token: {{.Token}}
+`))
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Service]
@@ -72,6 +73,8 @@ sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
 `))
 
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse("sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} --skip-preflight-checks"))
+
+var kubeadmJoinTemplate = template.Must(template.New("kubeadmJoinTemplate").Parse("sudo /usr/bin/kubeadm join --token {{.Token}} {{.ServerAddress}}"))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key
 // value pairs with the separator character

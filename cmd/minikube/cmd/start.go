@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+    "github.com/elgs/gostrgen"
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
@@ -198,6 +199,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
+    token, err := genBootstrapToken()
+    if err != nil {
+        glog.Exitf("Error generating bootstrap token: ", err)
+    }
+
 	kubernetesConfig := bootstrapper.KubernetesConfig{
 		KubernetesVersion:      selectedKubernetesVersion,
 		NodeIP:                 ip,
@@ -210,6 +216,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ServiceCIDR:            pkgutil.DefaultServiceCIDR,
 		ExtraOptions:           extraOptions,
 		ShouldLoadCachedImages: shouldCacheImages,
+        BootstrapToken:         token,
 	}
 
     // NOTE Get bootstrapper
@@ -396,4 +403,17 @@ func init() {
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
+}
+
+func genBootstrapToken() (string, error) {
+    first, err := gostrgen.RandGen(6, gostrgen.Lower | gostrgen.Digit, "", "")
+    if err != nil {
+        return "", nil
+    }
+
+    second, err := gostrgen.RandGen(16, gostrgen.Lower | gostrgen.Digit, "", "")
+    if err != nil {
+        return "", nil
+    }
+    return fmt.Sprintf("%s.%s", first, second), nil
 }

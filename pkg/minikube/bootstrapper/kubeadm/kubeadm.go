@@ -45,7 +45,11 @@ type KubeadmBootstrapper struct {
 }
 
 func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
-	h, err := api.Load(config.GetMachineName())
+	return NewKubeadmBootstrapperForMachine(config.GetMachineName(), api)
+}
+
+func NewKubeadmBootstrapperForMachine(machineName string, api libmachine.API) (*KubeadmBootstrapper, error) {
+	h, err := api.Load(machineName)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
@@ -106,7 +110,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 	// We use --skip-preflight-checks since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
 	b := bytes.Buffer{}
-	if err := kubeadmInitTemplate.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
+	if err := kubeadmInitTemplate.Execute(&b, struct{KubeadmConfigFile, Token  string}{ constants.KubeadmConfigFile, k8s.BootstrapToken }); err != nil {
 		return err
 	}
 
@@ -123,6 +127,22 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	}
+
+	return nil
+}
+
+func (k *KubeadmBootstrapper) JoinNode(k8s bootstrapper.KubernetesConfig) error {
+	// We use --skip-preflight-checks since we have our own custom addons
+	// that we also stick in /etc/kubernetes/manifests
+	b := bytes.Buffer{}
+	if err := kubeadmJoinTemplate.Execute(&b, struct{Token, ServerAddress  string}{ k8s.BootstrapToken, fmt.Sprintf("%s:8443", k8s.NodeIP) }); err != nil {
+		return err
+	}
+
+	err := k.c.Run(b.String())
+	if err != nil {
+		return errors.Wrapf(err, "kubeadm init error running command: %s", b.String())
 	}
 
 	return nil
@@ -305,6 +325,57 @@ sudo systemctl start kubelet
 	return nil
 }
 
+func (k *KubeadmBootstrapper) UpdateNode(cfg bootstrapper.KubernetesConfig) error {
+	kubeletCfg, err := NewKubeletConfig(cfg)
+	if err != nil {
+		return errors.Wrap(err, "generating kubelet config")
+	}
+
+	files := []assets.CopyableFile{
+		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeletCfg), constants.KubeletSystemdConfFile, "0640"),
+	}
+
+	var g errgroup.Group
+	for _, bin := range []string{"kubelet", "kubeadm"} {
+		bin := bin
+		g.Go(func() error {
+			path, err := maybeDownloadAndCache(bin, cfg.KubernetesVersion)
+			if err != nil {
+				return errors.Wrapf(err, "downloading %s", bin)
+			}
+			f, err := assets.NewFileAsset(path, "/usr/bin", bin, "0641")
+			if err != nil {
+				return errors.Wrap(err, "making new file asset")
+			}
+			if err := k.c.Copy(f); err != nil {
+				return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+			}
+			return nil
+		})
+	}
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "downloading binaries")
+	}
+
+	for _, f := range files {
+		if err := k.c.Copy(f); err != nil {
+			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+		}
+	}
+
+	err = k.c.Run(`
+sudo systemctl daemon-reload &&
+sudo systemctl enable kubelet &&
+sudo systemctl start kubelet
+`)
+	if err != nil {
+		return errors.Wrap(err, "starting kubelet")
+	}
+
+	return nil
+}
+
 func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -326,6 +397,7 @@ func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 		EtcdDataDir       string
 		NodeName          string
 		ExtraArgs         []ComponentExtraArgs
+        Token string
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
@@ -335,6 +407,7 @@ func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 		EtcdDataDir:       "/data", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		ExtraArgs:         extraComponentConfig,
+        Token: k8s.BootstrapToken,
 	}
 
 	b := bytes.Buffer{}

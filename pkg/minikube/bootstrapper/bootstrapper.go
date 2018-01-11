@@ -45,6 +45,8 @@ type KubernetesConfig struct {
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
+
+	BootstrapToken string
 }
 
 const (
