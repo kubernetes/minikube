@@ -235,9 +235,9 @@ var Addons = map[string]*Addon{
 	}, false, "registry-creds"),
 	"freshpod": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/freshpod/freshpod-dp.yaml",
+			"deploy/addons/freshpod/freshpod-rc.yaml",
 			constants.AddonsPath,
-			"freshpod-dp.yaml",
+			"freshpod-rc.yaml",
 			"0640"),
 	}, false, "freshpod"),
 }
