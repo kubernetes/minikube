@@ -12,30 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: ReplicationController
 metadata:
   name: freshpod
   namespace: kube-system
   labels:
-    version: v0.0.1
     k8s-app: freshpod
-    tier: prod
     kubernetes.io/minikube-addons: freshpod
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
   selector:
-    matchLabels:
-      version: v0.0.1
-      k8s-app: freshpod
-      tier: prod
+    k8s-app: freshpod
+    addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
-        version: v0.0.1
         k8s-app: freshpod
-        tier: prod
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
       - name: freshpod
