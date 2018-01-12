@@ -57,16 +57,3 @@ func GetDNSIP(serviceCIDR string) (net.IP, error) {
 func GetAlternateDNS(domain string) []string {
 	return []string{"kubernetes.default.svc." + domain, "kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
 }
-
-func GetAPIServerIPs(APIServerIPs []string) []net.IP {
-	var ips []net.IP
-	var ip net.IP
-
-	for _, ipString := range APIServerIPs {
-		ip = net.ParseIP(ipString)
-		if ip != nil {
-			ips = append(ips, ip)
-		}
-	}
-	return ips
-}

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -77,7 +78,7 @@ var (
 	dockerOpt        []string
 	insecureRegistry []string
 	apiServerNames   []string
-	apiServerIPs     []string
+	apiServerIPs     []net.IP
 	extraOptions     pkgutil.ExtraOptionSlice
 )
 
@@ -385,7 +386,7 @@ func init() {
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().StringArrayVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for localkube/kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")

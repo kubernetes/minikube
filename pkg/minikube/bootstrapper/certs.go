@@ -124,7 +124,7 @@ func generateCerts(k8s KubernetesConfig) error {
 	}
 
 	apiServerIPs := append(
-		util.GetAPIServerIPs(k8s.APIServerIPs),
+		k8s.APIServerIPs,
 		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")}...)
 	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName)
 	apiServerAlternateNames := append(
@@ -152,7 +152,7 @@ func generateCerts(k8s KubernetesConfig) error {
 		{ // apiserver serving cert
 			certPath:       filepath.Join(localPath, "apiserver.crt"),
 			keyPath:        filepath.Join(localPath, "apiserver.key"),
-			subject:        k8s.APIServerName,
+			subject:        "minikube",
 			ips:            apiServerIPs,
 			alternateNames: apiServerAlternateNames,
 			caCertPath:     caCertPath,
