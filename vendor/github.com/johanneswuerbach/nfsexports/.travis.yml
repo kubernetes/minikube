@@ -1,0 +1,10 @@
+os: osx
+language: go
+go:
+  - 1.5.1
+
+before_script:
+  - sudo nfsd status
+  - sudo touch /etc/exports # Auto-starts nfsd on OS X
+  - sleep 5
+  - sudo nfsd status

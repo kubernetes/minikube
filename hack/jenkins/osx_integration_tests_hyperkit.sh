@@ -29,8 +29,8 @@ set -e
 OS_ARCH="darwin-amd64"
 VM_DRIVER="hyperkit"
 JOB_NAME="OSX-Hyperkit"
-EXTRA_ARGS="--bootstrapper=localkube"
-EXTRA_START_ARGS="--kubernetes-version=file://$PWD/out/localkube"
+EXTRA_ARGS="--bootstrapper=kubeadm"
+EXTRA_START_ARGS=""
 
 
 # Download files and set permissions

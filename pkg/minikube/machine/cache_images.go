@@ -17,13 +17,14 @@ limitations under the License.
 package machine
 
 import (
-	"golang.org/x/sync/errgroup"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -57,8 +58,8 @@ func CacheImagesForBootstrapper(version string, clusterBootstrapper string) erro
 // CacheImages will cache images on the host
 //
 // The cache directory currently caches images using the imagename_tag
-// For example, gcr.io/google-containers-kube-addon-manager:v6.4-beta.2 would be
-// stored at $CACHE_DIR/gcr.io/google-containers/kube-addon-manager_v6.4-beta.2
+// For example, gcr.io/google-containers-kube-addon-manager:v6.5 would be
+// stored at $CACHE_DIR/gcr.io/google-containers/kube-addon-manager_v6.5
 func CacheImages(images []string, cacheDir string) error {
 	var g errgroup.Group
 	for _, image := range images {
@@ -223,6 +224,7 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
 func DeleteFromImageCacheDir(images []string) error {
 	for _, image := range images {
 		path := filepath.Join(constants.ImageCacheDir, image)
+		path = sanitizeCacheDir(path)
 		glog.Infoln("Deleting image in cache at ", path)
 		if err := os.Remove(path); err != nil {
 			return err

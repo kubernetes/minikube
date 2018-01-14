@@ -33,6 +33,18 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
+gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-pod-svc.yaml testdata/
+gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-ing.yaml testdata/
+
+# Set the executable bit on the e2e binary and out binary
+chmod +x out/e2e-${OS_ARCH}
+chmod +x out/minikube-${OS_ARCH}
+chmod +x out/docker-machine-driver-*
+chmod +x out/localkube
+
+# Fix permissions in $HOME
+sudo chown -R $USER $HOME/.kube
+sudo chown -R $USER $HOME/.minikube
 
 export MINIKUBE_WANTREPORTERRORPROMPT=False
 sudo ./out/minikube-${OS_ARCH} delete || true
@@ -52,7 +64,7 @@ virsh -c qemu:///system list --all \
 vboxmanage list vms \
       | cut -d "{" -f2 \
       | cut -d "}" -f1 \
-      | xargs -I {} sh -c "vboxmanage unregistervm {} --delete" \
+      | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop && vboxmanage unregistervm {} --delete" \
       || true
 
 # Clean up xhyve disks
@@ -65,10 +77,6 @@ hdiutil info \
 # Clean up xhyve processes
 pgrep xhyve | xargs kill || true
 
-# Set the executable bit on the e2e binary and out binary
-chmod +x out/e2e-${OS_ARCH}
-chmod +x out/minikube-${OS_ARCH}
-chmod +x out/docker-machine-driver-*
 
 if [ -e out/docker-machine-driver-hyperkit ]; then
   sudo chown root:wheel out/docker-machine-driver-hyperkit || true

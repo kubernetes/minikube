@@ -9,8 +9,9 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["photon.go"],
+    importpath = "k8s.io/kubernetes/pkg/cloudprovider/providers/photon",
     deps = [
-        "//pkg/api/v1/helper:go_default_library",
+        "//pkg/apis/core/v1/helper:go_default_library",
         "//pkg/cloudprovider:go_default_library",
         "//pkg/controller:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
@@ -24,6 +25,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = ["photon_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/cloudprovider/providers/photon",
     library = ":go_default_library",
     deps = [
         "//pkg/cloudprovider:go_default_library",

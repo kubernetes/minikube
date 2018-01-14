@@ -18,7 +18,9 @@ limitations under the License.
 
 package hyperkit
 
-import vmnet "github.com/zchee/go-vmnet"
+import (
+	vmnet "github.com/zchee/go-vmnet"
+)
 
 func GetMACAddressFromUUID(UUID string) (string, error) {
 	return vmnet.GetMACAddressFromUUID(UUID)

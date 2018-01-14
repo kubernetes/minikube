@@ -20,7 +20,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"html/template"
+	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	clientv1 "k8s.io/api/core/v1"
 	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
@@ -35,7 +37,10 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-const masterTaint = "node-role.kubernetes.io/master"
+const (
+	masterTaint = "node-role.kubernetes.io/master"
+	rbacName    = "minikube-rbac"
+)
 
 var master = ""
 
@@ -92,7 +97,7 @@ func elevateKubeSystemPrivileges() error {
 	client, err := k8s.GetClientset()
 	clusterRoleBinding := &rbacv1beta1.ClusterRoleBinding{
 		ObjectMeta: v1.ObjectMeta{
-			Name: "minikube-rbac",
+			Name: rbacName,
 		},
 		Subjects: []rbacv1beta1.Subject{
 			{
@@ -107,6 +112,10 @@ func elevateKubeSystemPrivileges() error {
 		},
 	}
 
+	if _, err := client.RbacV1beta1().ClusterRoleBindings().Get(rbacName, metav1.GetOptions{}); err == nil {
+		glog.Infof("Role binding %s already exists. Skipping creation.", rbacName)
+		return nil
+	}
 	_, err = client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding)
 	if err != nil {
 		return errors.Wrap(err, "creating clusterrolebinding")
@@ -167,11 +176,11 @@ func restartKubeProxy(k8s bootstrapper.KubernetesConfig) error {
 		return errors.Wrap(err, "executing kube proxy configmap template")
 	}
 
-	data := map[string]string{
-		kubeconfigConf: kubeconfig.String(),
+	if cfgMap.Data == nil {
+		cfgMap.Data = map[string]string{}
 	}
+	cfgMap.Data[kubeconfigConf] = strings.TrimSuffix(kubeconfig.String(), "\n")
 
-	cfgMap.Data = data
 	if _, err := client.CoreV1().ConfigMaps("kube-system").Update(cfgMap); err != nil {
 		return errors.Wrap(err, "updating configmap")
 	}

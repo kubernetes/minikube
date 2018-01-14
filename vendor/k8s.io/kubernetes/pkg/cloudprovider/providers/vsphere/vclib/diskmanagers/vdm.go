@@ -35,7 +35,7 @@ type virtualDiskManager struct {
 
 // Create implements Disk's Create interface
 // Contains implementation of virtualDiskManager based Provisioning
-func (diskManager virtualDiskManager) Create(ctx context.Context, datastore *vclib.Datastore) (err error) {
+func (diskManager virtualDiskManager) Create(ctx context.Context, datastore *vclib.Datastore) (canonicalDiskPath string, err error) {
 	if diskManager.volumeOptions.SCSIControllerType == "" {
 		diskManager.volumeOptions.SCSIControllerType = vclib.LSILogicControllerType
 	}
@@ -57,25 +57,26 @@ func (diskManager virtualDiskManager) Create(ctx context.Context, datastore *vcl
 	if err != nil {
 		vclib.RecordvSphereMetric(vclib.APICreateVolume, requestTime, err)
 		glog.Errorf("Failed to create virtual disk: %s. err: %+v", diskManager.diskPath, err)
-		return err
+		return "", err
 	}
-	err = task.Wait(ctx)
+	taskInfo, err := task.WaitForResult(ctx, nil)
 	vclib.RecordvSphereMetric(vclib.APICreateVolume, requestTime, err)
 	if err != nil {
-		glog.Errorf("Failed to create virtual disk: %s. err: %+v", diskManager.diskPath, err)
-		return err
+		glog.Errorf("Failed to complete virtual disk creation: %s. err: %+v", diskManager.diskPath, err)
+		return "", err
 	}
-	return nil
+	canonicalDiskPath = taskInfo.Result.(string)
+	return canonicalDiskPath, nil
 }
 
 // Delete implements Disk's Delete interface
-func (diskManager virtualDiskManager) Delete(ctx context.Context, datastore *vclib.Datastore) error {
+func (diskManager virtualDiskManager) Delete(ctx context.Context, datacenter *vclib.Datacenter) error {
 	// Create a virtual disk manager
-	virtualDiskManager := object.NewVirtualDiskManager(datastore.Client())
-	diskPath := vclib.RemoveClusterFromVDiskPath(diskManager.diskPath)
+	virtualDiskManager := object.NewVirtualDiskManager(datacenter.Client())
+	diskPath := vclib.RemoveStorageClusterORFolderNameFromVDiskPath(diskManager.diskPath)
 	requestTime := time.Now()
 	// Delete virtual disk
-	task, err := virtualDiskManager.DeleteVirtualDisk(ctx, diskPath, datastore.Datacenter.Datacenter)
+	task, err := virtualDiskManager.DeleteVirtualDisk(ctx, diskPath, datacenter.Datacenter)
 	if err != nil {
 		glog.Errorf("Failed to delete virtual disk. err: %v", err)
 		vclib.RecordvSphereMetric(vclib.APIDeleteVolume, requestTime, err)

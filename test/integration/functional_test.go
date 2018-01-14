@@ -40,6 +40,7 @@ func TestFunctional(t *testing.T) {
 	if !strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
+		t.Run("IngressController", testIngressController)
 		// t.Run("Mounting", testMounting)
 	}
 }

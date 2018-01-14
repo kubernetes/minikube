@@ -21,6 +21,7 @@ import (
 
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pborman/uuid"
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -69,6 +70,9 @@ func createHyperkitHost(config MachineConfig) *hyperkit.Driver {
 		DiskSize:       config.DiskSize,
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
+		NFSShares:      config.NFSShare,
+		NFSSharesRoot:  config.NFSSharesRoot,
+		UUID:           uuid.NewUUID().String(),
 		Cmdline:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
 	}
 }

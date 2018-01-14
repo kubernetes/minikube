@@ -144,8 +144,9 @@ func (a *APIInstaller) newWebService() *restful.WebService {
 // object. If the storage object is a subresource and has an override supplied for it, it returns
 // the group version kind supplied in the override.
 func (a *APIInstaller) getResourceKind(path string, storage rest.Storage) (schema.GroupVersionKind, error) {
-	if fqKindToRegister, ok := a.group.SubresourceGroupVersionKind[path]; ok {
-		return fqKindToRegister, nil
+	// Let the storage tell us exactly what GVK it has
+	if gvkProvider, ok := storage.(rest.GroupVersionKindProvider); ok {
+		return gvkProvider.GroupVersionKind(a.group.GroupVersion), nil
 	}
 
 	object := storage.New()
@@ -161,12 +162,6 @@ func (a *APIInstaller) getResourceKind(path string, storage rest.Storage) (schem
 		if fqKind.Group == a.group.GroupVersion.Group {
 			fqKindToRegister = a.group.GroupVersion.WithKind(fqKind.Kind)
 			break
-		}
-
-		// TODO: keep rid of extensions api group dependency here
-		// This keeps it doing what it was doing before, but it doesn't feel right.
-		if fqKind.Group == "extensions" && fqKind.Kind == "ThirdPartyResourceData" {
-			fqKindToRegister = a.group.GroupVersion.WithKind(fqKind.Kind)
 		}
 	}
 	if fqKindToRegister.Empty() {
@@ -316,9 +311,12 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			return nil, err
 		}
 		getOptionsInternalKind = getOptionsInternalKinds[0]
-		versionedGetOptions, err = a.group.Creater.New(optionsExternalVersion.WithKind(getOptionsInternalKind.Kind))
+		versionedGetOptions, err = a.group.Creater.New(a.group.GroupVersion.WithKind(getOptionsInternalKind.Kind))
 		if err != nil {
-			return nil, err
+			versionedGetOptions, err = a.group.Creater.New(optionsExternalVersion.WithKind(getOptionsInternalKind.Kind))
+			if err != nil {
+				return nil, err
+			}
 		}
 		isGetter = true
 	}
@@ -347,9 +345,12 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			}
 
 			connectOptionsInternalKind = connectOptionsInternalKinds[0]
-			versionedConnectOptions, err = a.group.Creater.New(optionsExternalVersion.WithKind(connectOptionsInternalKind.Kind))
+			versionedConnectOptions, err = a.group.Creater.New(a.group.GroupVersion.WithKind(connectOptionsInternalKind.Kind))
 			if err != nil {
-				return nil, err
+				versionedConnectOptions, err = a.group.Creater.New(optionsExternalVersion.WithKind(connectOptionsInternalKind.Kind))
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	}
@@ -526,7 +527,6 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 		ParameterCodec:  a.group.ParameterCodec,
 		Creater:         a.group.Creater,
 		Convertor:       a.group.Convertor,
-		Copier:          a.group.Copier,
 		Defaulter:       a.group.Defaulter,
 		Typer:           a.group.Typer,
 		UnsafeConvertor: a.group.UnsafeConvertor,
@@ -545,9 +545,9 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 		reqScope.MetaGroupVersion = *a.group.MetaGroupVersion
 	}
 	for _, action := range actions {
-		versionedObject := storageMeta.ProducesObject(action.Verb)
-		if versionedObject == nil {
-			versionedObject = defaultVersionedObject
+		producedObject := storageMeta.ProducesObject(action.Verb)
+		if producedObject == nil {
+			producedObject = defaultVersionedObject
 		}
 		reqScope.Namer = action.Namer
 
@@ -617,8 +617,8 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed.")).
 				Operation("read"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
-				Returns(http.StatusOK, "OK", versionedObject).
-				Writes(versionedObject)
+				Returns(http.StatusOK, "OK", producedObject).
+				Writes(producedObject)
 			if isGetterWithOptions {
 				if err := addObjectParams(ws, route, versionedGetOptions); err != nil {
 					return nil, err
@@ -677,9 +677,12 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed.")).
 				Operation("replace"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
-				Returns(http.StatusOK, "OK", versionedObject).
-				Reads(versionedObject).
-				Writes(versionedObject)
+				Returns(http.StatusOK, "OK", producedObject).
+				// TODO: in some cases, the API may return a v1.Status instead of the versioned object
+				// but currently go-restful can't handle multiple different objects being returned.
+				Returns(http.StatusCreated, "Created", producedObject).
+				Reads(defaultVersionedObject).
+				Writes(producedObject)
 			addParams(route, action.Params)
 			routes = append(routes, route)
 		case "PATCH": // Partially update a resource
@@ -694,9 +697,9 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				Consumes(string(types.JSONPatchType), string(types.MergePatchType), string(types.StrategicMergePatchType)).
 				Operation("patch"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
-				Returns(http.StatusOK, "OK", versionedObject).
+				Returns(http.StatusOK, "OK", producedObject).
 				Reads(metav1.Patch{}).
-				Writes(versionedObject)
+				Writes(producedObject)
 			addParams(route, action.Params)
 			routes = append(routes, route)
 		case "POST": // Create a resource.
@@ -717,9 +720,13 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				Param(ws.QueryParameter("pretty", "If 'true', then the output is pretty printed.")).
 				Operation("create"+namespaced+kind+strings.Title(subresource)+operationSuffix).
 				Produces(append(storageMeta.ProducesMIMETypes(action.Verb), mediaTypes...)...).
-				Returns(http.StatusOK, "OK", versionedObject).
-				Reads(versionedObject).
-				Writes(versionedObject)
+				Returns(http.StatusOK, "OK", producedObject).
+				// TODO: in some cases, the API may return a v1.Status instead of the versioned object
+				// but currently go-restful can't handle multiple different objects being returned.
+				Returns(http.StatusCreated, "Created", producedObject).
+				Returns(http.StatusAccepted, "Accepted", producedObject).
+				Reads(defaultVersionedObject).
+				Writes(producedObject)
 			addParams(route, action.Params)
 			routes = append(routes, route)
 		case "DELETE": // Delete a resource.
@@ -814,6 +821,10 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			routes = append(routes, buildProxyRoute(ws, "OPTIONS", a.prefix, action.Path, kind, resource, subresource, namespaced, requestScope, hasSubresource, action.Params, proxyHandler, operationSuffix))
 		case "CONNECT":
 			for _, method := range connecter.ConnectMethods() {
+				connectProducedObject := storageMeta.ProducesObject(method)
+				if connectProducedObject == nil {
+					connectProducedObject = "string"
+				}
 				doc := "connect " + method + " requests to " + kind
 				if hasSubresource {
 					doc = "connect " + method + " requests to " + subresource + " of " + kind
@@ -825,7 +836,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 					Operation("connect" + strings.Title(strings.ToLower(method)) + namespaced + kind + strings.Title(subresource) + operationSuffix).
 					Produces("*/*").
 					Consumes("*/*").
-					Writes("string")
+					Writes(connectProducedObject)
 				if versionedConnectOptions != nil {
 					if err := addObjectParams(ws, route, versionedConnectOptions); err != nil {
 						return nil, err
@@ -862,7 +873,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 		apiResource.Categories = categoriesProvider.Categories()
 	}
 	if gvkProvider, ok := storage.(rest.GroupVersionKindProvider); ok {
-		gvk := gvkProvider.GroupVersionKind()
+		gvk := gvkProvider.GroupVersionKind(a.group.GroupVersion)
 		apiResource.Group = gvk.Group
 		apiResource.Version = gvk.Version
 		apiResource.Kind = gvk.Kind

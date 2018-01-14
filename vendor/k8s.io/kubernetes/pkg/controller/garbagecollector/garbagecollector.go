@@ -171,17 +171,7 @@ func (gc *GarbageCollector) Sync(discoveryClient discovery.DiscoveryInterface, p
 	oldResources := make(map[schema.GroupVersionResource]struct{})
 	wait.Until(func() {
 		// Get the current resource list from discovery.
-		newResources, err := GetDeletableResources(discoveryClient)
-		if err != nil {
-			utilruntime.HandleError(err)
-			return
-		}
-
-		// Detect first or abnormal sync and try again later.
-		if oldResources == nil || len(oldResources) == 0 {
-			oldResources = newResources
-			return
-		}
+		newResources := GetDeletableResources(discoveryClient)
 
 		// Decide whether discovery has reported a change.
 		if reflect.DeepEqual(oldResources, newResources) {
@@ -189,9 +179,8 @@ func (gc *GarbageCollector) Sync(discoveryClient discovery.DiscoveryInterface, p
 			return
 		}
 
-		// Something has changed, so track the new state and perform a sync.
+		// Something has changed, time to sync.
 		glog.V(2).Infof("syncing garbage collector with updated resources from discovery: %v", newResources)
-		oldResources = newResources
 
 		// Ensure workers are paused to avoid processing events before informers
 		// have resynced.
@@ -216,9 +205,19 @@ func (gc *GarbageCollector) Sync(discoveryClient discovery.DiscoveryInterface, p
 			utilruntime.HandleError(fmt.Errorf("failed to sync resource monitors: %v", err))
 			return
 		}
+		// TODO: WaitForCacheSync can block forever during normal operation. Could
+		// pass a timeout channel, but we have to consider the implications of
+		// un-pausing the GC with a partially synced graph builder.
 		if !controller.WaitForCacheSync("garbage collector", stopCh, gc.dependencyGraphBuilder.IsSynced) {
 			utilruntime.HandleError(fmt.Errorf("timed out waiting for dependency graph builder sync during GC sync"))
+			return
 		}
+
+		// Finally, keep track of our new state. Do this after all preceding steps
+		// have succeeded to ensure we'll retry on subsequent syncs if an error
+		// occured.
+		oldResources = newResources
+		glog.V(2).Infof("synced garbage collector")
 	}, period, stopCh)
 }
 
@@ -563,14 +562,14 @@ func (gc *GarbageCollector) attemptToOrphanWorker() bool {
 
 	err := gc.orphanDependents(owner.identity, dependents)
 	if err != nil {
-		glog.V(5).Infof("orphanDependents for %s failed with %v", owner.identity, err)
+		utilruntime.HandleError(fmt.Errorf("orphanDependents for %s failed with %v", owner.identity, err))
 		gc.attemptToOrphan.AddRateLimited(item)
 		return true
 	}
 	// update the owner, remove "orphaningFinalizer" from its finalizers list
 	err = gc.removeFinalizer(owner, metav1.FinalizerOrphanDependents)
 	if err != nil {
-		glog.V(5).Infof("removeOrphanFinalizer for %s failed with %v", owner.identity, err)
+		utilruntime.HandleError(fmt.Errorf("removeOrphanFinalizer for %s failed with %v", owner.identity, err))
 		gc.attemptToOrphan.AddRateLimited(item)
 	}
 	return true
@@ -591,16 +590,38 @@ func (gc *GarbageCollector) GraphHasUID(UIDs []types.UID) bool {
 
 // GetDeletableResources returns all resources from discoveryClient that the
 // garbage collector should recognize and work with. More specifically, all
-// preferred resources which support the 'delete' verb.
-func GetDeletableResources(discoveryClient discovery.DiscoveryInterface) (map[schema.GroupVersionResource]struct{}, error) {
+// preferred resources which support the 'delete', 'list', and 'watch' verbs.
+//
+// All discovery errors are considered temporary. Upon encountering any error,
+// GetDeletableResources will log and return any discovered resources it was
+// able to process (which may be none).
+func GetDeletableResources(discoveryClient discovery.ServerResourcesInterface) map[schema.GroupVersionResource]struct{} {
 	preferredResources, err := discoveryClient.ServerPreferredResources()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get supported resources from server: %v", err)
+		if discovery.IsGroupDiscoveryFailedError(err) {
+			glog.Warning("failed to discover some groups: %v", err.(*discovery.ErrGroupDiscoveryFailed).Groups)
+		} else {
+			glog.Warning("failed to discover preferred resources: %v", err)
+		}
 	}
-	deletableResources := discovery.FilteredBy(discovery.SupportsAllVerbs{Verbs: []string{"delete"}}, preferredResources)
-	deletableGroupVersionResources, err := discovery.GroupVersionResources(deletableResources)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse resources from server: %v", err)
+	if preferredResources == nil {
+		return map[schema.GroupVersionResource]struct{}{}
 	}
-	return deletableGroupVersionResources, nil
+
+	// This is extracted from discovery.GroupVersionResources to allow tolerating
+	// failures on a per-resource basis.
+	deletableResources := discovery.FilteredBy(discovery.SupportsAllVerbs{Verbs: []string{"delete", "list", "watch"}}, preferredResources)
+	deletableGroupVersionResources := map[schema.GroupVersionResource]struct{}{}
+	for _, rl := range deletableResources {
+		gv, err := schema.ParseGroupVersion(rl.GroupVersion)
+		if err != nil {
+			glog.Warning("ignoring invalid discovered resource %q: %v", rl.GroupVersion, err)
+			continue
+		}
+		for i := range rl.APIResources {
+			deletableGroupVersionResources[schema.GroupVersionResource{Group: gv.Group, Version: gv.Version, Resource: rl.APIResources[i].Name}] = struct{}{}
+		}
+	}
+
+	return deletableGroupVersionResources
 }

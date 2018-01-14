@@ -4,12 +4,13 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.0.0
+CRIO_BIN_VERSION = v1.8.4
 CRIO_BIN_SITE = https://github.com/kubernetes-incubator/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = libgpgme
 CRIO_BIN_GOPATH = $(@D)/_output
 CRIO_BIN_ENV = \
+	CGO_ENABLED=1 \
 	GOPATH="$(CRIO_BIN_GOPATH)" \
 	PATH=$(CRIO_BIN_GOPATH)/bin:$(BR_PATH)
 
@@ -26,7 +27,10 @@ define CRIO_BIN_CONFIGURE_CMDS
 endef
 
 define CRIO_BIN_BUILD_CMDS
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) binaries PREFIX=/usr BUILDTAGS="containers_image_ostree_stub" 
+	mkdir -p $(@D)/bin
+	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr pause
+	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr crio
+	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr conmon
 endef
 
 define CRIO_BIN_INSTALL_TARGET_CMDS
@@ -34,19 +38,13 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 	mkdir -p $(TARGET_DIR)/etc/containers/oci/hooks.d
 
 	$(INSTALL) -Dm755 \
-		$(@D)/crio \
+		$(@D)/bin/crio \
 		$(TARGET_DIR)/usr/bin/crio
 	$(INSTALL) -Dm755 \
-		$(@D)/crioctl \
-		$(TARGET_DIR)/usr/bin/crioctl
-	$(INSTALL) -Dm755 \
-		$(@D)/kpod \
-		$(TARGET_DIR)/usr/bin/kpod
-	$(INSTALL) -Dm755 \
-		$(@D)/conmon/conmon \
+		$(@D)/bin/conmon \
 		$(TARGET_DIR)/usr/libexec/crio/conmon
 	$(INSTALL) -Dm755 \
-		$(@D)/pause/pause \
+		$(@D)/bin/pause \
 		$(TARGET_DIR)/usr/libexec/crio/pause
 	$(INSTALL) -Dm644 \
 		$(@D)/seccomp.json \
@@ -64,7 +62,7 @@ endef
 
 define CRIO_BIN_INSTALL_INIT_SYSTEMD
 	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.systemd DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
-	$(INSTALL) -Dm755 \
+	$(INSTALL) -Dm644 \
 		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/crio.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/crio.service
 	$(call link-service,crio.service)

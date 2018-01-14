@@ -19,11 +19,13 @@ package constants
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"time"
 
 	"k8s.io/api/core/v1"
+	"k8s.io/kubernetes/pkg/registry/core/service/ipallocator"
 	"k8s.io/kubernetes/pkg/util/version"
 )
 
@@ -32,49 +34,91 @@ import (
 var KubernetesDir = "/etc/kubernetes"
 
 const (
+	// ManifestsSubDirName defines directory name to store manifests
 	ManifestsSubDirName = "manifests"
-	TempDirForKubeadm   = "/etc/kubernetes/tmp"
+	// TempDirForKubeadm defines temporary directory for kubeadm
+	TempDirForKubeadm = "/etc/kubernetes/tmp"
 
+	// CACertAndKeyBaseName defines certificate authority base name
 	CACertAndKeyBaseName = "ca"
-	CACertName           = "ca.crt"
-	CAKeyName            = "ca.key"
+	// CACertName defines certificate name
+	CACertName = "ca.crt"
+	// CAKeyName defines certificate name
+	CAKeyName = "ca.key"
 
+	// APIServerCertAndKeyBaseName defines API's server certificate and key base name
 	APIServerCertAndKeyBaseName = "apiserver"
-	APIServerCertName           = "apiserver.crt"
-	APIServerKeyName            = "apiserver.key"
-	APIServerCertCommonName     = "kube-apiserver" //used as subject.commonname attribute (CN)
+	// APIServerCertName defines API's server certificate name
+	APIServerCertName = "apiserver.crt"
+	// APIServerKeyName defines API's server key name
+	APIServerKeyName = "apiserver.key"
+	// APIServerCertCommonName defines API's server certificate common name (CN)
+	APIServerCertCommonName = "kube-apiserver"
 
+	// APIServerKubeletClientCertAndKeyBaseName defines kubelet client certificate and key base name
 	APIServerKubeletClientCertAndKeyBaseName = "apiserver-kubelet-client"
-	APIServerKubeletClientCertName           = "apiserver-kubelet-client.crt"
-	APIServerKubeletClientKeyName            = "apiserver-kubelet-client.key"
-	APIServerKubeletClientCertCommonName     = "kube-apiserver-kubelet-client" //used as subject.commonname attribute (CN)
+	// APIServerKubeletClientCertName defines kubelet client certificate name
+	APIServerKubeletClientCertName = "apiserver-kubelet-client.crt"
+	// APIServerKubeletClientKeyName defines kubelet client key name
+	APIServerKubeletClientKeyName = "apiserver-kubelet-client.key"
+	// APIServerKubeletClientCertCommonName defines kubelet client certificate common name (CN)
+	APIServerKubeletClientCertCommonName = "kube-apiserver-kubelet-client"
 
-	ServiceAccountKeyBaseName    = "sa"
-	ServiceAccountPublicKeyName  = "sa.pub"
+	// ServiceAccountKeyBaseName defines SA key base name
+	ServiceAccountKeyBaseName = "sa"
+	// ServiceAccountPublicKeyName defines SA public key base name
+	ServiceAccountPublicKeyName = "sa.pub"
+	// ServiceAccountPrivateKeyName defines SA private key base name
 	ServiceAccountPrivateKeyName = "sa.key"
 
+	// FrontProxyCACertAndKeyBaseName defines front proxy CA certificate and key base name
 	FrontProxyCACertAndKeyBaseName = "front-proxy-ca"
-	FrontProxyCACertName           = "front-proxy-ca.crt"
-	FrontProxyCAKeyName            = "front-proxy-ca.key"
+	// FrontProxyCACertName defines front proxy CA certificate name
+	FrontProxyCACertName = "front-proxy-ca.crt"
+	// FrontProxyCAKeyName defines front proxy CA key name
+	FrontProxyCAKeyName = "front-proxy-ca.key"
 
+	// FrontProxyClientCertAndKeyBaseName defines front proxy certificate and key base name
 	FrontProxyClientCertAndKeyBaseName = "front-proxy-client"
-	FrontProxyClientCertName           = "front-proxy-client.crt"
-	FrontProxyClientKeyName            = "front-proxy-client.key"
-	FrontProxyClientCertCommonName     = "front-proxy-client" //used as subject.commonname attribute (CN)
+	// FrontProxyClientCertName defines front proxy certificate name
+	FrontProxyClientCertName = "front-proxy-client.crt"
+	// FrontProxyClientKeyName defines front proxy key name
+	FrontProxyClientKeyName = "front-proxy-client.key"
+	// FrontProxyClientCertCommonName defines front proxy certificate common name
+	FrontProxyClientCertCommonName = "front-proxy-client" //used as subject.commonname attribute (CN)
 
-	AdminKubeConfigFileName             = "admin.conf"
-	KubeletBootstrapKubeConfigFileName  = "bootstrap-kubelet.conf"
-	KubeletKubeConfigFileName           = "kubelet.conf"
+	// AdminKubeConfigFileName defines name for the KubeConfig aimed to be used by the superuser/admin of the cluster
+	AdminKubeConfigFileName = "admin.conf"
+	// KubeletBootstrapKubeConfigFileName defines the file name for the KubeConfig that the kubelet will use to do
+	// the TLS bootstrap to get itself an unique credential
+	KubeletBootstrapKubeConfigFileName = "bootstrap-kubelet.conf"
+
+	// KubeletKubeConfigFileName defines the file name for the KubeConfig that the master kubelet will use for talking
+	// to the API server
+	KubeletKubeConfigFileName = "kubelet.conf"
+	// ControllerManagerKubeConfigFileName defines the file name for the controller manager's KubeConfig file
 	ControllerManagerKubeConfigFileName = "controller-manager.conf"
-	SchedulerKubeConfigFileName         = "scheduler.conf"
+	// SchedulerKubeConfigFileName defines the file name for the scheduler's KubeConfig file
+	SchedulerKubeConfigFileName = "scheduler.conf"
 
 	// Some well-known users and groups in the core Kubernetes authorization system
 
-	ControllerManagerUser   = "system:kube-controller-manager"
-	SchedulerUser           = "system:kube-scheduler"
-	MastersGroup            = "system:masters"
-	NodesGroup              = "system:nodes"
+	// ControllerManagerUser defines the well-known user the controller-manager should be authenticated as
+	ControllerManagerUser = "system:kube-controller-manager"
+	// SchedulerUser defines the well-known user the scheduler should be authenticated as
+	SchedulerUser = "system:kube-scheduler"
+	// MastersGroup defines the well-known group for the apiservers. This group is also superuser by default
+	// (i.e. bound to the cluster-admin ClusterRole)
+	MastersGroup = "system:masters"
+	// NodesGroup defines the well-known group for all nodes.
+	NodesGroup = "system:nodes"
+	// NodesClusterRoleBinding defines the well-known ClusterRoleBinding which binds the too permissive system:node
+	// ClusterRole to the system:nodes group. Since kubeadm is using the Node Authorizer, this ClusterRoleBinding's
+	// system:nodes group subject is removed if present.
 	NodesClusterRoleBinding = "system:node"
+
+	// KubeletBaseConfigMapRoleName defines the base kubelet configuration ConfigMap.
+	KubeletBaseConfigMapRoleName = "kubeadm:kubelet-base-configmap"
 
 	// APICallRetryInterval defines how long kubeadm should wait before retrying a failed API operation
 	APICallRetryInterval = 500 * time.Millisecond
@@ -82,8 +126,10 @@ const (
 	DiscoveryRetryInterval = 5 * time.Second
 	// MarkMasterTimeout specifies how long kubeadm should wait for applying the label and taint on the master before timing out
 	MarkMasterTimeout = 2 * time.Minute
+	// UpdateNodeTimeout specifies how long kubeadm should wait for updating node with the initial remote configuration of kubelet before timing out
+	UpdateNodeTimeout = 2 * time.Minute
 
-	// Minimum amount of nodes the Service subnet should allow.
+	// MinimumAddressesInServiceSubnet defines minimum amount of nodes the Service subnet should allow.
 	// We need at least ten, because the DNS service is always at the tenth cluster clusterIP
 	MinimumAddressesInServiceSubnet = 10
 
@@ -92,7 +138,7 @@ const (
 	DefaultTokenDuration = 24 * time.Hour
 
 	// LabelNodeRoleMaster specifies that a node is a master
-	// It's copied over to kubeadm until it's merged in core: https://github.com/kubernetes/kubernetes/pull/39112
+	// This is a duplicate definition of the constant in pkg/controller/service/service_controller.go
 	LabelNodeRoleMaster = "node-role.kubernetes.io/master"
 
 	// MasterConfigurationConfigMap specifies in what ConfigMap in the kube-system namespace the `kubeadm init` configuration should be stored
@@ -101,17 +147,38 @@ const (
 	// MasterConfigurationConfigMapKey specifies in what ConfigMap key the master configuration should be stored
 	MasterConfigurationConfigMapKey = "MasterConfiguration"
 
+	// KubeletBaseConfigurationConfigMap specifies in what ConfigMap in the kube-system namespace the initial remote configuration of kubelet should be stored
+	KubeletBaseConfigurationConfigMap = "kubelet-base-config-1.9"
+
+	// KubeletBaseConfigurationConfigMapKey specifies in what ConfigMap key the initial remote configuration of kubelet should be stored
+	// TODO: Use the constant ("kubelet.config.k8s.io") defined in pkg/kubelet/kubeletconfig/util/keys/keys.go
+	// after https://github.com/kubernetes/kubernetes/pull/53833 being merged.
+	KubeletBaseConfigurationConfigMapKey = "kubelet"
+
+	// KubeletBaseConfigurationDir specifies the directory on the node where stores the initial remote configuration of kubelet
+	KubeletBaseConfigurationDir = "/var/lib/kubelet/config/init"
+
+	// KubeletBaseConfigurationFile specifies the file name on the node which stores initial remote configuration of kubelet
+	// TODO: Use the constant ("kubelet.config.k8s.io") defined in pkg/kubelet/kubeletconfig/util/keys/keys.go
+	// after https://github.com/kubernetes/kubernetes/pull/53833 being merged.
+	KubeletBaseConfigurationFile = "kubelet"
+
 	// MinExternalEtcdVersion indicates minimum external etcd version which kubeadm supports
 	MinExternalEtcdVersion = "3.0.14"
 
 	// DefaultEtcdVersion indicates the default etcd version that kubeadm uses
-	DefaultEtcdVersion = "3.0.17"
+	DefaultEtcdVersion = "3.1.10"
 
-	Etcd                  = "etcd"
-	KubeAPIServer         = "kube-apiserver"
+	// Etcd defines variable used internally when referring to etcd component
+	Etcd = "etcd"
+	// KubeAPIServer defines variable used internally when referring to kube-apiserver component
+	KubeAPIServer = "kube-apiserver"
+	// KubeControllerManager defines variable used internally when referring to kube-controller-manager component
 	KubeControllerManager = "kube-controller-manager"
-	KubeScheduler         = "kube-scheduler"
-	KubeProxy             = "kube-proxy"
+	// KubeScheduler defines variable used internally when referring to kube-scheduler component
+	KubeScheduler = "kube-scheduler"
+	// KubeProxy defines variable used internally when referring to kube-proxy component
+	KubeProxy = "kube-proxy"
 
 	// SelfHostingPrefix describes the prefix workloads that are self-hosted by kubeadm has
 	SelfHostingPrefix = "self-hosted-"
@@ -122,18 +189,19 @@ const (
 	// KubeConfigVolumeName specifies the name for the Volume that is used for injecting the kubeconfig to talk securely to the api server for a control plane component if applicable
 	KubeConfigVolumeName = "kubeconfig"
 
-	// V17NodeBootstrapTokenAuthGroup specifies which group a Node Bootstrap Token should be authenticated in, in v1.7
-	V17NodeBootstrapTokenAuthGroup = "system:bootstrappers"
-
-	// V18NodeBootstrapTokenAuthGroup specifies which group a Node Bootstrap Token should be authenticated in, in v1.8
-	V18NodeBootstrapTokenAuthGroup = "system:bootstrappers:kubeadm:default-node-token"
+	// NodeBootstrapTokenAuthGroup specifies which group a Node Bootstrap Token should be authenticated in
+	NodeBootstrapTokenAuthGroup = "system:bootstrappers:kubeadm:default-node-token"
 
 	// DefaultCIImageRepository points to image registry where CI uploads images from ci-cross build job
 	DefaultCIImageRepository = "gcr.io/kubernetes-ci-images"
+
+	// CoreDNS defines a variable used internally when referring to the CoreDNS addon for a cluster
+	CoreDNS = "coredns"
+	// KubeDNS defines a variable used internally when referring to the kube-dns addon for a cluster
+	KubeDNS = "kube-dns"
 )
 
 var (
-
 	// MasterTaint is the taint to apply on the PodSpec for being able to run that Pod on the master
 	MasterTaint = v1.Taint{
 		Key:    LabelNodeRoleMaster,
@@ -146,7 +214,9 @@ var (
 		Effect: v1.TaintEffectNoSchedule,
 	}
 
-	AuthorizationPolicyPath        = filepath.Join(KubernetesDir, "abac_policy.json")
+	// AuthorizationPolicyPath defines the supported location of authorization policy file
+	AuthorizationPolicyPath = filepath.Join(KubernetesDir, "abac_policy.json")
+	// AuthorizationWebhookConfigPath defines the supported location of webhook config file
 	AuthorizationWebhookConfigPath = filepath.Join(KubernetesDir, "webhook_authz.conf")
 
 	// DefaultTokenUsages specifies the default functions a token will get
@@ -156,16 +226,39 @@ var (
 	MasterComponents = []string{KubeAPIServer, KubeControllerManager, KubeScheduler}
 
 	// MinimumControlPlaneVersion specifies the minimum control plane version kubeadm can deploy
-	MinimumControlPlaneVersion = version.MustParseSemantic("v1.7.0")
+	MinimumControlPlaneVersion = version.MustParseSemantic("v1.8.0")
 
-	// MinimumCSRAutoApprovalClusterRolesVersion defines whether kubeadm can rely on the built-in CSR approval ClusterRole or not (note, the binding is always created by kubeadm!)
-	// TODO: Remove this when the v1.9 cycle starts and we bump the minimum supported version to v1.8.0
-	MinimumCSRAutoApprovalClusterRolesVersion = version.MustParseSemantic("v1.8.0-alpha.3")
+	// MinimumKubeletVersion specifies the minimum version of kubelet which kubeadm supports
+	MinimumKubeletVersion = version.MustParseSemantic("v1.8.0")
 
-	// UseEnableBootstrapTokenAuthFlagVersion defines the first version where the API server supports the --enable-bootstrap-token-auth flag instead of the old and deprecated flag.
-	// TODO: Remove this when the v1.9 cycle starts and we bump the minimum supported version to v1.8.0
-	UseEnableBootstrapTokenAuthFlagVersion = version.MustParseSemantic("v1.8.0-beta.0")
+	// MinimumKubeProxyComponentConfigVersion specifies the minimum version for the kubeProxyComponent
+	MinimumKubeProxyComponentConfigVersion = version.MustParseSemantic("v1.9.0-alpha.3")
+
+	// SupportedEtcdVersion lists officially supported etcd versions with corresponding kubernetes releases
+	SupportedEtcdVersion = map[uint8]string{
+		8:  "3.0.17",
+		9:  "3.1.10",
+		10: "3.1.10",
+	}
 )
+
+// EtcdSupportedVersion returns officially supported version of etcd for a specific kubernetes release
+// if passed version is not listed, the function returns nil and an error
+func EtcdSupportedVersion(versionString string) (*version.Version, error) {
+	kubernetesVersion, err := version.ParseSemantic(versionString)
+	if err != nil {
+		return nil, err
+	}
+
+	if etcdStringVersion, ok := SupportedEtcdVersion[uint8(kubernetesVersion.Minor())]; ok {
+		etcdVersion, err := version.ParseSemantic(etcdStringVersion)
+		if err != nil {
+			return nil, err
+		}
+		return etcdVersion, nil
+	}
+	return nil, fmt.Errorf("Unsupported or unknown kubernetes version")
+}
 
 // GetStaticPodDirectory returns the location on the disk where the Static Pod should be present
 func GetStaticPodDirectory() string {
@@ -201,10 +294,19 @@ func CreateTempDirForKubeadm(dirName string) (string, error) {
 	return tempDir, nil
 }
 
-// GetNodeBootstrapTokenAuthGroup gets the bootstrap token auth group conditionally based on version
-func GetNodeBootstrapTokenAuthGroup(k8sVersion *version.Version) string {
-	if k8sVersion.AtLeast(UseEnableBootstrapTokenAuthFlagVersion) {
-		return V18NodeBootstrapTokenAuthGroup
+// GetDNSIP returns a dnsIP, which is 10th IP in svcSubnet CIDR range
+func GetDNSIP(svcSubnet string) (net.IP, error) {
+	// Get the service subnet CIDR
+	_, svcSubnetCIDR, err := net.ParseCIDR(svcSubnet)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't parse service subnet CIDR %q: %v", svcSubnet, err)
 	}
-	return V17NodeBootstrapTokenAuthGroup
+
+	// Selects the 10th IP in service subnet CIDR range as dnsIP
+	dnsIP, err := ipallocator.GetIndexedIP(svcSubnetCIDR, 10)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get tenth IP address from service subnet CIDR %s: %v", svcSubnetCIDR.String(), err)
+	}
+
+	return dnsIP, nil
 }

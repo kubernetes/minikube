@@ -240,7 +240,6 @@ func (attacher *cinderDiskAttacher) WaitForAttach(spec *volume.Spec, devicePath 
 	defer timer.Stop()
 
 	for {
-		probeAttachedVolume()
 		select {
 		case <-ticker.C:
 			glog.V(5).Infof("Checking Cinder disk %q is attached.", volumeID)
@@ -374,8 +373,8 @@ func (detacher *cinderDiskDetacher) waitDiskDetached(instanceID, volumeID string
 	return err
 }
 
-func (detacher *cinderDiskDetacher) Detach(deviceMountPath string, nodeName types.NodeName) error {
-	volumeID := path.Base(deviceMountPath)
+func (detacher *cinderDiskDetacher) Detach(volumeName string, nodeName types.NodeName) error {
+	volumeID := path.Base(volumeName)
 	instances, res := detacher.cinderProvider.Instances()
 	if !res {
 		return fmt.Errorf("failed to list openstack instances")

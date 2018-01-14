@@ -35,11 +35,10 @@ cat /etc/os-release
 echo "";
 echo "VM driver": 
 grep DriverName ~/.minikube/machines/minikube/config.json
-```
-
 echo "";
 echo "ISO version";
 grep -i ISO ~/.minikube/machines/minikube/config.json
+```
 
 **What happened**:
 

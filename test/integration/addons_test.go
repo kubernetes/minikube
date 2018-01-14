@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -66,6 +67,53 @@ func testDashboard(t *testing.T) {
 	if port != "30000" {
 		t.Fatalf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
 	}
+}
+
+func testIngressController(t *testing.T) {
+	t.Parallel()
+	minikubeRunner := NewMinikubeRunner(t)
+	kubectlRunner := util.NewKubectlRunner(t)
+
+	minikubeRunner.RunCommand("addons enable ingress", true)
+	if err := util.WaitForIngressControllerRunning(t); err != nil {
+		t.Fatalf("waiting for ingress-controller to be up: %s", err)
+	}
+
+	if err := util.WaitForIngressDefaultBackendRunning(t); err != nil {
+		t.Fatalf("waiting for default-http-backend to be up: %s", err)
+	}
+
+	ingressPath, _ := filepath.Abs("testdata/nginx-ing.yaml")
+	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
+		t.Fatalf("creating nginx ingress resource: %s", err)
+	}
+
+	podPath, _ := filepath.Abs("testdata/nginx-pod-svc.yaml")
+	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
+		t.Fatalf("creating nginx ingress resource: %s", err)
+	}
+
+	if err := util.WaitForNginxRunning(t); err != nil {
+		t.Fatalf("waiting for nginx to be up: %s", err)
+	}
+
+	checkIngress := func() error {
+		expectedStr := "Welcome to nginx!"
+		runCmd := fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")
+		sshCmdOutput, _ := minikubeRunner.SSH(runCmd)
+		if !strings.Contains(sshCmdOutput, expectedStr) {
+			return fmt.Errorf("ExpectedStr sshCmdOutput to be: %s. Output was: %s", expectedStr, sshCmdOutput)
+		}
+		return nil
+	}
+
+	if err := util.Retry(t, checkIngress, 3*time.Second, 5); err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
+	defer kubectlRunner.RunCommand([]string{"delete", "-f", ingressPath})
+	minikubeRunner.RunCommand("addons disable ingress", true)
 }
 
 func testServicesList(t *testing.T) {

@@ -32,11 +32,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	intstrutil "k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/apimachinery/pkg/util/rand"
 	podutil "k8s.io/kubernetes/pkg/api/v1/pod"
 	"k8s.io/kubernetes/pkg/controller"
 	"k8s.io/kubernetes/pkg/controller/daemon/util"
 	labelsutil "k8s.io/kubernetes/pkg/util/labels"
-	"k8s.io/kubernetes/staging/src/k8s.io/apimachinery/pkg/util/rand"
 )
 
 // rollingUpdate deletes old daemon set pods making sure that no more than
@@ -228,7 +228,7 @@ func (dsc *DaemonSetsController) dedupCurHistories(ds *extensions.DaemonSet, cur
 					toUpdate.Labels = make(map[string]string)
 				}
 				toUpdate.Labels[extensions.DefaultDaemonSetUniqueLabelKey] = keepCur.Labels[extensions.DefaultDaemonSetUniqueLabelKey]
-				_, err = dsc.kubeClient.Core().Pods(ds.Namespace).Update(toUpdate)
+				_, err = dsc.kubeClient.CoreV1().Pods(ds.Namespace).Update(toUpdate)
 				if err != nil {
 					return nil, err
 				}

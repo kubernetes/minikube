@@ -14,6 +14,7 @@ Some features can only be accessed by environment variables, here is a list of t
 * **MINIKUBE_WANTREPORTERRORPROMPT** - (bool) sets whether the user wants to be prompted on an error that they can report them to help improve minikube
 
 * **MINIKUBE_WANTKUBECTLDOWNLOADMSG** - (bool) sets whether minikube should tell a user that `kubectl` cannot be found on there path
+* **MINIKUBE_WANTNONEDRIVERWARNING** - (bool) sets whether minikube should warn a user about running the 'none' driver (CSRF attacks)
 
 * **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube which can be analyzed via:
 

@@ -217,7 +217,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		}
 		driver = createKVMHost(config)
 	case "kvm2":
-		driver = createKVMHost(config)
+		driver = createKVM2Host(config)
 	case "xhyve":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			fmt.Fprintln(os.Stderr, `WARNING: The xhyve driver is now deprecated and support for it will be removed in a future release.
@@ -313,6 +313,8 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
 	case "kvm":
 		return net.ParseIP("192.168.42.1"), nil
+	case "kvm2":
+		return net.ParseIP("192.168.39.1"), nil
 	case "hyperv":
 		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
 		// TODO(aprindle) Change this to deserialize the driver instead
@@ -334,7 +336,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return ip, nil
-	case "xhyve":
+	case "xhyve", "hyperkit":
 		return net.ParseIP("192.168.64.1"), nil
 	default:
 		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")

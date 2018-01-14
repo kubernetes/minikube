@@ -12,8 +12,8 @@ go_library(
         "escalation_check.go",
         "helpers.go",
     ],
+    importpath = "k8s.io/kubernetes/pkg/registry/rbac",
     deps = [
-        "//pkg/api:go_default_library",
         "//pkg/apis/rbac:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/meta:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/conversion:go_default_library",
@@ -50,10 +50,11 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["helpers_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/registry/rbac",
     library = ":go_default_library",
     deps = [
-        "//pkg/api:go_default_library",
-        "//pkg/api/helper:go_default_library",
+        "//pkg/apis/core:go_default_library",
+        "//pkg/apis/core/helper:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/runtime:go_default_library",
     ],

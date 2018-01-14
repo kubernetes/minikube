@@ -28,6 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/endpoints/handlers/negotiation"
+	"k8s.io/apiserver/pkg/endpoints/metrics"
 	"k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/util/flushwriter"
@@ -42,7 +43,10 @@ import (
 func WriteObject(ctx request.Context, statusCode int, gv schema.GroupVersion, s runtime.NegotiatedSerializer, object runtime.Object, w http.ResponseWriter, req *http.Request) {
 	stream, ok := object.(rest.ResourceStreamer)
 	if ok {
-		StreamObject(ctx, statusCode, gv, s, stream, w, req)
+		requestInfo, _ := request.RequestInfoFrom(ctx)
+		metrics.RecordLongRunning(req, requestInfo, func() {
+			StreamObject(ctx, statusCode, gv, s, stream, w, req)
+		})
 		return
 	}
 	WriteObjectNegotiated(ctx, s, gv, w, req, statusCode, object)
@@ -100,6 +104,12 @@ func SerializeObject(mediaType string, encoder runtime.Encoder, w http.ResponseW
 func WriteObjectNegotiated(ctx request.Context, s runtime.NegotiatedSerializer, gv schema.GroupVersion, w http.ResponseWriter, req *http.Request, statusCode int, object runtime.Object) {
 	serializer, err := negotiation.NegotiateOutputSerializer(req, s)
 	if err != nil {
+		// if original statusCode was not successful we need to return the original error
+		// we cannot hide it behind negotiation problems
+		if statusCode < http.StatusOK || statusCode >= http.StatusBadRequest {
+			WriteRawJSON(int(statusCode), object, w)
+			return
+		}
 		status := ErrorToAPIStatus(err)
 		WriteRawJSON(int(status.Code), status, w)
 		return

@@ -8,8 +8,10 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["interface.go"],
+    importpath = "k8s.io/client-go/informers/admissionregistration",
     deps = [
         "//vendor/k8s.io/client-go/informers/admissionregistration/v1alpha1:go_default_library",
+        "//vendor/k8s.io/client-go/informers/admissionregistration/v1beta1:go_default_library",
         "//vendor/k8s.io/client-go/informers/internalinterfaces:go_default_library",
     ],
 )
@@ -26,6 +28,7 @@ filegroup(
     srcs = [
         ":package-srcs",
         "//staging/src/k8s.io/client-go/informers/admissionregistration/v1alpha1:all-srcs",
+        "//staging/src/k8s.io/client-go/informers/admissionregistration/v1beta1:all-srcs",
     ],
     tags = ["automanaged"],
 )

@@ -9,9 +9,10 @@ load(
 go_library(
     name = "go_default_library",
     srcs = ["preemption.go"],
+    importpath = "k8s.io/kubernetes/pkg/kubelet/preemption",
     deps = [
-        "//pkg/api/v1/helper/qos:go_default_library",
         "//pkg/api/v1/resource:go_default_library",
+        "//pkg/apis/core/v1/helper/qos:go_default_library",
         "//pkg/features:go_default_library",
         "//pkg/kubelet/events:go_default_library",
         "//pkg/kubelet/eviction:go_default_library",
@@ -43,9 +44,10 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["preemption_test.go"],
+    importpath = "k8s.io/kubernetes/pkg/kubelet/preemption",
     library = ":go_default_library",
     deps = [
-        "//pkg/api:go_default_library",
+        "//pkg/apis/core:go_default_library",
         "//pkg/kubelet/types:go_default_library",
         "//vendor/k8s.io/api/core/v1:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/api/resource:go_default_library",

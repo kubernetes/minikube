@@ -202,9 +202,6 @@ func (provisioner *SUSEProvisioner) Provision(swarmOptions swarm.Options, authOp
 
 	// enable in systemd
 	log.Debug("Enabling docker in systemd")
-	if err := provisioner.Service("docker", serviceaction.Enable); err != nil {
-		return err
-	}
-
-	return nil
+	err = provisioner.Service("docker", serviceaction.Enable)
+	return err
 }

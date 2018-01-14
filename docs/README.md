@@ -10,6 +10,7 @@
 
 * **Configuring Kubernetes** ([configuring_kubernetes.md](configuring_kubernetes.md)): Configuring different Kubernetes components in minikube
 
+* **Caching Images** ([cache.md](cache.md)): Caching non-minikube images in minikube
 
 ### Installation and debugging
 

@@ -34,11 +34,6 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
-const (
-	qemusystem                = "qemu:///system"
-	defaultPrivateNetworkName = "minikube-net"
-)
-
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -72,7 +67,11 @@ type Driver struct {
 	MAC string
 }
 
-const defaultNetworkName = "minikube-net"
+const (
+	qemusystem                = "qemu:///system"
+	defaultPrivateNetworkName = "minikube-net"
+	defaultNetworkName        = "default"
+)
 
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
@@ -269,9 +268,9 @@ func (d *Driver) Create() error {
 			return err
 		}
 		mode := info.Mode()
-		if mode&0001 != 1 {
+		if mode&0011 != 1 {
 			log.Debugf("Setting executable bit set on %s", dir)
-			mode |= 0001
+			mode |= 0011
 			os.Chmod(dir, mode)
 		}
 	}

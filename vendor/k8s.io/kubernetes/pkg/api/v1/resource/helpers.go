@@ -111,13 +111,9 @@ func ExtractResourceValueByContainerName(fs *v1.ResourceFieldSelector, pod *v1.P
 	return ExtractContainerResourceValue(fs, container)
 }
 
-type deepCopier interface {
-	DeepCopy(interface{}) (interface{}, error)
-}
-
 // ExtractResourceValueByContainerNameAndNodeAllocatable extracts the value of a resource
 // by providing container name and node allocatable
-func ExtractResourceValueByContainerNameAndNodeAllocatable(copier deepCopier, fs *v1.ResourceFieldSelector, pod *v1.Pod, containerName string, nodeAllocatable v1.ResourceList) (string, error) {
+func ExtractResourceValueByContainerNameAndNodeAllocatable(fs *v1.ResourceFieldSelector, pod *v1.Pod, containerName string, nodeAllocatable v1.ResourceList) (string, error) {
 	realContainer, err := findContainerInPod(pod, containerName)
 	if err != nil {
 		return "", err
@@ -196,7 +192,7 @@ func MergeContainerResourceLimits(container *v1.Container,
 	if container.Resources.Limits == nil {
 		container.Resources.Limits = make(v1.ResourceList)
 	}
-	for _, resource := range []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory} {
+	for _, resource := range []v1.ResourceName{v1.ResourceCPU, v1.ResourceMemory, v1.ResourceEphemeralStorage} {
 		if quantity, exists := container.Resources.Limits[resource]; !exists || quantity.IsZero() {
 			if cap, exists := allocatable[resource]; exists {
 				container.Resources.Limits[resource] = *cap.Copy()

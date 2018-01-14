@@ -29,11 +29,16 @@ set -e
 OS_ARCH="linux-amd64"
 VM_DRIVER="none"
 JOB_NAME="Linux-None"
-EXTRA_ARGS="--bootstrapper=localkube"
-EXTRA_START_ARGS="--kubernetes-version=file://$PWD/out/localkube"
+EXTRA_ARGS="--bootstrapper=kubeadm"
 
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
+
+# "none" driver specific cleanup from previous runs.
+# kubeadm
+sudo kubeadm reset || true
+# Cleanup data directory
+sudo rm -rf /data/*
 
 # Download files and set permissions
 source common.sh

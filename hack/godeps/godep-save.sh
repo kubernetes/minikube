@@ -27,6 +27,17 @@ godep::ensure_godep_version v79
 godep::sync_staging
 
 rm -rf ${MINIKUBE_ROOT}/vendor ${MINIKUBE_ROOT}/Godeps
+
+# We use a different version of viper than Kubernetes.
+pushd ${GOPATH}/src/github.com/spf13/viper >/dev/null
+    git checkout 25b30aa063fc18e48662b86996252eabdcf2f0c7
+popd >/dev/null
+
+# We use a different version of mux than Kubernetes.
+pushd ${GOPATH}/src/github.com/gorilla/mux >/dev/null
+    git checkout 5ab525f4fb1678e197ae59401e9050fa0b6cb5fd
+popd >/dev/null
+
 godep save ./...
 
 cp -r ${KUBE_ROOT}/pkg/generated/openapi ${MINIKUBE_ROOT}/vendor/k8s.io/kubernetes/pkg/generated/
@@ -37,6 +48,5 @@ git checkout -- ${MINIKUBE_ROOT}/vendor/golang.org/x/sys/windows
 pushd ${MINIKUBE_ROOT} >/dev/null
     git apply ${MINIKUBE_ROOT}/hack/tpr-patch.diff
     git apply ${MINIKUBE_ROOT}/hack/kube-proxy-patch.diff
-    git apply ${MINIKUBE_ROOT}/hack/openapi.diff
 popd >/dev/null
 

@@ -48,6 +48,12 @@ Then install the driver itself:
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 && chmod +x docker-machine-driver-kvm2 && sudo mv docker-machine-driver-kvm2 /usr/bin/
 ```
 
+To use the driver you would do:
+
+```
+minikube start --vm-driver kvm2
+```
+
 #### KVM driver
 
 Minikube is currently tested against [`docker-machine-driver-kvm` v0.10.0](https://github.com/dhiltgen/docker-machine-kvm/releases).
@@ -74,6 +80,12 @@ $ newgrp libvirtd
 $ newgrp libvirt
 ```
 
+To use the driver you would do:
+
+```
+minikube start --vm-driver kvm
+```
+
 #### Hyperkit driver
 
 The Hyperkit driver will eventually replace the existing xhyve driver.
@@ -82,10 +94,16 @@ It is built from the minikube source tree, and uses [moby/hyperkit](http://githu
 To install the hyperkit driver:
 
 ```
-curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit && chmod +x docker-machine-driver-hyperkit && sudo mv docker-machine-driver-hyperkit /usr/local/bin/ && sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit && sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
+&& chmod +x docker-machine-driver-hyperkit \
+&& sudo mv docker-machine-driver-hyperkit /usr/local/bin/ \
+&& sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit \
+&& sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
 ```
 
 The hyperkit driver currently requires running as root to use the vmnet framework to setup networking.
+
+If you encountered errors like `Could not find hyperkit executable`, you might need to install [Docker for Mac](https://store.docker.com/editions/community/docker-ce-desktop-mac)
 
 #### xhyve driver
 

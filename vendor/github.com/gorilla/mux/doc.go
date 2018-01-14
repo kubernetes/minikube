@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 /*
-Package gorilla/mux implements a request router and dispatcher.
+Package mux implements a request router and dispatcher.
 
 The name mux stands for "HTTP request multiplexer". Like the standard
 http.ServeMux, mux.Router matches incoming requests against a list of
@@ -12,8 +12,8 @@ or other conditions. The main features are:
 
 	* Requests can be matched based on URL host, path, path prefix, schemes,
 	  header and query values, HTTP methods or using custom matchers.
-	* URL hosts and paths can have variables with an optional regular
-	  expression.
+	* URL hosts, paths and query values can have variables with an optional
+	  regular expression.
 	* Registered URLs can be built, or "reversed", which helps maintaining
 	  references to resources.
 	* Routes can be used as subrouters: nested routes are only tested if the
@@ -47,11 +47,20 @@ variable will be anything until the next slash. For example:
 	r.HandleFunc("/articles/{category}/", ArticlesCategoryHandler)
 	r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler)
 
+Groups can be used inside patterns, as long as they are non-capturing (?:re). For example:
+
+	r.HandleFunc("/articles/{category}/{sort:(?:asc|desc|new)}", ArticlesCategoryHandler)
+
 The names are used to create a map of route variables which can be retrieved
 calling mux.Vars():
 
 	vars := mux.Vars(request)
 	category := vars["category"]
+
+Note that if any capturing groups are present, mux will panic() during parsing. To prevent
+this, convert any capturing groups to non-capturing, e.g. change "/{sort:(asc|desc)}" to
+"/{sort:(?:asc|desc)}". This is a change from prior versions which behaved unpredictably
+when capturing groups were present.
 
 And this is all you need to know about the basic usage. More advanced options
 are explained below.
@@ -60,8 +69,8 @@ Routes can also be restricted to a domain or subdomain. Just define a host
 pattern to be matched. They can also have variables:
 
 	r := mux.NewRouter()
-	// Only matches if domain is "www.domain.com".
-	r.Host("www.domain.com")
+	// Only matches if domain is "www.example.com".
+	r.Host("www.example.com")
 	// Matches a dynamic subdomain.
 	r.Host("{subdomain:[a-z]+}.domain.com")
 
@@ -89,12 +98,12 @@ There are several other matchers that can be added. To match path prefixes:
 
 	r.MatcherFunc(func(r *http.Request, rm *RouteMatch) bool {
 		return r.ProtoMajor == 0
-    })
+	})
 
 ...and finally, it is possible to combine several matchers in a single route:
 
 	r.HandleFunc("/products", ProductsHandler).
-	  Host("www.domain.com").
+	  Host("www.example.com").
 	  Methods("GET").
 	  Schemes("http")
 
@@ -103,11 +112,11 @@ a way to group several routes that share the same requirements.
 We call it "subrouting".
 
 For example, let's say we have several URLs that should only match when the
-host is "www.domain.com". Create a route for that host and get a "subrouter"
+host is "www.example.com". Create a route for that host and get a "subrouter"
 from it:
 
 	r := mux.NewRouter()
-	s := r.Host("www.domain.com").Subrouter()
+	s := r.Host("www.example.com").Subrouter()
 
 Then register routes in the subrouter:
 
@@ -116,7 +125,7 @@ Then register routes in the subrouter:
 	s.HandleFunc("/articles/{category}/{id:[0-9]+}"), ArticleHandler)
 
 The three URL paths we registered above will only be tested if the domain is
-"www.domain.com", because the subrouter is tested first. This is not
+"www.example.com", because the subrouter is tested first. This is not
 only convenient, but also optimizes request matching. You can create
 subrouters combining any attribute matchers accepted by a route.
 
@@ -136,6 +145,31 @@ the inner routes use it as base for their paths:
 	// "/products/{key}/details"
 	s.HandleFunc("/{key}/details", ProductDetailsHandler)
 
+Note that the path provided to PathPrefix() represents a "wildcard": calling
+PathPrefix("/static/").Handler(...) means that the handler will be passed any
+request that matches "/static/*". This makes it easy to serve static files with mux:
+
+	func main() {
+		var dir string
+
+		flag.StringVar(&dir, "dir", ".", "the directory to serve files from. Defaults to the current dir")
+		flag.Parse()
+		r := mux.NewRouter()
+
+		// This will serve files under http://localhost:8000/static/<filename>
+		r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(dir))))
+
+		srv := &http.Server{
+			Handler:      r,
+			Addr:         "127.0.0.1:8000",
+			// Good practice: enforce timeouts for servers you create!
+			WriteTimeout: 15 * time.Second,
+			ReadTimeout:  15 * time.Second,
+		}
+
+		log.Fatal(srv.ListenAndServe())
+	}
+
 Now let's see how to build registered URLs.
 
 Routes can be named. All routes that define a name can have their URLs built,
@@ -154,23 +188,32 @@ key/value pairs for the route variables. For the previous route, we would do:
 
 	"/articles/technology/42"
 
-This also works for host variables:
+This also works for host and query value variables:
 
 	r := mux.NewRouter()
 	r.Host("{subdomain}.domain.com").
 	  Path("/articles/{category}/{id:[0-9]+}").
+	  Queries("filter", "{filter}").
 	  HandlerFunc(ArticleHandler).
 	  Name("article")
 
-	// url.String() will be "http://news.domain.com/articles/technology/42"
+	// url.String() will be "http://news.domain.com/articles/technology/42?filter=gorilla"
 	url, err := r.Get("article").URL("subdomain", "news",
-									 "category", "technology",
-									 "id", "42")
+	                                 "category", "technology",
+	                                 "id", "42",
+	                                 "filter", "gorilla")
 
 All variables defined in the route are required, and their values must
 conform to the corresponding patterns. These requirements guarantee that a
 generated URL will always match a registered route -- the only exception is
 for explicitly defined "build-only" routes which never match.
+
+Regex support also exists for matching Headers within a route. For example, we could do:
+
+	r.HeadersRegexp("Content-Type", "application/(text|json)")
+
+...and the route will match both requests with a Content-Type of `application/json` as well as
+`application/text`
 
 There's also a way to build only the URL host or path for a route:
 use the methods URLHost() or URLPath() instead. For the previous route,
@@ -193,7 +236,7 @@ as well:
 
 	// "http://news.domain.com/articles/technology/42"
 	url, err := r.Get("article").URL("subdomain", "news",
-									 "category", "technology",
-									 "id", "42")
+	                                 "category", "technology",
+	                                 "id", "42")
 */
 package mux

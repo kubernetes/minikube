@@ -36,7 +36,7 @@ set -e
 gsutil cp gs://minikube-builds/logs/index.html gs://minikube-builds/logs/${ghprbPullId}/index.html
 
 # Exit if the cross build failed.
-if [ "$?"-ne 0]; then echo "cross build failed"; exit 1; fi
+if [ "$?"-ne 0 ]; then echo "cross build failed"; exit 1; fi
 
 # If there are ISO changes, build and upload the ISO
 # then set the default to the newly built ISO for testing
