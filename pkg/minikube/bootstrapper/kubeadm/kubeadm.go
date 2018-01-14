@@ -110,7 +110,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) er
 	// We use --skip-preflight-checks since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
 	b := bytes.Buffer{}
-	if err := kubeadmInitTemplate.Execute(&b, struct{KubeadmConfigFile, Token  string}{ constants.KubeadmConfigFile, k8s.BootstrapToken }); err != nil {
+	if err := kubeadmInitTemplate.Execute(&b, struct{ KubeadmConfigFile, Token string }{constants.KubeadmConfigFile, k8s.BootstrapToken}); err != nil {
 		return err
 	}
 
@@ -136,7 +136,7 @@ func (k *KubeadmBootstrapper) JoinNode(k8s bootstrapper.KubernetesConfig) error 
 	// We use --skip-preflight-checks since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
 	b := bytes.Buffer{}
-	if err := kubeadmJoinTemplate.Execute(&b, struct{Token, ServerAddress  string}{ k8s.BootstrapToken, fmt.Sprintf("%s:8443", k8s.NodeIP) }); err != nil {
+	if err := kubeadmJoinTemplate.Execute(&b, struct{ Token, ServerAddress string }{k8s.BootstrapToken, fmt.Sprintf("%s:8443", k8s.NodeIP)}); err != nil {
 		return err
 	}
 
@@ -391,23 +391,26 @@ func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
+		PodsCIDR          string
 		AdvertiseAddress  string
 		APIServerPort     int
 		KubernetesVersion string
 		EtcdDataDir       string
 		NodeName          string
 		ExtraArgs         []ComponentExtraArgs
-        Token string
+		Token             string
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
+		// TODO Make configurable
+		PodsCIDR: 				 "10.244.0.0/16",
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     util.APIServerPort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		ExtraArgs:         extraComponentConfig,
-        Token: k8s.BootstrapToken,
+		Token:             k8s.BootstrapToken,
 	}
 
 	b := bytes.Buffer{}
