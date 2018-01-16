@@ -109,6 +109,8 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	// that we also stick in /etc/kubernetes/manifests
 	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
 	// (it should probably stop doing this, though...)
+	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
+	// (because we start kubelet with an invalid config)
 	b := bytes.Buffer{}
 	if err := kubeadmInitTemplate.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
 		return err
