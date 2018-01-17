@@ -25,11 +25,13 @@ import (
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/vmware"
 )
 
 var driverMap = map[string]driverGetter{
 	"hyperv":     getHyperVDriver,
 	"virtualbox": getVirtualboxDriver,
+	"vmware":     getVMwareDriver,
 }
 
 func getHyperVDriver(rawDriver []byte) (drivers.Driver, error) {
@@ -48,6 +50,8 @@ func registerDriver(driverName string) {
 		plugin.RegisterDriver(virtualbox.NewDriver("", ""))
 	case "hyperv":
 		plugin.RegisterDriver(hyperv.NewDriver("", ""))
+	case "vmware":
+		plugin.RegisterDriver(vmware.NewDriver("", ""))
 	default:
 		glog.Exitf("Unsupported driver: %s\n", driverName)
 	}

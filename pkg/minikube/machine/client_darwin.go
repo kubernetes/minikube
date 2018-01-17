@@ -25,9 +25,11 @@ import (
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/vmware"
 )
 
 var driverMap = map[string]driverGetter{
+	"vmware":       getVMwareDriver,
 	"vmwarefusion": getVMWareFusionDriver,
 	"virtualbox":   getVirtualboxDriver,
 }
@@ -56,6 +58,8 @@ func registerDriver(driverName string) {
 		plugin.RegisterDriver(virtualbox.NewDriver("", ""))
 	case "vmwarefusion":
 		plugin.RegisterDriver(vmwarefusion.NewDriver("", ""))
+	case "vmware":
+		plugin.RegisterDriver(vmware.NewDriver("", ""))
 	default:
 		glog.Exitf("Unsupported driver: %s\n", driverName)
 	}

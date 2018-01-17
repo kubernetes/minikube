@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"k8s.io/minikube/pkg/drivers/vmware"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -88,6 +89,15 @@ func getVirtualboxDriver(rawDriver []byte) (drivers.Driver, error) {
 	err := json.Unmarshal(rawDriver, driver)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error unmarshalling virtualbox driver %s", string(rawDriver))
+	}
+	return driver, nil
+}
+
+func getVMwareDriver(rawDriver []byte) (drivers.Driver, error) {
+	var driver drivers.Driver
+	driver = vmware.NewDriver("", "")
+	if err := json.Unmarshal(rawDriver, &driver); err != nil {
+		return nil, errors.Wrap(err, "Error unmarshalling vmware driver")
 	}
 	return driver, nil
 }
