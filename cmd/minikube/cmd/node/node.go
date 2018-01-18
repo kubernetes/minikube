@@ -104,6 +104,13 @@ func addNode(cmd *cobra.Command, args []string) {
 }
 
 func startNode(cmd *cobra.Command, args []string) {
+	if len(args) == 0 || args[0] == "" {
+		glog.Error("node_name is required.")
+		os.Exit(1)
+	}
+
+	nodeName := args[0]
+
 	clusterName := viper.GetString(cfg.MachineProfile)
 
 	cfg, err := profile.LoadConfigFromFile(clusterName)
@@ -122,6 +129,10 @@ func startNode(cmd *cobra.Command, args []string) {
 	defer api.Close()
 
 	for _, node := range cfg.Nodes {
+		if node.Name != nodeName {
+			continue
+		}
+
 		fmt.Printf("Starting node: %s\n", node.Name)
 
 		machineCfg := cfg.MachineConfig
