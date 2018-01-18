@@ -22,6 +22,7 @@ import (
 	"text/template"
 )
 
+// TODO Make template more readable
 var kubeadmConfigTemplate = template.Must(template.New("kubeadmConfigTemplate").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
@@ -38,14 +39,13 @@ etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
 {{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
-  {{$val}}{{end}}{{end}}
-token: {{.Token}}
-`))
+  {{$val}}{{end}}
+{{end}}{{if .Token}}token: {{.Token}}{{end}}`))
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
+ExecStart=/usr/bin/kubelet --node-ip={{.NodeIP}} --hostname-override={{.Hostname}} {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
 
 [Install]
 {{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else}}Wants=docker.socket{{end}}

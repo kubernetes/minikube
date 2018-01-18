@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
+    "github.com/docker/machine/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -41,6 +42,7 @@ import (
 )
 
 type KubeadmBootstrapper struct {
+    host *host.Host
 	c bootstrapper.CommandRunner
 }
 
@@ -65,6 +67,7 @@ func NewKubeadmBootstrapperForMachine(machineName string, api libmachine.API) (*
 		cmd = bootstrapper.NewSSHRunner(client)
 	}
 	return &KubeadmBootstrapper{
+        host: h,
 		c: cmd,
 	}, nil
 }
@@ -144,6 +147,15 @@ func (k *KubeadmBootstrapper) JoinNode(k8s bootstrapper.KubernetesConfig) error 
 	if err != nil {
 		return errors.Wrapf(err, "kubeadm init error running command: %s", b.String())
 	}
+
+    err = k.c.Run(`
+sudo systemctl daemon-reload &&
+sudo systemctl enable kubelet &&
+sudo systemctl start kubelet
+`)
+    if err != nil {
+        return errors.Wrap(err, "starting kubelet")
+    }
 
 	return nil
 }
@@ -230,7 +242,7 @@ func SetContainerRuntime(cfg map[string]string, runtime string) map[string]strin
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
+func NewKubeletConfig(hostname, ip string, k8s bootstrapper.KubernetesConfig) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing kubernetes version")
@@ -248,10 +260,14 @@ func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 		ExtraOptions     string
 		FeatureGates     string
 		ContainerRuntime string
+		Hostname         string
+		NodeIP           string
 	}{
 		ExtraOptions:     extraFlags,
 		FeatureGates:     k8s.FeatureGates,
 		ContainerRuntime: k8s.ContainerRuntime,
+		Hostname:         hostname,
+		NodeIP:           ip,
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return "", err
@@ -270,7 +286,12 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	kubeletCfg, err := NewKubeletConfig(cfg)
+    ip, err := k.host.Driver.GetIP()
+    if err != nil {
+        return errors.Wrap(err, "getting node's IP")
+    }
+
+	kubeletCfg, err := NewKubeletConfig("minikube", ip, cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
@@ -326,7 +347,12 @@ sudo systemctl start kubelet
 }
 
 func (k *KubeadmBootstrapper) UpdateNode(cfg bootstrapper.KubernetesConfig) error {
-	kubeletCfg, err := NewKubeletConfig(cfg)
+    ip, err := k.host.Driver.GetIP()
+    if err != nil {
+        return errors.Wrap(err, "getting node's IP")
+    }
+
+	kubeletCfg, err := NewKubeletConfig(k.host.Name, ip, cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
@@ -362,15 +388,6 @@ func (k *KubeadmBootstrapper) UpdateNode(cfg bootstrapper.KubernetesConfig) erro
 		if err := k.c.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
 		}
-	}
-
-	err = k.c.Run(`
-sudo systemctl daemon-reload &&
-sudo systemctl enable kubelet &&
-sudo systemctl start kubelet
-`)
-	if err != nil {
-		return errors.Wrap(err, "starting kubelet")
 	}
 
 	return nil

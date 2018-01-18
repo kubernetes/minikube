@@ -174,7 +174,6 @@ var versionSpecificOpts = []VersionedExtraOption{
 	NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
 	NewUnversionedOption(Kubelet, "require-kubeconfig", "true"),
-	NewUnversionedOption(Kubelet, "hostname-override", "minikube"),
 
 	// System pods args
 	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
@@ -183,6 +182,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 	// Network args
 	NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
 	NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
+	NewUnversionedOption(Kubelet, "network-plugin", "cni"),
 
 	// Auth args
 	NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
