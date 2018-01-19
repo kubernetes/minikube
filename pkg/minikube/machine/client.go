@@ -92,7 +92,7 @@ func getVirtualboxDriver(rawDriver []byte) (drivers.Driver, error) {
 	return driver, nil
 }
 
-// LocalClient is a non-RPC implemenation
+// LocalClient is a non-RPC implementation
 // of the libmachine API
 type LocalClient struct {
 	certsDir  string
