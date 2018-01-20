@@ -54,13 +54,15 @@ K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
 LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldflags '-static'"
 
-LOCALKUBEFILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-MINIKUBEFILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-HYPERKIT_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/drivers/hyperkit | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-STORAGE_PROVISIONER_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/storage-provisioner | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-KVM_DRIVER_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/drivers/kvm/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+MAKEDEPEND := GOPATH=$(GOPATH) ./makedepend.sh
 
-MINIKUBE_TEST_FILES := GOPATH=$(GOPATH) go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./... | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+LOCALKUBEFILES := ./cmd/localkube/
+MINIKUBEFILES := ./cmd/minikube/
+HYPERKIT_FILES := ./cmd/drivers/hyperkit
+STORAGE_PROVISIONER_FILES := ./cmd/storage-provisioner
+KVM_DRIVER_FILES := ./cmd/drivers/kvm/
+
+MINIKUBE_TEST_FILES := ./...
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
@@ -95,7 +97,11 @@ endif
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
-out/localkube: $(shell $(LOCALKUBEFILES))
+out/localkube.d:
+	$(MAKEDEPEND) out/localkube k8s.io $(LOCALKUBEFILES) $^ > $@
+
+include out/localkube.d
+out/localkube:
 ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -105,7 +111,11 @@ endif
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
-out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
+out/minikube.d: pkg/minikube/assets/assets.go
+	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) k8s.io $(MINIKUBEFILES) $^ > $@
+
+include out/minikube.d
+out/minikube-%-amd64: pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -155,6 +165,9 @@ test-iso:
 test-pkg/%:
 	go test -v -test.timeout=30m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
+.PHONY: depend
+depend: out/localkube.d out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d
+
 .PHONY: all
 all: cross drivers e2e-cross images out/localkube
 
@@ -180,7 +193,11 @@ integration-versioned: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
-test: pkg/minikube/assets/assets.go $(shell $(MINIKUBE_TEST_FILES))
+out/test.d: pkg/minikube/assets/assets.go
+	$(MAKEDEPEND) -t test k8s.io $(MINIKUBE_TEST_FILES) $^ > $@
+
+include out/test.d
+test:
 	./test.sh
 
 pkg/minikube/assets/assets.go: $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
@@ -252,7 +269,11 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
 
-out/docker-machine-driver-hyperkit: $(shell $(HYPERKIT_FILES))
+out/docker-machine-driver-hyperkit.d:
+	$(MAKEDEPEND) out/docker-machine-driver-hyperkit k8s.io $(HYPERKIT_FILES) $^ > $@
+
+include out/docker-machine-driver-hyperkit.d
+out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
@@ -305,7 +326,11 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo ""
 	@echo "$(@) successfully built"
 
-out/storage-provisioner: $(shell $(STORAGE_PROVISIONER_FILES))
+out/storage-provisioner.d:
+	$(MAKEDEPEND) out/storage-provisioner k8s.io $(STORAGE_PROVISIONER_FILES) $^ > $@
+
+include out/storage-provisioner.d
+out/storage-provisioner:
 	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(LOCALKUBE_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
@@ -321,7 +346,11 @@ release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
 
-out/docker-machine-driver-kvm2: $(shell $(KVM_DRIVER_FILES))
+out/docker-machine-driver-kvm2.d:
+	$(MAKEDEPEND) out/docker-machine-driver-kvm2 k8s.io $(KVM_DRIVER_FILES) $^ > $@
+
+include out/docker-machine-driver-kvm2.d
+out/docker-machine-driver-kvm2:
 	go build 																		\
 		-installsuffix "static" 													\
 		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
