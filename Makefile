@@ -92,8 +92,8 @@ endif
 ifeq ($(GOOS),windows)
 	IS_EXE = ".exe"
 endif
-out/minikube$(IS_EXE): gopath out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
-	cp $(BUILD_DIR)/minikube-$(GOOS)-$(GOARCH) $(BUILD_DIR)/minikube$(IS_EXE)
+out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
+	cp $< $@
 
 out/localkube: $(shell $(LOCALKUBEFILES))
 ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
@@ -109,6 +109,9 @@ out/minikube-%-amd64: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
+ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
+	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
+endif
 	GOOS=$* go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
@@ -179,12 +182,6 @@ integration-versioned: out/minikube
 .PHONY: test
 test: $(shell $(MINIKUBE_TEST_FILES)) pkg/minikube/assets/assets.go
 	./test.sh
-
-.PHONY: gopath
-gopath:
-ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
-	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
-endif
 
 pkg/minikube/assets/assets.go: $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
 	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
