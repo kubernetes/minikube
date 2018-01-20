@@ -111,6 +111,14 @@ else
 	GOOS=$* go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
+# Building Binaries for ppc64le
+out/minikube-linux-ppc64le: pkg/minikube/assets/assets.go $(shell $(MINIKUBEFILES))
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else
+	GOOS=linux GOARCH=ppc64le go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
+endif
+
 .PHONY: e2e-%-amd64
 e2e-%-amd64: out/minikube-%-amd64
 	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
@@ -192,7 +200,7 @@ $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube-linux-ppc64le
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
