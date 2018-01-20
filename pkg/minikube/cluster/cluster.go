@@ -104,17 +104,17 @@ func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 }
 
 // StopHost stops the host VM.
-func StopHost(api libmachine.API) error {
-	host, err := api.Load(cfg.GetMachineName())
+func StopHost(name string, api libmachine.API) error {
+	host, err := api.Load(name)
 	if err != nil {
-		return errors.Wrapf(err, "Error loading host: %s", cfg.GetMachineName())
+		return errors.Wrapf(err, "Error loading host: %s", name)
 	}
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
 		}
-		return errors.Wrapf(err, "Error stopping host: %s", cfg.GetMachineName())
+		return errors.Wrapf(err, "Error stopping host: %s", name)
 	}
 	return nil
 }
@@ -132,18 +132,18 @@ func DeleteHost(name string, api libmachine.API) error {
 }
 
 // GetHostStatus gets the status of the host VM.
-func GetHostStatus(api libmachine.API) (string, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+func GetHostStatus(name string, api libmachine.API) (string, error) {
+	exists, err := api.Exists(name)
 	if err != nil {
-		return "", errors.Wrapf(err, "Error checking that api exists for: %s", cfg.GetMachineName())
+		return "", errors.Wrapf(err, "Error checking that api exists for: %s", name)
 	}
 	if !exists {
 		return state.None.String(), nil
 	}
 
-	host, err := api.Load(cfg.GetMachineName())
+	host, err := api.Load(name)
 	if err != nil {
-		return "", errors.Wrapf(err, "Error loading api for: %s", cfg.GetMachineName())
+		return "", errors.Wrapf(err, "Error loading api for: %s", name)
 	}
 
 	s, err := host.Driver.GetState()
@@ -263,8 +263,8 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 }
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
-func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+func GetHostDockerEnv(name string, api libmachine.API) (map[string]string, error) {
+	host, err := CheckIfApiExistsAndLoadByName(name, api)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -406,7 +406,7 @@ func CreateSSHShellByName(name string, api libmachine.API, args []string) error 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
 // that the status is `Running`, otherwise it will exit
 func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
-	s, err := GetHostStatus(api)
+	s, err := GetHostStatus(cfg.GetMachineName(), api)
 	if err != nil {
 		glog.Errorln("Error getting machine status:", err)
 		os.Exit(1)

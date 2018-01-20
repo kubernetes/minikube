@@ -146,7 +146,7 @@ func generateUsageHint(userShell string) string {
 
 func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 
-	envMap, err := cluster.GetHostDockerEnv(api)
+	envMap, err := cluster.GetHostDockerEnv(config.GetMachineName(), api)
 	if err != nil {
 		return nil, err
 	}

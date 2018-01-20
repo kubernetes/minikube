@@ -45,7 +45,7 @@ var defaultMachineConfig = MachineConfig{
 func TestCreateHost(t *testing.T) {
 	api := tests.NewMockAPI()
 
-	exists, _ := api.Exists(config.GetMachineName())
+	exists, _ := api.Exists(defaultMachineConfig.MachineName)
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
@@ -53,12 +53,12 @@ func TestCreateHost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, _ = api.Exists(config.GetMachineName())
+	exists, _ = api.Exists(defaultMachineConfig.MachineName)
 	if !exists {
 		t.Fatal("Machine does not exist, but should.")
 	}
 
-	h, err := api.Load(config.GetMachineName())
+	h, err := api.Load(defaultMachineConfig.MachineName)
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestStartHostExists(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != config.GetMachineName() {
+	if h.Name != defaultMachineConfig.MachineName {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
@@ -130,7 +130,7 @@ func TestStartStoppedHost(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != config.GetMachineName() {
+	if h.Name != defaultMachineConfig.MachineName {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 
@@ -157,7 +157,7 @@ func TestStartHost(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != config.GetMachineName() {
+	if h.Name != defaultMachineConfig.MachineName {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 	if exists, _ := api.Exists(h.Name); !exists {
@@ -208,7 +208,7 @@ func TestStartHostConfig(t *testing.T) {
 
 func TestStopHostError(t *testing.T) {
 	api := tests.NewMockAPI()
-	if err := StopHost(api); err == nil {
+	if err := StopHost(defaultMachineConfig.MachineName, api); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 }
@@ -216,9 +216,13 @@ func TestStopHostError(t *testing.T) {
 func TestStopHost(t *testing.T) {
 	api := tests.NewMockAPI()
 	h, _ := createHost(api, defaultMachineConfig)
-	if err := StopHost(api); err != nil {
+	if err := StopHost("some-other-machine", api); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
+	if err := StopHost(defaultMachineConfig.MachineName, api); err != nil {
+		t.Fatal("An error should not be thrown when stopping existing machine.")
+	}
+
 	if s, _ := h.Driver.GetState(); s != state.Stopped {
 		t.Fatalf("Machine not stopped. Currently in state: %s", s)
 	}
@@ -271,7 +275,7 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 		t.Fatal("Expected error deleting host, didn't get one.")
 	}
 
-	expectedErrors := []string{"Error removing " + config.GetMachineName(), "Error deleting machine"}
+	expectedErrors := []string{"Error removing " + defaultMachineConfig.MachineName, "Error deleting machine"}
 	for _, expectedError := range expectedErrors {
 		if !strings.Contains(err.Error(), expectedError) {
 			t.Fatalf("Error %s expected to contain: %s.", err, expectedError)
@@ -283,7 +287,7 @@ func TestGetHostStatus(t *testing.T) {
 	api := tests.NewMockAPI()
 
 	checkState := func(expected string) {
-		s, err := GetHostStatus(api)
+		s, err := GetHostStatus(defaultMachineConfig.MachineName, api)
 		if err != nil {
 			t.Fatalf("Unexpected error getting status: %s", err)
 		}
@@ -297,7 +301,7 @@ func TestGetHostStatus(t *testing.T) {
 	createHost(api, defaultMachineConfig)
 	checkState(state.Running.String())
 
-	StopHost(api)
+	StopHost(defaultMachineConfig.MachineName, api)
 	checkState(state.Stopped.String())
 }
 
@@ -317,7 +321,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 	}
 	h.Driver = d
 
-	envMap, err := GetHostDockerEnv(api)
+	envMap, err := GetHostDockerEnv(defaultMachineConfig.MachineName, api)
 	if err != nil {
 		t.Fatalf("Unexpected error getting env: %s", err)
 	}
@@ -350,7 +354,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 	}
 	h.Driver = d
 
-	envMap, err := GetHostDockerEnv(api)
+	envMap, err := GetHostDockerEnv(defaultMachineConfig.MachineName, api)
 	if err != nil {
 		t.Fatalf("Unexpected error getting env: %s", err)
 	}
