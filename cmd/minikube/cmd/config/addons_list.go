@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"sort"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -66,7 +67,14 @@ func stringFromStatus(addonStatus bool) string {
 }
 
 func addonList() error {
-	for addonName, addonBundle := range assets.Addons {
+	addonNames := make([]string, 0, len(assets.Addons))
+	for addonName := range assets.Addons {
+		addonNames = append(addonNames, addonName)
+	}
+	sort.Strings(addonNames)
+
+	for _, addonName := range addonNames {
+		addonBundle := assets.Addons[addonName]
 		addonStatus, err := addonBundle.IsEnabled()
 		if err != nil {
 			return err
