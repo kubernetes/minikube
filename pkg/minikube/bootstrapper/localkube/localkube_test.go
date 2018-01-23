@@ -17,6 +17,7 @@ limitations under the License.
 package localkube
 
 import (
+	"bytes"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -200,13 +201,14 @@ func TestGetHostLogs(t *testing.T) {
 		},
 	}
 
+	var b bytes.Buffer
 	for _, test := range cases {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			f := bootstrapper.NewFakeCommandRunner()
 			f.SetCommandToOutput(test.logsCmdMap)
 			l := LocalkubeBootstrapper{f}
-			_, err := l.GetClusterLogs(test.follow)
+			err := l.GetClusterLogsTo(test.follow, &b)
 			if err != nil && !test.shouldErr {
 				t.Errorf("Error getting localkube logs: %s", err)
 				return

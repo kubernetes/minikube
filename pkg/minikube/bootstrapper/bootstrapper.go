@@ -17,6 +17,7 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"io"
 	"net"
 
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -28,7 +29,7 @@ type Bootstrapper interface {
 	StartCluster(KubernetesConfig) error
 	UpdateCluster(KubernetesConfig) error
 	RestartCluster(KubernetesConfig) error
-	GetClusterLogs(follow bool) (string, error)
+	GetClusterLogsTo(follow bool, out io.Writer) error
 	SetupCerts(cfg KubernetesConfig) error
 	GetClusterStatus() (string, error)
 }
