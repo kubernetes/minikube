@@ -233,6 +233,13 @@ var Addons = map[string]*Addon{
 			"registry-creds-rc.yaml",
 			"0640"),
 	}, false, "registry-creds"),
+	"freshpod": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/freshpod/freshpod-rc.yaml",
+			constants.AddonsPath,
+			"freshpod-rc.yaml",
+			"0640"),
+	}, false, "freshpod"),
 }
 
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
