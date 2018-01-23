@@ -50,12 +50,11 @@ var logsCmd = &cobra.Command{
 			glog.Exitf("Error getting cluster bootstrapper: %s", err)
 		}
 
-		s, err := clusterBootstrapper.GetClusterLogs(follow)
+		err = clusterBootstrapper.GetClusterLogsTo(follow, os.Stdout)
 		if err != nil {
 			log.Println("Error getting machine logs:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		fmt.Fprintln(os.Stdout, s)
 	},
 }
 

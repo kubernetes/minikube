@@ -18,6 +18,7 @@ package localkube
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -57,19 +58,27 @@ func NewLocalkubeBootstrapper(api libmachine.API) (*LocalkubeBootstrapper, error
 	}, nil
 }
 
-// GetClusterLogs If follow is specified, it will tail the logs
-func (lk *LocalkubeBootstrapper) GetClusterLogs(follow bool) (string, error) {
+// GetClusterLogs
+// If follow is specified, it will tail the logs
+func (lk *LocalkubeBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error {
 	logsCommand, err := GetLogsCommand(follow)
 	if err != nil {
-		return "", errors.Wrap(err, "Error getting logs command")
+		return errors.Wrap(err, "Error getting logs command")
 	}
 
-	logs, err := lk.cmd.CombinedOutput(logsCommand)
-	if err != nil {
-		return "", errors.Wrap(err, "getting cluster logs")
+	if follow {
+		err = lk.cmd.CombinedOutputTo(logsCommand, out)
+		if err != nil {
+			return errors.Wrap(err, "getting cluster logs")
+		}
+	} else {
+		logs, err := lk.cmd.CombinedOutput(logsCommand)
+		if err != nil {
+			return errors.Wrap(err, "getting cluster logs")
+		}
+		fmt.Fprint(out, logs)
 	}
-
-	return logs, nil
+	return nil
 }
 
 // GetClusterStatus gets the status of localkube from the host VM.
