@@ -17,6 +17,7 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"path"
@@ -63,20 +64,36 @@ func (s *SSHRunner) Run(cmd string) error {
 	return sess.Run(cmd)
 }
 
-// CombinedOutput runs the command on the remote and returns its combined
-// standard output and standard error.
-func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
+// CombinedOutputTo runs the command and stores both command
+// output and error to out.
+func (s *SSHRunner) CombinedOutputTo(cmd string, out io.Writer) error {
 	glog.Infoln("Run with output:", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return "", errors.Wrap(err, "getting ssh session")
+		return errors.Wrap(err, "getting ssh session")
 	}
 	defer sess.Close()
-	out, err := sess.CombinedOutput(cmd)
+
+	sess.Stdout = out
+	sess.Stderr = out
+
+	err = sess.Run(cmd)
 	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, out)
+		return errors.Wrapf(err, "running command: %s\n.", cmd)
 	}
-	return string(out), nil
+
+	return nil
+}
+
+// CombinedOutput runs the command on the remote and returns its combined
+// standard output and standard error.
+func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
+	var b bytes.Buffer
+	err := s.CombinedOutputTo(cmd, &b)
+	if err != nil {
+		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
+	}
+	return b.String(), nil
 }
 
 // Copy copies a file to the remote over SSH.

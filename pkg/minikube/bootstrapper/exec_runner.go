@@ -17,6 +17,7 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"bytes"
 	"io"
 	"os"
 	"os/exec"
@@ -43,16 +44,31 @@ func (*ExecRunner) Run(cmd string) error {
 	return nil
 }
 
-// CombinedOutput runs the command  in a bash shell and returns its
-// combined standard output and standard error.
-func (*ExecRunner) CombinedOutput(cmd string) (string, error) {
+// CombinedOutputTo runs the command and stores both command
+// output and error to out.
+func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
 	glog.Infoln("Run with output:", cmd)
 	c := exec.Command("/bin/bash", "-c", cmd)
-	out, err := c.CombinedOutput()
+	c.Stdout = out
+	c.Stderr = out
+	err := c.Run()
 	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, out)
+		return errors.Wrapf(err, "running command: %s\n.", cmd)
 	}
-	return string(out), nil
+
+	return nil
+}
+
+// CombinedOutput runs the command  in a bash shell and returns its
+// combined standard output and standard error.
+func (e *ExecRunner) CombinedOutput(cmd string) (string, error) {
+	var b bytes.Buffer
+	err := e.CombinedOutputTo(cmd, &b)
+	if err != nil {
+		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
+	}
+	return b.String(), nil
+
 }
 
 // Copy copies a file and its permissions
