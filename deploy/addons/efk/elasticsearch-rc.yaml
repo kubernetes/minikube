@@ -38,8 +38,10 @@ spec:
         resources:
           limits:
             cpu: 500m
+            memory: 2400Mi
           requests:
             cpu: 100m
+            memory: 2350Mi
         ports:
         - containerPort: 9200
           name: db
