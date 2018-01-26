@@ -1,5 +1,22 @@
 # Minikube Release Notes
 
+# Version 0.25.0 - 1/26/2018
+* Add freshpod addon [#2423](https://github.com/kubernetes/minikube/pull/2423)
+* List addons in consistent sort order [#2446](https://github.com/kubernetes/minikube/pull/2446)
+* [Minikube ISO] Upgrade Docker to 17.09 [#2427](https://github.com/kubernetes/minikube/pull/2427)
+* [Minikube ISO] Change cri-o socket location to upstream default [#2262](https://github.com/kubernetes/minikube/pull/2262)
+* [Minikube ISO] Update crio to v1.0.3 [#2311](https://github.com/kubernetes/minikube/pull/2311)
+* Change Dashboard from Replication Controller to Deployment [#2409](https://github.com/kubernetes/minikube/pull/2409)
+* Upgrade kube-addon-manager to v6.5 [#2400](https://github.com/kubernetes/minikube/pull/2400)
+* Upgrade heapster to v1.5.0 [#2335](https://github.com/kubernetes/minikube/pull/2335)
+* Upgrade ingress controller to v0.9.0 [#2292](https://github.com/kubernetes/minikube/pull/2292)
+* Upgrade docker machine to g49dfaa70 [#2299](https://github.com/kubernetes/minikube/pull/2299)
+* Added ingress integration tests [#2254](https://github.com/kubernetes/minikube/pull/2254)
+* Converted image registries to k8s.gcr.io [#2356](https://github.com/kubernetes/minikube/pull/2356)
+* Added cache list command [#2272](https://github.com/kubernetes/minikube/pull/2272)
+* Upgrade to Kubernetes 1.9 [#2343](https://github.com/kubernetes/minikube/pull/2343)
+* [hyperkit] Support NFS Sharing [#2337](https://github.com/kubernetes/minikube/pull/2337)
+
 # Version 0.24.1 - 11/30/2017
 * Add checksum verification for localkube
 * Bump minikube iso to v0.23.6
