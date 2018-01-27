@@ -46,7 +46,7 @@ pushd aur-minikube >/dev/null
 popd >/dev/null
 
 
-git clone ssh://aur@aur.archlinux.org/minikube.git aur-minikube-driver-kvm
+git clone ssh://aur@aur.archlinux.org/docker-machine-driver-kvm2.git aur-minikube-driver-kvm
 pushd aur-minikube-driver-kvm >/dev/null
     sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
     sed -e "s/\$MINIKUBE_DRIVER_KVM_SHA256/${REPLACE_MINIKUBE_DRIVER_KVM_SHA256}/g" \
