@@ -19,7 +19,7 @@ metadata:
   name: storage-provisioner
   namespace: kube-system
   labels:
-    addonmanager.kubernetes.io/mode: EnsureExists
+    addonmanager.kubernetes.io/mode: Reconcile
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -45,7 +45,7 @@ metadata:
   namespace: kube-system
   labels:
     integration-test: storage-provisioner
-    addonmanager.kubernetes.io/mode: EnsureExists
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   serviceAccountName: storage-provisioner
   hostNetwork: true
