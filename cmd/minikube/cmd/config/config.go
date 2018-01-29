@@ -197,6 +197,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableDefaultStorageClass},
 	},
 	{
+		name:        "storage-provisioner",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name: "hyperv-virtual-switch",
 		set:  SetString,
 	},
