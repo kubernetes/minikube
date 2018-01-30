@@ -46,7 +46,10 @@ func StartLocalkube() {
 		os.Exit(0)
 	}
 
-	// TODO: Require root
+	if os.Geteuid() != 0 {
+		fmt.Println("localkube should run as root!")
+		os.Exit(1)
+	}
 
 	SetupServer(Server)
 	Server.StartAll()
