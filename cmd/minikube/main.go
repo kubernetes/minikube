@@ -27,12 +27,12 @@ import (
 	_ "k8s.io/minikube/pkg/provision"
 )
 
-const minikubeEnvPrefix = "MINIKUBE_ENABLE_PROFILING"
+const minikubeEnableProfile = "MINIKUBE_ENABLE_PROFILING"
 
 func main() {
 	defer glog.Flush()
 
-	if os.Getenv(minikubeEnvPrefix) == "1" {
+	if os.Getenv(minikubeEnableProfile) == "1" {
 		defer profile.Start(profile.TraceProfile).Stop()
 	}
 	if os.Getenv(constants.IsMinikubeChildProcess) == "" {
