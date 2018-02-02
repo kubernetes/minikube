@@ -1,6 +1,6 @@
 ## minikube ISO image
 
-This includes the configuration for an alternative bootable ISO image meant to be used in conjection with minikube.
+This includes the configuration for an alternative bootable ISO image meant to be used in conjunction with minikube.
 
 It includes:
 - systemd as the init system
@@ -30,7 +30,7 @@ $ make buildroot-image
 $ make out/minikube.iso
 ```
 
-The build will occurs inside a docker container, if you want to do this
+The build will occur inside a docker container. If you want to do this on
 baremetal, replace `make out/minikube.iso` with `IN_DOCKER=1 make out/minikube.iso`.
 The bootable ISO image will be available in `out/minikube.iso`.
 
