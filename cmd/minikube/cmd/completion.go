@@ -41,7 +41,7 @@ const longDescription = `
 		$ apt-get install bash-completion
 		$ source /etc/bash-completion
 		$ source <(minikube completion bash) # for bash users
-		$ source <(minikube completion bash) # for zsh users
+		$ source <(minikube completion zsh) # for zsh users
 
 	Additionally, you may want to output the completion to a file and source in your .bashrc
 
