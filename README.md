@@ -33,7 +33,7 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/miniku
 ### Windows
 Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
 
-### Linux Continuous Integration with VM Support
+### Linux Continuous Integration without VM Support
 Example with kubectl installation:
 ```shell
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube
