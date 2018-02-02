@@ -27,15 +27,18 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
+	commonutil "k8s.io/minikube/pkg/util"
 )
 
 var (
-	https             bool
-	addonsURLMode     bool
-	addonsURLFormat   string
-	addonsURLTemplate *template.Template
-	wait              int
-	interval          int
+	https              bool
+	addonsURLMode      bool
+	addonsProxyMode    bool
+	addonsProxyAddress string
+	addonsURLFormat    string
+	addonsURLTemplate  *template.Template
+	wait               int
+	interval           int
 )
 
 const defaultAddonsFormatTemplate = "http://{{.IP}}:{{.Port}}"
@@ -101,11 +104,21 @@ You can add one by annotating a service with the label %s:%s
 `, key, addonName)
 			os.Exit(0)
 		}
+		runTillBreak := false
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
-			service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate,
-				addonsURLMode, https, wait, interval)
+			proxyActive, err := service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate,
+				addonsURLMode, https, addonsProxyMode, addonsProxyAddress, wait, interval)
 
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Opening service %s in namespace %s failed: %s\n", svc, namespace, err)
+			}
+			if proxyActive {
+				runTillBreak = true
+			}
+		}
+		if runTillBreak {
+			commonutil.RunTillBreak()
 		}
 	},
 }
@@ -113,6 +126,8 @@ You can add one by annotating a service with the label %s:%s
 func init() {
 	addonsOpenCmd.Flags().BoolVar(&addonsURLMode, "url", false, "Display the kubernetes addons URL in the CLI instead of opening it in the default browser")
 	addonsOpenCmd.Flags().BoolVar(&https, "https", false, "Open the addons URL with https instead of http")
+	addonsOpenCmd.Flags().BoolVar(&addonsProxyMode, "proxy", false, "Keeps minikube running as a proxy server and rewrites the URL so that it refers to the proxy")
+	addonsOpenCmd.Flags().StringVar(&addonsProxyAddress, "proxyaddress", ":0", "Listen on a specific IP address and/or port. The format is [host]:port. Port 0 picks a random port (default: :0).")
 	addonsOpenCmd.Flags().IntVar(&wait, "wait", constants.DefaultWait, "Amount of time to wait for service in seconds")
 	addonsOpenCmd.Flags().IntVar(&interval, "interval", constants.DefaultInterval, "The time interval for each check that wait performs in seconds")
 	addonsOpenCmd.PersistentFlags().StringVar(&addonsURLFormat, "format", defaultAddonsFormatTemplate, "Format to output addons URL in.  This format will be applied to each url individually and they will be printed one at a time.")

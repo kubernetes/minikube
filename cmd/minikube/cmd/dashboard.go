@@ -33,7 +33,9 @@ import (
 )
 
 var (
-	dashboardURLMode bool
+	dashboardURLMode      bool
+	dashboardProxyMode    bool
+	dashboardProxyAddress string
 )
 
 // dashboardCmd represents the dashboard command
@@ -69,16 +71,30 @@ var dashboardCmd = &cobra.Command{
 			glog.Infoln(errMsg)
 			os.Exit(1)
 		}
+		url := urls[0]
+		if dashboardProxyMode {
+			proxyurl, err := commonutil.Proxy(dashboardProxyAddress, url)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			url = proxyurl
+		}
 		if dashboardURLMode {
-			fmt.Fprintln(os.Stdout, urls[0])
+			fmt.Fprintln(os.Stdout, url)
 		} else {
 			fmt.Fprintln(os.Stdout, "Opening kubernetes dashboard in default browser...")
-			browser.OpenURL(urls[0])
+			browser.OpenURL(url)
+		}
+		if dashboardProxyMode {
+			commonutil.RunTillBreak()
 		}
 	},
 }
 
 func init() {
 	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display the kubernetes dashboard in the CLI instead of opening it in the default browser")
+	dashboardCmd.Flags().BoolVar(&dashboardProxyMode, "proxy", false, "Keeps minikube running as a proxy server and rewrites the URL so that it refers to the proxy")
+	dashboardCmd.Flags().StringVar(&dashboardProxyAddress, "proxyaddress", ":0", "Listen on a specific IP address and/or port. The format is [host]:port. Port 0 picks a random port (default: :0).")
 	RootCmd.AddCommand(dashboardCmd)
 }

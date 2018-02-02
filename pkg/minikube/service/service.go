@@ -236,28 +236,45 @@ func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) err
 	return nil
 }
 
+// WaitAndMaybeOpenService will print or open all URLs of a service.
+// When proxying is requested, it will activate port forwarding for http/https URLs.
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
-	wait int, interval int) error {
+	proxyMode bool, proxyAddress string,
+	wait int, interval int) (proxyActive bool, err error) {
 	if err := util.RetryAfter(wait, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
-		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
+		return false, errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
 	}
 
 	urls, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
 	if err != nil {
-		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
+		return false, errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
+	proxyActive = false
 	for _, url := range urls {
+		if !strings.HasPrefix(url, "http") {
+			// Just print the URL, we can't proxy or open it.
+			fmt.Fprintln(os.Stdout, url)
+			continue
+		}
 		if https {
 			url = strings.Replace(url, "http", "https", 1)
 		}
-		if urlMode || !strings.HasPrefix(url, "http") {
+		if proxyMode {
+			proxyurl, err := util.Proxy(proxyAddress, url)
+			if err != nil {
+				return proxyActive, err
+			}
+			proxyActive = true
+			url = proxyurl
+		}
+		if urlMode {
 			fmt.Fprintln(os.Stdout, url)
 		} else {
 			fmt.Fprintln(os.Stderr, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
 			browser.OpenURL(url)
 		}
 	}
-	return nil
+	return proxyActive, nil
 }
 
 func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
