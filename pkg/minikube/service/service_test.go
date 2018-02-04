@@ -26,7 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
@@ -61,7 +61,7 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 	ServiceList: &v1.ServiceList{
 		Items: []v1.Service{
 			{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "mock-dashboard",
 					Namespace: "default",
 				},
@@ -73,7 +73,7 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 				},
 			},
 			{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "mock-dashboard-no-ports",
 					Namespace: "default",
 				},
@@ -125,7 +125,7 @@ var endpointMap = map[string]*v1.Endpoints{
 	},
 }
 
-func (e MockEndpointsInterface) Get(name string, _ meta_v1.GetOptions) (*v1.Endpoints, error) {
+func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -176,7 +176,7 @@ type MockServiceInterface struct {
 	ServiceList *v1.ServiceList
 }
 
-func (s MockServiceInterface) List(opts meta_v1.ListOptions) (*v1.ServiceList, error) {
+func (s MockServiceInterface) List(opts metav1.ListOptions) (*v1.ServiceList, error) {
 	serviceList := &v1.ServiceList{
 		Items: []v1.Service{},
 	}
@@ -195,7 +195,7 @@ func (s MockServiceInterface) List(opts meta_v1.ListOptions) (*v1.ServiceList, e
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(name string, _ meta_v1.GetOptions) (*v1.Service, error) {
+func (s MockServiceInterface) Get(name string, _ metav1.GetOptions) (*v1.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
