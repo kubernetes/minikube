@@ -25,7 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/r2d4/external-storage/lib/controller"
 	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -67,7 +67,7 @@ func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*v1.P
 	}
 
 	pv := &v1.PersistentVolume{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: options.PVName,
 			Annotations: map[string]string{
 				"hostPathProvisionerIdentity": string(p.identity),
