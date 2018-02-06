@@ -143,7 +143,7 @@ func (l *localkubeCacher) genLocalkubeFileFromURL() (assets.CopyableFile, error)
 	} else {
 		glog.Infoln("Using cached localkube")
 	}
-	localkubeFile, err := assets.NewFileAsset(l.getLocalkubeCacheFilepath(), "/usr/local/bin", "localkube", "0777")
+	localkubeFile, err := assets.NewFileAsset(l.getLocalkubeCacheFilepath(), localkubeExecDir, "localkube", "0777")
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating localkube asset from url")
 	}
@@ -153,7 +153,7 @@ func (l *localkubeCacher) genLocalkubeFileFromURL() (assets.CopyableFile, error)
 func (l *localkubeCacher) genLocalkubeFileFromFile() (assets.CopyableFile, error) {
 	path := strings.TrimPrefix(l.k8sConf.KubernetesVersion, "file://")
 	path = filepath.FromSlash(path)
-	localkubeFile, err := assets.NewFileAsset(path, "/usr/local/bin", "localkube", "0777")
+	localkubeFile, err := assets.NewFileAsset(path, localkubeExecDir, "localkube", "0777")
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating localkube asset from file")
 	}
