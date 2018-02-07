@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"k8s.io/minikube/pkg/minikube"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/util"
 )
@@ -46,11 +47,10 @@ type MachineConfig struct {
 
 // Config contains machine and k8s config
 type Config struct {
+	ClusterName      string
 	MachineConfig    MachineConfig
 	KubernetesConfig bootstrapper.KubernetesConfig
-	Nodes            []Node
+	Nodes            []minikube.NodeConfig
 }
 
-type Node struct {
-	Name string
 }
