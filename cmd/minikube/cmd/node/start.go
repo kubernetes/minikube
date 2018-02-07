@@ -1,0 +1,98 @@
+package node
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"k8s.io/minikube/cmd/minikube/profile"
+	cmdutil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
+)
+
+func startNode(cmd *cobra.Command, args []string) {
+	if len(args) == 0 || args[0] == "" {
+		glog.Error("node_name is required.")
+		os.Exit(1)
+	}
+
+	nodeName := args[0]
+	clusterName := viper.GetString(cfg.MachineProfile)
+
+	cfg, err := profile.LoadConfigFromFile(clusterName)
+	if err != nil {
+		glog.Errorln("Error loading profile config: ", err)
+		cmdutil.MaybeReportErrorAndExit(err)
+	}
+
+	fmt.Println("Starting nodes...")
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Errorf("Error getting client: %s\n", err)
+		os.Exit(1)
+	}
+	defer api.Close()
+
+	for _, nodeCfg := range cfg.Nodes {
+		name := nodeCfg.Name
+		if name != nodeName {
+			continue
+		}
+
+		fmt.Printf("Starting node: %s\n", name)
+
+		n := node.NewNode(nodeCfg, cfg.MachineConfig, clusterName, api)
+
+		if err := n.Start(); err != nil {
+			glog.Errorln("Error starting node machine: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+
+		ip, err := n.IP()
+		if err != nil {
+			glog.Errorln("Error getting node's IP: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+
+		runner, err := n.Runner()
+		if err != nil {
+			glog.Errorln("Error getting node's runner: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+
+		b := kubeadm.NewKubeadmBootstrapperForRunner(n.MachineName(), ip, runner)
+		err = bootstrapNode(b, cfg.KubernetesConfig)
+		if err != nil {
+			glog.Errorln("Error bootstrapping node: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
+		}
+
+		fmt.Printf("Node started. IP: %s\n", ip)
+	}
+}
+
+func bootstrapNode(b *kubeadm.KubeadmBootstrapper, cfg bootstrapper.KubernetesConfig) error {
+	fmt.Println("Moving assets into node...")
+	if err := b.UpdateNode(cfg); err != nil {
+		return errors.Wrap(err, "Error updating node")
+	}
+	fmt.Println("Setting up certs...")
+	if err := b.SetupCerts(cfg); err != nil {
+		return errors.Wrap(err, "Error configuring authentication")
+	}
+
+	fmt.Println("Joining node to cluster...")
+	if err := b.JoinNode(cfg); err != nil {
+		return errors.Wrap(err, "Error joining node to cluster")
+	}
+	return nil
+}
