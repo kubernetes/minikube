@@ -34,7 +34,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
-    "github.com/docker/machine/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -42,8 +41,9 @@ import (
 )
 
 type KubeadmBootstrapper struct {
-    host *host.Host
-	c bootstrapper.CommandRunner
+	c           bootstrapper.CommandRunner
+	ip          string
+	machineName string
 }
 
 func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
@@ -66,10 +66,25 @@ func NewKubeadmBootstrapperForMachine(machineName string, api libmachine.API) (*
 		}
 		cmd = bootstrapper.NewSSHRunner(client)
 	}
+
+	ip, err := h.Driver.GetIP()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting host IP")
+	}
+
 	return &KubeadmBootstrapper{
-        host: h,
-		c: cmd,
+		c:           cmd,
+		ip:          ip,
+		machineName: machineName,
 	}, nil
+}
+
+func NewKubeadmBootstrapperForRunner(machineName, ip string, c bootstrapper.CommandRunner) *KubeadmBootstrapper {
+	return &KubeadmBootstrapper{
+        c: c,
+        ip: ip,
+        machineName: machineName,
+    }
 }
 
 //TODO(r2d4): This should most likely check the health of the apiserver
@@ -148,14 +163,14 @@ func (k *KubeadmBootstrapper) JoinNode(k8s bootstrapper.KubernetesConfig) error 
 		return errors.Wrapf(err, "kubeadm init error running command: %s", b.String())
 	}
 
-    err = k.c.Run(`
+	err = k.c.Run(`
 sudo systemctl daemon-reload &&
 sudo systemctl enable kubelet &&
 sudo systemctl start kubelet
 `)
-    if err != nil {
-        return errors.Wrap(err, "starting kubelet")
-    }
+	if err != nil {
+		return errors.Wrap(err, "starting kubelet")
+	}
 
 	return nil
 }
@@ -279,19 +294,18 @@ func NewKubeletConfig(hostname, ip string, k8s bootstrapper.KubernetesConfig) (s
 func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
 		// Make best effort to load any cached images
-		go machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
+		glog.Infoln("Loading cached images....")
+		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
+		if err != nil {
+			glog.Errorf("Could not load all cached images: ", err)
+		}
 	}
 	kubeadmCfg, err := generateConfig(cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-    ip, err := k.host.Driver.GetIP()
-    if err != nil {
-        return errors.Wrap(err, "getting node's IP")
-    }
-
-	kubeletCfg, err := NewKubeletConfig("minikube", ip, cfg)
+	kubeletCfg, err := NewKubeletConfig("minikube", k.ip, cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
@@ -347,12 +361,7 @@ sudo systemctl start kubelet
 }
 
 func (k *KubeadmBootstrapper) UpdateNode(cfg bootstrapper.KubernetesConfig) error {
-    ip, err := k.host.Driver.GetIP()
-    if err != nil {
-        return errors.Wrap(err, "getting node's IP")
-    }
-
-	kubeletCfg, err := NewKubeletConfig(k.host.Name, ip, cfg)
+	kubeletCfg, err := NewKubeletConfig(k.machineName, k.ip, cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
@@ -417,10 +426,10 @@ func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 		ExtraArgs         []ComponentExtraArgs
 		Token             string
 	}{
-		CertDir:           util.DefaultCertPath,
-		ServiceCIDR:       util.DefaultServiceCIDR,
+		CertDir:     util.DefaultCertPath,
+		ServiceCIDR: util.DefaultServiceCIDR,
 		// TODO Make configurable
-		PodsCIDR: 				 "10.244.0.0/16",
+		PodsCIDR:          "10.244.0.0/16",
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     util.APIServerPort,
 		KubernetesVersion: k8s.KubernetesVersion,
