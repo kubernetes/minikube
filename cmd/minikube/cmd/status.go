@@ -66,7 +66,7 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		ms, err := cluster.GetHostStatus(api)
+		ms, err := cluster.GetHostStatus(config.GetMachineName(), api)
 		if err != nil {
 			glog.Errorln("Error getting machine status:", err)
 			cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)

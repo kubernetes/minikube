@@ -153,9 +153,13 @@ func GetHostStatus(name string, api libmachine.API) (string, error) {
 	return s.String(), nil
 }
 
-// GetHostDriverIP gets the ip address of the current minikube cluster
 func GetHostDriverIP(api libmachine.API) (net.IP, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+	return GetHostDriverIpByName(cfg.GetMachineName(), api)
+}
+
+// GetHostDriverIP gets the ip address of the current minikube cluster
+func GetHostDriverIpByName(name string, api libmachine.API) (net.IP, error) {
+	host, err := CheckIfApiExistsAndLoadByName(name, api)
 	if err != nil {
 		return nil, err
 	}
