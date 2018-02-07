@@ -82,6 +82,7 @@ func CacheImages(images []string, cacheDir string) error {
 
 func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
 	var g errgroup.Group
+	glog.Infof("Loading cached images: %s", images)
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
