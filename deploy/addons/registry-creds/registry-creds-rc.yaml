@@ -4,14 +4,14 @@ metadata:
   name: registry-creds
   namespace: kube-system
   labels:
-    version: v1.8
+    version: v1.9
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: registry-creds
 spec:
   replicas: 1
   selector:
     name: registry-creds
-    version: v1.8
+    version: v1.9
     addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
@@ -21,7 +21,7 @@ spec:
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - image: registry.hub.docker.com/upmcenterprises/registry-creds:1.8
+      - image: registry.hub.docker.com/upmcenterprises/registry-creds:1.9
         name: registry-creds
         imagePullPolicy: Always
         env:
