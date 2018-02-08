@@ -1,36 +1,53 @@
 package node
 
 import (
+	"fmt"
 	"os"
-	"text/template"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"k8s.io/minikube/cmd/minikube/profile"
 	cmdutil "k8s.io/minikube/cmd/util"
-	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube"
+	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 )
 
 func list(cmd *cobra.Command, args []string) {
-	clusterName := viper.GetString(cfg.MachineProfile)
-
-	cfg, err := profile.LoadConfigFromFile(clusterName)
-	if err != nil && !os.IsNotExist(err) {
-		glog.Errorln("Error loading profile config: ", err)
+	configs, err := profile.LoadClusterConfigs()
+	if err != nil {
+		glog.Errorln("Error loading cluster configs: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-	tmpl, err := template.New("nodeeList").Parse("{{range .}}{{ .Name }}\n{{end}}")
+	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Errorln("Error creating nodeList template:", err)
-		os.Exit(internalErrorCode)
+		glog.Errorf("Error getting client: %s\n", err)
+		os.Exit(1)
 	}
+	defer api.Close()
 
-	err = tmpl.Execute(os.Stdout, cfg.Nodes)
-	if err != nil {
-		glog.Errorln("Error executing nodeList template:", err)
-		os.Exit(internalErrorCode)
+	fmt.Printf("%-20s %-20s %-20s %-20s\n", "CLUSTER", "NODE", "STATUS", "IP")
+	for _, c := range configs {
+		for _, nc := range c.Nodes {
+			n := node.NewNode(nc, c.MachineConfig, c.ClusterName, api)
+			status, err := n.Status()
+			if err != nil {
+				glog.Errorf("Error getting status for node %s: %s", nc.Name, err)
+				cmdutil.MaybeReportErrorAndExit(err)
+			}
+
+			ip := ""
+			if status == minikube.StatusRunning {
+				ip, err = n.IP()
+				if err != nil {
+					glog.Errorf("Error getting IP address for node %s: %s", nc.Name, err)
+					cmdutil.MaybeReportErrorAndExit(err)
+				}
+			}
+
+			fmt.Printf("%-20s %-20s %-20s %-20s\n", c.ClusterName, nc.Name, status, ip)
+		}
 	}
 }

@@ -117,6 +117,11 @@ func GetProfileFile(profile string) string {
 	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
 
+func GetProfileFiles() []string {
+	files, _ := filepath.Glob(filepath.Join(GetMinipath(), "profiles", "*", "config.json"))
+	return files
+}
+
 var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sReleases/"
 var LocalkubeLinuxFilename = "localkube-linux-amd64"
 

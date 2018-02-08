@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -89,4 +90,32 @@ func LoadConfigFromFile(profile string) (cluster.Config, error) {
 	cc.MachineConfig.Downloader = pkgutil.DefaultDownloader{}
 
 	return cc, nil
+}
+
+func LoadClusterConfigs() ([]cluster.Config, error) {
+	files := constants.GetProfileFiles()
+
+	configs := make([]cluster.Config, len(files))
+	for i, f := range files {
+		c, err := loadConfigFromFile(f)
+		if err != nil {
+			return []cluster.Config{}, errors.Wrapf(err, "Error loading config from file: %s", f)
+		}
+		configs[i] = c
+	}
+
+	return configs, nil
+}
+
+func loadConfigFromFile(file string) (cluster.Config, error) {
+	var c cluster.Config
+
+	reader, err := os.Open(file)
+	defer reader.Close()
+	if err != nil {
+		return c, err
+	}
+
+	err = json.NewDecoder(reader).Decode(&c)
+	return c, err
 }
