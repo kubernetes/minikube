@@ -52,5 +52,3 @@ type Config struct {
 	KubernetesConfig bootstrapper.KubernetesConfig
 	Nodes            []minikube.NodeConfig
 }
-
-}
