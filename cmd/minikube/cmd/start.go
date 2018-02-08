@@ -26,14 +26,14 @@ import (
 	"strings"
 	"time"
 
-    "github.com/elgs/gostrgen"
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/elgs/gostrgen"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-    "k8s.io/minikube/cmd/minikube/profile"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/cmd/minikube/profile"
 	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -102,7 +102,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		go machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
 	}
 
-    // NOTE Instantiate docker-machine API
+	// NOTE Instantiate docker-machine API
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
@@ -124,7 +124,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		validateK8sVersion(k8sVersion)
 	}
 
-    // NOTE Create machine config
+	// NOTE Create machine config
 	config := cluster.MachineConfig{
 		MachineName:         cfg.GetMachineName(),
 		MinikubeISO:         viper.GetString(isoURL),
@@ -153,7 +153,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Exitf("checking if machine exists: %s", err)
 	}
 
-    // NOTE Start machine
+	// NOTE Start machine
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
 	fmt.Println("Starting VM...")
 	var host *host.Host
@@ -170,7 +170,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-    // NOTE Get machine IP
+	// NOTE Get machine IP
 	fmt.Println("Getting VM IP address...")
 	ip, err := host.Driver.GetIP()
 	if err != nil {
@@ -180,9 +180,9 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 
-    // NOTE Load cluster cfg
+	// NOTE Load cluster cfg
 	// Load profile cluster config from file
-    profileName := viper.GetString(cfg.MachineProfile)
+	profileName := viper.GetString(cfg.MachineProfile)
 	cc, err := profile.LoadConfigFromFile(profileName)
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
@@ -205,10 +205,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-    token, err := genBootstrapToken()
-    if err != nil {
-        glog.Exitf("Error generating bootstrap token: ", err)
-    }
+	token, err := genBootstrapToken()
+	if err != nil {
+		glog.Exitf("Error generating bootstrap token: ", err)
+	}
 
 	kubernetesConfig := bootstrapper.KubernetesConfig{
 		KubernetesVersion:      selectedKubernetesVersion,
@@ -222,10 +222,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		ServiceCIDR:            pkgutil.DefaultServiceCIDR,
 		ExtraOptions:           extraOptions,
 		ShouldLoadCachedImages: shouldCacheImages,
-        BootstrapToken:         token,
+		BootstrapToken:         token,
 	}
 
-    // NOTE Get bootstrapper
+	// NOTE Get bootstrapper
 	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
 	if err != nil {
 		glog.Exitf("Error getting cluster bootstrapper: %s", err)
@@ -233,6 +233,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Write profile cluster configuration to file
 	clusterConfig := cluster.Config{
+		ClusterName:      profileName,
 		MachineConfig:    config,
 		KubernetesConfig: kubernetesConfig,
 	}
@@ -241,7 +242,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
-    // NOTE Configure machine
+	// NOTE Configure machine
 	fmt.Println("Moving files into cluster...")
 	if err := k8sBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
@@ -415,14 +416,14 @@ func init() {
 }
 
 func genBootstrapToken() (string, error) {
-    first, err := gostrgen.RandGen(6, gostrgen.Lower | gostrgen.Digit, "", "")
-    if err != nil {
-        return "", nil
-    }
+	first, err := gostrgen.RandGen(6, gostrgen.Lower|gostrgen.Digit, "", "")
+	if err != nil {
+		return "", nil
+	}
 
-    second, err := gostrgen.RandGen(16, gostrgen.Lower | gostrgen.Digit, "", "")
-    if err != nil {
-        return "", nil
-    }
-    return fmt.Sprintf("%s.%s", first, second), nil
+	second, err := gostrgen.RandGen(16, gostrgen.Lower|gostrgen.Digit, "", "")
+	if err != nil {
+		return "", nil
+	}
+	return fmt.Sprintf("%s.%s", first, second), nil
 }
