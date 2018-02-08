@@ -5,13 +5,11 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"k8s.io/minikube/cmd/minikube/profile"
 	cmdutil "k8s.io/minikube/cmd/util"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -51,48 +49,16 @@ func startNode(cmd *cobra.Command, args []string) {
 		fmt.Printf("Starting node: %s\n", name)
 
 		n := node.NewNode(nodeCfg, cfg.MachineConfig, clusterName, api)
-
 		if err := n.Start(); err != nil {
 			glog.Errorln("Error starting node machine: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 
-		ip, err := n.IP()
-		if err != nil {
-			glog.Errorln("Error getting node's IP: ", err)
-			cmdutil.MaybeReportErrorAndExit(err)
-		}
-
-		runner, err := n.Runner()
-		if err != nil {
-			glog.Errorln("Error getting node's runner: ", err)
-			cmdutil.MaybeReportErrorAndExit(err)
-		}
-
-		b := kubeadm.NewKubeadmBootstrapperForRunner(n.MachineName(), ip, runner)
-		err = bootstrapNode(b, cfg.KubernetesConfig)
-		if err != nil {
+		b := kubeadm.NewNodeBootstrapper(cfg.KubernetesConfig, os.Stdout)
+		if err := b.Bootstrap(n); err != nil {
 			glog.Errorln("Error bootstrapping node: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
-
-		fmt.Printf("Node started. IP: %s\n", ip)
+		fmt.Printf("Node %s started and configured.\n", n.Name())
 	}
-}
-
-func bootstrapNode(b *kubeadm.KubeadmBootstrapper, cfg bootstrapper.KubernetesConfig) error {
-	fmt.Println("Moving assets into node...")
-	if err := b.UpdateNode(cfg); err != nil {
-		return errors.Wrap(err, "Error updating node")
-	}
-	fmt.Println("Setting up certs...")
-	if err := b.SetupCerts(cfg); err != nil {
-		return errors.Wrap(err, "Error configuring authentication")
-	}
-
-	fmt.Println("Joining node to cluster...")
-	if err := b.JoinNode(cfg); err != nil {
-		return errors.Wrap(err, "Error joining node to cluster")
-	}
-	return nil
 }

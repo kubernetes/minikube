@@ -53,6 +53,10 @@ func (n *node) MachineName() string {
 	return fmt.Sprintf("%s-node-%s", n.clusterName, n.config.Name)
 }
 
+func (n *node) Name() string {
+	return n.config.Name
+}
+
 func (n *node) Start() error {
 	_, err := cluster.StartHost(n.api, n.machineConfig())
 	if err != nil {

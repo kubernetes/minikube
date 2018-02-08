@@ -23,5 +23,6 @@ type Node interface {
 	Status() (NodeStatus, error)
 	Runner() (bootstrapper.CommandRunner, error)
 	MachineName() string
+	Name() string
 	IP() (string, error)
 }
