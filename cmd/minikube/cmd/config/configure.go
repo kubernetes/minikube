@@ -62,7 +62,7 @@ var addonsConfigureCmd = &cobra.Command{
 				awsAccessKey = AskForStaticValue("-- Enter AWS Secret Access Key: ")
 				awsSessionToken = AskForStaticValueOptional("-- (Optional) Enter AWS Session Token: ")
 				awsRegion = AskForStaticValue("-- Enter AWS Region: ")
-				awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID: ")
+				awsAccount = AskForStaticValue("-- Enter 12 digit AWS Account ID (Comma seperated list): ")
 				awsRole = AskForStaticValueOptional("-- (Optional) Enter ARN of AWS role to assume: ")
 			}
 
