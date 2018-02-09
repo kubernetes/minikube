@@ -27,7 +27,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func createVMwareFusionHost(config MachineConfig) drivers.Driver {
+func init() {
+	registry.Register("vmwarefusion", createVMwareFusionHost)
+	registry.Register("hyperkit", createHyperkitHost)
+	registry.Register("xhyve", createXhyveHost)
+}
+
+func createVMwareFusionHost(config MachineConfig) RawDriver {
 	d := vmwarefusion.NewDriver(cfg.GetMachineName(), constants.GetMinipath()).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
@@ -59,7 +65,7 @@ type xhyveDriver struct {
 	RawDisk        bool
 }
 
-func createHyperkitHost(config MachineConfig) *hyperkit.Driver {
+func createHyperkitHost(config MachineConfig) RawDriver {
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
@@ -77,7 +83,7 @@ func createHyperkitHost(config MachineConfig) *hyperkit.Driver {
 	}
 }
 
-func createXhyveHost(config MachineConfig) *xhyveDriver {
+func createXhyveHost(config MachineConfig) RawDriver {
 	useVirtio9p := !config.DisableDriverMounts
 	return &xhyveDriver{
 		BaseDriver: &drivers.BaseDriver{

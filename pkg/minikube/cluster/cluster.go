@@ -30,7 +30,6 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -58,6 +57,8 @@ func init() {
 	flag.Set("logtostderr", "false")
 	// Setting the default client to native gives much better performance.
 	ssh.SetDefaultClient(ssh.Native)
+
+	registry.Register("virtualbox", createVirtualboxHost)
 }
 
 // StartHost starts a host VM.
@@ -180,7 +181,7 @@ func engineOptions(config MachineConfig) *engine.Options {
 	return &o
 }
 
-func createVirtualboxHost(config MachineConfig) drivers.Driver {
+func createVirtualboxHost(config MachineConfig) RawDriver {
 	d := virtualbox.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
@@ -193,20 +194,8 @@ func createVirtualboxHost(config MachineConfig) drivers.Driver {
 	return d
 }
 
-func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
-	var driver interface{}
-
-	if config.VMDriver != "none" {
-		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
-			return nil, errors.Wrap(err, "Error attempting to cache minikube ISO from URL")
-		}
-	}
-
+func preCreateHost(config *MachineConfig) error {
 	switch config.VMDriver {
-	case "virtualbox":
-		driver = createVirtualboxHost(config)
-	case "vmwarefusion":
-		driver = createVMwareFusionHost(config)
 	case "kvm":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			fmt.Fprintln(os.Stderr, `WARNING: The kvm driver is now deprecated and support for it will be removed in a future release.
@@ -214,9 +203,6 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
 				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
-		driver = createKVMHost(config)
-	case "kvm2":
-		driver = createKVM2Host(config)
 	case "xhyve":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			fmt.Fprintln(os.Stderr, `WARNING: The xhyve driver is now deprecated and support for it will be removed in a future release.
@@ -224,16 +210,33 @@ Please consider switching to the hyperkit driver, which is intended to replace t
 See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
 To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
-		driver = createXhyveHost(config)
-	case "hyperv":
-		driver = createHypervHost(config)
-	case "none":
-		driver = createNoneHost(config)
-	case "hyperkit":
-		driver = createHyperkitHost(config)
-	default:
-		glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
 	}
+
+	return nil
+}
+
+func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
+	err := preCreateHost(&config)
+	if err != nil {
+		return nil, err
+	}
+
+	driverFunc, err := registry.Driver(config.VMDriver)
+	if err != nil {
+		if err == ErrDriverNotFound {
+			glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
+		} else {
+			glog.Exit(err.Error())
+		}
+	}
+
+	if config.VMDriver != "none" {
+		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
+			return nil, errors.Wrap(err, "Error attempting to cache minikube ISO from URL")
+		}
+	}
+
+	driver := driverFunc(config)
 
 	data, err := json.Marshal(driver)
 	if err != nil {
