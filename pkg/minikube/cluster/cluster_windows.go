@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/drivers/hyperv"
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/windows/registry"
@@ -31,7 +30,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func createHypervHost(config MachineConfig) drivers.Driver {
+func init() {
+	registry.Register("hyperkit", createHypervHost)
+}
+
+func createHypervHost(config MachineConfig) RawDriver {
 	d := hyperv.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch

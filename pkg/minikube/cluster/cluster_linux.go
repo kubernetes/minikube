@@ -27,6 +27,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+func init() {
+	registry.Register("kvm", createKVMHost)
+	registry.Register("kvm2", createKVM2Host)
+	registry.Register("none", createNoneHost)
+}
+
 type kvmDriver struct {
 	*drivers.BaseDriver
 
@@ -42,7 +48,7 @@ type kvmDriver struct {
 	IOMode         string
 }
 
-func createKVMHost(config MachineConfig) *kvmDriver {
+func createKVMHost(config MachineConfig) RawDriver {
 	return &kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
@@ -62,7 +68,7 @@ func createKVMHost(config MachineConfig) *kvmDriver {
 	}
 }
 
-func createKVM2Host(config MachineConfig) *kvmDriver {
+func createKVM2Host(config MachineConfig) RawDriver {
 	return &kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
@@ -90,7 +96,7 @@ func detectVBoxManageCmd() string {
 	return cmd
 }
 
-func createNoneHost(config MachineConfig) *none.Driver {
+func createNoneHost(config MachineConfig) RawDriver {
 	return &none.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
