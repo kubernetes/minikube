@@ -18,9 +18,9 @@ import (
 
 func NewCmdStart() *cobra.Command {
 	return &cobra.Command{
-		Use:   "start",
-		Short: "Starts all nodes",
-		Long:  "Starts all nodes",
+		Use:   "start [node_name [node_name] ...]",
+		Short: "Starts nodes",
+		Long:  "Starts nodes",
 		Run:   startNode,
 	}
 }
@@ -31,7 +31,7 @@ func startNode(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	nodeName := args[0]
+	nodeNames := args
 	clusterName := viper.GetString(cfg.MachineProfile)
 
 	cfg, err := profile.LoadConfigFromFile(clusterName)
@@ -51,7 +51,7 @@ func startNode(cmd *cobra.Command, args []string) {
 
 	for _, nodeCfg := range cfg.Nodes {
 		name := nodeCfg.Name
-		if name != nodeName {
+		if len(nodeNames) > 0 && !contains(nodeNames, name) {
 			continue
 		}
 
@@ -63,11 +63,20 @@ func startNode(cmd *cobra.Command, args []string) {
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 
-		b := kubeadm.NewNodeBootstrapper(cfg.KubernetesConfig, os.Stdout)
+		b := kubeadm.NewWorkerBootstrapper(cfg.KubernetesConfig, os.Stdout)
 		if err := b.Bootstrap(n); err != nil {
 			glog.Errorln("Error bootstrapping node: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 		fmt.Printf("Node %s started and configured.\n", n.Name())
 	}
+}
+
+func contains(s []string, v string) bool {
+	for _, str := range s {
+		if str == v {
+			return true
+		}
+	}
+	return false
 }
