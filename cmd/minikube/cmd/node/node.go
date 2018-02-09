@@ -31,7 +31,7 @@ func NewCmdNode() *cobra.Command {
 }
 
 func getMachineName(clusterName string, node minikube.NodeConfig) string {
-	return fmt.Sprintf("%s-node-%s", clusterName, node.Name)
+	return fmt.Sprintf("%s-%s", clusterName, node.Name)
 }
 
 func getNode(clusterName, nodeName string) (minikube.NodeConfig, error) {
