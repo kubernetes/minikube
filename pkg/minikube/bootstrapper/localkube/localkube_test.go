@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -46,7 +47,7 @@ func TestStartCluster(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			f := bootstrapper.NewFakeCommandRunner()
+			f := runner.NewFakeCommandRunner()
 			f.SetCommandToOutput(map[string]string{test.startCmd: "ok"})
 			l := LocalkubeBootstrapper{f}
 			err := l.StartCluster(bootstrapper.KubernetesConfig{})
@@ -96,7 +97,7 @@ func TestUpdateCluster(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			f := bootstrapper.NewFakeCommandRunner()
+			f := runner.NewFakeCommandRunner()
 			l := LocalkubeBootstrapper{f}
 			err := l.UpdateCluster(test.k8s)
 			if err != nil && !test.shouldErr {
@@ -149,7 +150,7 @@ func TestGetLocalkubeStatus(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			f := bootstrapper.NewFakeCommandRunner()
+			f := runner.NewFakeCommandRunner()
 			f.SetCommandToOutput(test.statusCmdMap)
 			l := LocalkubeBootstrapper{f}
 			actualStatus, err := l.GetClusterStatus()
@@ -203,7 +204,7 @@ func TestGetHostLogs(t *testing.T) {
 	for _, test := range cases {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			f := bootstrapper.NewFakeCommandRunner()
+			f := runner.NewFakeCommandRunner()
 			f.SetCommandToOutput(test.logsCmdMap)
 			l := LocalkubeBootstrapper{f}
 			_, err := l.GetClusterLogs(test.follow)

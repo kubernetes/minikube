@@ -36,7 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -224,7 +224,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
-	execRunner := &bootstrapper.ExecRunner{}
+	execRunner := &runner.ExecRunner{}
 	hostCerts := map[string]string{
 		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
 		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
@@ -275,7 +275,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 	if err != nil {
 		return errors.Wrap(err, "provisioning: error getting ssh client")
 	}
-	sshRunner := bootstrapper.NewSSHRunner(sshClient)
+	sshRunner := runner.NewSSHRunner(sshClient)
 	for src, dst := range remoteCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
 		if err != nil {

@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/util"
@@ -30,7 +31,7 @@ func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	f := NewFakeCommandRunner()
+	f := runner.NewFakeCommandRunner()
 	k8s := KubernetesConfig{
 		APIServerName: constants.APIServerName,
 		DNSDomain:     constants.ClusterDNSDomain,

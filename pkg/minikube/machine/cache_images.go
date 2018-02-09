@@ -28,6 +28,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -80,7 +81,7 @@ func CacheImages(images []string, cacheDir string) error {
 	return nil
 }
 
-func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
+func LoadImages(cmd runner.CommandRunner, images []string, cacheDir string) error {
 	var g errgroup.Group
 	glog.Infof("Loading cached images: %s", images)
 	for _, image := range images {
@@ -119,7 +120,7 @@ func CacheAndLoadImages(images []string) error {
 	if err != nil {
 		return err
 	}
-	cmdRunner, err := bootstrapper.NewSSHRunner(client), nil
+	cmdRunner, err := runner.NewSSHRunner(client), nil
 	if err != nil {
 		return err
 	}
@@ -191,7 +192,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
+func LoadFromCacheBlocking(cmd runner.CommandRunner, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
 	for {

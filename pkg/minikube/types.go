@@ -1,7 +1,7 @@
 package minikube
 
 import (
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 )
 
 const (
@@ -21,7 +21,7 @@ type Node interface {
 	Start() error
 	Stop() error
 	Status() (NodeStatus, error)
-	Runner() (bootstrapper.CommandRunner, error)
+	Runner() (runner.CommandRunner, error)
 	MachineName() string
 	Name() string
 	IP() (string, error)

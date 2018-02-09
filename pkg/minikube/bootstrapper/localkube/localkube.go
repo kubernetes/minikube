@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -33,7 +34,7 @@ import (
 )
 
 type LocalkubeBootstrapper struct {
-	cmd bootstrapper.CommandRunner
+	cmd runner.CommandRunner
 }
 
 func NewLocalkubeBootstrapper(api libmachine.API) (*LocalkubeBootstrapper, error) {
@@ -41,16 +42,16 @@ func NewLocalkubeBootstrapper(api libmachine.API) (*LocalkubeBootstrapper, error
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
-	var cmd bootstrapper.CommandRunner
+	var cmd runner.CommandRunner
 	// The none driver executes commands directly on the host
 	if h.Driver.DriverName() == constants.DriverNone {
-		cmd = &bootstrapper.ExecRunner{}
+		cmd = &runner.ExecRunner{}
 	} else {
 		client, err := sshutil.NewSSHClient(h.Driver)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting ssh client")
 		}
-		cmd = bootstrapper.NewSSHRunner(client)
+		cmd = runner.NewSSHRunner(client)
 	}
 	return &LocalkubeBootstrapper{
 		cmd: cmd,

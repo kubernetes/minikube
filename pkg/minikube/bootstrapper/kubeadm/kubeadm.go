@@ -32,7 +32,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+    "k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -41,7 +42,7 @@ import (
 )
 
 type KubeadmBootstrapper struct {
-	c           bootstrapper.CommandRunner
+	c           runner.CommandRunner
 	ip          string
 	machineName string
 }
@@ -55,16 +56,16 @@ func NewKubeadmBootstrapperForMachine(machineName string, api libmachine.API) (*
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
-	var cmd bootstrapper.CommandRunner
+	var cmd runner.CommandRunner
 	// The none driver executes commands directly on the host
 	if h.Driver.DriverName() == constants.DriverNone {
-		cmd = &bootstrapper.ExecRunner{}
+		cmd = &runner.ExecRunner{}
 	} else {
 		client, err := sshutil.NewSSHClient(h.Driver)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting ssh client")
 		}
-		cmd = bootstrapper.NewSSHRunner(client)
+		cmd = runner.NewSSHRunner(client)
 	}
 
 	ip, err := h.Driver.GetIP()
@@ -79,7 +80,7 @@ func NewKubeadmBootstrapperForMachine(machineName string, api libmachine.API) (*
 	}, nil
 }
 
-func NewKubeadmBootstrapperForRunner(machineName, ip string, c bootstrapper.CommandRunner) *KubeadmBootstrapper {
+func NewKubeadmBootstrapperForRunner(machineName, ip string, c runner.CommandRunner) *KubeadmBootstrapper {
 	return &KubeadmBootstrapper{
         c: c,
         ip: ip,
