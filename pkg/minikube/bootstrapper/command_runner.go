@@ -49,7 +49,7 @@ type CommandRunner interface {
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
 
-	//Remove is a convenience method that runs a command to remove a file
+	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
 }
 
