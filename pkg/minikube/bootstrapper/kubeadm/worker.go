@@ -9,16 +9,16 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 )
 
-type NodeBootstrapper struct {
+type WorkerBootstrapper struct {
 	config bootstrapper.KubernetesConfig
 	ui     io.Writer
 }
 
-func NewNodeBootstrapper(c bootstrapper.KubernetesConfig, ui io.Writer) *NodeBootstrapper {
-	return &NodeBootstrapper{config: c, ui: ui}
+func NewWorkerBootstrapper(c bootstrapper.KubernetesConfig, ui io.Writer) minikube.Bootstrapper {
+	return &WorkerBootstrapper{config: c, ui: ui}
 }
 
-func (nb *NodeBootstrapper) Bootstrap(n minikube.Node) error {
+func (nb *WorkerBootstrapper) Bootstrap(n minikube.Node) error {
 	ip, err := n.IP()
 	if err != nil {
 		return errors.Wrap(err, "Error getting node's IP")

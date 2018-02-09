@@ -26,3 +26,7 @@ type Node interface {
 	Name() string
 	IP() (string, error)
 }
+
+type Bootstrapper interface {
+	Bootstrap(Node) error
+}
