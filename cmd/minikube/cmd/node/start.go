@@ -51,7 +51,7 @@ func startNode(cmd *cobra.Command, args []string) {
 
 	for _, nodeCfg := range cfg.Nodes {
 		name := nodeCfg.Name
-		if len(nodeNames) > 0 && !contains(nodeNames, name) {
+		if isExcluded(nodeNames, name) {
 			continue
 		}
 
@@ -70,6 +70,10 @@ func startNode(cmd *cobra.Command, args []string) {
 		}
 		fmt.Printf("Node %s started and configured.\n", n.Name())
 	}
+}
+
+func isExcluded(nodeNames []string, nodeName string) bool {
+	return len(nodeNames) > 0 && !contains(nodeNames, nodeName)
 }
 
 func contains(s []string, v string) bool {
