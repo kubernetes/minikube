@@ -105,6 +105,6 @@ do you have the correct permissions?`,
 
 // Remove removes a file
 func (e *ExecRunner) Remove(f assets.CopyableFile) error {
-	cmd := getDeleteFileCommand(f)
-	return e.Run(cmd)
+	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
+	return os.Remove(targetPath)
 }
