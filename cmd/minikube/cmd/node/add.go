@@ -2,9 +2,7 @@ package node
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -41,8 +39,7 @@ func add(cmd *cobra.Command, args []string) {
 	}
 
 	if nodeName == "" {
-		s := rand.New(rand.NewSource(time.Now().UTC().UnixNano()))
-		nodeName = fmt.Sprintf("node-%d", s.Uint32())
+		nodeName = fmt.Sprintf("node-%d", len(cfg.Nodes)+1)
 	}
 
 	node := minikube.NodeConfig{
