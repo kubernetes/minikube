@@ -14,6 +14,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
+func NewCmdRemove() *cobra.Command {
+	return &cobra.Command{
+		Use:   "remove <node_name>",
+		Short: "Removes a node from the cluster",
+		Long:  "Removes a node from the cluster",
+		Run:   remove,
+	}
+}
+
 func remove(cmd *cobra.Command, args []string) {
 	clusterName := viper.GetString(cfg.MachineProfile)
 

@@ -132,7 +132,7 @@ func init() {
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	RootCmd.AddCommand(configCmd.ProfileCmd)
-	RootCmd.AddCommand(nodeCmd.NodeCmd)
+	RootCmd.AddCommand(nodeCmd.NewCmdNode())
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	viper.BindPFlags(RootCmd.PersistentFlags())
 

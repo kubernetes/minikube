@@ -14,6 +14,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 )
 
+func NewCmdList() *cobra.Command {
+	return &cobra.Command{
+		Use:   "list",
+		Short: "Lists all nodes",
+		Long:  "Lists all nodes",
+		Run:   list,
+	}
+}
+
 func list(cmd *cobra.Command, args []string) {
 	configs, err := profile.LoadClusterConfigs()
 	if err != nil {

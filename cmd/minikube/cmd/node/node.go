@@ -13,12 +13,8 @@ import (
 
 const internalErrorCode = -1
 
-var (
-	NodeCmd *cobra.Command
-)
-
-func init() {
-	NodeCmd = &cobra.Command{
+func NewCmdNode() *cobra.Command {
+	cmd := &cobra.Command{
 		Use:   "node SUBCOMMAND [flags]",
 		Short: "Control a minikube cluster's nodes",
 		Long:  `Control a cluster's nodes using subcommands like "minikube node add <node_name>"`,
@@ -26,36 +22,12 @@ func init() {
 			cmd.Help()
 		},
 	}
-	NodeCmd.AddCommand(&cobra.Command{
-		Use:   "add [flags]",
-		Short: "Adds a node to the cluster",
-		Long:  "Adds a node tot the cluster",
-		Run:   add,
-	})
-	NodeCmd.AddCommand(&cobra.Command{
-		Use:   "list",
-		Short: "Lists all nodes",
-		Long:  "Lists all nodes",
-		Run:   list,
-	})
-	NodeCmd.AddCommand(&cobra.Command{
-		Use:   "remove <node_name>",
-		Short: "Removes a node from the cluster",
-		Long:  "Removes a node from the cluster",
-		Run:   remove,
-	})
-	NodeCmd.AddCommand(&cobra.Command{
-		Use:   "ssh",
-		Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
-		Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
-		Run:   ssh,
-	})
-	NodeCmd.AddCommand(&cobra.Command{
-		Use:   "start",
-		Short: "Starts all nodes",
-		Long:  "Starts all nodes",
-		Run:   startNode,
-	})
+	cmd.AddCommand(NewCmdAdd())
+	cmd.AddCommand(NewCmdList())
+	cmd.AddCommand(NewCmdRemove())
+	cmd.AddCommand(NewCmdSsh())
+	cmd.AddCommand(NewCmdStart())
+	return cmd
 }
 
 func getMachineName(clusterName string, node minikube.NodeConfig) string {

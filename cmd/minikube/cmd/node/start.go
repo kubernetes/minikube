@@ -16,6 +16,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/node"
 )
 
+func NewCmdStart() *cobra.Command {
+	return &cobra.Command{
+		Use:   "start",
+		Short: "Starts all nodes",
+		Long:  "Starts all nodes",
+		Run:   startNode,
+	}
+}
+
 func startNode(cmd *cobra.Command, args []string) {
 	if len(args) == 0 || args[0] == "" {
 		glog.Error("node_name is required.")

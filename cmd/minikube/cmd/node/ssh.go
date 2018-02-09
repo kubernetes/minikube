@@ -14,6 +14,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
+func NewCmdSsh() *cobra.Command {
+	return &cobra.Command{
+		Use:   "ssh",
+		Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
+		Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
+		Run:   ssh,
+	}
+}
+
 func ssh(cmd *cobra.Command, args []string) {
 	clusterName := viper.GetString(cfg.MachineProfile)
 
