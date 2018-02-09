@@ -12,13 +12,20 @@ p ""
 p "# Start minikube master ..."
 pe "out/minikube start"
 
+pe "out/minikube nodes list"
+
 p "# Add some nodes ..."
 pe "out/minikube node add"
 pe "out/minikube node add"
 pe "out/minikube node add"
 
+pe "out/minikube nodes list"
+
+
 p "# Start nodes ..."
 pe "out/minikube node start"
+
+pe "out/minikube nodes list"
 
 PROMPT_TIMEOUT=10
 wait
