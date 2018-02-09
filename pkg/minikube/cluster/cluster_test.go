@@ -67,7 +67,7 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	found := false
-	for _, driver := range constants.SupportedVMDrivers {
+	for _, driver := range ListDrivers() {
 		if h.DriverName == driver {
 			found = true
 			break
@@ -75,7 +75,7 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatalf("Wrong driver name: %v. Should be virtualbox, vmwarefusion, kvm or xhyve.", h.DriverName)
+		t.Fatalf("Wrong driver name: %v. Should be among %v", h.DriverName, ListDrivers())
 	}
 }
 

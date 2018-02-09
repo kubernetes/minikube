@@ -1,4 +1,4 @@
-// +build linux,!gendocs
+// +build linux
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -21,12 +21,5 @@ package constants
 import (
 	"k8s.io/client-go/util/homedir"
 )
-
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"kvm",
-	"kvm2",
-	"none",
-}
 
 var DefaultMountDir = homedir.HomeDir()
