@@ -37,14 +37,16 @@ func list(cmd *cobra.Command, args []string) {
 	}
 	defer api.Close()
 
-	fmt.Printf("%-20s %-20s %-20s %-20s\n", "CLUSTER", "NODE", "STATUS", "IP")
+	fmt.Printf("%-20s %-20s %-16s %-20s\n", "CLUSTER", "NODE", "IP", "STATUS")
+
+	nodesFound := false
 	for _, c := range configs {
 		for _, nc := range c.Nodes {
+			nodesFound = true
 			n := node.NewNode(nc, c.MachineConfig, c.ClusterName, api)
 			status, err := n.Status()
 			if err != nil {
-				glog.Errorf("Error getting status for node %s: %s", nc.Name, err)
-				cmdutil.MaybeReportErrorAndExit(err)
+				status = minikube.NodeStatus("Error: " + err.Error())
 			}
 
 			ip := ""
@@ -56,7 +58,11 @@ func list(cmd *cobra.Command, args []string) {
 				}
 			}
 
-			fmt.Printf("%-20s %-20s %-20s %-20s\n", c.ClusterName, nc.Name, status, ip)
+			fmt.Printf("%-20s %-20s %-16s %-20s\n", c.ClusterName, nc.Name, ip, status)
 		}
+	}
+
+	if !nodesFound {
+		fmt.Println("No nodes found.")
 	}
 }
