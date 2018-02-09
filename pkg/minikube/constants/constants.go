@@ -46,6 +46,16 @@ func GetMinipath() string {
 	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
 }
 
+// SupportedVMDrivers is a list of supported drivers on all platforms. Currently
+// used in gendocs.
+var SupportedVMDrivers = [...]string{
+	"virtualbox",
+	"vmwarefusion",
+	"kvm",
+	"xhyve",
+	"hyperv",
+}
+
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 // KubeconfigPath is the path to the Kubernetes client config

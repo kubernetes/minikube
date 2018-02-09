@@ -1,4 +1,4 @@
-// +build darwin,!gendocs
+// +build darwin
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -17,12 +17,5 @@ limitations under the License.
 */
 
 package constants
-
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"xhyve",
-	"vmwarefusion",
-	"hyperkit",
-}
 
 var DefaultMountDir = "/Users"
