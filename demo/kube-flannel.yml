@@ -77,6 +77,9 @@ metadata:
     tier: node
     app: flannel
 spec:
+  updateStrategy:
+    type: RollingUpdate
+  minReadySeconds: 5
   template:
     metadata:
       labels:

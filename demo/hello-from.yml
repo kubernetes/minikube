@@ -1,0 +1,43 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: hello-from
+spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 100%
+  template:
+    metadata:
+      labels:
+        app: hello-from
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions: [{ key: app, operator: In, values: [hello-from] }]
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: hello-from
+        image: pbitty/hello-from:latest
+        ports:
+          - name: http
+            containerPort: 80
+      terminationGracePeriodSeconds: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-from
+spec:
+  type: NodePort
+  selector:
+    app: hello-from
+  ports:
+    - protocol: TCP
+      nodePort: 31000
+      port: 80
+      targetPort: http
