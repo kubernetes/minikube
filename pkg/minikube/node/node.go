@@ -7,7 +7,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -50,7 +50,7 @@ func (n *node) IP() (string, error) {
 }
 
 func (n *node) MachineName() string {
-	return fmt.Sprintf("%s-node-%s", n.clusterName, n.config.Name)
+	return fmt.Sprintf("%s-%s", n.clusterName, n.config.Name)
 }
 
 func (n *node) Name() string {
@@ -71,24 +71,24 @@ func (n *node) Stop() error {
 
 func (n *node) Status() (minikube.NodeStatus, error) {
 	s, err := n.status()
-	return s, errors.Wrap(err, "Error getting node status.")
+	return s, errors.Wrap(err, "getting node status")
 }
 
-func (n *node) Runner() (bootstrapper.CommandRunner, error) {
+func (n *node) Runner() (runner.CommandRunner, error) {
 	h, err := n.api.Load(n.MachineName())
 	if err != nil {
-		return nil, errors.Wrap(err, "Error loading host")
+		return nil, errors.Wrap(err, "loading host")
 	}
 
 	// The none driver executes commands directly on the host
 	if h.Driver.DriverName() == constants.DriverNone {
-		return &bootstrapper.ExecRunner{}, nil
+		return &runner.ExecRunner{}, nil
 	}
 	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting ssh client")
 	}
-	return bootstrapper.NewSSHRunner(client), nil
+	return runner.NewSSHRunner(client), nil
 }
 
 func (n *node) machineConfig() cluster.MachineConfig {
