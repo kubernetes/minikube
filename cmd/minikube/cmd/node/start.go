@@ -26,11 +26,6 @@ func NewCmdStart() *cobra.Command {
 }
 
 func startNode(cmd *cobra.Command, args []string) {
-	if len(args) == 0 || args[0] == "" {
-		glog.Error("node_name is required.")
-		os.Exit(1)
-	}
-
 	nodeNames := args
 	clusterName := viper.GetString(cfg.MachineProfile)
 
