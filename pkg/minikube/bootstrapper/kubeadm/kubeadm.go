@@ -298,7 +298,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) e
 		glog.Infoln("Loading cached images....")
 		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
 		if err != nil {
-			glog.Errorf("Could not load all cached images: ", err)
+			glog.Infoln("Could not load all cached images, ignoring and continuing. Error: ", err)
 		}
 	}
 	kubeadmCfg, err := generateConfig(cfg)
