@@ -5,34 +5,35 @@ cd "$(dirname $0)" || exit
 
 source demo-magic.sh -n
 
-TYPE_SPEED=15
 DEMO_PROMPT="${CYAN}$ "
+MINIKUBE_CMD="../out/minikube"
+TYPE_SPEED=15
 
 p "# In this demo I will start up a 4-node minikube cluster."
 p "# Three workers and one server"
 p ""
 
 p "# Start minikube master ..."
-pe "./minikube start"
+pe "$MINIKUBE_CMD start"
 
 p ""
-pe "./minikube node list"
+pe "$MINIKUBE_CMD node list"
 
 p ""
 p "# Add some nodes ..."
-pe "./minikube node add"
-pe "./minikube node add"
-pe "./minikube node add"
+pe "$MINIKUBE_CMD node add"
+pe "$MINIKUBE_CMD node add"
+pe "$MINIKUBE_CMD node add"
 
 p ""
-pe "./minikube node list"
+pe "$MINIKUBE_CMD node list"
 
 p ""
 p "# Start nodes ..."
-pe "./minikube node start"
+pe "$MINIKUBE_CMD node start"
 
 p ""
-pe "./minikube node list"
+pe "$MINIKUBE_CMD node list"
 
 sleep 10
 
@@ -65,10 +66,10 @@ pe "# Note Pod IPs ..."
 pe "kubectl get pod -o wide"
 
 p ""
-pe "./minikube service list"
+pe "$MINIKUBE_CMD service list"
 
 p ""
-ip=$(./minikube ip)
+ip=$($MINIKUBE_CMD ip)
 pe "for i in \$(seq 1 10); do curl http://$ip:31000; echo; sleep 0.4; done"
 
 p "# Yay"
