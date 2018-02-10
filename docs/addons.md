@@ -31,7 +31,7 @@ The currently supported addons include:
 * [Kube-dns](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dns)
 * [Heapster](https://github.com/kubernetes/heapster): [Troubleshooting Guide](https://github.com/kubernetes/heapster/blob/master/docs/influxdb.md) Note:You will need to login to Grafana as admin/admin in order to access the console
 * [EFK](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/fluentd-elasticsearch)
-* [Registry](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/registry)
+* [Registry](https://github.com/kubernetes/minikube/tree/master/deploy/addons/registry)
 * [Registry Credentials](https://github.com/upmc-enterprises/registry-creds)
 * [CoreDNS](https://github.com/coredns/deployment/tree/master/kubernetes)
 * [Ingress](https://github.com/kubernetes/ingress-nginx)
