@@ -32,7 +32,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
-    "k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/runner"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -82,10 +82,10 @@ func NewKubeadmBootstrapperForMachine(machineName string, api libmachine.API) (*
 
 func NewKubeadmBootstrapperForRunner(machineName, ip string, c runner.CommandRunner) *KubeadmBootstrapper {
 	return &KubeadmBootstrapper{
-        c: c,
-        ip: ip,
-        machineName: machineName,
-    }
+		c:           c,
+		ip:          ip,
+		machineName: machineName,
+	}
 }
 
 //TODO(r2d4): This should most likely check the health of the apiserver
