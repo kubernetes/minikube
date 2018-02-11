@@ -38,6 +38,10 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
+const (
+	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
+)
+
 type RetriableError struct {
 	Err error
 }
@@ -153,6 +157,15 @@ func ParseSHAFromURL(url string) (string, error) {
 	}
 
 	return strings.Trim(string(body), "\n"), nil
+}
+
+func GetBinaryDownloadURL(version, platform string) string {
+	switch platform {
+	case "windows":
+		return fmt.Sprintf(downloadURL, version, platform, ".exe")
+	default:
+		return fmt.Sprintf(downloadURL, version, platform, "")
+	}
 }
 
 type MultiError struct {
