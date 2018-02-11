@@ -1,5 +1,27 @@
 # multi-node prototype
 
+## Motivation
+
+This was inspired by the requests in https://github.com/kubernetes/minikube/issues/94.  Having multiple Kubernetes nodes in minikube allows one to test and play around with Kubernetes features that are not available in a single-node cluster.
+
+Some examples:
+
+* Scheduling behavior based on
+  * Resource allocation
+  * Node selector
+  * Anti-affinity
+  * Taints
+
+* Networking layer
+  * Experimenting with different CNI plugins and configurations
+
+* Self-healing
+  * Simulating node failure
+
+* Developing Kube components
+  * Use a multi-node cluster to reproduce kube bugs
+  * Deploy custom binaries built locally?
+
 ## How to use
 
 * Check out this branch
