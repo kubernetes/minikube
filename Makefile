@@ -64,6 +64,7 @@ KVM_DRIVER_FILES := $(shell go list -f '{{join .Deps "\n"}}' ./cmd/drivers/kvm/ 
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
+SOURCE_DIRS = cmd pkg test
 
 # $(call DOCKER, image, command)
 define DOCKER
@@ -212,6 +213,10 @@ clean:
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md
+
+.PHONY: fmt
+fmt:
+	@gofmt -l -s -w $(SOURCE_DIRS)
 
 out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
 	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" -tags gendocs hack/gen_help_text.go
