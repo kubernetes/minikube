@@ -1,4 +1,4 @@
-# multi-node PoC
+# multi-node prototype
 
 ## How to use
 
