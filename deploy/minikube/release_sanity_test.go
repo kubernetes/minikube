@@ -32,19 +32,6 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-const (
-	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
-)
-
-func getDownloadURL(version, platform string) string {
-	switch platform {
-	case "windows":
-		return fmt.Sprintf(downloadURL, version, platform, ".exe")
-	default:
-		return fmt.Sprintf(downloadURL, version, platform, "")
-	}
-}
-
 func getShaFromURL(url string) (string, error) {
 	fmt.Println("Downloading: ", url)
 	r, err := http.Get(url)
@@ -71,7 +58,7 @@ func TestReleasesJson(t *testing.T) {
 		fmt.Printf("Checking release: %s\n", r.Name)
 		for platform, sha := range r.Checksums {
 			fmt.Printf("Checking SHA for %s.\n", platform)
-			actualSha, err := getShaFromURL(getDownloadURL(r.Name, platform))
+			actualSha, err := getShaFromURL(util.GetBinaryDownloadURL(r.Name, platform))
 			if err != nil {
 				t.Errorf("Error calcuating SHA for %s-%s. Error: %s", r.Name, platform, err)
 				continue

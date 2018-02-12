@@ -162,3 +162,23 @@ Error 2`
 		t.Fatalf("Unexpected error: %s", err)
 	}
 }
+
+func TestGetBinaryDownloadURL(t *testing.T) {
+	testData := []struct {
+		version     string
+		platform    string
+		expectedURL string
+	}{
+		{"v0.0.1", "linux", "https://storage.googleapis.com/minikube/releases/v0.0.1/minikube-linux-amd64"},
+		{"v0.0.1", "darwin", "https://storage.googleapis.com/minikube/releases/v0.0.1/minikube-darwin-amd64"},
+		{"v0.0.1", "windows", "https://storage.googleapis.com/minikube/releases/v0.0.1/minikube-windows-amd64.exe"},
+	}
+
+	for _, tt := range testData {
+		url := GetBinaryDownloadURL(tt.version, tt.platform)
+		if url != tt.expectedURL {
+			t.Fatalf("Expected '%s' but got '%s'", tt.expectedURL, url)
+		}
+	}
+
+}
