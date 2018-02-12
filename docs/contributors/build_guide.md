@@ -15,7 +15,7 @@ $ sudo dnf install -y glibc-static
 ### Building from Source
 Clone minikube into your go path under `$GOPATH/src/k8s.io`
 
-```
+```shell
 $ git clone https://github.com/kubernetes/minikube.git $GOPATH/src/k8s.io/minikube
 $ cd $GOPATH/src/k8s.io/minikube
 $ make
