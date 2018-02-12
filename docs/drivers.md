@@ -22,7 +22,7 @@ The KVM2 driver is maintained by the minikube team, and is built, tested and rel
 
 To install the KVM2 driver, first install and configure the prereqs:
 
-```
+```shell
 # Install libvirt and qemu-kvm on your system, e.g.
 # Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
 $ sudo apt install libvirt-bin qemu-kvm
@@ -44,13 +44,13 @@ $ newgrp libvirt
 
 Then install the driver itself:
 
-```
+```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 && chmod +x docker-machine-driver-kvm2 && sudo mv docker-machine-driver-kvm2 /usr/bin/
 ```
 
 To use the driver you would do:
 
-```
+```shell
 minikube start --vm-driver kvm2
 ```
 
@@ -59,7 +59,7 @@ minikube start --vm-driver kvm2
 Minikube is currently tested against [`docker-machine-driver-kvm` v0.10.0](https://github.com/dhiltgen/docker-machine-kvm/releases).
 
 After following the instructions on the KVM driver releases page, you need to make sure that have the necessary packages and permissions by following these instructions:
-```
+```shell
 
 # Install libvirt and qemu-kvm on your system, e.g.
 # Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
@@ -82,7 +82,7 @@ $ newgrp libvirt
 
 To use the driver you would do:
 
-```
+```shell
 minikube start --vm-driver kvm
 ```
 
@@ -93,7 +93,7 @@ It is built from the minikube source tree, and uses [moby/hyperkit](http://githu
 
 To install the hyperkit driver:
 
-```
+```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
 && chmod +x docker-machine-driver-hyperkit \
 && sudo mv docker-machine-driver-hyperkit /usr/local/bin/ \
@@ -109,7 +109,7 @@ If you encountered errors like `Could not find hyperkit executable`, you might n
 
 From https://github.com/zchee/docker-machine-driver-xhyve#install:
 
-```
+```shell
 $ brew install docker-machine-driver-xhyve
 
 # docker-machine-driver-xhyve need root owner and uid

@@ -16,7 +16,7 @@ The kubeadm bootstrapper can be configured by the `--extra-config` flag on the `
 
 and `key=value` is a flag=value pair for the component being configured.  For example,
 
-```
+```shell
 minikube start --extra-config=apiserver.v=10 --extra-config=kubelet.max-pods=100
 ```
 
