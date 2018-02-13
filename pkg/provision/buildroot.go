@@ -282,7 +282,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 			return errors.Wrapf(err, "error copying %s to %s", src, dst)
 		}
 		if err := sshRunner.Copy(f); err != nil {
-			return errors.Wrapf(err, "transfering file to machine %v", f)
+			return errors.Wrapf(err, "transferring file to machine %v", f)
 		}
 	}
 
