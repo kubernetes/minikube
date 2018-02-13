@@ -3,7 +3,7 @@ Version: --VERSION--
 Section: base
 Priority: optional
 Architecture: amd64
-Depends: virtualbox
+Recommends: virtualbox
 Maintainer: Aaron Prindle <aaprindle@gmail.com>
 Description: Minikube
  Minikube is a tool that makes it easy to run Kubernetes locally.
