@@ -2,7 +2,7 @@
 ## Mounting Host Folders
 `minikube mount /path/to/dir/to/mount:/vm-mount-path` is the recommended way to mount directories into minikube so that they can be used in your local Kubernetes cluster. The command works on all supported platforms. Below is an example workflow for using `minikube mount`:
 
-```
+```shell
 # terminal 1
 $ mkdir ~/mount-dir
 $ minikube mount ~/mount-dir:/mount-9p
@@ -12,7 +12,7 @@ ufs starting
 # This process has to stay open, so in another terminal...
 ```
 
-```
+```shell
 # terminal 2
 $ echo "hello from host" > ~/mount-dir/hello-from-host
 $ kubectl run -i --rm --tty ubuntu --overrides='
@@ -50,7 +50,7 @@ $ kubectl run -i --rm --tty ubuntu --overrides='
     ]
   }
 }
-'  --image=ubuntu:14.04 --restart=Never -- bash
+' --image=ubuntu:14.04 --restart=Never -- bash
 
 Waiting for pod default/ubuntu to be running, status is Pending, pod ready: false
 Waiting for pod default/ubuntu to be running, status is Running, pod ready: false
