@@ -54,6 +54,7 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 		"ServiceAccount",
 		"DefaultStorageClass",
 		"ResourceQuota",
+		"MutatingAdmissionWebhook",
 	}
 	// use localkube etcd
 
