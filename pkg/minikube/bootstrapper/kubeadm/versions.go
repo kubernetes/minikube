@@ -191,6 +191,14 @@ var versionSpecificOpts = []VersionedExtraOption{
 	// Cgroup args
 	NewUnversionedOption(Kubelet, "cadvisor-port", "0"),
 	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
+	{
+		Option: util.ExtraOption{
+			Component: Apiserver,
+			Key:       "admission-control",
+			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+		},
+		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
+	},
 }
 
 func VersionIsBetween(version, gte, lte semver.Version) bool {

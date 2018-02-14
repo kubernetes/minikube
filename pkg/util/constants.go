@@ -32,6 +32,18 @@ const (
 	DefaultServiceCIDR        = "10.96.0.0/12"
 )
 
+var DefaultAdmissionControllers = []string{
+	"Initializers",
+	"NamespaceLifecycle",
+	"LimitRanger",
+	"ServiceAccount",
+	"DefaultStorageClass",
+	"DefaultTolerationSeconds",
+	"NodeRestriction",
+	"ResourceQuota",
+	"MutatingAdmissionWebhook",
+}
+
 // GetServiceClusterIP returns the first IP of the ServiceCIDR
 func GetServiceClusterIP(serviceCIDR string) (net.IP, error) {
 	ip, _, err := net.ParseCIDR(serviceCIDR)
