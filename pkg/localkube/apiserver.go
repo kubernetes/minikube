@@ -21,6 +21,8 @@ import (
 	"path"
 	"strconv"
 
+	"k8s.io/minikube/pkg/util"
+
 	"github.com/coreos/etcd/embed"
 
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
@@ -48,14 +50,7 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 
 	config.SecureServing.ServerCert.CertKey.CertFile = lk.GetPublicKeyCertPath()
 	config.SecureServing.ServerCert.CertKey.KeyFile = lk.GetPrivateKeyCertPath()
-	config.Admission.PluginNames = []string{
-		"NamespaceLifecycle",
-		"LimitRanger",
-		"ServiceAccount",
-		"DefaultStorageClass",
-		"ResourceQuota",
-		"MutatingAdmissionWebhook",
-	}
+	config.Admission.PluginNames = util.DefaultAdmissionControllers
 	// use localkube etcd
 
 	config.Etcd.StorageConfig.ServerList = []string{embed.DefaultListenClientURLs}
