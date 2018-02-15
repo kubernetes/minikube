@@ -32,14 +32,14 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
 // localkubeCacher is a struct with methods designed for caching localkube
 type localkubeCacher struct {
-	k8sConf bootstrapper.KubernetesConfig
+	k8sConf config.KubernetesConfig
 }
 
 func (l *localkubeCacher) getLocalkubeCacheFilepath() string {
@@ -51,7 +51,7 @@ func (l *localkubeCacher) getLocalkubeSha256CacheFilepath() string {
 	return l.getLocalkubeCacheFilepath() + ".sha256"
 }
 
-func localkubeURIWasSpecified(config bootstrapper.KubernetesConfig) bool {
+func localkubeURIWasSpecified(config config.KubernetesConfig) bool {
 	// see if flag is different than default -> it was passed by user
 	return config.KubernetesVersion != constants.DefaultKubernetesVersion
 }

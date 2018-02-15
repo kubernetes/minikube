@@ -27,15 +27,16 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/provision"
 
-	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/cert"
 	"github.com/docker/machine/libmachine/check"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/drivers/plugin"
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
@@ -45,10 +46,9 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
-
-type driverGetter func([]byte) (drivers.Driver, error)
 
 func NewRPCClient(storePath, certsDir string) libmachine.API {
 	c := libmachine.NewClient(storePath, certsDir)
@@ -69,29 +69,6 @@ func NewAPIClient() (libmachine.API, error) {
 	}, nil
 }
 
-func getDriver(driverName string, rawDriver []byte) (drivers.Driver, error) {
-	driverGetter, ok := driverMap[driverName]
-	if !ok {
-		return nil, fmt.Errorf("Unknown driver %s for platform.", driverName)
-	}
-	driver, err := driverGetter(rawDriver)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error getting driver for %s", driverName)
-	}
-
-	return driver, nil
-}
-
-func getVirtualboxDriver(rawDriver []byte) (drivers.Driver, error) {
-	var driver drivers.Driver
-	driver = virtualbox.NewDriver("", "")
-	err := json.Unmarshal(rawDriver, driver)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error unmarshalling virtualbox driver %s", string(rawDriver))
-	}
-	return driver, nil
-}
-
 // LocalClient is a non-RPC implementation
 // of the libmachine API
 type LocalClient struct {
@@ -102,15 +79,21 @@ type LocalClient struct {
 }
 
 func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
-	// If not should get Driver, use legacy
-	if _, ok := driverMap[driverName]; !ok {
+	var def registry.DriverDef
+	var err error
+	if def, err = registry.Driver(driverName); err != nil {
+		return nil, err
+	} else if !def.Builtin || def.DriverCreator == nil {
 		return api.legacyClient.NewHost(driverName, rawDriver)
 	}
 
-	driver, err := getDriver(driverName, rawDriver)
+	driver := def.DriverCreator()
+
+	err = json.Unmarshal(rawDriver, driver)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting driver")
+		return nil, errors.Wrapf(err, "Error getting driver %s", string(rawDriver))
 	}
+
 	return &host.Host{
 		ConfigVersion: version.ConfigVersion,
 		Name:          driver.GetMachineName(),
@@ -141,17 +124,22 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 		return nil, errors.Wrap(err, "Error loading host from store")
 	}
 
-	// If not should get Driver, use legacy
-	if _, ok := driverMap[h.DriverName]; !ok {
+	var def registry.DriverDef
+	if def, err = registry.Driver(h.DriverName); err != nil {
+		return nil, err
+	} else if !def.Builtin || def.DriverCreator == nil {
 		return api.legacyClient.Load(name)
 	}
 
-	h.Driver, err = getDriver(h.DriverName, h.RawDriver)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error loading driver from host")
-	}
+	h.Driver = def.DriverCreator()
+	return h, json.Unmarshal(h.RawDriver, h.Driver)
+}
 
-	return h, nil
+func (api *LocalClient) Close() error {
+	if api.legacyClient != nil {
+		return api.legacyClient.Close()
+	}
+	return nil
 }
 
 func GetCommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
@@ -166,16 +154,10 @@ func GetCommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
 	return &bootstrapper.ExecRunner{}, nil
 }
 
-func (api *LocalClient) Close() error {
-	if api.legacyClient != nil {
-		return api.legacyClient.Close()
-	}
-	return nil
-}
-
 func (api *LocalClient) Create(h *host.Host) error {
-
-	if _, ok := driverMap[h.Driver.DriverName()]; !ok {
+	if def, err := registry.Driver(h.DriverName); err != nil {
+		return err
+	} else if !def.Builtin || def.DriverCreator == nil {
 		return api.legacyClient.Create(h)
 	}
 
@@ -275,4 +257,13 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 	}
 
 	return true, nil
+}
+
+func registerDriver(driverName string) {
+	def, err := registry.Driver(driverName)
+	if err != nil {
+		glog.Exitf("Unsupported driver: %s\n", driverName)
+	}
+
+	plugin.RegisterDriver(def.DriverCreator())
 }

@@ -22,28 +22,10 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/docker/machine/drivers/hyperv"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/windows/registry"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
-
-func init() {
-	registry.Register("hyperkit", createHypervHost)
-}
-
-func createHypervHost(config MachineConfig) RawDriver {
-	d := hyperv.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.VSwitch = config.HypervVirtualSwitch
-	d.MemSize = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = int(config.DiskSize)
-	d.SSHUser = "docker"
-	return d
-}
 
 func detectVBoxManageCmd() string {
 	cmd := "VBoxManage"

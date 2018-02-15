@@ -98,7 +98,7 @@ func (lk *LocalkubeBootstrapper) GetClusterStatus() (string, error) {
 }
 
 // StartCluster starts a k8s cluster on the specified Host.
-func (lk *LocalkubeBootstrapper) StartCluster(kubernetesConfig bootstrapper.KubernetesConfig) error {
+func (lk *LocalkubeBootstrapper) StartCluster(kubernetesConfig config.KubernetesConfig) error {
 	startCommand, err := GetStartCommand(kubernetesConfig)
 	if err != nil {
 		return errors.Wrapf(err, "Error generating start command: %s", err)
@@ -110,11 +110,11 @@ func (lk *LocalkubeBootstrapper) StartCluster(kubernetesConfig bootstrapper.Kube
 	return nil
 }
 
-func (lk *LocalkubeBootstrapper) RestartCluster(kubernetesConfig bootstrapper.KubernetesConfig) error {
+func (lk *LocalkubeBootstrapper) RestartCluster(kubernetesConfig config.KubernetesConfig) error {
 	return lk.StartCluster(kubernetesConfig)
 }
 
-func (lk *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesConfig) error {
+func (lk *LocalkubeBootstrapper) UpdateCluster(config config.KubernetesConfig) error {
 	if config.ShouldLoadCachedImages {
 		// Make best effort to load any cached images
 		go machine.LoadImages(lk.cmd, constants.LocalkubeCachedImages, constants.ImageCacheDir)
@@ -155,6 +155,6 @@ func (lk *LocalkubeBootstrapper) UpdateCluster(config bootstrapper.KubernetesCon
 	return nil
 }
 
-func (lk *LocalkubeBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) error {
+func (lk *LocalkubeBootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 	return bootstrapper.SetupCerts(lk.cmd, k8s)
 }

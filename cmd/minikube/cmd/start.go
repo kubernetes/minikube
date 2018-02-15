@@ -129,7 +129,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		validateK8sVersion(k8sVersion)
 	}
 
-	config := cluster.MachineConfig{
+	config := cfg.MachineConfig{
 		MinikubeISO:         viper.GetString(isoURL),
 		Memory:              viper.GetInt(memory),
 		CPUs:                viper.GetInt(cpus),
@@ -198,7 +198,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubernetesConfig := bootstrapper.KubernetesConfig{
+	kubernetesConfig := cfg.KubernetesConfig{
 		KubernetesVersion:      selectedKubernetesVersion,
 		NodeIP:                 ip,
 		NodeName:               cfg.GetMachineName(),
@@ -220,7 +220,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// Write profile cluster configuration to file
-	clusterConfig := cluster.Config{
+	clusterConfig := cfg.Config{
 		MachineConfig:    config,
 		KubernetesConfig: kubernetesConfig,
 	}
@@ -405,7 +405,7 @@ func init() {
 
 // saveConfig saves profile cluster configuration in
 // $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig cluster.Config) error {
+func saveConfig(clusterConfig cfg.Config) error {
 	data, err := json.MarshalIndent(clusterConfig, "", "    ")
 	if err != nil {
 		return err
@@ -453,8 +453,8 @@ func saveConfigToFile(data []byte, file string) error {
 	return nil
 }
 
-func loadConfigFromFile(profile string) (cluster.Config, error) {
-	var cc cluster.Config
+func loadConfigFromFile(profile string) (cfg.Config, error) {
+	var cc cfg.Config
 
 	profileConfigFile := constants.GetProfileFile(profile)
 

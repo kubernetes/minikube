@@ -17,13 +17,12 @@ limitations under the License.
 package cluster
 
 import (
-	"os/exec"
+	_ "k8s.io/minikube/pkg/minikube/drivers/hyperkit"
+	_ "k8s.io/minikube/pkg/minikube/drivers/hyperv"
+	_ "k8s.io/minikube/pkg/minikube/drivers/kvm"
+	_ "k8s.io/minikube/pkg/minikube/drivers/kvm2"
+	_ "k8s.io/minikube/pkg/minikube/drivers/none"
+	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
+	_ "k8s.io/minikube/pkg/minikube/drivers/vmwarefusion"
+	_ "k8s.io/minikube/pkg/minikube/drivers/xhyve"
 )
-
-func detectVBoxManageCmd() string {
-	cmd := "VBoxManage"
-	if path, err := exec.LookPath(cmd); err == nil {
-		return path
-	}
-	return cmd
-}

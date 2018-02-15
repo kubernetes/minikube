@@ -18,38 +18,19 @@ package bootstrapper
 
 import (
 	"io"
-	"net"
 
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
 )
 
 // Bootstrapper contains all the methods needed to bootstrap a kubernetes cluster
 type Bootstrapper interface {
-	StartCluster(KubernetesConfig) error
-	UpdateCluster(KubernetesConfig) error
-	RestartCluster(KubernetesConfig) error
+	StartCluster(config.KubernetesConfig) error
+	UpdateCluster(config.KubernetesConfig) error
+	RestartCluster(config.KubernetesConfig) error
 	GetClusterLogsTo(follow bool, out io.Writer) error
-	SetupCerts(cfg KubernetesConfig) error
+	SetupCerts(cfg config.KubernetesConfig) error
 	GetClusterStatus() (string, error)
-}
-
-// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
-type KubernetesConfig struct {
-	KubernetesVersion string
-	NodeIP            string
-	NodeName          string
-	APIServerName     string
-	APIServerNames    []string
-	APIServerIPs      []net.IP
-	DNSDomain         string
-	ContainerRuntime  string
-	NetworkPlugin     string
-	FeatureGates      string
-	ServiceCIDR       string
-	ExtraOptions      util.ExtraOptionSlice
-
-	ShouldLoadCachedImages bool
 }
 
 const (
