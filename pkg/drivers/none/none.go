@@ -136,7 +136,7 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) Remove() error {
-	rmCmd := `for svc in "localkube", "kubelet"; do
+	rmCmd := `for svc in "localkube" "kubelet"; do
 		sudo systemctl stop "$svc".service
 	done
 	sudo rm -rf /var/lib/localkube || true`
@@ -151,7 +151,7 @@ func (d *Driver) Remove() error {
 }
 
 func (d *Driver) Restart() error {
-	restartCmd := `for svc in "localkube", "kubelet"; do
+	restartCmd := `for svc in "localkube" "kubelet"; do
 	if systemctl is-active $svc.service; then
 		sudo systemctl restart "$svc".service
 	fi
@@ -179,9 +179,9 @@ func (d *Driver) Start() error {
 
 func (d *Driver) Stop() error {
 	var stopcmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; "+`then
-	for svc in "localkube", "kubelet"; do
-		sudo systemctl stop "$svc".service
-	done
+for svc in "localkube" "kubelet"; do
+	sudo systemctl stop "$svc".service || true
+done
 else
 	sudo kill $(cat %s)
 fi
