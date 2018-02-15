@@ -27,6 +27,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -35,7 +36,7 @@ type MockDownloader struct{}
 func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
-var defaultMachineConfig = MachineConfig{
+var defaultMachineConfig = config.MachineConfig{
 	VMDriver:    constants.DefaultVMDriver,
 	MinikubeISO: constants.DefaultIsoUrl,
 	Downloader:  MockDownloader{},
@@ -67,15 +68,15 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	found := false
-	for _, driver := range ListDrivers() {
-		if h.DriverName == driver {
+	for _, def := range registry.ListDrivers() {
+		if h.DriverName == def.Name {
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		t.Fatalf("Wrong driver name: %v. Should be among %v", h.DriverName, ListDrivers())
+		t.Fatalf("Wrong driver name: %v. It should be among drivers %v", h.DriverName, registry.ListDrivers())
 	}
 }
 
@@ -179,7 +180,7 @@ func TestStartHostConfig(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	config := MachineConfig{
+	config := config.MachineConfig{
 		VMDriver:   constants.DefaultVMDriver,
 		DockerEnv:  []string{"FOO=BAR"},
 		DockerOpt:  []string{"param=value"},

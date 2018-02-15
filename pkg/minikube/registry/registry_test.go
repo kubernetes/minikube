@@ -14,31 +14,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package registry
 
 import (
-	"sort"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 func TestRegistry(t *testing.T) {
-	dummy := func(_ MachineConfig) RawDriver {
-		return nil
+	foo := DriverDef{
+		Name:    "foo",
+		Builtin: true,
+		ConfigCreator: func(_ config.MachineConfig) interface{} {
+			return nil
+		},
+	}
+	bar := DriverDef{
+		Name:    "bar",
+		Builtin: true,
+		ConfigCreator: func(_ config.MachineConfig) interface{} {
+			return nil
+		},
 	}
 
 	registry := createRegistry()
 
-	err := registry.Register("foo", dummy)
+	err := registry.Register(foo)
 	if err != nil {
 		t.Fatal("expect nil")
 	}
 
-	err = registry.Register("foo", dummy)
+	err = registry.Register(foo)
 	if err != ErrDriverNameExist {
 		t.Fatal("expect ErrDriverNameExist")
 	}
 
-	err = registry.Register("bar", dummy)
+	err = registry.Register(bar)
 	if err != nil {
 		t.Fatal("expect nil")
 	}
@@ -48,8 +60,7 @@ func TestRegistry(t *testing.T) {
 		t.Fatalf("expect len(list) to be %d; got %d", 2, len(list))
 	}
 
-	sort.Strings(list)
-	if list[0] != "bar" || list[1] != "foo" {
+	if !(list[0].Name == "bar" && list[1].Name == "foo" || list[0].Name == "foo" && list[1].Name == "bar") {
 		t.Fatalf("expect registry.List return %s; got %s", []string{"bar", "foo"}, list)
 	}
 
@@ -57,7 +68,7 @@ func TestRegistry(t *testing.T) {
 	if err != nil {
 		t.Fatal("expect nil")
 	}
-	if driver == nil {
+	if driver.Name != "foo" {
 		t.Fatal("expect registry.Driver(foo) returns registered driver")
 	}
 

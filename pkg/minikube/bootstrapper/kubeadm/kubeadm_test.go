@@ -19,20 +19,20 @@ package kubeadm
 import (
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util"
 )
 
 func TestGenerateConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         bootstrapper.KubernetesConfig
+		cfg         config.KubernetesConfig
 		expectedCfg string
 		shouldErr   bool
 	}{
 		{
 			description: "no extra args",
-			cfg: bootstrapper.KubernetesConfig{
+			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.100",
 				KubernetesVersion: "v1.8.0",
 				NodeName:          "minikube",
@@ -53,7 +53,7 @@ nodeName: minikube
 		},
 		{
 			description: "extra args all components",
-			cfg: bootstrapper.KubernetesConfig{
+			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.8.0-alpha.0",
 				NodeName:          "extra-args-minikube",
@@ -97,7 +97,7 @@ schedulerExtraArgs:
 		},
 		{
 			description: "two extra args for one component",
-			cfg: bootstrapper.KubernetesConfig{
+			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.8.0-alpha.0",
 				NodeName:          "extra-args-minikube",
@@ -133,7 +133,7 @@ apiServerExtraArgs:
 		},
 		{
 			description: "enable feature gates",
-			cfg: bootstrapper.KubernetesConfig{
+			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.8.0-alpha.0",
 				NodeName:          "extra-args-minikube",
@@ -161,7 +161,7 @@ schedulerExtraArgs:
 		},
 		{
 			description: "enable feature gates and extra config",
-			cfg: bootstrapper.KubernetesConfig{
+			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.8.0-alpha.0",
 				NodeName:          "extra-args-minikube",
@@ -198,7 +198,7 @@ schedulerExtraArgs:
 		{
 			// Unknown components should fail silently
 			description: "unknown component",
-			cfg: bootstrapper.KubernetesConfig{
+			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
 				KubernetesVersion: "v1.8.0-alpha.0",
 				NodeName:          "extra-args-minikube",
