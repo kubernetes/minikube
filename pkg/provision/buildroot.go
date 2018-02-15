@@ -201,12 +201,14 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 	if err := t.Execute(&crioOptsBuf, p); err != nil {
 		return err
 	}
+
 	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
 		return err
 	}
 
+	// This is unlikely to cause issues unless the user has explicitly requested CRIO, so just log a warning.
 	if err := p.Service("crio", serviceaction.Restart); err != nil {
-		return err
+		log.Warn("Unable to restart crio service. Error: %s", err)
 	}
 
 	return nil
