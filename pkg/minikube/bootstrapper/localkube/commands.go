@@ -21,10 +21,9 @@ import (
 	gflag "flag"
 	"fmt"
 	"strings"
-
 	"text/template"
 
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -67,7 +66,7 @@ else
 fi
 `
 
-func GetStartCommand(kubernetesConfig bootstrapper.KubernetesConfig) (string, error) {
+func GetStartCommand(kubernetesConfig config.KubernetesConfig) (string, error) {
 	localkubeStartCommand, err := GenLocalkubeStartCmd(kubernetesConfig)
 	if err != nil {
 		return "", err
@@ -95,7 +94,7 @@ func GetStartCommand(kubernetesConfig bootstrapper.KubernetesConfig) (string, er
 	return buf.String(), nil
 }
 
-func GetStartCommandNoSystemd(kubernetesConfig bootstrapper.KubernetesConfig, localkubeStartCmd string) (string, error) {
+func GetStartCommandNoSystemd(kubernetesConfig config.KubernetesConfig, localkubeStartCmd string) (string, error) {
 	t := template.Must(template.New("startCommand").Parse(startCommandNoSystemdTemplate))
 	buf := bytes.Buffer{}
 	data := struct {
@@ -115,7 +114,7 @@ func GetStartCommandNoSystemd(kubernetesConfig bootstrapper.KubernetesConfig, lo
 	return buf.String(), nil
 }
 
-func GetStartCommandSystemd(kubernetesConfig bootstrapper.KubernetesConfig, localkubeStartCmd string) (string, error) {
+func GetStartCommandSystemd(kubernetesConfig config.KubernetesConfig, localkubeStartCmd string) (string, error) {
 	t, err := template.New("localkubeConfig").Parse(localkubeSystemdTmpl)
 	if err != nil {
 		return "", err
@@ -133,7 +132,7 @@ func GetStartCommandSystemd(kubernetesConfig bootstrapper.KubernetesConfig, loca
 		constants.LocalkubeServicePath), nil
 }
 
-func GenLocalkubeStartCmd(kubernetesConfig bootstrapper.KubernetesConfig) (string, error) {
+func GenLocalkubeStartCmd(kubernetesConfig config.KubernetesConfig) (string, error) {
 	flagVals := make([]string, len(constants.LogFlags))
 	for _, logFlag := range constants.LogFlags {
 		if logVal := gflag.Lookup(logFlag); logVal != nil && logVal.Value.String() != logVal.DefValue {

@@ -18,6 +18,7 @@ package machine
 
 import (
 	"bufio"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -25,11 +26,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/docker/machine/drivers/virtualbox"
-	"github.com/docker/machine/libmachine/drivers"
-
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"k8s.io/minikube/pkg/minikube/constants"
+	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
 )
 
 const vboxConfig = `
@@ -62,54 +61,6 @@ const vboxConfig = `
         "NoVTXCheck": false
 }
 `
-
-func TestGetDriver(t *testing.T) {
-	var tests = []struct {
-		description string
-		driver      string
-		rawDriver   []byte
-		expected    drivers.Driver
-		err         bool
-	}{
-		{
-			description: "vbox correct",
-			driver:      "virtualbox",
-			rawDriver:   []byte(vboxConfig),
-			expected:    virtualbox.NewDriver("", ""),
-		},
-		{
-			description: "unknown driver",
-			driver:      "unknown",
-			rawDriver:   []byte("?"),
-			expected:    nil,
-			err:         true,
-		},
-		{
-			description: "vbox bad",
-			driver:      "virtualbox",
-			rawDriver:   []byte("?"),
-			expected:    nil,
-			err:         true,
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
-			driver, err := getDriver(test.driver, test.rawDriver)
-			if err != nil && !test.err {
-				t.Errorf("Unexpected error: %s", err)
-			}
-			if err == nil && test.err {
-				t.Errorf("No error returned, but expected err")
-			}
-			if driver != nil && test.expected.DriverName() != driver.DriverName() {
-				t.Errorf("Driver names did not match, actual: %s, expected: %s", driver.DriverName(), test.expected.DriverName())
-			}
-		})
-	}
-}
 
 func TestLocalClientNewHost(t *testing.T) {
 	c, err := NewAPIClient()
@@ -182,9 +133,9 @@ func TestRunNotDriver(t *testing.T) {
 func TestRunDriver(t *testing.T) {
 	// This test is a bit complicated. It verifies that when the root command is
 	// called with the proper environment variables, we setup the libmachine driver.
-
 	tempDir := makeTempDir()
 	defer os.RemoveAll(tempDir)
+
 	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
 	os.Setenv(localbinary.PluginEnvDriverName, "virtualbox")
 
@@ -206,6 +157,8 @@ func TestRunDriver(t *testing.T) {
 		t.Fatal("Failed to read address over stdout.")
 	}
 	os.Stdout = old
+
+	fmt.Println(string(addr))
 
 	// Now that we got the port, make sure we can connect.
 	if _, err := net.Dial("tcp", string(addr)); err != nil {

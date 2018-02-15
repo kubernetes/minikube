@@ -32,7 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
 )
@@ -146,7 +146,7 @@ users:
 `
 )
 
-func restartKubeProxy(k8s bootstrapper.KubernetesConfig) error {
+func restartKubeProxy(k8s config.KubernetesConfig) error {
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")

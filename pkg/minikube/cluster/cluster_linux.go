@@ -17,76 +17,8 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
 	"os/exec"
-	"path/filepath"
-
-	"github.com/docker/machine/libmachine/drivers"
-	"k8s.io/minikube/pkg/drivers/none"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
-
-func init() {
-	registry.Register("kvm", createKVMHost)
-	registry.Register("kvm2", createKVM2Host)
-	registry.Register("none", createNoneHost)
-}
-
-type kvmDriver struct {
-	*drivers.BaseDriver
-
-	Memory         int
-	DiskSize       int
-	CPU            int
-	Network        string
-	PrivateNetwork string
-	ISO            string
-	Boot2DockerURL string
-	DiskPath       string
-	CacheMode      string
-	IOMode         string
-}
-
-func createKVMHost(config MachineConfig) RawDriver {
-	return &kvmDriver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: cfg.GetMachineName(),
-			StorePath:   constants.GetMinipath(),
-			SSHUser:     "docker",
-		},
-		Memory:         config.Memory,
-		CPU:            config.CPUs,
-		Network:        config.KvmNetwork,
-		PrivateNetwork: "docker-machines",
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
-		DiskSize:       config.DiskSize,
-		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
-		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
-		CacheMode:      "default",
-		IOMode:         "threads",
-	}
-}
-
-func createKVM2Host(config MachineConfig) RawDriver {
-	return &kvmDriver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: cfg.GetMachineName(),
-			StorePath:   constants.GetMinipath(),
-			SSHUser:     "docker",
-		},
-		Memory:         config.Memory,
-		CPU:            config.CPUs,
-		Network:        config.KvmNetwork,
-		PrivateNetwork: "minikube-net",
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
-		DiskSize:       config.DiskSize,
-		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
-		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
-		CacheMode:      "default",
-		IOMode:         "threads",
-	}
-}
 
 func detectVBoxManageCmd() string {
 	cmd := "VBoxManage"
@@ -94,13 +26,4 @@ func detectVBoxManageCmd() string {
 		return path
 	}
 	return cmd
-}
-
-func createNoneHost(config MachineConfig) RawDriver {
-	return &none.Driver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: cfg.GetMachineName(),
-			StorePath:   constants.GetMinipath(),
-		},
-	}
 }

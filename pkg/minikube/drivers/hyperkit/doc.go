@@ -1,7 +1,5 @@
-// +build !darwin
-
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2018 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,18 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
-
-import "github.com/docker/machine/libmachine/drivers"
-
-func createVMwareFusionHost(config MachineConfig) drivers.Driver {
-	panic("vmwarefusion not supported")
-}
-
-func createXhyveHost(config MachineConfig) drivers.Driver {
-	panic("xhyve not supported")
-}
-
-func createHyperkitHost(config MachineConfig) drivers.Driver {
-	panic("hyperkit not supported")
-}
+package hyperkit

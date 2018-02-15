@@ -21,11 +21,12 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestStartCluster(t *testing.T) {
-	expectedStartCmd, err := GetStartCommand(bootstrapper.KubernetesConfig{})
+	expectedStartCmd, err := GetStartCommand(config.KubernetesConfig{})
 	if err != nil {
 		t.Fatalf("generating start command: %s", err)
 	}
@@ -50,7 +51,7 @@ func TestStartCluster(t *testing.T) {
 			f := bootstrapper.NewFakeCommandRunner()
 			f.SetCommandToOutput(map[string]string{test.startCmd: "ok"})
 			l := LocalkubeBootstrapper{f}
-			err := l.StartCluster(bootstrapper.KubernetesConfig{})
+			err := l.StartCluster(config.KubernetesConfig{})
 			if err != nil && test.startCmd == expectedStartCmd {
 				t.Errorf("Error starting cluster: %s", err)
 			}
@@ -59,7 +60,7 @@ func TestStartCluster(t *testing.T) {
 }
 
 func TestUpdateCluster(t *testing.T) {
-	defaultCfg := bootstrapper.KubernetesConfig{
+	defaultCfg := config.KubernetesConfig{
 		KubernetesVersion: constants.DefaultKubernetesVersion,
 	}
 	defaultAddons := []string{
@@ -73,7 +74,7 @@ func TestUpdateCluster(t *testing.T) {
 	}
 	cases := []struct {
 		description   string
-		k8s           bootstrapper.KubernetesConfig
+		k8s           config.KubernetesConfig
 		expectedFiles []string
 		shouldErr     bool
 	}{
@@ -89,7 +90,7 @@ func TestUpdateCluster(t *testing.T) {
 		},
 		{
 			description: "no localkube version",
-			k8s:         bootstrapper.KubernetesConfig{},
+			k8s:         config.KubernetesConfig{},
 			shouldErr:   true,
 		},
 	}

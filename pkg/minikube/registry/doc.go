@@ -1,7 +1,5 @@
-// +build !windows
-
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2018 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,10 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+// This package contains the registry to enable a docker machine driver to be used
+// in minikube.
 
-import "github.com/docker/machine/libmachine/drivers"
-
-func createHypervHost(config MachineConfig) drivers.Driver {
-	panic("hyperv not supported")
-}
+package registry

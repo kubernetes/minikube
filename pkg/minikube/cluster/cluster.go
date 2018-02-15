@@ -28,7 +28,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
@@ -41,9 +40,9 @@ import (
 
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	pkgutil "k8s.io/minikube/pkg/util"
-
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/util"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -55,14 +54,13 @@ const (
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
 	flag.Set("logtostderr", "false")
+
 	// Setting the default client to native gives much better performance.
 	ssh.SetDefaultClient(ssh.Native)
-
-	registry.Register("virtualbox", createVirtualboxHost)
 }
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
+func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking if host exists: %s", cfg.GetMachineName())
@@ -171,7 +169,7 @@ func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 	return ip, nil
 }
 
-func engineOptions(config MachineConfig) *engine.Options {
+func engineOptions(config cfg.MachineConfig) *engine.Options {
 	o := engine.Options{
 		Env:              config.DockerEnv,
 		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
@@ -181,20 +179,7 @@ func engineOptions(config MachineConfig) *engine.Options {
 	return &o
 }
 
-func createVirtualboxHost(config MachineConfig) RawDriver {
-	d := virtualbox.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = int(config.DiskSize)
-	d.HostOnlyCIDR = config.HostOnlyCIDR
-	d.NoShare = config.DisableDriverMounts
-	d.NatNicType = defaultVirtualboxNicType
-	d.HostOnlyNicType = defaultVirtualboxNicType
-	return d
-}
-
-func preCreateHost(config *MachineConfig) error {
+func preCreateHost(config *cfg.MachineConfig) error {
 	switch config.VMDriver {
 	case "kvm":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
@@ -215,15 +200,15 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 	return nil
 }
 
-func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
+func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	err := preCreateHost(&config)
 	if err != nil {
 		return nil, err
 	}
 
-	driverFunc, err := registry.Driver(config.VMDriver)
+	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
-		if err == ErrDriverNotFound {
+		if err == registry.ErrDriverNotFound {
 			glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
 		} else {
 			glog.Exit(err.Error())
@@ -236,7 +221,7 @@ func createHost(api libmachine.API, config MachineConfig) (*host.Host, error) {
 		}
 	}
 
-	driver := driverFunc(config)
+	driver := def.ConfigCreator(config)
 
 	data, err := json.Marshal(driver)
 	if err != nil {

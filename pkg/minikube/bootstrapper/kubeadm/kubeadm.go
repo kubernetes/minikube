@@ -104,7 +104,7 @@ func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error
 	return nil
 }
 
-func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) error {
+func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
 	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
@@ -158,7 +158,7 @@ func addAddons(files *[]assets.CopyableFile) error {
 	return nil
 }
 
-func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) error {
+func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	opts := struct {
 		KubeadmConfigFile string
 	}{
@@ -181,7 +181,7 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s bootstrapper.KubernetesConfig) 
 	return nil
 }
 
-func (k *KubeadmBootstrapper) SetupCerts(k8s bootstrapper.KubernetesConfig) error {
+func (k *KubeadmBootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
@@ -214,7 +214,7 @@ func SetContainerRuntime(cfg map[string]string, runtime string) map[string]strin
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
+func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing kubernetes version")
@@ -244,7 +244,7 @@ func NewKubeletConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
 	return b.String(), nil
 }
 
-func (k *KubeadmBootstrapper) UpdateCluster(cfg bootstrapper.KubernetesConfig) error {
+func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
 		// Make best effort to load any cached images
 		go machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
@@ -309,7 +309,7 @@ sudo systemctl start kubelet
 	return nil
 }
 
-func generateConfig(k8s bootstrapper.KubernetesConfig) (string, error) {
+func generateConfig(k8s config.KubernetesConfig) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing kubernetes version")

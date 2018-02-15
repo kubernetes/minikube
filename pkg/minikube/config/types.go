@@ -14,12 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package config
 
 import (
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"net"
+
 	"k8s.io/minikube/pkg/util"
 )
+
+// Config contains machine and k8s config
+type Config struct {
+	MachineConfig    MachineConfig
+	KubernetesConfig KubernetesConfig
+}
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
@@ -43,8 +50,20 @@ type MachineConfig struct {
 	UUID                string // Only used by hyperkit to restore the mac address
 }
 
-// Config contains machine and k8s config
-type Config struct {
-	MachineConfig    MachineConfig
-	KubernetesConfig bootstrapper.KubernetesConfig
+// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
+type KubernetesConfig struct {
+	KubernetesVersion string
+	NodeIP            string
+	NodeName          string
+	APIServerName     string
+	APIServerNames    []string
+	APIServerIPs      []net.IP
+	DNSDomain         string
+	ContainerRuntime  string
+	NetworkPlugin     string
+	FeatureGates      string
+	ServiceCIDR       string
+	ExtraOptions      util.ExtraOptionSlice
+
+	ShouldLoadCachedImages bool
 }
