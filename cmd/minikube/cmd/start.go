@@ -61,6 +61,7 @@ const (
 	networkPlugin         = "network-plugin"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
+	kvmCPUModel           = "kvm-cpu-model"
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
@@ -145,6 +146,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
 		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
 		KvmNetwork:          viper.GetString(kvmNetwork),
+		KvmCPUModel:         viper.GetString(kvmCPUModel),
 		Downloader:          pkgutil.DefaultDownloader{},
 		DisableDriverMounts: viper.GetBool(disableDriverMounts),
 		UUID:                viper.GetString(uuid),
@@ -379,6 +381,7 @@ func init() {
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
+	startCmd.Flags().String(kvmCPUModel, "custom", "The KVM CPU model name. (only supported with KVM driver)")
 	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
 	startCmd.Flags().StringSlice(NFSShare, []string{}, "Local folders to share with Guest via NFS mounts (Only supported on with hyperkit now)")
 	startCmd.Flags().String(NFSSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")

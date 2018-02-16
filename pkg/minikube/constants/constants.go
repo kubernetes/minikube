@@ -89,6 +89,7 @@ const (
 	ShaSuffix           = ".sha256"
 	DefaultMemory       = 2048
 	DefaultCPUS         = 2
+	DefaultCPUModel     = "custom"
 	DefaultDiskSize     = "20g"
 	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
