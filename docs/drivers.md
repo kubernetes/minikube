@@ -54,6 +54,16 @@ To use the driver you would do:
 minikube start --vm-driver kvm2
 ```
 
+##### Nesting
+
+The KVM2 driver allows to run [nested VMs](https://en.wikipedia.org/wiki/Virtualization#Nested_virtualization)
+if the right CPU model is specyfied when launching minikube:
+
+```shell
+minikube --start --vm-driver kvm2 --kvm-cpu-model host-model
+```
+
+
 #### KVM driver
 
 Minikube is currently tested against [`docker-machine-driver-kvm` v0.10.0](https://github.com/dhiltgen/docker-machine-kvm/releases).
