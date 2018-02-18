@@ -54,13 +54,13 @@ K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
 LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldflags '-static'"
 
-LOCALKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-MINIKUBEFILES := GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-HYPERKIT_FILES :=  GOPATH=$(GOPATH) go list  -f '{{join .Deps "\n"}}' k8s.io/minikube/cmd/drivers/hyperkit | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-STORAGE_PROVISIONER_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' k8s.io/minikube/cmd/storage-provisioner | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
-MINIKUBE_TEST_FILES := go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./... | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+LOCALKUBEFILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/localkube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+MINIKUBEFILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/minikube/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+HYPERKIT_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/drivers/hyperkit | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+STORAGE_PROVISIONER_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/storage-provisioner | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
+KVM_DRIVER_FILES := GOPATH=$(GOPATH) go list -f '{{join .Deps "\n"}}' ./cmd/drivers/kvm/ | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
-KVM_DRIVER_FILES := $(shell go list -f '{{join .Deps "\n"}}' ./cmd/drivers/kvm/ | grep k8s.io | xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}')
+MINIKUBE_TEST_FILES := GOPATH=$(GOPATH) go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./... | grep k8s.io | GOPATH=$(GOPATH) xargs go list -f '{{ range $$file := .GoFiles }} {{$$.Dir}}/{{$$file}}{{"\n"}}{{end}}'
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
@@ -180,7 +180,7 @@ integration-versioned: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
-test: $(shell $(MINIKUBE_TEST_FILES)) pkg/minikube/assets/assets.go
+test: pkg/minikube/assets/assets.go $(shell $(MINIKUBE_TEST_FILES))
 	./test.sh
 
 pkg/minikube/assets/assets.go: $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
@@ -321,7 +321,7 @@ release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
 
-out/docker-machine-driver-kvm2: $(KVM_DRIVER_FILES)
+out/docker-machine-driver-kvm2: $(shell $(KVM_DRIVER_FILES))
 	go build 																		\
 		-installsuffix "static" 													\
 		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
