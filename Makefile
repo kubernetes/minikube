@@ -100,7 +100,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 out/localkube.d:
 	$(MAKEDEPEND) out/localkube k8s.io $(LOCALKUBEFILES) $^ > $@
 
-include out/localkube.d
+-include out/localkube.d
 out/localkube:
 ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
@@ -114,7 +114,7 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 out/minikube.d: pkg/minikube/assets/assets.go
 	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) k8s.io $(MINIKUBEFILES) $^ > $@
 
-include out/minikube.d
+-include out/minikube.d
 out/minikube-%-amd64: pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
@@ -196,7 +196,7 @@ integration-versioned: out/minikube
 out/test.d: pkg/minikube/assets/assets.go
 	$(MAKEDEPEND) -t test k8s.io $(MINIKUBE_TEST_FILES) $^ > $@
 
-include out/test.d
+-include out/test.d
 test:
 	./test.sh
 
@@ -272,7 +272,7 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 out/docker-machine-driver-hyperkit.d:
 	$(MAKEDEPEND) out/docker-machine-driver-hyperkit k8s.io $(HYPERKIT_FILES) $^ > $@
 
-include out/docker-machine-driver-hyperkit.d
+-include out/docker-machine-driver-hyperkit.d
 out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
@@ -329,7 +329,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 out/storage-provisioner.d:
 	$(MAKEDEPEND) out/storage-provisioner k8s.io $(STORAGE_PROVISIONER_FILES) $^ > $@
 
-include out/storage-provisioner.d
+-include out/storage-provisioner.d
 out/storage-provisioner:
 	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(LOCALKUBE_LDFLAGS) cmd/storage-provisioner/main.go
 
@@ -349,7 +349,7 @@ release-iso: minikube_iso checksum
 out/docker-machine-driver-kvm2.d:
 	$(MAKEDEPEND) out/docker-machine-driver-kvm2 k8s.io $(KVM_DRIVER_FILES) $^ > $@
 
-include out/docker-machine-driver-kvm2.d
+-include out/docker-machine-driver-kvm2.d
 out/docker-machine-driver-kvm2:
 	go build 																		\
 		-installsuffix "static" 													\
