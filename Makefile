@@ -98,7 +98,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/localkube.d:
-	$(MAKEDEPEND) out/localkube k8s.io $(LOCALKUBEFILES) $^ > $@
+	$(MAKEDEPEND) out/localkube $(ORG) $(LOCALKUBEFILES) $^ > $@
 
 -include out/localkube.d
 out/localkube:
@@ -112,7 +112,7 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
 out/minikube.d: pkg/minikube/assets/assets.go
-	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) k8s.io $(MINIKUBEFILES) $^ > $@
+	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) $(ORG) $(MINIKUBEFILES) $^ > $@
 
 -include out/minikube.d
 out/minikube-%-amd64: pkg/minikube/assets/assets.go
@@ -194,7 +194,7 @@ integration-versioned: out/minikube
 
 .PHONY: test
 out/test.d: pkg/minikube/assets/assets.go
-	$(MAKEDEPEND) -t test k8s.io $(MINIKUBE_TEST_FILES) $^ > $@
+	$(MAKEDEPEND) -t test $(ORG) $(MINIKUBE_TEST_FILES) $^ > $@
 
 -include out/test.d
 test:
@@ -270,7 +270,7 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 
 out/docker-machine-driver-hyperkit.d:
-	$(MAKEDEPEND) out/docker-machine-driver-hyperkit k8s.io $(HYPERKIT_FILES) $^ > $@
+	$(MAKEDEPEND) out/docker-machine-driver-hyperkit $(ORG) $(HYPERKIT_FILES) $^ > $@
 
 -include out/docker-machine-driver-hyperkit.d
 out/docker-machine-driver-hyperkit:
@@ -327,7 +327,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner.d:
-	$(MAKEDEPEND) out/storage-provisioner k8s.io $(STORAGE_PROVISIONER_FILES) $^ > $@
+	$(MAKEDEPEND) out/storage-provisioner $(ORG) $(STORAGE_PROVISIONER_FILES) $^ > $@
 
 -include out/storage-provisioner.d
 out/storage-provisioner:
@@ -347,7 +347,7 @@ release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
 
 out/docker-machine-driver-kvm2.d:
-	$(MAKEDEPEND) out/docker-machine-driver-kvm2 k8s.io $(KVM_DRIVER_FILES) $^ > $@
+	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $(KVM_DRIVER_FILES) $^ > $@
 
 -include out/docker-machine-driver-kvm2.d
 out/docker-machine-driver-kvm2:
