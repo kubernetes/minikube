@@ -3,7 +3,7 @@
 # Generate go dependencies, for make. Uses `go list".
 # Usage: makedepend.sh [-t] output package path [extra]
 
-PATH_FORMAT='{{join .Deps "\n"}}'
+PATH_FORMAT='{{ .ImportPath }}{{"\n"}}{{join .Deps "\n"}}'
 FILE_FORMAT='{{ range $file := .GoFiles }} {{$.Dir}}/{{$file}}{{"\n"}}{{end}}'
 
 if [ "$1" = "-t" ]
