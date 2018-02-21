@@ -37,7 +37,6 @@ const domainTmpl = `
     <apic/>
     <pae/>
   </features>
-  <cpu mode='{{.CPUModel}}'/>
   <os>
     <type>hvm</type>
     <boot dev='cdrom'/>

@@ -44,9 +44,6 @@ type Driver struct {
 	// How many cpus to allocate to the VM
 	CPU int
 
-	// What CPU model to expose
-	CPUModel string
-
 	// The name of the default network
 	Network string
 
@@ -86,7 +83,6 @@ func NewDriver(hostName, storePath string) *Driver {
 		CommonDriver:   &pkgdrivers.CommonDriver{},
 		Boot2DockerURL: constants.DefaultIsoUrl,
 		CPU:            constants.DefaultCPUS,
-		CPUModel:       constants.DefaultCPUModel,
 		DiskSize:       util.CalculateDiskSizeInMB(constants.DefaultDiskSize),
 		Memory:         constants.DefaultMemory,
 		PrivateNetwork: defaultPrivateNetworkName,
