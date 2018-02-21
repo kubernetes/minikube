@@ -37,6 +37,7 @@ const domainTmpl = `
     <apic/>
     <pae/>
   </features>
+  <cpu mode='host-passthrough'/>
   <os>
     <type>hvm</type>
     <boot dev='cdrom'/>
