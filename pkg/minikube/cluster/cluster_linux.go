@@ -33,7 +33,6 @@ type kvmDriver struct {
 	Memory         int
 	DiskSize       int
 	CPU            int
-	CPUModel       string
 	Network        string
 	PrivateNetwork string
 	ISO            string
@@ -72,7 +71,6 @@ func createKVM2Host(config MachineConfig) *kvmDriver {
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
-		CPUModel:       config.KvmCPUModel,
 		Network:        config.KvmNetwork,
 		PrivateNetwork: "minikube-net",
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
