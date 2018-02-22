@@ -214,6 +214,23 @@ var Addons = map[string]*Addon{
 			"ingress-svc.yaml",
 			"0640"),
 	}, false, "ingress"),
+	"metrics-server": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/metrics-server/metrics-apiservice.yaml",
+			constants.AddonsPath,
+			"metrics-apiservice.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/metrics-server/metrics-server-deployment.yaml",
+			constants.AddonsPath,
+			"metrics-server-deployment.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/metrics-server/metrics-server-service.yaml",
+			constants.AddonsPath,
+			"metrics-server-service.yaml",
+			"0640"),
+	}, false, "metrics-server"),
 	"registry": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/registry/registry-rc.yaml",
