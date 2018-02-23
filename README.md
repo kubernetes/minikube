@@ -10,7 +10,7 @@
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
 [GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
 
-[CodeCovResult]: https://codecov.io/gh/kubernetes/minikube 
+[CodeCovResult]: https://codecov.io/gh/kubernetes/minikube
 [CodeCovWidget]: https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg
 
 <img src="https://github.com/kubernetes/minikube/raw/master/logo/logo.png" width="100">
@@ -78,7 +78,7 @@ We also released a Debian package and Windows installer on our [releases page](h
     * [Hyperkit driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver), [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), or [VMware Fusion](https://www.vmware.com/products/fusion)
 * Linux
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
-    * **NOTE:** Minikube also supports a `--vm-driver=none` option that runs the Kubernetes components on the host and not in a VM. Docker is required to use this driver but no hypervisor.
+    * **NOTE:** Minikube also supports a `--vm-driver=none` option that runs the Kubernetes components on the host and not in a VM. Docker is required to use this driver but no hypervisor. If you use `--vm-driver=none`, be sure to specify a [bridge network](https://docs.docker.com/network/bridge/#configure-the-default-bridge-network) for docker. Otherwise it might change between network restarts, causing loss of connectivity to your cluster.
 * Windows
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [Hyper-V](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
 * VT-x/AMD-v virtualization must be enabled in BIOS
