@@ -27,7 +27,7 @@ To install the KVM2 driver, first install and configure the prereqs:
 # Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
 $ sudo apt install libvirt-bin qemu-kvm
 # Fedora/CentOS/RHEL
-$ sudo yum install libvirt-daemon-kvm qemu-kvm
+$ sudo dnf install libvirt-daemon-kvm qemu-kvm
 
 # Add yourself to the libvirtd group (use libvirt group for rpm based distros) so you don't need to sudo
 # Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
@@ -65,7 +65,7 @@ After following the instructions on the KVM driver releases page, you need to ma
 # Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
 $ sudo apt install libvirt-bin qemu-kvm
 # Fedora/CentOS/RHEL
-$ sudo yum install libvirt-daemon-kvm qemu-kvm
+$ sudo dnf install libvirt-daemon-kvm qemu-kvm
 
 # Add yourself to the libvirtd group (use libvirt group for rpm based distros) so you don't need to sudo
 # Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
