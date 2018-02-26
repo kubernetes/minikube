@@ -55,7 +55,7 @@ func parseLines(stdout string) []string {
 }
 
 func hypervAvailable() error {
-	stdout, err := cmdOut("@(Get-Command Get-VM).ModuleName")
+	stdout, err := cmdOut("@(Get-Command hyper-v\\Get-VM).ModuleName")
 	if err != nil {
 		return err
 	}
