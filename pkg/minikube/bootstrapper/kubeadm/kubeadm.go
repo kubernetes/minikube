@@ -105,8 +105,10 @@ func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s bootstrapper.KubernetesConfig) error {
-	// We use --skip-preflight-checks since we have our own custom addons
+	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
+	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
+	// (it should probably stop doing this, though...)
 	b := bytes.Buffer{}
 	if err := kubeadmInitTemplate.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
 		return err
