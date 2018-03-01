@@ -11,11 +11,12 @@ data:
         errors
         log
         health
-        kubernetes cluster.local 10.0.0.0/24 {
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
             pods insecure
-            upstream /etc/resolv.conf
+            upstream
+            fallthrough in-addr.arpa ip6.arpa
         }
-        prometheus
+        prometheus :9153
         proxy . /etc/resolv.conf
         cache 30
     }
