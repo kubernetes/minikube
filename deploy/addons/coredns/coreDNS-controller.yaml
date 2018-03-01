@@ -9,6 +9,10 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
   selector:
     matchLabels:
       k8s-app: kube-dns
@@ -25,7 +29,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: coredns
-        image: registry.hub.docker.com/coredns/coredns:1.0.2
+        image: registry.hub.docker.com/coredns/coredns:1.0.6
         imagePullPolicy: IfNotPresent
         resources:
           limits:
@@ -43,9 +47,6 @@ spec:
           protocol: UDP
         - containerPort: 53
           name: dns-tcp
-          protocol: TCP
-        - containerPort: 9153
-          name: metrics
           protocol: TCP
         livenessProbe:
           httpGet:
