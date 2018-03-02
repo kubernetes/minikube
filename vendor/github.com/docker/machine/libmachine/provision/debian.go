@@ -64,11 +64,7 @@ func (provisioner *DebianProvisioner) Package(name string, action pkgaction.Pack
 
 	log.Debugf("package: action=%s name=%s", action.String(), name)
 
-	if _, err := provisioner.SSHCommand(command); err != nil {
-		return err
-	}
-
-	return nil
+	return waitForLock(provisioner, command)
 }
 
 func (provisioner *DebianProvisioner) dockerDaemonResponding() bool {
