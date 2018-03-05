@@ -9,11 +9,11 @@ See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
 
 This step isn't always required. Check if there were changes in the deploy directory.
 If you do this, bump the ISO URL to point to the new ISO, and send a PR.
-To do this, build the new iso by running:
+To do this, build the new ISO by running:
 ```shell
 deploy/iso/build.sh
 ```
-This will generate a new iso at 'deploy/iso/minikube.iso'.  Then upload the iso and shasum using the following command:
+This will generate a new ISO at 'deploy/iso/minikube.iso'.  Then upload the ISO and shasum using the following command:
 ```shell
 gsutil cp deploy/iso/minikube.iso gs://minikube/minikube-<increment.version>.iso
 gsutil cp deploy/iso/minikube.iso.sha256 gs://minikube/minikube-<increment.version>.iso.sha256
