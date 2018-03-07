@@ -15,6 +15,7 @@
 apiVersion: v1
 data:
   map-hash-bucket-size: "128"
+  hsts: "false"
 kind: ConfigMap
 metadata:
   name: nginx-load-balancer-conf
