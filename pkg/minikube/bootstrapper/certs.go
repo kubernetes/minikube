@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/kubernetes/pkg/master"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
@@ -39,6 +40,21 @@ var (
 		"proxy-client-ca.key", "proxy-client.crt", "proxy-client.key",
 	}
 )
+
+func internalIP(k8s KubernetesConfig) (net.IP, error) {
+	var svcNet net.IPNet
+	for _, extraOption := range k8s.ExtraOptions {
+		if extraOption.Component == "apiserver" && extraOption.Key == "ServiceClusterIPRange" {
+			ip, net, err := net.ParseCIDR(extraOption.Value)
+			if err != nil {
+				return ip, err
+			}
+			svcNet = *net
+		}
+	}
+	_, masterIP, err := master.DefaultServiceIPRange(svcNet)
+	return masterIP, err
+}
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd CommandRunner, k8s KubernetesConfig) error {
@@ -105,6 +121,11 @@ func generateCerts(k8s KubernetesConfig) error {
 
 	proxyClientCACertPath := filepath.Join(localPath, "proxy-client-ca.crt")
 	proxyClientCAKeyPath := filepath.Join(localPath, "proxy-client-ca.key")
+
+	internalIP, err := internalIP(k8s)
+	if err != nil {
+		return err
+	}
 
 	caCertSpecs := []struct {
 		certPath string
