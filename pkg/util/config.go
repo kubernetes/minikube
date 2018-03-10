@@ -107,10 +107,14 @@ func setElement(e reflect.Value, v string) error {
 }
 
 func convertMap(e reflect.Value, v string) error {
+	if e.IsNil() {
+		e.Set(reflect.MakeMap(e.Type()))
+	}
 	vals := strings.Split(v, ",")
 	for _, subitem := range vals {
-		// only deals with eviction thresholds in the "eviction.signal<value" format
-		subvals := strings.Split(subitem, "<")
+		subvals := strings.FieldsFunc(subitem, func(c rune) bool {
+			return c == '<' || c == '=' || c == '>'
+		})
 		if len(subvals) != 2 {
 			return fmt.Errorf("Unparsable %s", v)
 		}
