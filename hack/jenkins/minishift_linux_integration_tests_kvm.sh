@@ -185,12 +185,20 @@ function verify_delete() {
   print_success_message "Deleting VM"
 }
 
+function verify_sshfs_installation() {
+  expected="SSHFS version 2.5"
+  output=`$BINARY ssh -- sudo sshfs -V`
+  assert_equal "$output" "$expected"
+  print_success_message "SSHFS installation"
+}
+
 # Tests
 set +e
 verify_start_instance
 verify_vm_ip
 verify_cifs_installation
 verify_nfs_installation
+verify_sshfs_installation
 verify_bind_mount
 verify_swap_space
 verify_delete
