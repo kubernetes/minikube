@@ -40,8 +40,9 @@ var DefaultAdmissionControllers = []string{
 	"DefaultStorageClass",
 	"DefaultTolerationSeconds",
 	"NodeRestriction",
-	"ResourceQuota",
 	"MutatingAdmissionWebhook",
+	"ValidatingAdmissionWebhook",
+	"ResourceQuota",
 }
 
 // GetServiceClusterIP returns the first IP of the ServiceCIDR
