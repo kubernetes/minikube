@@ -173,7 +173,14 @@ var versionSpecificOpts = []VersionedExtraOption{
 	// Kubeconfig args
 	NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
-	NewUnversionedOption(Kubelet, "require-kubeconfig", "true"),
+	{
+		Option: util.ExtraOption{
+			Component: Kubelet,
+			Key:       "require-kubeconfig",
+			Value:     "true",
+		},
+		LessThanOrEqual: semver.MustParse("v1.10.0-alpha.3"),
+	},
 	NewUnversionedOption(Kubelet, "hostname-override", "minikube"),
 
 	// System pods args
