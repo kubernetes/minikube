@@ -84,7 +84,7 @@ func MountConn(c net.Conn, aname string, msize uint32, user User) (*Clnt, error)
 	return clnt, nil
 }
 
-// Closes the connection to the file sever.
+// Closes the connection to the file server.
 func (clnt *Clnt) Unmount() {
 	clnt.Lock()
 	clnt.err = &Error{"connection closed", EIO}
