@@ -179,7 +179,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 			Key:       "require-kubeconfig",
 			Value:     "true",
 		},
-		LessThanOrEqual: semver.MustParse("v1.10.0-alpha.3"),
+		LessThanOrEqual: semver.MustParse("1.10.0-alpha.3"),
 	},
 	NewUnversionedOption(Kubelet, "hostname-override", "minikube"),
 
