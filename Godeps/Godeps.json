@@ -2108,6 +2108,11 @@
 			"Rev": "9577782540c1398b710ddae1b86268ba03a19b0c"
 		},
 		{
+			"ImportPath": "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
+			"Comment": "v0.1.0",
+			"Rev": "abd4e62c279b39fdb3fec9b23e8e2b1f2abd3f60"
+		},
+		{
 			"ImportPath": "github.com/magiconair/properties",
 			"Comment": "v1.7.0-4-g61b492c",
 			"Rev": "61b492c03cf472e0c6419be5899b8e0dc28b1b88"
@@ -2642,79 +2647,83 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/bcrypt",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/blowfish",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/cast5",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/curve25519",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ed25519",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ed25519/internal/edwards25519",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/internal/chacha20",
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/nacl/secretbox",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/openpgp",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/openpgp/armor",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/openpgp/elgamal",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/openpgp/errors",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/openpgp/packet",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/openpgp/s2k",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/pkcs12",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/pkcs12/internal/rc2",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/poly1305",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/salsa20/salsa",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",
-			"Rev": "81e90905daefcd6fd217b62423c0908922eadb30"
+			"Rev": "b4956d363a8b14623cc81db401707679605930a3"
 		},
 		{
 			"ImportPath": "golang.org/x/exp/inotify",

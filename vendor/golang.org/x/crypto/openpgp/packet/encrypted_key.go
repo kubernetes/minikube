@@ -42,12 +42,18 @@ func (e *EncryptedKey) parse(r io.Reader) (err error) {
 	switch e.Algo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSAEncryptOnly:
 		e.encryptedMPI1.bytes, e.encryptedMPI1.bitLength, err = readMPI(r)
+		if err != nil {
+			return
+		}
 	case PubKeyAlgoElGamal:
 		e.encryptedMPI1.bytes, e.encryptedMPI1.bitLength, err = readMPI(r)
 		if err != nil {
 			return
 		}
 		e.encryptedMPI2.bytes, e.encryptedMPI2.bitLength, err = readMPI(r)
+		if err != nil {
+			return
+		}
 	}
 	_, err = consumeAll(r)
 	return
