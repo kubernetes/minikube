@@ -65,6 +65,7 @@ func TestUpdateCluster(t *testing.T) {
 	}
 	defaultAddons := []string{
 		"deploy/addons/kube-dns/kube-dns-cm.yaml",
+		"deploy/addons/kube-dns/kube-dns-sa.yaml",
 		"deploy/addons/kube-dns/kube-dns-svc.yaml",
 		"deploy/addons/addon-manager.yaml",
 		"deploy/addons/dashboard/dashboard-rc.yaml",

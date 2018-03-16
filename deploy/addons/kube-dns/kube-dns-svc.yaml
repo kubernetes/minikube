@@ -21,6 +21,7 @@ metadata:
     k8s-app: kube-dns
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/name: "KubeDNS"
+    kubernetes.io/cluster-service: "true"
 spec:
   selector:
     k8s-app: kube-dns
