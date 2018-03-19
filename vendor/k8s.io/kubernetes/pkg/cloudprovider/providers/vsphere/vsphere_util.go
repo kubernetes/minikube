@@ -32,12 +32,14 @@ import (
 
 	"fmt"
 
+	"path/filepath"
+
 	"github.com/vmware/govmomi/vim25/mo"
+
 	"k8s.io/api/core/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/vsphere/vclib"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/vsphere/vclib/diskmanagers"
-	"path/filepath"
 )
 
 const (
@@ -46,6 +48,11 @@ const (
 	Folder                = "Folder"
 	VirtualMachine        = "VirtualMachine"
 	DummyDiskName         = "kube-dummyDisk.vmdk"
+
+	UUIDPath              = "/sys/class/dmi/id/product_serial"
+	UUIDPrefix            = "VMware-"
+	ProviderPrefix        = "vsphere://"
+	vSphereConfFileEnvVar = "VSPHERE_CONF_FILE"
 )
 
 // GetVSphere reads vSphere configuration from system environment and construct vSphere object
@@ -187,20 +194,30 @@ func getAccessibleDatastores(ctx context.Context, nodeVmDetail *NodeDetails, nod
 
 // Get all datastores accessible for the virtual machine object.
 func getSharedDatastoresInK8SCluster(ctx context.Context, dc *vclib.Datacenter, nodeManager *NodeManager) ([]*vclib.DatastoreInfo, error) {
-	nodeVmDetails := nodeManager.GetNodeDetails()
-	if nodeVmDetails == nil || len(nodeVmDetails) == 0 {
+	nodeVmDetails, err := nodeManager.GetNodeDetails()
+	if err != nil {
+		glog.Errorf("Error while obtaining Kubernetes node nodeVmDetail details. error : %+v", err)
+		return nil, err
+	}
+
+	if len(nodeVmDetails) == 0 {
 		msg := fmt.Sprintf("Kubernetes node nodeVmDetail details is empty. nodeVmDetails : %+v", nodeVmDetails)
 		glog.Error(msg)
 		return nil, fmt.Errorf(msg)
 	}
 	var sharedDatastores []*vclib.DatastoreInfo
-	for index, nodeVmDetail := range nodeVmDetails {
+	for _, nodeVmDetail := range nodeVmDetails {
 		glog.V(9).Infof("Getting accessible datastores for node %s", nodeVmDetail.NodeName)
 		accessibleDatastores, err := getAccessibleDatastores(ctx, &nodeVmDetail, nodeManager)
 		if err != nil {
+			if err == vclib.ErrNoVMFound {
+				glog.V(9).Infof("Got NoVMFound error for node %s", nodeVmDetail.NodeName)
+				continue
+			}
 			return nil, err
 		}
-		if index == 0 {
+
+		if len(sharedDatastores) == 0 {
 			sharedDatastores = accessibleDatastores
 		} else {
 			sharedDatastores = intersect(sharedDatastores, accessibleDatastores)
@@ -210,7 +227,7 @@ func getSharedDatastoresInK8SCluster(ctx context.Context, dc *vclib.Datacenter, 
 		}
 	}
 	glog.V(9).Infof("sharedDatastores : %+v", sharedDatastores)
-	sharedDatastores, err := getDatastoresForEndpointVC(ctx, dc, sharedDatastores)
+	sharedDatastores, err = getDatastoresForEndpointVC(ctx, dc, sharedDatastores)
 	if err != nil {
 		glog.Errorf("Failed to get shared datastores from endpoint VC. err: %+v", err)
 		return nil, err
@@ -521,8 +538,74 @@ func (vs *VSphere) checkDiskAttached(ctx context.Context, nodes []k8stypes.NodeN
 		if err != nil {
 			return nodesToRetry, err
 		}
-		glog.V(9).Infof("Verifying volume for nodeName: %q with nodeuuid: %s", nodeName, node.Status.NodeInfo.SystemUUID, vmMoMap)
-		vclib.VerifyVolumePathsForVM(vmMoMap[strings.ToLower(node.Status.NodeInfo.SystemUUID)], nodeVolumes[nodeName], convertToString(nodeName), attached)
+
+		nodeUUID := strings.ToLower(GetUUIDFromProviderID(node.Spec.ProviderID))
+		glog.V(9).Infof("Verifying volume for node %s with nodeuuid %q: %s", nodeName, nodeUUID, vmMoMap)
+		vclib.VerifyVolumePathsForVM(vmMoMap[nodeUUID], nodeVolumes[nodeName], convertToString(nodeName), attached)
 	}
 	return nodesToRetry, nil
+}
+
+func (vs *VSphere) IsDummyVMPresent(vmName string) (bool, error) {
+	isDummyVMPresent := false
+
+	// Create context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	vsi, err := vs.getVSphereInstanceForServer(vs.cfg.Workspace.VCenterIP, ctx)
+	if err != nil {
+		return isDummyVMPresent, err
+	}
+
+	dc, err := vclib.GetDatacenter(ctx, vsi.conn, vs.cfg.Workspace.Datacenter)
+	if err != nil {
+		return isDummyVMPresent, err
+	}
+
+	vmFolder, err := dc.GetFolderByPath(ctx, vs.cfg.Workspace.Folder)
+	if err != nil {
+		return isDummyVMPresent, err
+	}
+
+	vms, err := vmFolder.GetVirtualMachines(ctx)
+	if err != nil {
+		return isDummyVMPresent, err
+	}
+
+	for _, vm := range vms {
+		if vm.Name() == vmName {
+			isDummyVMPresent = true
+			break
+		}
+	}
+
+	return isDummyVMPresent, nil
+}
+
+func GetVMUUID() (string, error) {
+	id, err := ioutil.ReadFile(UUIDPath)
+	if err != nil {
+		return "", fmt.Errorf("error retrieving vm uuid: %s", err)
+	}
+	uuidFromFile := string(id[:])
+	//strip leading and trailing white space and new line char
+	uuid := strings.TrimSpace(uuidFromFile)
+	// check the uuid starts with "VMware-"
+	if !strings.HasPrefix(uuid, UUIDPrefix) {
+		return "", fmt.Errorf("Failed to match Prefix, UUID read from the file is %v", uuidFromFile)
+	}
+	// Strip the prefix and white spaces and -
+	uuid = strings.Replace(uuid[len(UUIDPrefix):(len(uuid))], " ", "", -1)
+	uuid = strings.Replace(uuid, "-", "", -1)
+	if len(uuid) != 32 {
+		return "", fmt.Errorf("Length check failed, UUID read from the file is %v", uuidFromFile)
+	}
+	// need to add dashes, e.g. "564d395e-d807-e18a-cb25-b79f65eb2b9f"
+	uuid = fmt.Sprintf("%s-%s-%s-%s-%s", uuid[0:8], uuid[8:12], uuid[12:16], uuid[16:20], uuid[20:32])
+	return uuid, nil
+}
+
+func GetUUIDFromProviderID(providerID string) string {
+	return strings.TrimPrefix(providerID, ProviderPrefix)
 }

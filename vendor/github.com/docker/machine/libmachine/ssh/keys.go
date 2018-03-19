@@ -82,7 +82,7 @@ func (kp *KeyPair) WriteToFile(privateKeyPath string, publicKeyPath string) erro
 
 		// windows does not support chmod
 		switch runtime.GOOS {
-		case "darwin", "linux", "freebsd":
+		case "darwin", "freebsd", "linux", "openbsd":
 			if err := f.Chmod(0600); err != nil {
 				return err
 			}

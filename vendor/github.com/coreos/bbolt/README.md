@@ -1,5 +1,15 @@
-Bolt [![Coverage Status](https://coveralls.io/repos/boltdb/bolt/badge.svg?branch=master)](https://coveralls.io/r/boltdb/bolt?branch=master) [![GoDoc](https://godoc.org/github.com/boltdb/bolt?status.svg)](https://godoc.org/github.com/boltdb/bolt) ![Version](https://img.shields.io/badge/version-1.2.1-green.svg)
+bbolt
 ====
+
+[![Go Report Card](https://goreportcard.com/badge/github.com/coreos/bbolt?style=flat-square)](https://goreportcard.com/report/github.com/coreos/bbolt)
+[![Coverage](https://codecov.io/gh/coreos/bbolt/branch/master/graph/badge.svg)](https://codecov.io/gh/coreos/bbolt)
+[![Godoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://godoc.org/github.com/coreos/bbolt)
+
+bbolt is a fork of [Ben Johnson's][gh_ben] [Bolt][bolt] key/value
+store. The purpose of this fork is to provide the Go community with an active
+maintenance and development target for Bolt; the goal is improved reliability
+and stability. bbolt includes bug fixes, performance enhancements, and features
+not found in Bolt while preserving backwards compatibility with the Bolt API.
 
 Bolt is a pure Go key/value store inspired by [Howard Chu's][hyc_symas]
 [LMDB project][lmdb]. The goal of the project is to provide a simple,
@@ -10,16 +20,18 @@ Since Bolt is meant to be used as such a low-level piece of functionality,
 simplicity is key. The API will be small and only focus on getting values
 and setting values. That's it.
 
+[gh_ben]: https://github.com/benbjohnson
+[bolt]: https://github.com/boltdb/bolt
 [hyc_symas]: https://twitter.com/hyc_symas
 [lmdb]: http://symas.com/mdb/
 
 ## Project Status
 
-Bolt is stable and the API is fixed. Full unit test coverage and randomized
-black box testing are used to ensure database consistency and thread safety.
-Bolt is currently in high-load production environments serving databases as
-large as 1TB. Many companies such as Shopify and Heroku use Bolt-backed
-services every day.
+Bolt is stable, the API is fixed, and the file format is fixed. Full unit
+test coverage and randomized black box testing are used to ensure database
+consistency and thread safety. Bolt is currently used in high-load production
+environments serving databases as large as 1TB. Many companies such as
+Shopify and Heroku use Bolt-backed services every day.
 
 ## Table of Contents
 
@@ -59,7 +71,7 @@ services every day.
 To start using Bolt, install Go and run `go get`:
 
 ```sh
-$ go get github.com/boltdb/bolt/...
+$ go get github.com/coreos/bbolt/...
 ```
 
 This will retrieve the library and install the `bolt` command line utility into
@@ -79,7 +91,7 @@ package main
 import (
 	"log"
 
-	"github.com/boltdb/bolt"
+	bolt "github.com/coreos/bbolt"
 )
 
 func main() {
@@ -209,7 +221,7 @@ and then safely close your transaction if an error is returned. This is the
 recommended way to use Bolt transactions.
 
 However, sometimes you may want to manually start and end your transactions.
-You can use the `Tx.Begin()` function directly but **please** be sure to close
+You can use the `DB.Begin()` function directly but **please** be sure to close
 the transaction.
 
 ```go
@@ -395,7 +407,7 @@ db.View(func(tx *bolt.Tx) error {
 	c := tx.Bucket([]byte("MyBucket")).Cursor()
 
 	prefix := []byte("1234")
-	for k, v := c.Seek(prefix); bytes.HasPrefix(k, prefix); k, v = c.Next() {
+	for k, v := c.Seek(prefix); k != nil && bytes.HasPrefix(k, prefix); k, v = c.Next() {
 		fmt.Printf("key=%s, value=%s\n", k, v)
 	}
 
@@ -448,6 +460,10 @@ db.View(func(tx *bolt.Tx) error {
 })
 ```
 
+Please note that keys and values in `ForEach()` are only valid while
+the transaction is open. If you need to use a key or value outside of
+the transaction, you must use `copy()` to copy it to another byte
+slice.
 
 ### Nested buckets
 
@@ -460,6 +476,55 @@ func (*Bucket) CreateBucketIfNotExists(key []byte) (*Bucket, error)
 func (*Bucket) DeleteBucket(key []byte) error
 ```
 
+Say you had a multi-tenant application where the root level bucket was the account bucket. Inside of this bucket was a sequence of accounts which themselves are buckets. And inside the sequence bucket you could have many buckets pertaining to the Account itself (Users, Notes, etc) isolating the information into logical groupings.
+
+```go
+
+// createUser creates a new user in the given account.
+func createUser(accountID int, u *User) error {
+    // Start the transaction.
+    tx, err := db.Begin(true)
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()
+
+    // Retrieve the root bucket for the account.
+    // Assume this has already been created when the account was set up.
+    root := tx.Bucket([]byte(strconv.FormatUint(accountID, 10)))
+
+    // Setup the users bucket.
+    bkt, err := root.CreateBucketIfNotExists([]byte("USERS"))
+    if err != nil {
+        return err
+    }
+
+    // Generate an ID for the new user.
+    userID, err := bkt.NextSequence()
+    if err != nil {
+        return err
+    }
+    u.ID = userID
+
+    // Marshal and save the encoded user.
+    if buf, err := json.Marshal(u); err != nil {
+        return err
+    } else if err := bkt.Put([]byte(strconv.FormatUint(u.ID, 10)), buf); err != nil {
+        return err
+    }
+
+    // Commit the transaction.
+    if err := tx.Commit(); err != nil {
+        return err
+    }
+
+    return nil
+}
+
+```
+
+
+
 
 ### Database backups
 
@@ -469,7 +534,7 @@ this from a read-only transaction, it will perform a hot backup and not block
 your other database reads and writes.
 
 By default, it will use a regular file handle which will utilize the operating
-system's page cache. See the [`Tx`](https://godoc.org/github.com/boltdb/bolt#Tx)
+system's page cache. See the [`Tx`](https://godoc.org/github.com/coreos/bbolt#Tx)
 documentation for information about optimizing for larger-than-RAM datasets.
 
 One common use case is to backup over HTTP so you can use tools like `cURL` to
@@ -715,6 +780,9 @@ Here are a few things to note when evaluating and using Bolt:
   can be reused by a new page or can be unmapped from virtual memory and you'll
   see an `unexpected fault address` panic when accessing it.
 
+* Bolt uses an exclusive write lock on the database file so it cannot be
+  shared by multiple processes.
+
 * Be careful when using `Bucket.FillPercent`. Setting a high fill percent for
   buckets that have random inserts will cause your database to have very poor
   page utilization.
@@ -755,7 +823,7 @@ Here are a few things to note when evaluating and using Bolt:
 
 ## Reading the Source
 
-Bolt is a relatively small code base (<3KLOC) for an embedded, serializable,
+Bolt is a relatively small code base (<5KLOC) for an embedded, serializable,
 transactional key/value database so it can be a good starting point for people
 interested in how databases work.
 
@@ -848,5 +916,13 @@ Below is a list of public, open source projects that use Bolt:
 * [Algernon](https://github.com/xyproto/algernon) - A HTTP/2 web server with built-in support for Lua. Uses BoltDB as the default database backend.
 * [MuLiFS](https://github.com/dankomiocevic/mulifs) - Music Library Filesystem creates a filesystem to organise your music files.
 * [GoShort](https://github.com/pankajkhairnar/goShort) - GoShort is a URL shortener written in Golang and BoltDB for persistent key/value storage and for routing it's using high performent HTTPRouter.
+* [torrent](https://github.com/anacrolix/torrent) - Full-featured BitTorrent client package and utilities in Go. BoltDB is a storage backend in development.
+* [gopherpit](https://github.com/gopherpit/gopherpit) - A web service to manage Go remote import paths with custom domains
+* [bolter](https://github.com/hasit/bolter) - Command-line app for viewing BoltDB file in your terminal.
+* [boltcli](https://github.com/spacewander/boltcli) - the redis-cli for boltdb with Lua script support.
+* [btcwallet](https://github.com/btcsuite/btcwallet) - A bitcoin wallet.
+* [dcrwallet](https://github.com/decred/dcrwallet) - A wallet for the Decred cryptocurrency.
+* [Ironsmith](https://github.com/timshannon/ironsmith) - A simple, script-driven continuous integration (build - > test -> release) tool, with no external dependencies
+* [BoltHold](https://github.com/timshannon/bolthold) - An embeddable NoSQL store for Go types built on BoltDB
 
 If you are using Bolt in a project please send a pull request to add it to the list.
