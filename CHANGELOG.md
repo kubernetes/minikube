@@ -1,6 +1,9 @@
 # Minikube Release Notes
 
-# Version 0.25.1 - 3/28/2018
+# Version 0.25.1 - 3/22/2018
+* Update docker-machine for hyper-v fix
+
+# Version 0.25.1 - 3/21/2018
 * Update to Kubernetes 1.9.4[#2613](https://github.com/kubernetes/minikube/pull/2613e)
 
 # Version 0.25.0 - 1/26/2018
