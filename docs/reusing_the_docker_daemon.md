@@ -1,13 +1,13 @@
 ### Reusing the Docker daemon
 
-When using a single VM of kubernetes it's really handy to reuse the Docker daemon inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
+When using a single VM of Kubernetes it's really handy to reuse the Docker daemon inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
 
 To be able to work with the docker daemon on your mac/linux host use the docker-env command in your shell:
 
 ```shell
 eval $(minikube docker-env)
 ```
-you should now be able to use docker on the command line on your host mac/linux machine talking to the docker daemon inside the minikube VM:
+You should now be able to use docker on the command line on your host mac/linux machine talking to the docker daemon inside the minikube VM:
 ```shell
 docker ps
 ```
