@@ -63,7 +63,9 @@ done
 
 ### Other Ways to Install
 
-* [Linux] [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
+* [Linux]
+    * [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
+    * [Fedora/CentOS/Red Hat COPR](https://copr.fedorainfracloud.org/coprs/antonpatsev/minikube-rpm/)
 * [Windows] [Chocolatey](https://chocolatey.org/packages/Minikube)
 
 ### Minikube Version Management
