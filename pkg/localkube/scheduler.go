@@ -17,8 +17,8 @@ limitations under the License.
 package localkube
 
 import (
+	scheduler "k8s.io/kubernetes/cmd/kube-scheduler/app"
 	"k8s.io/kubernetes/pkg/apis/componentconfig"
-	scheduler "k8s.io/kubernetes/plugin/cmd/kube-scheduler/app"
 	"k8s.io/minikube/pkg/util"
 )
 

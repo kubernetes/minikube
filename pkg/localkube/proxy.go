@@ -43,6 +43,10 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 	}
 
 	opts := kubeproxy.NewOptions()
+	fg, err := lk.GetFeatureGates()
+	if err != nil {
+		panic(err)
+	}
 	config := &kubeproxyconfig.KubeProxyConfiguration{
 		OOMScoreAdj: &OOMScoreAdj,
 		ClientConnection: kubeproxyconfig.ClientConnectionConfiguration{
@@ -58,17 +62,15 @@ func StartProxyServer(lk LocalkubeServer) func() error {
 		},
 		BindAddress:  bindaddress,
 		Mode:         kubeproxyconfig.ProxyModeIPTables,
-		FeatureGates: lk.FeatureGates,
+		FeatureGates: fg,
 		// Disable the healthz check
-		HealthzBindAddress: "0",
+		HealthzBindAddress: "",
 	}
-	_, err := opts.ApplyDefaults(config)
-	if err != nil {
+	if _, err := opts.ApplyDefaults(config); err != nil {
 		panic(err)
 	}
-	opts.SetConfig(config)
-
 	lk.SetExtraConfigForComponent("proxy", &config)
+	opts.SetConfig(config)
 
 	return func() error {
 		return opts.Run()

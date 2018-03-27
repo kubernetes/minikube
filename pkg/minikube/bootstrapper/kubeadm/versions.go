@@ -173,7 +173,14 @@ var versionSpecificOpts = []VersionedExtraOption{
 	// Kubeconfig args
 	NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
 	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
-	NewUnversionedOption(Kubelet, "require-kubeconfig", "true"),
+	{
+		Option: util.ExtraOption{
+			Component: Apiserver,
+			Key:       "require-kubeconfig",
+			Value:     "true",
+		},
+		LessThanOrEqual: semver.MustParse("1.9.10"),
+	},
 	NewUnversionedOption(Kubelet, "hostname-override", "minikube"),
 
 	// System pods args
