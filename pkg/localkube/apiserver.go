@@ -28,9 +28,9 @@ import (
 	apiserveroptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/apiserver/pkg/storage/storagebackend"
 
+	genericoptions "k8s.io/apiserver/pkg/server/options"
 	apiserver "k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
-	kubeapioptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 )
 
 func (lk LocalkubeServer) NewAPIServer() Server {
@@ -69,7 +69,7 @@ func StartAPIServer(lk LocalkubeServer) func() error {
 
 	config.AllowPrivileged = true
 
-	config.APIEnablement = &kubeapioptions.APIEnablementOptions{
+	config.APIEnablement = &genericoptions.APIEnablementOptions{
 		RuntimeConfig: lk.RuntimeConfig,
 	}
 

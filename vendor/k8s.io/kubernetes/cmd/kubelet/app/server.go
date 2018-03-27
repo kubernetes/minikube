@@ -413,7 +413,6 @@ func initConfigz(kc *kubeletconfiginternal.KubeletConfiguration) error {
 	}
 	if err := setConfigz(cz, kc); err != nil {
 		glog.Errorf("unable to register config: %s", err)
-		return err
 	}
 	return nil
 }
