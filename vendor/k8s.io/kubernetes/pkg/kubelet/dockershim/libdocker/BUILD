@@ -12,8 +12,7 @@ go_test(
         "helpers_test.go",
         "kube_docker_client_test.go",
     ],
-    importpath = "k8s.io/kubernetes/pkg/kubelet/dockershim/libdocker",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//vendor/github.com/docker/docker/api/types:go_default_library",
         "//vendor/github.com/stretchr/testify/assert:go_default_library",

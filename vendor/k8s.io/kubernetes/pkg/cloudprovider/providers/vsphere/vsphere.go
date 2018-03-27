@@ -379,14 +379,6 @@ func newControllerNode(cfg VSphereConfig) (*VSphere, error) {
 	if cfg.Global.VCenterPort == "" {
 		cfg.Global.VCenterPort = "443"
 	}
-	if cfg.Global.VMUUID == "" {
-		// This needs root privileges on the host, and will fail otherwise.
-		cfg.Global.VMUUID, err = getvmUUID()
-		if err != nil {
-			glog.Errorf("Failed to get VM UUID. err: %+v", err)
-			return nil, err
-		}
-	}
 	vsphereInstanceMap, err := populateVsphereInstanceMap(&cfg)
 	if err != nil {
 		return nil, err
@@ -504,7 +496,7 @@ func (vs *VSphere) getVMFromNodeName(ctx context.Context, nodeName k8stypes.Node
 }
 
 // NodeAddresses is an implementation of Instances.NodeAddresses.
-func (vs *VSphere) NodeAddresses(nodeName k8stypes.NodeName) ([]v1.NodeAddress, error) {
+func (vs *VSphere) NodeAddresses(ctx context.Context, nodeName k8stypes.NodeName) ([]v1.NodeAddress, error) {
 	// Get local IP addresses if node is local node
 	if vs.hostName == convertToString(nodeName) {
 		return getLocalIP()
@@ -563,17 +555,17 @@ func (vs *VSphere) NodeAddresses(nodeName k8stypes.NodeName) ([]v1.NodeAddress, 
 // NodeAddressesByProviderID returns the node addresses of an instances with the specified unique providerID
 // This method will not be called from the node that is requesting this ID. i.e. metadata service
 // and other local methods cannot be used here
-func (vs *VSphere) NodeAddressesByProviderID(providerID string) ([]v1.NodeAddress, error) {
-	return vs.NodeAddresses(convertToK8sType(providerID))
+func (vs *VSphere) NodeAddressesByProviderID(ctx context.Context, providerID string) ([]v1.NodeAddress, error) {
+	return vs.NodeAddresses(ctx, convertToK8sType(providerID))
 }
 
 // AddSSHKeyToAllInstances add SSH key to all instances
-func (vs *VSphere) AddSSHKeyToAllInstances(user string, keyData []byte) error {
+func (vs *VSphere) AddSSHKeyToAllInstances(ctx context.Context, user string, keyData []byte) error {
 	return cloudprovider.NotImplemented
 }
 
 // CurrentNodeName gives the current node name
-func (vs *VSphere) CurrentNodeName(hostname string) (k8stypes.NodeName, error) {
+func (vs *VSphere) CurrentNodeName(ctx context.Context, hostname string) (k8stypes.NodeName, error) {
 	return convertToK8sType(vs.hostName), nil
 }
 
@@ -586,13 +578,13 @@ func convertToK8sType(vmName string) k8stypes.NodeName {
 }
 
 // ExternalID returns the cloud provider ID of the node with the specified Name (deprecated).
-func (vs *VSphere) ExternalID(nodeName k8stypes.NodeName) (string, error) {
-	return vs.InstanceID(nodeName)
+func (vs *VSphere) ExternalID(ctx context.Context, nodeName k8stypes.NodeName) (string, error) {
+	return vs.InstanceID(ctx, nodeName)
 }
 
 // InstanceExistsByProviderID returns true if the instance with the given provider id still exists and is running.
 // If false is returned with no error, the instance will be immediately deleted by the cloud controller manager.
-func (vs *VSphere) InstanceExistsByProviderID(providerID string) (bool, error) {
+func (vs *VSphere) InstanceExistsByProviderID(ctx context.Context, providerID string) (bool, error) {
 	var nodeName string
 	nodes, err := vs.nodeManager.GetNodeDetails()
 	if err != nil {
@@ -609,7 +601,7 @@ func (vs *VSphere) InstanceExistsByProviderID(providerID string) (bool, error) {
 		msg := fmt.Sprintf("Error while obtaining Kubernetes nodename for providerID %s.", providerID)
 		return false, errors.New(msg)
 	}
-	_, err = vs.InstanceID(convertToK8sType(nodeName))
+	_, err = vs.InstanceID(ctx, convertToK8sType(nodeName))
 	if err == nil {
 		return true, nil
 	}
@@ -618,7 +610,7 @@ func (vs *VSphere) InstanceExistsByProviderID(providerID string) (bool, error) {
 }
 
 // InstanceID returns the cloud provider ID of the node with the specified Name.
-func (vs *VSphere) InstanceID(nodeName k8stypes.NodeName) (string, error) {
+func (vs *VSphere) InstanceID(ctx context.Context, nodeName k8stypes.NodeName) (string, error) {
 
 	instanceIDInternal := func() (string, error) {
 		if vs.hostName == convertToString(nodeName) {
@@ -682,11 +674,11 @@ func (vs *VSphere) InstanceID(nodeName k8stypes.NodeName) (string, error) {
 // InstanceTypeByProviderID returns the cloudprovider instance type of the node with the specified unique providerID
 // This method will not be called from the node that is requesting this ID. i.e. metadata service
 // and other local methods cannot be used here
-func (vs *VSphere) InstanceTypeByProviderID(providerID string) (string, error) {
+func (vs *VSphere) InstanceTypeByProviderID(ctx context.Context, providerID string) (string, error) {
 	return "", nil
 }
 
-func (vs *VSphere) InstanceType(name k8stypes.NodeName) (string, error) {
+func (vs *VSphere) InstanceType(ctx context.Context, name k8stypes.NodeName) (string, error) {
 	return "", nil
 }
 
@@ -713,11 +705,6 @@ func (vs *VSphere) Zones() (cloudprovider.Zones, bool) {
 // Routes returns a false since the interface is not supported for vSphere.
 func (vs *VSphere) Routes() (cloudprovider.Routes, bool) {
 	return nil, false
-}
-
-// ScrubDNS filters DNS settings for pods.
-func (vs *VSphere) ScrubDNS(nameservers, searches []string) (nsOut, srchOut []string) {
-	return nameservers, searches
 }
 
 // AttachDisk attaches given virtual disk volume to the compute running kubelet.
@@ -1196,4 +1183,11 @@ func (vs *VSphere) NodeDeleted(obj interface{}) {
 
 	glog.V(4).Infof("Node deleted: %+v", node)
 	vs.nodeManager.UnRegisterNode(node)
+}
+
+func (vs *VSphere) NodeManager() (nodeManager *NodeManager) {
+	if vs == nil {
+		return nil
+	}
+	return vs.nodeManager
 }

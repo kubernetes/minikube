@@ -34,7 +34,7 @@ import (
 // namespace> tuple to a unversioned.APIResource struct.
 func (gc *GarbageCollector) apiResource(apiVersion, kind string) (*metav1.APIResource, error) {
 	fqKind := schema.FromAPIVersionAndKind(apiVersion, kind)
-	mapping, err := gc.restMapper.RESTMapping(fqKind.GroupKind(), apiVersion)
+	mapping, err := gc.restMapper.RESTMapping(fqKind.GroupKind(), fqKind.Version)
 	if err != nil {
 		return nil, newRESTMappingError(kind, apiVersion)
 	}
@@ -128,7 +128,7 @@ func (gc *GarbageCollector) removeFinalizer(owner *node, targetFinalizer string)
 			newFinalizers = append(newFinalizers, f)
 		}
 		if !found {
-			glog.V(5).Infof("the orphan finalizer is already removed from object %s", owner.identity)
+			glog.V(5).Infof("the %s finalizer is already removed from object %s", targetFinalizer, owner.identity)
 			return nil
 		}
 		// remove the owner from dependent's OwnerReferences

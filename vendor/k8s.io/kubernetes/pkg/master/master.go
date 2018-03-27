@@ -65,6 +65,7 @@ import (
 	"k8s.io/kubernetes/pkg/registry/core/endpoint"
 	endpointsstorage "k8s.io/kubernetes/pkg/registry/core/endpoint/storage"
 	"k8s.io/kubernetes/pkg/routes"
+	"k8s.io/kubernetes/pkg/serviceaccount"
 	nodeutil "k8s.io/kubernetes/pkg/util/node"
 
 	"github.com/golang/glog"
@@ -109,7 +110,6 @@ type ExtraConfig struct {
 
 	// Used to start and monitor tunneling
 	Tunneler          tunneler.Tunneler
-	EnableUISupport   bool
 	EnableLogsSupport bool
 	ProxyTransport    http.RoundTripper
 
@@ -156,6 +156,9 @@ type ExtraConfig struct {
 
 	// Selects which reconciler to use
 	EndpointReconcilerType reconcilers.Type
+
+	ServiceAccountIssuer       serviceaccount.TokenGenerator
+	ServiceAccountAPIAudiences []string
 }
 
 type Config struct {
@@ -269,9 +272,6 @@ func (cfg *Config) Complete(informers informers.SharedInformerFactory) Completed
 		glog.Infof("Node port range unspecified. Defaulting to %v.", c.ExtraConfig.ServiceNodePortRange)
 	}
 
-	// enable swagger UI only if general UI support is on
-	c.GenericConfig.EnableSwaggerUI = c.GenericConfig.EnableSwaggerUI && c.ExtraConfig.EnableUISupport
-
 	if c.ExtraConfig.EndpointReconcilerConfig.Interval == 0 {
 		c.ExtraConfig.EndpointReconcilerConfig.Interval = DefaultEndpointReconcilerInterval
 	}
@@ -304,9 +304,6 @@ func (c completedConfig) New(delegationTarget genericapiserver.DelegationTarget)
 		return nil, err
 	}
 
-	if c.ExtraConfig.EnableUISupport {
-		routes.UIRedirect{}.Install(s.Handler.NonGoRestfulMux)
-	}
 	if c.ExtraConfig.EnableLogsSupport {
 		routes.Logs{}.Install(s.Handler.GoRestfulContainer)
 	}
@@ -316,15 +313,17 @@ func (c completedConfig) New(delegationTarget genericapiserver.DelegationTarget)
 	}
 
 	// install legacy rest storage
-	if c.ExtraConfig.APIResourceConfigSource.AnyResourcesForVersionEnabled(apiv1.SchemeGroupVersion) {
+	if c.ExtraConfig.APIResourceConfigSource.VersionEnabled(apiv1.SchemeGroupVersion) {
 		legacyRESTStorageProvider := corerest.LegacyRESTStorageProvider{
-			StorageFactory:       c.ExtraConfig.StorageFactory,
-			ProxyTransport:       c.ExtraConfig.ProxyTransport,
-			KubeletClientConfig:  c.ExtraConfig.KubeletClientConfig,
-			EventTTL:             c.ExtraConfig.EventTTL,
-			ServiceIPRange:       c.ExtraConfig.ServiceIPRange,
-			ServiceNodePortRange: c.ExtraConfig.ServiceNodePortRange,
-			LoopbackClientConfig: c.GenericConfig.LoopbackClientConfig,
+			StorageFactory:             c.ExtraConfig.StorageFactory,
+			ProxyTransport:             c.ExtraConfig.ProxyTransport,
+			KubeletClientConfig:        c.ExtraConfig.KubeletClientConfig,
+			EventTTL:                   c.ExtraConfig.EventTTL,
+			ServiceIPRange:             c.ExtraConfig.ServiceIPRange,
+			ServiceNodePortRange:       c.ExtraConfig.ServiceNodePortRange,
+			LoopbackClientConfig:       c.GenericConfig.LoopbackClientConfig,
+			ServiceAccountIssuer:       c.ExtraConfig.ServiceAccountIssuer,
+			ServiceAccountAPIAudiences: c.ExtraConfig.ServiceAccountAPIAudiences,
 		}
 		m.InstallLegacyAPI(&c, c.GenericConfig.RESTOptionsGetter, legacyRESTStorageProvider)
 	}
@@ -337,15 +336,15 @@ func (c completedConfig) New(delegationTarget genericapiserver.DelegationTarget)
 	// TODO: describe the priority all the way down in the RESTStorageProviders and plumb it back through the various discovery
 	// handlers that we have.
 	restStorageProviders := []RESTStorageProvider{
-		authenticationrest.RESTStorageProvider{Authenticator: c.GenericConfig.Authenticator},
-		authorizationrest.RESTStorageProvider{Authorizer: c.GenericConfig.Authorizer, RuleResolver: c.GenericConfig.RuleResolver},
+		authenticationrest.RESTStorageProvider{Authenticator: c.GenericConfig.Authentication.Authenticator},
+		authorizationrest.RESTStorageProvider{Authorizer: c.GenericConfig.Authorization.Authorizer, RuleResolver: c.GenericConfig.RuleResolver},
 		autoscalingrest.RESTStorageProvider{},
 		batchrest.RESTStorageProvider{},
 		certificatesrest.RESTStorageProvider{},
 		extensionsrest.RESTStorageProvider{},
 		networkingrest.RESTStorageProvider{},
 		policyrest.RESTStorageProvider{},
-		rbacrest.RESTStorageProvider{Authorizer: c.GenericConfig.Authorizer},
+		rbacrest.RESTStorageProvider{Authorizer: c.GenericConfig.Authorization.Authorizer},
 		schedulingrest.RESTStorageProvider{},
 		settingsrest.RESTStorageProvider{},
 		storagerest.RESTStorageProvider{},
@@ -375,7 +374,7 @@ func (m *Master) InstallLegacyAPI(c *completedConfig, restOptionsGetter generic.
 	if c.ExtraConfig.EnableCoreControllers {
 		controllerName := "bootstrap-controller"
 		coreClient := coreclient.NewForConfigOrDie(c.GenericConfig.LoopbackClientConfig)
-		bootstrapController := c.NewBootstrapController(legacyRESTStorage, coreClient, coreClient)
+		bootstrapController := c.NewBootstrapController(legacyRESTStorage, coreClient, coreClient, coreClient)
 		m.GenericAPIServer.AddPostStartHookOrDie(controllerName, bootstrapController.PostStartHook)
 		m.GenericAPIServer.AddPreShutdownHookOrDie(controllerName, bootstrapController.PreShutdownHook)
 	}
@@ -406,7 +405,7 @@ func (m *Master) InstallAPIs(apiResourceConfigSource serverstorage.APIResourceCo
 
 	for _, restStorageBuilder := range restStorageProviders {
 		groupName := restStorageBuilder.GroupName()
-		if !apiResourceConfigSource.AnyResourcesForGroupEnabled(groupName) {
+		if !apiResourceConfigSource.AnyVersionForGroupEnabled(groupName) {
 			glog.V(1).Infof("Skipping disabled API group %q.", groupName)
 			continue
 		}
@@ -485,16 +484,6 @@ func DefaultAPIResourceConfigSource() *serverstorage.ResourceConfig {
 		networkingapiv1.SchemeGroupVersion,
 		eventsv1beta1.SchemeGroupVersion,
 		admissionregistrationv1beta1.SchemeGroupVersion,
-	)
-
-	// all extensions resources except these are disabled by default
-	ret.EnableResources(
-		extensionsapiv1beta1.SchemeGroupVersion.WithResource("daemonsets"),
-		extensionsapiv1beta1.SchemeGroupVersion.WithResource("deployments"),
-		extensionsapiv1beta1.SchemeGroupVersion.WithResource("ingresses"),
-		extensionsapiv1beta1.SchemeGroupVersion.WithResource("networkpolicies"),
-		extensionsapiv1beta1.SchemeGroupVersion.WithResource("replicasets"),
-		extensionsapiv1beta1.SchemeGroupVersion.WithResource("podsecuritypolicies"),
 	)
 
 	return ret

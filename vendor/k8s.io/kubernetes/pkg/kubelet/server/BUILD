@@ -56,8 +56,7 @@ go_test(
         "server_test.go",
         "server_websocket_test.go",
     ],
-    importpath = "k8s.io/kubernetes/pkg/kubelet/server",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/apis/core:go_default_library",
         "//pkg/apis/core/install:go_default_library",
