@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"path"
 	"strconv"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -177,6 +178,27 @@ func (lk LocalkubeServer) SetExtraConfigForComponent(component string, config in
 			glog.Warningf("Unable to set %s to %s. Error: %s", e.Key, e.Value, err)
 		}
 	}
+}
+
+func (lk LocalkubeServer) GetFeatureGates() (map[string]bool, error) {
+	fg := map[string]bool{}
+	if lk.FeatureGates == "" {
+		return fg, nil
+	}
+	gates := strings.Split(lk.FeatureGates, ",")
+	for _, g := range gates {
+
+		kvp := strings.SplitN(g, "=", 2)
+		if len(kvp) != 2 {
+			return nil, fmt.Errorf("invalid feature gate specification: %s", g)
+		}
+		value, err := strconv.ParseBool(kvp[1])
+		if err != nil {
+			return nil, fmt.Errorf("invalid feature gate specification: %s", g)
+		}
+		fg[kvp[0]] = value
+	}
+	return fg, nil
 }
 
 func (lk LocalkubeServer) loadCert(path string) (*x509.Certificate, error) {
