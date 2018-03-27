@@ -26,13 +26,25 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/kubernetes/pkg/apis/core/helper"
 )
 
-// IsExtendedResourceName returns true if the resource name is not in the
-// default namespace.
+// IsExtendedResourceName returns true if:
+// 1. the resource name is not in the default namespace;
+// 2. resource name does not have "requests." prefix,
+// to avoid confusion with the convention in quota
+// 3. it satisfies the rules in IsQualifiedName() after converted into quota resource name
 func IsExtendedResourceName(name v1.ResourceName) bool {
-	return !IsDefaultNamespaceResource(name)
+	if IsDefaultNamespaceResource(name) || strings.HasPrefix(string(name), v1.DefaultResourceRequestsPrefix) {
+		return false
+	}
+	// Ensure it satisfies the rules in IsQualifiedName() after converted into quota resource name
+	nameForQuota := fmt.Sprintf("%s%s", v1.DefaultResourceRequestsPrefix, string(name))
+	if errs := validation.IsQualifiedName(string(nameForQuota)); len(errs) != 0 {
+		return false
+	}
+	return true
 }
 
 // IsDefaultNamespaceResource returns true if the resource name is in the
@@ -87,15 +99,6 @@ func IsScalarResourceName(name v1.ResourceName) bool {
 // the objective is not to perform validation here
 func IsServiceIPSet(service *v1.Service) bool {
 	return service.Spec.ClusterIP != v1.ClusterIPNone && service.Spec.ClusterIP != ""
-}
-
-// this function aims to check if the service's cluster IP is requested or not
-func IsServiceIPRequested(service *v1.Service) bool {
-	// ExternalName services are CNAME aliases to external ones. Ignore the IP.
-	if service.Spec.Type == v1.ServiceTypeExternalName {
-		return false
-	}
-	return service.Spec.ClusterIP == ""
 }
 
 // AddToNodeAddresses appends the NodeAddresses to the passed-by-pointer slice,
@@ -414,20 +417,6 @@ func GetPersistentVolumeClaimClass(claim *v1.PersistentVolumeClaim) string {
 	}
 
 	return ""
-}
-
-// PersistentVolumeClaimHasClass returns true if given claim has set StorageClassName field.
-func PersistentVolumeClaimHasClass(claim *v1.PersistentVolumeClaim) bool {
-	// Use beta annotation first
-	if _, found := claim.Annotations[v1.BetaStorageClassAnnotation]; found {
-		return true
-	}
-
-	if claim.Spec.StorageClassName != nil {
-		return true
-	}
-
-	return false
 }
 
 // GetStorageNodeAffinityFromAnnotation gets the json serialized data from PersistentVolume.Annotations

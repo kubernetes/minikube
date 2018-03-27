@@ -45,8 +45,7 @@ go_test(
         "prober_test.go",
         "worker_test.go",
     ],
-    importpath = "k8s.io/kubernetes/pkg/kubelet/prober",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/kubelet/container:go_default_library",
         "//pkg/kubelet/container/testing:go_default_library",

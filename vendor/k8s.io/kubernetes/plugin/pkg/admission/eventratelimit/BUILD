@@ -12,8 +12,7 @@ go_test(
         "admission_test.go",
         "cache_test.go",
     ],
-    importpath = "k8s.io/kubernetes/plugin/pkg/admission/eventratelimit",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/apis/core:go_default_library",
         "//plugin/pkg/admission/eventratelimit/apis/eventratelimit:go_default_library",

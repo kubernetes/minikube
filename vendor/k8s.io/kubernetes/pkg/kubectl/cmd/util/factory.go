@@ -18,7 +18,6 @@ package util
 
 import (
 	"fmt"
-	"io"
 	"sort"
 	"strconv"
 	"strings"
@@ -60,10 +59,10 @@ var (
 
 // Factory provides abstractions that allow the Kubectl command to be extended across multiple types
 // of resources and different API sets.
-// The rings are here for a reason.  In order for composers to be able to provide alternative factory implementations
+// The rings are here for a reason. In order for composers to be able to provide alternative factory implementations
 // they need to provide low level pieces of *certain* functions so that when the factory calls back into itself
-// it uses the custom version of the function.  Rather than try to enumerate everything that someone would want to override
-// we split the factory into rings, where each ring can depend on methods  an earlier ring, but cannot depend
+// it uses the custom version of the function. Rather than try to enumerate everything that someone would want to override
+// we split the factory into rings, where each ring can depend on methods in an earlier ring, but cannot depend
 // upon peer methods in its own ring.
 // TODO: make the functions interfaces
 // TODO: pass the various interfaces on the factory directly into the command constructors (so the
@@ -103,18 +102,6 @@ type ClientAccessFactory interface {
 	// just directions to the server. People use this to build RESTMappers on top of
 	BareClientConfig() (*restclient.Config, error)
 
-	// TODO remove.  This should be rolled into `ClientSet`
-	ClientSetForVersion(requiredVersion *schema.GroupVersion) (internalclientset.Interface, error)
-	// TODO remove.  This should be rolled into `ClientConfig`
-	ClientConfigForVersion(requiredVersion *schema.GroupVersion) (*restclient.Config, error)
-
-	// Returns interfaces for decoding objects - if toInternal is set, decoded objects will be converted
-	// into their internal form (if possible). Eventually the internal form will be removed as an option,
-	// and only versioned objects will be returned.
-	Decoder(toInternal bool) runtime.Decoder
-	// Returns an encoder capable of encoding a provided object into JSON in the default desired version.
-	JSONEncoder() runtime.Encoder
-
 	// UpdatePodSpecForObject will call the provided function on the pod spec this object supports,
 	// return false if no pod spec is supported, or return an error.
 	UpdatePodSpecForObject(obj runtime.Object, fn func(*v1.PodSpec) error) (bool, error)
@@ -146,14 +133,12 @@ type ClientAccessFactory interface {
 	// SuggestedPodTemplateResources returns a list of resource types that declare a pod template
 	SuggestedPodTemplateResources() []schema.GroupResource
 
-	// Returns a Printer for formatting objects of the given type or an error.
-	Printer(mapping *meta.RESTMapping, options printers.PrintOptions) (printers.ResourcePrinter, error)
 	// Pauser marks the object in the info as paused. Currently supported only for Deployments.
-	// Returns the patched object in bytes and any error that occured during the encoding or
+	// Returns the patched object in bytes and any error that occurred during the encoding or
 	// in case the object is already paused.
 	Pauser(info *resource.Info) ([]byte, error)
 	// Resumer resumes a paused object inside the info. Currently supported only for Deployments.
-	// Returns the patched object in bytes and any error that occured during the encoding or
+	// Returns the patched object in bytes and any error that occurred during the encoding or
 	// in case the object is already resumed.
 	Resumer(info *resource.Info) ([]byte, error)
 
@@ -177,12 +162,9 @@ type ClientAccessFactory interface {
 	// can range over in order to determine if the user has specified an editor
 	// of their choice.
 	EditorEnvs() []string
-
-	// PrintObjectSpecificMessage prints object-specific messages on the provided writer
-	PrintObjectSpecificMessage(obj runtime.Object, out io.Writer)
 }
 
-// ObjectMappingFactory holds the second level of factory methods.  These functions depend upon ClientAccessFactory methods.
+// ObjectMappingFactory holds the second level of factory methods. These functions depend upon ClientAccessFactory methods.
 // Generally they provide object typing and functions that build requests based on the negotiated clients.
 type ObjectMappingFactory interface {
 	// Returns interfaces for dealing with arbitrary runtime.Objects.
@@ -220,31 +202,13 @@ type ObjectMappingFactory interface {
 
 	// Returns a schema that can validate objects stored on disk.
 	Validator(validate bool) (validation.Schema, error)
-	// OpenAPISchema returns the schema openapi schema definiton
+	// OpenAPISchema returns the schema openapi schema definition
 	OpenAPISchema() (openapi.Resources, error)
 }
 
-// BuilderFactory holds the second level of factory methods.  These functions depend upon ObjectMappingFactory and ClientAccessFactory methods.
+// BuilderFactory holds the third level of factory methods. These functions depend upon ObjectMappingFactory and ClientAccessFactory methods.
 // Generally they depend upon client mapper functions
 type BuilderFactory interface {
-	// PrinterForCommand returns the default printer for the command. It requires that certain options
-	// are declared on the command (see AddPrinterFlags). Returns a printer, or an error if a printer
-	// could not be found.
-	PrinterForOptions(options *printers.PrintOptions) (printers.ResourcePrinter, error)
-	// PrinterForMapping returns a printer suitable for displaying the provided resource type.
-	// Requires that printer flags have been added to cmd (see AddPrinterFlags).
-	// Returns a printer, true if the printer is generic (is not internal), or
-	// an error if a printer could not be found.
-	PrinterForMapping(options *printers.PrintOptions, mapping *meta.RESTMapping) (printers.ResourcePrinter, error)
-	// PrintObject prints an api object given command line flags to modify the output format
-	PrintObject(cmd *cobra.Command, isLocal bool, mapper meta.RESTMapper, obj runtime.Object, out io.Writer) error
-	// PrintResourceInfoForCommand receives a *cobra.Command and a *resource.Info and
-	// attempts to print an info object based on the specified output format. If the
-	// object passed is non-generic, it attempts to print the object using a HumanReadablePrinter.
-	// Requires that printer flags have been added to cmd (see AddPrinterFlags).
-	PrintResourceInfoForCommand(cmd *cobra.Command, info *resource.Info, out io.Writer) error
-	// PrintSuccess prints message after finishing mutating operations
-	PrintSuccess(mapper meta.RESTMapper, shortOutput bool, out io.Writer, resource, name string, dryRun bool, operation string)
 	// NewBuilder returns an object that assists in loading objects from both disk and the server
 	// and which implements the common patterns for CLI interactions with generic resources.
 	NewBuilder() *resource.Builder
@@ -252,16 +216,6 @@ type BuilderFactory interface {
 	PluginLoader() plugins.PluginLoader
 	// PluginRunner provides the implementation to be used to run cli plugins.
 	PluginRunner() plugins.PluginRunner
-}
-
-func getGroupVersionKinds(gvks []schema.GroupVersionKind, group string) []schema.GroupVersionKind {
-	result := []schema.GroupVersionKind{}
-	for ix := range gvks {
-		if gvks[ix].Group == group {
-			result = append(result, gvks[ix])
-		}
-	}
-	return result
 }
 
 type factory struct {

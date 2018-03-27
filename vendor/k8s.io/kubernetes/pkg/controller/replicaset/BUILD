@@ -48,8 +48,7 @@ go_test(
         "replica_set_test.go",
         "replica_set_utils_test.go",
     ],
-    importpath = "k8s.io/kubernetes/pkg/controller/replicaset",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/api/legacyscheme:go_default_library",
         "//pkg/controller:go_default_library",

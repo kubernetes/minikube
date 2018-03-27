@@ -9,8 +9,7 @@ load(
 go_test(
     name = "go_default_test",
     srcs = ["storage_test.go"],
-    importpath = "k8s.io/kubernetes/pkg/registry/batch/cronjob/storage",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/api/testapi:go_default_library",
         "//pkg/apis/batch:go_default_library",

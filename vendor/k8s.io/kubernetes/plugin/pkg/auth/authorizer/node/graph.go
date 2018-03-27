@@ -106,15 +106,19 @@ const (
 	pvcVertexType
 	pvVertexType
 	secretVertexType
+	vaVertexType
+	serviceAccountVertexType
 )
 
 var vertexTypes = map[vertexType]string{
-	configMapVertexType: "configmap",
-	nodeVertexType:      "node",
-	podVertexType:       "pod",
-	pvcVertexType:       "pvc",
-	pvVertexType:        "pv",
-	secretVertexType:    "secret",
+	configMapVertexType:      "configmap",
+	nodeVertexType:           "node",
+	podVertexType:            "pod",
+	pvcVertexType:            "pvc",
+	pvVertexType:             "pv",
+	secretVertexType:         "secret",
+	vaVertexType:             "volumeattachment",
+	serviceAccountVertexType: "serviceAccount",
 }
 
 // must be called under a write lock
@@ -202,6 +206,7 @@ func (g *Graph) deleteVertex_locked(vertexType vertexType, namespace, name strin
 //   secret    -> pod
 //   configmap -> pod
 //   pvc       -> pod
+//   svcacct   -> pod
 func (g *Graph) AddPod(pod *api.Pod) {
 	g.lock.Lock()
 	defer g.lock.Unlock()
@@ -210,6 +215,14 @@ func (g *Graph) AddPod(pod *api.Pod) {
 	podVertex := g.getOrCreateVertex_locked(podVertexType, pod.Namespace, pod.Name)
 	nodeVertex := g.getOrCreateVertex_locked(nodeVertexType, "", pod.Spec.NodeName)
 	g.graph.SetEdge(newDestinationEdge(podVertex, nodeVertex, nodeVertex))
+
+	// TODO(mikedanese): If the pod doesn't mount the service account secrets,
+	// should the node still get access to the service account?
+	//
+	// ref https://github.com/kubernetes/kubernetes/issues/58790
+	if len(pod.Spec.ServiceAccountName) > 0 {
+		g.graph.SetEdge(newDestinationEdge(g.getOrCreateVertex_locked(serviceAccountVertexType, pod.Namespace, pod.Spec.ServiceAccountName), podVertex, nodeVertex))
+	}
 
 	podutil.VisitPodSecretNames(pod, func(secret string) bool {
 		g.graph.SetEdge(newDestinationEdge(g.getOrCreateVertex_locked(secretVertexType, pod.Namespace, secret), podVertex, nodeVertex))
@@ -251,9 +264,11 @@ func (g *Graph) AddPV(pv *api.PersistentVolume) {
 
 		// since we don't know the other end of the pvc -> pod -> node chain (or it may not even exist yet), we can't decorate these edges with kubernetes node info
 		g.graph.SetEdge(simple.Edge{F: pvVertex, T: g.getOrCreateVertex_locked(pvcVertexType, pv.Spec.ClaimRef.Namespace, pv.Spec.ClaimRef.Name)})
-		pvutil.VisitPVSecretNames(pv, func(namespace, secret string) bool {
+		pvutil.VisitPVSecretNames(pv, func(namespace, secret string, kubeletVisible bool) bool {
 			// This grants access to the named secret in the same namespace as the bound PVC
-			g.graph.SetEdge(simple.Edge{F: g.getOrCreateVertex_locked(secretVertexType, namespace, secret), T: pvVertex})
+			if kubeletVisible {
+				g.graph.SetEdge(simple.Edge{F: g.getOrCreateVertex_locked(secretVertexType, namespace, secret), T: pvVertex})
+			}
 			return true
 		})
 	}
@@ -262,4 +277,27 @@ func (g *Graph) DeletePV(name string) {
 	g.lock.Lock()
 	defer g.lock.Unlock()
 	g.deleteVertex_locked(pvVertexType, "", name)
+}
+
+// AddVolumeAttachment sets up edges for the following relationships:
+//
+//   volume attachment -> node
+func (g *Graph) AddVolumeAttachment(attachmentName, nodeName string) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+
+	// clear existing edges
+	g.deleteVertex_locked(vaVertexType, "", attachmentName)
+
+	// if we have a node, establish new edges
+	if len(nodeName) > 0 {
+		vaVertex := g.getOrCreateVertex_locked(vaVertexType, "", attachmentName)
+		nodeVertex := g.getOrCreateVertex_locked(nodeVertexType, "", nodeName)
+		g.graph.SetEdge(newDestinationEdge(vaVertex, nodeVertex, nodeVertex))
+	}
+}
+func (g *Graph) DeleteVolumeAttachment(name string) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
+	g.deleteVertex_locked(vaVertexType, "", name)
 }

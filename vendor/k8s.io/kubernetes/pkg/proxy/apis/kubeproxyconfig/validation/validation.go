@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	apivalidation "k8s.io/kubernetes/pkg/apis/core/validation"
 	"k8s.io/kubernetes/pkg/proxy/apis/kubeproxyconfig"
@@ -36,7 +37,9 @@ func Validate(config *kubeproxyconfig.KubeProxyConfiguration) field.ErrorList {
 	newPath := field.NewPath("KubeProxyConfiguration")
 
 	allErrs = append(allErrs, validateKubeProxyIPTablesConfiguration(config.IPTables, newPath.Child("KubeProxyIPTablesConfiguration"))...)
-	allErrs = append(allErrs, validateKubeProxyIPVSConfiguration(config.IPVS, newPath.Child("KubeProxyIPVSConfiguration"))...)
+	if config.Mode == kubeproxyconfig.ProxyModeIPVS {
+		allErrs = append(allErrs, validateKubeProxyIPVSConfiguration(config.IPVS, newPath.Child("KubeProxyIPVSConfiguration"))...)
+	}
 	allErrs = append(allErrs, validateKubeProxyConntrackConfiguration(config.Conntrack, newPath.Child("KubeProxyConntrackConfiguration"))...)
 	allErrs = append(allErrs, validateProxyMode(config.Mode, newPath.Child("Mode"))...)
 	allErrs = append(allErrs, validateClientConnectionConfiguration(config.ClientConnection, newPath.Child("ClientConnection"))...)
@@ -69,6 +72,8 @@ func Validate(config *kubeproxyconfig.KubeProxyConfiguration) field.ErrorList {
 	if _, err := utilnet.ParsePortRange(config.PortRange); err != nil {
 		allErrs = append(allErrs, field.Invalid(newPath.Child("PortRange"), config.PortRange, "must be a valid port range (e.g. 300-2000)"))
 	}
+
+	allErrs = append(allErrs, validateKubeProxyNodePortAddress(config.NodePortAddresses, newPath.Child("NodePortAddresses"))...)
 
 	return allErrs
 }
@@ -150,33 +155,32 @@ func validateProxyMode(mode kubeproxyconfig.ProxyMode, fldPath *field.Path) fiel
 }
 
 func validateProxyModeLinux(mode kubeproxyconfig.ProxyMode, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
+	validModes := sets.NewString(
+		string(kubeproxyconfig.ProxyModeUserspace),
+		string(kubeproxyconfig.ProxyModeIPTables),
+		string(kubeproxyconfig.ProxyModeIPVS),
+	)
 
-	switch mode {
-	case kubeproxyconfig.ProxyModeUserspace:
-	case kubeproxyconfig.ProxyModeIPTables:
-	case kubeproxyconfig.ProxyModeIPVS:
-	case "":
-	default:
-		modes := []string{string(kubeproxyconfig.ProxyModeUserspace), string(kubeproxyconfig.ProxyModeIPTables), string(kubeproxyconfig.ProxyModeIPVS)}
-		errMsg := fmt.Sprintf("must be %s or blank (blank means the best-available proxy [currently iptables])", strings.Join(modes, ","))
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("ProxyMode"), string(mode), errMsg))
+	if mode == "" || validModes.Has(string(mode)) {
+		return nil
 	}
-	return allErrs
+
+	errMsg := fmt.Sprintf("must be %s or blank (blank means the best-available proxy [currently iptables])", strings.Join(validModes.List(), ","))
+	return field.ErrorList{field.Invalid(fldPath.Child("ProxyMode"), string(mode), errMsg)}
 }
 
 func validateProxyModeWindows(mode kubeproxyconfig.ProxyMode, fldPath *field.Path) field.ErrorList {
-	allErrs := field.ErrorList{}
+	validModes := sets.NewString(
+		string(kubeproxyconfig.ProxyModeUserspace),
+		string(kubeproxyconfig.ProxyModeKernelspace),
+	)
 
-	switch mode {
-	case kubeproxyconfig.ProxyModeUserspace:
-	case kubeproxyconfig.ProxyModeKernelspace:
-	default:
-		modes := []string{string(kubeproxyconfig.ProxyModeUserspace), string(kubeproxyconfig.ProxyModeKernelspace)}
-		errMsg := fmt.Sprintf("must be %s or blank (blank means the most-available proxy [currently userspace])", strings.Join(modes, ","))
-		allErrs = append(allErrs, field.Invalid(fldPath.Child("ProxyMode"), string(mode), errMsg))
+	if mode == "" || validModes.Has(string(mode)) {
+		return nil
 	}
-	return allErrs
+
+	errMsg := fmt.Sprintf("must be %s or blank (blank means the most-available proxy [currently userspace])", strings.Join(validModes.List(), ","))
+	return field.ErrorList{field.Invalid(fldPath.Child("ProxyMode"), string(mode), errMsg)}
 }
 
 func validateClientConnectionConfiguration(config kubeproxyconfig.ClientConnectionConfiguration, fldPath *field.Path) field.ErrorList {
@@ -234,5 +238,18 @@ func validateIPVSSchedulerMethod(scheduler kubeproxyconfig.IPVSSchedulerMethod, 
 		errMsg := fmt.Sprintf("must be in %v, blank means the default algorithm method (currently rr)", supportedMethod)
 		allErrs = append(allErrs, field.Invalid(fldPath.Child("Scheduler"), string(scheduler), errMsg))
 	}
+	return allErrs
+}
+
+func validateKubeProxyNodePortAddress(nodePortAddresses []string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	for i := range nodePortAddresses {
+		if _, _, err := net.ParseCIDR(nodePortAddresses[i]); err != nil {
+			allErrs = append(allErrs, field.Invalid(fldPath, nodePortAddresses, "must be a valid IP block"))
+			break
+		}
+	}
+
 	return allErrs
 }

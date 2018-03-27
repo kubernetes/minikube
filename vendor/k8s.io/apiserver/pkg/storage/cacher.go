@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strconv"
 	"sync"
 	"time"
 
@@ -131,7 +130,7 @@ func (i *indexedWatchers) terminateAll(objectType reflect.Type) {
 	}
 }
 
-type watchFilterFunc func(key string, l labels.Set, f fields.Set, uninitialized bool) bool
+type filterWithAttrsFunc func(key string, l labels.Set, f fields.Set, uninitialized bool) bool
 
 // Cacher is responsible for serving WATCH and LIST requests for a given
 // resource from its internal cache and updating its cache in the background
@@ -290,7 +289,7 @@ func (c *Cacher) Delete(ctx context.Context, key string, out runtime.Object, pre
 
 // Implements storage.Interface.
 func (c *Cacher) Watch(ctx context.Context, key string, resourceVersion string, pred SelectionPredicate) (watch.Interface, error) {
-	watchRV, err := ParseWatchResourceVersion(resourceVersion)
+	watchRV, err := c.versioner.ParseWatchResourceVersion(resourceVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +337,7 @@ func (c *Cacher) Watch(ctx context.Context, key string, resourceVersion string, 
 	c.Lock()
 	defer c.Unlock()
 	forget := forgetWatcher(c, c.watcherIdx, triggerValue, triggerSupported)
-	watcher := newCacheWatcher(watchRV, chanSize, initEvents, watchFilterFunction(key, pred), forget, c.versioner)
+	watcher := newCacheWatcher(watchRV, chanSize, initEvents, filterWithAttrsFunction(key, pred), forget, c.versioner)
 
 	c.watchers.addWatcher(watcher, c.watcherIdx, triggerValue, triggerSupported)
 	c.watcherIdx++
@@ -361,7 +360,7 @@ func (c *Cacher) Get(ctx context.Context, key string, resourceVersion string, ob
 	// If resourceVersion is specified, serve it from cache.
 	// It's guaranteed that the returned value is at least that
 	// fresh as the given resourceVersion.
-	getRV, err := ParseListResourceVersion(resourceVersion)
+	getRV, err := c.versioner.ParseListResourceVersion(resourceVersion)
 	if err != nil {
 		return err
 	}
@@ -414,7 +413,7 @@ func (c *Cacher) GetToList(ctx context.Context, key string, resourceVersion stri
 	// If resourceVersion is specified, serve it from cache.
 	// It's guaranteed that the returned value is at least that
 	// fresh as the given resourceVersion.
-	listRV, err := ParseListResourceVersion(resourceVersion)
+	listRV, err := c.versioner.ParseListResourceVersion(resourceVersion)
 	if err != nil {
 		return err
 	}
@@ -440,7 +439,7 @@ func (c *Cacher) GetToList(ctx context.Context, key string, resourceVersion stri
 	if err != nil || listVal.Kind() != reflect.Slice {
 		return fmt.Errorf("need a pointer to slice, got %v", listVal.Kind())
 	}
-	filter := filterFunction(key, pred)
+	filter := filterWithAttrsFunction(key, pred)
 
 	obj, exists, readResourceVersion, err := c.watchCache.WaitUntilFreshAndGet(listRV, key, trace)
 	if err != nil {
@@ -453,7 +452,7 @@ func (c *Cacher) GetToList(ctx context.Context, key string, resourceVersion stri
 		if !ok {
 			return fmt.Errorf("non *storeElement returned from storage: %v", obj)
 		}
-		if filter(elem.Key, elem.Object) {
+		if filter(elem.Key, elem.Labels, elem.Fields, elem.Uninitialized) {
 			listVal.Set(reflect.Append(listVal, reflect.ValueOf(elem.Object).Elem()))
 		}
 	}
@@ -483,7 +482,7 @@ func (c *Cacher) List(ctx context.Context, key string, resourceVersion string, p
 	// If resourceVersion is specified, serve it from cache.
 	// It's guaranteed that the returned value is at least that
 	// fresh as the given resourceVersion.
-	listRV, err := ParseListResourceVersion(resourceVersion)
+	listRV, err := c.versioner.ParseListResourceVersion(resourceVersion)
 	if err != nil {
 		return err
 	}
@@ -509,7 +508,7 @@ func (c *Cacher) List(ctx context.Context, key string, resourceVersion string, p
 	if err != nil || listVal.Kind() != reflect.Slice {
 		return fmt.Errorf("need a pointer to slice, got %v", listVal.Kind())
 	}
-	filter := filterFunction(key, pred)
+	filter := filterWithAttrsFunction(key, pred)
 
 	objs, readResourceVersion, err := c.watchCache.WaitUntilFreshAndList(listRV, trace)
 	if err != nil {
@@ -527,7 +526,7 @@ func (c *Cacher) List(ctx context.Context, key string, resourceVersion string, p
 		if !ok {
 			return fmt.Errorf("non *storeElement returned from storage: %v", obj)
 		}
-		if filter(elem.Key, elem.Object) {
+		if filter(elem.Key, elem.Labels, elem.Fields, elem.Uninitialized) {
 			listVal.Set(reflect.Append(listVal, reflect.ValueOf(elem.Object).Elem()))
 		}
 	}
@@ -554,6 +553,10 @@ func (c *Cacher) GuaranteedUpdate(
 	}
 	// If we couldn't get the object, fallback to no-suggestion.
 	return c.storage.GuaranteedUpdate(ctx, key, ptrToType, ignoreNotFound, preconditions, tryUpdate)
+}
+
+func (c *Cacher) Count(pathPrefix string) (int64, error) {
+	return c.storage.Count(pathPrefix)
 }
 
 func (c *Cacher) triggerValues(event *watchCacheEvent) ([]string, bool) {
@@ -655,7 +658,7 @@ func (c *Cacher) Stop() {
 	}
 	c.stopLock.Lock()
 	if c.stopped {
-		// avoid that it was locked meanwhile as isStopped only read-locks
+		c.stopLock.Unlock()
 		return
 	}
 	c.stopped = true
@@ -676,23 +679,12 @@ func forgetWatcher(c *Cacher, index int, triggerValue string, triggerSupported b
 			glog.V(1).Infof("Forcing watcher close due to unresponsiveness: %v", c.objectType.String())
 		}
 		// It's possible that the watcher is already not in the structure (e.g. in case of
-		// simulaneous Stop() and terminateAllWatchers(), but it doesn't break anything.
+		// simultaneous Stop() and terminateAllWatchers(), but it doesn't break anything.
 		c.watchers.deleteWatcher(index, triggerValue, triggerSupported)
 	}
 }
 
-func filterFunction(key string, p SelectionPredicate) func(string, runtime.Object) bool {
-	f := SimpleFilter(p)
-	filterFunc := func(objKey string, obj runtime.Object) bool {
-		if !hasPathPrefix(objKey, key) {
-			return false
-		}
-		return f(obj)
-	}
-	return filterFunc
-}
-
-func watchFilterFunction(key string, p SelectionPredicate) watchFilterFunc {
+func filterWithAttrsFunction(key string, p SelectionPredicate) filterWithAttrsFunc {
 	filterFunc := func(objKey string, label labels.Set, field fields.Set, uninitialized bool) bool {
 		if !hasPathPrefix(objKey, key) {
 			return false
@@ -707,11 +699,7 @@ func (c *Cacher) LastSyncResourceVersion() (uint64, error) {
 	c.ready.wait()
 
 	resourceVersion := c.reflector.LastSyncResourceVersion()
-	if resourceVersion == "" {
-		return 0, nil
-	}
-
-	return strconv.ParseUint(resourceVersion, 10, 64)
+	return c.versioner.ParseListResourceVersion(resourceVersion)
 }
 
 // cacherListerWatcher opaques storage.Interface to expose cache.ListerWatcher.
@@ -743,7 +731,7 @@ func (lw *cacherListerWatcher) Watch(options metav1.ListOptions) (watch.Interfac
 	return lw.storage.WatchList(context.TODO(), lw.resourcePrefix, options.ResourceVersion, Everything)
 }
 
-// cacherWatch implements watch.Interface to return a single error
+// errWatcher implements watch.Interface to return a single error
 type errWatcher struct {
 	result chan watch.Event
 }
@@ -783,19 +771,19 @@ func (c *errWatcher) Stop() {
 	// no-op
 }
 
-// cacherWatch implements watch.Interface
+// cachWatcher implements watch.Interface
 type cacheWatcher struct {
 	sync.Mutex
 	input     chan *watchCacheEvent
 	result    chan watch.Event
 	done      chan struct{}
-	filter    watchFilterFunc
+	filter    filterWithAttrsFunc
 	stopped   bool
 	forget    func(bool)
 	versioner Versioner
 }
 
-func newCacheWatcher(resourceVersion uint64, chanSize int, initEvents []*watchCacheEvent, filter watchFilterFunc, forget func(bool), versioner Versioner) *cacheWatcher {
+func newCacheWatcher(resourceVersion uint64, chanSize int, initEvents []*watchCacheEvent, filter filterWithAttrsFunc, forget func(bool), versioner Versioner) *cacheWatcher {
 	watcher := &cacheWatcher{
 		input:     make(chan *watchCacheEvent, chanSize),
 		result:    make(chan watch.Event, chanSize),

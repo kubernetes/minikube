@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -31,6 +30,13 @@ import (
 	gcfg "gopkg.in/gcfg.v1"
 
 	"cloud.google.com/go/compute/metadata"
+	"github.com/golang/glog"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	computealpha "google.golang.org/api/compute/v0.alpha"
+	computebeta "google.golang.org/api/compute/v0.beta"
+	compute "google.golang.org/api/compute/v1"
+	container "google.golang.org/api/container/v1"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -42,18 +48,12 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/flowcontrol"
+
 	"k8s.io/kubernetes/pkg/cloudprovider"
+	"k8s.io/kubernetes/pkg/cloudprovider/providers/gce/cloud"
 	"k8s.io/kubernetes/pkg/controller"
 	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 	"k8s.io/kubernetes/pkg/version"
-
-	"github.com/golang/glog"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	computealpha "google.golang.org/api/compute/v0.alpha"
-	computebeta "google.golang.org/api/compute/v0.beta"
-	compute "google.golang.org/api/compute/v1"
-	container "google.golang.org/api/container/v1"
 )
 
 const (
@@ -88,8 +88,8 @@ const (
 	// Defaults to 5 * 2 = 10 seconds before the LB will steer traffic away
 	gceHcUnhealthyThreshold = int64(5)
 
-	gceComputeAPIEndpoint      = "https://www.googleapis.com/compute/v1/"
-	gceComputeAPIEndpointAlpha = "https://www.googleapis.com/compute/alpha/"
+	gceComputeAPIEndpoint     = "https://www.googleapis.com/compute/v1/"
+	gceComputeAPIEndpointBeta = "https://www.googleapis.com/compute/beta/"
 )
 
 // gceObject is an abstraction of all GCE API object in go client
@@ -107,6 +107,7 @@ type GCECloud struct {
 	serviceBeta      *computebeta.Service
 	serviceAlpha     *computealpha.Service
 	containerService *container.Service
+	tpuService       *tpuService
 	client           clientset.Interface
 	clientBuilder    controller.ControllerClientBuilder
 	eventBroadcaster record.EventBroadcaster
@@ -148,6 +149,9 @@ type GCECloud struct {
 	// the corresponding api is enabled.
 	// If not enabled, it should return error.
 	AlphaFeatureGate *AlphaFeatureGate
+
+	// New code generated interface to the GCE compute library.
+	c cloud.Cloud
 }
 
 // TODO: replace gcfg with json
@@ -213,9 +217,22 @@ func init() {
 		})
 }
 
-// Raw access to the underlying GCE service, probably should only be used for e2e tests
-func (g *GCECloud) GetComputeService() *compute.Service {
-	return g.service
+// Services is the set of all versions of the compute service.
+type Services struct {
+	// GA, Alpha, Beta versions of the compute API.
+	GA    *compute.Service
+	Alpha *computealpha.Service
+	Beta  *computebeta.Service
+}
+
+// ComputeServices returns access to the internal compute services.
+func (g *GCECloud) ComputeServices() *Services {
+	return &Services{g.service, g.serviceAlpha, g.serviceBeta}
+}
+
+// Compute returns the generated stubs for the compute API.
+func (g *GCECloud) Compute() cloud.Cloud {
+	return g.c
 }
 
 // newGCECloud creates a new instance of GCECloud.
@@ -236,7 +253,6 @@ func newGCECloud(config io.Reader) (gceCloud *GCECloud, err error) {
 		return nil, err
 	}
 	return CreateGCECloud(cloudConfig)
-
 }
 
 func readConfig(reader io.Reader) (*ConfigFile, error) {
@@ -356,11 +372,12 @@ func generateCloudConfig(configFile *ConfigFile) (cloudConfig *CloudConfig, err 
 // If no tokenSource is specified, uses oauth2.DefaultTokenSource.
 // If managedZones is nil / empty all zones in the region will be managed.
 func CreateGCECloud(config *CloudConfig) (*GCECloud, error) {
-	// Remove any pre-release version and build metadata from the semver, leaving only the MAJOR.MINOR.PATCH portion.
-	// See http://semver.org/.
+	// Remove any pre-release version and build metadata from the semver,
+	// leaving only the MAJOR.MINOR.PATCH portion. See http://semver.org/.
 	version := strings.TrimLeft(strings.Split(strings.Split(version.Get().GitVersion, "-")[0], "+")[0], "v")
 
-	// Create a user-agent header append string to supply to the Google API clients, to identify Kubernetes as the origin of the GCP API calls.
+	// Create a user-agent header append string to supply to the Google API
+	// clients, to identify Kubernetes as the origin of the GCP API calls.
 	userAgent := fmt.Sprintf("Kubernetes/%s (%s %s)", version, runtime.GOOS, runtime.GOARCH)
 
 	// Use ProjectID for NetworkProjectID, if it wasn't explicitly set.
@@ -413,6 +430,11 @@ func CreateGCECloud(config *CloudConfig) (*GCECloud, error) {
 		return nil, err
 	}
 	containerService.UserAgent = userAgent
+
+	tpuService, err := newTPUService(client)
+	if err != nil {
+		return nil, err
+	}
 
 	// ProjectID and.NetworkProjectID may be project number or name.
 	projID, netProjID := tryConvertToProjectNames(config.ProjectID, config.NetworkProjectID, service)
@@ -480,6 +502,7 @@ func CreateGCECloud(config *CloudConfig) (*GCECloud, error) {
 		serviceAlpha:             serviceAlpha,
 		serviceBeta:              serviceBeta,
 		containerService:         containerService,
+		tpuService:               tpuService,
 		projectID:                projID,
 		networkProjectID:         netProjID,
 		onXPN:                    onXPN,
@@ -499,6 +522,13 @@ func CreateGCECloud(config *CloudConfig) (*GCECloud, error) {
 	}
 
 	gce.manager = &gceServiceManager{gce}
+	gce.c = cloud.NewGCE(&cloud.Service{
+		GA:            service,
+		Alpha:         serviceAlpha,
+		Beta:          serviceBeta,
+		ProjectRouter: &gceProjectRouter{gce},
+		RateLimiter:   &gceRateLimiter{gce},
+	})
 
 	return gce, nil
 }
@@ -694,20 +724,6 @@ func (gce *GCECloud) updateNodeZones(prevNode, newNode *v1.Node) {
 	}
 }
 
-// Known-useless DNS search path.
-var uselessDNSSearchRE = regexp.MustCompile(`^[0-9]+.google.internal.$`)
-
-// ScrubDNS filters DNS settings for pods.
-func (gce *GCECloud) ScrubDNS(nameservers, searches []string) (nsOut, srchOut []string) {
-	// GCE has too many search paths by default. Filter the ones we know are useless.
-	for _, s := range searches {
-		if !uselessDNSSearchRE.MatchString(s) {
-			srchOut = append(srchOut, s)
-		}
-	}
-	return nameservers, srchOut
-}
-
 // HasClusterID returns true if the cluster has a clusterID
 func (gce *GCECloud) HasClusterID() bool {
 	return true
@@ -735,20 +751,6 @@ func gceSubnetworkURL(apiEndpoint, project, region, subnetwork string) string {
 		apiEndpoint = gceComputeAPIEndpoint
 	}
 	return apiEndpoint + strings.Join([]string{"projects", project, "regions", region, "subnetworks", subnetwork}, "/")
-}
-
-// getProjectIDInURL parses full resource URLS and shorter URLS
-// https://www.googleapis.com/compute/v1/projects/myproject/global/networks/mycustom
-// projects/myproject/global/networks/mycustom
-// All return "myproject"
-func getProjectIDInURL(urlStr string) (string, error) {
-	fields := strings.Split(urlStr, "/")
-	for i, v := range fields {
-		if v == "projects" && i < len(fields)-1 {
-			return fields[i+1], nil
-		}
-	}
-	return "", fmt.Errorf("could not find project field in url: %v", urlStr)
 }
 
 // getRegionInURL parses full resource URLS and shorter URLS
@@ -848,7 +850,13 @@ func newOauthClient(tokenSource oauth2.TokenSource) (*http.Client, error) {
 		glog.Infof("Using existing Token Source %#v", tokenSource)
 	}
 
-	if err := wait.PollImmediate(5*time.Second, 30*time.Second, func() (bool, error) {
+	backoff := wait.Backoff{
+		// These values will add up to about a minute. See #56293 for background.
+		Duration: time.Second,
+		Factor:   1.4,
+		Steps:    10,
+	}
+	if err := wait.ExponentialBackoff(backoff, func() (bool, error) {
 		if _, err := tokenSource.Token(); err != nil {
 			glog.Errorf("error fetching initial token: %v", err)
 			return false, nil
@@ -870,10 +878,10 @@ func (manager *gceServiceManager) getProjectsAPIEndpoint() string {
 	return projectsApiEndpoint
 }
 
-func (manager *gceServiceManager) getProjectsAPIEndpointAlpha() string {
-	projectsApiEndpoint := gceComputeAPIEndpointAlpha + "projects/"
+func (manager *gceServiceManager) getProjectsAPIEndpointBeta() string {
+	projectsApiEndpoint := gceComputeAPIEndpointBeta + "projects/"
 	if manager.gce.service != nil {
-		projectsApiEndpoint = manager.gce.serviceAlpha.BasePath
+		projectsApiEndpoint = manager.gce.serviceBeta.BasePath
 	}
 
 	return projectsApiEndpoint

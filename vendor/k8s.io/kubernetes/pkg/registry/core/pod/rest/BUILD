@@ -35,8 +35,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = ["log_test.go"],
-    importpath = "k8s.io/kubernetes/pkg/registry/core/pod/rest",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/apis/core:go_default_library",
         "//pkg/registry/registrytest:go_default_library",

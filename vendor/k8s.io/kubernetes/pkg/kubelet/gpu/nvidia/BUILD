@@ -40,8 +40,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["nvidia_gpu_manager_test.go"],
-    importpath = "k8s.io/kubernetes/pkg/kubelet/gpu/nvidia",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/kubelet/dockershim:go_default_library",
         "//pkg/kubelet/dockershim/libdocker:go_default_library",
