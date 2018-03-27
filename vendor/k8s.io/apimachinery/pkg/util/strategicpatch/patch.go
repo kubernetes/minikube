@@ -423,7 +423,7 @@ func normalizeElementOrder(patch, serverOnly, patchOrder, serverOrder []interfac
 // scan from the place of last insertion in `right` to the end of `right`,
 // the place is before the first item that is greater than the item we want to insert.
 // example usage: using server-only items as left and patch items as right. We insert server-only items
-// to patch list. We use the order of live object as record for comparision.
+// to patch list. We use the order of live object as record for comparison.
 func mergeSortedSlice(left, right, serverOrder []interface{}, mergeKey string, kind reflect.Kind) []interface{} {
 	// Returns if l is less than r, and if both have been found.
 	// If l and r both present and l is in front of r, l is less than r.
@@ -1322,23 +1322,23 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 		// If they're both maps or lists, recurse into the value.
 		switch originalType.Kind() {
 		case reflect.Map:
-			subschema, patchMeta, err := schema.LookupPatchMetadataForStruct(k)
-			if err != nil {
-				return nil, err
+			subschema, patchMeta, err2 := schema.LookupPatchMetadataForStruct(k)
+			if err2 != nil {
+				return nil, err2
 			}
-			_, patchStrategy, err := extractRetainKeysPatchStrategy(patchMeta.GetPatchStrategies())
-			if err != nil {
-				return nil, err
+			_, patchStrategy, err2 := extractRetainKeysPatchStrategy(patchMeta.GetPatchStrategies())
+			if err2 != nil {
+				return nil, err2
 			}
 			original[k], err = mergeMapHandler(original[k], patchV, subschema, patchStrategy, mergeOptions)
 		case reflect.Slice:
-			subschema, patchMeta, err := schema.LookupPatchMetadataForSlice(k)
-			if err != nil {
-				return nil, err
+			subschema, patchMeta, err2 := schema.LookupPatchMetadataForSlice(k)
+			if err2 != nil {
+				return nil, err2
 			}
-			_, patchStrategy, err := extractRetainKeysPatchStrategy(patchMeta.GetPatchStrategies())
-			if err != nil {
-				return nil, err
+			_, patchStrategy, err2 := extractRetainKeysPatchStrategy(patchMeta.GetPatchStrategies())
+			if err2 != nil {
+				return nil, err2
 			}
 			original[k], err = mergeSliceHandler(original[k], patchV, subschema, patchStrategy, patchMeta.GetPatchMergeKey(), isDeleteList, mergeOptions)
 		default:
@@ -2109,7 +2109,7 @@ func sliceTypeAssertion(original, patch interface{}) ([]interface{}, []interface
 }
 
 // extractRetainKeysPatchStrategy process patch strategy, which is a string may contains multiple
-// patch strategies seperated by ",". It returns a boolean var indicating if it has
+// patch strategies separated by ",". It returns a boolean var indicating if it has
 // retainKeys strategies and a string for the other strategy.
 func extractRetainKeysPatchStrategy(strategies []string) (bool, string, error) {
 	switch len(strategies) {

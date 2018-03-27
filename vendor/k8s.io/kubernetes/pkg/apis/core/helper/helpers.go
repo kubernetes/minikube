@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/kubernetes/pkg/apis/core"
 )
 
@@ -146,10 +147,21 @@ func IsStandardContainerResourceName(str string) bool {
 	return standardContainerResources.Has(str) || IsHugePageResourceName(core.ResourceName(str))
 }
 
-// IsExtendedResourceName returns true if the resource name is not in the
-// default namespace.
+// IsExtendedResourceName returns true if:
+// 1. the resource name is not in the default namespace;
+// 2. resource name does not have "requests." prefix,
+// to avoid confusion with the convention in quota
+// 3. it satisfies the rules in IsQualifiedName() after converted into quota resource name
 func IsExtendedResourceName(name core.ResourceName) bool {
-	return !IsDefaultNamespaceResource(name)
+	if IsDefaultNamespaceResource(name) || strings.HasPrefix(string(name), core.DefaultResourceRequestsPrefix) {
+		return false
+	}
+	// Ensure it satisfies the rules in IsQualifiedName() after converted into quota resource name
+	nameForQuota := fmt.Sprintf("%s%s", core.DefaultResourceRequestsPrefix, string(name))
+	if errs := validation.IsQualifiedName(string(nameForQuota)); len(errs) != 0 {
+		return false
+	}
+	return true
 }
 
 // IsDefaultNamespaceResource returns true if the resource name is in the
@@ -254,24 +266,10 @@ func IsIntegerResourceName(str string) bool {
 	return integerResources.Has(str) || IsExtendedResourceName(core.ResourceName(str))
 }
 
-// Extended and HugePages resources
-func IsScalarResourceName(name core.ResourceName) bool {
-	return IsExtendedResourceName(name) || IsHugePageResourceName(name)
-}
-
 // this function aims to check if the service's ClusterIP is set or not
 // the objective is not to perform validation here
 func IsServiceIPSet(service *core.Service) bool {
 	return service.Spec.ClusterIP != core.ClusterIPNone && service.Spec.ClusterIP != ""
-}
-
-// this function aims to check if the service's cluster IP is requested or not
-func IsServiceIPRequested(service *core.Service) bool {
-	// ExternalName services are CNAME aliases to external ones. Ignore the IP.
-	if service.Spec.Type == core.ServiceTypeExternalName {
-		return false
-	}
-	return service.Spec.ClusterIP == ""
 }
 
 var standardFinalizers = sets.NewString(
@@ -279,20 +277,6 @@ var standardFinalizers = sets.NewString(
 	metav1.FinalizerOrphanDependents,
 	metav1.FinalizerDeleteDependents,
 )
-
-// HasAnnotation returns a bool if passed in annotation exists
-func HasAnnotation(obj core.ObjectMeta, ann string) bool {
-	_, found := obj.Annotations[ann]
-	return found
-}
-
-// SetMetaDataAnnotation sets the annotation and value
-func SetMetaDataAnnotation(obj *core.ObjectMeta, ann string, value string) {
-	if obj.Annotations == nil {
-		obj.Annotations = make(map[string]string)
-	}
-	obj.Annotations[ann] = value
-}
 
 func IsStandardFinalizerName(str string) bool {
 	return standardFinalizers.Has(str)
@@ -480,37 +464,6 @@ func AddOrUpdateTolerationInPod(pod *core.Pod, toleration *core.Toleration) bool
 
 	pod.Spec.Tolerations = newTolerations
 	return true
-}
-
-// TolerationToleratesTaint checks if the toleration tolerates the taint.
-func TolerationToleratesTaint(toleration *core.Toleration, taint *core.Taint) bool {
-	if len(toleration.Effect) != 0 && toleration.Effect != taint.Effect {
-		return false
-	}
-
-	if toleration.Key != taint.Key {
-		return false
-	}
-	// TODO: Use proper defaulting when Toleration becomes a field of PodSpec
-	if (len(toleration.Operator) == 0 || toleration.Operator == core.TolerationOpEqual) && toleration.Value == taint.Value {
-		return true
-	}
-	if toleration.Operator == core.TolerationOpExists {
-		return true
-	}
-	return false
-}
-
-// TaintToleratedByTolerations checks if taint is tolerated by any of the tolerations.
-func TaintToleratedByTolerations(taint *core.Taint, tolerations []core.Toleration) bool {
-	tolerated := false
-	for i := range tolerations {
-		if TolerationToleratesTaint(&tolerations[i], taint) {
-			tolerated = true
-			break
-		}
-	}
-	return tolerated
 }
 
 // GetTaintsFromNodeAnnotations gets the json serialized taints data from Pod.Annotations

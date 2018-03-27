@@ -170,7 +170,7 @@ message Binding {
   optional ObjectReference target = 2;
 }
 
-// Represents storage that is managed by an external CSI volume driver
+// Represents storage that is managed by an external CSI volume driver (Beta feature)
 message CSIPersistentVolumeSource {
   // Driver is the name of the driver to use for this volume.
   // Required.
@@ -185,6 +185,40 @@ message CSIPersistentVolumeSource {
   // Defaults to false (read/write).
   // +optional
   optional bool readOnly = 3;
+
+  // Filesystem type to mount.
+  // Must be a filesystem type supported by the host operating system.
+  // Ex. "ext4", "xfs", "ntfs". Implicitly inferred to be "ext4" if unspecified.
+  // +optional
+  optional string fsType = 4;
+
+  // Attributes of the volume to publish.
+  // +optional
+  map<string, string> volumeAttributes = 5;
+
+  // ControllerPublishSecretRef is a reference to the secret object containing
+  // sensitive information to pass to the CSI driver to complete the CSI
+  // ControllerPublishVolume and ControllerUnpublishVolume calls.
+  // This field is optional, and  may be empty if no secret is required. If the
+  // secret object contains more than one secret, all secrets are passed.
+  // +optional
+  optional SecretReference controllerPublishSecretRef = 6;
+
+  // NodeStageSecretRef is a reference to the secret object containing sensitive
+  // information to pass to the CSI driver to complete the CSI NodeStageVolume
+  // and NodeStageVolume and NodeUnstageVolume calls.
+  // This field is optional, and  may be empty if no secret is required. If the
+  // secret object contains more than one secret, all secrets are passed.
+  // +optional
+  optional SecretReference nodeStageSecretRef = 7;
+
+  // NodePublishSecretRef is a reference to the secret object containing
+  // sensitive information to pass to the CSI driver to complete the CSI
+  // NodePublishVolume and NodeUnpublishVolume calls.
+  // This field is optional, and  may be empty if no secret is required. If the
+  // secret object contains more than one secret, all secrets are passed.
+  // +optional
+  optional SecretReference nodePublishSecretRef = 8;
 }
 
 // Adds and removes POSIX capabilities from running containers.
@@ -351,8 +385,21 @@ message ConfigMap {
 
   // Data contains the configuration data.
   // Each key must consist of alphanumeric characters, '-', '_' or '.'.
+  // Values with non-UTF-8 byte sequences must use the BinaryData field.
+  // The keys stored in Data must not overlap with the keys in
+  // the BinaryData field, this is enforced during validation process.
   // +optional
   map<string, string> data = 2;
+
+  // BinaryData contains the binary data.
+  // Each key must consist of alphanumeric characters, '-', '_' or '.'.
+  // BinaryData can contain byte sequences that are not in the UTF-8 range.
+  // The keys stored in BinaryData must not overlap with the ones in
+  // the Data field, this is enforced during validation process.
+  // Using this field will require 1.10+ apiserver and
+  // kubelet.
+  // +optional
+  map<string, bytes> binaryData = 3;
 }
 
 // ConfigMapEnvSource selects a ConfigMap to populate the environment
@@ -618,7 +665,7 @@ message Container {
 // Describe a container image
 message ContainerImage {
   // Names by which this image is known.
-  // e.g. ["gcr.io/google_containers/hyperkube:v1.0.7", "dockerhub.io/google_containers/hyperkube:v1.0.7"]
+  // e.g. ["k8s.gcr.io/hyperkube:v1.0.7", "dockerhub.io/google_containers/hyperkube:v1.0.7"]
   repeated string names = 1;
 
   // The size of the image in bytes.
@@ -957,6 +1004,7 @@ message Endpoints {
   // subsets for the different ports. No address will appear in both Addresses and
   // NotReadyAddresses in the same subset.
   // Sets of addresses and ports that comprise a service.
+  // +optional
   repeated EndpointSubset subsets = 2;
 }
 
@@ -973,7 +1021,7 @@ message EndpointsList {
 
 // EnvFromSource represents the source of a set of ConfigMaps
 message EnvFromSource {
-  // An optional identifer to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.
+  // An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.
   // +optional
   optional string prefix = 1;
 
@@ -1105,12 +1153,12 @@ message EventList {
 }
 
 // EventSeries contain information on series of events, i.e. thing that was/is happening
-// continously for some time.
+// continuously for some time.
 message EventSeries {
   // Number of occurrences in this series up to the last heartbeat time
   optional int32 count = 1;
 
-  // Time of the last occurence observed
+  // Time of the last occurrence observed
   optional k8s.io.apimachinery.pkg.apis.meta.v1.MicroTime lastObservedTime = 2;
 
   // State of this Series: Ongoing or Finished
@@ -1167,6 +1215,36 @@ message FCVolumeSource {
   // Either wwids or combination of targetWWNs and lun must be set, but not both simultaneously.
   // +optional
   repeated string wwids = 5;
+}
+
+// FlexPersistentVolumeSource represents a generic persistent volume resource that is
+// provisioned/attached using an exec based plugin.
+message FlexPersistentVolumeSource {
+  // Driver is the name of the driver to use for this volume.
+  optional string driver = 1;
+
+  // Filesystem type to mount.
+  // Must be a filesystem type supported by the host operating system.
+  // Ex. "ext4", "xfs", "ntfs". The default filesystem depends on FlexVolume script.
+  // +optional
+  optional string fsType = 2;
+
+  // Optional: SecretRef is reference to the secret object containing
+  // sensitive information to pass to the plugin scripts. This may be
+  // empty if no secret object is specified. If the secret object
+  // contains more than one secret, all secrets are passed to the plugin
+  // scripts.
+  // +optional
+  optional SecretReference secretRef = 3;
+
+  // Optional: Defaults to false (read/write). ReadOnly here will force
+  // the ReadOnly setting in VolumeMounts.
+  // +optional
+  optional bool readOnly = 4;
+
+  // Optional: Extra command options if any.
+  // +optional
+  map<string, string> options = 5;
 }
 
 // FlexVolume represents a generic volume resource that is
@@ -2441,7 +2519,7 @@ message PersistentVolumeSource {
   // FlexVolume represents a generic volume resource that is
   // provisioned/attached using an exec based plugin.
   // +optional
-  optional FlexVolumeSource flexVolume = 12;
+  optional FlexPersistentVolumeSource flexVolume = 12;
 
   // AzureFile represents an Azure File Service mount on the host and bind mount to the pod.
   // +optional
@@ -2479,7 +2557,7 @@ message PersistentVolumeSource {
   // +optional
   optional StorageOSPersistentVolumeSource storageos = 21;
 
-  // CSI represents storage that handled by an external CSI driver
+  // CSI represents storage that handled by an external CSI driver (Beta feature).
   // +optional
   optional CSIPersistentVolumeSource csi = 22;
 }
@@ -2507,8 +2585,9 @@ message PersistentVolumeSpec {
   optional ObjectReference claimRef = 4;
 
   // What happens to a persistent volume when released from its claim.
-  // Valid options are Retain (default) and Recycle.
-  // Recycling must be supported by the volume plugin underlying this persistent volume.
+  // Valid options are Retain (default for manually created PersistentVolumes), Delete (default
+  // for dynamically provisioned PersistentVolumes), and Recycle (deprecated).
+  // Recycle must be supported by the volume plugin underlying this PersistentVolume.
   // More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming
   // +optional
   optional string persistentVolumeReclaimPolicy = 5;
@@ -2529,6 +2608,11 @@ message PersistentVolumeSpec {
   // This is an alpha feature and may change in the future.
   // +optional
   optional string volumeMode = 8;
+
+  // NodeAffinity defines constraints that limit what nodes this volume can be accessed from.
+  // This field influences the scheduling of pods that use this volume.
+  // +optional
+  optional VolumeNodeAffinity nodeAffinity = 9;
 }
 
 // PersistentVolumeStatus is the current status of a persistent volume.
@@ -2619,6 +2703,7 @@ message PodAffinityTerm {
 
   // namespaces specifies which namespaces the labelSelector applies to (matches against);
   // null or empty list means "this pod's namespace"
+  // +optional
   repeated string namespaces = 2;
 
   // This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching
@@ -2879,6 +2964,14 @@ message PodSecurityContext {
   // +optional
   optional int64 runAsUser = 2;
 
+  // The GID to run the entrypoint of the container process.
+  // Uses runtime default if unset.
+  // May also be set in SecurityContext.  If set in both SecurityContext and
+  // PodSecurityContext, the value specified in SecurityContext takes precedence
+  // for that container.
+  // +optional
+  optional int64 runAsGroup = 6;
+
   // Indicates that the container must run as a non-root user.
   // If true, the Kubelet will validate the image at runtime to ensure that it
   // does not run as UID 0 (root) and fail to start the container if it does.
@@ -2978,7 +3071,6 @@ message PodSpec {
   // DNS parameters given in DNSConfig will be merged with the policy selected with DNSPolicy.
   // To have DNS options set along with hostNetwork, you have to specify DNS policy
   // explicitly to 'ClusterFirstWithHostNet'.
-  // Note that 'None' policy is an alpha feature introduced in v1.9 and CustomPodDNS feature gate must be enabled to use it.
   // +optional
   optional string dnsPolicy = 6;
 
@@ -3028,6 +3120,16 @@ message PodSpec {
   // +optional
   optional bool hostIPC = 13;
 
+  // Share a single process namespace between all of the containers in a pod.
+  // When this is set containers will be able to view and signal processes from other containers
+  // in the same pod, and the first process in each container will not be assigned PID 1.
+  // HostPID and ShareProcessNamespace cannot both be set.
+  // Optional: Default to false.
+  // This field is alpha-level and is honored only by servers that enable the PodShareProcessNamespace feature.
+  // +k8s:conversion-gen=false
+  // +optional
+  optional bool shareProcessNamespace = 27;
+
   // SecurityContext holds pod-level security attributes and common container settings.
   // Optional: Defaults to empty.  See type description for default values of each field.
   // +optional
@@ -3072,9 +3174,10 @@ message PodSpec {
   // +patchStrategy=merge
   repeated HostAlias hostAliases = 23;
 
-  // If specified, indicates the pod's priority. "SYSTEM" is a special keyword
-  // which indicates the highest priority. Any other name must be defined by
-  // creating a PriorityClass object with that name.
+  // If specified, indicates the pod's priority. "system-node-critical" and
+  // "system-cluster-critical" are two special keywords which indicate the
+  // highest priorities with the former being the highest priority. Any other
+  // name must be defined by creating a PriorityClass object with that name.
   // If not specified, the pod priority will be default or zero if there is no
   // default.
   // +optional
@@ -3091,7 +3194,6 @@ message PodSpec {
   // Specifies the DNS parameters of a pod.
   // Parameters specified here will be merged to the generated DNS
   // configuration based on DNSPolicy.
-  // This is an alpha feature introduced in v1.9 and CustomPodDNS feature gate must be enabled to use it.
   // +optional
   optional PodDNSConfig dnsConfig = 26;
 }
@@ -3119,6 +3221,16 @@ message PodStatus {
   // e.g. 'Evicted'
   // +optional
   optional string reason = 4;
+
+  // nominatedNodeName is set only when this pod preempts other pods on the node, but it cannot be
+  // scheduled right away as preemption victims receive their graceful termination periods.
+  // This field does not guarantee that the pod will be scheduled on this node. Scheduler may decide
+  // to place the pod elsewhere if other nodes become available sooner. Scheduler may also decide to
+  // give the resources on this node to a higher priority pod that is created after preemption.
+  // As a result, this field may be different than PodSpec.nodeName when the pod is
+  // scheduled.
+  // +optional
+  optional string nominatedNodeName = 11;
 
   // IP address of the host to which the pod is assigned. Empty if not yet scheduled.
   // +optional
@@ -3148,7 +3260,7 @@ message PodStatus {
 
   // The Quality of Service (QOS) classification assigned to the pod based on resource requirements
   // See PodQOSClass type for available QOS classes
-  // More info: https://github.com/kubernetes/kubernetes/blob/master/docs/design/resource-qos.md
+  // More info: https://git.k8s.io/community/contributors/design-proposals/node/resource-qos.md
   // +optional
   optional string qosClass = 9;
 }
@@ -3920,6 +4032,13 @@ message SecurityContext {
   // +optional
   optional int64 runAsUser = 4;
 
+  // The GID to run the entrypoint of the container process.
+  // Uses runtime default if unset.
+  // May also be set in PodSecurityContext.  If set in both SecurityContext and
+  // PodSecurityContext, the value specified in SecurityContext takes precedence.
+  // +optional
+  optional int64 runAsGroup = 8;
+
   // Indicates that the container must run as a non-root user.
   // If true, the Kubelet will validate the image at runtime to ensure that it
   // does not run as UID 0 (root) and fail to start the container if it does.
@@ -4390,10 +4509,15 @@ message VolumeMount {
   // mountPropagation determines how mounts are propagated from the host
   // to container and the other way around.
   // When not set, MountPropagationHostToContainer is used.
-  // This field is alpha in 1.8 and can be reworked or removed in a future
-  // release.
+  // This field is beta in 1.10.
   // +optional
   optional string mountPropagation = 5;
+}
+
+// VolumeNodeAffinity defines constraints that limit what nodes this volume can be accessed from.
+message VolumeNodeAffinity {
+  // Required specifies hard node constraints that must be met.
+  optional NodeSelector required = 1;
 }
 
 // Projection that may be projected along with other supported volume types
