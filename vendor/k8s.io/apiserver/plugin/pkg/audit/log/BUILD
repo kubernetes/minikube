@@ -34,8 +34,7 @@ filegroup(
 go_test(
     name = "go_default_test",
     srcs = ["backend_test.go"],
-    importpath = "k8s.io/apiserver/plugin/pkg/audit/log",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//vendor/github.com/pborman/uuid:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apimachinery/announced:go_default_library",

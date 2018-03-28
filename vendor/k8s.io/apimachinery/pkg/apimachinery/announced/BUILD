@@ -9,8 +9,7 @@ load(
 go_test(
     name = "go_default_test",
     srcs = ["announced_test.go"],
-    importpath = "k8s.io/apimachinery/pkg/apimachinery/announced",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = ["//vendor/k8s.io/apimachinery/pkg/util/sets:go_default_library"],
 )
 

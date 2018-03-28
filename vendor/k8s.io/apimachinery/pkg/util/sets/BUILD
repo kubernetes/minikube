@@ -51,8 +51,7 @@ $(location //vendor/k8s.io/code-generator/cmd/set-gen) \
 go_test(
     name = "go_default_test",
     srcs = ["set_test.go"],
-    importpath = "k8s.io/apimachinery/pkg/util/sets",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
 )
 
 filegroup(

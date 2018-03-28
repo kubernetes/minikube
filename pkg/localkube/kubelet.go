@@ -17,7 +17,6 @@ limitations under the License.
 package localkube
 
 import (
-	"k8s.io/apiserver/pkg/util/flag"
 	kubelet "k8s.io/kubernetes/cmd/kubelet/app"
 	"k8s.io/kubernetes/cmd/kubelet/app/options"
 	"k8s.io/minikube/pkg/util"
@@ -38,14 +37,13 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	}
 
 	// Master details
-	config.KubeConfig = flag.NewStringFlag(util.DefaultKubeConfigPath)
-	config.RequireKubeConfig = true
+	config.KubeConfig = util.DefaultKubeConfigPath
 
 	// Set containerized based on the flag
 	config.Containerized = lk.Containerized
 
 	config.AllowPrivileged = true
-	config.PodManifestPath = "/etc/kubernetes/manifests"
+	config.StaticPodPath = "/etc/kubernetes/manifests"
 
 	// Networking
 	config.ClusterDomain = lk.DNSDomain
@@ -54,6 +52,7 @@ func StartKubeletServer(lk LocalkubeServer) func() error {
 	config.PodCIDR = "10.180.1.0/24"
 
 	config.NodeIP = lk.NodeIP.String()
+	config.FailSwapOn = false
 
 	if lk.NetworkPlugin != "" {
 		config.NetworkPluginName = lk.NetworkPlugin

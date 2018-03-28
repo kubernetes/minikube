@@ -17,6 +17,7 @@ limitations under the License.
 package admission
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -27,10 +28,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
 
-	"bytes"
-
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/apis/apiserver"
@@ -157,8 +155,8 @@ func GetAdmissionPluginConfigurationFor(pluginCfg apiserver.AdmissionPluginConfi
 	return nil, nil
 }
 
-// GetAdmissionPluginConfiguration takes the admission configuration and returns a reader
-// for the specified plugin.  If no specific configuration is present, we return a nil reader.
+// ConfigFor returns a reader for the specified plugin.
+// If no specific configuration is present, we return a nil reader.
 func (p configProvider) ConfigFor(pluginName string) (io.Reader, error) {
 	// there is no config, so there is no potential config
 	if p.config == nil {
@@ -177,27 +175,4 @@ func (p configProvider) ConfigFor(pluginName string) (io.Reader, error) {
 	}
 	// there is no registered config that matches on plugin name.
 	return nil, nil
-}
-
-// writeYAML writes the specified object to a byte array as yaml.
-func writeYAML(obj runtime.Object, scheme *runtime.Scheme) ([]byte, error) {
-	gvks, _, err := scheme.ObjectKinds(obj)
-	if err != nil {
-		return nil, err
-	}
-	gvs := []schema.GroupVersion{}
-	for _, gvk := range gvks {
-		gvs = append(gvs, gvk.GroupVersion())
-	}
-	codecs := serializer.NewCodecFactory(scheme)
-	json, err := runtime.Encode(codecs.LegacyCodec(gvs...), obj)
-	if err != nil {
-		return nil, err
-	}
-
-	content, err := yaml.JSONToYAML(json)
-	if err != nil {
-		return nil, err
-	}
-	return content, err
 }
