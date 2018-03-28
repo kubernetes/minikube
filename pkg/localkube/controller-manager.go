@@ -18,6 +18,7 @@ package localkube
 
 import (
 	controllerManager "k8s.io/kubernetes/cmd/kube-controller-manager/app"
+	"k8s.io/kubernetes/cmd/kube-controller-manager/app/config"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
 	"k8s.io/minikube/pkg/util"
 )
@@ -27,24 +28,28 @@ func (lk LocalkubeServer) NewControllerManagerServer() Server {
 }
 
 func StartControllerManagerServer(lk LocalkubeServer) func() error {
-	config := options.NewCMServer()
+	opts := options.NewKubeControllerManagerOptions()
 
-	config.Kubeconfig = util.DefaultKubeConfigPath
+	opts.Generic.Kubeconfig = util.DefaultKubeConfigPath
 
 	// defaults from command
-	config.DeletingPodsQps = 0.1
-	config.DeletingPodsBurst = 10
-	config.NodeEvictionRate = 0.1
+	opts.Generic.ComponentConfig.DeletingPodsQps = 0.1
+	opts.Generic.ComponentConfig.DeletingPodsBurst = 10
+	opts.Generic.ComponentConfig.NodeEvictionRate = 0.1
 
-	config.EnableProfiling = true
-	config.VolumeConfiguration.EnableHostPathProvisioning = true
-	config.VolumeConfiguration.EnableDynamicProvisioning = true
-	config.ServiceAccountKeyFile = lk.GetPrivateKeyCertPath()
-	config.RootCAFile = lk.GetCAPublicKeyCertPath()
+	opts.Generic.ComponentConfig.EnableProfiling = true
+	opts.Generic.ComponentConfig.VolumeConfiguration.EnableHostPathProvisioning = true
+	opts.Generic.ComponentConfig.VolumeConfiguration.EnableDynamicProvisioning = true
+	opts.Generic.ComponentConfig.ServiceAccountKeyFile = lk.GetPrivateKeyCertPath()
+	opts.Generic.ComponentConfig.RootCAFile = lk.GetCAPublicKeyCertPath()
 
-	lk.SetExtraConfigForComponent("controller-manager", &config)
+	lk.SetExtraConfigForComponent("controller-manager", &opts)
 
+	cfg := config.Config{}
+	if err := opts.ApplyTo(&cfg); err != nil {
+		panic(err)
+	}
 	return func() error {
-		return controllerManager.Run(config)
+		return controllerManager.Run(cfg.Complete())
 	}
 }

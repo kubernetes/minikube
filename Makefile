@@ -52,7 +52,7 @@ STORAGE_PROVISIONER_TAG := v1.8.1
 # Set the version information for the Kubernetes servers, and build localkube statically
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
-LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w -extldflags '-static'"
+LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w"
 
 MAKEDEPEND := GOPATH=$(GOPATH) ./makedepend.sh
 
@@ -98,14 +98,14 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/localkube.d:
-	$(MAKEDEPEND) out/localkube $(ORG) $(LOCALKUBEFILES) $^ > $@
+	GOOS=linux GOARCH=amd64 $(MAKEDEPEND) out/localkube $(ORG) $(LOCALKUBEFILES) $^ > $@
 
 -include out/localkube.d
 out/localkube:
 ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-	CGO_ENABLED=1 go build -tags static_build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
+	CGO_ENABLED=1 go build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
 endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64

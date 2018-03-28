@@ -14,8 +14,7 @@ go_test(
         "maxinflight_test.go",
         "timeout_test.go",
     ],
-    importpath = "k8s.io/apiserver/pkg/server/filters",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//vendor/k8s.io/apimachinery/pkg/api/errors:go_default_library",
         "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1:go_default_library",

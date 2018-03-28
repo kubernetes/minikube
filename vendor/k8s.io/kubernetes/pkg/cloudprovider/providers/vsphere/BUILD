@@ -21,7 +21,6 @@ go_library(
         "//pkg/cloudprovider/providers/vsphere/vclib/diskmanagers:go_default_library",
         "//pkg/controller:go_default_library",
         "//vendor/github.com/golang/glog:go_default_library",
-        "//vendor/github.com/vmware/govmomi:go_default_library",
         "//vendor/github.com/vmware/govmomi/vim25:go_default_library",
         "//vendor/github.com/vmware/govmomi/vim25/mo:go_default_library",
         "//vendor/golang.org/x/net/context:go_default_library",
@@ -36,8 +35,7 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = ["vsphere_test.go"],
-    importpath = "k8s.io/kubernetes/pkg/cloudprovider/providers/vsphere",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/cloudprovider:go_default_library",
         "//pkg/cloudprovider/providers/vsphere/vclib:go_default_library",

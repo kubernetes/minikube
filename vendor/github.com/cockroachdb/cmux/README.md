@@ -63,10 +63,3 @@ example of this approach.
 when it's accepted. For example, one connection can be either gRPC or REST, but
 not both. That is, we assume that a client connection is either used for gRPC
 or REST.
-
-# Copyright and License
-Copyright 2016 The CMux Authors. All rights reserved.
-
-See [CONTRIBUTORS](https://github.com/cockroachdb/cmux/blob/master/CONTRIBUTORS)
-for the CMux Authors. Code is released under
-[the Apache 2 license](https://github.com/cockroachdb/cmux/blob/master/LICENSE).

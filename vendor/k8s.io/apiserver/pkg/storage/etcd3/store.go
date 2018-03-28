@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"path"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
@@ -406,11 +405,20 @@ func (s *store) GetToList(ctx context.Context, key string, resourceVersion strin
 	if err != nil || v.Kind() != reflect.Slice {
 		panic("need ptr to slice")
 	}
-	if err := appendListItem(v, data, uint64(getResp.Kvs[0].ModRevision), storage.SimpleFilter(pred), s.codec, s.versioner); err != nil {
+	if err := appendListItem(v, data, uint64(getResp.Kvs[0].ModRevision), pred, s.codec, s.versioner); err != nil {
 		return err
 	}
 	// update version with cluster level revision
 	return s.versioner.UpdateList(listObj, uint64(getResp.Header.Revision), "")
+}
+
+func (s *store) Count(key string) (int64, error) {
+	key = path.Join(s.pathPrefix, key)
+	getResp, err := s.client.KV.Get(context.Background(), key, clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)), clientv3.WithCountOnly())
+	if err != nil {
+		return 0, err
+	}
+	return getResp.Count, nil
 }
 
 // continueToken is a simple structured object for encoding the state of a continue token.
@@ -495,8 +503,6 @@ func (s *store) List(ctx context.Context, key, resourceVersion string, pred stor
 	}
 	keyPrefix := key
 
-	filter := storage.SimpleFilter(pred)
-
 	// set the appropriate clientv3 options to filter the returned data set
 	var paging bool
 	options := make([]clientv3.OpOption, 0, 4)
@@ -526,14 +532,14 @@ func (s *store) List(ctx context.Context, key, resourceVersion string, pred stor
 
 	case s.pagingEnabled && pred.Limit > 0:
 		if len(resourceVersion) > 0 {
-			fromRV, err := strconv.ParseInt(resourceVersion, 10, 64)
+			fromRV, err := s.versioner.ParseListResourceVersion(resourceVersion)
 			if err != nil {
 				return apierrors.NewBadRequest(fmt.Sprintf("invalid resource version: %v", err))
 			}
 			if fromRV > 0 {
-				options = append(options, clientv3.WithRev(fromRV))
+				options = append(options, clientv3.WithRev(int64(fromRV)))
 			}
-			returnedRV = fromRV
+			returnedRV = int64(fromRV)
 		}
 
 		rangeEnd := clientv3.GetPrefixRangeEnd(keyPrefix)
@@ -541,14 +547,14 @@ func (s *store) List(ctx context.Context, key, resourceVersion string, pred stor
 
 	default:
 		if len(resourceVersion) > 0 {
-			fromRV, err := strconv.ParseInt(resourceVersion, 10, 64)
+			fromRV, err := s.versioner.ParseListResourceVersion(resourceVersion)
 			if err != nil {
 				return apierrors.NewBadRequest(fmt.Sprintf("invalid resource version: %v", err))
 			}
 			if fromRV > 0 {
-				options = append(options, clientv3.WithRev(fromRV))
+				options = append(options, clientv3.WithRev(int64(fromRV)))
 			}
-			returnedRV = fromRV
+			returnedRV = int64(fromRV)
 		}
 
 		options = append(options, clientv3.WithPrefix())
@@ -590,7 +596,7 @@ func (s *store) List(ctx context.Context, key, resourceVersion string, pred stor
 				continue
 			}
 
-			if err := appendListItem(v, data, uint64(kv.ModRevision), filter, s.codec, s.versioner); err != nil {
+			if err := appendListItem(v, data, uint64(kv.ModRevision), pred, s.codec, s.versioner); err != nil {
 				return err
 			}
 		}
@@ -668,7 +674,7 @@ func (s *store) WatchList(ctx context.Context, key string, resourceVersion strin
 }
 
 func (s *store) watch(ctx context.Context, key string, rv string, pred storage.SelectionPredicate, recursive bool) (watch.Interface, error) {
-	rev, err := storage.ParseWatchResourceVersion(rv)
+	rev, err := s.versioner.ParseWatchResourceVersion(rv)
 	if err != nil {
 		return nil, err
 	}
@@ -777,14 +783,14 @@ func decode(codec runtime.Codec, versioner storage.Versioner, value []byte, objP
 }
 
 // appendListItem decodes and appends the object (if it passes filter) to v, which must be a slice.
-func appendListItem(v reflect.Value, data []byte, rev uint64, filter storage.FilterFunc, codec runtime.Codec, versioner storage.Versioner) error {
+func appendListItem(v reflect.Value, data []byte, rev uint64, pred storage.SelectionPredicate, codec runtime.Codec, versioner storage.Versioner) error {
 	obj, _, err := codec.Decode(data, nil, reflect.New(v.Type().Elem()).Interface().(runtime.Object))
 	if err != nil {
 		return err
 	}
 	// being unable to set the version does not prevent the object from being extracted
 	versioner.UpdateObject(obj, rev)
-	if filter(obj) {
+	if matched, err := pred.Matches(obj); err == nil && matched {
 		v.Set(reflect.Append(v, reflect.ValueOf(obj).Elem()))
 	}
 	return nil

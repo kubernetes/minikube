@@ -39,8 +39,7 @@ go_test(
         "proxier_test.go",
         "roundrobin_test.go",
     ],
-    importpath = "k8s.io/kubernetes/pkg/proxy/winuserspace",
-    library = ":go_default_library",
+    embed = [":go_default_library"],
     deps = [
         "//pkg/apis/core:go_default_library",
         "//pkg/proxy:go_default_library",

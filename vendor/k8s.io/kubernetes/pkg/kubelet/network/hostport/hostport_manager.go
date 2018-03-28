@@ -26,9 +26,13 @@ import (
 	"sync"
 
 	"github.com/golang/glog"
+	"k8s.io/api/core/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	iptablesproxy "k8s.io/kubernetes/pkg/proxy/iptables"
+	"k8s.io/kubernetes/pkg/util/conntrack"
 	utiliptables "k8s.io/kubernetes/pkg/util/iptables"
+	utilnet "k8s.io/kubernetes/pkg/util/net"
+	"k8s.io/utils/exec"
 )
 
 // HostPortManager is an interface for adding and removing hostport for a given pod sandbox.
@@ -44,18 +48,26 @@ type HostPortManager interface {
 }
 
 type hostportManager struct {
-	hostPortMap map[hostport]closeable
-	iptables    utiliptables.Interface
-	portOpener  hostportOpener
-	mu          sync.Mutex
+	hostPortMap    map[hostport]closeable
+	execer         exec.Interface
+	conntrackFound bool
+	iptables       utiliptables.Interface
+	portOpener     hostportOpener
+	mu             sync.Mutex
 }
 
 func NewHostportManager(iptables utiliptables.Interface) HostPortManager {
-	return &hostportManager{
+	h := &hostportManager{
 		hostPortMap: make(map[hostport]closeable),
+		execer:      exec.New(),
 		iptables:    iptables,
 		portOpener:  openLocalPort,
 	}
+	h.conntrackFound = conntrack.Exists(h.execer)
+	if !h.conntrackFound {
+		glog.Warningf("The binary conntrack is not installed, this can cause failures in network connection cleanup.")
+	}
+	return h
 }
 
 func (hm *hostportManager) Add(id string, podPortMapping *PodPortMapping, natInterfaceName string) (err error) {
@@ -103,10 +115,14 @@ func (hm *hostportManager) Add(id string, podPortMapping *PodPortMapping, natInt
 	}
 
 	newChains := []utiliptables.Chain{}
+	conntrackPortsToRemove := []int{}
 	for _, pm := range hostportMappings {
 		protocol := strings.ToLower(string(pm.Protocol))
 		chain := getHostportChain(id, pm)
 		newChains = append(newChains, chain)
+		if pm.Protocol == v1.ProtocolUDP {
+			conntrackPortsToRemove = append(conntrackPortsToRemove, int(pm.HostPort))
+		}
 
 		// Add new hostport chain
 		writeLine(natChains, utiliptables.MakeChainLine(chain))
@@ -150,6 +166,21 @@ func (hm *hostportManager) Add(id string, podPortMapping *PodPortMapping, natInt
 		// clean up opened host port if encounter any error
 		return utilerrors.NewAggregate([]error{err, hm.closeHostports(hostportMappings)})
 	}
+	isIpv6 := utilnet.IsIPv6(podPortMapping.IP)
+
+	// Remove conntrack entries just after adding the new iptables rules. If the conntrack entry is removed along with
+	// the IP tables rule, it can be the case that the packets received by the node after iptables rule removal will
+	// create a new conntrack entry without any DNAT. That will result in blackhole of the traffic even after correct
+	// iptables rules have been added back.
+	if hm.execer != nil && hm.conntrackFound {
+		glog.Infof("Starting to delete udp conntrack entries: %v, isIPv6 - %v", conntrackPortsToRemove, isIpv6)
+		for _, port := range conntrackPortsToRemove {
+			err = conntrack.ClearEntriesForPort(hm.execer, port, isIpv6, v1.ProtocolUDP)
+			if err != nil {
+				glog.Errorf("Failed to clear udp conntrack for port %d, error: %v", port, err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -178,8 +209,6 @@ func (hm *hostportManager) Remove(id string, podPortMapping *PodPortMapping) (er
 	chainsToRemove := []utiliptables.Chain{}
 	for _, pm := range hostportMappings {
 		chainsToRemove = append(chainsToRemove, getHostportChain(id, pm))
-		// TODO remove this after release 1.9, please refer https://github.com/kubernetes/kubernetes/pull/55153
-		chainsToRemove = append(chainsToRemove, getBuggyHostportChain(id, pm))
 	}
 
 	// remove rules that consists of target chains
@@ -251,16 +280,6 @@ func (hm *hostportManager) closeHostports(hostportMappings []*PortMapping) error
 // identify existing iptables chains.
 func getHostportChain(id string, pm *PortMapping) utiliptables.Chain {
 	hash := sha256.Sum256([]byte(id + strconv.Itoa(int(pm.HostPort)) + string(pm.Protocol)))
-	encoded := base32.StdEncoding.EncodeToString(hash[:])
-	return utiliptables.Chain(kubeHostportChainPrefix + encoded[:16])
-}
-
-// This bugy func does bad conversion on HostPort from int32 to string.
-// It may generates same chain names for different ports of the same pod, e.g. port 57119/55429/56833.
-// `getHostportChain` fixed this bug. In order to cleanup the legacy chains/rules, it is temporarily left.
-// TODO remove this after release 1.9, please refer https://github.com/kubernetes/kubernetes/pull/55153
-func getBuggyHostportChain(id string, pm *PortMapping) utiliptables.Chain {
-	hash := sha256.Sum256([]byte(id + string(pm.HostPort) + string(pm.Protocol)))
 	encoded := base32.StdEncoding.EncodeToString(hash[:])
 	return utiliptables.Chain(kubeHostportChainPrefix + encoded[:16])
 }
