@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.8.4
+CRIO_BIN_VERSION = v1.10.0
 CRIO_BIN_SITE = https://github.com/kubernetes-incubator/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = libgpgme
