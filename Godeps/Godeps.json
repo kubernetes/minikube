@@ -565,8 +565,24 @@
 			"Rev": "ba72d1c8f590a19d182a25fd8671156766ab3c60"
 		},
 		{
+			"ImportPath": "github.com/containers/storage/pkg/fileutils",
+			"Rev": "ff8a6d2bf496daf46ab1a153f783a0f6b8762a54"
+		},
+		{
 			"ImportPath": "github.com/containers/storage/pkg/homedir",
-			"Rev": "87cb51ae7a688abb71dbe6e4ac5c962d9121b862"
+			"Rev": "ff8a6d2bf496daf46ab1a153f783a0f6b8762a54"
+		},
+		{
+			"ImportPath": "github.com/containers/storage/pkg/idtools",
+			"Rev": "ff8a6d2bf496daf46ab1a153f783a0f6b8762a54"
+		},
+		{
+			"ImportPath": "github.com/containers/storage/pkg/mount",
+			"Rev": "ff8a6d2bf496daf46ab1a153f783a0f6b8762a54"
+		},
+		{
+			"ImportPath": "github.com/containers/storage/pkg/system",
+			"Rev": "ff8a6d2bf496daf46ab1a153f783a0f6b8762a54"
 		},
 		{
 			"ImportPath": "github.com/coreos/bbolt",
