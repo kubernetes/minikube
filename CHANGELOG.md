@@ -1,5 +1,20 @@
 # Minikube Release Notes
 
+# Version 0.26.0 - 4/3/2018
+* Update to Kubernetes 1.10 [#2657](https://github.com/kubernetes/minikube/pull/2657)
+* Update Nginx Ingress Plugin to 0.12.0 [#2644](https://github.com/kubernetes/minikube/pull/2644)
+* [Minikube ISO] Add SSHFS Support to the Minikube ISO [#2600](https://github.com/kubernetes/minikube/pull/2600)
+* Upgrade Docker to 17.12 [#2597](https://github.com/kubernetes/minikube/pull/2597)
+* Deactivate HSTS in Ingress by default [#2591](https://github.com/kubernetes/minikube/pull/2591)
+* Add ValidatingAdmissionWebhook admission controller [#2590](https://github.com/kubernetes/minikube/pull/2590)
+* Upgrade docker-machine to fix Hyper-v name conflict [#2586](https://github.com/kubernetes/minikube/pull/2586)
+* Upgrade Core DNS Addon to 1.0.6 [#2584](https://github.com/kubernetes/minikube/pull/2584)
+* Add metrics server Addon [#2566](https://github.com/kubernetes/minikube/pull/2566)
+* Allow nesting in KVM driver [#2555](https://github.com/kubernetes/minikube/pull/2555)
+* Add MutatingAdmissionWebhook admission controller [#2547](https://github.com/kubernetes/minikube/pull/2547)
+* [Minikube ISO] Add Netfilter module to the ISO for Calico [#2490](https://github.com/kubernetes/minikube/pull/2490)
+* Add memory and request limit to EFK Addon [#2465](https://github.com/kubernetes/minikube/pull/2465)
+
 # Version 0.25.0 - 1/26/2018
 * Add freshpod addon [#2423](https://github.com/kubernetes/minikube/pull/2423)
 * List addons in consistent sort order [#2446](https://github.com/kubernetes/minikube/pull/2446)
