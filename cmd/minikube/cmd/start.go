@@ -292,7 +292,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		if glog.V(8) {
 			mountDebugVal = 1
 		}
-		mountCmd := exec.Command(path, "mount", fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
+		mountCmd := exec.Command(path, "mount", fmt.Sprintf("--profile=%s", viper.GetString(cfg.MachineProfile)), fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
 		mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
 		if glog.V(8) {
 			mountCmd.Stdout = os.Stdout
