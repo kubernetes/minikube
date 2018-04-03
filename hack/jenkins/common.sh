@@ -43,8 +43,8 @@ chmod +x out/docker-machine-driver-*
 chmod +x out/localkube
 
 # Fix permissions in $HOME
-sudo chown -R $USER $HOME/.kube
-sudo chown -R $USER $HOME/.minikube
+sudo chown -R $USER $HOME/.kube || true
+sudo chown -R $USER $HOME/.minikube || true
 
 export MINIKUBE_WANTREPORTERRORPROMPT=False
 sudo ./out/minikube-${OS_ARCH} delete || true
