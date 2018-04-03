@@ -71,7 +71,8 @@ sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile
 sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
 `))
 
-var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse("sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} --ignore-preflight-errors=DirAvailable--etc-kubernetes-manifests --ignore-preflight-errors=Swap --ignore-preflight-errors=CRI"))
+var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(
+	"sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}"))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key
 // value pairs with the separator character
