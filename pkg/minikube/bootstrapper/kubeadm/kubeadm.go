@@ -112,13 +112,20 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
 	// (because we start kubelet with an invalid config)
 	b := bytes.Buffer{}
-	if err := kubeadmInitTemplate.Execute(&b, struct{ KubeadmConfigFile string }{constants.KubeadmConfigFile}); err != nil {
+	templateContext := struct {
+		KubeadmConfigFile string
+		Preflights        []string
+	}{
+		KubeadmConfigFile: constants.KubeadmConfigFile,
+		Preflights:        constants.Preflights,
+	}
+	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
 	}
 
-	err := k.c.Run(b.String())
+	out, err := k.c.CombinedOutput(b.String())
 	if err != nil {
-		return errors.Wrapf(err, "kubeadm init error running command: %s", b.String())
+		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
 	}
 
 	//TODO(r2d4): get rid of global here

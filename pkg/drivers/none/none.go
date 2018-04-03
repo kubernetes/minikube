@@ -22,6 +22,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/golang/glog"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
@@ -31,8 +33,9 @@ import (
 )
 
 const driverName = "none"
-const dockerkillcmd = `docker rm $(docker kill $(docker ps -a --filter="name=k8s_" --format="{{.ID}}"))`
-const dockerstopcmd = `docker stop $(docker ps -a --filter="name=k8s_" --format="{{.ID}}")`
+const dockerstopcmd = `docker kill $(docker ps -a --filter="name=k8s_" --format="{{.ID}}")`
+
+var dockerkillcmd = fmt.Sprintf(`docker rm $(%s)`, dockerstopcmd)
 
 // none Driver is a driver designed to run localkube w/o a VM
 type Driver struct {
@@ -124,13 +127,14 @@ fi
 }
 
 func (d *Driver) Kill() error {
-	cmd := exec.Command("sudo", "systemctl", "stop", "localkube.service")
-	if err := cmd.Start(); err != nil {
-		return errors.Wrap(err, "stopping the localkube service")
-	}
-	cmd = exec.Command("sudo", "rm", "-rf", "/var/lib/localkube")
-	if err := cmd.Start(); err != nil {
-		return errors.Wrap(err, "removing localkube")
+	for _, cmdStr := range [][]string{
+		{"systemctl", "stop", "localkube.service"},
+		{"rm", "-rf", "/var/lib/localkube"},
+	} {
+		cmd := exec.Command("sudo", cmdStr...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			glog.Warningf("Error %s running command: %s. Output: %s", err, cmdStr, string(out))
+		}
 	}
 	return nil
 }
@@ -139,13 +143,15 @@ func (d *Driver) Remove() error {
 	rmCmd := `for svc in "localkube" "kubelet"; do
 		sudo systemctl stop "$svc".service
 	done
+	sudo rm -rf /data
+	sudo rm -rf /etc/kubernetes/manifests
 	sudo rm -rf /var/lib/localkube || true`
 
-	if _, err := runCommand(rmCmd, true); err != nil {
-		return errors.Wrap(err, "stopping minikube")
+	for _, cmdStr := range []string{rmCmd, dockerkillcmd} {
+		if out, err := runCommand(cmdStr, true); err != nil {
+			glog.Warningf("Error %s running command: %s, Output: %s", err, cmdStr, out)
+		}
 	}
-
-	runCommand(dockerkillcmd, false)
 
 	return nil
 }
@@ -199,7 +205,9 @@ fi
 			break
 		}
 	}
-	runCommand(dockerstopcmd, false)
+	if out, err := runCommand(dockerstopcmd, false); err != nil {
+		glog.Warningf("Error %s running command %s. Output: %s", err, dockerstopcmd, out)
+	}
 	return nil
 }
 
