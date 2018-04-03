@@ -150,6 +150,16 @@ const (
 	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
 )
 
+var Preflights = []string{
+	"DirAvailable--etc-kubernetes-manifests",
+	"DirAvailable--data",
+	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
+	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
+	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
+	"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
+	"Swap",
+}
+
 const (
 	LocalkubeServicePath = "/etc/systemd/system/localkube.service"
 	LocalkubeRunning     = "active"
