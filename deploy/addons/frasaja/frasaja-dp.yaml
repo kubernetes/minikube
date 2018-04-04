@@ -18,7 +18,7 @@ metadata:
   name: kubernetes-frasaja
   namespace: kube-system
   labels:
-    version: v1.8.1
+    version: v1
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: frasaja
 spec:
@@ -26,24 +26,33 @@ spec:
   selector:
     matchLabels:
       app: kubernetes-frasaja
-      version: v1.8.1
+      version: v1
       addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         app: kubernetes-frasaja
-        version: v1.8.1
+        version: v1
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
       - name: kubernetes-frasaja
-        image: gcr.io/frasaja-1/frasaja:sample
+        image: gcr.io/frasaja-1/base:v1
+        volumeMounts:
+        - mountPath: /var/run/docker.sock
+          name: docker-sock-volume
+        - mountPath: /usr/src/app/test
+          name: host-mount
+      volumes:
+      # attach host's docker socket (how we make api requests to docker daemon)
+      - name: docker-sock-volume
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      # attach host's files that we want to watch
+      - name: host-mount
+        hostPath:
+          path: /mount-9p
+          type: Directory
         ports:
         - containerPort: 8080
-          protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 30
-          timeoutSeconds: 30
