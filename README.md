@@ -68,7 +68,7 @@ done
 
 ### Minikube Version Management
 
-The [asdf](https://github.com/asdf-vm/asdf) tool offers version management for a wide range of languages and tools. On macOS, [asdf](https://github.com/asdf-vm/asdf) is available via Homebrew and can be installed with `brew install asdf`. Then, the Minikube plugin itself can be installed with `asdf plugin-add minikube`. A specific version of Minikube can be installed with `asdf install minikube <version>`. The tool allows you to switch versions for projects using a `.tool-versions` file inside the project. An asdf plugin exists for kubectl as well.
+The [asdf](https://github.com/asdf-vm/asdf) tool offers version management for a wide range of languages and tools. On macOS, [asdf](https://github.com/asdf-vm/asdf) is available via Homebrew and can be installed with `brew install asdf`. Then, the Minikube plugin itself can be installed with `asdf plugin-add minikube`. A specific version of Minikube can be installed with `asdf install minikube <version>`. The tool allows you to switch versions for projects using a `.tool-versions` file inside the project. An asdf plugin exists for kubectl as well
 
 We also released a Debian package and Windows installer on our [releases page](https://github.com/kubernetes/minikube/releases). If you maintain a Minikube package, please feel free to add it here.
 
