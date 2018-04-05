@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
       - name: kubernetes-frasaja
-        image: gcr.io/frasaja-1/base:v1
+        image: gcr.io/frasaja-1/frasaja:v1
         volumeMounts:
         - mountPath: /var/run/docker.sock
           name: docker-sock-volume
