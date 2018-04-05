@@ -16,17 +16,17 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: kubernetes-frasaja
+  name: kubernetes-watchpod
   namespace: kube-system
   labels:
-    app: kubernetes-frasaja
+    app: kubernetes-watchpod
     addonmanager.kubernetes.io/mode: Reconcile
-    kubernetes.io/minikube-addons: frasaja
-    kubernetes.io/minikube-addons-endpoint: frasaja
+    kubernetes.io/minikube-addons: watchpod
+    kubernetes.io/minikube-addons-endpoint: watchpod
 spec:
   type: NodePort
   ports:
   - port: 8080
     targetPort: 8080
   selector:
-    app: kubernetes-frasaja
+    app: kubernetes-watchpod
