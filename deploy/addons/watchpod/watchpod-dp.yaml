@@ -15,29 +15,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kubernetes-frasaja
+  name: kubernetes-watchpod
   namespace: kube-system
   labels:
     version: v1
     addonmanager.kubernetes.io/mode: Reconcile
-    kubernetes.io/minikube-addons: frasaja
+    kubernetes.io/minikube-addons: watchpod
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kubernetes-frasaja
+      app: kubernetes-watchpod
       version: v1
       addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
-        app: kubernetes-frasaja
+        app: kubernetes-watchpod
         version: v1
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - name: kubernetes-frasaja
-        image: gcr.io/frasaja-1/frasaja:v1
+      - name: kubernetes-watchpod
+        image: gcr.io/frasaja-1/watchpod:v1
         volumeMounts:
         - mountPath: /var/run/docker.sock
           name: docker-sock-volume
