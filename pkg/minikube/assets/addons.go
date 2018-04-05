@@ -75,6 +75,18 @@ var Addons = map[string]*Addon{
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
+	"frasaja": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/frasaja/frasaja-dp.yaml",
+			constants.AddonsPath,
+			"frasaja-dp.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/frasaja/frasaja-svc.yaml",
+			constants.AddonsPath,
+			"frasaja-svc.yaml",
+			"0640"),
+	}, true, "frasaja"),
 	"default-storageclass": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
