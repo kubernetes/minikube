@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: metrics-server
-        image: gcr.io/google_containers/metrics-server-amd64:v0.2.1
+        image: k8s.gcr.io/metrics-server-amd64:v0.2.1
         imagePullPolicy: Always
         command:
         - /metrics-server
