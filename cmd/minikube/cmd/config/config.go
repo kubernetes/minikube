@@ -125,6 +125,10 @@ var settings = []Setting{
 		set:  SetString, //TODO(r2d4): more validation here?
 	},
 	{
+		name: config.ShowBootstrapperDeprecationNotification,
+		set:  SetBool,
+	},
+	{
 		name:        "dashboard",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},

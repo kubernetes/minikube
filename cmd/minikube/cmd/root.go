@@ -164,6 +164,7 @@ func setupViper() {
 	viper.SetDefault(config.WantKubectlDownloadMsg, true)
 	viper.SetDefault(config.WantNoneDriverWarning, true)
 	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
+	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
 	setFlagsUsingViper()
 }
 
@@ -173,6 +174,12 @@ func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	var err error
 	switch bootstrapperName {
 	case bootstrapper.BootstrapperTypeLocalkube:
+		if viper.GetBool(config.ShowBootstrapperDeprecationNotification) {
+			fmt.Fprintln(os.Stderr, `WARNING: The localkube bootstrapper is now deprecated and support for it
+will be removed in a future release. Please consider switching to the kubeadm bootstrapper, which
+is intended to replace the localkube bootstrapper. To disable this message, run
+[minikube config set ShowBootstrapperDeprecationNotification false]`)
+		}
 		b, err = localkube.NewLocalkubeBootstrapper(api)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting localkube bootstrapper")
