@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"io/ioutil"
 	"strings"
 	"text/template"
@@ -114,12 +115,16 @@ func (d *Driver) lookupIPFromListInterface(dom *libvirt.Domain) (string, error) 
 		return "", errors.Wrap(err, "listing leased addresses")
 	}
 
+	_, subnet, _ := net.ParseCIDR("192.168.39.0/24")
+
 	for _, iface := range ifaces {
 		for _, ip := range iface.Addrs {
-			return ip.Addr, nil
+			if subnet.Contains(net.ParseIP(ip.Addr)) {
+				return ip.Addr, nil
+			}
 		}
 	}
-	return "", fmt.Errorf("IP address not leased.")
+	return "", fmt.Errorf("Leased address not found.")
 }
 
 func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
