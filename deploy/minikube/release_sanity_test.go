@@ -60,7 +60,7 @@ func TestReleasesJson(t *testing.T) {
 			fmt.Printf("Checking SHA for %s.\n", platform)
 			actualSha, err := getShaFromURL(util.GetBinaryDownloadURL(r.Name, platform))
 			if err != nil {
-				t.Errorf("Error calcuating SHA for %s-%s. Error: %s", r.Name, platform, err)
+				t.Errorf("Error calculating SHA for %s-%s. Error: %s", r.Name, platform, err)
 				continue
 			}
 			if actualSha != sha {
