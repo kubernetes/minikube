@@ -124,7 +124,7 @@ func (d *Driver) lookupIPFromListInterface(dom *libvirt.Domain) (string, error) 
 			}
 		}
 	}
-	return "", fmt.Errorf("Leased address not found.")
+	return "", nil
 }
 
 func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
