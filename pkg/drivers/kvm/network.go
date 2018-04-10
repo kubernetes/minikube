@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net"
 	"io/ioutil"
+	"net"
 	"strings"
 	"text/template"
 
