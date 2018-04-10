@@ -86,24 +86,40 @@ func (d *Driver) createNetwork() error {
 }
 
 func (d *Driver) lookupIP() (string, error) {
-	conn, err := getConnection()
+	dom, conn, err := d.getDomain()
 	if err != nil {
 		return "", errors.Wrap(err, "getting connection and domain")
 	}
 
-	defer conn.Close()
+	defer closeDomain(dom, conn)
 
 	libVersion, err := conn.GetLibVersion()
 	if err != nil {
 		return "", errors.Wrap(err, "getting libversion")
 	}
 
-	// Earlier versions of libvirt use a lease file instead of a status file
-	if libVersion < 1002006 {
+	switch {
+	case libVersion >= 1002014:
+		return d.lookupIPFromListInterface(dom)
+	case libVersion >= 1002006:
+		return d.lookupIPFromStatusFile(conn)
+	default:
 		return d.lookupIPFromLeasesFile()
 	}
+}
 
-	return d.lookupIPFromStatusFile(conn)
+func (d *Driver) lookupIPFromListInterface(dom *libvirt.Domain) (string, error) {
+	ifaces, err := dom.ListAllInterfaceAddresses(libvirt.DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE)
+	if err != nil {
+		return "", errors.Wrap(err, "listing leased addresses")
+	}
+
+	for _, iface := range ifaces {
+		for _, ip := range iface.Addrs {
+			return ip.Addr, nil
+		}
+	}
+	return "", fmt.Errorf("IP address not leased.")
 }
 
 func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
