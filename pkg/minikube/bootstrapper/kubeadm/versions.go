@@ -18,7 +18,7 @@ package kubeadm
 
 import (
 	"fmt"
-	"path/filepath"
+	"path"
 	"sort"
 	"strings"
 
@@ -193,7 +193,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 
 	// Auth args
 	NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	NewUnversionedOption(Kubelet, "client-ca-file", filepath.Join(util.DefaultCertPath, "ca.crt")),
+	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(util.DefaultCertPath, "ca.crt")),
 
 	// Cgroup args
 	NewUnversionedOption(Kubelet, "cadvisor-port", "0"),
