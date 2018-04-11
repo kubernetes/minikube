@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         name: registry-creds
-        version: v1.8
+        version: v1.9
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
