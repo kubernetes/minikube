@@ -267,3 +267,28 @@ func (xcg *X509CertGenerator) ValidateCertificate(addr string, authOptions *auth
 
 	return true, nil
 }
+
+func CheckCertificateDate(certPath string) (bool, error) {
+	log.Debugf("Reading certificate data from %s", certPath)
+	certBytes, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		return false, err
+	}
+
+	log.Debug("Decoding PEM data...")
+	pemBlock, _ := pem.Decode(certBytes)
+	if pemBlock == nil {
+		return false, errors.New("Failed to decode PEM data")
+	}
+
+	log.Debug("Parsing certificate...")
+	cert, err := x509.ParseCertificate(pemBlock.Bytes)
+	if err != nil {
+		return false, err
+	}
+	if time.Now().After(cert.NotAfter) {
+		return false, nil
+	}
+
+	return true, nil
+}
