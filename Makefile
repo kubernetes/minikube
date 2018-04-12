@@ -303,21 +303,21 @@ localkube-image: out/localkube
 	# TODO(aprindle) make addons placed into container configurable
 	docker build -t $(REGISTRY)/localkube-image:$(TAG) -f deploy/docker/Dockerfile .
 	@echo ""
-	@echo "${REGISTRY}/localkube-image:$(TAG) succesfully built"
+	@echo "${REGISTRY}/localkube-image:$(TAG) successfully built"
 	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
 
 localkube-dind-image: out/localkube
 	# TODO(aprindle) make addons placed into container configurable
 	docker build -t $(REGISTRY)/localkube-dind-image:$(TAG) -f deploy/docker/localkube-dind/Dockerfile .
 	@echo ""
-	@echo "${REGISTRY}/localkube-dind-image:$(TAG) succesfully built"
+	@echo "${REGISTRY}/localkube-dind-image:$(TAG) successfully built"
 	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
 
 localkube-dind-image-devshell: out/localkube
 	# TODO(aprindle) make addons placed into container configurable
 	docker build -t $(REGISTRY)/localkube-dind-image-devshell:$(TAG) -f deploy/docker/localkube-dind/Dockerfile .
 	@echo ""
-	@echo "${REGISTRY}/localkube-dind-image-devshell:$(TAG) succesfully built"
+	@echo "${REGISTRY}/localkube-dind-image-devshell:$(TAG) successfully built"
 	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
