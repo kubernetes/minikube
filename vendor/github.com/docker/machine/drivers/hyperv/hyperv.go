@@ -474,3 +474,4 @@ func (d *Driver) generateDiskImage() (string, error) {
 
 	return diskImage, nil
 }
+
