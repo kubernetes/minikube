@@ -119,15 +119,15 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	b := bytes.Buffer{}
 	templateContext := struct {
-		KubeadmConfigFile       string
-		SkipPreflightChecks     bool
-		Preflights              []string
+		KubeadmConfigFile   string
+		SkipPreflightChecks bool
+		Preflights          []string
 	}{
-		KubeadmConfigFile:      constants.KubeadmConfigFile,
-		SkipPreflightChecks:    !VersionIsBetween(version,
-		                            semver.MustParse("1.9.0-alpha.0"),
-				            semver.Version{}),
-		Preflights:             constants.Preflights,
+		KubeadmConfigFile: constants.KubeadmConfigFile,
+		SkipPreflightChecks: !VersionIsBetween(version,
+			semver.MustParse("1.9.0-alpha.0"),
+			semver.Version{}),
+		Preflights: constants.Preflights,
 	}
 	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
