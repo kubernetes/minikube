@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -111,13 +112,22 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	// (it should probably stop doing this, though...)
 	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
 	// (because we start kubelet with an invalid config)
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
+	}
+
 	b := bytes.Buffer{}
 	templateContext := struct {
-		KubeadmConfigFile string
-		Preflights        []string
+		KubeadmConfigFile       string
+		SkipPreflightChecks     bool
+		Preflights              []string
 	}{
-		KubeadmConfigFile: constants.KubeadmConfigFile,
-		Preflights:        constants.Preflights,
+		KubeadmConfigFile:      constants.KubeadmConfigFile,
+		SkipPreflightChecks:    !VersionIsBetween(version,
+		                            semver.MustParse("1.9.0-alpha.0"),
+				            semver.Version{}),
+		Preflights:             constants.Preflights,
 	}
 	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
