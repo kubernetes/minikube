@@ -106,12 +106,6 @@ func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
-	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
-	// that we also stick in /etc/kubernetes/manifests
-	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
-	// (it should probably stop doing this, though...)
-	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
-	// (because we start kubelet with an invalid config)
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
