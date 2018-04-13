@@ -72,7 +72,7 @@ sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
 `))
 
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(
-	"sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}"))
+	"sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}"))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key
 // value pairs with the separator character
