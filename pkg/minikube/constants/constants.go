@@ -151,13 +151,20 @@ const (
 )
 
 var Preflights = []string{
+	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
+	// that we also stick in /etc/kubernetes/manifests
 	"DirAvailable--etc-kubernetes-manifests",
 	"DirAvailable--data",
 	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
 	"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
+	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
+	// (it should probably stop doing this, though...)
 	"Swap",
+	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
+	// (because we start kubelet with an invalid config)
+	"CRI",
 }
 
 const (
