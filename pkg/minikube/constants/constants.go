@@ -79,6 +79,9 @@ const MinikubeEnvPrefix = "MINIKUBE"
 // DefaultMachineName is the default name for the VM
 const DefaultMachineName = "minikube"
 
+// DefaultNodeName is the default name for the kubeadm node within the VM
+const DefaultNodeName = "minikube"
+
 // The name of the default storage class provisioner
 const DefaultStorageClassProvisioner = "standard"
 
