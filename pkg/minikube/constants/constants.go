@@ -56,6 +56,7 @@ var SupportedVMDrivers = [...]string{
 	"hyperv",
 	"hyperkit",
 	"kvm2",
+	"none",
 }
 
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
