@@ -1,5 +1,11 @@
 # Minikube Release Notes
 
+# Version 0.26.1 - 4/17/2018
+* Mark hyperkit, kvm2 and none drivers as supported [#2734](https://github.com/kubernetes/minikube/pull/2723) and [#2728](https://github.com/kubernetes/minikube/pull/2728)
+* Bug fix for hyper-v driver [#2719](https://github.com/kubernetes/minikube/pull/2719)
+* Add back CRI preflight ignore [#2723](https://github.com/kubernetes/minikube/pull/2723)
+* Fix preflight checks on clusters <1.9 [#2721](https://github.com/kubernetes/minikube/pull/2721)
+
 # Version 0.26.0 - 4/3/2018
 * Update to Kubernetes 1.10 [#2657](https://github.com/kubernetes/minikube/pull/2657)
 * Update Nginx Ingress Plugin to 0.12.0 [#2644](https://github.com/kubernetes/minikube/pull/2644)
