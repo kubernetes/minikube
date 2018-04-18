@@ -34,6 +34,7 @@ import (
 const networkTmpl = `
 <network>
   <name>{{.PrivateNetwork}}</name>
+  <dns enable='no'/>
   <ip address='192.168.39.1' netmask='255.255.255.0'>
     <dhcp>
       <range start='192.168.39.2' end='192.168.39.254'/>
