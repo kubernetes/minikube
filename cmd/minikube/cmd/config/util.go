@@ -125,13 +125,13 @@ func EnableOrDisableAddon(name string, val string) error {
 	if enable {
 		for _, addon := range addon.Assets {
 			if err := cmd.Copy(addon); err != nil {
-				return errors.Wrapf(err, "error enabling addon %s: %s", addon.AssetName)
+				return errors.Wrapf(err, "error enabling addon %s", addon.AssetName)
 			}
 		}
 	} else {
 		for _, addon := range addon.Assets {
 			if err := cmd.Remove(addon); err != nil {
-				return errors.Wrapf(err, "error disabling addon %s: %s", addon.AssetName)
+				return errors.Wrapf(err, "error disabling addon %s", addon.AssetName)
 			}
 		}
 	}
