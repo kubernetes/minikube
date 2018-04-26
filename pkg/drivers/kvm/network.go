@@ -124,8 +124,8 @@ func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
 		return "", errors.Wrap(err, "reading status file")
 	}
 	type StatusEntry struct {
-		IPAddress string `json:"ip-address"`
-		Hostname  string `json:"hostname"`
+		IPAddress  string `json:"ip-address"`
+		MacAddress string `json:"mac-address"`
 	}
 
 	var statusEntries []StatusEntry
@@ -135,7 +135,7 @@ func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
 
 	ipAddress := ""
 	for _, status := range statusEntries {
-		if status.Hostname == d.MachineName {
+		if status.MacAddress == d.MAC {
 			ipAddress = status.IPAddress
 		}
 	}
