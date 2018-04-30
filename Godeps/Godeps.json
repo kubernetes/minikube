@@ -6701,6 +6701,10 @@
 		{
 			"ImportPath": "vbom.ml/util/sortorder",
 			"Rev": "db5cfe13f5cc80a4990d98e2e1b0707a4d1a5394"
+		},
+		{
+			"ImportPath": "github.com/inconshreveable/go-update",
+			"Rev": "8152e7eb6ccf8679a64582a66b78519688d156ad"
 		}
 	]
 }

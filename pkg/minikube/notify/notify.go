@@ -34,8 +34,6 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
-const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
-
 var (
 	timeLayout              = time.RFC1123
 	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
@@ -61,13 +59,12 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 	}
 	if localVersion.Compare(latestVersion) < 0 {
 		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
-		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
-%s%s
+		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s). Run 'minikube update'.
 
 To disable this notification, run the following:
 minikube config set WantUpdateNotification false
 `,
-			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion)
+			version.VersionPrefix, latestVersion)
 	}
 }
 
