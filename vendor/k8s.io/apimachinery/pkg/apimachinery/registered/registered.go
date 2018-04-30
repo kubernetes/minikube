@@ -242,12 +242,7 @@ func (m *APIRegistrationManager) RESTMapper(versionPatterns ...schema.GroupVersi
 	for enabledVersion := range m.enabledVersions {
 		if !unionedGroups.Has(enabledVersion.Group) {
 			unionedGroups.Insert(enabledVersion.Group)
-			groupMeta, found := m.groupMetaMap[enabledVersion.Group]
-			// TODO(r2d4): hack until tprs are decoupled from restMapper
-			if !found {
-				glog.Warningf("Could not find groupMeta for %s", enabledVersion.Group)
-				continue
-			}
+			groupMeta := m.groupMetaMap[enabledVersion.Group]
 			unionMapper = append(unionMapper, groupMeta.RESTMapper)
 		}
 	}
