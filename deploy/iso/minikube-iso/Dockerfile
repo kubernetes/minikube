@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:17.10
+FROM ubuntu:18.04
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update \
+	&& apt-get install -y apt dpkg apt-utils ca-certificates \
+	&& apt-get upgrade -y \
+	&& apt-get install -y \
 		build-essential \
 		git \
 		wget \
@@ -30,13 +33,11 @@ RUN apt-get update && apt-get install -y \
 		locales \
 		rsync \
 		dumb-init \
-		&& rm -rf /var/lib/apt/lists/*
+		golang-go \
+	&& rm -rf /var/lib/apt/lists/*
 
 RUN localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
 ENV LANG en_US.utf8
-
-RUN wget -O - https://redirector.gvt1.com/edgedl/go/go1.9.2.linux-amd64.tar.gz | tar -C /usr/local -xvz
-ENV PATH $PATH:/usr/local/go/bin
 
 # dumb init will allow us to interrupt the build with ^C
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
