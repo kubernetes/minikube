@@ -30,7 +30,7 @@ type FWstatOp interface {
 // If the FReadOp interface is implemented, the Read operation will be called
 // to read from the file. If not implemented, "permission denied" error will
 // be send back. The operation returns the number of bytes read, or the
-// error occured while reading.
+// error occurred while reading.
 type FReadOp interface {
 	Read(fid *FFid, buf []byte, offset uint64) (int, error)
 }
@@ -38,7 +38,7 @@ type FReadOp interface {
 // If the FWriteOp interface is implemented, the Write operation will be called
 // to write to the file. If not implemented, "permission denied" error will
 // be send back. The operation returns the number of bytes written, or the
-// error occured while writing.
+// error occurred while writing.
 type FWriteOp interface {
 	Write(fid *FFid, data []byte, offset uint64) (int, error)
 }
@@ -47,7 +47,7 @@ type FWriteOp interface {
 // when the client attempts to create a file in the srvFile implementing the interface.
 // If not implemented, "permission denied" error will be send back. If successful,
 // the operation should call (*File)Add() to add the created file to the directory.
-// The operation returns the created file, or the error occured while creating it.
+// The operation returns the created file, or the error occurred while creating it.
 type FCreateOp interface {
 	Create(fid *FFid, name string, perm uint32) (*srvFile, error)
 }
@@ -55,7 +55,7 @@ type FCreateOp interface {
 // If the FRemoveOp interface is implemented, the Remove operation will be called
 // when the client attempts to create a file in the srvFile implementing the interface.
 // If not implemented, "permission denied" error will be send back.
-// The operation returns nil if successful, or the error that occured while removing
+// The operation returns nil if successful, or the error that occurred while removing
 // the file.
 type FRemoveOp interface {
 	Remove(*FFid) error
