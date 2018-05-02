@@ -53,7 +53,7 @@ func NewDriver(hostName, storePath string) *Driver {
 	}
 }
 
-// PreCreateCheck checks for correct priviledges and dependencies
+// PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
 	// check that docker is on path
 	_, err := exec.LookPath("docker")
