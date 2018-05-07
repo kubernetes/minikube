@@ -204,7 +204,7 @@ var Addons = map[string]*Addon{
 			"ingress-configmap.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-rc.yaml",
+			"deploy/addons/ingress/ingress-dp.yaml",
 			constants.AddonsPath,
 			"ingress-rc.yaml",
 			"0640"),
