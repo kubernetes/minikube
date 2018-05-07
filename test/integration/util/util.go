@@ -269,8 +269,8 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
-	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for ingress-controller RC to stabilize")
+	if err := commonutil.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for ingress-controller deployment to stabilize")
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app": "nginx-ingress-controller"}))
@@ -287,8 +287,8 @@ func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
-	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "default-http-backend", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for default-http-backend RC to stabilize")
+	if err := commonutil.WaitForDeploymentToStabilize(client, "kube-system", "default-http-backend", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for default-http-backend deployment to stabilize")
 	}
 
 	if err := commonutil.WaitForService(client, "kube-system", "default-http-backend", true, time.Millisecond*500, time.Minute*10); err != nil {
