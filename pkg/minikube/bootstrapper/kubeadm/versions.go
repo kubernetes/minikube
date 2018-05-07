@@ -175,7 +175,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
 	{
 		Option: util.ExtraOption{
-			Component: Apiserver,
+			Component: Kubelet,
 			Key:       "require-kubeconfig",
 			Value:     "true",
 		},
