@@ -1,5 +1,12 @@
 # Minikube Release Notes
 
+# Version 0.27.0 - 5/14/2018
+* Start the default network for the kvm2 driver [@2806](https://github.com/kubernetes/minikube/pull/2806)
+* Fix 1.9.x versions of Kubernetes with the kubeadm bootstrapper [#2791](https://github.com/kubernetes/minikube/pull/2791)
+* Switch the ingress addon from an RC to a Deployment [#2788](https://github.com/kubernetes/minikube/pull/2788)
+* Update nginx ingress controller to 0.14.0 [#2780](https://github.com/kubernetes/minikube/pull/2780)
+* Disable dnsmasq on network for kvm driver [#2745](https://github.com/kubernetes/minikube/pull/2745)
+
 # Version 0.26.1 - 4/17/2018
 * Mark hyperkit, kvm2 and none drivers as supported [#2734](https://github.com/kubernetes/minikube/pull/2723) and [#2728](https://github.com/kubernetes/minikube/pull/2728)
 * Bug fix for hyper-v driver [#2719](https://github.com/kubernetes/minikube/pull/2719)
