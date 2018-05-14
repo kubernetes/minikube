@@ -1883,6 +1883,10 @@
 			"Rev": "8c5f0ad9360406a3807ce7de6bc73269a91a6e51"
 		},
 		{
+			"ImportPath": "github.com/hashicorp/go-version",
+			"Rev": "23480c0665776210b5fbbac6eaaee40e3e6a96b7"
+		},
+		{
 			"ImportPath": "github.com/hashicorp/golang-lru",
 			"Rev": "a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4"
 		},
@@ -2052,6 +2056,11 @@
 			"ImportPath": "github.com/lpabon/godbc",
 			"Comment": "v1.0-1-g9577782",
 			"Rev": "9577782540c1398b710ddae1b86268ba03a19b0c"
+		},
+		{
+			"ImportPath": "github.com/machine-drivers/docker-machine-parallels",
+			"Comment": "v1.3.0-2-g7a8dbc1",
+			"Rev": "7a8dbc1fe9580c364ceaf7887c91e9f7f3ee65c2"
 		},
 		{
 			"ImportPath": "github.com/magiconair/properties",
@@ -6534,6 +6543,61 @@
 			"ImportPath": "k8s.io/kubernetes/third_party/forked/gonum/graph/traverse",
 			"Comment": "v1.10.0",
 			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/apis/custom_metrics/v1beta1",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/apis/external_metrics",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/apis/external_metrics/v1beta1",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/apis/metrics",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/apis/metrics/v1alpha1",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/apis/metrics/v1beta1",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/client/clientset_generated/clientset/scheme",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/client/clientset_generated/clientset/typed/metrics/v1beta1",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/client/custom_metrics",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
+		},
+		{
+			"ImportPath": "k8s.io/metrics/pkg/client/external_metrics",
+			"Comment": "v1.10.0",
+			"Rev": "f5ea7799f3c29122e1acaffc0615e02e8c481a38"
 		},
 		{
 			"ImportPath": "k8s.io/utils/clock",
