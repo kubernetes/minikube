@@ -143,7 +143,7 @@ func (d *Driver) Remove() error {
 	rmCmd := `for svc in "localkube" "kubelet"; do
 		sudo systemctl stop "$svc".service
 	done
-	sudo rm -rf /data
+	sudo rm -rf /data/minikube
 	sudo rm -rf /etc/kubernetes/manifests
 	sudo rm -rf /var/lib/localkube || true`
 
