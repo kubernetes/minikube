@@ -349,7 +349,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     util.APIServerPort,
 		KubernetesVersion: k8s.KubernetesVersion,
-		EtcdDataDir:       "/data", //TODO(r2d4): change to something else persisted
+		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		ExtraArgs:         extraComponentConfig,
 	}
