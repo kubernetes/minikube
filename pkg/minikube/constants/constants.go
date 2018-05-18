@@ -221,18 +221,18 @@ func GetKubeadmCachedImages(version string) []string {
 		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
 
 		// Addon Manager
-		"k8s.gcr.io/kube-addon-manager:v6.5",
+		"k8s.gcr.io/kube-addon-manager:v8.6",
 
 		// Pause
-		"k8s.gcr.io/pause-amd64:3.0",
+		"k8s.gcr.io/pause-amd64:3.1",
 
 		// DNS
-		"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.4",
-		"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.4",
-		"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.4",
+		"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
+		"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+		"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
 
 		// etcd
-		"k8s.gcr.io/etcd-amd64:3.0.17",
+		"k8s.gcr.io/etcd-amd64:3.1.12",
 
 		"k8s.gcr.io/kube-proxy-amd64:" + version,
 		"k8s.gcr.io/kube-scheduler-amd64:" + version,
@@ -240,7 +240,7 @@ func GetKubeadmCachedImages(version string) []string {
 		"k8s.gcr.io/kube-apiserver-amd64:" + version,
 
 		//Storage Provisioner
-		"gcr.io/k8s-minikube/storage-provisioner:v1.8.0",
+		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 	}
 }
 
