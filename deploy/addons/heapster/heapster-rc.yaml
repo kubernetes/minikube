@@ -19,22 +19,25 @@ metadata:
     k8s-app: heapster
     kubernetes.io/minikube-addons: heapster
     addonmanager.kubernetes.io/mode: Reconcile
+    version: v1.5.3
   name: heapster
   namespace: kube-system
 spec:
   replicas: 1
   selector:
     k8s-app: heapster
+    version: v1.5.3
     addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
         k8s-app: heapster
+        version: v1.5.3
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
       - name: heapster
-        image: k8s.gcr.io/heapster-amd64:v1.5.0
+        image: k8s.gcr.io/heapster-amd64:v1.5.3
         imagePullPolicy: IfNotPresent
         command:
         - /heapster
