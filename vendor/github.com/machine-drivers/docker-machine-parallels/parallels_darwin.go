@@ -24,18 +24,19 @@ import (
 )
 
 const (
-	isoFilename           = "boot2docker.iso"
-	shareFolderName       = "Users"
-	shareFolderPath       = "/Users"
-	minDiskSize           = 32
-	defaultCPU            = 1
-	defaultMemory         = 1024
-	defaultVideoSize      = 64
-	defaultBoot2DockerURL = ""
-	defaultNoShare        = false
-	defaultDiskSize       = 20000
-	defaultSSHPort        = 22
-	defaultSSHUser        = "docker"
+	isoFilename                 = "boot2docker.iso"
+	shareFolderName             = "Users"
+	shareFolderPath             = "/Users"
+	minDiskSize                 = 32
+	defaultCPU                  = 1
+	defaultMemory               = 1024
+	defaultVideoSize            = 64
+	defaultBoot2DockerURL       = ""
+	defaultNoShare              = false
+	defaultDiskSize             = 20000
+	defaultSSHPort              = 22
+	defaultSSHUser              = "docker"
+	defaultNestedVirtualization = false
 )
 
 var (
@@ -54,12 +55,13 @@ var (
 // Driver for Parallels Desktop
 type Driver struct {
 	*drivers.BaseDriver
-	CPU            int
-	Memory         int
-	VideoSize      int
-	DiskSize       int
-	Boot2DockerURL string
-	NoShare        bool
+	CPU                  int
+	Memory               int
+	VideoSize            int
+	DiskSize             int
+	Boot2DockerURL       string
+	NoShare              bool
+	NestedVirtualization bool
 }
 
 // NewDriver creates a new Parallels Desktop driver with default settings
@@ -71,12 +73,13 @@ func NewDriver(hostName, storePath string) drivers.Driver {
 			SSHUser:     defaultSSHUser,
 			SSHPort:     defaultSSHPort,
 		},
-		CPU:            defaultCPU,
-		Memory:         defaultMemory,
-		VideoSize:      defaultVideoSize,
-		DiskSize:       defaultDiskSize,
-		Boot2DockerURL: defaultBoot2DockerURL,
-		NoShare:        defaultNoShare,
+		CPU:                  defaultCPU,
+		Memory:               defaultMemory,
+		VideoSize:            defaultVideoSize,
+		DiskSize:             defaultDiskSize,
+		Boot2DockerURL:       defaultBoot2DockerURL,
+		NoShare:              defaultNoShare,
+		NestedVirtualization: defaultNestedVirtualization,
 	}
 }
 
@@ -144,6 +147,13 @@ func (d *Driver) Create() error {
 		return err
 	}
 
+	if d.NestedVirtualization {
+		if err = prlctl("set", d.MachineName,
+			"--nested-virt", "on"); err != nil {
+			return err
+		}
+	}
+
 	absISOPath, _ := filepath.Abs(d.ResolveStorePath(isoFilename))
 	if err = prlctl("set", d.MachineName,
 		"--device-set", "cdrom0",
@@ -178,7 +188,7 @@ func (d *Driver) Create() error {
 	}
 
 	// For Parallels Desktop >= 11.0.0
-	if ver.Compare(v11) >= 0  {
+	if ver.Compare(v11) >= 0 {
 		// Enable headless mode
 		if err = prlctl("set", d.MachineName,
 			"--startup-view", "headless"); err != nil {
@@ -463,6 +473,10 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Name:  "parallels-no-share",
 			Usage: "Disable the mount of your home directory",
 		},
+		mcnflag.BoolFlag{
+			Name:  "parallels-nested-virtualization",
+			Usage: "Enable nested virutalization",
+		},
 	}
 }
 
@@ -478,6 +492,7 @@ func (d *Driver) SetConfigFromFlags(opts drivers.DriverOptions) error {
 	d.SSHUser = defaultSSHUser
 	d.SSHPort = defaultSSHPort
 	d.NoShare = opts.Bool("parallels-no-share")
+	d.NestedVirtualization = opts.Bool("parallels-nested-virtualization")
 
 	return nil
 }

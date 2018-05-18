@@ -47,6 +47,7 @@ Available options:
  - `--parallels-cpu-count`: Number of CPUs to use to create the VM (-1 to use the number of CPUs available).
  - `--parallels-video-size`: Size of video memory for host (in MB).
  - `--parallels-no-share`: Disable the sharing of `/Users` directory.
+ - `--parallels-nested-virutalization`: Enable nested virtualization.
 
 The `--parallels-boot2docker-url` flag takes a few different forms. By
 default, if no value is specified for this flag, Machine will check locally for
@@ -62,14 +63,15 @@ option also supports specifying ISOs by the `http://` and `file://` protocols.
 
 Environment variables and default values:
 
-| CLI option                    | Environment variable        | Default                  |
-|-------------------------------|-----------------------------|--------------------------|
-| `--parallels-boot2docker-url` | `PARALLELS_BOOT2DOCKER_URL` | *Latest boot2docker url* |
-| `--parallels-cpu-count`       | `PARALLELS_CPU_COUNT`       | `1`                      |
-| `--parallels-disk-size`       | `PARALLELS_DISK_SIZE`       | `20000`                  |
-| `--parallels-memory`          | `PARALLELS_MEMORY_SIZE`     | `1024`                   |
-| `--parallels-video-size`      | `PARALLELS_VIDEO_SIZE`      | `64`                     |
-| `--parallels-no-share`        | -                           | `false`                  |
+| CLI option                          | Environment variable        | Default                  |
+|-------------------------------------|-----------------------------|--------------------------|
+| `--parallels-boot2docker-url`       | `PARALLELS_BOOT2DOCKER_URL` | *Latest boot2docker url* |
+| `--parallels-cpu-count`             | `PARALLELS_CPU_COUNT`       | `1`                      |
+| `--parallels-disk-size`             | `PARALLELS_DISK_SIZE`       | `20000`                  |
+| `--parallels-memory`                | `PARALLELS_MEMORY_SIZE`     | `1024`                   |
+| `--parallels-video-size`            | `PARALLELS_VIDEO_SIZE`      | `64`                     |
+| `--parallels-no-share`              | -                           | `false`                  |
+| `--parallels-nested-virtualization` | -                           | `false`                  |
 
 ## Development
 

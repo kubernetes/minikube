@@ -43,5 +43,6 @@ func createParallelsHost(config cfg.MachineConfig) interface{} {
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
+	d.NestedVirtualization = true
 	return d
 }

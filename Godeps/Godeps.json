@@ -2059,8 +2059,8 @@
 		},
 		{
 			"ImportPath": "github.com/machine-drivers/docker-machine-parallels",
-			"Comment": "v1.3.0-2-g7a8dbc1",
-			"Rev": "7a8dbc1fe9580c364ceaf7887c91e9f7f3ee65c2"
+			"Comment": "v1.3.0-4-g0be16e9",
+			"Rev": "0be16e9d0a622d5a69e72fdf16bbbf3d77d0ec0f"
 		},
 		{
 			"ImportPath": "github.com/magiconair/properties",
