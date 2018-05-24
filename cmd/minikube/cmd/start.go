@@ -70,6 +70,8 @@ const (
 	disableDriverMounts   = "disable-driver-mounts"
 	cacheImages           = "cache-images"
 	uuid                  = "uuid"
+	vpnkitSock            = "hyperkit-vpnkit-sock"
+	vsockPorts            = "hyperkit-vsock-ports"
 )
 
 var (
@@ -135,6 +137,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		CPUs:                viper.GetInt(cpus),
 		DiskSize:            diskSizeMB,
 		VMDriver:            viper.GetString(vmDriver),
+		HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
+		HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
 		XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
 		NFSShare:            viper.GetStringSlice(NFSShare),
 		NFSSharesRoot:       viper.GetString(NFSSharesRoot),
@@ -321,8 +325,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		if viper.GetBool(cfg.WantNoneDriverWarning) {
 			fmt.Println(`===================
 WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
-	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks
-`)
+	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks` + "\n")
 		}
 
 		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
@@ -399,6 +402,9 @@ func init() {
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
+	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
+	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
+	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }
