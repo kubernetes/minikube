@@ -43,20 +43,16 @@ REPOPATH ?= $(ORG)/minikube
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
-LOCALKUBE_VERSION := $(shell $(PYTHON) hack/get_k8s_version.py --k8s-version-only 2>&1)
-LOCALKUBE_BUCKET ?= minikube/k8sReleases
-LOCALKUBE_UPLOAD_LOCATION := gs://${LOCALKUBE_BUCKET}
 TAG ?= $(LOCALKUBE_VERSION)
 STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers, and build localkube statically
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
-LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w"
+STORAGE_PROVISIONER_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w"
 
 MAKEDEPEND := GOPATH=$(GOPATH) ./makedepend.sh
 
-LOCALKUBEFILES := ./cmd/localkube/
 MINIKUBEFILES := ./cmd/minikube/
 HYPERKIT_FILES := ./cmd/drivers/hyperkit
 STORAGE_PROVISIONER_FILES := ./cmd/storage-provisioner
@@ -75,12 +71,6 @@ endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
 	MINIKUBE_BUILD_IN_DOCKER=y
-	LOCALKUBE_BUILD_IN_DOCKER=y
-endif
-
-# If not on linux, localkube must be built in docker
-ifneq ($(BUILD_OS),Linux)
-	LOCALKUBE_BUILD_IN_DOCKER=y
 endif
 
 # If we are already running in docker,
@@ -88,7 +78,6 @@ endif
 # The _BUILD_IN_DOCKER variables should not be modified after this conditional.
 ifeq ($(IN_DOCKER),1)
 	MINIKUBE_BUILD_IN_DOCKER=n
-	LOCALKUBE_BUILD_IN_DOCKER=n
 endif
 
 ifeq ($(GOOS),windows)
@@ -96,17 +85,6 @@ ifeq ($(GOOS),windows)
 endif
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
-
-out/localkube.d:
-	GOOS=linux GOARCH=amd64 $(MAKEDEPEND) out/localkube $(ORG) $(LOCALKUBEFILES) $^ > $@
-
--include out/localkube.d
-out/localkube:
-ifeq ($(LOCALKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-else
-	CGO_ENABLED=1 go build -ldflags=$(LOCALKUBE_LDFLAGS) -o $(BUILD_DIR)/localkube ./cmd/localkube
-endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
@@ -169,16 +147,10 @@ test-pkg/%:
 depend: out/localkube.d out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d
 
 .PHONY: all
-all: cross drivers e2e-cross images out/localkube
+all: cross drivers e2e-cross
 
 .PHONY: drivers
 drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
-
-.PHONY: images
-images: localkube-image localkube-dind-image localkube-dind-image-devshell
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$(TAG)
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$(TAG)
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$(TAG)
 
 .PHONY: integration
 integration: out/minikube
@@ -214,7 +186,7 @@ e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
-	for f in out/localkube out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso; do \
+	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
 		fi ; \
@@ -290,35 +262,9 @@ install-hyperkit-driver: out/docker-machine-driver-hyperkit
 check-release:
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
 
-.PHONY: release-localkube
-release-localkube: out/localkube checksum
-	gsutil cp out/localkube $(LOCALKUBE_UPLOAD_LOCATION)/$(LOCALKUBE_VERSION)/localkube-linux-amd64
-	gsutil cp out/localkube.sha256 $(LOCALKUBE_UPLOAD_LOCATION)/$(LOCALKUBE_VERSION)/localkube-linux-amd64.sha256
-
 .PHONY: update-releases
 update-releases:
 	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
-
-localkube-image: out/localkube
-	# TODO(aprindle) make addons placed into container configurable
-	docker build -t $(REGISTRY)/localkube-image:$(TAG) -f deploy/docker/Dockerfile .
-	@echo ""
-	@echo "${REGISTRY}/localkube-image:$(TAG) successfully built"
-	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
-
-localkube-dind-image: out/localkube
-	# TODO(aprindle) make addons placed into container configurable
-	docker build -t $(REGISTRY)/localkube-dind-image:$(TAG) -f deploy/docker/localkube-dind/Dockerfile .
-	@echo ""
-	@echo "${REGISTRY}/localkube-dind-image:$(TAG) successfully built"
-	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
-
-localkube-dind-image-devshell: out/localkube
-	# TODO(aprindle) make addons placed into container configurable
-	docker build -t $(REGISTRY)/localkube-dind-image-devshell:$(TAG) -f deploy/docker/localkube-dind/Dockerfile .
-	@echo ""
-	@echo "${REGISTRY}/localkube-dind-image-devshell:$(TAG) successfully built"
-	@echo "See https://github.com/kubernetes/minikube/tree/master/deploy/docker for instructions on how to run image"
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
@@ -331,7 +277,7 @@ out/storage-provisioner.d:
 
 -include out/storage-provisioner.d
 out/storage-provisioner:
-	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(LOCALKUBE_LDFLAGS) cmd/storage-provisioner/main.go
+	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(STORAGE_PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
