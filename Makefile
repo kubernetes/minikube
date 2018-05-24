@@ -98,7 +98,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/localkube.d:
-	GOOS=linux GOARCH=amd64 $(MAKEDEPEND) out/localkube $(ORG) $(LOCALKUBEFILES) $^ > $@
+	GOOS=linux GOARCH=$(GOARCH) $(MAKEDEPEND) out/localkube $(ORG) $(LOCALKUBEFILES) $^ > $@
 
 -include out/localkube.d
 out/localkube:
@@ -115,14 +115,14 @@ out/minikube.d: pkg/minikube/assets/assets.go
 	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) $(ORG) $(MINIKUBEFILES) $^ > $@
 
 -include out/minikube.d
-out/minikube-%-amd64: pkg/minikube/assets/assets.go
+out/minikube-%-$(GOARCH): pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
 	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
 endif
-	GOOS=$* go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
+	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
 .PHONY: e2e-%-amd64
