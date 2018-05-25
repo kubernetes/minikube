@@ -259,9 +259,12 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
-		// Make best effort to load any cached images
-		go machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
+		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
+		if err != nil {
+			return errors.Wrap(err, "loading cached images")
+		}
 	}
+
 	kubeadmCfg, err := generateConfig(cfg)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
