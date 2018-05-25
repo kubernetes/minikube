@@ -101,7 +101,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	clusterBootstrapper := viper.GetString(cmdcfg.Bootstrapper)
 
 	if shouldCacheImages {
-		go machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
+		machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
 	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -332,10 +332,10 @@ You will need to move the files to the appropriate location and then set the cor
 	sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
 	sudo chown -R $USER $HOME/.kube
 	sudo chgrp -R $USER $HOME/.kube
-	
+
 	sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
 	sudo chown -R $USER $HOME/.minikube
-	sudo chgrp -R $USER $HOME/.minikube 
+	sudo chgrp -R $USER $HOME/.minikube
 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 		}
