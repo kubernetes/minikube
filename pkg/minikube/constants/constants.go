@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-  "strings"
+	"strings"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -218,20 +218,20 @@ var LocalkubeCachedImages = []string{
 
 func GetKubeadmCachedImages(version string) []string {
 
-	var images = []string  {
-	  "k8s.gcr.io/kube-proxy-amd64:" + version,
-	  "k8s.gcr.io/kube-scheduler-amd64:" + version,
-	  "k8s.gcr.io/kube-controller-manager-amd64:" + version,
-	  "k8s.gcr.io/kube-apiserver-amd64:" + version,
-  }
+	var images = []string{
+		"k8s.gcr.io/kube-proxy-amd64:" + version,
+		"k8s.gcr.io/kube-scheduler-amd64:" + version,
+		"k8s.gcr.io/kube-controller-manager-amd64:" + version,
+		"k8s.gcr.io/kube-apiserver-amd64:" + version,
+	}
 
-  var versionElements []string = strings.Split(version,".")
+	var versionElements []string = strings.Split(version, ".")
 
 	// select correct images based on k8s version
-	if versionElements[0]=="1" {
-		if versionElements[1]=="10" {
+	if versionElements[0] == "1" {
+		if versionElements[1] == "10" {
 			// 1.10.X
-			images = append(images, []string {
+			images = append(images, []string{
 				"k8s.gcr.io/pause-amd64:3.1",
 				"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
 				"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
@@ -239,9 +239,9 @@ func GetKubeadmCachedImages(version string) []string {
 				"k8s.gcr.io/etcd-amd64:3.1.12",
 			}...)
 
-		} else if versionElements[1]=="9" {
+		} else if versionElements[1] == "9" {
 			// 1.9.X
-			images = append(images, []string {
+			images = append(images, []string{
 				"k8s.gcr.io/pause-amd64:3.0",
 				"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.7",
 				"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.7",
@@ -249,9 +249,9 @@ func GetKubeadmCachedImages(version string) []string {
 				"k8s.gcr.io/etcd-amd64:3.1.10",
 			}...)
 
-		} else if versionElements[1]=="8" {
+		} else if versionElements[1] == "8" {
 			// 1.8.X
-			images = append(images, []string {
+			images = append(images, []string{
 				"k8s.gcr.io/pause-amd64:3.0",
 				"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.5",
 				"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
@@ -262,7 +262,7 @@ func GetKubeadmCachedImages(version string) []string {
 
 	} else {
 		// default
-		images = append(images, []string {
+		images = append(images, []string{
 			"k8s.gcr.io/pause-amd64:3.1",
 			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
 			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
@@ -271,8 +271,8 @@ func GetKubeadmCachedImages(version string) []string {
 		}...)
 	}
 
-  // supplementary images
-  images = append(images, []string {
+	// supplementary images
+	images = append(images, []string{
 		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
 		"k8s.gcr.io/kube-addon-manager:v8.6",
 		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
