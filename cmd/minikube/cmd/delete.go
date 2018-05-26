@@ -45,7 +45,8 @@ associated files.`,
 		scanner := bufio.NewScanner(os.Stdin)
 		var text string
 		for !(text == "Y" || text == "y") {
-	        	fmt.Print("Are you sure you want to delete Minikube? It will delete the whole cluster, all data will be lost. [y/N] ")
+	        	fmt.Print(`Are you sure you want to delete Minikube? It will delete the whole cluster, all data 
+will be lost. [y/N] `)
 	        	scanner.Scan()
 	        	text = scanner.Text()
 	        	if (text == "N" || text == "n" || text == "" ){
