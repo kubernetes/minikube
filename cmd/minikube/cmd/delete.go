@@ -17,9 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"bufio"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,15 +45,15 @@ associated files.`,
 		scanner := bufio.NewScanner(os.Stdin)
 		var text string
 		for !(text == "Y" || text == "y") {
-	        	fmt.Print(`Are you sure you want to delete Minikube? It will delete the whole cluster, all data 
-will be lost. [y/N] `)
-	        	scanner.Scan()
-	        	text = scanner.Text()
-	        	if (text == "N" || text == "n" || text == "" ){
-	            		fmt.Println("Minikube deletion is aborted.")
-	            		os.Exit(1)
-	        	}
-	    	}
+			fmt.Print(`Are you sure you want to delete Minikube? It will delete the whole
+cluster, all data will be lost. [y/N] `)
+			scanner.Scan()
+			text = scanner.Text()
+			if text == "N" || text == "n" || text == "" {
+				fmt.Println("Minikube deletion is aborted.")
+				os.Exit(1)
+			}
+		}
 
 		fmt.Println("Deleting local Kubernetes cluster...")
 		api, err := machine.NewAPIClient()
