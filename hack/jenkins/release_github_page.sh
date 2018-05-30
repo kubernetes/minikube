@@ -53,6 +53,8 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/mi
 \`\`\`
 Feel free to leave off the \`\`\`sudo mv minikube /usr/local/bin\`\`\` if you would like to add minikube to your path manually.
 
+Or you can install via homebrew with `brew cask install minikube`.
+
 ### Linux
 \`\`\`shell
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
