@@ -227,9 +227,9 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		"k8s.gcr.io/kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
 
-	v1_10, _ := semver.ParseRange(">=1.10.0 <1.11.0")
-	v1_9, _ := semver.ParseRange(">=1.9.0 <1.10.0")
-	v1_8, _ := semver.ParseRange(">=1.8.0 <1.9.0")
+	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
+	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
+	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
 
 	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
 	if err != nil {
