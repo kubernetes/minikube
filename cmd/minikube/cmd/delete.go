@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 
@@ -28,6 +27,8 @@ import (
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+
+	cmd_config "k8s.io/minikube/cmd/minikube/cmd/config"
 )
 
 // deleteCmd represents the delete command
@@ -42,17 +43,14 @@ associated files.`,
 			os.Exit(1)
 		}
 
-		scanner := bufio.NewScanner(os.Stdin)
-		var text string
-		for !(text == "Y" || text == "y") {
-			fmt.Print(`Are you sure you want to delete Minikube? It will delete the whole
-cluster, all data will be lost. [y/N] `)
-			scanner.Scan()
-			text = scanner.Text()
-			if text == "N" || text == "n" || text == "" {
-				fmt.Println("Minikube deletion is aborted.")
-				os.Exit(1)
-			}
+		confirmPrompt := "Are you sure you want to delete Minikube? It will delete the whole cluster, all data will be lost."
+		posResponses := []string{"y", "yes", "Y", "Yes"}
+		negResponses := []string{"n", "no", "N", "No"}
+		confirmation := cmd_config.AskForYesNoConfirmation(confirmPrompt, posResponses, negResponses)
+
+		if !(confirmation) {
+			fmt.Println("Minikube deletion is aborted.")
+			os.Exit(1)
 		}
 
 		fmt.Println("Deleting local Kubernetes cluster...")
