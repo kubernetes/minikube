@@ -31,6 +31,8 @@ import (
 	cmd_config "k8s.io/minikube/cmd/minikube/cmd/config"
 )
 
+const forceDelete = "force"
+
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
@@ -43,14 +45,16 @@ associated files.`,
 			os.Exit(1)
 		}
 
-		confirmPrompt := "Are you sure you want to delete Minikube? It will delete the whole cluster, all data will be lost."
-		posResponses := []string{"y", "yes", "Y", "Yes"}
-		negResponses := []string{"n", "no", "N", "No"}
-		confirmation := cmd_config.AskForYesNoConfirmation(confirmPrompt, posResponses, negResponses)
+		if !viper.GetBool(forceDelete) {
+			confirmPrompt := "Are you sure you want to delete Minikube? It will delete the whole cluster, all data will be lost."
+			posResponses := []string{"y", "yes", "Y", "Yes"}
+			negResponses := []string{"n", "no", "N", "No"}
+			confirmation := cmd_config.AskForYesNoConfirmation(confirmPrompt, posResponses, negResponses)
 
-		if !(confirmation) {
-			fmt.Println("Minikube deletion is aborted.")
-			os.Exit(1)
+			if !(confirmation) {
+				fmt.Println("Minikube deletion is aborted.")
+				os.Exit(1)
+			}
 		}
 
 		fmt.Println("Deleting local Kubernetes cluster...")
@@ -79,5 +83,7 @@ associated files.`,
 }
 
 func init() {
+	deleteCmd.Flags().Bool(forceDelete, false, "Delete minikube without confirmation")
+	viper.BindPFlags(deleteCmd.Flags())
 	RootCmd.AddCommand(deleteCmd)
 }
