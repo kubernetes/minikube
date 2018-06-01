@@ -321,8 +321,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		if viper.GetBool(cfg.WantNoneDriverWarning) {
 			fmt.Println(`===================
 WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
-	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks
-`)
+	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks`)
 		}
 
 		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {

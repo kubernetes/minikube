@@ -137,6 +137,11 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/kube-dns/kube-dns-sa.yaml",
+			constants.AddonsPath,
+			"kube-dns-sa.yaml",
+			"0640"),
 	}, true, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
