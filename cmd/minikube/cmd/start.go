@@ -33,6 +33,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -100,9 +101,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	k8sVersion := viper.GetString(kubernetesVersion)
 	clusterBootstrapper := viper.GetString(cmdcfg.Bootstrapper)
 
+	var groupCacheImages errgroup.Group
 	if shouldCacheImages {
-		machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
+		groupCacheImages.Go(func() error {
+			return machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
+		})
 	}
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
@@ -229,7 +234,15 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
+	if shouldCacheImages {
+		fmt.Println("Waiting for image caching to complete...")
+		if err := groupCacheImages.Wait(); err != nil {
+			glog.Errorln("Error caching images: ", err)
+		}
+	}
+
 	fmt.Println("Moving files into cluster...")
+
 	if err := k8sBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
@@ -394,7 +407,7 @@ func init() {
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
-	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine.")
+	startCmd.Flags().Bool(cacheImages, false, "If true, cache docker images for the current bootstrapper and load them into the machine.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
