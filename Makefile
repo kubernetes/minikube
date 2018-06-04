@@ -148,7 +148,7 @@ test-pkg/%:
 depend: out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d
 
 .PHONY: all
-all: cross drivers e2e-cross images
+all: cross drivers e2e-cross
 
 .PHONY: drivers
 drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
