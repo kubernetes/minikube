@@ -70,7 +70,7 @@ func (c *Certificate) systemVerify(opts *VerifyOptions) (chains [][]*Certificate
 func initSystemRoots() {
 	roots := NewCertPool()
 
-	var data C.CFDataRef = nil
+	var data C.CFDataRef
 	err := C.FetchPEMRootsCTX509(&data)
 	if err == -1 {
 		return
