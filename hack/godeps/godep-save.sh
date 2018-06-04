@@ -44,9 +44,3 @@ cp -r ${KUBE_ROOT}/pkg/generated/openapi ${MINIKUBE_ROOT}/vendor/k8s.io/kubernet
 
 godep::remove_staging_from_json
 git checkout -- ${MINIKUBE_ROOT}/vendor/golang.org/x/sys/windows
-
-pushd ${MINIKUBE_ROOT} >/dev/null
-    git apply ${MINIKUBE_ROOT}/hack/tpr-patch.diff
-    git apply ${MINIKUBE_ROOT}/hack/kube-proxy-patch.diff
-popd >/dev/null
-

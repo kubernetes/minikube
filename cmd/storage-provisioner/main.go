@@ -22,7 +22,7 @@ import (
 	"os"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/localkube"
+	"k8s.io/minikube/pkg/storage"
 )
 
 func main() {
@@ -33,7 +33,7 @@ func main() {
 	}
 	flag.Parse()
 
-	if err := localkube.StartStorageProvisioner(); err != nil {
+	if err := storage.StartStorageProvisioner(); err != nil {
 		glog.Exit(err)
 	}
 
