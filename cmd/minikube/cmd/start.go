@@ -189,6 +189,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
 	}
+
 	if err == nil {
 		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(cc.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 		if err != nil {
