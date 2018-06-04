@@ -27,7 +27,6 @@
 # Copy only the files we need to this workspace
 mkdir -p out/ testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/localkube out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
@@ -40,7 +39,6 @@ gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-ing.yaml test
 chmod +x out/e2e-${OS_ARCH}
 chmod +x out/minikube-${OS_ARCH}
 chmod +x out/docker-machine-driver-*
-chmod +x out/localkube
 
 # Fix permissions in $HOME
 sudo chown -R $USER $HOME/.kube || true
