@@ -40,7 +40,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
@@ -373,19 +372,6 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	err = LoadCachedImagesInConfigFile()
 	if err != nil {
 		fmt.Println("Unable to load cached images from config file.")
-	}
-}
-
-func validateK8sVersion(version string) {
-	validVersion, err := kubernetes_versions.IsValidLocalkubeVersion(version, constants.KubernetesVersionGCSURL)
-	if err != nil {
-		glog.Errorln("Error getting valid kubernetes versions", err)
-		os.Exit(1)
-	}
-	if !validVersion {
-		fmt.Println("Invalid Kubernetes version.")
-		kubernetes_versions.PrintKubernetesVersionsFromGCS(os.Stdout)
-		os.Exit(1)
 	}
 }
 
