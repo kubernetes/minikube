@@ -20,6 +20,7 @@ import (
 	"bytes"
 	gflag "flag"
 	"fmt"
+	"os"
 	"strings"
 	"text/template"
 
@@ -27,9 +28,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// Kill any running instances.
+var localkubeExecDir = func() string {
+	if dir := os.Getenv("LOCALKUBE_BASE_DIR"); dir != "" {
+		return dir
+	}
+	return "/usr/local/bin"
+}()
 
-var localkubeStartCmdTemplate = "/usr/local/bin/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false"
+// Kill any running instances.
+var localkubeStartCmdTemplate = localkubeExecDir + "/localkube {{.Flags}} --generate-certs=false --logtostderr=true --enable-dns=false"
 
 var startCommandNoSystemdTemplate = `
 # Run with nohup so it stays up. Redirect logs to useful places.
