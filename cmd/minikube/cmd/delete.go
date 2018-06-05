@@ -47,8 +47,8 @@ associated files.`,
 
 		if !viper.GetBool(forceDelete) {
 			confirmPrompt := "Are you sure you want to delete Minikube? It will delete the whole cluster, all data will be lost."
-			posResponses := []string{"y", "yes", "Y", "Yes"}
-			negResponses := []string{"n", "no", "N", "No"}
+			posResponses := []string{"y", "yes"}
+			negResponses := []string{"n", "no"}
 			confirmation := cmd_config.AskForYesNoConfirmation(confirmPrompt, posResponses, negResponses)
 
 			if !(confirmation) {
@@ -83,7 +83,7 @@ associated files.`,
 }
 
 func init() {
-	deleteCmd.Flags().Bool(forceDelete, false, "Delete minikube without confirmation")
+	deleteCmd.Flags().BoolP(forceDelete, "f", false, "Delete minikube without confirmation")
 	viper.BindPFlags(deleteCmd.Flags())
 	RootCmd.AddCommand(deleteCmd)
 }
