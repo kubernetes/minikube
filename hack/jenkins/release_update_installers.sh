@@ -61,7 +61,7 @@ pushd aur-minikube-driver-kvm >/dev/null
 
 popd >/dev/null
 
-git clone --depth 1 git@github.com:minikube-bot/homebrew-cask.git # dont't pull entire history
+git clone --depth 1 git@github.com:minikube-bot/homebrew-cask.git # don't pull entire history
 
 pushd homebrew-cask >/dev/null
     git remote add upstream https://github.com/caskroom/homebrew-cask.git
