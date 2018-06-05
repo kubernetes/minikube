@@ -28,8 +28,6 @@ set -e
 OS_ARCH="linux-amd64"
 VM_DRIVER="virtualbox"
 JOB_NAME="Linux-VirtualBox"
-EXTRA_ARGS="--bootstrapper=localkube"
-EXTRA_START_ARGS="--kubernetes-version=file://$PWD/out/localkube"
 
 # Download files and set permissions
 source common.sh
