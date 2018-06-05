@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -29,8 +31,16 @@ import (
 	"github.com/pkg/errors"
 )
 
+func getGCSURL() string {
+	url := os.Getenv("MINIKUBE_LOCALKUBE_GCS")
+	if url == "" {
+		url = constants.KubernetesVersionGCSURL
+	}
+	return url
+}
+
 func PrintKubernetesVersionsFromGCS(output io.Writer) {
-	PrintKubernetesVersions(output, constants.KubernetesVersionGCSURL)
+	PrintKubernetesVersions(output, getGCSURL())
 }
 
 func PrintKubernetesVersions(output io.Writer, url string) {
@@ -52,7 +62,17 @@ type K8sRelease struct {
 
 type K8sReleases []K8sRelease
 
-func getJson(url string, target *K8sReleases) error {
+func getJsonFromFile(path string, target *K8sReleases) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting json from path: %s via file", path)
+	}
+	defer f.Close()
+
+	return json.NewDecoder(f).Decode(target)
+}
+
+func getJsonFromURL(url string, target *K8sReleases) error {
 	r, err := http.Get(url)
 	if err != nil {
 		return errors.Wrapf(err, "Error getting json from url: %s via http", url)
@@ -64,20 +84,34 @@ func getJson(url string, target *K8sReleases) error {
 
 var cachedK8sVersions = make(K8sReleases, 0)
 
-func GetK8sVersionsFromURL(url string) (K8sReleases, error) {
+func GetK8sVersionsFromURL(urlStr string) (K8sReleases, error) {
 	if len(cachedK8sVersions) != 0 {
 		return cachedK8sVersions, nil
 	}
 	var k8sVersions K8sReleases
-	if err := getJson(url, &k8sVersions); err != nil {
-		return K8sReleases{}, errors.Wrapf(err, "Error getting json via http with url: %s", url)
+	urlObj, err := url.Parse(urlStr)
+	if err != nil {
+		return K8sReleases{}, errors.Wrapf(err, "Error getting json with url: %s", urlStr)
+	}
+	if urlObj.Scheme == constants.FileScheme {
+		if err := getJsonFromFile(urlObj.Path, &k8sVersions); err != nil {
+			return K8sReleases{}, errors.Wrapf(err, "Error getting json via file with url: %s", urlStr)
+		}
+	} else {
+		if err := getJsonFromURL(urlStr, &k8sVersions); err != nil {
+			return K8sReleases{}, errors.Wrapf(err, "Error getting json via http with url: %s", urlStr)
+		}
 	}
 	if len(k8sVersions) == 0 {
-		return K8sReleases{}, errors.Errorf("There were no json k8s Releases at the url specified: %s", url)
+		return K8sReleases{}, errors.Errorf("There were no json k8s Releases at the url specified: %s", urlStr)
 	}
 
 	cachedK8sVersions = k8sVersions
 	return k8sVersions, nil
+}
+
+func IsValidLocalkubeVersionFromGCS(v string) (bool, error) {
+	return IsValidLocalkubeVersion(v, getGCSURL())
 }
 
 func IsValidLocalkubeVersion(v string, url string) (bool, error) {
