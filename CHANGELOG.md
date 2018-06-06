@@ -147,7 +147,7 @@
 * Added `minikube update-context` command [#1578](https://github.com/kubernetes/minikube/pull/1578)
 * Added kubeconfig context and minikube ip to `minikube status` [#1578](https://github.com/kubernetes/minikube/pull/1578)
 * Use native golang ssh [#1571](https://github.com/kubernetes/minikube/pull/1571)
-* Don't treat stopping stoppped hosts as error [#1606](https://github.com/kubernetes/minikube/pull/1606)
+* Don't treat stopping stopped hosts as error [#1606](https://github.com/kubernetes/minikube/pull/1606)
 * Bumped ingress addon to 0.9-beta.8
 * Removed systemd dependency for None driver [#1592](https://github.com/kubernetes/minikube/pull/1592)
 
