@@ -36,11 +36,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdutil "k8s.io/minikube/cmd/util"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
@@ -129,11 +127,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		err := fmt.Errorf("Disk Size %dMB (%s) is too small, the minimum disk size is %dMB", diskSizeMB, diskSize, constants.MinimumDiskSizeMB)
 		glog.Errorln("Error parsing disk size:", err)
 		os.Exit(1)
-	}
-
-	// Don't verify version for kubeadm bootstrapped clusters
-	if k8sVersion != constants.DefaultKubernetesVersion && clusterBootstrapper != bootstrapper.BootstrapperTypeKubeadm {
-		validateK8sVersion(k8sVersion)
 	}
 
 	config := cfg.MachineConfig{
@@ -367,19 +360,6 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	err = LoadCachedImagesInConfigFile()
 	if err != nil {
 		fmt.Println("Unable to load cached images from config file.")
-	}
-}
-
-func validateK8sVersion(version string) {
-	validVersion, err := kubernetes_versions.IsValidLocalkubeVersion(version, constants.KubernetesVersionGCSURL)
-	if err != nil {
-		glog.Errorln("Error getting valid kubernetes versions", err)
-		os.Exit(1)
-	}
-	if !validVersion {
-		fmt.Println("Invalid Kubernetes version.")
-		kubernetes_versions.PrintKubernetesVersionsFromGCS(os.Stdout)
-		os.Exit(1)
 	}
 }
 
