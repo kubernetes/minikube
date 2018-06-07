@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -32,7 +33,7 @@ func TestPersistence(t *testing.T) {
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
-	podPath, _ := filepath.Abs("testdata/busybox.yaml")
+	podPath, _ := filepath.Abs("testdata" + constants.SupportedArchTag(false) + "/busybox.yaml")
 
 	// Create a pod and wait for it to be running.
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {

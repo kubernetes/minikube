@@ -68,6 +68,11 @@ MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 SOURCE_DIRS = cmd pkg test
 
+ADDON_PATH := deploy/addons
+ifeq ($(GOARCH),s390x)
+	ADDON_PATH=deploy/addons-s390x
+endif
+
 # $(call DOCKER, image, command)
 define DOCKER
 	docker run --rm -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /go/src/$(REPOPATH) -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
@@ -129,6 +134,9 @@ endif
 e2e-%-amd64: out/minikube-%-amd64
 	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
 
+e2e-linux-s390x: out/minikube-linux-s390x
+	GOOS=linux GOARCH=s390x go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
+
 e2e-windows-amd64.exe: e2e-windows-amd64
 	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
 
@@ -185,8 +193,13 @@ integration: out/minikube
 	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
-integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
+integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)
+ifeq ($(GOARCH),amd64)
 	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
+endif
+ifeq ($(GOARCH),s390x)
+	sudo -E out/e2e-linux-s390x -testdata-dir "test/integration/testdata-s390x" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-s390x $(TEST_ARGS)
+endif
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
@@ -200,17 +213,17 @@ out/test.d: pkg/minikube/assets/assets.go
 test:
 	./test.sh
 
-pkg/minikube/assets/assets.go: $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
-	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
+pkg/minikube/assets/assets.go: $(GOPATH)/bin/go-bindata $(shell find $(ADDON_PATH) -type f)
+	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets $(ADDON_PATH)/...
 
 $(GOPATH)/bin/go-bindata:
 	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 
 .PHONY: cross
-cross: out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube-linux-s390x
 
 .PHONY: e2e-cross
-e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
+e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe e2e-linux-s390x
 
 .PHONY: checksum
 checksum:
@@ -335,7 +348,12 @@ out/storage-provisioner:
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
+ifeq ($(GOARCH),amd64)
 	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile .
+endif
+ifeq ($(GOARCH),s390x)
+	docker build -t $(REGISTRY)/storage-provisioner-s390x:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-s390x .
+endif
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image

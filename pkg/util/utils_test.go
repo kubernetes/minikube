@@ -95,9 +95,9 @@ type getTestArgs struct {
 func TestGetLocalkubeDownloadURL(t *testing.T) {
 	argsList := [...]getTestArgs{
 		{"v1.3.0",
-			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux-amd64", false},
+			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux" + constants.SupportedArchTag(true), false},
 		{"v1.3.3",
-			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.3/localkube-linux-amd64", false},
+			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.3/localkube-linux" + constants.SupportedArchTag(true), false},
 		{"http://www.example.com/my-localkube", "http://www.example.com/my-localkube", false},
 		{"abc", "", true},
 		{"1.2.3.4", "", true},

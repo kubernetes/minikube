@@ -58,201 +58,201 @@ func (a *Addon) IsEnabled() (bool, error) {
 var Addons = map[string]*Addon{
 	"addon-manager": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/addon-manager.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/addon-manager.yaml",
 			"/etc/kubernetes/manifests/",
 			"addon-manager.yaml",
 			"0640"),
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/dashboard/dashboard-dp.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/dashboard/dashboard-dp.yaml",
 			constants.AddonsPath,
 			"dashboard-dp.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/dashboard/dashboard-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/dashboard/dashboard-svc.yaml",
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
 	"default-storageclass": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/storageclass/storageclass.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/storageclass/storageclass.yaml",
 			constants.AddonsPath,
 			"storageclass.yaml",
 			"0640"),
 	}, true, "default-storageclass"),
 	"storage-provisioner": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/storage-provisioner/storage-provisioner.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/storage-provisioner/storage-provisioner.yaml",
 			constants.AddonsPath,
 			"storage-provisioner.yaml",
 			"0640"),
 	}, true, "storage-provisioner"),
 	"coredns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-controller.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-controller.yaml",
 			constants.AddonsPath,
 			"coreDNS-controller.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-configmap.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-configmap.yaml",
 			constants.AddonsPath,
 			"coreDNS-configmap.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-svc.yaml",
 			constants.AddonsPath,
 			"coreDNS-svc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-crbinding.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-crbinding.yaml",
 			constants.AddonsPath,
 			"coreDNS-crbinding.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-sa.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-sa.yaml",
 			constants.AddonsPath,
 			"coreDNS-sa.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-clusterrole.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-clusterrole.yaml",
 			constants.AddonsPath,
 			"coreDNS-clusterrole.yaml",
 			"0640"),
 	}, false, "coredns"),
 	"kube-dns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-controller.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/kube-dns/kube-dns-controller.yaml",
 			constants.AddonsPath,
 			"kube-dns-controller.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-cm.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/kube-dns/kube-dns-cm.yaml",
 			constants.AddonsPath,
 			"kube-dns-cm.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/kube-dns/kube-dns-svc.yaml",
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
 	}, true, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/heapster/influx-grafana-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/heapster/influx-grafana-rc.yaml",
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/heapster/grafana-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/heapster/grafana-svc.yaml",
 			constants.AddonsPath,
 			"grafana-svc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/heapster/influxdb-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/heapster/influxdb-svc.yaml",
 			constants.AddonsPath,
 			"influxdb-svc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/heapster/heapster-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/heapster/heapster-rc.yaml",
 			constants.AddonsPath,
 			"heapster-rc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/heapster/heapster-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/heapster/heapster-svc.yaml",
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640"),
 	}, false, "heapster"),
 	"efk": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/efk/elasticsearch-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/efk/elasticsearch-rc.yaml",
 			constants.AddonsPath,
 			"elasticsearch-rc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/efk/elasticsearch-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/efk/elasticsearch-svc.yaml",
 			constants.AddonsPath,
 			"elasticsearch-svc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/efk/fluentd-es-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/efk/fluentd-es-rc.yaml",
 			constants.AddonsPath,
 			"fluentd-es-rc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/efk/fluentd-es-configmap.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/efk/fluentd-es-configmap.yaml",
 			constants.AddonsPath,
 			"fluentd-es-configmap.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/efk/kibana-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/efk/kibana-rc.yaml",
 			constants.AddonsPath,
 			"kibana-rc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/efk/kibana-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/efk/kibana-svc.yaml",
 			constants.AddonsPath,
 			"kibana-svc.yaml",
 			"0640"),
 	}, false, "efk"),
 	"ingress": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-configmap.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/ingress/ingress-configmap.yaml",
 			constants.AddonsPath,
 			"ingress-configmap.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-dp.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/ingress/ingress-dp.yaml",
 			constants.AddonsPath,
 			"ingress-dp.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/ingress/ingress-svc.yaml",
 			constants.AddonsPath,
 			"ingress-svc.yaml",
 			"0640"),
 	}, false, "ingress"),
 	"metrics-server": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/metrics-server/metrics-apiservice.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/metrics-server/metrics-apiservice.yaml",
 			constants.AddonsPath,
 			"metrics-apiservice.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/metrics-server/metrics-server-deployment.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/metrics-server/metrics-server-deployment.yaml",
 			constants.AddonsPath,
 			"metrics-server-deployment.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/metrics-server/metrics-server-service.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/metrics-server/metrics-server-service.yaml",
 			constants.AddonsPath,
 			"metrics-server-service.yaml",
 			"0640"),
 	}, false, "metrics-server"),
 	"registry": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/registry/registry-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/registry/registry-rc.yaml",
 			constants.AddonsPath,
 			"registry-rc.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/registry/registry-svc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/registry/registry-svc.yaml",
 			constants.AddonsPath,
 			"registry-svc.yaml",
 			"0640"),
 	}, false, "registry"),
 	"registry-creds": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/registry-creds/registry-creds-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/registry-creds/registry-creds-rc.yaml",
 			constants.AddonsPath,
 			"registry-creds-rc.yaml",
 			"0640"),
 	}, false, "registry-creds"),
 	"freshpod": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/freshpod/freshpod-rc.yaml",
+			"deploy/addons"+constants.SupportedArchTag(false)+"/freshpod/freshpod-rc.yaml",
 			constants.AddonsPath,
 			"freshpod-rc.yaml",
 			"0640"),

@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: registry-creds
+  namespace: kube-system
+  labels:
+    version: v1.9
+    addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/minikube-addons: registry-creds
+spec:
+  replicas: 1
+  selector:
+    name: registry-creds
+    version: v1.9
+    addonmanager.kubernetes.io/mode: Reconcile
+  template:
+    metadata:
+      labels:
+        name: registry-creds
+        version: v1.9
+        addonmanager.kubernetes.io/mode: Reconcile
+    spec:
+      containers:
+      - image: registry.hub.docker.com/upmcenterprises/registry-creds:1.9
+        name: registry-creds
+        imagePullPolicy: Always
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: AWS_ACCESS_KEY_ID
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: AWS_SECRET_ACCESS_KEY
+          - name: AWS_SESSION_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: AWS_SESSION_TOKEN
+          - name: awsregion
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: aws-region
+          - name: awsaccount
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: aws-account
+          - name: aws_assume_role
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: aws-assume-role
+          - name: awsregion
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-ecr
+                key: aws-region
+          - name: DOCKER_PRIVATE_REGISTRY_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-dpr
+                key: DOCKER_PRIVATE_REGISTRY_PASSWORD
+          - name: DOCKER_PRIVATE_REGISTRY_SERVER
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-dpr
+                key: DOCKER_PRIVATE_REGISTRY_SERVER
+          - name: DOCKER_PRIVATE_REGISTRY_USER
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-dpr
+                key: DOCKER_PRIVATE_REGISTRY_USER
+          - name: gcrurl
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-gcr
+                key: gcrurl
+        volumeMounts:
+        - name: gcr-creds
+          mountPath: "/root/.config/gcloud"
+          readOnly: true
+      volumes:
+      - name: gcr-creds
+        secret:
+          secretName: registry-creds-gcr
+          items:
+            - key: "application_default_credentials.json"
+              path: "application_default_credentials.json"
+
