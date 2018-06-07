@@ -64,7 +64,7 @@ virsh -c qemu:///system list --all \
 vboxmanage list vms \
       | cut -d "{" -f2 \
       | cut -d "}" -f1 \
-      | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop && vboxmanage unregistervm {} --delete" \
+      | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
       || true
 
 # Clean up xhyve disks
