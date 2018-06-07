@@ -19,7 +19,7 @@ VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2017.11
+BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
@@ -29,7 +29,7 @@ ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 ISO_VERSION ?= v0.26.0
 ISO_BUCKET ?= minikube/iso
 
-KERNEL_VERSION ?= 4.9.64
+KERNEL_VERSION ?= 4.16.14
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -147,7 +147,7 @@ minikube_iso: # old target kept for making tests happy
 linux-menuconfig:
 	$(MAKE) -C $(BUILD_DIR)/buildroot linux-menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot linux-savedefconfig
-	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
+	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
 
 out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
