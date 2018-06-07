@@ -1,6 +1,0 @@
-# From http://download.virtualbox.org/virtualbox/5.1.30/MD5SUMS
-md5 4dadcb625f72b8b36a374a52526c682a  VirtualBox-5.1.30.tar.bz2
-
-# From http://download.virtualbox.org/virtualbox/5.1.30/SHA256SUMS
-sha256 6059b0986c9cdacc533177867634a76331ceccdcd46dddd111a50d1c42846d0b  VirtualBox-5.1.30.tar.bz2
-sha256 631ca8e8d513acf43a75de56a71a31aaffb5624864c57d10346ba657d991ec1e  VBoxGuestAdditions_5.1.30.iso
