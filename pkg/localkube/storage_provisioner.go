@@ -61,7 +61,7 @@ func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*v1.P
 		return nil, err
 	}
 
-	// Explictly chmod created dir, so we know mode is set to 0777 regardless of umask
+	// Explicitly chmod created dir, so we know mode is set to 0777 regardless of umask
 	if err := os.Chmod(path, 0777); err != nil {
 		return nil, err
 	}
