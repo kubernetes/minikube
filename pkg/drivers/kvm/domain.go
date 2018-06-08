@@ -66,12 +66,10 @@ const domainTmpl = `
       <model type='virtio'/>
     </interface>
     <serial type='pty'>
-      <source path='/dev/pts/2'/>
       <target port='0'/>
     </serial>
-    <console type='pty' tty='/dev/pts/2'>
-      <source path='/dev/pts/2'/>
-      <target port='0'/>
+    <console type='pty'>
+      <target type='serial' port='0'/>
     </console>
     <rng model='virtio'>
       <backend model='random'>/dev/random</backend>
