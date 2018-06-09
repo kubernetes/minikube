@@ -21,13 +21,6 @@ REPLACE_PKG_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 REPLACE_MINIKUBE_LINUX_SHA256=$(awk '{ print $1 }' out/minikube-linux-amd64.sha256)
 REPLACE_MINIKUBE_DRIVER_KVM_SHA256=$(awk '{ print $1 }' out/docker-machine-driver-kvm2.sha256)
 REPLACE_MINIKUBE_DARWIN_SHA256=$(awk '{ print $1 }' out/minikube-darwin-amd64.sha256)
-REPLACE_CASK_CHECKPOINT=$(curl \
-                        --compressed \
-                        --location   \
-                        --user-agent 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.152 Safari/537.36' \
-                        https://github.com/kubernetes/minikube/releases.atom \
-                        | sed 's|<pubDate>[^<]*</pubDate>||g' \
-                        | shasum -a 256 | awk '{ print $1 }')
 MINIKUBE_ROOT=$PWD
 
 git clone ssh://aur@aur.archlinux.org/minikube.git aur-minikube
@@ -70,7 +63,6 @@ pushd homebrew-cask >/dev/null
     git checkout -b ${REPLACE_PKG_VERSION}
     sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
         -e "s/\$MINIKUBE_DARWIN_SHA256/${REPLACE_MINIKUBE_DARWIN_SHA256}/g" \
-        -e "s/\$CASK_CHECKPOINT/${REPLACE_CASK_CHECKPOINT}/g" \
         $MINIKUBE_ROOT/installers/darwin/brew-cask/minikube.rb.tmpl > Casks/minikube.rb
     git add Casks/minikube.rb
     git commit -F- <<EOF
