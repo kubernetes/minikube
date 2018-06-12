@@ -69,16 +69,19 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 
 //TODO(r2d4): This should most likely check the health of the apiserver
 func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
-	statusCmd := `sudo systemctl is-active kubelet &>/dev/null && echo "Running" || echo "Stopped"`
+	statusCmd := `sudo systemctl is-active kubelet`
 	status, err := k.c.CombinedOutput(statusCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "getting status")
 	}
-	status = strings.TrimSpace(status)
-	if status == state.Running.String() || status == state.Stopped.String() {
-		return status, nil
+	s := strings.TrimSpace(status)
+	switch s {
+	case "active":
+		return state.Running.String(), nil
+	case "inactive":
+		return state.Stopped.String(), nil
 	}
-	return "", fmt.Errorf("Error: Unrecognized output from ClusterStatus: %s", status)
+	return state.Error.String(), nil
 }
 
 // TODO(r2d4): Should this aggregate all the logs from the control plane?
