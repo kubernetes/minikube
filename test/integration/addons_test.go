@@ -48,15 +48,21 @@ func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
 
-	if err := util.WaitForDashboardRunning(t); err != nil {
-		t.Fatalf("waiting for dashboard to be up: %s", err)
+	var u url.URL
+
+	checkDashboard := func(t *testing.T) error {
+		dashboardURL = minikubeRunner.RunCommand("dashboard --url", false)
+		u, err := url.Parse(strings.TrimSpace(dashboardURL))
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
-	dashboardURL := minikubeRunner.RunCommand("dashboard --url", true)
-	u, err := url.Parse(strings.TrimSpace(dashboardURL))
-	if err != nil {
-		t.Fatalf("failed to parse dashboard URL %s: %v", dashboardURL, err)
+	if err := util.Retry(t, checkDashboard, 2*time.Second, 10); err != nil {
+		t.Fatalf("error checking dashboard URL: %s", err)
 	}
+
 	if u.Scheme != "http" {
 		t.Fatalf("wrong scheme in dashboard URL, expected http, actual %s", u.Scheme)
 	}
