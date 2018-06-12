@@ -100,7 +100,7 @@ These are downstream packages that are being maintained by others and how to upg
 | Package Manager | URL | TODO |
 | --- | --- | --- |
 | Arch Linux AUR | https://aur.archlinux.org/packages/minikube/ | "Flag as package out-of-date"
-| Brew Cask | https://github.com/caskroom/homebrew-cask/blob/master/Casks/minikube.rb | Create a new PR in [caskroom/homebrew-cask](https://github.com/caskroom/homebrew-cask) with an updated version and SHA256
+| Brew Cask | https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb | Create a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256
 
 #### Updating the arch linux package
 The Arch Linux AUR is maintained at https://aur.archlinux.org/packages/minikube/.  The installer PKGBUILD is hosted in its own repository.  The public read-only repository is hosted here `https://aur.archlinux.org/minikube.git` and the private read-write repository is hosted here `ssh://aur@aur.archlinux.org/minikube.git`
