@@ -160,7 +160,8 @@ var Preflights = []string{
 	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
 	"DirAvailable--etc-kubernetes-manifests",
-	"DirAvailable--data",
+	"DirAvailable--data-minikube",
+	"Port-10250",
 	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
