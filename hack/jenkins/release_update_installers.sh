@@ -57,7 +57,7 @@ popd >/dev/null
 git clone --depth 1 git@github.com:minikube-bot/homebrew-cask.git # don't pull entire history
 
 pushd homebrew-cask >/dev/null
-    git remote add upstream https://github.com/caskroom/homebrew-cask.git
+    git remote add upstream https://github.com/Homebrew/homebrew-cask.git
     git fetch upstream
     git checkout upstream/master
     git checkout -b ${REPLACE_PKG_VERSION}
@@ -74,7 +74,7 @@ Update minikube to ${REPLACE_PKG_VERSION}
 
 EOF
     git push origin ${REPLACE_PKG_VERSION}
-    curl -v -k -u minikube-bot:${BOT_PASSWORD} -X POST https://api.github.com/repos/caskroom/homebrew-cask/pulls \
+    curl -v -k -u minikube-bot:${BOT_PASSWORD} -X POST https://api.github.com/repos/Homebrew/homebrew-cask/pulls \
     -d @- <<EOF
 
 {
