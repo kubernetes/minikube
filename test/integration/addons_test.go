@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -48,18 +49,22 @@ func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
 
-	var u url.URL
+	var u *url.URL
 
-	checkDashboard := func(t *testing.T) error {
-		dashboardURL = minikubeRunner.RunCommand("dashboard --url", false)
-		u, err := url.Parse(strings.TrimSpace(dashboardURL))
+	checkDashboard := func() error {
+		var err error
+		dashboardURL := minikubeRunner.RunCommand("dashboard --url", false)
+		if dashboardURL == "" {
+			return errors.New("error getting dashboard URL")
+		}
+		u, err = url.Parse(strings.TrimSpace(dashboardURL))
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 
-	if err := util.Retry(t, checkDashboard, 2*time.Second, 10); err != nil {
+	if err := util.Retry(t, checkDashboard, 2*time.Second, 60); err != nil {
 		t.Fatalf("error checking dashboard URL: %s", err)
 	}
 
