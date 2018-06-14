@@ -95,6 +95,9 @@ func unmarkMaster() error {
 func elevateKubeSystemPrivileges() error {
 	k8s := service.K8s
 	client, err := k8s.GetClientset()
+	if err != nil {
+		return errors.Wrap(err, "getting clientset")
+	}
 	clusterRoleBinding := &rbacv1beta1.ClusterRoleBinding{
 		ObjectMeta: v1.ObjectMeta{
 			Name: rbacName,

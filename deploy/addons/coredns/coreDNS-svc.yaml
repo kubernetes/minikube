@@ -3,6 +3,8 @@ kind: Service
 metadata:
   name: kube-dns
   namespace: kube-system
+  annotations:
+    prometheus.io/scrape: "true"
   labels:
     k8s-app: kube-dns
     addonmanager.kubernetes.io/mode: Reconcile
