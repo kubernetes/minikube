@@ -1,0 +1,80 @@
+--- a/configure	2018-04-24 16:25:41.000000000 +0200
++++ b/configure	2018-06-01 19:55:45.043559397 +0200
+@@ -15420,76 +15420,7 @@
+ 
+ # Check the distribution where you are compiling glusterfs on
+ 
+-GF_DISTRIBUTION=
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for /etc/debian_version" >&5
+-$as_echo_n "checking for /etc/debian_version... " >&6; }
+-if ${ac_cv_file__etc_debian_version+:} false; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  test "$cross_compiling" = yes &&
+-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+-if test -r "/etc/debian_version"; then
+-  ac_cv_file__etc_debian_version=yes
+-else
+-  ac_cv_file__etc_debian_version=no
+-fi
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_file__etc_debian_version" >&5
+-$as_echo "$ac_cv_file__etc_debian_version" >&6; }
+-if test "x$ac_cv_file__etc_debian_version" = xyes; then :
+-
+-fi
+-
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for /etc/SuSE-release" >&5
+-$as_echo_n "checking for /etc/SuSE-release... " >&6; }
+-if ${ac_cv_file__etc_SuSE_release+:} false; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  test "$cross_compiling" = yes &&
+-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+-if test -r "/etc/SuSE-release"; then
+-  ac_cv_file__etc_SuSE_release=yes
+-else
+-  ac_cv_file__etc_SuSE_release=no
+-fi
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_file__etc_SuSE_release" >&5
+-$as_echo "$ac_cv_file__etc_SuSE_release" >&6; }
+-if test "x$ac_cv_file__etc_SuSE_release" = xyes; then :
+-
+-fi
+-
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for /etc/redhat-release" >&5
+-$as_echo_n "checking for /etc/redhat-release... " >&6; }
+-if ${ac_cv_file__etc_redhat_release+:} false; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  test "$cross_compiling" = yes &&
+-  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+-if test -r "/etc/redhat-release"; then
+-  ac_cv_file__etc_redhat_release=yes
+-else
+-  ac_cv_file__etc_redhat_release=no
+-fi
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_file__etc_redhat_release" >&5
+-$as_echo "$ac_cv_file__etc_redhat_release" >&6; }
+-if test "x$ac_cv_file__etc_redhat_release" = xyes; then :
+-
+-fi
+-
+-
+-if test "x$ac_cv_file__etc_debian_version" = "xyes"; then
+-   GF_DISTRIBUTION=Debian
+-fi
+-if test "x$ac_cv_file__etc_SuSE_release" = "xyes"; then
+-   GF_DISTRIBUTION=SuSE
+-fi
+-if test "x$ac_cv_file__etc_redhat_release" = "xyes"; then
+-   GF_DISTRIBUTION=Redhat
+-fi
+-
+-
++GF_DISTRIBUTION=Redhat
+ 
+ GF_HOST_OS=""
+ GF_LDFLAGS="-rdynamic"
