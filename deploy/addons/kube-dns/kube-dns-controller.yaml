@@ -34,6 +34,7 @@ spec:
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ''
     spec:
+      serviceAccount: kube-dns
       tolerations:
       - key: "CriticalAddonsOnly"
         operator: "Exists"
