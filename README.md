@@ -66,7 +66,7 @@ done
 * [Linux]
     * [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
     * [Fedora/CentOS/Red Hat COPR](https://copr.fedorainfracloud.org/coprs/antonpatsev/minikube-rpm/)
-    * [Void Linux](https://github.com/voidlinux/void-packages/tree/master/srcpkgs/minikube/template)
+    * [Void Linux](https://github.com/void-linux/void-packages/tree/master/srcpkgs/minikube/template)
 * [Windows] [Chocolatey](https://chocolatey.org/packages/Minikube)
 
 ### Minikube Version Management
