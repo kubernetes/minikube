@@ -182,9 +182,9 @@ drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
 
 .PHONY: images
 images: localkube-image localkube-dind-image localkube-dind-image-devshell
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$(TAG)
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$(TAG)
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$(TAG)
+	gcloud docker -- push $(REGISTRY)/localkube-image:$(TAG)
+	gcloud docker -- push $(REGISTRY)/localkube-dind-image:$(TAG)
+	gcloud docker -- push $(REGISTRY)/localkube-dind-image-devshell:$(TAG)
 
 .PHONY: integration
 integration: out/minikube
