@@ -60,6 +60,7 @@ MINIKUBEFILES := ./cmd/minikube/
 HYPERKIT_FILES := ./cmd/drivers/hyperkit
 STORAGE_PROVISIONER_FILES := ./cmd/storage-provisioner
 KVM_DRIVER_FILES := ./cmd/drivers/kvm/
+LXD_DRIVER_FILES := ./cmd/drivers/lxd/
 
 MINIKUBE_TEST_FILES := ./...
 
@@ -166,13 +167,13 @@ test-pkg/%:
 	go test -v -test.timeout=30m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: depend
-depend: out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d
+depend: out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d out/docker-machine-driver-lxd.d
 
 .PHONY: all
 all: cross drivers e2e-cross
 
 .PHONY: drivers
-drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
+drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2 out/docker-machine-driver-lxd
 
 .PHONY: integration
 integration: out/minikube
@@ -237,7 +238,7 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	rm -rf out/minikube_$(DEB_VERSION)
 
 .SECONDEXPANSION:
-TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
+TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2 out/docker-machine-driver-lxd
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
 TAR_TARGETS_ALL     := $(shell find deploy/addons -type f)
@@ -333,3 +334,23 @@ install-kvm: out/docker-machine-driver-kvm2
 .PHONY: release-kvm-driver
 release-kvm-driver: install-kvm
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
+
+out/docker-machine-driver-lxd.d:
+	$(MAKEDEPEND) out/docker-machine-driver-lxd $(ORG) $(LXD_DRIVER_FILES) $^ > $@
+
+-include out/docker-machine-driver-lxd.d
+out/docker-machine-driver-lxd:
+	go build 																		\
+		-installsuffix "static" 													\
+		-ldflags "-X k8s.io/minikube/pkg/drivers/lxd/version.VERSION=$(VERSION)" 	\
+		-o $(BUILD_DIR)/docker-machine-driver-lxd 									\
+		k8s.io/minikube/cmd/drivers/lxd
+	chmod +X $@
+
+.PHONY: install-lxd
+install-lxd: out/docker-machine-driver-lxd
+	cp out/docker-machine-driver-lxd $(GOBIN)/docker-machine-driver-lxd
+
+.PHONY: release-lxd-driver
+release-lxd-driver: install-lxd
+	gsutil cp $(GOBIN)/docker-machine-driver-lxd gs://minikube/drivers/lxd/$(VERSION)/

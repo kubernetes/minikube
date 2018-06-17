@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2018 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,4 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
-
-import (
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperkit"
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperv"
-	_ "k8s.io/minikube/pkg/minikube/drivers/kvm"
-	_ "k8s.io/minikube/pkg/minikube/drivers/kvm2"
-	_ "k8s.io/minikube/pkg/minikube/drivers/lxd"
-	_ "k8s.io/minikube/pkg/minikube/drivers/none"
-	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
-	_ "k8s.io/minikube/pkg/minikube/drivers/vmwarefusion"
-	_ "k8s.io/minikube/pkg/minikube/drivers/xhyve"
-)
+package lxd
