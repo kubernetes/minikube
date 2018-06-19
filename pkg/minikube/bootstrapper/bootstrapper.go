@@ -34,14 +34,11 @@ type Bootstrapper interface {
 }
 
 const (
-	BootstrapperTypeLocalkube = "localkube"
-	BootstrapperTypeKubeadm   = "kubeadm"
+	BootstrapperTypeKubeadm = "kubeadm"
 )
 
 func GetCachedImageList(version string, bootstrapper string) []string {
 	switch bootstrapper {
-	case BootstrapperTypeLocalkube:
-		return constants.LocalkubeCachedImages
 	case BootstrapperTypeKubeadm:
 		return constants.GetKubeadmCachedImages(version)
 	default:

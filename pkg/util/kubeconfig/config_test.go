@@ -390,7 +390,7 @@ func tempFile(t *testing.T, data []byte) string {
 	return tmp.Name()
 }
 
-// minikubeConfig returns a config that reasonably approximates a localkube cluster
+// minikubeConfig returns a k8s cluster config
 func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"

@@ -45,7 +45,7 @@ api:
   bindPort: 8443
   controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -87,7 +87,7 @@ api:
   bindPort: 8443
   controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -129,7 +129,7 @@ api:
   bindPort: 8443
   controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -157,7 +157,7 @@ api:
   bindPort: 8443
   controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -195,7 +195,7 @@ api:
   bindPort: 8443
   controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:

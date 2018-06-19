@@ -142,7 +142,6 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-//TODO(r2d4): Split out into shared function between localkube and kubeadm
 func addAddons(files *[]assets.CopyableFile) error {
 	// add addons to file list
 	// custom addons

@@ -22,7 +22,7 @@ import (
 	"github.com/blang/semver"
 )
 
-// The current version of the minikube and localkube
+// The current version of the minikube
 // This is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.version=vX.Y.Z"
 const VersionPrefix = "v"
 
