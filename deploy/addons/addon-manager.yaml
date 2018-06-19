@@ -28,7 +28,7 @@ spec:
     image: k8s.gcr.io/kube-addon-manager:v8.6
     env:
     - name: KUBECONFIG
-      value: /var/lib/localkube/kubeconfig
+      value: /var/lib/minikube/kubeconfig
     imagePullPolicy: IfNotPresent
     resources:
       requests:
@@ -38,7 +38,7 @@ spec:
     - mountPath: /etc/kubernetes/
       name: addons
       readOnly: true
-    - mountPath: /var/lib/localkube/
+    - mountPath: /var/lib/minikube/
       name: kubeconfig
       readOnly: true
   volumes:
@@ -46,5 +46,5 @@ spec:
       path: /etc/kubernetes/
     name: addons
   - hostPath:
-      path: /var/lib/localkube/
+      path: /var/lib/minikube/
     name: kubeconfig

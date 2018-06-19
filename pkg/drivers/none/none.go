@@ -29,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 const driverName = "none"
@@ -37,7 +36,7 @@ const dockerstopcmd = `docker kill $(docker ps -a --filter="name=k8s_" --format=
 
 var dockerkillcmd = fmt.Sprintf(`docker rm $(%s)`, dockerstopcmd)
 
-// none Driver is a driver designed to run localkube w/o a VM
+// none Driver is a driver designed to run kubeadm w/o a VM
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -101,16 +100,8 @@ func (d *Driver) GetURL() (string, error) {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	var statuscmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; "+`then
-  sudo systemctl is-active kubelet localkube &>/dev/null && echo "Running" || echo "Stopped"
-else
-  if ps $(cat %s) &>/dev/null; then
-    echo "Running"
-  else
-    echo "Stopped"
-  fi
-fi
-`, constants.LocalkubePIDPath)
+	var statuscmd = fmt.Sprintf(
+		`sudo systemctl is-active kubelet &>/dev/null && echo "Running" || echo "Stopped"`)
 
 	out, err := runCommand(statuscmd, true)
 	if err != nil {
@@ -122,14 +113,14 @@ fi
 	} else if state.Stopped.String() == s {
 		return state.Stopped, nil
 	} else {
-		return state.None, fmt.Errorf("Error: Unrecognize output from GetLocalkubeStatus: %s", s)
+		return state.None, fmt.Errorf("Error: Unrecognize output from GetState: %s", s)
 	}
 }
 
 func (d *Driver) Kill() error {
 	for _, cmdStr := range [][]string{
-		{"systemctl", "stop", "localkube.service"},
-		{"rm", "-rf", "/var/lib/localkube"},
+		{"systemctl", "stop", "kubelet.service"},
+		{"rm", "-rf", "/var/lib/minikube"},
 	} {
 		cmd := exec.Command("sudo", cmdStr...)
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -140,12 +131,10 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) Remove() error {
-	rmCmd := `for svc in "localkube" "kubelet"; do
-		sudo systemctl stop "$svc".service
-	done
+	rmCmd := `sudo systemctl stop kubelet.service
 	sudo rm -rf /data/minikube
 	sudo rm -rf /etc/kubernetes/manifests
-	sudo rm -rf /var/lib/localkube || true`
+	sudo rm -rf /var/lib/minikube || true`
 
 	for _, cmdStr := range []string{rmCmd, dockerkillcmd} {
 		if out, err := runCommand(cmdStr, true); err != nil {
@@ -157,11 +146,10 @@ func (d *Driver) Remove() error {
 }
 
 func (d *Driver) Restart() error {
-	restartCmd := `for svc in "localkube" "kubelet"; do
-	if systemctl is-active $svc.service; then
-		sudo systemctl restart "$svc".service
-	fi
-done`
+	restartCmd := `
+	if systemctl is-active kubelet.service; then
+		sudo systemctl restart kubelet.service
+	fi`
 
 	cmd := exec.Command(restartCmd)
 	if err := cmd.Start(); err != nil {
@@ -184,14 +172,12 @@ func (d *Driver) Start() error {
 }
 
 func (d *Driver) Stop() error {
-	var stopcmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; "+`then
-for svc in "localkube" "kubelet"; do
+	var stopcmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; " + `then
+for svc in "kubelet"; do
 	sudo systemctl stop "$svc".service || true
 done
-else
-	sudo kill $(cat %s)
 fi
-`, constants.LocalkubePIDPath)
+`)
 	_, err := runCommand(stopcmd, false)
 	if err != nil {
 		return err
