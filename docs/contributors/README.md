@@ -9,9 +9,7 @@
 
 * **Adding a new addon** ([adding_an_addon.md](adding_an_addon.md)): How to add a new addon to minikube for `minikube addons`
 
-* **Adding a new driver** ([adding_driver.md](adding_driver.md)): How to add a new driver to minikube for `minikube create --vm-driver=<driver>` 
-
-* **Updating Kubernetes** ([updating_kubernetes.md](updating_kubernetes.md)): Updating the version of Kubernetes in Localkube
+* **Adding a new driver** ([adding_driver.md](adding_driver.md)): How to add a new driver to minikube for `minikube create --vm-driver=<driver>`
 
 ## Building and Releasing
 * **Build Guide** ([build_guide.md](build_guide.md)): How to build minikube from source
@@ -21,5 +19,3 @@
 * **CI Builds** ([ci_builds.md](./ci_builds.md)): Accessing CI build artifacts from Jenkins
 
 * **Releasing minikube** ([releasing_minikube.md](releasing_minikube.md)): Steps to release a new version of minikube
-
-*  **Releasing localkube** ([releasing_localkube.md](releasing_localkube.md)): Steps to release a new version of localkube

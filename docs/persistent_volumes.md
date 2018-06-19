@@ -6,7 +6,7 @@ The Minikube VM boots into a tmpfs, so most directories will not be persisted ac
 However, Minikube is configured to persist files stored under the following directories in the Minikube VM:
 
 * `/data`
-* `/var/lib/localkube`
+* `/var/lib/minikube`
 * `/var/lib/docker`
 * `/tmp/hostpath_pv`
 * `/tmp/hostpath-provisioner`
