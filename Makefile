@@ -48,14 +48,12 @@ REPOPATH ?= $(ORG)/minikube
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
-LOCALKUBE_VERSION := $(shell $(PYTHON) hack/get_k8s_version.py --k8s-version-only 2>&1)
-TAG ?= $(LOCALKUBE_VERSION)
 STORAGE_PROVISIONER_TAG := v1.8.1
 
-# Set the version information for the Kubernetes servers, and build localkube statically
+# Set the version information for the Kubernetes servers
 K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
-LOCALKUBE_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w"
+PROVISIONER_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w"
 
 MAKEDEPEND := GOPATH=$(GOPATH) ./makedepend.sh
 
@@ -292,7 +290,7 @@ out/storage-provisioner.d:
 
 -include out/storage-provisioner.d
 out/storage-provisioner:
-	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(LOCALKUBE_LDFLAGS) cmd/storage-provisioner/main.go
+	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner

@@ -22,14 +22,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// These constants are used by both minikube and localkube
+// These constants are used by both minikube
 const (
-	APIServerPort             = 8443
-	DefaultLocalkubeDirectory = "/var/lib/localkube"
-	DefaultCertPath           = DefaultLocalkubeDirectory + "/certs/"
-	DefaultKubeConfigPath     = DefaultLocalkubeDirectory + "/kubeconfig"
-	DefaultDNSDomain          = "cluster.local"
-	DefaultServiceCIDR        = "10.96.0.0/12"
+	APIServerPort            = 8443
+	DefaultMinikubeDirectory = "/var/lib/minikube"
+	DefaultCertPath          = DefaultMinikubeDirectory + "/certs/"
+	DefaultKubeConfigPath    = DefaultMinikubeDirectory + "/kubeconfig"
+	DefaultDNSDomain         = "cluster.local"
+	DefaultServiceCIDR       = "10.96.0.0/12"
 )
 
 var DefaultAdmissionControllers = []string{

@@ -97,12 +97,6 @@ func MakeMiniPath(fileName ...string) string {
 
 var MountProcessFileName = ".mount-process"
 
-// Only pass along these flags to localkube.
-var LogFlags = [...]string{
-	"v",
-	"vmodule",
-}
-
 const (
 	DefaultKeepContext  = false
 	ShaSuffix           = ".sha256"
@@ -136,9 +130,6 @@ func GetProfileFile(profile string) string {
 	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
 
-var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sReleases/"
-var LocalkubeLinuxFilename = "localkube-linux-amd64"
-
 // DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
 const DockerAPIVersion = "1.35"
 
@@ -146,12 +137,6 @@ const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/project
 
 const AddonsPath = "/etc/kubernetes/addons"
 const FilesPath = "/files"
-
-const (
-	RemoteLocalKubeErrPath = "/var/lib/localkube/localkube.err"
-	RemoteLocalKubeOutPath = "/var/lib/localkube/localkube.out"
-	LocalkubePIDPath       = "/var/run/localkube.pid"
-)
 
 const (
 	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
@@ -178,12 +163,6 @@ var Preflights = []string{
 }
 
 const (
-	LocalkubeServicePath = "/etc/systemd/system/localkube.service"
-	LocalkubeRunning     = "active"
-	LocalkubeStopped     = "inactive"
-)
-
-const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
 	DefaultMountEndpoint = "/minikube-host"
@@ -202,25 +181,6 @@ func GetKubernetesReleaseURLSha1(binaryName, version string) string {
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 const DriverNone = "none"
 const FileScheme = "file"
-
-var LocalkubeCachedImages = []string{
-	// Dashboard
-	"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
-
-	// DNS
-	"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.5",
-	"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
-	"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.5",
-
-	// Addon Manager
-	"k8s.gcr.io/kube-addon-manager:v6.5",
-
-	// Pause
-	"k8s.gcr.io/pause-amd64:3.0",
-
-	//Storage Provisioner
-	"gcr.io/k8s-minikube/storage-provisioner:v1.8.0",
-}
 
 func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 
