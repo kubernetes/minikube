@@ -188,7 +188,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
-
+	if strings.Compare(selectedKubernetesVersion, "") == 0 {
+		selectedKubernetesVersion = constants.DefaultKubernetesVersion
+	}
 	// Load profile cluster config from file
 	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
 	if err != nil && !os.IsNotExist(err) {
