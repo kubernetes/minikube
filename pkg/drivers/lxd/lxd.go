@@ -22,17 +22,23 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	lxd "github.com/lxc/lxd/client"
+	"github.com/lxc/lxd/shared/api"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
-const driverName = "lxd"
+const (
+	driverName            = "lxd"
+	connectionErrStr      = "Error connecting to LXD API. Is your LXD service running?"
+	createContainerErrStr = "Error creating LXD container."
+)
 
 // lxd Driver is for running minikube inside LXD
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-	URL string
+	URL    string
+	server lxd.ContainerServer
 }
 
 func NewDriver(hostName, storePath string) *Driver {
@@ -46,16 +52,47 @@ func NewDriver(hostName, storePath string) *Driver {
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
-	fmt.Println("LXD: pre create check")
 	if _, err := getConnection(); err != nil {
-		return errors.Wrap(err, "Error connecting to LXD API. Is your LXD service running?")
+		return err
 	}
 	return nil
 }
 
 func (d *Driver) Create() error {
 	fmt.Println("LXD: create ")
-	// creation for the none driver is handled by commands.go
+	c, err := getConnection()
+	if err != nil {
+		return err
+	}
+	req := api.ContainersPost{
+		Name: d.MachineName,
+		Source: api.ContainerSource{
+			Type:  "image",
+			Alias: "ubuntu",
+		},
+	}
+	op, err := c.CreateContainer(req)
+	if err != nil {
+		return errors.Wrap(err, "Error creating container")
+	}
+	err = op.Wait()
+	if err != nil {
+		return errors.Wrap(err, "Error waiting for container to be created")
+	}
+	reqState := api.ContainerStatePut{
+		Action:  "start",
+		Timeout: -1,
+	}
+
+	op, err = c.UpdateContainerState(d.MachineName, reqState, "")
+	if err != nil {
+		return errors.Wrap(err, "Error updating container state")
+	}
+
+	err = op.Wait()
+	if err != nil {
+		return errors.Wrap(err, "Error waiting for container state to be updated")
+	}
 	return nil
 }
 
@@ -86,16 +123,74 @@ func (d *Driver) GetURL() (string, error) {
 
 func (d *Driver) GetState() (state.State, error) {
 	fmt.Println("LXD: get state ")
-	return state.None, nil
+	c, err := getConnection()
+	if err != nil {
+		return state.None, err
+	}
+	lxdState, etag, err := c.GetContainerState(d.MachineName)
+	if err != nil {
+		return state.None, errors.Wrap(err, "Error getting container state")
+	}
+	fmt.Printf("LXD: container state ETag: %s\n", etag)
+	var mkState state.State
+	switch lxdState.StatusCode {
+	case api.Running:
+		mkState = state.Running
+	case api.Freezing, api.Frozen:
+		mkState = state.Paused
+	case api.Stopped:
+		mkState = state.Stopped
+	case api.Stopping, api.Aborting:
+		mkState = state.Stopping
+	case api.OperationCreated, api.Started, api.Pending, api.Starting, api.Thawed:
+		mkState = state.Starting
+	case api.Error, api.Failure:
+		mkState = state.Error
+	default:
+		mkState = state.None
+	}
+	return mkState, nil
 }
 
 func (d *Driver) Kill() error {
 	fmt.Println("LXD: kill ")
+	c, err := getConnection()
+	if err != nil {
+		return err
+	}
+	reqState := api.ContainerStatePut{
+		Action:  "kill",
+		Timeout: -1,
+	}
+
+	op, err := c.UpdateContainerState(d.MachineName, reqState, "")
+	if err != nil {
+		return errors.Wrap(err, "Error updating container state")
+	}
+
+	err = op.Wait()
+	if err != nil {
+		return errors.Wrap(err, "Error waiting for container state to be updated")
+	}
 	return nil
 }
 
 func (d *Driver) Remove() error {
 	fmt.Println("LXD: delete ")
+	c, err := getConnection()
+	if err != nil {
+		return err
+	}
+
+	op, err := c.DeleteContainer(d.MachineName)
+	if err != nil {
+		return errors.Wrap(err, "Error deleting container")
+	}
+
+	err = op.Wait()
+	if err != nil {
+		return errors.Wrap(err, "Error waiting for container to be deleted")
+	}
 	return nil
 }
 
@@ -106,12 +201,12 @@ func (d *Driver) Restart() error {
 
 func (d *Driver) Start() error {
 	fmt.Println("LXD: starting ")
-	return nil
+	return d.UpdateState("start")
 }
 
 func (d *Driver) Stop() error {
 	fmt.Println("LXD: stopping ")
-	return nil
+	return d.UpdateState("stop")
 }
 
 func (d *Driver) RunSSHCommandFromDriver() error {
@@ -121,7 +216,29 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 func getConnection() (lxd.ContainerServer, error) {
 	c, err := lxd.ConnectLXDUnix("", nil)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, connectionErrStr)
 	}
 	return c, nil
+}
+
+func (d *Driver) UpdateState(state string) error {
+	c, err := getConnection()
+	if err != nil {
+		return err
+	}
+	reqState := api.ContainerStatePut{
+		Action:  state,
+		Timeout: -1,
+	}
+
+	op, err := c.UpdateContainerState(d.MachineName, reqState, "")
+	if err != nil {
+		return errors.Wrap(err, "Error updating container state")
+	}
+
+	err = op.Wait()
+	if err != nil {
+		return errors.Wrap(err, "Error waiting for container state to be updated")
+	}
+	return nil
 }
