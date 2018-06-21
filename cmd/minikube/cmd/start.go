@@ -73,6 +73,7 @@ const (
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
 	vsockPorts            = "hyperkit-vsock-ports"
+	gpu                   = "gpu"
 )
 
 var (
@@ -136,6 +137,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		validateK8sVersion(k8sVersion)
 	}
 
+	if viper.GetBool(gpu) && viper.GetString(vmDriver) != "kvm2" {
+		glog.Exitf("--gpu is only supported with --vm-driver=kvm2")
+	}
+
 	config := cfg.MachineConfig{
 		MinikubeISO:         viper.GetString(isoURL),
 		Memory:              viper.GetInt(memory),
@@ -157,6 +162,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		Downloader:          pkgutil.DefaultDownloader{},
 		DisableDriverMounts: viper.GetBool(disableDriverMounts),
 		UUID:                viper.GetString(uuid),
+		GPU:                 viper.GetBool(gpu),
 	}
 
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
@@ -419,6 +425,7 @@ func init() {
 	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
+	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }
