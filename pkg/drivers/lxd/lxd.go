@@ -103,11 +103,30 @@ func (d *Driver) DriverName() string {
 
 func (d *Driver) GetIP() (string, error) {
 	fmt.Println("LXD: get ip ")
-	return "127.0.0.1", nil
+	c, err := getConnection()
+	if err != nil {
+		return "", err
+	}
+	lxdState, _, err := c.GetContainerState(d.MachineName)
+	if err != nil {
+		return "", errors.Wrap(err, "Error getting container state")
+	}
+
+	eth0, ok := lxdState.Network["eth0"]
+	if !ok {
+		return "", errors.Wrap(err, "eth0 network doesn't exist")
+	}
+	for _, address := range eth0.Addresses {
+		if address.Family == "inet" {
+			fmt.Printf("container address: %s", address.Address)
+			return address.Address, nil
+		}
+	}
+	return "", errors.New("couldn't find IPV4 address for container")
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
-	fmt.Println("LXD: get ssh hostname ")
+	fmt.Println("LXD: get ssh hostname")
 	return "minikube", nil
 }
 
@@ -131,6 +150,7 @@ func (d *Driver) GetState() (state.State, error) {
 	if err != nil {
 		return state.None, errors.Wrap(err, "Error getting container state")
 	}
+
 	fmt.Printf("LXD: container state ETag: %s\n", etag)
 	var mkState state.State
 	switch lxdState.StatusCode {
@@ -240,5 +260,6 @@ func (d *Driver) UpdateState(state string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error waiting for container state to be updated")
 	}
+
 	return nil
 }
