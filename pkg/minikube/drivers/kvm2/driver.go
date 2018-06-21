@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/drivers/kvm"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -36,25 +37,8 @@ func init() {
 	})
 }
 
-// Delete this once the following PR is merged:
-// https://github.com/dhiltgen/docker-machine-kvm/pull/68
-type kvmDriver struct {
-	*drivers.BaseDriver
-
-	Memory         int
-	DiskSize       int
-	CPU            int
-	Network        string
-	PrivateNetwork string
-	ISO            string
-	Boot2DockerURL string
-	DiskPath       string
-	CacheMode      string
-	IOMode         string
-}
-
 func createKVM2Host(config cfg.MachineConfig) interface{} {
-	return &kvmDriver{
+	return &kvm.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
 			StorePath:   constants.GetMinipath(),
@@ -68,7 +52,5 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		DiskSize:       config.DiskSize,
 		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
-		CacheMode:      "default",
-		IOMode:         "threads",
 	}
 }
