@@ -74,6 +74,9 @@ const domainTmpl = `
     <rng model='virtio'>
       <backend model='random'>/dev/random</backend>
     </rng>
+    {{if .GPU}}
+    {{.DevicesXML}}
+    {{end}}
   </devices>
 </domain>
 `
