@@ -18,6 +18,8 @@ package lxd
 
 import (
 	"fmt"
+	"log"
+	"os/user"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
@@ -37,8 +39,6 @@ const (
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-	URL    string
-	server lxd.ContainerServer
 }
 
 func NewDriver(hostName, storePath string) *Driver {
@@ -59,7 +59,6 @@ func (d *Driver) PreCreateCheck() error {
 }
 
 func (d *Driver) Create() error {
-	fmt.Println("LXD: create ")
 	c, err := getConnection()
 	if err != nil {
 		return err
@@ -68,7 +67,7 @@ func (d *Driver) Create() error {
 		Name: d.MachineName,
 		Source: api.ContainerSource{
 			Type:  "image",
-			Alias: "ubuntu",
+			Alias: "base-minikube",
 		},
 	}
 	op, err := c.CreateContainer(req)
@@ -79,21 +78,7 @@ func (d *Driver) Create() error {
 	if err != nil {
 		return errors.Wrap(err, "Error waiting for container to be created")
 	}
-	reqState := api.ContainerStatePut{
-		Action:  "start",
-		Timeout: -1,
-	}
-
-	op, err = c.UpdateContainerState(d.MachineName, reqState, "")
-	if err != nil {
-		return errors.Wrap(err, "Error updating container state")
-	}
-
-	err = op.Wait()
-	if err != nil {
-		return errors.Wrap(err, "Error waiting for container state to be updated")
-	}
-	return nil
+	return d.Start()
 }
 
 // DriverName returns the name of the driver
@@ -102,7 +87,6 @@ func (d *Driver) DriverName() string {
 }
 
 func (d *Driver) GetIP() (string, error) {
-	fmt.Println("LXD: get ip ")
 	c, err := getConnection()
 	if err != nil {
 		return "", err
@@ -118,40 +102,50 @@ func (d *Driver) GetIP() (string, error) {
 	}
 	for _, address := range eth0.Addresses {
 		if address.Family == "inet" {
-			fmt.Printf("container address: %s", address.Address)
 			return address.Address, nil
 		}
 	}
 	return "", errors.New("couldn't find IPV4 address for container")
 }
 
-func (d *Driver) GetSSHHostname() (string, error) {
-	fmt.Println("LXD: get ssh hostname")
-	return "minikube", nil
+func (d *Driver) GetSSHKeyPath() string {
+	usr, err := user.Current()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return fmt.Sprintf("%s/.ssh/id_rsa_lxd", usr.HomeDir)
 }
 
-func (d *Driver) GetSSHPort() (int, error) {
-	fmt.Println("LXD: get ssh port ")
-	return 2222, nil
+func (d *Driver) GetSSHUsername() string {
+	return "ubuntu"
+}
+
+func (d *Driver) GetSSHHostname() (string, error) {
+	return d.GetIP()
 }
 
 func (d *Driver) GetURL() (string, error) {
-	fmt.Println("LXD: get url ")
-	return "lxd://minikube", nil
+	ip, err := d.GetIP()
+	if err != nil {
+		return "", errors.Wrap(err, "getting URL, could not get IP")
+	}
+	if ip == "" {
+		return "", nil
+	}
+
+	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	fmt.Println("LXD: get state ")
 	c, err := getConnection()
 	if err != nil {
 		return state.None, err
 	}
-	lxdState, etag, err := c.GetContainerState(d.MachineName)
+	lxdState, _, err := c.GetContainerState(d.MachineName)
 	if err != nil {
 		return state.None, errors.Wrap(err, "Error getting container state")
 	}
 
-	fmt.Printf("LXD: container state ETag: %s\n", etag)
 	var mkState state.State
 	switch lxdState.StatusCode {
 	case api.Running:
@@ -172,31 +166,24 @@ func (d *Driver) GetState() (state.State, error) {
 	return mkState, nil
 }
 
+func (d *Driver) Restart() error {
+	return d.UpdateState("restart")
+}
+
+func (d *Driver) Start() error {
+	return d.UpdateState("start")
+}
+
+func (d *Driver) Stop() error {
+	return d.UpdateState("stop")
+}
+
 func (d *Driver) Kill() error {
-	fmt.Println("LXD: kill ")
-	c, err := getConnection()
-	if err != nil {
-		return err
-	}
-	reqState := api.ContainerStatePut{
-		Action:  "kill",
-		Timeout: -1,
-	}
-
-	op, err := c.UpdateContainerState(d.MachineName, reqState, "")
-	if err != nil {
-		return errors.Wrap(err, "Error updating container state")
-	}
-
-	err = op.Wait()
-	if err != nil {
-		return errors.Wrap(err, "Error waiting for container state to be updated")
-	}
-	return nil
+	return d.Stop()
 }
 
 func (d *Driver) Remove() error {
-	fmt.Println("LXD: delete ")
+	d.Stop()
 	c, err := getConnection()
 	if err != nil {
 		return err
@@ -212,25 +199,6 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "Error waiting for container to be deleted")
 	}
 	return nil
-}
-
-func (d *Driver) Restart() error {
-	fmt.Println("LXD: restarting ")
-	return nil
-}
-
-func (d *Driver) Start() error {
-	fmt.Println("LXD: starting ")
-	return d.UpdateState("start")
-}
-
-func (d *Driver) Stop() error {
-	fmt.Println("LXD: stopping ")
-	return d.UpdateState("stop")
-}
-
-func (d *Driver) RunSSHCommandFromDriver() error {
-	return fmt.Errorf("LXD: driver does not support ssh commands")
 }
 
 func getConnection() (lxd.ContainerServer, error) {
@@ -260,6 +228,5 @@ func (d *Driver) UpdateState(state string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error waiting for container state to be updated")
 	}
-
 	return nil
 }

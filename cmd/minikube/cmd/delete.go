@@ -60,7 +60,7 @@ associated files.`,
 		}
 
 		if err := os.Remove(constants.GetProfileFile(viper.GetString(pkg_config.MachineProfile))); err != nil {
-			fmt.Println("Error deleting machine profile config")
+			fmt.Println("Error deleting machine profile config: ", err)
 			os.Exit(1)
 		}
 	},
