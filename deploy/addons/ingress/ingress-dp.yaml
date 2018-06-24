@@ -79,7 +79,7 @@ spec:
     spec:
       terminationGracePeriodSeconds: 60
       containers:
-      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.14.0
+      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.16.2
         name: nginx-ingress-controller
         imagePullPolicy: IfNotPresent
         readinessProbe:
@@ -120,3 +120,11 @@ spec:
         - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
         # use minikube IP address in ingress status field
         - --report-node-internal-ip-address
+        securityContext:
+          capabilities:
+              drop:
+              - ALL
+              add:
+              - NET_BIND_SERVICE
+          # www-data -> 33
+          runAsUser: 33
