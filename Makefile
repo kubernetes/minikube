@@ -29,6 +29,10 @@ ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 ISO_VERSION ?= v0.28.0
 ISO_BUCKET ?= minikube/iso
 
+MINIKUBE_VERSION ?= $(ISO_VERSION)
+MINIKUBE_BUCKET ?= minikube/releases
+MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
+
 KERNEL_VERSION ?= 4.16.14
 
 GOOS ?= $(shell go env GOOS)
@@ -349,6 +353,11 @@ push-storage-provisioner-image: storage-provisioner-image
 release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
+
+.PHONY: release-minikube
+release-minikube: out/minikube checksum
+	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
+	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
 out/docker-machine-driver-kvm2.d:
 	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $(KVM_DRIVER_FILES) $^ > $@
