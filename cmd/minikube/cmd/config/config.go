@@ -213,6 +213,18 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "nvidia-driver-installer",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:        "nvidia-gpu-device-plugin",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name: "hyperv-virtual-switch",
 		set:  SetString,
 	},
