@@ -14,22 +14,26 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 27
+VERSION_MINOR ?= 28
 VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2017.11
+BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.8.3
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.9.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.26.0
+ISO_VERSION ?= v0.28.0
 ISO_BUCKET ?= minikube/iso
 
-KERNEL_VERSION ?= 4.9.64
+MINIKUBE_VERSION ?= $(ISO_VERSION)
+MINIKUBE_BUCKET ?= minikube/releases
+MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
+
+KERNEL_VERSION ?= 4.16.14
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -142,12 +146,18 @@ minikube_iso: # old target kept for making tests happy
 	$(MAKE) -C $(BUILD_DIR)/buildroot
 	mv $(BUILD_DIR)/buildroot/output/images/rootfs.iso9660 $(BUILD_DIR)/minikube.iso
 
+# Change buildroot configuration for the minikube ISO
+.PHONY: iso-menuconfig
+iso-menuconfig:
+	$(MAKE) -C $(BUILD_DIR)/buildroot menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot savedefconfig
+
 # Change the kernel configuration for the minikube ISO
 .PHONY: linux-menuconfig
 linux-menuconfig:
-	$(MAKE) -C $(BUILD_DIR)/buildroot linux-menuconfig
-	$(MAKE) -C $(BUILD_DIR)/buildroot linux-savedefconfig
-	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux-4.9_defconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ menuconfig
+	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ savedefconfig
+	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
 
 out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
 ifeq ($(IN_DOCKER),1)
@@ -176,9 +186,9 @@ drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
 
 .PHONY: images
 images: localkube-image localkube-dind-image localkube-dind-image-devshell
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-image:$(TAG)
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image:$(TAG)
-	gcloud docker -- push gcr.io/k8s-minikube/localkube-dind-image-devshell:$(TAG)
+	gcloud docker -- push $(REGISTRY)/localkube-image:$(TAG)
+	gcloud docker -- push $(REGISTRY)/localkube-dind-image:$(TAG)
+	gcloud docker -- push $(REGISTRY)/localkube-dind-image-devshell:$(TAG)
 
 .PHONY: integration
 integration: out/minikube
@@ -200,11 +210,9 @@ out/test.d: pkg/minikube/assets/assets.go
 test:
 	./test.sh
 
-pkg/minikube/assets/assets.go: $(GOPATH)/bin/go-bindata $(shell find deploy/addons -type f)
-	$(GOPATH)/bin/go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
-
-$(GOPATH)/bin/go-bindata:
-	GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
+pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
+	which go-bindata || GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
+	PATH=$(PATH):$(GOPATH)/bin go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
 
 .PHONY: cross
 cross: out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
@@ -345,6 +353,11 @@ push-storage-provisioner-image: storage-provisioner-image
 release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
+
+.PHONY: release-minikube
+release-minikube: out/minikube checksum
+	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
+	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
 out/docker-machine-driver-kvm2.d:
 	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $(KVM_DRIVER_FILES) $^ > $@

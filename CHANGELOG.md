@@ -1,7 +1,20 @@
 # Minikube Release Notes
 
+# Version 0.28.0 - 6/12/2018
+* Minikube status command fixes [#2894](https://github.com/kubernetes/minikube/pull/2894)
+* Boot changes to support virsh console [#2887](https://github.com/kubernetes/minikube/pull/2887)
+* ISO changes to update to Linux 4.16 [#2883](https://github.com/kubernetes/minikube/pull/2883)
+* ISO changes to support openvswitch/vxlan [#2876](https://github.com/kubernetes/minikube/pull/2876)
+* Docker API version bumped to 1.35 [#2867](https://github.com/kubernetes/minikube/pull/2867)
+* Added hyperkit options for enterprise VPN support [#2850](https://github.com/kubernetes/minikube/pull/2850)
+* Caching correct images for k8s version [#2849](https://github.com/kubernetes/minikube/pull/2849)
+* Cache images feature made synchronous, off by default [#2847](https://github.com/kubernetes/minikube/pull/2847)
+* CoreDNS updated to 1.1.3 [#2836](https://github.com/kubernetes/minikube/pull/2836)
+* Heapster updated to 1.5.3 [#2821](https://github.com/kubernetes/minikube/pull/2821)
+* Fix for clock skew in certificate creation [#2823](https://github.com/kubernetes/minikube/pull/2823)
+
 # Version 0.27.0 - 5/14/2018
-* Start the default network for the kvm2 driver [@2806](https://github.com/kubernetes/minikube/pull/2806)
+* Start the default network for the kvm2 driver [#2806](https://github.com/kubernetes/minikube/pull/2806)
 * Fix 1.9.x versions of Kubernetes with the kubeadm bootstrapper [#2791](https://github.com/kubernetes/minikube/pull/2791)
 * Switch the ingress addon from an RC to a Deployment [#2788](https://github.com/kubernetes/minikube/pull/2788)
 * Update nginx ingress controller to 0.14.0 [#2780](https://github.com/kubernetes/minikube/pull/2780)
@@ -147,7 +160,7 @@
 * Added `minikube update-context` command [#1578](https://github.com/kubernetes/minikube/pull/1578)
 * Added kubeconfig context and minikube ip to `minikube status` [#1578](https://github.com/kubernetes/minikube/pull/1578)
 * Use native golang ssh [#1571](https://github.com/kubernetes/minikube/pull/1571)
-* Don't treat stopping stoppped hosts as error [#1606](https://github.com/kubernetes/minikube/pull/1606)
+* Don't treat stopping stopped hosts as error [#1606](https://github.com/kubernetes/minikube/pull/1606)
 * Bumped ingress addon to 0.9-beta.8
 * Removed systemd dependency for None driver [#1592](https://github.com/kubernetes/minikube/pull/1592)
 

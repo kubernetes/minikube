@@ -18,12 +18,20 @@ package machine
 
 import (
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/google/go-containerregistry/v1/tarball"
+
+	"github.com/google/go-containerregistry/authn"
+
+	"github.com/google/go-containerregistry/name"
+	"github.com/google/go-containerregistry/v1/remote"
 
 	"golang.org/x/sync/errgroup"
 
@@ -33,11 +41,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 
-	"github.com/containers/image/copy"
-	"github.com/containers/image/docker"
-	"github.com/containers/image/docker/archive"
-	"github.com/containers/image/signature"
-	"github.com/containers/image/types"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
@@ -260,33 +263,17 @@ func cleanImageCacheDir() error {
 	return err
 }
 
-func getSrcRef(image string) (types.ImageReference, error) {
-	srcRef, err := docker.ParseReference("//" + image)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing docker image src ref")
-	}
-	return srcRef, nil
-}
-
-func getDstRef(image, dst string) (types.ImageReference, error) {
+func getDstPath(image, dst string) (string, error) {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(dst) {
 		// ParseReference does not support a Windows drive letter.
 		// Therefore, will replace the drive letter to a volume name.
 		var err error
 		if dst, err = replaceWinDriveLetterToVolumeName(dst); err != nil {
-			return nil, errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
+			return "", errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
 		}
 	}
 
-	return _getDstRef(image, dst)
-}
-
-func _getDstRef(image, dst string) (types.ImageReference, error) {
-	dstRef, err := archive.ParseReference(dst + ":" + image)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing docker archive dst ref")
-	}
-	return dstRef, nil
+	return dst, nil
 }
 
 func CacheImage(image, dst string) error {
@@ -295,44 +282,28 @@ func CacheImage(image, dst string) error {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
+	dstPath, err := getDstPath(image, dst)
+	if err != nil {
+		return errors.Wrap(err, "getting destination path")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dstPath), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
-	srcRef, err := getSrcRef(image)
+	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
-		return errors.Wrap(err, "creating docker image src ref")
+		return errors.Wrap(err, "creating docker image name")
 	}
 
-	dstRef, err := getDstRef(image, dst)
+	auth, err := authn.DefaultKeychain.Resolve(tag.Registry)
 	if err != nil {
-		return errors.Wrap(err, "creating docker archive dst ref")
+		return errors.Wrap(err, "setting up registry auth")
+	}
+	img, err := remote.Image(tag, auth, http.DefaultTransport)
+	if err != nil {
+		return errors.Wrap(err, "fetching remote image")
 	}
 
-	policy := &signature.Policy{Default: []signature.PolicyRequirement{signature.NewPRInsecureAcceptAnything()}}
-	policyContext, err := signature.NewPolicyContext(policy)
-	if err != nil {
-		return errors.Wrap(err, "getting policy context")
-	}
-
-	tmp, err := ioutil.TempDir("", "")
-	if err != nil {
-		return errors.Wrap(err, "making temp dir")
-	}
-	defer os.RemoveAll(tmp)
-	sourceCtx := &types.SystemContext{
-		// By default, the image library will try to look at /etc/docker/certs.d
-		// As a non-root user, this would result in a permissions error,
-		// so, we skip this step by just looking in a newly created tmpdir.
-		DockerCertPath: tmp,
-	}
-
-	err = copy.Image(policyContext, dstRef, srcRef, &copy.Options{
-		SourceCtx: sourceCtx,
-	})
-	if err != nil {
-		return errors.Wrap(err, "copying image")
-	}
-
-	return nil
+	return tarball.Write(dstPath, tag, img, nil)
 }

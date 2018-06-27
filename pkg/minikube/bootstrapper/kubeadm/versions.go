@@ -25,6 +25,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -181,7 +182,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		},
 		LessThanOrEqual: semver.MustParse("1.9.10"),
 	},
-	NewUnversionedOption(Kubelet, "hostname-override", "minikube"),
+	NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
 
 	// System pods args
 	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),

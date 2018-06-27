@@ -20,7 +20,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/blang/semver"
+	"github.com/golang/glog"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/kubernetes/pkg/version"
@@ -75,6 +78,9 @@ const MinikubeEnvPrefix = "MINIKUBE"
 
 // DefaultMachineName is the default name for the VM
 const DefaultMachineName = "minikube"
+
+// DefaultNodeName is the default name for the kubeadm node within the VM
+const DefaultNodeName = "minikube"
 
 // The name of the default storage class provisioner
 const DefaultStorageClassProvisioner = "standard"
@@ -134,7 +140,7 @@ var LocalkubeDownloadURLPrefix = "https://storage.googleapis.com/minikube/k8sRel
 var LocalkubeLinuxFilename = "localkube-linux-amd64"
 
 // DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
-const DockerAPIVersion = "1.23"
+const DockerAPIVersion = "1.35"
 
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
 
@@ -157,7 +163,8 @@ var Preflights = []string{
 	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
 	// that we also stick in /etc/kubernetes/manifests
 	"DirAvailable--etc-kubernetes-manifests",
-	"DirAvailable--data",
+	"DirAvailable--data-minikube",
+	"Port-10250",
 	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
@@ -215,33 +222,60 @@ var LocalkubeCachedImages = []string{
 	"gcr.io/k8s-minikube/storage-provisioner:v1.8.0",
 }
 
-func GetKubeadmCachedImages(version string) []string {
-	return []string{
-		// Dashboard
-		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
+func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 
-		// Addon Manager
-		"k8s.gcr.io/kube-addon-manager:v8.6",
-
-		// Pause
-		"k8s.gcr.io/pause-amd64:3.1",
-
-		// DNS
-		"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-		"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-		"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-
-		// etcd
-		"k8s.gcr.io/etcd-amd64:3.1.12",
-
-		"k8s.gcr.io/kube-proxy-amd64:" + version,
-		"k8s.gcr.io/kube-scheduler-amd64:" + version,
-		"k8s.gcr.io/kube-controller-manager-amd64:" + version,
-		"k8s.gcr.io/kube-apiserver-amd64:" + version,
-
-		//Storage Provisioner
-		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
+	var images = []string{
+		"k8s.gcr.io/kube-proxy-amd64:" + kubernetesVersionStr,
+		"k8s.gcr.io/kube-scheduler-amd64:" + kubernetesVersionStr,
+		"k8s.gcr.io/kube-controller-manager-amd64:" + kubernetesVersionStr,
+		"k8s.gcr.io/kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
+
+	gt_v1_10 := semver.MustParseRange(">=1.11.0")
+	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
+	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
+	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
+
+	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
+	if err != nil {
+		glog.Errorln("Error parsing version semver: ", err)
+	}
+
+	if v1_10(kubernetesVersion) || gt_v1_10(kubernetesVersion) {
+		images = append(images, []string{
+			"k8s.gcr.io/pause-amd64:3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
+			"k8s.gcr.io/etcd-amd64:3.1.12",
+		}...)
+
+	} else if v1_9(kubernetesVersion) {
+		images = append(images, []string{
+			"k8s.gcr.io/pause-amd64:3.0",
+			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.7",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.7",
+			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.7",
+			"k8s.gcr.io/etcd-amd64:3.1.10",
+		}...)
+
+	} else if v1_8(kubernetesVersion) {
+		images = append(images, []string{
+			"k8s.gcr.io/pause-amd64:3.0",
+			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.5",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
+			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.5",
+			"k8s.gcr.io/etcd-amd64:3.0.17",
+		}...)
+	}
+
+	images = append(images, []string{
+		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
+		"k8s.gcr.io/kube-addon-manager:v8.6",
+		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
+	}...)
+
+	return images
 }
 
 var ImageCacheDir = MakeMiniPath("cache", "images")
