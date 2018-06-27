@@ -125,5 +125,11 @@ FILES_TO_UPLOAD=(
 
 for UPLOAD in "${FILES_TO_UPLOAD[@]}"
 do
-    github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name $UPLOAD --file out/$UPLOAD
+    n=0
+    until [ $n -ge 5 ]
+    do
+        github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name $UPLOAD --file out/$UPLOAD && break
+        n=$[$n+1]
+        sleep 15
+    done
 done
