@@ -12,6 +12,8 @@
 
 * **Caching Images** ([cache.md](cache.md)): Caching non-minikube images in minikube
 
+* **GPUs** ([gpu.md](gpu.md)): Using NVIDIA GPUs on minikube
+
 ### Installation and debugging
 
 * **Driver installation** ([drivers.md](drivers.md)): In depth instructions for installing the various hypervisor drivers
