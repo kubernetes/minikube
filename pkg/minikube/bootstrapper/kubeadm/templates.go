@@ -29,6 +29,7 @@ kind: MasterConfiguration
 api:
   advertiseAddress: {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
+  controlPlaneEndpoint: localhost
 kubernetesVersion: {{.KubernetesVersion}}
 certificatesDir: {{.CertDir}}
 networking:
@@ -75,7 +76,7 @@ sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
 
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(`
 sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}} &&
-sudo /usr/bin/kubeadm alpha phase addon all
+sudo /usr/bin/kubeadm alpha phase addon kube-dns
 `))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key

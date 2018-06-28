@@ -205,7 +205,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 			Key:       "admission-control",
 			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
 		},
-		LessThanOrEqual:    semver.MustParse("1.10.10"),
+		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
 		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
 	},
 	{
