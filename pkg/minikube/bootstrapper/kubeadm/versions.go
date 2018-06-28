@@ -205,7 +205,16 @@ var versionSpecificOpts = []VersionedExtraOption{
 			Key:       "admission-control",
 			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
 		},
+		LessThanOrEqual:    semver.MustParse("1.10.10"),
 		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
+	},
+	{
+		Option: util.ExtraOption{
+			Component: Apiserver,
+			Key:       "enable-admission-plugins",
+			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+		},
+		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
 	},
 }
 
