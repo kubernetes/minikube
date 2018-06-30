@@ -37,9 +37,8 @@ etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
 {{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
-	{{$val}}{{end}}
-{{end}}
-{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
+  {{$val}}{{end}}
+{{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
 {{end}}`))
 
