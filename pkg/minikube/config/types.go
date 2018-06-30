@@ -54,18 +54,19 @@ type MachineConfig struct {
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
-	KubernetesVersion string
-	NodeIP            string
-	NodeName          string
-	APIServerName     string
-	APIServerNames    []string
-	APIServerIPs      []net.IP
-	DNSDomain         string
-	ContainerRuntime  string
-	NetworkPlugin     string
-	FeatureGates      string
-	ServiceCIDR       string
-	ExtraOptions      util.ExtraOptionSlice
+	KubernetesVersion   string
+	NodeIP              string
+	NodeName            string
+	APIServerName       string
+	APIServerNames      []string
+	APIServerIPs        []net.IP
+	DNSDomain           string
+	ContainerRuntime    string
+	NetworkPlugin       string
+	FeatureGates        string
+	KubeadmFeatureGates string
+	ServiceCIDR         string
+	ExtraOptions        util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
 }

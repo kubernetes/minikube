@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
@@ -62,6 +63,8 @@ type ComponentExtraArgs struct {
 	Component string
 	Options   map[string]string
 }
+
+type FeatureArgs map[string]bool
 
 var componentToKubeadmConfigKey = map[string]string{
 	Apiserver:         "apiServerExtraArgs",
@@ -106,6 +109,30 @@ func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, f
 	}
 
 	return kubeadmExtraArgs, nil
+}
+
+func ParseKubeadmFeatureArgs(featureGates string) (FeatureArgs, error) {
+	featureArgs := map[string]bool{}
+	for _, s := range strings.Split(featureGates, ",") {
+		if len(s) == 0 {
+			continue
+		}
+
+		fg := strings.SplitN(s, "=", 2)
+		if len(fg) != 2 {
+			return nil, fmt.Errorf("missing value for key \"%v\"", s)
+		}
+
+		k := strings.TrimSpace(fg[0])
+		v := strings.TrimSpace(fg[1])
+
+		boolValue, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert bool value \"%v\"", v)
+		}
+		featureArgs[k] = boolValue
+	}
+	return featureArgs, nil
 }
 
 func ParseKubernetesVersion(version string) (semver.Version, error) {
