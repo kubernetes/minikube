@@ -340,6 +340,12 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
+	// generates a map of the feature gates for kubeadm
+	kubeadmFeatureArgs, err := ParseKubeadmFeatureArgs(k8s.KubeadmFeatureGates)
+	if err != nil {
+		return "", errors.Wrap(err, "generating feature gate config for kubeadm")
+	}
+
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
@@ -349,6 +355,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		EtcdDataDir       string
 		NodeName          string
 		ExtraArgs         []ComponentExtraArgs
+		FeatureArgs       FeatureArgs
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
@@ -358,6 +365,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		ExtraArgs:         extraComponentConfig,
+		FeatureArgs:       kubeadmFeatureArgs,
 	}
 
 	b := bytes.Buffer{}
