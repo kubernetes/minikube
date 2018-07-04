@@ -37,6 +37,7 @@ KERNEL_VERSION ?= 4.16.14
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
+GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= ./out
 $(shell mkdir -p $(BUILD_DIR))
 
@@ -208,7 +209,7 @@ out/test.d: pkg/minikube/assets/assets.go
 
 -include out/test.d
 test:
-	./test.sh
+	GOPATH=$(GOPATH) ./test.sh
 
 pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
 	which go-bindata || GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
