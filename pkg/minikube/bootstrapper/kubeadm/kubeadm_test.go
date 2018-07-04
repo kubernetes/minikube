@@ -42,6 +42,7 @@ kind: MasterConfiguration
 api:
   advertiseAddress: 192.168.1.100
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
@@ -82,6 +83,7 @@ kind: MasterConfiguration
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
@@ -122,6 +124,7 @@ kind: MasterConfiguration
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
@@ -148,6 +151,7 @@ kind: MasterConfiguration
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
@@ -184,6 +188,7 @@ kind: MasterConfiguration
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
 certificatesDir: /var/lib/localkube/certs/
 networking:
