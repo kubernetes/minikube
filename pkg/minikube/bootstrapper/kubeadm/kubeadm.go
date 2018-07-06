@@ -243,6 +243,13 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 
 	extraOpts = SetContainerRuntime(extraOpts, k8s.ContainerRuntime)
 	extraFlags := convertToFlags(extraOpts)
+
+	// parses a map of the feature gates for kubelet
+	_, kubeletFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
+	if err != nil {
+		return "", errors.Wrap(err, "parses feature gate config for kubelet")
+	}
+
 	b := bytes.Buffer{}
 	opts := struct {
 		ExtraOptions     string
@@ -250,7 +257,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 		ContainerRuntime string
 	}{
 		ExtraOptions:     extraFlags,
-		FeatureGates:     k8s.FeatureGates,
+		FeatureGates:     kubeletFeatureArgs,
 		ContainerRuntime: k8s.ContainerRuntime,
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
@@ -334,16 +341,16 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
-	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version, k8s.FeatureGates)
+	// parses a map of the feature gates for kubeadm and component
+	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
-		return "", errors.Wrap(err, "generating extra component config for kubeadm")
+		return "", errors.Wrap(err, "parses feature gate config for kubeadm and component")
 	}
 
-	// generates a map of the feature gates for kubeadm
-	kubeadmFeatureArgs, err := ParseKubeadmFeatureArgs(k8s.KubeadmFeatureGates)
+	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
+	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version, componentFeatureArgs)
 	if err != nil {
-		return "", errors.Wrap(err, "generating feature gate config for kubeadm")
+		return "", errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
 	opts := struct {
@@ -355,7 +362,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		EtcdDataDir       string
 		NodeName          string
 		ExtraArgs         []ComponentExtraArgs
-		FeatureArgs       FeatureArgs
+		FeatureArgs       map[string]bool
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,

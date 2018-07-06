@@ -17,6 +17,7 @@ limitations under the License.
 package kubeadm
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/blang/semver"
@@ -99,5 +100,57 @@ func TestParseKubernetesVersion(t *testing.T) {
 	}
 	if version.NE(semver.MustParse("1.8.0-alpha.5")) {
 		t.Errorf("Expected: %s, Actual:%s", "1.8.0-alpha.5", version)
+	}
+}
+
+func TestParseFeatureArgs(t *testing.T) {
+	tests := []struct {
+		description                  string
+		featureGates                 string
+		expectedKubeadmFeatureArgs   map[string]bool
+		expectedComponentFeatureArgs string
+	}{
+		{
+			description:  "only kubeadm feature",
+			featureGates: "Auditing=true,SelfHosting=false",
+			expectedKubeadmFeatureArgs: map[string]bool{
+				"Auditing":    true,
+				"SelfHosting": false,
+			},
+			expectedComponentFeatureArgs: "",
+		},
+		{
+			description:                  "only component feature",
+			featureGates:                 "PodPriority=true,Accelerators=false",
+			expectedKubeadmFeatureArgs:   map[string]bool{},
+			expectedComponentFeatureArgs: "PodPriority=true,Accelerators=false",
+		},
+		{
+			description:  "between component and kubeadm feature",
+			featureGates: "Auditing=true,PodPriority=true,SelfHosting=false,Accelerators=false",
+			expectedKubeadmFeatureArgs: map[string]bool{
+				"Auditing":    true,
+				"SelfHosting": false,
+			},
+			expectedComponentFeatureArgs: "PodPriority=true,Accelerators=false",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			kubeadm, component, err := ParseFeatureArgs(test.featureGates)
+
+			if err != nil {
+				t.Fatalf("Error parsing feature args: %s", err)
+			}
+
+			if !reflect.DeepEqual(kubeadm, test.expectedKubeadmFeatureArgs) {
+				t.Errorf("Kubeadm Actual: %v, Expected: %v", kubeadm, test.expectedKubeadmFeatureArgs)
+			}
+
+			if !reflect.DeepEqual(component, test.expectedComponentFeatureArgs) {
+				t.Errorf("Component Actual: %v, Expected: %v", component, test.expectedComponentFeatureArgs)
+			}
+		})
 	}
 }
