@@ -26,6 +26,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
@@ -63,8 +64,6 @@ type ComponentExtraArgs struct {
 	Component string
 	Options   map[string]string
 }
-
-type FeatureArgs map[string]bool
 
 var componentToKubeadmConfigKey = map[string]string{
 	Apiserver:         "apiServerExtraArgs",
@@ -111,8 +110,9 @@ func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, f
 	return kubeadmExtraArgs, nil
 }
 
-func ParseKubeadmFeatureArgs(featureGates string) (FeatureArgs, error) {
-	featureArgs := map[string]bool{}
+func ParseFeatureArgs(featureGates string) (map[string]bool, string, error) {
+	kubeadmFeatureArgs := map[string]bool{}
+	componentFeatureArgs := ""
 	for _, s := range strings.Split(featureGates, ",") {
 		if len(s) == 0 {
 			continue
@@ -120,19 +120,36 @@ func ParseKubeadmFeatureArgs(featureGates string) (FeatureArgs, error) {
 
 		fg := strings.SplitN(s, "=", 2)
 		if len(fg) != 2 {
-			return nil, fmt.Errorf("missing value for key \"%v\"", s)
+			return nil, "", fmt.Errorf("missing value for key \"%v\"", s)
 		}
 
 		k := strings.TrimSpace(fg[0])
 		v := strings.TrimSpace(fg[1])
 
+		if !Supports(k) {
+			componentFeatureArgs = fmt.Sprintf("%s%s,", componentFeatureArgs, s)
+			continue
+		}
+
 		boolValue, err := strconv.ParseBool(v)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to convert bool value \"%v\"", v)
+			return nil, "", errors.Wrapf(err, "failed to convert bool value \"%v\"", v)
 		}
-		featureArgs[k] = boolValue
+		kubeadmFeatureArgs[k] = boolValue
 	}
-	return featureArgs, nil
+	componentFeatureArgs = strings.TrimRight(componentFeatureArgs, ",")
+	return kubeadmFeatureArgs, componentFeatureArgs, nil
+}
+
+// Supports indicates whether a feature name is supported on the
+// feature gates for kubeadm
+func Supports(featureName string) bool {
+	for k := range features.InitFeatureGates {
+		if featureName == string(k) {
+			return true
+		}
+	}
+	return false
 }
 
 func ParseKubernetesVersion(version string) (semver.Version, error) {
