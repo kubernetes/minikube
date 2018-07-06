@@ -65,7 +65,6 @@ const (
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
-	kubeadmFeatureGates   = "kubeadm-feature-gates"
 	apiServerName         = "apiserver-name"
 	dnsDomain             = "dns-domain"
 	mountString           = "mount-string"
@@ -218,7 +217,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		APIServerIPs:           apiServerIPs,
 		DNSDomain:              viper.GetString(dnsDomain),
 		FeatureGates:           viper.GetString(featureGates),
-		KubeadmFeatureGates:    viper.GetString(kubeadmFeatureGates),
 		ContainerRuntime:       viper.GetString(containerRuntime),
 		NetworkPlugin:          viper.GetString(networkPlugin),
 		ServiceCIDR:            pkgutil.DefaultServiceCIDR,
@@ -413,7 +411,6 @@ func init() {
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
-	startCmd.Flags().String(kubeadmFeatureGates, "", "A set of key=value pairs that describe feature gates for kubeadm alpha/experimental features.")
 	startCmd.Flags().Bool(cacheImages, false, "If true, cache docker images for the current bootstrapper and load them into the machine.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.

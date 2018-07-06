@@ -3106,6 +3106,11 @@
 			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
 		},
 		{
+			"ImportPath": "k8s.io/kubernetes/cmd/kubeadm/app/features",
+			"Comment": "v1.10.0",
+			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
+		},
+		{
 			"ImportPath": "k8s.io/kubernetes/cmd/kubelet/app",
 			"Comment": "v1.10.0",
 			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
