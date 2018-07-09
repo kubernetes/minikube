@@ -45,7 +45,10 @@ $ newgrp libvirt
 Then install the driver itself:
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 && chmod +x docker-machine-driver-kvm2 && sudo mv docker-machine-driver-kvm2 /usr/local/bin/
+curl -Lo docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
+&& chmod +x docker-machine-driver-kvm2 \
+&& sudo cp docker-machine-driver-kvm2 /usr/local/bin/ \
+&& rm docker-machine-driver-kvm2
 ```
 
 To use the driver you would do:
@@ -94,9 +97,10 @@ It is built from the minikube source tree, and uses [moby/hyperkit](http://githu
 To install the hyperkit driver:
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
+curl -Lo docker-machine-driver-hyperkit https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
 && chmod +x docker-machine-driver-hyperkit \
-&& sudo mv docker-machine-driver-hyperkit /usr/local/bin/ \
+&& sudo cp docker-machine-driver-hyperkit /usr/local/bin/ \
+&& rm docker-machine-driver-hyperkit \
 && sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit \
 && sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
 ```
