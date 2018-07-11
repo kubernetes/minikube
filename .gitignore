@@ -41,3 +41,5 @@ deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 /.vscode
 
 dump*
+kubectl
+minikube
