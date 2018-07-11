@@ -1,0 +1,31 @@
+
+user1@eagle:/mnt/ntfs/github/docker-github-PUBLIC/minikube/echo-server$ sudo kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.4 --port=8080
+deployment.apps/hello-minikube created
+
+user1@eagle:/mnt/ntfs/github/docker-github-PUBLIC/minikube/echo-server$ sudo kubectl expose deployment hello-minikube --type=NodePort
+service/hello-minikube exposed
+
+
+user1@eagle:/mnt/ntfs/github/docker-github-PUBLIC/minikube/echo-server$ sudo kubectl get pod
+NAME                             READY     STATUS    RESTARTS   AGE
+hello-minikube-6c47c66d8-48q7x   1/1       Running   0          34s
+
+user1@eagle:/mnt/ntfs/github/docker-github-PUBLIC/minikube/echo-server$ curl $(sudo minikube service hello-minikube --url)
+CLIENT VALUES:
+client_address=172.17.0.1
+command=GET
+real path=/
+query=nil
+request_version=1.1
+request_uri=http://192.168.0.160:8080/
+
+SERVER VALUES:
+server_version=nginx: 1.10.0 - lua: 10001
+
+HEADERS RECEIVED:
+accept=*/*
+host=192.168.0.160:32513
+user-agent=curl/7.47.0
+BODY:
+-no body in request-user1@eagle:/mnt/ntfs/github/docker-github-PUBLIC/minikube/echo-server$ 
+

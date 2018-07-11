@@ -231,6 +231,7 @@
 
 ## Version 0.16.0 - 2/2/2017
 * Updated minikube ISO to [v1.0.6](https://github.com/kubernetes/minikube/tree/v0.16.0/deploy/iso/minikube-iso/CHANGELOG.md)
+cmdCONTRIBUTING.md code-of-conduct.md
 * Updated Registry Creds addon to v1.5
 * Added check for minimum disk size
 * Updated kubernetes to v1.5.2

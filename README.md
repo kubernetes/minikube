@@ -47,7 +47,9 @@ mkdir -p $HOME/.kube
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
-sudo -E ./minikube start --vm-driver=none
+## -- INCORRECT: (see https://github.com/kubernetes/minikube/issues/2575)
+# sudo -E ./minikube start --vm-driver=none
+sudo -E ./minikube start--vm-driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost
 
 # this for loop waits until kubectl can access the api server that Minikube has created
 for i in {1..150}; do # timeout for 5 minutes

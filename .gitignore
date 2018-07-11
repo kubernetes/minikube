@@ -39,3 +39,5 @@ deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 /.idea
 
 /.vscode
+
+dump*
