@@ -31,9 +31,13 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/miniku
 ```
 
 ### Windows
+
+Install with [Chocolatey](https://chocolatey.org/):
 ```shell
 choco install minikube
 ```
+Install manually: Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
+
 
 ### Linux Continuous Integration without VM Support
 Example with kubectl installation:
