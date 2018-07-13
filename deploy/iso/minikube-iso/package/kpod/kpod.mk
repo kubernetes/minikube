@@ -10,6 +10,7 @@ KPOD_GOPATH = $(@D)/_output
 KPOD_BIN_ENV = \
 	CGO_ENABLED=1 \
 	GOPATH="$(KPOD_GOPATH)" \
+	GOBIN="$(KPOD_GOPATH)/bin" \
 	PATH=$(KPOD_GOPATH)/bin:$(BR_PATH)
 
 

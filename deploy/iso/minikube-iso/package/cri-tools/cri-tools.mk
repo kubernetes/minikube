@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRI_TOOLS_VERSION = v1.0.0-beta.0
+CRI_TOOLS_VERSION = v1.11.1
 CRI_TOOLS_SITE = https://github.com/kubernetes-incubator/cri-tools/archive
 CRI_TOOLS_SOURCE = $(CRI_TOOLS_VERSION).tar.gz
 CRI_TOOLS_LICENSE = Apache-2.0
@@ -14,6 +14,7 @@ CRI_TOOLS_GOPATH = $(@D)/_output
 CRI_TOOLS_ENV = \
 	CGO_ENABLED=1 \
 	GOPATH="$(CRI_TOOLS_GOPATH)" \
+	GOBIN="$(CRI_TOOLS_GOPATH)/bin" \
 	PATH=$(CRI_TOOLS_GOPATH)/bin:$(BR_PATH)
 
 
