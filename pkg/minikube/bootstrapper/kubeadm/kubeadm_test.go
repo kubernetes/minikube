@@ -39,6 +39,7 @@ func TestGenerateConfig(t *testing.T) {
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.100
   bindPort: 8443
@@ -80,6 +81,7 @@ apiServerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
@@ -121,6 +123,7 @@ schedulerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
@@ -148,6 +151,7 @@ apiServerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
@@ -185,6 +189,7 @@ schedulerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443

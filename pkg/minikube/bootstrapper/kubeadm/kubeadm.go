@@ -135,12 +135,6 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
 	}
 
-	//TODO(r2d4): get rid of global here
-	master = k8s.NodeName
-	if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
-		return errors.Wrap(err, "timed out waiting to unmark master")
-	}
-
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
@@ -363,6 +357,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		NodeName          string
 		ExtraArgs         []ComponentExtraArgs
 		FeatureArgs       map[string]bool
+		NoTaintMaster     bool
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
@@ -373,6 +368,11 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		NodeName:          k8s.NodeName,
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
+		NoTaintMaster:     false,
+	}
+
+	if version.GTE(semver.MustParse("1.10.0-alpha.0")) {
+		opts.NoTaintMaster = true
 	}
 
 	b := bytes.Buffer{}
