@@ -1,0 +1,5 @@
+config BR2_PACKAGE_VBOX_GUEST
+	bool "vbox-guest"
+	default y
+	depends on BR2_LINUX_KERNEL
+
