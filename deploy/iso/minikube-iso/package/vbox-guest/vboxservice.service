@@ -1,0 +1,12 @@
+[Unit]
+Description=VirtualBox Guest Service
+ConditionVirtualization=oracle
+
+[Service]
+ExecStartPre=-/usr/sbin/modprobe vboxguest
+ExecStartPre=-/usr/sbin/modprobe vboxvideo
+ExecStartPre=-/usr/sbin/modprobe vboxsf
+ExecStart=/usr/sbin/VBoxService -f --disable-automount
+
+[Install]
+WantedBy=multi-user.target
