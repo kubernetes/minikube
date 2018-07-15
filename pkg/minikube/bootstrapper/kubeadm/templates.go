@@ -26,6 +26,7 @@ var kubeadmConfigTemplate = template.Must(template.New("kubeadmConfigTemplate").
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+{{if .NoTaintMaster}}noTaintMaster: true{{end}}
 api:
   advertiseAddress: {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
