@@ -169,6 +169,11 @@ else
 		$(ISO_BUILD_IMAGE) /usr/bin/make out/minikube.iso
 endif
 
+iso_in_docker:
+	docker run -it --rm --workdir /mnt --volume $(CURDIR):/mnt $(ISO_DOCKER_EXTRA_ARGS) \
+		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
+		$(ISO_BUILD_IMAGE) /bin/bash
+
 test-iso:
 	go test -v $(REPOPATH)/test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
