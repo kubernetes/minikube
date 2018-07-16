@@ -24,8 +24,15 @@ import (
 
 // Config contains machine and k8s config
 type Config struct {
+	HostConfig       HostConfig
 	MachineConfig    MachineConfig
 	KubernetesConfig KubernetesConfig
+}
+
+// HostConfig stores configuration for the local connecting host.
+type HostConfig struct {
+	APIServerPort int
+	DashboardPort int
 }
 
 // MachineConfig contains the parameters used to start a cluster.

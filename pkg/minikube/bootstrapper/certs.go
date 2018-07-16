@@ -46,7 +46,18 @@ func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
 	localPath := constants.GetMinipath()
 	glog.Infof("Setting up certificates for IP: %s\n", k8s.NodeIP)
 
-	if err := generateCerts(k8s); err != nil {
+	eth0IP := k8s.NodeIP
+	if k8s.NodeIP == "127.0.0.1" {
+		var err error
+		ipCmd := "/sbin/ip -4 -o addr show dev eth0 | awk '{print $4}' | cut -f1 -d/"
+		if eth0IP, err = cmd.CombinedOutput(ipCmd); err != nil {
+			return errors.Wrap(err, "Error getting eth0 IP")
+		}
+		eth0IP = strings.TrimSpace(eth0IP)
+		glog.Infof("Also adding certificate for IP: %s\n", eth0IP)
+	}
+
+	if err := generateCerts(k8s, k8s.NodeIP, eth0IP); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
 
@@ -93,7 +104,7 @@ func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
 	return nil
 }
 
-func generateCerts(k8s config.KubernetesConfig) error {
+func generateCerts(k8s config.KubernetesConfig, nodeIP string, eth0IP string) error {
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
 	if err != nil {
 		return errors.Wrap(err, "getting service cluster ip")
@@ -126,7 +137,7 @@ func generateCerts(k8s config.KubernetesConfig) error {
 
 	apiServerIPs := append(
 		k8s.APIServerIPs,
-		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")}...)
+		[]net.IP{net.ParseIP(nodeIP), serviceIP, net.ParseIP("10.0.0.1"), net.ParseIP(eth0IP)}...)
 	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName)
 	apiServerAlternateNames := append(
 		apiServerNames,

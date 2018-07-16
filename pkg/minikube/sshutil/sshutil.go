@@ -18,6 +18,7 @@ package sshutil
 
 import (
 	"net"
+	"os/exec"
 	"strconv"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -43,6 +44,27 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 	}
 
 	client, err := ssh.Dial("tcp", net.JoinHostPort(h.IP, strconv.Itoa(h.Port)), &config)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error dialing tcp via ssh client")
+	}
+	return client, nil
+}
+
+func NewSSHExternalClient(d drivers.Driver) (machinessh.Client, error) {
+	h, err := newSSHHost(d)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error creating new ssh host from driver")
+	}
+	auth := &machinessh.Auth{}
+	if h.SSHKeyPath != "" {
+		auth.Keys = []string{h.SSHKeyPath}
+	}
+	sshBinaryPath, err := exec.LookPath("ssh")
+	if err != nil {
+		return nil, errors.Wrap(err, "ssh executable not found")
+	}
+	machinessh.SetDefaultClient(machinessh.External)
+	client, err := machinessh.NewExternalClient(sshBinaryPath, h.Username, h.IP, h.Port, auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error dialing tcp via ssh client")
 	}

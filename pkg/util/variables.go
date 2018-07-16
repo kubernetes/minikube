@@ -14,16 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package util
 
-import (
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperkit"
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperv"
-	_ "k8s.io/minikube/pkg/minikube/drivers/kvm"
-	_ "k8s.io/minikube/pkg/minikube/drivers/kvm2"
-	_ "k8s.io/minikube/pkg/minikube/drivers/none"
-	_ "k8s.io/minikube/pkg/minikube/drivers/qemu"
-	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
-	_ "k8s.io/minikube/pkg/minikube/drivers/vmwarefusion"
-	_ "k8s.io/minikube/pkg/minikube/drivers/xhyve"
-)
+var APIServerPort int = DefaultAPIServerPort
+var DashboardPort int = DefaultDashboardPort

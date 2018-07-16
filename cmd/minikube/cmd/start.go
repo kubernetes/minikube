@@ -17,13 +17,13 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -191,7 +191,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 
 	// Load profile cluster config from file
-	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
+	cc, err := cluster.LoadConfigFromFile(viper.GetString(cfg.MachineProfile))
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
 	}
@@ -212,6 +212,32 @@ func runStart(cmd *cobra.Command, args []string) {
 			selectedKubernetesVersion = version.VersionPrefix + oldKubernetesVersion.String()
 			fmt.Println("Kubernetes version downgrade is not supported. Using version:", selectedKubernetesVersion)
 		}
+	}
+
+	glog.Infof("APIServerPort %d", cc.HostConfig.APIServerPort)
+	if cc.HostConfig.APIServerPort != 0 {
+		pkgutil.APIServerPort = cc.HostConfig.APIServerPort
+	} else if host.Driver.DriverName() == "qemu" {
+		port, err := cmdutil.GetPort()
+		if err != nil {
+			glog.Errorln("Error getting port number: ", err)
+		}
+		pkgutil.APIServerPort, err = strconv.Atoi(port)
+	}
+	glog.Infof("DashboardPort %d", cc.HostConfig.DashboardPort)
+	if cc.HostConfig.DashboardPort != 0 {
+		pkgutil.DashboardPort = cc.HostConfig.DashboardPort
+	} else if host.Driver.DriverName() == "qemu" {
+		port, err := cmdutil.GetPort()
+		if err != nil {
+			glog.Errorln("Error getting port number: ", err)
+		}
+		pkgutil.DashboardPort, err = strconv.Atoi(port)
+	}
+
+	hostConfig := cfg.HostConfig{
+		APIServerPort: pkgutil.APIServerPort,
+		DashboardPort: pkgutil.DashboardPort,
 	}
 
 	kubernetesConfig := cfg.KubernetesConfig{
@@ -237,11 +263,12 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Write profile cluster configuration to file
 	clusterConfig := cfg.Config{
+		HostConfig:       hostConfig,
 		MachineConfig:    config,
 		KubernetesConfig: kubernetesConfig,
 	}
 
-	if err := saveConfig(clusterConfig); err != nil {
+	if err := cluster.SaveConfig(clusterConfig); err != nil {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
@@ -270,8 +297,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		glog.Errorln("Error connecting to cluster: ", err)
 	}
+	dockerPort := 2376
+	re := regexp.MustCompile(":([0-9]+)$")
+	if matches := re.FindStringSubmatch(kubeHost); matches != nil {
+		dockerPort, err = strconv.Atoi(matches[1])
+	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
+	kubeHost = strings.Replace(kubeHost, ":"+strconv.Itoa(dockerPort), ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
 
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
@@ -428,74 +460,4 @@ func init() {
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
-}
-
-// saveConfig saves profile cluster configuration in
-// $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig cfg.Config) error {
-	data, err := json.MarshalIndent(clusterConfig, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	profileConfigFile := constants.GetProfileFile(viper.GetString(cfg.MachineProfile))
-
-	if err := os.MkdirAll(filepath.Dir(profileConfigFile), 0700); err != nil {
-		return err
-	}
-
-	if err := saveConfigToFile(data, profileConfigFile); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func saveConfigToFile(data []byte, file string) error {
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return ioutil.WriteFile(file, data, 0600)
-	}
-
-	tmpfi, err := ioutil.TempFile(filepath.Dir(file), "config.json.tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tmpfi.Name())
-
-	if err = ioutil.WriteFile(tmpfi.Name(), data, 0600); err != nil {
-		return err
-	}
-
-	if err = tmpfi.Close(); err != nil {
-		return err
-	}
-
-	if err = os.Remove(file); err != nil {
-		return err
-	}
-
-	if err = os.Rename(tmpfi.Name(), file); err != nil {
-		return err
-	}
-	return nil
-}
-
-func loadConfigFromFile(profile string) (cfg.Config, error) {
-	var cc cfg.Config
-
-	profileConfigFile := constants.GetProfileFile(profile)
-
-	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
-		return cc, err
-	}
-
-	data, err := ioutil.ReadFile(profileConfigFile)
-	if err != nil {
-		return cc, err
-	}
-
-	if err := json.Unmarshal(data, &cc); err != nil {
-		return cc, err
-	}
-	return cc, nil
 }
