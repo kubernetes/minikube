@@ -115,6 +115,7 @@ FILES_TO_UPLOAD=(
     'minikube-darwin-amd64'
     'minikube-darwin-amd64.sha256'
     'minikube-windows-amd64'
+    'minikube-windows-amd64.sha256'
     'minikube-installer.exe'
     "minikube_${DEB_VERSION}.deb"
     'docker-machine-driver-kvm2'
