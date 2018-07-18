@@ -36,7 +36,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdutil "k8s.io/minikube/cmd/util"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -129,11 +128,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		err := fmt.Errorf("Disk Size %dMB (%s) is too small, the minimum disk size is %dMB", diskSizeMB, diskSize, constants.MinimumDiskSizeMB)
 		glog.Errorln("Error parsing disk size:", err)
 		os.Exit(1)
-	}
-
-	// Don't verify version for kubeadm bootstrapped clusters
-	if k8sVersion != constants.DefaultKubernetesVersion && clusterBootstrapper != bootstrapper.BootstrapperTypeKubeadm {
-		validateK8sVersion(k8sVersion)
 	}
 
 	if viper.GetBool(gpu) && viper.GetString(vmDriver) != "kvm2" {
