@@ -1,5 +1,8 @@
 # Minikube Release Notes
 
+# Version 0.28.2 - 7/20/2018
+* Nvidia driver installation fixed [#2996](https://github.com/kubernetes/minikube/pull/2986)
+
 # Version 0.28.1 - 7/16/2018
 * vboxsf Host Mounting fixed (Linux Kernel version downgraded to 4.15 from 4.16) [#2986](https://github.com/kubernetes/minikube/pull/2986)
 * cri-tools udpated to 1.11.1 [#2986](https://github.com/kubernetes/minikube/pull/2986)
