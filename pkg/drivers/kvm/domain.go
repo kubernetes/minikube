@@ -85,21 +85,17 @@ const connectionErrorText = `
 Error connecting to libvirt socket.  Have you set up libvirt correctly?
 
 # Install libvirt and qemu-kvm on your system, e.g.
-# Debian/Ubuntu
-$ sudo apt install libvirt-bin qemu-kvm
+# Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
+$ sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
 # Fedora/CentOS/RHEL
 $ sudo yum install libvirt-daemon-kvm qemu-kvm
 
-# Add yourself to the libvirtd group (use libvirt group for rpm based distros) so you don't need to sudo
-# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to libvirt)
-$ sudo usermod -a -G libvirtd $(whoami)
-# Fedora/CentOS/RHEL
+# Add yourself to the libvirt group so you don't need to sudo
+# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
 $ sudo usermod -a -G libvirt $(whoami)
 
 # Update your current session for the group change to take effect
-# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to libvirt)
-$ newgrp libvirtd
-# Fedora/CentOS/RHEL
+# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
 $ newgrp libvirt
 
 Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver for more information.
