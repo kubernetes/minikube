@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
+	commonutil "k8s.io/minikube/pkg/util"
 )
 
 const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
@@ -33,6 +34,8 @@ const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
 var (
 	namespace          string
 	https              bool
+	proxyMode          bool
+	proxyAddress       string
 	serviceURLMode     bool
 	serviceURLFormat   string
 	serviceURLTemplate *template.Template
@@ -71,11 +74,14 @@ var serviceCmd = &cobra.Command{
 		defer api.Close()
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
-		err = service.WaitAndMaybeOpenService(api, namespace, svc,
-			serviceURLTemplate, serviceURLMode, https, wait, interval)
+		proxyActive, err := service.WaitAndMaybeOpenService(api, namespace, svc,
+			serviceURLTemplate, serviceURLMode, https, proxyMode, proxyAddress, wait, interval)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error opening service: %s\n", err)
 			os.Exit(1)
+		}
+		if proxyActive {
+			commonutil.RunTillBreak()
 		}
 	},
 }
@@ -84,6 +90,8 @@ func init() {
 	serviceCmd.Flags().StringVarP(&namespace, "namespace", "n", "default", "The service namespace")
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
+	serviceCmd.Flags().BoolVar(&proxyMode, "proxy", false, "Keeps minikube running as a proxy server and rewrites the URL so that it refers to the proxy")
+	serviceCmd.Flags().StringVar(&proxyAddress, "proxyaddress", ":0", "Listen on a specific IP address and/or port. The format is [host]:port. Port 0 picks a random port (default: :0).")
 	serviceCmd.Flags().IntVar(&wait, "wait", constants.DefaultWait, "Amount of time to wait for a service in seconds")
 	serviceCmd.Flags().IntVar(&interval, "interval", constants.DefaultWait, "The time interval for each check that wait performs in seconds")
 
