@@ -24,21 +24,17 @@ To install the KVM2 driver, first install and configure the prereqs:
 
 ```shell
 # Install libvirt and qemu-kvm on your system, e.g.
-# Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
-$ sudo apt install libvirt-bin qemu-kvm
+# Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
+$ sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
 # Fedora/CentOS/RHEL
 $ sudo yum install libvirt-daemon-kvm qemu-kvm
 
-# Add yourself to the libvirtd group (use libvirt group for rpm based distros) so you don't need to sudo
-# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
-$ sudo usermod -a -G libvirtd $(whoami)
-# Fedora/CentOS/RHEL
+# Add yourself to the libvirt group so you don't need to sudo
+# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
 $ sudo usermod -a -G libvirt $(whoami)
 
 # Update your current session for the group change to take effect
-# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
-$ newgrp libvirtd
-# Fedora/CentOS/RHEL
+# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
 $ newgrp libvirt
 ```
 
@@ -60,23 +56,18 @@ Minikube is currently tested against [`docker-machine-driver-kvm` v0.10.0](https
 
 After following the instructions on the KVM driver releases page, you need to make sure that have the necessary packages and permissions by following these instructions:
 ```shell
-
 # Install libvirt and qemu-kvm on your system, e.g.
-# Debian/Ubuntu (for Debian Stretch libvirt-bin it's been replaced with libvirt-clients and libvirt-daemon-system)
-$ sudo apt install libvirt-bin qemu-kvm
+# Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
+$ sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
 # Fedora/CentOS/RHEL
 $ sudo yum install libvirt-daemon-kvm qemu-kvm
 
-# Add yourself to the libvirtd group (use libvirt group for rpm based distros) so you don't need to sudo
-# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
-$ sudo usermod -a -G libvirtd $(whoami)
-# Fedora/CentOS/RHEL
+# Add yourself to the libvirt group so you don't need to sudo
+# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
 $ sudo usermod -a -G libvirt $(whoami)
 
 # Update your current session for the group change to take effect
-# Debian/Ubuntu (NOTE: For Ubuntu 17.04 change the group to `libvirt`)
-$ newgrp libvirtd
-# Fedora/CentOS/RHEL
+# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
 $ newgrp libvirt
 ```
 
