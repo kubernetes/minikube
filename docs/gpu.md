@@ -30,7 +30,7 @@ host to the minikube VM. Doing so has a few prerequisites:
   you want to passthrough to the VM and all other devices that are in the IOMMU
   group of these GPUs.
 
-- Once you reboot the system after doing the above, you should be ready to you
+- Once you reboot the system after doing the above, you should be ready to use
   GPUs with kvm2. Run the following command to start minikube:
   ```
   minikube start --vm-driver kvm2 --gpu
