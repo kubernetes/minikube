@@ -91,11 +91,11 @@ $ sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
 $ sudo yum install libvirt-daemon-kvm qemu-kvm
 
 # Add yourself to the libvirt group so you don't need to sudo
-# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
+# NOTE: For older Debian/Ubuntu versions change the group to [libvirtd]
 $ sudo usermod -a -G libvirt $(whoami)
 
 # Update your current session for the group change to take effect
-# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
+# NOTE: For older Debian/Ubuntu versions change the group to [libvirtd]
 $ newgrp libvirt
 
 Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver for more information.
