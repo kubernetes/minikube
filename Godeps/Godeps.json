@@ -24,11 +24,6 @@
 			"Rev": "bcc06269efa974c4f098619d9aae436846e83d84"
 		},
 		{
-			"ImportPath": "github.com/cloudflare/cfssl/log",
-			"Comment": "1.2.0",
-			"Rev": "db0d0650b6496bfe8061ec56a92edd32d8e75c30"
-		},
-		{
 			"ImportPath": "github.com/cpuguy83/go-md2man/md2man",
 			"Comment": "v1.0.4",
 			"Rev": "71acacd42f85e5e82f70a55327789582a5200a90"
@@ -677,11 +672,6 @@
 			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
 		},
 		{
-			"ImportPath": "k8s.io/kubernetes/pkg/apis/storage",
-			"Comment": "v1.10.0",
-			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
-		},
-		{
 			"ImportPath": "k8s.io/kubernetes/pkg/registry/core/service/allocator",
 			"Comment": "v1.10.0",
 			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
@@ -703,11 +693,6 @@
 		},
 		{
 			"ImportPath": "k8s.io/kubernetes/pkg/util/version",
-			"Comment": "v1.10.0",
-			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
-		},
-		{
-			"ImportPath": "k8s.io/kubernetes/pkg/version",
 			"Comment": "v1.10.0",
 			"Rev": "fc32d2f3698e36b93322a3465f63a14e9f0eaead"
 		}
