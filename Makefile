@@ -51,9 +51,8 @@ BUILD_OS := $(shell uname -s)
 STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers
-K8S_VERSION_LDFLAGS := $(shell $(PYTHON) hack/get_k8s_version.py 2>&1)
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
-PROVISIONER_LDFLAGS := "$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS) -s -w"
+PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w"
 
 MAKEDEPEND := GOPATH=$(GOPATH) ./makedepend.sh
 
@@ -104,7 +103,7 @@ else
 ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
 	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
 endif
-	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS) $(K8S_VERSION_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
+	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
 .PHONY: e2e-%-amd64
@@ -218,7 +217,7 @@ fmt:
 	@gofmt -l -s -w $(SOURCE_DIRS)
 
 out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
-	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(K8S_VERSION_LDFLAGS) $(MINIKUBE_LDFLAGS)" hack/gen_help_text.go
+	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(MINIKUBE_LDFLAGS)" hack/gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)

@@ -22,11 +22,11 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/cloudflare/cfssl/log"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -94,12 +94,12 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 		return errors.Wrap(err, "Error copying ISO to machine dir")
 	}
 
-	log.Info("Creating ssh key...")
+	glog.Info("Creating ssh key...")
 	if err := ssh.GenerateSSHKey(d.GetSSHKeyPath()); err != nil {
 		return err
 	}
 
-	log.Info("Creating raw disk image...")
+	glog.Info("Creating raw disk image...")
 	diskPath := GetDiskPath(d)
 	if _, err := os.Stat(diskPath); os.IsNotExist(err) {
 		if err := createRawDiskImage(publicSSHKeyPath(d), diskPath, diskSize); err != nil {
