@@ -19,6 +19,7 @@ package none
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -27,7 +28,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
@@ -77,11 +77,11 @@ func (d *Driver) DriverName() string {
 }
 
 func (d *Driver) GetIP() (string, error) {
-	ip, err := net.ChooseBindAddress(nil)
-	if err != nil {
-		return "", err
+	if hostIP, ok := os.LookupEnv("MINIKUBE_IP"); ok {
+		return hostIP, nil
+	} else {
+		return "127.0.0.1", nil
 	}
-	return ip.String(), nil
 }
 
 func (d *Driver) GetSSHHostname() (string, error) {
