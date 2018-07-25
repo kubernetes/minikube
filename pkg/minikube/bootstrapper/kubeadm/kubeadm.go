@@ -293,7 +293,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", bin)
 			}
-			f, err := assets.NewFileAsset(path, "/usr/bin", bin, "0641")
+			f, err := assets.NewFileAsset(path, "/usr/bin", bin, "0750")
 			if err != nil {
 				return errors.Wrap(err, "making new file asset")
 			}
