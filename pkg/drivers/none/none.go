@@ -131,10 +131,10 @@ func (d *Driver) Kill() error {
 }
 
 func (d *Driver) Remove() error {
-	rmCmd := `sudo systemctl stop kubelet.service
-	sudo rm -rf /data/minikube
-	sudo rm -rf /etc/kubernetes/manifests
-	sudo rm -rf /var/lib/minikube`
+	rmCmd := `systemctl stop kubelet.service
+	rm -rf /data/minikube
+	rm -rf /etc/kubernetes/manifests
+	rm -rf /var/lib/minikube`
 
 	for _, cmdStr := range []string{rmCmd, dockerkillcmd} {
 		if out, err := runCommand(cmdStr, true); err != nil {
