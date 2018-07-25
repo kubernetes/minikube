@@ -19,7 +19,7 @@ package bootstrapper
 import (
 	"fmt"
 	"io"
-	"path"
+	"path/filepath"
 	"sync"
 
 	"github.com/golang/glog"
@@ -52,12 +52,12 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	return sess.Run(cmd)
 }
 
-// Run starts a command on the remote and waits for it to return.
+// Run starts a command on the remote in a shell and waits for it to return.
 func (s *SSHRunner) Run(cmd string) error {
 	glog.Infoln("Run:", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return errors.Wrap(err, "getting ssh session")
+		return errors.Wrap(err, "failed to create a SSH session")
 	}
 	defer sess.Close()
 	return sess.Run(cmd)
@@ -68,7 +68,7 @@ func (s *SSHRunner) Run(cmd string) error {
 func (s *SSHRunner) RunWithOutputTo(cmd string, out io.Writer) error {
 	b, err := s.RunWithOutput(cmd)
 	if err != nil {
-		return errors.Wrapf(err, "running command: %s\n.", cmd)
+		return errors.Wrapf(err, "failed to run command `%s`", cmd)
 	}
 	_, err = out.Write([]byte(b))
 	return err
@@ -80,35 +80,35 @@ func (s *SSHRunner) RunWithOutput(cmd string) (string, error) {
 	glog.Infoln("Run with output:", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return "", errors.Wrap(err, "getting ssh session")
+		return "", errors.Wrap(err, "failed to create a SSH session")
 	}
 	defer sess.Close()
 
 	b, err := sess.CombinedOutput(cmd)
 	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n.", cmd)
+		return "", errors.Wrapf(err, "failed to run command `%s`", cmd)
 	}
 	return string(b), nil
 }
 
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
-	deleteCmd := fmt.Sprintf("sudo rm -f %s", path.Join(f.GetTargetDir(), f.GetTargetName()))
-	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", f.GetTargetDir())
-	for _, cmd := range []string{deleteCmd, mkdirCmd} {
+	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
+
+	for _, cmd := range []string{getDeleteFileCommand(f), getMkDirCommand(f)} {
 		if err := s.Run(cmd); err != nil {
-			return errors.Wrapf(err, "Error running command: %s", cmd)
+			return errors.Wrapf(err, "failed to prepare to copy file `%s`", targetPath)
 		}
 	}
 
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return errors.Wrap(err, "Error creating new session via ssh client")
+		return errors.Wrap(err, "failed to create a SSH session")
 	}
 
 	w, err := sess.StdinPipe()
 	if err != nil {
-		return errors.Wrap(err, "Error accessing StdinPipe via ssh session")
+		return errors.Wrap(err, "failed to access StdinPipe of a SSH session")
 	}
 	// The scpcmd below *should not* return until all data is copied and the
 	// StdinPipe is closed. But let's use a WaitGroup to make it expicit.
@@ -124,9 +124,8 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	}()
 
 	scpcmd := fmt.Sprintf("sudo scp -t %s", f.GetTargetDir())
-	out, err := sess.CombinedOutput(scpcmd)
-	if err != nil {
-		return errors.Wrapf(err, "Error running scp command: %s output: %s", scpcmd, out)
+	if err := sess.Run(scpcmd); err != nil {
+		return errors.Wrapf(err, "failed to copy file `%s` via scp", targetPath)
 	}
 	wg.Wait()
 

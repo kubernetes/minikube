@@ -54,5 +54,9 @@ type CommandRunner interface {
 }
 
 func getDeleteFileCommand(f assets.CopyableFile) string {
-	return fmt.Sprintf("sudo rm %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
+	return fmt.Sprintf("sudo rm -f %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
+}
+
+func getMkDirCommand(f assets.CopyableFile) string {
+	return fmt.Sprintf("sudo mkdir -p %s", f.GetTargetDir())
 }

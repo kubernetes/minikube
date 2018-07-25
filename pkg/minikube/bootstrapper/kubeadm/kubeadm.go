@@ -131,7 +131,9 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	if out, err := k.c.RunWithOutput(b.String()); err != nil {
-		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
+		// kubeadm is noisy -- only show its output if there was a problem
+		fmt.Fprint(os.Stderr, out)
+		return errors.Wrapf(err, "failed to init kubeadm")
 	}
 
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
