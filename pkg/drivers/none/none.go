@@ -32,7 +32,7 @@ import (
 )
 
 const driverName = "none"
-const dockerstopcmd = `docker kill $(docker ps -a --filter="name=k8s_" --format="{{.ID}}")`
+const dockerstopcmd = `docker kill $(docker ps -a --filter="name=k8s_" -q")`
 
 var dockerkillcmd = fmt.Sprintf(`docker rm $(%s)`, dockerstopcmd)
 
