@@ -100,20 +100,20 @@ func (d *Driver) GetURL() (string, error) {
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	var statuscmd = fmt.Sprintf(
-		`sudo systemctl is-active kubelet &>/dev/null && echo "Running" || echo "Stopped"`)
+	const statusCmd = `systemctl is-active kubelet || true` // is-active returns status via exit-code, we don't need that
 
-	out, err := runCommand(statuscmd, true)
+	out, err := runCommand(statusCmd, true)
 	if err != nil {
 		return state.None, err
 	}
-	s := strings.TrimSpace(out)
-	if state.Running.String() == s {
+
+	out = strings.TrimSpace(out)
+	if "active" == out {
 		return state.Running, nil
-	} else if state.Stopped.String() == s {
+	} else if "inactive" == out {
 		return state.Stopped, nil
 	} else {
-		return state.None, fmt.Errorf("Error: Unrecognize output from GetState: %s", s)
+		return state.None, fmt.Errorf("Invalid `systemctl is-active` output: %s", out)
 	}
 }
 
