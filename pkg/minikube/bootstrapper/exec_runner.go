@@ -18,11 +18,10 @@ package bootstrapper
 
 import (
 	"bytes"
+	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -58,6 +57,17 @@ func (*ExecRunner) RunWithOutputTo(cmd string, out io.Writer) error {
 	return nil
 }
 
+// RunWithInputFrom() runs the command (as in Run()) and passes `in` as its stdin.
+func (*ExecRunner) RunWithInputFrom(cmd string, in io.Reader) error {
+	glog.Infoln("Run:", cmd)
+	c := exec.Command("/bin/bash", "-c", cmd)
+	c.Stdin = in
+	if err := c.Run(); err != nil {
+		return errors.Wrapf(err, "failed to run command `%s`", cmd)
+	}
+	return nil
+}
+
 // RunWithOutput runs the command  in a bash shell and returns its
 // combined standard output and standard error.
 func (e *ExecRunner) RunWithOutput(cmd string) (string, error) {
@@ -70,40 +80,27 @@ func (e *ExecRunner) RunWithOutput(cmd string) (string, error) {
 }
 
 // Copy copies a file and its permissions
-func (*ExecRunner) Copy(f assets.CopyableFile) error {
-	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
-		return errors.Wrapf(err, "failed to make dirs for `%s`", f.GetTargetDir())
-	}
+func (e *ExecRunner) Copy(f assets.CopyableFile) error {
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
-	if _, err := os.Stat(targetPath); err == nil {
-		if err := os.Remove(targetPath); err != nil {
-			return errors.Wrapf(err, "failed to remove `%s`", targetPath)
+
+	for _, cmd := range []string{getDeleteFileCommand(f), getMkDirCommand(f)} {
+		if err := e.Run(cmd); err != nil {
+			return errors.Wrapf(err, "failed to prepare to copy `%s`", targetPath)
 		}
-
-	}
-	target, err := os.Create(targetPath)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create `%s`", targetPath)
-	}
-	perms, err := strconv.Atoi(f.GetPermissions())
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse file permissions `%s`", perms)
-	}
-	if err := os.Chmod(targetPath, os.FileMode(perms)); err != nil {
-		return errors.Wrapf(err, "failed to set permissions for `%s` to `%s`", targetPath, perms)
 	}
 
-	if _, err = io.Copy(target, f); err != nil {
-		return errors.Wrapf(err, "failed to write `%s`: do you have the correct permissions?",
-			targetPath)
+	cmd := fmt.Sprintf("sudo install -Dm%s /dev/stdin '%s'", f.GetPermissions(), targetPath)
+	if err := e.RunWithInputFrom(cmd, f); err != nil {
+		return errors.Wrapf(err, "failed to write `%s`", targetPath)
 	}
-	return target.Close()
+	return nil
 }
 
 // Remove removes a file
 func (e *ExecRunner) Remove(f assets.CopyableFile) error {
-	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
-	if err := os.Remove(targetPath); err != nil {
+	cmd := getDeleteFileCommand(f)
+	if err := e.Run(cmd); err != nil {
+		targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 		return errors.Wrapf(err, "failed to remove `%s`", targetPath)
 	}
 	return nil
