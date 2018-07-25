@@ -202,17 +202,19 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 }
 
 func runCommand(command string, sudo bool) (string, error) {
-	cmd := exec.Command("/bin/bash", "-c", command)
+	var cmd *exec.Cmd
 	if sudo {
 		cmd = exec.Command("sudo", "/bin/bash", "-c", command)
+	} else {
+		cmd = exec.Command("/bin/bash", "-c", command)
 	}
-	var out bytes.Buffer
+	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	cmd.Stdout = &out
+	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return "", errors.Wrap(err, stderr.String())
+		return stdout.String(), errors.Wrap(err, stderr.String())
 	}
-	return out.String(), nil
+	return stdout.String(), nil
 }
