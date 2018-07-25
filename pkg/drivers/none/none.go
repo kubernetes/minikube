@@ -32,9 +32,11 @@ import (
 )
 
 const driverName = "none"
-const dockerstopcmd = `docker kill $(docker ps -a --filter="name=k8s_" -q")`
 
-var dockerkillcmd = fmt.Sprintf(`docker rm $(%s)`, dockerstopcmd)
+const dockerList = `docker ps -a --filter="name=k8s_" -q`
+const dockerKill = ` | xargs docker kill`
+const dockerStop = ` | xargs docker stop`
+const dockerRm = ` | xargs docker rm`
 
 // none Driver is a driver designed to run kubeadm w/o a VM
 type Driver struct {
@@ -118,42 +120,47 @@ func (d *Driver) GetState() (state.State, error) {
 }
 
 func (d *Driver) Kill() error {
-	for _, cmdStr := range [][]string{
-		{"systemctl", "stop", "kubelet.service"},
-		{"rm", "-rf", "/var/lib/minikube"},
-	} {
-		cmd := exec.Command("sudo", cmdStr...)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			glog.Warningf("Error %s running command: %s. Output: %s", err, cmdStr, string(out))
+	var killCmds = []string{
+		`systemctl kill kubelet.service`,
+		dockerList + dockerKill + dockerRm,
+	}
+
+	for _, cmdStr := range killCmds {
+		if _, err := runCommand(cmdStr, true); err != nil {
+			glog.Warningf("Failed to run command `%s`: %s", cmdStr, err)
 		}
 	}
 	return nil
 }
 
 func (d *Driver) Remove() error {
-	rmCmd := `systemctl stop kubelet.service
-	rm -rf /data/minikube
-	rm -rf /etc/kubernetes/manifests
-	rm -rf /var/lib/minikube`
-
-	for _, cmdStr := range []string{rmCmd, dockerkillcmd} {
-		if out, err := runCommand(cmdStr, true); err != nil {
-			glog.Warningf("Error %s running command: %s, Output: %s", err, cmdStr, out)
-		}
+	var rmCmds = []string{
+		`systemctl stop kubelet.service`,
+		dockerList + dockerKill + dockerRm,
+		`rm -rf /data/minikube`,
+		`rm -rf /etc/kubernetes/manifests`,
+		`rm -rf /var/lib/minikube`,
 	}
 
+	for _, cmdStr := range rmCmds {
+		if _, err := runCommand(cmdStr, true); err != nil {
+			glog.Warningf("Failed to run command `%s`: %s", cmdStr, err)
+		}
+	}
 	return nil
 }
 
 func (d *Driver) Restart() error {
-	restartCmd := `
-	if systemctl is-active kubelet.service; then
-		sudo systemctl restart kubelet.service
-	fi`
+	var restartCmds = []string{
+		`systemctl stop kubelet.service`,
+		dockerList + dockerStop + dockerRm,
+		`systemctl start kubelet.service`,
+	}
 
-	cmd := exec.Command(restartCmd)
-	if err := cmd.Start(); err != nil {
-		return err
+	for _, cmdStr := range restartCmds {
+		if _, err := runCommand(cmdStr, true); err != nil {
+			glog.Warningf("Failed to run command `%s`: %s", cmdStr, err)
+		}
 	}
 	return nil
 }
@@ -172,27 +179,15 @@ func (d *Driver) Start() error {
 }
 
 func (d *Driver) Stop() error {
-	var stopcmd = fmt.Sprintf("if [[ `systemctl` =~ -\\.mount ]] &>/dev/null; " + `then
-for svc in "kubelet"; do
-	sudo systemctl stop "$svc".service || true
-done
-fi
-`)
-	_, err := runCommand(stopcmd, false)
-	if err != nil {
-		return err
+	var stopCmds = []string{
+		`systemctl stop kubelet.service`,
+		dockerList + dockerStop + dockerRm,
 	}
-	for {
-		s, err := d.GetState()
-		if err != nil {
-			return err
+
+	for _, cmdStr := range stopCmds {
+		if _, err := runCommand(cmdStr, true); err != nil {
+			glog.Warningf("Failed to run command `%s`: %s", cmdStr, err)
 		}
-		if s != state.Running {
-			break
-		}
-	}
-	if out, err := runCommand(dockerstopcmd, false); err != nil {
-		glog.Warningf("Error %s running command %s. Output: %s", err, dockerstopcmd, out)
 	}
 	return nil
 }
