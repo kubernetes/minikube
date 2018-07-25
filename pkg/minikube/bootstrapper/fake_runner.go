@@ -45,13 +45,13 @@ func NewFakeCommandRunner() *FakeCommandRunner {
 
 // Run returns nil if output has been set for the given command text.
 func (f *FakeCommandRunner) Run(cmd string) error {
-	_, err := f.CombinedOutput(cmd)
+	_, err := f.RunWithOutput(cmd)
 	return err
 }
 
-// CombinedOutputTo runs the command and stores both command
+// RunWithOutputTo runs the command and stores both command
 // output and error to out.
-func (f *FakeCommandRunner) CombinedOutputTo(cmd string, out io.Writer) error {
+func (f *FakeCommandRunner) RunWithOutputTo(cmd string, out io.Writer) error {
 	value, ok := f.cmdMap.Load(cmd)
 	if !ok {
 		return fmt.Errorf("unavailable command: %s", cmd)
@@ -64,8 +64,8 @@ func (f *FakeCommandRunner) CombinedOutputTo(cmd string, out io.Writer) error {
 	return nil
 }
 
-// CombinedOutput returns the set output for a given command text.
-func (f *FakeCommandRunner) CombinedOutput(cmd string) (string, error) {
+// RunWithOutput returns the set output for a given command text.
+func (f *FakeCommandRunner) RunWithOutput(cmd string) (string, error) {
 	out, ok := f.cmdMap.Load(cmd)
 	if !ok {
 		return "", fmt.Errorf("unavailable command: %s", cmd)

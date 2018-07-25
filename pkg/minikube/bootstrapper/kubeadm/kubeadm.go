@@ -70,7 +70,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 //TODO(r2d4): This should most likely check the health of the apiserver
 func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
 	statusCmd := `sudo systemctl is-active kubelet`
-	status, err := k.c.CombinedOutput(statusCmd)
+	status, err := k.c.RunWithOutput(statusCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "getting status")
 	}
@@ -94,12 +94,12 @@ func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error
 	logsCommand := fmt.Sprintf("sudo journalctl %s -u kubelet", strings.Join(flags, " "))
 
 	if follow {
-		if err := k.c.CombinedOutputTo(logsCommand, out); err != nil {
+		if err := k.c.RunWithOutputTo(logsCommand, out); err != nil {
 			return errors.Wrap(err, "getting cluster logs")
 		}
 	} else {
 
-		logs, err := k.c.CombinedOutput(logsCommand)
+		logs, err := k.c.RunWithOutput(logsCommand)
 		if err != nil {
 			return errors.Wrap(err, "getting cluster logs")
 		}
@@ -130,8 +130,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return err
 	}
 
-	out, err := k.c.CombinedOutput(b.String())
-	if err != nil {
+	if out, err := k.c.RunWithOutput(b.String()); err != nil {
 		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
 	}
 

@@ -44,9 +44,9 @@ func (*ExecRunner) Run(cmd string) error {
 	return nil
 }
 
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
+// RunWithOutputTo runs the command (as in Run()) and redirects both its
+// stdout and stderr to `out`.
+func (*ExecRunner) RunWithOutputTo(cmd string, out io.Writer) error {
 	glog.Infoln("Run with output:", cmd)
 	c := exec.Command("/bin/bash", "-c", cmd)
 	c.Stdout = out
@@ -59,11 +59,11 @@ func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
 	return nil
 }
 
-// CombinedOutput runs the command  in a bash shell and returns its
+// RunWithOutput runs the command  in a bash shell and returns its
 // combined standard output and standard error.
-func (e *ExecRunner) CombinedOutput(cmd string) (string, error) {
+func (e *ExecRunner) RunWithOutput(cmd string) (string, error) {
 	var b bytes.Buffer
-	err := e.CombinedOutputTo(cmd, &b)
+	err := e.RunWithOutputTo(cmd, &b)
 	if err != nil {
 		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
 	}

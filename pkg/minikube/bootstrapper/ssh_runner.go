@@ -63,10 +63,10 @@ func (s *SSHRunner) Run(cmd string) error {
 	return sess.Run(cmd)
 }
 
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (s *SSHRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	b, err := s.CombinedOutput(cmd)
+// RunWithOutputTo runs the command (as in Run()) and writes both its stdout
+// and stderr to `out`.
+func (s *SSHRunner) RunWithOutputTo(cmd string, out io.Writer) error {
+	b, err := s.RunWithOutput(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "running command: %s\n.", cmd)
 	}
@@ -74,9 +74,9 @@ func (s *SSHRunner) CombinedOutputTo(cmd string, out io.Writer) error {
 	return err
 }
 
-// CombinedOutput runs the command on the remote and returns its combined
+// RunWithOutput runs the command (as in Run()) and returns its combined
 // standard output and standard error.
-func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
+func (s *SSHRunner) RunWithOutput(cmd string) (string, error) {
 	glog.Infoln("Run with output:", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
