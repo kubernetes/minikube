@@ -191,7 +191,7 @@ func MaybePrintKubectlDownloadMsg(goos string, out io.Writer) {
 	}
 
 	verb := "run"
-	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/"
+	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo cp kubectl /usr/local/bin/ && rm kubectl"
 	if goos == "windows" {
 		verb = "do"
 		installInstructions = `download kubectl from:
