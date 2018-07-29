@@ -1,4 +1,4 @@
-PODMAN_VERSION = v0.4.1
+PODMAN_VERSION = v0.9.3
 PODMAN_SITE = https://github.com/projectatomic/libpod/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
@@ -17,6 +17,8 @@ PODMAN_BIN_ENV = \
 define PODMAN_CONFIGURE_CMDS
 	mkdir -p $(PODMAN_GOPATH)/src/github.com/projectatomic
 	ln -sf $(@D) $(PODMAN_GOPATH)/src/github.com/projectatomic/libpod
+	mkdir -p $(PODMAN_GOPATH)/src/github.com/varlink
+	ln -sf $(@D)/vendor/github.com/varlink/go $(PODMAN_GOPATH)/src/github.com/varlink/go
 	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.tools DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
 endef
 
