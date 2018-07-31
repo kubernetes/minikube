@@ -347,13 +347,13 @@ WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
 			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
 You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
 
-	sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
-	sudo chown -R $USER $HOME/.kube
-	sudo chgrp -R $USER $HOME/.kube
+	sudo cp -a /root/.kube $HOME/.kube # this will write over any previous configuration
+	sudo rm -rf /root/.kube
+	sudo chown -R $USER: $HOME/.kube
 
-	sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
-	sudo chown -R $USER $HOME/.minikube
-	sudo chgrp -R $USER $HOME/.minikube
+	sudo cp -a /root/.minikube $HOME/.minikube # this will write over any previous configuration
+	sudo rm -rf /root/.minikube
+	sudo chown -R $USER: $HOME/.minikube
 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 		}
