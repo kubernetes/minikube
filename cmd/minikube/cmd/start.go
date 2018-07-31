@@ -343,24 +343,26 @@ WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
 	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks` + "\n")
 		}
 
-		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
+		if os.Geteuid() == 0 {
+			if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
+				fmt.Println(`When running minikube as root, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
 You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
 
-	sudo cp -a /root/.kube $HOME/.kube # this will write over any previous configuration
+	sudo cp -aT /root/.kube $HOME/.kube # this will write over any previous configuration
 	sudo rm -rf /root/.kube
 	sudo chown -R $USER: $HOME/.kube
 
-	sudo cp -a /root/.minikube $HOME/.minikube # this will write over any previous configuration
+	sudo cp -aT /root/.minikube $HOME/.minikube # this will write over any previous configuration
 	sudo rm -rf /root/.minikube
 	sudo chown -R $USER: $HOME/.minikube
 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
-		}
-		if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
-			glog.Errorf("Error recursively changing ownership of directory %s: %s",
-				constants.GetMinipath(), err)
-			cmdutil.MaybeReportErrorAndExit(err)
+			}
+			if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
+				glog.Errorf("Error recursively changing ownership of directory %s: %s",
+					constants.GetMinipath(), err)
+				cmdutil.MaybeReportErrorAndExit(err)
+			}
 		}
 	}
 
