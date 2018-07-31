@@ -344,6 +344,9 @@ WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
 		}
 
 		if os.Geteuid() == 0 {
+			fmt.Println(`===================
+WARNING: IT IS NOT NECESSARY NOR RECOMMENNDED TO RUN MINIKUBE AS ROOT WITH --vm-driver=none ANYMORE` + "\n")
+
 			if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
 				fmt.Println(`When running minikube as root, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
 You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
