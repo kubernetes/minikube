@@ -21,6 +21,23 @@ $ cd $GOPATH/src/k8s.io/minikube
 $ make
 ```
 
+### Building from Source in Docker (using Debian stretch image with golang)
+Clone minikube:
+```shell
+$ git clone https://github.com/kubernetes/minikube.git
+```
+Build (cross complile for linux / OS X and Windows) using make:
+```shell
+$ cd minikube
+$ docker run --rm -v "$PWD":/go/src/k8s.io/minikube -w /go/src/k8s.io/minikube golang:stretch make cross
+```
+Check "out" directory:
+```shell
+$ ls out/
+docker-machine-driver-hyperkit.d	minikube				minikube.d				test.d
+docker-machine-driver-kvm2.d		minikube-linux-amd64			storage-provisioner.d
+```
+
 ### Run Instructions
 
 Start the cluster using your built minikube with:

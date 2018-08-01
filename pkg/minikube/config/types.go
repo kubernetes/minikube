@@ -50,6 +50,7 @@ type MachineConfig struct {
 	NFSShare            []string
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
+	GPU                 bool   // Only used by kvm2
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

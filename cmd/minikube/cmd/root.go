@@ -35,7 +35,6 @@ import (
 	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/localkube"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -47,7 +46,6 @@ var dirs = [...]string{
 	constants.MakeMiniPath("machines"),
 	constants.MakeMiniPath("cache"),
 	constants.MakeMiniPath("cache", "iso"),
-	constants.MakeMiniPath("cache", "localkube"),
 	constants.MakeMiniPath("config"),
 	constants.MakeMiniPath("addons"),
 	constants.MakeMiniPath("files"),
@@ -173,17 +171,6 @@ func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
-	case bootstrapper.BootstrapperTypeLocalkube:
-		if viper.GetBool(config.ShowBootstrapperDeprecationNotification) {
-			fmt.Fprintln(os.Stderr, `WARNING: The localkube bootstrapper is now deprecated and support for it
-will be removed in a future release. Please consider switching to the kubeadm bootstrapper, which
-is intended to replace the localkube bootstrapper. To disable this message, run
-[minikube config set ShowBootstrapperDeprecationNotification false]`)
-		}
-		b, err = localkube.NewLocalkubeBootstrapper(api)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting localkube bootstrapper")
-		}
 	case bootstrapper.BootstrapperTypeKubeadm:
 		b, err = kubeadm.NewKubeadmBootstrapper(api)
 		if err != nil {

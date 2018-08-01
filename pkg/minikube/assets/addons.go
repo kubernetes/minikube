@@ -257,6 +257,20 @@ var Addons = map[string]*Addon{
 			"freshpod-rc.yaml",
 			"0640"),
 	}, false, "freshpod"),
+	"nvidia-driver-installer": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gpu/nvidia-driver-installer.yaml",
+			constants.AddonsPath,
+			"nvidia-driver-installer.yaml",
+			"0640"),
+	}, false, "nvidia-driver-installer"),
+	"nvidia-gpu-device-plugin": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
+			constants.AddonsPath,
+			"nvidia-gpu-device-plugin.yaml",
+			"0640"),
+	}, false, "nvidia-gpu-device-plugin"),
 }
 
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {

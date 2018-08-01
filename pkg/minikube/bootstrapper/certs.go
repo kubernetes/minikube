@@ -82,7 +82,7 @@ func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
 	}
 
 	kubeCfgFile := assets.NewMemoryAsset(data,
-		util.DefaultLocalkubeDirectory, "kubeconfig", "0644")
+		util.DefaultMinikubeDirectory, "kubeconfig", "0644")
 	copyableFiles = append(copyableFiles, kubeCfgFile)
 
 	for _, f := range copyableFiles {

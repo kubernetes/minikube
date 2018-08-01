@@ -65,6 +65,12 @@ type Driver struct {
 	// The randomly generated MAC Address
 	// If empty, a random MAC will be generated.
 	MAC string
+
+	// Whether to passthrough GPU devices from the host to the VM.
+	GPU bool
+
+	// XML that needs to be added to passthrough GPU devices.
+	DevicesXML string
 }
 
 const (
@@ -255,6 +261,13 @@ func (d *Driver) Create() error {
 	err := d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
+	}
+	if d.GPU {
+		log.Info("Creating devices...")
+		d.DevicesXML, err = getDevicesXML()
+		if err != nil {
+			return errors.Wrap(err, "creating devices")
+		}
 	}
 
 	log.Info("Setting up minikube home directory...")

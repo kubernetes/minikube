@@ -252,14 +252,6 @@ func WaitForDashboardRunning(t *testing.T) error {
 		return errors.Wrap(err, "waiting for dashboard deployment to stabilize")
 	}
 
-	if err := commonutil.WaitForService(client, "kube-system", "kubernetes-dashboard", true, time.Millisecond*500, time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for dashboard service to be up")
-	}
-
-	if err := commonutil.WaitForServiceEndpointsNum(client, "kube-system", "kubernetes-dashboard", 1, time.Second*3, time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for one dashboard endpoint to be up")
-	}
-
 	return nil
 }
 

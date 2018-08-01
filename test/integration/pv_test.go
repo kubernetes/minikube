@@ -26,9 +26,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	api "k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	api "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/apis/storage"
 	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
