@@ -190,7 +190,7 @@ func (u *Ufs) Wstat(req *SrvReq) {
 			destpath = path.Join(fiddir, dir.Name)
 			fmt.Printf("rel  results in %s\n", destpath)
 		}
-		err := syscall.Rename(fid.path, destpath)
+		err := os.Rename(fid.path, destpath)
 		fmt.Printf("rename %s to %s gets %v\n", fid.path, destpath, err)
 		if err != nil {
 			req.RespondError(toError(err))
