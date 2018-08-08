@@ -85,8 +85,6 @@ We also released a Debian package and Windows installer on our [releases page](h
 * [kubectl](https://kubernetes.io/docs/tasks/kubectl/install/)
 * macOS
     * [Hyperkit driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver), [xhyve driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver), [VirtualBox](https://www.virtualbox.org/wiki/Downloads), or [VMware Fusion](https://www.vmware.com/products/fusion)
-    * [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) `brew install dnsmasq` (add `listen-address=192.168.64.1` to `dnsmasq.conf`)
-    
 * Linux
     * [VirtualBox](https://www.virtualbox.org/wiki/Downloads) or [KVM](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver)
     * **NOTE:** Minikube also supports a `--vm-driver=none` option that runs the Kubernetes components on the host and not in a VM. Docker is required to use this driver but no hypervisor. If you use `--vm-driver=none`, be sure to specify a [bridge network](https://docs.docker.com/network/bridge/#configure-the-default-bridge-network) for docker. Otherwise it might change between network restarts, causing loss of connectivity to your cluster.
