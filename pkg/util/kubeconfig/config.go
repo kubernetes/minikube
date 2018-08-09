@@ -53,6 +53,9 @@ type KubeConfigSetup struct {
 	// Should the current context be kept when setting up this one
 	KeepContext bool
 
+	// Should the certificate files be embedded instead of referenced by path
+	EmbedCerts bool
+
 	// kubeConfigFile is the path where the kube config is stored
 	// Only access this with atomic ops
 	kubeConfigFile atomic.Value
@@ -67,18 +70,37 @@ func (k *KubeConfigSetup) GetKubeConfigFile() string {
 }
 
 // PopulateKubeConfig populates an api.Config object.
-func PopulateKubeConfig(cfg *KubeConfigSetup, kubecfg *api.Config) {
+func PopulateKubeConfig(cfg *KubeConfigSetup, kubecfg *api.Config) error {
+	var err error
 	clusterName := cfg.ClusterName
 	cluster := api.NewCluster()
 	cluster.Server = cfg.ClusterServerAddress
-	cluster.CertificateAuthority = cfg.CertificateAuthority
+	if cfg.EmbedCerts {
+		cluster.CertificateAuthorityData, err = ioutil.ReadFile(cfg.CertificateAuthority)
+		if err != nil {
+			return err
+		}
+	} else {
+		cluster.CertificateAuthority = cfg.CertificateAuthority
+	}
 	kubecfg.Clusters[clusterName] = cluster
 
 	// user
 	userName := cfg.ClusterName
 	user := api.NewAuthInfo()
-	user.ClientCertificate = cfg.ClientCertificate
-	user.ClientKey = cfg.ClientKey
+	if cfg.EmbedCerts {
+		user.ClientCertificateData, err = ioutil.ReadFile(cfg.ClientCertificate)
+		if err != nil {
+			return err
+		}
+		user.ClientKeyData, err = ioutil.ReadFile(cfg.ClientKey)
+		if err != nil {
+			return err
+		}
+	} else {
+		user.ClientCertificate = cfg.ClientCertificate
+		user.ClientKey = cfg.ClientKey
+	}
 	kubecfg.AuthInfos[userName] = user
 
 	// context
@@ -92,6 +114,8 @@ func PopulateKubeConfig(cfg *KubeConfigSetup, kubecfg *api.Config) {
 	if !cfg.KeepContext {
 		kubecfg.CurrentContext = cfg.ClusterName
 	}
+
+	return nil
 }
 
 // SetupKubeConfig reads config from disk, adds the minikube settings, and writes it back.
@@ -106,7 +130,10 @@ func SetupKubeConfig(cfg *KubeConfigSetup) error {
 		return err
 	}
 
-	PopulateKubeConfig(cfg, config)
+	err = PopulateKubeConfig(cfg, config)
+	if err != nil {
+		return err
+	}
 
 	// write back to disk
 	if err := WriteConfig(config, cfg.GetKubeConfigFile()); err != nil {

@@ -72,6 +72,7 @@ const (
 	vpnkitSock            = "hyperkit-vpnkit-sock"
 	vsockPorts            = "hyperkit-vsock-ports"
 	gpu                   = "gpu"
+	embedCerts            = "embed-certs"
 )
 
 var (
@@ -280,6 +281,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ClientKey:            constants.MakeMiniPath("client.key"),
 		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
+		EmbedCerts:           viper.GetBool(embedCerts),
 	}
 	kubeCfgSetup.SetKubeConfigFile(kubeConfigFile)
 
