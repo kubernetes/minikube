@@ -25,7 +25,6 @@ else
 	PYTHON="docker run --rm -it -v $(pwd):/minikube -w /minikube python python"
 fi
 
-
 COV_FILE=coverage.txt
 COV_TMP_FILE=coverage_tmp.txt
 
@@ -43,7 +42,7 @@ done
 rm out/$COV_TMP_FILE
 
 # Ignore these paths in the following tests.
-ignore="vendor\|\_gopath\|assets.go\|out"
+ignore="vendor\|\_gopath\|assets.go\|out\/"
 
 # Check gofmt
 echo "Checking gofmt..."

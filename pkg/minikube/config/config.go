@@ -24,6 +24,7 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -87,4 +88,36 @@ func GetMachineName() string {
 		return constants.DefaultMachineName
 	}
 	return viper.GetString(MachineProfile)
+}
+
+func Load() (Config, error) {
+	return Loader.LoadConfigFromFile(GetMachineName())
+}
+
+type ConfigLoader interface {
+	LoadConfigFromFile(profile string) (Config, error)
+}
+
+type simpleConfigLoader struct{}
+
+var Loader ConfigLoader = &simpleConfigLoader{}
+
+func (c *simpleConfigLoader) LoadConfigFromFile(profile string) (Config, error) {
+	var cc Config
+
+	profileConfigFile := constants.GetProfileFile(profile)
+
+	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
+		return cc, err
+	}
+
+	data, err := ioutil.ReadFile(profileConfigFile)
+	if err != nil {
+		return cc, err
+	}
+
+	if err := json.Unmarshal(data, &cc); err != nil {
+		return cc, err
+	}
+	return cc, nil
 }

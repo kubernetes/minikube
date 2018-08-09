@@ -38,6 +38,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
+	"github.com/docker/machine/libmachine/persist"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -102,8 +103,8 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 }
 
 // StopHost stops the host VM.
-func StopHost(api libmachine.API) error {
-	host, err := api.Load(cfg.GetMachineName())
+func StopHost(store persist.Store) error {
+	host, err := store.Load(cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrapf(err, "Error loading host: %s", cfg.GetMachineName())
 	}
@@ -118,30 +119,30 @@ func StopHost(api libmachine.API) error {
 }
 
 // DeleteHost deletes the host VM.
-func DeleteHost(api libmachine.API) error {
-	host, err := api.Load(cfg.GetMachineName())
+func DeleteHost(store persist.Store) error {
+	host, err := store.Load(cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrapf(err, "Error deleting host: %s", cfg.GetMachineName())
 	}
 	m := util.MultiError{}
 	m.Collect(host.Driver.Remove())
-	m.Collect(api.Remove(cfg.GetMachineName()))
+	m.Collect(store.Remove(cfg.GetMachineName()))
 	return m.ToError()
 }
 
 // GetHostStatus gets the status of the host VM.
-func GetHostStatus(api libmachine.API) (string, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+func GetHostStatus(store persist.Store) (string, error) {
+	exists, err := store.Exists(cfg.GetMachineName())
 	if err != nil {
-		return "", errors.Wrapf(err, "Error checking that api exists for: %s", cfg.GetMachineName())
+		return "", errors.Wrapf(err, "Error checking that store exists for: %s", cfg.GetMachineName())
 	}
 	if !exists {
 		return state.None.String(), nil
 	}
 
-	host, err := api.Load(cfg.GetMachineName())
+	host, err := store.Load(cfg.GetMachineName())
 	if err != nil {
-		return "", errors.Wrapf(err, "Error loading api for: %s", cfg.GetMachineName())
+		return "", errors.Wrapf(err, "Error loading store for: %s", cfg.GetMachineName())
 	}
 
 	s, err := host.Driver.GetState()
@@ -152,8 +153,8 @@ func GetHostStatus(api libmachine.API) (string, error) {
 }
 
 // GetHostDriverIP gets the ip address of the current minikube cluster
-func GetHostDriverIP(api libmachine.API) (net.IP, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+func GetHostDriverIP(store persist.Store, machineName string) (net.IP, error) {
+	host, err := CheckIfHostExistsAndLoad(store, machineName)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +165,7 @@ func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		return nil, errors.Wrap(err, "Error parsing IP")
+		return nil, fmt.Errorf("error parsing IP: %s", ipStr)
 	}
 	return ip, nil
 }
@@ -250,8 +251,8 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 }
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
-func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+func GetHostDockerEnv(store persist.Store) (map[string]string, error) {
+	host, err := CheckIfHostExistsAndLoad(store, cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -272,8 +273,8 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 }
 
 // MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
-func MountHost(api libmachine.API, ip net.IP, path, port, mountVersion string, uid, gid, msize int) error {
-	host, err := CheckIfApiExistsAndLoad(api)
+func MountHost(store persist.Store, ip net.IP, path, port, mountVersion string, uid, gid, msize int) error {
+	host, err := CheckIfHostExistsAndLoad(store, cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -344,24 +345,25 @@ func getIPForInterface(name string) (net.IP, error) {
 	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
 }
 
-func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+func CheckIfHostExistsAndLoad(store persist.Store, machineName string) (*host.Host, error) {
+	exists, err := store.Exists(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking that api exists for: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)
 	}
 	if !exists {
-		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", cfg.GetMachineName())
+		return nil, errors.Errorf("Machine does not exist for store.Exists(%s)", machineName)
 	}
 
-	host, err := api.Load(cfg.GetMachineName())
+	host, err := store.Load(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading api for: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
 	}
 	return host, nil
 }
 
-func CreateSSHShell(api libmachine.API, args []string) error {
-	host, err := CheckIfApiExistsAndLoad(api)
+func CreateSSHShell(store persist.Store, args []string) error {
+	machineName := cfg.GetMachineName()
+	host, err := CheckIfHostExistsAndLoad(store, machineName)
 	if err != nil {
 		return errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -372,7 +374,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	}
 
 	if currentState != state.Running {
-		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", cfg.GetMachineName())
+		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", machineName)
 	}
 
 	client, err := host.CreateSSHClient()
@@ -384,8 +386,8 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
 // the status is `Running`, otherwise it will exit
-func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
-	s, err := GetHostStatus(api)
+func EnsureMinikubeRunningOrExit(store persist.Store, exitStatus int) {
+	s, err := GetHostStatus(store)
 	if err != nil {
 		glog.Errorln("Error getting machine status:", err)
 		os.Exit(1)

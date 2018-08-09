@@ -31,6 +31,7 @@ type MockDriver struct {
 	RemoveError  bool
 	HostError    bool
 	Port         int
+	IP           string
 }
 
 // Create creates a MockDriver instance
@@ -40,6 +41,9 @@ func (driver *MockDriver) Create() error {
 }
 
 func (driver *MockDriver) GetIP() (string, error) {
+	if driver.IP != "" {
+		return driver.IP, nil
+	}
 	if driver.BaseDriver.IPAddress != "" {
 		return driver.BaseDriver.IPAddress, nil
 	}
