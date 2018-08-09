@@ -237,6 +237,10 @@ var settings = []Setting{
 		set:    SetConfigMap,
 		setMap: SetMap,
 	},
+	{
+		name: "embed-certs",
+		set:  SetBool,
+	},
 }
 
 var ConfigCmd = &cobra.Command{

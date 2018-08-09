@@ -75,7 +75,10 @@ func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
 	}
 
 	kubeCfg := api.NewConfig()
-	kubeconfig.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
+	err := kubeconfig.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
+	if err != nil {
+		return errors.Wrap(err, "populating kubeconfig")
+	}
 	data, err := runtime.Encode(latest.Codec, kubeCfg)
 	if err != nil {
 		return errors.Wrap(err, "encoding kubeconfig")
