@@ -76,14 +76,8 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 	return nil
 }
 
-func (d *Driver) createNetwork() error {
-	if d.MAC == "" {
-		mac, err := randomMAC()
-		if err != nil {
-			return errors.Wrap(err, "generating mac address")
-		}
-		d.MAC = mac.String()
-	}
+// ensureNetwork is called on start of the VM
+func (d *Driver) ensureNetwork() error {
 	conn, err := getConnection()
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
@@ -94,10 +88,32 @@ func (d *Driver) createNetwork() error {
 
 	// Start the default network
 	// It is assumed that the libvirt/kvm installation has already created this network
-	log.Infof("Setting up network %s", defaultNetworkName)
+	log.Infof("Ensuring network %s is active", defaultNetworkName)
 	if err := setupNetwork(conn, defaultNetworkName); err != nil {
 		return err
 	}
+
+	// network: private
+
+	// Start the private network
+	log.Infof("Ensuring network %s is active", d.PrivateNetwork)
+	if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createNetwork is called during creation of the VM only (and not on start)
+func (d *Driver) createNetwork() error {
+	conn, err := getConnection()
+	if err != nil {
+		return errors.Wrap(err, "getting libvirt connection")
+	}
+	defer conn.Close()
+
+	// network: default
+	// It is assumed that the libvirt/kvm installation has already created this network
 
 	// network: private
 
@@ -120,12 +136,6 @@ func (d *Driver) createNetwork() error {
 		if err := network.Create(); err != nil {
 			return errors.Wrapf(err, "creating network %s", d.PrivateNetwork)
 		}
-	}
-
-	// Start the private network
-	log.Infof("Setting up network %s", d.PrivateNetwork)
-	if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
-		return err
 	}
 
 	return nil
