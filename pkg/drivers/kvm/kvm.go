@@ -66,6 +66,10 @@ type Driver struct {
 	// If empty, a random MAC will be generated.
 	MAC string
 
+	// The randomly generated MAC Address for the NIC attached to the private network
+	// If empty, a random MAC will be generated.
+	PrivateMAC string
+
 	// Whether to passthrough GPU devices from the host to the VM.
 	GPU bool
 

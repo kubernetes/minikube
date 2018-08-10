@@ -190,7 +190,7 @@ func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
 
 	ipAddress := ""
 	for _, status := range statusEntries {
-		if status.MacAddress == d.MAC {
+		if status.MacAddress == d.PrivateMAC {
 			ipAddress = status.IPAddress
 		}
 	}
@@ -215,7 +215,7 @@ func (d *Driver) lookupIPFromLeasesFile() (string, error) {
 		if len(entry) != 5 {
 			return "", fmt.Errorf("Malformed leases entry: %s", entry)
 		}
-		if entry[1] == d.MAC {
+		if entry[1] == d.PrivateMAC {
 			ipAddress = entry[2]
 		}
 	}
