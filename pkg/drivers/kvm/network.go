@@ -43,11 +43,15 @@ const networkTmpl = `
 </network>
 `
 
+// setupNetwork ensures that the network with `name` is started (active)
+// and has the autostart feature set.
 func setupNetwork(conn *libvirt.Connect, name string) error {
-	n, err := conn.LookupNetworkByName(defaultNetworkName)
+	n, err := conn.LookupNetworkByName(name)
 	if err != nil {
 		return errors.Wrapf(err, "checking network %s", name)
 	}
+
+	// always ensure autostart is set on the network
 	autostart, err := n.GetAutostart()
 	if err != nil {
 		return errors.Wrapf(err, "checking network %s autostart", name)
@@ -58,6 +62,7 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 		}
 	}
 
+	// always ensure the network is started (active)
 	active, err := n.IsActive()
 	if err != nil {
 		return errors.Wrapf(err, "checking network status for %s", name)
@@ -67,8 +72,8 @@ func setupNetwork(conn *libvirt.Connect, name string) error {
 			return errors.Wrapf(err, "starting network %s", name)
 		}
 	}
-	return nil
 
+	return nil
 }
 
 func (d *Driver) createNetwork() error {
@@ -85,31 +90,39 @@ func (d *Driver) createNetwork() error {
 	}
 	defer conn.Close()
 
-	tmpl := template.Must(template.New("network").Parse(networkTmpl))
-	var networkXML bytes.Buffer
-	if err := tmpl.Execute(&networkXML, d); err != nil {
-		return errors.Wrap(err, "executing network template")
-	}
+	// network: default
 
 	// Start the default network
+	// It is assumed that the libvirt/kvm installation has already created this network
 	log.Infof("Setting up network %s", defaultNetworkName)
 	if err := setupNetwork(conn, defaultNetworkName); err != nil {
 		return err
 	}
 
-	//Check if network already exists
-	if _, err := conn.LookupNetworkByName(d.PrivateNetwork); err == nil {
-		return nil
+	// network: private
+
+	// Only create the private network if it does not already exist
+	if _, err := conn.LookupNetworkByName(d.PrivateNetwork); err != nil {
+		// create the XML for the private network from our networkTmpl
+		tmpl := template.Must(template.New("network").Parse(networkTmpl))
+		var networkXML bytes.Buffer
+		if err := tmpl.Execute(&networkXML, d); err != nil {
+			return errors.Wrap(err, "executing network template")
+		}
+
+		// define the network using our template
+		network, err := conn.NetworkDefineXML(networkXML.String())
+		if err != nil {
+			return errors.Wrapf(err, "defining network from xml: %s", networkXML.String())
+		}
+
+		// and finally create it
+		if err := network.Create(); err != nil {
+			return errors.Wrapf(err, "creating network %s", d.PrivateNetwork)
+		}
 	}
 
-	network, err := conn.NetworkDefineXML(networkXML.String())
-	if err != nil {
-		return errors.Wrapf(err, "defining network from xml: %s", networkXML.String())
-	}
-	if err := network.Create(); err != nil {
-		return errors.Wrapf(err, "creating network %s", d.PrivateNetwork)
-	}
-
+	// Start the private network
 	log.Infof("Setting up network %s", d.PrivateNetwork)
 	if err := setupNetwork(conn, d.PrivateNetwork); err != nil {
 		return err
