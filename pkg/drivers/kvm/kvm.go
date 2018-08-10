@@ -211,6 +211,12 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) Start() error {
+	log.Info("Ensuring networks are active...")
+	err := d.ensureNetwork()
+	if err != nil {
+		return errors.Wrap(err, "ensuring active networks")
+	}
+
 	log.Info("Getting domain xml...")
 	dom, conn, err := d.getDomain()
 	if err != nil {

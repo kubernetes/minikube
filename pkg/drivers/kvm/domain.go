@@ -152,9 +152,20 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 }
 
 func (d *Driver) createDomain() (*libvirt.Domain, error) {
+	// create random MAC addresses first for our NICs
+	// TODO: we use the same MAC addresses for both NICs
+	if d.MAC == "" {
+		mac, err := randomMAC()
+		if err != nil {
+			return nil, errors.Wrap(err, "generating mac address")
+		}
+		d.MAC = mac.String()
+	}
+
+	// create the XML for the domain using our domainTmpl template
 	tmpl := template.Must(template.New("domain").Parse(domainTmpl))
-	var domainXml bytes.Buffer
-	if err := tmpl.Execute(&domainXml, d); err != nil {
+	var domainXML bytes.Buffer
+	if err := tmpl.Execute(&domainXML, d); err != nil {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
 
@@ -164,9 +175,10 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	}
 	defer conn.Close()
 
-	dom, err := conn.DomainDefineXML(domainXml.String())
+	// define the domain in libvirt using the generated XML
+	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error defining domain xml: %s", domainXml.String())
+		return nil, errors.Wrapf(err, "Error defining domain xml: %s", domainXML.String())
 	}
 
 	return dom, nil
