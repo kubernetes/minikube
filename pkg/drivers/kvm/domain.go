@@ -62,7 +62,7 @@ const domainTmpl = `
     </interface>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
-      <mac address='{{.MAC}}'/>
+      <mac address='{{.PrivateMAC}}'/>
       <model type='virtio'/>
     </interface>
     <serial type='pty'>
@@ -153,13 +153,20 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 
 func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	// create random MAC addresses first for our NICs
-	// TODO: we use the same MAC addresses for both NICs
 	if d.MAC == "" {
 		mac, err := randomMAC()
 		if err != nil {
 			return nil, errors.Wrap(err, "generating mac address")
 		}
 		d.MAC = mac.String()
+	}
+
+	if d.PrivateMAC == "" {
+		mac, err := randomMAC()
+		if err != nil {
+			return nil, errors.Wrap(err, "generating mac address")
+		}
+		d.PrivateMAC = mac.String()
 	}
 
 	// create the XML for the domain using our domainTmpl template
