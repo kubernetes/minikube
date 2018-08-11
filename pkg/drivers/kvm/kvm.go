@@ -215,8 +215,17 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) Start() error {
+	// if somebody/something deleted the network in the meantime,
+	// we might need to recreate it. It's (nearly) a noop if the network exists.
+	log.Info("Creating network...")
+	err := d.createNetwork()
+	if err != nil {
+		return errors.Wrap(err, "creating network")
+	}
+
+	// this call ensures that all networks are active
 	log.Info("Ensuring networks are active...")
-	err := d.ensureNetwork()
+	err = d.ensureNetwork()
 	if err != nil {
 		return errors.Wrap(err, "ensuring active networks")
 	}
@@ -358,18 +367,16 @@ func (d *Driver) Remove() error {
 	}
 	defer conn.Close()
 
-	//Tear down network and disk if they exist
-	log.Debug("Checking if the network needs to be deleted")
-	network, err := conn.LookupNetworkByName(d.PrivateNetwork)
+	// Tear down network if it exists and is not in use by another minikube instance
+	log.Debug("Trying to delete the networks (if possible)")
+	err = d.deleteNetwork()
 	if err != nil {
-		log.Warn("Network %s does not exist, nothing to clean up...", d.PrivateNetwork)
-	}
-	if network != nil {
-		log.Infof("Network %s exists, removing...", d.PrivateNetwork)
-		network.Destroy()
-		network.Undefine()
+		log.Warnf("Deleting of networks failed: %s", err.Error())
+	} else {
+		log.Info("Successfully deleted networks")
 	}
 
+	// Tear down the domain now
 	log.Debug("Checking if the domain needs to be deleted")
 	dom, err := conn.LookupDomainByName(d.MachineName)
 	if err != nil {
