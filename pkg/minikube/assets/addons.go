@@ -285,15 +285,16 @@ func AddMinikubeDirAssets(assets *[]CopyableFile) error {
 }
 
 // AddMinikubeDirToAssets adds all the files in the basedir argument to the list
-// of files to be copied to the vm.  If vmpath is left blank, the files will be
+// of files to be copied to the vm.  If vmbasedir is left blank, the files will be
 // transferred to the location according to their relative minikube folder path.
-func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) error {
+func addMinikubeDirToAssets(basedir, vmbasedir string, assets *[]CopyableFile) error {
 	err := filepath.Walk(basedir, func(hostpath string, info os.FileInfo, err error) error {
 		isDir, err := util.IsDirectory(hostpath)
 		if err != nil {
 			return errors.Wrapf(err, "checking if %s is directory", hostpath)
 		}
 		if !isDir {
+			vmpath := vmbasedir
 			if vmpath == "" {
 				rPath, err := filepath.Rel(basedir, hostpath)
 				if err != nil {
