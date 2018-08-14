@@ -98,7 +98,7 @@ $ sudo usermod -a -G libvirt $(whoami)
 # NOTE: For older Debian/Ubuntu versions change the group to [libvirtd]
 $ newgrp libvirt
 
-Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver for more information.
+Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
 `
 
 func randomMAC() (net.HardwareAddr, error) {
