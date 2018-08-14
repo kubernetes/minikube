@@ -120,7 +120,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"coreDNS-clusterrole.yaml",
 			"0640"),
-	}, false, "coredns"),
+	}, true, "coredns"),
 	"kube-dns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-controller.yaml",
@@ -137,7 +137,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
-	}, true, "kube-dns"),
+	}, false, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml",
