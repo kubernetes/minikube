@@ -29,6 +29,7 @@ import (
 // after unclean shutdowns.
 type Manager struct {
 	delay time.Duration
+	registry *registry
 }
 
 func NewManager() *Manager {

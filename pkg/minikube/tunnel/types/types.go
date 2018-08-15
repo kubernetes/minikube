@@ -63,6 +63,12 @@ func (r *Route) String() string {
 	return fmt.Sprintf("%s -> %s", r.DestCIDR.String(), r.Gateway.String())
 }
 
+func (r *Route) Equal(other *Route) bool {
+	return other != nil && r.DestCIDR.IP.Equal(other.DestCIDR.IP) &&
+		r.DestCIDR.Mask.String() == other.DestCIDR.Mask.String() &&
+		r.Gateway.Equal(other.Gateway)
+}
+
 type Patch struct {
 	Type         types.PatchType
 	NameSpace    string
@@ -77,7 +83,7 @@ type Patch struct {
 type HostState int
 
 const (
-	Unkown HostState = iota
+	Unkown  HostState = iota
 	Running
 	Stopped
 )

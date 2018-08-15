@@ -63,7 +63,7 @@ func (t *minikubeTunnel) cleanup() *types.TunnelState {
 		logrus.Debugf("cleaning up %s", t.state.Route)
 		e := t.router.Cleanup(t.state.Route)
 		if e != nil {
-			t.state.RouteError = errors.Errorf("error cleaning up route %s", e)
+			t.state.RouteError = errors.Errorf("error cleaning up Route %s", e)
 		} else {
 			t.state.Route = nil
 		}
@@ -84,7 +84,7 @@ func (t *minikubeTunnel) updateTunnelStatus() *types.TunnelState {
 		Route:         r,
 	}
 	if t.state.MinikubeState == types.Running {
-		logrus.Debug("minikube is running trying to add route %s", t.state.Route)
+		logrus.Debug("minikube is running trying to add Route %s", t.state.Route)
 		t.state.RouteError = t.router.EnsureRouteIsAdded(t.state.Route)
 		t.state.PatchedServices, t.state.LoadBalancerPatcherError = t.loadBalancerPatcher.PatchServices()
 	} else {

@@ -32,7 +32,7 @@ func (r *recordingReporter) Report(tunnelState *types.TunnelState) {
 }
 
 type fakeRouter struct {
-	osRoutes []*types.Route
+	osRoutes      []*types.Route
 	osRouter
 	errorResponse error
 }
@@ -59,19 +59,20 @@ func (l *stubConfigLoader) LoadConfigFromFile(profile string) (config.Config, er
 	return l.c, l.e
 }
 
-////
-////type fakeCoreClient struct {
-////	fake.FakeCoreV1
-////}
-////
-////func (c *fakeCoreClient) Services(namespace string) v1.ServiceInterface {
-////	return &fake.FakeServices{&c.FakeCoreV1, namespace}
-////}
-//
-//func (c *fakeCoreClient) RESTClient() rest.Interface {
-//	var ret *rest.RESTClient
-//	return ret
-//}
+type fakeTunnelRegistry struct {
+	tunnels map[*types.Route]*TunnelInfo
+}
 
-type FakeRouter struct {
+func (r *fakeTunnelRegistry) Register(route *TunnelInfo) error            {
+	r.tunnels[route.Route] = route
+	return nil
+}
+func (r *fakeTunnelRegistry) Get(route *types.Route) (*TunnelInfo, error) {
+	return r.tunnels[route], nil
+}
+func (r *fakeTunnelRegistry) Remove(route *types.Route) error                    {
+	return nil
+}
+func (r *fakeTunnelRegistry) List() []*TunnelInfo {
+	return nil
 }

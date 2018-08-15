@@ -43,7 +43,7 @@ func TestSimpleReporter_Report(t *testing.T) {
 			},
 			expectedOutput: `TunnelState:
 	minikube: Running
-	route: 10.96.0.0/12 -> 1.2.3.4
+	Route: 10.96.0.0/12 -> 1.2.3.4
 	services: [svc1, svc2]
 `,
 		},
@@ -61,7 +61,7 @@ func TestSimpleReporter_Report(t *testing.T) {
 			},
 			expectedOutput: `TunnelState:
 	minikube: minikubeerror
-	route: routeerror
+	Route: routeerror
 	services: lberror
 `,
 		},

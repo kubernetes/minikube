@@ -145,7 +145,7 @@ func TestTunnel(t *testing.T) {
 		},
 
 		{
-			name:         "tunnel create route",
+			name:         "tunnel create Route",
 			machineState: state.Running,
 			serviceCIDR:  "1.2.3.4/5",
 			machineIP:    "1.2.3.4",
@@ -201,11 +201,11 @@ func TestTunnel(t *testing.T) {
 
 				substring := "testerror"
 				if !strings.Contains(actualSecondState.RouteError.Error(), substring) {
-					t.Errorf("wrong tunnel state. expected route error to contain '%s' \ngot:     %s", substring, actualSecondState.RouteError)
+					t.Errorf("wrong tunnel state. expected Route error to contain '%s' \ngot:     %s", substring, actualSecondState.RouteError)
 				}
 
 				if !reflect.DeepEqual(actualSecondState.Route, expectedRoute) {
-					t.Errorf("wrong route in tunnel state. expected %s\n\ngot:     %s", expectedRoute, actualSecondState.Route)
+					t.Errorf("wrong Route in tunnel state. expected %s\n\ngot:     %s", expectedRoute, actualSecondState.Route)
 				}
 
 				expectedRoutes := []*types.Route{expectedRoute}

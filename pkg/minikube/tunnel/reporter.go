@@ -62,7 +62,7 @@ func (r *SimpleReporter) Report(tunnelState *types.TunnelState) {
 	r.out.Write([]byte(fmt.Sprintf(
 		`TunnelState:
 	minikube: %s
-	route: %s
+	Route: %s
 	services: %s
 `, minikubeState, routeState, managedServices)))
 }

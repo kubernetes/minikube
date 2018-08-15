@@ -39,14 +39,14 @@ func (router *osRouter) EnsureRouteIsAdded(route *types.Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	logrus.Infof("Adding route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
-	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
+	logrus.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	command := exec.Command("sudo", "Route", "-n", "add", serviceCIDR, gatewayIP)
 	logrus.Infof("About to run command: %s", command.Args)
 	stdInAndOut, e := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	re := regexp.MustCompile(fmt.Sprintf("add net (.*): gateway %s\n", gatewayIP))
 	if !re.MatchString(message) {
-		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
+		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
 	logrus.Infof("%s", stdInAndOut)
 	if e != nil {
@@ -88,7 +88,7 @@ func (router *osRouter) CheckRoute(r *types.Route) (bool, error) {
 				}
 			} else if ip, ipNet, e := net.ParseCIDR(dstCIDR); e == nil {
 				if ipNet.Contains(r.DestCIDR.IP) || r.DestCIDR.Contains(ip) {
-					logrus.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove this rule. Run: sudo route -n delete %s", ipNet, r.DestCIDR, ipNet)
+					logrus.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove this rule. Run: sudo Route -n delete %s", ipNet, r.DestCIDR, ipNet)
 				}
 			} else {
 				logrus.Errorf("can't parse CIDR from routing table: %s", dstCIDR)
@@ -150,8 +150,8 @@ func (router *osRouter) Cleanup(route *types.Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	fmt.Printf("Cleaning up route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
-	command := exec.Command("sudo", "route", "-n", "delete", serviceCIDR)
+	fmt.Printf("Cleaning up Route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
+	command := exec.Command("sudo", "Route", "-n", "delete", serviceCIDR)
 	if stdInAndOut, e := command.CombinedOutput(); e != nil {
 		return e
 	} else {
@@ -159,7 +159,7 @@ func (router *osRouter) Cleanup(route *types.Route) error {
 		logrus.Infof("%s", message)
 		re := regexp.MustCompile(fmt.Sprintf("^delete net ([^:]*)$"))
 		if !re.MatchString(message) {
-			return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
+			return fmt.Errorf("error deleting Route: %s, %d", message, len(strings.Split(message, "\n")))
 		} else {
 			return nil
 		}

@@ -21,9 +21,9 @@ import (
 	"net"
 )
 
-func parseRoute(ipString string, gwString string) *types.Route {
-	ip := net.ParseIP(ipString)
-	_, ipNet, _ := net.ParseCIDR(gwString)
+func parseRoute(gatewayIP string, destCIDR string) *types.Route {
+	ip := net.ParseIP(gatewayIP)
+	_, ipNet, _ := net.ParseCIDR(destCIDR)
 
 	expectedRoute := &types.Route{
 		Gateway:  ip,

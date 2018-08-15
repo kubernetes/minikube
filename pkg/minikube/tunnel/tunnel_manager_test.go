@@ -173,6 +173,14 @@ func TestTunnelManagerDelayAndContext(t *testing.T) {
 	}
 }
 
+func TestTunnelManagerCleanup(t *testing.T) {
+	//inject fake registry and fake Pid inspector
+	//expect
+	// 	call router.cleanup on all the tunnels that have a non-running Pid
+	//	print warning on all the routes that have a running Pid
+
+}
+
 type tunnelStub struct {
 	mockClusterInfo *types.TunnelState
 	mockError       error

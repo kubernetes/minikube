@@ -105,7 +105,7 @@ func TestRouteTable(t *testing.T) {
 		expectedError  error
 	}{
 		{
-			name: "route already exists",
+			name: "Route already exists",
 			cidr: &net.IPNet{
 				IP:   net.IPv4(10, 96, 0, 0),
 				Mask: net.IPv4Mask(255, 240, 0, 0),
@@ -127,7 +127,7 @@ func TestRouteTable(t *testing.T) {
 		},
 
 		{
-			name: "route doesn't exist yet",
+			name: "Route doesn't exist yet",
 			cidr: &net.IPNet{
 				IP:   net.IPv4(10, 112, 0, 0),
 				Mask: net.IPv4Mask(255, 240, 0, 0),
@@ -138,7 +138,7 @@ func TestRouteTable(t *testing.T) {
 		},
 
 		{
-			name: "route doesn't exist yet, but there is overlap (warning is only logged)",
+			name: "Route doesn't exist yet, but there is overlap (warning is only logged)",
 			cidr: &net.IPNet{
 				IP:   net.IPv4(10, 0, 0, 0),
 				Mask: net.IPv4Mask(255, 0, 0, 0),
@@ -149,7 +149,7 @@ func TestRouteTable(t *testing.T) {
 		},
 
 		{
-			name: "route doesn't exist yet, but there is overlap (warning is only logged)",
+			name: "Route doesn't exist yet, but there is overlap (warning is only logged)",
 			cidr: &net.IPNet{
 				IP:   net.IPv4(10, 96, 1, 0),
 				Mask: net.IPv4Mask(255, 255, 0, 0),
@@ -184,17 +184,17 @@ got 			"%v" | error: [%s]`, testCase.name, testCase.expectedResult, testCase.exp
 }
 
 func addRoute(t *testing.T, cidr string, gw string) {
-	command := exec.Command("sudo", "ip", "route", "add", cidr, "via", gw)
+	command := exec.Command("sudo", "ip", "Route", "add", cidr, "via", gw)
 	sout, e := command.CombinedOutput()
 	if e != nil {
-		t.Logf("assertion add route error (should be ok): %s, error: %s", sout, e)
+		t.Logf("assertion add Route error (should be ok): %s, error: %s", sout, e)
 	} else {
 		t.Logf("assertion - successfully added %s -> %s", cidr, gw)
 	}
 }
 
 func cleanRoute(t *testing.T, cidr string) {
-	command := exec.Command("sudo", "ip", "route", "delete", cidr)
+	command := exec.Command("sudo", "ip", "Route", "delete", cidr)
 	sout, e := command.CombinedOutput()
 	if e != nil {
 		t.Logf("assertion cleanup error (should be ok): %s, error: %s", sout, e)

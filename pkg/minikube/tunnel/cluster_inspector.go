@@ -70,7 +70,7 @@ func (m *MinikubeInspector) Inspect() (types.HostState, *types.Route, error) {
 	var route *types.Route
 	route, e = toRoute(h, c)
 	if e != nil {
-		e = errors.Wrapf(e, "error getting route info for %s", m.machineName)
+		e = errors.Wrapf(e, "error getting Route info for %s", m.machineName)
 		return hostState, nil, e
 	}
 	return hostState, route, nil
