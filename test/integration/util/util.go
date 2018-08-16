@@ -225,24 +225,6 @@ func WaitForBusyboxRunning(t *testing.T, namespace string) error {
 	return commonutil.WaitForPodsWithLabelRunning(client, namespace, selector)
 }
 
-func WaitForDNSRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
-	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
-	}
-
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "kube-dns"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		return errors.Wrap(err, "waiting for kube-dns pods")
-	}
-
-	if err := commonutil.WaitForService(client, "kube-system", "kube-dns", true, time.Millisecond*500, time.Minute*10); err != nil {
-		t.Errorf("Error waiting for kube-dns service to be up")
-	}
-
-	return nil
-}
-
 func WaitForDashboardRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 	if err != nil {
