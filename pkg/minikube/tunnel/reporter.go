@@ -24,16 +24,16 @@ import (
 	"strings"
 )
 
-type Reporter interface {
+type reporter interface {
 	Report(tunnelState *types.TunnelState)
 }
 
-type SimpleReporter struct {
+type simpleReporter struct {
 	out       io.Writer
 	lastState *types.TunnelState
 }
 
-func (r *SimpleReporter) Report(tunnelState *types.TunnelState) {
+func (r *simpleReporter) Report(tunnelState *types.TunnelState) {
 	if r.lastState == tunnelState {
 		return
 	}
@@ -67,8 +67,8 @@ func (r *SimpleReporter) Report(tunnelState *types.TunnelState) {
 `, minikubeState, routeState, managedServices)))
 }
 
-func NewReporter(out io.Writer) Reporter {
-	return &SimpleReporter{
+func NewReporter(out io.Writer) reporter {
+	return &simpleReporter{
 		out: out,
 	}
 }

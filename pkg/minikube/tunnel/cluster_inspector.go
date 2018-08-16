@@ -28,17 +28,14 @@ import (
 	"net"
 )
 
-type clusterInspector interface {
-	Inspect() (types.HostState, *types.Route, error)
-}
 
-type MinikubeInspector struct {
+type minikubeInspector struct {
 	machineStore persist.Store
 	configLoader config.ConfigLoader
 	machineName  string
 }
 
-func (m *MinikubeInspector) Inspect() (types.HostState, *types.Route, error) {
+func (m *minikubeInspector) Inspect() (types.HostState, *types.Route, error) {
 	hostState := types.Unkown
 
 	h, e := cluster.CheckIfHostExistsAndLoad(m.machineStore, m.machineName)

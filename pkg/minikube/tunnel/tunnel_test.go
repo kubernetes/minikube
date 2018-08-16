@@ -70,7 +70,7 @@ func TestTunnel(t *testing.T) {
 				expectedState := &types.TunnelState{
 					MinikubeState: types.Stopped,
 					MinikubeError: nil,
-					Route:         nil,
+					Route:         parseRoute("1.2.3.4", "1.2.3.4/5"),
 				}
 
 				if !reflect.DeepEqual(expectedState, returnedState) {

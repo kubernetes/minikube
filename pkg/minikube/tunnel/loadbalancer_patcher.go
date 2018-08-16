@@ -28,40 +28,37 @@ import (
 	"k8s.io/minikube/pkg/minikube/tunnel/types"
 )
 
-type LoadBalancerPatcher interface {
-	PatchServices() ([]string, error)
-	Cleanup() ([]string, error)
+
+
+type requestSender interface {
+	send(request *rest.Request) (result []byte, err error)
 }
 
-type RequestSender interface {
-	Do(request *rest.Request) (result []byte, err error)
+type patchConverter interface {
+	convert(restClient rest.Interface, patch *types.Patch) *rest.Request
 }
 
-type PatchConverter interface {
-	Convert(restClient rest.Interface, patch *types.Patch) *rest.Request
-}
-
-type DefaultPatcher struct {
+type loadBalancerPatcher struct {
 	coreV1Client   v1.CoreV1Interface
-	requestSender  RequestSender
-	patchConverter PatchConverter
+	requestSender  requestSender
+	patchConverter patchConverter
 }
 
-func (l *DefaultPatcher) PatchServices() (managedServices []string, err error) {
+func (l *loadBalancerPatcher) PatchServices() (managedServices []string, err error) {
 	managedServices, err = l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 		return l.updateService(restClient, svc)
 	})
 	return
 }
 
-func (l *DefaultPatcher) Cleanup() (managedServices []string, err error) {
+func (l *loadBalancerPatcher) Cleanup() (managedServices []string, err error) {
 	managedServices, err = l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 		return l.cleanupService(restClient, svc)
 	})
 	return
 }
 
-func (l *DefaultPatcher) applyOnLBServices(action func(restClient rest.Interface, svc core_v1.Service) ([]byte, error)) ([]string, error) {
+func (l *loadBalancerPatcher) applyOnLBServices(action func(restClient rest.Interface, svc core_v1.Service) ([]byte, error)) ([]string, error) {
 	services := l.coreV1Client.Services("")
 	serviceList, e := services.List(metav1.ListOptions{})
 	if e != nil {
@@ -87,7 +84,7 @@ func (l *DefaultPatcher) applyOnLBServices(action func(restClient rest.Interface
 	}
 	return managedServices, nil
 }
-func (l *DefaultPatcher) updateService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
+func (l *loadBalancerPatcher) updateService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
 	clusterIP := svc.Spec.ClusterIP
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) == 0 || (len(ingresses) == 1 && ingresses[0].IP != clusterIP) {
@@ -102,15 +99,15 @@ func (l *DefaultPatcher) updateService(restClient rest.Interface, svc core_v1.Se
 			Resource:     "services",
 			BodyContent:  jsonPatch,
 		}
-		request := l.patchConverter.Convert(restClient, patch)
-		result, err = l.requestSender.Do(request)
+		request := l.patchConverter.convert(restClient, patch)
+		result, err = l.requestSender.send(request)
 		logrus.Infof("Patched %s with IP %s", svc.Name, clusterIP)
 		return
 	}
 	return nil, nil
 }
 
-func (l *DefaultPatcher) cleanupService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
+func (l *loadBalancerPatcher) cleanupService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) > 0 {
 		logrus.Debugf("[%s] cleanup: unset load balancer ingress", svc.Name)
@@ -124,16 +121,16 @@ func (l *DefaultPatcher) cleanupService(restClient rest.Interface, svc core_v1.S
 			Resource:     "services",
 			BodyContent:  jsonPatch,
 		}
-		request := l.patchConverter.Convert(restClient, patch)
-		result, err = l.requestSender.Do(request)
+		request := l.patchConverter.convert(restClient, patch)
+		result, err = l.requestSender.send(request)
 		logrus.Infof("Removed load balancer ingress from %s.", svc.Name)
 		return
 	}
 	return nil, nil
 }
 
-func NewLoadBalancerPatcher(corev1Client v1.CoreV1Interface) *DefaultPatcher {
-	return &DefaultPatcher{
+func NewLoadBalancerPatcher(corev1Client v1.CoreV1Interface) *loadBalancerPatcher {
+	return &loadBalancerPatcher{
 		coreV1Client:   corev1Client,
 		requestSender:  &defaultRequestSender{},
 		patchConverter: &defaultPatchConverter{},
@@ -142,7 +139,7 @@ func NewLoadBalancerPatcher(corev1Client v1.CoreV1Interface) *DefaultPatcher {
 
 type defaultPatchConverter struct{}
 
-func (c *defaultPatchConverter) Convert(restClient rest.Interface, patch *types.Patch) (request *rest.Request) {
+func (c *defaultPatchConverter) convert(restClient rest.Interface, patch *types.Patch) (request *rest.Request) {
 	request = restClient.Patch(patch.Type)
 	request.Name(patch.ResourceName)
 	request.Resource(patch.Resource)
@@ -156,6 +153,6 @@ func (c *defaultPatchConverter) Convert(restClient rest.Interface, patch *types.
 
 type defaultRequestSender struct{}
 
-func (r *defaultRequestSender) Do(request *rest.Request) (result []byte, err error) {
+func (r *defaultRequestSender) send(request *rest.Request) (result []byte, err error) {
 	return request.Do().Raw()
 }

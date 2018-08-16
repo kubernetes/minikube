@@ -35,7 +35,7 @@ func NewTunnel(machineName string,
 	configLoader config.ConfigLoader,
 	v1Core v1.CoreV1Interface) *minikubeTunnel {
 	return &minikubeTunnel{
-		clusterInspector: &MinikubeInspector{
+		clusterInspector: &minikubeInspector{
 			machineName:  machineName,
 			machineStore: machineStore,
 			configLoader: configLoader,
@@ -51,11 +51,11 @@ func NewTunnel(machineName string,
 
 type minikubeTunnel struct {
 	//collaborators
-	clusterInspector    clusterInspector
+	clusterInspector    *minikubeInspector
 	router              router
-	loadBalancerPatcher LoadBalancerPatcher
+	loadBalancerPatcher *loadBalancerPatcher
 	state               *types.TunnelState
-	reporter            Reporter
+	reporter            reporter
 }
 
 func (t *minikubeTunnel) cleanup() *types.TunnelState {
@@ -78,6 +78,7 @@ func (t *minikubeTunnel) updateTunnelStatus() *types.TunnelState {
 	logrus.Debug("updating tunnel status...")
 	s, r, e := t.clusterInspector.Inspect()
 	//TODO: can this change while minikube is running?
+	//TODO: check for registered tunnels
 	t.state = &types.TunnelState{
 		MinikubeState: s,
 		MinikubeError: e,
@@ -87,9 +88,6 @@ func (t *minikubeTunnel) updateTunnelStatus() *types.TunnelState {
 		logrus.Debug("minikube is running trying to add Route %s", t.state.Route)
 		t.state.RouteError = t.router.EnsureRouteIsAdded(t.state.Route)
 		t.state.PatchedServices, t.state.LoadBalancerPatcherError = t.loadBalancerPatcher.PatchServices()
-	} else {
-		logrus.Debug("minikube is not running, cleaning up tunnel.")
-		t.cleanup()
 	}
 	logrus.Debugf("sending report %v", t.state)
 	t.reporter.Report(t.state.Clone())

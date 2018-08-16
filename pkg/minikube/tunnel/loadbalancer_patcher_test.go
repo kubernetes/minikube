@@ -74,7 +74,7 @@ type countingRequestSender struct {
 	requests int
 }
 
-func (s *countingRequestSender) Do(request *rest.Request) (result []byte, err error) {
+func (s *countingRequestSender) send(request *rest.Request) (result []byte, err error) {
 	s.requests += 1
 	return nil, nil
 }
@@ -83,7 +83,7 @@ type recordingPatchConverter struct {
 	patches []*types.Patch
 }
 
-func (r *recordingPatchConverter) Convert(restClient rest.Interface, patch *types.Patch) *rest.Request {
+func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *types.Patch) *rest.Request {
 	r.patches = append(r.patches, patch)
 	return nil
 }
@@ -360,7 +360,7 @@ func TestManualTesting_PatchUtil(t *testing.T) {
 	clientset, _ := service.K8s.GetClientset()
 	client := clientset.CoreV1()
 	patcher := NewLoadBalancerPatcher(client)
-	req := patcher.patchConverter.Convert(client.RESTClient(), &types.Patch{
+	req := patcher.patchConverter.convert(client.RESTClient(), &types.Patch{
 		Type:         "application/json-patch+json",
 		NameSpace:    "default",
 		NameSpaceSet: true,
@@ -369,7 +369,7 @@ func TestManualTesting_PatchUtil(t *testing.T) {
 		ResourceName: "nginx3",
 		BodyContent:  `[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "1.2.3.4" } ] }]`,
 	})
-	object, e := patcher.requestSender.Do(req)
+	object, e := patcher.requestSender.send(req)
 
 	fmt.Printf("Result: %s\nerror: %v\n", object, e)
 

@@ -85,6 +85,7 @@ func (mgr *Manager) run(t Tunnel, ctx context.Context, ready, check, done chan b
 			status := t.updateTunnelStatus()
 			logrus.Debug("minikube status: %s", status)
 			if status.MinikubeState != types.Running {
+				t.cleanup()
 				return
 			}
 			ready <- true

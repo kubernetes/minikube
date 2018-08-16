@@ -34,7 +34,7 @@ func TestAPIError(t *testing.T) {
 
 	machineStore := &tests.FakeStore{}
 	configLoader := &stubConfigLoader{}
-	inspector := &MinikubeInspector{
+	inspector := &minikubeInspector{
 		machineStore, configLoader, machineName,
 	}
 
@@ -66,7 +66,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 			},
 		},
 	}
-	inspector := &MinikubeInspector{
+	inspector := &minikubeInspector{
 		machineStore, configLoader, machineName,
 	}
 
