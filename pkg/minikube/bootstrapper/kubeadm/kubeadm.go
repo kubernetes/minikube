@@ -157,12 +157,8 @@ func addAddons(files *[]assets.CopyableFile) error {
 		return errors.Wrap(err, "adding minikube dir assets")
 	}
 	// bundled addons
-	for addonName, addonBundle := range assets.Addons {
-		// TODO(r2d4): Kubeadm ignores the kube-dns addon and uses its own.
-		// expose this in a better way
-		if addonName == "kube-dns" {
-			continue
-		}
+	for _, addonBundle := range assets.Addons {
+
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
 			for _, addon := range addonBundle.Assets {
 				*files = append(*files, addon)
