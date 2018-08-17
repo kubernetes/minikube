@@ -32,11 +32,35 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/miniku
 
 ### Windows
 
-Install with [Chocolatey](https://chocolatey.org/):
+Hyper-V needs to be enabled. For Windows 10 this can only run on these versions:
+
+* Windows 10 Enterprise
+* Windows 10 Professional
+* Windows 10 Education
+
+#### Install with [Chocolatey](https://chocolatey.org/) (recommended):
+These commands must be run as administrator. To do this, open the Windows command line by typing 'cmd' in your start menu, right clicking it and choosing 'Run as administrator'.
 ```shell
 choco install minikube
 ```
-Install manually: Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
+```shell
+choco install kubernetes-cli
+```
+ After it finished installing, close the current command line and restart. Minikube was added to your path automatically.
+
+ To start the minikube cluster, make sure you also have administrator rights.
+
+```shell
+minikube start
+ ```
+
+ You might have to specify the vm driver.
+ ```shell
+minikube start --vm-driver hyperv
+ ```
+
+#### Install manually
+Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
 
 
 ### Linux Continuous Integration without VM Support
