@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 
 	"time"
+	"os"
 )
 
 func TestTunnelManagerEventHandling(t *testing.T) {
@@ -174,11 +175,68 @@ func TestTunnelManagerDelayAndContext(t *testing.T) {
 }
 
 func TestTunnelManagerCleanup(t *testing.T) {
-	//TODO: balopat
-	//inject fake registry and fake Pid inspector
-	//expect
-	// 	call router.cleanup on all the tunnels that have a non-running Pid
-	//	print warning on all the routes that have a running Pid
+	reg, cleanup := createTestRegistry(t)
+	defer cleanup()
+
+	runningTunnel1 := &TunnelID{
+		Route:       parseRoute("1.2.3.4", "5.6.7.8/9"),
+		Pid:         os.Getpid(),
+		MachineName: "minikube",
+	}
+
+	runningTunnel2 := &TunnelID{
+		Route:       parseRoute("100.2.3.4", "200.6.7.8/9"),
+		Pid:         os.Getpid(),
+		MachineName: "minikube",
+	}
+
+	notRunningTunnel1 := &TunnelID{
+		Route:       parseRoute("200.2.3.4", "5.6.7.8/9"),
+		Pid:         1234,
+		MachineName: "minikube",
+	}
+
+	notRunningTunnel2 := &TunnelID{
+		Route:       parseRoute("250.2.3.4", "5.6.7.8/9"),
+		Pid:         1234,
+		MachineName: "minikube",
+	}
+	reg.Register(runningTunnel1)
+	reg.Register(runningTunnel2)
+	reg.Register(notRunningTunnel1)
+	reg.Register(notRunningTunnel2)
+
+	router := &fakeRouter{}
+
+	router.osRoutes = append(router.osRoutes,
+		runningTunnel1.Route,
+		runningTunnel2.Route,
+		notRunningTunnel1.Route,
+		notRunningTunnel2.Route)
+
+	manager := NewManager()
+	manager.router = router
+	manager.registry = reg
+
+	err := manager.CleanupNotRunningTunnels()
+
+	if err != nil {
+		t.Errorf("expected no error got %s", err)
+	}
+
+	if len(router.osRoutes) != 2 ||
+		!router.osRoutes[0].Equal(runningTunnel1.Route) ||
+		!router.osRoutes[1].Equal(runningTunnel2.Route) {
+			t.Errorf("routes are not cleaned up, expected only running tunnels to stay, got: %v", router.osRoutes)
+	}
+
+	tunnels, err := reg.List()
+
+	if len(tunnels) != 2 ||
+		!tunnels[0].Equal(runningTunnel1) ||
+		!tunnels[1].Equal(runningTunnel2) {
+		t.Errorf("tunnels are not cleaned up properly, expected only running tunnels to stay, got: %v", tunnels)
+	}
 
 }
 

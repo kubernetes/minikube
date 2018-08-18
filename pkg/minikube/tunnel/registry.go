@@ -56,12 +56,26 @@ type persistentRegistry struct {
 	fileName string
 }
 
+//TODO(balopat): register should check against conflicting/overlapping routes
 func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 	if tunnel.Route == nil {
 		return errors.New("tunnel.Route should not be nil")
 	}
-	f, e := os.OpenFile(r.fileName, unix.O_RDWR|unix.O_APPEND, 0666)
 
+	tunnels, e := r.List()
+	if e != nil {
+		return fmt.Errorf("failed to list: %s", e)
+	}
+	tunnels = append(tunnels, tunnel)
+
+	bytes, e := json.Marshal(tunnels)
+	if e != nil {
+		return fmt.Errorf("error marshalling json %s", e)
+	}
+
+	logrus.Infof("json marshalled: %v, %s\n", tunnels, bytes)
+
+	f, e := os.OpenFile(r.fileName, unix.O_RDWR|unix.O_TRUNC, 0666)
 	if e != nil {
 		if os.IsNotExist(e) {
 			f, e = os.Create(r.fileName)
@@ -74,18 +88,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 	}
 	defer f.Close()
 
-	byteValue, _ := ioutil.ReadAll(f)
-	var tunnels []*TunnelID
-	json.Unmarshal(byteValue, &tunnels)
 
-	tunnels = append(tunnels, tunnel)
-
-	bytes, e := json.Marshal(tunnels)
-	if e != nil {
-		return fmt.Errorf("error marshalling json %s", e)
-	}
-
-	logrus.Debugf("json marshalled: %v, %s", tunnels, bytes)
 	n, err := f.Write(bytes)
 	if n < len(bytes) || err != nil {
 		return fmt.Errorf("error registering tunnel while writing tunnels file: %s", err)
@@ -138,8 +141,10 @@ func (r *persistentRegistry) List() ([]*TunnelID, error) {
 		return []*TunnelID{}, nil
 	}
 	byteValue, _ := ioutil.ReadAll(f)
-	fmt.Printf("json content:\n%s\n", byteValue)
 	var tunnels []*TunnelID
+	if len(byteValue) == 0 {
+		return tunnels, nil
+	}
 	if e = json.Unmarshal(byteValue, &tunnels); e != nil {
 		return nil, e
 	}

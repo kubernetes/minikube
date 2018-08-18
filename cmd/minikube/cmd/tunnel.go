@@ -28,6 +28,7 @@ import (
 	"os/signal"
 )
 
+var cleanup bool
 // tunnelCmd represents the tunnel command
 var tunnelCmd = &cobra.Command{
 	Use:   "tunnel",
@@ -37,6 +38,10 @@ var tunnelCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		manager := tunnel.NewManager()
+		if cleanup {
+			manager.CleanupNotRunningTunnels()
+		}
 		logrus.Infof("Creating docker machine client...")
 		api, e := machine.NewAPIClient()
 		if e != nil {
@@ -59,7 +64,7 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		done, e := tunnel.NewManager().StartTunnel(ctx, machineName, api, config.Loader, v1)
+		done, e := manager.StartTunnel(ctx, machineName, api, config.Loader, v1)
 		if e != nil {
 			logrus.Fatalf("error starting tunnel: %s", e)
 		}
@@ -68,5 +73,6 @@ var tunnelCmd = &cobra.Command{
 }
 
 func init() {
+	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c" , false, "call with cleanup=true to remove old tunnels")
 	RootCmd.AddCommand(tunnelCmd)
 }

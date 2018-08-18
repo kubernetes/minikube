@@ -8,18 +8,11 @@ import (
 )
 
 func TestPersistentRegistryWithNoKey(t *testing.T) {
-	f, err := ioutil.TempFile(os.TempDir(), "reg_")
-	defer f.Close()
-	if err != nil {
-		t.Errorf("failed to create temp file %s", err)
-	}
-
-	registry := &persistentRegistry{
-		fileName: f.Name(),
-	}
+	registry, cleanup := createTestRegistry(t)
+	defer cleanup()
 
 	route := &TunnelID{}
-	err = registry.Register(route)
+	err := registry.Register(route)
 
 	if err == nil {
 		t.Errorf("attempting to register TunnelID without key should throw error")
@@ -27,18 +20,13 @@ func TestPersistentRegistryWithNoKey(t *testing.T) {
 }
 
 func TestPersistentRegistryNullableMetadata(t *testing.T) {
-	f, err := ioutil.TempFile(os.TempDir(), "reg_")
-	defer f.Close()
-	if err != nil {
-		t.Errorf("failed to create temp file %s", err)
-	}
-	registry := &persistentRegistry{
-		fileName: f.Name(),
-	}
+	registry, cleanup := createTestRegistry(t)
+	defer cleanup()
+
 	route := &TunnelID{
 		Route: parseRoute("1.2.3.4", "10.96.0.0/12"),
 	}
-	err = registry.Register(route)
+	err := registry.Register(route)
 
 	if err != nil {
 		t.Errorf("metadata should be nullable, expected no error, got %s", err)
@@ -196,4 +184,18 @@ func TestPersistentRegistryOperations(t *testing.T) {
 		})
 	}
 
+}
+
+
+func createTestRegistry(t *testing.T) (reg *persistentRegistry, cleanup func()) {
+	f, err := ioutil.TempFile(os.TempDir(), "reg_")
+	f.Close()
+	if err != nil {
+		t.Errorf("failed to create temp file %s", err)
+	}
+
+	registry := &persistentRegistry{
+		fileName: f.Name(),
+	}
+	return registry, func(){os.Remove(f.Name())}
 }

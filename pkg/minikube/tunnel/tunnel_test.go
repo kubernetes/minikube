@@ -227,15 +227,8 @@ func TestTunnel(t *testing.T) {
 				e: tc.configLoaderError,
 			}
 
-			f, err := ioutil.TempFile(os.TempDir(), "reg_")
-			f.Close()
-			if err != nil {
-				t.Errorf("failed to create temp file %s", err)
-			}
-			defer os.Remove(f.Name())
-			registry := &persistentRegistry{
-				fileName: f.Name(),
-			}
+			registry, cleanup := createTestRegistry(t)
+			defer cleanup()
 
 			tunnel, e := newTunnel(machineName, store, configLoader, newStubCoreClient(nil, nil), registry)
 			if e != nil {
@@ -260,6 +253,7 @@ func TestTunnel(t *testing.T) {
 	}
 
 }
+
 
 func TestErrorCreatingTunnel(t *testing.T) {
 	machineName := "testmachine"

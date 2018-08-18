@@ -64,6 +64,9 @@ func newTunnel(machineName string,
 			MinikubeState: state,
 			MinikubeError: nil,
 		},
+		reporter: &simpleReporter{
+			out: os.Stdout,
+		},
 	}, nil
 
 }

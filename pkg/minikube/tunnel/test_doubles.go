@@ -43,8 +43,14 @@ func (r *fakeRouter) EnsureRouteIsAdded(route  *Route) error {
 	return r.errorResponse
 }
 func (r *fakeRouter) Cleanup(route  *Route) error {
+	logrus.Infof("fake router cleanup: %v\n", route)
 	if r.errorResponse == nil {
-		r.osRoutes = [] *Route{}
+		for i := range r.osRoutes {
+			if r.osRoutes[i].Equal(route) {
+				r.osRoutes = append(r.osRoutes[:i], r.osRoutes[i+1:]...)
+				break
+			}
+		}
 	}
 	return r.errorResponse
 }

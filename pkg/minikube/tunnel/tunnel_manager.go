@@ -37,9 +37,10 @@ type Manager struct {
 	delay            time.Duration
 	registry         *persistentRegistry
 	isProcessRunning pidChecker
+	router           router
 }
 
-type pidChecker func (int) (bool, error)
+type pidChecker func(int) (bool, error)
 
 func checkIfRunning(pid int) (bool, error) {
 	p, err := os.FindProcess(pid)
@@ -55,7 +56,6 @@ func checkIfRunning(pid int) (bool, error) {
 	return true, nil
 }
 
-
 func NewManager() *Manager {
 	return &Manager{
 		delay: 5 * time.Second,
@@ -63,6 +63,7 @@ func NewManager() *Manager {
 			fileName: constants.GetTunnelRegistryFile(),
 		},
 		isProcessRunning: checkIfRunning,
+		router: &osRouter{},
 	}
 }
 func (mgr *Manager) StartTunnel(ctx context.Context, machineName string,
@@ -121,7 +122,7 @@ func (mgr *Manager) run(t tunnel, ctx context.Context, ready, check, done chan b
 			}
 			status := t.updateTunnelStatus()
 			logrus.Debug("minikube status: %s", status)
-			if status.MinikubeState !=Running {
+			if status.MinikubeState != Running {
 				mgr.cleanup(t)
 				return
 			}
@@ -130,6 +131,33 @@ func (mgr *Manager) run(t tunnel, ctx context.Context, ready, check, done chan b
 	}
 }
 
-func (mgr *Manager) cleanup(t tunnel)  *TunnelState {
+func (mgr *Manager) cleanup(t tunnel) *TunnelState {
 	return t.cleanup()
+}
+
+func (mgr *Manager) CleanupNotRunningTunnels() error {
+	logrus.Infof("cleaning up tunnels")
+	tunnels, e := mgr.registry.List()
+	if e != nil {
+		return fmt.Errorf("error listing tunnels from registry: %s", e)
+	}
+
+	for _, tunnel := range tunnels {
+		isRunning, e := mgr.isProcessRunning(tunnel.Pid)
+		logrus.Infof("%v is running: %s", tunnel, isRunning)
+		if e != nil {
+			return e
+		}
+		if !isRunning {
+			e = mgr.router.Cleanup(tunnel.Route)
+			if e != nil {
+				return e
+			}
+			e = mgr.registry.Remove(tunnel.Route)
+			if e != nil {
+				return e
+			}
+		}
+	}
+	return nil
 }
