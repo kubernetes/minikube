@@ -16,13 +16,9 @@ limitations under the License.
 
 package tunnel
 
-import (
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
-)
-
 type router interface {
-	EnsureRouteIsAdded(route *types.Route) error
-	Cleanup(route *types.Route) error
+	EnsureRouteIsAdded(route *Route) error
+	Cleanup(route *Route) error
 }
 
 type osRouter struct{}

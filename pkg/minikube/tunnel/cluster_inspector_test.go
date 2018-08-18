@@ -23,7 +23,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 	"net"
 	"reflect"
 	"strings"
@@ -38,7 +37,7 @@ func TestAPIError(t *testing.T) {
 		machineStore, configLoader, machineName,
 	}
 
-	s, r, e := inspector.Inspect()
+	s, r, e := inspector.getStateAndRoute()
 
 	if e == nil || !strings.Contains(e.Error(), "Machine does not exist") {
 		t.Fatalf("minikube monitor should propagate errors from API, inspectCluster() returned \"%v, %v\", %v", s, r, e)
@@ -70,7 +69,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 		machineStore, configLoader, machineName,
 	}
 
-	s, r, e := inspector.Inspect()
+	s, r, e := inspector.getStateAndRoute()
 
 	if e != nil {
 		t.Errorf("`error` is not nil")
@@ -79,12 +78,12 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 	ip := net.ParseIP("1.2.3.4")
 	_, ipNet, _ := net.ParseCIDR("96.0.0.0/12")
 
-	expectedRoute := &types.Route{
+	expectedRoute := &Route{
 		Gateway:  ip,
 		DestCIDR: ipNet,
 	}
 
-	if s != types.Running {
+	if s != Running {
 		t.Errorf("expected running, got %s", s)
 	}
 	if !reflect.DeepEqual(r, expectedRoute) {

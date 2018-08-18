@@ -14,44 +14,47 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package types
+package tunnel
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"net"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type TunnelState struct {
+	TunnelID TunnelID
+
 	MinikubeState HostState
 	MinikubeError error
 
-	Route      *Route
-	RouteError error
+	RouterError error
 
-	PatchedServices          []string
-	LoadBalancerPatcherError error
+	PatchedServices           []string
+	LoadBalancerEmulatorError error
 }
 
 func (t *TunnelState) Clone() *TunnelState {
 	return &TunnelState{
-		MinikubeState:            t.MinikubeState,
-		MinikubeError:            t.MinikubeError,
-		Route:                    t.Route,
-		RouteError:               t.RouteError,
-		PatchedServices:          t.PatchedServices,
-		LoadBalancerPatcherError: t.LoadBalancerPatcherError,
+		TunnelID:                  t.TunnelID,
+		MinikubeState:             t.MinikubeState,
+		MinikubeError:             t.MinikubeError,
+		RouterError:               t.RouterError,
+		PatchedServices:           t.PatchedServices,
+		LoadBalancerEmulatorError: t.LoadBalancerEmulatorError,
 	}
 }
 
+
 func (t *TunnelState) String() string {
-	return fmt.Sprintf("minikube(%s, e:%s), route(%s, e:%s), services(%s, e:%s)",
+	return fmt.Sprintf("id(%s), minikube(%s, e:%s), route(%s, e:%s), services(%s, e:%s)",
+		t.TunnelID,
 		t.MinikubeState,
 		t.MinikubeError,
-		t.Route,
-		t.RouteError,
+		t.TunnelID.Route,
+		t.RouterError,
 		t.PatchedServices,
-		t.LoadBalancerPatcherError)
+		t.LoadBalancerEmulatorError)
 }
 
 type Route struct {
@@ -83,7 +86,7 @@ type Patch struct {
 type HostState int
 
 const (
-	Unkown  HostState = iota
+	Unknown HostState = iota
 	Running
 	Stopped
 )

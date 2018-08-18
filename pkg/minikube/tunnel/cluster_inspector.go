@@ -24,10 +24,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 	"net"
 )
-
 
 type minikubeInspector struct {
 	machineStore persist.Store
@@ -35,8 +33,8 @@ type minikubeInspector struct {
 	machineName  string
 }
 
-func (m *minikubeInspector) Inspect() (types.HostState, *types.Route, error) {
-	hostState := types.Unkown
+func (m *minikubeInspector) getStateAndHost() (HostState, *host.Host, error) {
+	hostState := Unknown
 
 	h, e := cluster.CheckIfHostExistsAndLoad(m.machineStore, m.machineName)
 	if e != nil {
@@ -51,6 +49,20 @@ func (m *minikubeInspector) Inspect() (types.HostState, *types.Route, error) {
 		return hostState, nil, e
 	}
 
+	if s == state.Running {
+		hostState = Running
+	} else {
+		hostState = Stopped
+	}
+
+	return hostState, h, nil
+}
+
+func (m *minikubeInspector) getStateAndRoute() (HostState, *Route, error) {
+	hostState, h, e := m.getStateAndHost()
+	if e != nil {
+		return hostState, nil, e
+	}
 	var c config.Config
 	c, e = m.configLoader.LoadConfigFromFile(m.machineName)
 	if e != nil {
@@ -58,13 +70,7 @@ func (m *minikubeInspector) Inspect() (types.HostState, *types.Route, error) {
 		return hostState, nil, e
 	}
 
-	if s == state.Running {
-		hostState = types.Running
-	} else {
-		hostState = types.Stopped
-	}
-
-	var route *types.Route
+	var route *Route
 	route, e = toRoute(h, c)
 	if e != nil {
 		e = errors.Wrapf(e, "error getting Route info for %s", m.machineName)
@@ -73,7 +79,7 @@ func (m *minikubeInspector) Inspect() (types.HostState, *types.Route, error) {
 	return hostState, route, nil
 }
 
-func toRoute(host *host.Host, clusterConfig config.Config) (*types.Route, error) {
+func toRoute(host *host.Host, clusterConfig config.Config) (*Route, error) {
 	hostDriverIP, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting host IP for %s", host.Name)
@@ -88,7 +94,7 @@ func toRoute(host *host.Host, clusterConfig config.Config) (*types.Route, error)
 		return nil, fmt.Errorf("invalid IP for host %s", hostDriverIP)
 	}
 
-	return &types.Route{
+	return &Route{
 		Gateway:  ip,
 		DestCIDR: ipNet,
 	}, nil

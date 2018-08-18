@@ -24,11 +24,11 @@ import (
 	"testing"
 
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
+
 )
 
 func TestDarwinRouteFailsOnConflictIntegrationTest(t *testing.T) {
-	cfg := &types.Route{
+	cfg := &Route{
 		Gateway: net.IPv4(127, 0, 0, 1),
 		DestCIDR: &net.IPNet{
 			IP:   net.IPv4(10, 96, 0, 0),
@@ -45,7 +45,7 @@ func TestDarwinRouteFailsOnConflictIntegrationTest(t *testing.T) {
 }
 
 func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
-	cfg := &types.Route{
+	cfg := &Route{
 		Gateway: net.IPv4(127, 0, 0, 1),
 		DestCIDR: &net.IPNet{
 			IP:   net.IPv4(10, 96, 0, 0),
@@ -71,7 +71,7 @@ func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
 
 func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 
-	cfg := &types.Route{
+	cfg := &Route{
 		Gateway: net.IPv4(127, 0, 0, 1),
 		DestCIDR: &net.IPNet{
 			IP:   net.IPv4(10, 96, 0, 0),

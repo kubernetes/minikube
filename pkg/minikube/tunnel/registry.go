@@ -17,7 +17,6 @@ limitations under the License.
 package tunnel
 
 import (
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 	"github.com/pkg/errors"
 	"os"
 	"fmt"
@@ -35,38 +34,29 @@ import (
 // when cleanup is called, all the non running tunnels should be checked for removal
 // when a new tunnel is created it should register itself with the registry Pid/machinename/Route
 
-type TunnelInfo struct {
+type TunnelID struct {
 	//Route is the key
-	Route *types.Route
+	Route *Route
 	//the rest is metadata
 	MachineName string
 	Pid         int
 }
 
-func (t *TunnelInfo) Equal(other *TunnelInfo) bool {
+func (t *TunnelID) Equal(other *TunnelID) bool {
 	return t.Route.Equal(other.Route) &&
 		t.MachineName == other.MachineName &&
 		t.Pid == other.Pid
 }
 
-func (t *TunnelInfo) String() string {
-	return fmt.Sprintf("TunnelInfo { Route: %v, machineName: %s, Pid: %d }", t.Route, t.MachineName, t.Pid)
-}
-
-type registry interface {
-	//registers Route with metadata, throws error when Route already exists
-	Register(route *TunnelInfo) error
-	//removes the Route from the registry
-	Remove(route *types.Route) error
-	//lists all the routes
-	List() ([]*TunnelInfo, error)
+func (t *TunnelID) String() string {
+	return fmt.Sprintf("TunnelID { Route: %v, machineName: %s, Pid: %d }", t.Route, t.MachineName, t.Pid)
 }
 
 type persistentRegistry struct {
 	fileName string
 }
 
-func (r *persistentRegistry) Register(tunnel *TunnelInfo) error {
+func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 	if tunnel.Route == nil {
 		return errors.New("tunnel.Route should not be nil")
 	}
@@ -85,7 +75,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelInfo) error {
 	defer f.Close()
 
 	byteValue, _ := ioutil.ReadAll(f)
-	var tunnels []*TunnelInfo
+	var tunnels []*TunnelID
 	json.Unmarshal(byteValue, &tunnels)
 
 	tunnels = append(tunnels, tunnel)
@@ -104,7 +94,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelInfo) error {
 	return nil
 }
 
-func (r *persistentRegistry) Remove(route *types.Route) error {
+func (r *persistentRegistry) Remove(route *Route) error {
 	tunnels, e := r.List()
 	if e != nil {
 		return e
@@ -139,17 +129,17 @@ func (r *persistentRegistry) Remove(route *types.Route) error {
 
 	return nil
 }
-func (r *persistentRegistry) List() ([]*TunnelInfo, error) {
+func (r *persistentRegistry) List() ([]*TunnelID, error) {
 	f, e := os.Open(r.fileName)
 	if e != nil {
 		if !os.IsNotExist(e) {
 			return nil, e
 		}
-		return []*TunnelInfo{}, nil
+		return []*TunnelID{}, nil
 	}
 	byteValue, _ := ioutil.ReadAll(f)
 	fmt.Printf("json content:\n%s\n", byteValue)
-	var tunnels []*TunnelInfo
+	var tunnels []*TunnelID
 	if e = json.Unmarshal(byteValue, &tunnels); e != nil {
 		return nil, e
 	}

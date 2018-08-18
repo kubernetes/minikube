@@ -17,15 +17,14 @@ limitations under the License.
 package tunnel
 
 import (
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 	"net"
 )
 
-func parseRoute(gatewayIP string, destCIDR string) *types.Route {
+func parseRoute(gatewayIP string, destCIDR string)  *Route {
 	ip := net.ParseIP(gatewayIP)
 	_, ipNet, _ := net.ParseCIDR(destCIDR)
 
-	expectedRoute := &types.Route{
+	expectedRoute := &Route{
 		Gateway:  ip,
 		DestCIDR: ipNet,
 	}

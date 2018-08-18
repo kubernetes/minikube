@@ -23,11 +23,10 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 )
 
 type OSRouter struct {
-	config types.Route
+	configRoute
 }
 
 func (r *OSRouter) EnsureRouteIsAdded() error {
@@ -146,11 +145,11 @@ func (r *OSRouter) Cleanup() error {
 	}
 }
 
-func (r *OSRouter) GetConfig() types.Route {
+func (r *OSRouter) GetConfig()Route {
 	return r.config
 }
 
-func newRouter(routerConfig types.Route) router {
+func newRouter(routerConfigRoute) router {
 	return &OSRouter{
 		config: routerConfig,
 	}

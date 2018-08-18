@@ -20,51 +20,62 @@ import (
 	"fmt"
 
 	"io"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 	"strings"
 )
 
 type reporter interface {
-	Report(tunnelState *types.TunnelState)
+	Report(tunnelState *TunnelState)
 }
 
 type simpleReporter struct {
 	out       io.Writer
-	lastState *types.TunnelState
+	lastState *TunnelState
 }
 
-func (r *simpleReporter) Report(tunnelState *types.TunnelState) {
+func (r *simpleReporter) Report(tunnelState *TunnelState) {
 	if r.lastState == tunnelState {
 		return
 	}
 	r.lastState = tunnelState
-	var minikubeState string
-	if tunnelState.MinikubeError == nil {
-		minikubeState = tunnelState.MinikubeState.String()
-	} else {
-		minikubeState = tunnelState.MinikubeError.Error()
-	}
-
-	var routeState string
-	if tunnelState.RouteError == nil {
-		routeState = tunnelState.Route.String()
-	} else {
-		routeState = tunnelState.RouteError.Error()
-	}
+	minikubeState := tunnelState.MinikubeState.String()
 
 	var managedServices string
-	if tunnelState.LoadBalancerPatcherError == nil {
-		managedServices = fmt.Sprintf("[%s]", strings.Join(tunnelState.PatchedServices, ", "))
-	} else {
-		managedServices = tunnelState.LoadBalancerPatcherError.Error()
+	managedServices = fmt.Sprintf("[%s]", strings.Join(tunnelState.PatchedServices, ", "))
+
+	lbError :=  "no errors"
+	if tunnelState.LoadBalancerEmulatorError != nil {
+		lbError = tunnelState.LoadBalancerEmulatorError.Error()
 	}
 
+	minikubeError :=  "no errors"
+	if tunnelState.MinikubeError != nil {
+		minikubeError = tunnelState.MinikubeError.Error()
+	}
+
+	routerError :=  "no errors"
+	if tunnelState.RouterError != nil {
+		routerError = tunnelState.RouterError.Error()
+	}
+
+	errors := fmt.Sprintf(`    errors: 
+		minikube: %s
+		router: %s
+		loadbalancer emulator: %s
+`, minikubeError, routerError, lbError)
+
 	r.out.Write([]byte(fmt.Sprintf(
-		`TunnelState:
+		`TunnelState:	
+	machine: %s
+	pid: %d
+	route: %s
 	minikube: %s
-	Route: %s
 	services: %s
-`, minikubeState, routeState, managedServices)))
+%s`, tunnelState.TunnelID.MachineName,
+		tunnelState.TunnelID.Pid,
+		tunnelState.TunnelID.Route,
+		minikubeState,
+		managedServices,
+		errors)))
 }
 
 func NewReporter(out io.Writer) reporter {

@@ -19,33 +19,32 @@ package tunnel
 import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 )
 
 type recordingReporter struct {
-	statesRecorded []*types.TunnelState
+	statesRecorded [] *TunnelState
 }
 
-func (r *recordingReporter) Report(tunnelState *types.TunnelState) {
+func (r *recordingReporter) Report(tunnelState  *TunnelState) {
 	logrus.Debugf("recordingReporter.Report: %v", tunnelState)
 	r.statesRecorded = append(r.statesRecorded, tunnelState)
 }
 
 type fakeRouter struct {
-	osRoutes      []*types.Route
+	osRoutes      [] *Route
 	osRouter
 	errorResponse error
 }
 
-func (r *fakeRouter) EnsureRouteIsAdded(route *types.Route) error {
+func (r *fakeRouter) EnsureRouteIsAdded(route  *Route) error {
 	if r.errorResponse == nil {
 		r.osRoutes = append(r.osRoutes, route)
 	}
 	return r.errorResponse
 }
-func (r *fakeRouter) Cleanup(route *types.Route) error {
+func (r *fakeRouter) Cleanup(route  *Route) error {
 	if r.errorResponse == nil {
-		r.osRoutes = []*types.Route{}
+		r.osRoutes = [] *Route{}
 	}
 	return r.errorResponse
 }
@@ -60,19 +59,19 @@ func (l *stubConfigLoader) LoadConfigFromFile(profile string) (config.Config, er
 }
 
 type fakeTunnelRegistry struct {
-	tunnels map[*types.Route]*TunnelInfo
+	tunnels map[ *Route]*TunnelID
 }
 
-func (r *fakeTunnelRegistry) Register(route *TunnelInfo) error            {
+func (r *fakeTunnelRegistry) Register(route *TunnelID) error            {
 	r.tunnels[route.Route] = route
 	return nil
 }
-func (r *fakeTunnelRegistry) Get(route *types.Route) (*TunnelInfo, error) {
+func (r *fakeTunnelRegistry) Get(route  *Route) (*TunnelID, error) {
 	return r.tunnels[route], nil
 }
-func (r *fakeTunnelRegistry) Remove(route *types.Route) error                    {
+func (r *fakeTunnelRegistry) Remove(route  *Route) error                    {
 	return nil
 }
-func (r *fakeTunnelRegistry) List() []*TunnelInfo {
+func (r *fakeTunnelRegistry) List() []*TunnelID {
 	return nil
 }

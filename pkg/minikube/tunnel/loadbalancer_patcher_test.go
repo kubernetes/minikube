@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/rest"
 	"k8s.io/minikube/pkg/minikube/service"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 
 	"reflect"
 )
@@ -80,10 +79,10 @@ func (s *countingRequestSender) send(request *rest.Request) (result []byte, err 
 }
 
 type recordingPatchConverter struct {
-	patches []*types.Patch
+	patches [] *Patch
 }
 
-func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *types.Patch) *rest.Request {
+func (r *recordingPatchConverter) convert(restClient rest.Interface, patch  *Patch) *rest.Request {
 	r.patches = append(r.patches, patch)
 	return nil
 }
@@ -92,7 +91,7 @@ func TestEmptyListOfServicesDoesNothing(t *testing.T) {
 	mockCoreV1Client := newStubCoreClient(&apiV1.ServiceList{
 		Items: []apiV1.Service{}}, nil)
 
-	patcher := NewLoadBalancerPatcher(mockCoreV1Client)
+	patcher := NewLoadBalancerEmulator(mockCoreV1Client)
 
 	serviceNames, e := patcher.PatchServices()
 
@@ -120,7 +119,7 @@ func TestServicesWithNoLoadbalancerType(t *testing.T) {
 	},
 		nil)
 
-	patcher := NewLoadBalancerPatcher(mockCoreV1Client)
+	patcher := NewLoadBalancerEmulator(mockCoreV1Client)
 
 	serviceNames, e := patcher.PatchServices()
 
@@ -198,7 +197,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 		},
 	}, nil)
 
-	expectedPatches := []*types.Patch{
+	expectedPatches := [] *Patch{
 		{
 			Type:         "application/json-patch+json",
 			NameSpace:    "ns2",
@@ -222,7 +221,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := NewLoadBalancerPatcher(stubCoreV1Client)
+	patcher := NewLoadBalancerEmulator(stubCoreV1Client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
@@ -245,7 +244,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 }
 
 func TestCleanupPatchedIPs(t *testing.T) {
-	expectedPatches := []*types.Patch{
+	expectedPatches := [] *Patch{
 		{
 			Type:         "application/json-patch+json",
 			NameSpace:    "ns1",
@@ -336,7 +335,7 @@ func TestCleanupPatchedIPs(t *testing.T) {
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := NewLoadBalancerPatcher(stubCoreV1Client)
+	patcher := NewLoadBalancerEmulator(stubCoreV1Client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
@@ -359,8 +358,8 @@ func TestManualTesting_PatchUtil(t *testing.T) {
 	t.SkipNow()
 	clientset, _ := service.K8s.GetClientset()
 	client := clientset.CoreV1()
-	patcher := NewLoadBalancerPatcher(client)
-	req := patcher.patchConverter.convert(client.RESTClient(), &types.Patch{
+	patcher := NewLoadBalancerEmulator(client)
+	req := patcher.patchConverter.convert(client.RESTClient(), &Patch{
 		Type:         "application/json-patch+json",
 		NameSpace:    "default",
 		NameSpaceSet: true,

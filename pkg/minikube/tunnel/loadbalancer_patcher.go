@@ -25,7 +25,6 @@ import (
 	k8s_types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 )
 
 
@@ -35,30 +34,30 @@ type requestSender interface {
 }
 
 type patchConverter interface {
-	convert(restClient rest.Interface, patch *types.Patch) *rest.Request
+	convert(restClient rest.Interface, patch *Patch) *rest.Request
 }
 
-type loadBalancerPatcher struct {
+type loadBalancerEmulator struct {
 	coreV1Client   v1.CoreV1Interface
 	requestSender  requestSender
 	patchConverter patchConverter
 }
 
-func (l *loadBalancerPatcher) PatchServices() (managedServices []string, err error) {
+func (l *loadBalancerEmulator) PatchServices() (managedServices []string, err error) {
 	managedServices, err = l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 		return l.updateService(restClient, svc)
 	})
 	return
 }
 
-func (l *loadBalancerPatcher) Cleanup() (managedServices []string, err error) {
+func (l *loadBalancerEmulator) Cleanup() (managedServices []string, err error) {
 	managedServices, err = l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 		return l.cleanupService(restClient, svc)
 	})
 	return
 }
 
-func (l *loadBalancerPatcher) applyOnLBServices(action func(restClient rest.Interface, svc core_v1.Service) ([]byte, error)) ([]string, error) {
+func (l *loadBalancerEmulator) applyOnLBServices(action func(restClient rest.Interface, svc core_v1.Service) ([]byte, error)) ([]string, error) {
 	services := l.coreV1Client.Services("")
 	serviceList, e := services.List(metav1.ListOptions{})
 	if e != nil {
@@ -84,13 +83,13 @@ func (l *loadBalancerPatcher) applyOnLBServices(action func(restClient rest.Inte
 	}
 	return managedServices, nil
 }
-func (l *loadBalancerPatcher) updateService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
+func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
 	clusterIP := svc.Spec.ClusterIP
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) == 0 || (len(ingresses) == 1 && ingresses[0].IP != clusterIP) {
 		logrus.Debugf("[%s] setting ClusterIP as the LoadBalancer Ingress", svc.Name)
 		jsonPatch := fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, clusterIP)
-		patch := &types.Patch{
+		patch := &Patch{
 			Type:         k8s_types.JSONPatchType,
 			ResourceName: svc.Name,
 			NameSpaceSet: true,
@@ -107,12 +106,12 @@ func (l *loadBalancerPatcher) updateService(restClient rest.Interface, svc core_
 	return nil, nil
 }
 
-func (l *loadBalancerPatcher) cleanupService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
+func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) > 0 {
 		logrus.Debugf("[%s] cleanup: unset load balancer ingress", svc.Name)
 		jsonPatch := `[{"op": "remove", "path": "/status/loadBalancer/ingress" }]`
-		patch := &types.Patch{
+		patch := &Patch{
 			Type:         k8s_types.JSONPatchType,
 			ResourceName: svc.Name,
 			NameSpaceSet: true,
@@ -129,8 +128,8 @@ func (l *loadBalancerPatcher) cleanupService(restClient rest.Interface, svc core
 	return nil, nil
 }
 
-func NewLoadBalancerPatcher(corev1Client v1.CoreV1Interface) *loadBalancerPatcher {
-	return &loadBalancerPatcher{
+func NewLoadBalancerEmulator(corev1Client v1.CoreV1Interface) *loadBalancerEmulator {
+	return &loadBalancerEmulator{
 		coreV1Client:   corev1Client,
 		requestSender:  &defaultRequestSender{},
 		patchConverter: &defaultPatchConverter{},
@@ -139,7 +138,7 @@ func NewLoadBalancerPatcher(corev1Client v1.CoreV1Interface) *loadBalancerPatche
 
 type defaultPatchConverter struct{}
 
-func (c *defaultPatchConverter) convert(restClient rest.Interface, patch *types.Patch) (request *rest.Request) {
+func (c *defaultPatchConverter) convert(restClient rest.Interface, patch *Patch) (request *rest.Request) {
 	request = restClient.Patch(patch.Type)
 	request.Name(patch.ResourceName)
 	request.Resource(patch.Resource)

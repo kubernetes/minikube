@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
+
 	"strings"
 )
 

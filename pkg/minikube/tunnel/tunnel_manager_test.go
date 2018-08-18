@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/minikube/pkg/minikube/tests"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
+
 	"time"
 )
 
@@ -39,8 +39,8 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 			name:   "tunnel quits on stopped minikube",
 			repeat: 1,
 			test: func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error {
-				tunnel.mockClusterInfo = &types.TunnelState{
-					MinikubeState: types.Stopped,
+				tunnel.mockClusterInfo = &TunnelState{
+					MinikubeState: Stopped,
 				}
 				logrus.Info("waiting for tunnel to be ready.")
 				<-ready
@@ -64,8 +64,8 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 			name:   "tunnel quits on ctrlc before doing a check",
 			repeat: 1,
 			test: func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error {
-				tunnel.mockClusterInfo = &types.TunnelState{
-					MinikubeState: types.Stopped,
+				tunnel.mockClusterInfo = &TunnelState{
+					MinikubeState: Stopped,
 				}
 				<-ready
 				cancel()
@@ -86,8 +86,8 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 			name:   "tunnel always quits when ctrl c is pressed",
 			repeat: 100000,
 			test: func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error {
-				tunnel.mockClusterInfo = &types.TunnelState{
-					MinikubeState: types.Running,
+				tunnel.mockClusterInfo = &TunnelState{
+					MinikubeState: Running,
 				}
 				go func() {
 					<-ready
@@ -151,12 +151,12 @@ func TestTunnelManagerDelayAndContext(t *testing.T) {
 		delay: 1000 * time.Millisecond,
 	}
 	tunnel := &tunnelStub{
-		mockClusterInfo: &types.TunnelState{
-			MinikubeState: types.Running,
+		mockClusterInfo: &TunnelState{
+			MinikubeState: Running,
 		},
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	done, err := tunnelManager.StartTunnel(ctx, tunnel)
+	done, err := tunnelManager.startTunnel(ctx, tunnel)
 	if err != nil {
 		t.Errorf("creating tunnel failed: %s", err)
 	}
@@ -174,6 +174,7 @@ func TestTunnelManagerDelayAndContext(t *testing.T) {
 }
 
 func TestTunnelManagerCleanup(t *testing.T) {
+	//TODO: balopat
 	//inject fake registry and fake Pid inspector
 	//expect
 	// 	call router.cleanup on all the tunnels that have a non-running Pid
@@ -182,19 +183,19 @@ func TestTunnelManagerCleanup(t *testing.T) {
 }
 
 type tunnelStub struct {
-	mockClusterInfo *types.TunnelState
+	mockClusterInfo  *TunnelState
 	mockError       error
 	tunnelExists    bool
 	timesChecked    int
 }
 
-func (t *tunnelStub) updateTunnelStatus() *types.TunnelState {
-	t.tunnelExists = t.mockClusterInfo.MinikubeState == types.Running
+func (t *tunnelStub) updateTunnelStatus()  *TunnelState {
+	t.tunnelExists = t.mockClusterInfo.MinikubeState == Running
 	t.timesChecked += 1
 	return t.mockClusterInfo
 }
 
-func (t *tunnelStub) cleanup() *types.TunnelState {
+func (t *tunnelStub) cleanup()  *TunnelState {
 	t.tunnelExists = false
 	return t.mockClusterInfo
 }

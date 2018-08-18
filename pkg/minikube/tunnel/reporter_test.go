@@ -19,50 +19,70 @@ package tunnel
 import (
 	"errors"
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
+
 	"testing"
 )
 
-func TestSimpleReporter_Report(t *testing.T) {
+func TestReporter(t *testing.T) {
 	testCases := []struct {
 		name           string
-		tunnelState    *types.TunnelState
+		tunnelState     *TunnelState
 		expectedOutput string
 	}{
 		{
 			name: "simple",
-			tunnelState: &types.TunnelState{
-				MinikubeState: types.Running,
+			tunnelState: &TunnelState{
+				TunnelID:  TunnelID{
+					Route: parseRoute("1.2.3.4", "10.96.0.0/12"),
+					MachineName: "testmachine",
+					Pid: 1234,
+				},
+				MinikubeState: Running,
 				MinikubeError: nil,
 
-				Route:      parseRoute("1.2.3.4", "10.96.0.0/12"),
-				RouteError: nil,
+				RouterError: nil,
 
-				PatchedServices:          []string{"svc1", "svc2"},
-				LoadBalancerPatcherError: nil,
+				PatchedServices:           []string{"svc1", "svc2"},
+				LoadBalancerEmulatorError: nil,
 			},
-			expectedOutput: `TunnelState:
+			expectedOutput: `TunnelState:	
+	machine: testmachine
+	pid: 1234
+	route: 10.96.0.0/12 -> 1.2.3.4
 	minikube: Running
-	Route: 10.96.0.0/12 -> 1.2.3.4
 	services: [svc1, svc2]
+    errors: 
+		minikube: no errors
+		router: no errors
+		loadbalancer emulator: no errors
 `,
 		},
 		{
 			name: "errors",
-			tunnelState: &types.TunnelState{
-				MinikubeState: types.Stopped,
+			tunnelState: &TunnelState{
+				TunnelID:  TunnelID{
+					Route: parseRoute("1.2.3.4", "10.96.0.0/12"),
+					MachineName: "testmachine",
+					Pid: 1234,
+				},
+				MinikubeState: Unknown,
 				MinikubeError: errors.New("minikubeerror"),
 
-				Route:      nil,
-				RouteError: errors.New("routeerror"),
+				RouterError: errors.New("routeerror"),
 
-				PatchedServices:          []string{},
-				LoadBalancerPatcherError: errors.New("lberror"),
+				PatchedServices:           nil,
+				LoadBalancerEmulatorError: errors.New("lberror"),
 			},
-			expectedOutput: `TunnelState:
-	minikube: minikubeerror
-	Route: routeerror
-	services: lberror
+			expectedOutput: `TunnelState:	
+	machine: testmachine
+	pid: 1234
+	route: 10.96.0.0/12 -> 1.2.3.4
+	minikube: Unknown
+	services: []
+    errors: 
+		minikube: minikubeerror
+		router: routeerror
+		loadbalancer emulator: lberror
 `,
 		},
 	}

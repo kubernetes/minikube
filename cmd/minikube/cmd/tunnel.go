@@ -59,8 +59,7 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		t := tunnel.NewTunnel(machineName, api, config.Loader, v1)
-		done, e := tunnel.NewManager().StartTunnel(ctx, t)
+		done, e := tunnel.NewManager().StartTunnel(ctx, machineName, api, config.Loader, v1)
 		if e != nil {
 			logrus.Fatalf("error starting tunnel: %s", e)
 		}

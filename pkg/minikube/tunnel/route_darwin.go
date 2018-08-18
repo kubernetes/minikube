@@ -24,10 +24,9 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
 )
 
-func (router *osRouter) EnsureRouteIsAdded(route *types.Route) error {
+func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	exists, e := router.CheckRoute(route)
 	if e != nil {
 		return e
@@ -55,7 +54,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *types.Route) error {
 	return nil
 }
 
-func (router *osRouter) CheckRoute(r *types.Route) (bool, error) {
+func (router *osRouter) CheckRoute(r *Route) (bool, error) {
 	stdInAndOut, e := exec.Command("netstat", "-nr", "-f", "inet").CombinedOutput()
 	if e != nil {
 		return false, e
@@ -139,7 +138,7 @@ func (r *osRouter) padCIDR(origCIDR string) string {
 	return s
 }
 
-func (router *osRouter) Cleanup(route *types.Route) error {
+func (router *osRouter) Cleanup(route *Route) error {
 	exists, e := router.CheckRoute(route)
 	if e != nil {
 		return e

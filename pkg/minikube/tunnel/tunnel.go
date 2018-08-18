@@ -22,72 +22,84 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
+	"fmt"
+	"os"
 )
 
-type Tunnel interface {
-	cleanup() *types.TunnelState
-	updateTunnelStatus() *types.TunnelState
+type tunnel interface {
+	cleanup() *TunnelState
+	updateTunnelStatus() *TunnelState
 }
 
-func NewTunnel(machineName string,
+func newTunnel(machineName string,
 	machineStore persist.Store,
 	configLoader config.ConfigLoader,
-	v1Core v1.CoreV1Interface) *minikubeTunnel {
+	v1Core v1.CoreV1Interface, registry *persistentRegistry) (*minikubeTunnel, error) {
+	clusterInspector := &minikubeInspector{
+		machineName:  machineName,
+		machineStore: machineStore,
+		configLoader: configLoader,
+	}
+	state, route, err := clusterInspector.getStateAndRoute()
+	if err != nil {
+		return nil, fmt.Errorf("unable to determine cluster info: %s", err)
+	}
+	id := TunnelID{
+		Route:       route,
+		MachineName: machineName,
+		Pid:         os.Getpid(),
+	}
+	err = registry.Register(&id)
+	if err != nil {
+		return nil, fmt.Errorf("error registering tunnel: %s", err)
+	}
+
 	return &minikubeTunnel{
-		clusterInspector: &minikubeInspector{
-			machineName:  machineName,
-			machineStore: machineStore,
-			configLoader: configLoader,
-		},
-		router:              &osRouter{},
-		loadBalancerPatcher: NewLoadBalancerPatcher(v1Core),
-		state: &types.TunnelState{
-			MinikubeState: types.Unkown,
+		clusterInspector:     clusterInspector,
+		router:               &osRouter{},
+		registry:             registry,
+		loadBalancerEmulator: NewLoadBalancerEmulator(v1Core),
+		state: &TunnelState{
+			TunnelID:      id,
+			MinikubeState: state,
 			MinikubeError: nil,
 		},
-	}
+	}, nil
+
 }
 
 type minikubeTunnel struct {
 	//collaborators
-	clusterInspector    *minikubeInspector
-	router              router
-	loadBalancerPatcher *loadBalancerPatcher
-	state               *types.TunnelState
-	reporter            reporter
+	clusterInspector     *minikubeInspector
+	router               router
+	loadBalancerEmulator *loadBalancerEmulator
+	reporter             reporter
+	registry             *persistentRegistry
+
+	state *TunnelState
 }
 
-func (t *minikubeTunnel) cleanup() *types.TunnelState {
-	if t.state != nil && t.state.Route != nil {
-		logrus.Debugf("cleaning up %s", t.state.Route)
-		e := t.router.Cleanup(t.state.Route)
-		if e != nil {
-			t.state.RouteError = errors.Errorf("error cleaning up Route %s", e)
-		} else {
-			t.state.Route = nil
-		}
+func (t *minikubeTunnel) cleanup() *TunnelState {
+	logrus.Debugf("cleaning up %s", t.state.TunnelID.Route)
+	e := t.router.Cleanup(t.state.TunnelID.Route)
+	if e != nil {
+		t.state.RouterError = errors.Errorf("error cleaning up Route %s", e)
 	}
-	if t.state.MinikubeState == types.Running {
-		t.state.PatchedServices, t.state.LoadBalancerPatcherError = t.loadBalancerPatcher.Cleanup()
+	if t.state.MinikubeState == Running {
+		t.state.PatchedServices, t.state.LoadBalancerEmulatorError = t.loadBalancerEmulator.Cleanup()
 	}
+	t.registry.Remove(t.state.TunnelID.Route)
 	return t.state
 }
 
-func (t *minikubeTunnel) updateTunnelStatus() *types.TunnelState {
+func (t *minikubeTunnel) updateTunnelStatus() *TunnelState {
 	logrus.Debug("updating tunnel status...")
-	s, r, e := t.clusterInspector.Inspect()
-	//TODO: can this change while minikube is running?
-	//TODO: check for registered tunnels
-	t.state = &types.TunnelState{
-		MinikubeState: s,
-		MinikubeError: e,
-		Route:         r,
-	}
-	if t.state.MinikubeState == types.Running {
-		logrus.Debug("minikube is running trying to add Route %s", t.state.Route)
-		t.state.RouteError = t.router.EnsureRouteIsAdded(t.state.Route)
-		t.state.PatchedServices, t.state.LoadBalancerPatcherError = t.loadBalancerPatcher.PatchServices()
+	t.state.MinikubeState, _, t.state.MinikubeError = t.clusterInspector.getStateAndHost()
+	if t.state.MinikubeState == Running {
+		logrus.Debug("minikube is running, trying to add Route %s", t.state.TunnelID.Route)
+
+		t.state.RouterError = t.router.EnsureRouteIsAdded(t.state.TunnelID.Route)
+		t.state.PatchedServices, t.state.LoadBalancerEmulatorError = t.loadBalancerEmulator.PatchServices()
 	}
 	logrus.Debugf("sending report %v", t.state)
 	t.reporter.Report(t.state.Clone())

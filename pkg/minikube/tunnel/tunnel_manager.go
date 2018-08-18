@@ -21,24 +21,62 @@ import (
 
 	"context"
 	"github.com/sirupsen/logrus"
-	"k8s.io/minikube/pkg/minikube/tunnel/types"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"github.com/docker/machine/libmachine/persist"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"os"
+	"syscall"
+	"fmt"
 )
 
 // Manager can create, start and cleanup a tunnel
 // It keeps track of created tunnels for multiple vms so that it can cleanup
 // after unclean shutdowns.
 type Manager struct {
-	delay time.Duration
-	registry *registry
+	delay            time.Duration
+	registry         *persistentRegistry
+	isProcessRunning pidChecker
 }
+
+type pidChecker func (int) (bool, error)
+
+func checkIfRunning(pid int) (bool, error) {
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return false, err
+	}
+	if err := p.Signal(syscall.Signal(0)); err != nil {
+		return false, nil
+	}
+	if p == nil {
+		return false, nil
+	}
+	return true, nil
+}
+
 
 func NewManager() *Manager {
 	return &Manager{
 		delay: 5 * time.Second,
+		registry: &persistentRegistry{
+			fileName: constants.GetTunnelRegistryFile(),
+		},
+		isProcessRunning: checkIfRunning,
 	}
 }
+func (mgr *Manager) StartTunnel(ctx context.Context, machineName string,
+	machineStore persist.Store,
+	configLoader config.ConfigLoader,
+	v1Core v1.CoreV1Interface) (done chan bool, err error) {
+	tunnel, e := newTunnel(machineName, machineStore, configLoader, v1Core, mgr.registry)
+	if e != nil {
+		return nil, fmt.Errorf("error creating tunnel: %s", e)
+	}
+	return mgr.startTunnel(ctx, tunnel)
 
-func (mgr *Manager) StartTunnel(ctx context.Context, tunnel Tunnel) (done chan bool, err error) {
+}
+func (mgr *Manager) startTunnel(ctx context.Context, tunnel tunnel) (done chan bool, err error) {
 	logrus.Infof("Setting up tunnel...")
 
 	ready := make(chan bool, 1)
@@ -50,7 +88,6 @@ func (mgr *Manager) StartTunnel(ctx context.Context, tunnel Tunnel) (done chan b
 	go mgr.run(tunnel, ctx, ready, check, done)
 
 	logrus.Infof("Started minikube tunnel.")
-
 	return
 }
 
@@ -64,7 +101,7 @@ func (mgr *Manager) timerLoop(ready, check chan bool) {
 	}
 }
 
-func (mgr *Manager) run(t Tunnel, ctx context.Context, ready, check, done chan bool) {
+func (mgr *Manager) run(t tunnel, ctx context.Context, ready, check, done chan bool) {
 	defer func() {
 		done <- true
 	}()
@@ -72,23 +109,27 @@ func (mgr *Manager) run(t Tunnel, ctx context.Context, ready, check, done chan b
 	for {
 		select {
 		case <-ctx.Done():
-			t.cleanup()
+			mgr.cleanup(t)
 			return
 		case <-check:
 			logrus.Debug("check receieved")
 			select {
 			case <-ctx.Done():
-				t.cleanup()
+				mgr.cleanup(t)
 				return
 			default:
 			}
 			status := t.updateTunnelStatus()
 			logrus.Debug("minikube status: %s", status)
-			if status.MinikubeState != types.Running {
-				t.cleanup()
+			if status.MinikubeState !=Running {
+				mgr.cleanup(t)
 				return
 			}
 			ready <- true
 		}
 	}
+}
+
+func (mgr *Manager) cleanup(t tunnel)  *TunnelState {
+	return t.cleanup()
 }
