@@ -93,7 +93,7 @@ curl -Lo docker-machine-driver-hyperkit https://storage.googleapis.com/minikube/
 && sudo cp docker-machine-driver-hyperkit /usr/local/bin/ \
 && rm docker-machine-driver-hyperkit \
 && sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit \
-&& sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
+&& sudo chmod u+s+x /usr/local/bin/docker-machine-driver-hyperkit
 ```
 
 The hyperkit driver currently requires running as root to use the vmnet framework to setup networking.
