@@ -28,6 +28,9 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
+	if strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
+		t.Skip("skipping test as none driver does not support persistence")
+	}
 	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
 
