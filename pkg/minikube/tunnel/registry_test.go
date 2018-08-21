@@ -1,10 +1,10 @@
 package tunnel
 
 import (
-	"testing"
-	"os"
 	"io/ioutil"
+	"os"
 	"reflect"
+	"testing"
 )
 
 func TestPersistentRegistryWithNoKey(t *testing.T) {
@@ -24,7 +24,7 @@ func TestPersistentRegistryNullableMetadata(t *testing.T) {
 	defer cleanup()
 
 	route := &TunnelID{
-		Route: parseRoute("1.2.3.4", "10.96.0.0/12"),
+		Route: unsafeParseRoute("1.2.3.4", "10.96.0.0/12"),
 	}
 	err := registry.Register(route)
 
@@ -55,7 +55,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			name:     "Calling Remove on non-existent registry file should return error",
 			fileName: "nonexistent.txt",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Remove(parseRoute("1.2.3.4", "1.2.3.4/5"))
+				e := reg.Remove(unsafeParseRoute("1.2.3.4", "1.2.3.4/5"))
 				if e == nil {
 					t.Errorf("expected error, got %s", e)
 				}
@@ -65,7 +65,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			name:     "Calling Register on non-existent registry file should create file",
 			fileName: "nonexistent.txt",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{Route: parseRoute("1.2.3.4", "1.2.3.4/5")})
+				e := reg.Register(&TunnelID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
 				if e != nil {
 					t.Errorf("expected no error, got %s", e)
 				}
@@ -85,12 +85,12 @@ func TestPersistentRegistryOperations(t *testing.T) {
 		{
 			name: "Calling Remove on non-existent tunnel should return error",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{Route: parseRoute("1.2.3.4", "1.2.3.4/5")})
+				e := reg.Register(&TunnelID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
 				if e != nil {
 					t.Errorf("expected no error, got %s", e)
 				}
 
-				e = reg.Remove(parseRoute("5.6.7.8", "1.2.3.4/5"))
+				e = reg.Remove(unsafeParseRoute("5.6.7.8", "1.2.3.4/5"))
 				if e == nil {
 					t.Errorf("expected error, got nil")
 				}
@@ -100,7 +100,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			name: "Register + List should return tunnel info",
 			test: func(t *testing.T, reg *persistentRegistry) {
 				e := reg.Register(&TunnelID{
-					Route:       parseRoute("1.2.3.4", "1.2.3.4/5"),
+					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 					MachineName: "testmachine",
 					Pid:         1234,
 				})
@@ -115,7 +115,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 
 				expectedList := []*TunnelID{
 					{
-						Route:       parseRoute("1.2.3.4", "1.2.3.4/5"),
+						Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 						MachineName: "testmachine",
 						Pid:         1234,
 					},
@@ -130,7 +130,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			name: "Register + Remove + List",
 			test: func(t *testing.T, reg *persistentRegistry) {
 				e := reg.Register(&TunnelID{
-					Route:       parseRoute("192.168.1.25", "10.96.0.0/12"),
+					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         1234,
 				})
@@ -138,7 +138,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 					t.Errorf("failed to register: expected no error, got %s", e)
 				}
 
-				e = reg.Remove(parseRoute("192.168.1.25", "10.96.0.0/12"))
+				e = reg.Remove(unsafeParseRoute("192.168.1.25", "10.96.0.0/12"))
 
 				if e != nil {
 					t.Errorf("failed to remove: expected no error, got %s", e)
@@ -186,7 +186,6 @@ func TestPersistentRegistryOperations(t *testing.T) {
 
 }
 
-
 func createTestRegistry(t *testing.T) (reg *persistentRegistry, cleanup func()) {
 	f, err := ioutil.TempFile(os.TempDir(), "reg_")
 	f.Close()
@@ -197,5 +196,5 @@ func createTestRegistry(t *testing.T) (reg *persistentRegistry, cleanup func()) 
 	registry := &persistentRegistry{
 		fileName: f.Name(),
 	}
-	return registry, func(){os.Remove(f.Name())}
+	return registry, func() { os.Remove(f.Name()) }
 }

@@ -24,15 +24,15 @@ import (
 )
 
 type reporter interface {
-	Report(tunnelState *TunnelState)
+	Report(tunnelState *TunnelStatus)
 }
 
 type simpleReporter struct {
 	out       io.Writer
-	lastState *TunnelState
+	lastState *TunnelStatus
 }
 
-func (r *simpleReporter) Report(tunnelState *TunnelState) {
+func (r *simpleReporter) Report(tunnelState *TunnelStatus) {
 	if r.lastState == tunnelState {
 		return
 	}
@@ -42,17 +42,17 @@ func (r *simpleReporter) Report(tunnelState *TunnelState) {
 	var managedServices string
 	managedServices = fmt.Sprintf("[%s]", strings.Join(tunnelState.PatchedServices, ", "))
 
-	lbError :=  "no errors"
+	lbError := "no errors"
 	if tunnelState.LoadBalancerEmulatorError != nil {
 		lbError = tunnelState.LoadBalancerEmulatorError.Error()
 	}
 
-	minikubeError :=  "no errors"
+	minikubeError := "no errors"
 	if tunnelState.MinikubeError != nil {
 		minikubeError = tunnelState.MinikubeError.Error()
 	}
 
-	routerError :=  "no errors"
+	routerError := "no errors"
 	if tunnelState.RouterError != nil {
 		routerError = tunnelState.RouterError.Error()
 	}
@@ -64,7 +64,7 @@ func (r *simpleReporter) Report(tunnelState *TunnelState) {
 `, minikubeError, routerError, lbError)
 
 	r.out.Write([]byte(fmt.Sprintf(
-		`TunnelState:	
+		`TunnelStatus:	
 	machine: %s
 	pid: %d
 	route: %s

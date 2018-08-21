@@ -17,13 +17,13 @@ limitations under the License.
 package tunnel
 
 import (
-	"github.com/pkg/errors"
-	"os"
-	"fmt"
 	"encoding/json"
-	"io/ioutil"
-	"golang.org/x/sys/unix"
+	"fmt"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
+	"io/ioutil"
+	"os"
 )
 
 //registry should be
@@ -58,6 +58,7 @@ type persistentRegistry struct {
 
 //TODO(balopat): register should check against conflicting/overlapping routes
 func (r *persistentRegistry) Register(tunnel *TunnelID) error {
+	logrus.Debugf("registering tunnel: %s", tunnel)
 	if tunnel.Route == nil {
 		return errors.New("tunnel.Route should not be nil")
 	}
@@ -73,7 +74,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 		return fmt.Errorf("error marshalling json %s", e)
 	}
 
-	logrus.Infof("json marshalled: %v, %s\n", tunnels, bytes)
+	logrus.Debugf("json marshalled: %v, %s\n", tunnels, bytes)
 
 	f, e := os.OpenFile(r.fileName, unix.O_RDWR|unix.O_TRUNC, 0666)
 	if e != nil {
@@ -88,7 +89,6 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 	}
 	defer f.Close()
 
-
 	n, err := f.Write(bytes)
 	if n < len(bytes) || err != nil {
 		return fmt.Errorf("error registering tunnel while writing tunnels file: %s", err)
@@ -98,6 +98,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 }
 
 func (r *persistentRegistry) Remove(route *Route) error {
+	logrus.Debugf("removing tunnel from registry: %s", route)
 	tunnels, e := r.List()
 	if e != nil {
 		return e

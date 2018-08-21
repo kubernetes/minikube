@@ -17,42 +17,67 @@ limitations under the License.
 package tunnel
 
 import (
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
 type recordingReporter struct {
-	statesRecorded [] *TunnelState
+	statesRecorded []*TunnelStatus
 }
 
-func (r *recordingReporter) Report(tunnelState  *TunnelState) {
+func (r *recordingReporter) Report(tunnelState *TunnelStatus) {
 	logrus.Debugf("recordingReporter.Report: %v", tunnelState)
 	r.statesRecorded = append(r.statesRecorded, tunnelState)
 }
 
+//simulating idempotent router behavior
+//without checking for conflicting routes
 type fakeRouter struct {
-	osRoutes      [] *Route
-	osRouter
+	rt            routingTable
 	errorResponse error
 }
 
-func (r *fakeRouter) EnsureRouteIsAdded(route  *Route) error {
+func (r *fakeRouter) EnsureRouteIsAdded(route *Route) error {
+	logrus.Debugf("fakerouter.EnsureRouteIsAdded %s", route)
 	if r.errorResponse == nil {
-		r.osRoutes = append(r.osRoutes, route)
+		exists, e := isValidToAddOrDelete(r, route)
+		if e != nil {
+			return e
+		}
+		if !exists {
+			r.rt = append(r.rt, routingTableLine{
+				route: route,
+				line:  fmt.Sprintf("fake router line: %s", route),
+			})
+		}
+
 	}
 	return r.errorResponse
 }
-func (r *fakeRouter) Cleanup(route  *Route) error {
-	logrus.Infof("fake router cleanup: %v\n", route)
+func (r *fakeRouter) Cleanup(route *Route) error {
+	logrus.Debugf("fake router cleanup: %v\n", route)
 	if r.errorResponse == nil {
-		for i := range r.osRoutes {
-			if r.osRoutes[i].Equal(route) {
-				r.osRoutes = append(r.osRoutes[:i], r.osRoutes[i+1:]...)
-				break
+		exists, e := isValidToAddOrDelete(r, route)
+		if e != nil {
+			return e
+		}
+		if exists {
+			for i := range r.rt {
+				if r.rt[i].route.Equal(route) {
+					r.rt = append(r.rt[:i], r.rt[i+1:]...)
+					break
+				}
 			}
 		}
 	}
 	return r.errorResponse
+}
+
+func (r *fakeRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
+	err = r.errorResponse
+	exists, conflict, overlaps = r.rt.Check(route)
+	return
 }
 
 type stubConfigLoader struct {
@@ -62,22 +87,4 @@ type stubConfigLoader struct {
 
 func (l *stubConfigLoader) LoadConfigFromFile(profile string) (config.Config, error) {
 	return l.c, l.e
-}
-
-type fakeTunnelRegistry struct {
-	tunnels map[ *Route]*TunnelID
-}
-
-func (r *fakeTunnelRegistry) Register(route *TunnelID) error            {
-	r.tunnels[route.Route] = route
-	return nil
-}
-func (r *fakeTunnelRegistry) Get(route  *Route) (*TunnelID, error) {
-	return r.tunnels[route], nil
-}
-func (r *fakeTunnelRegistry) Remove(route  *Route) error                    {
-	return nil
-}
-func (r *fakeTunnelRegistry) List() []*TunnelID {
-	return nil
 }

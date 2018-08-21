@@ -29,6 +29,7 @@ import (
 )
 
 var cleanup bool
+
 // tunnelCmd represents the tunnel command
 var tunnelCmd = &cobra.Command{
 	Use:   "tunnel",
@@ -39,9 +40,13 @@ var tunnelCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		manager := tunnel.NewManager()
+
 		if cleanup {
+			logrus.Info("Checking for tunnels to cleanup...")
 			manager.CleanupNotRunningTunnels()
+			return
 		}
+
 		logrus.Infof("Creating docker machine client...")
 		api, e := machine.NewAPIClient()
 		if e != nil {
@@ -73,6 +78,6 @@ var tunnelCmd = &cobra.Command{
 }
 
 func init() {
-	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c" , false, "call with cleanup=true to remove old tunnels")
+	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", false, "call with cleanup=true to remove old tunnels")
 	RootCmd.AddCommand(tunnelCmd)
 }

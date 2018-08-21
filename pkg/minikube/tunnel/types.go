@@ -18,11 +18,11 @@ package tunnel
 
 import (
 	"fmt"
-	"net"
 	"k8s.io/apimachinery/pkg/types"
+	"net"
 )
 
-type TunnelState struct {
+type TunnelStatus struct {
 	TunnelID TunnelID
 
 	MinikubeState HostState
@@ -34,8 +34,8 @@ type TunnelState struct {
 	LoadBalancerEmulatorError error
 }
 
-func (t *TunnelState) Clone() *TunnelState {
-	return &TunnelState{
+func (t *TunnelStatus) Clone() *TunnelStatus {
+	return &TunnelStatus{
 		TunnelID:                  t.TunnelID,
 		MinikubeState:             t.MinikubeState,
 		MinikubeError:             t.MinikubeError,
@@ -45,9 +45,8 @@ func (t *TunnelState) Clone() *TunnelState {
 	}
 }
 
-
-func (t *TunnelState) String() string {
-	return fmt.Sprintf("id(%s), minikube(%s, e:%s), route(%s, e:%s), services(%s, e:%s)",
+func (t *TunnelStatus) String() string {
+	return fmt.Sprintf("id(%v), minikube(%s, e:%s), route(%s, e:%s), services(%s, e:%s)",
 		t.TunnelID,
 		t.MinikubeState,
 		t.MinikubeError,
@@ -82,7 +81,7 @@ type Patch struct {
 	BodyContent  string
 }
 
-// State represents the state of a host
+// State represents the status of a host
 type HostState int
 
 const (

@@ -26,16 +26,16 @@ import (
 func TestReporter(t *testing.T) {
 	testCases := []struct {
 		name           string
-		tunnelState     *TunnelState
+		tunnelState    *TunnelStatus
 		expectedOutput string
 	}{
 		{
 			name: "simple",
-			tunnelState: &TunnelState{
-				TunnelID:  TunnelID{
-					Route: parseRoute("1.2.3.4", "10.96.0.0/12"),
+			tunnelState: &TunnelStatus{
+				TunnelID: TunnelID{
+					Route:       unsafeParseRoute("1.2.3.4", "10.96.0.0/12"),
 					MachineName: "testmachine",
-					Pid: 1234,
+					Pid:         1234,
 				},
 				MinikubeState: Running,
 				MinikubeError: nil,
@@ -45,7 +45,7 @@ func TestReporter(t *testing.T) {
 				PatchedServices:           []string{"svc1", "svc2"},
 				LoadBalancerEmulatorError: nil,
 			},
-			expectedOutput: `TunnelState:	
+			expectedOutput: `TunnelStatus:	
 	machine: testmachine
 	pid: 1234
 	route: 10.96.0.0/12 -> 1.2.3.4
@@ -59,11 +59,11 @@ func TestReporter(t *testing.T) {
 		},
 		{
 			name: "errors",
-			tunnelState: &TunnelState{
-				TunnelID:  TunnelID{
-					Route: parseRoute("1.2.3.4", "10.96.0.0/12"),
+			tunnelState: &TunnelStatus{
+				TunnelID: TunnelID{
+					Route:       unsafeParseRoute("1.2.3.4", "10.96.0.0/12"),
 					MachineName: "testmachine",
-					Pid: 1234,
+					Pid:         1234,
 				},
 				MinikubeState: Unknown,
 				MinikubeError: errors.New("minikubeerror"),
@@ -73,7 +73,7 @@ func TestReporter(t *testing.T) {
 				PatchedServices:           nil,
 				LoadBalancerEmulatorError: errors.New("lberror"),
 			},
-			expectedOutput: `TunnelState:	
+			expectedOutput: `TunnelStatus:	
 	machine: testmachine
 	pid: 1234
 	route: 10.96.0.0/12 -> 1.2.3.4

@@ -27,8 +27,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-
-
 type requestSender interface {
 	send(request *rest.Request) (result []byte, err error)
 }

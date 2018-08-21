@@ -20,14 +20,14 @@ import (
 	"time"
 
 	"context"
-	"github.com/sirupsen/logrus"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"fmt"
 	"github.com/docker/machine/libmachine/persist"
-	"k8s.io/minikube/pkg/minikube/config"
+	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"os"
 	"syscall"
-	"fmt"
 )
 
 // Manager can create, start and cleanup a tunnel
@@ -63,14 +63,14 @@ func NewManager() *Manager {
 			fileName: constants.GetTunnelRegistryFile(),
 		},
 		isProcessRunning: checkIfRunning,
-		router: &osRouter{},
+		router:           &osRouter{},
 	}
 }
 func (mgr *Manager) StartTunnel(ctx context.Context, machineName string,
 	machineStore persist.Store,
 	configLoader config.ConfigLoader,
 	v1Core v1.CoreV1Interface) (done chan bool, err error) {
-	tunnel, e := newTunnel(machineName, machineStore, configLoader, v1Core, mgr.registry)
+	tunnel, e := newTunnel(machineName, machineStore, configLoader, v1Core, mgr.registry, mgr.router)
 	if e != nil {
 		return nil, fmt.Errorf("error creating tunnel: %s", e)
 	}
@@ -123,6 +123,7 @@ func (mgr *Manager) run(t tunnel, ctx context.Context, ready, check, done chan b
 			status := t.updateTunnelStatus()
 			logrus.Debug("minikube status: %s", status)
 			if status.MinikubeState != Running {
+				logrus.Infof("minikube status: %s, cleaning up and quitting...", status.MinikubeState)
 				mgr.cleanup(t)
 				return
 			}
@@ -131,12 +132,11 @@ func (mgr *Manager) run(t tunnel, ctx context.Context, ready, check, done chan b
 	}
 }
 
-func (mgr *Manager) cleanup(t tunnel) *TunnelState {
+func (mgr *Manager) cleanup(t tunnel) *TunnelStatus {
 	return t.cleanup()
 }
 
 func (mgr *Manager) CleanupNotRunningTunnels() error {
-	logrus.Infof("cleaning up tunnels")
 	tunnels, e := mgr.registry.List()
 	if e != nil {
 		return fmt.Errorf("error listing tunnels from registry: %s", e)
@@ -144,7 +144,7 @@ func (mgr *Manager) CleanupNotRunningTunnels() error {
 
 	for _, tunnel := range tunnels {
 		isRunning, e := mgr.isProcessRunning(tunnel.Pid)
-		logrus.Infof("%v is running: %s", tunnel, isRunning)
+		logrus.Infof("%v is running: %b", tunnel, isRunning)
 		if e != nil {
 			return e
 		}

@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-
 )
 
 type OSRouter struct {
@@ -151,8 +150,4 @@ func (r *OSRouter) Cleanup() error {
 			return nil
 		}
 	}
-}
-
-func (r *OSRouter) GetConfig() Route {
-	return r.config
 }

@@ -17,24 +17,24 @@ limitations under the License.
 package tunnel
 
 import (
+	"fmt"
 	"github.com/docker/machine/libmachine/persist"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
-	"fmt"
 	"os"
 )
 
 type tunnel interface {
-	cleanup() *TunnelState
-	updateTunnelStatus() *TunnelState
+	cleanup() *TunnelStatus
+	updateTunnelStatus() *TunnelStatus
 }
 
 func newTunnel(machineName string,
 	machineStore persist.Store,
 	configLoader config.ConfigLoader,
-	v1Core v1.CoreV1Interface, registry *persistentRegistry) (*minikubeTunnel, error) {
+	v1Core v1.CoreV1Interface, registry *persistentRegistry, router router) (*minikubeTunnel, error) {
 	clusterInspector := &minikubeInspector{
 		machineName:  machineName,
 		machineStore: machineStore,
@@ -49,20 +49,15 @@ func newTunnel(machineName string,
 		MachineName: machineName,
 		Pid:         os.Getpid(),
 	}
-	err = registry.Register(&id)
-	if err != nil {
-		return nil, fmt.Errorf("error registering tunnel: %s", err)
-	}
 
 	return &minikubeTunnel{
 		clusterInspector:     clusterInspector,
-		router:               &osRouter{},
+		router:               router,
 		registry:             registry,
 		loadBalancerEmulator: NewLoadBalancerEmulator(v1Core),
-		state: &TunnelState{
+		status: &TunnelStatus{
 			TunnelID:      id,
 			MinikubeState: state,
-			MinikubeError: nil,
 		},
 		reporter: &simpleReporter{
 			out: os.Stdout,
@@ -79,32 +74,54 @@ type minikubeTunnel struct {
 	reporter             reporter
 	registry             *persistentRegistry
 
-	state *TunnelState
+	status *TunnelStatus
 }
 
-func (t *minikubeTunnel) cleanup() *TunnelState {
-	logrus.Debugf("cleaning up %s", t.state.TunnelID.Route)
-	e := t.router.Cleanup(t.state.TunnelID.Route)
+func (t *minikubeTunnel) cleanup() *TunnelStatus {
+	logrus.Debugf("cleaning up %s", t.status.TunnelID.Route)
+	e := t.router.Cleanup(t.status.TunnelID.Route)
 	if e != nil {
-		t.state.RouterError = errors.Errorf("error cleaning up Route %s", e)
+		t.status.RouterError = errors.Errorf("error cleaning up route: %s", e)
+		logrus.Debugf(t.status.RouterError.Error())
+	} else {
+		exists, _, _, err := t.router.Inspect(t.status.TunnelID.Route)
+		if !exists && err != nil {
+			t.registry.Remove(t.status.TunnelID.Route)
+		} else {
+			logrus.Debugf("did not remove tunnel (%s) from registry.")
+		}
 	}
-	if t.state.MinikubeState == Running {
-		t.state.PatchedServices, t.state.LoadBalancerEmulatorError = t.loadBalancerEmulator.Cleanup()
+	if t.status.MinikubeState == Running {
+		t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.loadBalancerEmulator.Cleanup()
 	}
-	t.registry.Remove(t.state.TunnelID.Route)
-	return t.state
+	return t.status
 }
 
-func (t *minikubeTunnel) updateTunnelStatus() *TunnelState {
+func (t *minikubeTunnel) updateTunnelStatus() *TunnelStatus {
 	logrus.Debug("updating tunnel status...")
-	t.state.MinikubeState, _, t.state.MinikubeError = t.clusterInspector.getStateAndHost()
-	if t.state.MinikubeState == Running {
-		logrus.Debug("minikube is running, trying to add Route %s", t.state.TunnelID.Route)
+	t.status.MinikubeState, _, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
+	if t.status.MinikubeState == Running {
+		logrus.Debug("minikube is running, trying to add Route %s", t.status.TunnelID.Route)
 
-		t.state.RouterError = t.router.EnsureRouteIsAdded(t.state.TunnelID.Route)
-		t.state.PatchedServices, t.state.LoadBalancerEmulatorError = t.loadBalancerEmulator.PatchServices()
+		exists, conflict, _, err := t.router.Inspect(t.status.TunnelID.Route)
+		if err != nil {
+			t.status.RouterError = fmt.Errorf("error checking for route state: %s", err)
+		} else if !exists && len(conflict) == 0 {
+			t.status.RouterError = t.router.EnsureRouteIsAdded(t.status.TunnelID.Route)
+			if t.status.RouterError == nil {
+				//the route was added successfully, we need to make sure the registry has it too
+				if err := t.registry.Register(&t.status.TunnelID); err != nil {
+					logrus.Errorf("failed to register tunnel: %s, removing...", err)
+					//if registry failes, we need to remove the route
+					t.status.RouterError = t.router.Cleanup(t.status.TunnelID.Route)
+				}
+			}
+		} else if len(conflict) > 0 {
+			t.status.RouterError = fmt.Errorf("conflicting route: ")
+		}
+		t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.loadBalancerEmulator.PatchServices()
 	}
-	logrus.Debugf("sending report %v", t.state)
-	t.reporter.Report(t.state.Clone())
-	return t.state
+	logrus.Debugf("sending report %s", t.status)
+	t.reporter.Report(t.status.Clone())
+	return t.status
 }

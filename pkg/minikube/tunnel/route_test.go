@@ -18,9 +18,116 @@ package tunnel
 
 import (
 	"net"
+	"reflect"
+	"testing"
 )
 
-func parseRoute(gatewayIP string, destCIDR string)  *Route {
+func TestRoutingTable(t *testing.T) {
+	tcs := []struct {
+		name         string
+		routingTable routingTable
+		route        *Route
+
+		exists   bool
+		conflict string
+		overlaps []string
+	}{
+		{
+			name: "doesn't exist, no complication",
+			routingTable: routingTable{
+				{
+					route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
+					line:  "line1",
+				},
+			},
+			route: unsafeParseRoute("127.0.0.1", "10.112.0.0/12"),
+
+			exists:   false,
+			conflict: "",
+			overlaps: []string{},
+		},
+
+		{
+			name: "doesn't exist, and has overlap and a conflict",
+			routingTable: routingTable{
+				{
+					route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
+					line:  "conflicting line",
+				},
+				{
+					route: unsafeParseRoute("127.0.0.1", "10.98.0.0/8"),
+					line:  "overlap line1",
+				},
+				{
+					route: unsafeParseRoute("127.0.0.1", "10.100.0.0/24"),
+					line:  "overlap line2",
+				},
+				{
+					route: unsafeParseRoute("127.0.0.1", "192.96.0.0/12"),
+					line:  "no overlap",
+				},
+			},
+			route: unsafeParseRoute("192.168.1.1", "10.96.0.0/12"),
+
+			exists:   false,
+			conflict: "conflicting line",
+			overlaps: []string{
+				"overlap line1",
+				"overlap line2",
+			},
+		},
+
+		{
+			name: "exists, and has overlap and no conflict",
+			routingTable: routingTable{
+				{
+					route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
+					line:  "same",
+				},
+				{
+					route: unsafeParseRoute("127.0.0.1", "10.98.0.0/8"),
+					line:  "overlap line1",
+				},
+				{
+					route: unsafeParseRoute("127.0.0.1", "10.100.0.0/24"),
+					line:  "overlap line2",
+				},
+				{
+					route: unsafeParseRoute("127.0.0.1", "192.96.0.0/12"),
+					line:  "no overlap",
+				},
+			},
+			route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
+
+			exists:   true,
+			conflict: "",
+			overlaps: []string{
+				"overlap line1",
+				"overlap line2",
+			},
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			exists, conflict, overlaps := tc.routingTable.Check(tc.route)
+			if tc.exists != exists || tc.conflict != conflict || !reflect.DeepEqual(tc.overlaps, overlaps) {
+				t.Errorf(`expected
+  exists: %v
+  conflict: %s
+  overlaps: %s
+got
+  exists: %v
+  conflict: %s
+  overlaps: %s
+`, tc.exists, tc.conflict, tc.overlaps,
+					exists, conflict, overlaps)
+			}
+		})
+	}
+}
+
+func unsafeParseRoute(gatewayIP string, destCIDR string) *Route {
 	ip := net.ParseIP(gatewayIP)
 	_, ipNet, _ := net.ParseCIDR(destCIDR)
 

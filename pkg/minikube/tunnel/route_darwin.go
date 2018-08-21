@@ -27,7 +27,7 @@ import (
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
-	exists, e := router.CheckRoute(route)
+	exists, e := isValidToAddOrDelete(router, route)
 	if e != nil {
 		return e
 	}
@@ -54,17 +54,25 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	return nil
 }
 
-func (router *osRouter) CheckRoute(r *Route) (bool, error) {
+func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
 	stdInAndOut, e := exec.Command("netstat", "-nr", "-f", "inet").CombinedOutput()
 	if e != nil {
-		return false, e
+		err = fmt.Errorf("error running netstat: %s", e)
+		return
 	}
 	routeTableString := fmt.Sprintf("%s", stdInAndOut)
-	routeTable := strings.Split(routeTableString, "\n")
+
+	rt := router.parseTable(routeTableString)
+
+	exists, conflict, overlaps = rt.Check(route)
+
+	return
+}
+
+func (router *osRouter) parseTable(table string) routingTable {
+	t := routingTable{}
 	skip := true
-	exactMatch := false
-	collision := ""
-	for _, line := range routeTable {
+	for _, line := range strings.Split(table, "\n") {
 		//header
 		if strings.HasPrefix(line, "Destination") {
 			skip = false
@@ -77,33 +85,29 @@ func (router *osRouter) CheckRoute(r *Route) (bool, error) {
 		fields := strings.Fields(line)
 
 		if len(fields) > 2 {
-			dstCIDR := router.padCIDR(fields[0])
-			gatewayIP := fields[1]
-			if dstCIDR == r.DestCIDR.String() {
-				if gatewayIP == r.Gateway.String() {
-					exactMatch = true
-				} else {
-					collision = line
-				}
-			} else if ip, ipNet, e := net.ParseCIDR(dstCIDR); e == nil {
-				if ipNet.Contains(r.DestCIDR.IP) || r.DestCIDR.Contains(ip) {
-					logrus.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove this rule. Run: sudo Route -n delete %s", ipNet, r.DestCIDR, ipNet)
-				}
+			dstCIDRString := router.padCIDR(fields[0])
+			gatewayIPString := fields[1]
+			gatewayIP := net.ParseIP(gatewayIPString)
+
+			_, ipNet, e := net.ParseCIDR(dstCIDRString)
+			if e != nil {
+				logrus.Debugf("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
+			} else if gatewayIP == nil {
+				logrus.Debugf("skipping line: can't parse IP from routing table: %s", gatewayIPString)
 			} else {
-				logrus.Errorf("can't parse CIDR from routing table: %s", dstCIDR)
+				tableLine := routingTableLine{
+					route: &Route{
+						DestCIDR: ipNet,
+						Gateway:  gatewayIP,
+					},
+					line: line,
+				}
+				t = append(t, tableLine)
 			}
 		}
 	}
 
-	if exactMatch {
-		return true, nil
-	}
-
-	if len(collision) > 0 {
-		return false, fmt.Errorf("conflicting rule in routing table: %s", collision)
-	}
-
-	return false, nil
+	return t
 }
 
 func (r *osRouter) padCIDR(origCIDR string) string {
@@ -139,7 +143,7 @@ func (r *osRouter) padCIDR(origCIDR string) string {
 }
 
 func (router *osRouter) Cleanup(route *Route) error {
-	exists, e := router.CheckRoute(route)
+	exists, e := isValidToAddOrDelete(router, route)
 	if e != nil {
 		return e
 	}

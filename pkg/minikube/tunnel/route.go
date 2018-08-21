@@ -16,9 +16,69 @@ limitations under the License.
 
 package tunnel
 
+import (
+	"fmt"
+	"github.com/sirupsen/logrus"
+	"strings"
+)
+
 type router interface {
+	Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error)
 	EnsureRouteIsAdded(route *Route) error
 	Cleanup(route *Route) error
 }
 
 type osRouter struct{}
+
+type routingTableLine struct {
+	route *Route
+	line  string
+}
+
+func isValidToAddOrDelete(router router, r *Route) (bool, error) {
+	exists, conflict, overlaps, e := router.Inspect(r)
+	if e != nil {
+		return false, e
+	}
+
+	if len(overlaps) > 0 {
+		logrus.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove these rules:\n%v", r.DestCIDR, strings.Join(overlaps, "\n"))
+	}
+
+	if exists {
+		return true, nil
+	}
+
+	if len(conflict) > 0 {
+		return false, fmt.Errorf("conflicting rule in routing table: %s", conflict)
+	}
+
+	return false, nil
+}
+
+type routingTable []routingTableLine
+
+func (t *routingTable) Check(route *Route) (exists bool, conflict string, overlaps []string) {
+	conflict = ""
+	exists = false
+	overlaps = []string{}
+	for _, tableLine := range *t {
+		if route.Equal(tableLine.route) {
+			exists = true
+		} else if route.DestCIDR.String() == tableLine.route.DestCIDR.String() &&
+			route.Gateway.String() != tableLine.route.Gateway.String() {
+			conflict = tableLine.line
+		} else if route.DestCIDR.Contains(tableLine.route.DestCIDR.IP) || tableLine.route.DestCIDR.Contains(route.DestCIDR.IP) {
+			overlaps = append(overlaps, tableLine.line)
+		}
+	}
+	return
+}
+
+func (t *routingTable) String() string {
+	result := fmt.Sprintf("routingTable (%d routes)", len(*t))
+	for _, l := range *t {
+		result = fmt.Sprintf("%s\n  %s\t|%s", result, l.route.String(), l.line)
+	}
+	return result
+}

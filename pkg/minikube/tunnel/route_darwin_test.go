@@ -25,6 +25,7 @@ import (
 
 	"fmt"
 
+	"reflect"
 )
 
 func TestDarwinRouteFailsOnConflictIntegrationTest(t *testing.T) {
@@ -72,7 +73,7 @@ func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
 func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 
 	cfg := &Route{
-		Gateway: net.IPv4(127, 0, 0, 1),
+		Gateway: net.IPv4(192, 168, 1, 1),
 		DestCIDR: &net.IPNet{
 			IP:   net.IPv4(10, 96, 0, 0),
 			Mask: net.IPv4Mask(255, 240, 0, 0),
@@ -130,5 +131,33 @@ func TestCIDRPadding(t *testing.T) {
 				t.Fail()
 			}
 		})
+	}
+}
+
+func TestRoutingTableParser(t *testing.T) {
+	table := `Routing tables
+
+Internet:
+Destination        Gateway            Flags        Refs      Use   Netif Expire
+127                127.0.0.1          UCS             0        0     lo0
+127.0.0.1          127.0.0.1          UH             13    30917     lo0
+172.16.128/24      link#17            UC              1        0  vmnet1
+192.168.246        link#18            UC              1        0  vmnet8
+224.0.0            link#1             UmCS            0        0     lo0
+`
+	rt := (&osRouter{}).parseTable(table)
+
+	expectedRt := routingTable{
+		routingTableLine{
+			route: unsafeParseRoute("127.0.0.1", "127.0.0.0/8"),
+			line:  "127                127.0.0.1          UCS             0        0     lo0",
+		},
+		routingTableLine{
+			route: unsafeParseRoute("127.0.0.1", "127.0.0.1/32"),
+			line:  "127.0.0.1          127.0.0.1          UH             13    30917     lo0",
+		},
+	}
+	if !reflect.DeepEqual(rt, expectedRt) {
+		t.Errorf("expected:\n %s\ngot\n %s", expectedRt.String(), rt.String())
 	}
 }

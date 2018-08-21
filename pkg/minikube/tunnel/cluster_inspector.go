@@ -45,7 +45,7 @@ func (m *minikubeInspector) getStateAndHost() (HostState, *host.Host, error) {
 	var s state.State
 	s, e = h.Driver.GetState()
 	if e != nil {
-		e = errors.Wrapf(e, "error getting host state for %s", m.machineName)
+		e = errors.Wrapf(e, "error getting host status for %s", m.machineName)
 		return hostState, nil, e
 	}
 

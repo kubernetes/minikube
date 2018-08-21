@@ -145,7 +145,7 @@ func (r *OSRouter) Cleanup() error {
 	}
 }
 
-func (r *OSRouter) GetConfig()Route {
+func (r *OSRouter) GetConfig() Route {
 	return r.config
 }
 

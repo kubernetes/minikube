@@ -79,10 +79,10 @@ func (s *countingRequestSender) send(request *rest.Request) (result []byte, err 
 }
 
 type recordingPatchConverter struct {
-	patches [] *Patch
+	patches []*Patch
 }
 
-func (r *recordingPatchConverter) convert(restClient rest.Interface, patch  *Patch) *rest.Request {
+func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *Patch) *rest.Request {
 	r.patches = append(r.patches, patch)
 	return nil
 }
@@ -197,7 +197,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 		},
 	}, nil)
 
-	expectedPatches := [] *Patch{
+	expectedPatches := []*Patch{
 		{
 			Type:         "application/json-patch+json",
 			NameSpace:    "ns2",
@@ -244,7 +244,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 }
 
 func TestCleanupPatchedIPs(t *testing.T) {
-	expectedPatches := [] *Patch{
+	expectedPatches := []*Patch{
 		{
 			Type:         "application/json-patch+json",
 			NameSpace:    "ns1",

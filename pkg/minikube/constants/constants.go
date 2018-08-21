@@ -88,7 +88,7 @@ const DefaultStorageClassProvisioner = "standard"
 const Cache = "cache"
 
 func GetTunnelRegistryFile() string {
-	return filepath.Join(GetMinipath(),"tunnels.json")
+	return filepath.Join(GetMinipath(), "tunnels.json")
 }
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.

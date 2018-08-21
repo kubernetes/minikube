@@ -92,6 +92,37 @@ route DELETE 10.0.0.0
 
 The routing table can be queried with `route print -4`
 
+### Handling unclean shutdowns 
+
+Unclean shutdowns of the tunnel process can result in partially executed cleanup process, leaving network routes in the routing table. 
+We will keep track of the routes created by each tunnel in a centralized location in the main minikube config directory. 
+This list serves as a registry for tunnels containing information about 
+- machine profile 
+- process ID 
+- and the route that was created
+
+The cleanup command cleans the routes from both the routing table and the registry for tunnels that are not running: 
+ 
+``` 
+minikube tunnel --cleanup
+```
+
+Updating the tunnel registry and the routing table is an atomic transaction: 
+
+- create route in the routing table + create registry entry if both are successful, otherwise rollback  
+- delete route in the routing table + remove registry entry if both are successful, otherwise rollback 
+
+*Note*: because we don't support currently real multi cluster setup (due to overlapping CIDRs), the handling of running/not-running processes is not strictly required however it is forward looking.  
+
+### Handling routing table conflicts  
+
+A routing table conflict happens when a destination CIDR of the route required by the tunnel overlaps with an existing route. 
+Minikube tunnel will warn the user if this happens and should not create the rule. 
+There should not be any automated removal of conflicting routes.
+
+*Note*: If the user removes the minikube config directory, this might leave conflicting rules in the network routing table that will have to be cleaned up manually.  
+
+
 ## Load Balancer Controller
 
 In addition to making IPs routable, minikube tunnel will assign an external IP (the ClusterIP) to all services of type `LoadBalancer`.
