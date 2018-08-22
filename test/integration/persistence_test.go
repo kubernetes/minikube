@@ -20,6 +20,7 @@ package integration
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,10 +29,10 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
 	if strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
-	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
