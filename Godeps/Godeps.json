@@ -1,7 +1,7 @@
 {
 	"ImportPath": "k8s.io/minikube",
 	"GoVersion": "go1.10",
-	"GodepVersion": "v80",
+	"GodepVersion": "v79",
 	"Packages": [
 		"./..."
 	],
@@ -50,162 +50,162 @@
 		},
 		{
 			"ImportPath": "github.com/docker/machine/commands/mcndirs",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/drivers/errdriver",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/drivers/hyperv",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/drivers/none",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/drivers/virtualbox",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/drivers/vmwarefusion",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/auth",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/cert",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/check",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/drivers",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/drivers/plugin",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/drivers/plugin/localbinary",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/drivers/rpc",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/engine",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/host",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/log",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/mcndockerclient",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/mcnerror",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/mcnflag",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/mcnutils",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/persist",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/provision",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/provision/pkgaction",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/provision/serviceaction",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/shell",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/ssh",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/state",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/swarm",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/version",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/libmachine/versioncmp",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
 			"ImportPath": "github.com/docker/machine/version",
-			"Comment": "docs-v0.8.2-2016-09-26-391-g1903531",
+			"Comment": "docs-v0.8.2-2016-09-26-391-g19035310",
 			"Rev": "19035310d4ba1b58056aae427ea669d1db5fc618"
 		},
 		{
@@ -256,40 +256,40 @@
 			"Rev": "1643683e1b54a9e88ad26d98f81400c8c9d9f4f9"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/authn",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/authn",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/name",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/name",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/v1",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/v1",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/v1/partial",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/v1/partial",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/v1/remote",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/v1/remote",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/v1/remote/transport",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/v1/remote/transport",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/v1/tarball",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/v1/tarball",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/v1/types",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/v1/types",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
-			"ImportPath": "github.com/google/go-containerregistry/v1/v1util",
-			"Rev": "ee5c47f79bbaa9faac0ffd681b86427383b79213"
+			"ImportPath": "github.com/google/go-containerregistry/pkg/v1/v1util",
+			"Rev": "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
 		},
 		{
 			"ImportPath": "github.com/google/gofuzz",
