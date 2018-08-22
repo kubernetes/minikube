@@ -18,7 +18,6 @@ package machine
 
 import (
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -26,12 +25,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/google/go-containerregistry/v1/tarball"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
-	"github.com/google/go-containerregistry/authn"
+	"github.com/google/go-containerregistry/pkg/authn"
 
-	"github.com/google/go-containerregistry/name"
-	"github.com/google/go-containerregistry/v1/remote"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 
 	"golang.org/x/sync/errgroup"
 
@@ -296,14 +295,16 @@ func CacheImage(image, dst string) error {
 		return errors.Wrap(err, "creating docker image name")
 	}
 
-	auth, err := authn.DefaultKeychain.Resolve(tag.Registry)
-	if err != nil {
-		return errors.Wrap(err, "setting up registry auth")
-	}
-	img, err := remote.Image(tag, auth, http.DefaultTransport)
+	img, err := remote.Image(tag, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return errors.Wrap(err, "fetching remote image")
 	}
 
-	return tarball.Write(dstPath, tag, img, nil)
+	glog.Infoln("OPENING: ", dstPath)
+	f, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return tarball.Write(tag, img, nil, f)
 }
