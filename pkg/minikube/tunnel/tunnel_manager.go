@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"os"
 	"syscall"
+	"runtime"
 )
 
 // Manager can create, start and cleanup a tunnel
@@ -44,11 +45,15 @@ type pidChecker func(int) (bool, error)
 
 func checkIfRunning(pid int) (bool, error) {
 	p, err := os.FindProcess(pid)
+	if runtime.GOOS == "windows" {
+		return err == nil, nil
+	}
+	//on unix systems further checking is required, as findProcess is noop
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error finding process %d: %s", pid, err)
 	}
 	if err := p.Signal(syscall.Signal(0)); err != nil {
-		return false, nil
+		return false, fmt.Errorf("error sending Signal(0) to %d: %s", pid, err)
 	}
 	if p == nil {
 		return false, nil
@@ -146,7 +151,7 @@ func (mgr *Manager) CleanupNotRunningTunnels() error {
 		isRunning, e := mgr.isProcessRunning(tunnel.Pid)
 		logrus.Infof("%v is running: %b", tunnel, isRunning)
 		if e != nil {
-			return e
+			return fmt.Errorf("error checking if tunnel is running: %s", e)
 		}
 		if !isRunning {
 			e = mgr.router.Cleanup(tunnel.Route)

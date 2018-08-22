@@ -55,9 +55,10 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
-	stdInAndOut, e := exec.Command("netstat", "-nr", "-f", "inet").CombinedOutput()
+	command := exec.Command("netstat", "-nr", "-f", "inet")
+	stdInAndOut, e := command.CombinedOutput()
 	if e != nil {
-		err = fmt.Errorf("error running netstat: %s", e)
+		err = fmt.Errorf("error running '%s': %s", command, e)
 		return
 	}
 	routeTableString := fmt.Sprintf("%s", stdInAndOut)
@@ -110,7 +111,7 @@ func (router *osRouter) parseTable(table string) routingTable {
 	return t
 }
 
-func (r *osRouter) padCIDR(origCIDR string) string {
+func (router *osRouter) padCIDR(origCIDR string) string {
 	s := ""
 	dots := 0
 	slash := false

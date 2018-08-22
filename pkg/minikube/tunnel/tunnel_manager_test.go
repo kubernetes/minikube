@@ -220,7 +220,7 @@ func TestTunnelManagerCleanup(t *testing.T) {
 	err := manager.CleanupNotRunningTunnels()
 
 	if err != nil {
-		t.Errorf("expected no error got %s", err)
+		t.Errorf("expected no error got: %s", err)
 	}
 
 	if len(router.rt) != 2 ||

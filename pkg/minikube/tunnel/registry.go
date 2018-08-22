@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sys/unix"
 	"io/ioutil"
 	"os"
 )
@@ -76,7 +75,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 
 	logrus.Debugf("json marshalled: %v, %s\n", tunnels, bytes)
 
-	f, e := os.OpenFile(r.fileName, unix.O_RDWR|unix.O_TRUNC, 0666)
+	f, e := os.OpenFile(r.fileName, os.O_RDWR|os.O_TRUNC, 0666)
 	if e != nil {
 		if os.IsNotExist(e) {
 			f, e = os.Create(r.fileName)
@@ -115,7 +114,7 @@ func (r *persistentRegistry) Remove(route *Route) error {
 	}
 	tunnels = append(tunnels[:idx], tunnels[idx+1:]...)
 	logrus.Debugf("tunnels after remove: %s", tunnels)
-	f, e := os.OpenFile(r.fileName, unix.O_RDWR|unix.O_TRUNC, 0666)
+	f, e := os.OpenFile(r.fileName, os.O_RDWR | os.O_TRUNC, 0666)
 	if e != nil {
 		return fmt.Errorf("error removing tunnel %s", e)
 	}
