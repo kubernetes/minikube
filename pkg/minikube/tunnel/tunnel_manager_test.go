@@ -21,9 +21,9 @@ import (
 
 	"context"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"k8s.io/minikube/pkg/minikube/tests"
 
+	"github.com/golang/glog"
 	"os"
 	"time"
 )
@@ -43,14 +43,14 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 				tunnel.mockClusterInfo = &TunnelStatus{
 					MinikubeState: Stopped,
 				}
-				logrus.Info("waiting for tunnel to be ready.")
+				glog.Info("waiting for tunnel to be ready.")
 				<-ready
-				logrus.Info("check!")
+				glog.Info("check!")
 				check <- true
-				logrus.Info("check done.")
+				glog.Info("check done.")
 				select {
 				case <-done:
-					logrus.Info("it's done, yay!")
+					glog.Info("it's done, yay!")
 				case <-time.After(1 * time.Second):
 					t.Error("tunnel did not stop on stopped minikube")
 				}
@@ -138,7 +138,7 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 				go tunnelManager.run(tunnel, ctx, ready, check, done)
 				err = tc.test(tunnel, cancel, ready, check, done)
 				if err != nil {
-					logrus.Errorf("error at %d", i)
+					glog.Errorf("error at %d", i)
 				}
 			}
 		})
@@ -147,7 +147,6 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 }
 
 func TestTunnelManagerDelayAndContext(t *testing.T) {
-	logrus.SetLevel(logrus.DebugLevel)
 	tunnelManager := &Manager{
 		delay: 1000 * time.Millisecond,
 	}
@@ -192,13 +191,13 @@ func TestTunnelManagerCleanup(t *testing.T) {
 
 	notRunningTunnel1 := &TunnelID{
 		Route:       unsafeParseRoute("200.2.3.4", "10.6.7.8/9"),
-		Pid:         1234,
+		Pid:         12341234,
 		MachineName: "minikube",
 	}
 
 	notRunningTunnel2 := &TunnelID{
 		Route:       unsafeParseRoute("250.2.3.4", "20.6.7.8/9"),
-		Pid:         1234,
+		Pid:         12341234,
 		MachineName: "minikube",
 	}
 	reg.Register(runningTunnel1)

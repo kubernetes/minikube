@@ -18,7 +18,7 @@ package tunnel
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 	"strings"
 )
 
@@ -42,7 +42,7 @@ func isValidToAddOrDelete(router router, r *Route) (bool, error) {
 	}
 
 	if len(overlaps) > 0 {
-		logrus.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove these rules:\n%v", r.DestCIDR, strings.Join(overlaps, "\n"))
+		glog.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove these rules:\n%v", r.DestCIDR, strings.Join(overlaps, "\n"))
 	}
 
 	if exists {

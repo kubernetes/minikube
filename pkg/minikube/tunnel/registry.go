@@ -19,8 +19,8 @@ package tunnel
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 )
@@ -55,9 +55,28 @@ type persistentRegistry struct {
 	fileName string
 }
 
-//TODO(balopat): register should check against conflicting/overlapping routes
+func (r *persistentRegistry) IsAlreadyDefinedAndRunning(tunnel *TunnelID) (*TunnelID, error) {
+	tunnels, e := r.List()
+	if e != nil {
+		return nil, fmt.Errorf("failed to list: %s", e)
+	}
+
+	for _, t := range tunnels {
+		if t.Route.Equal(tunnel.Route) {
+			isRunning, e := checkIfRunning(t.Pid)
+			if e != nil {
+				return nil, fmt.Errorf("error checking if conflicting tunnel (%v) is running: %s", t, e)
+			}
+			if isRunning {
+				return t, nil
+			}
+		}
+	}
+	return nil, nil
+}
+
 func (r *persistentRegistry) Register(tunnel *TunnelID) error {
-	logrus.Debugf("registering tunnel: %s", tunnel)
+	glog.V(3).Infof("registering tunnel: %s", tunnel)
 	if tunnel.Route == nil {
 		return errors.New("tunnel.Route should not be nil")
 	}
@@ -66,14 +85,33 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 	if e != nil {
 		return fmt.Errorf("failed to list: %s", e)
 	}
-	tunnels = append(tunnels, tunnel)
+
+	alreadyExists := false
+	for i, t := range tunnels {
+		if t.Route.Equal(tunnel.Route) {
+			isRunning, e := checkIfRunning(t.Pid)
+			if e != nil {
+				return fmt.Errorf("error checking if conflicting tunnel (%v) is running: %s", t, e)
+			}
+			if isRunning {
+				return errorTunnelAlreadyExists(t)
+			} else {
+				tunnels[i] = tunnel
+				alreadyExists = true
+			}
+		}
+	}
+
+	if !alreadyExists {
+		tunnels = append(tunnels, tunnel)
+	}
 
 	bytes, e := json.Marshal(tunnels)
 	if e != nil {
 		return fmt.Errorf("error marshalling json %s", e)
 	}
 
-	logrus.Debugf("json marshalled: %v, %s\n", tunnels, bytes)
+	glog.V(5).Infof("json marshalled: %v, %s\n", tunnels, bytes)
 
 	f, e := os.OpenFile(r.fileName, os.O_RDWR|os.O_TRUNC, 0666)
 	if e != nil {
@@ -97,7 +135,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 }
 
 func (r *persistentRegistry) Remove(route *Route) error {
-	logrus.Debugf("removing tunnel from registry: %s", route)
+	glog.V(3).Infof("removing tunnel from registry: %s", route)
 	tunnels, e := r.List()
 	if e != nil {
 		return e
@@ -113,8 +151,8 @@ func (r *persistentRegistry) Remove(route *Route) error {
 		return fmt.Errorf("can't remove route: %s not found in tunnel registry", route)
 	}
 	tunnels = append(tunnels[:idx], tunnels[idx+1:]...)
-	logrus.Debugf("tunnels after remove: %s", tunnels)
-	f, e := os.OpenFile(r.fileName, os.O_RDWR | os.O_TRUNC, 0666)
+	glog.V(4).Infof("tunnels after remove: %s", tunnels)
+	f, e := os.OpenFile(r.fileName, os.O_RDWR|os.O_TRUNC, 0666)
 	if e != nil {
 		return fmt.Errorf("error removing tunnel %s", e)
 	}

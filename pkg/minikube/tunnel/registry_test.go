@@ -172,6 +172,65 @@ func TestPersistentRegistryOperations(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "Error on duplicate route with running process",
+			test: func(t *testing.T, reg *persistentRegistry) {
+				e := reg.Register(&TunnelID{
+					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+					MachineName: "testmachine",
+					Pid:         os.Getpid(),
+				})
+				if e != nil {
+					t.Errorf("failed to register: expected no error, got %s", e)
+				}
+				e = reg.Register(&TunnelID{
+					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+					MachineName: "testmachine",
+					Pid:         5678,
+				})
+				if e == nil {
+					t.Error("expected error on duplicate route, got nil")
+				}
+			},
+		},
+		{
+			name: "Update duplicate route when process is not running",
+			test: func(t *testing.T, reg *persistentRegistry) {
+				e := reg.Register(&TunnelID{
+					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+					MachineName: "testmachine",
+					Pid:         12341234,
+				})
+				if e != nil {
+					t.Errorf("failed to register: expected no error, got %s", e)
+				}
+				e = reg.Register(&TunnelID{
+					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+					MachineName: "testmachine",
+					Pid:         5678,
+				})
+				if e != nil {
+					t.Errorf("failed to register: expected no error, got %s", e)
+				}
+
+				tunnelList, err := reg.List()
+				if err != nil {
+					t.Errorf("failed to list: expected no error, got %s", err)
+				}
+
+				expectedList := []*TunnelID{
+					{
+						Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+						MachineName: "testmachine",
+						Pid:         5678,
+					},
+				}
+
+				if len(tunnelList) != 1 || !tunnelList[0].Equal(expectedList[0]) {
+					t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
+				}
+			},
+		},
 	}
 
 	for _, tc := range tcs {

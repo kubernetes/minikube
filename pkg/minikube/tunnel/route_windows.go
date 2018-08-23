@@ -21,8 +21,6 @@ import (
 	"net"
 	"os/exec"
 	"strings"
-
-	"github.com/sirupsen/logrus"
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
@@ -44,17 +42,17 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 
 	gatewayIP := route.Gateway.String()
 
-	logrus.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("Route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
-	logrus.Infof("About to run command: %s", command.Args)
+	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, e := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
-	logrus.Infof("%s", stdInAndOut)
+	glog.Infof("%s", stdInAndOut)
 	if e != nil {
-		logrus.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
+		glog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 		return e
 	}
 	return nil
@@ -81,7 +79,7 @@ func (router *osRouter) parseTable(table string) routingTable {
 			dstMaskIP := net.ParseIP(dstCIDRMask)
 			gatewayIP := net.ParseIP(fields[2])
 			if dstCIDRIP == nil || dstMaskIP == nil || gatewayIP == nil {
-				logrus.Debugf("skipping line: can't parse all IPs from routing table: %s", line)
+				glog.V(4).Infof("skipping line: can't parse all IPs from routing table: %s", line)
 			} else {
 				tableLine := routingTableLine{
 					route: &Route{
@@ -89,11 +87,11 @@ func (router *osRouter) parseTable(table string) routingTable {
 							IP:   dstCIDRIP,
 							Mask: net.IPMask(dstMaskIP.To4()),
 						},
-						Gateway:  gatewayIP,
+						Gateway: gatewayIP,
 					},
 					line: line,
 				}
-				logrus.Debugf("adding line %s", tableLine)
+				glog.V(4).Infof("adding line %s", tableLine)
 				t = append(t, tableLine)
 			}
 		}
@@ -135,7 +133,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 		return e
 	} else {
 		message := fmt.Sprintf("%s", stdInAndOut)
-		logrus.Infof("'%s'", message)
+		glog.Infof("'%s'", message)
 		if message != " OK!\r\n" {
 			return fmt.Errorf("error deleting Route: %s, %d", message, len(strings.Split(message, "\n")))
 		} else {

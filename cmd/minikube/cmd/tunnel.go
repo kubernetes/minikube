@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -26,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"os"
 	"os/signal"
+	"github.com/golang/glog"
 )
 
 var cleanup bool
@@ -42,22 +42,24 @@ var tunnelCmd = &cobra.Command{
 		manager := tunnel.NewManager()
 
 		if cleanup {
-			logrus.Info("Checking for tunnels to cleanup...")
-			manager.CleanupNotRunningTunnels()
+			glog.Info("Checking for tunnels to cleanup...")
+			if err := manager.CleanupNotRunningTunnels(); err != nil {
+				glog.Errorf("error cleaning up: %s", err)
+			}
 			return
 		}
 
-		logrus.Infof("Creating docker machine client...")
+		glog.Infof("Creating docker machine client...")
 		api, e := machine.NewAPIClient()
 		if e != nil {
-			logrus.Fatalf("error creating dockermachine client: %s", e)
+			glog.Fatalf("error creating dockermachine client: %s", e)
 		}
 		machineName := config.GetMachineName()
 
-		logrus.Infof("Creating k8s client...")
+		glog.Infof("Creating k8s client...")
 		clientset, e := service.K8s.GetClientset()
 		if e != nil {
-			logrus.Fatalf("error creating K8S clientset: %s", e)
+			glog.Fatalf("error creating K8S clientset: %s", e)
 		}
 		v1 := clientset.CoreV1()
 
@@ -71,7 +73,7 @@ var tunnelCmd = &cobra.Command{
 
 		done, e := manager.StartTunnel(ctx, machineName, api, config.Loader, v1)
 		if e != nil {
-			logrus.Fatalf("error starting tunnel: %s", e)
+			glog.Fatalf("error starting tunnel: %s", e)
 		}
 		<-done
 	},

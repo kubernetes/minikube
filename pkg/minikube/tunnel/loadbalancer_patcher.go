@@ -19,7 +19,7 @@ package tunnel
 import (
 	"fmt"
 
-	"github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 	core_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_types "k8s.io/apimachinery/pkg/types"
@@ -67,16 +67,16 @@ func (l *loadBalancerEmulator) applyOnLBServices(action func(restClient rest.Int
 
 	for _, svc := range serviceList.Items {
 		if svc.Spec.Type == "LoadBalancer" {
-			logrus.Debugf("%s is type LoadBalancer.", svc.Name)
+			glog.Info("%s is type LoadBalancer.", svc.Name)
 			managedServices = append(managedServices, svc.Name)
 			result, err := action(restClient, svc)
 			if err != nil {
-				logrus.Errorf("%s", result)
-				logrus.Errorf("error patching service %s/%s: %s", svc.Namespace, svc.Name, err)
+				glog.Errorf("%s", result)
+				glog.Errorf("error patching service %s/%s: %s", svc.Namespace, svc.Name, err)
 				continue
 			}
 		} else {
-			logrus.Debugf("%s is not type LoadBalancer, skipping.", svc.Name)
+			glog.V(3).Infof("%s is not type LoadBalancer, skipping.", svc.Name)
 		}
 	}
 	return managedServices, nil
@@ -85,7 +85,7 @@ func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core
 	clusterIP := svc.Spec.ClusterIP
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) == 0 || (len(ingresses) == 1 && ingresses[0].IP != clusterIP) {
-		logrus.Debugf("[%s] setting ClusterIP as the LoadBalancer Ingress", svc.Name)
+		glog.V(3).Infof("[%s] setting ClusterIP as the LoadBalancer Ingress", svc.Name)
 		jsonPatch := fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, clusterIP)
 		patch := &Patch{
 			Type:         k8s_types.JSONPatchType,
@@ -98,7 +98,7 @@ func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core
 		}
 		request := l.patchConverter.convert(restClient, patch)
 		result, err = l.requestSender.send(request)
-		logrus.Infof("Patched %s with IP %s", svc.Name, clusterIP)
+		glog.Infof("Patched %s with IP %s", svc.Name, clusterIP)
 		return
 	}
 	return nil, nil
@@ -107,7 +107,7 @@ func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core
 func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) > 0 {
-		logrus.Debugf("[%s] cleanup: unset load balancer ingress", svc.Name)
+		glog.V(3).Infof("[%s] cleanup: unset load balancer ingress", svc.Name)
 		jsonPatch := `[{"op": "remove", "path": "/status/loadBalancer/ingress" }]`
 		patch := &Patch{
 			Type:         k8s_types.JSONPatchType,
@@ -120,7 +120,7 @@ func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc cor
 		}
 		request := l.patchConverter.convert(restClient, patch)
 		result, err = l.requestSender.send(request)
-		logrus.Infof("Removed load balancer ingress from %s.", svc.Name)
+		glog.Infof("Removed load balancer ingress from %s.", svc.Name)
 		return
 	}
 	return nil, nil

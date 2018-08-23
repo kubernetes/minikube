@@ -20,7 +20,6 @@ import (
 	"errors"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/sirupsen/logrus"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
 
@@ -29,17 +28,31 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"fmt"
 )
 
 func TestTunnel(t *testing.T) {
-	logrus.SetLevel(logrus.DebugLevel)
+	const RUNNING_PID1 = 1234
+	const RUNNING_PID2 = 1235
+	const NOT_RUNNING_PID = 1236
+	const NOT_RUNNING_PID2 = 1237
+
+	mockPidChecker := func(pid int) (bool, error) {
+		if pid == NOT_RUNNING_PID || pid == NOT_RUNNING_PID2 {
+			return false, nil
+		} else if pid == RUNNING_PID1 || pid == RUNNING_PID2 {
+			return true, nil
+		}
+		return false, fmt.Errorf("fake pid checker does not recognize %d", pid)
+	}
+
 	testCases := []struct {
 		name              string
 		machineState      state.State
 		serviceCIDR       string
 		machineIP         string
 		configLoaderError error
-		routerError       error
+		mockPidHandling   bool
 		expectedState     *TunnelStatus
 		call              func(tunnel *minikubeTunnel) *TunnelStatus
 		assertion         func(*testing.T, *TunnelStatus, []*TunnelStatus, []*Route, []*TunnelID)
@@ -162,8 +175,6 @@ func TestTunnel(t *testing.T) {
 			serviceCIDR:  "1.2.3.4/5",
 			machineIP:    "1.2.3.4",
 			call: func(tunnel *minikubeTunnel) *TunnelStatus {
-				logrus.SetLevel(logrus.DebugLevel)
-				defer logrus.SetLevel(logrus.InfoLevel)
 				tunnel.updateTunnelStatus()
 				tunnel.router.(*fakeRouter).errorResponse = errors.New("testerror")
 				return tunnel.cleanup()
@@ -185,8 +196,8 @@ func TestTunnel(t *testing.T) {
 				}
 
 				substring := "testerror"
-				if !strings.Contains(actualSecondState.RouterError.Error(), substring) {
-					t.Errorf("wrong tunnel status. expected Route error to contain '%s' \ngot:     %s", substring, actualSecondState.RouterError)
+				if actualSecondState.RouteError == nil || !strings.Contains(actualSecondState.RouteError.Error(), substring) {
+					t.Errorf("wrong tunnel status. expected Route error to contain '%s' \ngot:     %s", substring, actualSecondState.RouteError)
 				}
 
 				expectedRoutes := []*Route{expectedRoute}
@@ -204,10 +215,169 @@ func TestTunnel(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:         "tunnel cleanup",
+			machineState: state.Running,
+			serviceCIDR:  "1.2.3.4/5",
+			machineIP:    "1.2.3.4",
+			call: func(tunnel *minikubeTunnel) *TunnelStatus {
+				tunnel.updateTunnelStatus()
+				return tunnel.cleanup()
+			},
+			assertion: func(t *testing.T, actualSecondState *TunnelStatus, reportedStates []*TunnelStatus, routes []*Route, registeredTunnels []*TunnelID) {
+				expectedRoute := unsafeParseRoute("1.2.3.4", "1.2.3.4/5")
+				expectedFirstState := &TunnelStatus{
+					MinikubeState: Running,
+					MinikubeError: nil,
+					TunnelID: TunnelID{
+						Route:       expectedRoute,
+						MachineName: "testmachine",
+						Pid:         os.Getpid(),
+					},
+				}
+
+				if !reflect.DeepEqual(expectedFirstState, actualSecondState) {
+					t.Errorf("wrong tunnel status.\nexpected %s\ngot:     %s", expectedFirstState, actualSecondState)
+				}
+
+				if len(routes) > 0 {
+					t.Errorf("expected empty routes\n got: %s", routes)
+				}
+
+				expectedReports := []*TunnelStatus{expectedFirstState}
+
+				if !reflect.DeepEqual(reportedStates, expectedReports) {
+					t.Errorf("wrong reports.\nexpected %v\n\ngot:     %v", expectedReports, reportedStates)
+				}
+				if len(registeredTunnels) > 0 {
+					t.Errorf("registry mismatch.\nexpected []\ngot     %+v", registeredTunnels)
+				}
+			},
+		},
+		{
+			name:            "race condition: other tunnel registers while in between routing and registration",
+			machineState:    state.Running,
+			serviceCIDR:     "1.2.3.4/5",
+			machineIP:       "1.2.3.4",
+			mockPidHandling: true,
+			call: func(tunnel *minikubeTunnel) *TunnelStatus {
+
+				tunnel.registry.Register(&TunnelID{
+					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
+					MachineName: "testmachine",
+					Pid:         RUNNING_PID2,
+				}, )
+				tunnel.updateTunnelStatus()
+				return tunnel.cleanup()
+			},
+			assertion: func(t *testing.T, actualSecondState *TunnelStatus, reportedStates []*TunnelStatus, routes []*Route, registeredTunnels []*TunnelID) {
+				b, e := checkIfRunning(1)
+				fmt.Println(fmt.Sprintf("PID1: %v, %s", b, e))
+				expectedRoute := unsafeParseRoute("1.2.3.4", "1.2.3.4/5")
+				expectedFirstState := &TunnelStatus{
+					MinikubeState: Running,
+					MinikubeError: nil,
+					TunnelID: TunnelID{
+						Route:       expectedRoute,
+						MachineName: "testmachine",
+						Pid:         RUNNING_PID1,
+					},
+					RouteError: errorTunnelAlreadyExists(&TunnelID{
+						Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
+						MachineName: "testmachine",
+						Pid:         RUNNING_PID2,
+					}),
+				}
+
+				if !reflect.DeepEqual(expectedFirstState, actualSecondState) {
+					t.Errorf("wrong tunnel status.\nexpected %s\ngot:     %s", expectedFirstState, actualSecondState)
+				}
+
+				if len(routes) > 0 {
+					t.Errorf("expected empty routes\n got: %s", routes)
+				}
+
+				expectedReports := []*TunnelStatus{expectedFirstState}
+
+				if !reflect.DeepEqual(reportedStates, expectedReports) {
+					t.Errorf("wrong reports.\nexpected %v\n\ngot:     %v", expectedReports, reportedStates)
+				}
+				if len(registeredTunnels) > 0 {
+					t.Errorf("registry mismatch.\nexpected []\ngot     %+v", registeredTunnels)
+				}
+			},
+		},
+		{
+			name:            "race condition: other tunnel registers and creates the same route first",
+			machineState:    state.Running,
+			serviceCIDR:     "1.2.3.4/5",
+			machineIP:       "1.2.3.4",
+			mockPidHandling: true,
+			call: func(tunnel *minikubeTunnel) *TunnelStatus {
+
+				tunnel.registry.Register(&TunnelID{
+					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
+					MachineName: "testmachine",
+					Pid:         RUNNING_PID2,
+				}, )
+				tunnel.router.(*fakeRouter).rt = append(tunnel.router.(*fakeRouter).rt, routingTableLine{
+					route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
+					line:  "",
+				})
+				tunnel.updateTunnelStatus()
+				return tunnel.cleanup()
+			},
+			assertion: func(t *testing.T, actualSecondState *TunnelStatus, reportedStates []*TunnelStatus, routes []*Route, registeredTunnels []*TunnelID) {
+				expectedRoute := unsafeParseRoute("1.2.3.4", "1.2.3.4/5")
+				expectedFirstState := &TunnelStatus{
+					MinikubeState: Running,
+					MinikubeError: nil,
+					TunnelID: TunnelID{
+						Route:       expectedRoute,
+						MachineName: "testmachine",
+						Pid:         RUNNING_PID1,
+					},
+					RouteError: errorTunnelAlreadyExists(&TunnelID{
+						Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
+						MachineName: "testmachine",
+						Pid:         RUNNING_PID2,
+					}),
+				}
+
+				if !reflect.DeepEqual(expectedFirstState, actualSecondState) {
+					t.Errorf("wrong tunnel status.\nexpected %s\ngot:     %s", expectedFirstState, actualSecondState)
+				}
+
+				if len(routes) > 0 {
+					t.Errorf("expected empty routes\n got: %s", routes)
+				}
+
+				expectedReports := []*TunnelStatus{expectedFirstState}
+
+				if !reflect.DeepEqual(reportedStates, expectedReports) {
+					t.Errorf("wrong reports.\nexpected %v\n\ngot:     %v", expectedReports, reportedStates)
+				}
+				if len(registeredTunnels) > 0 {
+					t.Errorf("registry mismatch.\nexpected []\ngot     %+v", registeredTunnels)
+				}
+			},
+		},
+
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.mockPidHandling {
+				origPidChecker := checkIfRunning
+				checkIfRunning = mockPidChecker
+				defer func() { checkIfRunning = origPidChecker }()
+
+				origPidGetter := getPid
+				getPid = func() int {
+					return RUNNING_PID1
+				}
+				defer func() { getPid = origPidGetter }()
+			}
 			machineName := "testmachine"
 			store := &tests.FakeStore{
 				Hosts: map[string]*host.Host{
@@ -230,9 +400,7 @@ func TestTunnel(t *testing.T) {
 			registry, cleanup := createTestRegistry(t)
 			defer cleanup()
 
-			tunnel, e := newTunnel(machineName, store, configLoader, newStubCoreClient(nil, nil), registry, &fakeRouter{
-				errorResponse: tc.routerError,
-			})
+			tunnel, e := newTunnel(machineName, store, configLoader, newStubCoreClient(nil, nil), registry, &fakeRouter{})
 			if e != nil {
 				t.Errorf("error creating tunnel: %s", e)
 				return

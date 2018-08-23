@@ -23,7 +23,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"github.com/golang/glog"
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
@@ -38,16 +38,16 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	logrus.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "Route", "-n", "add", serviceCIDR, gatewayIP)
-	logrus.Infof("About to run command: %s", command.Args)
+	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, e := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	re := regexp.MustCompile(fmt.Sprintf("add net (.*): gateway %s\n", gatewayIP))
 	if !re.MatchString(message) {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
-	logrus.Infof("%s", stdInAndOut)
+	glog.Infof("%s", stdInAndOut)
 	if e != nil {
 		return e
 	}
@@ -58,7 +58,7 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 	command := exec.Command("netstat", "-nr", "-f", "inet")
 	stdInAndOut, e := command.CombinedOutput()
 	if e != nil {
-		err = fmt.Errorf("error running '%s': %s", command, e)
+		err = fmt.Errorf("error running '%v': %s", command, e)
 		return
 	}
 	routeTableString := fmt.Sprintf("%s", stdInAndOut)
@@ -92,9 +92,9 @@ func (router *osRouter) parseTable(table string) routingTable {
 
 			_, ipNet, e := net.ParseCIDR(dstCIDRString)
 			if e != nil {
-				logrus.Debugf("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
+				glog.V(4).Infof("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
 			} else if gatewayIP == nil {
-				logrus.Debugf("skipping line: can't parse IP from routing table: %s", gatewayIPString)
+				glog.V(4).Infof("skipping line: can't parse IP from routing table: %s", gatewayIPString)
 			} else {
 				tableLine := routingTableLine{
 					route: &Route{
@@ -144,6 +144,7 @@ func (router *osRouter) padCIDR(origCIDR string) string {
 }
 
 func (router *osRouter) Cleanup(route *Route) error {
+	glog.V(3).Infof("Cleaning up %s\n", route)
 	exists, e := isValidToAddOrDelete(router, route)
 	if e != nil {
 		return e
@@ -151,16 +152,12 @@ func (router *osRouter) Cleanup(route *Route) error {
 	if !exists {
 		return nil
 	}
-	serviceCIDR := route.DestCIDR.String()
-	gatewayIP := route.Gateway.String()
-
-	fmt.Printf("Cleaning up Route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
-	command := exec.Command("sudo", "Route", "-n", "delete", serviceCIDR)
+	command := exec.Command("sudo", "Route", "-n", "delete", route.DestCIDR.String())
 	if stdInAndOut, e := command.CombinedOutput(); e != nil {
 		return e
 	} else {
 		message := fmt.Sprintf("%s", stdInAndOut)
-		logrus.Infof("%s", message)
+		glog.V(4).Infof("%s", message)
 		re := regexp.MustCompile(fmt.Sprintf("^delete net ([^:]*)$"))
 		if !re.MatchString(message) {
 			return fmt.Errorf("error deleting Route: %s, %d", message, len(strings.Split(message, "\n")))

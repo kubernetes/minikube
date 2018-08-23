@@ -53,8 +53,8 @@ func (r *simpleReporter) Report(tunnelState *TunnelStatus) {
 	}
 
 	routerError := "no errors"
-	if tunnelState.RouterError != nil {
-		routerError = tunnelState.RouterError.Error()
+	if tunnelState.RouteError != nil {
+		routerError = tunnelState.RouteError.Error()
 	}
 
 	errors := fmt.Sprintf(`    errors: 

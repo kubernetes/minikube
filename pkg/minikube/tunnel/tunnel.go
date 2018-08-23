@@ -19,8 +19,8 @@ package tunnel
 import (
 	"fmt"
 	"github.com/docker/machine/libmachine/persist"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 	"os"
@@ -29,6 +29,10 @@ import (
 type tunnel interface {
 	cleanup() *TunnelStatus
 	updateTunnelStatus() *TunnelStatus
+}
+
+func errorTunnelAlreadyExists(id *TunnelID) error {
+	return fmt.Errorf("there is already a running tunnel for this machine: %s", id)
 }
 
 func newTunnel(machineName string,
@@ -47,7 +51,14 @@ func newTunnel(machineName string,
 	id := TunnelID{
 		Route:       route,
 		MachineName: machineName,
-		Pid:         os.Getpid(),
+		Pid:         getPid(),
+	}
+	runningTunnel, err := registry.IsAlreadyDefinedAndRunning(&id)
+	if err != nil {
+		return nil, fmt.Errorf("unable to check tunnel registry for conflict: %s", err)
+	}
+	if runningTunnel != nil {
+		return nil, fmt.Errorf("another tunnel is already running, shut it down first: %s", runningTunnel)
 	}
 
 	return &minikubeTunnel{
@@ -78,18 +89,13 @@ type minikubeTunnel struct {
 }
 
 func (t *minikubeTunnel) cleanup() *TunnelStatus {
-	logrus.Debugf("cleaning up %s", t.status.TunnelID.Route)
+	glog.V(3).Infof("cleaning up %s", t.status.TunnelID.Route)
 	e := t.router.Cleanup(t.status.TunnelID.Route)
 	if e != nil {
-		t.status.RouterError = errors.Errorf("error cleaning up route: %s", e)
-		logrus.Debugf(t.status.RouterError.Error())
+		t.status.RouteError = errors.Errorf("error cleaning up route: %s", e)
+		glog.V(3).Infof(t.status.RouteError.Error())
 	} else {
-		exists, _, _, err := t.router.Inspect(t.status.TunnelID.Route)
-		if !exists && err != nil {
-			t.registry.Remove(t.status.TunnelID.Route)
-		} else {
-			logrus.Debugf("did not remove tunnel (%s) from registry.")
-		}
+		t.registry.Remove(t.status.TunnelID.Route)
 	}
 	if t.status.MinikubeState == Running {
 		t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.loadBalancerEmulator.Cleanup()
@@ -98,30 +104,50 @@ func (t *minikubeTunnel) cleanup() *TunnelStatus {
 }
 
 func (t *minikubeTunnel) updateTunnelStatus() *TunnelStatus {
-	logrus.Debug("updating tunnel status...")
+	glog.V(3).Info("updating tunnel status...")
 	t.status.MinikubeState, _, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
 	if t.status.MinikubeState == Running {
-		logrus.Debug("minikube is running, trying to add Route %s", t.status.TunnelID.Route)
+		glog.V(3).Info("minikube is running, trying to add Route %s", t.status.TunnelID.Route)
 
 		exists, conflict, _, err := t.router.Inspect(t.status.TunnelID.Route)
 		if err != nil {
-			t.status.RouterError = fmt.Errorf("error checking for route state: %s", err)
+			t.status.RouteError = fmt.Errorf("error checking for route state: %s", err)
 		} else if !exists && len(conflict) == 0 {
-			t.status.RouterError = t.router.EnsureRouteIsAdded(t.status.TunnelID.Route)
-			if t.status.RouterError == nil {
+			t.status.RouteError = t.router.EnsureRouteIsAdded(t.status.TunnelID.Route)
+			if t.status.RouteError == nil {
 				//the route was added successfully, we need to make sure the registry has it too
+				//this might fail in race conditions, when another process created this tunnel
 				if err := t.registry.Register(&t.status.TunnelID); err != nil {
-					logrus.Errorf("failed to register tunnel: %s, removing...", err)
-					//if registry failes, we need to remove the route
-					t.status.RouterError = t.router.Cleanup(t.status.TunnelID.Route)
+					glog.Errorf("failed to register tunnel: %s", err)
+					t.status.RouteError = err
 				}
 			}
 		} else if len(conflict) > 0 {
-			t.status.RouterError = fmt.Errorf("conflicting route: ")
+			t.status.RouteError = fmt.Errorf("conflicting route: %s", conflict)
+		} else {
+			//the route exists, make sure that this process owns it in the registry
+			conflictingTunnel, e := t.registry.IsAlreadyDefinedAndRunning(&t.status.TunnelID)
+			if e != nil {
+				glog.Errorf("failed to check for other tunnels: %s", e)
+				t.status.RouteError = e
+			}
+			if conflictingTunnel == nil {
+				//the route exists, but "orphaned", this process will "own it" in the registry
+				if err := t.registry.Register(&t.status.TunnelID); err != nil {
+					glog.Errorf("failed to register tunnel: %s", err)
+					t.status.RouteError = err
+				}
+			} else if conflictingTunnel.Pid != getPid() {
+				//another process owns the tunnel
+				t.status.RouteError = errorTunnelAlreadyExists(conflictingTunnel)
+			}
+
 		}
-		t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.loadBalancerEmulator.PatchServices()
+		if t.status.RouteError == nil {
+			t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.loadBalancerEmulator.PatchServices()
+		}
 	}
-	logrus.Debugf("sending report %s", t.status)
+	glog.V(3).Infof("sending report %s", t.status)
 	t.reporter.Report(t.status.Clone())
 	return t.status
 }

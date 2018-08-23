@@ -28,7 +28,7 @@ type TunnelStatus struct {
 	MinikubeState HostState
 	MinikubeError error
 
-	RouterError error
+	RouteError error
 
 	PatchedServices           []string
 	LoadBalancerEmulatorError error
@@ -39,7 +39,7 @@ func (t *TunnelStatus) Clone() *TunnelStatus {
 		TunnelID:                  t.TunnelID,
 		MinikubeState:             t.MinikubeState,
 		MinikubeError:             t.MinikubeError,
-		RouterError:               t.RouterError,
+		RouteError:                t.RouteError,
 		PatchedServices:           t.PatchedServices,
 		LoadBalancerEmulatorError: t.LoadBalancerEmulatorError,
 	}
@@ -51,7 +51,7 @@ func (t *TunnelStatus) String() string {
 		t.MinikubeState,
 		t.MinikubeError,
 		t.TunnelID.Route,
-		t.RouterError,
+		t.RouteError,
 		t.PatchedServices,
 		t.LoadBalancerEmulatorError)
 }

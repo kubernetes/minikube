@@ -40,7 +40,7 @@ func TestReporter(t *testing.T) {
 				MinikubeState: Running,
 				MinikubeError: nil,
 
-				RouterError: nil,
+				RouteError: nil,
 
 				PatchedServices:           []string{"svc1", "svc2"},
 				LoadBalancerEmulatorError: nil,
@@ -68,7 +68,7 @@ func TestReporter(t *testing.T) {
 				MinikubeState: Unknown,
 				MinikubeError: errors.New("minikubeerror"),
 
-				RouterError: errors.New("routeerror"),
+				RouteError: errors.New("routeerror"),
 
 				PatchedServices:           nil,
 				LoadBalancerEmulatorError: errors.New("lberror"),
