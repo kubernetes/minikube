@@ -359,6 +359,12 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
+	// In case of no port assigned, use util.APIServerPort
+	nodePort := k8s.NodePort
+	if nodePort <= 0 {
+		nodePort = util.APIServerPort
+	}
+
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
@@ -374,7 +380,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
 		AdvertiseAddress:  k8s.NodeIP,
-		APIServerPort:     util.APIServerPort,
+		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
