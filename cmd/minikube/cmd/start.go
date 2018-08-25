@@ -64,6 +64,7 @@ const (
 	createMount           = "mount"
 	featureGates          = "feature-gates"
 	apiServerName         = "apiserver-name"
+	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
@@ -212,6 +213,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubernetesConfig := cfg.KubernetesConfig{
 		KubernetesVersion:      selectedKubernetesVersion,
 		NodeIP:                 ip,
+		NodePort:               viper.GetInt(apiServerPort),
 		NodeName:               constants.DefaultNodeName,
 		APIServerName:          viper.GetString(apiServerName),
 		APIServerNames:         apiServerNames,
@@ -266,7 +268,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error connecting to cluster: ", err)
 	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(kubernetesConfig.NodePort), -1)
 
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
@@ -389,6 +391,7 @@ func init() {
 	startCmd.Flags().String(NFSSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().Int(apiServerPort, pkgutil.APIServerPort, "The apiserver listening port")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")

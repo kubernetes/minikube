@@ -57,6 +57,7 @@ type MachineConfig struct {
 type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
+	NodePort          int
 	NodeName          string
 	APIServerName     string
 	APIServerNames    []string

@@ -222,12 +222,16 @@ func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, e
 	if kip.Equal(ip) {
 		return false, nil
 	}
+	kport, err := getPortFromKubeConfig(filename, machineName)
+	if err != nil {
+		return false, err
+	}
 	con, err := ReadConfigOrNew(filename)
 	if err != nil {
 		return false, errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
-	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(util.APIServerPort)
+	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(kport)
 	err = WriteConfig(con, filename)
 	if err != nil {
 		return false, err
@@ -256,4 +260,26 @@ func getIPFromKubeConfig(filename, machineName string) (net.IP, error) {
 	}
 	ip := net.ParseIP(kip)
 	return ip, nil
+}
+
+// getPortFromKubeConfig returns the Port number stored for minikube in the kubeconfig specified
+func getPortFromKubeConfig(filename, machineName string) (int, error) {
+	con, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return 0, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	cluster, ok := con.Clusters[machineName]
+	if !ok {
+		return 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+	}
+	kurl, err := url.Parse(cluster.Server)
+	if err != nil {
+		return util.APIServerPort, nil
+	}
+	_, kport, err := net.SplitHostPort(kurl.Host)
+	if err != nil {
+		return util.APIServerPort, nil
+	}
+	port, err := strconv.Atoi(kport)
+	return port, err
 }
