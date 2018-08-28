@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -25,7 +26,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"os"
 	"os/signal"
-	"github.com/golang/glog"
 )
 
 var cleanup bool

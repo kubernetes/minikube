@@ -124,7 +124,7 @@ func (mgr *Manager) CleanupNotRunningTunnels() error {
 
 	for _, tunnel := range tunnels {
 		isRunning, e := checkIfRunning(tunnel.Pid)
-		glog.Infof("%v is running: %b", tunnel, isRunning)
+		glog.Infof("%v is running: %t", tunnel, isRunning)
 		if e != nil {
 			return fmt.Errorf("error checking if tunnel is running: %s", e)
 		}

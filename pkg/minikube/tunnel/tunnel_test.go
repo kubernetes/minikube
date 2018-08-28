@@ -23,12 +23,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
 
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"strings"
 	"testing"
-	"fmt"
 )
 
 func TestTunnel(t *testing.T) {
@@ -266,7 +266,7 @@ func TestTunnel(t *testing.T) {
 					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 					MachineName: "testmachine",
 					Pid:         RUNNING_PID2,
-				}, )
+				})
 				tunnel.updateTunnelStatus()
 				return tunnel.cleanup()
 			},
@@ -319,7 +319,7 @@ func TestTunnel(t *testing.T) {
 					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 					MachineName: "testmachine",
 					Pid:         RUNNING_PID2,
-				}, )
+				})
 				tunnel.router.(*fakeRouter).rt = append(tunnel.router.(*fakeRouter).rt, routingTableLine{
 					route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 					line:  "",
@@ -362,7 +362,6 @@ func TestTunnel(t *testing.T) {
 				}
 			},
 		},
-
 	}
 
 	for _, tc := range testCases {

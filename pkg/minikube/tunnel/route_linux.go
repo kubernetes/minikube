@@ -24,12 +24,8 @@ import (
 	"strings"
 )
 
-type OSRouter struct {
-	configRoute
-}
-
-func (r *OSRouter) EnsureRouteIsAdded() error {
-	exists, e := checkRoute(r.config.RoutedCIDR, r.config.TargetGateway)
+func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
+	exists, e := isValidToAddOrDelete(router, route)
 	if e != nil {
 		return e
 	}
@@ -37,11 +33,11 @@ func (r *OSRouter) EnsureRouteIsAdded() error {
 		return nil
 	}
 
-	serviceCIDR := r.config.RoutedCIDR.String()
-	gatewayIP := r.config.TargetGateway.String()
+	serviceCIDR := route.DestCIDR.String()
+	gatewayIP := route.Gateway.String()
 
 	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
-	command := exec.Command("sudo", "ip", "Route", "add", serviceCIDR, "via", gatewayIP)
+	command := exec.Command("sudo", "ip", "route", "add", serviceCIDR, "via", gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, e := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
@@ -56,21 +52,26 @@ func (r *OSRouter) EnsureRouteIsAdded() error {
 	return nil
 }
 
-func checkRoute(cidr *net.IPNet, gateway net.IP) (bool, error) {
-	stdInAndOut, e := exec.Command("netstat", "-nr", "-f", "inet").CombinedOutput()
+func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
+	command := exec.Command("netstat", "-nr", "-f", "inet")
+	stdInAndOut, e := command.CombinedOutput()
 	if e != nil {
-		return false, e
+		err = fmt.Errorf("error running '%v': %s", command, e)
+		return
 	}
 	routeTableString := fmt.Sprintf("%s", stdInAndOut)
-	return checkRouteTable(cidr, gateway, routeTableString)
+
+	rt := router.parseTable(routeTableString)
+
+	exists, conflict, overlaps = rt.Check(route)
+
+	return
 }
 
-func checkRouteTable(cidr *net.IPNet, gateway net.IP, routeTableString string) (bool, error) {
-	routeTable := strings.Split(routeTableString, "\n")
+func (router *osRouter) parseTable(table string) routingTable {
+	t := routingTable{}
 	skip := true
-	exactMatch := false
-	collision := ""
-	for _, line := range routeTable {
+	for _, line := range strings.Split(table, "\n") {
 		//after first line of header we can start consuming
 		if strings.HasPrefix(line, "Destination") {
 			skip = false
@@ -86,70 +87,50 @@ func checkRouteTable(cidr *net.IPNet, gateway net.IP, routeTableString string) (
 			dstCIDRIP := net.ParseIP(fields[0])
 			dstCIDRMask := fields[2]
 			dstMaskIP := net.ParseIP(dstCIDRMask)
-			gatewayIP := fields[1]
-			dstCIDR := &net.IPNet{
-				IP:   dstCIDRIP,
-				Mask: net.IPv4Mask(dstMaskIP[12], dstMaskIP[13], dstMaskIP[14], dstMaskIP[15]),
-			}
-			if dstCIDR.String() == cidr.String() {
-				if gatewayIP == gateway.String() {
-					exactMatch = true
-				} else {
-					collision = line
-				}
-			} else if dstCIDR != nil {
-				if dstCIDR.Contains(cidr.IP) || cidr.Contains(dstCIDRIP) {
-					glog.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove this rule. Run: sudo Route -n delete %s", dstCIDR.String(), cidr, dstCIDR.String())
-				}
+			gatewayIP := net.ParseIP(fields[1])
+
+			if dstCIDRIP == nil || gatewayIP == nil || dstMaskIP == nil {
+				glog.V(8).Infof("skipping line: can't parse: %s", line)
 			} else {
-				glog.Errorf("can't parse CIDR from routing table: %s", dstCIDR)
+
+				dstCIDR := &net.IPNet{
+					IP:   dstCIDRIP,
+					Mask: net.IPv4Mask(dstMaskIP[12], dstMaskIP[13], dstMaskIP[14], dstMaskIP[15]),
+				}
+
+				tableLine := routingTableLine{
+					route: &Route{
+						DestCIDR: dstCIDR,
+						Gateway:  gatewayIP,
+					},
+					line: line,
+				}
+				t = append(t, tableLine)
 			}
 		}
 	}
 
-	if exactMatch {
-		return true, nil
-	}
-
-	if len(collision) > 0 {
-		return false, fmt.Errorf("conflicting rule in routing table: %s", collision)
-	}
-
-	return false, nil
+	return t
 }
 
-func (r *OSRouter) Cleanup() error {
-	exists, e := checkRoute(r.config.RoutedCIDR, r.config.TargetGateway)
+func (router *osRouter) Cleanup(route *Route) error {
+	exists, e := isValidToAddOrDelete(router, route)
 	if e != nil {
 		return e
 	}
 	if !exists {
 		return nil
 	}
-	serviceCIDR := r.config.RoutedCIDR.String()
-	gatewayIP := r.config.TargetGateway.String()
+	serviceCIDR := route.DestCIDR.String()
+	gatewayIP := route.Gateway.String()
 
-	fmt.Printf("Cleaning up Route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
-	command := exec.Command("sudo", "ip", "Route", "delete", serviceCIDR)
-	if stdInAndOut, e := command.CombinedOutput(); e != nil {
-		return e
-	} else {
-		message := fmt.Sprintf("%s", stdInAndOut)
-		glog.Infof("%s", message)
-		if len(message) > 0 {
-			return fmt.Errorf("error deleting Route: %s, %d", message, len(strings.Split(message, "\n")))
-		} else {
-			return nil
-		}
+	glog.Infof("Cleaning up Route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
+	command := exec.Command("sudo", "ip", "route", "delete", serviceCIDR)
+	stdInAndOut, e := command.CombinedOutput()
+	message := fmt.Sprintf("%s", stdInAndOut)
+	glog.Infof("%s", message)
+	if e != nil || len(message) > 0 {
+		return fmt.Errorf("error deleting Route: %s, %s", message, e)
 	}
-}
-
-func (r *OSRouter) GetConfig() Route {
-	return r.config
-}
-
-func newRouter(routerConfigRoute) router {
-	return &OSRouter{
-		config: routerConfig,
-	}
+	return nil
 }

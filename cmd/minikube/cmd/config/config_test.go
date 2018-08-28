@@ -47,10 +47,10 @@ var configTestCases = []configTestCase{
     "vm-driver": "kvm"
 }`,
 		config: map[string]interface{}{
-			"vm-driver": "kvm",
-			"cpus":      4,
-			"disk-size": "20g",
-			"v":         5,
+			"vm-driver":                 "kvm",
+			"cpus":                      4,
+			"disk-size":                 "20g",
+			"v":                         5,
 			"show-libmachine-logs":      true,
 			"log_dir":                   "/etc/hosts",
 			"ReminderWaitPeriodInHours": 99,

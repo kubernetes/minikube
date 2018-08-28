@@ -67,7 +67,7 @@ func (l *loadBalancerEmulator) applyOnLBServices(action func(restClient rest.Int
 
 	for _, svc := range serviceList.Items {
 		if svc.Spec.Type == "LoadBalancer" {
-			glog.Info("%s is type LoadBalancer.", svc.Name)
+			glog.Infof("%s is type LoadBalancer.", svc.Name)
 			managedServices = append(managedServices, svc.Name)
 			result, err := action(restClient, svc)
 			if err != nil {

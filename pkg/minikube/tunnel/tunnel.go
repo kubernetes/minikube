@@ -107,7 +107,7 @@ func (t *minikubeTunnel) updateTunnelStatus() *TunnelStatus {
 	glog.V(3).Info("updating tunnel status...")
 	t.status.MinikubeState, _, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
 	if t.status.MinikubeState == Running {
-		glog.V(3).Info("minikube is running, trying to add Route %s", t.status.TunnelID.Route)
+		glog.V(3).Infof("minikube is running, trying to add Route %s", t.status.TunnelID.Route)
 
 		exists, conflict, _, err := t.router.Inspect(t.status.TunnelID.Route)
 		if err != nil {

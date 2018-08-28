@@ -42,7 +42,7 @@ func isValidToAddOrDelete(router router, r *Route) (bool, error) {
 	}
 
 	if len(overlaps) > 0 {
-		glog.Warningf("overlapping CIDR (%s) detected in routing table with minikube tunnel (%s). It is advisable to remove these rules:\n%v", r.DestCIDR, strings.Join(overlaps, "\n"))
+		glog.Warningf("overlapping CIDR detected in routing table with minikube tunnel (CIDR: %s). It is advisable to remove these rules:\n%v", r.DestCIDR, strings.Join(overlaps, "\n"))
 	}
 
 	if exists {
@@ -81,4 +81,19 @@ func (t *routingTable) String() string {
 		result = fmt.Sprintf("%s\n  %s\t|%s", result, l.route.String(), l.line)
 	}
 	return result
+}
+
+func (t *routingTable) Equal(other *routingTable) bool {
+	if other == nil || len(*t) != len(*other) {
+		return false
+	}
+
+	for i := range *t {
+		routesEqual := (*t)[i].route.Equal((*other)[i].route)
+		linesEqual := (*t)[i].line == ((*other)[i].line)
+		if !(routesEqual && linesEqual) {
+			return false
+		}
+	}
+	return true
 }
