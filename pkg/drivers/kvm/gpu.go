@@ -62,7 +62,7 @@ type PCIDevice struct {
 func getDevicesXML() (string, error) {
 	unboundNVIDIADevices, err := getPassthroughableNVIDIADevices()
 	if err != nil {
-		return "", fmt.Errorf("coundn't generate devices XML: %v", err)
+		return "", fmt.Errorf("couldn't generate devices XML: %v", err)
 	}
 	var pciDevices []PCIDevice
 	for _, device := range unboundNVIDIADevices {
