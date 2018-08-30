@@ -271,8 +271,6 @@ func TestTunnel(t *testing.T) {
 				return tunnel.cleanup()
 			},
 			assertion: func(t *testing.T, actualSecondState *TunnelStatus, reportedStates []*TunnelStatus, routes []*Route, registeredTunnels []*TunnelID) {
-				b, e := checkIfRunning(1)
-				fmt.Println(fmt.Sprintf("PID1: %v, %s", b, e))
 				expectedRoute := unsafeParseRoute("1.2.3.4", "1.2.3.4/5")
 				expectedFirstState := &TunnelStatus{
 					MinikubeState: Running,
