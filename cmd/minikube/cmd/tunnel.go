@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"os"
 	"os/signal"
+	"flag"
 )
 
 var cleanup bool
@@ -39,6 +40,7 @@ var tunnelCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
+		flag.Lookup("logtostderr").Value.Set("true")
 		manager := tunnel.NewManager()
 
 		if cleanup {
