@@ -18,6 +18,8 @@ data:
         }
         prometheus :9153
         proxy . /etc/resolv.conf
+        loop
         cache 30
+        loadbalance
         reload
     }
