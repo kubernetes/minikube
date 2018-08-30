@@ -17,17 +17,17 @@ limitations under the License.
 package integration
 
 import (
-	"testing"
-	"k8s.io/minikube/test/integration/util"
-	"path/filepath"
 	"fmt"
-	"net/http"
-	"strings"
-	"time"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
-	"io/ioutil"
+	"k8s.io/minikube/test/integration/util"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
 )
 
 func testTunnel(t *testing.T) {
@@ -65,7 +65,6 @@ func testTunnel(t *testing.T) {
 
 	nginxIP := ""
 
-
 	for i := 1; i < 3 && len(nginxIP) == 0; i++ {
 		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"})
 
@@ -96,7 +95,7 @@ func testTunnel(t *testing.T) {
 	}
 
 	responseBody := fmt.Sprintf("%s", body)
-	if !strings.Contains(responseBody,"Welcome to nginx!") {
+	if !strings.Contains(responseBody, "Welcome to nginx!") {
 		t.Fatalf("response body doesn't seem like an nginx response:\n%s", responseBody)
 	}
 }
