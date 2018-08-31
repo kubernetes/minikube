@@ -155,7 +155,7 @@ To opt out of these messages, run the command:
 
 func getInput(input chan string, r io.Reader) {
 	reader := bufio.NewReader(r)
-	fmt.Print("Please enter your response [Y/n]: \n")
+	fmt.Print("Please enter your response [Y/n]: ")
 	response, err := reader.ReadString('\n')
 	if err != nil {
 		glog.Errorf(err.Error())
