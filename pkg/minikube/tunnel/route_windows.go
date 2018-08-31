@@ -21,6 +21,7 @@ import (
 	"net"
 	"os/exec"
 	"strings"
+	"github.com/golang/glog"
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
