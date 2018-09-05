@@ -19,7 +19,6 @@ package service
 import (
 	"bytes"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -41,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util"
+	"net/url"
 )
 
 type K8sClient interface {
@@ -184,12 +184,7 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 			return nil, err
 		}
 
-		u, err := url.Parse(doc.String())
-		if err != nil {
-			return nil, err
-		}
-
-		urls = append(urls, u.String())
+		urls = append(urls, doc.String())
 	}
 	return urls, nil
 }
@@ -246,15 +241,21 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
-	for _, url := range urls {
-		if https {
-			url = strings.Replace(url, "http", "https", 1)
+	for _, urlString := range urls {
+		isHttpPrefixedURL := false
+		if u, parseErr := url.Parse(urlString); parseErr == nil {
+			isHttpPrefixedURL = u.Scheme == "http"
 		}
-		if urlMode || !strings.HasPrefix(url, "http") {
-			fmt.Fprintln(os.Stdout, url)
+
+		if isHttpPrefixedURL && https {
+			urlString = strings.Replace(urlString, "http", "https", 1)
+		}
+
+		if urlMode || !isHttpPrefixedURL {
+			fmt.Fprintln(os.Stdout, urlString)
 		} else {
 			fmt.Fprintln(os.Stderr, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
-			browser.OpenURL(url)
+			browser.OpenURL(urlString)
 		}
 	}
 	return nil
