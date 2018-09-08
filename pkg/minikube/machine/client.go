@@ -110,7 +110,7 @@ func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host
 				ServerKeyPath:    filepath.Join(api.GetMachinesDir(), "server-key.pem"),
 			},
 			EngineOptions: &engine.Options{
-				StorageDriver: "aufs",
+				StorageDriver: "overlay2",
 				TLSVerify:     true,
 			},
 			SwarmOptions: &swarm.Options{},
