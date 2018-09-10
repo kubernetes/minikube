@@ -75,6 +75,18 @@ var Addons = map[string]*Addon{
 			"dashboard-svc.yaml",
 			"0640"),
 	}, true, "dashboard"),
+	"watchpod": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/watchpod/watchpod-dp.yaml",
+			constants.AddonsPath,
+			"watchpod-dp.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/watchpod/watchpod-svc.yaml",
+			constants.AddonsPath,
+			"watchpod-svc.yaml",
+			"0640"),
+	}, true, "watchpod"),
 	"default-storageclass": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
