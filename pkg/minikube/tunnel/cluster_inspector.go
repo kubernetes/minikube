@@ -19,16 +19,16 @@ package tunnel
 import (
 	"fmt"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/persist"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"net"
+	"github.com/docker/machine/libmachine"
 )
 
 type minikubeInspector struct {
-	machineStore persist.Store
+	machineAPI   libmachine.API
 	configLoader config.ConfigLoader
 	machineName  string
 }
@@ -36,7 +36,8 @@ type minikubeInspector struct {
 func (m *minikubeInspector) getStateAndHost() (HostState, *host.Host, error) {
 	hostState := Unknown
 
-	h, e := cluster.CheckIfHostExistsAndLoad(m.machineStore, m.machineName)
+	h, e := cluster.CheckIfHostExistsAndLoad(m.machineAPI, m.machineName)
+
 	if e != nil {
 		e = errors.Wrapf(e, "error loading docker-machine host for: %s", m.machineName)
 		return hostState, nil, e

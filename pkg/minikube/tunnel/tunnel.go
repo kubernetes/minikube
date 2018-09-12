@@ -18,12 +18,12 @@ package tunnel
 
 import (
 	"fmt"
-	"github.com/docker/machine/libmachine/persist"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 	"os"
+	"github.com/docker/machine/libmachine"
 )
 
 type tunnel interface {
@@ -36,15 +36,17 @@ func errorTunnelAlreadyExists(id *TunnelID) error {
 }
 
 func newTunnel(machineName string,
-	machineStore persist.Store,
+	machineAPI libmachine.API,
 	configLoader config.ConfigLoader,
 	v1Core v1.CoreV1Interface, registry *persistentRegistry, router router) (*minikubeTunnel, error) {
 	clusterInspector := &minikubeInspector{
 		machineName:  machineName,
-		machineStore: machineStore,
+		machineAPI:   machineAPI,
 		configLoader: configLoader,
 	}
 	state, route, err := clusterInspector.getStateAndRoute()
+	//TODO(balintp): clean this up to be more self contained
+	machineAPI.Close()
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine cluster info: %s", err)
 	}
@@ -106,6 +108,8 @@ func (t *minikubeTunnel) cleanup() *TunnelStatus {
 func (t *minikubeTunnel) updateTunnelStatus() *TunnelStatus {
 	glog.V(3).Info("updating tunnel status...")
 	t.status.MinikubeState, _, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
+	//TODO(balintp): clean this up to be more self contained
+	defer t.clusterInspector.machineAPI.Close()
 	if t.status.MinikubeState == Running {
 		glog.V(3).Infof("minikube is running, trying to add Route %s", t.status.TunnelID.Route)
 

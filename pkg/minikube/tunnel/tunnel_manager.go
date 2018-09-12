@@ -21,11 +21,11 @@ import (
 
 	"context"
 	"fmt"
-	"github.com/docker/machine/libmachine/persist"
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"github.com/docker/machine/libmachine"
 )
 
 // Manager can create, start and cleanup a tunnel
@@ -47,10 +47,10 @@ func NewManager() *Manager {
 	}
 }
 func (mgr *Manager) StartTunnel(ctx context.Context, machineName string,
-	machineStore persist.Store,
+	machineAPI libmachine.API,
 	configLoader config.ConfigLoader,
 	v1Core v1.CoreV1Interface) (done chan bool, err error) {
-	tunnel, e := newTunnel(machineName, machineStore, configLoader, v1Core, mgr.registry, mgr.router)
+	tunnel, e := newTunnel(machineName, machineAPI, configLoader, v1Core, mgr.registry, mgr.router)
 	if e != nil {
 		return nil, fmt.Errorf("error creating tunnel: %s", e)
 	}

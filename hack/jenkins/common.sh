@@ -25,11 +25,10 @@
 
 
 # Copy only the files we need to this workspace
-mkdir -p out/ testdata/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
 gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/* testdata/
+gsutil cp -R gs://minikube-builds/${MINIKUBE_LOCATION}/testdata .
 
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}

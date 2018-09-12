@@ -376,12 +376,14 @@ func TestTunnel(t *testing.T) {
 				defer func() { getPid = origPidGetter }()
 			}
 			machineName := "testmachine"
-			store := &tests.FakeStore{
-				Hosts: map[string]*host.Host{
-					machineName: {
-						Driver: &tests.MockDriver{
-							CurrentState: tc.machineState,
-							IP:           tc.machineIP,
+			machineAPI := &tests.MockAPI{
+				FakeStore: tests.FakeStore{
+					Hosts: map[string]*host.Host{
+						machineName: {
+							Driver: &tests.MockDriver{
+								CurrentState: tc.machineState,
+								IP:           tc.machineIP,
+							},
 						},
 					},
 				},
@@ -397,7 +399,7 @@ func TestTunnel(t *testing.T) {
 			registry, cleanup := createTestRegistry(t)
 			defer cleanup()
 
-			tunnel, e := newTunnel(machineName, store, configLoader, newStubCoreClient(nil, nil), registry, &fakeRouter{})
+			tunnel, e := newTunnel(machineName, machineAPI, configLoader, newStubCoreClient(nil, nil), registry, &fakeRouter{})
 			if e != nil {
 				t.Errorf("error creating tunnel: %s", e)
 				return
@@ -424,16 +426,19 @@ func TestTunnel(t *testing.T) {
 
 func TestErrorCreatingTunnel(t *testing.T) {
 	machineName := "testmachine"
-	store := &tests.FakeStore{
-		Hosts: map[string]*host.Host{
-			machineName: {
-				Driver: &tests.MockDriver{
-					CurrentState: state.Stopped,
-					IP:           "1.2.3.5",
+	store := &tests.MockAPI{
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				machineName: {
+					Driver: &tests.MockDriver{
+						CurrentState: state.Stopped,
+						IP:           "1.2.3.5",
+					},
 				},
 			},
 		},
 	}
+
 	configLoader := &stubConfigLoader{
 		c: config.Config{
 			KubernetesConfig: config.KubernetesConfig{

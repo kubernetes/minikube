@@ -58,6 +58,8 @@ var configTestCases = []configTestCase{
 	},
 }
 
+
+
 func TestHiddenPrint(t *testing.T) {
 	testCases := []struct {
 		TestString  string
@@ -72,6 +74,8 @@ func TestHiddenPrint(t *testing.T) {
 			Verbose:    true,
 		},
 	}
+
+
 	for _, test := range testCases {
 		b := new(bytes.Buffer)
 		_, err := b.WriteString(fmt.Sprintf("%s\r\n", test.TestString)) // you need the \r!

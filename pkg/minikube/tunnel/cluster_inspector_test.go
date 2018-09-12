@@ -31,10 +31,10 @@ import (
 func TestAPIError(t *testing.T) {
 	machineName := "nonexistentmachine"
 
-	machineStore := &tests.FakeStore{}
+	machineAPI := tests.NewMockAPI()
 	configLoader := &stubConfigLoader{}
 	inspector := &minikubeInspector{
-		machineStore, configLoader, machineName,
+		machineAPI, configLoader, machineName,
 	}
 
 	s, r, e := inspector.getStateAndRoute()
@@ -48,16 +48,19 @@ func TestAPIError(t *testing.T) {
 func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 	machineName := "testmachine"
 
-	machineStore := &tests.FakeStore{
-		Hosts: map[string]*host.Host{
-			machineName: {
-				Driver: &tests.MockDriver{
-					CurrentState: state.Running,
-					IP:           "1.2.3.4",
+	machineAPI := &tests.MockAPI{
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				machineName: {
+					Driver: &tests.MockDriver{
+						CurrentState: state.Running,
+						IP:           "1.2.3.4",
+					},
 				},
 			},
 		},
 	}
+
 	configLoader := &stubConfigLoader{
 		c: config.Config{
 			KubernetesConfig: config.KubernetesConfig{
@@ -66,7 +69,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 		},
 	}
 	inspector := &minikubeInspector{
-		machineStore, configLoader, machineName,
+		machineAPI, configLoader, machineName,
 	}
 
 	s, r, e := inspector.getStateAndRoute()
