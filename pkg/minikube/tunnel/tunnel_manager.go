@@ -21,11 +21,11 @@ import (
 
 	"context"
 	"fmt"
+	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"github.com/docker/machine/libmachine"
 )
 
 // Manager can create, start and cleanup a tunnel

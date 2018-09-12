@@ -18,12 +18,12 @@ package tunnel
 
 import (
 	"fmt"
+	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 	"os"
-	"github.com/docker/machine/libmachine"
 )
 
 type tunnel interface {
