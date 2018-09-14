@@ -20,11 +20,14 @@ import (
 	"fmt"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/kubernetes/cmd/kubeadm/app/features"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -107,6 +110,48 @@ func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, f
 	return kubeadmExtraArgs, nil
 }
 
+func ParseFeatureArgs(featureGates string) (map[string]bool, string, error) {
+	kubeadmFeatureArgs := map[string]bool{}
+	componentFeatureArgs := ""
+	for _, s := range strings.Split(featureGates, ",") {
+		if len(s) == 0 {
+			continue
+		}
+
+		fg := strings.SplitN(s, "=", 2)
+		if len(fg) != 2 {
+			return nil, "", fmt.Errorf("missing value for key \"%v\"", s)
+		}
+
+		k := strings.TrimSpace(fg[0])
+		v := strings.TrimSpace(fg[1])
+
+		if !Supports(k) {
+			componentFeatureArgs = fmt.Sprintf("%s%s,", componentFeatureArgs, s)
+			continue
+		}
+
+		boolValue, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "failed to convert bool value \"%v\"", v)
+		}
+		kubeadmFeatureArgs[k] = boolValue
+	}
+	componentFeatureArgs = strings.TrimRight(componentFeatureArgs, ",")
+	return kubeadmFeatureArgs, componentFeatureArgs, nil
+}
+
+// Supports indicates whether a feature name is supported on the
+// feature gates for kubeadm
+func Supports(featureName string) bool {
+	for k := range features.InitFeatureGates {
+		if featureName == string(k) {
+			return true
+		}
+	}
+	return false
+}
+
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	// Strip leading 'v' prefix from version for semver parsing
 	v, err := semver.Make(version[1:])
@@ -175,13 +220,13 @@ var versionSpecificOpts = []VersionedExtraOption{
 	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
 	{
 		Option: util.ExtraOption{
-			Component: Apiserver,
+			Component: Kubelet,
 			Key:       "require-kubeconfig",
 			Value:     "true",
 		},
 		LessThanOrEqual: semver.MustParse("1.9.10"),
 	},
-	NewUnversionedOption(Kubelet, "hostname-override", "minikube"),
+	NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
 
 	// System pods args
 	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
@@ -204,7 +249,16 @@ var versionSpecificOpts = []VersionedExtraOption{
 			Key:       "admission-control",
 			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
 		},
+		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
 		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
+	},
+	{
+		Option: util.ExtraOption{
+			Component: Apiserver,
+			Key:       "enable-admission-plugins",
+			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+		},
+		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
 	},
 }
 

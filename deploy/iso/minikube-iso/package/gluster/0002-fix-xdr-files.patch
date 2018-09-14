@@ -1,0 +1,23 @@
+--- a/rpc/xdr/src/changelog-xdr.x	2018-04-24 19:55:36.000000000 +0530
++++ b/rpc/xdr/src/changelog-xdr.x	2018-06-21 19:41:11.146680931 +0530
+@@ -27,16 +27,16 @@
+ /* XDR: changelog -> libgfchangelog */
+ struct changelog_event_req {
+        /* sequence number for the buffer */
+-       unsigned long seq;
++       unsigned int seq;
+ 
+        /* time of dispatch */
+-       unsigned long tv_sec;
+-       unsigned long tv_usec;
++       unsigned int tv_sec;
++       unsigned int tv_usec;
+ };
+ 
+ struct changelog_event_rsp {
+        int op_ret;
+ 
+        /* ack'd buffers sequence number */
+-       unsigned long seq;
++       unsigned int seq;
+ };

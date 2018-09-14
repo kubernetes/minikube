@@ -120,7 +120,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"coreDNS-clusterrole.yaml",
 			"0640"),
-	}, false, "coredns"),
+	}, true, "coredns"),
 	"kube-dns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-controller.yaml",
@@ -137,7 +137,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"kube-dns-svc.yaml",
 			"0640"),
-	}, true, "kube-dns"),
+	}, false, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml",
@@ -204,9 +204,9 @@ var Addons = map[string]*Addon{
 			"ingress-configmap.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-rc.yaml",
+			"deploy/addons/ingress/ingress-dp.yaml",
 			constants.AddonsPath,
-			"ingress-rc.yaml",
+			"ingress-dp.yaml",
 			"0640"),
 		NewBinDataAsset(
 			"deploy/addons/ingress/ingress-svc.yaml",
@@ -257,6 +257,20 @@ var Addons = map[string]*Addon{
 			"freshpod-rc.yaml",
 			"0640"),
 	}, false, "freshpod"),
+	"nvidia-driver-installer": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gpu/nvidia-driver-installer.yaml",
+			constants.AddonsPath,
+			"nvidia-driver-installer.yaml",
+			"0640"),
+	}, false, "nvidia-driver-installer"),
+	"nvidia-gpu-device-plugin": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
+			constants.AddonsPath,
+			"nvidia-gpu-device-plugin.yaml",
+			"0640"),
+	}, false, "nvidia-gpu-device-plugin"),
 }
 
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {

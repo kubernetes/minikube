@@ -1,4 +1,4 @@
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: coredns
@@ -29,7 +29,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: coredns
-        image: registry.hub.docker.com/coredns/coredns:1.0.6
+        image: k8s.gcr.io/coredns:1.2.2
         imagePullPolicy: IfNotPresent
         resources:
           limits:
@@ -41,6 +41,7 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /etc/coredns
+          readOnly: true
         ports:
         - containerPort: 53
           name: dns
@@ -48,6 +49,17 @@ spec:
         - containerPort: 53
           name: dns-tcp
           protocol: TCP
+        - containerPort: 9153
+          name: metrics
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - NET_BIND_SERVICE
+            drop:
+            - all
+          readOnlyRootFilesystem: true
         livenessProbe:
           httpGet:
             path: /health

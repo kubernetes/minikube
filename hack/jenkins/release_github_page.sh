@@ -49,15 +49,17 @@ Minikube is distributed in binary form for Linux, OSX, and Windows systems for t
 ## Installation
 ### OSX
 \`\`\`shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-darwin-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-darwin-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
 \`\`\`
-Feel free to leave off the \`\`\`sudo mv minikube /usr/local/bin\`\`\` if you would like to add minikube to your path manually.
+Feel free to leave off \`\`\`sudo cp minikube /usr/local/bin/ && rm minikube\`\`\` if you would like to add minikube to your path manually.
+
+Or you can install via homebrew with \`brew cask install minikube\`.
 
 ### Linux
 \`\`\`shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
 \`\`\`
-Feel free to leave off the \`\`\`sudo mv minikube /usr/local/bin\`\`\` if you would like to add minikube to your path manually.
+Feel free to leave off \`\`\`sudo cp minikube /usr/local/bin/ && rm minikube\`\`\` if you would like to add minikube to your path manually.
 
 ### Debian Package (.deb) [Experimental]
 Download the \`minikube_${DEB_VERSION}.deb\` file, and install it using \`sudo dpkg -i minikube_$(DEB_VERSION).deb\`
@@ -113,15 +115,20 @@ FILES_TO_UPLOAD=(
     'minikube-darwin-amd64'
     'minikube-darwin-amd64.sha256'
     'minikube-windows-amd64'
+    'minikube-windows-amd64.sha256'
     'minikube-installer.exe'
     "minikube_${DEB_VERSION}.deb"
     'docker-machine-driver-kvm2'
     'docker-machine-driver-hyperkit'
-    'localkube'
-    'localkube.sha256'
 )
 
 for UPLOAD in "${FILES_TO_UPLOAD[@]}"
 do
-    github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name $UPLOAD --file out/$UPLOAD
+    n=0
+    until [ $n -ge 5 ]
+    do
+        github-release upload --user ${GITHUB_ORGANIZATION} --repo ${GITHUB_REPO} --tag ${TAGNAME} --name $UPLOAD --file out/$UPLOAD && break
+        n=$[$n+1]
+        sleep 15
+    done
 done

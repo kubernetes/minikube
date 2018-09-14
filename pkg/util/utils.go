@@ -21,7 +21,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -29,13 +28,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
 	units "github.com/docker/go-units"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/kubernetes_versions"
-	"k8s.io/minikube/pkg/version"
 )
 
 const (
@@ -113,33 +108,6 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 		time.Sleep(d)
 	}
 	return m.ToError()
-}
-
-func GetLocalkubeDownloadURL(versionOrURL string, filename string) (string, error) {
-	urlObj, err := url.Parse(versionOrURL)
-	if err != nil {
-		return "", errors.Wrap(err, "Error parsing localkube download url")
-	}
-	if urlObj.IsAbs() {
-		// scheme was specified in input, is a valid URI.
-		// http.Get will catch unsupported schemes
-		return versionOrURL, nil
-	}
-	if !strings.HasPrefix(versionOrURL, "v") {
-		// no 'v' prefix in input, need to prepend it to version
-		versionOrURL = "v" + versionOrURL
-	}
-	isValidVersion, err := kubernetes_versions.IsValidLocalkubeVersion(versionOrURL, constants.KubernetesVersionGCSURL)
-	if err != nil {
-		return "", errors.Wrap(err, "Error getting valid localkube versions")
-	}
-	if !isValidVersion {
-		return "", errors.New("Not a valid localkube version to download")
-	}
-	if _, err = semver.Make(strings.TrimPrefix(versionOrURL, version.VersionPrefix)); err != nil {
-		return "", errors.Wrap(err, "Error creating semver version from localkube version input string")
-	}
-	return fmt.Sprintf("%s%s/%s", constants.LocalkubeDownloadURLPrefix, versionOrURL, filename), nil
 }
 
 func ParseSHAFromURL(url string) (string, error) {

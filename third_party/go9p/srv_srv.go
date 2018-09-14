@@ -433,7 +433,7 @@ func (req *SrvReq) Respond() {
 
 	// respond to the flush messages
 	// can't send the responses directly to conn.reqout, because the
-	// the flushes may be in a tag group too
+	// flushes may be in a tag group too
 	for freq := flushreqs; freq != nil; freq = freq.flushreq {
 		freq.Respond()
 	}

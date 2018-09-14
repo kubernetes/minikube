@@ -383,7 +383,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 }
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
-// that the status is `Running`, otherwise it will exit
+// the status is `Running`, otherwise it will exit
 func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	s, err := GetHostStatus(api)
 	if err != nil {
@@ -403,7 +403,7 @@ func GetMountCleanupCommand(path string) string {
 var mountTemplate = `
 sudo mkdir -p {{.Path}} || true;
 sudo mount -t 9p -o trans=tcp,port={{.Port}},dfltuid={{.UID}},dfltgid={{.GID}},version={{.Version}},msize={{.Msize}} {{.IP}} {{.Path}};
-sudo chmod 775 {{.Path}};`
+sudo chmod 775 {{.Path}} || true;`
 
 func GetMountCommand(ip net.IP, path, port, mountVersion string, uid, gid, msize int) (string, error) {
 	t := template.Must(template.New("mountCommand").Parse(mountTemplate))

@@ -35,6 +35,8 @@ type MachineConfig struct {
 	CPUs                int
 	DiskSize            int
 	VMDriver            string
+	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
+	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
 	XhyveDiskDriver     string   // Only used by the xhyve driver
 	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry    []string
@@ -48,6 +50,7 @@ type MachineConfig struct {
 	NFSShare            []string
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
+	GPU                 bool   // Only used by kvm2
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
