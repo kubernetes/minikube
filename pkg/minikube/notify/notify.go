@@ -22,6 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -87,13 +88,24 @@ type Release struct {
 type Releases []Release
 
 func getJson(url string, target *Releases) error {
-	r, err := http.Get(url)
-	if err != nil {
-		return errors.Wrap(err, "Error getting minikube version url via http")
-	}
-	defer r.Body.Close()
+	client := &http.Client{}
 
-	return json.NewDecoder(r.Body).Decode(target)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return errors.Wrap(err, "error creating new http request")
+	}
+	ua := fmt.Sprintf("Minikube/%s Minikube-OS/%s",
+		version.GetVersion(), runtime.GOOS)
+
+	req.Header.Set("User-Agent", ua)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrapf(err, "error with http GET for endpoint %s", url)
+	}
+
+	defer resp.Body.Close()
+	return json.NewDecoder(resp.Body).Decode(target)
 }
 
 func getLatestVersionFromURL(url string) (semver.Version, error) {

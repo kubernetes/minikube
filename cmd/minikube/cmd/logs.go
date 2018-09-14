@@ -36,8 +36,8 @@ var (
 // logsCmd represents the logs command
 var logsCmd = &cobra.Command{
 	Use:   "logs",
-	Short: "Gets the logs of the running localkube instance, used for debugging minikube, not user code",
-	Long:  `Gets the logs of the running localkube instance, used for debugging minikube, not user code.`,
+	Short: "Gets the logs of the running instance, used for debugging minikube, not user code",
+	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {

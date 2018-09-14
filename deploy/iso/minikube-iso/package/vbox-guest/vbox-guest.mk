@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-VBOX_GUEST_VERSION = 5.1.30
+VBOX_GUEST_VERSION = 5.1.38
 VBOX_GUEST_SITE = http://download.virtualbox.org/virtualbox/$(VBOX_GUEST_VERSION)
 VBOX_GUEST_LICENSE = GPLv2
 VBOX_GUEST_LICENSE_FILES = COPYING
@@ -19,7 +19,7 @@ endef
 
 VBOX_GUEST_POST_EXTRACT_HOOKS += VBOX_GUEST_EXPORT_MODULES
 
-VBOX_GUEST_MODULE_SUBDIRS = vbox-modules
+VBOX_GUEST_MODULE_SUBDIRS = vbox-modules/
 VBOX_GUEST_MODULE_MAKE_OPTS = KVERSION=$(LINUX_VERSION_PROBED)
 
 define VBOX_GUEST_USERS
@@ -36,7 +36,7 @@ define VBOX_GUEST_INSTALL_INIT_SYSTEMD
 endef
 
 define VBOX_GUEST_BUILD_CMDS
-	7z x -aoa $(BR2_DL_DIR)/VBoxGuestAdditions_${VBOX_GUEST_VERSION}.iso -ir'!VBoxLinuxAdditions.run' -o"$(@D)"
+	7z x -aoa $(BR2_DL_DIR)/vbox-guest/VBoxGuestAdditions_${VBOX_GUEST_VERSION}.iso -ir'!VBoxLinuxAdditions.run' -o"$(@D)"
 	sh $(@D)/VBoxLinuxAdditions.run --noexec --target $(@D)
 	tar --overwrite -C $(@D) -xjf $(@D)/VBoxGuestAdditions-amd64.tar.bz2 sbin/VBoxService
 	tar --overwrite -C $(@D) -xjf $(@D)/VBoxGuestAdditions-amd64.tar.bz2 bin/VBoxControl

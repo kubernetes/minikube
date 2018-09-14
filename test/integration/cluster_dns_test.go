@@ -31,9 +31,6 @@ import (
 
 func testClusterDNS(t *testing.T) {
 	t.Parallel()
-	if err := util.WaitForDNSRunning(t); err != nil {
-		t.Fatalf("Waiting for DNS to be running: %s", err)
-	}
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podPath := filepath.Join(*testdataDir, "busybox.yaml")

@@ -84,6 +84,8 @@ func setElement(e reflect.Value, v string) error {
 	case []string:
 		vals := strings.Split(v, ",")
 		e.Set(reflect.ValueOf(vals))
+	case map[string]string:
+		return convertMap(e, v)
 	default:
 		// Last ditch attempt to convert anything based on its underlying kind.
 		// This covers any types that are aliased to a native type
@@ -101,6 +103,23 @@ func setElement(e reflect.Value, v string) error {
 		}
 	}
 
+	return nil
+}
+
+func convertMap(e reflect.Value, v string) error {
+	if e.IsNil() {
+		e.Set(reflect.MakeMap(e.Type()))
+	}
+	vals := strings.Split(v, ",")
+	for _, subitem := range vals {
+		subvals := strings.FieldsFunc(subitem, func(c rune) bool {
+			return c == '<' || c == '=' || c == '>'
+		})
+		if len(subvals) != 2 {
+			return fmt.Errorf("Unparsable %s", v)
+		}
+		e.SetMapIndex(reflect.ValueOf(subvals[0]), reflect.ValueOf(subvals[1]))
+	}
 	return nil
 }
 

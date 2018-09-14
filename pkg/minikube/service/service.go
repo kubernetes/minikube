@@ -95,7 +95,7 @@ type ServiceURL struct {
 type ServiceURLs []ServiceURL
 
 // Returns all the node port URLs for every service in a particular namespace
-// Accepts a template for formating
+// Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (ServiceURLs, error) {
 	host, err := cluster.CheckIfApiExistsAndLoad(api)
 	if err != nil {

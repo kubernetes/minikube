@@ -49,8 +49,7 @@ type kvmDriver struct {
 	ISO            string
 	Boot2DockerURL string
 	DiskPath       string
-	CacheMode      string
-	IOMode         string
+	GPU            bool
 }
 
 func createKVM2Host(config cfg.MachineConfig) interface{} {
@@ -68,7 +67,6 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		DiskSize:       config.DiskSize,
 		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
-		CacheMode:      "default",
-		IOMode:         "threads",
+		GPU:            config.GPU,
 	}
 }

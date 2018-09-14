@@ -36,6 +36,11 @@ func init() {
 }
 
 func createHyperkitHost(config cfg.MachineConfig) interface{} {
+	uuID := config.UUID
+	if uuID == "" {
+		uuID = uuid.NewUUID().String()
+	}
+
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
@@ -48,7 +53,9 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 		CPU:            config.CPUs,
 		NFSShares:      config.NFSShare,
 		NFSSharesRoot:  config.NFSSharesRoot,
-		UUID:           uuid.NewUUID().String(),
+		UUID:           uuID,
+		VpnKitSock:     config.HyperkitVpnKitSock,
+		VSockPorts:     config.HyperkitVSockPorts,
 		Cmdline:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
 	}
 }

@@ -39,15 +39,17 @@ func TestGenerateConfig(t *testing.T) {
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.100
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
-  dataDir: /data
+  dataDir: /data/minikube
 nodeName: minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
@@ -79,15 +81,17 @@ apiServerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
-  dataDir: /data
+  dataDir: /data/minikube
 nodeName: extra-args-minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
@@ -119,15 +123,17 @@ schedulerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
-  dataDir: /data
+  dataDir: /data/minikube
 nodeName: extra-args-minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
@@ -145,15 +151,17 @@ apiServerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
-  dataDir: /data
+  dataDir: /data/minikube
 nodeName: extra-args-minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
@@ -181,15 +189,17 @@ schedulerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
-  dataDir: /data
+  dataDir: /data/minikube
 nodeName: extra-args-minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"

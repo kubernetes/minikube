@@ -155,7 +155,7 @@ To opt out of these messages, run the command:
 
 func getInput(input chan string, r io.Reader) {
 	reader := bufio.NewReader(r)
-	fmt.Print("Please enter your response [Y/n]: \n")
+	fmt.Print("Please enter your response [Y/n]: ")
 	response, err := reader.ReadString('\n')
 	if err != nil {
 		glog.Errorf(err.Error())
@@ -191,7 +191,7 @@ func MaybePrintKubectlDownloadMsg(goos string, out io.Writer) {
 	}
 
 	verb := "run"
-	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/"
+	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo cp kubectl /usr/local/bin/ && rm kubectl"
 	if goos == "windows" {
 		verb = "do"
 		installInstructions = `download kubectl from:

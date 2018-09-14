@@ -44,7 +44,7 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 		Subject: pkix.Name{
 			CommonName: name,
 		},
-		NotBefore: time.Now(),
+		NotBefore: time.Now().Add(time.Hour * -24),
 		NotAfter:  time.Now().Add(time.Hour * 24 * 365 * 10),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
@@ -92,7 +92,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 			CommonName:   cn,
 			Organization: []string{"system:masters"},
 		},
-		NotBefore: time.Now(),
+		NotBefore: time.Now().Add(time.Hour * -24),
 		NotAfter:  time.Now().Add(time.Hour * 24 * 365),
 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
