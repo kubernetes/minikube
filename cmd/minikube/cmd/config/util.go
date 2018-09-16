@@ -153,3 +153,25 @@ func EnableOrDisableDefaultStorageClass(name, val string) error {
 	}
 	return EnableOrDisableAddon(name, val)
 }
+
+func EnableOrDisableStorageClasses(name, val string) error {
+	enable, err := strconv.ParseBool(val)
+	if err != nil {
+		return errors.Wrap(err, "Error parsing boolean")
+	}
+
+	// Only StorageClass for 'name' should stay enabled
+	if enable {
+		class := "standard"
+		if name == "storage-provisioner-gluster" {
+			class = "glusterfile"
+		}
+
+		err := storageclass.DisableAllOtherStorageClasses(class)
+		if err != nil {
+			return errors.Wrap(err, "Error disabling storage classes")
+		}
+	}
+
+	return EnableOrDisableAddon(name, val)
+}

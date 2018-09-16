@@ -198,7 +198,7 @@ var settings = []Setting{
 		name:        "storage-provisioner-gluster",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
+		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
 		name:        "metrics-server",
