@@ -46,3 +46,34 @@ func DisableDefaultStorageClass() error {
 
 	return nil
 }
+
+func DisableAllOtherStorageClasses(name string) error {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
+	config, err := kubeConfig.ClientConfig()
+	if err != nil {
+		return errors.Wrap(err, "Error creating kubeConfig")
+	}
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
+	}
+
+	scList, err := client.Storage().StorageClasses().List(metav1.ListOptions{})
+	if err != nil {
+		return errors.Wrap(err, "Error listing StorageClasses")
+	}
+
+	for _, sc := range scList.Items {
+		if sc.Name == name {
+			continue
+		}
+
+		err = client.Storage().StorageClasses().Delete(sc.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			return errors.Wrapf(err, "Error deleting storage class %s", sc.Name)
+		}
+	}
+
+	return nil
+}
