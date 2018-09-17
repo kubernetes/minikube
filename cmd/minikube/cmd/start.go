@@ -202,7 +202,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorln("Error parsing version semver: ", err)
 		}
 
-		// Inspect if it's an attempt to downgrade version. Avoid version downgrad.
+		// Check if it's an attempt to downgrade version. Avoid version downgrad.
 		if newKubernetesVersion.LT(oldKubernetesVersion) {
 			selectedKubernetesVersion = version.VersionPrefix + oldKubernetesVersion.String()
 			fmt.Println("Kubernetes version downgrade is not supported. Using version:", selectedKubernetesVersion)

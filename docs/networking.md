@@ -11,13 +11,13 @@ We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 
 `minikube service --url $SERVICE`
 
-### LoadBalancer support
+### LoadBalancer emulation (`minikube tunnel`)
 
 Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. 
 
 ````shell
 $ sudo "PATH=$PATH" "HOME=$HOME" minikube tunnel
-[sudo] password for balintp: 
+[sudo] password for *****: 
 INFO[0000] Creating docker machine client...            
 INFO[0000] Creating k8s client...                       
 INFO[0000] Setting up router...                         
@@ -39,7 +39,7 @@ TunnelState:
 
 
 `minikube tunnel` runs as a separate daemon, creates a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway. 
-Adding a route requires root privileges for the user, and thus there are differences in how to run this operating   
+Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS.    
 
 Recommended way to use on Linux with KVM2 driver and MacOSX with Hyperkit driver: 
 

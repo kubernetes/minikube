@@ -25,6 +25,7 @@ else
 	PYTHON="docker run --rm -it -v $(pwd):/minikube -w /minikube python python"
 fi
 
+
 COV_FILE=coverage.txt
 COV_TMP_FILE=coverage_tmp.txt
 
