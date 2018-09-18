@@ -61,9 +61,6 @@ func JoinPreservingTrailingSlash(elem ...string) string {
 // differentiate probable errors in connection behavior between normal "this is
 // disconnected" should use the method.
 func IsProbableEOF(err error) bool {
-	if err == nil {
-		return false
-	}
 	if uerr, ok := err.(*url.Error); ok {
 		err = uerr.Err
 	}
