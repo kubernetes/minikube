@@ -111,6 +111,16 @@ func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunn
 // Wait up to 10 minutes for all matching pods to become Running and at least one
 // matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
+	return waitForPodsWithLabel(c, ns, label, v1.PodRunning)
+}
+
+// Wait up to 10 minutes for all matching pods to become Succeded and at least one
+// matching pod exists.
+func WaitForPodsWithLabelSucceeded(c kubernetes.Interface, ns string, label labels.Selector) error {
+	return waitForPodsWithLabel(c, ns, label, v1.PodSucceeded)
+}
+
+func waitForPodsWithLabel(c kubernetes.Interface, ns string, label labels.Selector, status v1.PodPhase) error {
 	lastKnownPodNumber := -1
 	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
 		listOpts := metav1.ListOptions{LabelSelector: label.String()}
@@ -130,7 +140,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		}
 
 		for _, pod := range pods.Items {
-			if pod.Status.Phase != v1.PodRunning {
+			if pod.Status.Phase != status {
 				return false, nil
 			}
 		}

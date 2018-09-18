@@ -294,6 +294,48 @@ func WaitForNginxRunning(t *testing.T) error {
 	return nil
 }
 
+func WaitForNvidiaDriverInstallerRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "nvidia-driver-installer"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for nvidia-driver-installer")
+	}
+
+	return nil
+}
+
+func WaitForNvidiaGpuDevicePluginRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "nvidia-gpu-device-plugin"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for nvidia-gpu-device-plugin")
+	}
+
+	return nil
+}
+
+func WaitForCudaSuccess(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"name": "cuda-vector-add"}))
+	if err := commonutil.WaitForPodsWithLabelSucceeded(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for cuda-vector-add")
+	}
+
+	return nil
+}
+
 func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (err error) {
 	for i := 0; i < attempts; i++ {
 		err = callback()
