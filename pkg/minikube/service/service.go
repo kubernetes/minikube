@@ -184,12 +184,7 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 			return nil, err
 		}
 
-		u, err := url.Parse(doc.String())
-		if err != nil {
-			return nil, err
-		}
-
-		urls = append(urls, u.String())
+		urls = append(urls, doc.String())
 	}
 	return urls, nil
 }
@@ -236,6 +231,21 @@ func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) err
 	return nil
 }
 
+func OptionallyHttpsFormattedUrlString(bareUrlString string, https bool) (string, bool) {
+	httpsFormattedString := bareUrlString
+	isHttpSchemedURL := false
+
+	if u, parseErr := url.Parse(bareUrlString); parseErr == nil {
+		isHttpSchemedURL = u.Scheme == "http"
+	}
+
+	if isHttpSchemedURL && https {
+		httpsFormattedString = strings.Replace(bareUrlString, "http", "https", 1)
+	}
+
+	return httpsFormattedString, isHttpSchemedURL
+}
+
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
 	wait int, interval int) error {
 	if err := util.RetryAfter(wait, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
@@ -246,15 +256,14 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
-	for _, url := range urls {
-		if https {
-			url = strings.Replace(url, "http", "https", 1)
-		}
-		if urlMode || !strings.HasPrefix(url, "http") {
-			fmt.Fprintln(os.Stdout, url)
+	for _, bareUrlString := range urls {
+		urlString, isHttpSchemedURL := OptionallyHttpsFormattedUrlString(bareUrlString, https)
+
+		if urlMode || !isHttpSchemedURL {
+			fmt.Fprintln(os.Stdout, urlString)
 		} else {
 			fmt.Fprintln(os.Stderr, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
-			browser.OpenURL(url)
+			browser.OpenURL(urlString)
 		}
 	}
 	return nil

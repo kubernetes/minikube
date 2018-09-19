@@ -250,6 +250,13 @@ func TestPrintURLsForService(t *testing.T) {
 			expectedOutput: []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
 		},
 		{
+			description:    "should get all node ports with arbitrary format",
+			serviceName:    "mock-dashboard",
+			namespace:      "default",
+			tmpl:           template.Must(template.New("svc-arbitrary-template").Parse("{{.IP}}:{{.Port}}")),
+			expectedOutput: []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+		},
+		{
 			description:    "empty slice for no node ports",
 			serviceName:    "mock-dashboard-no-ports",
 			namespace:      "default",
@@ -274,6 +281,63 @@ func TestPrintURLsForService(t *testing.T) {
 			}
 			if !reflect.DeepEqual(urls, test.expectedOutput) {
 				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, urls)
+			}
+		})
+	}
+}
+
+func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
+
+	var tests = []struct {
+		description                     string
+		bareUrlString                   string
+		https                           bool
+		expectedHttpsFormattedUrlString string
+		expectedIsHttpSchemedURL        bool
+	}{
+		{
+			description:   "no https for http schemed with no https option",
+			bareUrlString: "http://192.168.99.100:30563",
+			https:         false,
+			expectedHttpsFormattedUrlString: "http://192.168.99.100:30563",
+			expectedIsHttpSchemedURL:        true,
+		},
+		{
+			description:   "no https for non-http schemed with no https option",
+			bareUrlString: "xyz.http.myservice:30563",
+			https:         false,
+			expectedHttpsFormattedUrlString: "xyz.http.myservice:30563",
+			expectedIsHttpSchemedURL:        false,
+		},
+		{
+			description:   "https for http schemed with https option",
+			bareUrlString: "http://192.168.99.100:30563",
+			https:         true,
+			expectedHttpsFormattedUrlString: "https://192.168.99.100:30563",
+			expectedIsHttpSchemedURL:        true,
+		},
+		{
+			description:   "no https for non-http schemed with https option and http substring",
+			bareUrlString: "xyz.http.myservice:30563",
+			https:         true,
+			expectedHttpsFormattedUrlString: "xyz.http.myservice:30563",
+			expectedIsHttpSchemedURL:        false,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			httpsFormattedUrlString, isHttpSchemedURL := OptionallyHttpsFormattedUrlString(test.bareUrlString, test.https)
+
+			if httpsFormattedUrlString != test.expectedHttpsFormattedUrlString {
+				t.Errorf("\nhttpsFormattedUrlString, Expected %v \nActual: %v \n\n", test.expectedHttpsFormattedUrlString, httpsFormattedUrlString)
+			}
+
+			if isHttpSchemedURL != test.expectedIsHttpSchemedURL {
+				t.Errorf("\nisHttpSchemedURL, Expected %v \nActual: %v \n\n",
+					test.expectedHttpsFormattedUrlString, httpsFormattedUrlString)
 			}
 		})
 	}
