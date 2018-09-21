@@ -345,10 +345,12 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 
 func TestGetServiceURLs(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
-		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
-				Driver: &tests.MockDriver{},
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
 			},
 		},
 	}
@@ -364,7 +366,9 @@ func TestGetServiceURLs(t *testing.T) {
 		{
 			description: "no host",
 			api: &tests.MockAPI{
-				Hosts: make(map[string]*host.Host),
+				FakeStore: tests.FakeStore{
+					Hosts: make(map[string]*host.Host),
+				},
 			},
 			err: true,
 		},
@@ -412,10 +416,12 @@ func TestGetServiceURLs(t *testing.T) {
 
 func TestGetServiceURLsForService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
-		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
-				Driver: &tests.MockDriver{},
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
 			},
 		},
 	}
@@ -432,7 +438,9 @@ func TestGetServiceURLsForService(t *testing.T) {
 		{
 			description: "no host",
 			api: &tests.MockAPI{
-				Hosts: make(map[string]*host.Host),
+				FakeStore: tests.FakeStore{
+					Hosts: make(map[string]*host.Host),
+				},
 			},
 			err: true,
 		},

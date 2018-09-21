@@ -78,6 +78,7 @@ func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
 	}
+	clientConfig.Timeout = 1 * time.Second
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
@@ -97,7 +98,7 @@ type ServiceURLs []ServiceURL
 // Returns all the node port URLs for every service in a particular namespace
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (ServiceURLs, error) {
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +135,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 // Returns all the node ports for a service in a namespace
 // with optional formatting
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
