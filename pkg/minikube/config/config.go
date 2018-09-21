@@ -90,10 +90,12 @@ func GetMachineName() string {
 	return viper.GetString(MachineProfile)
 }
 
+// Load loads the kubernetes and machine config for the current machine
 func Load() (Config, error) {
 	return Loader.LoadConfigFromFile(GetMachineName())
 }
 
+// ConfigLoader exposes
 type ConfigLoader interface {
 	LoadConfigFromFile(profile string) (Config, error)
 }

@@ -27,14 +27,17 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+//interface exposed for testing what requests are sent through the k8s REST client
 type requestSender interface {
 	send(request *rest.Request) (result []byte, err error)
 }
 
+//interface exposed for testing what patches are sent through the k8s REST client
 type patchConverter interface {
 	convert(restClient rest.Interface, patch *Patch) *rest.Request
 }
 
+//the main struct for emulating the loadbalancer behavior. it sets the ingress to the cluster IP
 type loadBalancerEmulator struct {
 	coreV1Client   v1.CoreV1Interface
 	requestSender  requestSender

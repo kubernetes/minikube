@@ -45,8 +45,7 @@ func newTunnel(machineName string,
 		configLoader: configLoader,
 	}
 	state, route, err := clusterInspector.getStateAndRoute()
-	//TODO(balintp): clean this up to be more self contained
-	machineAPI.Close()
+
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine cluster info: %s", err)
 	}

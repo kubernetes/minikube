@@ -61,6 +61,7 @@ func (m *minikubeInspector) getStateAndHost() (HostState, *host.Host, error) {
 
 func (m *minikubeInspector) getStateAndRoute() (HostState, *Route, error) {
 	hostState, h, e := m.getStateAndHost()
+	defer m.machineAPI.Close()
 	if e != nil {
 		return hostState, nil, e
 	}
@@ -72,7 +73,7 @@ func (m *minikubeInspector) getStateAndRoute() (HostState, *Route, error) {
 	}
 
 	var route *Route
-	route, e = toRoute(h, c)
+	route, e = getRoute(h, c)
 	if e != nil {
 		e = errors.Wrapf(e, "error getting Route info for %s", m.machineName)
 		return hostState, nil, e
@@ -80,7 +81,7 @@ func (m *minikubeInspector) getStateAndRoute() (HostState, *Route, error) {
 	return hostState, route, nil
 }
 
-func toRoute(host *host.Host, clusterConfig config.Config) (*Route, error) {
+func getRoute(host *host.Host, clusterConfig config.Config) (*Route, error) {
 	hostDriverIP, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting host IP for %s", host.Name)

@@ -105,7 +105,7 @@ func TestUnparseableCIDR(t *testing.T) {
 		},
 	}
 
-	_, e := toRoute(h, cfg)
+	_, e := getRoute(h, cfg)
 
 	if e == nil {
 		t.Errorf("expected non nil error, instead got %s", e)
@@ -129,7 +129,7 @@ func TestRouteIPDetection(t *testing.T) {
 		},
 	}
 
-	routerConfig, err := toRoute(h, cfg)
+	routerConfig, err := getRoute(h, cfg)
 
 	if err != nil {
 		t.Errorf("expected no errors but got: %s", err)

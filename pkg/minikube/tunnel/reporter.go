@@ -23,6 +23,7 @@ import (
 	"strings"
 )
 
+//reporter that reports the status of a tunnel
 type reporter interface {
 	Report(tunnelState *TunnelStatus)
 }

@@ -22,9 +22,19 @@ import (
 	"strings"
 )
 
+//router manages the routing table on the host, implementations should cater for OS specific methods
 type router interface {
+	//Inspect checks if the given route exists or not in the routing table
+	//conflict is defined as: same destination CIDR, different Gateway
+	//overlaps are defined as: routes that have overlapping but not exactly matching destination CIDR
 	Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error)
+
+	//EnsureRouteIsAdded is an idempotent way to add a route to the routing table
+	//it fails if there is a conflict
 	EnsureRouteIsAdded(route *Route) error
+
+	//Cleanup is an idempotent way to remove a route from the routing table
+	//it fails if there is a conflict
 	Cleanup(route *Route) error
 }
 
@@ -56,6 +66,8 @@ func isValidToAddOrDelete(router router, r *Route) (bool, error) {
 	return false, nil
 }
 
+//a partial representation of the routing table on the host
+//tunnel only requires the destination CIDR, the gateway and the actual textual representation per line
 type routingTable []routingTableLine
 
 func (t *routingTable) Check(route *Route) (exists bool, conflict string, overlaps []string) {

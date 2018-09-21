@@ -95,7 +95,7 @@ func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 }
 
 func addRoute(t *testing.T, cidr string, gw string) {
-	command := exec.Command("sudo", "Route", "-n", "add", cidr, gw)
+	command := exec.Command("sudo", "route", "-n", "add", cidr, gw)
 	_, e := command.CombinedOutput()
 	if e != nil {
 		t.Logf("add Route error (should be ok): %s", e)
@@ -103,7 +103,7 @@ func addRoute(t *testing.T, cidr string, gw string) {
 }
 
 func cleanRoute(t *testing.T, cidr string) {
-	command := exec.Command("sudo", "Route", "-n", "delete", cidr)
+	command := exec.Command("sudo", "route", "-n", "delete", cidr)
 	_, e := command.CombinedOutput()
 	if e != nil {
 		t.Logf("cleanup error (should be ok): %s", e)

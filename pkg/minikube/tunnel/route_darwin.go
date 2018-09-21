@@ -39,7 +39,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	gatewayIP := route.Gateway.String()
 
 	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
-	command := exec.Command("sudo", "Route", "-n", "add", serviceCIDR, gatewayIP)
+	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, e := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
@@ -152,7 +152,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 	if !exists {
 		return nil
 	}
-	command := exec.Command("sudo", "Route", "-n", "delete", route.DestCIDR.String())
+	command := exec.Command("sudo", "route", "-n", "delete", route.DestCIDR.String())
 	if stdInAndOut, e := command.CombinedOutput(); e != nil {
 		return e
 	} else {
@@ -160,7 +160,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 		glog.V(4).Infof("%s", message)
 		re := regexp.MustCompile(fmt.Sprintf("^delete net ([^:]*)$"))
 		if !re.MatchString(message) {
-			return fmt.Errorf("error deleting Route: %s, %d", message, len(strings.Split(message, "\n")))
+			return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
 		} else {
 			return nil
 		}

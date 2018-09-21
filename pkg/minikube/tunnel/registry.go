@@ -25,14 +25,8 @@ import (
 	"os"
 )
 
-//registry should be
-// - configurable in terms of directory for testing
-// - one per user, across multiple vms
-// should have a list of tunnels:
-// tunnel: Route, Pid, machinename
-// when cleanup is called, all the non running tunnels should be checked for removal
-// when a new tunnel is created it should register itself with the registry Pid/machinename/Route
-
+// There is one tunnel registry per user, shared across multiple vms.
+// It can register, list and check for existing and running tunnels
 type TunnelID struct {
 	//Route is the key
 	Route *Route
@@ -65,7 +59,7 @@ func (r *persistentRegistry) IsAlreadyDefinedAndRunning(tunnel *TunnelID) (*Tunn
 		if t.Route.Equal(tunnel.Route) {
 			isRunning, e := checkIfRunning(t.Pid)
 			if e != nil {
-				return nil, fmt.Errorf("error checking if conflicting tunnel (%v) is running: %s", t, e)
+				return nil, fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, e)
 			}
 			if isRunning {
 				return t, nil
@@ -91,7 +85,7 @@ func (r *persistentRegistry) Register(tunnel *TunnelID) error {
 		if t.Route.Equal(tunnel.Route) {
 			isRunning, e := checkIfRunning(t.Pid)
 			if e != nil {
-				return fmt.Errorf("error checking if conflicting tunnel (%v) is running: %s", t, e)
+				return fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, e)
 			}
 			if isRunning {
 				return errorTunnelAlreadyExists(t)

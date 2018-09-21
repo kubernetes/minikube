@@ -159,7 +159,7 @@ Persistent Routes:
 }
 
 func addRoute(t *testing.T, dstIP string, dstMask string, gw string) {
-	command := exec.Command("Route", "ADD", dstIP, "mask", dstMask, gw)
+	command := exec.Command("route", "ADD", dstIP, "mask", dstMask, gw)
 	sout, e := command.CombinedOutput()
 	if e != nil {
 		t.Logf("assertion add Route error (should be ok): %s, error: %s", sout, e)
@@ -169,7 +169,7 @@ func addRoute(t *testing.T, dstIP string, dstMask string, gw string) {
 }
 
 func cleanRoute(t *testing.T, dstIP string) {
-	command := exec.Command("Route", "DELETE", dstIP)
+	command := exec.Command("route", "DELETE", dstIP)
 	sout, e := command.CombinedOutput()
 	if e != nil {
 		t.Logf("assertion cleanup error (should be ok): %s, error: %s", sout, e)

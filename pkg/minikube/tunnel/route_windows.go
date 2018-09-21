@@ -44,12 +44,12 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	gatewayIP := route.Gateway.String()
 
 	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
-	command := exec.Command("Route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
+	command := exec.Command("route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, e := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	if message != " OK!\r\n" {
-		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
+		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
 	glog.Infof("%s", stdInAndOut)
 	if e != nil {
@@ -102,7 +102,7 @@ func (router *osRouter) parseTable(table string) routingTable {
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
-	command := exec.Command("Route", "print", "-4")
+	command := exec.Command("route", "print", "-4")
 	stdInAndOut, e := command.CombinedOutput()
 	if e != nil {
 		err = fmt.Errorf("error running '%s': %s", command.Args, e)
@@ -129,14 +129,14 @@ func (router *osRouter) Cleanup(route *Route) error {
 	gatewayIP := route.Gateway.String()
 
 	fmt.Printf("Cleaning up Route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
-	command := exec.Command("Route", "delete", serviceCIDR)
+	command := exec.Command("route", "delete", serviceCIDR)
 	if stdInAndOut, e := command.CombinedOutput(); e != nil {
 		return e
 	} else {
 		message := fmt.Sprintf("%s", stdInAndOut)
 		glog.Infof("'%s'", message)
 		if message != " OK!\r\n" {
-			return fmt.Errorf("error deleting Route: %s, %d", message, len(strings.Split(message, "\n")))
+			return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
 		} else {
 			return nil
 		}
