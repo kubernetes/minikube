@@ -2,14 +2,14 @@
 
 
 [[projects]]
-  digest = "1:4485ca12c0ab1317ddebfad6562c9dc0bd70b0453171b3e14f684553c1502490"
+  digest = "1:81f8c061c3d18ed1710957910542bc17d2b789c6cd19e0f654c30b35fd255ca5"
   name = "github.com/Azure/go-ansiterm"
   packages = [
     ".",
     "winterm",
   ]
   pruneopts = "NUT"
-  revision = "19f72df4d05d31cbe1c56bfc8045c96babff6c7e"
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
   digest = "1:aba270497eb2d49f5cba6f4162d524b9a1195a24cbce8be20bf56a0051f47deb"
