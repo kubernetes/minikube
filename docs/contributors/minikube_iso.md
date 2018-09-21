@@ -15,7 +15,7 @@ It includes:
 * Linux
 ```shell
 sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
-	unzip bc gcc-multilib automake libtool locales
+	unzip bc gcc-multilib automake libtool locales golang docker.io
 ```
 
 Either import your private key or generate a sign-only key using `gpg2 --gen-key`.
