@@ -93,6 +93,10 @@
   name = "k8s.io/apimachinery"
   version = "kubernetes-1.10.0"
 
+[[override]]
+  name = "github.com/Azure/go-ansiterm"
+  revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
 [prune]
   go-tests = true
   non-go = true
