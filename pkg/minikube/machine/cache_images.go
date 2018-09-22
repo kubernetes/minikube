@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
@@ -47,6 +48,8 @@ import (
 const tempLoadDir = "/tmp"
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
+
+var podmanLoad sync.Mutex
 
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
@@ -213,14 +216,23 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, k8s config.Kubernetes
 	}
 
 	var dockerLoadCmd string
-	if k8s.ContainerRuntime == constants.CrioRuntime || k8s.ContainerRuntime == constants.Cri_oRuntime {
+	crio := k8s.ContainerRuntime == constants.CrioRuntime || k8s.ContainerRuntime == constants.Cri_oRuntime
+	if crio {
 		dockerLoadCmd = "sudo podman load -i " + dst
 	} else {
 		dockerLoadCmd = "docker load -i " + dst
 	}
 
+	if crio {
+		podmanLoad.Lock()
+	}
+
 	if err := cmd.Run(dockerLoadCmd); err != nil {
 		return errors.Wrapf(err, "loading docker image: %s", dst)
+	}
+
+	if crio {
+		podmanLoad.Unlock()
 	}
 
 	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
