@@ -79,6 +79,10 @@ touch $HOME/.kube/config
 export KUBECONFIG=$HOME/.kube/config
 sudo -E minikube start --vm-driver=none
 
+# Change permissions of .minikube directory to current user
+sudo chown -R $USER $HOME/.minikube
+sudo chgrp -R $USER $HOME/.minikube
+
 # this for loop waits until kubectl can access the api server that Minikube has created
 for i in {1..150}; do # timeout for 5 minutes
    kubectl get po &> /dev/null
