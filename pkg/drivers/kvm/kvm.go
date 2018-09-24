@@ -369,8 +369,7 @@ func (d *Driver) Remove() error {
 
 	// Tear down network if it exists and is not in use by another minikube instance
 	log.Debug("Trying to delete the networks (if possible)")
-	err = d.deleteNetwork()
-	if err != nil {
+	if err := d.deleteNetwork(); err != nil {
 		log.Warnf("Deleting of networks failed: %s", err.Error())
 	} else {
 		log.Info("Successfully deleted networks")
