@@ -38,8 +38,8 @@ networking:
 etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
-{{if .CRISocket}}criSocket: {{.CRISocket}}{{end}}
-{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
+{{if .CRISocket}}criSocket: {{.CRISocket}}
+{{end}}{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
