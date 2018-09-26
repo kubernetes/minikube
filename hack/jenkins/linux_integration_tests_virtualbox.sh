@@ -30,4 +30,4 @@ VM_DRIVER="virtualbox"
 JOB_NAME="Linux-VirtualBox"
 
 # Download files and set permissions
-source common.sh
+source ./common.sh
