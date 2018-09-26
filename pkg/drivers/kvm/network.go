@@ -187,7 +187,7 @@ func (d *Driver) deleteNetwork() error {
 
 	// fail if there are 0 domains
 	if len(doms) == 0 {
-		return fmt.Errorf("list of domains is 0 lenght")
+		log.Warn("list of domains is 0 length")
 	}
 
 	for _, dom := range doms {
