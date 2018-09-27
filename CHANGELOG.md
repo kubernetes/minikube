@@ -1,88 +1,60 @@
 # Minikube Release Notes
 
 # Version 0.29.0 - 09/27/2018
-* Simplifies Linux installation instructions by using install(1) [#3118](https://github.com/kubernetes/minikube/pull/3118)
 * Issue #3037 change dependency management to dep [#3136](https://github.com/kubernetes/minikube/pull/3136)
 * Update dashboard version to v1.10.0 [#3122](https://github.com/kubernetes/minikube/pull/3122)
-* Fix typo: suppports -> supports [#3159](https://github.com/kubernetes/minikube/pull/3159)
-* Add link to minikube repository for Void Linux [#2763](https://github.com/kubernetes/minikube/pull/2763)
-* adding tstromberg as maintainer [#3149](https://github.com/kubernetes/minikube/pull/3149)
 * fix: --format outputs any string, --https only subsitute http URL scheme [#3114](https://github.com/kubernetes/minikube/pull/3114)
-* Stay in same line [#3105](https://github.com/kubernetes/minikube/pull/3105)
 * Change default docker storage driver to overlay2 [#3121](https://github.com/kubernetes/minikube/pull/3121)
 * Add env variable for default ES_JAVA_OPTS [#3086](https://github.com/kubernetes/minikube/pull/3086)
-* Update CoreDNS manifest and version [#3102](https://github.com/kubernetes/minikube/pull/3102)
-* Correct typo in the returned message [#3101](https://github.com/kubernetes/minikube/pull/3101)
 * fix(cli): `minikube start --mount --mountsting` without write permission [#2671](https://github.com/kubernetes/minikube/pull/2671)
-* Add workaround for dnsmasq and hyperkit users to drivers readme [#3003](https://github.com/kubernetes/minikube/pull/3003)
 * Allow certificates to be optionally embedded in .kube/config [#3065](https://github.com/kubernetes/minikube/pull/3065)
-* update owners [#3045](https://github.com/kubernetes/minikube/pull/3045)
 * Fix the --cache-images flag. [#3090](https://github.com/kubernetes/minikube/pull/3090)
 * support containerd  [#3040](https://github.com/kubernetes/minikube/pull/3040)
-* Don't look for DNS by name. It might be coredns or kubedns. [#3079](https://github.com/kubernetes/minikube/pull/3079)
-* Fix the copyright header in our custom journald.conf [#3027](https://github.com/kubernetes/minikube/pull/3027)
 * Fix vmwarefusion driver [#3029](https://github.com/kubernetes/minikube/pull/3029)
 * Make CoreDNS default addon [#3072](https://github.com/kubernetes/minikube/pull/3072)
-* updated readme for Windows installation [#3082](https://github.com/kubernetes/minikube/pull/3082)
-* Update persistent_volumes.md [#3081](https://github.com/kubernetes/minikube/pull/3081)
 * Update CoreDNS deployment [#3073](https://github.com/kubernetes/minikube/pull/3073)
-* Update logo_white.svg [#3061](https://github.com/kubernetes/minikube/pull/3061)
-* readme: update the script to match executable path [#3051](https://github.com/kubernetes/minikube/pull/3051)
 * Replace 9p mount calls to syscall.Rename with os.Rename, which is capable of renaming on top of existing files. [#3047](https://github.com/kubernetes/minikube/pull/3047)
 * Revert "Remove untainting logic." [#3050](https://github.com/kubernetes/minikube/pull/3050)
-* Create LICENSE [#3049](https://github.com/kubernetes/minikube/pull/3049)
 * Upgrade kpod 0.1 to podman 0.4.1 [#3026](https://github.com/kubernetes/minikube/pull/3026)
-* remove r2d4 from brew PR comment [#3034](https://github.com/kubernetes/minikube/pull/3034)
-* Fix typo in README [#3035](https://github.com/kubernetes/minikube/pull/3035)
-* Maintainer update [#3033](https://github.com/kubernetes/minikube/pull/3033)
 * Linux install: Set owner to root [#3021](https://github.com/kubernetes/minikube/pull/3021)
 * Rm localkube [#2911](https://github.com/kubernetes/minikube/pull/2911)
 * Update to go 1.10.1 everywhere. [#2777](https://github.com/kubernetes/minikube/pull/2777)
-* Remove some more vendored k8s. [#3014](https://github.com/kubernetes/minikube/pull/3014)
-* Added instructions how to build using docker [#3017](https://github.com/kubernetes/minikube/pull/3017)
 * Allow to override build date with SOURCE_DATE_EPOCH [#3009](https://github.com/kubernetes/minikube/pull/3009)
-* update releases.json to include v0.28.2 [#3008](https://github.com/kubernetes/minikube/pull/3008)
-* Simplifies Linux installation instructions by using install(1) [#3118](https://github.com/kubernetes/minikube/pull/3118)
-* Issue #3037 change dependency management to dep [#3136](https://github.com/kubernetes/minikube/pull/3136)
-* Update dashboard version to v1.10.0 [#3122](https://github.com/kubernetes/minikube/pull/3122)
-* Fix typo: suppports -> supports [#3159](https://github.com/kubernetes/minikube/pull/3159)
-* Add link to minikube repository for Void Linux [#2763](https://github.com/kubernetes/minikube/pull/2763)
-* adding tstromberg as maintainer [#3149](https://github.com/kubernetes/minikube/pull/3149)
-* fix: --format outputs any string, --https only subsitute http URL scheme [#3114](https://github.com/kubernetes/minikube/pull/3114)
-* Stay in same line [#3105](https://github.com/kubernetes/minikube/pull/3105)
-* Change default docker storage driver to overlay2 [#3121](https://github.com/kubernetes/minikube/pull/3121)
-* Add env variable for default ES_JAVA_OPTS [#3086](https://github.com/kubernetes/minikube/pull/3086)
-* Update CoreDNS manifest and version [#3102](https://github.com/kubernetes/minikube/pull/3102)
-* Correct typo in the returned message [#3101](https://github.com/kubernetes/minikube/pull/3101)
-* fix(cli): `minikube start --mount --mountsting` without write permission [#2671](https://github.com/kubernetes/minikube/pull/2671)
-* Add workaround for dnsmasq and hyperkit users to drivers readme [#3003](https://github.com/kubernetes/minikube/pull/3003)
-* Allow certificates to be optionally embedded in .kube/config [#3065](https://github.com/kubernetes/minikube/pull/3065)
-* update owners [#3045](https://github.com/kubernetes/minikube/pull/3045)
-* Fix the --cache-images flag. [#3090](https://github.com/kubernetes/minikube/pull/3090)
-* support containerd  [#3040](https://github.com/kubernetes/minikube/pull/3040)
-* Don't look for DNS by name. It might be coredns or kubedns. [#3079](https://github.com/kubernetes/minikube/pull/3079)
-* Fix the copyright header in our custom journald.conf [#3027](https://github.com/kubernetes/minikube/pull/3027)
-* Fix vmwarefusion driver [#3029](https://github.com/kubernetes/minikube/pull/3029)
-* Make CoreDNS default addon [#3072](https://github.com/kubernetes/minikube/pull/3072)
-* updated readme for Windows installation [#3082](https://github.com/kubernetes/minikube/pull/3082)
-* Update persistent_volumes.md [#3081](https://github.com/kubernetes/minikube/pull/3081)
-* Update CoreDNS deployment [#3073](https://github.com/kubernetes/minikube/pull/3073)
-* Update logo_white.svg [#3061](https://github.com/kubernetes/minikube/pull/3061)
-* readme: update the script to match executable path [#3051](https://github.com/kubernetes/minikube/pull/3051)
-* Replace 9p mount calls to syscall.Rename with os.Rename, which is capable of renaming on top of existing files. [#3047](https://github.com/kubernetes/minikube/pull/3047)
-* Revert "Remove untainting logic." [#3050](https://github.com/kubernetes/minikube/pull/3050)
-* Create LICENSE [#3049](https://github.com/kubernetes/minikube/pull/3049)
-* Upgrade kpod 0.1 to podman 0.4.1 [#3026](https://github.com/kubernetes/minikube/pull/3026)
-* remove r2d4 from brew PR comment [#3034](https://github.com/kubernetes/minikube/pull/3034)
-* Fix typo in README [#3035](https://github.com/kubernetes/minikube/pull/3035)
-* Maintainer update [#3033](https://github.com/kubernetes/minikube/pull/3033)
-* Linux install: Set owner to root [#3021](https://github.com/kubernetes/minikube/pull/3021)
-* Rm localkube [#2911](https://github.com/kubernetes/minikube/pull/2911)
-* Update to go 1.10.1 everywhere. [#2777](https://github.com/kubernetes/minikube/pull/2777)
-* Remove some more vendored k8s. [#3014](https://github.com/kubernetes/minikube/pull/3014)
-* Added instructions how to build using docker [#3017](https://github.com/kubernetes/minikube/pull/3017)
-* Allow to override build date with SOURCE_DATE_EPOCH [#3009](https://github.com/kubernetes/minikube/pull/3009)
-* update releases.json to include v0.28.2 [#3008](https://github.com/kubernetes/minikube/pull/3008)
+
+Huge Thank You for this release to our contributors: 
+
+- Aaron Prindle
+- AdamDang
+- Anders F Björklund
+- Arijit Basu
+- Asbjørn Apeland
+- Balint Pato
+- balopat
+- Bennett Ellis
+- Bernhard M. Wiedemann
+- Daemeron
+- Damian Kubaczka
+- Daniel Santana
+- dlorenc
+- Jason Stangroome
+- Jeffrey Sica
+- Joao Carlos
+- Kumbirai Tanekha
+- Matt Rickard
+- Nate Bessette
+- NsLib
+- peak-load
+- Praveen Kumar
+- RA489
+- Raghavendra Talur
+- ruicao
+- Sandeep Rajan
+- Thomas Strömberg
+- Tijs Gommeren
+- Viktor Safronov
+- wangxy518
+- yanxuean
+
 
 
 # Version 0.28.2 - 7/20/2018
