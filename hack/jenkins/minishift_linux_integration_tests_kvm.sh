@@ -96,7 +96,7 @@ function assert_equal() {
   fi
 }
 
-# http://www.linuxjournal.com/content/validating-ip-address-bash-script
+# https://www.linuxjournal.com/content/validating-ip-address-bash-script
 function assert_valid_ip() {
   local ip=$1
   local valid=1
