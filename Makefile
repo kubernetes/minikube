@@ -72,12 +72,6 @@ define DOCKER
 	docker run --rm -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /go/src/$(REPOPATH) -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
 endef
 
-# Newline for warnings
-define N
-
-
-endef
-
 ifeq ($(BUILD_IN_DOCKER),y)
 	MINIKUBE_BUILD_IN_DOCKER=y
 endif
