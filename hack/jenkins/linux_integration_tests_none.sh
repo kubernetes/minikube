@@ -41,4 +41,4 @@ sudo kubeadm reset || true
 sudo rm -rf /data/*
 
 # Download files and set permissions
-source common.sh
+source ./common.sh
