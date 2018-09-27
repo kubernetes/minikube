@@ -107,13 +107,15 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
-    $(warning $N ******************************************************************************$N \
-	WARNING: You are building minikube outside the expected GOPATH:$N$N \
-	  expected: $(GOPATH)/src/$(REPOPATH) $N \
-      got:      $(PWD) $N$N \
-	You will likely encounter unusual build failures. For proper setup, read: $N \
-    https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md$N \
-    ******************************************************************************)
+	$(warning ******************************************************************************)
+	$(warning WARNING: You are building minikube outside the expected GOPATH:)
+	$(warning )
+	$(warning expected: $(GOPATH)/src/$(REPOPATH) )
+	$(warning   got:      $(PWD) )
+	$(warning )
+	$(warning You will likely encounter unusual build failures. For proper setup, read: )
+	$(warning https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md)
+	$(warning ******************************************************************************)
 endif
 	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
