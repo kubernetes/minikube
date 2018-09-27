@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -114,19 +113,14 @@ func (m *MinikubeRunner) EnsureRunning() {
 	m.CheckStatus("Running")
 }
 
-func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
+// ParseEnvCmdOutput parses the output of `env` (assumes bash)
+func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
+	env := map[string]string{}
 	re := regexp.MustCompile(`(\w+?) ?= ?"?(.+?)"?\n`)
-	matches := re.FindAllStringSubmatch(dockerEnvVars, -1)
-	seenEnvVar := false
-	for _, m := range matches {
-		seenEnvVar = true
-		key, val := m[1], m[2]
-		os.Setenv(key, val)
+	for _, m := range re.FindAllStringSubmatch(out, -1) {
+		env[m[1]] = m[2]
 	}
-	if !seenEnvVar {
-		return fmt.Errorf("Error: No environment variables were found in docker-env command output: %s", dockerEnvVars)
-	}
-	return nil
+	return env
 }
 
 func (m *MinikubeRunner) GetStatus() string {
