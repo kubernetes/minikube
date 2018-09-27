@@ -1,5 +1,62 @@
 # Minikube Release Notes
 
+# Version 0.29.0 - 09/27/2018
+* Issue #3037 change dependency management to dep [#3136](https://github.com/kubernetes/minikube/pull/3136)
+* Update dashboard version to v1.10.0 [#3122](https://github.com/kubernetes/minikube/pull/3122)
+* fix: --format outputs any string, --https only subsitute http URL scheme [#3114](https://github.com/kubernetes/minikube/pull/3114)
+* Change default docker storage driver to overlay2 [#3121](https://github.com/kubernetes/minikube/pull/3121)
+* Add env variable for default ES_JAVA_OPTS [#3086](https://github.com/kubernetes/minikube/pull/3086)
+* fix(cli): `minikube start --mount --mountsting` without write permission [#2671](https://github.com/kubernetes/minikube/pull/2671)
+* Allow certificates to be optionally embedded in .kube/config [#3065](https://github.com/kubernetes/minikube/pull/3065)
+* Fix the --cache-images flag. [#3090](https://github.com/kubernetes/minikube/pull/3090)
+* support containerd  [#3040](https://github.com/kubernetes/minikube/pull/3040)
+* Fix vmwarefusion driver [#3029](https://github.com/kubernetes/minikube/pull/3029)
+* Make CoreDNS default addon [#3072](https://github.com/kubernetes/minikube/pull/3072)
+* Update CoreDNS deployment [#3073](https://github.com/kubernetes/minikube/pull/3073)
+* Replace 9p mount calls to syscall.Rename with os.Rename, which is capable of renaming on top of existing files. [#3047](https://github.com/kubernetes/minikube/pull/3047)
+* Revert "Remove untainting logic." [#3050](https://github.com/kubernetes/minikube/pull/3050)
+* Upgrade kpod 0.1 to podman 0.4.1 [#3026](https://github.com/kubernetes/minikube/pull/3026)
+* Linux install: Set owner to root [#3021](https://github.com/kubernetes/minikube/pull/3021)
+* Rm localkube [#2911](https://github.com/kubernetes/minikube/pull/2911)
+* Update to go 1.10.1 everywhere. [#2777](https://github.com/kubernetes/minikube/pull/2777)
+* Allow to override build date with SOURCE_DATE_EPOCH [#3009](https://github.com/kubernetes/minikube/pull/3009)
+
+Huge Thank You for this release to our contributors: 
+
+- Aaron Prindle
+- AdamDang
+- Anders F Björklund
+- Arijit Basu
+- Asbjørn Apeland
+- Balint Pato
+- balopat
+- Bennett Ellis
+- Bernhard M. Wiedemann
+- Daemeron
+- Damian Kubaczka
+- Daniel Santana
+- dlorenc
+- Jason Stangroome
+- Jeffrey Sica
+- Joao Carlos
+- Kumbirai Tanekha
+- Matt Rickard
+- Nate Bessette
+- NsLib
+- peak-load
+- Praveen Kumar
+- RA489
+- Raghavendra Talur
+- ruicao
+- Sandeep Rajan
+- Thomas Strömberg
+- Tijs Gommeren
+- Viktor Safronov
+- wangxy518
+- yanxuean
+
+
+
 # Version 0.28.2 - 7/20/2018
 * Nvidia driver installation fixed [#2996](https://github.com/kubernetes/minikube/pull/2986)
 
