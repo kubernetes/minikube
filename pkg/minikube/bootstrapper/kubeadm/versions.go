@@ -260,7 +260,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
 	},
 	{
- 		Option: util.ExtraOption{
+		Option: util.ExtraOption{
 			Component: Kubelet,
 			Key:       "cadvisor-port",
 			Value:     "0",
