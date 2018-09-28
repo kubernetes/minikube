@@ -356,7 +356,7 @@ func (d *Driver) Stop() error {
 
 	}
 
-	return fmt.Errorf("Could not stop VM, current state %s", s.String())
+	return fmt.Errorf("Could not stop VM, current state %s", s.String()
 }
 
 func (d *Driver) Remove() error {
@@ -370,7 +370,7 @@ func (d *Driver) Remove() error {
 	// Tear down network if it exists and is not in use by another minikube instance
 	log.Debug("Trying to delete the networks (if possible)")
 	if err := d.deleteNetwork(); err != nil {
-		log.Warnf("Deleting of networks failed: %s", err.Error())
+		log.Warnf("Deleting of networks failed: %v", err)
 	} else {
 		log.Info("Successfully deleted networks")
 	}

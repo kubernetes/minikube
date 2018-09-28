@@ -124,7 +124,7 @@ func (d *Driver) Kill() error {
 	} {
 		cmd := exec.Command("sudo", cmdStr...)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			glog.Warningf("Error %s running command: %s. Output: %s", err, cmdStr, string(out))
+			glog.Warningf("Error %v running command: %s. Output: %s", err, cmdStr, out)
 		}
 	}
 	return nil
@@ -138,7 +138,7 @@ func (d *Driver) Remove() error {
 
 	for _, cmdStr := range []string{rmCmd, dockerkillcmd} {
 		if out, err := runCommand(cmdStr, true); err != nil {
-			glog.Warningf("Error %s running command: %s, Output: %s", err, cmdStr, out)
+			glog.Warningf("Error %v running command: %s, Output: %s", err, cmdStr, out)
 		}
 	}
 
@@ -192,7 +192,7 @@ fi
 		}
 	}
 	if out, err := runCommand(dockerstopcmd, false); err != nil {
-		glog.Warningf("Error %s running command %s. Output: %s", err, dockerstopcmd, out)
+		glog.Warningf("Error %v running command %s. Output: %s", err, dockerstopcmd, out)
 	}
 	return nil
 }

@@ -41,7 +41,7 @@ func testMounting(t *testing.T) {
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
-		t.Fatalf("Unexpected error while creating tempDir: %s", err)
+		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
@@ -88,11 +88,11 @@ func testMounting(t *testing.T) {
 
 	client, err := pkgutil.GetClient()
 	if err != nil {
-		t.Fatalf("getting kubernetes client: %s", err)
+		t.Fatalf("getting kubernetes client: %v", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Fatalf("Error waiting for busybox mount pod to be up: %s", err)
+		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
 	}
 
 	mountTest := func() error {

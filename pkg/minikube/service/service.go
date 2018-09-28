@@ -76,7 +76,7 @@ func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	clientConfig, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {

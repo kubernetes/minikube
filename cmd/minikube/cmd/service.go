@@ -65,7 +65,7 @@ var serviceCmd = &cobra.Command{
 		svc := args[0]
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()
@@ -74,7 +74,7 @@ var serviceCmd = &cobra.Command{
 		err = service.WaitAndMaybeOpenService(api, namespace, svc,
 			serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error opening service: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error opening service: %v\n", err)
 			os.Exit(1)
 		}
 	},

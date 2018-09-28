@@ -75,7 +75,7 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
 		} else {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
+			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stdout)
 		}
 	}
 	return string(stdout)
@@ -87,7 +87,7 @@ func (m *MinikubeRunner) RunDaemon(command string) *exec.Cmd {
 	cmd := exec.Command(path, commandArr...)
 	err := cmd.Start()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %s", command, err)
+		m.T.Fatalf("Error running command: %s %v", command, err)
 	}
 	return cmd
 }
@@ -182,8 +182,8 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			k.T.Logf("Error %s running command %s. Return code: %s", stdout, args, err)
-			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)}
+			k.T.Logf("Error %s running command %s. Return code: %v", stdout, args, err)
+			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command: %v. Output: %s", err, stdout)}
 		}
 		return nil
 	}
@@ -196,7 +196,7 @@ func (k *KubectlRunner) CreateRandomNamespace() string {
 	const strLen = 20
 	name := genRandString(strLen)
 	if _, err := k.RunCommand([]string{"create", "namespace", name}); err != nil {
-		k.T.Fatalf("Error creating namespace: %s", err)
+		k.T.Fatalf("Error creating namespace: %v", err)
 	}
 	return name
 }
@@ -300,7 +300,7 @@ func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (
 		if err == nil {
 			return nil
 		}
-		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
+		t.Logf("Error: %v, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
 		time.Sleep(d)
 	}
 	return err

@@ -61,7 +61,7 @@ var statusCmd = &cobra.Command{
 		var returnCode = 0
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(internalErrorCode)
 		}
 		defer api.Close()
@@ -77,7 +77,7 @@ var statusCmd = &cobra.Command{
 		if ms == state.Running.String() {
 			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
-				glog.Errorf("Error getting cluster bootstrapper: %s", err)
+				glog.Errorf("Error getting cluster bootstrapper: %v", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			}
 			cs, err = clusterBootstrapper.GetClusterStatus()
