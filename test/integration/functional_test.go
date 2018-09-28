@@ -41,6 +41,6 @@ func TestFunctional(t *testing.T) {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
 		t.Run("IngressController", testIngressController)
-		// t.Run("Mounting", testMounting)
+		t.Run("Mounting", testMounting)
 	}
 }

@@ -49,15 +49,21 @@ func testClusterDNS(t *testing.T) {
 	}
 	listOpts := metav1.ListOptions{LabelSelector: "integration-test=busybox"}
 	pods, err := client.CoreV1().Pods("default").List(listOpts)
+	if err != nil {
+		t.Fatalf("Unable to list default pods: %v", err)
+	}
 	if len(pods.Items) == 0 {
 		t.Fatal("Expected a busybox pod to be running")
 	}
 
-	podName := pods.Items[0].Name
-	defer kubectlRunner.RunCommand([]string{"delete", "po", podName})
+	bbox := pods.Items[0].Name
+	defer func() {
+		if out, err := kubectlRunner.RunCommand([]string{"delete", "po", bbox}); err != nil {
+			t.Logf("delete po %s failed: %v\noutput: %s\n", bbox, err, out)
+		}
+	}()
 
-	dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName,
-		"nslookup", "kubernetes"})
+	dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", bbox, "nslookup", "kubernetes"})
 	if err != nil {
 		t.Fatalf("running nslookup in pod:%s", err)
 	}
