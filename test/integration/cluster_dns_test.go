@@ -37,15 +37,15 @@ func testClusterDNS(t *testing.T) {
 
 	client, err := pkgutil.GetClient()
 	if err != nil {
-		t.Fatalf("Error getting kubernetes client %s", err)
+		t.Fatalf("Error getting kubernetes client %v", err)
 	}
 
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("creating busybox pod: %s", err)
+		t.Fatalf("creating busybox pod: %v", err)
 	}
 
 	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
-		t.Fatalf("Waiting for busybox pod to be up: %s", err)
+		t.Fatalf("Waiting for busybox pod to be up: %v", err)
 	}
 	listOpts := metav1.ListOptions{LabelSelector: "integration-test=busybox"}
 	pods, err := client.CoreV1().Pods("default").List(listOpts)
@@ -65,7 +65,7 @@ func testClusterDNS(t *testing.T) {
 
 	dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", bbox, "nslookup", "kubernetes"})
 	if err != nil {
-		t.Fatalf("running nslookup in pod:%s", err)
+		t.Fatalf("running nslookup in pod:%v", err)
 	}
 	dnsOutput := string(dnsByteArr)
 	if !strings.Contains(dnsOutput, "10.96.0.1") || !strings.Contains(dnsOutput, "10.96.0.10") {

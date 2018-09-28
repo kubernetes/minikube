@@ -64,7 +64,7 @@ func testProvisioning(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
-		t.Fatalf("no default storage class after retry: %s", err)
+		t.Fatalf("no default storage class after retry: %v", err)
 	}
 
 	// Check that the storage provisioner pod is running
