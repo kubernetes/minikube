@@ -70,7 +70,7 @@ func waitForDNS(t *testing.T, c kubernetes.Interface) {
 func busyBoxPod(t *testing.T, c kubernetes.Interface, kr *util.KubectlRunner) string {
 	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
 		t.Fatalf("creating busybox pod: %v", err)
--	}
+	}
 	// TODO(tstromberg): Refactor WaitForBusyboxRunning to return name of pod.
 	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
 		t.Fatalf("Waiting for busybox pod to be up: %v", err)

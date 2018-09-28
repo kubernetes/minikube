@@ -374,7 +374,7 @@ func (d *Driver) cleanupNfsExports() {
 		}
 
 		if err := nfsexports.ReloadDaemon(); err != nil {
-			log.Errorf("failed to reload the nfs daemon: %v", err
+			log.Errorf("failed to reload the nfs daemon: %v", err)
 		}
 	}
 }

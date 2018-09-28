@@ -356,7 +356,7 @@ func (d *Driver) Stop() error {
 
 	}
 
-	return fmt.Errorf("Could not stop VM, current state %s", s.String()
+	return fmt.Errorf("Could not stop VM, current state %s", s.String())
 }
 
 func (d *Driver) Remove() error {
