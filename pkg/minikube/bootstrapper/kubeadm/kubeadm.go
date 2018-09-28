@@ -126,7 +126,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 			semver.MustParse("1.9.0-alpha.0"),
 			semver.Version{}),
 		Preflights: constants.Preflights,
-		DNSAddon: "kube-dns",
+		DNSAddon:   "kube-dns",
 	}
 	if version.GTE(semver.MustParse("1.12.0")) {
 		templateContext.DNSAddon = "coredns"

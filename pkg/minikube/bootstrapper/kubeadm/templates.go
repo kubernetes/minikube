@@ -45,7 +45,7 @@ nodeName: {{.NodeName}}
 {{end}}`))
 
 var kubeadmConfigTemplateV1Alpha3 = template.Must(template.New("kubeadmConfigTemplate-v1alpha3").Funcs(template.FuncMap{
-  "printMapInOrder": printMapInOrder,
+	"printMapInOrder": printMapInOrder,
 }).Parse(`apiEndpoint:
   advertiseAddress: {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
