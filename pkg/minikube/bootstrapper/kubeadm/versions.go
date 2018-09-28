@@ -241,7 +241,6 @@ var versionSpecificOpts = []VersionedExtraOption{
 	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(util.DefaultCertPath, "ca.crt")),
 
 	// Cgroup args
-	NewUnversionedOption(Kubelet, "cadvisor-port", "0"),
 	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
 	{
 		Option: util.ExtraOption{
@@ -259,6 +258,14 @@ var versionSpecificOpts = []VersionedExtraOption{
 			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
 		},
 		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
+	},
+	{
+ 		Option: util.ExtraOption{
+			Component: Kubelet,
+			Key:       "cadvisor-port",
+			Value:     "0",
+		},
+		LessThanOrEqual: semver.MustParse("1.11.1000"),
 	},
 }
 
