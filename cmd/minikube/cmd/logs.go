@@ -41,13 +41,13 @@ var logsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()
 		clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
-			glog.Exitf("Error getting cluster bootstrapper: %s", err)
+			glog.Exitf("Error getting cluster bootstrapper: %v", err)
 		}
 
 		err = clusterBootstrapper.GetClusterLogsTo(follow, os.Stdout)

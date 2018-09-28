@@ -61,7 +61,7 @@ var addonsOpenCmd = &cobra.Command{
 		//TODO(r2d4): config should not reference API, pull this out
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()
@@ -91,7 +91,7 @@ minikube addons enable %s`, addonName, addonName))
 
 		serviceList, err := service.GetServiceListByLabel(namespace, key, addonName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting service with namespace: %s and labels %s:%s: %s\n", namespace, key, addonName, err)
+			fmt.Fprintf(os.Stderr, "Error getting service with namespace: %s and labels %s:%s: %v\n", namespace, key, addonName, err)
 			os.Exit(1)
 		}
 		if len(serviceList.Items) == 0 {

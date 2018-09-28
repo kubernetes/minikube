@@ -64,7 +64,7 @@ func testProvisioning(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
-		t.Fatalf("no default storage class after retry: %s", err)
+		t.Fatalf("no default storage class after retry: %v", err)
 	}
 
 	// Check that the storage provisioner pod is running
@@ -83,13 +83,13 @@ func testProvisioning(t *testing.T) {
 	}
 
 	if err := checkPodRunning(); err != nil {
-		t.Fatal("Check storage-provisioner pod running failed with error: ", err)
+		t.Fatalf("Check storage-provisioner pod running failed with error: %v", err)
 	}
 
 	// Now create the PVC
 	pvcPath := filepath.Join(*testdataDir, "pvc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
-		t.Fatalf("Error creating pvc")
+		t.Fatalf("Error creating pvc: %v", err)
 	}
 
 	// And check that it gets bound to a PV.
@@ -106,7 +106,7 @@ func testProvisioning(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkStorage, 2*time.Second, 5); err != nil {
-		t.Fatal("PV Creation failed with error:", err)
+		t.Fatalf("PV Creation failed with error: %v", err)
 	}
 
 }

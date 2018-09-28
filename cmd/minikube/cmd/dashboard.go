@@ -44,7 +44,7 @@ var dashboardCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()
@@ -54,7 +54,7 @@ var dashboardCmd = &cobra.Command{
 		svc := "kubernetes-dashboard"
 
 		if err = commonutil.RetryAfter(20, func() error { return service.CheckService(namespace, svc) }, 6*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", svc, err)
+			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %v\n", svc, err)
 			os.Exit(1)
 		}
 

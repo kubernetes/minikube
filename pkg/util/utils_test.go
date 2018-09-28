@@ -130,12 +130,12 @@ func TestMultiError(t *testing.T) {
 	expected := `Error 1
 Error 2`
 	if err.Error() != expected {
-		t.Fatalf("%s != %s", err, expected)
+		t.Fatalf("%s != %s", err.Error(), expected)
 	}
 
 	m = MultiError{}
 	if err := m.ToError(); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
