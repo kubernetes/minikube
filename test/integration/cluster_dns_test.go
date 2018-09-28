@@ -19,50 +19,69 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
 	"path/filepath"
-	"strings"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 
+	commonutil "k8s.io/minikube/pkg/util"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func testClusterDNS(t *testing.T) {
 	t.Parallel()
-
-	kubectlRunner := util.NewKubectlRunner(t)
-	podPath := filepath.Join(*testdataDir, "busybox.yaml")
-
 	client, err := pkgutil.GetClient()
 	if err != nil {
 		t.Fatalf("Error getting kubernetes client %s", err)
 	}
+	waitForDNS(t, client)
 
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
+	kr := util.NewKubectlRunner(t)
+	busybox := busyBoxPod(t, client, kr)
+	defer kr.RunCommand([]string{"delete", "po", busybox})
+
+	// The query result is not as important as service reachability
+	out, err := kr.RunCommand([]string{"exec", busybox, "nslookup", "localhost"})
+	if err != nil {
+		t.Errorf("nslookup within busybox failed: %s", err)
+	}
+	clusterIP := []byte("10.96.0.1")
+	if !bytes.Contains(out, clusterIP) {
+		t.Errorf("nslookup did not mention %s:\n%s", clusterIP, out)
+	}
+}
+
+func waitForDNS(t *testing.T, c kubernetes.Interface) {
+	// Implementation note: both kube-dns and coredns have k8s-app=kube-dns labels.
+	sel := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "kube-dns"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(c, "kube-system", sel); err != nil {
+		t.Fatalf("Waited too long for k8s-app=kube-dns pods")
+	}
+	if err := commonutil.WaitForDeploymentToStabilize(c, "kube-system", "kube-dns", time.Minute*2); err != nil {
+		t.Fatalf("kube-dns deployment failed became stable within 2 minutes")
+	}
+}
+
+func busyBoxPod(t *testing.T, c kubernetes.Interface, kr *util.KubectlRunner) string {
+	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
 		t.Fatalf("creating busybox pod: %s", err)
 	}
-
+	// TODO(tstromberg): Refactor WaitForBusyboxRunning to return name of pod.
 	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
 		t.Fatalf("Waiting for busybox pod to be up: %s", err)
 	}
-	listOpts := metav1.ListOptions{LabelSelector: "integration-test=busybox"}
-	pods, err := client.CoreV1().Pods("default").List(listOpts)
+
+	pods, err := c.CoreV1().Pods("default").List(metav1.ListOptions{LabelSelector: "integration-test=busybox"})
+	if err != nil {
+		t.Fatalf("list error: %v", err)
+	}
 	if len(pods.Items) == 0 {
 		t.Fatal("Expected a busybox pod to be running")
 	}
-
-	podName := pods.Items[0].Name
-	defer kubectlRunner.RunCommand([]string{"delete", "po", podName})
-
-	dnsByteArr, err := kubectlRunner.RunCommand([]string{"exec", podName,
-		"nslookup", "kubernetes"})
-	if err != nil {
-		t.Fatalf("running nslookup in pod:%s", err)
-	}
-	dnsOutput := string(dnsByteArr)
-	if !strings.Contains(dnsOutput, "10.96.0.1") || !strings.Contains(dnsOutput, "10.96.0.10") {
-		t.Errorf("DNS lookup failed, could not find both 10.96.0.1 and 10.96.0.10.  Output: %s", dnsOutput)
-	}
+	return pods.Items[0].Name
 }
