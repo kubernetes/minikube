@@ -30,4 +30,4 @@ VM_DRIVER="kvm2"
 JOB_NAME="Linux-KVM"
 
 # Download files and set permissions
-source common.sh
+source ./common.sh

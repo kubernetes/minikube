@@ -22,4 +22,4 @@ limitations under the License.
 // InitializerConfiguration and validatingWebhookConfiguration is for the
 // new dynamic admission controller configuration.
 // +groupName=admissionregistration.k8s.io
-package v1beta1
+package v1beta1 // import "k8s.io/api/admissionregistration/v1beta1"

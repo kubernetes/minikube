@@ -14,8 +14,8 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 28
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 29
+VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -26,7 +26,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.10.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.28.1
+ISO_VERSION ?= v0.29.0
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -101,7 +101,15 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
-	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
+	$(warning ******************************************************************************)
+	$(warning WARNING: You are building minikube outside the expected GOPATH:)
+	$(warning )
+	$(warning expected: $(GOPATH)/src/$(REPOPATH) )
+	$(warning   got:      $(PWD) )
+	$(warning )
+	$(warning You will likely encounter unusual build failures. For proper setup, read: )
+	$(warning https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md)
+	$(warning ******************************************************************************)
 endif
 	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif

@@ -26,8 +26,10 @@ brew cask install minikube
 ```
 
 ### Linux
+
 ```shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+  && sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 
 ### Windows
@@ -96,6 +98,7 @@ done
 * [Linux]
     * [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
     * [Fedora/CentOS/Red Hat COPR](https://copr.fedorainfracloud.org/coprs/antonpatsev/minikube-rpm/)
+    * [Void Linux](https://github.com/void-linux/void-packages/tree/master/srcpkgs/minikube/template)
     * [openSUSE/SUSE Linux Enterprise](https://build.opensuse.org/package/show/Virtualization:containers/minikube)
 * [Windows] Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
 

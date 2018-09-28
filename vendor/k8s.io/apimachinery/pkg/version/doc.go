@@ -16,4 +16,4 @@ limitations under the License.
 
 // Package version supplies the type for version information collected at build time.
 // +k8s:openapi-gen=true
-package version
+package version // import "k8s.io/apimachinery/pkg/version"
