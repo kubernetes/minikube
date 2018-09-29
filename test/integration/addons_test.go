@@ -122,13 +122,8 @@ func testIngressController(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	defer func() {
-		for _, p := range []string{podPath, ingressPath} {
-			if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", p}); err != nil {
-				t.Logf("delete -f %s failed: %v\noutput: %s\n", p, err, out)
-			}
-		}
-	}()
+	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
+	defer kubectlRunner.RunCommand([]string{"delete", "-f", ingressPath})
 	minikubeRunner.RunCommand("addons disable ingress", true)
 }
 

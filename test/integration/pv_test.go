@@ -43,9 +43,7 @@ func testProvisioning(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	defer func() {
-		if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
-			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
-		}
+		kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName})
 	}()
 
 	// We have to make sure the addon-manager has created the StorageClass before creating
@@ -53,14 +51,11 @@ func testProvisioning(t *testing.T) {
 
 	checkStorageClass := func() error {
 		scl := storage.StorageClassList{}
-		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
-			return fmt.Errorf("get storageclass: %v", err)
-		}
-
+		kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl)
 		if len(scl.Items) > 0 {
 			return nil
 		}
-		return fmt.Errorf("no StorageClass yet")
+		return fmt.Errorf("No default StorageClass yet.")
 	}
 
 	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {

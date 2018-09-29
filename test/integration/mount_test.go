@@ -47,12 +47,7 @@ func testMounting(t *testing.T) {
 
 	mountCmd := fmt.Sprintf("mount %s:/mount-9p", tempDir)
 	cmd := minikubeRunner.RunDaemon(mountCmd)
-	defer func() {
-		err := cmd.Process.Kill()
-		if err != nil {
-			t.Logf("Failed to kill mount command: %v", err)
-		}
-	}()
+	defer cmd.Process.Kill()
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox-mount"
@@ -65,7 +60,7 @@ func testMounting(t *testing.T) {
 		path := filepath.Join(tempDir, file)
 		err = ioutil.WriteFile(path, []byte(expected), 0644)
 		if err != nil {
-			t.Fatalf("Unexpected error while writing file %s: %s.", path, err)
+			t.Fatalf("Unexpected error while writing file %s: %v", path, err)
 		}
 	}
 
@@ -76,11 +71,7 @@ func testMounting(t *testing.T) {
 		}
 		return nil
 	}
-	defer func() {
-		if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", podPath}); err != nil {
-			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
-		}
-	}()
+	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
 
 	if err := util.Retry(t, setupTest, 5*time.Second, 40); err != nil {
 		t.Fatal("mountTest failed with error:", err)
@@ -123,13 +114,13 @@ func testMounting(t *testing.T) {
 		// test that frompodremove can be deleted on the host
 		path = filepath.Join(tempDir, "frompodremove")
 		if err := os.Remove(path); err != nil {
-			t.Fatalf("Unexpected error removing file %s: %s", path, err)
+			t.Fatalf("Unexpected error removing file %s: %v", path, err)
 		}
 
 		return nil
 	}
 	if err := util.Retry(t, mountTest, 5*time.Second, 40); err != nil {
-		t.Fatal("mountTest failed with error:", err)
+		t.Fatalf("mountTest failed with error: %v", err)
 	}
 
 }
