@@ -50,7 +50,7 @@ func TestStartStop(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-		t.Fatalf("timed out while checking stopped status: %s", err)
+		t.Fatalf("timed out while checking stopped status: %v", err)
 	}
 
 	runner.Start()

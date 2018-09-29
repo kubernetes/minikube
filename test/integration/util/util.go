@@ -183,7 +183,7 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
 			k.T.Logf("Error %s running command %s. Return code: %s", stdout, args, err)
-			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)}
+			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command: %v. Output: %s", err, stdout)}
 		}
 		return nil
 	}
@@ -196,7 +196,7 @@ func (k *KubectlRunner) CreateRandomNamespace() string {
 	const strLen = 20
 	name := genRandString(strLen)
 	if _, err := k.RunCommand([]string{"create", "namespace", name}); err != nil {
-		k.T.Fatalf("Error creating namespace: %s", err)
+		k.T.Fatalf("Error creating namespace: %v", err)
 	}
 	return name
 }

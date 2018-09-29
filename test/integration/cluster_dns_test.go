@@ -37,7 +37,7 @@ func testClusterDNS(t *testing.T) {
 	t.Parallel()
 	client, err := pkgutil.GetClient()
 	if err != nil {
-		t.Fatalf("Error getting kubernetes client %s", err)
+		t.Fatalf("Error getting kubernetes client %v", err)
 	}
 	waitForDNS(t, client)
 
