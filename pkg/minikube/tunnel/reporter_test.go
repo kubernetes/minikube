@@ -26,13 +26,13 @@ import (
 func TestReporter(t *testing.T) {
 	testCases := []struct {
 		name           string
-		tunnelState    *TunnelStatus
+		tunnelState    *Status
 		expectedOutput string
 	}{
 		{
 			name: "simple",
-			tunnelState: &TunnelStatus{
-				TunnelID: TunnelID{
+			tunnelState: &Status{
+				TunnelID: ID{
 					Route:       unsafeParseRoute("1.2.3.4", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         1234,
@@ -45,7 +45,7 @@ func TestReporter(t *testing.T) {
 				PatchedServices:           []string{"svc1", "svc2"},
 				LoadBalancerEmulatorError: nil,
 			},
-			expectedOutput: `TunnelStatus:	
+			expectedOutput: `Status:	
 	machine: testmachine
 	pid: 1234
 	route: 10.96.0.0/12 -> 1.2.3.4
@@ -59,8 +59,8 @@ func TestReporter(t *testing.T) {
 		},
 		{
 			name: "errors",
-			tunnelState: &TunnelStatus{
-				TunnelID: TunnelID{
+			tunnelState: &Status{
+				TunnelID: ID{
 					Route:       unsafeParseRoute("1.2.3.4", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         1234,
@@ -73,7 +73,7 @@ func TestReporter(t *testing.T) {
 				PatchedServices:           nil,
 				LoadBalancerEmulatorError: errors.New("lberror"),
 			},
-			expectedOutput: `TunnelStatus:	
+			expectedOutput: `Status:	
 	machine: testmachine
 	pid: 1234
 	route: 10.96.0.0/12 -> 1.2.3.4
@@ -90,7 +90,7 @@ func TestReporter(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			out := &recordingWriter{}
-			reporter := NewReporter(out)
+			reporter := newReporter(out)
 			reporter.Report(tc.tunnelState)
 			if tc.expectedOutput != out.output {
 				t.Errorf(`%s [FAIL].
@@ -103,7 +103,7 @@ Got:	  "%s"`, tc.name, tc.expectedOutput, out.output)
 
 	//testing deduplication
 	out := &recordingWriter{}
-	reporter := NewReporter(out)
+	reporter := newReporter(out)
 	reporter.Report(testCases[0].tunnelState)
 	reporter.Report(testCases[0].tunnelState)
 	reporter.Report(testCases[1].tunnelState)

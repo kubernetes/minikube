@@ -27,11 +27,11 @@ func TestPersistentRegistryWithNoKey(t *testing.T) {
 	registry, cleanup := createTestRegistry(t)
 	defer cleanup()
 
-	route := &TunnelID{}
+	route := &ID{}
 	err := registry.Register(route)
 
 	if err == nil {
-		t.Errorf("attempting to register TunnelID without key should throw error")
+		t.Errorf("attempting to register ID without key should throw error")
 	}
 }
 
@@ -39,7 +39,7 @@ func TestPersistentRegistryNullableMetadata(t *testing.T) {
 	registry, cleanup := createTestRegistry(t)
 	defer cleanup()
 
-	route := &TunnelID{
+	route := &ID{
 		Route: unsafeParseRoute("1.2.3.4", "10.96.0.0/12"),
 	}
 	err := registry.Register(route)
@@ -61,7 +61,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			fileName: "nonexistent.txt",
 			test: func(t *testing.T, reg *persistentRegistry) {
 				info, e := reg.List()
-				expectedInfo := []*TunnelID{}
+				expectedInfo := []*ID{}
 				if !reflect.DeepEqual(info, expectedInfo) || e != nil {
 					t.Errorf("expected %s, nil error, got %s, %s", expectedInfo, info, e)
 				}
@@ -81,7 +81,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			name:     "Calling Register on non-existent registry file should create file",
 			fileName: "nonexistent.txt",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
+				e := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
 				if e != nil {
 					t.Errorf("expected no error, got %s", e)
 				}
@@ -101,7 +101,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 		{
 			name: "Calling Remove on non-existent tunnel should return error",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
+				e := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
 				if e != nil {
 					t.Errorf("expected no error, got %s", e)
 				}
@@ -115,7 +115,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 		{
 			name: "Register + List should return tunnel info",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{
+				e := reg.Register(&ID{
 					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 					MachineName: "testmachine",
 					Pid:         1234,
@@ -129,7 +129,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 					t.Errorf("failed to list: expected no error, got %s", err)
 				}
 
-				expectedList := []*TunnelID{
+				expectedList := []*ID{
 					{
 						Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 						MachineName: "testmachine",
@@ -145,7 +145,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 		{
 			name: "Register + Remove + List",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{
+				e := reg.Register(&ID{
 					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         1234,
@@ -165,7 +165,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 					t.Errorf("failed to list: expected no error, got %s", err)
 				}
 
-				expectedList := []*TunnelID{}
+				expectedList := []*ID{}
 
 				if len(tunnelList) != 0 {
 					t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
@@ -175,7 +175,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 		{
 			name: "Error on duplicate route with running process",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{
+				e := reg.Register(&ID{
 					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         os.Getpid(),
@@ -183,7 +183,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 				if e != nil {
 					t.Errorf("failed to register: expected no error, got %s", e)
 				}
-				e = reg.Register(&TunnelID{
+				e = reg.Register(&ID{
 					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         5678,
@@ -196,7 +196,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 		{
 			name: "Update duplicate route when process is not running",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&TunnelID{
+				e := reg.Register(&ID{
 					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         12341234,
@@ -204,7 +204,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 				if e != nil {
 					t.Errorf("failed to register: expected no error, got %s", e)
 				}
-				e = reg.Register(&TunnelID{
+				e = reg.Register(&ID{
 					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
 					MachineName: "testmachine",
 					Pid:         5678,
@@ -218,7 +218,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 					t.Errorf("failed to list: expected no error, got %s", err)
 				}
 
-				expectedList := []*TunnelID{
+				expectedList := []*ID{
 					{
 						Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
 						MachineName: "testmachine",

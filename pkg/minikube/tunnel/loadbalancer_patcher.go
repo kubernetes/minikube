@@ -129,8 +129,8 @@ func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc cor
 	return nil, nil
 }
 
-func NewLoadBalancerEmulator(corev1Client v1.CoreV1Interface) *loadBalancerEmulator {
-	return &loadBalancerEmulator{
+func newLoadBalancerEmulator(corev1Client v1.CoreV1Interface) loadBalancerEmulator {
+	return loadBalancerEmulator{
 		coreV1Client:   corev1Client,
 		requestSender:  &defaultRequestSender{},
 		patchConverter: &defaultPatchConverter{},

@@ -21,39 +21,42 @@ import (
 
 	"io"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 //reporter that reports the status of a tunnel
 type reporter interface {
-	Report(tunnelState *TunnelStatus)
+	Report(tunnelState *Status)
 }
 
 type simpleReporter struct {
 	out       io.Writer
-	lastState *TunnelStatus
+	lastState *Status
 }
 
-func (r *simpleReporter) Report(tunnelState *TunnelStatus) {
+const noErrors = "no errors"
+
+func (r *simpleReporter) Report(tunnelState *Status) {
 	if r.lastState == tunnelState {
 		return
 	}
 	r.lastState = tunnelState
 	minikubeState := tunnelState.MinikubeState.String()
 
-	var managedServices string
-	managedServices = fmt.Sprintf("[%s]", strings.Join(tunnelState.PatchedServices, ", "))
+	managedServices := fmt.Sprintf("[%s]", strings.Join(tunnelState.PatchedServices, ", "))
 
-	lbError := "no errors"
+	lbError := noErrors
 	if tunnelState.LoadBalancerEmulatorError != nil {
 		lbError = tunnelState.LoadBalancerEmulatorError.Error()
 	}
 
-	minikubeError := "no errors"
+	minikubeError := noErrors
 	if tunnelState.MinikubeError != nil {
 		minikubeError = tunnelState.MinikubeError.Error()
 	}
 
-	routerError := "no errors"
+	routerError := noErrors
 	if tunnelState.RouteError != nil {
 		routerError = tunnelState.RouteError.Error()
 	}
@@ -64,8 +67,8 @@ func (r *simpleReporter) Report(tunnelState *TunnelStatus) {
 		loadbalancer emulator: %s
 `, minikubeError, routerError, lbError)
 
-	r.out.Write([]byte(fmt.Sprintf(
-		`TunnelStatus:	
+	_, err := r.out.Write([]byte(fmt.Sprintf(
+		`Status:	
 	machine: %s
 	pid: %d
 	route: %s
@@ -77,9 +80,12 @@ func (r *simpleReporter) Report(tunnelState *TunnelStatus) {
 		minikubeState,
 		managedServices,
 		errors)))
+	if err != nil {
+		glog.Errorf("failed to report state %s", err)
+	}
 }
 
-func NewReporter(out io.Writer) reporter {
+func newReporter(out io.Writer) reporter {
 	return &simpleReporter{
 		out: out,
 	}

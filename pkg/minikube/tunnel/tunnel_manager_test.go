@@ -20,12 +20,11 @@ import (
 	"testing"
 
 	"context"
-	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/tests"
-
-	"github.com/golang/glog"
 	"os"
 	"time"
+
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 func TestTunnelManagerEventHandling(t *testing.T) {
@@ -33,14 +32,13 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 		//tunnel inputs
 		name   string
 		repeat int
-		store  *tests.FakeStore
 		test   func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error
 	}{
 		{
 			name:   "tunnel quits on stopped minikube",
 			repeat: 1,
 			test: func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error {
-				tunnel.mockClusterInfo = &TunnelStatus{
+				tunnel.mockClusterInfo = &Status{
 					MinikubeState: Stopped,
 				}
 				glog.Info("waiting for tunnel to be ready.")
@@ -65,7 +63,7 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 			name:   "tunnel quits on ctrlc before doing a check",
 			repeat: 1,
 			test: func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error {
-				tunnel.mockClusterInfo = &TunnelStatus{
+				tunnel.mockClusterInfo = &Status{
 					MinikubeState: Stopped,
 				}
 				<-ready
@@ -87,7 +85,7 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 			name:   "tunnel always quits when ctrl c is pressed",
 			repeat: 100000,
 			test: func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error {
-				tunnel.mockClusterInfo = &TunnelStatus{
+				tunnel.mockClusterInfo = &Status{
 					MinikubeState: Running,
 				}
 				go func() {
@@ -135,7 +133,7 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 				done := make(chan bool, 1)
 
 				ctx, cancel := context.WithCancel(context.Background())
-				go tunnelManager.run(tunnel, ctx, ready, check, done)
+				go tunnelManager.run(ctx, tunnel, ready, check, done)
 				err = tc.test(tunnel, cancel, ready, check, done)
 				if err != nil {
 					glog.Errorf("error at %d", i)
@@ -151,7 +149,7 @@ func TestTunnelManagerDelayAndContext(t *testing.T) {
 		delay: 1000 * time.Millisecond,
 	}
 	tunnel := &tunnelStub{
-		mockClusterInfo: &TunnelStatus{
+		mockClusterInfo: &Status{
 			MinikubeState: Running,
 		},
 	}
@@ -177,40 +175,64 @@ func TestTunnelManagerCleanup(t *testing.T) {
 	reg, cleanup := createTestRegistry(t)
 	defer cleanup()
 
-	runningTunnel1 := &TunnelID{
+	runningTunnel1 := &ID{
 		Route:       unsafeParseRoute("1.2.3.4", "5.6.7.8/9"),
 		Pid:         os.Getpid(),
 		MachineName: "minikube",
 	}
 
-	runningTunnel2 := &TunnelID{
+	runningTunnel2 := &ID{
 		Route:       unsafeParseRoute("100.2.3.4", "200.6.7.8/9"),
 		Pid:         os.Getpid(),
 		MachineName: "minikube",
 	}
 
-	notRunningTunnel1 := &TunnelID{
+	notRunningTunnel1 := &ID{
 		Route:       unsafeParseRoute("200.2.3.4", "10.6.7.8/9"),
 		Pid:         12341234,
 		MachineName: "minikube",
 	}
 
-	notRunningTunnel2 := &TunnelID{
+	notRunningTunnel2 := &ID{
 		Route:       unsafeParseRoute("250.2.3.4", "20.6.7.8/9"),
 		Pid:         12341234,
 		MachineName: "minikube",
 	}
-	reg.Register(runningTunnel1)
-	reg.Register(runningTunnel2)
-	reg.Register(notRunningTunnel1)
-	reg.Register(notRunningTunnel2)
+	e := reg.Register(runningTunnel1)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
+	e = reg.Register(runningTunnel2)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
+	e = reg.Register(notRunningTunnel1)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
+	e = reg.Register(notRunningTunnel2)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
 
 	router := &fakeRouter{}
 
-	router.EnsureRouteIsAdded(runningTunnel1.Route)
-	router.EnsureRouteIsAdded(runningTunnel2.Route)
-	router.EnsureRouteIsAdded(notRunningTunnel1.Route)
-	router.EnsureRouteIsAdded(notRunningTunnel2.Route)
+	e = router.EnsureRouteIsAdded(runningTunnel1.Route)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
+	e = router.EnsureRouteIsAdded(runningTunnel2.Route)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
+	e = router.EnsureRouteIsAdded(notRunningTunnel1.Route)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
+	e = router.EnsureRouteIsAdded(notRunningTunnel2.Route)
+	if e != nil {
+		t.Errorf("expected no error got: %v", e)
+	}
 
 	manager := NewManager()
 	manager.router = router
@@ -219,7 +241,7 @@ func TestTunnelManagerCleanup(t *testing.T) {
 	err := manager.CleanupNotRunningTunnels()
 
 	if err != nil {
-		t.Errorf("expected no error got: %s", err)
+		t.Errorf("expected no error got: %v", err)
 	}
 
 	if len(router.rt) != 2 ||
@@ -230,6 +252,10 @@ func TestTunnelManagerCleanup(t *testing.T) {
 
 	tunnels, err := reg.List()
 
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
+	}
+
 	if len(tunnels) != 2 ||
 		!tunnels[0].Equal(runningTunnel1) ||
 		!tunnels[1].Equal(runningTunnel2) {
@@ -239,19 +265,18 @@ func TestTunnelManagerCleanup(t *testing.T) {
 }
 
 type tunnelStub struct {
-	mockClusterInfo *TunnelStatus
-	mockError       error
+	mockClusterInfo *Status
 	tunnelExists    bool
 	timesChecked    int
 }
 
-func (t *tunnelStub) updateTunnelStatus() *TunnelStatus {
+func (t *tunnelStub) updateTunnelStatus() *Status {
 	t.tunnelExists = t.mockClusterInfo.MinikubeState == Running
-	t.timesChecked += 1
+	t.timesChecked++
 	return t.mockClusterInfo
 }
 
-func (t *tunnelStub) cleanup() *TunnelStatus {
+func (t *tunnelStub) cleanup() *Status {
 	t.tunnelExists = false
 	return t.mockClusterInfo
 }

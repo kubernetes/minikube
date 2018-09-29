@@ -18,10 +18,11 @@ package tunnel
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"net"
 	"os/exec"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {

@@ -21,6 +21,7 @@ import (
 
 	"context"
 	"fmt"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
@@ -66,7 +67,7 @@ func (mgr *Manager) startTunnel(ctx context.Context, tunnel tunnel) (done chan b
 
 	//simulating Ctrl+C so that we can cancel the tunnel programmatically too
 	go mgr.timerLoop(ready, check)
-	go mgr.run(tunnel, ctx, ready, check, done)
+	go mgr.run(ctx, tunnel, ready, check, done)
 
 	glog.Info("Started minikube tunnel.")
 	return
@@ -82,7 +83,7 @@ func (mgr *Manager) timerLoop(ready, check chan bool) {
 	}
 }
 
-func (mgr *Manager) run(t tunnel, ctx context.Context, ready, check, done chan bool) {
+func (mgr *Manager) run(ctx context.Context, t tunnel, ready, check, done chan bool) {
 	defer func() {
 		done <- true
 	}()
@@ -112,7 +113,7 @@ func (mgr *Manager) run(t tunnel, ctx context.Context, ready, check, done chan b
 	}
 }
 
-func (mgr *Manager) cleanup(t tunnel) *TunnelStatus {
+func (mgr *Manager) cleanup(t tunnel) *Status {
 	return t.cleanup()
 }
 

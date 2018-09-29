@@ -18,15 +18,16 @@ package tunnel
 
 import (
 	"fmt"
+
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
 type recordingReporter struct {
-	statesRecorded []*TunnelStatus
+	statesRecorded []*Status
 }
 
-func (r *recordingReporter) Report(tunnelState *TunnelStatus) {
+func (r *recordingReporter) Report(tunnelState *Status) {
 	glog.V(4).Infof("recordingReporter.Report: %v", tunnelState)
 	r.statesRecorded = append(r.statesRecorded, tunnelState)
 }

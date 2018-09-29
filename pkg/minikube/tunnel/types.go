@@ -18,12 +18,13 @@ package tunnel
 
 import (
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"net"
+
+	"k8s.io/apimachinery/pkg/types"
 )
 
-type TunnelStatus struct {
-	TunnelID TunnelID
+type Status struct {
+	TunnelID ID
 
 	MinikubeState HostState
 	MinikubeError error
@@ -34,8 +35,8 @@ type TunnelStatus struct {
 	LoadBalancerEmulatorError error
 }
 
-func (t *TunnelStatus) Clone() *TunnelStatus {
-	return &TunnelStatus{
+func (t *Status) Clone() *Status {
+	return &Status{
 		TunnelID:                  t.TunnelID,
 		MinikubeState:             t.MinikubeState,
 		MinikubeError:             t.MinikubeError,
@@ -45,7 +46,7 @@ func (t *TunnelStatus) Clone() *TunnelStatus {
 	}
 }
 
-func (t *TunnelStatus) String() string {
+func (t *Status) String() string {
 	return fmt.Sprintf("id(%v), minikube(%s, e:%s), route(%s, e:%s), services(%s, e:%s)",
 		t.TunnelID,
 		t.MinikubeState,

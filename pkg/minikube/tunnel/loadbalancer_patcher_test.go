@@ -32,9 +32,8 @@ import (
 
 type stubCoreClient struct {
 	fake.FakeCoreV1
-	servicesList      *apiV1.ServiceList
-	servicesListError *apiV1.ServiceList
-	restClient        *rest.RESTClient
+	servicesList *apiV1.ServiceList
+	restClient   *rest.RESTClient
 }
 
 func (c *stubCoreClient) Services(namespace string) v1.ServiceInterface {
@@ -57,15 +56,14 @@ func (s *stubServices) List(opts metaV1.ListOptions) (*apiV1.ServiceList, error)
 	return s.servicesList, nil
 }
 
-func newStubCoreClient(servicesList *apiV1.ServiceList, servicesListError *apiV1.ServiceList) *stubCoreClient {
+func newStubCoreClient(servicesList *apiV1.ServiceList) *stubCoreClient {
 	if servicesList == nil {
 		servicesList = &apiV1.ServiceList{
 			Items: []apiV1.Service{}}
 	}
 	return &stubCoreClient{
-		servicesList:      servicesList,
-		servicesListError: servicesListError,
-		restClient:        nil,
+		servicesList: servicesList,
+		restClient:   nil,
 	}
 }
 
@@ -74,7 +72,7 @@ type countingRequestSender struct {
 }
 
 func (s *countingRequestSender) send(request *rest.Request) (result []byte, err error) {
-	s.requests += 1
+	s.requests++
 	return nil, nil
 }
 
@@ -89,9 +87,9 @@ func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *Patc
 
 func TestEmptyListOfServicesDoesNothing(t *testing.T) {
 	mockCoreV1Client := newStubCoreClient(&apiV1.ServiceList{
-		Items: []apiV1.Service{}}, nil)
+		Items: []apiV1.Service{}})
 
-	patcher := NewLoadBalancerEmulator(mockCoreV1Client)
+	patcher := newLoadBalancerEmulator(mockCoreV1Client)
 
 	serviceNames, e := patcher.PatchServices()
 
@@ -116,10 +114,9 @@ func TestServicesWithNoLoadbalancerType(t *testing.T) {
 				},
 			},
 		},
-	},
-		nil)
+	})
 
-	patcher := NewLoadBalancerEmulator(mockCoreV1Client)
+	patcher := newLoadBalancerEmulator(mockCoreV1Client)
 
 	serviceNames, e := patcher.PatchServices()
 
@@ -195,7 +192,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 				},
 			},
 		},
-	}, nil)
+	})
 
 	expectedPatches := []*Patch{
 		{
@@ -221,7 +218,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := NewLoadBalancerEmulator(stubCoreV1Client)
+	patcher := newLoadBalancerEmulator(stubCoreV1Client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
@@ -330,12 +327,12 @@ func TestCleanupPatchedIPs(t *testing.T) {
 				},
 			},
 		},
-	}, nil)
+	})
 
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := NewLoadBalancerEmulator(stubCoreV1Client)
+	patcher := newLoadBalancerEmulator(stubCoreV1Client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
@@ -358,7 +355,7 @@ func TestManualTesting_PatchUtil(t *testing.T) {
 	t.SkipNow()
 	clientset, _ := service.K8s.GetClientset()
 	client := clientset.CoreV1()
-	patcher := NewLoadBalancerEmulator(client)
+	patcher := newLoadBalancerEmulator(client)
 	req := patcher.patchConverter.convert(client.RESTClient(), &Patch{
 		Type:         "application/json-patch+json",
 		NameSpace:    "default",

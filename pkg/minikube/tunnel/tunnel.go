@@ -18,20 +18,21 @@ package tunnel
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
-	"os"
 )
 
 type tunnel interface {
-	cleanup() *TunnelStatus
-	updateTunnelStatus() *TunnelStatus
+	cleanup() *Status
+	updateTunnelStatus() *Status
 }
 
-func errorTunnelAlreadyExists(id *TunnelID) error {
+func errorTunnelAlreadyExists(id *ID) error {
 	return fmt.Errorf("there is already a running tunnel for this machine: %s", id)
 }
 
@@ -49,7 +50,7 @@ func newTunnel(machineName string,
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine cluster info: %s", err)
 	}
-	id := TunnelID{
+	id := ID{
 		Route:       route,
 		MachineName: machineName,
 		Pid:         getPid(),
@@ -66,8 +67,8 @@ func newTunnel(machineName string,
 		clusterInspector:     clusterInspector,
 		router:               router,
 		registry:             registry,
-		loadBalancerEmulator: NewLoadBalancerEmulator(v1Core),
-		status: &TunnelStatus{
+		loadBalancerEmulator: newLoadBalancerEmulator(v1Core),
+		status: &Status{
 			TunnelID:      id,
 			MinikubeState: state,
 		},
@@ -82,21 +83,24 @@ type minikubeTunnel struct {
 	//collaborators
 	clusterInspector     *minikubeInspector
 	router               router
-	loadBalancerEmulator *loadBalancerEmulator
+	loadBalancerEmulator loadBalancerEmulator
 	reporter             reporter
 	registry             *persistentRegistry
 
-	status *TunnelStatus
+	status *Status
 }
 
-func (t *minikubeTunnel) cleanup() *TunnelStatus {
+func (t *minikubeTunnel) cleanup() *Status {
 	glog.V(3).Infof("cleaning up %s", t.status.TunnelID.Route)
 	e := t.router.Cleanup(t.status.TunnelID.Route)
 	if e != nil {
-		t.status.RouteError = errors.Errorf("error cleaning up route: %s", e)
+		t.status.RouteError = errors.Errorf("error cleaning up route: %v", e)
 		glog.V(3).Infof(t.status.RouteError.Error())
 	} else {
-		t.registry.Remove(t.status.TunnelID.Route)
+		e = t.registry.Remove(t.status.TunnelID.Route)
+		if e != nil {
+			glog.V(3).Infof("error removing route from registry: %v", e)
+		}
 	}
 	if t.status.MinikubeState == Running {
 		t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.loadBalancerEmulator.Cleanup()
@@ -104,7 +108,7 @@ func (t *minikubeTunnel) cleanup() *TunnelStatus {
 	return t.status
 }
 
-func (t *minikubeTunnel) updateTunnelStatus() *TunnelStatus {
+func (t *minikubeTunnel) updateTunnelStatus() *Status {
 	glog.V(3).Info("updating tunnel status...")
 	t.status.MinikubeState, _, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
 	//TODO(balintp): clean this up to be more self contained

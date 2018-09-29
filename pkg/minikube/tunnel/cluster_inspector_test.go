@@ -19,13 +19,14 @@ package tunnel
 import (
 	"testing"
 
+	"net"
+	"reflect"
+	"strings"
+
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
-	"net"
-	"reflect"
-	"strings"
 )
 
 func TestAPIError(t *testing.T) {
@@ -46,12 +47,10 @@ func TestAPIError(t *testing.T) {
 }
 
 func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
-	machineName := "testmachine"
-
 	machineAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				machineName: {
+				"testmachine": {
 					Driver: &tests.MockDriver{
 						CurrentState: state.Running,
 						IP:           "1.2.3.4",
@@ -69,7 +68,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 		},
 	}
 	inspector := &minikubeInspector{
-		machineAPI, configLoader, machineName,
+		machineAPI, configLoader, "testmachine",
 	}
 
 	s, r, e := inspector.getStateAndRoute()

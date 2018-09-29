@@ -18,13 +18,14 @@ package tunnel
 
 import (
 	"fmt"
+	"net"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"net"
 )
 
 type minikubeInspector struct {

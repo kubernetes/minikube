@@ -153,16 +153,15 @@ func (router *osRouter) Cleanup(route *Route) error {
 		return nil
 	}
 	command := exec.Command("sudo", "route", "-n", "delete", route.DestCIDR.String())
-	if stdInAndOut, e := command.CombinedOutput(); e != nil {
+	stdInAndOut, e := command.CombinedOutput()
+	if e != nil {
 		return e
-	} else {
-		message := fmt.Sprintf("%s", stdInAndOut)
-		glog.V(4).Infof("%s", message)
-		re := regexp.MustCompile(fmt.Sprintf("^delete net ([^:]*)$"))
-		if !re.MatchString(message) {
-			return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
-		} else {
-			return nil
-		}
 	}
+	message := fmt.Sprintf("%s", stdInAndOut)
+	glog.V(4).Infof("%s", message)
+	re := regexp.MustCompile(fmt.Sprintf("^delete net ([^:]*)$"))
+	if !re.MatchString(message) {
+		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
+	}
+	return nil
 }

@@ -18,8 +18,9 @@ package tunnel
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 //router manages the routing table on the host, implementations should cater for OS specific methods
