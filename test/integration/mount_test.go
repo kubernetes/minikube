@@ -41,13 +41,18 @@ func testMounting(t *testing.T) {
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
-		t.Fatalf("Unexpected error while creating tempDir: %s", err)
+		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
 	mountCmd := fmt.Sprintf("mount %s:/mount-9p", tempDir)
 	cmd := minikubeRunner.RunDaemon(mountCmd)
-	defer cmd.Process.Kill()
+	defer func() {
+		err := cmd.Process.Kill()
+		if err != nil {
+			t.Logf("Failed to kill mount command: %v", err)
+		}
+	}()
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox-mount"
@@ -71,7 +76,11 @@ func testMounting(t *testing.T) {
 		}
 		return nil
 	}
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
+	defer func() {
+		if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", podPath}); err != nil {
+			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
+		}
+	}()
 
 	if err := util.Retry(t, setupTest, 5*time.Second, 40); err != nil {
 		t.Fatal("mountTest failed with error:", err)
@@ -79,11 +88,11 @@ func testMounting(t *testing.T) {
 
 	client, err := pkgutil.GetClient()
 	if err != nil {
-		t.Fatalf("getting kubernetes client: %s", err)
+		t.Fatalf("getting kubernetes client: %v", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Fatalf("Error waiting for busybox mount pod to be up: %s", err)
+		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
 	}
 
 	mountTest := func() error {
