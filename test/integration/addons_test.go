@@ -37,7 +37,7 @@ func testAddons(t *testing.T) {
 	t.Parallel()
 	client, err := pkgutil.GetClient()
 	if err != nil {
-		t.Fatalf("Could not get kubernetes client: %s", err)
+		t.Fatalf("Could not get kubernetes client: %v", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
@@ -65,7 +65,7 @@ func testDashboard(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkDashboard, 2*time.Second, 60); err != nil {
-		t.Fatalf("error checking dashboard URL: %s", err)
+		t.Fatalf("error checking dashboard URL: %v", err)
 	}
 
 	if u.Scheme != "http" {
@@ -87,25 +87,25 @@ func testIngressController(t *testing.T) {
 
 	minikubeRunner.RunCommand("addons enable ingress", true)
 	if err := util.WaitForIngressControllerRunning(t); err != nil {
-		t.Fatalf("waiting for ingress-controller to be up: %s", err)
+		t.Fatalf("waiting for ingress-controller to be up: %v", err)
 	}
 
 	if err := util.WaitForIngressDefaultBackendRunning(t); err != nil {
-		t.Fatalf("waiting for default-http-backend to be up: %s", err)
+		t.Fatalf("waiting for default-http-backend to be up: %v", err)
 	}
 
 	ingressPath, _ := filepath.Abs("testdata/nginx-ing.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
-		t.Fatalf("creating nginx ingress resource: %s", err)
+		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
 	podPath, _ := filepath.Abs("testdata/nginx-pod-svc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("creating nginx ingress resource: %s", err)
+		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
 	if err := util.WaitForNginxRunning(t); err != nil {
-		t.Fatalf("waiting for nginx to be up: %s", err)
+		t.Fatalf("waiting for nginx to be up: %v", err)
 	}
 
 	checkIngress := func() error {
@@ -122,8 +122,13 @@ func testIngressController(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", ingressPath})
+	defer func() {
+		for _, p := range []string{podPath, ingressPath} {
+			if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", p}); err != nil {
+				t.Logf("delete -f %s failed: %v\noutput: %s\n", p, err, out)
+			}
+		}
+	}()
 	minikubeRunner.RunCommand("addons disable ingress", true)
 }
 
