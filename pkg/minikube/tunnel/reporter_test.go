@@ -96,7 +96,6 @@ func TestReporter(t *testing.T) {
 				t.Errorf(`%s [FAIL].
 Expected: "%s" 
 Got:	  "%s"`, tc.name, tc.expectedOutput, out.output)
-				t.Fail()
 			}
 		})
 	}
@@ -119,7 +118,6 @@ Got:	  "%s"`, tc.name, tc.expectedOutput, out.output)
 		t.Errorf(`Deduplication test [FAIL].
 Expected: "%s" 
 Got:	  "%s"`, expectedOutput, out.output)
-		t.Fail()
 	}
 }
 

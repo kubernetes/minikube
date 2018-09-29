@@ -69,9 +69,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		glog.Infoln("Machine does not exist... provisioning new machine")
 		glog.Infof("Provisioning machine with config: %+v", config)
 		return createHost(api, config)
-	} else {
-		glog.Infoln("Skipping create...Using existing machine configuration")
 	}
+
+	glog.Infoln("Skipping create...Using existing machine configuration")
 
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {

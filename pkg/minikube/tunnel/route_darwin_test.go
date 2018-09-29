@@ -41,7 +41,6 @@ func TestDarwinRouteFailsOnConflictIntegrationTest(t *testing.T) {
 	err := (&osRouter{}).EnsureRouteIsAdded(cfg)
 	if err == nil {
 		t.Errorf("add should have error, but it is nil")
-		t.Fail()
 	}
 }
 
@@ -58,13 +57,11 @@ func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
 	err := (&osRouter{}).EnsureRouteIsAdded(cfg)
 	if err != nil {
 		t.Errorf("add error: %s", err)
-		t.Fail()
 	}
 
 	err = (&osRouter{}).EnsureRouteIsAdded(cfg)
 	if err != nil {
 		t.Errorf("add error: %s", err)
-		t.Fail()
 	}
 
 	cleanRoute(t, "10.96.0.0/12")
@@ -85,28 +82,26 @@ func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 	err := (&osRouter{}).Cleanup(cfg)
 	if err != nil {
 		t.Errorf("cleanup failed with %s", err)
-		t.Fail()
 	}
 	err = (&osRouter{}).Cleanup(cfg)
 	if err != nil {
 		t.Errorf("cleanup failed with %s", err)
-		t.Fail()
 	}
 }
 
 func addRoute(t *testing.T, cidr string, gw string) {
 	command := exec.Command("sudo", "route", "-n", "add", cidr, gw)
-	_, e := command.CombinedOutput()
-	if e != nil {
-		t.Logf("add Route error (should be ok): %s", e)
+	_, err := command.CombinedOutput()
+	if err != nil {
+		t.Logf("add Route error (should be ok): %s", err)
 	}
 }
 
 func cleanRoute(t *testing.T, cidr string) {
 	command := exec.Command("sudo", "route", "-n", "delete", cidr)
-	_, e := command.CombinedOutput()
-	if e != nil {
-		t.Logf("cleanup error (should be ok): %s", e)
+	_, err := command.CombinedOutput()
+	if err != nil {
+		t.Logf("cleanup error (should be ok): %s", err)
 	}
 }
 
@@ -128,7 +123,6 @@ func TestCIDRPadding(t *testing.T) {
 			cidr := (&osRouter{}).padCIDR(test.inputCIDR)
 			if cidr != test.paddedCIDR {
 				t.Errorf("%s got %s", testName, cidr)
-				t.Fail()
 			}
 		})
 	}

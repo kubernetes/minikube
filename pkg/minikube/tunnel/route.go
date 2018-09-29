@@ -47,9 +47,9 @@ type routingTableLine struct {
 }
 
 func isValidToAddOrDelete(router router, r *Route) (bool, error) {
-	exists, conflict, overlaps, e := router.Inspect(r)
-	if e != nil {
-		return false, e
+	exists, conflict, overlaps, err := router.Inspect(r)
+	if err != nil {
+		return false, err
 	}
 
 	if len(overlaps) > 0 {

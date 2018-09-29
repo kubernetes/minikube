@@ -37,7 +37,6 @@ func TestLinuxRouteFailsOnConflictIntegrationTest(t *testing.T) {
 		}})
 	if err == nil {
 		t.Errorf("add should have error, but it is nil")
-		t.Fail()
 	}
 	cleanRoute(t, "10.96.0.0/12")
 }
@@ -56,13 +55,11 @@ func TestLinuxRouteIdempotentIntegrationTest(t *testing.T) {
 	err := r.EnsureRouteIsAdded(route)
 	if err != nil {
 		t.Errorf("add error: %s", err)
-		t.Fail()
 	}
 
 	err = r.EnsureRouteIsAdded(route)
 	if err != nil {
 		t.Errorf("add error: %s", err)
-		t.Fail()
 	}
 
 	cleanRoute(t, "10.96.0.0/12")
@@ -84,12 +81,10 @@ func TestLinuxRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 	err := r.Cleanup(route)
 	if err != nil {
 		t.Errorf("cleanup failed: %s", err)
-		t.Fail()
 	}
 	err = r.Cleanup(route)
 	if err != nil {
 		t.Errorf("cleanup failed: %s", err)
-		t.Fail()
 	}
 }
 
@@ -121,9 +116,9 @@ Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
 
 func addRoute(t *testing.T, cidr string, gw string) {
 	command := exec.Command("sudo", "ip", "route", "add", cidr, "via", gw)
-	sout, e := command.CombinedOutput()
-	if e != nil {
-		t.Logf("assertion add Route error (should be ok): %s, error: %s", sout, e)
+	sout, err := command.CombinedOutput()
+	if err != nil {
+		t.Logf("assertion add Route error (should be ok): %s, error: %s", sout, err)
 	} else {
 		t.Logf("assertion - successfully added %s -> %s", cidr, gw)
 	}
@@ -131,9 +126,9 @@ func addRoute(t *testing.T, cidr string, gw string) {
 
 func cleanRoute(t *testing.T, cidr string) {
 	command := exec.Command("sudo", "ip", "route", "delete", cidr)
-	sout, e := command.CombinedOutput()
-	if e != nil {
-		t.Logf("integration test cleanup error (should be ok): %s, error: %s", sout, e)
+	sout, err := command.CombinedOutput()
+	if err != nil {
+		t.Logf("integration test cleanup error (should be ok): %s, error: %s", sout, err)
 	} else {
 		t.Logf("integration test successfully cleaned %s", cidr)
 	}

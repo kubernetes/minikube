@@ -18,16 +18,17 @@ package integration
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/labels"
-	commonutil "k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/test/integration/util"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/test/integration/util"
 )
 
 func testTunnel(t *testing.T) {
@@ -81,17 +82,17 @@ func testTunnel(t *testing.T) {
 
 	httpClient := http.DefaultClient
 	httpClient.Timeout = 1 * time.Second
-	resp, e := httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+	resp, err := httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
 
-	if e != nil {
-		t.Fatalf("error reading from nginx at address(%s): %s", nginxIP, e)
+	if err != nil {
+		t.Fatalf("error reading from nginx at address(%s): %s", nginxIP, err)
 	}
 
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	if e != nil || len(body) == 0 {
-		t.Fatalf("error reading body from nginx at address(%s): error: %s, len bytes read: %d", nginxIP, e, len(body))
+	if err != nil || len(body) == 0 {
+		t.Fatalf("error reading body from nginx at address(%s): error: %s, len bytes read: %d", nginxIP, err, len(body))
 	}
 
 	responseBody := fmt.Sprintf("%s", body)

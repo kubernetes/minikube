@@ -42,18 +42,18 @@ func NewManager() *Manager {
 	return &Manager{
 		delay: 5 * time.Second,
 		registry: &persistentRegistry{
-			fileName: constants.GetTunnelRegistryFile(),
+			path: constants.TunnelRegistryPath(),
 		},
 		router: &osRouter{},
 	}
 }
 func (mgr *Manager) StartTunnel(ctx context.Context, machineName string,
 	machineAPI libmachine.API,
-	configLoader config.ConfigLoader,
+	configLoader config.Loader,
 	v1Core v1.CoreV1Interface) (done chan bool, err error) {
-	tunnel, e := newTunnel(machineName, machineAPI, configLoader, v1Core, mgr.registry, mgr.router)
-	if e != nil {
-		return nil, fmt.Errorf("error creating tunnel: %s", e)
+	tunnel, err := newTunnel(machineName, machineAPI, configLoader, v1Core, mgr.registry, mgr.router)
+	if err != nil {
+		return nil, fmt.Errorf("error creating tunnel: %s", err)
 	}
 	return mgr.startTunnel(ctx, tunnel)
 
@@ -118,25 +118,25 @@ func (mgr *Manager) cleanup(t tunnel) *Status {
 }
 
 func (mgr *Manager) CleanupNotRunningTunnels() error {
-	tunnels, e := mgr.registry.List()
-	if e != nil {
-		return fmt.Errorf("error listing tunnels from registry: %s", e)
+	tunnels, err := mgr.registry.List()
+	if err != nil {
+		return fmt.Errorf("error listing tunnels from registry: %s", err)
 	}
 
 	for _, tunnel := range tunnels {
-		isRunning, e := checkIfRunning(tunnel.Pid)
+		isRunning, err := checkIfRunning(tunnel.Pid)
 		glog.Infof("%v is running: %t", tunnel, isRunning)
-		if e != nil {
-			return fmt.Errorf("error checking if tunnel is running: %s", e)
+		if err != nil {
+			return fmt.Errorf("error checking if tunnel is running: %s", err)
 		}
 		if !isRunning {
-			e = mgr.router.Cleanup(tunnel.Route)
-			if e != nil {
-				return e
+			err = mgr.router.Cleanup(tunnel.Route)
+			if err != nil {
+				return err
 			}
-			e = mgr.registry.Remove(tunnel.Route)
-			if e != nil {
-				return e
+			err = mgr.registry.Remove(tunnel.Route)
+			if err != nil {
+				return err
 			}
 		}
 	}

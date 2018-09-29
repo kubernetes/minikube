@@ -27,106 +27,110 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-//interface exposed for testing what requests are sent through the k8s REST client
+//requestSender is an interface exposed for testing what requests are sent through the k8s REST client
 type requestSender interface {
-	send(request *rest.Request) (result []byte, err error)
+	send(request *rest.Request) ([]byte, error)
 }
 
-//interface exposed for testing what patches are sent through the k8s REST client
+//patchConverter is an interface exposed for testing what patches are sent through the k8s REST client
 type patchConverter interface {
 	convert(restClient rest.Interface, patch *Patch) *rest.Request
 }
 
-//the main struct for emulating the loadbalancer behavior. it sets the ingress to the cluster IP
+//loadBalancerEmulator is the main struct for emulating the loadbalancer behavior. it sets the ingress to the cluster IP
 type loadBalancerEmulator struct {
 	coreV1Client   v1.CoreV1Interface
 	requestSender  requestSender
 	patchConverter patchConverter
 }
 
-func (l *loadBalancerEmulator) PatchServices() (managedServices []string, err error) {
-	managedServices, err = l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
+func (l *loadBalancerEmulator) PatchServices() ([]string, error) {
+	return l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 		return l.updateService(restClient, svc)
 	})
-	return
 }
 
-func (l *loadBalancerEmulator) Cleanup() (managedServices []string, err error) {
-	managedServices, err = l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
+func (l *loadBalancerEmulator) Cleanup() ([]string, error) {
+	return l.applyOnLBServices(func(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 		return l.cleanupService(restClient, svc)
 	})
-	return
 }
 
 func (l *loadBalancerEmulator) applyOnLBServices(action func(restClient rest.Interface, svc core_v1.Service) ([]byte, error)) ([]string, error) {
 	services := l.coreV1Client.Services("")
-	serviceList, e := services.List(metav1.ListOptions{})
-	if e != nil {
-		return nil, e
+	serviceList, err := services.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
 	}
 	restClient := l.coreV1Client.RESTClient()
 
 	var managedServices []string
 
 	for _, svc := range serviceList.Items {
-		if svc.Spec.Type == "LoadBalancer" {
-			glog.Infof("%s is type LoadBalancer.", svc.Name)
-			managedServices = append(managedServices, svc.Name)
-			result, err := action(restClient, svc)
-			if err != nil {
-				glog.Errorf("%s", result)
-				glog.Errorf("error patching service %s/%s: %s", svc.Namespace, svc.Name, err)
-				continue
-			}
-		} else {
+		if svc.Spec.Type != "LoadBalancer" {
 			glog.V(3).Infof("%s is not type LoadBalancer, skipping.", svc.Name)
+			continue
 		}
+		glog.Infof("%s is type LoadBalancer.", svc.Name)
+		managedServices = append(managedServices, svc.Name)
+		result, err := action(restClient, svc)
+		if err != nil {
+			glog.Errorf("%s", result)
+			glog.Errorf("error patching service %s/%s: %s", svc.Namespace, svc.Name, err)
+			continue
+		}
+
 	}
 	return managedServices, nil
 }
-func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
+func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 	clusterIP := svc.Spec.ClusterIP
 	ingresses := svc.Status.LoadBalancer.Ingress
-	if len(ingresses) == 0 || (len(ingresses) == 1 && ingresses[0].IP != clusterIP) {
-		glog.V(3).Infof("[%s] setting ClusterIP as the LoadBalancer Ingress", svc.Name)
-		jsonPatch := fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, clusterIP)
-		patch := &Patch{
-			Type:         k8s_types.JSONPatchType,
-			ResourceName: svc.Name,
-			NameSpaceSet: true,
-			NameSpace:    svc.Namespace,
-			Subresource:  "status",
-			Resource:     "services",
-			BodyContent:  jsonPatch,
-		}
-		request := l.patchConverter.convert(restClient, patch)
-		result, err = l.requestSender.send(request)
-		glog.Infof("Patched %s with IP %s", svc.Name, clusterIP)
-		return
+	if len(ingresses) == 1 && ingresses[0].IP == clusterIP {
+		return nil, nil
 	}
-	return nil, nil
+	glog.V(3).Infof("[%s] setting ClusterIP as the LoadBalancer Ingress", svc.Name)
+	jsonPatch := fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, clusterIP)
+	patch := &Patch{
+		Type:         k8s_types.JSONPatchType,
+		ResourceName: svc.Name,
+		NameSpaceSet: true,
+		NameSpace:    svc.Namespace,
+		Subresource:  "status",
+		Resource:     "services",
+		BodyContent:  jsonPatch,
+	}
+	request := l.patchConverter.convert(restClient, patch)
+	result, err := l.requestSender.send(request)
+	if err != nil {
+		glog.Infof("Patched %s with IP %s", svc.Name, clusterIP)
+	} else {
+		glog.Errorf("error patching %s with IP %s: %s", svc.Name, clusterIP, err)
+	}
+	return result, err
 }
 
-func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc core_v1.Service) (result []byte, err error) {
+func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc core_v1.Service) ([]byte, error) {
 	ingresses := svc.Status.LoadBalancer.Ingress
-	if len(ingresses) > 0 {
-		glog.V(3).Infof("[%s] cleanup: unset load balancer ingress", svc.Name)
-		jsonPatch := `[{"op": "remove", "path": "/status/loadBalancer/ingress" }]`
-		patch := &Patch{
-			Type:         k8s_types.JSONPatchType,
-			ResourceName: svc.Name,
-			NameSpaceSet: true,
-			NameSpace:    svc.Namespace,
-			Subresource:  "status",
-			Resource:     "services",
-			BodyContent:  jsonPatch,
-		}
-		request := l.patchConverter.convert(restClient, patch)
-		result, err = l.requestSender.send(request)
-		glog.Infof("Removed load balancer ingress from %s.", svc.Name)
-		return
+	if len(ingresses) == 0 {
+		return nil, nil
 	}
-	return nil, nil
+	glog.V(3).Infof("[%s] cleanup: unset load balancer ingress", svc.Name)
+	jsonPatch := `[{"op": "remove", "path": "/status/loadBalancer/ingress" }]`
+	patch := &Patch{
+		Type:         k8s_types.JSONPatchType,
+		ResourceName: svc.Name,
+		NameSpaceSet: true,
+		NameSpace:    svc.Namespace,
+		Subresource:  "status",
+		Resource:     "services",
+		BodyContent:  jsonPatch,
+	}
+	request := l.patchConverter.convert(restClient, patch)
+	result, err := l.requestSender.send(request)
+	glog.Infof("Removed load balancer ingress from %s.", svc.Name)
+	return result, err
+
 }
 
 func newLoadBalancerEmulator(corev1Client v1.CoreV1Interface) loadBalancerEmulator {
@@ -139,8 +143,8 @@ func newLoadBalancerEmulator(corev1Client v1.CoreV1Interface) loadBalancerEmulat
 
 type defaultPatchConverter struct{}
 
-func (c *defaultPatchConverter) convert(restClient rest.Interface, patch *Patch) (request *rest.Request) {
-	request = restClient.Patch(patch.Type)
+func (c *defaultPatchConverter) convert(restClient rest.Interface, patch *Patch) *rest.Request {
+	request := restClient.Patch(patch.Type)
 	request.Name(patch.ResourceName)
 	request.Resource(patch.Resource)
 	request.SubResource(patch.Subresource)
@@ -148,11 +152,11 @@ func (c *defaultPatchConverter) convert(restClient rest.Interface, patch *Patch)
 		request.Namespace(patch.NameSpace)
 	}
 	request.Body([]byte(patch.BodyContent))
-	return
+	return request
 }
 
 type defaultRequestSender struct{}
 
-func (r *defaultRequestSender) send(request *rest.Request) (result []byte, err error) {
+func (r *defaultRequestSender) send(request *rest.Request) ([]byte, error) {
 	return request.Do().Raw()
 }

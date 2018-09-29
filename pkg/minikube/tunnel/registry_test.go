@@ -60,10 +60,10 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			name:     "Calling List on non-existent registry file should return empty list",
 			fileName: "nonexistent.txt",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				info, e := reg.List()
+				info, err := reg.List()
 				expectedInfo := []*ID{}
-				if !reflect.DeepEqual(info, expectedInfo) || e != nil {
-					t.Errorf("expected %s, nil error, got %s, %s", expectedInfo, info, e)
+				if !reflect.DeepEqual(info, expectedInfo) || err != nil {
+					t.Errorf("expected %s, nil error, got %s, %s", expectedInfo, info, err)
 				}
 			},
 		},
@@ -81,20 +81,20 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			name:     "Calling Register on non-existent registry file should create file",
 			fileName: "nonexistent.txt",
 			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
-				if e != nil {
-					t.Errorf("expected no error, got %s", e)
+				err := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
+				if err != nil {
+					t.Errorf("expected no error, got %s", err)
 				}
 				fileName := "nonexistent.txt"
-				f, e := os.Open(fileName)
-				if e != nil {
-					t.Errorf("expected file to exist, got: %s", e)
+				f, err := os.Open(fileName)
+				if err != nil {
+					t.Errorf("expected file to exist, got: %s", err)
 					return
 				}
 				f.Close()
-				e = os.Remove("nonexistent.txt")
-				if e != nil {
-					t.Errorf("error removing nonexistent.txt: %s", e)
+				err = os.Remove("nonexistent.txt")
+				if err != nil {
+					t.Errorf("error removing nonexistent.txt: %s", err)
 				}
 			},
 		},
@@ -248,7 +248,7 @@ func TestPersistentRegistryOperations(t *testing.T) {
 			}
 
 			registry := &persistentRegistry{
-				fileName: fileName,
+				path: fileName,
 			}
 			if tc.setup != nil {
 				tc.setup(t, registry)
@@ -269,7 +269,7 @@ func createTestRegistry(t *testing.T) (reg *persistentRegistry, cleanup func()) 
 	}
 
 	registry := &persistentRegistry{
-		fileName: f.Name(),
+		path: f.Name(),
 	}
 	return registry, func() { os.Remove(f.Name()) }
 }

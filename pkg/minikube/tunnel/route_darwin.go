@@ -27,9 +27,9 @@ import (
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
-	exists, e := isValidToAddOrDelete(router, route)
-	if e != nil {
-		return e
+	exists, err := isValidToAddOrDelete(router, route)
+	if err != nil {
+		return err
 	}
 	if exists {
 		return nil
@@ -41,24 +41,24 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
-	stdInAndOut, e := command.CombinedOutput()
+	stdInAndOut, err := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	re := regexp.MustCompile(fmt.Sprintf("add net (.*): gateway %s\n", gatewayIP))
 	if !re.MatchString(message) {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
 	glog.Infof("%s", stdInAndOut)
-	if e != nil {
-		return e
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
 	command := exec.Command("netstat", "-nr", "-f", "inet")
-	stdInAndOut, e := command.CombinedOutput()
-	if e != nil {
-		err = fmt.Errorf("error running '%v': %s", command, e)
+	stdInAndOut, err := command.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("error running '%v': %s", command, err)
 		return
 	}
 	routeTableString := fmt.Sprintf("%s", stdInAndOut)
@@ -85,26 +85,27 @@ func (router *osRouter) parseTable(table string) routingTable {
 		}
 		fields := strings.Fields(line)
 
-		if len(fields) > 2 {
-			dstCIDRString := router.padCIDR(fields[0])
-			gatewayIPString := fields[1]
-			gatewayIP := net.ParseIP(gatewayIPString)
+		if len(fields) <= 2 {
+			continue
+		}
+		dstCIDRString := router.padCIDR(fields[0])
+		gatewayIPString := fields[1]
+		gatewayIP := net.ParseIP(gatewayIPString)
 
-			_, ipNet, e := net.ParseCIDR(dstCIDRString)
-			if e != nil {
-				glog.V(4).Infof("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
-			} else if gatewayIP == nil {
-				glog.V(4).Infof("skipping line: can't parse IP from routing table: %s", gatewayIPString)
-			} else {
-				tableLine := routingTableLine{
-					route: &Route{
-						DestCIDR: ipNet,
-						Gateway:  gatewayIP,
-					},
-					line: line,
-				}
-				t = append(t, tableLine)
+		_, ipNet, err := net.ParseCIDR(dstCIDRString)
+		if err != nil {
+			glog.V(4).Infof("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
+		} else if gatewayIP == nil {
+			glog.V(4).Infof("skipping line: can't parse IP from routing table: %s", gatewayIPString)
+		} else {
+			tableLine := routingTableLine{
+				route: &Route{
+					DestCIDR: ipNet,
+					Gateway:  gatewayIP,
+				},
+				line: line,
 			}
+			t = append(t, tableLine)
 		}
 	}
 
@@ -145,21 +146,21 @@ func (router *osRouter) padCIDR(origCIDR string) string {
 
 func (router *osRouter) Cleanup(route *Route) error {
 	glog.V(3).Infof("Cleaning up %s\n", route)
-	exists, e := isValidToAddOrDelete(router, route)
-	if e != nil {
-		return e
+	exists, err := isValidToAddOrDelete(router, route)
+	if err != nil {
+		return err
 	}
 	if !exists {
 		return nil
 	}
 	command := exec.Command("sudo", "route", "-n", "delete", route.DestCIDR.String())
-	stdInAndOut, e := command.CombinedOutput()
-	if e != nil {
-		return e
+	stdInAndOut, err := command.CombinedOutput()
+	if err != nil {
+		return err
 	}
 	message := fmt.Sprintf("%s", stdInAndOut)
 	glog.V(4).Infof("%s", message)
-	re := regexp.MustCompile(fmt.Sprintf("^delete net ([^:]*)$"))
+	re := regexp.MustCompile("^delete net ([^:]*)$")
 	if !re.MatchString(message) {
 		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
 	}

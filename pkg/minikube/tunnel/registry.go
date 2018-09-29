@@ -47,20 +47,20 @@ func (t *ID) String() string {
 }
 
 type persistentRegistry struct {
-	fileName string
+	path string
 }
 
 func (r *persistentRegistry) IsAlreadyDefinedAndRunning(tunnel *ID) (*ID, error) {
-	tunnels, e := r.List()
-	if e != nil {
-		return nil, fmt.Errorf("failed to list: %s", e)
+	tunnels, err := r.List()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list: %s", err)
 	}
 
 	for _, t := range tunnels {
 		if t.Route.Equal(tunnel.Route) {
-			isRunning, e := checkIfRunning(t.Pid)
-			if e != nil {
-				return nil, fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, e)
+			isRunning, err := checkIfRunning(t.Pid)
+			if err != nil {
+				return nil, fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, err)
 			}
 			if isRunning {
 				return t, nil
@@ -76,17 +76,17 @@ func (r *persistentRegistry) Register(tunnel *ID) error {
 		return errors.New("tunnel.Route should not be nil")
 	}
 
-	tunnels, e := r.List()
-	if e != nil {
-		return fmt.Errorf("failed to list: %s", e)
+	tunnels, err := r.List()
+	if err != nil {
+		return fmt.Errorf("failed to list: %s", err)
 	}
 
 	alreadyExists := false
 	for i, t := range tunnels {
 		if t.Route.Equal(tunnel.Route) {
-			isRunning, e := checkIfRunning(t.Pid)
-			if e != nil {
-				return fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, e)
+			isRunning, err := checkIfRunning(t.Pid)
+			if err != nil {
+				return fmt.Errorf("error checking whether conflicting tunnel (%v) is running: %s", t, err)
 			}
 			if isRunning {
 				return errorTunnelAlreadyExists(t)
@@ -100,22 +100,22 @@ func (r *persistentRegistry) Register(tunnel *ID) error {
 		tunnels = append(tunnels, tunnel)
 	}
 
-	bytes, e := json.Marshal(tunnels)
-	if e != nil {
-		return fmt.Errorf("error marshalling json %s", e)
+	bytes, err := json.Marshal(tunnels)
+	if err != nil {
+		return fmt.Errorf("error marshalling json %s", err)
 	}
 
 	glog.V(5).Infof("json marshalled: %v, %s\n", tunnels, bytes)
 
-	f, e := os.OpenFile(r.fileName, os.O_RDWR|os.O_TRUNC, 0666)
-	if e != nil {
-		if os.IsNotExist(e) {
-			f, e = os.Create(r.fileName)
-			if e != nil {
-				return fmt.Errorf("error creating registry file (%s): %s", r.fileName, e)
+	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0600)
+	if err != nil {
+		if os.IsNotExist(err) {
+			f, err = os.Create(r.path)
+			if err != nil {
+				return fmt.Errorf("error creating registry file (%s): %s", r.path, err)
 			}
 		} else {
-			return e
+			return err
 		}
 	}
 	defer f.Close()
@@ -130,9 +130,9 @@ func (r *persistentRegistry) Register(tunnel *ID) error {
 
 func (r *persistentRegistry) Remove(route *Route) error {
 	glog.V(3).Infof("removing tunnel from registry: %s", route)
-	tunnels, e := r.List()
-	if e != nil {
-		return e
+	tunnels, err := r.List()
+	if err != nil {
+		return err
 	}
 	idx := -1
 	for i := range tunnels {
@@ -146,29 +146,29 @@ func (r *persistentRegistry) Remove(route *Route) error {
 	}
 	tunnels = append(tunnels[:idx], tunnels[idx+1:]...)
 	glog.V(4).Infof("tunnels after remove: %s", tunnels)
-	f, e := os.OpenFile(r.fileName, os.O_RDWR|os.O_TRUNC, 0666)
-	if e != nil {
-		return fmt.Errorf("error removing tunnel %s", e)
+	f, err := os.OpenFile(r.path, os.O_RDWR|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("error removing tunnel %s", err)
 	}
 	defer f.Close()
 
 	var bytes []byte
-	bytes, e = json.Marshal(tunnels)
-	if e != nil {
-		return fmt.Errorf("error removing tunnel %s", e)
+	bytes, err = json.Marshal(tunnels)
+	if err != nil {
+		return fmt.Errorf("error removing tunnel %s", err)
 	}
-	n, e := f.Write(bytes)
-	if n < len(bytes) || e != nil {
-		return fmt.Errorf("error removing tunnel %s", e)
+	n, err := f.Write(bytes)
+	if n < len(bytes) || err != nil {
+		return fmt.Errorf("error removing tunnel %s", err)
 	}
 
 	return nil
 }
 func (r *persistentRegistry) List() ([]*ID, error) {
-	f, e := os.Open(r.fileName)
-	if e != nil {
-		if !os.IsNotExist(e) {
-			return nil, e
+	f, err := os.Open(r.path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
 		}
 		return []*ID{}, nil
 	}
@@ -177,8 +177,8 @@ func (r *persistentRegistry) List() ([]*ID, error) {
 	if len(byteValue) == 0 {
 		return tunnels, nil
 	}
-	if e = json.Unmarshal(byteValue, &tunnels); e != nil {
-		return nil, e
+	if err = json.Unmarshal(byteValue, &tunnels); err != nil {
+		return nil, err
 	}
 
 	return tunnels, nil

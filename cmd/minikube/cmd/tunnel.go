@@ -19,14 +19,15 @@ package cmd
 import (
 	"context"
 	"flag"
+	"os"
+	"os/signal"
+
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel"
-	"os"
-	"os/signal"
 )
 
 var cleanup bool
@@ -52,18 +53,15 @@ var tunnelCmd = &cobra.Command{
 		}
 
 		glog.Infof("Creating docker machine client...")
-		api, e := machine.NewAPIClient()
-		if e != nil {
-			glog.Fatalf("error creating dockermachine client: %s", e)
+		api, err := machine.NewAPIClient()
+		if err != nil {
+			glog.Fatalf("error creating dockermachine client: %s", err)
 		}
-		machineName := config.GetMachineName()
-
 		glog.Infof("Creating k8s client...")
-		clientset, e := service.K8s.GetClientset()
-		if e != nil {
-			glog.Fatalf("error creating K8S clientset: %s", e)
+		clientset, err := service.K8s.GetClientset()
+		if err != nil {
+			glog.Fatalf("error creating K8S clientset: %s", err)
 		}
-		v1 := clientset.CoreV1()
 
 		ctrlC := make(chan os.Signal, 1)
 		signal.Notify(ctrlC, os.Interrupt)
@@ -73,9 +71,9 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		done, e := manager.StartTunnel(ctx, machineName, api, config.Loader, v1)
-		if e != nil {
-			glog.Fatalf("error starting tunnel: %s", e)
+		done, err := manager.StartTunnel(ctx, config.GetMachineName(), api, config.DefaultLoader, clientset.CoreV1())
+		if err != nil {
+			glog.Fatalf("error starting tunnel: %s", err)
 		}
 		<-done
 	},

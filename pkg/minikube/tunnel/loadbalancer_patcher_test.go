@@ -17,17 +17,15 @@ limitations under the License.
 package tunnel
 
 import (
-	"fmt"
 	"testing"
+
+	"reflect"
 
 	apiV1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/rest"
-	"k8s.io/minikube/pkg/minikube/service"
-
-	"reflect"
 )
 
 type stubCoreClient struct {
@@ -86,22 +84,21 @@ func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *Patc
 }
 
 func TestEmptyListOfServicesDoesNothing(t *testing.T) {
-	mockCoreV1Client := newStubCoreClient(&apiV1.ServiceList{
+	client := newStubCoreClient(&apiV1.ServiceList{
 		Items: []apiV1.Service{}})
 
-	patcher := newLoadBalancerEmulator(mockCoreV1Client)
+	patcher := newLoadBalancerEmulator(client)
 
-	serviceNames, e := patcher.PatchServices()
+	serviceNames, err := patcher.PatchServices()
 
-	if len(serviceNames) > 0 || e != nil {
-		t.Errorf("Expected: [], nil\n Got: %v, %s", serviceNames, e)
-		t.Fail()
+	if len(serviceNames) > 0 || err != nil {
+		t.Errorf("Expected: [], nil\n Got: %v, %s", serviceNames, err)
 	}
 
 }
 
 func TestServicesWithNoLoadbalancerType(t *testing.T) {
-	mockCoreV1Client := newStubCoreClient(&apiV1.ServiceList{
+	client := newStubCoreClient(&apiV1.ServiceList{
 		Items: []apiV1.Service{
 			{
 				Spec: apiV1.ServiceSpec{
@@ -116,19 +113,18 @@ func TestServicesWithNoLoadbalancerType(t *testing.T) {
 		},
 	})
 
-	patcher := newLoadBalancerEmulator(mockCoreV1Client)
+	patcher := newLoadBalancerEmulator(client)
 
-	serviceNames, e := patcher.PatchServices()
+	serviceNames, err := patcher.PatchServices()
 
-	if len(serviceNames) > 0 || e != nil {
-		t.Errorf("Expected: [], nil\n Got: %v, %s", serviceNames, e)
-		t.Fail()
+	if len(serviceNames) > 0 || err != nil {
+		t.Errorf("Expected: [], nil\n Got: %v, %s", serviceNames, err)
 	}
 
 }
 
 func TestServicesWithLoadbalancerType(t *testing.T) {
-	stubCoreV1Client := newStubCoreClient(&apiV1.ServiceList{
+	client := newStubCoreClient(&apiV1.ServiceList{
 		Items: []apiV1.Service{
 			{
 				ObjectMeta: metaV1.ObjectMeta{
@@ -218,16 +214,16 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := newLoadBalancerEmulator(stubCoreV1Client)
+	patcher := newLoadBalancerEmulator(client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
-	serviceNames, e := patcher.PatchServices()
+	serviceNames, err := patcher.PatchServices()
 
 	expectedServices := []string{"svc1-up-to-date", "svc2-out-of-date", "svc3-empty-ingress"}
 
-	if !reflect.DeepEqual(serviceNames, expectedServices) || e != nil {
-		t.Errorf("error.\nExpected: %s, <nil>\nGot: %v, %v", expectedServices, serviceNames, e)
+	if !reflect.DeepEqual(serviceNames, expectedServices) || err != nil {
+		t.Errorf("error.\nExpected: %s, <nil>\nGot: %v, %v", expectedServices, serviceNames, err)
 	}
 
 	if !reflect.DeepEqual(patchConverter.patches, expectedPatches) {
@@ -263,7 +259,7 @@ func TestCleanupPatchedIPs(t *testing.T) {
 		},
 	}
 
-	stubCoreV1Client := newStubCoreClient(&apiV1.ServiceList{
+	client := newStubCoreClient(&apiV1.ServiceList{
 		Items: []apiV1.Service{
 			{
 				ObjectMeta: metaV1.ObjectMeta{
@@ -332,16 +328,15 @@ func TestCleanupPatchedIPs(t *testing.T) {
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := newLoadBalancerEmulator(stubCoreV1Client)
+	patcher := newLoadBalancerEmulator(client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
-	serviceNames, e := patcher.Cleanup()
+	serviceNames, err := patcher.Cleanup()
 	expectedServices := []string{"svc1-up-to-date", "svc2-out-of-date", "svc3-empty-ingress"}
 
-	if !reflect.DeepEqual(serviceNames, expectedServices) || e != nil {
-		t.Errorf("error.\nExpected: %s, <nil>\nGot: %v, %v", expectedServices, serviceNames, e)
-		t.Fail()
+	if !reflect.DeepEqual(serviceNames, expectedServices) || err != nil {
+		t.Errorf("error.\nExpected: %s, <nil>\nGot: %v, %v", expectedServices, serviceNames, err)
 	}
 	if !reflect.DeepEqual(patchConverter.patches, expectedPatches) {
 		t.Errorf("error in patches.\nExpected: %v, <nil>\nGot: %v", expectedPatches, patchConverter.patches)
@@ -349,24 +344,4 @@ func TestCleanupPatchedIPs(t *testing.T) {
 	if requestSender.requests != 2 {
 		t.Errorf("error in number of requests sent.\nExpected: %v, <nil>\nGot: %v", 2, requestSender.requests)
 	}
-}
-
-func TestManualTesting_PatchUtil(t *testing.T) {
-	t.SkipNow()
-	clientset, _ := service.K8s.GetClientset()
-	client := clientset.CoreV1()
-	patcher := newLoadBalancerEmulator(client)
-	req := patcher.patchConverter.convert(client.RESTClient(), &Patch{
-		Type:         "application/json-patch+json",
-		NameSpace:    "default",
-		NameSpaceSet: true,
-		Resource:     "services",
-		Subresource:  "status",
-		ResourceName: "nginx3",
-		BodyContent:  `[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "1.2.3.4" } ] }]`,
-	})
-	object, e := patcher.requestSender.send(req)
-
-	fmt.Printf("Result: %s\nerror: %v\n", object, e)
-
 }

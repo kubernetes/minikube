@@ -405,18 +405,18 @@ func TestTunnel(t *testing.T) {
 			registry, cleanup := createTestRegistry(t)
 			defer cleanup()
 
-			tunnel, e := newTunnel(machineName, machineAPI, configLoader, newStubCoreClient(nil), registry, &fakeRouter{})
-			if e != nil {
-				t.Errorf("error creating tunnel: %s", e)
+			tunnel, err := newTunnel(machineName, machineAPI, configLoader, newStubCoreClient(nil), registry, &fakeRouter{})
+			if err != nil {
+				t.Errorf("error creating tunnel: %s", err)
 				return
 			}
 			reporter := &recordingReporter{}
 			tunnel.reporter = reporter
 
 			returnedState := tc.call(tunnel)
-			tunnels, e := registry.List()
-			if e != nil {
-				t.Errorf("error querying registry %s", e)
+			tunnels, err := registry.List()
+			if err != nil {
+				t.Errorf("error querying registry %s", err)
 				return
 			}
 			var routes []*Route
@@ -460,11 +460,11 @@ func TestErrorCreatingTunnel(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 	registry := &persistentRegistry{
-		fileName: f.Name(),
+		path: f.Name(),
 	}
 
-	_, e := newTunnel(machineName, store, configLoader, newStubCoreClient(nil), registry, &fakeRouter{})
-	if e == nil || !strings.Contains(e.Error(), "error loading machine") {
-		t.Errorf("expected error containing 'error loading machine', got %s", e)
+	_, err = newTunnel(machineName, store, configLoader, newStubCoreClient(nil), registry, &fakeRouter{})
+	if err == nil || !strings.Contains(err.Error(), "error loading machine") {
+		t.Errorf("expected error containing 'error loading machine', got %s", err)
 	}
 }

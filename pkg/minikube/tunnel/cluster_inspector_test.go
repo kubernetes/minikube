@@ -34,15 +34,14 @@ func TestAPIError(t *testing.T) {
 
 	machineAPI := tests.NewMockAPI()
 	configLoader := &stubConfigLoader{}
-	inspector := &minikubeInspector{
+	inspector := &clusterInspector{
 		machineAPI, configLoader, machineName,
 	}
 
-	s, r, e := inspector.getStateAndRoute()
+	s, r, err := inspector.getStateAndRoute()
 
-	if e == nil || !strings.Contains(e.Error(), "Machine does not exist") {
-		t.Fatalf("minikube monitor should propagate errors from API, inspectCluster() returned \"%v, %v\", %v", s, r, e)
-		t.Fail()
+	if err == nil || !strings.Contains(err.Error(), "Machine does not exist") {
+		t.Errorf("cluster inspector should propagate errors from API, getStateAndRoute() returned \"%v, %v\", %v", s, r, err)
 	}
 }
 
@@ -67,13 +66,13 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 			},
 		},
 	}
-	inspector := &minikubeInspector{
+	inspector := &clusterInspector{
 		machineAPI, configLoader, "testmachine",
 	}
 
-	s, r, e := inspector.getStateAndRoute()
+	s, r, err := inspector.getStateAndRoute()
 
-	if e != nil {
+	if err != nil {
 		t.Errorf("`error` is not nil")
 	}
 
@@ -104,11 +103,10 @@ func TestUnparseableCIDR(t *testing.T) {
 		},
 	}
 
-	_, e := getRoute(h, cfg)
+	_, err := getRoute(h, cfg)
 
-	if e == nil {
-		t.Errorf("expected non nil error, instead got %s", e)
-		t.Fail()
+	if err == nil {
+		t.Errorf("expected non nil error, instead got %s", err)
 	}
 }
 

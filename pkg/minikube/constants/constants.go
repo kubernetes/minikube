@@ -87,7 +87,7 @@ const DefaultStorageClassProvisioner = "standard"
 // Used to modify the cache field in the config file
 const Cache = "cache"
 
-func GetTunnelRegistryFile() string {
+func TunnelRegistryPath() string {
 	return filepath.Join(GetMinipath(), "tunnels.json")
 }
 

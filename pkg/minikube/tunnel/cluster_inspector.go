@@ -28,56 +28,53 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
-type minikubeInspector struct {
+type clusterInspector struct {
 	machineAPI   libmachine.API
-	configLoader config.ConfigLoader
+	configLoader config.Loader
 	machineName  string
 }
 
-func (m *minikubeInspector) getStateAndHost() (HostState, *host.Host, error) {
-	hostState := Unknown
+func (m *clusterInspector) getStateAndHost() (HostState, *host.Host, error) {
 
-	h, e := cluster.CheckIfHostExistsAndLoad(m.machineAPI, m.machineName)
+	h, err := cluster.CheckIfHostExistsAndLoad(m.machineAPI, m.machineName)
 
-	if e != nil {
-		e = errors.Wrapf(e, "error loading docker-machine host for: %s", m.machineName)
-		return hostState, nil, e
+	if err != nil {
+		err = errors.Wrapf(err, "error loading docker-machine host for: %s", m.machineName)
+		return Unknown, nil, err
 	}
 
 	var s state.State
-	s, e = h.Driver.GetState()
-	if e != nil {
-		e = errors.Wrapf(e, "error getting host status for %s", m.machineName)
-		return hostState, nil, e
+	s, err = h.Driver.GetState()
+	if err != nil {
+		err = errors.Wrapf(err, "error getting host status for %s", m.machineName)
+		return Unknown, nil, err
 	}
 
 	if s == state.Running {
-		hostState = Running
-	} else {
-		hostState = Stopped
+		return Running, h, nil
 	}
 
-	return hostState, h, nil
+	return Stopped, h, nil
 }
 
-func (m *minikubeInspector) getStateAndRoute() (HostState, *Route, error) {
-	hostState, h, e := m.getStateAndHost()
+func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
+	hostState, h, err := m.getStateAndHost()
 	defer m.machineAPI.Close()
-	if e != nil {
-		return hostState, nil, e
+	if err != nil {
+		return hostState, nil, err
 	}
 	var c config.Config
-	c, e = m.configLoader.LoadConfigFromFile(m.machineName)
-	if e != nil {
-		e = errors.Wrapf(e, "error loading config for %s", m.machineName)
-		return hostState, nil, e
+	c, err = m.configLoader.LoadConfigFromFile(m.machineName)
+	if err != nil {
+		err = errors.Wrapf(err, "error loading config for %s", m.machineName)
+		return hostState, nil, err
 	}
 
 	var route *Route
-	route, e = getRoute(h, c)
-	if e != nil {
-		e = errors.Wrapf(e, "error getting Route info for %s", m.machineName)
-		return hostState, nil, e
+	route, err = getRoute(h, c)
+	if err != nil {
+		err = errors.Wrapf(err, "error getting Route info for %s", m.machineName)
+		return hostState, nil, err
 	}
 	return hostState, route, nil
 }
@@ -88,9 +85,9 @@ func getRoute(host *host.Host, clusterConfig config.Config) (*Route, error) {
 		return nil, errors.Wrapf(err, "error getting host IP for %s", host.Name)
 	}
 
-	_, ipNet, e := net.ParseCIDR(clusterConfig.KubernetesConfig.ServiceCIDR)
-	if e != nil {
-		return nil, fmt.Errorf("error parsing service CIDR: %s", e)
+	_, ipNet, err := net.ParseCIDR(clusterConfig.KubernetesConfig.ServiceCIDR)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing service CIDR: %s", err)
 	}
 	ip := net.ParseIP(hostDriverIP)
 	if ip == nil {

@@ -26,9 +26,9 @@ import (
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
-	exists, e := isValidToAddOrDelete(router, route)
-	if e != nil {
-		return e
+	exists, err := isValidToAddOrDelete(router, route)
+	if err != nil {
+		return err
 	}
 	if exists {
 		return nil
@@ -40,24 +40,25 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "ip", "route", "add", serviceCIDR, "via", gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
-	stdInAndOut, e := command.CombinedOutput()
+	stdInAndOut, err := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	if len(message) > 0 {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
 	glog.Infof("%s", stdInAndOut)
-	if e != nil {
+	if err != nil {
 		glog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
-		return e
+		return err
 	}
 	return nil
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
 	command := exec.Command("netstat", "-nr", "-f", "inet")
-	stdInAndOut, e := command.CombinedOutput()
-	if e != nil {
-		err = fmt.Errorf("error running '%v': %s", command, e)
+	command.Env["LC_ALL"] = "C"
+	stdInAndOut, err := command.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("error running '%v': %s", command, err)
 		return
 	}
 	routeTableString := fmt.Sprintf("%s", stdInAndOut)
@@ -115,9 +116,9 @@ func (router *osRouter) parseTable(table string) routingTable {
 }
 
 func (router *osRouter) Cleanup(route *Route) error {
-	exists, e := isValidToAddOrDelete(router, route)
-	if e != nil {
-		return e
+	exists, err := isValidToAddOrDelete(router, route)
+	if err != nil {
+		return err
 	}
 	if !exists {
 		return nil
@@ -127,11 +128,11 @@ func (router *osRouter) Cleanup(route *Route) error {
 
 	glog.Infof("Cleaning up Route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "ip", "route", "delete", serviceCIDR)
-	stdInAndOut, e := command.CombinedOutput()
+	stdInAndOut, err := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	glog.Infof("%s", message)
-	if e != nil || len(message) > 0 {
-		return fmt.Errorf("error deleting Route: %s, %s", message, e)
+	if err != nil {
+		return fmt.Errorf("error deleting Route: %s, %s", message, err)
 	}
 	return nil
 }

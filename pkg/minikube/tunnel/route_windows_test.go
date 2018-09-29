@@ -42,10 +42,8 @@ func TestWindowsRouteFailsOnConflictIntegrationTest(t *testing.T) {
 	err := r.EnsureRouteIsAdded(route)
 	if err == nil {
 		t.Errorf("add should have error, but it is nil")
-		t.Fail()
 	} else if !strings.Contains(err.Error(), "conflict") {
 		t.Errorf("expected to fail with error containg `conflict`, but failed with wrong error %s", err)
-		t.Fail()
 	}
 	cleanRoute(t, "10.96.0.0")
 }
@@ -64,13 +62,11 @@ func TestWindowsRouteIdempotentIntegrationTest(t *testing.T) {
 	err := r.EnsureRouteIsAdded(route)
 	if err != nil {
 		t.Errorf("add error: %s", err)
-		t.Fail()
 	}
 
 	err = r.EnsureRouteIsAdded(route)
 	if err != nil {
 		t.Errorf("add error: %s", err)
-		t.Fail()
 	}
 
 	cleanRoute(t, "10.96.0.0")
@@ -91,12 +87,10 @@ func TestWindowsRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 	err := r.Cleanup(route)
 	if err != nil {
 		t.Errorf("cleanup failed: %s", err)
-		t.Fail()
 	}
 	err = r.Cleanup(route)
 	if err != nil {
 		t.Errorf("cleanup failed: %s", err)
-		t.Fail()
 	}
 	cleanRoute(t, "10.96.0.0")
 }
@@ -160,9 +154,9 @@ Persistent Routes:
 
 func addRoute(t *testing.T, dstIP string, dstMask string, gw string) {
 	command := exec.Command("route", "ADD", dstIP, "mask", dstMask, gw)
-	sout, e := command.CombinedOutput()
-	if e != nil {
-		t.Logf("assertion add Route error (should be ok): %s, error: %s", sout, e)
+	sout, err := command.CombinedOutput()
+	if err != nil {
+		t.Logf("assertion add Route error (should be ok): %s, error: %s", sout, err)
 	} else {
 		t.Logf("assertion - successfully added %s (%s) -> %s", dstIP, dstMask, gw)
 	}
@@ -170,9 +164,9 @@ func addRoute(t *testing.T, dstIP string, dstMask string, gw string) {
 
 func cleanRoute(t *testing.T, dstIP string) {
 	command := exec.Command("route", "DELETE", dstIP)
-	sout, e := command.CombinedOutput()
-	if e != nil {
-		t.Logf("assertion cleanup error (should be ok): %s, error: %s", sout, e)
+	sout, err := command.CombinedOutput()
+	if err != nil {
+		t.Logf("assertion cleanup error (should be ok): %s, error: %s", sout, err)
 	} else {
 		t.Logf("assertion - successfully cleaned %s", dstIP)
 	}

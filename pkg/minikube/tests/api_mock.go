@@ -51,7 +51,7 @@ func (api *MockAPI) Close() error {
 func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
 	var driver MockDriver
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
-		return nil, errors.Wrap(err, "Error unmarshalling json")
+		return nil, errors.Wrap(err, "error unmarshalling json")
 	}
 	h := &host.Host{
 		DriverName:  driverName,
@@ -66,7 +66,7 @@ func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, er
 // Create creates the actual host.
 func (api *MockAPI) Create(h *host.Host) error {
 	if api.CreateError {
-		return fmt.Errorf("Error creating host.")
+		return errors.New("error creating host")
 	}
 	return h.Driver.Create()
 }
@@ -79,7 +79,7 @@ func (api *MockAPI) List() ([]string, error) {
 // Remove a host.
 func (api *MockAPI) Remove(name string) error {
 	if api.RemoveError {
-		return fmt.Errorf("Error removing %s", name)
+		return fmt.Errorf("error removing %s", name)
 	}
 
 	delete(api.Hosts, name)

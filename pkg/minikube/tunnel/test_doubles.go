@@ -42,9 +42,9 @@ type fakeRouter struct {
 func (r *fakeRouter) EnsureRouteIsAdded(route *Route) error {
 	glog.V(4).Infof("fakerouter.EnsureRouteIsAdded %s", route)
 	if r.errorResponse == nil {
-		exists, e := isValidToAddOrDelete(r, route)
-		if e != nil {
-			return e
+		exists, err := isValidToAddOrDelete(r, route)
+		if err != nil {
+			return err
 		}
 		if !exists {
 			r.rt = append(r.rt, routingTableLine{
@@ -59,9 +59,9 @@ func (r *fakeRouter) EnsureRouteIsAdded(route *Route) error {
 func (r *fakeRouter) Cleanup(route *Route) error {
 	glog.V(4).Infof("fake router cleanup: %v\n", route)
 	if r.errorResponse == nil {
-		exists, e := isValidToAddOrDelete(r, route)
-		if e != nil {
-			return e
+		exists, err := isValidToAddOrDelete(r, route)
+		if err != nil {
+			return err
 		}
 		if exists {
 			for i := range r.rt {

@@ -38,9 +38,9 @@ func errorTunnelAlreadyExists(id *ID) error {
 
 func newTunnel(machineName string,
 	machineAPI libmachine.API,
-	configLoader config.ConfigLoader,
+	configLoader config.Loader,
 	v1Core v1.CoreV1Interface, registry *persistentRegistry, router router) (*minikubeTunnel, error) {
-	clusterInspector := &minikubeInspector{
+	clusterInspector := &clusterInspector{
 		machineName:  machineName,
 		machineAPI:   machineAPI,
 		configLoader: configLoader,
@@ -81,7 +81,7 @@ func newTunnel(machineName string,
 
 type minikubeTunnel struct {
 	//collaborators
-	clusterInspector     *minikubeInspector
+	clusterInspector     *clusterInspector
 	router               router
 	loadBalancerEmulator loadBalancerEmulator
 	reporter             reporter
@@ -133,10 +133,10 @@ func (t *minikubeTunnel) updateTunnelStatus() *Status {
 			t.status.RouteError = fmt.Errorf("conflicting route: %s", conflict)
 		} else {
 			//the route exists, make sure that this process owns it in the registry
-			conflictingTunnel, e := t.registry.IsAlreadyDefinedAndRunning(&t.status.TunnelID)
-			if e != nil {
-				glog.Errorf("failed to check for other tunnels: %s", e)
-				t.status.RouteError = e
+			conflictingTunnel, err := t.registry.IsAlreadyDefinedAndRunning(&t.status.TunnelID)
+			if err != nil {
+				glog.Errorf("failed to check for other tunnels: %s", err)
+				t.status.RouteError = err
 			}
 			if conflictingTunnel == nil {
 				//the route exists, but "orphaned", this process will "own it" in the registry
