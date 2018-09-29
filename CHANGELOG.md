@@ -17,7 +17,7 @@
 * Revert "Remove untainting logic." [#3050](https://github.com/kubernetes/minikube/pull/3050)
 * Upgrade kpod 0.1 to podman 0.4.1 [#3026](https://github.com/kubernetes/minikube/pull/3026)
 * Linux install: Set owner to root [#3021](https://github.com/kubernetes/minikube/pull/3021)
-* Rm localkube [#2911](https://github.com/kubernetes/minikube/pull/2911)
+* Remove localkube bootstrapper and associated `get-k8s-versions` command [#2911](https://github.com/kubernetes/minikube/pull/2911)
 * Update to go 1.10.1 everywhere. [#2777](https://github.com/kubernetes/minikube/pull/2777)
 * Allow to override build date with SOURCE_DATE_EPOCH [#3009](https://github.com/kubernetes/minikube/pull/3009)
 
