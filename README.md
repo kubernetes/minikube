@@ -220,5 +220,5 @@ For more information about Minikube, see the [proposal](https://github.com/kuber
 ## Community
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com)
-* [**kubernetes-users mailing list** ](https://groups.google.com/forum/#!forum/kubernetes-users)
-(If you are posting to the list, please prefix your subject with "minikube: ")
+* [**Kubernetes Official Forum** ](https://discuss.kubernetes.io)
+(If you are posting to the forum, please tag your post with "minikube")
