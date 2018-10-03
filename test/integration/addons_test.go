@@ -50,7 +50,7 @@ func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
 
-	_, out := minikubeRunner.RunDaemon("dashboard --url")
+	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
 	defer func() {
 		err := cmd.Process.Kill()
 		if err != nil {
