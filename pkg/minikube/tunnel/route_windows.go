@@ -48,7 +48,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	command := exec.Command("route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
-	message := fmt.Sprintf("%s", stdInAndOut)
+	message := string(stdInAndOut)
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error adding route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
@@ -60,10 +60,10 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	return nil
 }
 
-func (router *osRouter) parseTable(table string) routingTable {
+func (router *osRouter) parseTable(table []byte) routingTable {
 	t := routingTable{}
 	skip := true
-	for _, line := range strings.Split(table, "\n") {
+	for _, line := range strings.Split(string(table), "\n") {
 		//after first line of header we can start consuming
 		if strings.HasPrefix(line, "Network Destination") {
 			skip = false
@@ -109,9 +109,7 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 		err = fmt.Errorf("error running '%s': %s", command.Args, err)
 		return
 	}
-	routeTableString := fmt.Sprintf("%s", stdInAndOut)
-
-	rt := router.parseTable(routeTableString)
+	rt := router.parseTable(stdInAndOut)
 
 	exists, conflict, overlaps = rt.Check(route)
 
@@ -135,7 +133,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 	if err != nil {
 		return err
 	}
-	message := fmt.Sprintf("%s", stdInAndOut)
+	message := string(stdInAndOut)
 	glog.Infof("'%s'", message)
 	if message != " OK!\r\n" {
 		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))

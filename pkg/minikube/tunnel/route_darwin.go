@@ -61,19 +61,18 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 		err = fmt.Errorf("error running '%v': %s", command, err)
 		return
 	}
-	routeTableString := fmt.Sprintf("%s", stdInAndOut)
 
-	rt := router.parseTable(routeTableString)
+	rt := router.parseTable(stdInAndOut)
 
 	exists, conflict, overlaps = rt.Check(route)
 
 	return
 }
 
-func (router *osRouter) parseTable(table string) routingTable {
+func (router *osRouter) parseTable(table []byte) routingTable {
 	t := routingTable{}
 	skip := true
-	for _, line := range strings.Split(table, "\n") {
+	for _, line := range strings.Split(string(table), "\n") {
 		//header
 		if strings.HasPrefix(line, "Destination") {
 			skip = false
