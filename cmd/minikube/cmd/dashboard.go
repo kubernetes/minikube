@@ -33,7 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 
-	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -45,23 +45,27 @@ var (
 // dashboardCmd represents the dashboard command
 var dashboardCmd = &cobra.Command{
 	Use:   "dashboard",
-	Short: "Opens/displays the kubernetes dashboard URL for your local cluster",
-	Long:  `Opens/displays the kubernetes dashboard URL for your local cluster`,
+	Short: "Access the kubernetes dashboard running within the minikube cluster",
+	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
-		defer api.Close()
+		defer func() {
+			err := api.Close()
+			if err != nil {
+				glog.Warningf("Failed to close API: %v", err)
+			}
+		}()
+
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error creating client: %v\n", err)
 			os.Exit(1)
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
-		namespace := "kube-system"
+		ns := "kube-system"
 		svc := "kubernetes-dashboard"
-
-		glog.Infof("Looking for dashboard service ...")
-		if err = commonutil.RetryAfter(30, func() error { return service.CheckService(namespace, svc) }, 1*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "%s:%s is not running: %s\n", namespace, svc, err)
+		if err = util.RetryAfter(30, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
+			fmt.Fprintf(os.Stderr, "%s:%s is not running: %s\n", ns, svc, err)
 			os.Exit(1)
 		}
 
@@ -69,9 +73,9 @@ var dashboardCmd = &cobra.Command{
 		if err != nil {
 			glog.Fatalf("kubectl proxy: %v", err)
 		}
-		url := dashboardURL(hostPort, namespace, svc)
+		url := dashboardURL(hostPort, ns, svc)
 
-		if err = commonutil.RetryAfter(30, func() error { return checkURL(url) }, 1*time.Second); err != nil {
+		if err = util.RetryAfter(30, func() error { return checkURL(url) }, 1*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "%s is not responding properly: %s\n", url, err)
 			os.Exit(1)
 		}
@@ -81,8 +85,13 @@ var dashboardCmd = &cobra.Command{
 			return
 		}
 		fmt.Fprintln(os.Stdout, fmt.Sprintf("Opening %s in your default browser...", url))
-		browser.OpenURL(url)
-		p.Wait()
+		if err = browser.OpenURL(url); err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("failed to open browser: %v", err))
+		}
+		glog.Infof("Waiting forever for kubectl proxy to exit ...")
+		if err = p.Wait(); err != nil {
+			glog.Errorf("Wait: %v", err)
+		}
 	},
 }
 
@@ -108,28 +117,23 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 	if err != nil {
 		return nil, "", errors.Wrap(err, "read")
 	}
-	return cmd, parseHostPort(out), nil
+	glog.Infof("Output: %s ...", out)
+	return cmd, hostPortRe.FindString(out), nil
 }
 
 func dashboardURL(proxy string, ns string, svc string) string {
 	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
-	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", proxy, ns, svc)
-}
-
-func parseHostPort(out string) string {
-	glog.Infof("Parsing output: %s ...", out)
-	// Starting to serve on 127.0.0.1:8001
-	return hostPortRe.FindString(out)
+	return fmt.Sprintf("http://%s/api/v1/nss/%s/services/http:%s:/proxy/", proxy, ns, svc)
 }
 
 func checkURL(url string) error {
 	resp, err := http.Get(url)
-	glog.Infof("%s response: %s %s", url, err, resp)
+	glog.Infof("%s response: %s %+v", url, err, resp)
 	if err != nil {
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return &commonutil.RetriableError{
+		return &util.RetriableError{
 			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
 		}
 	}
@@ -137,6 +141,6 @@ func checkURL(url string) error {
 }
 
 func init() {
-	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display the kubernetes dashboard in the CLI instead of opening it in the default browser")
+	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display dashboard URL instead of opening a browser")
 	RootCmd.AddCommand(dashboardCmd)
 }
