@@ -290,6 +290,31 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Println("Stopping extra container runtimes...")
+
+	containerRuntime := viper.GetString(containerRuntime)
+	if config.VMDriver != "none" && containerRuntime != "" {
+		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping docker", err)
+		}
+	}
+	if config.VMDriver != "none" && (containerRuntime != "crio" && containerRuntime != "cri-o") {
+		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
+			glog.Errorf("Error stopping crio", err)
+		}
+	}
+	if config.VMDriver != "none" && containerRuntime != "rkt" {
+		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping rkt", err)
+		}
+	}
+
 	fmt.Println("Starting cluster components...")
 
 	if !exists || config.VMDriver == "none" {
