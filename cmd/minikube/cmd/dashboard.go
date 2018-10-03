@@ -83,12 +83,13 @@ var dashboardCmd = &cobra.Command{
 
 		if dashboardURLMode {
 			fmt.Fprintln(os.Stdout, url)
-			return
+		} else {
+			fmt.Fprintln(os.Stdout, fmt.Sprintf("Opening %s in your default browser...", url))
+			if err = browser.OpenURL(url); err != nil {
+				fmt.Fprintf(os.Stderr, fmt.Sprintf("failed to open browser: %v", err))
+			}
 		}
-		fmt.Fprintln(os.Stdout, fmt.Sprintf("Opening %s in your default browser...", url))
-		if err = browser.OpenURL(url); err != nil {
-			fmt.Fprintf(os.Stderr, fmt.Sprintf("failed to open browser: %v", err))
-		}
+
 		glog.Infof("Waiting forever for kubectl proxy to exit ...")
 		if err = p.Wait(); err != nil {
 			glog.Errorf("Wait: %v", err)
