@@ -39,6 +39,7 @@ import (
 var (
 	dashboardURLMode bool
 	// Matches: 127.0.0.1:8001
+	// TODO(tstromberg): Get kubectl to implement a stable supported output format.
 	hostPortRe = regexp.MustCompile(`127.0.0.1:\d{4,}`)
 )
 
@@ -119,15 +120,17 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 	if err != nil {
 		return nil, "", errors.Wrap(err, "reading stdout pipe")
 	}
-	glog.Infof("Output: %s ...", out)
+	glog.Infof("proxy stdout: %s", out)
 	return cmd, hostPortRe.FindString(out), nil
 }
 
+// dashboardURL generates a URL for accessing the dashboard service
 func dashboardURL(proxy string, ns string, svc string) string {
 	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
 	return fmt.Sprintf("http://%s/api/v1/nss/%s/services/http:%s:/proxy/", proxy, ns, svc)
 }
 
+// checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
 	resp, err := http.Get(url)
 	glog.Infof("%s response: %s %+v", url, err, resp)
