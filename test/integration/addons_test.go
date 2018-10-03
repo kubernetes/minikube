@@ -19,9 +19,10 @@ limitations under the License.
 package integration
 
 import (
-	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -49,37 +50,45 @@ func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
 
-	var u *url.URL
-
-	checkDashboard := func() error {
-		var err error
-		dashboardURL := minikubeRunner.RunCommand("dashboard --url", false)
-		if dashboardURL == "" {
-			return errors.New("error getting dashboard URL")
-		}
-		u, err = url.Parse(strings.TrimSpace(dashboardURL))
+	_, out := minikubeRunner.RunDaemon("dashboard --url")
+	defer func() {
+		err := cmd.Process.Kill()
 		if err != nil {
-			return err
+			t.Logf("Failed to kill mount command: %v", err)
 		}
-		return nil
+	}()
+
+	s, err := out.ReadString('\n')
+	if err != nil {
+		t.Fatalf("failed to read url: %v", err)
 	}
 
-	if err := util.Retry(t, checkDashboard, 2*time.Second, 60); err != nil {
-		t.Fatalf("error checking dashboard URL: %v", err)
+	u, err := url.Parse(strings.TrimSpace(s))
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", s, err)
 	}
 
 	if u.Scheme != "http" {
-		t.Fatalf("wrong scheme in dashboard URL, expected http, actual %s", u.Scheme)
+		t.Errorf("got Scheme %s, expected http", u.Scheme)
 	}
-	host, port, err := net.SplitHostPort(u.Host)
+	host, _, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		t.Fatalf("failed to split dashboard host %s: %v", u.Host, err)
-	}
-	if port != "30000" {
-		t.Errorf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
+		t.Fatalf("failed SplitHostPort: %v", err)
 	}
 	if host != "127.0.0.1" {
-		t.Errorf("host is %s, expected 127.0.0.1", host)
+		t.Errorf("got host %s, expected 127.0.0.1", host)
+	}
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		t.Fatalf("failed get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("Unable to read http response body: %v", err)
+		}
+		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
 	}
 }
 
