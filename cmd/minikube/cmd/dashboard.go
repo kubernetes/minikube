@@ -127,7 +127,7 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 // dashboardURL generates a URL for accessing the dashboard service
 func dashboardURL(proxy string, ns string, svc string) string {
 	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
-	return fmt.Sprintf("http://%s/api/v1/nss/%s/services/http:%s:/proxy/", proxy, ns, svc)
+	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", proxy, ns, svc)
 }
 
 // checkURL checks if a URL returns 200 HTTP OK
