@@ -25,7 +25,7 @@ metadata:
     kubernetes.io/minikube-addons-endpoint: dashboard
 spec:
   ports:
-    - port: 80
-      targetPort: 9090
+  - port: 80
+    targetPort: 9090
   selector:
     k8s-app: kubernetes-dashboard
