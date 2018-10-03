@@ -19,6 +19,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -47,20 +48,20 @@ var dashboardCmd = &cobra.Command{
 	Short: "Opens/displays the kubernetes dashboard URL for your local cluster",
 	Long:  `Opens/displays the kubernetes dashboard URL for your local cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		glog.Infof("Setting up dashboard ...")
 		api, err := machine.NewAPIClient()
+		defer api.Close()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error creating client: %v\n", err)
 			os.Exit(1)
 		}
-		defer api.Close()
-
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
+
 		namespace := "kube-system"
 		svc := "kubernetes-dashboard"
 
-		if err = commonutil.RetryAfter(20, func() error { return service.CheckService(namespace, svc) }, 6*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not find finalized endpoint being pointed to by %s: %s\n", svc, err)
+		glog.Infof("Looking for dashboard service ...")
+		if err = commonutil.RetryAfter(30, func() error { return service.CheckService(namespace, svc) }, 1*time.Second); err != nil {
+			fmt.Fprintf(os.Stderr, "%s:%s is not running: %s\n", namespace, svc, err)
 			os.Exit(1)
 		}
 
@@ -69,6 +70,12 @@ var dashboardCmd = &cobra.Command{
 			glog.Fatalf("kubectl proxy: %v", err)
 		}
 		url := dashboardURL(hostPort, namespace, svc)
+
+		if err = commonutil.RetryAfter(30, func() error { return checkURL(url) }, 1*time.Second); err != nil {
+			fmt.Fprintf(os.Stderr, "%s is not responding properly: %s\n", url, err)
+			os.Exit(1)
+		}
+
 		if dashboardURLMode {
 			fmt.Fprintln(os.Stdout, url)
 			return
@@ -81,7 +88,6 @@ var dashboardCmd = &cobra.Command{
 
 // kubectlProxy runs "kubectl proxy", returning host:port
 func kubectlProxy() (*exec.Cmd, string, error) {
-	glog.Infof("Searching for kubectl ...")
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
 		return nil, "", errors.Wrap(err, "Unable to find kubectl in PATH")
@@ -96,9 +102,8 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, "", errors.Wrap(err, "start")
 	}
-	glog.Infof("proxy should be running ...")
 	reader := bufio.NewReader(stdoutPipe)
-	glog.Infof("Reading stdout pipe ...")
+	glog.Infof("Started proxy, now reading stdout pipe ...")
 	out, err := reader.ReadString('\n')
 	if err != nil {
 		return nil, "", errors.Wrap(err, "read")
@@ -112,9 +117,23 @@ func dashboardURL(proxy string, ns string, svc string) string {
 }
 
 func parseHostPort(out string) string {
+	glog.Infof("Parsing output: %s ...", out)
 	// Starting to serve on 127.0.0.1:8001
-	glog.Infof("Parsing: %s ...", out)
 	return hostPortRe.FindString(out)
+}
+
+func checkURL(url string) error {
+	resp, err := http.Get(url)
+	glog.Infof("%s response: %s %s", url, err, resp)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return &commonutil.RetriableError{
+			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
+		}
+	}
+	return nil
 }
 
 func init() {
