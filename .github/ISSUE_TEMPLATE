@@ -33,7 +33,7 @@ echo "";
 echo "OS:";
 cat /etc/os-release
 echo "";
-echo "VM driver": 
+echo "VM driver:"; 
 grep DriverName ~/.minikube/machines/minikube/config.json
 echo "";
 echo "ISO version";
