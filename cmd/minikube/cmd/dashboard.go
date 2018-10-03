@@ -75,7 +75,7 @@ var dashboardCmd = &cobra.Command{
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
-		if err = util.RetryAfter(30, func() error { return checkURL(url) }, 1*time.Second); err != nil {
+		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "%s is not responding properly: %s\n", url, err)
 			os.Exit(1)
 		}
@@ -99,23 +99,25 @@ var dashboardCmd = &cobra.Command{
 func kubectlProxy() (*exec.Cmd, string, error) {
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		return nil, "", errors.Wrap(err, "Unable to find kubectl in PATH")
+		return nil, "", errors.Wrap(err, "kubectl not found in PATH")
 	}
+
+	// port=0 picks a random system port.
 	cmd := exec.Command(path, "proxy", "--port=0")
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, "", errors.Wrap(err, "stdout")
+		return nil, "", errors.Wrap(err, "cmd stdout")
 	}
 
 	glog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
 	if err := cmd.Start(); err != nil {
-		return nil, "", errors.Wrap(err, "start")
+		return nil, "", errors.Wrap(err, "proxy start")
 	}
 	reader := bufio.NewReader(stdoutPipe)
-	glog.Infof("Started proxy, now reading stdout pipe ...")
+	glog.Infof("proxy started, reading stdout pipe ...")
 	out, err := reader.ReadString('\n')
 	if err != nil {
-		return nil, "", errors.Wrap(err, "read")
+		return nil, "", errors.Wrap(err, "reading stdout pipe")
 	}
 	glog.Infof("Output: %s ...", out)
 	return cmd, hostPortRe.FindString(out), nil
@@ -130,7 +132,7 @@ func checkURL(url string) error {
 	resp, err := http.Get(url)
 	glog.Infof("%s response: %s %+v", url, err, resp)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "checkURL")
 	}
 	if resp.StatusCode != http.StatusOK {
 		return &util.RetriableError{
