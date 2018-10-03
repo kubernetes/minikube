@@ -71,12 +71,15 @@ func testDashboard(t *testing.T) {
 	if u.Scheme != "http" {
 		t.Fatalf("wrong scheme in dashboard URL, expected http, actual %s", u.Scheme)
 	}
-	_, port, err := net.SplitHostPort(u.Host)
+	host, port, err := net.SplitHostPort(u.Host)
 	if err != nil {
 		t.Fatalf("failed to split dashboard host %s: %v", u.Host, err)
 	}
 	if port != "30000" {
-		t.Fatalf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
+		t.Errorf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
+	}
+	if host != "127.0.0.1" {
+		t.Errorf("host is %s, expected 127.0.0.1", host)
 	}
 }
 

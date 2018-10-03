@@ -17,13 +17,16 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 	"os"
-	"text/template"
+	"os/exec"
+	"regexp"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/browser"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -34,6 +37,8 @@ import (
 
 var (
 	dashboardURLMode bool
+	// Matches: 127.0.0.1:8001
+	hostPortRe = regexp.MustCompile(`127.0.0.1:\d{4,}`)
 )
 
 // dashboardCmd represents the dashboard command
@@ -42,6 +47,7 @@ var dashboardCmd = &cobra.Command{
 	Short: "Opens/displays the kubernetes dashboard URL for your local cluster",
 	Long:  `Opens/displays the kubernetes dashboard URL for your local cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		glog.Infof("Setting up dashboard ...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
@@ -58,24 +64,57 @@ var dashboardCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		urls, err := service.GetServiceURLsForService(api, namespace, svc, template.Must(template.New("dashboardServiceFormat").Parse(defaultServiceFormatTemplate)))
+		p, hostPort, err := kubectlProxy()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprintln(os.Stderr, "Check that minikube is running.")
-			os.Exit(1)
+			glog.Fatalf("kubectl proxy: %v", err)
 		}
-		if len(urls) == 0 {
-			errMsg := "There appears to be no url associated with dashboard, this is not expected, exiting"
-			glog.Infoln(errMsg)
-			os.Exit(1)
-		}
+		url := dashboardURL(hostPort, namespace, svc)
 		if dashboardURLMode {
-			fmt.Fprintln(os.Stdout, urls[0])
-		} else {
-			fmt.Fprintln(os.Stdout, "Opening kubernetes dashboard in default browser...")
-			browser.OpenURL(urls[0])
+			fmt.Fprintln(os.Stdout, url)
+			return
 		}
+		fmt.Fprintln(os.Stdout, fmt.Sprintf("Opening %s in your default browser...", url))
+		browser.OpenURL(url)
+		p.Wait()
 	},
+}
+
+// kubectlProxy runs "kubectl proxy", returning host:port
+func kubectlProxy() (*exec.Cmd, string, error) {
+	glog.Infof("Searching for kubectl ...")
+	path, err := exec.LookPath("kubectl")
+	if err != nil {
+		return nil, "", errors.Wrap(err, "Unable to find kubectl in PATH")
+	}
+	cmd := exec.Command(path, "proxy", "--port=0")
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, "", errors.Wrap(err, "stdout")
+	}
+
+	glog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
+	if err := cmd.Start(); err != nil {
+		return nil, "", errors.Wrap(err, "start")
+	}
+	glog.Infof("proxy should be running ...")
+	reader := bufio.NewReader(stdoutPipe)
+	glog.Infof("Reading stdout pipe ...")
+	out, err := reader.ReadString('\n')
+	if err != nil {
+		return nil, "", errors.Wrap(err, "read")
+	}
+	return cmd, parseHostPort(out), nil
+}
+
+func dashboardURL(proxy string, ns string, svc string) string {
+	// Reference: https://github.com/kubernetes/dashboard/wiki/Accessing-Dashboard---1.7.X-and-above
+	return fmt.Sprintf("http://%s/api/v1/namespaces/%s/services/http:%s:/proxy/", proxy, ns, svc)
+}
+
+func parseHostPort(out string) string {
+	// Starting to serve on 127.0.0.1:8001
+	glog.Infof("Parsing: %s ...", out)
+	return hostPortRe.FindString(out)
 }
 
 func init() {

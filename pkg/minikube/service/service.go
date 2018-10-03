@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -35,6 +36,7 @@ import (
 
 	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/labels"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -197,27 +199,34 @@ func CheckService(namespace string, service string) error {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
 	services := client.Services(namespace)
+	glog.Infof("services: %+v", services)
 	err = validateService(services, service)
 	if err != nil {
 		return errors.Wrap(err, "Error validating service")
 	}
+	// Add logic here to switch between needing external endpoints or not.
 	endpoints := client.Endpoints(namespace)
-	return checkEndpointReady(endpoints, service)
+	glog.Infof("%s:%s endpoints: %+v", namespace, service, endpoints)
+	return nil
+	// return checkEndpointReady(endpoints, service)
 }
 
 func validateService(s corev1.ServiceInterface, service string) error {
-	if _, err := s.Get(service, metav1.GetOptions{}); err != nil {
+	svc, err := s.Get(service, metav1.GetOptions{})
+	if err != nil {
 		return errors.Wrapf(err, "Error getting service %s", service)
 	}
+	glog.Infof("%s: %+v", service, svc)
 	return nil
 }
 
 func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) error {
 	endpoint, err := endpoints.Get(service, metav1.GetOptions{})
+	glog.Infof("%s endpoint: %+v", service, endpoint)
 	if err != nil {
 		return &util.RetriableError{Err: errors.Errorf("Error getting endpoints for service %s", service)}
 	}
-	const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
+	notReadyMsg := fmt.Sprintf("Waiting, endpoint for %s is not ready yet...\n", service)
 	if len(endpoint.Subsets) == 0 {
 		fmt.Fprintf(os.Stderr, notReadyMsg)
 		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
