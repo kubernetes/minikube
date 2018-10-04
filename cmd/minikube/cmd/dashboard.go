@@ -66,7 +66,7 @@ var dashboardCmd = &cobra.Command{
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
 		if err = util.RetryAfter(30, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "%s:%s is not running: %s\n", ns, svc, err)
+			fmt.Fprintf(os.Stderr, "%s:%s is not running: %v\n", ns, svc, err)
 			os.Exit(1)
 		}
 
@@ -77,7 +77,7 @@ var dashboardCmd = &cobra.Command{
 		url := dashboardURL(hostPort, ns, svc)
 
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "%s is not responding properly: %s\n", url, err)
+			fmt.Fprintf(os.Stderr, "%s is not responding properly: %v\n", url, err)
 			os.Exit(1)
 		}
 
@@ -134,7 +134,7 @@ func dashboardURL(proxy string, ns string, svc string) string {
 // checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
 	resp, err := http.Get(url)
-	glog.Infof("%s response: %s %+v", url, err, resp)
+	glog.Infof("%s response: %v %+v", url, err, resp)
 	if err != nil {
 		return errors.Wrap(err, "checkURL")
 	}
