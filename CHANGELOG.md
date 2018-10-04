@@ -1,5 +1,31 @@
 # Minikube Release Notes
 
+# Version 0.30.0 - 10/04/2018
+
+* Use "kubectl proxy" instead of a NodePort to expose the dashboard [#3210](https://github.com/kubernetes/minikube/pull/3210)
+* Enhance the Ingress Addon [#3099](https://github.com/kubernetes/minikube/pull/3099)
+* Upgrade cni and cni-plugins to release version [#3152](https://github.com/kubernetes/minikube/pull/3152)
+* ensure that /dev has settled before operating [#3195](https://github.com/kubernetes/minikube/pull/3195)
+* Upgrade gluster client in ISO to 4.1.5 [#3162](https://github.com/kubernetes/minikube/pull/3162)
+* update nginx ingress controller version to 0.19.0 [#3123](https://github.com/kubernetes/minikube/pull/3123)
+* Install crictl from binary instead of from source [#3160](https://github.com/kubernetes/minikube/pull/3160)
+* Switch the source of libmachine to machine-drivers. [#3185](https://github.com/kubernetes/minikube/pull/3185)
+* Add psmisc package, for pstree command [#3161](https://github.com/kubernetes/minikube/pull/3161)
+* waitForDNS should wait for k8s-app=kube-dns pods to be Running [#3186](https://github.com/kubernetes/minikube/pull/3186)
+
+Huge thank you for this release towards our contributors:
+- Anders F Björklund
+- Bob Killen
+- David Genest
+- dlorenc
+- Fernando Diaz
+- oilbeater
+- Raunak Ramakrishnan
+- Rui Cao
+- samuela
+- Sven Anderson
+- Thomas Strömberg
+
 # Version 0.29.0 - 09/27/2018
 * Issue #3037 change dependency management to dep [#3136](https://github.com/kubernetes/minikube/pull/3136)
 * Update dashboard version to v1.10.0 [#3122](https://github.com/kubernetes/minikube/pull/3122)
@@ -54,8 +80,6 @@ Huge Thank You for this release to our contributors:
 - Viktor Safronov
 - wangxy518
 - yanxuean
-
-
 
 # Version 0.28.2 - 7/20/2018
 * Nvidia driver installation fixed [#2996](https://github.com/kubernetes/minikube/pull/2986)
