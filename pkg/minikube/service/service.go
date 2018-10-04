@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
+
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
@@ -189,45 +191,23 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 	return urls, nil
 }
 
-// CheckService waits for the specified service to be ready by returning an error until the service is up
-// The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
+// CheckService checks if a service is listening on a port.
 func CheckService(namespace string, service string) error {
 	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
-	services := client.Services(namespace)
-	err = validateService(services, service)
-	if err != nil {
-		return errors.Wrap(err, "Error validating service")
-	}
-	endpoints := client.Endpoints(namespace)
-	return checkEndpointReady(endpoints, service)
-}
 
-func validateService(s corev1.ServiceInterface, service string) error {
-	if _, err := s.Get(service, metav1.GetOptions{}); err != nil {
-		return errors.Wrapf(err, "Error getting service %s", service)
-	}
-	return nil
-}
-
-func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) error {
-	endpoint, err := endpoints.Get(service, metav1.GetOptions{})
+	svc, err := client.Services(namespace).Get(service, metav1.GetOptions{})
 	if err != nil {
-		return &util.RetriableError{Err: errors.Errorf("Error getting endpoints for service %s", service)}
-	}
-	const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
-	if len(endpoint.Subsets) == 0 {
-		fmt.Fprintf(os.Stderr, notReadyMsg)
-		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
-	}
-	for _, subset := range endpoint.Subsets {
-		if len(subset.Addresses) == 0 {
-			fmt.Fprintf(os.Stderr, notReadyMsg)
-			return &util.RetriableError{Err: errors.New("No endpoints for service are ready yet")}
+		return &util.RetriableError{
+			Err: errors.Wrapf(err, "Error getting service %s", service),
 		}
 	}
+	if len(svc.Spec.Ports) == 0 {
+		return fmt.Errorf("%s:%s has no ports", namespace, service)
+	}
+	glog.Infof("Found service: %+v", svc)
 	return nil
 }
 
