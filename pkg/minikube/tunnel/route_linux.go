@@ -41,11 +41,11 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	command := exec.Command("sudo", "ip", "route", "add", serviceCIDR, "via", gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
-	message := fmt.Sprintf("%s", stdInAndOut)
+	message := string(stdInAndOut)
 	if len(message) > 0 {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
-	glog.Infof("%s", stdInAndOut)
+	glog.Info(stdInAndOut)
 	if err != nil {
 		glog.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 		return err
@@ -54,10 +54,11 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
-	command := exec.Command("netstat", "-nr", "-f", "inet")
-	stdInAndOut, err := command.CombinedOutput()
+	cmd := exec.Command("netstat", "-nr", "-f", "inet")
+	cmd.Env = append(cmd.Env, "LC_ALL=C")
+	stdInAndOut, err := cmd.CombinedOutput()
 	if err != nil {
-		err = fmt.Errorf("error running '%v': %s", command, err)
+		err = fmt.Errorf("error running '%v': %s", cmd, err)
 		return
 	}
 	rt := router.parseTable(stdInAndOut)

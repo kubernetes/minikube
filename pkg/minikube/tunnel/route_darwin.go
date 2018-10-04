@@ -55,10 +55,11 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
-	command := exec.Command("netstat", "-nr", "-f", "inet")
-	stdInAndOut, err := command.CombinedOutput()
+	cmd := exec.Command("netstat", "-nr", "-f", "inet")
+	cmd.Env = append(cmd.Env, "LC_ALL=C")
+	stdInAndOut, err := cmd.CombinedOutput()
 	if err != nil {
-		err = fmt.Errorf("error running '%v': %s", command, err)
+		err = fmt.Errorf("error running '%v': %s", cmd, err)
 		return
 	}
 
