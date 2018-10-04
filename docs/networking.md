@@ -16,37 +16,47 @@ We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. 
 
 ````shell
-sudo "PATH=$PATH" "HOME=$HOME" minikube tunnel
+minikube tunnel
 ```` 
+
+Will output:
 
 ```
-[sudo] password for *****: 
-INFO[0000] Creating docker machine client...            
-INFO[0000] Creating k8s client...                       
-INFO[0000] Setting up router...                         
-INFO[0000] Setting up tunnel...                         
-INFO[0000] Started minikube tunnel. Tunnel requires root access. Please wait for the password prompt! 
-INFO[0005] Adding route for CIDR 10.96.0.0/12 to gateway 192.168.39.90 
-INFO[0005] About to run command: [sudo ip route add 10.96.0.0/12 via 192.168.39.90] 
-INFO[0005]                                              
-TunnelState:
-	minikube: Running
-	route: 10.96.0.0/12 -> 192.168.39.90
-	services: []
-INFO[0055] Patched nginx with IP 10.101.207.169         
-TunnelState:
-	minikube: Running
-	route: 10.96.0.0/12 -> 192.168.39.90
-	services: [nginx]
+out/minikube tunnel
+Password: *****
+Status: 
+        machine: minikube
+        pid: 59088
+        route: 10.96.0.0/12 -> 192.168.99.101
+        minikube: Running
+        services: []
+    errors: 
+                minikube: no errors
+                router: no errors
+                loadbalancer emulator: no errors
+
+
 ```` 
 
+Tunnel might ask you for password for creating and deleting network routes.
+ 
+# Cleaning up orphaned routes 
+
+If the `minikube tunnel` shuts down in an unclean way, it might leave a network route around.
+This case the ~/.minikube/tunnels.json file will contain an entry for that tunnel. 
+To cleanup orphaned routes, run: 
+````
+minikube tunnel --cleanup
+````
+
+# (Advanced) Running tunnel as root to avoid entering password multiple times 
 
 `minikube tunnel` runs as a separate daemon, creates a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway. 
 Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS.    
 
 Recommended way to use on Linux with KVM2 driver and MacOSX with Hyperkit driver: 
 
-`sudo "PATH=$PATH" "HOME=$HOME" minikube tunnel`
+`sudo -E minikube tunnel`
 
-Using VirtualBox on Windows _both_ `minikube start` and `minikube tunnel` needs to be started from the same Administrator user session otherwise [VBoxManage can't recognize the created VM](https://forums.virtualbox.org/viewtopic.php?f=6&t=81551).     
+Using VirtualBox on Windows, Mac and Linux _both_ `minikube start` and `minikube tunnel` needs to be started from the same Administrator user session otherwise [VBoxManage can't recognize the created VM](https://forums.virtualbox.org/viewtopic.php?f=6&t=81551).     
 

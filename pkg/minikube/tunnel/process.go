@@ -34,6 +34,7 @@ func init() {
 func osGetPid() int {
 	return os.Getpid()
 }
+//TODO(balintp): this is vulnerable to pid reuse we should include process name in the check
 func osCheckIfRunning(pid int) (bool, error) {
 	p, err := os.FindProcess(pid)
 	if runtime.GOOS == "windows" {
