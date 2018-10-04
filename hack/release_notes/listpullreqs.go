@@ -85,7 +85,7 @@ func printPullRequests() {
 			if pr.MergedAt != nil {
 				if pr.GetMergedAt().After(lastReleaseTime.Time) {
 					fmt.Printf("* %s [#%d](https://github.com/%s/%s/pull/%d)\n", pr.GetTitle(), *pr.Number, org, repo, *pr.Number)
-					seen += 1
+					seen++
 				}
 			}
 		}
