@@ -48,7 +48,7 @@ ignore="vendor\|\_gopath\|assets.go\|out"
 # Check gofmt
 echo "Checking gofmt..."
 set +e
-files=$(gofmt -l -s . | grep -v ${ignore})
+files=$(gofmt -d -s . | grep -v ${ignore})
 set -e
 if [[ $files ]]; then
   echo "Gofmt errors in files: $files"
