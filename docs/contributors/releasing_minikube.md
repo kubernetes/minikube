@@ -2,10 +2,10 @@
 
 ## Create a Release Notes PR
 
-Collect meaningful changes:
+Collect the release notes, and edit them as necessary:
 
 ```shell
-hack/release.sh
+hack/release_notes.sh
 ```
 
 Then merge into the CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
