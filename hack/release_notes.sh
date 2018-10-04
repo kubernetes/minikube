@@ -18,7 +18,7 @@ set -eux -o pipefail
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-go run ${DIR}/release_notes/listpullreqs.go
+go run "${DIR}/release_notes/listpullreqs.go"
 
 echo "Huge thank you for this release towards our contributors: "
 git log "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
