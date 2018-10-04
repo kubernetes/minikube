@@ -115,7 +115,7 @@ def normalize_files(files):
         newfiles.append(pathname)
     for i, pathname in enumerate(newfiles):
         if not os.path.isabs(pathname):
-            newfiles[i] = os.path.join(rootdir, pathname)
+            newfiles[i] = os.path.join(args.rootdir, pathname)
     return newfiles
 
 def get_files(extensions):
