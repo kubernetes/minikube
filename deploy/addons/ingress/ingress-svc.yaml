@@ -18,7 +18,8 @@ metadata:
   name: default-http-backend
   namespace: kube-system
   labels:
-    app: default-http-backend
+    app.kubernetes.io/name: default-http-backend
+    app.kubernetes.io/part-of: kube-system
     kubernetes.io/minikube-addons: ingress
     kubernetes.io/minikube-addons-endpoint: ingress
     addonmanager.kubernetes.io/mode: Reconcile
@@ -29,4 +30,4 @@ spec:
     targetPort: 8080
     nodePort: 30001
   selector:
-    app: default-http-backend
+    app.kubernetes.io/name: default-http-backend
