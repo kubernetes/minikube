@@ -282,10 +282,6 @@ install-hyperkit-driver: out/docker-machine-driver-hyperkit
 check-release:
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
 
-.PHONY: update-releases
-update-releases:
-	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
-
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	docker build $(ISO_DOCKER_EXTRA_ARGS) -t $@ -f $< $(dir $<)
