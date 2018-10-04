@@ -254,7 +254,7 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 		return errors.Wrap(err, "waiting for ingress-controller deployment to stabilize")
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app": "nginx-ingress-controller"}))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app.kubernetes.io/name": "nginx-ingress-controller"}))
 	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for ingress-controller pods")
 	}

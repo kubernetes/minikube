@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_PLUGINS_BIN_VERSION = v0.6.0-rc1
+CNI_PLUGINS_BIN_VERSION = v0.6.0
 CNI_PLUGINS_BIN_SITE = https://github.com/containernetworking/plugins/releases/download/$(CNI_PLUGINS_BIN_VERSION)
 CNI_PLUGINS_BIN_SOURCE = cni-plugins-amd64-$(CNI_PLUGINS_BIN_VERSION).tgz
 
