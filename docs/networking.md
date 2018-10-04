@@ -16,7 +16,10 @@ We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. 
 
 ````shell
-$ sudo "PATH=$PATH" "HOME=$HOME" minikube tunnel
+sudo "PATH=$PATH" "HOME=$HOME" minikube tunnel
+```` 
+
+```
 [sudo] password for *****: 
 INFO[0000] Creating docker machine client...            
 INFO[0000] Creating k8s client...                       

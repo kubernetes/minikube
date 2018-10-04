@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"context"
-	"flag"
 	"os"
 	"os/signal"
 
@@ -41,7 +40,6 @@ var tunnelCmd = &cobra.Command{
 		RootCmd.PersistentPreRun(cmd, args)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		flag.Lookup("logtostderr").Value.Set("true")
 		manager := tunnel.NewManager()
 
 		if cleanup {
