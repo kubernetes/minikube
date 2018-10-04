@@ -24,9 +24,9 @@ import (
 
 func TestRoutingTable(t *testing.T) {
 	tcs := []struct {
-		name         string
-		routingTable routingTable
-		route        *Route
+		name  string
+		table routingTable
+		route *Route
 
 		exists   bool
 		conflict string
@@ -34,7 +34,7 @@ func TestRoutingTable(t *testing.T) {
 	}{
 		{
 			name: "doesn't exist, no complication",
-			routingTable: routingTable{
+			table: routingTable{
 				{
 					route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
 					line:  "line1",
@@ -49,7 +49,7 @@ func TestRoutingTable(t *testing.T) {
 
 		{
 			name: "doesn't exist, and has overlap and a conflict",
-			routingTable: routingTable{
+			table: routingTable{
 				{
 					route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
 					line:  "conflicting line",
@@ -79,7 +79,7 @@ func TestRoutingTable(t *testing.T) {
 
 		{
 			name: "exists, and has overlap and no conflict",
-			routingTable: routingTable{
+			table: routingTable{
 				{
 					route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
 					line:  "same",
@@ -110,7 +110,7 @@ func TestRoutingTable(t *testing.T) {
 
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
-			exists, conflict, overlaps := tc.routingTable.Check(tc.route)
+			exists, conflict, overlaps := tc.table.Check(tc.route)
 			if tc.exists != exists || tc.conflict != conflict || !reflect.DeepEqual(tc.overlaps, overlaps) {
 				t.Errorf(`expected
   exists: %v

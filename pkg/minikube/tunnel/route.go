@@ -89,7 +89,7 @@ func (t *routingTable) Check(route *Route) (exists bool, conflict string, overla
 }
 
 func (t *routingTable) String() string {
-	result := fmt.Sprintf("routingTable (%d routes)", len(*t))
+	result := fmt.Sprintf("table (%d routes)", len(*t))
 	for _, l := range *t {
 		result = fmt.Sprintf("%s\n  %s\t|%s", result, l.route.String(), l.line)
 	}
