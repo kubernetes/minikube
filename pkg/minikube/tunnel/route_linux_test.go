@@ -97,7 +97,7 @@ Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
 172.31.126.0    0.0.0.0         255.255.255.0   U         0 0          0 eno1
 `
 
-	rt := (&osRouter{}).parseTable(table)
+	rt := (&osRouter{}).parseTable([]byte(table))
 
 	expectedRt := routingTable{
 		routingTableLine{

@@ -134,7 +134,7 @@ Network Destination        Netmask          Gateway       Interface  Metric
 Persistent Routes:
   None`
 
-	rt := (&osRouter{}).parseTable(table)
+	rt := (&osRouter{}).parseTable([]byte(table))
 
 	expectedRt := routingTable{
 		routingTableLine{

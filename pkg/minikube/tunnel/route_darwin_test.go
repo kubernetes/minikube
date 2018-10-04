@@ -139,7 +139,7 @@ Destination        Gateway            Flags        Refs      Use   Netif Expire
 192.168.246        link#18            UC              1        0  vmnet8
 224.0.0            link#1             UmCS            0        0     lo0
 `
-	rt := (&osRouter{}).parseTable(table)
+	rt := (&osRouter{}).parseTable([]byte(table))
 
 	expectedRt := routingTable{
 		routingTableLine{
