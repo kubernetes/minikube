@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 
@@ -104,8 +105,9 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 		return nil, "", errors.Wrap(err, "kubectl not found in PATH")
 	}
 
-	// port=0 picks a random system port.
-	cmd := exec.Command(path, "proxy", "--port=0")
+	// port=0 picks a random system port
+	// config.GetMachineName() respects the -p (profile) flag
+	cmd := exec.Command(path, "--context", config.GetMachineName(), "proxy", "--port=0")
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, "", errors.Wrap(err, "cmd stdout")
