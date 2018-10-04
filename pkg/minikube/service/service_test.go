@@ -133,44 +133,6 @@ func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpo
 	return endpoint, nil
 }
 
-func TestCheckEndpointReady(t *testing.T) {
-	var tests = []struct {
-		description string
-		service     string
-		err         bool
-	}{
-		{
-			description: "Endpoint with no subsets should return an error",
-			service:     "no-subsets",
-			err:         true,
-		},
-		{
-			description: "Endpoint with no ready endpoints should return an error",
-			service:     "not-ready",
-			err:         true,
-		},
-		{
-			description: "Endpoint with at least one ready endpoint should not return an error",
-			service:     "one-ready",
-			err:         false,
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
-			err := checkEndpointReady(&MockEndpointsInterface{}, test.service)
-			if err != nil && !test.err {
-				t.Errorf("Check endpoints returned an error: %+v", err)
-			}
-			if err == nil && test.err {
-				t.Errorf("Check endpoints should have returned an error but returned nil")
-			}
-		})
-	}
-}
-
 type MockServiceInterface struct {
 	fake.FakeServices
 	ServiceList *v1.ServiceList
