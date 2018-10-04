@@ -57,13 +57,16 @@ func main() {
 func printPullRequests() {
 	client := getClient()
 
-	releases, _, _ := client.Repositories.ListReleases(context.Background(), org, repo, &github.ListOptions{})
+	releases, _, err := client.Repositories.ListReleases(context.Background(), org, repo, &github.ListOptions{})
+	if err != nil {
+		logrus.Fatal(err)
+	}
 	lastReleaseTime := *releases[0].PublishedAt
 	fmt.Println(fmt.Sprintf("Collecting pull request that were merged since the last release: %s (%s)", *releases[0].TagName, lastReleaseTime))
 
 	listSize := 1
 	for page := 1; listSize > 0; page++ {
-		pullRequests, _, _ := client.PullRequests.List(context.Background(), org, repo, &github.PullRequestListOptions{
+		pullRequests, _, err := client.PullRequests.List(context.Background(), org, repo, &github.PullRequestListOptions{
 			State:     "closed",
 			Sort:      "updated",
 			Direction: "desc",
@@ -72,6 +75,9 @@ func printPullRequests() {
 				Page:    page,
 			},
 		})
+		if err != nil {
+			logrus.Fatal(err)
+		}
 
 		seen := 0
 		for idx := range pullRequests {
