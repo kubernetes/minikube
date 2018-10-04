@@ -11,7 +11,6 @@
 * Install crictl from binary instead of from source [#3160](https://github.com/kubernetes/minikube/pull/3160)
 * Switch the source of libmachine to machine-drivers. [#3185](https://github.com/kubernetes/minikube/pull/3185)
 * Add psmisc package, for pstree command [#3161](https://github.com/kubernetes/minikube/pull/3161)
-* waitForDNS should wait for k8s-app=kube-dns pods to be Running [#3186](https://github.com/kubernetes/minikube/pull/3186)
 
 Huge thank you for this release towards our contributors:
 - Anders F Björklund
