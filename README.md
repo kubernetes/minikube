@@ -26,8 +26,10 @@ brew cask install minikube
 ```
 
 ### Linux
+
 ```shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+  && sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 
 ### Windows
@@ -74,6 +76,7 @@ export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 mkdir -p $HOME/.kube
+mkdir -p $HOME/.minikube
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
@@ -217,5 +220,5 @@ For more information about Minikube, see the [proposal](https://github.com/kuber
 ## Community
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com)
-* [**kubernetes-users mailing list** ](https://groups.google.com/forum/#!forum/kubernetes-users)
-(If you are posting to the list, please prefix your subject with "minikube: ")
+* [**Kubernetes Official Forum** ](https://discuss.kubernetes.io)
+(If you are posting to the forum, please tag your post with "minikube")

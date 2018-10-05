@@ -14,8 +14,8 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 28
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 29
+VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -26,7 +26,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.10.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.28.1
+ISO_VERSION ?= v0.29.0
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -72,12 +72,6 @@ define DOCKER
 	docker run --rm -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /go/src/$(REPOPATH) -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
 endef
 
-# Newline for warnings
-define N
-
-
-endef
-
 ifeq ($(BUILD_IN_DOCKER),y)
 	MINIKUBE_BUILD_IN_DOCKER=y
 endif
@@ -107,13 +101,15 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
-    $(warning $N ******************************************************************************$N \
-	WARNING: You are building minikube outside the expected GOPATH:$N$N \
-	  expected: $(GOPATH)/src/$(REPOPATH) $N \
-      got:      $(PWD) $N$N \
-	You will likely encounter unusual build failures. For proper setup, read: $N \
-    https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md$N \
-    ******************************************************************************)
+	$(warning ******************************************************************************)
+	$(warning WARNING: You are building minikube outside the expected GOPATH:)
+	$(warning )
+	$(warning expected: $(GOPATH)/src/$(REPOPATH) )
+	$(warning   got:      $(PWD) )
+	$(warning )
+	$(warning You will likely encounter unusual build failures. For proper setup, read: )
+	$(warning https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md)
+	$(warning ******************************************************************************)
 endif
 	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
@@ -285,10 +281,6 @@ install-hyperkit-driver: out/docker-machine-driver-hyperkit
 .PHONY: check-release
 check-release:
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
-
-.PHONY: update-releases
-update-releases:
-	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile

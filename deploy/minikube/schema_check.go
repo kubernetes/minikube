@@ -26,7 +26,6 @@ import (
 
 func main() {
 	validateSchema("deploy/minikube/schema.json", "deploy/minikube/releases.json")
-	validateSchema("deploy/minikube/k8s_schema.json", "deploy/minikube/k8s_releases.json")
 	os.Exit(0)
 }
 
