@@ -2,8 +2,13 @@
 
 ## Create a Release Notes PR
 
-Assemble all the meaningful changes since the last release into the CHANGELOG.md file.
-See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
+Collect the release notes, and edit them as necessary:
+
+```shell
+hack/release_notes.sh
+```
+
+Then merge into the CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
 
 ## Build and Release a New ISO
 
