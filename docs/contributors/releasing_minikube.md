@@ -1,42 +1,36 @@
 # Steps to Release Minikube
 
-## Create a Release Notes PR
-
-Collect the release notes, and edit them as necessary:
-
-```shell
-hack/release_notes.sh
-```
-
-Merge output into CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
-
 ## Build a new ISO
 
- * Visit http://<jenkins root>/job/ISO/build
+ * http://go/minikube:build-iso
  * Ensure that you are logged in (top right)
- * For ISO_VERSION, fill in the intended release version
- * For ISO_BUCKET, use minikube/iso
- * Click "Build"
+ * For `ISO_VERSION`, use the intended release version
+ * For `ISO_BUCKET`, use `minikube/iso`
+ * Click *Build*
  * Wait ~45 minutes
 
-## Update ISO path
+## Update Makefile
 
+Once the ISO has built, update the Makefile:
 
-## Run integration tests
+```shell
+VERSION_MINOR
+ISO_VERSION
+```
 
-Run this command:
+## Run Local Integration Test
+
+Run the integration tests, making sure that all tests pass:
+
 ```shell
 make integration
 ```
-Investigate and fix any failures.
 
-## Bump the version in the Makefile and Update Docs to reflect this
+## Submit PR to update the Makefile
 
-See [this PR](https://github.com/kubernetes/minikube/pull/165) for an example.
+Pay careful attention to integration test failures from Jenkins.
 
-##Send an initial commit with the Makefile change:
-
-Send a PR for the Makefile change and wait until it is merged.  Once the commit is merged, continue.
+If there are test flakes, open or find the appropriate Issue, and add a PR  comment with links to the appropriate issues.
 
 ## Build the Release
 
@@ -46,7 +40,16 @@ Run this command:
 BUILD_IN_DOCKER=y make cross checksum
 ```
 
-## Add the version to the releases.json file
+## Submit PR to update Release Notes and `releases.json`
+
+Then Collect the release notes, and edit them as necessary:
+
+```shell
+hack/release_notes.sh
+```
+
+Merge output into CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/3175) for an example.
+
 
 Add an entry **to the top** of deploy/minikube/releases.json with the **version** and **checksums**.
 Send a PR.
