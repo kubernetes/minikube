@@ -4,41 +4,49 @@
 
  * http://go/minikube:build-iso
  * Ensure that you are logged in (top right)
- * For `ISO_VERSION`, use the intended release version
- * For `ISO_BUCKET`, use `minikube/iso`
+ * For `ISO_VERSION`, type in the intended release version
+ * For `ISO_BUCKET`, type in `minikube/iso`
  * Click *Build*
- * Wait ~45 minutes
+
+The build will take roughly 50 minutes.
 
 ## Update Makefile
 
-Once the ISO has built, update the Makefile:
+Edit the minikube `Makefile`, updating the version number values at the top:
 
-```shell
-VERSION_MINOR
-ISO_VERSION
-```
+* `VERSION_MINOR`
+* `ISO_VERSION`
 
 ## Run Local Integration Test
 
-Run the integration tests, making sure that all tests pass:
+With the updated Makefile, run the integration tests and ensure that all tests pass:
 
 ```shell
-make integration
+env TEST_ARGS="-minikube-start-args=--vm-driver=kvm2" make integration
 ```
 
-## Submit PR to update the Makefile
+## Ad-Hoc testing of other platforms
 
-Pay careful attention to integration test failures from Jenkins.
-
-If there are test flakes, open or find the appropriate Issue, and add a PR  comment with links to the appropriate issues.
-
-## Build the Release
-
-Run this command:
+If there are supported platforms which do not have functioning Jenkins workers (Windows), you may use the following to build a sanity check:
 
 ```shell
 BUILD_IN_DOCKER=y make cross checksum
 ```
+
+## Send out Makefile PR
+
+This will update users of HEAD to the new ISO.
+
+Please pay attention to test failures, as this is our integration test across platforms. If there are known acceptable failures, please add a PR comment linking to the appropriate issue.
+
+## Build the Release
+
+This step publishes a new binary release, but only for people who know where to find it:
+
+ * http://go/minikube:build-release
+ * Ensure that you are logged in (top right)
+ * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
+ * Click *Build*
 
 ## Submit PR to update Release Notes and `releases.json`
 
@@ -50,27 +58,9 @@ hack/release_notes.sh
 
 Merge output into CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/3175) for an example.
 
+Then update `deploy/minikube/releases.json`, which controls auto-update notifications.
 
 Add an entry **to the top** of deploy/minikube/releases.json with the **version** and **checksums**.
-Send a PR.
-This file controls the auto update notifications in minikube.
-Only add entries to this file that should be released to all users (no pre-release, alpha or beta releases).
-The file must be uploaded to GCS before notifications will go out. That step comes at the end.
-
-The schema for this file can be found in deploy/minikube/schema.json.
-
-An automated test to verify the schema runs in Travis before each submit.
-
-## Upload to GCS:
-
-```shell
-gsutil cp out/minikube-linux-amd64 gs://minikube/releases/$RELEASE/
-gsutil cp out/minikube-linux-amd64.sha256 gs://minikube/releases/$RELEASE/
-gsutil cp out/minikube-darwin-amd64 gs://minikube/releases/$RELEASE/
-gsutil cp out/minikube-darwin-amd64.sha256 gs://minikube/releases/$RELEASE/
-gsutil cp out/minikube-windows-amd64.exe gs://minikube/releases/$RELEASE/
-gsutil cp out/minikube-windows-amd64.exe.sha256 gs://minikube/releases/$RELEASE/
-```
 
 ## Tag the Release
 
