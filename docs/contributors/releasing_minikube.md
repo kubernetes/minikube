@@ -39,9 +39,7 @@ This will update users of HEAD to the new ISO.
 
 Please pay attention to test failures, as this is our integration test across platforms. If there are known acceptable failures, please add a PR comment linking to the appropriate issue.
 
-## Update Release Notes and `releases.json`
-
-Add the checksums for the release to the top of `deploy/minikube/releases.json`. This file is  used for auto-update notifications. The notifications are not activated until this file is copied to GCS.
+## Update Release Notes 
 
 Then run the following script to update the release notes:
 
@@ -72,6 +70,10 @@ This step uses the git tag to publish new binaries to GCS:
 Create a new release based on your tag, like [this one](https://github.com/kubernetes/minikube/releases/tag/v0.2.0).
 
 Upload the files, and calculated checksums.
+
+## Update releases.json
+
+Send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
 
 ## Upload releases.json to GCS
 
