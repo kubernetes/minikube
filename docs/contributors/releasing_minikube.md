@@ -51,13 +51,13 @@ Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/
 
 ## Tag the Release
 
-Run a command like this to tag it locally: `git tag -a v0.2.0 -m "0.2.0 Release"`.
+Run a command like this to tag it locally: `git tag -a v<version> -m "<version> Release"`.
 
-And run a command like this to push the tag: `git push upstream v0.2.0`.
+And run a command like this to push the tag: `git push upstream v<version>`.
 
 ## Build the Release
 
-This step uses the git tag to publish new binaries to GCS:
+This step uses the git tag to publish new binaries to GCS and create a github release:
 
  * http://go/minikube:build-release
  * Ensure that you are logged in (top right)
@@ -65,15 +65,11 @@ This step uses the git tag to publish new binaries to GCS:
  * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
  * Click *Build*
 
-## Create a Release in Github
-
-Create a new release based on your tag, like [this one](https://github.com/kubernetes/minikube/releases/tag/v0.2.0).
-
-Upload the files, and calculated checksums.
-
 ## Update releases.json
 
-Send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
+minikube-bot will send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. Make sure it is submitted, or hack one together yourself.
+
+This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
 
 ## Upload releases.json to GCS
 
