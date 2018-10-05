@@ -119,12 +119,17 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		KubeadmConfigFile   string
 		SkipPreflightChecks bool
 		Preflights          []string
+		DNSAddon            string
 	}{
 		KubeadmConfigFile: constants.KubeadmConfigFile,
 		SkipPreflightChecks: !VersionIsBetween(version,
 			semver.MustParse("1.9.0-alpha.0"),
 			semver.Version{}),
 		Preflights: constants.Preflights,
+		DNSAddon:   "kube-dns",
+	}
+	if version.GTE(semver.MustParse("1.12.0")) {
+		templateContext.DNSAddon = "coredns"
 	}
 	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
@@ -380,7 +385,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		NodeName:          k8s.NodeName,
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
-		NoTaintMaster:     false,
+		NoTaintMaster:     false, // That does not work with k8s 1.12+
 	}
 
 	if version.GTE(semver.MustParse("1.10.0-alpha.0")) {
@@ -388,6 +393,10 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 	}
 
 	b := bytes.Buffer{}
+	kubeadmConfigTemplate := kubeadmConfigTemplateV1Alpha1
+	if version.GTE(semver.MustParse("1.12.0")) {
+		kubeadmConfigTemplate = kubeadmConfigTemplateV1Alpha3
+	}
 	if err := kubeadmConfigTemplate.Execute(&b, opts); err != nil {
 		return "", err
 	}
