@@ -1,0 +1,72 @@
+From 515e4362eabaaf6d142f8d67a5190ad10fbdf7f5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Anders=20F=20Bj=C3=B6rklund?= <anders.f.bjorklund@gmail.com>
+Date: Fri, 5 Oct 2018 23:53:23 +0200
+Subject: [PATCH] Add the --no-pivot flag to the run command
+
+--no-pivot: "do not use pivot root to jail process inside rootfs.
+  This should be used whenever the rootfs is on top of a ramdisk"
+---
+ cmd/buildah/run.go |  7 +++++++
+ run.go             | 10 +++++++++-
+ 2 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/cmd/buildah/run.go b/cmd/buildah/run.go
+index 45cae49e5..a314347f1 100644
+--- a/cmd/buildah/run.go
++++ b/cmd/buildah/run.go
+@@ -43,6 +43,10 @@ var (
+ 			Name:  "runtime-flag",
+ 			Usage: "add global flags for the container runtime",
+ 		},
++		cli.BoolFlag{
++			Name:  "no-pivot",
++			Usage: "do not use pivot root to jail process inside rootfs",
++		},
+ 		cli.StringSliceFlag{
+ 			Name:  "security-opt",
+ 			Usage: "security options (default [])",
+@@ -108,6 +112,8 @@ func runCmd(c *cli.Context) error {
+ 		runtimeFlags = append(runtimeFlags, "--"+arg)
+ 	}
+ 
++	noPivot := c.Bool("no-pivot")
++
+ 	namespaceOptions, networkPolicy, err := parse.NamespaceOptions(c)
+ 	if err != nil {
+ 		return errors.Wrapf(err, "error parsing namespace-related options")
+@@ -117,6 +123,7 @@ func runCmd(c *cli.Context) error {
+ 		Hostname:         c.String("hostname"),
+ 		Runtime:          c.String("runtime"),
+ 		Args:             runtimeFlags,
++		NoPivot:          noPivot,
+ 		User:             c.String("user"),
+ 		Isolation:        isolation,
+ 		NamespaceOptions: namespaceOptions,
+diff --git a/run.go b/run.go
+index d73f0d239..0a935152f 100644
+--- a/run.go
++++ b/run.go
+@@ -146,6 +146,8 @@ type RunOptions struct {
+ 	Runtime string
+ 	// Args adds global arguments for the runtime.
+ 	Args []string
++	// NoPivot adds the --no-pivot runtime flag.
++	NoPivot bool
+ 	// Mounts are additional mount points which we want to provide.
+ 	Mounts []specs.Mount
+ 	// Env is additional environment variables to set.
+@@ -1091,7 +1093,13 @@ func (b *Builder) Run(command []string, options RunOptions) error {
+ 		// 	}
+ 		// }
+ 		// options.Args = append(options.Args, rootlessFlag...)
+-		err = b.runUsingRuntimeSubproc(options, configureNetwork, configureNetworks, nil, spec, mountPoint, path, Package+"-"+filepath.Base(path))
++		var moreCreateArgs []string
++		if options.NoPivot {
++			moreCreateArgs = []string{"--no-pivot"}
++		} else {
++			moreCreateArgs = nil
++		}
++		err = b.runUsingRuntimeSubproc(options, configureNetwork, configureNetworks, moreCreateArgs, spec, mountPoint, path, Package+"-"+filepath.Base(path))
+ 	case IsolationChroot:
+ 		err = chroot.RunUsingChroot(spec, path, options.Stdin, options.Stdout, options.Stderr)
+ 	case IsolationOCIRootless:
