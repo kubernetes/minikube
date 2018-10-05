@@ -53,7 +53,6 @@ apiVersion: kubeadm.k8s.io/v1alpha3
 bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
-  token: 599s02.8i3w2yyyay8t0onm
   ttl: 24h0m0s
   usages:
   - signing
