@@ -307,7 +307,6 @@ func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (
 		if err == nil {
 			return nil
 		}
-		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
 		time.Sleep(d)
 	}
 	return err
