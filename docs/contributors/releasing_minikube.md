@@ -39,15 +39,6 @@ This will update users of HEAD to the new ISO.
 
 Please pay attention to test failures, as this is our integration test across platforms. If there are known acceptable failures, please add a PR comment linking to the appropriate issue.
 
-## Build the Release
-
-This step publishes a new binary release, but only for people who know where to find it:
-
- * http://go/minikube:build-release
- * Ensure that you are logged in (top right)
- * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
- * Click *Build*
-
 ## Update Release Notes and `releases.json`
 
 Add the checksums for the release to the top of `deploy/minikube/releases.json`. This file is  used for auto-update notifications. The notifications are not activated until this file is copied to GCS.
@@ -66,6 +57,14 @@ Run a command like this to tag it locally: `git tag -a v0.2.0 -m "0.2.0 Release"
 
 And run a command like this to push the tag: `git push upstream v0.2.0`.
 
+## Build the Release
+
+This step uses the git tag to publish new binaries, but only for people who know where to find them:
+
+ * http://go/minikube:build-release
+ * Ensure that you are logged in (top right)
+ * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
+ * Click *Build*
 
 ## Create a Release in Github
 
