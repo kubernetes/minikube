@@ -217,7 +217,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 	if config.VMDriver != "none" {
 		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
-			return nil, errors.Wrap(err, "Error attempting to cache minikube ISO from URL")
+			return nil, errors.Wrap(err, "unable to cache ISO")
 		}
 	}
 
