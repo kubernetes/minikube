@@ -8,21 +8,19 @@ Collect the release notes, and edit them as necessary:
 hack/release_notes.sh
 ```
 
-Then merge into the CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
+Merge output into CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/164) for an example.
 
-## Build and Release a New ISO
+## Build a new ISO
 
-This step isn't always required. Check if there were changes in the deploy directory.
-If you do this, bump the ISO URL to point to the new ISO, and send a PR.
-To do this, build the new ISO by running:
-```shell
-deploy/iso/build.sh
-```
-This will generate a new ISO at 'deploy/iso/minikube.iso'.  Then upload the ISO and shasum using the following command:
-```shell
-gsutil cp deploy/iso/minikube.iso gs://minikube/minikube-<increment.version>.iso
-gsutil cp deploy/iso/minikube.iso.sha256 gs://minikube/minikube-<increment.version>.iso.sha256
-```
+ * Visit http://<jenkins root>/job/ISO/build
+ * Ensure that you are logged in (top right)
+ * For ISO_VERSION, fill in the intended release version
+ * For ISO_BUCKET, use minikube/iso
+ * Click "Build"
+ * Wait ~45 minutes
+
+## Update ISO path
+
 
 ## Run integration tests
 
