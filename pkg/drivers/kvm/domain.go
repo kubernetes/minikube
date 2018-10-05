@@ -62,7 +62,7 @@ const domainTmpl = `
     </interface>
     <interface type='network'>
       <source network='{{.PrivateNetwork}}'/>
-      <mac address='{{.MAC}}'/>
+      <mac address='{{.PrivateMAC}}'/>
       <model type='virtio'/>
     </interface>
     <serial type='pty'>
@@ -98,7 +98,7 @@ $ sudo usermod -a -G libvirt $(whoami)
 # NOTE: For older Debian/Ubuntu versions change the group to [libvirtd]
 $ newgrp libvirt
 
-Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm-driver for more information.
+Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
 `
 
 func randomMAC() (net.HardwareAddr, error) {
@@ -152,9 +152,27 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 }
 
 func (d *Driver) createDomain() (*libvirt.Domain, error) {
+	// create random MAC addresses first for our NICs
+	if d.MAC == "" {
+		mac, err := randomMAC()
+		if err != nil {
+			return nil, errors.Wrap(err, "generating mac address")
+		}
+		d.MAC = mac.String()
+	}
+
+	if d.PrivateMAC == "" {
+		mac, err := randomMAC()
+		if err != nil {
+			return nil, errors.Wrap(err, "generating mac address")
+		}
+		d.PrivateMAC = mac.String()
+	}
+
+	// create the XML for the domain using our domainTmpl template
 	tmpl := template.Must(template.New("domain").Parse(domainTmpl))
-	var domainXml bytes.Buffer
-	if err := tmpl.Execute(&domainXml, d); err != nil {
+	var domainXML bytes.Buffer
+	if err := tmpl.Execute(&domainXML, d); err != nil {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
 
@@ -164,9 +182,10 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	}
 	defer conn.Close()
 
-	dom, err := conn.DomainDefineXML(domainXml.String())
+	// define the domain in libvirt using the generated XML
+	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error defining domain xml: %s", domainXml.String())
+		return nil, errors.Wrapf(err, "Error defining domain xml: %s", domainXML.String())
 	}
 
 	return dom, nil

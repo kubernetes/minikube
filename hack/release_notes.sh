@@ -1,5 +1,6 @@
+#!/bin/bash
 
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2018 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-kind: Service
-apiVersion: v1
-metadata:
-  name: kubernetes-dashboard
-  namespace: kube-system
-  labels:
-    app: kubernetes-dashboard
-    addonmanager.kubernetes.io/mode: Reconcile
-    kubernetes.io/minikube-addons: dashboard
-    kubernetes.io/minikube-addons-endpoint: dashboard
-spec:
-  ports:
-  - port: 80
-    targetPort: 9090
-  selector:
-    app: kubernetes-dashboard
+set -eux -o pipefail
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+go run "${DIR}/release_notes/listpullreqs.go"
+
+echo "Huge thank you for this release towards our contributors: "
+git log "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
