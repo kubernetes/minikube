@@ -48,19 +48,17 @@ This step publishes a new binary release, but only for people who know where to 
  * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
  * Click *Build*
 
-## Submit PR to update Release Notes and `releases.json`
+## Update Release Notes and `releases.json`
 
-Then Collect the release notes, and edit them as necessary:
+Add the checksums for the release to the top of `deploy/minikube/releases.json`. This file is  used for auto-update notifications. The notifications are not activated until this file is copied to GCS.
+
+Then run the following script to update the release notes:
 
 ```shell
 hack/release_notes.sh
 ```
 
-Merge output into CHANGELOG.md file.  See [this PR](https://github.com/kubernetes/minikube/pull/3175) for an example.
-
-Then update `deploy/minikube/releases.json`, which controls auto-update notifications.
-
-Add an entry **to the top** of deploy/minikube/releases.json with the **version** and **checksums**.
+Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/minikube/pull/3175) as an example. Then get the PR submitted.
 
 ## Tag the Release
 
@@ -68,13 +66,14 @@ Run a command like this to tag it locally: `git tag -a v0.2.0 -m "0.2.0 Release"
 
 And run a command like this to push the tag: `git push upstream v0.2.0`.
 
+
 ## Create a Release in Github
 
 Create a new release based on your tag, like [this one](https://github.com/kubernetes/minikube/releases/tag/v0.2.0).
 
 Upload the files, and calculated checksums.
 
-## Upload the releases.json file to GCS
+## Upload releases.json to GCS
 
 This step makes the new release trigger update notifications in old versions of Minikube.
 Use this command from a clean git repo:
@@ -107,11 +106,11 @@ The repository is tracked in this repo under a submodule `installers/linux/arch_
 
 To actually update the package, you should bump the version and update the sha512 checksum.  You should also run `makepkg --printsrcinfo > .SRCINFO` to update the srcinfo file.  You can edit this manually if you don't have `makepkg` on your machine.
 
-## Release Verification
+## Verification
 
 After you've finished the release, run this command from the release commit to verify the release was done correctly:
 `make check-release`.
 
 ## Update kubernetes.io docs
 
-If there are major changes, please send a PR upstream for this file https://github.com/kubernetes/kubernetes.github.io/blob/master/docs/getting-started-guides/minikube.md in order to keep the getting started guide up to date.
+If there are major changes, please send a PR to update the official setup guide: [Running Kubernetes Locally via Minikube](https://kubernetes.io/docs/setup/minikube/)
