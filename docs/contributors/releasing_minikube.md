@@ -59,10 +59,11 @@ And run a command like this to push the tag: `git push upstream v0.2.0`.
 
 ## Build the Release
 
-This step uses the git tag to publish new binaries, but only for people who know where to find them:
+This step uses the git tag to publish new binaries to GCS:
 
  * http://go/minikube:build-release
  * Ensure that you are logged in (top right)
+ * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
  * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
  * Click *Build*
 
