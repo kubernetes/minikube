@@ -28,6 +28,7 @@ endef
 
 define BUILDAH_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 $(@D)/buildah $(TARGET_DIR)/usr/bin/buildah
+	$(INSTALL) -Dm644 $(BR2_EXTERNAL_MINIKUBE_PATH)/package/buildah/buildah.profile $(TARGET_DIR)/etc/profile.d/buildah.sh
 endef
 
 $(eval $(generic-package))
