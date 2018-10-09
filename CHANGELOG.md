@@ -2,7 +2,7 @@
 
 # Version 0.30.0 - 10/04/2018
 
-* **fixes [CVE-2018-1002103](https://github.com/kubernetes/minikube/issues/3208)** Use "kubectl proxy" instead of a NodePort to expose the dashboard [#3210](https://github.com/kubernetes/minikube/pull/3210)
+* **Fix for [CVE-2018-1002103](https://github.com/kubernetes/minikube/issues/3208)**: Dashboard vulnerable to DNS rebinding attack [#3210](https://github.com/kubernetes/minikube/pull/3210)
 * Initial support for Kubernetes 1.12+ [#3180](https://github.com/kubernetes/minikube/pull/3180)
 * Enhance the Ingress Addon [#3099](https://github.com/kubernetes/minikube/pull/3099)
 * Upgrade cni and cni-plugins to release version [#3152](https://github.com/kubernetes/minikube/pull/3152)
