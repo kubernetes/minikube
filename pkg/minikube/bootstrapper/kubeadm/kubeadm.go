@@ -116,11 +116,13 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	b := bytes.Buffer{}
 	templateContext := struct {
+		KubernetesVersion   string
 		KubeadmConfigFile   string
 		SkipPreflightChecks bool
 		Preflights          []string
 		DNSAddon            string
 	}{
+		KubernetesVersion: version.String(),
 		KubeadmConfigFile: constants.KubeadmConfigFile,
 		SkipPreflightChecks: !VersionIsBetween(version,
 			semver.MustParse("1.9.0-alpha.0"),
