@@ -14,8 +14,8 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 28
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 30
+VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -26,7 +26,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.10.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.28.1
+ISO_VERSION ?= v0.30.0
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -101,7 +101,15 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
-	$(warning Warning: Building minikube outside the GOPATH, should be $(GOPATH)/src/$(REPOPATH) but is $(PWD))
+	$(warning ******************************************************************************)
+	$(warning WARNING: You are building minikube outside the expected GOPATH:)
+	$(warning )
+	$(warning expected: $(GOPATH)/src/$(REPOPATH) )
+	$(warning   got:      $(PWD) )
+	$(warning )
+	$(warning You will likely encounter unusual build failures. For proper setup, read: )
+	$(warning https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md)
+	$(warning ******************************************************************************)
 endif
 	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
@@ -261,7 +269,7 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
-	GOOS=darwin CGO_ENABLED=1 go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+	GOOS=darwin CGO_ENABLED=1 CC=o64-clang CXX=o64-clang++ go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
 endif
 
 .PHONY: install-hyperkit-driver
@@ -273,10 +281,6 @@ install-hyperkit-driver: out/docker-machine-driver-hyperkit
 .PHONY: check-release
 check-release:
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
-
-.PHONY: update-releases
-update-releases:
-	gsutil cp deploy/minikube/k8s_releases.json gs://minikube/k8s_releases.json
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
 $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
