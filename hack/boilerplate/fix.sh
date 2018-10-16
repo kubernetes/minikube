@@ -14,29 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-rootDir=$1
-[[ "$rootDir" == "" ]] && export rootDir=`pwd`
+export readonly ROOT_DIR=${1:-$(pwd)}
 
 function prepend() {
-  ignore="vendor\|\_gopath\|assets.go"
-  pattern=$1
-  ref=$2
-  headers=$3
-  files=`hack/boilerplate/boilerplate.py --rootdir $rootDir | grep -v "$ignore" | grep "$pattern"`
-  for f in $files; do
-    echo $f;
-    copyright="$(cat hack/boilerplate/boilerplate.$ref.txt | sed s/YEAR/2018/g)"
+  local ignore="vendor\|\_gopath\|assets.go"
+  local pattern=$1
+  local ref=$2
+  local headers=$3
+  local files=$(hack/boilerplate/boilerplate.py --rootdir ${ROOT_DIR} | grep -v "$ignore" | grep "$pattern")
+  for f in ${files}; do
+    echo ${f};
+    local copyright="$(cat hack/boilerplate/boilerplate.${ref}.txt | sed s/YEAR/$(date +%Y)/g)"
+    local file_headers=""
 
-    if [ "$headers" != "" ]; then
-      fileHeaders="$(cat $f | grep $headers)"
+    if [ "${headers}" != "" ]; then
+      file_headers="$(cat ${f} | grep ${headers})"
     fi
 
-    if [ "$fileHeaders" != "" ]; then
-        fileContent="$(cat $f | grep -v $headers)"
-        printf '%s\n\n%s\n%s\n' "$fileHeaders" "$copyright" "$fileContent"  > $f ;
+    if [ "${file_headers}" != "" ]; then
+        fileContent="$(cat ${f} | grep -v ${headers})"
+        printf '%s\n\n%s\n%s\n' "$file_headers" "${copyright}" "$fileContent" > ${f}
     else
-      fileContent="$(cat $f)"
-      printf '%s\n\n%s\n' "$copyright" "$fileContent"  > $f ;
+      fileContent="$(cat ${f})"
+      printf '%s\n\n%s\n' "${copyright}" "$fileContent" > ${f}
     fi
 
     done
