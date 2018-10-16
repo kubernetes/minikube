@@ -19,6 +19,7 @@ package bootstrapper
 import (
 	"io"
 
+	"github.com/blang/semver"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -37,7 +38,7 @@ const (
 	BootstrapperTypeKubeadm = "kubeadm"
 )
 
-func GetCachedImageList(version string, bootstrapper string) []string {
+func GetCachedImageList(version semver.Version, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
 		return constants.GetKubeadmCachedImages(version)

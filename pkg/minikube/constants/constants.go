@@ -168,11 +168,11 @@ const (
 	DefaultMountVersion  = "9p2000.u"
 )
 
-func GetKubernetesReleaseURL(binaryName, version string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
+func GetKubernetesReleaseURL(binaryName string, version semver.Version) string {
+	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/v%s/bin/linux/amd64/%s", version, binaryName)
 }
 
-func GetKubernetesReleaseURLSha1(binaryName, version string) string {
+func GetKubernetesReleaseURLSha1(binaryName string, version semver.Version) string {
 	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
 }
 
@@ -180,7 +180,8 @@ const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 const DriverNone = "none"
 const FileScheme = "file"
 
-func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
+func GetKubeadmCachedImages(kubernetesVersion semver.Version) []string {
+	kubernetesVersionStr := fmt.Sprintf("v%s", kubernetesVersion)
 
 	var images = []string{
 		"k8s.gcr.io/kube-proxy-amd64:" + kubernetesVersionStr,

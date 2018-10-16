@@ -109,10 +109,7 @@ func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
-	if err != nil {
-		return errors.Wrap(err, "parsing kubernetes version")
-	}
+	version := k8s.KubernetesSemVer()
 
 	b := bytes.Buffer{}
 	templateContext := struct {
@@ -242,10 +239,7 @@ func SetContainerRuntime(cfg map[string]string, runtime string) map[string]strin
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
 func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing kubernetes version")
-	}
+	version := k8s.KubernetesSemVer()
 
 	extraOpts, err := ExtraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
 	if err != nil {
@@ -280,7 +274,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
-		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
+		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesSemVer()), constants.ImageCacheDir)
 		if err != nil {
 			return errors.Wrap(err, "loading cached images")
 		}
@@ -306,7 +300,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	for _, bin := range []string{"kubelet", "kubeadm"} {
 		bin := bin
 		g.Go(func() error {
-			path, err := maybeDownloadAndCache(bin, cfg.KubernetesVersion)
+			path, err := maybeDownloadAndCache(bin, cfg.KubernetesSemVer())
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", bin)
 			}
@@ -347,10 +341,7 @@ sudo systemctl start kubelet
 }
 
 func generateConfig(k8s config.KubernetesConfig) (string, error) {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing kubernetes version")
-	}
+	version := k8s.KubernetesSemVer()
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
@@ -369,7 +360,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		ServiceCIDR       string
 		AdvertiseAddress  string
 		APIServerPort     int
-		KubernetesVersion string
+		KubernetesVersion semver.Version
 		EtcdDataDir       string
 		NodeName          string
 		ExtraArgs         []ComponentExtraArgs
@@ -380,7 +371,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		ServiceCIDR:       util.DefaultServiceCIDR,
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     util.APIServerPort,
-		KubernetesVersion: k8s.KubernetesVersion,
+		KubernetesVersion: k8s.KubernetesSemVer(),
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		ExtraArgs:         extraComponentConfig,
@@ -404,8 +395,8 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 	return b.String(), nil
 }
 
-func maybeDownloadAndCache(binary, version string) (string, error) {
-	targetDir := constants.MakeMiniPath("cache", version)
+func maybeDownloadAndCache(binary string, version semver.Version) (string, error) {
+	targetDir := constants.MakeMiniPath("cache", fmt.Sprintf("v%s", version))
 	targetFilepath := path.Join(targetDir, binary)
 
 	_, err := os.Stat(targetFilepath)

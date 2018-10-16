@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -48,7 +49,7 @@ const tempLoadDir = "/tmp"
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
-func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
+func CacheImagesForBootstrapper(version semver.Version, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
 
 	if err := CacheImages(images, constants.ImageCacheDir); err != nil {

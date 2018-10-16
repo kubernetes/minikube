@@ -18,8 +18,11 @@ package config
 
 import (
 	"net"
+	"strings"
 
+	"github.com/blang/semver"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Config contains machine and k8s config
@@ -69,4 +72,10 @@ type KubernetesConfig struct {
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
+}
+
+// KubernetesSemVer gives us the semver object corresponding to the requested
+// Kubernetes version or panics.
+func (kcfg KubernetesConfig) KubernetesSemVer() semver.Version {
+	return semver.MustParse(strings.TrimPrefix(kcfg.KubernetesVersion, version.VersionPrefix))
 }

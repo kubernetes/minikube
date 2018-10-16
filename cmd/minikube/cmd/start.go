@@ -95,12 +95,25 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
+	var k8sVersion semver.Version
+
 	if glog.V(8) {
 		glog.Infoln("Viper configuration:")
 		viper.Debug()
 	}
 	shouldCacheImages := viper.GetBool(cacheImages)
-	k8sVersion := viper.GetString(kubernetesVersion)
+
+	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
+	if strings.Compare(selectedKubernetesVersion, "") == 0 {
+		k8sVersion = semver.MustParse(constants.DefaultKubernetesVersion)
+	} else {
+		var err error
+		k8sVersion, err = semver.Make(strings.TrimPrefix(viper.GetString(kubernetesVersion), version.VersionPrefix))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing version: %s\n", err)
+			os.Exit(1)
+		}
+	}
 	clusterBootstrapper := viper.GetString(cmdcfg.Bootstrapper)
 
 	var groupCacheImages errgroup.Group
@@ -159,7 +172,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		GPU:                 viper.GetBool(gpu),
 	}
 
-	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
+	fmt.Printf("Starting local Kubernetes v%s cluster...\n", k8sVersion)
 	fmt.Println("Starting VM...")
 	var host *host.Host
 	start := func() (err error) {
@@ -182,10 +195,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
-	if strings.Compare(selectedKubernetesVersion, "") == 0 {
-		selectedKubernetesVersion = constants.DefaultKubernetesVersion
-	}
 	// Load profile cluster config from file
 	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
 	if err != nil && !os.IsNotExist(err) {
@@ -193,25 +202,17 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if err == nil {
-		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(cc.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
-		if err != nil {
-			glog.Errorln("Error parsing version semver: ", err)
-		}
-
-		newKubernetesVersion, err := semver.Make(strings.TrimPrefix(viper.GetString(kubernetesVersion), version.VersionPrefix))
-		if err != nil {
-			glog.Errorln("Error parsing version semver: ", err)
-		}
+		oldKubernetesVersion := cc.KubernetesConfig.KubernetesSemVer()
 
 		// Check if it's an attempt to downgrade version. Avoid version downgrad.
-		if newKubernetesVersion.LT(oldKubernetesVersion) {
-			selectedKubernetesVersion = version.VersionPrefix + oldKubernetesVersion.String()
-			fmt.Println("Kubernetes version downgrade is not supported. Using version:", selectedKubernetesVersion)
+		if k8sVersion.LT(oldKubernetesVersion) {
+			k8sVersion = oldKubernetesVersion
+			fmt.Printf("Kubernetes version downgrade is not supported. Using version: %s\n", k8sVersion)
 		}
 	}
 
 	kubernetesConfig := cfg.KubernetesConfig{
-		KubernetesVersion:      selectedKubernetesVersion,
+		KubernetesVersion:      k8sVersion.String(),
 		NodeIP:                 ip,
 		NodeName:               constants.DefaultNodeName,
 		APIServerName:          viper.GetString(apiServerName),

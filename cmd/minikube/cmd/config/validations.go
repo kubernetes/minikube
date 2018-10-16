@@ -22,11 +22,14 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
+	"github.com/blang/semver"
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/version"
 )
 
 func IsValidDriver(string, driver string) error {
@@ -91,4 +94,12 @@ func IsValidAddon(name string, val string) error {
 		return nil
 	}
 	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
+}
+
+func IsValidVersion(name string, val string) error {
+	_, err := semver.Make(strings.TrimPrefix(val, version.VersionPrefix))
+	if err != nil {
+		return fmt.Errorf("%s is not a valid Kubernetes version", val)
+	}
+	return nil
 }

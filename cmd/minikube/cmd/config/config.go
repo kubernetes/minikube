@@ -84,8 +84,9 @@ var settings = []Setting{
 		validations: []setFn{IsValidPath},
 	},
 	{
-		name: "kubernetes-version",
-		set:  SetString,
+		name:        "kubernetes-version",
+		set:         SetString,
+		validations: []setFn{IsValidVersion},
 	},
 	{
 		name:        "iso-url",

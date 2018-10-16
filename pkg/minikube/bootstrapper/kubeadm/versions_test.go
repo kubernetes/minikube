@@ -93,16 +93,6 @@ func TestVersionIsBetween(t *testing.T) {
 	}
 }
 
-func TestParseKubernetesVersion(t *testing.T) {
-	version, err := ParseKubernetesVersion("v1.8.0-alpha.5")
-	if err != nil {
-		t.Fatalf("Error parsing version: %s", err)
-	}
-	if version.NE(semver.MustParse("1.8.0-alpha.5")) {
-		t.Errorf("Expected: %s, Actual:%s", "1.8.0-alpha.5", version)
-	}
-}
-
 func TestParseFeatureArgs(t *testing.T) {
 	tests := []struct {
 		description                  string

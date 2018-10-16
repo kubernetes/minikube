@@ -152,16 +152,6 @@ func Supports(featureName string) bool {
 	return false
 }
 
-func ParseKubernetesVersion(version string) (semver.Version, error) {
-	// Strip leading 'v' prefix from version for semver parsing
-	v, err := semver.Make(version[1:])
-	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "parsing kubernetes version")
-	}
-
-	return v, nil
-}
-
 func convertToFlags(opts map[string]string) string {
 	var flags []string
 	for k, v := range opts {

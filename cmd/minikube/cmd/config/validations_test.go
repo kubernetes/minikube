@@ -94,3 +94,42 @@ func TestValidCIDR(t *testing.T) {
 
 	runValidations(t, tests, "cidr", IsValidCIDR)
 }
+
+func TestValidVersion(t *testing.T) {
+	var tests = []validationTest{
+		{
+			value:     "v1.12.1",
+			shouldErr: false,
+		},
+		{
+			value:     "1.12.1",
+			shouldErr: false,
+		},
+		{
+			value:     "1.8.0-alpha.5",
+			shouldErr: false,
+		},
+		{
+			value:     "v1.8.0-alpha.5",
+			shouldErr: false,
+		},
+		{
+			value:     "x99",
+			shouldErr: true,
+		},
+		{
+			value:     "12.1",
+			shouldErr: true,
+		},
+		{
+			value:     "fnord",
+			shouldErr: true,
+		},
+		{
+			value:     "this.that.theother",
+			shouldErr: true,
+		},
+	}
+
+	runValidations(t, tests, "version", IsValidVersion)
+}

@@ -31,7 +31,7 @@ api:
   advertiseAddress: {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
   controlPlaneEndpoint: localhost
-kubernetesVersion: {{.KubernetesVersion}}
+kubernetesVersion: v{{.KubernetesVersion}}
 certificatesDir: {{.CertDir}}
 networking:
   serviceSubnet: {{.ServiceCIDR}}
@@ -76,7 +76,7 @@ etcd:
   local:
     dataDir: {{.EtcdDataDir}}
 kind: ClusterConfiguration
-kubernetesVersion: {{.KubernetesVersion}}
+kubernetesVersion: v{{.KubernetesVersion}}
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
