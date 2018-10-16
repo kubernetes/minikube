@@ -19,8 +19,8 @@ package assets
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"path"
+	"path/filepath"
 	"strconv"
 
 	"github.com/pkg/errors"
