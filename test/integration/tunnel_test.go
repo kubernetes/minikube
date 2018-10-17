@@ -29,15 +29,22 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
+	"k8s.io/minikube/pkg/minikube/tunnel"
 )
 
 func testTunnel(t *testing.T) {
-	t.Log("starting tunnel...")
+	t.Log("starting tunnel test...")
 	runner := NewMinikubeRunner(t)
 	go func() {
 		output := runner.RunCommand("tunnel --alsologtostderr -v 8", true)
 		fmt.Println(output)
 	}()
+
+	err := tunnel.NewManager().CleanupNotRunningTunnels()
+
+	if err != nil {
+		t.Fatal(errors.Wrap(err, "cleaning up tunnels"))
+	}
 
 	kubectlRunner := util.NewKubectlRunner(t)
 
@@ -59,7 +66,7 @@ func testTunnel(t *testing.T) {
 	}
 
 	if err := commonutil.WaitForService(client, "default", "nginx-svc", true, time.Millisecond*500, time.Minute*10); err != nil {
-		t.Errorf("Error waiting for nginx service to be up")
+		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
 	t.Log("getting nginx ingress...")
@@ -72,7 +79,7 @@ func testTunnel(t *testing.T) {
 		if err != nil {
 			t.Fatalf("error listing nginx service: %s", err)
 		}
-		nginxIP = fmt.Sprintf("%s", stdout)
+		nginxIP = string(stdout)
 		time.Sleep(1 * time.Second)
 	}
 
@@ -95,7 +102,7 @@ func testTunnel(t *testing.T) {
 		t.Fatalf("error reading body from nginx at address(%s): error: %s, len bytes read: %d", nginxIP, err, len(body))
 	}
 
-	responseBody := fmt.Sprintf("%s", body)
+	responseBody := string(body)
 	if !strings.Contains(responseBody, "Welcome to nginx!") {
 		t.Fatalf("response body doesn't seem like an nginx response:\n%s", responseBody)
 	}
