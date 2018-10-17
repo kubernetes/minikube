@@ -27,9 +27,9 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/minikube/pkg/minikube/tunnel"
 	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
-	"k8s.io/minikube/pkg/minikube/tunnel"
 )
 
 func testTunnel(t *testing.T) {
