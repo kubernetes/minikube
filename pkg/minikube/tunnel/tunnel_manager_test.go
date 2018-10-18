@@ -270,7 +270,7 @@ type tunnelStub struct {
 	timesChecked    int
 }
 
-func (t *tunnelStub) updateTunnelStatus() *Status {
+func (t *tunnelStub) update() *Status {
 	t.tunnelExists = t.mockClusterInfo.MinikubeState == Running
 	t.timesChecked++
 	return t.mockClusterInfo

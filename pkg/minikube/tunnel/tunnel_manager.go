@@ -38,19 +38,19 @@ type Manager struct {
 	router   router
 }
 
+//stateCheckInterval defines how frequently the cluster and route states are checked
+const stateCheckInterval = 5 * time.Second
+
 func NewManager() *Manager {
 	return &Manager{
-		delay: 5 * time.Second,
+		delay: stateCheckInterval,
 		registry: &persistentRegistry{
 			path: constants.TunnelRegistryPath(),
 		},
 		router: &osRouter{},
 	}
 }
-func (mgr *Manager) StartTunnel(ctx context.Context, machineName string,
-	machineAPI libmachine.API,
-	configLoader config.Loader,
-	v1Core v1.CoreV1Interface) (done chan bool, err error) {
+func (mgr *Manager) StartTunnel(ctx context.Context, machineName string, machineAPI libmachine.API, configLoader config.Loader, v1Core v1.CoreV1Interface) (done chan bool, err error) {
 	tunnel, err := newTunnel(machineName, machineAPI, configLoader, v1Core, mgr.registry, mgr.router)
 	if err != nil {
 		return nil, fmt.Errorf("error creating tunnel: %s", err)
@@ -58,7 +58,7 @@ func (mgr *Manager) StartTunnel(ctx context.Context, machineName string,
 	return mgr.startTunnel(ctx, tunnel)
 
 }
-func (mgr *Manager) startTunnel(ctx context.Context, tunnel tunnel) (done chan bool, err error) {
+func (mgr *Manager) startTunnel(ctx context.Context, tunnel controller) (done chan bool, err error) {
 	glog.Info("Setting up tunnel...")
 
 	ready := make(chan bool, 1)
@@ -83,7 +83,7 @@ func (mgr *Manager) timerLoop(ready, check chan bool) {
 	}
 }
 
-func (mgr *Manager) run(ctx context.Context, t tunnel, ready, check, done chan bool) {
+func (mgr *Manager) run(ctx context.Context, t controller, ready, check, done chan bool) {
 	defer func() {
 		done <- true
 	}()
@@ -101,7 +101,7 @@ func (mgr *Manager) run(ctx context.Context, t tunnel, ready, check, done chan b
 				return
 			default:
 			}
-			status := t.updateTunnelStatus()
+			status := t.update()
 			glog.V(4).Infof("minikube status: %s", status)
 			if status.MinikubeState != Running {
 				glog.Infof("minikube status: %s, cleaning up and quitting...", status.MinikubeState)
@@ -113,7 +113,7 @@ func (mgr *Manager) run(ctx context.Context, t tunnel, ready, check, done chan b
 	}
 }
 
-func (mgr *Manager) cleanup(t tunnel) *Status {
+func (mgr *Manager) cleanup(t controller) *Status {
 	return t.cleanup()
 }
 

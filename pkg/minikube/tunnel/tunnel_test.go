@@ -54,7 +54,7 @@ func TestTunnel(t *testing.T) {
 		machineIP         string
 		configLoaderError error
 		mockPidHandling   bool
-		call              func(tunnel *minikubeTunnel) *Status
+		call              func(tunnel *tunnel) *Status
 		assertion         func(*testing.T, *Status, []*Status, []*Route, []*ID)
 	}{
 		{
@@ -62,8 +62,8 @@ func TestTunnel(t *testing.T) {
 			machineState: state.Stopped,
 			serviceCIDR:  "1.2.3.4/5",
 			machineIP:    "1.2.3.4",
-			call: func(tunnel *minikubeTunnel) *Status {
-				return tunnel.updateTunnelStatus()
+			call: func(tunnel *tunnel) *Status {
+				return tunnel.update()
 			},
 			assertion: func(t *testing.T, returnedState *Status, reportedStates []*Status, routes []*Route, registeredTunnels []*ID) {
 				expectedState := &Status{
@@ -98,7 +98,7 @@ func TestTunnel(t *testing.T) {
 			machineState: state.Running,
 			serviceCIDR:  "1.2.3.4/5",
 			machineIP:    "1.2.3.4",
-			call: func(tunnel *minikubeTunnel) *Status {
+			call: func(tunnel *tunnel) *Status {
 				return tunnel.cleanup()
 			},
 			assertion: func(t *testing.T, returnedState *Status, reportedStates []*Status, routes []*Route, registeredTunnels []*ID) {
@@ -135,8 +135,8 @@ func TestTunnel(t *testing.T) {
 			machineState: state.Running,
 			serviceCIDR:  "1.2.3.4/5",
 			machineIP:    "1.2.3.4",
-			call: func(tunnel *minikubeTunnel) *Status {
-				return tunnel.updateTunnelStatus()
+			call: func(tunnel *tunnel) *Status {
+				return tunnel.update()
 			},
 			assertion: func(t *testing.T, returnedState *Status, reportedStates []*Status, routes []*Route, registeredTunnels []*ID) {
 				expectedRoute := unsafeParseRoute("1.2.3.4", "1.2.3.4/5")
@@ -170,12 +170,12 @@ func TestTunnel(t *testing.T) {
 			},
 		},
 		{
-			name:         "tunnel cleanup error after 1 successful update",
+			name:         "tunnel cleanup error after 1 successful addRoute",
 			machineState: state.Running,
 			serviceCIDR:  "1.2.3.4/5",
 			machineIP:    "1.2.3.4",
-			call: func(tunnel *minikubeTunnel) *Status {
-				tunnel.updateTunnelStatus()
+			call: func(tunnel *tunnel) *Status {
+				tunnel.update()
 				tunnel.router.(*fakeRouter).errorResponse = errors.New("testerror")
 				return tunnel.cleanup()
 			},
@@ -220,8 +220,8 @@ func TestTunnel(t *testing.T) {
 			machineState: state.Running,
 			serviceCIDR:  "1.2.3.4/5",
 			machineIP:    "1.2.3.4",
-			call: func(tunnel *minikubeTunnel) *Status {
-				tunnel.updateTunnelStatus()
+			call: func(tunnel *tunnel) *Status {
+				tunnel.update()
 				return tunnel.cleanup()
 			},
 			assertion: func(t *testing.T, actualSecondState *Status, reportedStates []*Status, routes []*Route, registeredTunnels []*ID) {
@@ -260,7 +260,7 @@ func TestTunnel(t *testing.T) {
 			serviceCIDR:     "1.2.3.4/5",
 			machineIP:       "1.2.3.4",
 			mockPidHandling: true,
-			call: func(tunnel *minikubeTunnel) *Status {
+			call: func(tunnel *tunnel) *Status {
 
 				err := tunnel.registry.Register(&ID{
 					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
@@ -270,7 +270,7 @@ func TestTunnel(t *testing.T) {
 				if err != nil {
 					t.Errorf("error registering tunnel: %s", err)
 				}
-				tunnel.updateTunnelStatus()
+				tunnel.update()
 				return tunnel.cleanup()
 			},
 			assertion: func(t *testing.T, actualSecondState *Status, reportedStates []*Status, routes []*Route, registeredTunnels []*ID) {
@@ -314,7 +314,7 @@ func TestTunnel(t *testing.T) {
 			serviceCIDR:     "1.2.3.4/5",
 			machineIP:       "1.2.3.4",
 			mockPidHandling: true,
-			call: func(tunnel *minikubeTunnel) *Status {
+			call: func(tunnel *tunnel) *Status {
 
 				err := tunnel.registry.Register(&ID{
 					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
@@ -328,7 +328,7 @@ func TestTunnel(t *testing.T) {
 					route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
 					line:  "",
 				})
-				tunnel.updateTunnelStatus()
+				tunnel.update()
 				return tunnel.cleanup()
 			},
 			assertion: func(t *testing.T, actualSecondState *Status, reportedStates []*Status, routes []*Route, registeredTunnels []*ID) {
