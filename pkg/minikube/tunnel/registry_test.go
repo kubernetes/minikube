@@ -49,216 +49,209 @@ func TestPersistentRegistryNullableMetadata(t *testing.T) {
 	}
 }
 
-func TestPersistentRegistryOperations(t *testing.T) {
-	tcs := []struct {
-		name     string
-		fileName string
-		setup    func(*testing.T, *persistentRegistry)
-		test     func(*testing.T, *persistentRegistry)
-	}{
+func TestListOnEmptyRegistry(t *testing.T) {
+	reg := &persistentRegistry{
+		path: "nonexistent.txt",
+	}
+
+	info, err := reg.List()
+	expectedInfo := []*ID{}
+	if !reflect.DeepEqual(info, expectedInfo) || err != nil {
+		t.Errorf("expected %s, nil error, got %s, %s", expectedInfo, info, err)
+	}
+}
+
+func TestRemoveOnEmptyRegistry(t *testing.T) {
+	reg := &persistentRegistry{
+		path: "nonexistent.txt",
+	}
+
+	e := reg.Remove(unsafeParseRoute("1.2.3.4", "1.2.3.4/5"))
+	if e == nil {
+		t.Errorf("expected error, got %s", e)
+	}
+}
+
+func TestRegisterOnEmptyRegistry(t *testing.T) {
+	reg := &persistentRegistry{
+		path: "nonexistent.txt",
+	}
+
+	err := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
+	if err != nil {
+		t.Errorf("expected no error, got %s", err)
+	}
+	f, err := os.Open("nonexistent.txt")
+	if err != nil {
+		t.Errorf("expected file to exist, got: %s", err)
+		return
+	}
+	f.Close()
+	err = os.Remove("nonexistent.txt")
+	if err != nil {
+		t.Errorf("error removing nonexistent.txt: %s", err)
+	}
+}
+
+func TestRemoveOnNonExistentTunnel(t *testing.T) {
+	file := tmpFile(t)
+	reg := &persistentRegistry{
+		path: file,
+	}
+	defer os.Remove(file)
+
+	err := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
+	if err != nil {
+		t.Errorf("expected no error, got %s", err)
+	}
+
+	err = reg.Remove(unsafeParseRoute("5.6.7.8", "1.2.3.4/5"))
+	if err == nil {
+		t.Errorf("expected error, got nil")
+	}
+}
+
+func TestListAfterRegister(t *testing.T) {
+	file := tmpFile(t)
+	reg := &persistentRegistry{
+		path: file,
+	}
+	defer os.Remove(file)
+	err := reg.Register(&ID{
+		Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
+		MachineName: "testmachine",
+		Pid:         1234,
+	})
+	if err != nil {
+		t.Errorf("failed to register: expected no error, got %s", err)
+	}
+
+	tunnelList, err := reg.List()
+	if err != nil {
+		t.Errorf("failed to list: expected no error, got %s", err)
+	}
+
+	expectedList := []*ID{
 		{
-			name:     "Calling List on non-existent registry file should return empty list",
-			fileName: "nonexistent.txt",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				info, err := reg.List()
-				expectedInfo := []*ID{}
-				if !reflect.DeepEqual(info, expectedInfo) || err != nil {
-					t.Errorf("expected %s, nil error, got %s, %s", expectedInfo, info, err)
-				}
-			},
-		},
-		{
-			name:     "Calling Remove on non-existent registry file should return error",
-			fileName: "nonexistent.txt",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Remove(unsafeParseRoute("1.2.3.4", "1.2.3.4/5"))
-				if e == nil {
-					t.Errorf("expected error, got %s", e)
-				}
-			},
-		},
-		{
-			name:     "Calling Register on non-existent registry file should create file",
-			fileName: "nonexistent.txt",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				err := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
-				if err != nil {
-					t.Errorf("expected no error, got %s", err)
-				}
-				fileName := "nonexistent.txt"
-				f, err := os.Open(fileName)
-				if err != nil {
-					t.Errorf("expected file to exist, got: %s", err)
-					return
-				}
-				f.Close()
-				err = os.Remove("nonexistent.txt")
-				if err != nil {
-					t.Errorf("error removing nonexistent.txt: %s", err)
-				}
-			},
-		},
-		{
-			name: "Calling Remove on non-existent tunnel should return error",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&ID{Route: unsafeParseRoute("1.2.3.4", "1.2.3.4/5")})
-				if e != nil {
-					t.Errorf("expected no error, got %s", e)
-				}
-
-				e = reg.Remove(unsafeParseRoute("5.6.7.8", "1.2.3.4/5"))
-				if e == nil {
-					t.Errorf("expected error, got nil")
-				}
-			},
-		},
-		{
-			name: "Register + List should return tunnel info",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&ID{
-					Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
-					MachineName: "testmachine",
-					Pid:         1234,
-				})
-				if e != nil {
-					t.Errorf("failed to register: expected no error, got %s", e)
-				}
-
-				tunnelList, err := reg.List()
-				if err != nil {
-					t.Errorf("failed to list: expected no error, got %s", err)
-				}
-
-				expectedList := []*ID{
-					{
-						Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
-						MachineName: "testmachine",
-						Pid:         1234,
-					},
-				}
-
-				if len(tunnelList) != 1 || !tunnelList[0].Equal(expectedList[0]) {
-					t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
-				}
-			},
-		},
-		{
-			name: "Register + Remove + List",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&ID{
-					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
-					MachineName: "testmachine",
-					Pid:         1234,
-				})
-				if e != nil {
-					t.Errorf("failed to register: expected no error, got %s", e)
-				}
-
-				e = reg.Remove(unsafeParseRoute("192.168.1.25", "10.96.0.0/12"))
-
-				if e != nil {
-					t.Errorf("failed to remove: expected no error, got %s", e)
-				}
-
-				tunnelList, err := reg.List()
-				if err != nil {
-					t.Errorf("failed to list: expected no error, got %s", err)
-				}
-
-				expectedList := []*ID{}
-
-				if len(tunnelList) != 0 {
-					t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
-				}
-			},
-		},
-		{
-			name: "Error on duplicate route with running process",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&ID{
-					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
-					MachineName: "testmachine",
-					Pid:         os.Getpid(),
-				})
-				if e != nil {
-					t.Errorf("failed to register: expected no error, got %s", e)
-				}
-				e = reg.Register(&ID{
-					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
-					MachineName: "testmachine",
-					Pid:         5678,
-				})
-				if e == nil {
-					t.Error("expected error on duplicate route, got nil")
-				}
-			},
-		},
-		{
-			name: "Update duplicate route when process is not running",
-			test: func(t *testing.T, reg *persistentRegistry) {
-				e := reg.Register(&ID{
-					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
-					MachineName: "testmachine",
-					Pid:         12341234,
-				})
-				if e != nil {
-					t.Errorf("failed to register: expected no error, got %s", e)
-				}
-				e = reg.Register(&ID{
-					Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
-					MachineName: "testmachine",
-					Pid:         5678,
-				})
-				if e != nil {
-					t.Errorf("failed to register: expected no error, got %s", e)
-				}
-
-				tunnelList, err := reg.List()
-				if err != nil {
-					t.Errorf("failed to list: expected no error, got %s", err)
-				}
-
-				expectedList := []*ID{
-					{
-						Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
-						MachineName: "testmachine",
-						Pid:         5678,
-					},
-				}
-
-				if len(tunnelList) != 1 || !tunnelList[0].Equal(expectedList[0]) {
-					t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
-				}
-			},
+			Route:       unsafeParseRoute("1.2.3.4", "1.2.3.4/5"),
+			MachineName: "testmachine",
+			Pid:         1234,
 		},
 	}
 
-	for _, tc := range tcs {
-		t.Run(tc.name, func(t *testing.T) {
-			fileName := tc.fileName
+	if len(tunnelList) != 1 || !tunnelList[0].Equal(expectedList[0]) {
+		t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
+	}
+}
+func TestRegisterRemoveList(t *testing.T) {
+	file := tmpFile(t)
+	reg := &persistentRegistry{
+		path: file,
+	}
+	defer os.Remove(file)
 
-			if fileName == "" {
-				f, err := ioutil.TempFile(os.TempDir(), "reg_")
-				f.Close()
-				if err != nil {
-					t.Errorf("failed to create temp file %s", err)
-				}
-				fileName = f.Name()
-				defer os.Remove(fileName)
-			}
-
-			registry := &persistentRegistry{
-				path: fileName,
-			}
-			if tc.setup != nil {
-				tc.setup(t, registry)
-			}
-			if tc.test != nil {
-				tc.test(t, registry)
-			}
-		})
+	err := reg.Register(&ID{
+		Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+		MachineName: "testmachine",
+		Pid:         1234,
+	})
+	if err != nil {
+		t.Errorf("failed to register: expected no error, got %s", err)
 	}
 
+	err = reg.Remove(unsafeParseRoute("192.168.1.25", "10.96.0.0/12"))
+
+	if err != nil {
+		t.Errorf("failed to remove: expected no error, got %s", err)
+	}
+
+	tunnelList, err := reg.List()
+	if err != nil {
+		t.Errorf("failed to list: expected no error, got %s", err)
+	}
+
+	expectedList := []*ID{}
+
+	if len(tunnelList) != 0 {
+		t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
+	}
+}
+
+func TestDuplicateRouteError(t *testing.T) {
+	file := tmpFile(t)
+	reg := &persistentRegistry{
+		path: file,
+	}
+	defer os.Remove(file)
+
+	err := reg.Register(&ID{
+		Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+		MachineName: "testmachine",
+		Pid:         os.Getpid(),
+	})
+	if err != nil {
+		t.Errorf("failed to register: expected no error, got %s", err)
+	}
+	err = reg.Register(&ID{
+		Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+		MachineName: "testmachine",
+		Pid:         5678,
+	})
+	if err == nil {
+		t.Error("expected error on duplicate route, got nil")
+	}
+}
+
+func TestTunnelTakeoverFromNonRunningProcess(t *testing.T) {
+	file := tmpFile(t)
+	reg := &persistentRegistry{
+		path: file,
+	}
+	defer os.Remove(file)
+
+	err := reg.Register(&ID{
+		Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+		MachineName: "testmachine",
+		Pid:         12341234,
+	})
+	if err != nil {
+		t.Errorf("failed to register: expected no error, got %s", err)
+	}
+	err = reg.Register(&ID{
+		Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+		MachineName: "testmachine",
+		Pid:         5678,
+	})
+	if err != nil {
+		t.Errorf("failed to register: expected no error, got %s", err)
+	}
+
+	tunnelList, err := reg.List()
+	if err != nil {
+		t.Errorf("failed to list: expected no error, got %s", err)
+	}
+
+	expectedList := []*ID{
+		{
+			Route:       unsafeParseRoute("192.168.1.25", "10.96.0.0/12"),
+			MachineName: "testmachine",
+			Pid:         5678,
+		},
+	}
+
+	if len(tunnelList) != 1 || !tunnelList[0].Equal(expectedList[0]) {
+		t.Errorf("\nexpected %+v,\ngot      %+v", expectedList, tunnelList)
+	}
+}
+
+func tmpFile(t *testing.T) string {
+	t.Helper()
+	f, err := ioutil.TempFile(os.TempDir(), "reg_")
+	f.Close()
+	if err != nil {
+		t.Errorf("failed to create temp file %s", err)
+	}
+	return f.Name()
 }
 
 func createTestRegistry(t *testing.T) (reg *persistentRegistry, cleanup func()) {

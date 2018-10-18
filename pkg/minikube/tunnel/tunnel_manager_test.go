@@ -198,47 +198,47 @@ func TestTunnelManagerCleanup(t *testing.T) {
 		Pid:         12341234,
 		MachineName: "minikube",
 	}
-	e := reg.Register(runningTunnel1)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err := reg.Register(runningTunnel1)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
-	e = reg.Register(runningTunnel2)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err = reg.Register(runningTunnel2)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
-	e = reg.Register(notRunningTunnel1)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err = reg.Register(notRunningTunnel1)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
-	e = reg.Register(notRunningTunnel2)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err = reg.Register(notRunningTunnel2)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
 
 	router := &fakeRouter{}
 
-	e = router.EnsureRouteIsAdded(runningTunnel1.Route)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err = router.EnsureRouteIsAdded(runningTunnel1.Route)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
-	e = router.EnsureRouteIsAdded(runningTunnel2.Route)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err = router.EnsureRouteIsAdded(runningTunnel2.Route)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
-	e = router.EnsureRouteIsAdded(notRunningTunnel1.Route)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err = router.EnsureRouteIsAdded(notRunningTunnel1.Route)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
-	e = router.EnsureRouteIsAdded(notRunningTunnel2.Route)
-	if e != nil {
-		t.Errorf("expected no error got: %v", e)
+	err = router.EnsureRouteIsAdded(notRunningTunnel2.Route)
+	if err != nil {
+		t.Errorf("expected no error got: %v", err)
 	}
 
 	manager := NewManager()
 	manager.router = router
 	manager.registry = reg
 
-	err := manager.CleanupNotRunningTunnels()
+	err = manager.CleanupNotRunningTunnels()
 
 	if err != nil {
 		t.Errorf("expected no error got: %v", err)

@@ -43,12 +43,12 @@ func newTunnel(machineName string,
 	machineAPI libmachine.API,
 	configLoader config.Loader,
 	v1Core v1.CoreV1Interface, registry *persistentRegistry, router router) (*tunnel, error) {
-	clusterInspector := &clusterInspector{
+	ci := &clusterInspector{
 		machineName:  machineName,
 		machineAPI:   machineAPI,
 		configLoader: configLoader,
 	}
-	state, route, err := clusterInspector.getStateAndRoute()
+	state, route, err := ci.getStateAndRoute()
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine cluster info: %s", err)
@@ -67,7 +67,7 @@ func newTunnel(machineName string,
 	}
 
 	return &tunnel{
-		clusterInspector:     clusterInspector,
+		clusterInspector:     ci,
 		router:               router,
 		registry:             registry,
 		loadBalancerEmulator: newLoadBalancerEmulator(v1Core),
@@ -95,14 +95,14 @@ type tunnel struct {
 
 func (t *tunnel) cleanup() *Status {
 	glog.V(3).Infof("cleaning up %s", t.status.TunnelID.Route)
-	e := t.router.Cleanup(t.status.TunnelID.Route)
-	if e != nil {
-		t.status.RouteError = errors.Errorf("error cleaning up route: %v", e)
+	err := t.router.Cleanup(t.status.TunnelID.Route)
+	if err != nil {
+		t.status.RouteError = errors.Errorf("error cleaning up route: %v", err)
 		glog.V(3).Infof(t.status.RouteError.Error())
 	} else {
-		e = t.registry.Remove(t.status.TunnelID.Route)
-		if e != nil {
-			glog.V(3).Infof("error removing route from registry: %v", e)
+		err = t.registry.Remove(t.status.TunnelID.Route)
+		if err != nil {
+			glog.V(3).Infof("error removing route from registry: %v", err)
 		}
 	}
 	if t.status.MinikubeState == Running {

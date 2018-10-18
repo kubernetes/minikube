@@ -118,7 +118,12 @@ func (r *persistentRegistry) Register(tunnel *ID) error {
 			return err
 		}
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			fmt.Errorf("error closing registry file: %s", err)
+		}
+	}()
 
 	n, err := f.Write(bytes)
 	if n < len(bytes) || err != nil {
@@ -150,7 +155,12 @@ func (r *persistentRegistry) Remove(route *Route) error {
 	if err != nil {
 		return fmt.Errorf("error removing tunnel %s", err)
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			fmt.Errorf("error closing tunnel registry file: %s", err)
+		}
+	}()
 
 	var bytes []byte
 	bytes, err = json.Marshal(tunnels)
