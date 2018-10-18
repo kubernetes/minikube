@@ -35,8 +35,8 @@ EXTRA_FLAGS="--show-libmachine-logs"
 mkdir -p out/
 
 curl -L http://artifacts.ci.centos.org/minishift/minishift/master/latest/linux-amd64/minishift -o out/minishift
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/ || true
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-testing.iso out/ || true
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/ || true
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-testing.iso out/ || true
 
 # Set the executable bit on the minishift and driver binary
 chmod +x out/minishift

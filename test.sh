@@ -51,6 +51,7 @@ set +e
 files=$(gofmt -l -s . | grep -v ${ignore})
 set -e
 if [[ $files ]]; then
+  gofmt -d ${files}
   echo "Gofmt errors in files: $files"
   exit 1
 fi

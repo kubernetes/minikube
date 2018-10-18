@@ -21,6 +21,9 @@ $ cd $GOPATH/src/k8s.io/minikube
 $ make
 ```
 
+Note: Make sure that you uninstall any previous versions of minikube before building
+from the source.
+
 ### Building from Source in Docker (using Debian stretch image with golang)
 Clone minikube:
 ```shell
