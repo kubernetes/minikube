@@ -69,9 +69,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		glog.Infoln("Machine does not exist... provisioning new machine")
 		glog.Infof("Provisioning machine with config: %+v", config)
 		return createHost(api, config)
-	} else {
-		glog.Infoln("Skipping create...Using existing machine configuration")
 	}
+
+	glog.Infoln("Skipping create...Using existing machine configuration")
 
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
@@ -152,8 +152,8 @@ func GetHostStatus(api libmachine.API) (string, error) {
 }
 
 // GetHostDriverIP gets the ip address of the current minikube cluster
-func GetHostDriverIP(api libmachine.API) (net.IP, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
+	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		return nil, errors.Wrap(err, "Error parsing IP")
+		return nil, fmt.Errorf("error parsing IP: %s", ipStr)
 	}
 	return ip, nil
 }
@@ -251,7 +251,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -273,7 +273,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 
 // MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
 func MountHost(api libmachine.API, ip net.IP, path, port, mountVersion string, uid, gid, msize int) error {
-	host, err := CheckIfApiExistsAndLoad(api)
+	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -344,24 +344,25 @@ func getIPForInterface(name string) (net.IP, error) {
 	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
 }
 
-func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
+	exists, err := api.Exists(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking that api exists for: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)
 	}
 	if !exists {
-		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", cfg.GetMachineName())
+		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", machineName)
 	}
 
-	host, err := api.Load(cfg.GetMachineName())
+	host, err := api.Load(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading api for: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
 	}
 	return host, nil
 }
 
 func CreateSSHShell(api libmachine.API, args []string) error {
-	host, err := CheckIfApiExistsAndLoad(api)
+	machineName := cfg.GetMachineName()
+	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -372,7 +373,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	}
 
 	if currentState != state.Running {
-		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", cfg.GetMachineName())
+		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", machineName)
 	}
 
 	client, err := host.CreateSSHClient()
