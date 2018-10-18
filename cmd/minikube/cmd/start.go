@@ -187,7 +187,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		selectedKubernetesVersion = constants.DefaultKubernetesVersion
 	}
 	// Load profile cluster config from file
-	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
+	cc, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
 	}
@@ -462,24 +462,4 @@ func saveConfigToFile(data []byte, file string) error {
 		return err
 	}
 	return nil
-}
-
-func loadConfigFromFile(profile string) (cfg.Config, error) {
-	var cc cfg.Config
-
-	profileConfigFile := constants.GetProfileFile(profile)
-
-	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
-		return cc, err
-	}
-
-	data, err := ioutil.ReadFile(profileConfigFile)
-	if err != nil {
-		return cc, err
-	}
-
-	if err := json.Unmarshal(data, &cc); err != nil {
-		return cc, err
-	}
-	return cc, nil
 }

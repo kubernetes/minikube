@@ -43,7 +43,7 @@ done
 rm out/$COV_TMP_FILE
 
 # Ignore these paths in the following tests.
-ignore="vendor\|\_gopath\|assets.go\|out"
+ignore="vendor\|\_gopath\|assets.go\|out\/"
 
 # Check gofmt
 echo "Checking gofmt..."
