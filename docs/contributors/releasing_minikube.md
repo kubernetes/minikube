@@ -62,7 +62,7 @@ And run a command like this to push the tag: `git push upstream v<version>`.
 
 This step uses the git tag to publish new binaries to GCS and create a github release:
 
- * http://go/minikube:build-release
+ * navigate to the minikube "Release" jenkins job
  * Ensure that you are logged in (top right)
  * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
  * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
