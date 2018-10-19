@@ -41,9 +41,12 @@ var (
 func testProvisioning(t *testing.T) {
 	t.Parallel()
 	kubectlRunner := util.NewKubectlRunner(t)
-	if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
-		t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
-	}
+
+	defer func() {
+		if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
+			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
+		}
+	}()
 
 	// We have to make sure the addon-manager has created the StorageClass before creating
 	// a claim. Otherwise it will never get bound.
@@ -53,6 +56,7 @@ func testProvisioning(t *testing.T) {
 		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
 			return fmt.Errorf("get storageclass: %v", err)
 		}
+
 		if len(scl.Items) > 0 {
 			return nil
 		}
