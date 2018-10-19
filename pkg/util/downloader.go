@@ -74,7 +74,7 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 
 	fmt.Println("Downloading Minikube ISO")
 	if err := download.ToFile(isoURL, f.GetISOCacheFilepath(isoURL), options); err != nil {
-		return errors.Wrap(err, "Error downloading Minikube ISO")
+		return errors.Wrap(err, isoURL)
 	}
 
 	return nil
