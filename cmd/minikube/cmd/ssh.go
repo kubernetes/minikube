@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -39,7 +40,7 @@ var sshCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		host, err := cluster.CheckIfApiExistsAndLoad(api)
+		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting host: %s\n", err)
 			os.Exit(1)

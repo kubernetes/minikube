@@ -63,7 +63,7 @@ func waitForDNS(t *testing.T, c kubernetes.Interface) {
 		t.Fatalf("Waited too long for k8s-app=kube-dns pods")
 	}
 	if err := commonutil.WaitForDeploymentToStabilize(c, "kube-system", "kube-dns", time.Minute*2); err != nil {
-		t.Fatalf("kube-dns deployment failed became stable within 2 minutes")
+		t.Fatalf("kube-dns deployment failed to stabilize within 2 minutes")
 	}
 }
 

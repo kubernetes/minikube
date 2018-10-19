@@ -88,7 +88,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ip, err := cluster.GetHostDriverIP(api)
+			ip, err := cluster.GetHostDriverIP(api, config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error host driver ip status:", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)

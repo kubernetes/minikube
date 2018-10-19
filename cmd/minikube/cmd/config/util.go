@@ -114,7 +114,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		return err
 	}
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}
