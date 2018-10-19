@@ -258,61 +258,32 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 		expectedIsHTTPSchemedURL        bool
 	}{
 		{
-<<<<<<< HEAD
 			description:                     "no https for http schemed with no https option",
-			bareUrlString:                   "http://192.168.99.100:30563",
+			bareURLString:                   "http://192.168.99.100:30563",
 			https:                           false,
-			expectedHttpsFormattedUrlString: "http://192.168.99.100:30563",
-			expectedIsHttpSchemedURL:        true,
-		},
-		{
-			description:                     "no https for non-http schemed with no https option",
-			bareUrlString:                   "xyz.http.myservice:30563",
-			https:                           false,
-			expectedHttpsFormattedUrlString: "xyz.http.myservice:30563",
-			expectedIsHttpSchemedURL:        false,
-		},
-		{
-			description:                     "https for http schemed with https option",
-			bareUrlString:                   "http://192.168.99.100:30563",
-			https:                           true,
-			expectedHttpsFormattedUrlString: "https://192.168.99.100:30563",
-			expectedIsHttpSchemedURL:        true,
-		},
-		{
-			description:                     "no https for non-http schemed with https option and http substring",
-			bareUrlString:                   "xyz.http.myservice:30563",
-			https:                           true,
-			expectedHttpsFormattedUrlString: "xyz.http.myservice:30563",
-			expectedIsHttpSchemedURL:        false,
-=======
-			description:   "no https for http schemed with no https option",
-			bareURLString: "http://192.168.99.100:30563",
-			https:         false,
 			expectedHTTPSFormattedURLString: "http://192.168.99.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
-			description:   "no https for non-http schemed with no https option",
-			bareURLString: "xyz.http.myservice:30563",
-			https:         false,
+			description:                     "no https for non-http schemed with no https option",
+			bareURLString:                   "xyz.http.myservice:30563",
+			https:                           false,
 			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
 			expectedIsHTTPSchemedURL:        false,
 		},
 		{
-			description:   "https for http schemed with https option",
-			bareURLString: "http://192.168.99.100:30563",
-			https:         true,
+			description:                     "https for http schemed with https option",
+			bareURLString:                   "http://192.168.99.100:30563",
+			https:                           true,
 			expectedHTTPSFormattedURLString: "https://192.168.99.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
-			description:   "no https for non-http schemed with https option and http substring",
-			bareURLString: "xyz.http.myservice:30563",
-			https:         true,
+			description:                     "no https for non-http schemed with https option and http substring",
+			bareURLString:                   "xyz.http.myservice:30563",
+			https:                           true,
 			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
 			expectedIsHTTPSchemedURL:        false,
->>>>>>> master
 		},
 	}
 

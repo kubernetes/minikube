@@ -88,7 +88,7 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	cmd := exec.Command(path, commandArr...)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %v", command, err)
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
 	}
 
 	err = cmd.Start()
