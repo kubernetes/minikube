@@ -271,7 +271,7 @@ func TestDeleteHostMultipleErrors(t *testing.T) {
 		t.Fatal("Expected error deleting host, didn't get one.")
 	}
 
-	expectedErrors := []string{"Error removing " + config.GetMachineName(), "Error deleting machine"}
+	expectedErrors := []string{"error removing " + config.GetMachineName(), "error deleting machine"}
 	for _, expectedError := range expectedErrors {
 		if !strings.Contains(err.Error(), expectedError) {
 			t.Fatalf("Error %s expected to contain: %s.", err, expectedError)

@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -81,15 +82,21 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	return string(stdout)
 }
 
-func (m *MinikubeRunner) RunDaemon(command string) *exec.Cmd {
+func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
-	err := cmd.Start()
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %s", command, err)
+		m.T.Fatalf("stdout pipe failed: %v", err)
 	}
-	return cmd
+
+	err = cmd.Start()
+	if err != nil {
+		m.T.Fatalf("Error running command: %s %v", command, err)
+	}
+	return cmd, bufio.NewReader(stdoutPipe)
+
 }
 
 func (m *MinikubeRunner) SSH(command string) (string, error) {
@@ -300,7 +307,6 @@ func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (
 		if err == nil {
 			return nil
 		}
-		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
 		time.Sleep(d)
 	}
 	return err
