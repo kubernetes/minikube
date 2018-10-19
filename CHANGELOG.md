@@ -2,8 +2,8 @@
 
 # Version 0.30.0 - 10/04/2018
 
+* **Fix for [CVE-2018-1002103](https://github.com/kubernetes/minikube/issues/3208): Dashboard vulnerable to DNS rebinding attack** [#3210](https://github.com/kubernetes/minikube/pull/3210)
 * Initial support for Kubernetes 1.12+ [#3180](https://github.com/kubernetes/minikube/pull/3180)
-* Use "kubectl proxy" instead of a NodePort to expose the dashboard [#3210](https://github.com/kubernetes/minikube/pull/3210)
 * Enhance the Ingress Addon [#3099](https://github.com/kubernetes/minikube/pull/3099)
 * Upgrade cni and cni-plugins to release version [#3152](https://github.com/kubernetes/minikube/pull/3152)
 * ensure that /dev has settled before operating [#3195](https://github.com/kubernetes/minikube/pull/3195)
@@ -12,6 +12,7 @@
 * Install crictl from binary instead of from source [#3160](https://github.com/kubernetes/minikube/pull/3160)
 * Switch the source of libmachine to machine-drivers. [#3185](https://github.com/kubernetes/minikube/pull/3185)
 * Add psmisc package, for pstree command [#3161](https://github.com/kubernetes/minikube/pull/3161)
+* Significant improvements to kvm2 networking [#3148](https://github.com/kubernetes/minikube/pull/3148)
 
 Huge thank you for this release towards our contributors:
 - Anders F Björklund
@@ -20,6 +21,7 @@ Huge thank you for this release towards our contributors:
 - Denis Gladkikh
 - dlorenc
 - Fernando Diaz
+- Marcus Heese
 - oilbeater
 - Raunak Ramakrishnan
 - Rui Cao
