@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	api "k8s.io/api/core/v1"
+	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/minikube/test/integration/util"
 )
 

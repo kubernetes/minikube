@@ -76,7 +76,12 @@ func testMounting(t *testing.T) {
 		}
 		return nil
 	}
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
+	defer func() {
+		if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", podPath}); err != nil {
+			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
+
+		}
+	}()
 
 	if err := util.Retry(t, setupTest, 5*time.Second, 40); err != nil {
 		t.Fatal("mountTest failed with error:", err)
