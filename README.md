@@ -19,6 +19,10 @@
 
 Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.
 
+# Newsflash
+
+- 2018-10-05: minikube v0.30.0 released, addressing **[CVE-2018-1002103](https://github.com/kubernetes/minikube/issues/3208): Dashboard vulnerable to DNS rebinding attack**
+
 ## Installation
 ### macOS
 ```shell
