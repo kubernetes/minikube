@@ -23,32 +23,32 @@
 
 set -eux -o pipefail
 
+readonly bucket="minikube-builds"
+
 declare -rx BUILD_IN_DOCKER=y
 declare -rx GOPATH=/var/lib/jenkins/go
-declare -rx ISO_BUCKET="minikube-builds/${ghprbPullId}"
+declare -rx ISO_BUCKET="${bucket}/${ghprbPullId}"
 declare -rx ISO_VERSION="testing"
 declare -rx TAG="${ghprbActualCommit}"
 
-readonly bucket="gs://minikube-builds"
 
 docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
-make -j 16 all && result=$? || result=$?
+make -j 16 all && failed=$? || failed=$?
 
-gsutil cp gs://minikube-builds/logs/index.html \
-  "gs://minikube-builds/logs/${ghprbPullId}/index.html"
+gsutil cp "gs:/${bucket}/logs/index.html" \
+  "gs://${bucket}/logs/${ghprbPullId}/index.html"
 
-if [[ "${result}" -ne 0 ]]; then
+if [[ "${failed}" -ne 0 ]]; then
   echo "build failed"
-  exit "${result}"
+  exit "${failed}"
 fi
-
 
 git diff ${ghprbActualCommit} --name-only \
   $(git merge-base origin/master ${ghprbActualCommit}) \
-  | grep -q deploy/iso/minikube && rebuild_iso=1 || rebuild_iso=0
+  | grep -q deploy/iso/minikube && rebuild=1 || rebuild=0
 
-if [[ "${rebuild_iso}" -eq 1 ]]; then
+if [[ "${rebuild}" -eq 1 ]]; then
 	echo "ISO changes detected ... rebuilding ISO"
 	make release-iso
 fi
@@ -58,4 +58,4 @@ cp -r test/integration/testdata out/
 # Don't upload the buildroot artifacts if they exist
 rm -r out/buildroot || true
 
-gsutil -m cp -r out/* gs://minikube-builds/${ghprbPullId}/
+gsutil -m cp -r out/* "gs://${bucket}/${ghprbPullId}/"
