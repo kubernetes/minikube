@@ -46,8 +46,13 @@ func testMounting(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	mountCmd := fmt.Sprintf("mount %s:/mount-9p", tempDir)
-	cmd := minikubeRunner.RunDaemon(mountCmd)
-	defer cmd.Process.Kill()
+	cmd, _ := minikubeRunner.RunDaemon(mountCmd)
+	defer func() {
+		err := cmd.Process.Kill()
+		if err != nil {
+			t.Logf("Failed to kill mount command: %v", err)
+		}
+	}()
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox-mount"

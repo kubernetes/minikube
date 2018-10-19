@@ -87,6 +87,10 @@ const DefaultStorageClassProvisioner = "standard"
 // Used to modify the cache field in the config file
 const Cache = "cache"
 
+func TunnelRegistryPath() string {
+	return filepath.Join(GetMinipath(), "tunnels.json")
+}
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
 	args := []string{GetMinipath()}
@@ -110,7 +114,6 @@ const (
 	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	DefaultCacheListFormat     = "{{.CacheImage}}\n"
 	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
-	KubernetesVersionGCSURL    = "https://storage.googleapis.com/minikube/k8s_releases.json"
 	DefaultWait                = 20
 	DefaultInterval            = 6
 	DefaultClusterBootstrapper = "kubeadm"

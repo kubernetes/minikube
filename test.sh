@@ -43,7 +43,7 @@ done
 rm out/$COV_TMP_FILE
 
 # Ignore these paths in the following tests.
-ignore="vendor\|\_gopath\|assets.go\|out"
+ignore="vendor\|\_gopath\|assets.go\|out\/"
 
 # Check gofmt
 echo "Checking gofmt..."
@@ -51,6 +51,7 @@ set +e
 files=$(gofmt -l -s . | grep -v ${ignore})
 set -e
 if [[ $files ]]; then
+  gofmt -d ${files}
   echo "Gofmt errors in files: $files"
   exit 1
 fi
