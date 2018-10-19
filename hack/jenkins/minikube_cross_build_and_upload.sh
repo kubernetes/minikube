@@ -36,7 +36,7 @@ docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
 make -j 16 all && failed=$? || failed=$?
 
-gsutil cp "gs:/${bucket}/logs/index.html" \
+gsutil cp "gs://${bucket}/logs/index.html" \
   "gs://${bucket}/logs/${ghprbPullId}/index.html"
 
 if [[ "${failed}" -ne 0 ]]; then
