@@ -44,7 +44,7 @@ Please pay attention to test failures, as this is our integration test across pl
 
 ## Update Release Notes 
 
-Then run the following script to update the release notes:
+Run the following script to update the release notes:
 
 ```shell
 hack/release_notes.sh
