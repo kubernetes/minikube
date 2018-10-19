@@ -4,7 +4,7 @@
 
 This document is written for system integrators who are familiar with minikube, and wish to run it within a customized VM environment.
 
-`--vm-driver=none` allows advanced minikube users to skip VM creation, allowing minikube to be run on an user-supplied VM.
+`--vm-driver=none` allows advanced minikube users to skip VM creation, allowing minikube to be run on a user-supplied VM.
 
 ## What operating systems are supported?
 
