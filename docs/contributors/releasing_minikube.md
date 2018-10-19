@@ -7,7 +7,7 @@ Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally
 
  * navigate to the minikube ISO jenkins job
  * Ensure that you are logged in (top right)
- * For `ISO_VERSION`, type in the intended release version
+ * For `ISO_VERSION`, type in the intended release version (same as the minikube binary's version)
  * For `ISO_BUCKET`, type in `minikube/iso`
  * Click *Build*
 
