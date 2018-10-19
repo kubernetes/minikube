@@ -31,6 +31,7 @@
 
 [[constraint]]
   branch = "master"
+  source = "github.com/machine-drivers/machine"
   name = "github.com/docker/machine"
 
 [[constraint]]

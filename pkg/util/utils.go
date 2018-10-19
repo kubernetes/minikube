@@ -97,14 +97,17 @@ func Retry(attempts int, callback func() error) (err error) {
 func RetryAfter(attempts int, callback func() error, d time.Duration) (err error) {
 	m := MultiError{}
 	for i := 0; i < attempts; i++ {
+		glog.V(1).Infof("retry loop %d", i)
 		err = callback()
 		if err == nil {
 			return nil
 		}
 		m.Collect(err)
 		if _, ok := err.(*RetriableError); !ok {
+			glog.Infof("non-retriable error: %v", err)
 			return m.ToError()
 		}
+		glog.V(2).Infof("sleeping %s", d)
 		time.Sleep(d)
 	}
 	return m.ToError()

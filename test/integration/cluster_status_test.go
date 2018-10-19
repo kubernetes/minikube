@@ -42,7 +42,6 @@ func testClusterStatus(t *testing.T) {
 				if c.Type != api.ComponentHealthy {
 					continue
 				}
-				t.Logf("Component: %v, Healthy: %s.\n", i.GetName(), c.Status)
 				status = c.Status
 			}
 			if status != api.ConditionTrue {

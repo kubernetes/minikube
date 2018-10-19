@@ -43,17 +43,18 @@ var updateContextCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		defer api.Close()
-		ip, err := cluster.GetHostDriverIP(api)
+		machineName := config.GetMachineName()
+		ip, err := cluster.GetHostDriverIP(api, machineName)
 		if err != nil {
 			glog.Errorln("Error host driver ip status:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		kstatus, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath, config.GetMachineName())
+		ok, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
 		if err != nil {
 			glog.Errorln("Error kubeconfig status:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		if kstatus {
+		if ok {
 			fmt.Println("Reconfigured kubeconfig IP, now pointing at " + ip.String())
 		} else {
 			fmt.Println("Kubeconfig IP correctly configured, pointing at " + ip.String())

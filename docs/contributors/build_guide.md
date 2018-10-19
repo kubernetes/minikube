@@ -21,12 +21,15 @@ $ cd $GOPATH/src/k8s.io/minikube
 $ make
 ```
 
+Note: Make sure that you uninstall any previous versions of minikube before building
+from the source.
+
 ### Building from Source in Docker (using Debian stretch image with golang)
 Clone minikube:
 ```shell
 $ git clone https://github.com/kubernetes/minikube.git
 ```
-Build (cross complile for linux / OS X and Windows) using make:
+Build (cross compile for linux / OS X and Windows) using make:
 ```shell
 $ cd minikube
 $ docker run --rm -v "$PWD":/go/src/k8s.io/minikube -w /go/src/k8s.io/minikube golang:stretch make cross

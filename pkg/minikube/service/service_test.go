@@ -133,44 +133,6 @@ func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpo
 	return endpoint, nil
 }
 
-func TestCheckEndpointReady(t *testing.T) {
-	var tests = []struct {
-		description string
-		service     string
-		err         bool
-	}{
-		{
-			description: "Endpoint with no subsets should return an error",
-			service:     "no-subsets",
-			err:         true,
-		},
-		{
-			description: "Endpoint with no ready endpoints should return an error",
-			service:     "not-ready",
-			err:         true,
-		},
-		{
-			description: "Endpoint with at least one ready endpoint should not return an error",
-			service:     "one-ready",
-			err:         false,
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
-			err := checkEndpointReady(&MockEndpointsInterface{}, test.service)
-			if err != nil && !test.err {
-				t.Errorf("Check endpoints returned an error: %+v", err)
-			}
-			if err == nil && test.err {
-				t.Errorf("Check endpoints should have returned an error but returned nil")
-			}
-		})
-	}
-}
-
 type MockServiceInterface struct {
 	fake.FakeServices
 	ServiceList *v1.ServiceList
@@ -290,12 +252,13 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 
 	var tests = []struct {
 		description                     string
-		bareUrlString                   string
+		bareURLString                   string
 		https                           bool
-		expectedHttpsFormattedUrlString string
-		expectedIsHttpSchemedURL        bool
+		expectedHTTPSFormattedURLString string
+		expectedIsHTTPSchemedURL        bool
 	}{
 		{
+<<<<<<< HEAD
 			description:                     "no https for http schemed with no https option",
 			bareUrlString:                   "http://192.168.99.100:30563",
 			https:                           false,
@@ -322,6 +285,34 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 			https:                           true,
 			expectedHttpsFormattedUrlString: "xyz.http.myservice:30563",
 			expectedIsHttpSchemedURL:        false,
+=======
+			description:   "no https for http schemed with no https option",
+			bareURLString: "http://192.168.99.100:30563",
+			https:         false,
+			expectedHTTPSFormattedURLString: "http://192.168.99.100:30563",
+			expectedIsHTTPSchemedURL:        true,
+		},
+		{
+			description:   "no https for non-http schemed with no https option",
+			bareURLString: "xyz.http.myservice:30563",
+			https:         false,
+			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
+			expectedIsHTTPSchemedURL:        false,
+		},
+		{
+			description:   "https for http schemed with https option",
+			bareURLString: "http://192.168.99.100:30563",
+			https:         true,
+			expectedHTTPSFormattedURLString: "https://192.168.99.100:30563",
+			expectedIsHTTPSchemedURL:        true,
+		},
+		{
+			description:   "no https for non-http schemed with https option and http substring",
+			bareURLString: "xyz.http.myservice:30563",
+			https:         true,
+			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
+			expectedIsHTTPSchemedURL:        false,
+>>>>>>> master
 		},
 	}
 
@@ -329,15 +320,15 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			httpsFormattedUrlString, isHttpSchemedURL := OptionallyHttpsFormattedUrlString(test.bareUrlString, test.https)
+			httpsFormattedURLString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(test.bareURLString, test.https)
 
-			if httpsFormattedUrlString != test.expectedHttpsFormattedUrlString {
-				t.Errorf("\nhttpsFormattedUrlString, Expected %v \nActual: %v \n\n", test.expectedHttpsFormattedUrlString, httpsFormattedUrlString)
+			if httpsFormattedURLString != test.expectedHTTPSFormattedURLString {
+				t.Errorf("\nhttpsFormattedURLString, Expected %v \nActual: %v \n\n", test.expectedHTTPSFormattedURLString, httpsFormattedURLString)
 			}
 
-			if isHttpSchemedURL != test.expectedIsHttpSchemedURL {
-				t.Errorf("\nisHttpSchemedURL, Expected %v \nActual: %v \n\n",
-					test.expectedHttpsFormattedUrlString, httpsFormattedUrlString)
+			if isHTTPSchemedURL != test.expectedIsHTTPSchemedURL {
+				t.Errorf("\nisHTTPSchemedURL, Expected %v \nActual: %v \n\n",
+					test.expectedHTTPSFormattedURLString, httpsFormattedURLString)
 			}
 		})
 	}
@@ -345,10 +336,12 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 
 func TestGetServiceURLs(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
-		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
-				Driver: &tests.MockDriver{},
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
 			},
 		},
 	}
@@ -358,13 +351,15 @@ func TestGetServiceURLs(t *testing.T) {
 		description string
 		api         libmachine.API
 		namespace   string
-		expected    ServiceURLs
+		expected    URLs
 		err         bool
 	}{
 		{
 			description: "no host",
 			api: &tests.MockAPI{
-				Hosts: make(map[string]*host.Host),
+				FakeStore: tests.FakeStore{
+					Hosts: make(map[string]*host.Host),
+				},
 			},
 			err: true,
 		},
@@ -372,7 +367,7 @@ func TestGetServiceURLs(t *testing.T) {
 			description: "correctly return serviceURLs",
 			namespace:   "default",
 			api:         defaultAPI,
-			expected: []ServiceURL{
+			expected: []URL{
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard",
@@ -412,10 +407,12 @@ func TestGetServiceURLs(t *testing.T) {
 
 func TestGetServiceURLsForService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
-		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
-				Driver: &tests.MockDriver{},
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
 			},
 		},
 	}
@@ -432,7 +429,9 @@ func TestGetServiceURLsForService(t *testing.T) {
 		{
 			description: "no host",
 			api: &tests.MockAPI{
-				Hosts: make(map[string]*host.Host),
+				FakeStore: tests.FakeStore{
+					Hosts: make(map[string]*host.Host),
+				},
 			},
 			err: true,
 		},

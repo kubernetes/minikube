@@ -23,6 +23,8 @@ import (
 	"io"
 	"os"
 
+	"io/ioutil"
+
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -87,4 +89,38 @@ func GetMachineName() string {
 		return constants.DefaultMachineName
 	}
 	return viper.GetString(MachineProfile)
+}
+
+// Load loads the kubernetes and machine config for the current machine
+func Load() (Config, error) {
+	return DefaultLoader.LoadConfigFromFile(GetMachineName())
+}
+
+// Loader loads the kubernetes and machine config based on the machine profile name
+type Loader interface {
+	LoadConfigFromFile(profile string) (Config, error)
+}
+
+type simpleConfigLoader struct{}
+
+var DefaultLoader Loader = &simpleConfigLoader{}
+
+func (c *simpleConfigLoader) LoadConfigFromFile(profile string) (Config, error) {
+	var cc Config
+
+	path := constants.GetProfileFile(profile)
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return cc, err
+	}
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return cc, err
+	}
+
+	if err := json.Unmarshal(data, &cc); err != nil {
+		return cc, err
+	}
+	return cc, nil
 }

@@ -36,14 +36,10 @@ fi
 
 # Add the out/ directory to the PATH, for using new drivers.
 export PATH="$(pwd)/out/":$PATH
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-pod-svc.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-ing.yaml testdata/
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/* testdata/
 
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}
