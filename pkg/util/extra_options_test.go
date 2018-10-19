@@ -70,7 +70,7 @@ func TestValidFlags(t *testing.T) {
 		var e ExtraOptionSlice
 		flags.Var(&e, "e", "usage")
 		if err := flags.Parse(tc.args); err != nil {
-			t.Errorf("Unexpected error: %s for %s.", err, tc)
+			t.Errorf("Unexpected error: %v for %s.", err, tc)
 		}
 
 		if !reflect.DeepEqual(e, tc.values) {

@@ -62,6 +62,6 @@ func testClusterEnv(t *testing.T) {
 		return nil
 	}
 	if err := util.Retry(t, dockerPs, 3*time.Second, 5); err != nil {
-		t.Fatalf("Error running command: %s. Error: %s Output: %s", "docker ps", err, output)
+		t.Fatalf("Error running command: %s. Error: %v Output: %s", "docker ps", err, output)
 	}
 }

@@ -59,7 +59,7 @@ var dashboardCmd = &cobra.Command{
 		}()
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating client: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)

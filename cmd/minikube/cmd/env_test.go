@@ -248,7 +248,7 @@ func TestShellCfgSet(t *testing.T) {
 				t.Errorf("Shell cfgs differ: expected %+v, \n\n got %+v", test.expectedShellCfg, shellCfg)
 			}
 			if err != nil && !test.shouldErr {
-				t.Errorf("Test should have failed but didn't return error: %s, error: %s", test.description, err)
+				t.Errorf("Test should have failed but didn't return error: %s, error: %v", test.description, err)
 			}
 			if err == nil && test.shouldErr {
 				t.Errorf("Test didn't return error but should have: %s", test.description)

@@ -36,7 +36,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 		fmt.Println("Stopping local Kubernetes cluster...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()

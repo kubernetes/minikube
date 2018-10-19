@@ -236,7 +236,7 @@ func TestPrintURLsForService(t *testing.T) {
 			t.Parallel()
 			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
-				t.Errorf("Error: %s", err)
+				t.Errorf("Error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
@@ -364,7 +364,7 @@ func TestGetServiceURLs(t *testing.T) {
 			}
 			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
 			if err != nil && !test.err {
-				t.Errorf("Error GetServiceURLs %s", err)
+				t.Errorf("Error GetServiceURLs %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")
@@ -431,7 +431,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 			}
 			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
-				t.Errorf("Error GetServiceURLsForService %s", err)
+				t.Errorf("Error GetServiceURLsForService %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")
