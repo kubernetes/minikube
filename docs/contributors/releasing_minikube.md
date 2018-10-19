@@ -17,7 +17,7 @@ The build will take roughly 50 minutes.
 
 Edit the minikube `Makefile`, updating the version number values at the top:
 
-* `VERSION_MINOR`
+* `VERSION_MINOR` (and `VERSION_MAJOR`, `VERSION_BUILD` as necessary)
 * `ISO_VERSION` (only update this if there is a new ISO release)
 
 ## Run Local Integration Test
