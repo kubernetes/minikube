@@ -2,6 +2,9 @@
 
 ## Build a new ISO
 
+You only need to build the minikube ISO when the there are changes in the `deploy/iso` folder. 
+Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally.
+
  * http://go/minikube:build-iso
  * Ensure that you are logged in (top right)
  * For `ISO_VERSION`, type in the intended release version
