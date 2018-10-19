@@ -65,7 +65,7 @@ func testMounting(t *testing.T) {
 		path := filepath.Join(tempDir, file)
 		err = ioutil.WriteFile(path, []byte(expected), 0644)
 		if err != nil {
-			t.Fatalf("Unexpected error while writing file %s: %s.", path, err)
+			t.Fatalf("Unexpected error while writing file %s: %v", path, err)
 		}
 	}
 
@@ -123,13 +123,13 @@ func testMounting(t *testing.T) {
 		// test that frompodremove can be deleted on the host
 		path = filepath.Join(tempDir, "frompodremove")
 		if err := os.Remove(path); err != nil {
-			t.Fatalf("Unexpected error removing file %s: %s", path, err)
+			t.Fatalf("Unexpected error removing file %s: %v", path, err)
 		}
 
 		return nil
 	}
 	if err := util.Retry(t, mountTest, 5*time.Second, 40); err != nil {
-		t.Fatal("mountTest failed with error:", err)
+		t.Fatalf("mountTest failed with error: %v", err)
 	}
 
 }

@@ -50,7 +50,7 @@ func getShaFromURL(url string) (string, error) {
 func TestReleasesJson(t *testing.T) {
 	releases, err := notify.GetAllVersionsFromURL(constants.GithubMinikubeReleasesURL)
 	if err != nil {
-		t.Fatalf("Error getting releases.json: %s", err)
+		t.Fatalf("Error getting releases.json: %v", err)
 	}
 
 	for _, r := range releases {
@@ -59,7 +59,7 @@ func TestReleasesJson(t *testing.T) {
 			fmt.Printf("Checking SHA for %s.\n", platform)
 			actualSha, err := getShaFromURL(util.GetBinaryDownloadURL(r.Name, platform))
 			if err != nil {
-				t.Errorf("Error calculating SHA for %s-%s. Error: %s", r.Name, platform, err)
+				t.Errorf("Error calculating SHA for %s-%s. Error: %v", r.Name, platform, err)
 				continue
 			}
 			if actualSha != sha {

@@ -143,7 +143,7 @@ func TestSetupKubeConfig(t *testing.T) {
 			t.Parallel()
 			tmpDir, err := ioutil.TempDir("", "")
 			if err != nil {
-				t.Fatalf("Error making temp directory %s", err)
+				t.Fatalf("Error making temp directory %v", err)
 			}
 			test.cfg.SetKubeConfigFile(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
@@ -151,14 +151,14 @@ func TestSetupKubeConfig(t *testing.T) {
 			}
 			err = SetupKubeConfig(test.cfg)
 			if err != nil && !test.err {
-				t.Errorf("Got unexpected error: %s", err)
+				t.Errorf("Got unexpected error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
 			config, err := ReadConfigOrNew(test.cfg.GetKubeConfigFile())
 			if err != nil {
-				t.Errorf("Error reading kubeconfig file: %s", err)
+				t.Errorf("Error reading kubeconfig file: %v", err)
 			}
 			if test.cfg.KeepContext && config.CurrentContext == test.cfg.ClusterName {
 				t.Errorf("Context was changed even though KeepContext was true")
@@ -213,10 +213,10 @@ func TestGetKubeConfigStatus(t *testing.T) {
 			configFilename := tempFile(t, test.existing)
 			statusActual, err := GetKubeConfigStatus(test.ip, configFilename, "minikube")
 			if err != nil && !test.err {
-				t.Errorf("Got unexpected error: %s", err)
+				t.Errorf("Got unexpected error: %v", err)
 			}
 			if err == nil && test.err {
-				t.Errorf("Expected error but got none: %s", err)
+				t.Errorf("Expected error but got none: %v", err)
 			}
 			if test.status != statusActual {
 				t.Errorf("Expected status %t, but got %t", test.status, statusActual)
@@ -270,10 +270,10 @@ func TestUpdateKubeconfigIP(t *testing.T) {
 			configFilename := tempFile(t, test.existing)
 			statusActual, err := UpdateKubeconfigIP(test.ip, configFilename, "minikube")
 			if err != nil && !test.err {
-				t.Errorf("Got unexpected error: %s", err)
+				t.Errorf("Got unexpected error: %v", err)
 			}
 			if err == nil && test.err {
-				t.Errorf("Expected error but got none: %s", err)
+				t.Errorf("Expected error but got none: %v", err)
 			}
 			if test.status != statusActual {
 				t.Errorf("Expected status %t, but got %t", test.status, statusActual)
@@ -357,10 +357,10 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 			configFilename := tempFile(t, test.cfg)
 			ip, err := getIPFromKubeConfig(configFilename, "minikube")
 			if err != nil && !test.err {
-				t.Errorf("Got unexpected error: %s", err)
+				t.Errorf("Got unexpected error: %v", err)
 			}
 			if err == nil && test.err {
-				t.Errorf("Expected error but got none: %s", err)
+				t.Errorf("Expected error but got none: %v", err)
 			}
 			if !ip.Equal(test.ip) {
 				t.Errorf("IP returned: %s does not match ip given: %s", ip, test.ip)

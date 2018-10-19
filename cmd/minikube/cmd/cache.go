@@ -18,12 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"os"
 )
 
 // cacheCmd represents the cache command
@@ -41,12 +42,12 @@ var addCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Cache and load images into docker daemon
 		if err := machine.CacheAndLoadImages(args); err != nil {
-			fmt.Fprintf(os.Stderr, "Error caching and loading images: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error caching and loading images: %v\n", err)
 			os.Exit(1)
 		}
 		// Add images to config file
 		if err := cmdConfig.AddToConfigMap(constants.Cache, args); err != nil {
-			fmt.Fprintf(os.Stderr, "Error adding cached images to config file: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error adding cached images to config file: %v\n", err)
 			os.Exit(1)
 		}
 	},
@@ -60,12 +61,12 @@ var deleteCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Delete images from config file
 		if err := cmdConfig.DeleteFromConfigMap(constants.Cache, args); err != nil {
-			fmt.Fprintf(os.Stderr, "Error deleting images from config file: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error deleting images from config file: %v\n", err)
 			os.Exit(1)
 		}
 		// Delete images from cache/images directory
 		if err := machine.DeleteFromImageCacheDir(args); err != nil {
-			fmt.Fprintf(os.Stderr, "Error deleting images: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error deleting images: %v\n", err)
 			os.Exit(1)
 		}
 	},

@@ -48,7 +48,7 @@ func TestFormatError(t *testing.T) {
 
 	_, err := FormatError(testErr)
 	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
@@ -59,7 +59,7 @@ func TestMarshallError(t *testing.T) {
 
 	errMsg, _ := FormatError(testErr)
 	if _, err := MarshallError(errMsg, "default", version.GetVersion()); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
@@ -75,7 +75,7 @@ func TestUploadError(t *testing.T) {
 	}))
 
 	if err := UploadError(jsonErrMsg, server.URL); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

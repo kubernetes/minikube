@@ -74,7 +74,7 @@ func testPackages(t *testing.T) {
 
 	for _, pkg := range packages {
 		if output, err := minikubeRunner.SSH(fmt.Sprintf("which %s", pkg)); err != nil {
-			t.Errorf("Error finding package: %s. Error: %s. Output: %s", pkg, err, output)
+			t.Errorf("Error finding package: %s. Error: %v. Output: %s", pkg, err, output)
 		}
 	}
 
@@ -94,7 +94,7 @@ func testPersistence(t *testing.T) {
 	} {
 		output, err := minikubeRunner.SSH(fmt.Sprintf("df %s | tail -n 1 | awk '{print $1}'", dir))
 		if err != nil {
-			t.Errorf("Error checking device for %s. Error: %s.", dir, err)
+			t.Errorf("Error checking device for %s. Error: %v", dir, err)
 		}
 		if !strings.Contains(output, "/dev/sda1") {
 			t.Errorf("Path %s is not mounted persistently. %s", dir, output)
