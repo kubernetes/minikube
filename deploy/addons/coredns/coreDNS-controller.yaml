@@ -27,9 +27,11 @@ spec:
         operator: Exists
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+    nodeSelector:
+      beta.kubernetes.io/os: linux
       containers:
       - name: coredns
-        image: k8s.gcr.io/coredns:1.2.2
+        image: k8s.gcr.io/coredns:1.2.4
         imagePullPolicy: IfNotPresent
         resources:
           limits:
