@@ -32,8 +32,8 @@ brew cask install minikube
 ### Linux
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
-  && sudo install minikube-linux-amd64 /usr/local/bin/minikube
+curl -L https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 |
+  sudo install /dev/stdin /usr/local/bin/minikube
 ```
 
 ### Windows
@@ -72,8 +72,8 @@ Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikub
 ### Linux Continuous Integration without VM Support
 Example with kubectl installation:
 ```shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
-curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo cp kubectl /usr/local/bin/ && rm kubectl
+curl -L https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 | sudo install /dev/stdin /usr/local/bin/minikube
+curl -L https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl | sudo install /dev/stdin /usr/local/bin/kubectl
 
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false

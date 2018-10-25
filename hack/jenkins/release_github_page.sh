@@ -49,17 +49,17 @@ Minikube is distributed in binary form for Linux, OSX, and Windows systems for t
 ## Installation
 ### OSX
 \`\`\`shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-darwin-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+curl -L https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-darwin-amd64 | sudo install /dev/stdin /usr/local/bin/minikube
 \`\`\`
-Feel free to leave off \`\`\`sudo cp minikube /usr/local/bin/ && rm minikube\`\`\` if you would like to add minikube to your path manually.
+Feel free to download the file manually if you would like to add minikube to your \`\$PATH\` yourself.
 
 Or you can install via homebrew with \`brew cask install minikube\`.
 
 ### Linux
 \`\`\`shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+curl -L https://storage.googleapis.com/minikube/releases/${TAGNAME}/minikube-linux-amd64 | sudo install /dev/stdin /usr/local/bin/minikube
 \`\`\`
-Feel free to leave off \`\`\`sudo cp minikube /usr/local/bin/ && rm minikube\`\`\` if you would like to add minikube to your path manually.
+Feel free to download the file manually if you would like to add minikube to your \`\$PATH\` yourself.
 
 ### Debian Package (.deb) [Experimental]
 Download the \`minikube_${DEB_VERSION}.deb\` file, and install it using \`sudo dpkg -i minikube_$(DEB_VERSION).deb\`
