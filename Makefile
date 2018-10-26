@@ -37,6 +37,8 @@ MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 BUILD_BUCKET ?= minikube-builds
 BUILD_UPLOAD_LOCATION := gs://${BUILD_BUCKET}/${PULL_NUMBER}
 
+REMOTE_TEST_DIR := minikube-tests-$(shell dbus-uuidgen)
+
 KERNEL_VERSION ?= 4.16.14
 
 GOOS ?= $(shell go env GOOS)
@@ -321,6 +323,10 @@ release-minikube: out/minikube checksum
 push-build: out/minikube checksum
 	cp -r test/integration/testdata out
 	gsutil cp -r out/*  $(BUILD_UPLOAD_LOCATION)
+	gsutil cp -r hack/jenkins/*  $(BUILD_UPLOAD_LOCATION)
+
+.PHONY: test-linux-kvm
+    ssh -f hack/prow/ssh_config kvmnode "mkdir -p $(REMOTE_TEST_DIR) && gsutil cp -r $(BUILD_UPLOAD_LOCATION)/* $(REMOTE_TEST_DIR) && cd $(REMOTE_TEST_DIR) && bash -x linux_integration_tests_kvm.sh"
 
 out/docker-machine-driver-kvm2.d:
 	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $(KVM_DRIVER_FILES) $^ > $@

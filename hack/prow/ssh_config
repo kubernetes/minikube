@@ -1,20 +1,26 @@
 Host jumphost
-	HostName 35.231.224.8
+	HostName 35.188.31.95
 
 Host macnode
-	ProxyCommand ssh 35.231.224.8 nc localhost 19999
+	ProxyCommand ssh 35.188.31.95 nc localhost 19999
 	Port 19999
 	User jenkins
 	IdentityFile ~/.ssh/id_rsa
 
 Host winnode
-	ProxyCommand ssh 35.231.224.8 nc localhost 19998
+	ProxyCommand ssh 35.188.31.95 nc localhost 19998
 	Port 19998
 	User jenkins
 	IdentityFile ~/.ssh/id_rsa
 
 Host gpunode
-	ProxyCommand ssh 35.231.224.8 nc localhost 19997
+	ProxyCommand ssh 35.188.31.95 nc localhost 19997
 	Port 19997
+	User jenkins
+	IdentityFile ~/.ssh/id_rsa
+
+Host kvmnode
+	ProxyCommand ssh 35.188.31.95 nc localhost 19996
+	Port 19996
 	User jenkins
 	IdentityFile ~/.ssh/id_rsa
