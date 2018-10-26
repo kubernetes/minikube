@@ -33,6 +33,10 @@ MINIKUBE_VERSION ?= $(ISO_VERSION)
 MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 
+#PULL_NUMBER env variable will usually come from the Prow environment
+BUILD_BUCKET ?= minikube-builds
+BUILD_UPLOAD_LOCATION := gs://${BUILD_BUCKET}/${PULL_NUMBER}
+
 KERNEL_VERSION ?= 4.16.14
 
 GOOS ?= $(shell go env GOOS)
@@ -312,6 +316,11 @@ release-iso: minikube_iso checksum
 release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
+
+.PHONY: push-build
+push-build: out/minikube checksum
+	cp -r test/integration/testdata out
+	gsutil cp -r out/*  $(BUILD_UPLOAD_LOCATION)
 
 out/docker-machine-driver-kvm2.d:
 	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $(KVM_DRIVER_FILES) $^ > $@

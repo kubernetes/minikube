@@ -1,12 +1,64 @@
-From debian:stretch
+FROM docker:17.12.0-ce as static-docker-source
+FROM debian:stretch
 MAINTAINER Don McCasland <donmccasland@google.com>
 CMD ["bash"]
 RUN apt-get update \
-    && apt-get install -y pkg-config libvirt-clients libvirt-daemon libvirt-daemon-system libvirt-dev qemu-kvm gcc g++ libc6-dev wget make git patch file jq gnupg apt-utils clang bzip2 cmake
+    && apt-get install -qqy \
+    pkg-config \
+    libvirt-clients \
+    libvirt-daemon \
+    libvirt-daemon-system \
+    libvirt-dev \
+    qemu-kvm \
+    gcc \
+    g++ \
+    libc6-dev \
+    wget \
+    make \
+    git \
+    patch \
+    file \
+    jq \
+    gnupg \
+    apt-utils \
+    clang \
+    bzip2 \
+    cmake \
+    curl \
+    python-dev \
+    python-setuptools \
+    apt-transport-https \
+    lsb-release \
+    openssh-client
 RUN wget https://dl.google.com/go/go1.11.1.linux-amd64.tar.gz && tar -C /usr/local -xzf go1.11.1.linux-amd64.tar.gz
 ENV GOPATH=/go
 ENV PATH=/go/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" &&  chmod -R 777 "$GOPATH"
+ARG CLOUD_SDK_VERSION=221.0.0
+ENV CLOUD_SDK_VERSION=$CLOUD_SDK_VERSION
+COPY --from=static-docker-source /usr/local/bin/docker /usr/local/bin/docker
+RUN easy_install -U pip && \
+    pip install -U crcmod   && \
+    export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
+    echo "deb https://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" > /etc/apt/sources.list.d/google-cloud-sdk.list && \
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add - && \
+    apt-get update && \
+    apt-get install -y google-cloud-sdk=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-app-engine-python=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-app-engine-python-extras=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-app-engine-java=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-app-engine-go=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-datalab=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-datastore-emulator=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-pubsub-emulator=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-bigtable-emulator=${CLOUD_SDK_VERSION}-0 \
+        google-cloud-sdk-cbt=${CLOUD_SDK_VERSION}-0 \
+        kubectl && \
+    gcloud config set core/disable_usage_reporting true && \
+    gcloud config set component_manager/disable_update_check true && \
+    gcloud config set metrics/environment github_docker_image && \
+    gcloud --version && \
+    docker --version && kubectl version --client
 WORKDIR /go
 ENV PWD /go/src/k8s.io/minikube
 ENV GOARM=7
@@ -38,3 +90,4 @@ RUN OSX_SDK_PATH=https://storage.googleapis.com/osx-sdk/$OSX_SDK.tar.bz2 \
    &&  OCDEBUG=1 UNATTENDED=yes OSX_VERSION_MIN=10.6 /osxcross/build.sh \
    &&  mv /osxcross/target $OSX_NDK_X86 \
    &&  rm -rf /osxcross
+VOLUME ["/root/.config"]
