@@ -63,11 +63,6 @@ apiServerExtraArgs:
 				NodeName:          "extra-args-minikube",
 				ExtraOptions: util.ExtraOptionSlice{
 					util.ExtraOption{
-						Component: Apiserver,
-						Key:       "fail-no-swap",
-						Value:     "true",
-					},
-					util.ExtraOption{
 						Component: ControllerManager,
 						Key:       "kube-api-burst",
 						Value:     "32",
@@ -95,7 +90,6 @@ etcd:
 nodeName: extra-args-minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-  fail-no-swap: "true"
 controllerManagerExtraArgs:
   kube-api-burst: "32"
 schedulerExtraArgs:
@@ -109,11 +103,6 @@ schedulerExtraArgs:
 				KubernetesVersion: "v1.10.0-alpha.0",
 				NodeName:          "extra-args-minikube",
 				ExtraOptions: util.ExtraOptionSlice{
-					util.ExtraOption{
-						Component: Apiserver,
-						Key:       "fail-no-swap",
-						Value:     "true",
-					},
 					util.ExtraOption{
 						Component: Apiserver,
 						Key:       "kube-api-burst",
@@ -137,7 +126,6 @@ etcd:
 nodeName: extra-args-minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-  fail-no-swap: "true"
   kube-api-burst: "32"
 `,
 		},
@@ -179,13 +167,6 @@ schedulerExtraArgs:
 				KubernetesVersion: "v1.10.0-alpha.0",
 				NodeName:          "extra-args-minikube",
 				FeatureGates:      "HugePages=true,OtherFeature=false",
-				ExtraOptions: util.ExtraOptionSlice{
-					util.ExtraOption{
-						Component: Apiserver,
-						Key:       "fail-no-swap",
-						Value:     "true",
-					},
-				},
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
@@ -203,7 +184,6 @@ etcd:
 nodeName: extra-args-minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-  fail-no-swap: "true"
   feature-gates: "HugePages=true,OtherFeature=false"
 controllerManagerExtraArgs:
   feature-gates: "HugePages=true,OtherFeature=false"

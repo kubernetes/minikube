@@ -156,9 +156,6 @@ var Preflights = []string{
 	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
 	"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
-	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
-	// (it should probably stop doing this, though...)
-	"Swap",
 	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
 	// (because we start kubelet with an invalid config)
 	"CRI",

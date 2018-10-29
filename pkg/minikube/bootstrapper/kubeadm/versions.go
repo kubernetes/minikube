@@ -208,11 +208,6 @@ func NewUnversionedOption(component, k, v string) VersionedExtraOption {
 
 var versionSpecificOpts = []VersionedExtraOption{
 	{
-		Option: util.ExtraOption{
-			Component: Kubelet,
-			Key:       "fail-swap-on",
-			Value:     "false",
-		},
 		GreaterThanOrEqual: semver.MustParse("1.8.0-alpha.0"),
 	},
 	// Kubeconfig args
