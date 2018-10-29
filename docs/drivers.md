@@ -87,7 +87,7 @@ To install the hyperkit driver:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
-&& sudo install -o root -g root -m 4755 docker-machine-driver-hyperkit /usr/local/bin/
+&& sudo install -o root -g wheel -m 4755 docker-machine-driver-hyperkit /usr/local/bin/
 ```
 
 The hyperkit driver currently requires running as root to use the vmnet framework to setup networking.
