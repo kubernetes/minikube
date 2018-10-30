@@ -203,10 +203,13 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 	if v1_11(kubernetesVersion) || gt_v1_11(kubernetesVersion) {
 		images = append(images, []string{
 			"k8s.gcr.io/pause-amd64:3.1",
+			"k8s.gcr.io/pause:3.1",
 			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
 			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
 			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.1.12",
+			"k8s.gcr.io/etcd-amd64:3.2.18",
+			"k8s.gcr.io/coredns:1.1.3",
+			"k8s.gcr.io/coredns:1.2.2",
 		}...)
 
 	} else if v1_10(kubernetesVersion) {
