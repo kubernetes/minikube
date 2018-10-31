@@ -78,6 +78,10 @@ func IsURLExists(name string, location string) error {
 			return fmt.Errorf("%s does not exist", location)
 		}
 
+		if os.IsPermission(err) {
+			return fmt.Errorf("%s could not be opened (permission error: %s)", location, err.Error())
+		}
+
 		return err
 	}
 
