@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func IsValidDriver(string, driver string) error {
@@ -70,7 +71,7 @@ func IsURLExists(name string, location string) error {
 	}
 
 	// chop off "file://" from the location, giving us the real system path
-	sysPath := string([]rune(location[len("file://"):]))
+	sysPath := strings.TrimPrefix(location, "file://")
 	stat, err := os.Stat(sysPath)
 	if err != nil {
 		if os.IsNotExist(err) {
