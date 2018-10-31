@@ -6,16 +6,16 @@ import (
 	"testing"
 )
 
-func assert_NotNil(t *testing.T, i interface {}) {
-  if (i == nil) {
-    t.Error("Value should not be nil")
-  }
+func assert_NotNil(t *testing.T, i interface{}) {
+	if i == nil {
+		t.Error("Value should not be nil")
+	}
 }
 
 func assert_NotEqual(t *testing.T, lhs uint32, rhs uint32, message string) {
-  if (lhs == rhs) {
-    t.Errorf("Value %d should not be %d. %s", lhs, rhs, message)
-  }
+	if lhs == rhs {
+		t.Errorf("Value %d should not be %d. %s", lhs, rhs, message)
+	}
 }
 
 func TestDir2DirTimestamp(t *testing.T) {
