@@ -43,6 +43,7 @@ type MinikubeRunner struct {
 	BinaryPath string
 	Args       string
 	StartArgs  string
+	MountArgs  string
 }
 
 func (m *MinikubeRunner) Run(cmd string) error {
