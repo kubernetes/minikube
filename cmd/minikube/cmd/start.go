@@ -29,6 +29,8 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -113,6 +115,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	api, err := machine.NewAPIClient()
+	ensureNotRunning(api, constants.DefaultMachineName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 		os.Exit(1)
@@ -541,4 +544,17 @@ func saveConfigToFile(data []byte, file string) error {
 		return err
 	}
 	return nil
+}
+
+func ensureNotRunning(client libmachine.API, machineName string) {
+
+	hostVm, err := client.Load(machineName)
+
+	if err != nil {
+		fmt.Fprintln(os.Stderr, fmt.Sprintf(err.Error()))
+	}
+	if drivers.MachineInState(hostVm.Driver, state.Running)() && hostVm.DriverName != "generic" {
+		fmt.Fprintln(os.Stdout, fmt.Sprintf("The '%s' VM is already running.", machineName))
+		os.Exit(0)
+	}
 }
