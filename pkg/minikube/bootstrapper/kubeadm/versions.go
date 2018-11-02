@@ -27,6 +27,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
+	"k8s.io/kubernetes/pkg/util/procfs"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
@@ -206,67 +207,79 @@ func NewUnversionedOption(component, k, v string) VersionedExtraOption {
 	}
 }
 
-var versionSpecificOpts = []VersionedExtraOption{
-	{
-		Option: util.ExtraOption{
-			Component: Kubelet,
-			Key:       "fail-swap-on",
-			Value:     "false",
-		},
-		GreaterThanOrEqual: semver.MustParse("1.8.0-alpha.0"),
-	},
-	// Kubeconfig args
-	NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
-	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
-	{
-		Option: util.ExtraOption{
-			Component: Kubelet,
-			Key:       "require-kubeconfig",
-			Value:     "true",
-		},
-		LessThanOrEqual: semver.MustParse("1.9.10"),
-	},
-	NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
+var versionSpecificOpts = newVersionSpecificOpts()
 
-	// System pods args
-	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
-	NewUnversionedOption(Kubelet, "allow-privileged", "true"),
-
-	// Network args
-	NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
-	NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
-
-	// Auth args
-	NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(util.DefaultCertPath, "ca.crt")),
-
-	// Cgroup args
-	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
-	{
-		Option: util.ExtraOption{
-			Component: Apiserver,
-			Key:       "admission-control",
-			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+func newVersionSpecificOpts() []VersionedExtraOption {
+	versionedExtraOptions := []VersionedExtraOption{
+		{
+			Option: util.ExtraOption{
+				Component: Kubelet,
+				Key:       "fail-swap-on",
+				Value:     "false",
+			},
+			GreaterThanOrEqual: semver.MustParse("1.8.0-alpha.0"),
 		},
-		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
-		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
-	},
-	{
-		Option: util.ExtraOption{
-			Component: Apiserver,
-			Key:       "enable-admission-plugins",
-			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+		// Kubeconfig args
+		NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
+		NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
+		{
+			Option: util.ExtraOption{
+				Component: Kubelet,
+				Key:       "require-kubeconfig",
+				Value:     "true",
+			},
+			LessThanOrEqual: semver.MustParse("1.9.10"),
 		},
-		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
-	},
-	{
-		Option: util.ExtraOption{
-			Component: Kubelet,
-			Key:       "cadvisor-port",
-			Value:     "0",
+		NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
+
+		// System pods args
+		NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
+		NewUnversionedOption(Kubelet, "allow-privileged", "true"),
+
+		// Network args
+		NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
+		NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
+
+		// Auth args
+		NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
+		NewUnversionedOption(Kubelet, "client-ca-file", path.Join(util.DefaultCertPath, "ca.crt")),
+
+		// Cgroup args
+		NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
+		{
+			Option: util.ExtraOption{
+				Component: Apiserver,
+				Key:       "admission-control",
+				Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+			},
+			LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
+			GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
 		},
-		LessThanOrEqual: semver.MustParse("1.11.1000"),
-	},
+		{
+			Option: util.ExtraOption{
+				Component: Apiserver,
+				Key:       "enable-admission-plugins",
+				Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+			},
+			GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
+		},
+		{
+			Option: util.ExtraOption{
+				Component: Kubelet,
+				Key:       "cadvisor-port",
+				Value:     "0",
+			},
+			LessThanOrEqual: semver.MustParse("1.11.1000"),
+		},
+	}
+
+	// Set the kubelet `--resolv-conf` flag conditionally
+	if pids, _ := procfs.PidOf("systemd-resolved"); len(pids) > 0 {
+		extraOpt := NewUnversionedOption(Kubelet, "resolv-conf", "/run/systemd/resolve/resolv.conf")
+		versionedExtraOptions = append(versionedExtraOptions, extraOpt)
+	}
+
+	return versionedExtraOptions
 }
 
 func VersionIsBetween(version, gte, lte semver.Version) bool {
