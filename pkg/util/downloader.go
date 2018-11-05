@@ -81,7 +81,7 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 }
 
 func (f DefaultDownloader) ShouldCacheMinikubeISO(isoURL string) bool {
-	// store the miniube-iso inside the .minikube dir
+	// store the minikube-iso inside the .minikube dir
 
 	urlObj, err := url.Parse(isoURL)
 	if err != nil {
