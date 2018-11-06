@@ -128,7 +128,8 @@ We also released a Debian package and Windows installer on our [releases page](h
 ## Quickstart
 
 Here's a brief demo of Minikube usage.
-If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube supports
+- If you want to change the container runtime, network details, consult notes from your container runtime provider.
+- If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube supports
 the following drivers:
 
 * virtualbox
@@ -138,7 +139,7 @@ the following drivers:
 * [hyperkit](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver)
 * [xhyve](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
 * [hyperv](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
-* none (**Linux-only**) - this driver can be used to run the Kubernetes cluster components on the host instead of in a VM. This can be useful for CI workloads which do not support nested virtualization.
+* none (**Linux + docker daemon as container runtime only**) - this driver can be used to run the Kubernetes cluster components on the host instead of in a VM. This can be useful for CI workloads which do not support nested virtualization.
 
 ```shell
 $ minikube start
