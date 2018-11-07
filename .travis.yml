@@ -1,5 +1,9 @@
 language: go
-os: linux
+
+os: 
+  - linux
+  - linux-ppc64le
+
 sudo: required
 
 go:
@@ -11,4 +15,4 @@ install:
 script:
   - make test
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+- bash <(curl -s https://codecov.io/bash)
