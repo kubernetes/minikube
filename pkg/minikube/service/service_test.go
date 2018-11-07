@@ -236,7 +236,7 @@ func TestPrintURLsForService(t *testing.T) {
 			t.Parallel()
 			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
-				t.Errorf("Error: %s", err)
+				t.Errorf("Error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
@@ -258,30 +258,30 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 		expectedIsHTTPSchemedURL        bool
 	}{
 		{
-			description:   "no https for http schemed with no https option",
-			bareURLString: "http://192.168.99.100:30563",
-			https:         false,
+			description:                     "no https for http schemed with no https option",
+			bareURLString:                   "http://192.168.99.100:30563",
+			https:                           false,
 			expectedHTTPSFormattedURLString: "http://192.168.99.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
-			description:   "no https for non-http schemed with no https option",
-			bareURLString: "xyz.http.myservice:30563",
-			https:         false,
+			description:                     "no https for non-http schemed with no https option",
+			bareURLString:                   "xyz.http.myservice:30563",
+			https:                           false,
 			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
 			expectedIsHTTPSchemedURL:        false,
 		},
 		{
-			description:   "https for http schemed with https option",
-			bareURLString: "http://192.168.99.100:30563",
-			https:         true,
+			description:                     "https for http schemed with https option",
+			bareURLString:                   "http://192.168.99.100:30563",
+			https:                           true,
 			expectedHTTPSFormattedURLString: "https://192.168.99.100:30563",
 			expectedIsHTTPSchemedURL:        true,
 		},
 		{
-			description:   "no https for non-http schemed with https option and http substring",
-			bareURLString: "xyz.http.myservice:30563",
-			https:         true,
+			description:                     "no https for non-http schemed with https option and http substring",
+			bareURLString:                   "xyz.http.myservice:30563",
+			https:                           true,
 			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
 			expectedIsHTTPSchemedURL:        false,
 		},
@@ -364,7 +364,7 @@ func TestGetServiceURLs(t *testing.T) {
 			}
 			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
 			if err != nil && !test.err {
-				t.Errorf("Error GetServiceURLs %s", err)
+				t.Errorf("Error GetServiceURLs %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")
@@ -431,7 +431,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 			}
 			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
-				t.Errorf("Error GetServiceURLsForService %s", err)
+				t.Errorf("Error GetServiceURLsForService %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")

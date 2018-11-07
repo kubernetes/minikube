@@ -120,7 +120,7 @@ func (s *SSHServer) Start() (int, error) {
 							// Note: string(req.Payload) adds additional characters to start of input.
 							var cmd execRequest
 							if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
-								glog.Errorf("Unmarshall encountered error: %s with req: %v", err, req.Type)
+								glog.Errorf("Unmarshall encountered error: %v with req: %v", err, req.Type)
 								return
 							}
 							s.Commands[cmd.Command] = 1

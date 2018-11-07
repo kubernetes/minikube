@@ -41,10 +41,8 @@ $ newgrp libvirt
 Then install the driver itself:
 
 ```shell
-curl -Lo docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
-&& chmod +x docker-machine-driver-kvm2 \
-&& sudo cp docker-machine-driver-kvm2 /usr/local/bin/ \
-&& rm docker-machine-driver-kvm2
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
+  && sudo install docker-machine-driver-kvm2 /usr/local/bin/
 ```
 
 To use the driver you would do:
@@ -88,12 +86,8 @@ It is built from the minikube source tree, and uses [moby/hyperkit](http://githu
 To install the hyperkit driver:
 
 ```shell
-curl -Lo docker-machine-driver-hyperkit https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
-&& chmod +x docker-machine-driver-hyperkit \
-&& sudo cp docker-machine-driver-hyperkit /usr/local/bin/ \
-&& rm docker-machine-driver-hyperkit \
-&& sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit \
-&& sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
+&& sudo install -o root -g wheel -m 4755 docker-machine-driver-hyperkit /usr/local/bin/
 ```
 
 The hyperkit driver currently requires running as root to use the vmnet framework to setup networking.

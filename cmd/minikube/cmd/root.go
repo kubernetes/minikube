@@ -70,7 +70,7 @@ var RootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
-				glog.Exitf("Error creating minikube directory: %s", err)
+				glog.Exitf("Error creating minikube directory: %v", err)
 			}
 		}
 
@@ -143,7 +143,7 @@ func initConfig() {
 	viper.SetConfigType("json")
 	err := viper.ReadInConfig()
 	if err != nil {
-		glog.Warningf("Error reading config file at %s: %s", configPath, err)
+		glog.Warningf("Error reading config file at %s: %v", configPath, err)
 	}
 	setupViper()
 }

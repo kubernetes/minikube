@@ -66,19 +66,19 @@ func setElement(e reflect.Value, v string) error {
 	case net.IPNet:
 		_, cidr, err := net.ParseCIDR(v)
 		if err != nil {
-			return fmt.Errorf("Error converting input %s to a CIDR: %s", v, err)
+			return fmt.Errorf("Error converting input %s to a CIDR: %v", v, err)
 		}
 		e.Set(reflect.ValueOf(*cidr))
 	case utilnet.PortRange:
 		pr, err := utilnet.ParsePortRange(v)
 		if err != nil {
-			return fmt.Errorf("Error converting input %s to PortRange: %s", v, err)
+			return fmt.Errorf("Error converting input %s to PortRange: %v", v, err)
 		}
 		e.Set(reflect.ValueOf(*pr))
 	case time.Duration:
 		dur, err := time.ParseDuration(v)
 		if err != nil {
-			return fmt.Errorf("Error converting input %s to Duration: %s", v, err)
+			return fmt.Errorf("Error converting input %s to Duration: %v", v, err)
 		}
 		e.Set(reflect.ValueOf(dur))
 	case []string:
@@ -126,7 +126,7 @@ func convertMap(e reflect.Value, v string) error {
 func convertInt(e reflect.Value, v string) error {
 	i, err := strconv.Atoi(v)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to an integer: %s", v, err)
+		return fmt.Errorf("Error converting input %s to an integer: %v", v, err)
 	}
 	e.SetInt(int64(i))
 	return nil
@@ -140,7 +140,7 @@ func convertString(e reflect.Value, v string) error {
 func convertFloat(e reflect.Value, v string) error {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to a float: %s", v, err)
+		return fmt.Errorf("Error converting input %s to a float: %v", v, err)
 	}
 	e.SetFloat(f)
 	return nil
@@ -149,7 +149,7 @@ func convertFloat(e reflect.Value, v string) error {
 func convertBool(e reflect.Value, v string) error {
 	b, err := strconv.ParseBool(v)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to a bool: %s", v, err)
+		return fmt.Errorf("Error converting input %s to a bool: %v", v, err)
 	}
 	e.SetBool(b)
 	return nil

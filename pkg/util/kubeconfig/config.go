@@ -220,7 +220,7 @@ func decode(data []byte) (*api.Config, error) {
 	return config.(*api.Config), nil
 }
 
-// GetKubeConfigStatus verifys the ip stored in kubeconfig.
+// GetKubeConfigStatus verifies the ip stored in kubeconfig.
 func GetKubeConfigStatus(ip net.IP, filename string, machineName string) (bool, error) {
 	if ip == nil {
 		return false, fmt.Errorf("Error, empty ip passed")

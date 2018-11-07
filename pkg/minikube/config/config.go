@@ -65,13 +65,13 @@ func ReadConfig() (MinikubeConfig, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
+		return nil, fmt.Errorf("Could not open file %s: %v", constants.ConfigFile, err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decode config %s: %s", constants.ConfigFile, err)
+		return nil, fmt.Errorf("Could not decode config %s: %v", constants.ConfigFile, err)
 	}
 
 	return m, nil

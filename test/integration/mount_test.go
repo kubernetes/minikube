@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -34,6 +35,9 @@ import (
 
 func testMounting(t *testing.T) {
 	t.Parallel()
+	if runtime.GOOS == "darwin" {
+		t.Skip("mount tests disabled in darwin due to timeout (issue#3200)")
+	}
 	if strings.Contains(*args, "--vm-driver=none") {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
@@ -65,7 +69,7 @@ func testMounting(t *testing.T) {
 		path := filepath.Join(tempDir, file)
 		err = ioutil.WriteFile(path, []byte(expected), 0644)
 		if err != nil {
-			t.Fatalf("Unexpected error while writing file %s: %s.", path, err)
+			t.Fatalf("Unexpected error while writing file %s: %v", path, err)
 		}
 	}
 
@@ -123,13 +127,13 @@ func testMounting(t *testing.T) {
 		// test that frompodremove can be deleted on the host
 		path = filepath.Join(tempDir, "frompodremove")
 		if err := os.Remove(path); err != nil {
-			t.Fatalf("Unexpected error removing file %s: %s", path, err)
+			t.Fatalf("Unexpected error removing file %s: %v", path, err)
 		}
 
 		return nil
 	}
 	if err := util.Retry(t, mountTest, 5*time.Second, 40); err != nil {
-		t.Fatal("mountTest failed with error:", err)
+		t.Fatalf("mountTest failed with error: %v", err)
 	}
 
 }

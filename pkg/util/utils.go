@@ -46,7 +46,7 @@ func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Erro
 func CalculateDiskSizeInMB(humanReadableDiskSize string) int {
 	diskSize, err := units.FromHumanSize(humanReadableDiskSize)
 	if err != nil {
-		glog.Errorf("Invalid disk size: %s", err)
+		glog.Errorf("Invalid disk size: %v", err)
 	}
 	return int(diskSize / units.MB)
 }
