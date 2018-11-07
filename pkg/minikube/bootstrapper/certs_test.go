@@ -44,7 +44,7 @@ func TestSetupCerts(t *testing.T) {
 	}
 
 	if err := SetupCerts(f, k8s); err != nil {
-		t.Fatalf("Error starting cluster: %s", err)
+		t.Fatalf("Error starting cluster: %v", err)
 	}
 	for _, cert := range filesToBeTransferred {
 		_, err := f.GetFileToContents(cert)

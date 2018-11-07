@@ -277,7 +277,7 @@ func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
 
 	bridge, err := network.GetBridgeName()
 	if err != nil {
-		log.Warnf("Failed to get network bridge: %s", err)
+		log.Warnf("Failed to get network bridge: %v", err)
 		return "", err
 	}
 	statusFile := fmt.Sprintf("/var/lib/libvirt/dnsmasq/%s.status", bridge)

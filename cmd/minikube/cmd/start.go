@@ -112,14 +112,14 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 		os.Exit(1)
 	}
 	defer api.Close()
 
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		glog.Exitf("checking if machine exists: %s", err)
+		glog.Exitf("checking if machine exists: %v", err)
 	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
@@ -165,7 +165,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)
 		if err != nil {
-			glog.Errorf("Error starting host: %s.\n\n Retrying.\n", err)
+			glog.Errorf("Error starting host: %v.\n\n Retrying.\n", err)
 		}
 		return err
 	}
@@ -228,7 +228,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
 	if err != nil {
-		glog.Exitf("Error getting cluster bootstrapper: %s", err)
+		glog.Exitf("Error getting cluster bootstrapper: %v", err)
 	}
 
 	// Write profile cluster configuration to file
@@ -321,12 +321,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 		err = mountCmd.Start()
 		if err != nil {
-			glog.Errorf("Error running command minikube mount %s", err)
+			glog.Errorf("Error running command minikube mount %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 		err = ioutil.WriteFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644)
 		if err != nil {
-			glog.Errorf("Error writing mount process pid to file: %s", err)
+			glog.Errorf("Error writing mount process pid to file: %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}

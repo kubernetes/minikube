@@ -208,7 +208,7 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 
 	// This is unlikely to cause issues unless the user has explicitly requested CRIO, so just log a warning.
 	if err := p.Service("crio", serviceaction.Restart); err != nil {
-		log.Warn("Unable to restart crio service. Error: %s", err)
+		log.Warn("Unable to restart crio service. Error: %v", err)
 	}
 
 	return nil
@@ -264,7 +264,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("error generating server cert: %s", err)
+		return fmt.Errorf("error generating server cert: %v", err)
 	}
 
 	remoteCerts := map[string]string{
