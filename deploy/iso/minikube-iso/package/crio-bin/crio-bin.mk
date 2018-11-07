@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.10.0
+CRIO_BIN_VERSION = v1.11.8
 CRIO_BIN_SITE = https://github.com/kubernetes-incubator/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
@@ -29,9 +29,7 @@ endef
 
 define CRIO_BIN_BUILD_CMDS
 	mkdir -p $(@D)/bin
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr pause
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr crio
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr conmon
+	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr binaries
 endef
 
 define CRIO_BIN_INSTALL_TARGET_CMDS
