@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -46,19 +47,45 @@ func testAddons(t *testing.T) {
 	}
 }
 
+func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error) {
+	s := make(chan string)
+	e := make(chan error)
+	go func() {
+		read, err := b.ReadString('\n')
+		if err != nil {
+			e <- err
+		} else {
+			s <- read
+		}
+		close(s)
+		close(e)
+	}()
+
+	select {
+	case line := <-s:
+		return line, nil
+	case err := <-e:
+		return "", err
+	case <-time.After(timeout):
+		return "", fmt.Errorf("timeout after %s", timeout)
+	}
+}
+
 func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
-
+	t.Logf("Launching dashboard ...")
 	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
 	defer func() {
+		t.Logf("Killing dashboard ...")
 		err := cmd.Process.Kill()
 		if err != nil {
-			t.Logf("Failed to kill mount command: %v", err)
+			t.Logf("Failed to kill dashboard command: %v", err)
 		}
 	}()
 
-	s, err := out.ReadString('\n')
+	t.Logf("Waiting for URL to be output by minikube dashboard...")
+	s, err := readLineWithTimeout(out, 180*time.Second)
 	if err != nil {
 		t.Fatalf("failed to read url: %v", err)
 	}
