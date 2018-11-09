@@ -126,7 +126,7 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 	for {
 		r, timedOut, err := readByteWithTimeout(reader, 5*time.Second)
 		if err != nil {
-			return cmd, "", fmt.Errorf("readRuneWithTimeout: %v", err)
+			return cmd, "", fmt.Errorf("readByteWithTimeout: %v", err)
 		}
 		if r == byte('\n') {
 			break
