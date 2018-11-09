@@ -19,6 +19,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -141,7 +142,7 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 }
 
 // readWithTimeout returns a rune from a reader or an indicator that a timeout has occurred.
-func readWithTimeout(r *bufio.Reader, timeout time.Duration) (byte, bool, error) {
+func readWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
 	bc := make(chan byte)
 	ec := make(chan error)
 	go func() {
