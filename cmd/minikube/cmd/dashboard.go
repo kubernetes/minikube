@@ -124,7 +124,7 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 
 	var out []byte
 	for {
-		r, timedOut, err := readWithTimeout(reader, 5*time.Second)
+		r, timedOut, err := readByteWithTimeout(reader, 5*time.Second)
 		if err != nil {
 			return cmd, "", fmt.Errorf("readRuneWithTimeout: %v", err)
 		}
@@ -141,8 +141,8 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 	return cmd, hostPortRe.FindString(string(out)), nil
 }
 
-// readWithTimeout returns a rune from a reader or an indicator that a timeout has occurred.
-func readWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
+// readByteWithTimeout returns a byte from a reader or an indicator that a timeout has occurred.
+func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
 	bc := make(chan byte)
 	ec := make(chan error)
 	go func() {
