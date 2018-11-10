@@ -43,7 +43,7 @@ func TestWindowsRouteFailsOnConflictIntegrationTest(t *testing.T) {
 	if err == nil {
 		t.Errorf("add should have error, but it is nil")
 	} else if !strings.Contains(err.Error(), "conflict") {
-		t.Errorf("expected to fail with error containg `conflict`, but failed with wrong error %s", err)
+		t.Errorf("expected to fail with error contain `conflict`, but failed with wrong error %s", err)
 	}
 	cleanRoute(t, "10.96.0.0")
 }
