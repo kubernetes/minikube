@@ -99,6 +99,26 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 
 }
 
+func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command(path, commandArr...)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		m.T.Fatalf("stderr pipe failed: %s %v", command, err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		m.T.Fatalf("Error running command: %s %v", command, err)
+	}
+	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
+}
+
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
