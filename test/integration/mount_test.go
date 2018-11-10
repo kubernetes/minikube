@@ -20,6 +20,7 @@ package integration
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -49,14 +50,27 @@ func testMounting(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	mountCmd := fmt.Sprintf("mount %s %s:/mount-9p", minikubeRunner.MountArgs, tempDir)
-	cmd, _ := minikubeRunner.RunDaemon(mountCmd)
+	var mountCmd string
+	if len(minikubeRunner.MountArgs) > 0 {
+		mountCmd = fmt.Sprintf("mount %s %s:/mount-9p", minikubeRunner.MountArgs, tempDir)
+	} else {
+		mountCmd = fmt.Sprintf("mount %s:/mount-9p", tempDir)
+	}
+	if testing.Verbose() {
+		fmt.Fprintf(os.Stderr, "runing mount cmd: %s\n", mountCmd)
+	}
+	cmd, out, serr := minikubeRunner.RunDaemon2(mountCmd)
 	defer func() {
 		err := cmd.Process.Kill()
 		if err != nil {
 			t.Logf("Failed to kill mount command: %v", err)
 		}
 	}()
+
+	if testing.Verbose() {
+		go io.Copy(os.Stderr, out)
+		go io.Copy(os.Stderr, serr)
+	}
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox-mount"
@@ -127,8 +141,10 @@ func testMounting(t *testing.T) {
 				t.Fatalf("%v", err)
 			}
 
-			if strings.Contains(statOutput, "Access: 1970-01-01") {
-				t.Fatalf("Invalid access time\n%s", statOutput)
+			if runtime.GOOS == "windows" {
+				if strings.Contains(statOutput, "Access: 1970-01-01") {
+					t.Fatalf("Invalid access time\n%s", statOutput)
+				}
 			}
 
 			if strings.Contains(statOutput, "Modify: 1970-01-01") {
