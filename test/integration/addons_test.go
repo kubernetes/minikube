@@ -74,17 +74,14 @@ func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error)
 func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
-	t.Logf("Launching dashboard ...")
 	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
 	defer func() {
-		t.Logf("Killing dashboard ...")
 		err := cmd.Process.Kill()
 		if err != nil {
 			t.Logf("Failed to kill dashboard command: %v", err)
 		}
 	}()
 
-	t.Logf("Waiting for URL to be output by minikube dashboard...")
 	s, err := readLineWithTimeout(out, 180*time.Second)
 	if err != nil {
 		t.Fatalf("failed to read url: %v", err)
