@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-logviewer
+  namespace: kube-system
+  labels:
+    kubernetes.io/minikube-addons: logviewer
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  # "namespace" omitted since ClusterRoles are not namespaced
+  name: cr-logviewer
+  labels:
+    kubernetes.io/minikube-addons: logviewer
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "watch", "list"]
+
+---
+
+# This cluster role binding allows "sa-logviewer" to read namespace metadata
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: crb-logviewer
+  namespace: kube-system
+  labels:
+    kubernetes.io/minikube-addons: logviewer
+subjects:
+- kind: ServiceAccount
+  name: sa-logviewer
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole #this must be Role or ClusterRole
+  name: cr-logviewer # this must match the name of the Role or ClusterRole you wish to bind to
+  apiGroup: rbac.authorization.k8s.io
