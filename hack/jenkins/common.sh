@@ -115,6 +115,11 @@ else
   source print-debug-info.sh
 fi
 
+if [ "${MINIKUBE_LOCATION}" == "master" ]; then
+  echo "not setting github status for continuous builds"
+  exit $result
+fi
+
 set +x
 target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
 curl "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
