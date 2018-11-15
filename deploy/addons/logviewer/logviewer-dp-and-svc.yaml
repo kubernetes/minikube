@@ -1,37 +1,66 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: minikube-log-viewer
+  name: logviewer
   namespace: kube-system
   labels:
     kubernetes.io/minikube-addons: logviewer
     kubernetes.io/minikube-addons-endpoint: logviewer
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   ports:
     - port: 3000
       name: http
       nodePort: 32000
   selector:
-    app: minikube-log-viewer
+    app: logviewer
   type: NodePort
 
 ---
-apiVersion: extensions/v1beta1
+
+apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: minikube-log-viewer
+  name: logviewer
   namespace: kube-system
   labels:
+    addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: logviewer
 spec:
-  strategy:
-    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logviewer
+      addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
-        app: minikube-log-viewer
+        app: logviewer
+        addonmanager.kubernetes.io/mode: Reconcile
     spec:
       serviceAccountName: sa-logviewer
+      containers:
+      - name: logviewer
+        imagePullPolicy: IfNotPresent
+        image: docker.io/ivans3/minikube-log-viewer:latest
+        volumeMounts:
+         - name: logs
+           mountPath: /var/log/containers/
+         - name: logs-pods
+           mountPath: /var/log/pods
+         - name: logs-containers-mnt-sda1
+           mountPath: /mnt/sda1/var/lib/docker/containers/
+         - name: logs-containers
+           mountPath: /var/lib/docker/containers/
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
       volumes:
       - name: logs
         hostPath:
@@ -47,19 +76,3 @@ spec:
       - name: logs-containers
         hostPath:
           path: /var/lib/docker/containers/
-      hostNetwork: true
-      containers:
-      - name: logviewer
-        image: docker.io/ivans3/minikube-log-viewer:latest
-        imagePullPolicy: Always
-        volumeMounts:
-         - name: logs
-           mountPath: /var/log/containers/
-         - name: logs-pods
-           mountPath: /var/log/pods
-         - name: logs-containers-mnt-sda1
-           mountPath: /mnt/sda1/var/lib/docker/containers/
-         - name: logs-containers
-           mountPath: /var/lib/docker/containers/
-
-
