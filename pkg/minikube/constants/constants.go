@@ -164,6 +164,23 @@ var Preflights = []string{
 	"CRI",
 }
 
+// AlternateRuntimePreflights are additional preflight checks applied when running
+// any container runtime that isn't Docker
+var AlternateRuntimePreflights = append(Preflights, []string{
+	"Service-Docker",
+	"Port-8443",
+	"Port-10251",
+	"Port-10252",
+	"Port-2379",
+}...)
+
+const (
+	ContainerdRuntime = "containerd"
+	RktRuntime        = "rkt"
+	CrioRuntime       = "crio"
+	Cri_oRuntime      = "cri-o"
+)
+
 const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0

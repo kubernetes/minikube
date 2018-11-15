@@ -115,6 +115,10 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	b := bytes.Buffer{}
+	preflights := constants.Preflights
+	if k8s.ContainerRuntime != "" {
+		preflights = constants.AlternateRuntimePreflights
+	}
 	templateContext := struct {
 		KubeadmConfigFile   string
 		SkipPreflightChecks bool
@@ -125,7 +129,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		SkipPreflightChecks: !VersionIsBetween(version,
 			semver.MustParse("1.9.0-alpha.0"),
 			semver.Version{}),
-		Preflights: constants.Preflights,
+		Preflights: preflights,
 		DNSAddon:   "kube-dns",
 	}
 	if version.GTE(semver.MustParse("1.12.0")) {
