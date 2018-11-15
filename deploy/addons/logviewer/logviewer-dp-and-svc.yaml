@@ -41,7 +41,7 @@ spec:
       serviceAccountName: sa-logviewer
       containers:
       - name: logviewer
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         image: docker.io/ivans3/minikube-log-viewer:latest
         volumeMounts:
          - name: logs
