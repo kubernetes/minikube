@@ -300,12 +300,12 @@ func runStart(cmd *cobra.Command, args []string) {
 			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
 		}
 		if err != nil {
-			glog.Errorf("Error stopping docker", err)
+			glog.Errorf("Error stopping docker: %v", err)
 		}
 	}
 	if config.VMDriver != "none" && (containerRuntime != "crio" && containerRuntime != "cri-o") {
 		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
-			glog.Errorf("Error stopping crio", err)
+			glog.Errorf("Error stopping crio: %v", err)
 		}
 	}
 	if config.VMDriver != "none" && containerRuntime != "rkt" {
@@ -313,7 +313,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
 		}
 		if err != nil {
-			glog.Errorf("Error stopping rkt", err)
+			glog.Errorf("Error stopping rkt: %v", err)
 		}
 	}
 
