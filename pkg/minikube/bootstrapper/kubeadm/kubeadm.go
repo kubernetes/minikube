@@ -239,6 +239,24 @@ func SetContainerRuntime(cfg map[string]string, runtime string) map[string]strin
 	return cfg
 }
 
+func GetCRISocket(path string, runtime string) string {
+	if path != "" {
+		glog.Infoln("Container runtime interface socket provided, using path.")
+		return path
+	}
+
+	switch runtime {
+	case "crio", "cri-o":
+		path = "/var/run/crio/crio.sock"
+	case "containerd":
+		path = "/run/containerd/containerd.sock"
+	default:
+		path = ""
+	}
+
+	return path
+}
+
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
 func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
@@ -352,6 +370,8 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "parsing kubernetes version")
 	}
 
+	criSocket := GetCRISocket(k8s.CRISocket, k8s.ContainerRuntime)
+
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
@@ -372,6 +392,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		KubernetesVersion string
 		EtcdDataDir       string
 		NodeName          string
+		CRISocket         string
 		ExtraArgs         []ComponentExtraArgs
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
@@ -383,6 +404,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
+		CRISocket:         criSocket,
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
