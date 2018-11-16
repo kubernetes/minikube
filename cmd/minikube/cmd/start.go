@@ -295,7 +295,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	fmt.Println("Stopping extra container runtimes...")
 
 	containerRuntime := viper.GetString(containerRuntime)
-	if config.VMDriver != "none" && containerRuntime != "" {
+	if config.VMDriver != constants.DriverNone && containerRuntime != "" {
 		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
 			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
 		}
@@ -303,12 +303,12 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorf("Error stopping docker: %v", err)
 		}
 	}
-	if config.VMDriver != "none" && (containerRuntime != "crio" && containerRuntime != "cri-o") {
+	if config.VMDriver != constants.DriverNone && (containerRuntime != constants.CrioRuntime && containerRuntime != constants.Cri_oRuntime) {
 		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
 			glog.Errorf("Error stopping crio: %v", err)
 		}
 	}
-	if config.VMDriver != "none" && containerRuntime != "rkt" {
+	if config.VMDriver != constants.DriverNone && containerRuntime != constants.RktRuntime {
 		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
 			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
 		}
@@ -317,9 +317,17 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	if config.VMDriver != constants.DriverNone && containerRuntime == constants.ContainerdRuntime {
+		fmt.Println("Restarting containerd runtime...")
+		// restart containerd so that it can install all plugins
+		if _, err := host.RunSSHCommand("sudo systemctl restart containerd"); err != nil {
+			glog.Errorf("Error restarting containerd: %v", err)
+		}
+	}
+
 	fmt.Println("Starting cluster components...")
 
-	if !exists || config.VMDriver == "none" {
+	if !exists || config.VMDriver == constants.DriverNone {
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
