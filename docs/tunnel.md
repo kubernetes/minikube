@@ -136,7 +136,7 @@ for service in services:
 sleep
 ```
 
-Note that the Minikube ClusterIP can change over time (during system reboots) and this loop should also handle reconcilliation of those changes.
+Note that the Minikube ClusterIP can change over time (during system reboots) and this loop should also handle reconciliation of those changes.
 
 ## Handling multiple clusters 
 

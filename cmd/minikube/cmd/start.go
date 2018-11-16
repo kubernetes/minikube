@@ -57,6 +57,7 @@ const (
 	kubernetesVersion     = "kubernetes-version"
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
+	criSocket             = "cri-socket"
 	networkPlugin         = "network-plugin"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
@@ -220,6 +221,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		DNSDomain:              viper.GetString(dnsDomain),
 		FeatureGates:           viper.GetString(featureGates),
 		ContainerRuntime:       viper.GetString(containerRuntime),
+		CRISocket:              viper.GetString(criSocket),
 		NetworkPlugin:          viper.GetString(networkPlugin),
 		ServiceCIDR:            pkgutil.DefaultServiceCIDR,
 		ExtraOptions:           extraOptions,
@@ -288,6 +290,31 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := kubeconfig.SetupKubeConfig(kubeCfgSetup); err != nil {
 		glog.Errorln("Error setting up kubeconfig: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
+	}
+
+	fmt.Println("Stopping extra container runtimes...")
+
+	containerRuntime := viper.GetString(containerRuntime)
+	if config.VMDriver != "none" && containerRuntime != "" {
+		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping docker: %v", err)
+		}
+	}
+	if config.VMDriver != "none" && (containerRuntime != "crio" && containerRuntime != "cri-o") {
+		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
+			glog.Errorf("Error stopping crio: %v", err)
+		}
+	}
+	if config.VMDriver != "none" && containerRuntime != "rkt" {
+		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping rkt: %v", err)
+		}
 	}
 
 	fmt.Println("Starting cluster components...")
@@ -398,6 +425,7 @@ func init() {
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
+	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")

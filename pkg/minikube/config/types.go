@@ -63,6 +63,7 @@ type KubernetesConfig struct {
 	APIServerIPs      []net.IP
 	DNSDomain         string
 	ContainerRuntime  string
+	CRISocket         string
 	NetworkPlugin     string
 	FeatureGates      string
 	ServiceCIDR       string
