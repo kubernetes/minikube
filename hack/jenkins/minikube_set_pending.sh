@@ -32,7 +32,7 @@ if [ "${ghprbPullId}" == "master" ]; then
   exit 0
 fi
 
-for job in "Minishift-Linux-KVM" "OSX-Virtualbox" "OSX-Hyperkit" "Linux-Virtualbox" "Linux-KVM" "Linux-None" "Windows-Virtualbox" "Windows-Kubeadm-CRI-O" "Linux-Container"; do
+for job in "OSX-Virtualbox" "OSX-Hyperkit" "Linux-Virtualbox" "Linux-KVM" "Linux-None" "Windows-Virtualbox"; do
   target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${job}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
     -H "Content-Type: application/json" \
