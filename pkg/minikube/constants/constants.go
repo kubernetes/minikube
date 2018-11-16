@@ -164,7 +164,7 @@ var Preflights = []string{
 	"CRI",
 }
 
-// AlternateRuntimePreflights are additional preflight checks applied when running
+// AlternateRuntimePreflights are additional preflight checks that are skipped when running
 // any container runtime that isn't Docker
 var AlternateRuntimePreflights = append(Preflights, []string{
 	"Service-Docker",
