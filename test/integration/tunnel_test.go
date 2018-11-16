@@ -88,10 +88,16 @@ func testTunnel(t *testing.T) {
 	}
 
 	httpClient := http.DefaultClient
-	httpClient.Timeout = 1 * time.Second
-	resp, err := httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+	httpClient.Timeout = 5 * time.Second
 
-	if err != nil {
+	var resp *http.Response
+
+	request := func() error {
+		resp, err = httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+		return err
+	}
+
+	if err = util.Retry(t, request, 1*time.Second, 5); err != nil {
 		t.Fatalf("error reading from nginx at address(%s): %s", nginxIP, err)
 	}
 
