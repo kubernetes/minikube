@@ -19,37 +19,55 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestDocker(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
-
-	if strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
+	mk := NewMinikubeRunner(t)
+	if strings.Contains(mk.StartArgs, "--vm-driver=none") {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
 
-	minikubeRunner.RunCommand("delete", false)
-	startCmd := fmt.Sprintf("start %s %s %s", minikubeRunner.StartArgs, minikubeRunner.Args,
-		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
-	minikubeRunner.RunCommand(startCmd, true)
-	minikubeRunner.EnsureRunning()
+	// Start a timer for all remaining commands, to display failure output before a panic.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
 
-	dockerdEnvironment := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=Environment --no-pager", true)
-	fmt.Println(dockerdEnvironment)
+	out, err := mk.RunWithContext(ctx, "delete")
+	if err != nil {
+		t.Logf("delete: %v\ndelete out: %s", err, out)
+	}
+
+	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args,
+		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
+	out, err = mk.RunWithContext(ctx, startCmd)
+	if err != nil {
+		t.Fatalf("start: %v\nstart out: %s", err, out)
+	}
+
+	mk.EnsureRunning()
+
+	out, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
+	if err != nil {
+		t.Errorf("docker env: %v\ndocker env out: %s", err, out)
+	}
+
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
-		if !strings.Contains(dockerdEnvironment, envVar) {
-			t.Fatalf("Env var %s missing from Environment: %s.", envVar, dockerdEnvironment)
+		if !strings.Contains(string(out), envVar) {
+			t.Errorf("Env var %s missing: %s.", envVar, out)
 		}
 	}
 
-	dockerdExecStart := minikubeRunner.RunCommand("ssh -- systemctl show docker --property=ExecStart --no-pager", true)
-	fmt.Println(dockerdExecStart)
+	out, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=ExecStart --no-pager")
+	if err != nil {
+		t.Errorf("ssh show docker: %v\nshow docker out: %s", err, out)
+	}
 	for _, opt := range []string{"--debug", "--icc=true"} {
-		if !strings.Contains(dockerdExecStart, opt) {
-			t.Fatalf("Option %s missing from ExecStart: %s.", opt, dockerdExecStart)
+		if !strings.Contains(string(out), opt) {
+			t.Fatalf("Option %s missing from ExecStart: %s.", opt, out)
 		}
 	}
 }
