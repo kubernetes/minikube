@@ -36,7 +36,7 @@ func testTunnel(t *testing.T) {
 	t.Log("starting tunnel test...")
 	runner := NewMinikubeRunner(t)
 	go func() {
-		output := runner.RunCommand("tunnel --alsologtostderr -v 8", true)
+		output := runner.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
 		fmt.Println(output)
 	}()
 

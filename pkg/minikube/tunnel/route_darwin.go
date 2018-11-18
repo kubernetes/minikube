@@ -48,10 +48,8 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
 	glog.Infof("%s", stdInAndOut)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
