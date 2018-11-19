@@ -110,11 +110,11 @@ WantedBy=multi-user.target
 `
 
 var kubeadmRestoreTemplate = template.Must(template.New("kubeadmRestoreTemplate").Parse(`
-sudo systemctl stop kubelet
-sudo systemctl stop docker
-sudo systemctl start minikube-automount
-sudo systemctl start docker
-sudo systemctl start kubelet
+sudo systemctl stop kubelet &&
+sudo systemctl stop docker && 
+sudo systemctl start minikube-automount && 
+sudo systemctl start docker &&
+sudo systemctl start kubelet && 
 sudo kubeadm alpha phase certs all --config {{.KubeadmConfigFile}} &&
 sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} &&
 sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile}} &&

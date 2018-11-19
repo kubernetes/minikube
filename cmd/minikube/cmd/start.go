@@ -334,7 +334,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
-		fmt.Println("Restarting cluster components...")
+		fmt.Println("Machine exists, restarting cluster components...")
 		if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error restarting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
