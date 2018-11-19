@@ -94,9 +94,12 @@ func testTunnel(t *testing.T) {
 
 	request := func() error {
 		resp, err = httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
-		retriable :=  &commonutil.RetriableError{Err: err}
-		t.Log(retriable)
-		return retriable
+		if err != nil {
+			retriable :=  &commonutil.RetriableError{Err: err}
+			t.Log(retriable)
+			return retriable
+		}
+		return nil
 	}
 
 	if err = commonutil.RetryAfter(5, request, 1*time.Second); err != nil {
