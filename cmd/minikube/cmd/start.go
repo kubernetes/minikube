@@ -325,8 +325,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-
-
 	if !exists || config.VMDriver == constants.DriverNone {
 		fmt.Println("Starting cluster components...")
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
