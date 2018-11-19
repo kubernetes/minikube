@@ -70,8 +70,8 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-After=network.target docker.socket
-Requires=docker.socket
+After=network.target  minikube-automount.service docker.socket
+Requires=docker.socket  minikube-automount.service
 
 [Service]
 Type=notify
