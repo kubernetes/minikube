@@ -69,7 +69,7 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
-	stdout, err := cmd.CombinedOutput()
+	stdout, err := cmd.Output()
 
 	if checkError && err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
