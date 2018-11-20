@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -33,6 +35,13 @@ import (
 )
 
 func testTunnel(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		// Otherwise minikube fails waiting for a password.
+		if err := exec.Command("sudo", "-n", "route").Run(); err != nil {
+			t.Skipf("password required to execute 'route', skipping testTunnel: %v", err)
+		}
+	}
+
 	t.Log("starting tunnel test...")
 	runner := NewMinikubeRunner(t)
 	go func() {
