@@ -156,7 +156,7 @@ func addRoute(t *testing.T, dstIP string, dstMask string, gw string) {
 	command := exec.Command("route", "ADD", dstIP, "mask", dstMask, gw)
 	sout, err := command.CombinedOutput()
 	if err != nil {
-		t.Logf("assertion add routeerror (should be ok): %s, error: %s", sout, err)
+		t.Logf("assertion add route error (should be ok): %s, error: %s", sout, err)
 	} else {
 		t.Logf("assertion - successfully added %s (%s) -> %s", dstIP, dstMask, gw)
 	}

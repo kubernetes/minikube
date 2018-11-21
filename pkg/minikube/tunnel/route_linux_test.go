@@ -118,7 +118,7 @@ func addRoute(t *testing.T, cidr string, gw string) {
 	command := exec.Command("sudo", "ip", "route", "add", cidr, "via", gw)
 	sout, err := command.CombinedOutput()
 	if err != nil {
-		t.Logf("assertion add routeerror (should be ok): %s, error: %s", sout, err)
+		t.Logf("assertion add route error (should be ok): %s, error: %s", sout, err)
 	} else {
 		t.Logf("assertion - successfully added %s -> %s", cidr, gw)
 	}

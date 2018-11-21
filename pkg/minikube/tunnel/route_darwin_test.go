@@ -93,7 +93,7 @@ func addRoute(t *testing.T, cidr string, gw string) {
 	command := exec.Command("sudo", "route", "-n", "add", cidr, gw)
 	_, err := command.CombinedOutput()
 	if err != nil {
-		t.Logf("add routeerror (should be ok): %s", err)
+		t.Logf("add route error (should be ok): %s", err)
 	}
 }
 

@@ -68,7 +68,7 @@ func TestReporter(t *testing.T) {
 				MinikubeState: Unknown,
 				MinikubeError: errors.New("minikubeerror"),
 
-				RouteError: errors.New("routeerror"),
+				RouteError: errors.New("route error"),
 
 				PatchedServices:           nil,
 				LoadBalancerEmulatorError: errors.New("lberror"),
