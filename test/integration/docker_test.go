@@ -36,14 +36,12 @@ func TestDocker(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	out, err := mk.RunWithContext(ctx, "delete")
-	if err != nil {
-		t.Logf("delete: %v\ndelete out: %s", err, out)
-	}
+	// Pre-cleanup: this usually fails, because no instance is running.
+	mk.RunWithContext(ctx, "delete")
 
 	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args,
 		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
-	out, err = mk.RunWithContext(ctx, startCmd)
+	out, err := mk.RunWithContext(ctx, startCmd)
 	if err != nil {
 		t.Fatalf("start: %v\nstart out: %s", err, out)
 	}
