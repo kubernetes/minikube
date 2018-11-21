@@ -25,8 +25,17 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
 
 ## Installation
 ### macOS
+[Homebrew](https://brew.sh/) is a package manager for macOS that can be used to install Minikube.
+After installing Homebrew, run the following at a terminal prompt:
 ```shell
 brew cask install minikube
+```
+This installs kubernetes-cli package as well. The same can be verified using:
+```shell
+kubectl version
+```
+If it's not installed, install it using:
+```shell
 brew install kubernetes-cli
 ```
 
