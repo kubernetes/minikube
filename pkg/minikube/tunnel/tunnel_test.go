@@ -197,7 +197,7 @@ func TestTunnel(t *testing.T) {
 
 				substring := "testerror"
 				if actualSecondState.RouteError == nil || !strings.Contains(actualSecondState.RouteError.Error(), substring) {
-					t.Errorf("wrong tunnel status. expected Route error to contain '%s' \ngot:     %s", substring, actualSecondState.RouteError)
+					t.Errorf("wrong tunnel status. expected routeerror to contain '%s' \ngot:     %s", substring, actualSecondState.RouteError)
 				}
 
 				expectedRoutes := []*Route{expectedRoute}

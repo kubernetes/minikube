@@ -121,7 +121,7 @@ func (t *tunnel) update() *Status {
 	t.status.MinikubeState, h, t.status.MinikubeError = t.clusterInspector.getStateAndHost()
 	defer t.clusterInspector.machineAPI.Close()
 	if t.status.MinikubeState == Running {
-		glog.V(3).Infof("minikube is running, trying to add Route %s", t.status.TunnelID.Route)
+		glog.V(3).Infof("minikube is running, trying to add route%s", t.status.TunnelID.Route)
 		setupRoute(t, h)
 		if t.status.RouteError == nil {
 			t.status.PatchedServices, t.status.LoadBalancerEmulatorError = t.loadBalancerEmulator.PatchServices()
@@ -150,39 +150,43 @@ func setupRoute(t *tunnel, h *host.Host) {
 			glog.Errorf("failed to register tunnel: %s", err)
 			t.status.RouteError = err
 			return
-		} else if h.DriverName == "hyperkit" {
+		}
+
+		if h.DriverName == "hyperkit" {
 			//the virtio-net interface acts up with ip tunnels :(
 			command := exec.Command("ifconfig", "bridge100")
-			fmt.Printf("About to run command: %s\n", command.Args)
-			response, _ := command.CombinedOutput()
+			glog.Infof("About to run command: %s\n", command.Args)
+			response, err := command.CombinedOutput()
+			if err != nil {
+				t.status.RouteError = fmt.Errorf("running %v: %v", command.Args, err)
+				return
+			}
 			iface := string(response)
-			pattern := regexp.MustCompile(`.*member: (en\d+) flags=3<LEARNING,DISCOVER>.*`)
+			pattern := regexp.MustCompile(`.*member: (en\d+) flags=.*`)
 			submatch := pattern.FindStringSubmatch(iface)
 			if len(submatch) != 2 {
-				//error
-				t.status.RouteError = fmt.Errorf("error, couldn't find member in bridge100 interface: \n%s", iface)
+				t.status.RouteError = fmt.Errorf("couldn't find member in bridge100 interface: %s", iface)
 				return
 			}
 
 			member := submatch[1]
 			command = exec.Command("sudo", "ifconfig", "bridge100", "deletem", member)
-			fmt.Printf("About to run command: %s\n", command.Args)
-			response, err := command.CombinedOutput()
-			fmt.Printf(string(response))
+			glog.Infof("About to run command: %s\n", command.Args)
+			response, err = command.CombinedOutput()
+			glog.Infof(string(response))
 			if err != nil {
 				t.status.RouteError = fmt.Errorf("couldn't remove member %s: %s", member, err)
 				return
 			}
 
 			command = exec.Command("sudo", "ifconfig", "bridge100", "addm", member)
-			fmt.Printf("About to run command: %s\n", command.Args)
+			glog.Infof("About to run command: %s\n", command.Args)
 			response, err = command.CombinedOutput()
-			fmt.Printf(string(response))
+			glog.Infof(string(response))
 			if err != nil {
 				t.status.RouteError = fmt.Errorf("couldn't re-add member %s: %s", member, err)
 				return
 			}
-
 		}
 	}
 

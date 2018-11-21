@@ -38,7 +38,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	glog.Infof("Adding routefor CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()

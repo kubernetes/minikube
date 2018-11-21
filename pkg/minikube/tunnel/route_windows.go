@@ -44,7 +44,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 
 	gatewayIP := route.Gateway.String()
 
-	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	glog.Infof("Adding routefor CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("route", "ADD", destinationIP, "MASK", destinationMask, gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
@@ -127,7 +127,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	glog.Infof("Cleaning up Route for CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
+	glog.Infof("Cleaning up routefor CIDR %s to gateway %s\n", serviceCIDR, gatewayIP)
 	command := exec.Command("route", "delete", serviceCIDR)
 	stdInAndOut, err := command.CombinedOutput()
 	if err != nil {
