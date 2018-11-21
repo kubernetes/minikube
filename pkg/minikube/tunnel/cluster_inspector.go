@@ -73,7 +73,7 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 	var route *Route
 	route, err = getRoute(h, c)
 	if err != nil {
-		err = errors.Wrapf(err, "error getting Route info for %s", m.machineName)
+		err = errors.Wrapf(err, "error getting route info for %s", m.machineName)
 		return hostState, nil, err
 	}
 	return hostState, route, nil

@@ -45,7 +45,7 @@ func testTunnel(t *testing.T) {
 	t.Log("starting tunnel test...")
 	runner := NewMinikubeRunner(t)
 	go func() {
-		output := runner.RunCommand("tunnel --alsologtostderr -v 8", true)
+		output := runner.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
 		fmt.Println(output)
 	}()
 
@@ -97,10 +97,21 @@ func testTunnel(t *testing.T) {
 	}
 
 	httpClient := http.DefaultClient
-	httpClient.Timeout = 1 * time.Second
-	resp, err := httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+	httpClient.Timeout = 5 * time.Second
 
-	if err != nil {
+	var resp *http.Response
+
+	request := func() error {
+		resp, err = httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+		if err != nil {
+			retriable := &commonutil.RetriableError{Err: err}
+			t.Log(retriable)
+			return retriable
+		}
+		return nil
+	}
+
+	if err = commonutil.RetryAfter(5, request, 1*time.Second); err != nil {
 		t.Fatalf("error reading from nginx at address(%s): %s", nginxIP, err)
 	}
 
