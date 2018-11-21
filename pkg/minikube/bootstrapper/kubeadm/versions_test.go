@@ -96,7 +96,7 @@ func TestVersionIsBetween(t *testing.T) {
 func TestParseKubernetesVersion(t *testing.T) {
 	version, err := ParseKubernetesVersion("v1.8.0-alpha.5")
 	if err != nil {
-		t.Fatalf("Error parsing version: %s", err)
+		t.Fatalf("Error parsing version: %v", err)
 	}
 	if version.NE(semver.MustParse("1.8.0-alpha.5")) {
 		t.Errorf("Expected: %s, Actual:%s", "1.8.0-alpha.5", version)
@@ -141,7 +141,7 @@ func TestParseFeatureArgs(t *testing.T) {
 			kubeadm, component, err := ParseFeatureArgs(test.featureGates)
 
 			if err != nil {
-				t.Fatalf("Error parsing feature args: %s", err)
+				t.Fatalf("Error parsing feature args: %v", err)
 			}
 
 			if !reflect.DeepEqual(kubeadm, test.expectedKubeadmFeatureArgs) {

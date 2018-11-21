@@ -66,7 +66,7 @@ func GetClient() (kubernetes.Interface, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -211,7 +211,7 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 			glog.Infof("Service %s in namespace %s disappeared.", name, namespace)
 			return !exist, nil
 		case !IsRetryableAPIError(err):
-			glog.Infof("Non-retryable failure while getting service.")
+			glog.Info("Non-retryable failure while getting service.")
 			return false, err
 		default:
 			glog.Infof("Get service %s in namespace %s failed: %v", name, namespace, err)

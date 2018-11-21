@@ -48,7 +48,7 @@ func testClusterDNS(t *testing.T) {
 	// The query result is not as important as service reachability
 	out, err := kr.RunCommand([]string{"exec", busybox, "nslookup", "localhost"})
 	if err != nil {
-		t.Errorf("nslookup within busybox failed: %s", err)
+		t.Errorf("nslookup within busybox failed: %v", err)
 	}
 	clusterIP := []byte("10.96.0.1")
 	if !bytes.Contains(out, clusterIP) {
@@ -63,7 +63,7 @@ func waitForDNS(t *testing.T, c kubernetes.Interface) {
 		t.Fatalf("Waited too long for k8s-app=kube-dns pods")
 	}
 	if err := commonutil.WaitForDeploymentToStabilize(c, "kube-system", "kube-dns", time.Minute*2); err != nil {
-		t.Fatalf("kube-dns deployment failed became stable within 2 minutes")
+		t.Fatalf("kube-dns deployment failed to stabilize within 2 minutes")
 	}
 }
 
@@ -73,7 +73,7 @@ func busyBoxPod(t *testing.T, c kubernetes.Interface, kr *util.KubectlRunner) st
 	}
 	// TODO(tstromberg): Refactor WaitForBusyboxRunning to return name of pod.
 	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
-		t.Fatalf("Waiting for busybox pod to be up: %s", err)
+		t.Fatalf("Waiting for busybox pod to be up: %v", err)
 	}
 
 	pods, err := c.CoreV1().Pods("default").List(metav1.ListOptions{LabelSelector: "integration-test=busybox"})

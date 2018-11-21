@@ -151,7 +151,7 @@ func (d *Driver) Kill() error {
 func (d *Driver) Remove() error {
 	s, err := d.GetState()
 	if err != nil || s == state.Error {
-		log.Infof("Error checking machine status: %s, assuming it has been removed already", err)
+		log.Infof("Error checking machine status: %v, assuming it has been removed already", err)
 	}
 	if s == state.Running {
 		if err := d.Stop(); err != nil {
@@ -229,7 +229,8 @@ func (d *Driver) Start() error {
 		time.Sleep(time.Second * 30)
 		err = d.setupNFSShare()
 		if err != nil {
-			log.Errorf("NFS setup failed: %s", err.Error())
+			// TODO(tstromberg): Check that logging an and error and return it is appropriate. Seems weird.
+			log.Errorf("NFS setup failed: %v", err)
 			return err
 		}
 	}
@@ -350,13 +351,13 @@ func (d *Driver) getPid() int {
 
 	f, err := os.Open(pidPath)
 	if err != nil {
-		log.Warnf("Error reading pid file: %s", err)
+		log.Warnf("Error reading pid file: %v", err)
 		return 0
 	}
 	dec := json.NewDecoder(f)
 	config := hyperkit.HyperKit{}
 	if err := dec.Decode(&config); err != nil {
-		log.Warnf("Error decoding pid file: %s", err)
+		log.Warnf("Error decoding pid file: %v", err)
 		return 0
 	}
 
@@ -368,12 +369,12 @@ func (d *Driver) cleanupNfsExports() {
 		log.Infof("You must be root to remove NFS shared folders. Please type root password.")
 		for _, share := range d.NFSShares {
 			if _, err := nfsexports.Remove("", d.nfsExportIdentifier(share)); err != nil {
-				log.Errorf("failed removing nfs share (%s): %s", share, err.Error())
+				log.Errorf("failed removing nfs share (%s): %v", share, err)
 			}
 		}
 
 		if err := nfsexports.ReloadDaemon(); err != nil {
-			log.Errorf("failed to reload the nfs daemon: %s", err.Error())
+			log.Errorf("failed to reload the nfs daemon: %v", err)
 		}
 	}
 }

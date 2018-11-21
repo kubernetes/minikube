@@ -78,8 +78,9 @@ func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	clientConfig, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
+	clientConfig.Timeout = 1 * time.Second
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
@@ -88,18 +89,18 @@ func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-type ServiceURL struct {
+type URL struct {
 	Namespace string
 	Name      string
 	URLs      []string
 }
 
-type ServiceURLs []ServiceURL
+type URLs []URL
 
 // Returns all the node port URLs for every service in a particular namespace
 // Accepts a template for formatting
-func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (ServiceURLs, error) {
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return nil, err
 	}
@@ -121,13 +122,13 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 		return nil, err
 	}
 
-	var serviceURLs []ServiceURL
+	var serviceURLs []URL
 	for _, svc := range svcs.Items {
 		urls, err := printURLsForService(client, ip, svc.Name, svc.Namespace, t)
 		if err != nil {
 			return nil, err
 		}
-		serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls})
+		serviceURLs = append(serviceURLs, URL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls})
 	}
 
 	return serviceURLs, nil
@@ -136,7 +137,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 // Returns all the node ports for a service in a namespace
 // with optional formatting
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -211,19 +212,19 @@ func CheckService(namespace string, service string) error {
 	return nil
 }
 
-func OptionallyHttpsFormattedUrlString(bareUrlString string, https bool) (string, bool) {
-	httpsFormattedString := bareUrlString
-	isHttpSchemedURL := false
+func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string, bool) {
+	httpsFormattedString := bareURLString
+	isHTTPSchemedURL := false
 
-	if u, parseErr := url.Parse(bareUrlString); parseErr == nil {
-		isHttpSchemedURL = u.Scheme == "http"
+	if u, parseErr := url.Parse(bareURLString); parseErr == nil {
+		isHTTPSchemedURL = u.Scheme == "http"
 	}
 
-	if isHttpSchemedURL && https {
-		httpsFormattedString = strings.Replace(bareUrlString, "http", "https", 1)
+	if isHTTPSchemedURL && https {
+		httpsFormattedString = strings.Replace(bareURLString, "http", "https", 1)
 	}
 
-	return httpsFormattedString, isHttpSchemedURL
+	return httpsFormattedString, isHTTPSchemedURL
 }
 
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
@@ -236,10 +237,10 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
-	for _, bareUrlString := range urls {
-		urlString, isHttpSchemedURL := OptionallyHttpsFormattedUrlString(bareUrlString, https)
+	for _, bareURLString := range urls {
+		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
-		if urlMode || !isHttpSchemedURL {
+		if urlMode || !isHTTPSchemedURL {
 			fmt.Fprintln(os.Stdout, urlString)
 		} else {
 			fmt.Fprintln(os.Stderr, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")

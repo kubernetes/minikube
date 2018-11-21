@@ -57,6 +57,7 @@ const (
 	kubernetesVersion     = "kubernetes-version"
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
+	criSocket             = "cri-socket"
 	networkPlugin         = "network-plugin"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
@@ -112,14 +113,14 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 		os.Exit(1)
 	}
 	defer api.Close()
 
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		glog.Exitf("checking if machine exists: %s", err)
+		glog.Exitf("checking if machine exists: %v", err)
 	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
@@ -165,7 +166,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, config)
 		if err != nil {
-			glog.Errorf("Error starting host: %s.\n\n Retrying.\n", err)
+			glog.Errorf("Error starting host: %v.\n\n Retrying.\n", err)
 		}
 		return err
 	}
@@ -187,7 +188,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		selectedKubernetesVersion = constants.DefaultKubernetesVersion
 	}
 	// Load profile cluster config from file
-	cc, err := loadConfigFromFile(viper.GetString(cfg.MachineProfile))
+	cc, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
 	}
@@ -220,6 +221,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		DNSDomain:              viper.GetString(dnsDomain),
 		FeatureGates:           viper.GetString(featureGates),
 		ContainerRuntime:       viper.GetString(containerRuntime),
+		CRISocket:              viper.GetString(criSocket),
 		NetworkPlugin:          viper.GetString(networkPlugin),
 		ServiceCIDR:            pkgutil.DefaultServiceCIDR,
 		ExtraOptions:           extraOptions,
@@ -228,7 +230,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
 	if err != nil {
-		glog.Exitf("Error getting cluster bootstrapper: %s", err)
+		glog.Exitf("Error getting cluster bootstrapper: %v", err)
 	}
 
 	// Write profile cluster configuration to file
@@ -290,9 +292,42 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
+	fmt.Println("Stopping extra container runtimes...")
+
+	containerRuntime := viper.GetString(containerRuntime)
+	if config.VMDriver != constants.DriverNone && containerRuntime != "" {
+		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping docker: %v", err)
+		}
+	}
+	if config.VMDriver != constants.DriverNone && (containerRuntime != constants.CrioRuntime && containerRuntime != constants.Cri_oRuntime) {
+		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
+			glog.Errorf("Error stopping crio: %v", err)
+		}
+	}
+	if config.VMDriver != constants.DriverNone && containerRuntime != constants.RktRuntime {
+		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping rkt: %v", err)
+		}
+	}
+
+	if config.VMDriver != constants.DriverNone && containerRuntime == constants.ContainerdRuntime {
+		fmt.Println("Restarting containerd runtime...")
+		// restart containerd so that it can install all plugins
+		if _, err := host.RunSSHCommand("sudo systemctl restart containerd"); err != nil {
+			glog.Errorf("Error restarting containerd: %v", err)
+		}
+	}
+
 	fmt.Println("Starting cluster components...")
 
-	if !exists || config.VMDriver == "none" {
+	if !exists || config.VMDriver == constants.DriverNone {
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
@@ -321,12 +356,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 		err = mountCmd.Start()
 		if err != nil {
-			glog.Errorf("Error running command minikube mount %s", err)
+			glog.Errorf("Error running command minikube mount %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 		err = ioutil.WriteFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644)
 		if err != nil {
-			glog.Errorf("Error writing mount process pid to file: %s", err)
+			glog.Errorf("Error writing mount process pid to file: %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}
@@ -398,6 +433,7 @@ func init() {
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
+	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
@@ -462,24 +498,4 @@ func saveConfigToFile(data []byte, file string) error {
 		return err
 	}
 	return nil
-}
-
-func loadConfigFromFile(profile string) (cfg.Config, error) {
-	var cc cfg.Config
-
-	profileConfigFile := constants.GetProfileFile(profile)
-
-	if _, err := os.Stat(profileConfigFile); os.IsNotExist(err) {
-		return cc, err
-	}
-
-	data, err := ioutil.ReadFile(profileConfigFile)
-	if err != nil {
-		return cc, err
-	}
-
-	if err := json.Unmarshal(data, &cc); err != nil {
-		return cc, err
-	}
-	return cc, nil
 }

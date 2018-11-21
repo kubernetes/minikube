@@ -27,7 +27,12 @@
 set -e
 set +x
 
-for job in "Minishift-Linux-KVM" "OSX-Virtualbox" "OSX-Hyperkit" "Linux-Virtualbox" "Linux-KVM" "Linux-None" "Windows-Virtualbox" "Windows-Kubeadm-CRI-O" "Linux-Container"; do
+if [ "${ghprbPullId}" == "master" ]; then
+  echo "not setting github status for continuous builds"
+  exit 0
+fi
+
+for job in "OSX-Virtualbox" "OSX-Hyperkit" "Linux-Virtualbox" "Linux-KVM" "Linux-None" "Windows-Virtualbox"; do
   target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${job}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
     -H "Content-Type: application/json" \

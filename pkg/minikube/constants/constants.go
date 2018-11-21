@@ -87,6 +87,10 @@ const DefaultStorageClassProvisioner = "standard"
 // Used to modify the cache field in the config file
 const Cache = "cache"
 
+func TunnelRegistryPath() string {
+	return filepath.Join(GetMinipath(), "tunnels.json")
+}
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
 	args := []string{GetMinipath()}
@@ -159,6 +163,23 @@ var Preflights = []string{
 	// (because we start kubelet with an invalid config)
 	"CRI",
 }
+
+// AlternateRuntimePreflights are additional preflight checks that are skipped when running
+// any container runtime that isn't Docker
+var AlternateRuntimePreflights = append(Preflights, []string{
+	"Service-Docker",
+	"Port-8443",
+	"Port-10251",
+	"Port-10252",
+	"Port-2379",
+}...)
+
+const (
+	ContainerdRuntime = "containerd"
+	RktRuntime        = "rkt"
+	CrioRuntime       = "crio"
+	Cri_oRuntime      = "cri-o"
+)
 
 const (
 	DefaultUfsPort       = "5640"

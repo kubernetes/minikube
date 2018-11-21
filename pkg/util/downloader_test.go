@@ -59,7 +59,7 @@ func TestCacheMinikubeISOFromURL(t *testing.T) {
 	}))
 	isoURL := server.URL + "/minikube-test.iso"
 	if err := dler.CacheMinikubeISOFromURL(isoURL); err != nil {
-		t.Fatalf("Unexpected error from CacheMinikubeISOFromURL: %s", err)
+		t.Fatalf("Unexpected error from CacheMinikubeISOFromURL: %v", err)
 	}
 
 	transferred, err := ioutil.ReadFile(filepath.Join(isoPath))

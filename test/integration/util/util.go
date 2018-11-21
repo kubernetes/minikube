@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -76,7 +75,7 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
 		} else {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
+			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stdout)
 		}
 	}
 	return string(stdout)
@@ -95,7 +94,7 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	cmd := exec.Command(path, commandArr...)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("stdout pipe failed: %v", err)
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
 	}
 
 	err = cmd.Start()
@@ -128,19 +127,14 @@ func (m *MinikubeRunner) EnsureRunning() {
 	m.CheckStatus("Running")
 }
 
-func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
+// ParseEnvCmdOutput parses the output of `env` (assumes bash)
+func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
+	env := map[string]string{}
 	re := regexp.MustCompile(`(\w+?) ?= ?"?(.+?)"?\n`)
-	matches := re.FindAllStringSubmatch(dockerEnvVars, -1)
-	seenEnvVar := false
-	for _, m := range matches {
-		seenEnvVar = true
-		key, val := m[1], m[2]
-		os.Setenv(key, val)
+	for _, m := range re.FindAllStringSubmatch(out, -1) {
+		env[m[1]] = m[2]
 	}
-	if !seenEnvVar {
-		return fmt.Errorf("Error: No environment variables were found in docker-env command output: %s", dockerEnvVars)
-	}
-	return nil
+	return env
 }
 
 func (m *MinikubeRunner) GetStatus() string {
@@ -196,7 +190,7 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			k.T.Logf("Error %s running command %s. Return code: %s", stdout, args, err)
+			k.T.Logf("Error %s running command %s. Return code: %v", stdout, args, err)
 			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command: %v. Output: %s", err, stdout)}
 		}
 		return nil
@@ -314,7 +308,6 @@ func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (
 		if err == nil {
 			return nil
 		}
-		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
 		time.Sleep(d)
 	}
 	return err
