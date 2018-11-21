@@ -81,7 +81,7 @@ func TestReporter(t *testing.T) {
 	services: []
     errors: 
 		minikube: minikubeerror
-		router: routeerror
+		router: route error
 		loadbalancer emulator: lberror
 `,
 		},
