@@ -276,6 +276,18 @@ var Addons = map[string]*Addon{
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
 	}, false, "nvidia-gpu-device-plugin"),
+	"logviewer": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml",
+			constants.AddonsPath,
+			"logviewer-dp-and-svc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-rbac.yaml",
+			constants.AddonsPath,
+			"logviewer-rbac.yaml",
+			"0640"),
+	}, false, "logviewer"),
 }
 
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
