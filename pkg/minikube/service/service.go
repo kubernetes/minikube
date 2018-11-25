@@ -42,8 +42,8 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util"
 )
 
 type K8sClient interface {

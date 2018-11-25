@@ -33,9 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 const (
