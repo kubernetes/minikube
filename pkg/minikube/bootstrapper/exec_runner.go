@@ -65,7 +65,7 @@ func (e *ExecRunner) CombinedOutput(cmd string) (string, error) {
 	var b bytes.Buffer
 	err := e.CombinedOutputTo(cmd, &b)
 	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
+		return b.String(), errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
 	}
 	return b.String(), nil
 
