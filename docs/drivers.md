@@ -25,17 +25,17 @@ To install the KVM2 driver, first install and configure the prereqs:
 ```shell
 # Install libvirt and qemu-kvm on your system, e.g.
 # Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
-$ sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
+sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
 # Fedora/CentOS/RHEL
-$ sudo yum install libvirt-daemon-kvm qemu-kvm
+sudo yum install libvirt-daemon-kvm qemu-kvm
 
 # Add yourself to the libvirt group so you don't need to sudo
 # NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-$ sudo usermod -a -G libvirt $(whoami)
+sudo usermod -a -G libvirt $(whoami)
 
 # Update your current session for the group change to take effect
 # NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-$ newgrp libvirt
+newgrp libvirt
 ```
 
 Then install the driver itself:
@@ -59,17 +59,17 @@ After following the instructions on the KVM driver releases page, you need to ma
 ```shell
 # Install libvirt and qemu-kvm on your system, e.g.
 # Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
-$ sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
+sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
 # Fedora/CentOS/RHEL
-$ sudo yum install libvirt-daemon-kvm qemu-kvm
+sudo yum install libvirt-daemon-kvm qemu-kvm
 
 # Add yourself to the libvirt group so you don't need to sudo
 # NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-$ sudo usermod -a -G libvirt $(whoami)
+sudo usermod -a -G libvirt $(whoami)
 
 # Update your current session for the group change to take effect
 # NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-$ newgrp libvirt
+newgrp libvirt
 ```
 
 To use the driver you would do:
@@ -103,11 +103,11 @@ If you are using [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) in you
 From https://github.com/zchee/docker-machine-driver-xhyve#install:
 
 ```shell
-$ brew install docker-machine-driver-xhyve
+brew install docker-machine-driver-xhyve
 
 # docker-machine-driver-xhyve need root owner and uid
-$ sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
-$ sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
+sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
 ```
 
 #### HyperV driver
