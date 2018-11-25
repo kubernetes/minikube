@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel"
+	"time"
 )
 
 var cleanup bool
@@ -56,7 +57,7 @@ var tunnelCmd = &cobra.Command{
 			glog.Fatalf("error creating dockermachine client: %s", err)
 		}
 		glog.Infof("Creating k8s client...")
-		clientset, err := service.K8s.GetClientset()
+		clientset, err := service.K8s.GetClientset(1 * time.Second)
 		if err != nil {
 			glog.Fatalf("error creating K8S clientset: %s", err)
 		}

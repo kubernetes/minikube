@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	minikubeVersion "k8s.io/minikube/pkg/version"
+	"time"
 )
 
 // APIServerPort is the port that the API server should listen on.
@@ -116,6 +117,7 @@ const (
 	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
 	DefaultWait                = 20
 	DefaultInterval            = 6
+	DefaultK8sClientTimeout    = 10 * time.Second
 	DefaultClusterBootstrapper = "kubeadm"
 )
 
