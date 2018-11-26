@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
 )
@@ -94,7 +95,7 @@ func unmarkMaster() error {
 // cluster admin privileges to work with RBAC.
 func elevateKubeSystemPrivileges() error {
 	k8s := service.K8s
-	client, err := k8s.GetClientset()
+	client, err := k8s.GetClientset(constants.DefaultK8sClientTimeout)
 	if err != nil {
 		return errors.Wrap(err, "getting clientset")
 	}

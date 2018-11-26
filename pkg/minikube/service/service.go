@@ -42,12 +42,13 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
 type K8sClient interface {
 	GetCoreClient() (corev1.CoreV1Interface, error)
-	GetClientset() (*kubernetes.Clientset, error)
+	GetClientset(timeout time.Duration) (*kubernetes.Clientset, error)
 }
 
 type K8sClientGetter struct{}
@@ -59,14 +60,14 @@ func init() {
 }
 
 func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
-	client, err := k.GetClientset()
+	client, err := k.GetClientset(constants.DefaultK8sClientTimeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}
 	return client.Core(), nil
 }
 
-func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
+func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	profile := viper.GetString(config.MachineProfile)
 	configOverrides := &clientcmd.ConfigOverrides{
@@ -80,7 +81,7 @@ func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
-	clientConfig.Timeout = 1 * time.Second
+	clientConfig.Timeout = timeout
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
