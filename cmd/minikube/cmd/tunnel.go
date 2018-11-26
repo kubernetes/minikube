@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel"
+	"time"
 )
 
 var cleanup bool
@@ -56,7 +57,12 @@ var tunnelCmd = &cobra.Command{
 			glog.Fatalf("error creating dockermachine client: %s", err)
 		}
 		glog.Infof("Creating k8s client...")
-		clientset, err := service.K8s.GetClientset()
+
+		//Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
+		//We define the tunnel and minikube error free if the API server responds within a second.
+		//This also contributes to better UX, the tunnel status check can happen every second and
+		//doesn't hang on the API server call during startup and shutdown time or if there is a temporary error.
+		clientset, err := service.K8s.GetClientset(1 * time.Second)
 		if err != nil {
 			glog.Fatalf("error creating K8S clientset: %s", err)
 		}
