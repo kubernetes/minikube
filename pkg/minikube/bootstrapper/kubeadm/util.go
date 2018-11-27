@@ -123,8 +123,8 @@ func elevateKubeSystemPrivileges() error {
 	}
 	_, err = client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding)
 	if err != nil {
-		timeout, ok := err.(net.Error)
-		if ok && timeout.Timeout() {
+		netErr, ok := err.(net.Error)
+		if ok && netErr.Timeout() {
 			return &util.RetriableError{Err: errors.Wrap(err, "creating clusterrolebinding")}
 		}
 		return errors.Wrap(err, "creating clusterrolebinding")
