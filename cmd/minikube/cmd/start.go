@@ -142,6 +142,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		CPUs:                viper.GetInt(cpus),
 		DiskSize:            diskSizeMB,
 		VMDriver:            viper.GetString(vmDriver),
+		ContainerRuntime:    viper.GetString(containerRuntime),
 		HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
 		HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
 		XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
