@@ -122,6 +122,9 @@ func elevateKubeSystemPrivileges() error {
 	}
 	_, err = client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding)
 	if err != nil {
+		if strings.Contains(err.Error(), "Client.Timeout exceeded while awaiting headers") {
+			return &util.RetriableError{ Err: errors.Wrap(err, "creating clusterrolebinding") }
+		}
 		return errors.Wrap(err, "creating clusterrolebinding")
 	}
 	return nil

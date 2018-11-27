@@ -117,7 +117,7 @@ const (
 	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
 	DefaultWait                = 20
 	DefaultInterval            = 6
-	DefaultK8sClientTimeout    = 10 * time.Second
+	DefaultK8sClientTimeout    = 60 * time.Second
 	DefaultClusterBootstrapper = "kubeadm"
 )
 
