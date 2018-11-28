@@ -20,7 +20,6 @@ package integration
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -56,21 +55,13 @@ func testMounting(t *testing.T) {
 	} else {
 		mountCmd = fmt.Sprintf("mount %s:/mount-9p", tempDir)
 	}
-	if testing.Verbose() {
-		fmt.Fprintf(os.Stderr, "runing mount cmd: %s\n", mountCmd)
-	}
-	cmd, out, serr := minikubeRunner.RunDaemon2(mountCmd)
+	cmd, _, _ := minikubeRunner.RunDaemon2(mountCmd)
 	defer func() {
 		err := cmd.Process.Kill()
 		if err != nil {
 			t.Logf("Failed to kill mount command: %v", err)
 		}
 	}()
-
-	if testing.Verbose() {
-		go io.Copy(os.Stderr, out)
-		go io.Copy(os.Stderr, serr)
-	}
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox-mount"
@@ -138,7 +129,7 @@ func testMounting(t *testing.T) {
 			statCmd := fmt.Sprintf("stat /mount-9p/%s", file)
 			statOutput, err := minikubeRunner.SSH(statCmd)
 			if err != nil {
-				t.Fatalf("%v", err)
+				t.Fatalf("Unable to stat %s via SSH. error %v, %s", file, err, statOutput)
 			}
 
 			if runtime.GOOS == "windows" {
