@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
+	"time"
 )
 
 type MockClientGetter struct {
@@ -44,7 +45,7 @@ func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	}, nil
 }
 
-func (m *MockClientGetter) GetClientset() (*kubernetes.Clientset, error) {
+func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	return nil, nil
 }
 
@@ -133,44 +134,6 @@ func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpo
 	return endpoint, nil
 }
 
-func TestCheckEndpointReady(t *testing.T) {
-	var tests = []struct {
-		description string
-		service     string
-		err         bool
-	}{
-		{
-			description: "Endpoint with no subsets should return an error",
-			service:     "no-subsets",
-			err:         true,
-		},
-		{
-			description: "Endpoint with no ready endpoints should return an error",
-			service:     "not-ready",
-			err:         true,
-		},
-		{
-			description: "Endpoint with at least one ready endpoint should not return an error",
-			service:     "one-ready",
-			err:         false,
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
-			err := checkEndpointReady(&MockEndpointsInterface{}, test.service)
-			if err != nil && !test.err {
-				t.Errorf("Check endpoints returned an error: %+v", err)
-			}
-			if err == nil && test.err {
-				t.Errorf("Check endpoints should have returned an error but returned nil")
-			}
-		})
-	}
-}
-
 type MockServiceInterface struct {
 	fake.FakeServices
 	ServiceList *v1.ServiceList
@@ -250,6 +213,13 @@ func TestPrintURLsForService(t *testing.T) {
 			expectedOutput: []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
 		},
 		{
+			description:    "should get all node ports with arbitrary format",
+			serviceName:    "mock-dashboard",
+			namespace:      "default",
+			tmpl:           template.Must(template.New("svc-arbitrary-template").Parse("{{.IP}}:{{.Port}}")),
+			expectedOutput: []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+		},
+		{
 			description:    "empty slice for no node ports",
 			serviceName:    "mock-dashboard-no-ports",
 			namespace:      "default",
@@ -267,7 +237,7 @@ func TestPrintURLsForService(t *testing.T) {
 			t.Parallel()
 			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
-				t.Errorf("Error: %s", err)
+				t.Errorf("Error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
@@ -279,12 +249,71 @@ func TestPrintURLsForService(t *testing.T) {
 	}
 }
 
+func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
+
+	var tests = []struct {
+		description                     string
+		bareURLString                   string
+		https                           bool
+		expectedHTTPSFormattedURLString string
+		expectedIsHTTPSchemedURL        bool
+	}{
+		{
+			description:                     "no https for http schemed with no https option",
+			bareURLString:                   "http://192.168.99.100:30563",
+			https:                           false,
+			expectedHTTPSFormattedURLString: "http://192.168.99.100:30563",
+			expectedIsHTTPSchemedURL:        true,
+		},
+		{
+			description:                     "no https for non-http schemed with no https option",
+			bareURLString:                   "xyz.http.myservice:30563",
+			https:                           false,
+			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
+			expectedIsHTTPSchemedURL:        false,
+		},
+		{
+			description:                     "https for http schemed with https option",
+			bareURLString:                   "http://192.168.99.100:30563",
+			https:                           true,
+			expectedHTTPSFormattedURLString: "https://192.168.99.100:30563",
+			expectedIsHTTPSchemedURL:        true,
+		},
+		{
+			description:                     "no https for non-http schemed with https option and http substring",
+			bareURLString:                   "xyz.http.myservice:30563",
+			https:                           true,
+			expectedHTTPSFormattedURLString: "xyz.http.myservice:30563",
+			expectedIsHTTPSchemedURL:        false,
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+		t.Run(test.description, func(t *testing.T) {
+			t.Parallel()
+			httpsFormattedURLString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(test.bareURLString, test.https)
+
+			if httpsFormattedURLString != test.expectedHTTPSFormattedURLString {
+				t.Errorf("\nhttpsFormattedURLString, Expected %v \nActual: %v \n\n", test.expectedHTTPSFormattedURLString, httpsFormattedURLString)
+			}
+
+			if isHTTPSchemedURL != test.expectedIsHTTPSchemedURL {
+				t.Errorf("\nisHTTPSchemedURL, Expected %v \nActual: %v \n\n",
+					test.expectedHTTPSFormattedURLString, httpsFormattedURLString)
+			}
+		})
+	}
+}
+
 func TestGetServiceURLs(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
-		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
-				Driver: &tests.MockDriver{},
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
 			},
 		},
 	}
@@ -294,13 +323,15 @@ func TestGetServiceURLs(t *testing.T) {
 		description string
 		api         libmachine.API
 		namespace   string
-		expected    ServiceURLs
+		expected    URLs
 		err         bool
 	}{
 		{
 			description: "no host",
 			api: &tests.MockAPI{
-				Hosts: make(map[string]*host.Host),
+				FakeStore: tests.FakeStore{
+					Hosts: make(map[string]*host.Host),
+				},
 			},
 			err: true,
 		},
@@ -308,7 +339,7 @@ func TestGetServiceURLs(t *testing.T) {
 			description: "correctly return serviceURLs",
 			namespace:   "default",
 			api:         defaultAPI,
-			expected: []ServiceURL{
+			expected: []URL{
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard",
@@ -334,7 +365,7 @@ func TestGetServiceURLs(t *testing.T) {
 			}
 			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
 			if err != nil && !test.err {
-				t.Errorf("Error GetServiceURLs %s", err)
+				t.Errorf("Error GetServiceURLs %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")
@@ -348,10 +379,12 @@ func TestGetServiceURLs(t *testing.T) {
 
 func TestGetServiceURLsForService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
-		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
-				Driver: &tests.MockDriver{},
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
 			},
 		},
 	}
@@ -368,7 +401,9 @@ func TestGetServiceURLsForService(t *testing.T) {
 		{
 			description: "no host",
 			api: &tests.MockAPI{
-				Hosts: make(map[string]*host.Host),
+				FakeStore: tests.FakeStore{
+					Hosts: make(map[string]*host.Host),
+				},
 			},
 			err: true,
 		},
@@ -397,7 +432,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 			}
 			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
-				t.Errorf("Error GetServiceURLsForService %s", err)
+				t.Errorf("Error GetServiceURLsForService %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")

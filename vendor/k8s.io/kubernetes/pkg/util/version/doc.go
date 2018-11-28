@@ -15,4 +15,4 @@ limitations under the License.
 */
 
 // Package version provides utilities for version number comparisons
-package version
+package version // import "k8s.io/kubernetes/pkg/util/version"

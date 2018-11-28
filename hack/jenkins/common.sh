@@ -23,17 +23,23 @@
 # EXTRA_BUILD_ARGS: additional flags to pass into minikube start
 # JOB_NAME: the name of the logfile and check name to update on github
 
-
-# Copy only the files we need to this workspace
 mkdir -p out/ testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/pvc.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/busybox-mount-test.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-pod-svc.yaml testdata/
-gsutil cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/nginx-ing.yaml testdata/
+
+# Install gsutil if necessary.
+if ! type -P gsutil; then
+  if [[ ! -x "out/gsutil/gsutil" ]]; then
+    echo "Installing gsutil to $(pwd)/out ..."
+    curl -s https://storage.googleapis.com/pub/gsutil.tar.gz | tar -C out/ -zxf -
+  fi
+  export PATH="$(pwd)/out/gsutil:$PATH"
+fi
+
+# Add the out/ directory to the PATH, for using new drivers.
+export PATH="$(pwd)/out/":$PATH
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH} out/
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver-* out/
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH} out/
+gsutil -m cp gs://minikube-builds/${MINIKUBE_LOCATION}/testdata/* testdata/
 
 # Set the executable bit on the e2e binary and out binary
 chmod +x out/e2e-${OS_ARCH}
@@ -48,8 +54,6 @@ export MINIKUBE_WANTREPORTERRORPROMPT=False
 sudo ./out/minikube-${OS_ARCH} delete || true
 ./out/minikube-${OS_ARCH} delete || true
 
-# Add the out/ directory to the PATH, for using new drivers.
-export PATH="$(pwd)/out/":$PATH
 
 # Linux cleanup
 virsh -c qemu:///system list --all \
@@ -90,7 +94,10 @@ find ~/.minikube || true
 
 # Allow this to fail, we'll switch on the return code below.
 set +e
-${SUDO_PREFIX}out/e2e-${OS_ARCH} -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
+${SUDO_PREFIX}out/e2e-${OS_ARCH} \
+  -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
+  -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
+  -test.v -test.timeout=30m -binary=out/minikube-${OS_ARCH}
 result=$?
 set -e
 
@@ -106,6 +113,11 @@ if [[ $result -eq 0 ]]; then
 else
   status="failure"
   source print-debug-info.sh
+fi
+
+if [ "${MINIKUBE_LOCATION}" == "master" ]; then
+  echo "not setting github status for continuous builds"
+  exit $result
 fi
 
 set +x

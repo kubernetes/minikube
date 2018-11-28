@@ -40,16 +40,16 @@ func TestPersistence(t *testing.T) {
 
 	// Create a pod and wait for it to be running.
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("Error creating test pod: %s", err)
+		t.Fatalf("Error creating test pod: %v", err)
 	}
 
 	verify := func(t *testing.T) {
 		if err := util.WaitForDashboardRunning(t); err != nil {
-			t.Fatalf("waiting for dashboard to be up: %s", err)
+			t.Fatalf("waiting for dashboard to be up: %v", err)
 		}
 
 		if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
-			t.Fatalf("waiting for busybox to be up: %s", err)
+			t.Fatalf("waiting for busybox to be up: %v", err)
 		}
 
 	}
@@ -66,7 +66,7 @@ func TestPersistence(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-		t.Fatalf("timed out while checking stopped status: %s", err)
+		t.Fatalf("timed out while checking stopped status: %v", err)
 	}
 
 	minikubeRunner.Start()

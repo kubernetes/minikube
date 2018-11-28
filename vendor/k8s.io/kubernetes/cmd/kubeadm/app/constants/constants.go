@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -38,7 +39,8 @@ const (
 	// ManifestsSubDirName defines directory name to store manifests
 	ManifestsSubDirName = "manifests"
 	// TempDirForKubeadm defines temporary directory for kubeadm
-	TempDirForKubeadm = "/etc/kubernetes/tmp"
+	// should be joined with KubernetesDir.
+	TempDirForKubeadm = "tmp"
 
 	// CACertAndKeyBaseName defines certificate authority base name
 	CACertAndKeyBaseName = "ca"
@@ -78,8 +80,6 @@ const (
 	EtcdServerCertName = "etcd/server.crt"
 	// EtcdServerKeyName defines etcd's server key name
 	EtcdServerKeyName = "etcd/server.key"
-	// EtcdServerCertCommonName defines etcd's server certificate common name (CN)
-	EtcdServerCertCommonName = "kube-etcd"
 
 	// EtcdPeerCertAndKeyBaseName defines etcd's peer certificate and key base name
 	EtcdPeerCertAndKeyBaseName = "etcd/peer"
@@ -87,8 +87,6 @@ const (
 	EtcdPeerCertName = "etcd/peer.crt"
 	// EtcdPeerKeyName defines etcd's peer key name
 	EtcdPeerKeyName = "etcd/peer.key"
-	// EtcdPeerCertCommonName defines etcd's peer certificate common name (CN)
-	EtcdPeerCertCommonName = "kube-etcd-peer"
 
 	// EtcdHealthcheckClientCertAndKeyBaseName defines etcd's healthcheck client certificate and key base name
 	EtcdHealthcheckClientCertAndKeyBaseName = "etcd/healthcheck-client"
@@ -161,17 +159,16 @@ const (
 	// system:nodes group subject is removed if present.
 	NodesClusterRoleBinding = "system:node"
 
-	// KubeletBaseConfigMapRoleName defines the base kubelet configuration ConfigMap.
-	KubeletBaseConfigMapRoleName = "kubeadm:kubelet-base-configmap"
-
 	// APICallRetryInterval defines how long kubeadm should wait before retrying a failed API operation
 	APICallRetryInterval = 500 * time.Millisecond
 	// DiscoveryRetryInterval specifies how long kubeadm should wait before retrying to connect to the master when doing discovery
 	DiscoveryRetryInterval = 5 * time.Second
-	// MarkMasterTimeout specifies how long kubeadm should wait for applying the label and taint on the master before timing out
-	MarkMasterTimeout = 2 * time.Minute
+	// PatchNodeTimeout specifies how long kubeadm should wait for applying the label and taint on the master before timing out
+	PatchNodeTimeout = 2 * time.Minute
 	// UpdateNodeTimeout specifies how long kubeadm should wait for updating node with the initial remote configuration of kubelet before timing out
 	UpdateNodeTimeout = 2 * time.Minute
+	// TLSBootstrapTimeout specifies how long kubeadm should wait for the kubelet to perform the TLS Bootstrap
+	TLSBootstrapTimeout = 2 * time.Minute
 
 	// MinimumAddressesInServiceSubnet defines minimum amount of nodes the Service subnet should allow.
 	// We need at least ten, because the DNS service is always at the tenth cluster clusterIP
@@ -185,33 +182,51 @@ const (
 	// This is a duplicate definition of the constant in pkg/controller/service/service_controller.go
 	LabelNodeRoleMaster = "node-role.kubernetes.io/master"
 
+	// AnnotationKubeadmCRISocket specifies the annotation kubeadm uses to preserve the crisocket information given to kubeadm at
+	// init/join time for use later. kubeadm annotates the node object with this information
+	AnnotationKubeadmCRISocket = "kubeadm.alpha.kubernetes.io/cri-socket"
+
 	// MasterConfigurationConfigMap specifies in what ConfigMap in the kube-system namespace the `kubeadm init` configuration should be stored
 	MasterConfigurationConfigMap = "kubeadm-config"
 
 	// MasterConfigurationConfigMapKey specifies in what ConfigMap key the master configuration should be stored
 	MasterConfigurationConfigMapKey = "MasterConfiguration"
 
-	// KubeletBaseConfigurationConfigMap specifies in what ConfigMap in the kube-system namespace the initial remote configuration of kubelet should be stored
-	KubeletBaseConfigurationConfigMap = "kubelet-base-config-1.9"
+	// KubeletBaseConfigurationConfigMapPrefix specifies in what ConfigMap in the kube-system namespace the initial remote configuration of kubelet should be stored
+	KubeletBaseConfigurationConfigMapPrefix = "kubelet-config-"
 
 	// KubeletBaseConfigurationConfigMapKey specifies in what ConfigMap key the initial remote configuration of kubelet should be stored
-	// TODO: Use the constant ("kubelet.config.k8s.io") defined in pkg/kubelet/kubeletconfig/util/keys/keys.go
-	// after https://github.com/kubernetes/kubernetes/pull/53833 being merged.
 	KubeletBaseConfigurationConfigMapKey = "kubelet"
 
-	// KubeletBaseConfigurationDir specifies the directory on the node where stores the initial remote configuration of kubelet
-	KubeletBaseConfigurationDir = "/var/lib/kubelet/config/init"
+	// KubeletBaseConfigMapRolePrefix defines the base kubelet configuration ConfigMap.
+	KubeletBaseConfigMapRolePrefix = "kubeadm:kubelet-config-"
 
-	// KubeletBaseConfigurationFile specifies the file name on the node which stores initial remote configuration of kubelet
-	// TODO: Use the constant ("kubelet.config.k8s.io") defined in pkg/kubelet/kubeletconfig/util/keys/keys.go
-	// after https://github.com/kubernetes/kubernetes/pull/53833 being merged.
-	KubeletBaseConfigurationFile = "kubelet"
+	// KubeletRunDirectory specifies the directory where the kubelet runtime information is stored.
+	// TODO: Make hard-coded "/var/lib/kubelet" strings reference this constant.
+	KubeletRunDirectory = "/var/lib/kubelet"
+
+	// KubeletConfigurationFileName specifies the file name on the node which stores initial remote configuration of kubelet
+	// This file should exist under KubeletRunDirectory
+	KubeletConfigurationFileName = "config.yaml"
+
+	// DynamicKubeletConfigurationDirectoryName specifies the directory which stores the dynamic configuration checkpoints for the kubelet
+	// This directory should exist under KubeletRunDirectory
+	DynamicKubeletConfigurationDirectoryName = "dynamic-config"
+
+	// KubeletEnvFileName is a file "kubeadm init" writes at runtime. Using that interface, kubeadm can customize certain
+	// kubelet flags conditionally based on the environment at runtime. Also, parameters given to the configuration file
+	// might be passed through this file. "kubeadm init" writes one variable, with the name ${KubeletEnvFileVariableName}.
+	// This file should exist under KubeletRunDirectory
+	KubeletEnvFileName = "kubeadm-flags.env"
+
+	// KubeletEnvFileVariableName specifies the shell script variable name "kubeadm init" should write a value to in KubeletEnvFile
+	KubeletEnvFileVariableName = "KUBELET_KUBEADM_ARGS"
 
 	// MinExternalEtcdVersion indicates minimum external etcd version which kubeadm supports
-	MinExternalEtcdVersion = "3.1.12"
+	MinExternalEtcdVersion = "3.2.17"
 
 	// DefaultEtcdVersion indicates the default etcd version that kubeadm uses
-	DefaultEtcdVersion = "3.1.12"
+	DefaultEtcdVersion = "3.2.18"
 
 	// Etcd defines variable used internally when referring to etcd component
 	Etcd = "etcd"
@@ -259,6 +274,17 @@ const (
 	KubeAuditPolicyLogVolumeName = "audit-log"
 	// StaticPodAuditPolicyLogDir is the name of the directory in the static pod that will have the audit logs
 	StaticPodAuditPolicyLogDir = "/var/log/kubernetes/audit"
+
+	// LeaseEndpointReconcilerType will select a storage based reconciler
+	// Copied from pkg/master/reconcilers to avoid pulling extra dependencies
+	// TODO: Import this constant from a consts only package, that does not pull any further dependencies.
+	LeaseEndpointReconcilerType = "lease"
+
+	// KubeDNSVersion is the version of kube-dns to be deployed if it is used
+	KubeDNSVersion = "1.14.10"
+
+	// CoreDNSVersion is the version of CoreDNS to be deployed if it is used
+	CoreDNSVersion = "1.1.3"
 )
 
 var (
@@ -274,11 +300,6 @@ var (
 		Effect: v1.TaintEffectNoSchedule,
 	}
 
-	// AuthorizationPolicyPath defines the supported location of authorization policy file
-	AuthorizationPolicyPath = filepath.Join(KubernetesDir, "abac_policy.json")
-	// AuthorizationWebhookConfigPath defines the supported location of webhook config file
-	AuthorizationWebhookConfigPath = filepath.Join(KubernetesDir, "webhook_authz.conf")
-
 	// DefaultTokenUsages specifies the default functions a token will get
 	DefaultTokenUsages = bootstrapapi.KnownTokenUsages
 
@@ -289,16 +310,16 @@ var (
 	MasterComponents = []string{KubeAPIServer, KubeControllerManager, KubeScheduler}
 
 	// MinimumControlPlaneVersion specifies the minimum control plane version kubeadm can deploy
-	MinimumControlPlaneVersion = version.MustParseSemantic("v1.9.0")
+	MinimumControlPlaneVersion = version.MustParseSemantic("v1.10.0")
 
 	// MinimumKubeletVersion specifies the minimum version of kubelet which kubeadm supports
-	MinimumKubeletVersion = version.MustParseSemantic("v1.9.0")
+	MinimumKubeletVersion = version.MustParseSemantic("v1.10.0")
 
 	// SupportedEtcdVersion lists officially supported etcd versions with corresponding kubernetes releases
 	SupportedEtcdVersion = map[uint8]string{
-		9:  "3.1.12",
 		10: "3.1.12",
-		11: "3.1.12",
+		11: "3.2.18",
+		12: "3.2.18",
 	}
 )
 
@@ -317,7 +338,7 @@ func EtcdSupportedVersion(versionString string) (*version.Version, error) {
 		}
 		return etcdVersion, nil
 	}
-	return nil, fmt.Errorf("Unsupported or unknown kubernetes version")
+	return nil, fmt.Errorf("Unsupported or unknown kubernetes version(%v)", kubernetesVersion)
 }
 
 // GetStaticPodDirectory returns the location on the disk where the Static Pod should be present
@@ -335,6 +356,16 @@ func GetAdminKubeConfigPath() string {
 	return filepath.Join(KubernetesDir, AdminKubeConfigFileName)
 }
 
+// GetBootstrapKubeletKubeConfigPath returns the location on the disk where bootstrap kubelet kubeconfig is located by default
+func GetBootstrapKubeletKubeConfigPath() string {
+	return filepath.Join(KubernetesDir, KubeletBootstrapKubeConfigFileName)
+}
+
+// GetKubeletKubeConfigPath returns the location on the disk where kubelet kubeconfig is located by default
+func GetKubeletKubeConfigPath() string {
+	return filepath.Join(KubernetesDir, KubeletKubeConfigFileName)
+}
+
 // AddSelfHostedPrefix adds the self-hosted- prefix to the component name
 func AddSelfHostedPrefix(componentName string) string {
 	return fmt.Sprintf("%s%s", SelfHostingPrefix, componentName)
@@ -342,16 +373,34 @@ func AddSelfHostedPrefix(componentName string) string {
 
 // CreateTempDirForKubeadm is a function that creates a temporary directory under /etc/kubernetes/tmp (not using /tmp as that would potentially be dangerous)
 func CreateTempDirForKubeadm(dirName string) (string, error) {
+	tempDir := path.Join(KubernetesDir, TempDirForKubeadm)
 	// creates target folder if not already exists
-	if err := os.MkdirAll(TempDirForKubeadm, 0700); err != nil {
-		return "", fmt.Errorf("failed to create directory %q: %v", TempDirForKubeadm, err)
+	if err := os.MkdirAll(tempDir, 0700); err != nil {
+		return "", fmt.Errorf("failed to create directory %q: %v", tempDir, err)
 	}
 
-	tempDir, err := ioutil.TempDir(TempDirForKubeadm, dirName)
+	tempDir, err := ioutil.TempDir(tempDir, dirName)
 	if err != nil {
 		return "", fmt.Errorf("couldn't create a temporary directory: %v", err)
 	}
 	return tempDir, nil
+}
+
+// CreateTimestampDirForKubeadm is a function that creates a temporary directory under /etc/kubernetes/tmp formatted with the current date
+func CreateTimestampDirForKubeadm(dirName string) (string, error) {
+	tempDir := path.Join(KubernetesDir, TempDirForKubeadm)
+	// creates target folder if not already exists
+	if err := os.MkdirAll(tempDir, 0700); err != nil {
+		return "", fmt.Errorf("failed to create directory %q: %v", tempDir, err)
+	}
+
+	timestampDirName := fmt.Sprintf("%s-%s", dirName, time.Now().Format("2006-01-02-15-04-05"))
+	timestampDir := path.Join(tempDir, timestampDirName)
+	if err := os.Mkdir(timestampDir, 0700); err != nil {
+		return "", fmt.Errorf("could not create timestamp directory: %v", err)
+	}
+
+	return timestampDir, nil
 }
 
 // GetDNSIP returns a dnsIP, which is 10th IP in svcSubnet CIDR range
@@ -374,4 +423,14 @@ func GetDNSIP(svcSubnet string) (net.IP, error) {
 // GetStaticPodAuditPolicyFile returns the path to the audit policy file within a static pod
 func GetStaticPodAuditPolicyFile() string {
 	return filepath.Join(KubernetesDir, AuditPolicyDir, AuditPolicyFile)
+}
+
+// GetDNSVersion is a handy function that returns the DNS version by DNS type
+func GetDNSVersion(dnsType string) string {
+	switch dnsType {
+	case CoreDNS:
+		return CoreDNSVersion
+	default:
+		return KubeDNSVersion
+	}
 }

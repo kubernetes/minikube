@@ -17,11 +17,12 @@ limitations under the License.
 package util
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -30,7 +31,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
@@ -75,21 +75,34 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
 		} else {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
+			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stdout)
 		}
 	}
 	return string(stdout)
 }
 
-func (m *MinikubeRunner) RunDaemon(command string) *exec.Cmd {
+// RunWithContext calls the minikube command with a context, useful for timeouts.
+func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) ([]byte, error) {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	return exec.CommandContext(ctx, path, commandArr...).CombinedOutput()
+}
+
+func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
-	err := cmd.Start()
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %s", command, err)
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
 	}
-	return cmd
+
+	err = cmd.Start()
+	if err != nil {
+		m.T.Fatalf("Error running command: %s %v", command, err)
+	}
+	return cmd, bufio.NewReader(stdoutPipe)
+
 }
 
 func (m *MinikubeRunner) SSH(command string) (string, error) {
@@ -114,19 +127,14 @@ func (m *MinikubeRunner) EnsureRunning() {
 	m.CheckStatus("Running")
 }
 
-func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
+// ParseEnvCmdOutput parses the output of `env` (assumes bash)
+func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
+	env := map[string]string{}
 	re := regexp.MustCompile(`(\w+?) ?= ?"?(.+?)"?\n`)
-	matches := re.FindAllStringSubmatch(dockerEnvVars, -1)
-	seenEnvVar := false
-	for _, m := range matches {
-		seenEnvVar = true
-		key, val := m[1], m[2]
-		os.Setenv(key, val)
+	for _, m := range re.FindAllStringSubmatch(out, -1) {
+		env[m[1]] = m[2]
 	}
-	if !seenEnvVar {
-		return fmt.Errorf("Error: No environment variables were found in docker-env command output: %s", dockerEnvVars)
-	}
-	return nil
+	return env
 }
 
 func (m *MinikubeRunner) GetStatus() string {
@@ -182,8 +190,9 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			k.T.Logf("Error %s running command %s. Return code: %s", stdout, args, err)
-			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)}
+			retriable := &commonutil.RetriableError{Err: fmt.Errorf("error running command %s: %v. Stdout: \n %s", args, err, stdout)}
+			k.T.Log(retriable)
+			return retriable
 		}
 		return nil
 	}
@@ -196,7 +205,7 @@ func (k *KubectlRunner) CreateRandomNamespace() string {
 	const strLen = 20
 	name := genRandString(strLen)
 	if _, err := k.RunCommand([]string{"create", "namespace", name}); err != nil {
-		k.T.Fatalf("Error creating namespace: %s", err)
+		k.T.Fatalf("Error creating namespace: %v", err)
 	}
 	return name
 }
@@ -247,7 +256,7 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 		return errors.Wrap(err, "waiting for ingress-controller deployment to stabilize")
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app": "nginx-ingress-controller"}))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app.kubernetes.io/name": "nginx-ingress-controller"}))
 	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for ingress-controller pods")
 	}
@@ -300,7 +309,6 @@ func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (
 		if err == nil {
 			return nil
 		}
-		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
 		time.Sleep(d)
 	}
 	return err

@@ -19,15 +19,31 @@
 
 Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.
 
+# Newsflash
+
+- 2018-10-05: minikube v0.30.0 released, addressing **[CVE-2018-1002103](https://github.com/kubernetes/minikube/issues/3208): Dashboard vulnerable to DNS rebinding attack**
+
 ## Installation
 ### macOS
+[Homebrew](https://brew.sh/) is a package manager for macOS that can be used to install Minikube.
+After installing Homebrew, run the following at a terminal prompt:
 ```shell
 brew cask install minikube
 ```
+This installs kubernetes-cli package as well. The same can be verified using:
+```shell
+kubectl version
+```
+If it's not installed, install it using:
+```shell
+brew install kubernetes-cli
+```
 
 ### Linux
+
 ```shell
-curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
+  && sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 
 ### Windows
@@ -74,6 +90,7 @@ export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
 export CHANGE_MINIKUBE_NONE_USER=true
 mkdir -p $HOME/.kube
+mkdir -p $HOME/.minikube
 touch $HOME/.kube/config
 
 export KUBECONFIG=$HOME/.kube/config
@@ -96,6 +113,7 @@ done
 * [Linux]
     * [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
     * [Fedora/CentOS/Red Hat COPR](https://copr.fedorainfracloud.org/coprs/antonpatsev/minikube-rpm/)
+    * [Void Linux](https://github.com/void-linux/void-packages/tree/master/srcpkgs/minikube/template)
     * [openSUSE/SUSE Linux Enterprise](https://build.opensuse.org/package/show/Virtualization:containers/minikube)
 * [Windows] Download the [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe` and add it to your path.
 
@@ -120,7 +138,8 @@ We also released a Debian package and Windows installer on our [releases page](h
 ## Quickstart
 
 Here's a brief demo of Minikube usage.
-If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube supports
+- If you want to change the container runtime, network details, consult notes from your container runtime provider.
+- If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube supports
 the following drivers:
 
 * virtualbox
@@ -216,5 +235,5 @@ For more information about Minikube, see the [proposal](https://github.com/kuber
 ## Community
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com)
-* [**kubernetes-users mailing list** ](https://groups.google.com/forum/#!forum/kubernetes-users)
-(If you are posting to the list, please prefix your subject with "minikube: ")
+* [**Kubernetes Official Forum** ](https://discuss.kubernetes.io)
+(If you are posting to the forum, please tag your post with "minikube")

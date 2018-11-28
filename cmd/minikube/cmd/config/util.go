@@ -104,7 +104,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	//TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+		fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 		os.Exit(1)
 	}
 	defer api.Close()
@@ -114,7 +114,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		return err
 	}
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}

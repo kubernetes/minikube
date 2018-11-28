@@ -100,7 +100,7 @@ Also:
 
 
 ## Why does minikube not support NVIDIA GPUs on Windows?
-minikube suppports Windows host through Hyper-V or VirtualBox.
+minikube supports Windows host through Hyper-V or VirtualBox.
 
 - VirtualBox doesn't support PCI passthrough for [Windows
   host](http://www.virtualbox.org/manual/ch09.html#pcipassthrough).

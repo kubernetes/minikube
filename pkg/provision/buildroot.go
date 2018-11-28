@@ -70,8 +70,8 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-After=network.target docker.socket
-Requires=docker.socket
+After=network.target  minikube-automount.service docker.socket
+Requires= minikube-automount.service docker.socket 
 
 [Service]
 Type=notify
@@ -208,7 +208,7 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 
 	// This is unlikely to cause issues unless the user has explicitly requested CRIO, so just log a warning.
 	if err := p.Service("crio", serviceaction.Restart); err != nil {
-		log.Warn("Unable to restart crio service. Error: %s", err)
+		log.Warn("Unable to restart crio service. Error: %v", err)
 	}
 
 	return nil
@@ -264,7 +264,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("error generating server cert: %s", err)
+		return fmt.Errorf("error generating server cert: %v", err)
 	}
 
 	remoteCerts := map[string]string{

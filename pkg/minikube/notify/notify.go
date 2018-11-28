@@ -118,7 +118,7 @@ func getLatestVersionFromURL(url string) (semver.Version, error) {
 
 func GetAllVersionsFromURL(url string) (Releases, error) {
 	var releases Releases
-	glog.Infof("Checking for updates...")
+	glog.Info("Checking for updates...")
 	if err := getJson(url, &releases); err != nil {
 		return releases, errors.Wrap(err, "Error getting json from minikube version url")
 	}
