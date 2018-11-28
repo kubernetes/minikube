@@ -436,8 +436,7 @@ func (d *Driver) Start() error {
 			return err
 		} else if !os.IsNotExist(err) {
 			// create mountpoint and mount shared folder
-			// command := "([ ! -d " + shareDir + " ]&& sudo mkdir " + shareDir + "; sudo mount --bind /mnt/hgfs/" + shareDir + " " + shareDir + ") || ([ -f /usr/local/bin/vmhgfs-fuse ]&& sudo /usr/local/bin/vmhgfs-fuse -o allow_other .host:/" + shareName + " " + shareDir + ") || sudo mount -t vmhgfs -o uid=$(id -u),gid=$(id -g) .host:/" + shareName + " " + shareDir
-			command := "([ ! -d " + shareDir + " ]&& sudo mkdir " + shareDir + "; sudo mount --bind /mnt/hgfs/" + shareDir + " " + shareDir + ") || ([ -f /usr/bin/vmhgfs-fuse ]&& sudo /usr/bin/vmhgfs-fuse -o allow_other .host:/" + shareName + " " + shareDir + ") || sudo mount -t vmhgfs -o uid=$(id -u),gid=$(id -g) .host:/" + shareName + " " + shareDir
+			command := "([ ! -d " + shareDir + " ]&& sudo mkdir " + shareDir + "; sudo mount --bind /mnt/hgfs/" + shareDir + " " + shareDir + ") || ([ -f /usr/local/bin/vmhgfs-fuse ]&& sudo /usr/local/bin/vmhgfs-fuse -o allow_other .host:/" + shareName + " " + shareDir + ") || sudo mount -t vmhgfs -o uid=$(id -u),gid=$(id -g) .host:/" + shareName + " " + shareDir
 			vmrun("-gu", B2DUser, "-gp", B2DPass, "runScriptInGuest", d.vmxPath(), "/bin/sh", command)
 		}
 	}
