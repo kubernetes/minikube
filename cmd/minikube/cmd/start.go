@@ -57,6 +57,7 @@ const (
 	kubernetesVersion     = "kubernetes-version"
 	hostOnlyCIDR          = "host-only-cidr"
 	containerRuntime      = "container-runtime"
+	criSocket             = "cri-socket"
 	networkPlugin         = "network-plugin"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
@@ -141,6 +142,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		CPUs:                viper.GetInt(cpus),
 		DiskSize:            diskSizeMB,
 		VMDriver:            viper.GetString(vmDriver),
+		ContainerRuntime:    viper.GetString(containerRuntime),
 		HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
 		HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
 		XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
@@ -220,6 +222,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		DNSDomain:              viper.GetString(dnsDomain),
 		FeatureGates:           viper.GetString(featureGates),
 		ContainerRuntime:       viper.GetString(containerRuntime),
+		CRISocket:              viper.GetString(criSocket),
 		NetworkPlugin:          viper.GetString(networkPlugin),
 		ServiceCIDR:            pkgutil.DefaultServiceCIDR,
 		ExtraOptions:           extraOptions,
@@ -290,14 +293,47 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-	fmt.Println("Starting cluster components...")
+	fmt.Println("Stopping extra container runtimes...")
 
-	if !exists || config.VMDriver == "none" {
+	containerRuntime := viper.GetString(containerRuntime)
+	if config.VMDriver != constants.DriverNone && containerRuntime != "" {
+		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping docker: %v", err)
+		}
+	}
+	if config.VMDriver != constants.DriverNone && (containerRuntime != constants.CrioRuntime && containerRuntime != constants.Cri_oRuntime) {
+		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
+			glog.Errorf("Error stopping crio: %v", err)
+		}
+	}
+	if config.VMDriver != constants.DriverNone && containerRuntime != constants.RktRuntime {
+		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
+			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
+		}
+		if err != nil {
+			glog.Errorf("Error stopping rkt: %v", err)
+		}
+	}
+
+	if config.VMDriver != constants.DriverNone && containerRuntime == constants.ContainerdRuntime {
+		fmt.Println("Restarting containerd runtime...")
+		// restart containerd so that it can install all plugins
+		if _, err := host.RunSSHCommand("sudo systemctl restart containerd"); err != nil {
+			glog.Errorf("Error restarting containerd: %v", err)
+		}
+	}
+
+	if !exists || config.VMDriver == constants.DriverNone {
+		fmt.Println("Starting cluster components...")
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
+		fmt.Println("Machine exists, restarting cluster components...")
 		if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error restarting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
@@ -398,6 +434,7 @@ func init() {
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
+	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")

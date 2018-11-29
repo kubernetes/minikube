@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/blang/semver"
@@ -27,6 +28,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	minikubeVersion "k8s.io/minikube/pkg/version"
+	"time"
 )
 
 // APIServerPort is the port that the API server should listen on.
@@ -116,6 +118,7 @@ const (
 	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
 	DefaultWait                = 20
 	DefaultInterval            = 6
+	DefaultK8sClientTimeout    = 60 * time.Second
 	DefaultClusterBootstrapper = "kubeadm"
 )
 
@@ -164,6 +167,23 @@ var Preflights = []string{
 	"CRI",
 }
 
+// AlternateRuntimePreflights are additional preflight checks that are skipped when running
+// any container runtime that isn't Docker
+var AlternateRuntimePreflights = append(Preflights, []string{
+	"Service-Docker",
+	"Port-8443",
+	"Port-10251",
+	"Port-10252",
+	"Port-2379",
+}...)
+
+const (
+	ContainerdRuntime = "containerd"
+	RktRuntime        = "rkt"
+	CrioRuntime       = "crio"
+	Cri_oRuntime      = "cri-o"
+)
+
 const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
@@ -173,7 +193,7 @@ const (
 )
 
 func GetKubernetesReleaseURL(binaryName, version string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
+	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/%s/%s", version, runtime.GOARCH, binaryName)
 }
 
 func GetKubernetesReleaseURLSha1(binaryName, version string) string {

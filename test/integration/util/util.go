@@ -19,6 +19,7 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -30,7 +31,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
@@ -79,6 +79,13 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 		}
 	}
 	return string(stdout)
+}
+
+// RunWithContext calls the minikube command with a context, useful for timeouts.
+func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) ([]byte, error) {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	return exec.CommandContext(ctx, path, commandArr...).CombinedOutput()
 }
 
 func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
@@ -183,8 +190,9 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			k.T.Logf("Error %s running command %s. Return code: %v", stdout, args, err)
-			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command: %v. Output: %s", err, stdout)}
+			retriable := &commonutil.RetriableError{Err: fmt.Errorf("error running command %s: %v. Stdout: \n %s", args, err, stdout)}
+			k.T.Log(retriable)
+			return retriable
 		}
 		return nil
 	}

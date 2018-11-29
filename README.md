@@ -25,8 +25,18 @@ Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a
 
 ## Installation
 ### macOS
+[Homebrew](https://brew.sh/) is a package manager for macOS that can be used to install Minikube.
+After installing Homebrew, run the following at a terminal prompt:
 ```shell
 brew cask install minikube
+```
+This installs kubernetes-cli package as well. The same can be verified using:
+```shell
+kubectl version
+```
+If it's not installed, install it using:
+```shell
+brew install kubernetes-cli
 ```
 
 ### Linux
@@ -139,7 +149,7 @@ the following drivers:
 * [hyperkit](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver)
 * [xhyve](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver)
 * [hyperv](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
-* none (**Linux + docker daemon as container runtime only**) - this driver can be used to run the Kubernetes cluster components on the host instead of in a VM. This can be useful for CI workloads which do not support nested virtualization.
+* none (**Linux-only**) - this driver can be used to run the Kubernetes cluster components on the host instead of in a VM. This can be useful for CI workloads which do not support nested virtualization.
 
 ```shell
 $ minikube start
