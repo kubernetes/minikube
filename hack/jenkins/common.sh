@@ -188,7 +188,7 @@ ${SUDO_PREFIX} rm -f "${KUBECONFIG}"
 rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
-if [[ "${MINIKUBE_LOCATION" != "master" ]]; then
+if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
   readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
   -H "Content-Type: application/json" \
