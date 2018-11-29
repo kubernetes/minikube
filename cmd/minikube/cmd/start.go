@@ -34,6 +34,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	apimachineryversion "k8s.io/apimachinery/pkg/version"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -102,6 +103,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	shouldCacheImages := viper.GetBool(cacheImages)
 	k8sVersion := viper.GetString(kubernetesVersion)
+
+	// Check that the version of kubectl installed is compatible with the desired Kubernetes version.
+	checkKubectlCompatibility(k8sVersion)
+
 	clusterBootstrapper := viper.GetString(cmdcfg.Bootstrapper)
 
 	var groupCacheImages errgroup.Group
@@ -499,4 +504,61 @@ func saveConfigToFile(data []byte, file string) error {
 		return err
 	}
 	return nil
+}
+
+// kubectlVersion is a helper struct used to unmarshal the output of "kubectl version --client -o json".
+type kubectlVersion struct {
+	ClientVersion apimachineryversion.Info `json:"clientVersion,omitempty"`
+}
+
+// checkKubectlCompatibility checks whether kubectl is installed and whether its version is compatible with the desired Kubernetes version.
+func checkKubectlCompatibility(kubernetesVersion string) {
+	// Lookup kubectl in PATH.
+	k, err := exec.LookPath("kubectl")
+	if err != nil {
+		warn("kubectl is not installed or not present in the PATH.")
+		return
+	}
+	// Grab the version reported by kubectl.
+	o, err := exec.Command(k, "version", "--client", "-o", "json").Output()
+	if err != nil {
+		warn("Failed to detect kubectl version.")
+		return
+	}
+	// Parse the version reported by kubectl.
+	v := kubectlVersion{}
+	if err := json.Unmarshal(o, &v); err != nil {
+		warn("Failed to detect kubectl version.")
+		return
+	}
+	svKubectlVersion, err := semver.Parse(strings.TrimPrefix(v.ClientVersion.GitVersion, version.VersionPrefix))
+	if err != nil {
+		warn("Failed to parse the version reported by kubectl.")
+		return
+	}
+
+	// Parse the desired Kubernetes version.
+	svKubernetesVersion, err := semver.Parse(strings.TrimPrefix(kubernetesVersion, version.VersionPrefix))
+	if err != nil {
+		warn("Failed to parse the desired version of Kubernetes.")
+		return
+	}
+
+	// Create a range of allowed versions based on the desired Kubernetes version.
+	svKubernetesRange, err := semver.ParseRange(fmt.Sprintf(">=%d.%d.0 <%d.%d.0", svKubernetesVersion.Major, svKubernetesVersion.Minor-1, svKubernetesVersion.Major, svKubernetesVersion.Minor+2))
+	if err != nil {
+		warn("Failed to create the range of allowed kubectl versions.")
+		return
+	}
+
+	// Warn the user if the version of kubectl doesn't fall within the allowed version range.
+	if !svKubernetesRange(svKubectlVersion) {
+		warn("The version of kubectl installed (%s) is not compatible with the desired Kubernetes version (%s).", svKubectlVersion, svKubernetesVersion)
+		return
+	}
+}
+
+// warn prints a formatted warning message to stderr.
+func warn(message string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, fmt.Sprintf("WARNING: %s\n", message), args...)
 }
