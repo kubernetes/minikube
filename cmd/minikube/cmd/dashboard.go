@@ -19,6 +19,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -91,7 +92,7 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		glog.Infof("Waiting forever for kubectl proxy to exit ...")
+		glog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
 		if err = p.Wait(); err != nil {
 			glog.Errorf("Wait: %v", err)
 		}
@@ -117,14 +118,51 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, "", errors.Wrap(err, "proxy start")
 	}
+
+	glog.Infof("Waiting for kubectl to output host:port ...")
 	reader := bufio.NewReader(stdoutPipe)
-	glog.Infof("proxy started, reading stdout pipe ...")
-	out, err := reader.ReadString('\n')
-	if err != nil {
-		return nil, "", errors.Wrap(err, "reading stdout pipe")
+
+	var out []byte
+	for {
+		r, timedOut, err := readByteWithTimeout(reader, 5*time.Second)
+		if err != nil {
+			return cmd, "", fmt.Errorf("readByteWithTimeout: %v", err)
+		}
+		if r == byte('\n') {
+			break
+		}
+		if timedOut {
+			glog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
+			break
+		}
+		out = append(out, r)
 	}
-	glog.Infof("proxy stdout: %s", out)
-	return cmd, hostPortRe.FindString(out), nil
+	glog.Infof("proxy stdout: %s", string(out))
+	return cmd, hostPortRe.FindString(string(out)), nil
+}
+
+// readByteWithTimeout returns a byte from a reader or an indicator that a timeout has occurred.
+func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
+	bc := make(chan byte)
+	ec := make(chan error)
+	go func() {
+		b, err := r.ReadByte()
+		if err != nil {
+			ec <- err
+		} else {
+			bc <- b
+		}
+		close(bc)
+		close(ec)
+	}()
+	select {
+	case b := <-bc:
+		return b, false, nil
+	case err := <-ec:
+		return byte(' '), false, err
+	case <-time.After(timeout):
+		return byte(' '), true, nil
+	}
 }
 
 // dashboardURL generates a URL for accessing the dashboard service

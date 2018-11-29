@@ -18,15 +18,15 @@ package config
 
 import (
 	"fmt"
+	"github.com/docker/go-units"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"net"
 	"net/url"
 	"os"
 	"strconv"
-
-	units "github.com/docker/go-units"
-	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"strings"
 )
 
 func IsValidDriver(string, driver string) error {
@@ -56,6 +56,39 @@ func IsValidURL(name string, location string) error {
 	if err != nil {
 		return fmt.Errorf("%s is not a valid URL", location)
 	}
+	return nil
+}
+
+func IsURLExists(name string, location string) error {
+	parsed, err := url.Parse(location)
+	if err != nil {
+		return fmt.Errorf("%s is not a valid URL", location)
+	}
+
+	// we can only validate if local files exist, not other urls
+	if parsed.Scheme != "file" {
+		return nil
+	}
+
+	// chop off "file://" from the location, giving us the real system path
+	sysPath := strings.TrimPrefix(location, "file://")
+	stat, err := os.Stat(sysPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s does not exist", location)
+		}
+
+		if os.IsPermission(err) {
+			return fmt.Errorf("%s could not be opened (permission error: %s)", location, err.Error())
+		}
+
+		return err
+	}
+
+	if stat.IsDir() {
+		return fmt.Errorf("%s is a directory", location)
+	}
+
 	return nil
 }
 
