@@ -140,8 +140,7 @@ if type -P hdiutil; then
       || true
 fi
 
-if [[ "${OS_ARCH}" == "Darwin" ]]; then
-  pgrep xhyve | xargs kill || true
+if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   if [[ -e out/docker-machine-driver-hyperkit ]]; then
     sudo chown root:wheel out/docker-machine-driver-hyperkit || true
    sudo chmod u+s out/docker-machine-driver-hyperkit || true
@@ -150,6 +149,7 @@ fi
 
 if pgrep kubectl; then
   echo "killing hung kubectl processes ..."
+  ps -afe | grep kubectl | grep -v grep || true
   pgrep kubectl | xargs kill || true
 fi
 
