@@ -147,7 +147,7 @@ if [[ "${OS_ARCH}" == "Darwin" ]]; then
 fi
 
 if pgrep kubectl; then
-  echo "stale kubectl processes found: $(pgrep kubectl)"
+  echo "killing hung kubectl processes ..."
   pgrep kubectl | xargs kill
 fi
 
@@ -190,7 +190,7 @@ echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
   readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
-  curl "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
+  curl -s "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
   -H "Content-Type: application/json" \
   -X POST \
   -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"${JOB_NAME}\"}"
