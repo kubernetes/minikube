@@ -118,19 +118,21 @@ if type -P virsh; then
   virsh -c qemu:///system list --all \
     | grep minikube \
     | awk '{ print $2 }' \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}"
+    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+    || true
 fi
 
 if type -P vboxmanage; then
-  vboxmanage list vms
+  vboxmanage list vms || true
   vboxmanage list vms \
+    | grep minikube \
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
 fi
 
 if type -P hdiutil; then
-  hdiutil info | grep -E "/dev/disk[1-9][^s]"
+  hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
   hdiutil info \
       | grep -E "/dev/disk[1-9][^s]" \
       | awk '{print $1}' \
@@ -148,7 +150,7 @@ fi
 
 if pgrep kubectl; then
   echo "killing hung kubectl processes ..."
-  pgrep kubectl | xargs kill
+  pgrep kubectl | xargs kill || true
 fi
 
 # Respected by minikube
@@ -161,7 +163,7 @@ export KUBECONFIG="${TEST_HOME}/kubeconfig"
 # Display the default image URL
 echo ""
 echo ">> ISO URL"
-"${MINIKUBE_BIN}" start -h | grep iso-url
+"${MINIKUBE_BIN}" start -h | grep iso-url || true
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
@@ -183,8 +185,9 @@ fi
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
-${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}"
-${SUDO_PREFIX} rm -f "${KUBECONFIG}"
+
+${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
+${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
 rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
