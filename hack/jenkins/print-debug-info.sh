@@ -30,12 +30,13 @@ kubectl version \
 
 docker ps
 
-MINIKUBE=${SUDO_PREFIX}out/minikube-${OS_ARCH}
-
 # minikube has probably been shut down, so iterate forward each command rather than spamming.
-${MINIKUBE} status \
-    && ${MINIKUBE} ip \
+MINIKUBE=${SUDO_PREFIX}out/minikube-${OS_ARCH}
+${MINIKUBE} status
+${MINIKUBE} ip \
     && ${MINIKUBE} ssh -- cat /etc/VERSION \
+    && ${MINIKUBE} ssh -- uptime \
+    && ${MINIKUBE} ssh --  \
     && ${MINIKUBE} logs \
     && ${MINIKUBE} ssh -- docker ps
 
@@ -50,8 +51,6 @@ fi
 if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]"
 fi
-
-ps -afe | grep kube
 
 echo ""
 echo ">>> end print-debug-info"
