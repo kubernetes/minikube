@@ -548,13 +548,16 @@ func saveConfigToFile(data []byte, file string) error {
 
 func ensureNotRunning(client libmachine.API, machineName string) {
 
-	hostVm, err := client.Load(machineName)
+	exists, _ := client.Exists(machineName)
+	if exists {
+		hostVm, err := client.Load(machineName)
 
-	if err != nil {
-		fmt.Fprintln(os.Stderr, fmt.Sprintf(err.Error()))
-	}
-	if drivers.MachineInState(hostVm.Driver, state.Running)() && hostVm.DriverName != "generic" {
-		fmt.Fprintln(os.Stdout, fmt.Sprintf("The '%s' VM is already running.", machineName))
-		os.Exit(0)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf(err.Error()))
+		}
+		if drivers.MachineInState(hostVm.Driver, state.Running)() && hostVm.DriverName != "generic" {
+			fmt.Fprintln(os.Stdout, fmt.Sprintf("The '%s' VM is already running.", machineName))
+			os.Exit(0)
+		}
 	}
 }
