@@ -303,6 +303,14 @@ storage-provisioner-image: out/storage-provisioner
 push-storage-provisioner-image: storage-provisioner-image
 	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 
+.PHONY: out/gvisor
+out/gvisor:
+	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
+ 
+ .PHONY: gvisor-image
+gvisor-image: out/gvisor
+	docker build -t $(REGISTRY)/gvisor:latest -f deploy/gvisor/Dockerfile .
+
 .PHONY: release-iso
 release-iso: minikube_iso checksum
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
