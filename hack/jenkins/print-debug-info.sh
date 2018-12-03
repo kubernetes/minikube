@@ -28,17 +28,25 @@ kubectl version \
     && kubectl get pods --all-namespaces \
     && kubectl cluster-info dump
 
-docker ps
-
 # minikube has probably been shut down, so iterate forward each command rather than spamming.
 MINIKUBE=${SUDO_PREFIX}out/minikube-${OS_ARCH}
 ${MINIKUBE} status
-${MINIKUBE} ip \
-    && ${MINIKUBE} ssh -- cat /etc/VERSION \
-    && ${MINIKUBE} ssh -- uptime \
-    && ${MINIKUBE} ssh --  \
-    && ${MINIKUBE} logs \
-    && ${MINIKUBE} ssh -- docker ps
+${MINIKUBE} ip && ${MINIKUBE} logs
+
+if [[ "${VM_DRIVER}" == "none" ]]; then
+  run=""
+else
+  run="${MINIKUBE} ssh --"
+fi
+
+echo "Local date: $(date)"
+${run} date
+${run} uptime
+${run} docker ps
+${run} env TERM=dumb systemctl list-units --state=failed
+${run} env TERM=dumb journalctl --no-tail --no-pager -p notice
+${run} free
+${run} cat /etc/VERSION
 
 if type -P virsh; then
   virsh -c qemu:///system list --all
