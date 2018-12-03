@@ -80,11 +80,15 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
-echo ""
-echo ">> Cleaning up after previous test runs ..."
+
+if pgrep "minikube|e2e-"; then
+  echo "WARNING: other instances of minikube may be running:"
+  ps -afe | egrep "minikube|e2e-"
+fi
 
 # Cleanup stale test outputs.
-pgrep minikube && echo "WARNING: other instances of minikube may be running"
+echo ""
+echo ">> Cleaning up after previous test runs ..."
 
 for stale_dir in "${TEST_ROOT}"/*; do
   echo "* Cleaning stale test: ${stale_dir}"
