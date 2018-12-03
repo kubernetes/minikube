@@ -39,6 +39,10 @@ export KUBECONFIG="/root/.kube/config"
 sudo kubeadm reset || true
 # Cleanup data directory
 sudo rm -rf /data/*
+# Stop any leftover kubelets
+systemctl is-active --quiet kubelet \
+  && echo "stopping kubelet" \
+  && sudo systemctl stop kubelet
 
 # Download files and set permissions
 source ./common.sh
