@@ -47,6 +47,10 @@ func TestStartStop(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			runner := NewMinikubeRunner(t)
+			if test.runtime != "" && usingNoneDriver(runner) {
+				t.SkipNow()
+			}
+
 			runner.RunCommand("config set WantReportErrorPrompt false", true)
 			runner.RunCommand("delete", false)
 			runner.CheckStatus(state.None.String())

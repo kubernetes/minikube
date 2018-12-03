@@ -38,10 +38,15 @@ func TestFunctional(t *testing.T) {
 	t.Run("Provisioning", testProvisioning)
 	t.Run("Tunnel", testTunnel)
 
-	if !strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
+	if !usingNoneDriver(minikubeRunner) {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
 		t.Run("IngressController", testIngressController)
 		t.Run("Mounting", testMounting)
 	}
+}
+
+// usingNoneDriver returns true if using the none driver
+func usingNoneDriver(runner *util.MinikuberRunner ) bool {
+	return strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none")
 }
