@@ -48,7 +48,7 @@ func TestStartStop(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			runner := NewMinikubeRunner(t)
 			if test.runtime != "" && usingNoneDriver(runner) {
-				t.SkipNow()
+				t.Skipf("skipping, can't use %s with none driver", test.runtime)
 			}
 
 			runner.RunCommand("config set WantReportErrorPrompt false", true)
