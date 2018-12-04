@@ -123,17 +123,12 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		KubeadmConfigFile   string
 		SkipPreflightChecks bool
 		Preflights          []string
-		DNSAddon            string
 	}{
 		KubeadmConfigFile: constants.KubeadmConfigFile,
 		SkipPreflightChecks: !VersionIsBetween(version,
 			semver.MustParse("1.9.0-alpha.0"),
 			semver.Version{}),
 		Preflights: preflights,
-		DNSAddon:   "kube-dns",
-	}
-	if version.GTE(semver.MustParse("1.12.0")) {
-		templateContext.DNSAddon = "coredns"
 	}
 	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
@@ -166,12 +161,7 @@ func addAddons(files *[]assets.CopyableFile) error {
 		return errors.Wrap(err, "adding minikube dir assets")
 	}
 	// bundled addons
-	for addonName, addonBundle := range assets.Addons {
-		// TODO(r2d4): Kubeadm ignores the kube-dns addon and uses its own.
-		// expose this in a better way
-		if addonName == "kube-dns" {
-			continue
-		}
+	for _, addonBundle := range assets.Addons {
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
 			for _, addon := range addonBundle.Assets {
 				*files = append(*files, addon)
