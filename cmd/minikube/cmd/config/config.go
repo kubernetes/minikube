@@ -227,7 +227,7 @@ var settings = []Setting{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{IsValidAddon},
+		validations: []setFn{IsValidAddon, IsContainerdRuntime},
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{

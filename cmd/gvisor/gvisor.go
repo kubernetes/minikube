@@ -17,32 +17,15 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 
 	"k8s.io/minikube/pkg/gvisor"
 )
 
-var (
-	disable bool
-)
-
-func init() {
-	flag.BoolVar(&disable, "disable", false, "disable gvisor addon")
-	flag.Parse()
-}
-
 func main() {
-	if err := execute(); err != nil {
+	if err := gvisor.Enable(); err != nil {
 		log.Print(err)
 		os.Exit(1)
 	}
-}
-
-func execute() error {
-	if disable {
-		return gvisor.Disable()
-	}
-	return gvisor.Enable()
 }

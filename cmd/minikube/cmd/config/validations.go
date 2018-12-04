@@ -18,15 +18,17 @@ package config
 
 import (
 	"fmt"
-	"github.com/docker/go-units"
-	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"net"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/docker/go-units"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func IsValidDriver(string, driver string) error {
@@ -124,4 +126,21 @@ func IsValidAddon(name string, val string) error {
 		return nil
 	}
 	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
+}
+
+func IsContainerdRuntime(_, _ string) error {
+	config, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("error getting cluster config: %v", err)
+	}
+	if config.KubernetesConfig.ContainerRuntime != constants.ContainerdRuntime {
+		return fmt.Errorf(`This addon can only be enabled with the containerd runtime backend.
+
+To enable this backend, please start minikube again with the following flags:
+
+minikube start --container-runtime=containerd  --docker-opt containerd=/var/run/containerd/containerd.sock --network-plugin=cni
+		`)
+	}
+
+	return nil
 }
