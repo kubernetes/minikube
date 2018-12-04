@@ -347,12 +347,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		st, err := k8sBootstrapper.GetKubeletStatus()
 		if err != nil || st != state.Running.String() {
 			fmt.Printf(".")
-			return fmt.Errorf("kubelet unhealthy: %v: %s", err, st)
+			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
 		}
 		return nil
 	}
 	err = pkgutil.RetryAfter(20, kStat, 3*time.Second)
 	if err != nil {
+		fmt.Printf("error: %v", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 	fmt.Print("\nVerifying apiserver health ...")
@@ -360,12 +361,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
 		if err != nil || st != state.Running.String() {
 			fmt.Print(".")
-			return fmt.Errorf("apiserver unhealthy: %v: %s", err, st)
+			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver unhealthy: %v: %s", err, st)}
 		}
 		return nil
 	}
 	err = pkgutil.RetryAfter(20, aStat, 3*time.Second)
 	if err != nil {
+		fmt.Printf("error: %v", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
