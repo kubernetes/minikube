@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"bytes"
 	"crypto"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -89,7 +90,12 @@ func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
 
 func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
 	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
-	resp, err := http.Get(url)
+	// To avoid: x509: certificate signed by unknown authority
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(url)
 	glog.Infof("%s response: %v %+v", url, err, resp)
 	// Connection refused, usually.
 	if err != nil {
