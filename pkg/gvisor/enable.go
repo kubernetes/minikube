@@ -24,13 +24,15 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/constants"
-
+	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 const (
@@ -55,6 +57,17 @@ func Enable() error {
 	if err := restartContainerd(); err != nil {
 		return errors.Wrap(err, "restarting containerd")
 	}
+	// When pod is terminated, disable gvisor and exit
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		if err := Disable(); err != nil {
+			log.Printf("Error disabling gvisor: %v", err)
+		}
+		os.Exit(0)
+	}()
+	log.Print("gvisor successfully enabled in cluster")
 	// sleep for one year so the pod continuously runs
 	time.Sleep(24 * 7 * 52 * time.Hour)
 	return nil
@@ -96,14 +109,13 @@ func downloadBinaries() error {
 // downloads the gvisor-containerd-shim
 func gvisorContainerdShim() error {
 	dest := filepath.Join(nodeDir, "usr/bin/gvisor-containerd-shim")
-	// TODO: priyawadhwa@, replace with official release
-	return downloadFileToDest("http://storage.googleapis.com/balintp-minikube/gvisor-containerd-shim", dest)
+	return downloadFileToDest(constants.GvisorContainerdShimURL, dest)
 }
 
 // downloads the runsc binary and returns a path to the binary
 func runsc() error {
 	dest := filepath.Join(nodeDir, "usr/local/bin/runsc")
-	return downloadFileToDest("http://storage.googleapis.com/gvisor/releases/nightly/latest/runsc", dest)
+	return downloadFileToDest(constants.GvisorURL, dest)
 }
 
 // downloadFileToDest downlaods the given file to the dest
@@ -136,7 +148,12 @@ func downloadFileToDest(url, dest string) error {
 // Must write the following files:
 //    1. gvisor-containerd-shim.toml
 //    2. gvisor containerd config.toml
+// and save the default version of config.toml
 func copyFiles() error {
+	log.Printf("Storing default config.toml at %s", constants.StoredContainerdConfigTomlPath)
+	if err := mcnutils.CopyFile(filepath.Join(nodeDir, constants.ContainerdConfigTomlPath), filepath.Join(nodeDir, constants.StoredContainerdConfigTomlPath)); err != nil {
+		return errors.Wrap(err, "copying default config.toml")
+	}
 	log.Print("Copying gvisor-containerd-shim.toml...")
 	if err := copyAssetToDest(constants.GvisorContainerdShimTargetName, filepath.Join(nodeDir, constants.GvisorContainerdShimTomlPath)); err != nil {
 		return errors.Wrap(err, "copying gvisor-containerd-shim.toml")

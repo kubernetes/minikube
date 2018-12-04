@@ -2,4 +2,4 @@ runc_shim = "/bin/containerd-shim"
 [runsc_config]
  debug-log="/tmp/runsc/"
  debug="true"
- log="/tmp/runsc/out.log"
+ user-log="/tmp/runsc/user-log-%ID%.log"

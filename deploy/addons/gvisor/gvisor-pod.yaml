@@ -46,10 +46,6 @@ spec:
           value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/node/bin
         - name: SYSTEMD_IGNORE_CHROOT
           value: "yes"
-      lifecycle:
-        preStop:
-          exec:
-            command: ["/gvisor-addon","-disable"]
   volumes:
   - name: node
     hostPath:

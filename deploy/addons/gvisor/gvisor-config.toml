@@ -44,7 +44,7 @@ oom_score = 0
       [plugins.cri.containerd.untrusted_workload_runtime]
         runtime_type = "io.containerd.runtime.v1.linux"
         runtime_engine = "/usr/local/bin/runsc"
-          runtime_root = "/run/containerd/runsc"
+        runtime_root = "/run/containerd/runsc"
     [plugins.cri.cni]
       bin_dir = "/opt/cni/bin"
       conf_dir = "/etc/cni/net.d"
