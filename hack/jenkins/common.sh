@@ -158,7 +158,7 @@ fi
 if pgrep kubectl; then
   echo "killing hung kubectl processes ..."
   ps -afe | grep kubectl | grep -v grep || true
-  pgrep kubectl | xargs kill || true
+  pgrep kubectl | ${SUDO_PREFIX} xargs kill || true
 fi
 
 function cleanup_stale_routes() {
