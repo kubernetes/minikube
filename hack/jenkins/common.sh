@@ -96,6 +96,12 @@ for stale_dir in "${TEST_ROOT}"/*; do
   export KUBECONFIG="${stale_dir}/kubeconfig"
 
   if [[ -d "${MINIKUBE_HOME}" ]]; then
+    if [[ -f "${MINIKUBE_HOME/tunnels.json" ]]; then
+      echo "Stale tunnels.json:"
+      cat "${MINIKUBE_HOME}/tunnels.json"
+      echo "Current routes:"
+      netstat -rn
+    fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
         "${MINIKUBE_BIN}" delete || true
