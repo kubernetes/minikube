@@ -100,7 +100,7 @@ for stale_dir in "${TEST_ROOT}"/*; do
       echo "Stale tunnels.json:"
       cat "${MINIKUBE_HOME}/tunnels.json"
       echo "Current routes:"
-      netstat -rn
+      netstat -rn -f inet
     fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
