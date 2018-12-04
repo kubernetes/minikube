@@ -99,7 +99,7 @@ var statusCmd = &cobra.Command{
 
 			apiserverSt, err = clusterBootstrapper.GetApiServerStatus(ip)
 			if err != nil {
-				glog.Errorln("Error api-server status:", err)
+				glog.Errorln("Error apiserver status:", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			} else if apiserverSt != state.Running.String() {
 				returnCode |= clusterNotRunningStatusFlag
