@@ -45,14 +45,14 @@ const (
 //   3. copies necessary containerd config files
 //   4. restarts containerd
 func Enable() error {
-	if err := makeDirs(); err != nil {
+	if err := makeGvisorDirs(); err != nil {
 		return errors.Wrap(err, "creating directories on node")
 	}
 	if err := downloadBinaries(); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
-	if err := copyFiles(); err != nil {
-		return errors.Wrap(err, "copying files")
+	if err := copyConfigFiles(); err != nil {
+		return errors.Wrap(err, "copying config files")
 	}
 	if err := restartContainerd(); err != nil {
 		return errors.Wrap(err, "restarting containerd")
@@ -64,6 +64,7 @@ func Enable() error {
 		<-c
 		if err := Disable(); err != nil {
 			log.Printf("Error disabling gvisor: %v", err)
+			os.Exit(1)
 		}
 		os.Exit(0)
 	}()
@@ -73,8 +74,8 @@ func Enable() error {
 	return nil
 }
 
-// makeDirs creates necessary directories on the node
-func makeDirs() error {
+// makeGvisorDirs creates necessary directories on the node
+func makeGvisorDirs() error {
 	// Make /run/containerd/runsc to hold logs
 	fp := filepath.Join(nodeDir, "run/containerd/runsc")
 	if err := os.MkdirAll(fp, 0755); err != nil {
@@ -149,7 +150,7 @@ func downloadFileToDest(url, dest string) error {
 //    1. gvisor-containerd-shim.toml
 //    2. gvisor containerd config.toml
 // and save the default version of config.toml
-func copyFiles() error {
+func copyConfigFiles() error {
 	log.Printf("Storing default config.toml at %s", constants.StoredContainerdConfigTomlPath)
 	if err := mcnutils.CopyFile(filepath.Join(nodeDir, constants.ContainerdConfigTomlPath), filepath.Join(nodeDir, constants.StoredContainerdConfigTomlPath)); err != nil {
 		return errors.Wrap(err, "copying default config.toml")

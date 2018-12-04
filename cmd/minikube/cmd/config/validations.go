@@ -138,8 +138,7 @@ func IsContainerdRuntime(_, _ string) error {
 
 To enable this backend, please start minikube again with the following flags:
 
-minikube start --container-runtime=containerd  --docker-opt containerd=/var/run/containerd/containerd.sock --network-plugin=cni
-		`)
+minikube start --container-runtime=containerd  --docker-opt containerd=/var/run/containerd/containerd.sock --network-plugin=cni`)
 	}
 
 	return nil

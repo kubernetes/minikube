@@ -281,5 +281,5 @@ const (
 	// GvisorContainerdShimURL is the url to download gvisor-containerd-shim
 	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
 	// GvisorURL is the url to download gvisor
-	GvisorURL = "http://storage.googleapis.com/gvisor/releases/nightly/latest/runsc"
+	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-11-08/runsc"
 )
