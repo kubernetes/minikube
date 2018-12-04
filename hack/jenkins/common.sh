@@ -51,7 +51,7 @@ case "${VM_DRIVER}" in
 esac
 
 echo ""
-mkdir -p out/ testdata/ "${TEST_HOME}"
+mkdir -p out/ testdata/
 
 # Install gsutil if necessary.
 if ! type -P gsutil >/dev/null; then
@@ -147,7 +147,7 @@ fi
 if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   if [[ -e out/docker-machine-driver-hyperkit ]]; then
     sudo chown root:wheel out/docker-machine-driver-hyperkit || true
-   sudo chmod u+s out/docker-machine-driver-hyperkit || true
+    sudo chmod u+s out/docker-machine-driver-hyperkit || true
   fi
 fi
 
@@ -157,11 +157,9 @@ if pgrep kubectl; then
   pgrep kubectl | xargs kill || true
 fi
 
-# Respected by minikube
+mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_WANTREPORTERRORPROMPT=False
-
-# Respected by kubectl
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
 # Display the default image URL
