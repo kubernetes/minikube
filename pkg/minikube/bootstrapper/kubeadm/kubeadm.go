@@ -21,6 +21,8 @@ import (
 	"crypto"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -67,8 +69,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	}, nil
 }
 
-//TODO(r2d4): This should most likely check the health of the apiserver
-func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
+func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
 	statusCmd := `sudo systemctl is-active kubelet`
 	status, err := k.c.CombinedOutput(statusCmd)
 	if err != nil {
@@ -80,8 +81,24 @@ func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
 		return state.Running.String(), nil
 	case "inactive":
 		return state.Stopped.String(), nil
+	case "activating":
+		return state.Starting.String(), nil
 	}
 	return state.Error.String(), nil
+}
+
+func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
+	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
+	resp, err := http.Get(url)
+	glog.Infof("%s response: %v %+v", url, err, resp)
+	// Connection refused, usually.
+	if err != nil {
+		return state.Stopped.String(), nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return state.Error.String(), nil
+	}
+	return state.Running.String(), nil
 }
 
 // TODO(r2d4): Should this aggregate all the logs from the control plane?
