@@ -341,6 +341,34 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// Block until the cluster is healthy.
+	fmt.Print("Verifying kubelet health ...")
+	kStat := func() (err error) {
+		st, err := k8sBootstrapper.GetKubeletStatus()
+		if err != nil || st != state.Running.String() {
+			fmt.Printf(".")
+			return fmt.Errorf("kubelet unhealthy: %v: %s", err, st)
+		}
+		return nil
+	}
+	err = pkgutil.RetryAfter(20, kStat, 3*time.Second)
+	if err != nil {
+		cmdutil.MaybeReportErrorAndExit(err)
+	}
+	fmt.Print("\nVerifying apiserver health ...")
+	aStat := func() (err error) {
+		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
+		if err != nil || st != state.Running.String() {
+			fmt.Print(".")
+			return fmt.Errorf("apiserver unhealthy: %v: %s", err, st)
+		}
+		return nil
+	}
+	err = pkgutil.RetryAfter(20, aStat, 3*time.Second)
+	if err != nil {
+		cmdutil.MaybeReportErrorAndExit(err)
+	}
+
 	// start 9p server mount
 	if viper.GetBool(createMount) {
 		fmt.Printf("Setting up hostmount on %s...\n", viper.GetString(mountString))
@@ -408,36 +436,7 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	if err != nil {
 		fmt.Println("Unable to load cached images from config file.")
 	}
-
-	// Block until the cluster is healthy.
-	fmt.Println("Verifying kubelet health ...")
-	kStat := func() (err error) {
-		st, err := k8sBootstrapper.GetKubeletStatus()
-		if err != nil || st != state.Running.String() {
-			fmt.Printf(".")
-			return fmt.Errorf("kubelet unhealthy: %v: %s", err, st)
-		}
-		return nil
-	}
-	err = pkgutil.RetryAfter(20, kStat, 3*time.Second)
-	if err != nil {
-		cmdutil.MaybeReportErrorAndExit(err)
-	}
-
-	fmt.Println("Verifying apiserver health ...")
-	aStat := func() (err error) {
-		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
-		if err != nil || st != state.Running.String() {
-			fmt.Printf(".")
-			return fmt.Errorf("apiserver unhealthy: %v: %s", err, st)
-		}
-		return nil
-	}
-	err = pkgutil.RetryAfter(20, aStat, 3*time.Second)
-	if err != nil {
-		cmdutil.MaybeReportErrorAndExit(err)
-	}
-	fmt.Println("Everything looks great. Enjoy minikube!")
+	fmt.Println("\n\nEverything looks great. Please enjoy minikube!")
 	return
 }
 
