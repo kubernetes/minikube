@@ -60,7 +60,7 @@ if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]"
 fi
 
-netstat -rn
+netstat -rn -f inet
 
 echo ""
 echo ">>> end print-debug-info"
