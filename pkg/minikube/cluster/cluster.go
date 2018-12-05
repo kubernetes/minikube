@@ -78,7 +78,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
-	if h.Driver.DriverName() != "none" && h.Driver.DriverName() != config.VMDriver {
+	if h.Driver.DriverName() != config.VMDriver {
 		fmt.Printf("Skipping %s driver, existing host has %s driver.\n", config.VMDriver, h.Driver.DriverName())
 	}
 
