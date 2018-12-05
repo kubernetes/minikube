@@ -89,55 +89,6 @@ var Addons = map[string]*Addon{
 			"storage-provisioner.yaml",
 			"0640"),
 	}, true, "storage-provisioner"),
-	"coredns": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-controller.yaml",
-			constants.AddonsPath,
-			"coreDNS-controller.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-configmap.yaml",
-			constants.AddonsPath,
-			"coreDNS-configmap.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-svc.yaml",
-			constants.AddonsPath,
-			"coreDNS-svc.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-crbinding.yaml",
-			constants.AddonsPath,
-			"coreDNS-crbinding.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-sa.yaml",
-			constants.AddonsPath,
-			"coreDNS-sa.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-clusterrole.yaml",
-			constants.AddonsPath,
-			"coreDNS-clusterrole.yaml",
-			"0640"),
-	}, true, "coredns"),
-	"kube-dns": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-controller.yaml",
-			constants.AddonsPath,
-			"kube-dns-controller.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-cm.yaml",
-			constants.AddonsPath,
-			"kube-dns-cm.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-svc.yaml",
-			constants.AddonsPath,
-			"kube-dns-svc.yaml",
-			"0640"),
-	}, false, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml",

@@ -147,18 +147,6 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
-		name:        "coredns",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
-		name:        "kube-dns",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
 		name:        "heapster",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
