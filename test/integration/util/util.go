@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -43,6 +44,7 @@ type MinikubeRunner struct {
 	BinaryPath string
 	Args       string
 	StartArgs  string
+	Runtime    string
 }
 
 func (m *MinikubeRunner) Run(cmd string) error {
@@ -105,6 +107,11 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 
 }
 
+// SetRuntime saves the runtime backend
+func (m *MinikubeRunner) SetRuntime(runtime string) {
+	m.Runtime = runtime
+}
+
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
@@ -117,7 +124,13 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 func (m *MinikubeRunner) Start() {
-	m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
+	switch r := m.Runtime; r {
+	case constants.ContainerdRuntime:
+		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock"
+		m.RunCommand(fmt.Sprintf("start %s %s %s", m.StartArgs, m.Args, containerdFlags), true)
+	default:
+		m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
+	}
 }
 
 func (m *MinikubeRunner) EnsureRunning() {
