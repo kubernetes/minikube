@@ -90,7 +90,7 @@ fi
 echo ""
 echo ">> Cleaning up after previous test runs ..."
 
-for stale_dir in "${TEST_ROOT}"/*; do
+for stale_dir in ${TEST_ROOT}/*; do
   echo "* Cleaning stale test: ${stale_dir}"
   export MINIKUBE_HOME="${stale_dir}/.minikube"
   export KUBECONFIG="${stale_dir}/kubeconfig"
