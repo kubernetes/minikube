@@ -190,7 +190,12 @@ func testGvisor(t *testing.T) {
 
 	minikubeRunner.RunCommand("addons enable gvisor", true)
 	if err := util.WaitForGvisorControllerRunning(); err != nil {
-		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+		// Print out logs from controller
+		out, err := kubectlRunner.RunCommand([]string{"logs", "gvisor", "-n", "kube-system"})
+		if err != nil {
+			t.Errorf("error getting gvisor logs: %v", err)
+		}
+		t.Fatalf("waiting for gvisor controller to be up: %v \n %s", err, string(out))
 	}
 
 	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
