@@ -138,7 +138,7 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 }
 
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.MinikubeStatus}} %s", m.Args), false)
+	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.Args), false)
 }
 
 func (m *MinikubeRunner) GetLogs() string {
