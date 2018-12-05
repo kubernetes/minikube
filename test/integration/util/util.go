@@ -126,7 +126,8 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 func (m *MinikubeRunner) Start() {
 	switch r := m.Runtime; r {
 	case constants.ContainerdRuntime:
-		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock"
+		// TODO: priyawadhwa@ remove iso url once updated iso is being used in integration tests
+		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock --iso-url=https://storage.googleapis.com/minikube-iso/minikube.iso"
 		m.RunCommand(fmt.Sprintf("start %s %s %s", m.StartArgs, m.Args, containerdFlags), true)
 	default:
 		m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
@@ -295,6 +296,60 @@ func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 		return errors.Wrap(err, "waiting for one default-http-backend endpoint to be up")
 	}
 
+	return nil
+}
+
+// WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
+func WaitForGvisorControllerRunning() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"minikube-addon": "gvisor"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
+	}
+	return nil
+}
+
+// WaitForGvisorControllerDeleted waits for the gvisor controller pod to be deleted
+func WaitForGvisorControllerDeleted() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"minikube-addon": "gvisor"}))
+	if err := commonutil.WaitForPodDelete(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for gvisor controller pod deletion")
+	}
+	return nil
+}
+
+// WaitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
+func WaitForUntrustedNginxRunning() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for nginx pods")
+	}
+	return nil
+}
+
+// WaitForFailedCreatePodSandBoxEvent waits for a FailedCreatePodSandBox event to show appear
+func WaitForFailedCreatePodSandBoxEvent() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+	if err := commonutil.WaitForEvent(client, "default", "FailedCreatePodSandBox"); err != nil {
+		return errors.Wrap(err, "waiting for FailedCreatePodSandBox event")
+	}
 	return nil
 }
 

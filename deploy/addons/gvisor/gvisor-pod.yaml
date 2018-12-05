@@ -18,6 +18,7 @@ metadata:
   name: gvisor
   namespace: kube-system
   labels:
+    minikube-addon: gvisor
     addonmanager.kubernetes.io/mode: Reconcile
 spec: 
   hostPID: true

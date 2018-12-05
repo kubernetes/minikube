@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -46,6 +47,19 @@ func TestFunctional(t *testing.T) {
 		t.Run("IngressController", testIngressController)
 		t.Run("Mounting", testMounting)
 	}
+}
+
+func TestFunctionalContainerd(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+
+	if usingNoneDriver(minikubeRunner) {
+		t.Skip("Can't run containerd backend with none driver")
+	}
+
+	minikubeRunner.SetRuntime(constants.ContainerdRuntime)
+	minikubeRunner.EnsureRunning()
+
+	t.Run("Gvisor", testGvisor)
 }
 
 // usingNoneDriver returns true if using the none driver

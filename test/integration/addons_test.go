@@ -183,3 +183,39 @@ func testServicesList(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 }
+
+func testGvisor(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	kubectlRunner := util.NewKubectlRunner(t)
+
+	minikubeRunner.RunCommand("addons enable gvisor", true)
+	if err := util.WaitForGvisorControllerRunning(); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", untrustedPath}); err != nil {
+		t.Fatalf("creating untrusted nginx resource: %v", err)
+	}
+
+	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+
+	minikubeRunner.RunCommand("addons disable gvisor", true)
+	if err := util.WaitForGvisorControllerDeleted(); err != nil {
+		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
+	}
+
+	if _, err := kubectlRunner.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
+		t.Fatalf("replacing untrusted nginx resource: %v", err)
+	}
+
+	if err := util.WaitForFailedCreatePodSandBoxEvent(); err != nil {
+		t.Fatalf("waiting for FailedCreatePodSandBox event: %v", err)
+	}
+
+	if _, err := kubectlRunner.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
+		t.Logf("deleting untrusted nginx resource: %v", err)
+	}
+}
