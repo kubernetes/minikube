@@ -22,6 +22,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -191,11 +192,13 @@ func testGvisor(t *testing.T) {
 	t.Log("enabling gvisor addon")
 	minikubeRunner.RunCommand("addons enable gvisor", true)
 	t.Log("waiting for gvisor controller to come up")
-	if err := util.WaitForGvisorControllerRunning(); err != nil {
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
 		// Print out logs from controller
-		if _, err := kubectlRunner.RunCommand([]string{"get", "pods", "--all-namespaces"}); err != nil {
+		out, err := kubectlRunner.RunCommand([]string{"get", "pods", "--all-namespaces"})
+		if err != nil {
 			t.Errorf("error getting all pods %v", err)
 		}
+		log.Print(string(out))
 		if _, err := kubectlRunner.RunCommand([]string{"logs", "gvisor", "-n", "kube-system"}); err != nil {
 			t.Errorf("error getting gvisor logs: %v", err)
 		}

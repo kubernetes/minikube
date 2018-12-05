@@ -32,7 +32,7 @@ func Disable() error {
 	if err := os.Remove(filepath.Join(nodeDir, constants.ContainerdConfigTomlPath)); err != nil {
 		return errors.Wrapf(err, "removing %s", constants.ContainerdConfigTomlPath)
 	}
-	log.Printf("Storing default config.toml at %s", constants.ContainerdConfigTomlPath)
+	log.Printf("Restoring default config.toml at %s", constants.ContainerdConfigTomlPath)
 	if err := mcnutils.CopyFile(filepath.Join(nodeDir, constants.StoredContainerdConfigTomlPath), filepath.Join(nodeDir, constants.ContainerdConfigTomlPath)); err != nil {
 		return errors.Wrap(err, "reverting back to default config.toml")
 	}

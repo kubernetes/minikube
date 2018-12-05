@@ -136,7 +136,11 @@ func IsContainerdRuntime(_, _ string) error {
 	if config.KubernetesConfig.ContainerRuntime != constants.ContainerdRuntime {
 		return fmt.Errorf(`This addon can only be enabled with the containerd runtime backend.
 
-To enable this backend, please start minikube again with the following flags:
+To enable this backend, please first stop minikube with:
+
+minikube stop
+
+and then start minikube again with the following flags:
 
 minikube start --container-runtime=containerd  --docker-opt containerd=/var/run/containerd/containerd.sock --network-plugin=cni`)
 	}

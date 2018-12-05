@@ -127,7 +127,7 @@ func (m *MinikubeRunner) Start() {
 	switch r := m.Runtime; r {
 	case constants.ContainerdRuntime:
 		// TODO: priyawadhwa@ remove iso url once updated iso is being used in integration tests
-		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock --iso-url=https://storage.googleapis.com/minikube-iso/minikube.iso"
+		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock --iso-url=https://storage.googleapis.com/gvisor-preview/minikube.iso"
 		m.RunCommand(fmt.Sprintf("start %s %s %s", m.StartArgs, m.Args, containerdFlags), true)
 	default:
 		m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
@@ -300,7 +300,7 @@ func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 }
 
 // WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
-func WaitForGvisorControllerRunning() error {
+func WaitForGvisorControllerRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
@@ -341,7 +341,7 @@ func WaitForUntrustedNginxRunning() error {
 	return nil
 }
 
-// WaitForFailedCreatePodSandBoxEvent waits for a FailedCreatePodSandBox event to show appear
+// WaitForFailedCreatePodSandBoxEvent waits for a FailedCreatePodSandBox event to appear
 func WaitForFailedCreatePodSandBoxEvent() error {
 	client, err := commonutil.GetClient()
 	if err != nil {
