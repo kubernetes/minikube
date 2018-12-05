@@ -96,7 +96,7 @@ for stale_dir in "${TEST_ROOT}"/*; do
   export KUBECONFIG="${stale_dir}/kubeconfig"
 
   if [[ -d "${MINIKUBE_HOME}" ]]; then
-    if [[ -f "${MINIKUBE_HOME/tunnels.json" ]]; then
+    if [[ -f "${MINIKUBE_HOME}/tunnels.json" ]]; then
       echo "Stale tunnels.json:"
       cat "${MINIKUBE_HOME}/tunnels.json"
       echo "Current routes:"
