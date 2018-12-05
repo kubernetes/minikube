@@ -96,9 +96,9 @@ for stale_dir in ${TEST_ROOT}/*; do
   export KUBECONFIG="${stale_dir}/kubeconfig"
 
   if [[ -d "${MINIKUBE_HOME}" ]]; then
-    if [[ -f "${MINIKUBE_HOME}/tunnels.json" ]]; then
-      echo "Stale tunnels.json:"
+    if [[ -r "${MINIKUBE_HOME}/tunnels.json" ]]; then
       cat "${MINIKUBE_HOME}/tunnels.json"
+      ${MINIKUBE_BIN} tunnel --clean || true
     fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
@@ -166,7 +166,11 @@ function cleanup_stale_routes() {
   if [[ "${stale_routes}" != "" ]]; then
     echo "WARNING: deleting stale tunnel routes: ${stale_routes}"
     for route in ${stale_routes}; do
-      sudo route -n delete "${route}" || true
+      if [[ "$(uname)" == "Linux" ]]; then
+        sudo ip route delete "${route}" || true
+      else
+        sudo route -n delete "${route}" || true
+      fi
     done
   fi
 }
@@ -202,7 +206,8 @@ else
 fi
 
 echo ">> Cleaning up after ourselves ..."
-${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
+${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --clean >/dev/null 2>/dev/null || true
+${SUDO_PREFIX}${MINIKUBE_BIN} delete || true
 cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
