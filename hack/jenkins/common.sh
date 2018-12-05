@@ -80,8 +80,7 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
-
-procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}")
+procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
 if [[ "${procs}" != "" ]]; then
   echo "ERROR: found stale test processes to kill:"
   ps -f -p ${procs} || true
@@ -154,10 +153,10 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   fi
 fi
 
-kprocs=$(pgrep kubectl)
+kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
   echo "error: killing hung kubectl processes ..."
-  ps -f -p ${kprocs} true
+  ps -f -p ${kprocs} || true
   kill ${kprocs} || true
 fi
 
