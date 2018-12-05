@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
 	"time"
 
 	"github.com/blang/semver"
