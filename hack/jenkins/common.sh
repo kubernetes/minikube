@@ -99,8 +99,6 @@ for stale_dir in ${TEST_ROOT}/*; do
     if [[ -f "${MINIKUBE_HOME}/tunnels.json" ]]; then
       echo "Stale tunnels.json:"
       cat "${MINIKUBE_HOME}/tunnels.json"
-      echo "Current routes:"
-      netstat -rn -f inet
     fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
@@ -163,6 +161,18 @@ if pgrep kubectl; then
   pgrep kubectl | xargs kill || true
 fi
 
+function cleanup_stale_routes() {
+  stale_routes=$(netstat -rn -f inet | awk '{ print $1 }' | grep 10.96.0.0)
+  if [[ "${stale_routes}" != "" ]]; then
+    echo "WARNING: deleting stale tunnel routes: ${stale_routes}"
+    for route in ${stale_routes}; do
+      sudo route -n delete "${route}" || true
+    done
+  fi
+}
+
+cleanup_stale_routes || true
+
 mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_WANTREPORTERRORPROMPT=False
@@ -193,6 +203,7 @@ fi
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
+cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
