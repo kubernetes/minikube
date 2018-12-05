@@ -306,7 +306,7 @@ func WaitForGvisorControllerRunning() error {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"minikube-addon": "gvisor"}))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
 	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
 	}
@@ -320,7 +320,7 @@ func WaitForGvisorControllerDeleted() error {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"minikube-addon": "gvisor"}))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
 	if err := commonutil.WaitForPodDelete(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for gvisor controller pod deletion")
 	}
