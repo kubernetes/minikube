@@ -162,7 +162,7 @@ if pgrep kubectl; then
 fi
 
 function cleanup_stale_routes() {
-  stale_routes=$(netstat -rn -f inet | awk '{ print $1 }' | grep 10.96.0.0)
+  stale_routes=$(netstat -rn -f inet | awk '{ print $1 }' | grep 10.96.0.0 || true)
   if [[ "${stale_routes}" != "" ]]; then
     echo "WARNING: deleting stale tunnel routes: ${stale_routes}"
     for route in ${stale_routes}; do
