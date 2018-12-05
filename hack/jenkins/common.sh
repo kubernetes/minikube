@@ -98,7 +98,7 @@ for stale_dir in ${TEST_ROOT}/*; do
   if [[ -d "${MINIKUBE_HOME}" ]]; then
     if [[ -r "${MINIKUBE_HOME}/tunnels.json" ]]; then
       cat "${MINIKUBE_HOME}/tunnels.json"
-      ${MINIKUBE_BIN} tunnel --clean || true
+      ${MINIKUBE_BIN} tunnel --cleanup || true
     fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
@@ -206,7 +206,7 @@ else
 fi
 
 echo ">> Cleaning up after ourselves ..."
-${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --clean >/dev/null 2>/dev/null || true
+${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup >/dev/null 2>/dev/null || true
 ${SUDO_PREFIX}${MINIKUBE_BIN} delete || true
 cleanup_stale_routes || true
 
