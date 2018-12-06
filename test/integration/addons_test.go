@@ -22,7 +22,6 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -188,35 +187,10 @@ func testServicesList(t *testing.T) {
 func testGvisor(t *testing.T) {
 	minikubeRunner := NewMinikubeRunner(t)
 	kubectlRunner := util.NewKubectlRunner(t)
-
-	t.Log("enabling gvisor addon")
-	output := minikubeRunner.RunCommand("addons enable gvisor", true)
-	t.Log(output)
+	minikubeRunner.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
 	if err := util.WaitForGvisorControllerRunning(t); err != nil {
-		// Print out logs from controller
-		out, err := kubectlRunner.RunCommand([]string{"get", "pods", "--all-namespaces"})
-		log.Print(string(out))
-		if err != nil {
-			t.Errorf("error getting all pods %v", err)
-		}
-
-		out, err = kubectlRunner.RunCommand([]string{"logs", "kube-addon-manager-minikube", "-n", "kube-system"})
-		log.Print(string(out))
-		if err != nil {
-			t.Errorf("error getting addon manager logs%v", err)
-		}
-
-		output, err := minikubeRunner.CombinedOutput("ls /etc/kubernetes/addons")
-		log.Print(output)
-		if err != nil {
-			t.Errorf("getting files in /etc/kubernetes/addons")
-		}
-
-		if _, err := kubectlRunner.RunCommand([]string{"logs", "gvisor", "-n", "kube-system"}); err != nil {
-			t.Errorf("error getting gvisor logs: %v", err)
-		}
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 

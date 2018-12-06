@@ -56,6 +56,7 @@ func TestFunctionalContainerd(t *testing.T) {
 		t.Skip("Can't run containerd backend with none driver")
 	}
 
+	minikubeRunner.RunCommand("delete", true)
 	minikubeRunner.SetRuntime(constants.ContainerdRuntime)
 	minikubeRunner.EnsureRunning()
 

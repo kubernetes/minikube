@@ -71,7 +71,6 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
-	m.T.Logf("Executing command: %s", cmd)
 	stdout, err := cmd.Output()
 
 	if checkError && err != nil {
