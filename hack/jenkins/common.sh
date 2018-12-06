@@ -92,12 +92,16 @@ fi
 echo ""
 echo ">> Cleaning up after previous test runs ..."
 
-for stale_dir in "${TEST_ROOT}"/*; do
+for stale_dir in ${TEST_ROOT}/*; do
   echo "* Cleaning stale test: ${stale_dir}"
   export MINIKUBE_HOME="${stale_dir}/.minikube"
   export KUBECONFIG="${stale_dir}/kubeconfig"
 
   if [[ -d "${MINIKUBE_HOME}" ]]; then
+    if [[ -r "${MINIKUBE_HOME}/tunnels.json" ]]; then
+      cat "${MINIKUBE_HOME}/tunnels.json"
+      ${MINIKUBE_BIN} tunnel --cleanup || true
+    fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
         "${MINIKUBE_BIN}" delete || true
@@ -160,6 +164,24 @@ if [[ "${kprocs}" != "" ]]; then
   ${SUDO_PREFIX} kill ${kprocs} || true
 fi
 
+function cleanup_stale_routes() {
+  local show="netstat -rn -f inet"
+  local del="sudo route -n delete"
+
+  if [[ "$(uname)" == "Linux" ]]; then
+    show="ip route show"
+    del="sudo ip route delete"
+  fi
+
+  local troutes=$($show | awk '{ print $1 }' | grep 10.96.0.0 || true)
+  for route in ${troutes}; do
+    echo "WARNING: deleting stale tunnel route: ${route}"
+    $del "${route}" || true
+  done
+}
+
+cleanup_stale_routes || true
+
 mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_WANTREPORTERRORPROMPT=False
@@ -189,7 +211,9 @@ else
 fi
 
 echo ">> Cleaning up after ourselves ..."
+${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
 ${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
+cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
