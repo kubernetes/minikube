@@ -80,22 +80,28 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
-
-if pgrep "minikube|e2e-"; then
-  echo "WARNING: other instances of minikube may be running:"
-  ps -afe | egrep "minikube|e2e-"
+procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
+if [[ "${procs}" != "" ]]; then
+  echo "ERROR: found stale test processes to kill:"
+  ps -f -p ${procs} || true
+  kill ${procs} || true
+  kill -9 ${procs} || true
 fi
 
 # Cleanup stale test outputs.
 echo ""
 echo ">> Cleaning up after previous test runs ..."
 
-for stale_dir in "${TEST_ROOT}"/*; do
+for stale_dir in ${TEST_ROOT}/*; do
   echo "* Cleaning stale test: ${stale_dir}"
   export MINIKUBE_HOME="${stale_dir}/.minikube"
   export KUBECONFIG="${stale_dir}/kubeconfig"
 
   if [[ -d "${MINIKUBE_HOME}" ]]; then
+    if [[ -r "${MINIKUBE_HOME}/tunnels.json" ]]; then
+      cat "${MINIKUBE_HOME}/tunnels.json"
+      ${MINIKUBE_BIN} tunnel --cleanup || true
+    fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
         "${MINIKUBE_BIN}" delete || true
@@ -151,11 +157,30 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   fi
 fi
 
-if pgrep kubectl; then
-  echo "killing hung kubectl processes ..."
-  ps -afe | grep kubectl | grep -v grep || true
-  pgrep kubectl | xargs kill || true
+kprocs=$(pgrep kubectl || true)
+if [[ "${kprocs}" != "" ]]; then
+  echo "error: killing hung kubectl processes ..."
+  ps -f -p ${kprocs} || true
+  ${SUDO_PREFIX} kill ${kprocs} || true
 fi
+
+function cleanup_stale_routes() {
+  local show="netstat -rn -f inet"
+  local del="sudo route -n delete"
+
+  if [[ "$(uname)" == "Linux" ]]; then
+    show="ip route show"
+    del="sudo ip route delete"
+  fi
+
+  local troutes=$($show | awk '{ print $1 }' | grep 10.96.0.0 || true)
+  for route in ${troutes}; do
+    echo "WARNING: deleting stale tunnel route: ${route}"
+    $del "${route}" || true
+  done
+}
+
+cleanup_stale_routes || true
 
 mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
@@ -186,7 +211,9 @@ else
 fi
 
 echo ">> Cleaning up after ourselves ..."
+${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
 ${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
+cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
