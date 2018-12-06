@@ -61,6 +61,7 @@ func TestFunctionalContainerd(t *testing.T) {
 	minikubeRunner.EnsureRunning()
 
 	t.Run("Gvisor", testGvisor)
+	minikubeRunner.RunCommand("delete", true)
 }
 
 // usingNoneDriver returns true if using the none driver
