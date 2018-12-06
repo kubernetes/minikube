@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -56,7 +57,10 @@ func TestFunctionalContainerd(t *testing.T) {
 		t.Skip("Can't run containerd backend with none driver")
 	}
 
-	minikubeRunner.RunCommand("delete", true)
+	if minikubeRunner.GetStatus() != state.None.String() {
+		minikubeRunner.RunCommand("delete", true)
+	}
+
 	minikubeRunner.SetRuntime(constants.ContainerdRuntime)
 	minikubeRunner.EnsureRunning()
 
