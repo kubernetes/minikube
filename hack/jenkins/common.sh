@@ -162,19 +162,17 @@ if pgrep kubectl; then
 fi
 
 function cleanup_stale_routes() {
-  local show="netstat -rn -f inet"
-  local del="sudo route -n delete"
-
-  if [[ "$(uname)" == "Linux" ]]; then
-    show="ip route show"
-    del="sudo ip route delete"
+  stale_routes=$(netstat -rn -f inet | awk '{ print $1 }' | grep 10.96.0.0 || true)
+  if [[ "${stale_routes}" != "" ]]; then
+    echo "WARNING: deleting stale tunnel routes: ${stale_routes}"
+    for route in ${stale_routes}; do
+      if [[ "$(uname)" == "Linux" ]]; then
+        sudo ip route delete "${route}" || true
+      else
+        sudo route -n delete "${route}" || true
+      fi
+    done
   fi
-
-  local troutes=$($show | awk '{ print $1 }' | grep 10.96.0.0 || true)
-  for route in ${troutes}; do
-    echo "WARNING: deleting stale tunnel route: ${route}"
-    $del "${route}" || true
-  done
 }
 
 cleanup_stale_routes || true
