@@ -27,7 +27,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
-	"time"
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
@@ -70,8 +69,7 @@ func Enable() error {
 	}()
 	log.Print("gvisor successfully enabled in cluster")
 	// sleep for one year so the pod continuously runs
-	time.Sleep(24 * 7 * 52 * time.Hour)
-	return nil
+	select {}
 }
 
 // makeGvisorDirs creates necessary directories on the node

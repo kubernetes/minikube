@@ -50,6 +50,8 @@ spec:
     image: nginx
 ```
 
+_Note: this annotation will not be necessary once the RuntimeClass Kubernetes feature is available broadly._
+
 ### Disabling gVisor
 To disable gVisor, run:
 

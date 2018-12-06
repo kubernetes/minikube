@@ -190,7 +190,9 @@ func testGvisor(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	t.Log("enabling gvisor addon")
-	minikubeRunner.RunCommand("addons enable gvisor", true)
+	output := minikubeRunner.RunCommand("addons enable gvisor", true)
+	t.Log(output)
+
 	t.Log("waiting for gvisor controller to come up")
 	if err := util.WaitForGvisorControllerRunning(t); err != nil {
 		// Print out logs from controller
@@ -206,10 +208,10 @@ func testGvisor(t *testing.T) {
 			t.Errorf("error getting addon manager logs%v", err)
 		}
 
-		output, err := minikubeRunner.CombinedOutput("addons list")
+		output, err := minikubeRunner.CombinedOutput("ls /etc/kubernetes/addons")
 		log.Print(output)
 		if err != nil {
-			t.Errorf("error getting addons list")
+			t.Errorf("getting files in /etc/kubernetes/addons")
 		}
 
 		if _, err := kubectlRunner.RunCommand([]string{"logs", "gvisor", "-n", "kube-system"}); err != nil {
