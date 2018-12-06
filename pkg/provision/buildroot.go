@@ -37,6 +37,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -286,6 +287,15 @@ func configureAuth(p *BuildrootProvisioner) error {
 		if err := sshRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring file to machine %v", f)
 		}
+	}
+
+	config, err := config.Load()
+	if err != nil {
+		return errors.Wrap(err, "getting cluster config")
+	}
+
+	if config.KubernetesConfig.ContainerRuntime != "" {
+		return nil
 	}
 
 	dockerCfg, err := p.GenerateDockerOptions(engine.DefaultPort)
