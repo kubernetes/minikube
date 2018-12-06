@@ -157,7 +157,7 @@ kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
   echo "error: killing hung kubectl processes ..."
   ps -f -p ${kprocs} || true
-  kill ${kprocs} || true
+  ${SUDO_PREFIX} kill ${kprocs} || true
 fi
 
 mkdir -p "${TEST_HOME}"
