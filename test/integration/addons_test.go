@@ -195,10 +195,23 @@ func testGvisor(t *testing.T) {
 	if err := util.WaitForGvisorControllerRunning(t); err != nil {
 		// Print out logs from controller
 		out, err := kubectlRunner.RunCommand([]string{"get", "pods", "--all-namespaces"})
+		log.Print(string(out))
 		if err != nil {
 			t.Errorf("error getting all pods %v", err)
 		}
+
+		out, err = kubectlRunner.RunCommand([]string{"logs", "kube-addon-manager-minikube", "-n", "kube-system"})
 		log.Print(string(out))
+		if err != nil {
+			t.Errorf("error getting addon manager logs%v", err)
+		}
+
+		output, err := minikubeRunner.CombinedOutput("addons list")
+		log.Print(output)
+		if err != nil {
+			t.Errorf("error getting addons list")
+		}
+
 		if _, err := kubectlRunner.RunCommand([]string{"logs", "gvisor", "-n", "kube-system"}); err != nil {
 			t.Errorf("error getting gvisor logs: %v", err)
 		}
