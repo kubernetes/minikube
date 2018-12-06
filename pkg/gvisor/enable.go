@@ -120,7 +120,13 @@ func runsc() error {
 // downloadFileToDest downlaods the given file to the dest
 // if something already exists at dest, first remove it
 func downloadFileToDest(url, dest string) error {
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return errors.Wrapf(err, "creating request for %s", url)
+	}
+	req.Header.Set("User-Agent", "minikube")
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
