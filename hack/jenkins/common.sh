@@ -80,10 +80,12 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
-
-if pgrep "minikube|e2e-"; then
-  echo "WARNING: other instances of minikube may be running:"
-  ps -afe | egrep "minikube|e2e-"
+procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
+if [[ "${procs}" != "" ]]; then
+  echo "ERROR: found stale test processes to kill:"
+  ps -f -p ${procs} || true
+  kill ${procs} || true
+  kill -9 ${procs} || true
 fi
 
 # Cleanup stale test outputs.
@@ -151,10 +153,11 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   fi
 fi
 
-if pgrep kubectl; then
-  echo "killing hung kubectl processes ..."
-  ps -afe | grep kubectl | grep -v grep || true
-  pgrep kubectl | ${SUDO_PREFIX} xargs kill || true
+kprocs=$(pgrep kubectl || true)
+if [[ "${kprocs}" != "" ]]; then
+  echo "error: killing hung kubectl processes ..."
+  ps -f -p ${kprocs} || true
+  ${SUDO_PREFIX} kill ${kprocs} || true
 fi
 
 mkdir -p "${TEST_HOME}"
