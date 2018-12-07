@@ -161,6 +161,15 @@ func runStart(cmd *cobra.Command, args []string) {
 		GPU:                 viper.GetBool(gpu),
 	}
 
+	// Write profile cluster configuration to file
+	clusterConfig := cfg.Config{
+		MachineConfig: config,
+	}
+
+	if err := saveConfig(clusterConfig); err != nil {
+		glog.Errorln("Error saving profile cluster configuration: ", err)
+	}
+
 	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
 	fmt.Println("Starting VM...")
 	var host *host.Host
@@ -235,7 +244,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// Write profile cluster configuration to file
-	clusterConfig := cfg.Config{
+	clusterConfig = cfg.Config{
 		MachineConfig:    config,
 		KubernetesConfig: kubernetesConfig,
 	}
