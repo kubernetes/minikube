@@ -118,7 +118,18 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	preflights := constants.Preflights
 	if k8s.ContainerRuntime != "" {
 		preflights = constants.AlternateRuntimePreflights
+		out, err := k.c.CombinedOutput("sudo modprobe br_netfilter")
+		if err != nil {
+			glog.Infoln(out)
+			return errors.Wrap(err, "sudo modprobe br_netfilter")
+		}
+		out, err = k.c.CombinedOutput("sudo sh -c \"echo '1' > /proc/sys/net/ipv4/ip_forward\"")
+		if err != nil {
+			glog.Infoln(out)
+			return errors.Wrap(err, "creating /proc/sys/net/ipv4/ip_forward")
+		}
 	}
+
 	templateContext := struct {
 		KubeadmConfigFile   string
 		SkipPreflightChecks bool

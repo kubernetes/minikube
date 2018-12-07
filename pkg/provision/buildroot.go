@@ -294,7 +294,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "getting cluster config")
 	}
 
-	if config.KubernetesConfig.ContainerRuntime != "" {
+	if config.MachineConfig.ContainerRuntime != "" {
 		return nil
 	}
 
