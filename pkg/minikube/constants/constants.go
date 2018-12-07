@@ -110,8 +110,10 @@ const (
 	DefaultDiskSize     = "20g"
 	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
-	DefaultStatusFormat = "minikube: {{.MinikubeStatus}}\n" +
-		"cluster: {{.ClusterStatus}}\n" + "kubectl: {{.KubeconfigStatus}}\n"
+	DefaultStatusFormat = `host: {{.Host}}
+kubelet: {{.Kubelet}}
+apiserver: {{.ApiServer}}
+kubectl: {{.Kubeconfig}}`
 	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	DefaultCacheListFormat     = "{{.CacheImage}}\n"

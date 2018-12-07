@@ -30,6 +30,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -349,6 +350,36 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// Block until the cluster is healthy.
+	fmt.Print("Verifying kubelet health ...")
+	kStat := func() (err error) {
+		st, err := k8sBootstrapper.GetKubeletStatus()
+		if err != nil || st != state.Running.String() {
+			fmt.Printf(".")
+			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
+		}
+		return nil
+	}
+	err = pkgutil.RetryAfter(20, kStat, 3*time.Second)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		cmdutil.MaybeReportErrorAndExit(err)
+	}
+	fmt.Print("\nVerifying apiserver health ...")
+	aStat := func() (err error) {
+		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
+		if err != nil || st != state.Running.String() {
+			fmt.Print(".")
+			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver unhealthy: %v: %s", err, st)}
+		}
+		return nil
+	}
+	err = pkgutil.RetryAfter(20, aStat, 3*time.Second)
+	if err != nil {
+		fmt.Printf("error: %v", err)
+		cmdutil.MaybeReportErrorAndExit(err)
+	}
+
 	// start 9p server mount
 	if viper.GetBool(createMount) {
 		fmt.Printf("Setting up hostmount on %s...\n", viper.GetString(mountString))
@@ -416,6 +447,8 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	if err != nil {
 		fmt.Println("Unable to load cached images from config file.")
 	}
+	fmt.Println("\n\nEverything looks great. Please enjoy minikube!")
+	return
 }
 
 func init() {

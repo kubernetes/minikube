@@ -18,6 +18,7 @@ package bootstrapper
 
 import (
 	"io"
+	"net"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -30,7 +31,8 @@ type Bootstrapper interface {
 	RestartCluster(config.KubernetesConfig) error
 	GetClusterLogsTo(follow bool, out io.Writer) error
 	SetupCerts(cfg config.KubernetesConfig) error
-	GetClusterStatus() (string, error)
+	GetKubeletStatus() (string, error)
+	GetApiServerStatus(net.IP) (string, error)
 }
 
 const (
