@@ -213,6 +213,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "gvisor",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon, IsContainerdRuntime},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name: "hyperv-virtual-switch",
 		set:  SetString,
 	},

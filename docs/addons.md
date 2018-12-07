@@ -36,6 +36,7 @@ The currently supported addons include:
 * [Freshpod](https://github.com/GoogleCloudPlatform/freshpod)
 * [nvidia-driver-installer](https://github.com/GoogleCloudPlatform/container-engine-accelerators/tree/master/nvidia-driver-installer/minikube)
 * [nvidia-gpu-device-plugin](https://github.com/GoogleCloudPlatform/container-engine-accelerators/tree/master/cmd/nvidia_gpu)
+* [gvisor](../deploy/addons/gvisor/README.md)
 
 If you would like to have minikube properly start/restart custom addons, place the addon(s) you wish to be launched with minikube in the `.minikube/addons` directory. Addons in this folder will be moved to the minikube VM and launched each time minikube is started/restarted.
 
