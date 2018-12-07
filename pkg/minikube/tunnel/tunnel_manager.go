@@ -94,7 +94,7 @@ func (mgr *Manager) run(ctx context.Context, t controller, ready, check, done ch
 			mgr.cleanup(t)
 			return
 		case <-check:
-			glog.V(4).Info("check receieved")
+			glog.V(4).Info("check received")
 			select {
 			case <-ctx.Done():
 				mgr.cleanup(t)
