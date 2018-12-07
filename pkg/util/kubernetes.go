@@ -139,6 +139,36 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 	})
 }
 
+// Wait up to 10 minutes for a pod to be deleted
+func WaitForPodDelete(c kubernetes.Interface, ns string, label labels.Selector) error {
+	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
+		listOpts := metav1.ListOptions{LabelSelector: label.String()}
+		pods, err := c.CoreV1().Pods(ns).List(listOpts)
+		if err != nil {
+			glog.Infof("error getting Pods with label selector %q [%v]\n", label.String(), err)
+			return false, nil
+		}
+		return len(pods.Items) == 0, nil
+	})
+}
+
+// Wait up to 10 minutes for the given event to appear
+func WaitForEvent(c kubernetes.Interface, ns string, reason string) error {
+	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
+		events, err := c.Events().Events("default").List(metav1.ListOptions{})
+		if err != nil {
+			glog.Infof("error getting events: %v", err)
+			return false, nil
+		}
+		for _, e := range events.Items {
+			if e.Reason == reason {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+}
+
 // WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status.
 func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
 	options := metav1.ListOptions{FieldSelector: fields.Set{

@@ -183,3 +183,46 @@ func testServicesList(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 }
+
+func testGvisor(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	kubectlRunner := util.NewKubectlRunner(t)
+	minikubeRunner.RunCommand("addons enable gvisor", true)
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	t.Log("creating pod with untrusted workload annotation")
+	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", untrustedPath}); err != nil {
+		t.Fatalf("creating untrusted nginx resource: %v", err)
+	}
+
+	t.Log("making sure untrusted workload is Running")
+	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+
+	t.Log("disabling gvisor addon")
+	minikubeRunner.RunCommand("addons disable gvisor", true)
+	t.Log("waiting for gvisor controller pod to be deleted")
+	if err := util.WaitForGvisorControllerDeleted(); err != nil {
+		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
+	}
+
+	t.Log("recreating untrusted workload pod")
+	if _, err := kubectlRunner.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
+		t.Fatalf("replacing untrusted nginx resource: %v", err)
+	}
+
+	t.Log("waiting for FailedCreatePodSandBox event")
+	if err := util.WaitForFailedCreatePodSandBoxEvent(); err != nil {
+		t.Fatalf("waiting for FailedCreatePodSandBox event: %v", err)
+	}
+
+	if _, err := kubectlRunner.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
+		t.Logf("error deleting untrusted nginx resource: %v", err)
+	}
+}
