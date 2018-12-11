@@ -71,4 +71,5 @@ type KubernetesConfig struct {
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
+	EnableDefaultCNI       bool
 }
