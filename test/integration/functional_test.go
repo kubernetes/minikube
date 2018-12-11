@@ -65,6 +65,7 @@ func TestFunctionalContainerd(t *testing.T) {
 	minikubeRunner.EnsureRunning()
 
 	t.Run("Gvisor", testGvisor)
+	t.Run("GvisorRestart", testGvisorRestart)
 	minikubeRunner.RunCommand("delete", true)
 }
 
