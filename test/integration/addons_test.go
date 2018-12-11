@@ -220,7 +220,6 @@ func testGvisor(t *testing.T) {
 func testGvisorRestart(t *testing.T) {
 	minikubeRunner := NewMinikubeRunner(t)
 	minikubeRunner.EnsureRunning()
-	fmt.Println("enabling gvisor")
 	minikubeRunner.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
@@ -228,8 +227,15 @@ func testGvisorRestart(t *testing.T) {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
-	minikubeRunner.RunCommand("delete", false)
-	minikubeRunner.CheckStatus(state.None.String())
+	checkStop := func() error {
+		minikubeRunner.RunCommand("stop", true)
+		return minikubeRunner.CheckStatusNoFail(state.Stopped.String())
+	}
+
+	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
+		t.Fatalf("timed out while checking stopped status: %v", err)
+	}
+
 	minikubeRunner.Start()
 	minikubeRunner.CheckStatus(state.Running.String())
 
