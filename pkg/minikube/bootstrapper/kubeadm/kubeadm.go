@@ -358,6 +358,15 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
 	}
 
+	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
+	// start a Pod in the case a user hasn't manually installed any CNI plugin
+	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
+	if cfg.EnableDefaultCNI {
+		files = append(files,
+			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"),
+			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultRktNetConfigPath, "0644"))
+	}
+
 	var g errgroup.Group
 	for _, bin := range []string{"kubelet", "kubeadm"} {
 		bin := bin
