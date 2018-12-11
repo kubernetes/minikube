@@ -227,15 +227,9 @@ func testGvisorRestart(t *testing.T) {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
-	checkStop := func() error {
-		minikubeRunner.RunCommand("stop", true)
-		return minikubeRunner.CheckStatusNoFail(state.Stopped.String())
-	}
-
-	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-		t.Fatalf("timed out while checking stopped status: %v", err)
-	}
-
+	// TODO: @priyawadhwa to add test for stop as well
+	minikubeRunner.RunCommand("delete", false)
+	minikubeRunner.CheckStatus(state.None.String())
 	minikubeRunner.Start()
 	minikubeRunner.CheckStatus(state.Running.String())
 
