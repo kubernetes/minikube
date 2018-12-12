@@ -69,4 +69,4 @@ spec:
   - name: gvisor
     hostPath:
       path: /tmp/gvisor
-  restartPolicy: Never
+  restartPolicy: Always
