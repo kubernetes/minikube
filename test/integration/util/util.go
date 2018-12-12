@@ -126,8 +126,7 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 func (m *MinikubeRunner) Start() {
 	switch r := m.Runtime; r {
 	case constants.ContainerdRuntime:
-		// TODO: priyawadhwa@ remove iso url once updated iso is being used in integration tests
-		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock --iso-url=https://storage.googleapis.com/k8s-minikube/gvisor-preview.iso"
+		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock"
 		m.RunCommand(fmt.Sprintf("start %s %s %s", m.StartArgs, m.Args, containerdFlags), true)
 	default:
 		m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
