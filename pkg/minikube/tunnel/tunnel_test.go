@@ -395,7 +395,7 @@ func TestTunnel(t *testing.T) {
 				},
 			}
 			configLoader := &stubConfigLoader{
-				c: config.Config{
+				c: &config.Config{
 					KubernetesConfig: config.KubernetesConfig{
 						ServiceCIDR: tc.serviceCIDR,
 					}},
@@ -446,7 +446,7 @@ func TestErrorCreatingTunnel(t *testing.T) {
 	}
 
 	configLoader := &stubConfigLoader{
-		c: config.Config{
+		c: &config.Config{
 			KubernetesConfig: config.KubernetesConfig{
 				ServiceCIDR: "10.96.0.0/12",
 			}},
