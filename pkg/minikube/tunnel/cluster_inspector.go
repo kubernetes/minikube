@@ -63,7 +63,7 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 	if err != nil {
 		return hostState, nil, err
 	}
-	var c config.Config
+	var c *config.Config
 	c, err = m.configLoader.LoadConfigFromFile(m.machineName)
 	if err != nil {
 		err = errors.Wrapf(err, "error loading config for %s", m.machineName)
@@ -71,7 +71,7 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 	}
 
 	var route *Route
-	route, err = getRoute(h, c)
+	route, err = getRoute(h, *c)
 	if err != nil {
 		err = errors.Wrapf(err, "error getting route info for %s", m.machineName)
 		return hostState, nil, err
