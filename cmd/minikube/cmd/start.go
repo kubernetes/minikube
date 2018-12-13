@@ -162,6 +162,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		GPU:                 viper.GetBool(gpu),
 	}
 
+	// Load current profile cluster config from file, before overwriting it with the new state
+	oldConfig, err := cfg.Load()
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorln("Error loading profile config: ", err)
+	}
+
 	// Write profile cluster configuration to file
 	clusterConfig := cfg.Config{
 		MachineConfig: config,
@@ -198,14 +204,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	if strings.Compare(selectedKubernetesVersion, "") == 0 {
 		selectedKubernetesVersion = constants.DefaultKubernetesVersion
 	}
-	// Load profile cluster config from file
-	cc, err := cfg.Load()
-	if err != nil && !os.IsNotExist(err) {
-		glog.Errorln("Error loading profile config: ", err)
-	}
-
-	if err == nil {
-		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(cc.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
+	if oldConfig != nil {
+		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(oldConfig.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 		if err != nil {
 			glog.Errorln("Error parsing version semver: ", err)
 		}
