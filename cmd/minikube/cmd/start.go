@@ -115,7 +115,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	api, err := machine.NewAPIClient()
-	ensureNotRunning(api, constants.DefaultMachineName)
+	ensureNotRunning(api, cfg.GetMachineName())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 		os.Exit(1)
