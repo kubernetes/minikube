@@ -67,6 +67,7 @@ const (
 	featureGates          = "feature-gates"
 	apiServerName         = "apiserver-name"
 	dnsDomain             = "dns-domain"
+	serviceCIDR           = "service-cluster-ip-range"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
 	cacheImages           = "cache-images"
@@ -234,7 +235,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ContainerRuntime:       viper.GetString(containerRuntime),
 		CRISocket:              viper.GetString(criSocket),
 		NetworkPlugin:          viper.GetString(networkPlugin),
-		ServiceCIDR:            pkgutil.DefaultServiceCIDR,
+		ServiceCIDR:            viper.GetString(serviceCIDR),
 		ExtraOptions:           extraOptions,
 		ShouldLoadCachedImages: shouldCacheImages,
 	}
@@ -473,6 +474,7 @@ func init() {
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
+	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
