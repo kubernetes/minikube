@@ -35,8 +35,9 @@ SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 
 # "none" driver specific cleanup from previous runs.
-# kubeadm
-sudo kubeadm reset -f || true
+
+# Try without -f first, primarily because older kubeadm versions (v1.10) don't support it anyways.
+sudo kubeadm reset || sudo kubeadm reset -f || true
 # Cleanup data directory
 sudo rm -rf /data/*
 # Cleanup old Kubernetes configs
