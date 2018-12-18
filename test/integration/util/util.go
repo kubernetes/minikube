@@ -19,10 +19,10 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -31,9 +31,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -44,6 +44,7 @@ type MinikubeRunner struct {
 	BinaryPath string
 	Args       string
 	StartArgs  string
+	Runtime    string
 }
 
 func (m *MinikubeRunner) Run(cmd string) error {
@@ -76,10 +77,17 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
 		} else {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
+			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stdout)
 		}
 	}
 	return string(stdout)
+}
+
+// RunWithContext calls the minikube command with a context, useful for timeouts.
+func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) ([]byte, error) {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	return exec.CommandContext(ctx, path, commandArr...).CombinedOutput()
 }
 
 func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
@@ -88,7 +96,7 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	cmd := exec.Command(path, commandArr...)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("stdout pipe failed: %v", err)
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
 	}
 
 	err = cmd.Start()
@@ -97,6 +105,11 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	}
 	return cmd, bufio.NewReader(stdoutPipe)
 
+}
+
+// SetRuntime saves the runtime backend
+func (m *MinikubeRunner) SetRuntime(runtime string) {
+	m.Runtime = runtime
 }
 
 func (m *MinikubeRunner) SSH(command string) (string, error) {
@@ -111,7 +124,13 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 func (m *MinikubeRunner) Start() {
-	m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
+	switch r := m.Runtime; r {
+	case constants.ContainerdRuntime:
+		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock"
+		m.RunCommand(fmt.Sprintf("start %s %s %s", m.StartArgs, m.Args, containerdFlags), true)
+	default:
+		m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
+	}
 }
 
 func (m *MinikubeRunner) EnsureRunning() {
@@ -121,23 +140,18 @@ func (m *MinikubeRunner) EnsureRunning() {
 	m.CheckStatus("Running")
 }
 
-func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
+// ParseEnvCmdOutput parses the output of `env` (assumes bash)
+func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
+	env := map[string]string{}
 	re := regexp.MustCompile(`(\w+?) ?= ?"?(.+?)"?\n`)
-	matches := re.FindAllStringSubmatch(dockerEnvVars, -1)
-	seenEnvVar := false
-	for _, m := range matches {
-		seenEnvVar = true
-		key, val := m[1], m[2]
-		os.Setenv(key, val)
+	for _, m := range re.FindAllStringSubmatch(out, -1) {
+		env[m[1]] = m[2]
 	}
-	if !seenEnvVar {
-		return fmt.Errorf("Error: No environment variables were found in docker-env command output: %s", dockerEnvVars)
-	}
-	return nil
+	return env
 }
 
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.MinikubeStatus}} %s", m.Args), false)
+	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.Args), false)
 }
 
 func (m *MinikubeRunner) GetLogs() string {
@@ -189,8 +203,9 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			k.T.Logf("Error %s running command %s. Return code: %s", stdout, args, err)
-			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command: %v. Output: %s", err, stdout)}
+			retriable := &commonutil.RetriableError{Err: fmt.Errorf("error running command %s: %v. Stdout: \n %s", args, err, stdout)}
+			k.T.Log(retriable)
+			return retriable
 		}
 		return nil
 	}
@@ -280,6 +295,60 @@ func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 		return errors.Wrap(err, "waiting for one default-http-backend endpoint to be up")
 	}
 
+	return nil
+}
+
+// WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
+func WaitForGvisorControllerRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
+	}
+	return nil
+}
+
+// WaitForGvisorControllerDeleted waits for the gvisor controller pod to be deleted
+func WaitForGvisorControllerDeleted() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
+	if err := commonutil.WaitForPodDelete(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for gvisor controller pod deletion")
+	}
+	return nil
+}
+
+// WaitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
+func WaitForUntrustedNginxRunning() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for nginx pods")
+	}
+	return nil
+}
+
+// WaitForFailedCreatePodSandBoxEvent waits for a FailedCreatePodSandBox event to appear
+func WaitForFailedCreatePodSandBoxEvent() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+	if err := commonutil.WaitForEvent(client, "default", "FailedCreatePodSandBox"); err != nil {
+		return errors.Wrap(err, "waiting for FailedCreatePodSandBox event")
+	}
 	return nil
 }
 

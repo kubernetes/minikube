@@ -36,9 +36,15 @@ export KUBECONFIG="/root/.kube/config"
 
 # "none" driver specific cleanup from previous runs.
 # kubeadm
-sudo kubeadm reset || true
+sudo kubeadm reset -f || true
 # Cleanup data directory
 sudo rm -rf /data/*
+# Cleanup old Kubernetes configs
+sudo rm -rf /etc/kubernetes/*
+# Stop any leftover kubelets
+systemctl is-active --quiet kubelet \
+  && echo "stopping kubelet" \
+  && sudo systemctl stop kubelet
 
 # Download files and set permissions
 source ./common.sh

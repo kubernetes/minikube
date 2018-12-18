@@ -19,10 +19,24 @@
 
 Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.
 
+# Newsflash
+
+- 2018-10-05: minikube v0.30.0 released, addressing **[CVE-2018-1002103](https://github.com/kubernetes/minikube/issues/3208): Dashboard vulnerable to DNS rebinding attack**
+
 ## Installation
 ### macOS
+[Homebrew](https://brew.sh/) is a package manager for macOS that can be used to install Minikube.
+After installing Homebrew, run the following at a terminal prompt:
 ```shell
 brew cask install minikube
+```
+This installs kubernetes-cli package as well. The same can be verified using:
+```shell
+kubectl version
+```
+If it's not installed, install it using:
+```shell
+brew install kubernetes-cli
 ```
 
 ### Linux
@@ -124,7 +138,8 @@ We also released a Debian package and Windows installer on our [releases page](h
 ## Quickstart
 
 Here's a brief demo of Minikube usage.
-If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube supports
+- If you want to change the container runtime, network details, consult notes from your container runtime provider.
+- If you want to change the VM driver add the appropriate `--vm-driver=xxx` flag to `minikube start`. Minikube supports
 the following drivers:
 
 * virtualbox

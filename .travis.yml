@@ -3,7 +3,7 @@ os: linux
 sudo: required
 
 go:
-  - 1.10.x
+  - 1.x
 go_import_path: k8s.io/minikube
 
 install:

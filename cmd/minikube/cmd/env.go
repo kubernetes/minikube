@@ -26,6 +26,7 @@ import (
 	"text/template"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/shell"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -293,6 +294,14 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	return noProxyVar, noProxyValue
 }
 
+func GetDockerActive(host *host.Host) (bool, error) {
+	statusCmd := `sudo systemctl is-active docker`
+	status, err := host.RunSSHCommand(statusCmd)
+	// systemd returns error code on inactive
+	s := strings.TrimSpace(status)
+	return err == nil && s == "active", err
+}
+
 // envCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
@@ -302,18 +311,23 @@ var dockerEnvCmd = &cobra.Command{
 
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()
 		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting host: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error getting host: %v\n", err)
 			os.Exit(1)
 		}
 		if host.Driver.DriverName() == "none" {
 			fmt.Println(`'none' driver does not support 'minikube docker-env' command`)
 			os.Exit(0)
+		}
+		docker, err := GetDockerActive(host)
+		if !docker {
+			fmt.Println(`# The docker service is currently not active`)
+			os.Exit(1)
 		}
 
 		var shellCfg *ShellConfig

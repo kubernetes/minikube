@@ -214,7 +214,7 @@ schedulerExtraArgs:
 		t.Run(test.description, func(t *testing.T) {
 			actualCfg, err := generateConfig(test.cfg)
 			if err != nil && !test.shouldErr {
-				t.Errorf("got unexpected error generating config: %s", err)
+				t.Errorf("got unexpected error generating config: %v", err)
 				return
 			}
 			if err == nil && test.shouldErr {

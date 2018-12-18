@@ -14,7 +14,7 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 30
+VERSION_MINOR ?= 31
 VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
@@ -26,7 +26,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.10.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.30.0
+ISO_VERSION ?= v0.31.0
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -100,12 +100,12 @@ out/minikube-%-$(GOARCH): pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
+ifneq ($(GOPATH)/src/$(REPOPATH),$(CURDIR))
 	$(warning ******************************************************************************)
 	$(warning WARNING: You are building minikube outside the expected GOPATH:)
 	$(warning )
 	$(warning expected: $(GOPATH)/src/$(REPOPATH) )
-	$(warning   got:      $(PWD) )
+	$(warning   got:      $(CURDIR) )
 	$(warning )
 	$(warning You will likely encounter unusual build failures. For proper setup, read: )
 	$(warning https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md)
@@ -302,6 +302,18 @@ storage-provisioner-image: out/storage-provisioner
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image
 	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+
+.PHONY: out/gvisor-addon
+out/gvisor-addon:
+	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
+
+.PHONY: gvisor-addon-image
+gvisor-addon-image: out/gvisor-addon
+	docker build -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
+
+.PHONY: push-gvisor-addon-image
+push-gvisor-addon-image: gvisor-addon-image
+	gcloud docker -- push $(REGISTRY)/gvisor-addon:latest
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum

@@ -25,10 +25,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-
-	commonutil "k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -39,31 +36,24 @@ func testClusterDNS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error getting kubernetes client %v", err)
 	}
-	waitForDNS(t, client)
 
 	kr := util.NewKubectlRunner(t)
 	busybox := busyBoxPod(t, client, kr)
 	defer kr.RunCommand([]string{"delete", "po", busybox})
 
-	// The query result is not as important as service reachability
-	out, err := kr.RunCommand([]string{"exec", busybox, "nslookup", "localhost"})
-	if err != nil {
-		t.Errorf("nslookup within busybox failed: %s", err)
+	out := []byte{}
+
+	nslookup := func() error {
+		out, err = kr.RunCommand([]string{"exec", busybox, "nslookup", "kubernetes.default"})
+		return err
 	}
+	if err := util.Retry(t, nslookup, 3*time.Second, 60); err != nil {
+		t.Fatalf(err.Error())
+	}
+
 	clusterIP := []byte("10.96.0.1")
 	if !bytes.Contains(out, clusterIP) {
-		t.Errorf("nslookup did not mention %s:\n%s", clusterIP, out)
-	}
-}
-
-func waitForDNS(t *testing.T, c kubernetes.Interface) {
-	// Implementation note: both kube-dns and coredns have k8s-app=kube-dns labels.
-	sel := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "kube-dns"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(c, "kube-system", sel); err != nil {
-		t.Fatalf("Waited too long for k8s-app=kube-dns pods")
-	}
-	if err := commonutil.WaitForDeploymentToStabilize(c, "kube-system", "kube-dns", time.Minute*2); err != nil {
-		t.Fatalf("kube-dns deployment failed to stabilize within 2 minutes")
+		t.Errorf("output did not contain expected IP:\n%s", out)
 	}
 }
 
@@ -73,7 +63,7 @@ func busyBoxPod(t *testing.T, c kubernetes.Interface, kr *util.KubectlRunner) st
 	}
 	// TODO(tstromberg): Refactor WaitForBusyboxRunning to return name of pod.
 	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
-		t.Fatalf("Waiting for busybox pod to be up: %s", err)
+		t.Fatalf("Waiting for busybox pod to be up: %v", err)
 	}
 
 	pods, err := c.CoreV1().Pods("default").List(metav1.ListOptions{LabelSelector: "integration-test=busybox"})

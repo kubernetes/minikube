@@ -19,8 +19,11 @@ package kubeadm
 import (
 	"bytes"
 	"crypto"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -67,8 +70,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	}, nil
 }
 
-//TODO(r2d4): This should most likely check the health of the apiserver
-func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
+func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
 	statusCmd := `sudo systemctl is-active kubelet`
 	status, err := k.c.CombinedOutput(statusCmd)
 	if err != nil {
@@ -80,8 +82,29 @@ func (k *KubeadmBootstrapper) GetClusterStatus() (string, error) {
 		return state.Running.String(), nil
 	case "inactive":
 		return state.Stopped.String(), nil
+	case "activating":
+		return state.Starting.String(), nil
 	}
 	return state.Error.String(), nil
+}
+
+func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
+	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
+	// To avoid: x509: certificate signed by unknown authority
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(url)
+	glog.Infof("%s response: %v %+v", url, err, resp)
+	// Connection refused, usually.
+	if err != nil {
+		return state.Stopped.String(), nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return state.Error.String(), nil
+	}
+	return state.Running.String(), nil
 }
 
 // TODO(r2d4): Should this aggregate all the logs from the control plane?
@@ -115,21 +138,31 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	b := bytes.Buffer{}
+	preflights := constants.Preflights
+	if k8s.ContainerRuntime != "" {
+		preflights = constants.AlternateRuntimePreflights
+		out, err := k.c.CombinedOutput("sudo modprobe br_netfilter")
+		if err != nil {
+			glog.Infoln(out)
+			return errors.Wrap(err, "sudo modprobe br_netfilter")
+		}
+		out, err = k.c.CombinedOutput("sudo sh -c \"echo '1' > /proc/sys/net/ipv4/ip_forward\"")
+		if err != nil {
+			glog.Infoln(out)
+			return errors.Wrap(err, "creating /proc/sys/net/ipv4/ip_forward")
+		}
+	}
+
 	templateContext := struct {
 		KubeadmConfigFile   string
 		SkipPreflightChecks bool
 		Preflights          []string
-		DNSAddon            string
 	}{
 		KubeadmConfigFile: constants.KubeadmConfigFile,
 		SkipPreflightChecks: !VersionIsBetween(version,
 			semver.MustParse("1.9.0-alpha.0"),
 			semver.Version{}),
-		Preflights: constants.Preflights,
-		DNSAddon:   "kube-dns",
-	}
-	if version.GTE(semver.MustParse("1.12.0")) {
-		templateContext.DNSAddon = "coredns"
+		Preflights: preflights,
 	}
 	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
@@ -162,12 +195,7 @@ func addAddons(files *[]assets.CopyableFile) error {
 		return errors.Wrap(err, "adding minikube dir assets")
 	}
 	// bundled addons
-	for addonName, addonBundle := range assets.Addons {
-		// TODO(r2d4): Kubeadm ignores the kube-dns addon and uses its own.
-		// expose this in a better way
-		if addonName == "kube-dns" {
-			continue
-		}
+	for _, addonBundle := range assets.Addons {
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
 			for _, addon := range addonBundle.Assets {
 				*files = append(*files, addon)
@@ -237,6 +265,24 @@ func SetContainerRuntime(cfg map[string]string, runtime string) map[string]strin
 	}
 
 	return cfg
+}
+
+func GetCRISocket(path string, runtime string) string {
+	if path != "" {
+		glog.Infoln("Container runtime interface socket provided, using path.")
+		return path
+	}
+
+	switch runtime {
+	case "crio", "cri-o":
+		path = "/var/run/crio/crio.sock"
+	case "containerd":
+		path = "/run/containerd/containerd.sock"
+	default:
+		path = ""
+	}
+
+	return path
 }
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
@@ -352,6 +398,8 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "parsing kubernetes version")
 	}
 
+	criSocket := GetCRISocket(k8s.CRISocket, k8s.ContainerRuntime)
+
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
@@ -372,6 +420,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		KubernetesVersion string
 		EtcdDataDir       string
 		NodeName          string
+		CRISocket         string
 		ExtraArgs         []ComponentExtraArgs
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
@@ -383,6 +432,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
+		CRISocket:         criSocket,
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+

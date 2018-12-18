@@ -47,10 +47,10 @@ var configTestCases = []configTestCase{
     "vm-driver": "kvm"
 }`,
 		config: map[string]interface{}{
-			"vm-driver": "kvm",
-			"cpus":      4,
-			"disk-size": "20g",
-			"v":         5,
+			"vm-driver":                 "kvm",
+			"cpus":                      4,
+			"disk-size":                 "20g",
+			"v":                         5,
 			"show-libmachine-logs":      true,
 			"log_dir":                   "/etc/hosts",
 			"ReminderWaitPeriodInHours": 99,
@@ -80,7 +80,7 @@ func TestHiddenPrint(t *testing.T) {
 		}
 		result, err := concealableAskForStaticValue(b, "hello", false)
 		if err != nil && !test.ShouldError {
-			t.Errorf("Error asking for concealable static value: %s", err)
+			t.Errorf("Error asking for concealable static value: %v", err)
 			continue
 		}
 		if result != test.TestString {
@@ -94,7 +94,7 @@ func TestWriteConfig(t *testing.T) {
 	for _, tt := range configTestCases {
 		err := encode(&b, tt.config)
 		if err != nil {
-			t.Errorf("Error encoding: %s", err)
+			t.Errorf("Error encoding: %v", err)
 		}
 		if b.String() != tt.data {
 			t.Errorf("Did not write config correctly, \n\n expected:\n %+v \n\n actual:\n %+v", tt.data, b.String())

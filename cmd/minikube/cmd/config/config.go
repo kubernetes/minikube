@@ -90,7 +90,7 @@ var settings = []Setting{
 	{
 		name:        "iso-url",
 		set:         SetString,
-		validations: []setFn{IsValidURL},
+		validations: []setFn{IsValidURL, IsURLExists},
 	},
 	{
 		name: config.WantUpdateNotification,
@@ -142,18 +142,6 @@ var settings = []Setting{
 	},
 	{
 		name:        "default-storageclass",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
-		name:        "coredns",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
-		name:        "kube-dns",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
@@ -222,6 +210,12 @@ var settings = []Setting{
 		name:        "nvidia-gpu-device-plugin",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:        "gvisor",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon, IsContainerdRuntime},
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{

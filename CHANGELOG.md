@@ -1,9 +1,57 @@
 # Minikube Release Notes
 
+# Version 0.31.0 - 12/08/2018
+
+* Enable gvisor addon in minikube [#3399](https://github.com/kubernetes/minikube/pull/3399)
+* LoadBalancer emulation with `minikube tunnel` [#3015](https://github.com/kubernetes/minikube/pull/3015)
+* Add NET_PRIO cgroup to iso [#3396](https://github.com/kubernetes/minikube/pull/3396)
+* Implement a check to see if an ISO URL is valid [#3287](https://github.com/kubernetes/minikube/pull/3287)
+* Update Ingress-NGINX to 0.21 Release [#3365](https://github.com/kubernetes/minikube/pull/3365)
+* Add schedutils to the guest VM for the ionice command (used by k8s 1.12) [#3419](https://github.com/kubernetes/minikube/pull/3419)
+* Remove both the CoreDNS and KubeDNS addons. Let Kubeadm install the correct DNS addon. [#3332](https://github.com/kubernetes/minikube/pull/3332)
+* Upgrade Docker, from 17.12.1-ce to 18.06.1-ce [#3223](https://github.com/kubernetes/minikube/pull/3223)
+* Include ISO URL and reduce stutter in download error message [#3221](https://github.com/kubernetes/minikube/pull/3221)
+* Add apiserver check to "status", and block "start" until it's healthy. [#3401](https://github.com/kubernetes/minikube/pull/3401)
+* Containerd improvements
+  *  Only restart docker service if container runtime is docker [#3426](https://github.com/kubernetes/minikube/pull/3426)
+  * Restart containerd after stopping alternate runtimes [#3343](https://github.com/kubernetes/minikube/pull/3343)
+* CRI-O improvements
+  * Stop docker daemon, when running cri-o [#3211](https://github.com/kubernetes/minikube/pull/3211)
+  *  Upgrade to crio v1.11.8 [#3313](https://github.com/kubernetes/minikube/pull/3313)
+  * Add config parameter for the cri socket path [#3154](https://github.com/kubernetes/minikube/pull/3154)
+
+* Ton of Build and CI improvements 
+* Ton of documentation updates
+
+Huge thank you for this release towards our contributors: 
+- Akihiro Suda
+- Alexander Ilyin
+- Anders Björklund
+- Balint Pato
+- Bartel Sielski
+- Bily Zhang
+- dlorenc
+- Fernando Diaz
+- Ihor Dvoretskyi
+- jay vyas
+- Joey
+- mikeweiwei
+- mooncake
+- Nguyen Hai Truong
+- Peeyush gupta
+- peterlobster
+- Prakhar Goyal
+- priyawadhwa
+- SataQiu
+- Thomas Strömberg
+- xichengliudui
+- Yongkun Anfernee Gui
+
+
 # Version 0.30.0 - 10/04/2018
 
+* **Fix for [CVE-2018-1002103](https://github.com/kubernetes/minikube/issues/3208): Dashboard vulnerable to DNS rebinding attack** [#3210](https://github.com/kubernetes/minikube/pull/3210)
 * Initial support for Kubernetes 1.12+ [#3180](https://github.com/kubernetes/minikube/pull/3180)
-* Use "kubectl proxy" instead of a NodePort to expose the dashboard [#3210](https://github.com/kubernetes/minikube/pull/3210)
 * Enhance the Ingress Addon [#3099](https://github.com/kubernetes/minikube/pull/3099)
 * Upgrade cni and cni-plugins to release version [#3152](https://github.com/kubernetes/minikube/pull/3152)
 * ensure that /dev has settled before operating [#3195](https://github.com/kubernetes/minikube/pull/3195)
@@ -12,6 +60,7 @@
 * Install crictl from binary instead of from source [#3160](https://github.com/kubernetes/minikube/pull/3160)
 * Switch the source of libmachine to machine-drivers. [#3185](https://github.com/kubernetes/minikube/pull/3185)
 * Add psmisc package, for pstree command [#3161](https://github.com/kubernetes/minikube/pull/3161)
+* Significant improvements to kvm2 networking [#3148](https://github.com/kubernetes/minikube/pull/3148)
 
 Huge thank you for this release towards our contributors:
 - Anders F Björklund
@@ -20,6 +69,7 @@ Huge thank you for this release towards our contributors:
 - Denis Gladkikh
 - dlorenc
 - Fernando Diaz
+- Marcus Heese
 - oilbeater
 - Raunak Ramakrishnan
 - Rui Cao

@@ -24,9 +24,10 @@ Or you can use the extended version:
 ```shell
 $ minikube start \
     --network-plugin=cni \
+    --cri-socket=/var/run/crio/crio.sock \
     --extra-config=kubelet.container-runtime=remote \
-    --extra-config=kubelet.container-runtime-endpoint=/var/run/crio/crio.sock \
-    --extra-config=kubelet.image-service-endpoint=/var/run/crio/crio.sock
+    --extra-config=kubelet.container-runtime-endpoint=unix:///var/run/crio/crio.sock \
+    --extra-config=kubelet.image-service-endpoint=unix:///var/run/crio/crio.sock
 ```
 
 ### Using containerd
@@ -44,6 +45,7 @@ Or you can use the extended version:
 ```shell
 $ minikube start \
     --network-plugin=cni \
+    --cri-socket=/run/containerd/containerd.sock \
     --extra-config=kubelet.container-runtime=remote \
     --extra-config=kubelet.container-runtime-endpoint=unix:///run/containerd/containerd.sock \
     --extra-config=kubelet.image-service-endpoint=unix:///run/containerd/containerd.sock

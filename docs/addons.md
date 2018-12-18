@@ -3,13 +3,11 @@
 Minikube has a set of built in addons that can be used enabled, disabled, and opened inside of the local k8s environment. Below is an example of this functionality for the `heapster` addon:
 ```shell
 $ minikube addons list
-- kube-dns: enabled
 - registry: disabled
 - registry-creds: disabled
 - freshpod: disabled
 - addon-manager: enabled
 - dashboard: enabled
-- coredns: disabled
 - heapster: disabled
 - efk: disabled
 - ingress: disabled
@@ -30,16 +28,15 @@ Created new window in existing browser session.
 The currently supported addons include:
 
 * [Kubernetes Dashboard](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dashboard)
-* [Kube-dns](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dns)
 * [Heapster](https://github.com/kubernetes/heapster): [Troubleshooting Guide](https://github.com/kubernetes/heapster/blob/master/docs/influxdb.md) Note:You will need to login to Grafana as admin/admin in order to access the console
 * [EFK](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/fluentd-elasticsearch)
 * [Registry](https://github.com/kubernetes/minikube/tree/master/deploy/addons/registry)
 * [Registry Credentials](https://github.com/upmc-enterprises/registry-creds)
-* [CoreDNS](https://github.com/coredns/deployment/tree/master/kubernetes)
 * [Ingress](https://github.com/kubernetes/ingress-nginx)
 * [Freshpod](https://github.com/GoogleCloudPlatform/freshpod)
 * [nvidia-driver-installer](https://github.com/GoogleCloudPlatform/container-engine-accelerators/tree/master/nvidia-driver-installer/minikube)
 * [nvidia-gpu-device-plugin](https://github.com/GoogleCloudPlatform/container-engine-accelerators/tree/master/cmd/nvidia_gpu)
+* [gvisor](../deploy/addons/gvisor/README.md)
 
 If you would like to have minikube properly start/restart custom addons, place the addon(s) you wish to be launched with minikube in the `.minikube/addons` directory. Addons in this folder will be moved to the minikube VM and launched each time minikube is started/restarted.
 

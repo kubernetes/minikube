@@ -65,13 +65,13 @@ func ReadConfig() (MinikubeConfig, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
+		return nil, fmt.Errorf("Could not open file %s: %v", constants.ConfigFile, err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decode config %s: %s", constants.ConfigFile, err)
+		return nil, fmt.Errorf("Could not decode config %s: %v", constants.ConfigFile, err)
 	}
 
 	return m, nil
@@ -92,35 +92,35 @@ func GetMachineName() string {
 }
 
 // Load loads the kubernetes and machine config for the current machine
-func Load() (Config, error) {
+func Load() (*Config, error) {
 	return DefaultLoader.LoadConfigFromFile(GetMachineName())
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name
 type Loader interface {
-	LoadConfigFromFile(profile string) (Config, error)
+	LoadConfigFromFile(profile string) (*Config, error)
 }
 
 type simpleConfigLoader struct{}
 
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profile string) (Config, error) {
+func (c *simpleConfigLoader) LoadConfigFromFile(profile string) (*Config, error) {
 	var cc Config
 
 	path := constants.GetProfileFile(profile)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return cc, err
+		return nil, err
 	}
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return cc, err
+		return nil, err
 	}
 
 	if err := json.Unmarshal(data, &cc); err != nil {
-		return cc, err
+		return nil, err
 	}
-	return cc, nil
+	return &cc, nil
 }

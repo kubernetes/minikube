@@ -60,7 +60,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 	}
 
 	configLoader := &stubConfigLoader{
-		c: config.Config{
+		c: &config.Config{
 			KubernetesConfig: config.KubernetesConfig{
 				ServiceCIDR: "96.0.0.0/12",
 			},
