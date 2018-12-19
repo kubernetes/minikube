@@ -41,31 +41,31 @@ func TestDocker(t *testing.T) {
 
 	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args,
 		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
-	out, err := mk.RunWithContext(ctx, startCmd)
+	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
 	if err != nil {
-		t.Fatalf("start: %v\nstart out: %s", err, out)
+		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}
 
 	mk.EnsureRunning()
 
-	out, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
+	stdout, stderr, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
 	if err != nil {
-		t.Errorf("docker env: %v\ndocker env out: %s", err, out)
+		t.Errorf("docker env: %v\nstderr: %s", err, stderr)
 	}
 
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
-		if !strings.Contains(string(out), envVar) {
-			t.Errorf("Env var %s missing: %s.", envVar, out)
+		if !strings.Contains(stdout, envVar) {
+			t.Errorf("Env var %s missing: %s.", envVar, stdout)
 		}
 	}
 
-	out, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=ExecStart --no-pager")
+	stdout, stderr, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=ExecStart --no-pager")
 	if err != nil {
-		t.Errorf("ssh show docker: %v\nshow docker out: %s", err, out)
+		t.Errorf("ssh show docker: %v\nstderr: %s", err, stderr)
 	}
 	for _, opt := range []string{"--debug", "--icc=true"} {
-		if !strings.Contains(string(out), opt) {
-			t.Fatalf("Option %s missing from ExecStart: %s.", opt, out)
+		if !strings.Contains(stdout, opt) {
+			t.Fatalf("Option %s missing from ExecStart: %s.", opt, stdout)
 		}
 	}
 }
