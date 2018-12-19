@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"os/exec"
 	"path/filepath"
@@ -38,6 +39,8 @@ import (
 )
 
 const kubectlBinary = "kubectl"
+const errPrefix = "  !"
+const outPrefix = "  >"
 
 type MinikubeRunner struct {
 	T          *testing.T
@@ -45,6 +48,14 @@ type MinikubeRunner struct {
 	Args       string
 	StartArgs  string
 	Runtime    string
+}
+
+func Logf(str string, args ...interface{}) {
+	if !testing.Verbose() {
+		return
+	}
+	fmt.Printf("%s: ", time.Now().Format(time.Stamp))
+	fmt.Println(fmt.Sprintf(str, args...))
 }
 
 func (m *MinikubeRunner) Run(cmd string) error {
@@ -55,6 +66,7 @@ func (m *MinikubeRunner) Run(cmd string) error {
 func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
+	Logf("Running: %s", cmd)
 	return cmd.Run()
 }
 
@@ -67,20 +79,58 @@ func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
 	return err
 }
 
+// tee logs streams command output to console and returns it
+func tee(prefix string, f io.Reader, b strings.Builder) {
+	start := time.Now()
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		t := scanner.Text()
+		b.WriteString(t + "\n")
+		if !testing.Verbose() {
+			continue
+		}
+		offset := ""
+		seconds := time.Since(start).Seconds()
+		if seconds > 1 {
+			offset = fmt.Sprintf("+%.fs", seconds)
+		}
+		fmt.Printf("%s%6s %s\n", prefix, offset, t)
+	}
+	Logf("%s tee done: %d bytes", prefix, b.Len())
+}
+
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
-	stdout, err := cmd.Output()
+	Logf("Run: %s", cmd.Args)
 
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		m.T.Fatalf("stderr pipe: %v", err)
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		m.T.Fatalf("stderr pipe: %v", err)
+	}
+
+	start := time.Now()
+	cmd.Start()
+	var bOut strings.Builder
+	var bErr strings.Builder
+	go tee(errPrefix, stderr, bErr)
+	go tee(outPrefix, stdout, bOut)
+
+	err = cmd.Wait()
+	Logf("Completed in %s, err=%v, out=%q", time.Since(start), err, bOut.String())
 	if checkError && err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
+			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, bOut.String())
 		} else {
-			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stdout)
+			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, bOut.String())
 		}
 	}
-	return string(stdout)
+	return bOut.String()
 }
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
@@ -115,11 +165,13 @@ func (m *MinikubeRunner) SetRuntime(runtime string) {
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
+	Logf("SSH: %s", command)
+
 	stdout, err := cmd.CombinedOutput()
+	Logf("Output: %s", stdout)
 	if err, ok := err.(*exec.ExitError); ok {
 		return string(stdout), err
 	}
-
 	return string(stdout), nil
 }
 
@@ -127,9 +179,9 @@ func (m *MinikubeRunner) Start() {
 	switch r := m.Runtime; r {
 	case constants.ContainerdRuntime:
 		containerdFlags := "--container-runtime=containerd --network-plugin=cni --docker-opt containerd=/var/run/containerd/containerd.sock"
-		m.RunCommand(fmt.Sprintf("start %s %s %s", m.StartArgs, m.Args, containerdFlags), true)
+		m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=6", m.StartArgs, m.Args, containerdFlags), true)
 	default:
-		m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
+		m.RunCommand(fmt.Sprintf("start %s %s --alsologtostderr --v=6", m.StartArgs, m.Args), true)
 	}
 }
 
@@ -167,7 +219,7 @@ func (m *MinikubeRunner) CheckStatus(desired string) {
 func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
 	s := m.GetStatus()
 	if s != desired {
-		return fmt.Errorf("Machine is in the wrong state: %s, expected  %s", s, desired)
+		return fmt.Errorf("got state: %q, expected %q", s, desired)
 	}
 	return nil
 }
