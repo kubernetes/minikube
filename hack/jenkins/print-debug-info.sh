@@ -20,22 +20,49 @@
 # the cluster state.
 set +e
 
-env
-${SUDO_PREFIX} cat $KUBECONFIG
+echo ""
+echo ">>> print-debug-info at $(date):"
+echo ""
+${SUDO_PREFIX} cat "${KUBECONFIG}"
+kubectl version \
+    && kubectl get pods --all-namespaces \
+    && kubectl cluster-info dump
 
-kubectl get pods --all-namespaces
-kubectl cluster-info dump
-
-cat $HOME/.kube/config
-echo $PATH
-
-docker ps
-
+# minikube has probably been shut down, so iterate forward each command rather than spamming.
 MINIKUBE=${SUDO_PREFIX}out/minikube-${OS_ARCH}
 ${MINIKUBE} status
-${MINIKUBE} ip
-${MINIKUBE} ssh -- cat /etc/VERSION
-${MINIKUBE} ssh -- docker ps
-${MINIKUBE} logs
+${MINIKUBE} ip && ${MINIKUBE} logs
 
+if [[ "${VM_DRIVER}" == "none" ]]; then
+  run=""
+else
+  run="${MINIKUBE} ssh --"
+fi
+
+echo "Local date: $(date)"
+${run} date
+${run} uptime
+${run} docker ps
+${run} env TERM=dumb systemctl list-units --state=failed
+${run} env TERM=dumb journalctl --no-tail --no-pager -p notice
+${run} free
+${run} cat /etc/VERSION
+
+if type -P virsh; then
+  virsh -c qemu:///system list --all
+fi
+
+if type -P vboxmanage; then
+  vboxmanage list vms
+fi
+
+if type -P hdiutil; then
+  hdiutil info | grep -E "/dev/disk[1-9][^s]"
+fi
+
+netstat -rn -f inet
+
+echo ""
+echo ">>> end print-debug-info"
+echo ""
 set -e

@@ -38,7 +38,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	glog.Infof("Adding Route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	glog.Infof("Adding route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
 	glog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
@@ -48,10 +48,8 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
 	glog.Infof("%s", stdInAndOut)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {

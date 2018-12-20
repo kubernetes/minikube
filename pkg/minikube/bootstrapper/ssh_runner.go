@@ -86,7 +86,7 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 
 	b, err := sess.CombinedOutput(cmd)
 	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n.", cmd)
+		return "", errors.Wrapf(err, "running command: %s\n, output: %s", cmd, string(b))
 	}
 	return string(b), nil
 }

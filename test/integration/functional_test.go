@@ -21,6 +21,10 @@ package integration
 import (
 	"strings"
 	"testing"
+
+	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/test/integration/util"
 )
 
 func TestFunctional(t *testing.T) {
@@ -38,10 +42,34 @@ func TestFunctional(t *testing.T) {
 	t.Run("Provisioning", testProvisioning)
 	t.Run("Tunnel", testTunnel)
 
-	if !strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
+	if !usingNoneDriver(minikubeRunner) {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
 		t.Run("IngressController", testIngressController)
 		t.Run("Mounting", testMounting)
 	}
+}
+
+func TestFunctionalContainerd(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+
+	if usingNoneDriver(minikubeRunner) {
+		t.Skip("Can't run containerd backend with none driver")
+	}
+
+	if minikubeRunner.GetStatus() != state.None.String() {
+		minikubeRunner.RunCommand("delete", true)
+	}
+
+	minikubeRunner.SetRuntime(constants.ContainerdRuntime)
+	minikubeRunner.EnsureRunning()
+
+	t.Run("Gvisor", testGvisor)
+	t.Run("GvisorRestart", testGvisorRestart)
+	minikubeRunner.RunCommand("delete", true)
+}
+
+// usingNoneDriver returns true if using the none driver
+func usingNoneDriver(runner util.MinikubeRunner) bool {
+	return strings.Contains(runner.StartArgs, "--vm-driver=none")
 }

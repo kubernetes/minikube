@@ -1,4 +1,4 @@
-# Copyright 2016 The Kubernetes Authors.
+# Copyright 2016 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,23 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: kube-dns
-  namespace: kube-system
-  labels:
-    k8s-app: kube-dns
-    addonmanager.kubernetes.io/mode: Reconcile
-    kubernetes.io/name: "KubeDNS"
-spec:
-  selector:
-    k8s-app: kube-dns
-  clusterIP: 10.96.0.10
-  ports:
-  - name: dns
-    port: 53
-    protocol: UDP
-  - name: dns-tcp
-    port: 53
-    protocol: TCP
+FROM ubuntu:18.04
+RUN apt-get update && \
+    apt-get install -y kmod gcc wget xz-utils libc6-dev bc libelf-dev bison flex openssl libssl-dev libidn2-0 sudo libcap2 && \
+    rm -rf /var/lib/apt/lists/*
+COPY out/gvisor-addon /gvisor-addon
+CMD ["/gvisor-addon"]
