@@ -40,7 +40,7 @@ func TestDocker(t *testing.T) {
 	mk.RunWithContext(ctx, "delete")
 
 	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args,
-		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
+		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true --alsologtostderr --v=5")
 	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
 	if err != nil {
 		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
