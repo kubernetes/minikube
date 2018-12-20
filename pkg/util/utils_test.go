@@ -17,9 +17,13 @@ limitations under the License.
 package util
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -157,4 +161,41 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 		}
 	}
 
+}
+
+func TestTeeWithPrefix(t *testing.T) {
+	var in bytes.Buffer
+	var out bytes.Buffer
+	var logged strings.Builder
+
+	logSink := func(format string, args ...interface{}) {
+		logged.WriteString("(")
+		logged.WriteString(fmt.Sprintf(format, args...))
+		logged.WriteString(")")
+	}
+
+	// Simulate the primary use case: tee in the background. This also helps avoid I/O races.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		TeeWithPrefix(": ", &in, &out, logSink)
+		wg.Done()
+	}()
+
+	in.Write([]byte("goo"))
+	in.Write([]byte("\n"))
+	in.Write([]byte("gle"))
+	wg.Wait()
+
+	gotBytes := out.Bytes()
+	wantBytes := []byte("goo\ngle")
+	if !bytes.Equal(gotBytes, wantBytes) {
+		t.Errorf("got bytes: %v, want: %v", gotBytes, wantBytes)
+	}
+
+	gotLog := logged.String()
+	wantLog := "(: goo)(: gle)"
+	if gotLog != wantLog {
+		t.Errorf("got log %q, want log %q", gotLog, wantLog)
+	}
 }
