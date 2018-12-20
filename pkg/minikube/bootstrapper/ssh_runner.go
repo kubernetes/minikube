@@ -100,19 +100,24 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 func (s *SSHRunner) Run(cmd string) error {
 	glog.Infof("SSH: %s", cmd)
 	sess, err := s.c.NewSession()
+	if err != nil {
+		return errors.Wrap(err, "NewSession")
+	}
+
 	defer func() {
 		if err := sess.Close(); err != nil {
 			if err != io.EOF {
-				glog.Errorf("close: %v", err)
+				glog.Errorf("session close: %v", err)
 			}
 		}
 	}()
-	if err != nil {
-		return errors.Wrap(err, "getting ssh session")
-	}
 	var outB bytes.Buffer
 	var errB bytes.Buffer
-	return teeSSH(sess, cmd, &outB, &errB)
+	err = teeSSH(sess, cmd, &outB, &errB)
+	if err != nil {
+		return errors.Wrapf(err, "command failed: %s\nstdout: %s\nstderr: %s", cmd, outB.String(), errB.String())
+	}
+	return nil
 }
 
 // CombinedOutputTo runs the command and stores both command
@@ -120,7 +125,7 @@ func (s *SSHRunner) Run(cmd string) error {
 func (s *SSHRunner) CombinedOutputTo(cmd string, w io.Writer) error {
 	out, err := s.CombinedOutput(cmd)
 	if err != nil {
-		return errors.Wrapf(err, "running command: %s\n.", cmd)
+		return err
 	}
 	_, err = w.Write([]byte(out))
 	return err
@@ -132,17 +137,17 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 	glog.Infoln("Run with output:", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return "", errors.Wrap(err, "getting ssh session")
+		return "", errors.Wrap(err, "NewSession")
 	}
 	defer sess.Close()
 
 	var combined singleWriter
 	err = teeSSH(sess, cmd, &combined, &combined)
-	b := combined.b.Bytes()
+	out := combined.b.String()
 	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n, output: %s", cmd, b)
+		return "", err
 	}
-	return string(b), nil
+	return out, nil
 }
 
 // Copy copies a file to the remote over SSH.
@@ -151,18 +156,18 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", f.GetTargetDir())
 	for _, cmd := range []string{deleteCmd, mkdirCmd} {
 		if err := s.Run(cmd); err != nil {
-			return errors.Wrapf(err, "Error running command: %s", cmd)
+			return errors.Wrapf(err, "pre-copy")
 		}
 	}
 
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return errors.Wrap(err, "Error creating new session via ssh client")
+		return errors.Wrap(err, "NewSession")
 	}
 
 	w, err := sess.StdinPipe()
 	if err != nil {
-		return errors.Wrap(err, "Error accessing StdinPipe via ssh session")
+		return errors.Wrap(err, "StdinPipe")
 	}
 	// The scpcmd below *should not* return until all data is copied and the
 	// StdinPipe is closed. But let's use a WaitGroup to make it expicit.
@@ -177,12 +182,10 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		fmt.Fprint(w, "\x00")
 	}()
 
-	scpcmd := fmt.Sprintf("sudo scp -t %s", f.GetTargetDir())
-	out, err := sess.CombinedOutput(scpcmd)
+	_, err = sess.CombinedOutput(fmt.Sprintf("sudo scp -t %s", f.GetTargetDir()))
 	if err != nil {
-		return errors.Wrapf(err, "Error running scp command: %s output: %s", scpcmd, out)
+		return err
 	}
 	wg.Wait()
-
 	return nil
 }
