@@ -17,6 +17,7 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"path"
@@ -26,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/util"
 )
 
 // SSHRunner runs commands through SSH.
@@ -52,25 +54,75 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	return sess.Run(cmd)
 }
 
+type singleWriter struct {
+	b  bytes.Buffer
+	mu sync.Mutex
+}
+
+func (w *singleWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.b.Write(p)
+}
+
+// teeSSH runs an SSH command, streaming stdout, stderr to logs
+func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
+	outPipe, err := s.StdoutPipe()
+	if err != nil {
+		return errors.Wrap(err, "stdout")
+	}
+
+	errPipe, err := s.StderrPipe()
+	if err != nil {
+		return errors.Wrap(err, "stderr")
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		if err := util.TeeWithPrefix(util.ErrPrefix, errPipe, errB, glog.Infof); err != nil {
+			glog.Errorf("tee stderr: %v", err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		if err := util.TeeWithPrefix(util.OutPrefix, outPipe, outB, glog.Infof); err != nil {
+			glog.Errorf("tee stdout: %v", err)
+		}
+		wg.Done()
+	}()
+	err = s.Run(cmd)
+	wg.Wait()
+	return err
+}
+
 // Run starts a command on the remote and waits for it to return.
 func (s *SSHRunner) Run(cmd string) error {
-	glog.Infoln("Run:", cmd)
+	glog.Infof("SSH: %s", cmd)
 	sess, err := s.c.NewSession()
+	defer func() {
+		if err := sess.Close(); err != nil {
+			if err != io.EOF {
+				glog.Errorf("close: %v", err)
+			}
+		}
+	}()
 	if err != nil {
 		return errors.Wrap(err, "getting ssh session")
 	}
-	defer sess.Close()
-	return sess.Run(cmd)
+	var outB bytes.Buffer
+	var errB bytes.Buffer
+	return teeSSH(sess, cmd, &outB, &errB)
 }
 
 // CombinedOutputTo runs the command and stores both command
 // output and error to out.
-func (s *SSHRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	b, err := s.CombinedOutput(cmd)
+func (s *SSHRunner) CombinedOutputTo(cmd string, w io.Writer) error {
+	out, err := s.CombinedOutput(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "running command: %s\n.", cmd)
 	}
-	_, err = out.Write([]byte(b))
+	_, err = w.Write([]byte(out))
 	return err
 }
 
@@ -84,9 +136,11 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 	}
 	defer sess.Close()
 
-	b, err := sess.CombinedOutput(cmd)
+	var combined singleWriter
+	err = teeSSH(sess, cmd, &combined, &combined)
+	b := combined.b.Bytes()
 	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n, output: %s", cmd, string(b))
+		return "", errors.Wrapf(err, "running command: %s\n, output: %s", cmd, b)
 	}
 	return string(b), nil
 }

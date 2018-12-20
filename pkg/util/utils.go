@@ -17,6 +17,8 @@ limitations under the License.
 package util
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -32,6 +34,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
+
+const ErrPrefix = "! "
+const OutPrefix = "> "
 
 const (
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
@@ -196,6 +201,35 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 		if err := ChownR(dir, uid, gid); err != nil {
 			return errors.Wrapf(err, "Error changing ownership for: %s", dir)
 		}
+	}
+	return nil
+}
+
+// TeeWithPrefix logs new lines from a reader. Designed to be run in the background.
+func TeeWithPrefix(prefix string, r io.Reader, w io.Writer, logger func(format string, args ...interface{})) error {
+	scanner := bufio.NewScanner(r)
+	// Collect individual bytes so that we don't accidentally strip newlines required by callers.
+	scanner.Split(bufio.ScanBytes)
+	var line bytes.Buffer
+
+	for scanner.Scan() {
+		b := scanner.Bytes()
+		if _, err := w.Write(b); err != nil {
+			return err
+		}
+
+		if bytes.IndexAny(b, "\r\n") == 0 {
+			if line.Len() > 0 {
+				logger("%s%s", prefix, line.String())
+				line.Reset()
+			}
+			continue
+		}
+		line.Write(b)
+	}
+	// Catch trailing output in case stream does not end with a newline
+	if line.Len() > 0 {
+		logger("%s%s", prefix, line.String())
 	}
 	return nil
 }

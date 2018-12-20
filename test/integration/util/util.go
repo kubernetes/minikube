@@ -22,12 +22,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math/rand"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -39,8 +39,6 @@ import (
 )
 
 const kubectlBinary = "kubectl"
-const errPrefix = "  !"
-const outPrefix = "  >"
 
 type MinikubeRunner struct {
 	T          *testing.T
@@ -50,11 +48,12 @@ type MinikubeRunner struct {
 	Runtime    string
 }
 
+// Logf writes logs to stdout if -v is set.
 func Logf(str string, args ...interface{}) {
 	if !testing.Verbose() {
 		return
 	}
-	fmt.Printf("%s: ", time.Now().Format(time.Stamp))
+	fmt.Printf(" %s | ", time.Now().Format("15:04:05"))
 	fmt.Println(fmt.Sprintf(str, args...))
 }
 
@@ -79,53 +78,37 @@ func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
 	return err
 }
 
-// tee logs new lines from a reader to stdout. Designed to be callable in the background.
-func tee(prefix string, f io.Reader, b strings.Builder) {
-	start := time.Now()
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		t := scanner.Text()
-		b.WriteString(t + "\n")
-		if !testing.Verbose() {
-			continue
-		}
-		offset := ""
-		seconds := time.Since(start).Seconds()
-		if seconds > 1 {
-			offset = fmt.Sprintf("+%.fs", seconds)
-		}
-		fmt.Printf("%s%6s %s\n", prefix, offset, t)
-	}
-}
-
 // teeRun runs a command, streaming stdout, stderr to console
-func teeRun(cmd exec.Cmd) (string, string, error) {
-	stderr, err := cmd.StderrPipe()
+func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
+	errPipe, err := cmd.StderrPipe()
 	if err != nil {
-		m.T.Fatalf("stderr pipe: %v", err)
+		return "", "", err
 	}
-	stdout, err := cmd.StdoutPipe()
+	outPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("stderr pipe: %v", err)
+		return "", "", err
 	}
 
-	start := time.Now()
 	cmd.Start()
-	var bOut strings.Builder
-	var bErr strings.Builder
+	var outB bytes.Buffer
+	var errB bytes.Buffer
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
-		tee(errPrefix, stderr, bErr)
+		if err := commonutil.TeeWithPrefix(commonutil.ErrPrefix, errPipe, &errB, Logf); err != nil {
+			m.T.Logf("tee: %v", err)
+		}
 		wg.Done()
-	}
+	}()
 	go func() {
-		tee(outPrefix, stdout, bOut)
+		if err := commonutil.TeeWithPrefix(commonutil.OutPrefix, outPipe, &outB, Logf); err != nil {
+			m.T.Logf("tee: %v", err)
+		}
 		wg.Done()
-	}
-	err := cmd.Wait()
+	}()
+	err = cmd.Wait()
 	wg.Wait()
-	return bOut.String(), bErr.String(), err
+	return outB.String(), errB.String(), err
 }
 
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
@@ -133,8 +116,7 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
 	Logf("Run: %s", cmd.Args)
-	stdout, stderr, err := teeRun(cmd)
-	Logf("Completed in %s, err=%v, out=%q", time.Since(start), err, bOut.String())
+	stdout, stderr, err := m.teeRun(cmd)
 	if checkError && err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
@@ -142,15 +124,16 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stderr)
 		}
 	}
-	return bOut.String()
+	return stdout
 }
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
-func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (stdout, stderr, error) {
+func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (string, string, error) {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.CommandContext(ctx, path, commandArr...)
-	stdout, stderr, err := teeRun(cmd)
+	Logf("Run: %s", cmd.Args)
+	return m.teeRun(cmd)
 }
 
 func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
