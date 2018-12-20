@@ -95,13 +95,13 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
-		if err := commonutil.TeeWithPrefix(commonutil.ErrPrefix, errPipe, &errB, Logf); err != nil {
+		if err := commonutil.TeePrefix(commonutil.ErrPrefix, errPipe, &errB, Logf); err != nil {
 			m.T.Logf("tee: %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		if err := commonutil.TeeWithPrefix(commonutil.OutPrefix, outPipe, &outB, Logf); err != nil {
+		if err := commonutil.TeePrefix(commonutil.OutPrefix, outPipe, &outB, Logf); err != nil {
 			m.T.Logf("tee: %v", err)
 		}
 		wg.Done()

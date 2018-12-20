@@ -163,39 +163,38 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 
 }
 
-func TestTeeWithPrefix(t *testing.T) {
+func TestTeePrefix(t *testing.T) {
 	var in bytes.Buffer
 	var out bytes.Buffer
 	var logged strings.Builder
 
 	logSink := func(format string, args ...interface{}) {
-		logged.WriteString("(")
-		logged.WriteString(fmt.Sprintf(format, args...))
-		logged.WriteString(")")
+		logged.WriteString("(" + fmt.Sprintf(format, args...) + ")")
 	}
 
 	// Simulate the primary use case: tee in the background. This also helps avoid I/O races.
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		TeeWithPrefix(": ", &in, &out, logSink)
+		TeePrefix(":", &in, &out, logSink)
 		wg.Done()
 	}()
 
 	in.Write([]byte("goo"))
 	in.Write([]byte("\n"))
-	in.Write([]byte("gle"))
+	in.Write([]byte("g\r\n\r\n"))
+	in.Write([]byte("le"))
 	wg.Wait()
 
 	gotBytes := out.Bytes()
-	wantBytes := []byte("goo\ngle")
+	wantBytes := []byte("goo\ng\r\n\r\nle")
 	if !bytes.Equal(gotBytes, wantBytes) {
-		t.Errorf("got bytes: %v, want: %v", gotBytes, wantBytes)
+		t.Errorf("output=%q, want: %q", gotBytes, wantBytes)
 	}
 
 	gotLog := logged.String()
-	wantLog := "(: goo)(: gle)"
+	wantLog := "(:goo)(:g)(:le)"
 	if gotLog != wantLog {
-		t.Errorf("got log %q, want log %q", gotLog, wantLog)
+		t.Errorf("log=%q, want: %q", gotLog, wantLog)
 	}
 }
