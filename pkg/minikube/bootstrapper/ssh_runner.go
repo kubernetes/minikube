@@ -80,13 +80,13 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	wg.Add(2)
 
 	go func() {
-		if err := util.TeeWithPrefix(util.ErrPrefix, errPipe, errB, glog.Infof); err != nil {
+		if err := util.TeePrefix(util.ErrPrefix, errPipe, errB, glog.Infof); err != nil {
 			glog.Errorf("tee stderr: %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		if err := util.TeeWithPrefix(util.OutPrefix, outPipe, outB, glog.Infof); err != nil {
+		if err := util.TeePrefix(util.OutPrefix, outPipe, outB, glog.Infof); err != nil {
 			glog.Errorf("tee stdout: %v", err)
 		}
 		wg.Done()

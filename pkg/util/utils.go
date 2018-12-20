@@ -205,10 +205,9 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 	return nil
 }
 
-// TeeWithPrefix logs new lines from a reader. Designed to be run in the background.
-func TeeWithPrefix(prefix string, r io.Reader, w io.Writer, logger func(format string, args ...interface{})) error {
+// TeePrefix copies bytes from a reader to writer, logging each new line.
+func TeePrefix(prefix string, r io.Reader, w io.Writer, logger func(format string, args ...interface{})) error {
 	scanner := bufio.NewScanner(r)
-	// Collect individual bytes so that we don't accidentally strip newlines required by callers.
 	scanner.Split(bufio.ScanBytes)
 	var line bytes.Buffer
 
