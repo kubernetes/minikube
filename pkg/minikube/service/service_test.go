@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
+	"time"
 )
 
 type MockClientGetter struct {
@@ -44,7 +45,7 @@ func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	}, nil
 }
 
-func (m *MockClientGetter) GetClientset() (*kubernetes.Clientset, error) {
+func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	return nil, nil
 }
 

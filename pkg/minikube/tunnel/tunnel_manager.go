@@ -75,7 +75,7 @@ func (mgr *Manager) startTunnel(ctx context.Context, tunnel controller) (done ch
 
 func (mgr *Manager) timerLoop(ready, check chan bool) {
 	for {
-		glog.V(4).Infof("waiting for tunnel to be ready for next check")
+		glog.V(4).Info("waiting for tunnel to be ready for next check")
 		<-ready
 		glog.V(4).Infof("sleep for %s", mgr.delay)
 		time.Sleep(mgr.delay)
@@ -94,7 +94,7 @@ func (mgr *Manager) run(ctx context.Context, t controller, ready, check, done ch
 			mgr.cleanup(t)
 			return
 		case <-check:
-			glog.V(4).Info("check receieved")
+			glog.V(4).Info("check received")
 			select {
 			case <-ctx.Done():
 				mgr.cleanup(t)

@@ -37,6 +37,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -70,8 +71,8 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-After=network.target docker.socket
-Requires=docker.socket
+After=network.target  minikube-automount.service docker.socket
+Requires= minikube-automount.service docker.socket 
 
 [Service]
 Type=notify
@@ -286,6 +287,15 @@ func configureAuth(p *BuildrootProvisioner) error {
 		if err := sshRunner.Copy(f); err != nil {
 			return errors.Wrapf(err, "transferring file to machine %v", f)
 		}
+	}
+
+	config, err := config.Load()
+	if err != nil {
+		return errors.Wrap(err, "getting cluster config")
+	}
+
+	if config.MachineConfig.ContainerRuntime != "" {
+		return nil
 	}
 
 	dockerCfg, err := p.GenerateDockerOptions(engine.DefaultPort)

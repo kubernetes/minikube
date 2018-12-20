@@ -43,5 +43,6 @@ func createNoneHost(config cfg.MachineConfig) interface{} {
 			MachineName: cfg.GetMachineName(),
 			StorePath:   constants.GetMinipath(),
 		},
+		ContainerRuntime: config.ContainerRuntime,
 	}
 }
