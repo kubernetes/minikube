@@ -447,6 +447,10 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
 	}
 
+	if k8s.ServiceCIDR != "" {
+		opts.ServiceCIDR = k8s.ServiceCIDR
+	}
+
 	if version.GTE(semver.MustParse("1.10.0-alpha.0")) {
 		opts.NoTaintMaster = true
 	}

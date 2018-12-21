@@ -48,6 +48,8 @@ func createVirtualboxHost(config cfg.MachineConfig) interface{} {
 	d.NoShare = config.DisableDriverMounts
 	d.NatNicType = defaultVirtualboxNicType
 	d.HostOnlyNicType = defaultVirtualboxNicType
+	d.DNSProxy = false
+	d.HostDNSResolver = true
 
 	return d
 }
