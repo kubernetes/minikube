@@ -16,6 +16,18 @@
 * Save old cluster config in memory before overwriting [#3450](https://github.com/kubernetes/minikube/pull/3450)
 * Change restart policy on gvisor pod [#3445](https://github.com/kubernetes/minikube/pull/3445)
 
+Shout-out to the amazing members of the minikube community who made this release possible:
+
+- Alasdair Tran
+- Balint Pato
+- Charles-Henri de Boysson
+- Chris Eason
+- Cory Locklear
+- Jeffrey Sica
+- JoeWrightss
+- RA489
+- Thomas Strömberg
+
 # Version 0.31.0 - 12/08/2018
 
 * Enable gvisor addon in minikube [#3399](https://github.com/kubernetes/minikube/pull/3399)
