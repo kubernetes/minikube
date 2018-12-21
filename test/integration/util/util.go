@@ -295,18 +295,6 @@ func WaitForBusyboxRunning(t *testing.T, namespace string) error {
 	return commonutil.WaitForPodsWithLabelRunning(client, namespace, selector)
 }
 
-func WaitForDashboardRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
-	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
-	}
-	if err := commonutil.WaitForDeploymentToStabilize(client, "kube-system", "kubernetes-dashboard", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for dashboard deployment to stabilize")
-	}
-
-	return nil
-}
-
 func WaitForIngressControllerRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 	if err != nil {
