@@ -1,5 +1,21 @@
 # Minikube Release Notes
 
+# Version 0.32.0 - 12/21/2018
+
+* Make Kubernetes v1.12.4 the default [#3482](https://github.com/kubernetes/minikube/pull/3482)
+* Update kubeadm restart commands to support v1.13.x [#3483](https://github.com/kubernetes/minikube/pull/3483)
+* Make "stop" retry on failure. [#3479](https://github.com/kubernetes/minikube/pull/3479)
+* VirtualBox time cleanup: sync on boot, don't run timesyncd [#3476](https://github.com/kubernetes/minikube/pull/3476)
+* tee party: Stream cmd output to tests when -v is enabled, and stream SSH output to logs [#3475](https://github.com/kubernetes/minikube/pull/3475)
+* Document None driver docker compatibility [#3367](https://github.com/kubernetes/minikube/pull/3367)
+* Enable host DNS resolution in virtualbox driver by default [#3453](https://github.com/kubernetes/minikube/pull/3453)
+* Fix CRI socket in Kubernetes >= 1.12.0 kubeadmin config [#3452](https://github.com/kubernetes/minikube/pull/3452)
+* Bump dashboard version to v1.10.1 [#3466](https://github.com/kubernetes/minikube/pull/3466)
+* Hide KVM signature when using GPU passthrough to support more GPU models [#3459](https://github.com/kubernetes/minikube/pull/3459)
+* Allow ServiceCIDR to be configured via 'service-cluster-ip-range' flag. [#3463](https://github.com/kubernetes/minikube/pull/3463)
+* Save old cluster config in memory before overwriting [#3450](https://github.com/kubernetes/minikube/pull/3450)
+* Change restart policy on gvisor pod [#3445](https://github.com/kubernetes/minikube/pull/3445)
+
 # Version 0.31.0 - 12/08/2018
 
 * Enable gvisor addon in minikube [#3399](https://github.com/kubernetes/minikube/pull/3399)
