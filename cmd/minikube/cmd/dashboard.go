@@ -76,7 +76,7 @@ var dashboardCmd = &cobra.Command{
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
 		fmt.Fprintln(os.Stderr, "Verifying dashboard health ...")
-		if err = util.RetryAfter(30, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
+		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "%s:%s is not running: %v\n", ns, svc, err)
 			os.Exit(1)
 		}
