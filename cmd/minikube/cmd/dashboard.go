@@ -30,11 +30,11 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
-
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -64,6 +64,13 @@ var dashboardCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
+
+		// Enable the dashboard add-on
+		err = configcmd.Set("dashboard", "true")
+		if err != nil {
+			fmt.Fprintf(os.Stdout, "Unable to enable dashboard: %v", err)
+			os.Exit(1)
+		}
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
