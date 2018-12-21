@@ -6,7 +6,7 @@
 * Update kubeadm restart commands to support v1.13.x [#3483](https://github.com/kubernetes/minikube/pull/3483)
 * Make "stop" retry on failure. [#3479](https://github.com/kubernetes/minikube/pull/3479)
 * VirtualBox time cleanup: sync on boot, don't run timesyncd [#3476](https://github.com/kubernetes/minikube/pull/3476)
-* tee party: Stream cmd output to tests when -v is enabled, and stream SSH output to logs [#3475](https://github.com/kubernetes/minikube/pull/3475)
+* Stream cmd output to tests when -v is enabled, and stream SSH output to logs [#3475](https://github.com/kubernetes/minikube/pull/3475)
 * Document None driver docker compatibility [#3367](https://github.com/kubernetes/minikube/pull/3367)
 * Enable host DNS resolution in virtualbox driver by default [#3453](https://github.com/kubernetes/minikube/pull/3453)
 * Fix CRI socket in Kubernetes >= 1.12.0 kubeadmin config [#3452](https://github.com/kubernetes/minikube/pull/3452)
