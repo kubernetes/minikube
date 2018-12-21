@@ -65,26 +65,30 @@ var dashboardCmd = &cobra.Command{
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
+		fmt.Fprintln(os.Stderr, "Enabling dashboard ...")
 		// Enable the dashboard add-on
 		err = configcmd.Set("dashboard", "true")
 		if err != nil {
-			fmt.Fprintf(os.Stdout, "Unable to enable dashboard: %v", err)
+			fmt.Fprintf(os.Stderr, "Unable to enable dashboard: %v\n", err)
 			os.Exit(1)
 		}
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
+		fmt.Fprintln(os.Stderr, "Verifying dashboard health ...")
 		if err = util.RetryAfter(30, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "%s:%s is not running: %v\n", ns, svc, err)
 			os.Exit(1)
 		}
 
+		fmt.Fprintln(os.Stderr, "Launching proxy ...")
 		p, hostPort, err := kubectlProxy()
 		if err != nil {
 			glog.Fatalf("kubectl proxy: %v", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
+		fmt.Fprintln(os.Stderr, "Verifying proxy health ...")
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "%s is not responding properly: %v\n", url, err)
 			os.Exit(1)
