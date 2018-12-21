@@ -225,9 +225,10 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 		fmt.Sprintf("sudo kubeadm %s phase certs all --config %s", phase, constants.KubeadmConfigFile),
 		fmt.Sprintf("sudo kubeadm %s phase kubeconfig all --config %s", phase, constants.KubeadmConfigFile),
 		fmt.Sprintf("sudo kubeadm %s phase %s all --config %s", phase, controlPlane, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase etcd all --config %s", phase, constants.KubeadmConfigFile),
+		fmt.Sprintf("sudo kubeadm %s phase etcd local --config %s", phase, constants.KubeadmConfigFile),
 	}
 
+	// Run commands one at a time so that it is easier to root cause failures.
 	for _, cmd := range cmds {
 		if err := k.c.Run(cmd); err != nil {
 			return errors.Wrapf(err, "running cmd: %s", cmd)
