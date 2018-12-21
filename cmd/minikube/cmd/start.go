@@ -338,14 +338,38 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if !exists || config.VMDriver == constants.DriverNone {
 		fmt.Println("Starting cluster components...")
-		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
-			glog.Errorln("Error starting cluster: ", err)
+		start := func() error {
+			if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
+				if _, ok := err.(*pkgutil.RetriableError); ok {
+					// Don't try to hide it: it's a sign of racey bring-up.
+					glog.Errorln("Retriable error starting cluster:", err)
+				} else {
+					glog.Errorln("Non-retriable error starting cluster:", err)
+				}
+			}
+			glog.Errorln("Raising up the error")
+			return err
+		}
+
+		err := pkgutil.RetryAfter(2, start, 10*time.Second)
+		glog.Errorf("err: %v", err)
+		if err != nil {
+			glog.Errorln("FAILED FAILED FAILED")
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
 		fmt.Println("Machine exists, restarting cluster components...")
-		if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
-			glog.Errorln("Error restarting cluster: ", err)
+		restart := func() error {
+			if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+				if _, ok := err.(*pkgutil.RetriableError); ok {
+					glog.Errorln("Retriable error restarting cluster:", err)
+				} else {
+					glog.Errorln("Non-retriable error restarting cluster:", err)
+				}
+			}
+			return err
+		}
+		if err := pkgutil.RetryAfter(2, restart, 10*time.Second); err != nil {
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}
