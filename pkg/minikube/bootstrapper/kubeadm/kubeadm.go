@@ -209,21 +209,31 @@ func addAddons(files *[]assets.CopyableFile) error {
 }
 
 func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
-	opts := struct {
-		KubeadmConfigFile string
-	}{
-		KubeadmConfigFile: constants.KubeadmConfigFile,
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	b := bytes.Buffer{}
-	if err := kubeadmRestoreTemplate.Execute(&b, opts); err != nil {
-		return err
+	phase := "alpha"
+	controlPlane := "controlplane"
+	if version.GTE(semver.MustParse("1.13.0")) {
+		phase = "init"
+		controlPlane = "control-plane"
 	}
 
-	if err := k.c.Run(b.String()); err != nil {
-		return errors.Wrapf(err, "running cmd: %s", b.String())
+	cmds := []string{
+		fmt.Sprintf("sudo kubeadm %s phase certs all --config %s", phase, constants.KubeadmConfigFile),
+		fmt.Sprintf("sudo kubeadm %s phase kubeconfig all --config %s", phase, constants.KubeadmConfigFile),
+		fmt.Sprintf("sudo kubeadm %s phase %s all --config %s", phase, controlPlane, constants.KubeadmConfigFile),
+		fmt.Sprintf("sudo kubeadm %s phase etcd local --config %s", phase, constants.KubeadmConfigFile),
 	}
 
+	// Run commands one at a time so that it is easier to root cause failures.
+	for _, cmd := range cmds {
+		if err := k.c.Run(cmd); err != nil {
+			return errors.Wrapf(err, "running cmd: %s", cmd)
+		}
+	}
 	if err := restartKubeProxy(k8s); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
 	}
