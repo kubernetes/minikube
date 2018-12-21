@@ -1,48 +1,33 @@
-# Minikube Roadmap
-This document contains the goals, plans, and priorities for the minikube project.
-Note that these priorities are not set in stone. Please file an issue if you'd like to discuss adding or reordering these :)
+# minikube roadmap (2019)
 
-## Goals
-The primary goal of minikube is to make it simple to run Kubernetes on your local machine, both for getting started and day-to-day development workflows.
-Here are some specific features that align with our goal:
-* Single command setup and teardown UX.
-* Support most portable Kubernetes core features (local storage, networking, auto-scaling, loadbalancing, etc.)
-* Unified UX across OSes.
-* Minimal dependencies on third party software.
-* Minimal resource overhead.
-* Becoming the default local-cluster setup for Kubernetes
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2019. Please send a PR to suggest any improvements to it.
 
-## Non-Goals
-* Simplifying Kubernetes production deployment experience. Kube-deploy is attempting to tackle this problem.
-* Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
+## (#1) Make minikube the easiest way for developers to learn Kubernetes
 
-## Priorities
-This section contains the overall priorities of the minikube project, in rough order.
+- Single step installation
+  - Users should not have to seperately install supporting binaries
+- Creation of a user-centric minikube website for installation & documentation
 
- * Setting up a well-tested, secure and complete Kubernetes cluster locally.
- * Cross Platform support (macOS, Linux, Windows)
- * Supporting existing Kubernetes features:
-    * Load Balancer support.
-    * Persistent disks.
- * Keeping up with new Kubernetes releases and features.
- * Development-focused features like:
-   * Mounting host directories.
-   * VPN/proxy networking.
- * Native hypervisor integration.
- * Support for alternative Kubernetes runtimes, like rkt.
- * Removing the VirtualBox dependency and replacing it with Hypervisor.framework/Hyper-V.
+## (#2) Diversify the minikube community
 
-## Timelines
-Minikube will release much faster than this, so this section is fairly speculative.
-This section is subject to change based on feedback and staffing.
+- Add documentation for new minikube contributors
+- Ensure that all decisions are ratified publically by the minikube community
 
-### Q1 2017
+## (#3) Make minikube robust and debuggable
 
-* Release Kubernetes 1.6.0 alpha and beta releases packaged with minikube
-* Release Kubernetes 1.6.0 packaged with minikube within two days of GA upstream build
-* Run local e2e Kubernetes tests with minikube
-* Minikube no longer depends on libmachine
-* Minikube no longer depends on existing KVM driver
-* Native drivers are made default and packaged with minikube
-* Improve minikube start time by 30%
-* Add a no-vm driver for linux CI environments
+- Add pre-flight error checks for common connectivity issues 
+- Add pre-flight error checks for common configuration errors
+- Mark features & options not covered by continuous integration as `experimental`
+- Improve the `status` command so that it can diagnose common environmental issues
+- Make minikube usable offline
+
+## (#4) Official multi-node/multi-cluster support
+
+- Rebrand profiles as multi-cluster support
+- Integrate KIND for multi-node support
+- Add commands to add/remove nodes within an existing cluster
+
+## (#5) Improve minikube performance
+
+- Add support for lighter-weight deployment methods, such as container-based (LXD, Docker) or chroot
+- Reduce guest VM overhead by 50% for macOS users
