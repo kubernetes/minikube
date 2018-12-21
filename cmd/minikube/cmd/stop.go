@@ -19,11 +19,13 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // stopCmd represents the stop command
@@ -41,7 +43,10 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 		}
 		defer api.Close()
 
-		if err = cluster.StopHost(api); err != nil {
+		stop := func() (err error) {
+			return cluster.StopHost(api)
+		}
+		if err := pkgutil.RetryAfter(5, stop, 1*time.Second); err != nil {
 			fmt.Println("Error stopping machine: ", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
