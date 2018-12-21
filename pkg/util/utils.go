@@ -90,10 +90,12 @@ func CanReadFile(path string) bool {
 	return true
 }
 
+// Retry retries a function without delay, if the function returns a RetriableError
 func Retry(attempts int, callback func() error) (err error) {
 	return RetryAfter(attempts, callback, 0)
 }
 
+// RetryAfter retries a function if it returns a RetriableError
 func RetryAfter(attempts int, callback func() error, d time.Duration) (err error) {
 	m := MultiError{}
 	for i := 0; i < attempts; i++ {
@@ -110,6 +112,7 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 		glog.V(2).Infof("sleeping %s", d)
 		time.Sleep(d)
 	}
+	glog.Infof("Returning: %v", m.ToError())
 	return m.ToError()
 }
 
