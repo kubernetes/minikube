@@ -65,7 +65,7 @@ func (m *MinikubeRunner) Run(cmd string) error {
 func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
-	Logf("Running: %s", cmd)
+	Logf("Running: %s", cmd.Args)
 	return cmd.Run()
 }
 
@@ -144,6 +144,17 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	if err != nil {
 		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
 	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		m.T.Fatalf("stderr pipe failed: %s %v", command, err)
+	}
+
+	var errB bytes.Buffer
+	go func() {
+		if err := commonutil.TeePrefix(commonutil.ErrPrefix, stderrPipe, &errB, Logf); err != nil {
+			m.T.Logf("tee: %v", err)
+		}
+	}()
 
 	err = cmd.Start()
 	if err != nil {
