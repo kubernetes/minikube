@@ -19,8 +19,10 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -175,5 +177,28 @@ func TestKubectlDownloadMsg(t *testing.T) {
 				t.Errorf("Output did not contain substring expected got output %s", actual)
 			}
 		})
+	}
+}
+
+func TestGetKubeConfigPath(t *testing.T) {
+	var tests = []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "/home/fake/.kube/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+		{
+			input: "/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+	}
+
+	for _, test := range tests {
+		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
+		if result := GetKubeConfigPath(); result != test.want {
+			t.Errorf("Expected first splitted chunk, got: %s", result)
+		}
 	}
 }
