@@ -17,17 +17,28 @@ limitations under the License.
 package storageclass
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
+	"k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
+
+func annotateDefaultStorageClass(client *kubernetes.Clientset, class *v1.StorageClass, enable bool) error {
+	isDefault := strconv.FormatBool(enable)
+
+	metav1.SetMetaDataAnnotation(&class.ObjectMeta, "storageclass.beta.kubernetes.io/is-default-class", isDefault)
+	_, err := client.Storage().StorageClasses().Update(class)
+
+	return err
+}
 
 // DisableDefaultStorageClass disables the default storage class provisioner
 // The addon-manager and kubectl apply cannot delete storageclasses
-func DisableDefaultStorageClass() error {
+func DisableDefaultStorageClass(class string) error {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
 	config, err := kubeConfig.ClientConfig()
@@ -39,15 +50,22 @@ func DisableDefaultStorageClass() error {
 		return errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
 
-	err = client.Storage().StorageClasses().Delete(constants.DefaultStorageClassProvisioner, &metav1.DeleteOptions{})
+	sc, err := client.Storage().StorageClasses().Get(class, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting default storage class %s", constants.DefaultStorageClassProvisioner)
+		return errors.Wrapf(err, "Error getting storage class %s", class)
+	}
+
+	err = annotateDefaultStorageClass(client, sc, false)
+	if err != nil {
+		return errors.Wrapf(err, "Error marking storage class %s as non-default", class)
 	}
 
 	return nil
 }
 
-func DisableAllOtherStorageClasses(name string) error {
+// SetDefaultStorageClass makes sure onlt the class with @name is marked as
+// default.
+func SetDefaultStorageClass(name string) error {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
 	config, err := kubeConfig.ClientConfig()
@@ -65,13 +83,13 @@ func DisableAllOtherStorageClasses(name string) error {
 	}
 
 	for _, sc := range scList.Items {
-		if sc.Name == name {
-			continue
-		}
-
-		err = client.Storage().StorageClasses().Delete(sc.Name, &metav1.DeleteOptions{})
+		err = annotateDefaultStorageClass(client, &sc, sc.Name == name)
 		if err != nil {
-			return errors.Wrapf(err, "Error deleting storage class %s", sc.Name)
+			isDefault := "non-default"
+			if sc.Name == name {
+				isDefault = "default"
+			}
+			return errors.Wrapf(err, "Error while marking storage class %s as %s", sc.Name, isDefault)
 		}
 	}
 

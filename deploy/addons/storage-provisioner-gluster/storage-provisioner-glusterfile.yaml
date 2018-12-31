@@ -6,7 +6,7 @@ metadata:
   labels:
     k8s-app: storage-provisioner-gluster
     kubernetes.io/minikube-addons: storage-provisioner-gluster
-    addonmanager.kubernetes.io/mode: Reconcile
+    addonmanager.kubernetes.io/mode: EnsureExists
   annotations:
     storageclass.beta.kubernetes.io/is-default-class: "true"
 provisioner: gluster.org/glusterfile
