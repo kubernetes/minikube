@@ -65,7 +65,7 @@ This step uses the git tag to publish new binaries to GCS and create a github re
  * navigate to the minikube "Release" jenkins job
  * Ensure that you are logged in (top right)
  * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
- * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256
+ * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256`
  * Click *Build*
 
 ## Update releases.json
@@ -74,21 +74,6 @@ minikube-bot will send out a PR to update the release checksums at the top of `d
 
 This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
 
-## Upload releases.json to GCS
-
-This step makes the new release trigger update notifications in old versions of Minikube.
-Use this command from a clean git repo:
-
-```shell
-gsutil cp deploy/minikube/releases.json gs://minikube/releases.json
-```
-
-## Mark the release as `latest` in GCS:
-
-```shell
-gsutil cp -r 'gs://minikube/releases/$RELEASE/*' gs://minikube/releases/latest/
-```
-
 ## Package managers which include minikube
 
 These are downstream packages that are being maintained by others and how to upgrade them to make sure they have the latest versions
@@ -96,7 +81,7 @@ These are downstream packages that are being maintained by others and how to upg
 | Package Manager | URL | TODO |
 | --- | --- | --- |
 | Arch Linux AUR | https://aur.archlinux.org/packages/minikube/ | "Flag as package out-of-date"
-| Brew Cask | https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb | Create a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256
+| Brew Cask | https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created.
 
 #### Updating the arch linux package
 The Arch Linux AUR is maintained at https://aur.archlinux.org/packages/minikube/.  The installer PKGBUILD is hosted in its own repository.  The public read-only repository is hosted here `https://aur.archlinux.org/minikube.git` and the private read-write repository is hosted here `ssh://aur@aur.archlinux.org/minikube.git`
