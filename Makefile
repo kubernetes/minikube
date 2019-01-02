@@ -14,7 +14,7 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 31
+VERSION_MINOR ?= 32
 VERSION_BUILD ?= 0
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
@@ -23,10 +23,11 @@ BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
-BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.10.1-1
+# NOTE: "latest" as of 2018-12-04. kube-cross images aren't updated as often as Kubernetes
+BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.31.0
+ISO_VERSION ?= v0.32.0
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
