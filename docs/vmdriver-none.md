@@ -37,3 +37,32 @@ If you find yourself running a web browser on the same host running `--vm-driver
 * `--vm-driver=none` deletes other local docker images #2705
 * `--vm-driver=none` fails on distro's which do not use systemd #2704
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`, `stop` #3127
+
+
+## Example Installation for Linux Continuous Integration
+
+```shell
+curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && chmod +x minikube && sudo cp minikube /usr/local/bin/ && rm minikube
+curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo cp kubectl /usr/local/bin/ && rm kubectl
+
+export MINIKUBE_WANTUPDATENOTIFICATION=false
+export MINIKUBE_WANTREPORTERRORPROMPT=false
+export MINIKUBE_HOME=$HOME
+export CHANGE_MINIKUBE_NONE_USER=true
+mkdir -p $HOME/.kube
+mkdir -p $HOME/.minikube
+touch $HOME/.kube/config
+
+export KUBECONFIG=$HOME/.kube/config
+sudo -E minikube start --vm-driver=none
+
+# this for loop waits until kubectl can access the api server that Minikube has created
+for i in {1..150}; do # timeout for 5 minutes
+   kubectl get po &> /dev/null
+   if [ $? -ne 1 ]; then
+      break
+  fi
+  sleep 2
+done
+```
+
