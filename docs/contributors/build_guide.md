@@ -83,7 +83,7 @@ export KUBERNETES_CONFORMANCE_TEST=y
 ```
 * Run the tests (from the k8s repo):
 ```shell
-go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check_version_skew=false --check_node_count=false
+go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check-version-skew=false
 ```
 
 To run a specific conformance test, you can use the `ginkgo.focus` flag to filter the set using a regular expression.
@@ -91,5 +91,5 @@ The `hack/e2e.go` wrapper and the `e2e.sh` wrappers have a little trouble with q
 For example, to run the test `should update annotations on modification [Conformance]`, use following command:
 
 ```shell
-go run hack/e2e.go -v --test --test_args="--ginkgo.focus=should\supdate\sannotations\son\smodification" --check_version_skew=false --check_node_count=false
+go run hack/e2e.go -v --test --test_args="--ginkgo.focus=should\supdate\sannotations\son\smodification" --check-version-skew=false
 ```
