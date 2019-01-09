@@ -127,7 +127,14 @@ kubectl: {{.Kubeconfig}}`
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
 var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
-var DefaultKubernetesVersion = "v1.12.4"
+// LatestKubernetesVersion is the most recent version of Kubernetes that we've tested with
+var LatestKubernetesVersion = semver.MustParse("1.13.1")
+
+// DefaultKubernetesVersion is the default installed, and should generally match LatestKubernetesVersion
+var DefaultKubernetesVersion = LatestKubernetesVersion
+
+// OldestKubernetesVersion is the oldest version of Kubernetes we won't complain about
+var OldestKubernetesVersion = semver.MustParse("1.10.12")
 
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")

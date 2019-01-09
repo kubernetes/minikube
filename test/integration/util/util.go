@@ -65,7 +65,7 @@ func (m *MinikubeRunner) Run(cmd string) error {
 func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
-	Logf("Running: %s", cmd)
+	Logf("Running: %v", cmd)
 	return cmd.Run()
 }
 
@@ -153,9 +153,14 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 
 }
 
-// SetRuntime saves the runtime backend
+// SetRuntime sets the runtime backend
 func (m *MinikubeRunner) SetRuntime(runtime string) {
 	m.Runtime = runtime
+}
+
+// SetExtraStartArgs sets start arguments to use
+func (m *MinikubeRunner) SetStartArgs(args string) {
+	m.StartArgs = args
 }
 
 func (m *MinikubeRunner) SSH(command string) (string, error) {

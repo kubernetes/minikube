@@ -98,6 +98,7 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 }
 
 func runStart(cmd *cobra.Command, args []string) {
+	fmt.Printf("minikube %s\n", version.GetVersion())
 	if glog.V(8) {
 		glog.Infoln("Viper configuration:")
 		viper.Debug()
@@ -168,6 +169,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil && !os.IsNotExist(err) {
 		glog.Errorln("Error loading profile config: ", err)
 	}
+	kv, err := chooseKubernetesVersion(viper.GetString(kubernetesVersion), oldConfig)
+	if err != nil {
+		glog.Errorf("Kubernetes version: %v", err)
+		cmdutil.MaybeReportErrorAndExit(err)
+	}
 
 	// Write profile cluster configuration to file
 	clusterConfig := cfg.Config{
@@ -201,30 +207,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
-	if strings.Compare(selectedKubernetesVersion, "") == 0 {
-		selectedKubernetesVersion = constants.DefaultKubernetesVersion
-	}
-	if oldConfig != nil {
-		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(oldConfig.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
-		if err != nil {
-			glog.Errorln("Error parsing version semver: ", err)
-		}
-
-		newKubernetesVersion, err := semver.Make(strings.TrimPrefix(viper.GetString(kubernetesVersion), version.VersionPrefix))
-		if err != nil {
-			glog.Errorln("Error parsing version semver: ", err)
-		}
-
-		// Check if it's an attempt to downgrade version. Avoid version downgrad.
-		if newKubernetesVersion.LT(oldKubernetesVersion) {
-			selectedKubernetesVersion = version.VersionPrefix + oldKubernetesVersion.String()
-			fmt.Println("Kubernetes version downgrade is not supported. Using version:", selectedKubernetesVersion)
-		}
-	}
-
 	kubernetesConfig := cfg.KubernetesConfig{
-		KubernetesVersion:      selectedKubernetesVersion,
+		KubernetesVersion:      kv,
 		NodeIP:                 ip,
 		NodeName:               constants.DefaultNodeName,
 		APIServerName:          viper.GetString(apiServerName),
@@ -479,7 +463,7 @@ func init() {
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
-	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
+	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion.String(), "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().Bool(cacheImages, false, "If true, cache docker images for the current bootstrapper and load them into the machine.")
@@ -543,4 +527,55 @@ func saveConfigToFile(data []byte, file string) error {
 		return err
 	}
 	return nil
+}
+
+// chooseKubernetesVersion picks which Kubernetes version to use
+func chooseKubernetesVersion(want string, c *cfg.Config) (string, error) {
+	chosen := constants.DefaultKubernetesVersion
+	switch want {
+	case "", "default":
+		chosen = constants.DefaultKubernetesVersion
+	case "latest":
+		chosen = constants.LatestKubernetesVersion
+	case "oldest":
+		chosen = constants.OldestKubernetesVersion
+	default:
+		sv, err := semver.Make(strings.TrimPrefix(want, version.VersionPrefix))
+		if err != nil {
+			return "", fmt.Errorf("semver(%s): %v", want, err)
+		}
+		chosen = sv
+	}
+
+	// Guard against downgrades
+	if c != nil && c.KubernetesConfig.KubernetesVersion != "" {
+		existing, err := semver.Make(strings.TrimPrefix(c.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
+		if err != nil {
+			return "", fmt.Errorf("existing semver(%s): %v", c.KubernetesConfig.KubernetesVersion, err)
+		}
+		if chosen.LT(existing) {
+			return "", fmt.Errorf("Kubernetes downgrades are unsupported. Please use `minikube delete` before creating a new cluster.")
+		}
+	}
+
+	if chosen.LT(constants.OldestKubernetesVersion) {
+		fmt.Fprintf(os.Stderr, `
+*****************************************************************************
+WARNING: Kubernetes v%s is no longer a supported release. minikube may  
+still work, but please consider using v%s or newer. Thanks!
+*****************************************************************************
+`, chosen, constants.OldestKubernetesVersion)
+		time.Sleep(2 * time.Second)
+	}
+
+	if chosen.GT(constants.LatestKubernetesVersion) {
+		fmt.Fprintf(os.Stderr, `
+****************************************************************************
+WARNING: Kubernetes v%s is not qualified for use with this release of
+minikube (%s). It might just work, so we'll give it a try anyways!
+****************************************************************************
+`, chosen, version.GetVersion())
+		time.Sleep(2 * time.Second)
+	}
+	return version.VersionPrefix + chosen.String(), nil
 }

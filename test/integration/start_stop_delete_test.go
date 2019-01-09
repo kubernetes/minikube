@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"net"
 	"strings"
 	"testing"
@@ -33,19 +34,23 @@ func TestStartStop(t *testing.T) {
 	tests := []struct {
 		name    string
 		runtime string
+		args    string
 	}{
-		{
-			name:    "default",
-			runtime: "",
-		},
-		{
-			name:    "start stop with containerd runtime",
-			runtime: constants.ContainerdRuntime,
-		},
+		{name: "default"},
+		{name: "containerd", runtime: constants.ContainerdRuntime},
+		{name: "oldest", args: "--kubernetes-version=oldest"},
+		{name: "latest", args: "--kubernetes-version=latest"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			if test.args == "--kubernetes-version=latest" && constants.DefaultKubernetesVersion.Equals(constants.LatestKubernetesVersion) {
+				t.Skipf("Skipping %s: --kubernetes-version=newest is equivalent to default", test.name)
+			}
+			if test.args == "--kubernetes-version=oldest" && constants.DefaultKubernetesVersion.Equals(constants.OldestKubernetesVersion) {
+				t.Skipf("Skipping %s: --kubernetes-version=oldest is equivalent to default", test.name)
+			}
+
 			runner := NewMinikubeRunner(t)
 			if test.runtime != "" && usingNoneDriver(runner) {
 				t.Skipf("skipping, can't use %s with none driver", test.runtime)
@@ -54,7 +59,7 @@ func TestStartStop(t *testing.T) {
 			runner.RunCommand("config set WantReportErrorPrompt false", true)
 			runner.RunCommand("delete", false)
 			runner.CheckStatus(state.None.String())
-
+			runner.SetStartArgs(fmt.Sprintf("%s %s", *startArgs, test.args))
 			runner.SetRuntime(test.runtime)
 			runner.Start()
 			runner.CheckStatus(state.Running.String())

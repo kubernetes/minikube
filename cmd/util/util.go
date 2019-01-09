@@ -130,13 +130,11 @@ func MaybeReportErrorAndExit(errToReport error) {
 	MaybeReportErrorAndExitWithCode(errToReport, 1)
 }
 
+// MaybeReportErrorAndExitWithCode asks the user if they want to report an error before exiting.
 func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
-	var err error
-	if viper.GetBool(config.WantReportError) {
-		err = ReportError(errToReport, constants.ReportingURL)
-	} else if viper.GetBool(config.WantReportErrorPrompt) {
-		fmt.Println(
-			`================================================================================
+	if viper.GetBool(config.WantReportErrorPrompt) {
+		fmt.Println(`
+================================================================================
 An error has occurred. Would you like to opt in to sending anonymized crash
 information to minikube to help prevent future errors?
 To opt out of these messages, run the command:
@@ -144,12 +142,16 @@ To opt out of these messages, run the command:
 ================================================================================`)
 		if PromptUserForAccept(os.Stdin) {
 			minikubeConfig.Set(config.WantReportError, "true")
-			err = ReportError(errToReport, constants.ReportingURL)
 		}
 	}
-	if err != nil {
-		glog.Errorf(err.Error())
+	if viper.GetBool(config.WantReportError) {
+		err := ReportError(errToReport, constants.ReportingURL)
+		// Most likely reason: the error contains no discernible stack trace
+		if err != nil {
+			glog.Infof("ReportError: %v", err)
+		}
 	}
+	glog.Errorf("Exiting with code %d", returnCode)
 	os.Exit(returnCode)
 }
 
