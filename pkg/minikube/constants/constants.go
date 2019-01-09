@@ -131,10 +131,10 @@ var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 var LatestKubernetesVersion = semver.MustParse("1.13.1")
 
 // DefaultKubernetesVersion is the default installed, and should generally match LatestKubernetesVersion
-var DefaultKubernetesVersion = LatestKubernetesVersion
+var DefaultKubernetesVersion = semver.MustParse("v1.12.4")
 
 // OldestKubernetesVersion is the oldest version of Kubernetes we won't complain about
-var OldestKubernetesVersion = semver.MustParse("1.10.12")
+var OldestKubernetesVersion = semver.MustParse("v1.10.12")
 
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
