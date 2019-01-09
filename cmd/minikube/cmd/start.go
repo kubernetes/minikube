@@ -336,42 +336,33 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if !exists || config.VMDriver == constants.DriverNone {
-		fmt.Println("Starting cluster components...")
-		start := func() error {
-			if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
-				if _, ok := err.(*pkgutil.RetriableError); ok {
-					// Don't try to hide it: it's a sign of racey bring-up.
-					glog.Errorln("Retriable error starting cluster:", err)
-				} else {
-					glog.Errorln("Non-retriable error starting cluster:", err)
-				}
-			}
-			glog.Errorln("Raising up the error")
-			return err
+	starter := func() error {
+		fmt.Println("Starting Cluster components ...")
+		return k8sBootstrapper.StartCluster(kubernetesConfig)
+	}
+	if exists {
+		starter = func() error {
+			fmt.Println("Restarting Cluster components ...")
+			return k8sBootstrapper.RestartCluster(kubernetesConfig)
 		}
-
-		err := pkgutil.RetryAfter(2, start, 10*time.Second)
-		glog.Errorf("err: %v", err)
+	}
+	retriableStart := func() error {
+		err := starter()
 		if err != nil {
-			glog.Errorln("FAILED FAILED FAILED")
-			cmdutil.MaybeReportErrorAndExit(err)
-		}
-	} else {
-		fmt.Println("Machine exists, restarting cluster components...")
-		restart := func() error {
-			if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
-				if _, ok := err.(*pkgutil.RetriableError); ok {
-					glog.Errorln("Retriable error restarting cluster:", err)
-				} else {
-					glog.Errorln("Non-retriable error restarting cluster:", err)
-				}
+			if _, ok := err.(*pkgutil.RetriableError); ok {
+				// Make no mistake, we should avoid bootstrap failures whenever possible.
+				glog.Errorln("Retriable bootstrap error:", err)
+			} else {
+				glog.Errorln("Non-retriable bootstrap error: ", err)
 			}
-			return err
 		}
-		if err := pkgutil.RetryAfter(2, restart, 10*time.Second); err != nil {
-			cmdutil.MaybeReportErrorAndExit(err)
-		}
+		return err
+	}
+
+	// Just retry once.
+	err = pkgutil.RetryAfter(2, retriableStart, 30*time.Second)
+	if err != nil {
+		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
 	// Block until the cluster is healthy.
