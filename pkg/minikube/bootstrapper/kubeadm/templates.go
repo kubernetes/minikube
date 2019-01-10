@@ -60,7 +60,7 @@ bootstrapTokens:
   - authentication
 kind: InitConfiguration
 nodeRegistration:
-  criSocket: /var/run/dockershim.sock
+  criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
   name: {{.NodeName}}
   taints: []
 ---
@@ -108,13 +108,6 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 `
-
-var kubeadmRestoreTemplate = template.Must(template.New("kubeadmRestoreTemplate").Parse(`
-sudo kubeadm alpha phase certs all --config {{.KubeadmConfigFile}} &&
-sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} &&
-sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile}} &&
-sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
-`))
 
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(`
 sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}

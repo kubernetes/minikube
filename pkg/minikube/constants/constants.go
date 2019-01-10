@@ -127,7 +127,7 @@ kubectl: {{.Kubeconfig}}`
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
 var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
-var DefaultKubernetesVersion = "v1.10.0"
+var DefaultKubernetesVersion = "v1.12.4"
 
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
@@ -254,7 +254,7 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 	}
 
 	images = append(images, []string{
-		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.0",
+		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1",
 		"k8s.gcr.io/kube-addon-manager:v8.6",
 		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 	}...)
