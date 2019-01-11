@@ -371,15 +371,17 @@ func runStart(cmd *cobra.Command, args []string) {
 		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
 		if err != nil || st != state.Running.String() {
 			fmt.Print(".")
-			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver unhealthy: %v: %s", err, st)}
+			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
 		}
 		return nil
 	}
-	err = pkgutil.RetryAfter(20, aStat, 3*time.Second)
+
+	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
 	if err != nil {
 		fmt.Printf("error: %v", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
+	fmt.Println()
 
 	// start 9p server mount
 	if viper.GetBool(createMount) {
