@@ -215,8 +215,12 @@ checksum:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR)/*
 	rm -f pkg/minikube/assets/assets.go
+
+.PHONY: tmpfs-out
+tmpfs-out:
+	mount -t tmpfs -o size=10g tmpfs $(BUILD_DIR)/out
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md
