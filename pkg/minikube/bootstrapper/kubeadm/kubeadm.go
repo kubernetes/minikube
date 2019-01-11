@@ -309,6 +309,11 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 	}
 
 	extraOpts = SetContainerRuntime(extraOpts, k8s.ContainerRuntime)
+
+	if k8s.NetworkPlugin != "" {
+		extraOpts["network-plugin"] = k8s.NetworkPlugin
+	}
+
 	extraFlags := convertToFlags(extraOpts)
 
 	// parses a map of the feature gates for kubelet
