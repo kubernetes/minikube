@@ -113,7 +113,8 @@ const (
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.ApiServer}}
-kubectl: {{.Kubeconfig}}`
+kubectl: {{.Kubeconfig}}
+`
 	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	DefaultCacheListFormat     = "{{.CacheImage}}\n"

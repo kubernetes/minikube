@@ -74,7 +74,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
-	}, true, "dashboard"),
+	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
