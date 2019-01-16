@@ -1,0 +1,109 @@
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1beta1
+metadata:
+  name: glusterfile
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: EnsureExists
+  annotations:
+    storageclass.beta.kubernetes.io/is-default-class: "true"
+provisioner: gluster.org/glusterfile
+reclaimPolicy: Delete
+parameters:
+  resturl: "http://heketi.storage-gluster.svc.cluster.local:8080"
+  restuser: admin
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: glusterfile-provisioner-runner
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get","create","delete"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["routes"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["get", "create","delete"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: storage-gluster
+  name: glusterfile-provisioner
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: glusterfile-provisioner
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+roleRef:
+  kind: ClusterRole
+  name: glusterfile-provisioner-runner
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  namespace: storage-gluster
+  name: glusterfile-provisioner
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  namespace: storage-gluster
+  name: glusterfile-provisioner
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+  annotations:
+    description: Defines how to deploy the glusterfile provisioner pod.
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      namespace: storage-gluster
+      name: glusterfile-provisioner
+      labels:
+        glusterfs: file-provisioner-pod
+        glusterfile: provisioner-pod
+    spec:
+      serviceAccountName: glusterfile-provisioner
+      containers:
+      - name: glusterfile-provisioner
+        image: gluster/glusterfile-provisioner:latest
+        imagePullPolicy: Always
+        env:
+        - name: PROVISIONER_NAME
+          value: gluster.org/glusterfile
