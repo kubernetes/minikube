@@ -83,7 +83,18 @@ minikube start --vm-driver kvm
 The Hyperkit driver will eventually replace the existing xhyve driver.
 It is built from the minikube source tree, and uses [moby/hyperkit](http://github.com/moby/hyperkit) as a Go library.
 
-To install the hyperkit driver:
+To install the hyperkit driver via brew:
+
+
+```shell
+brew install docker-machine-driver-hyperkit
+
+# docker-machine-driver-hyperkit need root owner and uid 
+sudo chown root:wheel /usr/local/opt/docker-machine-driver-hyperkit/bin/docker-machine-driver-hyperkit
+sudo chmod u+s /usr/local/opt/docker-machine-driver-hyperkit/bin/docker-machine-driver-hyperkit
+```
+
+To install the hyperkit driver manually:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
