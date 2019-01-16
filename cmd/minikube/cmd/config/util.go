@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 )
@@ -138,18 +139,30 @@ func EnableOrDisableAddon(name string, val string) error {
 	return nil
 }
 
-func EnableOrDisableDefaultStorageClass(name, val string) error {
+func EnableOrDisableStorageClasses(name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrap(err, "Error parsing boolean")
 	}
 
-	// Special logic to disable the default storage class
-	if !enable {
-		err := storageclass.DisableDefaultStorageClass()
+	class := constants.DefaultStorageClassProvisioner
+	if name == "storage-provisioner-gluster" {
+		class = "glusterfile"
+	}
+
+	if enable {
+		// Only StorageClass for 'name' should be marked as default
+		err := storageclass.SetDefaultStorageClass(class)
 		if err != nil {
-			return errors.Wrap(err, "Error disabling default storage class")
+			return errors.Wrapf(err, "Error making %s the default storage class", class)
+		}
+	} else {
+		// Unset the StorageClass as default
+		err := storageclass.DisableDefaultStorageClass(class)
+		if err != nil {
+			return errors.Wrapf(err, "Error disabling %s as the default storage class", class)
 		}
 	}
+
 	return EnableOrDisableAddon(name, val)
 }

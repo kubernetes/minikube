@@ -89,6 +89,45 @@ var Addons = map[string]*Addon{
 			"storage-provisioner.yaml",
 			"0640"),
 	}, true, "storage-provisioner"),
+	"storage-provisioner-gluster": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml",
+			constants.AddonsPath,
+			"storage-gluster-ns.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml",
+			constants.AddonsPath,
+			"glusterfs-daemonset.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml",
+			constants.AddonsPath,
+			"heketi-deployment.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml",
+			constants.AddonsPath,
+			"storage-privisioner-glusterfile.yaml",
+			"0640"),
+	}, false, "storage-provisioner-gluster"),
+	"kube-dns": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/kube-dns/kube-dns-controller.yaml",
+			constants.AddonsPath,
+			"kube-dns-controller.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/kube-dns/kube-dns-cm.yaml",
+			constants.AddonsPath,
+			"kube-dns-cm.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/kube-dns/kube-dns-svc.yaml",
+			constants.AddonsPath,
+			"kube-dns-svc.yaml",
+			"0640"),
+	}, false, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml",
