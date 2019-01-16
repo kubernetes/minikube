@@ -340,8 +340,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	if !exists || config.VMDriver == constants.DriverNone {
 		fmt.Println("Starting cluster components...")
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
-			glog.Errorln("Error starting cluster: ", err)
-			cmdutil.MaybeReportErrorAndExit(fmt.Errorf("%s\nYou may be able to failure logs using: 'minikube logs'\n"))
+			glog.Errorf("Error starting cluster: %v", err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
 		fmt.Println("Machine exists, restarting cluster components...")

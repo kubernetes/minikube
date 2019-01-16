@@ -130,6 +130,7 @@ func MaybeReportErrorAndExit(errToReport error) {
 	MaybeReportErrorAndExitWithCode(errToReport, 1)
 }
 
+// MaybeReportErrorAndExitWithCode prompts the user if they would like to report a stack trace, and exits.
 func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
 	var err error
 	if viper.GetBool(config.WantReportError) {
@@ -151,8 +152,10 @@ To disable this prompt, run: 'minikube config set WantReportErrorPrompt false'
 			fmt.Println("Bummer, perhaps next time!")
 		}
 	}
+
+	// This happens when the error was created without errors.Wrap(), and thus has no trace data.
 	if err != nil {
-		glog.Errorf(err.Error())
+		glog.Infof("report error failed: %v", err)
 	}
 	fmt.Printf("\n\nminikube failed :( exiting with error code %d\n", returnCode)
 	os.Exit(returnCode)
