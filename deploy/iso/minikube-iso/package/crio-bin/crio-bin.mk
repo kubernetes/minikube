@@ -56,7 +56,7 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/etc/containers/policy.json
 
 	mkdir -p $(TARGET_DIR)/etc/sysconfig
-	echo 'CRIO_OPTIONS="--storage-driver=overlay2 --log-level=debug"' > $(TARGET_DIR)/etc/sysconfig/crio
+	echo 'CRIO_OPTIONS="--log-level=debug"' > $(TARGET_DIR)/etc/sysconfig/crio
 endef
 
 define CRIO_BIN_INSTALL_INIT_SYSTEMD
