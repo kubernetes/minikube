@@ -29,10 +29,11 @@ type Bootstrapper interface {
 	StartCluster(config.KubernetesConfig) error
 	UpdateCluster(config.KubernetesConfig) error
 	RestartCluster(config.KubernetesConfig) error
-	GetClusterLogsTo(follow bool, out io.Writer) error
+	Logs(config.KubernetesConfig, io.Writer) error
+	FollowLogs(config.KubernetesConfig, io.Writer) error
 	SetupCerts(cfg config.KubernetesConfig) error
-	GetKubeletStatus() (string, error)
-	GetApiServerStatus(net.IP) (string, error)
+	KubeletStatus() (string, error)
+	ApiServerStatus(net.IP) (string, error)
 }
 
 const (

@@ -139,17 +139,22 @@ func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
 			`================================================================================
 An error has occurred. Would you like to opt in to sending anonymized crash
 information to minikube to help prevent future errors?
-To opt out of these messages, run the command:
-	minikube config set WantReportErrorPrompt false
+
+To disable this prompt, run: 'minikube config set WantReportErrorPrompt false'
 ================================================================================`)
 		if PromptUserForAccept(os.Stdin) {
-			minikubeConfig.Set(config.WantReportError, "true")
-			err = ReportError(errToReport, constants.ReportingURL)
+			err = minikubeConfig.Set(config.WantReportError, "true")
+			if err == nil {
+				err = ReportError(errToReport, constants.ReportingURL)
+			}
+		} else {
+			fmt.Println("Bummer, perhaps next time!")
 		}
 	}
 	if err != nil {
 		glog.Errorf(err.Error())
 	}
+	fmt.Printf("\n\nminikube failed :( exiting with error code %d\n", returnCode)
 	os.Exit(returnCode)
 }
 
@@ -181,6 +186,7 @@ func PromptUserForAccept(r io.Reader) bool {
 			return false
 		}
 	case <-time.After(30 * time.Second):
+		fmt.Println("Prompt timed out.")
 		return false
 	}
 }

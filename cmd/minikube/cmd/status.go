@@ -83,21 +83,20 @@ var statusCmd = &cobra.Command{
 				glog.Errorf("Error getting cluster bootstrapper: %v", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			}
-			kubeletSt, err = clusterBootstrapper.GetKubeletStatus()
+			kubeletSt, err = clusterBootstrapper.KubeletStatus()
 			if err != nil {
 				glog.Errorln("Error kubelet status:", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			} else if kubeletSt != state.Running.String() {
 				returnCode |= clusterNotRunningStatusFlag
 			}
-
 			ip, err := cluster.GetHostDriverIP(api, config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error host driver ip status:", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			}
 
-			apiserverSt, err = clusterBootstrapper.GetApiServerStatus(ip)
+			apiserverSt, err = clusterBootstrapper.ApiServerStatus(ip)
 			if err != nil {
 				glog.Errorln("Error apiserver status:", err)
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)

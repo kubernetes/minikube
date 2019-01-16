@@ -341,7 +341,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		fmt.Println("Starting cluster components...")
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
-			cmdutil.MaybeReportErrorAndExit(err)
+			cmdutil.MaybeReportErrorAndExit(fmt.Errorf("%s\nYou may be able to failure logs using: 'minikube logs'\n"))
 		}
 	} else {
 		fmt.Println("Machine exists, restarting cluster components...")
@@ -354,7 +354,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// Block until the cluster is healthy.
 	fmt.Print("Verifying kubelet health ...")
 	kStat := func() (err error) {
-		st, err := k8sBootstrapper.GetKubeletStatus()
+		st, err := k8sBootstrapper.KubeletStatus()
 		if err != nil || st != state.Running.String() {
 			fmt.Printf(".")
 			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
@@ -368,7 +368,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	fmt.Print("\nVerifying apiserver health ...")
 	aStat := func() (err error) {
-		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
+		st, err := k8sBootstrapper.ApiServerStatus(net.ParseIP(ip))
 		if err != nil || st != state.Running.String() {
 			fmt.Print(".")
 			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}

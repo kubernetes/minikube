@@ -45,6 +45,9 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// logLines is how many lines to include from a log
+var logLines = 500
+
 type KubeadmBootstrapper struct {
 	c bootstrapper.CommandRunner
 }
@@ -70,7 +73,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	}, nil
 }
 
-func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
+func (k *KubeadmBootstrapper) KubeletStatus() (string, error) {
 	statusCmd := `sudo systemctl is-active kubelet`
 	status, err := k.c.CombinedOutput(statusCmd)
 	if err != nil {
@@ -88,7 +91,7 @@ func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
 	return state.Error.String(), nil
 }
 
-func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
+func (k *KubeadmBootstrapper) ApiServerStatus(ip net.IP) (string, error) {
 	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
@@ -107,26 +110,58 @@ func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
 	return state.Running.String(), nil
 }
 
-// TODO(r2d4): Should this aggregate all the logs from the control plane?
-// Maybe subcommands for each component? minikube logs apiserver?
-func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error {
-	var flags []string
-	if follow {
-		flags = append(flags, "-f")
+// podLogCmd1 returns the command to get the log for a pod by name.
+func podLogCmd(runtime string, name string) string {
+	switch runtime {
+	case "crio", "cri-o":
+		return "crio pod logs not implemented"
+	case "containerd":
+		return "containerd pod logs not implemented"
+	default:
+		return fmt.Sprintf("docker logs --tail %d $(docker ps -a --filter name=%s --format='{{.ID}}')", logLines, name)
 	}
-	logsCommand := fmt.Sprintf("sudo journalctl %s -u kubelet", strings.Join(flags, " "))
+}
 
-	if follow {
-		if err := k.c.CombinedOutputTo(logsCommand, out); err != nil {
-			return errors.Wrap(err, "getting cluster logs")
-		}
-	} else {
+// logCmds returns the appropriate commands to output logs
+func logCmds(runtime string, follow bool) []string {
+	// Log commands that have proven useful for debuggers to have access to
+	cmds := []string{
+		fmt.Sprintf("journalctl -u kubelet -n %d", logLines),
+		podLogCmd(runtime, "k8s_kube-apiserver"),
+	}
+	if !follow {
+		return cmds
+	}
 
-		logs, err := k.c.CombinedOutput(logsCommand)
+	fcmds := []string{}
+	for _, c := range cmds {
+		fcmds = append(fcmds, fmt.Sprintf("%s -f", c))
+	}
+	return fcmds
+}
+
+// Logs writes service logs to a writer
+func (k *KubeadmBootstrapper) Logs(k8s config.KubernetesConfig, out io.Writer) error {
+	me := util.MultiError{}
+	for _, c := range logCmds(k8s.ContainerRuntime, false) {
+		fmt.Printf("\n%s\n%s\n", c, strings.Repeat("=", len(c)))
+		co, err := k.c.CombinedOutput(c)
+		fmt.Fprintln(out, co)
 		if err != nil {
-			return errors.Wrap(err, "getting cluster logs")
+			fmt.Fprintln(out, err)
 		}
-		fmt.Fprint(out, logs)
+		me.Collect(err)
+	}
+	return errors.Wrap(me.ToError(), "logs")
+}
+
+// FollowLogs streams service logs to a writer
+func (k *KubeadmBootstrapper) FollowLogs(k8s config.KubernetesConfig, out io.Writer) error {
+	cmd := fmt.Sprintf("%s & wait", strings.Join(logCmds(k8s.ContainerRuntime, true), " & "))
+
+	// BUG: This assumes that CombinedOutputTo is continuously streaming. The API does not guarantee this.
+	if err := k.c.CombinedOutputTo(cmd, out); err != nil {
+		return errors.Wrap(err, cmd)
 	}
 	return nil
 }
@@ -170,7 +205,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	out, err := k.c.CombinedOutput(b.String())
 	if err != nil {
-		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
+		return errors.Wrapf(err, "kubeadm init failed: %s\n%s\n", b.String(), out)
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {

@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/golang/glog"
@@ -26,6 +25,7 @@ import (
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -50,9 +50,16 @@ var logsCmd = &cobra.Command{
 			glog.Exitf("Error getting cluster bootstrapper: %v", err)
 		}
 
-		err = clusterBootstrapper.GetClusterLogsTo(follow, os.Stdout)
+		cfg, err := config.Load()
 		if err != nil {
-			log.Println("Error getting machine logs:", err)
+			glog.Exitf("error getting cluster config: %v", err)
+		}
+		if follow {
+			err = clusterBootstrapper.FollowLogs(cfg.KubernetesConfig, os.Stdout)
+		} else {
+			err = clusterBootstrapper.Logs(cfg.KubernetesConfig, os.Stdout)
+		}
+		if err != nil {
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 	},
