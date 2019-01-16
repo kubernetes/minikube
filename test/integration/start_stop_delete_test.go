@@ -39,13 +39,18 @@ func TestStartStop(t *testing.T) {
 			runtime: "",
 		},
 		{
-			name:    "start stop with containerd runtime",
+			name:    "containerd",
 			runtime: constants.ContainerdRuntime,
+		},
+		{
+			name:    "crio",
+			runtime: constants.CrioRuntime,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			T.Logf("Testing %q runtime ...", test.name)
 			runner := NewMinikubeRunner(t)
 			if test.runtime != "" && usingNoneDriver(runner) {
 				t.Skipf("skipping, can't use %s with none driver", test.runtime)
