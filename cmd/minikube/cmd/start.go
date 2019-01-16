@@ -60,6 +60,7 @@ const (
 	containerRuntime      = "container-runtime"
 	criSocket             = "cri-socket"
 	networkPlugin         = "network-plugin"
+	enableDefaultCNI      = "enable-default-cni"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
 	keepContext           = "keep-context"
@@ -240,6 +241,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ServiceCIDR:            viper.GetString(serviceCIDR),
 		ExtraOptions:           extraOptions,
 		ShouldLoadCachedImages: shouldCacheImages,
+		EnableDefaultCNI:       viper.GetBool(enableDefaultCNI),
 	}
 
 	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
@@ -486,6 +488,7 @@ func init() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
+	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().Bool(cacheImages, false, "If true, cache docker images for the current bootstrapper and load them into the machine.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
