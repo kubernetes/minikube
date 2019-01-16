@@ -40,6 +40,7 @@ The bootable ISO image will be available in `out/minikube.iso`.
 $ ./out/minikube start \
     --container-runtime=rkt \
     --network-plugin=cni \
+    --enable-default-cni \
     --iso-url=file://$GOPATH/src/k8s.io/minikube/out/minikube.iso
 ```
 

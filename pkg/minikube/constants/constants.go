@@ -147,9 +147,11 @@ const AddonsPath = "/etc/kubernetes/addons"
 const FilesPath = "/files"
 
 const (
-	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
-	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
+	KubeletServiceFile      = "/lib/systemd/system/kubelet.service"
+	KubeletSystemdConfFile  = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	KubeadmConfigFile       = "/var/lib/kubeadm.yaml"
+	DefaultCNIConfigPath    = "/etc/cni/net.d/k8s.conf"
+	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 var Preflights = []string{
