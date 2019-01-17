@@ -63,6 +63,7 @@ func (d *Driver) PreCreateCheck() error {
 	if err != nil {
 		return errors.Wrap(err, "docker not found, but is required for the none driver")
 	}
+	return nil
 }
 
 func (d *Driver) Create() error {
@@ -142,11 +143,11 @@ func (d *Driver) Remove() error {
 			glog.Warningf("Error %v running command: %s, Output: %s", err, cmdStr, out)
 		}
 	}
-	if !runtimes.IsDocker(d.ContainerRuntime) {
+	if !runtime.IsDocker(d.ContainerRuntime) {
 		return nil
 	}
 	if out, err := runCommand(dockerkillcmd, true); err != nil {
-		return errors.Wrapf("failed command: %s\nOutpt: %s", dockerkillcmd, out)
+		return errors.Wrapf(err, "failed: %s\nOutput: %s", dockerkillcmd, out)
 	}
 	return nil
 }
