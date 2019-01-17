@@ -13,6 +13,7 @@ This roadmap is a living document outlining the major technical improvements whi
 - Add documentation for new minikube contributors
 - Grow the number of maintainers
 - Increase community involvement in planning and decision making
+- Make the continuous integration and release infrastructure publicly available
 
 ## (#3) Make minikube robust and easy to debug
 
@@ -23,7 +24,7 @@ This roadmap is a living document outlining the major technical improvements whi
 
 ## (#4) Multi-node/multi-cluster support
 
-- Stabilize and improve profiles support (multi-cluster)
+- Stabilize and improve profiles support (AKA multi-cluster)
 - Introduce multi-node support
 
 ## (#5) Improve performance
@@ -35,4 +36,3 @@ This roadmap is a living document outlining the major technical improvements whi
 
 - Replace built-in machine drivers (virtualbox, kvm2) with their upstream equivalents
 - Remove dependency on boot2docker (deprecated)
-  
