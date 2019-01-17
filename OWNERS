@@ -3,6 +3,7 @@ reviewers:
   - balopat
   - tstromberg
   - priyawadhwa
+  - afbjorklund
 approvers:
   - dlorenc
   - luxas
@@ -10,3 +11,4 @@ approvers:
   - balopat
   - tstromberg
   - priyawadhwa
+  - afbjorklund
