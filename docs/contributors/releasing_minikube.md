@@ -78,7 +78,7 @@ This step uses the git tag to publish new binaries to GCS and create a github re
 
 This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
 
-minikube-bot will send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. You should check that this PR successfully merges. 
+minikube-bot will send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. You should merge this PR.
 
 ## Package managers which include minikube
 
