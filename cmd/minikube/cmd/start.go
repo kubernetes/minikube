@@ -60,12 +60,14 @@ const (
 	containerRuntime      = "container-runtime"
 	criSocket             = "cri-socket"
 	networkPlugin         = "network-plugin"
+	enableDefaultCNI      = "enable-default-cni"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
 	apiServerName         = "apiserver-name"
+	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
 	mountString           = "mount-string"
@@ -95,6 +97,22 @@ var startCmd = &cobra.Command{
 	Long: `Starts a local kubernetes cluster using VM. This command
 assumes you have already installed one of the VM drivers: virtualbox/vmwarefusion/kvm/xhyve/hyperv.`,
 	Run: runStart,
+}
+
+// SetContainerRuntime possibly sets the container runtime
+func SetContainerRuntime(cfg map[string]string, runtime string) map[string]string {
+	switch runtime {
+	case "crio", "cri-o":
+		cfg["runtime-endpoint"] = "unix:///var/run/crio/crio.sock"
+		cfg["image-endpoint"] = "unix:///var/run/crio/crio.sock"
+	case "containerd":
+		cfg["runtime-endpoint"] = "unix:///run/containerd/containerd.sock"
+		cfg["image-endpoint"] = "unix:///run/containerd/containerd.sock"
+	default:
+		return nil
+	}
+
+	return cfg
 }
 
 func runStart(cmd *cobra.Command, args []string) {
@@ -201,6 +219,20 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
+	// common config (currently none)
+	var cricfg = map[string]string{}
+	selectedContainerRuntime := viper.GetString(containerRuntime)
+	if cricfg := SetContainerRuntime(cricfg, selectedContainerRuntime); cricfg != nil {
+		var command string
+		fmt.Println("Writing crictl config...")
+		if command, err = cmdutil.GetCrictlConfigCommand(cricfg); err == nil {
+			_, err = host.RunSSHCommand(command)
+		}
+		if err != nil {
+			glog.Errorln("Error writing crictl config: ", err)
+		}
+	}
+
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 	if strings.Compare(selectedKubernetesVersion, "") == 0 {
 		selectedKubernetesVersion = constants.DefaultKubernetesVersion
@@ -226,18 +258,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubernetesConfig := cfg.KubernetesConfig{
 		KubernetesVersion:      selectedKubernetesVersion,
 		NodeIP:                 ip,
+		NodePort:               viper.GetInt(apiServerPort),
 		NodeName:               constants.DefaultNodeName,
 		APIServerName:          viper.GetString(apiServerName),
 		APIServerNames:         apiServerNames,
 		APIServerIPs:           apiServerIPs,
 		DNSDomain:              viper.GetString(dnsDomain),
 		FeatureGates:           viper.GetString(featureGates),
-		ContainerRuntime:       viper.GetString(containerRuntime),
+		ContainerRuntime:       selectedContainerRuntime,
 		CRISocket:              viper.GetString(criSocket),
 		NetworkPlugin:          viper.GetString(networkPlugin),
 		ServiceCIDR:            viper.GetString(serviceCIDR),
 		ExtraOptions:           extraOptions,
 		ShouldLoadCachedImages: shouldCacheImages,
+		EnableDefaultCNI:       viper.GetBool(enableDefaultCNI),
 	}
 
 	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
@@ -281,7 +315,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorln("Error connecting to cluster: ", err)
 	}
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
-	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(pkgutil.APIServerPort), -1)
+	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(kubernetesConfig.NodePort), -1)
 
 	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
@@ -306,8 +340,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Stopping extra container runtimes...")
 
-	containerRuntime := viper.GetString(containerRuntime)
-	if config.VMDriver != constants.DriverNone && containerRuntime != "" {
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime != "" {
 		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
 			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
 		}
@@ -315,12 +348,12 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorf("Error stopping docker: %v", err)
 		}
 	}
-	if config.VMDriver != constants.DriverNone && (containerRuntime != constants.CrioRuntime && containerRuntime != constants.Cri_oRuntime) {
+	if config.VMDriver != constants.DriverNone && (selectedContainerRuntime != constants.CrioRuntime && selectedContainerRuntime != constants.Cri_oRuntime) {
 		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
 			glog.Errorf("Error stopping crio: %v", err)
 		}
 	}
-	if config.VMDriver != constants.DriverNone && containerRuntime != constants.RktRuntime {
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime != constants.RktRuntime {
 		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
 			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
 		}
@@ -329,7 +362,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if config.VMDriver != constants.DriverNone && containerRuntime == constants.ContainerdRuntime {
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime == constants.ContainerdRuntime {
 		fmt.Println("Restarting containerd runtime...")
 		// restart containerd so that it can install all plugins
 		if _, err := host.RunSSHCommand("sudo systemctl restart containerd"); err != nil {
@@ -340,7 +373,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	if !exists || config.VMDriver == constants.DriverNone {
 		fmt.Println("Starting cluster components...")
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
-			glog.Errorln("Error starting cluster: ", err)
+			glog.Errorf("Error starting cluster: %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
@@ -371,15 +404,17 @@ func runStart(cmd *cobra.Command, args []string) {
 		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
 		if err != nil || st != state.Running.String() {
 			fmt.Print(".")
-			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver unhealthy: %v: %s", err, st)}
+			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
 		}
 		return nil
 	}
-	err = pkgutil.RetryAfter(20, aStat, 3*time.Second)
+
+	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
 	if err != nil {
 		fmt.Printf("error: %v", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
+	fmt.Println()
 
 	// start 9p server mount
 	if viper.GetBool(createMount) {
@@ -470,6 +505,7 @@ func init() {
 	startCmd.Flags().String(NFSSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().Int(apiServerPort, pkgutil.APIServerPort, "The apiserver listening port")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
@@ -481,6 +517,7 @@ func init() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
+	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().Bool(cacheImages, false, "If true, cache docker images for the current bootstrapper and load them into the machine.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",

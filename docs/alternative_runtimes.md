@@ -5,6 +5,7 @@ To use [rkt](https://github.com/coreos/rkt) as the container runtime run:
 ```shell
 $ minikube start \
     --network-plugin=cni \
+    --enable-default-cni \
     --container-runtime=rkt
 ```
 
@@ -16,6 +17,7 @@ To use [CRI-O](https://github.com/kubernetes-incubator/cri-o) as the container r
 ```shell
 $ minikube start \
     --network-plugin=cni \
+    --enable-default-cni \
     --container-runtime=cri-o
 ```
 
@@ -24,6 +26,8 @@ Or you can use the extended version:
 ```shell
 $ minikube start \
     --network-plugin=cni \
+    --enable-default-cni \
+    --container-runtime=cri-o \
     --cri-socket=/var/run/crio/crio.sock \
     --extra-config=kubelet.container-runtime=remote \
     --extra-config=kubelet.container-runtime-endpoint=unix:///var/run/crio/crio.sock \
@@ -37,6 +41,7 @@ To use [containerd](https://github.com/containerd/containerd) as the container r
 ```shell
 $ minikube start \
     --network-plugin=cni \
+    --enable-default-cni \
     --container-runtime=containerd
 ```
 
@@ -45,6 +50,8 @@ Or you can use the extended version:
 ```shell
 $ minikube start \
     --network-plugin=cni \
+    --enable-default-cni \
+    --container-runtime=containerd \
     --cri-socket=/run/containerd/containerd.sock \
     --extra-config=kubelet.container-runtime=remote \
     --extra-config=kubelet.container-runtime-endpoint=unix:///run/containerd/containerd.sock \

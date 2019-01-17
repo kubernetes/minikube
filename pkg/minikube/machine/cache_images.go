@@ -144,7 +144,7 @@ func hasWindowsDriveLetter(s string) bool {
 	}
 
 	drive := s[:3]
-	for _, b := range "CDEFGHIJKLMNOPQRSTUVWXYZAB" {
+	for _, b := range "CDEFGHIJKLMNOPQRSTUVWXYZABcdefghijklmnopqrstuvwxyzab" {
 		if d := string(b) + ":"; drive == d+`\` || drive == d+`/` {
 			return true
 		}
@@ -160,9 +160,6 @@ func replaceWinDriveLetterToVolumeName(s string) (string, error) {
 		return "", err
 	}
 	path := vname + s[3:]
-	if _, err := os.Stat(filepath.Dir(path)); err != nil {
-		return "", err
-	}
 
 	return path, nil
 }

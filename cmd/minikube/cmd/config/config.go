@@ -144,7 +144,7 @@ var settings = []Setting{
 		name:        "default-storageclass",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
+		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
 		name:        "heapster",
@@ -186,13 +186,19 @@ var settings = []Setting{
 		name:        "default-storageclass",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableDefaultStorageClass},
+		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
 		name:        "storage-provisioner",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:        "storage-provisioner-gluster",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
 		name:        "metrics-server",
