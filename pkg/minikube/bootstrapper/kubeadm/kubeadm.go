@@ -170,7 +170,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	out, err := k.c.CombinedOutput(b.String())
 	if err != nil {
-		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
+		return errors.Wrapf(err, "kubeadm init: %s\n%s\n", b.String(), out)
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
