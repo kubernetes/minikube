@@ -1,5 +1,55 @@
 # Minikube Release Notes
 
+# Version 0.33.0 - 2019-01-07
+
+* Write /etc/crictl.yaml when starting [#3194](https://github.com/kubernetes/minikube/pull/3194)
+* Improve failure output when kubeadm init fails [#3533](https://github.com/kubernetes/minikube/pull/3533)
+* Update to opencontainers/runc HEAD as of 2019-01-15 [#3535](https://github.com/kubernetes/minikube/pull/3535)
+* Add new VMware unified driver to supported list #2 [#3534](https://github.com/kubernetes/minikube/pull/3534)
+* Fix Windows cache path issues with directory hierarchies and lower-case drive letters [#3252](https://github.com/kubernetes/minikube/pull/3252)
+* Avoid out directory, when listing test files [#3229](https://github.com/kubernetes/minikube/pull/3229)
+* Number ordered list of priorities [#3364](https://github.com/kubernetes/minikube/pull/3364)
+* Do not include the default CNI config by default [#3441](https://github.com/kubernetes/minikube/pull/3441)
+* Adding more utils tests [#3494](https://github.com/kubernetes/minikube/pull/3494)
+* Add a storage-provisioner-gluster addon [#3521](https://github.com/kubernetes/minikube/pull/3521)
+* Improve the default crio-bin configuration [#3190](https://github.com/kubernetes/minikube/pull/3190)
+* Allow to specify api server port through CLI fix #2781 [#3108](https://github.com/kubernetes/minikube/pull/3108)
+* add brew install instructions for hyperkit [#3140](https://github.com/kubernetes/minikube/pull/3140)
+* Added defaultDiskSize setup to hyperkit driver [#3531](https://github.com/kubernetes/minikube/pull/3531)
+* Enable ipvlan kernel module [#3510](https://github.com/kubernetes/minikube/pull/3510)
+* Set default Kubernetes version to v1.13.2 (latest stable) [#3527](https://github.com/kubernetes/minikube/pull/3527)
+* issue# 3499: minikube status missing newline at end of output [#3502](https://github.com/kubernetes/minikube/pull/3502)
+* apiserver health: try up to 5 minutes, add newline [#3528](https://github.com/kubernetes/minikube/pull/3528)
+* Update to crio-bin v1.13.0 [#3515](https://github.com/kubernetes/minikube/pull/3515)
+* Pass network-plugin value to kubelet [#3442](https://github.com/kubernetes/minikube/pull/3442)
+* Fix missing a line break for minikube status [#3523](https://github.com/kubernetes/minikube/pull/3523)
+* Documentation - Updating golang requirement to 1.11 [#3508](https://github.com/kubernetes/minikube/pull/3508)
+* Updating e2e tests instructions [#3509](https://github.com/kubernetes/minikube/pull/3509)
+* Defer dashboard deployment until "minikube dashboard" is executed [#3485](https://github.com/kubernetes/minikube/pull/3485)
+* Fix for Minikube #3495 [#3497](https://github.com/kubernetes/minikube/pull/3497)
+* Tell user given driver has been igored if exising VM has a different … [#3374](https://github.com/kubernetes/minikube/pull/3374)
+
+Thank you to all to everyone who contributed to this massive release:
+
+- Amim Knabben
+- Anders F Björklund
+- Andrew Regner
+- bpopovschi
+- Fabio Rapposelli
+- Jason Cwik
+- Jeff Wu
+- Kazuki Suda
+- Mark Gibbons
+- Martynas Pumputis
+- Matt Dorn
+- Michal Franc
+- minikube-bot
+- Narendra Kangralkar
+- Niels de Vos
+- Sebastien Collin
+- Thomas Strömberg
+- wujeff
+
 # Version 0.32.0 - 12/21/2018
 
 * Make Kubernetes v1.12.4 the default [#3482](https://github.com/kubernetes/minikube/pull/3482)
