@@ -28,10 +28,11 @@ This roadmap is a living document outlining the major technical improvements whi
 
 ## (#5) Improve performance
 
-- Add support for lightweight deployment methods for environments where VM's are impractical
 - Reduce guest VM overhead by 50%
+- Support lightweight deployment methods for environments where VM's are impractical
 
 ## (#6) Reduce technical debt
 
 - Replace built-in machine drivers (virtualbox, kvm2) with their upstream equivalents
 - Remove dependency on boot2docker (deprecated)
+  
