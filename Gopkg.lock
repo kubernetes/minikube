@@ -338,6 +338,14 @@
   version = "v3.4.0"
 
 [[projects]]
+  digest = "1:c436d61d2f9af426241770422ef9f7a21edc7898963caa88c997c3f968770045"
+  name = "github.com/machine-drivers/docker-machine-driver-vmware"
+  packages = ["pkg/drivers/vmware/config"]
+  pruneopts = "NUT"
+  revision = "cd992887ede19ae63e030c63dda5593f19ed569c"
+  version = "v0.1.1"
+
+[[projects]]
   digest = "1:1745a9a20b54531ca6d6db617f47ac6d367e5d004c7a44ba39149928bca8caff"
   name = "github.com/magiconair/properties"
   packages = ["."]
@@ -940,6 +948,7 @@
     "github.com/jimmidyson/go-download",
     "github.com/johanneswuerbach/nfsexports",
     "github.com/libvirt/libvirt-go",
+    "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
     "github.com/moby/hyperkit/go",
     "github.com/olekukonko/tablewriter",
     "github.com/pborman/uuid",

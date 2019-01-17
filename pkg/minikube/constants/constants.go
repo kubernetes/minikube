@@ -60,6 +60,7 @@ var SupportedVMDrivers = [...]string{
 	"hyperv",
 	"hyperkit",
 	"kvm2",
+	"vmware",
 	"none",
 }
 

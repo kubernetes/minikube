@@ -198,6 +198,13 @@ Please consider switching to the hyperkit driver, which is intended to replace t
 See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
 To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
+	case "vmwarefusion":
+		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+			fmt.Fprintln(os.Stderr, `WARNING: The vmwarefusion driver is now deprecated and support for it will be removed in a future release.
+				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
+				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
+				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+		}
 	}
 
 	return nil
