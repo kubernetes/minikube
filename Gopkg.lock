@@ -99,6 +99,7 @@
   ]
   pruneopts = "NUT"
   revision = "19035310d4ba1b58056aae427ea669d1db5fc618"
+  source = "github.com/machine-drivers/machine"
 
 [[projects]]
   digest = "1:364ef519880c6024191ac7660244e5478b193489bb35755f843627cc86cfb411"
@@ -175,6 +176,22 @@
   ]
   pruneopts = "NUT"
   revision = "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
+
+[[projects]]
+  digest = "1:63ede27834b468648817fb80cfb95d40abfc61341f89cb7a0d6779b6aa955425"
+  name = "github.com/google/go-github"
+  packages = ["github"]
+  pruneopts = "NUT"
+  revision = "a5cb647b1fac8ba77e1cf25af2f9526658ab63e3"
+  version = "v21.0.0"
+
+[[projects]]
+  digest = "1:a63cff6b5d8b95638bfe300385d93b2a6d9d687734b863da8e09dc834510a690"
+  name = "github.com/google/go-querystring"
+  packages = ["query"]
+  pruneopts = "NUT"
+  revision = "44c6ddd0a2342c386950e880b658017258da92fc"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:f9425215dccf1c63f659ec781ca46bc81804341821d0cd8d2459c5b58f8bd067"
@@ -306,6 +323,14 @@
   pruneopts = "NUT"
   revision = "5ba8227244c30438609adcec6ea84dc1e688dfbd"
   version = "v3.4.0"
+
+[[projects]]
+  digest = "1:c436d61d2f9af426241770422ef9f7a21edc7898963caa88c997c3f968770045"
+  name = "github.com/machine-drivers/docker-machine-driver-vmware"
+  packages = ["pkg/drivers/vmware/config"]
+  pruneopts = "NUT"
+  revision = "cd992887ede19ae63e030c63dda5593f19ed569c"
+  version = "v0.1.1"
 
 [[projects]]
   digest = "1:1745a9a20b54531ca6d6db617f47ac6d367e5d004c7a44ba39149928bca8caff"
@@ -568,10 +593,11 @@
   revision = "81e90905daefcd6fd217b62423c0908922eadb30"
 
 [[projects]]
-  digest = "1:866122db0f3007816dccd5b50ba0b3ae593bdadb81f725a17b95c8c6953c5cb7"
+  digest = "1:546efc585d0b3b4ef026faa94ae2d3211c1744d517841a27c83905e18fd0828d"
   name = "golang.org/x/net"
   packages = [
     "context",
+    "context/ctxhttp",
     "http2",
     "http2/hpack",
     "idna",
@@ -579,6 +605,17 @@
   ]
   pruneopts = "NUT"
   revision = "1c05540f6879653db88113bc4a2b70aec4bd491f"
+
+[[projects]]
+  branch = "master"
+  digest = "1:9822dde4525c2bc0130c4b8d209cb08b3ab68d4865972b20fe213fc2f732d9db"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "internal",
+  ]
+  pruneopts = "NUT"
+  revision = "5dab4167f31cbd76b407f1486c86b40748bc5073"
 
 [[projects]]
   digest = "1:39485a034b89a9f2892b9c0cc24e2330e1c9981794c35281c2febfcc55b90a34"
@@ -624,6 +661,22 @@
   packages = ["rate"]
   pruneopts = "NUT"
   revision = "f51c12702a4d776e4c1fa9b0fabab841babae631"
+
+[[projects]]
+  digest = "1:34c10243da5972105edd1b4b883e2bd918fbb3f73fbe14d6af6929e547173494"
+  name = "google.golang.org/appengine"
+  packages = [
+    "internal",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch",
+  ]
+  pruneopts = "NUT"
+  revision = "e9657d882bb81064595ca3b56cbe2546bbabf7b1"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:f8dc0e20a5e1cbc728a21d00e0aef61b6101dda57e45ea1ed1ab148355864e5d"
@@ -876,10 +929,12 @@
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1/remote",
     "github.com/google/go-containerregistry/pkg/v1/tarball",
+    "github.com/google/go-github/github",
     "github.com/hooklift/iso9660",
     "github.com/jimmidyson/go-download",
     "github.com/johanneswuerbach/nfsexports",
     "github.com/libvirt/libvirt-go",
+    "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
     "github.com/moby/hyperkit/go",
     "github.com/olekukonko/tablewriter",
     "github.com/pborman/uuid",
@@ -887,6 +942,7 @@
     "github.com/pkg/errors",
     "github.com/pkg/profile",
     "github.com/r2d4/external-storage/lib/controller",
+    "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
     "github.com/spf13/pflag",
@@ -895,6 +951,7 @@
     "github.com/zchee/go-vmnet",
     "golang.org/x/crypto/ssh",
     "golang.org/x/crypto/ssh/terminal",
+    "golang.org/x/oauth2",
     "golang.org/x/sync/errgroup",
     "golang.org/x/sync/syncmap",
     "golang.org/x/sys/windows/registry",
@@ -925,6 +982,7 @@
     "k8s.io/client-go/util/homedir",
     "k8s.io/kubernetes/cmd/kubeadm/app/constants",
     "k8s.io/kubernetes/cmd/kubeadm/app/features",
+    "k8s.io/kubernetes/pkg/apis/core",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
