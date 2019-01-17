@@ -5,29 +5,33 @@ This roadmap is a living document outlining the major technical improvements whi
 ## (#1) Make minikube the easiest way for developers to learn Kubernetes
 
 - Single step installation
-  - Users should not have to seperately install supporting binaries
+  - Users should not have to separately install supporting binaries
 - Creation of a user-centric minikube website for installation & documentation
 
 ## (#2) Diversify the minikube community
 
 - Add documentation for new minikube contributors
-- Ensure that all decisions are ratified publically by the minikube community
+- Grow the number of maintainers
+- Increase community involvement in planning and decision making
 
-## (#3) Make minikube robust and debuggable
+## (#3) Make minikube robust and easy to debug
 
-- Add pre-flight error checks for common connectivity issues 
-- Add pre-flight error checks for common configuration errors
-- Mark features & options not covered by continuous integration as `experimental`
-- Improve the `status` command so that it can diagnose common environmental issues
+- Pre-flight error checks for common connectivity and configuration errors
+- Improve the `minikube status` command so that it can diagnose common issues
 - Make minikube usable offline
+- Mark features & options not covered by continuous integration as `experimental`
 
-## (#4) Official multi-node/multi-cluster support
+## (#4) Multi-node/multi-cluster support
 
-- Rebrand profiles as multi-cluster support
-- Integrate KIND for multi-node support
-- Add commands to add/remove nodes within an existing cluster
+- Stabilize and improve profiles support (multi-cluster)
+- Introduce multi-node support
 
-## (#5) Improve minikube performance
+## (#5) Improve performance
 
-- Add support for lighter-weight deployment methods, such as container-based (LXD, Docker) or chroot
-- Reduce guest VM overhead by 50% for macOS users
+- Add support for lightweight deployment methods for environments where VM's are impractical
+- Reduce guest VM overhead by 50%
+
+## (#6) Reduce technical debt
+
+- Replace built-in machine drivers (virtualbox, kvm2) with their upstream equivalents
+- Remove dependency on boot2docker (deprecated)
