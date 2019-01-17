@@ -35,10 +35,10 @@ var stopCmd = &cobra.Command{
 	Long: `Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Stopping local Kubernetes cluster...")
+		fmt.Println("🚦  Stopping local Kubernetes cluster...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			fmt.Fprintf(os.Stderr, "💣  Error getting client: %v\n", err)
 			os.Exit(1)
 		}
 		defer api.Close()
@@ -47,13 +47,13 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 			return cluster.StopHost(api)
 		}
 		if err := pkgutil.RetryAfter(5, stop, 1*time.Second); err != nil {
-			fmt.Println("Error stopping machine: ", err)
+			fmt.Println("💣  Error stopping machine: ", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		fmt.Println("Machine stopped.")
+		fmt.Println("🛑  Machine stopped.")
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			fmt.Println("Errors occurred deleting mount process: ", err)
+			fmt.Println("💣  Errors occurred deleting mount process: ", err)
 		}
 	},
 }

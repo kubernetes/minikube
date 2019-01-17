@@ -474,11 +474,10 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 	options.Checksum = constants.GetKubernetesReleaseURLSha1(binary, version)
 	options.ChecksumHash = crypto.SHA1
 
-	fmt.Printf("Downloading %s %s\n", binary, version)
+	glog.Infof("Downloading %s %s", binary, version)
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
-	fmt.Printf("Finished Downloading %s %s\n", binary, version)
-
+	glog.Infof("Finished Downloading %s %s", binary, version)
 	return targetFilepath, nil
 }

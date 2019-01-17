@@ -197,14 +197,15 @@ https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md
 Alternatively, please consider using kubeadm to install Kubernetes.
 
 To disable this warning: "minikube config set WantNoneDriverWarning false"
-==============================================================================`)
+==============================================================================
+`)
 			time.Sleep(time.Second * 5)
 		}
 	}
 
 	var host *host.Host
 	start := func() (err error) {
-		fmt.Printf("🔥  Starting %s VM (CPUs=%d, Memory=%dMiB, Disk=%dMiB) ...\n", viper.GetString(vmDriver), config.CPUs, config.Memory, config.DiskSize)
+		fmt.Printf("🔥  Starting %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...\n", viper.GetString(vmDriver), config.CPUs, config.Memory, config.DiskSize)
 		host, err = cluster.StartHost(api, config)
 		if err != nil {
 			glog.Errorf("Error starting host: %v.\n\n Retrying.\n", err)
@@ -332,7 +333,7 @@ To disable this warning: "minikube config set WantNoneDriverWarning false"
 	}
 
 	if !exists || config.VMDriver == constants.DriverNone {
-		fmt.Printf("💿  Pulling Kubernetes %s images into VM ...\n", kubernetesConfig.KubernetesVersion)
+		fmt.Printf("🚜  Pulling Kubernetes %s images from within VM ...\n", kubernetesConfig.KubernetesVersion)
 		if err := bootstrapper.PullImages(kubernetesConfig); err != nil {
 			fmt.Printf("❌  Unable to pull images, which may be OK: %v\n", err)
 		}
