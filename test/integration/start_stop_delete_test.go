@@ -50,7 +50,7 @@ func TestStartStop(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			T.Logf("Testing %q runtime ...", test.name)
+			t.Logf("Testing %q runtime ...", test.name)
 			runner := NewMinikubeRunner(t)
 			if test.runtime != "" && usingNoneDriver(runner) {
 				t.Skipf("skipping, can't use %s with none driver", test.runtime)
