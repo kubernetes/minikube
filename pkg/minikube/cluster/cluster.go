@@ -37,7 +37,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -79,7 +78,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if h.Driver.DriverName() != config.VMDriver {
-		fmt.Printf("Skipping %s driver, existing host has %s driver.\n", config.VMDriver, h.Driver.DriverName())
+		fmt.Printf("💥  Skipping %s driver, existing host has %s driver.\n", config.VMDriver, h.Driver.DriverName())
 	}
 
 	s, err := h.Driver.GetState()

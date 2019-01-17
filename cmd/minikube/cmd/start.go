@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -41,6 +42,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgruntime "k8s.io/minikube/pkg/minikube/runtime"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 	"k8s.io/minikube/pkg/version"
@@ -104,12 +106,17 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Infoln("Viper configuration:")
 		viper.Debug()
 	}
+
+	fmt.Printf("😃  minikube %s on %s (%s)\n", version.GetVersion(), runtime.GOOS, runtime.GOARCH)
+	// TODO(tstromberg): output command-line arguments
+
 	shouldCacheImages := viper.GetBool(cacheImages)
 	k8sVersion := viper.GetString(kubernetesVersion)
 	clusterBootstrapper := viper.GetString(cmdcfg.Bootstrapper)
 
 	var groupCacheImages errgroup.Group
 	if shouldCacheImages {
+		fmt.Println("🤹  Caching images in the background ...")
 		groupCacheImages.Go(func() error {
 			return machine.CacheImagesForBootstrapper(k8sVersion, clusterBootstrapper)
 		})
@@ -124,7 +131,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		glog.Exitf("checking if machine exists: %v", err)
+		glog.Exitf("💣  Failed existence check: %v", err)
 	}
 
 	diskSize := viper.GetString(humanReadableDiskSize)
@@ -137,7 +144,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if viper.GetBool(gpu) && viper.GetString(vmDriver) != "kvm2" {
-		glog.Exitf("--gpu is only supported with --vm-driver=kvm2")
+		glog.Exitf("💣  --gpu is only supported with --vm-driver=kvm2")
 	}
 
 	config := cfg.MachineConfig{
@@ -172,18 +179,32 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// Write profile cluster configuration to file
-	clusterConfig := cfg.Config{
-		MachineConfig: config,
-	}
-
+	clusterConfig := cfg.Config{MachineConfig: config}
 	if err := saveConfig(clusterConfig); err != nil {
 		glog.Errorln("Error saving profile cluster configuration: ", err)
 	}
 
-	fmt.Printf("Starting local Kubernetes %s cluster...\n", viper.GetString(kubernetesVersion))
-	fmt.Println("Starting VM...")
+	if config.VMDriver == "none" {
+		// TODO(tstromberg): Hide this warning if
+		if viper.GetBool(cfg.WantNoneDriverWarning) {
+			fmt.Println(`
+==============================================================================
+WARNING: Using --vm-driver=none outside of a VM is not recommended, as it may
+overwrite system files, logs, and may leave the host vulnerable to a variety
+of security attacks. For more information, see:
+https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md
+
+Alternatively, please consider using kubeadm to install Kubernetes.
+
+To disable this warning: "minikube config set WantNoneDriverWarning false"
+==============================================================================`)
+			time.Sleep(time.Second * 5)
+		}
+	}
+
 	var host *host.Host
 	start := func() (err error) {
+		fmt.Printf("🔥  Starting %s VM (CPUs=%d, Memory=%dMiB, Disk=%dMiB) ...\n", viper.GetString(vmDriver), config.CPUs, config.Memory, config.DiskSize)
 		host, err = cluster.StartHost(api, config)
 		if err != nil {
 			glog.Errorf("Error starting host: %v.\n\n Retrying.\n", err)
@@ -194,9 +215,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		glog.Errorln("Error starting host: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
+
 	}
 
-	fmt.Println("Getting VM IP address...")
+	// TODO(tstromberg): Verify outgoing internet connectivity here as well
+	fmt.Println("📡  Verifying connectivity ...")
 	ip, err := host.Driver.GetIP()
 	if err != nil {
 		glog.Errorln("Error getting VM IP address: ", err)
@@ -210,18 +233,18 @@ func runStart(cmd *cobra.Command, args []string) {
 	if oldConfig != nil {
 		oldKubernetesVersion, err := semver.Make(strings.TrimPrefix(oldConfig.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 		if err != nil {
-			glog.Errorln("Error parsing version semver: ", err)
+			glog.Infof("Error parsing old version semver: %v", err)
 		}
 
 		newKubernetesVersion, err := semver.Make(strings.TrimPrefix(viper.GetString(kubernetesVersion), version.VersionPrefix))
 		if err != nil {
-			glog.Errorln("Error parsing version semver: ", err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 
 		// Check if it's an attempt to downgrade version. Avoid version downgrad.
 		if newKubernetesVersion.LT(oldKubernetesVersion) {
 			selectedKubernetesVersion = version.VersionPrefix + oldKubernetesVersion.String()
-			fmt.Println("Kubernetes version downgrade is not supported. Using version:", selectedKubernetesVersion)
+			fmt.Println("💥   Kubernetes version downgrade is not supported. Using version:", selectedKubernetesVersion)
 		}
 	}
 
@@ -244,9 +267,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		EnableDefaultCNI:       viper.GetBool(enableDefaultCNI),
 	}
 
-	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
+	bootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
 	if err != nil {
-		glog.Exitf("Error getting cluster bootstrapper: %v", err)
+		glog.Exitf("💣  Error getting cluster bootstrapper: %v", err)
 	}
 
 	// Write profile cluster configuration to file
@@ -260,26 +283,23 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if shouldCacheImages {
-		fmt.Println("Waiting for image caching to complete...")
+		fmt.Println("⌛  Waiting for image caching to complete ...")
 		if err := groupCacheImages.Wait(); err != nil {
 			glog.Errorln("Error caching images: ", err)
 		}
 	}
 
-	fmt.Println("Moving files into cluster...")
-
-	if err := k8sBootstrapper.UpdateCluster(kubernetesConfig); err != nil {
+	fmt.Println("✨  Copying files into VM ...")
+	if err := bootstrapper.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-	fmt.Println("Setting up certs...")
-	if err := k8sBootstrapper.SetupCerts(kubernetesConfig); err != nil {
+	if err := bootstrapper.SetupCerts(kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-	fmt.Println("Connecting to cluster...")
 	kubeHost, err := host.Driver.GetURL()
 	if err != nil {
 		glog.Errorln("Error connecting to cluster: ", err)
@@ -287,11 +307,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeHost = strings.Replace(kubeHost, "tcp://", "https://", -1)
 	kubeHost = strings.Replace(kubeHost, ":2376", ":"+strconv.Itoa(kubernetesConfig.NodePort), -1)
 
-	fmt.Println("Setting up kubeconfig...")
 	// setup kubeconfig
-
 	kubeConfigFile := cmdutil.GetKubeConfigPath()
-
 	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
 		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: kubeHost,
@@ -308,57 +325,35 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
-	fmt.Println("Stopping extra container runtimes...")
-
-	containerRuntime := viper.GetString(containerRuntime)
-	if config.VMDriver != constants.DriverNone && containerRuntime != "" {
-		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
-			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
-		}
-		if err != nil {
-			glog.Errorf("Error stopping docker: %v", err)
-		}
-	}
-	if config.VMDriver != constants.DriverNone && (containerRuntime != constants.CrioRuntime && containerRuntime != constants.Cri_oRuntime) {
-		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
-			glog.Errorf("Error stopping crio: %v", err)
-		}
-	}
-	if config.VMDriver != constants.DriverNone && containerRuntime != constants.RktRuntime {
-		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
-			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
-		}
-		if err != nil {
-			glog.Errorf("Error stopping rkt: %v", err)
-		}
-	}
-
-	if config.VMDriver != constants.DriverNone && containerRuntime == constants.ContainerdRuntime {
-		fmt.Println("Restarting containerd runtime...")
-		// restart containerd so that it can install all plugins
-		if _, err := host.RunSSHCommand("sudo systemctl restart containerd"); err != nil {
-			glog.Errorf("Error restarting containerd: %v", err)
-		}
+	if config.VMDriver != constants.DriverNone {
+		r := viper.GetString(containerRuntime)
+		fmt.Printf("🎁  Configuring %s inside of VM ...\n", pkgruntime.Name(r))
+		pkgruntime.ConfigureHost(host, r)
 	}
 
 	if !exists || config.VMDriver == constants.DriverNone {
-		fmt.Println("Starting cluster components...")
-		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
+		fmt.Printf("💿  Pulling Kubernetes %s images into VM ...\n", kubernetesConfig.KubernetesVersion)
+		if err := bootstrapper.PullImages(kubernetesConfig); err != nil {
+			fmt.Printf("❌  Unable to pull images, which may be OK: %v\n", err)
+		}
+
+		fmt.Printf("🚀  Launching Kubernetes %s with %s ...\n", kubernetesConfig.KubernetesVersion, clusterBootstrapper)
+		if err := bootstrapper.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error starting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
-		fmt.Println("Machine exists, restarting cluster components...")
-		if err := k8sBootstrapper.RestartCluster(kubernetesConfig); err != nil {
+		fmt.Printf("🔁  Relaunching Kubernetes %s with %s ...\n", kubernetesConfig.KubernetesVersion, clusterBootstrapper)
+		if err := bootstrapper.RestartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error restarting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}
 
 	// Block until the cluster is healthy.
-	fmt.Print("Verifying kubelet health ...")
+	fmt.Println("🤔  Verifying component health ...")
 	kStat := func() (err error) {
-		st, err := k8sBootstrapper.GetKubeletStatus()
+		st, err := bootstrapper.GetKubeletStatus()
 		if err != nil || st != state.Running.String() {
 			fmt.Printf(".")
 			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
@@ -367,12 +362,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	err = pkgutil.RetryAfter(20, kStat, 3*time.Second)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		fmt.Println("💣  kubelet health check failed!")
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
-	fmt.Print("\nVerifying apiserver health ...")
 	aStat := func() (err error) {
-		st, err := k8sBootstrapper.GetApiServerStatus(net.ParseIP(ip))
+		st, err := bootstrapper.GetApiServerStatus(net.ParseIP(ip))
 		if err != nil || st != state.Running.String() {
 			fmt.Print(".")
 			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
@@ -382,14 +376,13 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
 	if err != nil {
-		fmt.Printf("error: %v", err)
+		fmt.Println("💣  apiserver health check failed!")
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
-	fmt.Println()
 
 	// start 9p server mount
 	if viper.GetBool(createMount) {
-		fmt.Printf("Setting up hostmount on %s...\n", viper.GetString(mountString))
+		fmt.Printf("📁  Setting up mount on %s...\n", viper.GetString(mountString))
 
 		path := os.Args[0]
 		mountDebugVal := 0
@@ -415,30 +408,22 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if kubeCfgSetup.KeepContext {
-		fmt.Printf("The local Kubernetes cluster has started. The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local Kubernetes cluster.\n",
+		fmt.Printf("❤️   The kubectl context has not been altered, kubectl will require \"--context=%s\" to use the local luster.\n",
 			kubeCfgSetup.ClusterName)
 	} else {
-		fmt.Println("Kubectl is now configured to use the cluster.")
+		fmt.Printf("❤️   kubectl is now configured to use %q", cfg.GetMachineName())
 	}
 
 	if config.VMDriver == "none" {
-		if viper.GetBool(cfg.WantNoneDriverWarning) {
-			fmt.Println(`===================
-WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
-	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks` + "\n")
-		}
-
 		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
 			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
 You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
 
 	sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
-	sudo chown -R $USER $HOME/.kube
-	sudo chgrp -R $USER $HOME/.kube
+	sudo chown -R $USER:$USER $HOME/.kube
 
 	sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
-	sudo chown -R $USER $HOME/.minikube
-	sudo chgrp -R $USER $HOME/.minikube
+	sudo chown -R $USER:$USER $HOME/.minikube
 
 This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
 		}
@@ -449,12 +434,11 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 		}
 	}
 
-	fmt.Println("Loading cached images from config file.")
 	err = LoadCachedImagesInConfigFile()
 	if err != nil {
-		fmt.Println("Unable to load cached images from config file.")
+		fmt.Println("❌  Unable to load cached images from config file.")
 	}
-	fmt.Println("\n\nEverything looks great. Please enjoy minikube!")
+	fmt.Println("\n\n🏄  Your local Kubernetes cluster is ready! Thank you for using minikube!")
 	return
 }
 
@@ -484,12 +468,13 @@ func init() {
 	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
-	startCmd.Flags().String(containerRuntime, "", "The container runtime to be used")
+	startCmd.Flags().String(containerRuntime, constants.DefaultContainerRuntime, "The container runtime to be used (docker, crio, containerd, rkt)")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
+	// TODO(tstromberg): Flip cacheImages to true once it can be stabilized
 	startCmd.Flags().Bool(cacheImages, false, "If true, cache docker images for the current bootstrapper and load them into the machine.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.

@@ -183,10 +183,12 @@ var AlternateRuntimePreflights = append(Preflights, []string{
 }...)
 
 const (
-	ContainerdRuntime = "containerd"
-	RktRuntime        = "rkt"
-	CrioRuntime       = "crio"
-	Cri_oRuntime      = "cri-o"
+	ContainerdRuntime       = "containerd"
+	RktRuntime              = "rkt"
+	CrioRuntime             = "crio"
+	Cri_oRuntime            = "cri-o"
+	DockerRuntime           = "docker"
+	DefaultContainerRuntime = DockerRuntime
 )
 
 const (

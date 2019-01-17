@@ -41,7 +41,6 @@ associated files.`,
 			os.Exit(1)
 		}
 
-		fmt.Println("Deleting local Kubernetes cluster...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
@@ -50,17 +49,17 @@ associated files.`,
 		defer api.Close()
 
 		if err = cluster.DeleteHost(api); err != nil {
-			fmt.Println("Errors occurred deleting machine: ", err)
+			fmt.Println("💣  Unable to delete VM: ", err)
 			os.Exit(1)
 		}
-		fmt.Println("Machine deleted.")
+		fmt.Println("✅  Deleted VM.")
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			fmt.Println("Errors occurred deleting mount process: ", err)
+			fmt.Println("❌  Unable to kill mount process: ", err)
 		}
 
 		if err := os.Remove(constants.GetProfileFile(viper.GetString(pkg_config.MachineProfile))); err != nil {
-			fmt.Println("Error deleting machine profile config")
+			fmt.Printf("💣  Unable to delete profile config for %q!\n", pkg_config.MachineProfile)
 			os.Exit(1)
 		}
 	},
