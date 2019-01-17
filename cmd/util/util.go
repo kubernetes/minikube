@@ -27,9 +27,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"text/template"
 	"time"
 
 	"strconv"
@@ -130,6 +132,7 @@ func MaybeReportErrorAndExit(errToReport error) {
 	MaybeReportErrorAndExitWithCode(errToReport, 1)
 }
 
+// MaybeReportErrorAndExitWithCode prompts the user if they would like to report a stack trace, and exits.
 func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
 	var err error
 	if viper.GetBool(config.WantReportError) {
@@ -139,17 +142,24 @@ func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
 			`================================================================================
 An error has occurred. Would you like to opt in to sending anonymized crash
 information to minikube to help prevent future errors?
-To opt out of these messages, run the command:
-	minikube config set WantReportErrorPrompt false
+
+To disable this prompt, run: 'minikube config set WantReportErrorPrompt false'
 ================================================================================`)
 		if PromptUserForAccept(os.Stdin) {
-			minikubeConfig.Set(config.WantReportError, "true")
-			err = ReportError(errToReport, constants.ReportingURL)
+			err = minikubeConfig.Set(config.WantReportError, "true")
+			if err == nil {
+				err = ReportError(errToReport, constants.ReportingURL)
+			}
+		} else {
+			fmt.Println("Bummer, perhaps next time!")
 		}
 	}
+
+	// This happens when the error was created without errors.Wrap(), and thus has no trace data.
 	if err != nil {
-		glog.Errorf(err.Error())
+		glog.Infof("report error failed: %v", err)
 	}
+	fmt.Printf("\n\nminikube failed :( exiting with error code %d\n", returnCode)
 	os.Exit(returnCode)
 }
 
@@ -181,6 +191,7 @@ func PromptUserForAccept(r io.Reader) bool {
 			return false
 		}
 	case <-time.After(30 * time.Second):
+		fmt.Println("Prompt timed out.")
 		return false
 	}
 }
@@ -218,6 +229,33 @@ minikube config set WantKubectlDownloadMsg false
 `,
 			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, goos, runtime.GOARCH))
 	}
+}
+
+// Return a command to run, that will generate the crictl config file
+func GetCrictlConfigCommand(cfg map[string]string) (string, error) {
+	var (
+		crictlYamlTmpl = `runtime-endpoint: {{.RuntimeEndpoint}}
+image-endpoint: {{.ImageEndpoint}}
+`
+		crictlYamlPath = "/etc/crictl.yaml"
+	)
+	t, err := template.New("crictlYaml").Parse(crictlYamlTmpl)
+	if err != nil {
+		return "", err
+	}
+	opts := struct {
+		RuntimeEndpoint string
+		ImageEndpoint   string
+	}{
+		RuntimeEndpoint: cfg["runtime-endpoint"],
+		ImageEndpoint:   cfg["image-endpoint"],
+	}
+	var crictlYamlBuf bytes.Buffer
+	if err := t.Execute(&crictlYamlBuf, opts); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crictlYamlPath), crictlYamlBuf.String(), crictlYamlPath), nil
 }
 
 // Ask the kernel for a free open port that is ready to use

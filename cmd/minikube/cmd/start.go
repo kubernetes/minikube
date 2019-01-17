@@ -99,6 +99,22 @@ assumes you have already installed one of the VM drivers: virtualbox/vmwarefusio
 	Run: runStart,
 }
 
+// SetContainerRuntime possibly sets the container runtime
+func SetContainerRuntime(cfg map[string]string, runtime string) map[string]string {
+	switch runtime {
+	case "crio", "cri-o":
+		cfg["runtime-endpoint"] = "unix:///var/run/crio/crio.sock"
+		cfg["image-endpoint"] = "unix:///var/run/crio/crio.sock"
+	case "containerd":
+		cfg["runtime-endpoint"] = "unix:///run/containerd/containerd.sock"
+		cfg["image-endpoint"] = "unix:///run/containerd/containerd.sock"
+	default:
+		return nil
+	}
+
+	return cfg
+}
+
 func runStart(cmd *cobra.Command, args []string) {
 	if glog.V(8) {
 		glog.Infoln("Viper configuration:")
@@ -203,6 +219,20 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
+	// common config (currently none)
+	var cricfg = map[string]string{}
+	selectedContainerRuntime := viper.GetString(containerRuntime)
+	if cricfg := SetContainerRuntime(cricfg, selectedContainerRuntime); cricfg != nil {
+		var command string
+		fmt.Println("Writing crictl config...")
+		if command, err = cmdutil.GetCrictlConfigCommand(cricfg); err == nil {
+			_, err = host.RunSSHCommand(command)
+		}
+		if err != nil {
+			glog.Errorln("Error writing crictl config: ", err)
+		}
+	}
+
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 	if strings.Compare(selectedKubernetesVersion, "") == 0 {
 		selectedKubernetesVersion = constants.DefaultKubernetesVersion
@@ -235,7 +265,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		APIServerIPs:           apiServerIPs,
 		DNSDomain:              viper.GetString(dnsDomain),
 		FeatureGates:           viper.GetString(featureGates),
-		ContainerRuntime:       viper.GetString(containerRuntime),
+		ContainerRuntime:       selectedContainerRuntime,
 		CRISocket:              viper.GetString(criSocket),
 		NetworkPlugin:          viper.GetString(networkPlugin),
 		ServiceCIDR:            viper.GetString(serviceCIDR),
@@ -310,8 +340,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	fmt.Println("Stopping extra container runtimes...")
 
-	containerRuntime := viper.GetString(containerRuntime)
-	if config.VMDriver != constants.DriverNone && containerRuntime != "" {
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime != "" {
 		if _, err := host.RunSSHCommand("sudo systemctl stop docker"); err == nil {
 			_, err = host.RunSSHCommand("sudo systemctl stop docker.socket")
 		}
@@ -319,12 +348,12 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorf("Error stopping docker: %v", err)
 		}
 	}
-	if config.VMDriver != constants.DriverNone && (containerRuntime != constants.CrioRuntime && containerRuntime != constants.Cri_oRuntime) {
+	if config.VMDriver != constants.DriverNone && (selectedContainerRuntime != constants.CrioRuntime && selectedContainerRuntime != constants.Cri_oRuntime) {
 		if _, err := host.RunSSHCommand("sudo systemctl stop crio"); err != nil {
 			glog.Errorf("Error stopping crio: %v", err)
 		}
 	}
-	if config.VMDriver != constants.DriverNone && containerRuntime != constants.RktRuntime {
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime != constants.RktRuntime {
 		if _, err := host.RunSSHCommand("sudo systemctl stop rkt-api"); err == nil {
 			_, err = host.RunSSHCommand("sudo systemctl stop rkt-metadata")
 		}
@@ -333,7 +362,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if config.VMDriver != constants.DriverNone && containerRuntime == constants.ContainerdRuntime {
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime == constants.ContainerdRuntime {
 		fmt.Println("Restarting containerd runtime...")
 		// restart containerd so that it can install all plugins
 		if _, err := host.RunSSHCommand("sudo systemctl restart containerd"); err != nil {
@@ -344,7 +373,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	if !exists || config.VMDriver == constants.DriverNone {
 		fmt.Println("Starting cluster components...")
 		if err := k8sBootstrapper.StartCluster(kubernetesConfig); err != nil {
-			glog.Errorln("Error starting cluster: ", err)
+			glog.Errorf("Error starting cluster: %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {

@@ -27,6 +27,7 @@ Or you can use the extended version:
 $ minikube start \
     --network-plugin=cni \
     --enable-default-cni \
+    --container-runtime=cri-o \
     --cri-socket=/var/run/crio/crio.sock \
     --extra-config=kubelet.container-runtime=remote \
     --extra-config=kubelet.container-runtime-endpoint=unix:///var/run/crio/crio.sock \
@@ -50,6 +51,7 @@ Or you can use the extended version:
 $ minikube start \
     --network-plugin=cni \
     --enable-default-cni \
+    --container-runtime=containerd \
     --cri-socket=/run/containerd/containerd.sock \
     --extra-config=kubelet.container-runtime=remote \
     --extra-config=kubelet.container-runtime-endpoint=unix:///run/containerd/containerd.sock \
