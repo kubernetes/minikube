@@ -46,6 +46,7 @@ func TestStartStop(t *testing.T) {
 			name:    "crio",
 			runtime: constants.CrioRuntime,
 		},
+		// TODO(tstromberg): Add test for crio w/o cni
 	}
 
 	for _, test := range tests {
