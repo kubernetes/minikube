@@ -361,6 +361,11 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorf("Error stopping rkt: %v", err)
 		}
 	}
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime != constants.ContainerdRuntime {
+		if _, err = host.RunSSHCommand("sudo systemctl stop containerd"); err != nil {
+			glog.Errorf("Error stopping containerd: %v", err)
+		}
+	}
 
 	if config.VMDriver != constants.DriverNone && selectedContainerRuntime == constants.ContainerdRuntime {
 		fmt.Println("Restarting containerd runtime...")
