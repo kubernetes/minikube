@@ -37,7 +37,7 @@ Please send a PR to suggest any improvements to it.
 - Continuous Integration testing across all supported Kubernetes releases
 - Automatic PR generation for updating the default Kubernetes release minikube uses
 
-## (#7) Support all Kubernetes-friendly container runtimes
+## (#7) Support for all Kubernetes-friendly container runtimes
 
 - Run all integration tests across all supported container runtimes
 - Support for Kata Containers (help wanted!)
