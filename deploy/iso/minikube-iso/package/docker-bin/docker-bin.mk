@@ -25,9 +25,10 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 		$(@D)/docker-containerd \
 		$(TARGET_DIR)/bin/docker-containerd
 
+	# As of 2019-01, we use upstream runc so that we may update it independently of docker.
 	$(INSTALL) -D -m 0755 \
 		$(@D)/docker-runc \
-		$(TARGET_DIR)/bin/docker-runc
+		$(TARGET_DIR)/bin/docker-runc.orig
 
 	$(INSTALL) -D -m 0755 \
 		$(@D)/docker-containerd-ctr \
