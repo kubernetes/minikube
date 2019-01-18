@@ -8,7 +8,7 @@ When starting minikube, specify the following flags, along with any additional d
 ```shell
 $ minikube start --container-runtime=containerd  \
     --docker-opt containerd=/var/run/containerd/containerd.sock \
-    --network-plugin=cni
+    --network-plugin=cni --enable-default-cni
 ```
 
 ### Enabling gVisor

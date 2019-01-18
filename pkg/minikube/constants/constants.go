@@ -60,6 +60,7 @@ var SupportedVMDrivers = [...]string{
 	"hyperv",
 	"hyperkit",
 	"kvm2",
+	"vmware",
 	"none",
 }
 
@@ -113,7 +114,8 @@ const (
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.ApiServer}}
-kubectl: {{.Kubeconfig}}`
+kubectl: {{.Kubeconfig}}
+`
 	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	DefaultCacheListFormat     = "{{.CacheImage}}\n"
@@ -127,7 +129,7 @@ kubectl: {{.Kubeconfig}}`
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
 var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
-var DefaultKubernetesVersion = "v1.12.4"
+var DefaultKubernetesVersion = "v1.13.2"
 
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
@@ -146,9 +148,11 @@ const AddonsPath = "/etc/kubernetes/addons"
 const FilesPath = "/files"
 
 const (
-	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
-	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
+	KubeletServiceFile      = "/lib/systemd/system/kubelet.service"
+	KubeletSystemdConfFile  = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	KubeadmConfigFile       = "/var/lib/kubeadm.yaml"
+	DefaultCNIConfigPath    = "/etc/cni/net.d/k8s.conf"
+	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 var Preflights = []string{
