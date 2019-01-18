@@ -1,33 +1,52 @@
 # minikube roadmap (2019)
 
-This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2019. Please send a PR to suggest any improvements to it.
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2019, divided by how they apply to the minikube [(guiding principles)[principles.md]
 
-## (#1) Make minikube the easiest way for developers to learn Kubernetes
+Please send a PR to suggest any improvements to it.
 
-- Single step installation
-  - Users should not have to seperately install supporting binaries
+## (#1). User-friendly and accessible
+
 - Creation of a user-centric minikube website for installation & documentation
+- Localized output to 5+ written languages
+- Make minikube usable in environments with challenging connectivity requirements
+- Support lightweight deployment methods for environments where VM's are impractical
+- Add offline support
 
-## (#2) Diversify the minikube community
+## (#2) Inclusive and community-driven
 
-- Add documentation for new minikube contributors
-- Ensure that all decisions are ratified publically by the minikube community
+- Increase community involvement in planning and decision making
+- Make the continuous integration and release infrastructure publicly available
+- Double the number of active maintainers
 
-## (#3) Make minikube robust and debuggable
+## (#3) Cross-platform
 
-- Add pre-flight error checks for common connectivity issues 
-- Add pre-flight error checks for common configuration errors
-- Mark features & options not covered by continuous integration as `experimental`
-- Improve the `status` command so that it can diagnose common environmental issues
-- Make minikube usable offline
+- Simplified installation process across all supported platforms
+- Users should never need to separately install supporting binaries
 
-## (#4) Official multi-node/multi-cluster support
+## (#4) Support all Kubernetes features
 
-- Rebrand profiles as multi-cluster support
-- Integrate KIND for multi-node support
-- Add commands to add/remove nodes within an existing cluster
+- Add multi-node support
 
-## (#5) Improve minikube performance
+## (#5) High-fidelity
 
-- Add support for lighter-weight deployment methods, such as container-based (LXD, Docker) or chroot
-- Reduce guest VM overhead by 50% for macOS users
+- Reduce guest VM overhead by 50%
+- Disable swap in the guest VM
+
+## (#6) Compatible with all supported Kubernetes releases
+
+- Continuous Integration testing across all supported Kubernetes releases
+- Automatic PR generation for updating the default Kubernetes release minikube uses
+
+## (#7) Support all Kubernetes-friendly container runtimes
+
+- Run all integration tests across all supported container runtimes
+- Support for Kata Containers (help wanted!)
+
+## (#8) Stable and easy to debug
+
+- Pre-flight error checks for common connectivity and configuration errors
+- Improve the `minikube status` command so that it can diagnose common issues
+- Mark all features not covered by continuous integration as `experimental`
+- Replace built-in machine drivers (virtualbox, kvm2) with their upstream equivalents
+- Remove dependency on boot2docker (deprecated)
+- Stabilize and improve profiles support (AKA multi-cluster)

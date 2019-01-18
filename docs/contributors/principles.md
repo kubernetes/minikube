@@ -1,33 +1,26 @@
 # Principles of Minikube
 
-The primary goal of minikube is to make it simple to run Kubernetes on your local machine, both for getting started and day-to-day development workflows.
+The primary goal of minikube is to make it simple to run Kubernetes locally, for day-to-day development workflows and learning purposes. Here are the guiding principles for minikube, in rough priority order:
 
-Here are some specific features that align with our goal:
+1. User-friendly and accessible
+2. Inclusive and community-driven
+3. Cross-platform
+4. Support all Kubernetes features
+5. High-fidelity
+6. Compatible with all supported Kubernetes releases
+7. Support all Kubernetes-friendly container runtimes
+8. Stable and easy to debug
 
-* Single command setup and teardown UX.
-* Support most portable Kubernetes core features (local storage, networking, auto-scaling, loadbalancing, etc.)
-* Unified UX across OSes.
-* Minimal dependencies on third party software.
-* Minimal resource overhead.
-* Becoming the default local-cluster setup for Kubernetes
+Here are some specific minikube features that align with our goal:
+
+* Single command setup and teardown UX
+* Support for local storage, networking, auto-scaling, load balancing, etc.
+* Unified UX across operating systems
+* Minimal dependencies on third party software
+* Minimal resource overhead
 
 ## Non-Goals
-* Simplifying Kubernetes production deployment experience. Kube-deploy is attempting to tackle this problem.
 
-* Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
+* Simplifying Kubernetes production deployment experience
+  * Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
 
-## Priorities
-
-This section contains the overall priorities of the minikube project, in rough order.
-
- * Setting up a well-tested, secure and complete Kubernetes cluster locally.
- * Cross Platform support (macOS, Linux, Windows)
- * Supporting existing Kubernetes features:
-    * Load Balancer support.
-    * Persistent disks.
- * Keeping up with new Kubernetes releases and features.
- * Development-focused features like:
-   * Mounting host directories.
-   * VPN/proxy networking.
- * Native hypervisor integration.
- * Support for alternative Kubernetes runtimes, like rkt.
