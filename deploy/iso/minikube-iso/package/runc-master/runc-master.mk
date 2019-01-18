@@ -47,6 +47,8 @@ endef
 
 define RUNC_MASTER_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/bin/runc $(TARGET_DIR)/usr/bin/runc
+	# Install the binary in the location where Docker expects it, so that we can keep runc releases in sync.
+	ln $(@D)/bin/runc $(TARGET_DIR)/usr/bin/docker-runc
 endef
 
 $(eval $(generic-package))
