@@ -14,6 +14,7 @@ the host PATH:
 * [Hyperkit](#hyperkit-driver)
 * [xhyve](#xhyve-driver)
 * [HyperV](#hyperv-driver)
+* [VMware](#vmware-unified-driver)
 
 #### KVM2 driver
 
@@ -83,7 +84,18 @@ minikube start --vm-driver kvm
 The Hyperkit driver will eventually replace the existing xhyve driver.
 It is built from the minikube source tree, and uses [moby/hyperkit](http://github.com/moby/hyperkit) as a Go library.
 
-To install the hyperkit driver:
+To install the hyperkit driver via brew:
+
+
+```shell
+brew install docker-machine-driver-hyperkit
+
+# docker-machine-driver-hyperkit need root owner and uid 
+sudo chown root:wheel /usr/local/opt/docker-machine-driver-hyperkit/bin/docker-machine-driver-hyperkit
+sudo chmod u+s /usr/local/opt/docker-machine-driver-hyperkit/bin/docker-machine-driver-hyperkit
+```
+
+To install the hyperkit driver manually:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
@@ -115,3 +127,25 @@ sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machi
 Hyper-v users may need to create a new external network switch as described [here](https://docs.docker.com/machine/drivers/hyper-v/). This step may prevent a problem in which `minikube start` hangs indefinitely, unable to ssh into the minikube virtual machine. In this add, add the `--hyperv-virtual-switch=switch-name` argument to the `minikube start` command.
 
 On some machines, having **dynamic memory management** turned on for the minikube VM can cause problems of unexpected and random restarts which manifests itself in simply losing the connection to the cluster, after which `minikube status` would simply state `stopped`. Machine restarts are caused due to following Hyper-V error: `The dynamic memory balancer could not add memory to the virtual machine 'minikube' because its configured maximum has been reached`. **Solution**: turned the dynamic memory management in hyper-v settings off (and allocate a fixed amount of memory to the machine).
+
+#### VMware unified driver
+
+The VMware unified driver will eventually replace the existing vmwarefusion driver.
+The new unified driver supports both VMware Fusion (on macOS) and VMware Workstation (on Linux and Windows)
+
+To install the vmware unified driver, head over at https://github.com/machine-drivers/docker-machine-driver-vmware/releases and download the release for your operating system. 
+
+The driver must be:
+
+1. Stored in `$PATH`
+2. Named `docker-machine-driver-vmware`
+3. Executable (`chmod +x` on UNIX based platforms)
+
+If you're running on macOS with Fusion, this is an easy way install the driver:
+
+```shell
+export LATEST_VERSION=$(curl -L -s -H 'Accept: application/json' https://github.com/machine-drivers/docker-machine-driver-vmware/releases/latest | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/') \
+&& curl -L -o docker-machine-driver-vmware https://github.com/machine-drivers/docker-machine-driver-vmware/releases/download/$LATEST_VERSION/docker-machine-driver-vmware_darwin_amd64 \
+&& chmod +x docker-machine-driver-vmware \
+&& mv docker-machine-driver-vmware /usr/local/bin/
+```

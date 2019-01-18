@@ -145,7 +145,7 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 	err = teeSSH(sess, cmd, &combined, &combined)
 	out := combined.b.String()
 	if err != nil {
-		return "", err
+		return out, err
 	}
 	return out, nil
 }

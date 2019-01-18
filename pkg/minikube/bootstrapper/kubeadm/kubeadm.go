@@ -170,7 +170,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	out, err := k.c.CombinedOutput(b.String())
 	if err != nil {
-		return errors.Wrapf(err, "kubeadm init error %s running command: %s", b.String(), out)
+		return errors.Wrapf(err, "kubeadm init: %s\n%s\n", b.String(), out)
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
@@ -309,6 +309,11 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 	}
 
 	extraOpts = SetContainerRuntime(extraOpts, k8s.ContainerRuntime)
+
+	if k8s.NetworkPlugin != "" {
+		extraOpts["network-plugin"] = k8s.NetworkPlugin
+	}
+
 	extraFlags := convertToFlags(extraOpts)
 
 	// parses a map of the feature gates for kubelet
@@ -356,6 +361,15 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
 		assets.NewMemoryAssetTarget([]byte(kubeletCfg), constants.KubeletSystemdConfFile, "0640"),
 		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
+	}
+
+	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
+	// start a Pod in the case a user hasn't manually installed any CNI plugin
+	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
+	if cfg.EnableDefaultCNI {
+		files = append(files,
+			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"),
+			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultRktNetConfigPath, "0644"))
 	}
 
 	var g errgroup.Group
@@ -422,6 +436,12 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
+	// In case of no port assigned, use util.APIServerPort
+	nodePort := k8s.NodePort
+	if nodePort <= 0 {
+		nodePort = util.APIServerPort
+	}
+
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
@@ -438,7 +458,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
 		AdvertiseAddress:  k8s.NodeIP,
-		APIServerPort:     util.APIServerPort,
+		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,

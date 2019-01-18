@@ -28,7 +28,7 @@ func TestISO(t *testing.T) {
 
 	minikubeRunner := NewMinikubeRunner(t)
 
-	minikubeRunner.RunCommand("delete", true)
+	minikubeRunner.RunCommand("delete", false)
 	minikubeRunner.Start()
 
 	t.Run("permissions", testMountPermissions)

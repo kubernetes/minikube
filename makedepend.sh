@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Generate go dependencies, for make. Uses `go list".
-# Usage: makedepend.sh [-t] output package path [extra]
+# Generate go dependencies, for make. Uses `go list`.
+# Usage: makedepend.sh [-t] output package extra path...
 
 PATH_FORMAT='{{ .ImportPath }}{{"\n"}}{{join .Deps "\n"}}'
 FILE_FORMAT='{{ range $file := .GoFiles }} {{$.Dir}}/{{$file}}{{"\n"}}{{end}}'
@@ -28,14 +28,14 @@ fi
 
 out=$1
 pkg=$2
-path=$3
-extra=$4
+extra=$3
+paths="$4 $5 $6"
 
 # check for mandatory parameters
-test -n "$out$pkg$path" || exit 1
+test -n "$out$pkg$paths" || exit 1
 
 echo "$out: $extra\\"
-go list -f "$PATH_FORMAT" $path |
+go list -f "$PATH_FORMAT" $paths |
   grep "$pkg" |
   xargs go list -f "$FILE_FORMAT" |
   sed -e "s|^ ${GOPATH}| \$(GOPATH)|;s/$/ \\\\/"

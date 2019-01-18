@@ -1,5 +1,81 @@
 # Minikube Release Notes
 
+# Version 0.33.0 - 2019-01-07
+
+* Set default Kubernetes version to v1.13.2 (latest stable) [#3527](https://github.com/kubernetes/minikube/pull/3527)
+* Update to opencontainers/runc HEAD as of 2019-01-15 [#3535](https://github.com/kubernetes/minikube/pull/3535)
+* Update to crio-bin v1.13.0 [#3515](https://github.com/kubernetes/minikube/pull/3515)
+* Write /etc/crictl.yaml when starting [#3194](https://github.com/kubernetes/minikube/pull/3194)
+* Improve failure output when kubeadm init fails [#3533](https://github.com/kubernetes/minikube/pull/3533)
+* Add new VMware unified driver to supported list [#3534](https://github.com/kubernetes/minikube/pull/3534)
+* Fix Windows cache path issues with directory hierarchies and lower-case drive letters [#3252](https://github.com/kubernetes/minikube/pull/3252)
+* Avoid out directory, when listing test files [#3229](https://github.com/kubernetes/minikube/pull/3229)
+* Do not include the default CNI config by default [#3441](https://github.com/kubernetes/minikube/pull/3441)
+* Adding more utils tests [#3494](https://github.com/kubernetes/minikube/pull/3494)
+* Add a storage-provisioner-gluster addon [#3521](https://github.com/kubernetes/minikube/pull/3521)
+* Improve the default crio-bin configuration [#3190](https://github.com/kubernetes/minikube/pull/3190)
+* Allow to specify api server port through CLI fix #2781 [#3108](https://github.com/kubernetes/minikube/pull/3108)
+* add brew install instructions for hyperkit [#3140](https://github.com/kubernetes/minikube/pull/3140)
+* Added defaultDiskSize setup to hyperkit driver [#3531](https://github.com/kubernetes/minikube/pull/3531)
+* Enable ipvlan kernel module [#3510](https://github.com/kubernetes/minikube/pull/3510)
+* issue# 3499: minikube status missing newline at end of output [#3502](https://github.com/kubernetes/minikube/pull/3502)
+* apiserver health: try up to 5 minutes, add newline [#3528](https://github.com/kubernetes/minikube/pull/3528)
+* Pass network-plugin value to kubelet [#3442](https://github.com/kubernetes/minikube/pull/3442)
+* Fix missing a line break for minikube status [#3523](https://github.com/kubernetes/minikube/pull/3523)
+* Documentation - Updating golang requirement to 1.11 [#3508](https://github.com/kubernetes/minikube/pull/3508)
+* Updating e2e tests instructions [#3509](https://github.com/kubernetes/minikube/pull/3509)
+* Defer dashboard deployment until "minikube dashboard" is executed [#3485](https://github.com/kubernetes/minikube/pull/3485)
+* Change minikube-hostpath storage class addon from Reconcile to EnsureExists [#3497](https://github.com/kubernetes/minikube/pull/3497)
+* Tell user given driver has been ignored if exising VM is different [#3374](https://github.com/kubernetes/minikube/pull/3374)
+
+Thank you to all to everyone who contributed to this massive release:
+
+- Amim Knabben
+- Anders F Björklund
+- Andrew Regner
+- bpopovschi
+- Fabio Rapposelli
+- Jason Cwik
+- Jeff Wu
+- Kazuki Suda
+- Mark Gibbons
+- Martynas Pumputis
+- Matt Dorn
+- Michal Franc
+- Narendra Kangralkar
+- Niels de Vos
+- Sebastien Collin
+- Thomas Strömberg
+- wujeff
+
+# Version 0.32.0 - 12/21/2018
+
+* Make Kubernetes v1.12.4 the default [#3482](https://github.com/kubernetes/minikube/pull/3482)
+* Update kubeadm restart commands to support v1.13.x [#3483](https://github.com/kubernetes/minikube/pull/3483)
+* Make "stop" retry on failure. [#3479](https://github.com/kubernetes/minikube/pull/3479)
+* VirtualBox time cleanup: sync on boot, don't run timesyncd [#3476](https://github.com/kubernetes/minikube/pull/3476)
+* Stream cmd output to tests when -v is enabled, and stream SSH output to logs [#3475](https://github.com/kubernetes/minikube/pull/3475)
+* Document None driver docker compatibility [#3367](https://github.com/kubernetes/minikube/pull/3367)
+* Enable host DNS resolution in virtualbox driver by default [#3453](https://github.com/kubernetes/minikube/pull/3453)
+* Fix CRI socket in Kubernetes >= 1.12.0 kubeadmin config [#3452](https://github.com/kubernetes/minikube/pull/3452)
+* Bump dashboard version to v1.10.1 [#3466](https://github.com/kubernetes/minikube/pull/3466)
+* Hide KVM signature when using GPU passthrough to support more GPU models [#3459](https://github.com/kubernetes/minikube/pull/3459)
+* Allow ServiceCIDR to be configured via 'service-cluster-ip-range' flag. [#3463](https://github.com/kubernetes/minikube/pull/3463)
+* Save old cluster config in memory before overwriting [#3450](https://github.com/kubernetes/minikube/pull/3450)
+* Change restart policy on gvisor pod [#3445](https://github.com/kubernetes/minikube/pull/3445)
+
+Shout-out to the amazing members of the minikube community who made this release possible:
+
+- Alasdair Tran
+- Balint Pato
+- Charles-Henri de Boysson
+- Chris Eason
+- Cory Locklear
+- Jeffrey Sica
+- JoeWrightss
+- RA489
+- Thomas Strömberg
+
 # Version 0.31.0 - 12/08/2018
 
 * Enable gvisor addon in minikube [#3399](https://github.com/kubernetes/minikube/pull/3399)
