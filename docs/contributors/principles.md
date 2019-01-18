@@ -8,7 +8,7 @@ The primary goal of minikube is to make it simple to run Kubernetes locally, for
 4. Support all Kubernetes features
 5. High-fidelity
 6. Compatible with all supported Kubernetes releases
-7. Support all Kubernetes-friendly container runtimes
+7. Support for all Kubernetes-friendly container runtimes
 8. Stable and easy to debug
 
 Here are some specific minikube features that align with our goal:
