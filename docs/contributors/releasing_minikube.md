@@ -55,12 +55,14 @@ Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/
 
 NOTE: Confirm that all release-related PR's have been submitted before doing this step. 
 
-From your own fork of minikube, run:
+Do this in a direct clone of the upstream kubernetes/minikube repository (not your fork!):
 
 ```
-git checkout master
-git tag -a v<version> -m "<version> Release"
-git push upstream v<version>
+git fetch \
+  && git checkout master \
+  && git pull \
+  && git tag -a v<version> -m "<version> Release" \
+  && git push origin v<version>
 ```
 
 ## Build the Release
