@@ -15,7 +15,7 @@
 # Bump these on release
 VERSION_MAJOR ?= 0
 VERSION_MINOR ?= 33
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -27,7 +27,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.33.0
+ISO_VERSION ?= v0.33.1
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
