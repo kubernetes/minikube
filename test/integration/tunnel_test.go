@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -33,11 +35,20 @@ import (
 )
 
 func testTunnel(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		// Otherwise minikube fails waiting for a password.
+		if err := exec.Command("sudo", "-n", "route").Run(); err != nil {
+			t.Skipf("password required to execute 'route', skipping testTunnel: %v", err)
+		}
+	}
+
 	t.Log("starting tunnel test...")
 	runner := NewMinikubeRunner(t)
 	go func() {
-		output := runner.RunCommand("tunnel --alsologtostderr -v 8", true)
-		fmt.Println(output)
+		output := runner.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
+		if t.Failed() {
+			fmt.Println(output)
+		}
 	}()
 
 	err := tunnel.NewManager().CleanupNotRunningTunnels()
@@ -88,10 +99,21 @@ func testTunnel(t *testing.T) {
 	}
 
 	httpClient := http.DefaultClient
-	httpClient.Timeout = 1 * time.Second
-	resp, err := httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+	httpClient.Timeout = 5 * time.Second
 
-	if err != nil {
+	var resp *http.Response
+
+	request := func() error {
+		resp, err = httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+		if err != nil {
+			retriable := &commonutil.RetriableError{Err: err}
+			t.Log(retriable)
+			return retriable
+		}
+		return nil
+	}
+
+	if err = commonutil.RetryAfter(5, request, 1*time.Second); err != nil {
 		t.Fatalf("error reading from nginx at address(%s): %s", nginxIP, err)
 	}
 

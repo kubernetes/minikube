@@ -197,7 +197,7 @@ func TestTunnel(t *testing.T) {
 
 				substring := "testerror"
 				if actualSecondState.RouteError == nil || !strings.Contains(actualSecondState.RouteError.Error(), substring) {
-					t.Errorf("wrong tunnel status. expected Route error to contain '%s' \ngot:     %s", substring, actualSecondState.RouteError)
+					t.Errorf("wrong tunnel status. expected route error to contain '%s' \ngot:     %s", substring, actualSecondState.RouteError)
 				}
 
 				expectedRoutes := []*Route{expectedRoute}
@@ -395,7 +395,7 @@ func TestTunnel(t *testing.T) {
 				},
 			}
 			configLoader := &stubConfigLoader{
-				c: config.Config{
+				c: &config.Config{
 					KubernetesConfig: config.KubernetesConfig{
 						ServiceCIDR: tc.serviceCIDR,
 					}},
@@ -446,7 +446,7 @@ func TestErrorCreatingTunnel(t *testing.T) {
 	}
 
 	configLoader := &stubConfigLoader{
-		c: config.Config{
+		c: &config.Config{
 			KubernetesConfig: config.KubernetesConfig{
 				ServiceCIDR: "10.96.0.0/12",
 			}},

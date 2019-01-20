@@ -34,13 +34,14 @@ import (
 )
 
 func testMounting(t *testing.T) {
-	t.Parallel()
 	if runtime.GOOS == "darwin" {
 		t.Skip("mount tests disabled in darwin due to timeout (issue#3200)")
 	}
 	if strings.Contains(*args, "--vm-driver=none") {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
+
+	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
 
 	tempDir, err := ioutil.TempDir("", "mounttest")

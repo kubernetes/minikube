@@ -82,10 +82,10 @@ func (r *fakeRouter) Inspect(route *Route) (exists bool, conflict string, overla
 }
 
 type stubConfigLoader struct {
-	c config.Config
+	c *config.Config
 	e error
 }
 
-func (l *stubConfigLoader) LoadConfigFromFile(profile string) (config.Config, error) {
+func (l *stubConfigLoader) LoadConfigFromFile(profile string) (*config.Config, error) {
 	return l.c, l.e
 }

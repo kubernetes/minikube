@@ -19,6 +19,7 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -29,11 +30,11 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
-
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -64,19 +65,30 @@ var dashboardCmd = &cobra.Command{
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
+		fmt.Fprintln(os.Stderr, "Enabling dashboard ...")
+		// Enable the dashboard add-on
+		err = configcmd.Set("dashboard", "true")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to enable dashboard: %v\n", err)
+			os.Exit(1)
+		}
+
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
-		if err = util.RetryAfter(30, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
+		fmt.Fprintln(os.Stderr, "Verifying dashboard health ...")
+		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "%s:%s is not running: %v\n", ns, svc, err)
 			os.Exit(1)
 		}
 
+		fmt.Fprintln(os.Stderr, "Launching proxy ...")
 		p, hostPort, err := kubectlProxy()
 		if err != nil {
 			glog.Fatalf("kubectl proxy: %v", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
+		fmt.Fprintln(os.Stderr, "Verifying proxy health ...")
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
 			fmt.Fprintf(os.Stderr, "%s is not responding properly: %v\n", url, err)
 			os.Exit(1)
@@ -91,7 +103,7 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		glog.Infof("Waiting forever for kubectl proxy to exit ...")
+		glog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
 		if err = p.Wait(); err != nil {
 			glog.Errorf("Wait: %v", err)
 		}
@@ -117,14 +129,51 @@ func kubectlProxy() (*exec.Cmd, string, error) {
 	if err := cmd.Start(); err != nil {
 		return nil, "", errors.Wrap(err, "proxy start")
 	}
+
+	glog.Infof("Waiting for kubectl to output host:port ...")
 	reader := bufio.NewReader(stdoutPipe)
-	glog.Infof("proxy started, reading stdout pipe ...")
-	out, err := reader.ReadString('\n')
-	if err != nil {
-		return nil, "", errors.Wrap(err, "reading stdout pipe")
+
+	var out []byte
+	for {
+		r, timedOut, err := readByteWithTimeout(reader, 5*time.Second)
+		if err != nil {
+			return cmd, "", fmt.Errorf("readByteWithTimeout: %v", err)
+		}
+		if r == byte('\n') {
+			break
+		}
+		if timedOut {
+			glog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
+			break
+		}
+		out = append(out, r)
 	}
-	glog.Infof("proxy stdout: %s", out)
-	return cmd, hostPortRe.FindString(out), nil
+	glog.Infof("proxy stdout: %s", string(out))
+	return cmd, hostPortRe.FindString(string(out)), nil
+}
+
+// readByteWithTimeout returns a byte from a reader or an indicator that a timeout has occurred.
+func readByteWithTimeout(r io.ByteReader, timeout time.Duration) (byte, bool, error) {
+	bc := make(chan byte)
+	ec := make(chan error)
+	go func() {
+		b, err := r.ReadByte()
+		if err != nil {
+			ec <- err
+		} else {
+			bc <- b
+		}
+		close(bc)
+		close(ec)
+	}()
+	select {
+	case b := <-bc:
+		return b, false, nil
+	case err := <-ec:
+		return byte(' '), false, err
+	case <-time.After(timeout):
+		return byte(' '), true, nil
+	}
 }
 
 // dashboardURL generates a URL for accessing the dashboard service

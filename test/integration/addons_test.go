@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -29,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	"k8s.io/apimachinery/pkg/labels"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
@@ -46,19 +48,42 @@ func testAddons(t *testing.T) {
 	}
 }
 
+func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error) {
+	s := make(chan string)
+	e := make(chan error)
+	go func() {
+		read, err := b.ReadString('\n')
+		if err != nil {
+			e <- err
+		} else {
+			s <- read
+		}
+		close(s)
+		close(e)
+	}()
+
+	select {
+	case line := <-s:
+		return line, nil
+	case err := <-e:
+		return "", err
+	case <-time.After(timeout):
+		return "", fmt.Errorf("timeout after %s", timeout)
+	}
+}
+
 func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
-
 	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
 	defer func() {
 		err := cmd.Process.Kill()
 		if err != nil {
-			t.Logf("Failed to kill mount command: %v", err)
+			t.Logf("Failed to kill dashboard command: %v", err)
 		}
 	}()
 
-	s, err := out.ReadString('\n')
+	s, err := readLineWithTimeout(out, 180*time.Second)
 	if err != nil {
 		t.Fatalf("failed to read url: %v", err)
 	}
@@ -157,5 +182,83 @@ func testServicesList(t *testing.T) {
 	}
 	if err := util.Retry(t, checkServices, 2*time.Second, 5); err != nil {
 		t.Fatalf(err.Error())
+	}
+}
+
+func testGvisor(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner.RunCommand("addons enable gvisor", true)
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	createUntrustedWorkload(t)
+
+	t.Log("making sure untrusted workload is Running")
+	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+
+	t.Log("disabling gvisor addon")
+	minikubeRunner.RunCommand("addons disable gvisor", true)
+	t.Log("waiting for gvisor controller pod to be deleted")
+	if err := util.WaitForGvisorControllerDeleted(); err != nil {
+		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
+	}
+
+	createUntrustedWorkload(t)
+
+	t.Log("waiting for FailedCreatePodSandBox event")
+	if err := util.WaitForFailedCreatePodSandBoxEvent(); err != nil {
+		t.Fatalf("waiting for FailedCreatePodSandBox event: %v", err)
+	}
+	deleteUntrustedWorkload(t)
+}
+
+func testGvisorRestart(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner.EnsureRunning()
+	minikubeRunner.RunCommand("addons enable gvisor", true)
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	// TODO: @priyawadhwa to add test for stop as well
+	minikubeRunner.RunCommand("delete", false)
+	minikubeRunner.CheckStatus(state.None.String())
+	minikubeRunner.Start()
+	minikubeRunner.CheckStatus(state.Running.String())
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	createUntrustedWorkload(t)
+	t.Log("making sure untrusted workload is Running")
+	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+	deleteUntrustedWorkload(t)
+}
+
+func createUntrustedWorkload(t *testing.T) {
+	kubectlRunner := util.NewKubectlRunner(t)
+	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	t.Log("creating pod with untrusted workload annotation")
+	if _, err := kubectlRunner.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
+		t.Fatalf("creating untrusted nginx resource: %v", err)
+	}
+}
+
+func deleteUntrustedWorkload(t *testing.T) {
+	kubectlRunner := util.NewKubectlRunner(t)
+	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	if _, err := kubectlRunner.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
+		t.Logf("error deleting untrusted nginx resource: %v", err)
 	}
 }

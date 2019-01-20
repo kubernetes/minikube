@@ -1,0 +1,158 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: storage-gluster
+  name: heketi-service-account
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: heketi-sa-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: edit
+subjects:
+- kind: ServiceAccount
+  namespace: storage-gluster
+  name: heketi-service-account
+---
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: storage-gluster
+  name: heketi
+  labels:
+    glusterfs: heketi-service
+    heketi: service
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+  annotations:
+    description: Exposes Heketi Service
+spec:
+  selector:
+    glusterfs: heketi-pod
+  ports:
+  - name: heketi
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: storage-gluster
+  name: heketi-topology
+  labels:
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  minikube.json: |+
+    {
+      "clusters": [
+        {
+          "nodes": [
+            {
+              "node": {
+                "hostnames": {
+                  "manage": [
+                    "minikube"
+                  ],
+                  "storage": [
+                    "172.17.0.1"
+                  ]
+                },
+                "zone": 1
+              },
+              "devices": [
+                "/dev/fake"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  namespace: storage-gluster
+  name: heketi
+  labels:
+    glusterfs: heketi-deployment
+    heketi: deployment
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+  annotations:
+    description: Defines how to deploy Heketi
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: storage-gluster
+      name: heketi
+      labels:
+        glusterfs: heketi-pod
+        heketi: pod
+        k8s-app: storage-provisioner-gluster
+    spec:
+      serviceAccountName: heketi-service-account
+      containers:
+      - image: heketi/heketi:latest
+        imagePullPolicy: IfNotPresent
+        name: heketi
+        env:
+        - name: HEKETI_EXECUTOR
+          value: "kubernetes"
+        - name: HEKETI_FSTAB
+          value: "/var/lib/heketi/fstab"
+        - name: HEKETI_SNAPSHOT_LIMIT
+          value: '14'
+        - name: HEKETI_KUBE_GLUSTER_DAEMONSET
+          value: "y"
+        - name: HEKETI_IGNORE_STALE_OPERATIONS
+          value: "true"
+        - name: HEKETI_GLUSTERAPP_LOGLEVEL
+          value: "debug"
+        # initial topology.json in case the db does not exist
+        - name: HEKETI_TOPOLOGY_FILE
+          value: "/etc/heketi/topology/minikube.json"
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: db
+          mountPath: "/var/lib/heketi"
+        - name: initial-topology
+          mountPath: "/etc/heketi/topology"
+        readinessProbe:
+          timeoutSeconds: 3
+          initialDelaySeconds: 3
+          httpGet:
+            path: "/hello"
+            port: 8080
+        livenessProbe:
+          timeoutSeconds: 3
+          initialDelaySeconds: 30
+          httpGet:
+            path: "/hello"
+            port: 8080
+      volumes:
+      - name: db
+        hostPath:
+          path: "/var/lib/heketi"
+      - name: initial-topology
+        configMap:
+          name: heketi-topology

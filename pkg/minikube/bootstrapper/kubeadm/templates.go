@@ -38,7 +38,8 @@ networking:
 etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
-{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
+{{if .CRISocket}}criSocket: {{.CRISocket}}
+{{end}}{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
@@ -59,7 +60,7 @@ bootstrapTokens:
   - authentication
 kind: InitConfiguration
 nodeRegistration:
-  criSocket: /var/run/dockershim.sock
+  criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
   name: {{.NodeName}}
   taints: []
 ---
@@ -108,16 +109,8 @@ RestartSec=10
 WantedBy=multi-user.target
 `
 
-var kubeadmRestoreTemplate = template.Must(template.New("kubeadmRestoreTemplate").Parse(`
-sudo kubeadm alpha phase certs all --config {{.KubeadmConfigFile}} &&
-sudo /usr/bin/kubeadm alpha phase kubeconfig all --config {{.KubeadmConfigFile}} &&
-sudo /usr/bin/kubeadm alpha phase controlplane all --config {{.KubeadmConfigFile}} &&
-sudo /usr/bin/kubeadm alpha phase etcd local --config {{.KubeadmConfigFile}}
-`))
-
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(`
-sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}} &&
-sudo /usr/bin/kubeadm alpha phase addon {{ .DNSAddon }}
+sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}
 `))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key
