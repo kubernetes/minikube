@@ -19,18 +19,18 @@ Here are some specific features that align with our goal:
 ## Priorities
 This section contains the overall priorities of the minikube project, in rough order.
 
- * Setting up a well-tested, secure and complete Kubernetes cluster locally.
- * Cross Platform support (macOS, Linux, Windows)
- * Supporting existing Kubernetes features:
+ 1. Setting up a well-tested, secure and complete Kubernetes cluster locally.
+ 2. Cross Platform support (macOS, Linux, Windows)
+ 3. Supporting existing Kubernetes features:
     * Load Balancer support.
     * Persistent disks.
- * Keeping up with new Kubernetes releases and features.
- * Development-focused features like:
+ 4. Keeping up with new Kubernetes releases and features.
+ 5. Development-focused features like:
    * Mounting host directories.
    * VPN/proxy networking.
- * Native hypervisor integration.
- * Support for alternative Kubernetes runtimes, like rkt.
- * Removing the VirtualBox dependency and replacing it with Hypervisor.framework/Hyper-V.
+ 6. Native hypervisor integration.
+ 7. Support for alternative Kubernetes runtimes, like rkt.
+ 8. Removing the VirtualBox dependency and replacing it with Hypervisor.framework/Hyper-V.
 
 ## Timelines
 Minikube will release much faster than this, so this section is fairly speculative.

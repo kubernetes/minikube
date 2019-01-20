@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"html/template"
+	"net"
 	"strings"
 
 	"github.com/golang/glog"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
 )
@@ -94,7 +96,7 @@ func unmarkMaster() error {
 // cluster admin privileges to work with RBAC.
 func elevateKubeSystemPrivileges() error {
 	k8s := service.K8s
-	client, err := k8s.GetClientset()
+	client, err := k8s.GetClientset(constants.DefaultK8sClientTimeout)
 	if err != nil {
 		return errors.Wrap(err, "getting clientset")
 	}
@@ -121,6 +123,10 @@ func elevateKubeSystemPrivileges() error {
 	}
 	_, err = client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding)
 	if err != nil {
+		netErr, ok := err.(net.Error)
+		if ok && netErr.Timeout() {
+			return &util.RetriableError{Err: errors.Wrap(err, "creating clusterrolebinding")}
+		}
 		return errors.Wrap(err, "creating clusterrolebinding")
 	}
 	return nil
@@ -171,7 +177,7 @@ func restartKubeProxy(k8s config.KubernetesConfig) error {
 		APIServerPort    int
 	}{
 		AdvertiseAddress: k8s.NodeIP,
-		APIServerPort:    util.APIServerPort,
+		APIServerPort:    k8s.NodePort,
 	}
 
 	kubeconfig := bytes.Buffer{}

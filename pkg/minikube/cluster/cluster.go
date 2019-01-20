@@ -78,6 +78,10 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
+	if h.Driver.DriverName() != config.VMDriver {
+		fmt.Printf("Skipping %s driver, existing host has %s driver.\n", config.VMDriver, h.Driver.DriverName())
+	}
+
 	s, err := h.Driver.GetState()
 	glog.Infoln("Machine state: ", s)
 	if err != nil {
@@ -105,14 +109,14 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 func StopHost(api libmachine.API) error {
 	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return errors.Wrapf(err, "Error loading host: %s", cfg.GetMachineName())
+		return errors.Wrapf(err, "Load: %s", cfg.GetMachineName())
 	}
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
 		}
-		return errors.Wrapf(err, "Error stopping host: %s", cfg.GetMachineName())
+		return &util.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
 	}
 	return nil
 }
@@ -121,7 +125,7 @@ func StopHost(api libmachine.API) error {
 func DeleteHost(api libmachine.API) error {
 	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting host: %s", cfg.GetMachineName())
+		return errors.Wrapf(err, "Load: %s", cfg.GetMachineName())
 	}
 	m := util.MultiError{}
 	m.Collect(host.Driver.Remove())
@@ -194,6 +198,13 @@ func preCreateHost(config *cfg.MachineConfig) error {
 Please consider switching to the hyperkit driver, which is intended to replace the xhyve driver.
 See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
 To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+		}
+	case "vmwarefusion":
+		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+			fmt.Fprintln(os.Stderr, `WARNING: The vmwarefusion driver is now deprecated and support for it will be removed in a future release.
+				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
+				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
+				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
 	}
 

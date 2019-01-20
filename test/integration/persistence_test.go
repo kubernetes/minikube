@@ -44,10 +44,6 @@ func TestPersistence(t *testing.T) {
 	}
 
 	verify := func(t *testing.T) {
-		if err := util.WaitForDashboardRunning(t); err != nil {
-			t.Fatalf("waiting for dashboard to be up: %v", err)
-		}
-
 		if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
 		}

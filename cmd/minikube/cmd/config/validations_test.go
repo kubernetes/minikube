@@ -16,7 +16,10 @@ limitations under the License.
 
 package config
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 type validationTest struct {
 	value     string
@@ -93,4 +96,26 @@ func TestValidCIDR(t *testing.T) {
 	}
 
 	runValidations(t, tests, "cidr", IsValidCIDR)
+}
+
+func TestIsURLExists(t *testing.T) {
+
+	self, err := os.Executable()
+	if err != nil {
+		t.Error(err)
+	}
+
+	tests := []validationTest{
+		{
+			value:     "file://" + self,
+			shouldErr: false,
+		},
+
+		{
+			value:     "file://" + self + "/subpath-of-file",
+			shouldErr: true,
+		},
+	}
+
+	runValidations(t, tests, "url", IsURLExists)
 }

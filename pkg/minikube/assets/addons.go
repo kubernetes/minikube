@@ -74,7 +74,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
-	}, true, "dashboard"),
+	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
@@ -89,38 +89,28 @@ var Addons = map[string]*Addon{
 			"storage-provisioner.yaml",
 			"0640"),
 	}, true, "storage-provisioner"),
-	"coredns": NewAddon([]*BinDataAsset{
+	"storage-provisioner-gluster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-controller.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml",
 			constants.AddonsPath,
-			"coreDNS-controller.yaml",
+			"storage-gluster-ns.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-configmap.yaml",
+			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml",
 			constants.AddonsPath,
-			"coreDNS-configmap.yaml",
+			"glusterfs-daemonset.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-svc.yaml",
+			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml",
 			constants.AddonsPath,
-			"coreDNS-svc.yaml",
+			"heketi-deployment.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-crbinding.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml",
 			constants.AddonsPath,
-			"coreDNS-crbinding.yaml",
+			"storage-privisioner-glusterfile.yaml",
 			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-sa.yaml",
-			constants.AddonsPath,
-			"coreDNS-sa.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-clusterrole.yaml",
-			constants.AddonsPath,
-			"coreDNS-clusterrole.yaml",
-			"0640"),
-	}, true, "coredns"),
+	}, false, "storage-provisioner-gluster"),
 	"kube-dns": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/kube-dns/kube-dns-controller.yaml",
@@ -276,6 +266,23 @@ var Addons = map[string]*Addon{
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
 	}, false, "nvidia-gpu-device-plugin"),
+	"gvisor": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-pod.yaml",
+			constants.AddonsPath,
+			"gvisor-pod.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-config.toml",
+			constants.GvisorFilesPath,
+			constants.GvisorConfigTomlTargetName,
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-containerd-shim.toml",
+			constants.GvisorFilesPath,
+			constants.GvisorContainerdShimTargetName,
+			"0640"),
+	}, false, "gvisor"),
 }
 
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {

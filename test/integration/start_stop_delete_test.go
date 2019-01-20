@@ -25,37 +25,60 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func TestStartStop(t *testing.T) {
-
-	runner := NewMinikubeRunner(t)
-	runner.RunCommand("config set WantReportErrorPrompt false", true)
-	runner.RunCommand("delete", false)
-	runner.CheckStatus(state.None.String())
-
-	runner.Start()
-	runner.CheckStatus(state.Running.String())
-
-	ip := runner.RunCommand("ip", true)
-	ip = strings.TrimRight(ip, "\n")
-	if net.ParseIP(ip) == nil {
-		t.Fatalf("IP command returned an invalid address: %s", ip)
+	tests := []struct {
+		name    string
+		runtime string
+	}{
+		{
+			name:    "default",
+			runtime: "",
+		},
+		{
+			name:    "start stop with containerd runtime",
+			runtime: constants.ContainerdRuntime,
+		},
 	}
 
-	checkStop := func() error {
-		runner.RunCommand("stop", true)
-		return runner.CheckStatusNoFail(state.Stopped.String())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			runner := NewMinikubeRunner(t)
+			if test.runtime != "" && usingNoneDriver(runner) {
+				t.Skipf("skipping, can't use %s with none driver", test.runtime)
+			}
+
+			runner.RunCommand("config set WantReportErrorPrompt false", true)
+			runner.RunCommand("delete", false)
+			runner.CheckStatus(state.None.String())
+
+			runner.SetRuntime(test.runtime)
+			runner.Start()
+			runner.CheckStatus(state.Running.String())
+
+			ip := runner.RunCommand("ip", true)
+			ip = strings.TrimRight(ip, "\n")
+			if net.ParseIP(ip) == nil {
+				t.Fatalf("IP command returned an invalid address: %s", ip)
+			}
+
+			checkStop := func() error {
+				runner.RunCommand("stop", true)
+				return runner.CheckStatusNoFail(state.Stopped.String())
+			}
+
+			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
+				t.Fatalf("timed out while checking stopped status: %v", err)
+			}
+
+			runner.Start()
+			runner.CheckStatus(state.Running.String())
+
+			runner.RunCommand("delete", true)
+			runner.CheckStatus(state.None.String())
+		})
 	}
-
-	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-		t.Fatalf("timed out while checking stopped status: %v", err)
-	}
-
-	runner.Start()
-	runner.CheckStatus(state.Running.String())
-
-	runner.RunCommand("delete", true)
-	runner.CheckStatus(state.None.String())
 }

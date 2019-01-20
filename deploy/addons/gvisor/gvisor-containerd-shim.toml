@@ -1,0 +1,3 @@
+runc_shim = "/bin/containerd-shim"
+[runsc_config]
+ user-log="/tmp/runsc/user-log-%ID%.log"
