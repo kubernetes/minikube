@@ -294,10 +294,6 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "getting cluster config")
 	}
 
-	if config.MachineConfig.ContainerRuntime != "" {
-		return nil
-	}
-
 	dockerCfg, err := p.GenerateDockerOptions(engine.DefaultPort)
 	if err != nil {
 		return errors.Wrap(err, "generating docker options")
@@ -309,12 +305,15 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return err
 	}
 
-	if err := p.Service("docker", serviceaction.Enable); err != nil {
-		return err
-	}
+	if config.MachineConfig.ContainerRuntime == "" {
 
-	if err := p.Service("docker", serviceaction.Restart); err != nil {
-		return err
+		if err := p.Service("docker", serviceaction.Enable); err != nil {
+			return err
+		}
+
+		if err := p.Service("docker", serviceaction.Restart); err != nil {
+			return err
+		}
 	}
 
 	return nil
