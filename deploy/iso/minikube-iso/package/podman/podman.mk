@@ -1,4 +1,5 @@
 PODMAN_VERSION = v1.0.0
+PODMAN_COMMIT = 82e80110c3f2d8728745c47e340f3bee4d408846
 PODMAN_SITE = https://github.com/containers/libpod/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
@@ -24,7 +25,7 @@ endef
 
 define PODMAN_BUILD_CMDS
 	mkdir -p $(@D)/bin
-	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr podman
+	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) GIT_COMMIT=$(PODMAN_COMMIT) PREFIX=/usr podman
 endef
 
 define PODMAN_INSTALL_TARGET_CMDS
