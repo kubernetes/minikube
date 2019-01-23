@@ -361,6 +361,19 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorf("Error stopping rkt: %v", err)
 		}
 	}
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime != constants.ContainerdRuntime {
+		if _, err = host.RunSSHCommand("sudo systemctl stop containerd"); err != nil {
+			glog.Errorf("Error stopping containerd: %v", err)
+		}
+	}
+
+	if config.VMDriver != constants.DriverNone && (selectedContainerRuntime == constants.CrioRuntime || selectedContainerRuntime == constants.Cri_oRuntime) {
+		fmt.Println("Restarting crio runtime...")
+		// restart crio so that it can monitor all hook dirs
+		if _, err := host.RunSSHCommand("sudo systemctl restart crio"); err != nil {
+			glog.Errorf("Error restarting crio: %v", err)
+		}
+	}
 
 	if config.VMDriver != constants.DriverNone && selectedContainerRuntime == constants.ContainerdRuntime {
 		fmt.Println("Restarting containerd runtime...")
