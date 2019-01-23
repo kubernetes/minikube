@@ -1,4 +1,4 @@
-PODMAN_VERSION = v0.9.3
+PODMAN_VERSION = v1.0.0
 PODMAN_SITE = https://github.com/containers/libpod/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
