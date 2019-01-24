@@ -99,10 +99,10 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		h.HostOptions.EngineOptions.Env = e.Env
 		provisioner, err := provision.DetectProvisioner(h.Driver)
 		if err != nil {
-			return nil, errors.Wrap(err, "Error detecting OS")
+			return nil, errors.Wrap(err, "detecting provisioner")
 		}
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
-			return nil, errors.Wrap(err, "Error running provisioning")
+			return nil, errors.Wrap(err, "provision")
 		}
 	}
 
