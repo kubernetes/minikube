@@ -111,7 +111,7 @@ var statusCmd = &cobra.Command{
 				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			}
 			if ks {
-				kubeconfigSt = "Correctly Configured: pointing to minikube-vm at " + ip.String() + "\n"
+				kubeconfigSt = "Correctly Configured: pointing to minikube-vm at " + ip.String()
 			} else {
 				kubeconfigSt = "Misconfigured: pointing to stale minikube-vm." +
 					"\nTo fix the kubectl context, run minikube update-context"
