@@ -55,8 +55,8 @@ func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 	dir := new(ufsDir)
 	dir.Qid = *dir2Qid(d)
 	dir.Mode = dir2Npmode(d, dotu)
-	// dir.Atime = uint32(0 /*atime(sysMode).Unix()*/)
-	// dir.Mtime = uint32(d.ModTime().Unix())
+	dir.Atime = uint32(atime(d).Unix())
+	dir.Mtime = uint32(d.ModTime().Unix())
 	dir.Length = uint64(d.Size())
 	dir.Name = path[strings.LastIndex(path, "/")+1:]
 
