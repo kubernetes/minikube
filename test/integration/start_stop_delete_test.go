@@ -39,9 +39,14 @@ func TestStartStop(t *testing.T) {
 			runtime: "",
 		},
 		{
-			name:    "start stop with containerd runtime",
+			name:    "containerd",
 			runtime: constants.ContainerdRuntime,
 		},
+		{
+			name:    "crio",
+			runtime: constants.CrioRuntime,
+		},
+		// TODO(tstromberg): Add test for crio w/o cni
 	}
 
 	for _, test := range tests {
