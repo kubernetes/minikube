@@ -17,13 +17,12 @@ limitations under the License.
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
-	"k8s.io/minikube/pkg/minikube/config"
-
-	"errors"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 var configGetCmd = &cobra.Command{
