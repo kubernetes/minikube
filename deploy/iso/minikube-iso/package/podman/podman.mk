@@ -1,5 +1,6 @@
-PODMAN_VERSION = v0.4.1
-PODMAN_SITE = https://github.com/projectatomic/libpod/archive
+PODMAN_VERSION = v1.0.0
+PODMAN_COMMIT = 82e80110c3f2d8728745c47e340f3bee4d408846
+PODMAN_SITE = https://github.com/containers/libpod/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
 PODMAN_LICENSE_FILES = LICENSE
@@ -15,14 +16,16 @@ PODMAN_BIN_ENV = \
 
 
 define PODMAN_CONFIGURE_CMDS
-	mkdir -p $(PODMAN_GOPATH)/src/github.com/projectatomic
-	ln -sf $(@D) $(PODMAN_GOPATH)/src/github.com/projectatomic/libpod
+	mkdir -p $(PODMAN_GOPATH)/src/github.com/containers
+	ln -sf $(@D) $(PODMAN_GOPATH)/src/github.com/containers/libpod
+	mkdir -p $(PODMAN_GOPATH)/src/github.com/varlink
+	ln -sf $(@D)/vendor/github.com/varlink/go $(PODMAN_GOPATH)/src/github.com/varlink/go
 	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.tools DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
 endef
 
 define PODMAN_BUILD_CMDS
 	mkdir -p $(@D)/bin
-	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) PREFIX=/usr podman
+	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) GIT_COMMIT=$(PODMAN_COMMIT) PREFIX=/usr podman
 endef
 
 define PODMAN_INSTALL_TARGET_CMDS
