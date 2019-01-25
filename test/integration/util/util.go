@@ -204,13 +204,16 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 func (m *MinikubeRunner) Start() {
+	opts := ""
+	// TODO(tstromberg): Deprecate this in favor of making it possible for tests to define explicit flags.
 	switch r := m.Runtime; r {
 	case constants.ContainerdRuntime:
-		containerdFlags := "--container-runtime=containerd --network-plugin=cni --enable-default-cni --docker-opt containerd=/var/run/containerd/containerd.sock"
-		m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, containerdFlags), true)
-	default:
-		m.RunCommand(fmt.Sprintf("start %s %s --alsologtostderr --v=5", m.StartArgs, m.Args), true)
+		opts = "--container-runtime=containerd --network-plugin=cni --enable-default-cni --docker-opt containerd=/var/run/containerd/containerd.sock"
+	case constants.CrioRuntime:
+		opts = "--container-runtime=crio --network-plugin=cni --enable-default-cni"
 	}
+	m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, opts), true)
+
 }
 
 func (m *MinikubeRunner) EnsureRunning() {
