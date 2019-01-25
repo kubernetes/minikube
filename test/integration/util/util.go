@@ -189,7 +189,7 @@ func (m *MinikubeRunner) Start() {
 	case constants.ContainerdRuntime:
 		opts = "--container-runtime=containerd --network-plugin=cni --enable-default-cni --docker-opt containerd=/var/run/containerd/containerd.sock"
 	case constants.CrioRuntime:
-		opts = "--container-runtime=crio --network-plugin=cni"
+		opts = "--container-runtime=crio --network-plugin=cni --enable-default-cni"
 	}
 	m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, opts), true)
 
