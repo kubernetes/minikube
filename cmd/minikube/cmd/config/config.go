@@ -219,6 +219,11 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "logviewer",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+  },
+  {
 		name:        "gvisor",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon, IsContainerdRuntime},
