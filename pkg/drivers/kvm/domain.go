@@ -36,9 +36,6 @@ const domainTmpl = `
     <acpi/>
     <apic/>
     <pae/>
-    <kvm>
-      <hidden state='on'/>
-    </kvm>
   </features>
   <cpu mode='host-passthrough'/>
   <os>
