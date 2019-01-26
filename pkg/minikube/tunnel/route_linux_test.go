@@ -91,8 +91,8 @@ func TestLinuxRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 func TestParseTable(t *testing.T) {
 
 	const table = `Kernel IP routing table
-Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
-0.0.0.0         172.31.126.254  0.0.0.0         UG        0 0          0 eno1
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+0.0.0.0         172.31.126.254  0.0.0.0         UG    100    0        0 eno1
 10.96.0.0       127.0.0.1   		255.240.0.0			UG        0 0          0 eno1
 172.31.126.0    0.0.0.0         255.255.255.0   U         0 0          0 eno1
 `
