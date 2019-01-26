@@ -36,10 +36,10 @@ import (
 	"github.com/johanneswuerbach/nfsexports"
 	"github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
+	"io/ioutil"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
-	"io/ioutil"
 )
 
 const (
