@@ -33,12 +33,13 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
-	nfsexports "github.com/johanneswuerbach/nfsexports"
-	hyperkit "github.com/moby/hyperkit/go"
+	"github.com/johanneswuerbach/nfsexports"
+	"github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
+	"io/ioutil"
 )
 
 const (
@@ -126,6 +127,7 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	pid := d.getPid()
+	log.Infof("Found hyperkit pid: %d", pid)
 	if pid == 0 {
 		return state.Stopped, nil
 	}
@@ -169,12 +171,14 @@ func (d *Driver) Restart() error {
 
 // Start a host
 func (d *Driver) Start() error {
-	h, err := hyperkit.New("", d.VpnKitSock, filepath.Join(d.StorePath, "machines", d.MachineName))
+	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
+	if err := d.checkForPidFile(); err != nil {
+		return err
+	}
+	h, err := hyperkit.New("", d.VpnKitSock, stateDir)
 	if err != nil {
 		return errors.Wrap(err, "new-ing Hyperkit")
 	}
-
-	// TODO: handle the rest of our settings.
 	h.Kernel = d.ResolveStorePath("bzimage")
 	h.Initrd = d.ResolveStorePath("initrd")
 	h.VMNet = true
@@ -183,13 +187,20 @@ func (d *Driver) Start() error {
 	h.CPUs = d.CPU
 	h.Memory = d.Memory
 	h.UUID = d.UUID
-
 	if vsockPorts, err := d.extractVSockPorts(); err != nil {
 		return err
 	} else if len(vsockPorts) >= 1 {
 		h.VSock = true
 		h.VSockPorts = vsockPorts
 	}
+	h.Disks = []hyperkit.DiskConfig{
+		{
+			Path:   pkgdrivers.GetDiskPath(d.BaseDriver),
+			Size:   d.DiskSize,
+			Driver: "virtio-blk",
+		},
+	}
+	//}
 
 	log.Infof("Using UUID %s", h.UUID)
 	mac, err := GetMACAddressFromUUID(h.UUID)
@@ -200,13 +211,7 @@ func (d *Driver) Start() error {
 	// Need to strip 0's
 	mac = trimMacAddress(mac)
 	log.Infof("Generated MAC %s", mac)
-	h.Disks = []hyperkit.DiskConfig{
-		{
-			Path:   pkgdrivers.GetDiskPath(d.BaseDriver),
-			Size:   d.DiskSize,
-			Driver: "virtio-blk",
-		},
-	}
+
 	log.Infof("Starting with cmdline: %s", d.Cmdline)
 	if err := h.Start(d.Cmdline); err != nil {
 		return errors.Wrapf(err, "starting with cmd line: %s", d.Cmdline)
@@ -236,6 +241,48 @@ func (d *Driver) Start() error {
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (d *Driver) checkForPidFile() error {
+	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
+	pidFile := filepath.Join(stateDir, pidFileName)
+
+	if _, err := os.Stat(pidFile); err != nil {
+		log.Infof("clean start, hyperkit pid file doesn't exist: %s", pidFile)
+		return nil
+	}
+
+	log.Warnf("hyperkit pid file exists: %s", pidFile)
+	// we have a pid file, hyperkit might be running!
+	// Make sure the pid written by hyperkit is the same as in the json
+	content, err := ioutil.ReadFile(pidFile)
+	if err != nil {
+		return errors.Wrapf(err, "reading pidfile %s", pidFile)
+	}
+	pid, err := strconv.Atoi(string(content[:]))
+	if err != nil {
+		return errors.Wrapf(err, "parsing pidfile %s", pidFile)
+	}
+
+	p, _ := os.FindProcess(pid) //noop on linux
+	// Sending a signal of 0 can be used to check the existence of a process.
+	if err := p.Signal(syscall.Signal(0)); err == nil {
+		return fmt.Errorf("something is not right...please stop all minikube instances, seemingly a hyperkit server is already running with pid %d", pid)
+	}
+
+	machinePID := d.getPid()
+
+	if machinePID != pid {
+		return fmt.Errorf("something is not right...the PID reported in %s (%d) is different from machine PID (%d from %s)", pidFile, pid, machinePID, machineFileName)
+	}
+
+	log.Warnf("No running process found with PID %d, removing %s...", machinePID, pidFile)
+	if err := os.Remove(pidFile); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
+	}
+	log.Infof("Removed PID file.")
 
 	return nil
 }
@@ -350,7 +397,6 @@ func (d *Driver) sendSignal(s os.Signal) error {
 
 func (d *Driver) getPid() int {
 	pidPath := d.ResolveStorePath(machineFileName)
-
 	f, err := os.Open(pidPath)
 	if err != nil {
 		log.Warnf("Error reading pid file: %v", err)
