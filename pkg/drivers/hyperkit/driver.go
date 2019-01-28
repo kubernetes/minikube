@@ -21,7 +21,6 @@ package hyperkit
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/mitchellh/go-ps"
 	"os"
 	"os/user"
 	"path"
@@ -31,13 +30,16 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mitchellh/go-ps"
+
+	"io/ioutil"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/johanneswuerbach/nfsexports"
 	"github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
-	"io/ioutil"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
@@ -268,13 +270,12 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
-	// we have a pid file, hyperkit might be running!
-	// Make sure the pid written by hyperkit is the same as in the json
+
 	content, err := ioutil.ReadFile(pidFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading pidfile %s", pidFile)
 	}
-	pid, err := strconv.Atoi(string(content[:]))
+	pid, err := strconv.Atoi(string(content))
 	if err != nil {
 		return errors.Wrapf(err, "parsing pidfile %s", pidFile)
 	}
