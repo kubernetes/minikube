@@ -47,6 +47,4 @@ Please send a PR to suggest any improvements to it.
 - Pre-flight error checks for common connectivity and configuration errors
 - Improve the `minikube status` command so that it can diagnose common issues
 - Mark all features not covered by continuous integration as `experimental`
-- Replace built-in machine drivers (virtualbox, kvm2) with their upstream equivalents
-- Remove dependency on boot2docker (deprecated)
 - Stabilize and improve profiles support (AKA multi-cluster)
