@@ -4,7 +4,7 @@ This roadmap is a living document outlining the major technical improvements whi
 
 Please send a PR to suggest any improvements to it.
 
-## (#1). User-friendly and accessible
+## (#1) User-friendly and accessible
 
 - Creation of a user-centric minikube website for installation & documentation
 - Localized output to 5+ written languages
