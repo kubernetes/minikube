@@ -76,7 +76,7 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 
 		//don't care about the routes that 0.0.0.0
 		if len(fields) == 0 ||
-				len(fields) > 0 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
+			len(fields) > 0 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
 			continue
 		}
 
