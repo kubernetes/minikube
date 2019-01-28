@@ -1,6 +1,6 @@
 # minikube roadmap (2019)
 
-This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2019, divided by how they apply to the minikube [(guiding principles)[principles.md]
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2019, divided by how they apply to our [guiding principles](principles.md)
 
 Please send a PR to suggest any improvements to it.
 
