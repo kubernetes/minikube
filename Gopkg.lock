@@ -295,11 +295,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:911a1eca3596f7af82d458d47291917e31be273376b06caf7de362cc98487076"
+  digest = "1:08e9d908b342ad3ec85cb188fd0c16c6e3e3fd4af23f1736f2eb2e174a6ec43c"
   name = "github.com/johanneswuerbach/nfsexports"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "a9068f3f0daa39616953aec11c3eb1209ebc4086"
+  revision = "1aa528dcb3451733ef505b9a268843831cb44b3f"
 
 [[projects]]
   digest = "1:8e36686e8b139f8fe240c1d5cf3a145bc675c22ff8e707857cdd3ae17b00d728"

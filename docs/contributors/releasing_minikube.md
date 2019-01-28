@@ -7,6 +7,7 @@ Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally
 
  * navigate to the minikube ISO jenkins job
  * Ensure that you are logged in (top right)
+ * Click "▶️ Build with Parameters" (left)
  * For `ISO_VERSION`, type in the intended release version (same as the minikube binary's version)
  * For `ISO_BUCKET`, type in `minikube/iso`
  * Click *Build*
@@ -18,11 +19,11 @@ The build will take roughly 50 minutes.
 Edit the minikube `Makefile`, updating the version number values at the top:
 
 * `VERSION_MINOR` (and `VERSION_MAJOR`, `VERSION_BUILD` as necessary)
-* `ISO_VERSION` (only update this if there is a new ISO release)
+* `ISO_VERSION` (only update this if there is a new ISO release - though there almost always is)
 
 ## Run Local Integration Test
 
-With the updated Makefile, run the integration tests and ensure that all tests pass:
+Once the ISO build completes, run run the integration tests with the updated Makefile:
 
 ```shell
 env TEST_ARGS="-minikube-start-args=--vm-driver=kvm2" make integration
@@ -33,14 +34,12 @@ env TEST_ARGS="-minikube-start-args=--vm-driver=kvm2" make integration
 If there are supported platforms which do not have functioning Jenkins workers (Windows), you may use the following to build a sanity check:
 
 ```shell
-BUILD_IN_DOCKER=y make cross checksum
+env BUILD_IN_DOCKER=y make cross checksum
 ```
 
 ## Send out Makefile PR
 
-This will update users of HEAD to the new ISO.
-
-Please pay attention to test failures, as this is our integration test across platforms. If there are known acceptable failures, please add a PR comment linking to the appropriate issue.
+Once submitted, HEAD will use the new ISO. Please pay attention to test failures, as this is our integration test across platforms. If there are known acceptable failures, please add a PR comment linking to the appropriate issue.
 
 ## Update Release Notes 
 
@@ -54,9 +53,15 @@ Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/
 
 ## Tag the Release
 
-Run a command like this to tag it locally: `git tag -a v<version> -m "<version> Release"`.
+NOTE: Confirm that all release-related PR's have been submitted before doing this step. 
 
-And run a command like this to push the tag: `git push upstream v<version>`.
+From your own fork of minikube, run:
+
+```
+git checkout master
+git tag -a v<version> -m "<version> Release"
+git push upstream v<version>
+```
 
 ## Build the Release
 
@@ -64,15 +69,16 @@ This step uses the git tag to publish new binaries to GCS and create a github re
 
  * navigate to the minikube "Release" jenkins job
  * Ensure that you are logged in (top right)
+ * Click "▶️ Build with Parameters" (left)
  * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
  * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256`
  * Click *Build*
 
-## Update releases.json
-
-minikube-bot will send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. Make sure it is submitted, or hack one together yourself.
+## Check releases.json
 
 This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
+
+minikube-bot will send out a PR to update the release checksums at the top of `deploy/minikube/releases.json`. You should merge this PR.
 
 ## Package managers which include minikube
 

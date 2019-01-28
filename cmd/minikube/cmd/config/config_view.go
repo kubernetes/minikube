@@ -23,7 +23,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )

@@ -54,6 +54,9 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm644 \
 		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/policy.json \
 		$(TARGET_DIR)/etc/containers/policy.json
+	$(INSTALL) -Dm644 \
+		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/registries.conf \
+		$(TARGET_DIR)/etc/containers/registries.conf
 
 	mkdir -p $(TARGET_DIR)/etc/sysconfig
 	echo 'CRIO_OPTIONS="--log-level=debug"' > $(TARGET_DIR)/etc/sysconfig/crio

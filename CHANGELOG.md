@@ -1,6 +1,10 @@
 # Minikube Release Notes
 
-# Version 0.33.0 - 2019-01-07
+# Version 0.33.1 - 2019-01-18
+
+* Install upstream runc into /usr/bin/docker-runc [#3545](https://github.com/kubernetes/minikube/pull/3545)
+
+# Version 0.33.0 - 2019-01-17
 
 * Set default Kubernetes version to v1.13.2 (latest stable) [#3527](https://github.com/kubernetes/minikube/pull/3527)
 * Update to opencontainers/runc HEAD as of 2019-01-15 [#3535](https://github.com/kubernetes/minikube/pull/3535)

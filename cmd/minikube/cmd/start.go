@@ -361,12 +361,53 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorf("Error stopping rkt: %v", err)
 		}
 	}
+	if config.VMDriver != constants.DriverNone && selectedContainerRuntime != constants.ContainerdRuntime {
+		if _, err = host.RunSSHCommand("sudo systemctl stop containerd"); err != nil {
+			glog.Errorf("Error stopping containerd: %v", err)
+		}
+	}
+
+	if config.VMDriver != constants.DriverNone && (selectedContainerRuntime == constants.CrioRuntime || selectedContainerRuntime == constants.Cri_oRuntime) {
+		fmt.Println("Restarting crio runtime...")
+		// restart crio so that it can monitor all hook dirs
+		if _, err := host.RunSSHCommand("sudo systemctl restart crio"); err != nil {
+			glog.Errorf("Error restarting crio: %v", err)
+		}
+	}
 
 	if config.VMDriver != constants.DriverNone && selectedContainerRuntime == constants.ContainerdRuntime {
 		fmt.Println("Restarting containerd runtime...")
 		// restart containerd so that it can install all plugins
 		if _, err := host.RunSSHCommand("sudo systemctl restart containerd"); err != nil {
 			glog.Errorf("Error restarting containerd: %v", err)
+		}
+	}
+
+	if config.VMDriver == constants.DriverNone {
+		if viper.GetBool(cfg.WantNoneDriverWarning) {
+			fmt.Println(`===================
+WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
+	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks` + "\n")
+		}
+
+		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
+			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
+You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
+
+	sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
+	sudo chown -R $USER $HOME/.kube
+	sudo chgrp -R $USER $HOME/.kube
+
+	sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
+	sudo chown -R $USER $HOME/.minikube
+	sudo chgrp -R $USER $HOME/.minikube
+
+This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
+		}
+		if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
+			glog.Errorf("Error recursively changing ownership of directory %s: %s",
+				constants.GetMinipath(), err)
+			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	}
 
@@ -448,34 +489,6 @@ func runStart(cmd *cobra.Command, args []string) {
 			kubeCfgSetup.ClusterName)
 	} else {
 		fmt.Println("Kubectl is now configured to use the cluster.")
-	}
-
-	if config.VMDriver == "none" {
-		if viper.GetBool(cfg.WantNoneDriverWarning) {
-			fmt.Println(`===================
-WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
-	The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks` + "\n")
-		}
-
-		if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-			fmt.Println(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
-You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
-
-	sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
-	sudo chown -R $USER $HOME/.kube
-	sudo chgrp -R $USER $HOME/.kube
-
-	sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
-	sudo chown -R $USER $HOME/.minikube
-	sudo chgrp -R $USER $HOME/.minikube
-
-This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
-		}
-		if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
-			glog.Errorf("Error recursively changing ownership of directory %s: %s",
-				constants.GetMinipath(), err)
-			cmdutil.MaybeReportErrorAndExit(err)
-		}
 	}
 
 	fmt.Println("Loading cached images from config file.")

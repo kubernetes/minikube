@@ -32,6 +32,7 @@ import (
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -94,6 +95,18 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		}
 		if err := api.Save(h); err != nil {
 			return nil, errors.Wrap(err, "Error saving started host")
+		}
+	}
+
+	e := engineOptions(config)
+	if len(e.Env) > 0 {
+		h.HostOptions.EngineOptions.Env = e.Env
+		provisioner, err := provision.DetectProvisioner(h.Driver)
+		if err != nil {
+			return nil, errors.Wrap(err, "detecting provisioner")
+		}
+		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
+			return nil, errors.Wrap(err, "provision")
 		}
 	}
 
