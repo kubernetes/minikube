@@ -21,6 +21,7 @@ package hyperkit
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/mitchellh/go-ps"
 	"os"
 	"os/user"
 	"path"
@@ -127,7 +128,6 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	pid := d.getPid()
-	log.Infof("Found hyperkit pid: %d", pid)
 	if pid == 0 {
 		return state.Stopped, nil
 	}
@@ -172,7 +172,7 @@ func (d *Driver) Restart() error {
 // Start a host
 func (d *Driver) Start() error {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
-	if err := d.checkForPidFile(); err != nil {
+	if err := d.recoverFromUncleanShutdown(); err != nil {
 		return err
 	}
 	h, err := hyperkit.New("", d.VpnKitSock, stateDir)
@@ -245,16 +245,29 @@ func (d *Driver) Start() error {
 	return nil
 }
 
-func (d *Driver) checkForPidFile() error {
+//recoverFromUncleanShutdown searches for an existing hyperkit.pid file in
+//the machine directory. If it can't find it, a clean shutdown is assumed.
+//If it finds the pid file, it checks for a running hyperkit process with that pid
+//as the existence of a file might not indicate an unclean shutdown but an actual running
+//hyperkit server. This is an error situation - we shouldn't start minikube as there is likely
+//an instance running already. If the PID in the pidfile does not belong to a running hyperkit
+//process, we can safely delete it, and there is a good chance the machine will recover when restarted.
+func (d *Driver) recoverFromUncleanShutdown() error {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	pidFile := filepath.Join(stateDir, pidFileName)
 
-	if _, err := os.Stat(pidFile); err != nil {
+	_, err := os.Stat(pidFile)
+
+	if os.IsNotExist(err) {
 		log.Infof("clean start, hyperkit pid file doesn't exist: %s", pidFile)
 		return nil
 	}
 
-	log.Warnf("hyperkit pid file exists: %s", pidFile)
+	if err != nil {
+		return errors.Wrap(err, "checking hyperkit pid file existence")
+	}
+
+	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
 	// we have a pid file, hyperkit might be running!
 	// Make sure the pid written by hyperkit is the same as in the json
 	content, err := ioutil.ReadFile(pidFile)
@@ -266,23 +279,19 @@ func (d *Driver) checkForPidFile() error {
 		return errors.Wrapf(err, "parsing pidfile %s", pidFile)
 	}
 
-	p, _ := os.FindProcess(pid) //noop on linux
-	// Sending a signal of 0 can be used to check the existence of a process.
-	if err := p.Signal(syscall.Signal(0)); err == nil {
-		return fmt.Errorf("something is not right...please stop all minikube instances, seemingly a hyperkit server is already running with pid %d", pid)
+	p, err := ps.FindProcess(pid)
+	if err != nil {
+		return errors.Wrapf(err, "trying to find process for PID %s", pid)
 	}
 
-	machinePID := d.getPid()
-
-	if machinePID != pid {
-		return fmt.Errorf("something is not right...the PID reported in %s (%d) is different from machine PID (%d from %s)", pidFile, pid, machinePID, machineFileName)
+	if p != nil && !strings.Contains(p.Executable(), "hyperkit") {
+		return fmt.Errorf("something is not right...please stop all minikube instances, seemingly a hyperkit server is already running with pid %d, executable: %s", pid, p.Executable())
 	}
 
-	log.Warnf("No running process found with PID %d, removing %s...", machinePID, pidFile)
+	log.Infof("No running hyperkit process found with PID %d, removing %s...", pid, pidFile)
 	if err := os.Remove(pidFile); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
 	}
-	log.Infof("Removed PID file.")
 
 	return nil
 }
