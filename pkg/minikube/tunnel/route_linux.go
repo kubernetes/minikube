@@ -54,7 +54,7 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 }
 
 func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, overlaps []string, err error) {
-	cmd := exec.Command("route", "-n")
+	cmd := exec.Command("ip", "r")
 	cmd.Env = append(cmd.Env, "LC_ALL=C")
 	stdInAndOut, err := cmd.CombinedOutput()
 	if err != nil {
@@ -70,37 +70,39 @@ func (router *osRouter) Inspect(route *Route) (exists bool, conflict string, ove
 
 func (router *osRouter) parseTable(table []byte) routingTable {
 	t := routingTable{}
-	skip := true
 	for _, line := range strings.Split(string(table), "\n") {
-		//after first line of header we can start consuming
-		if strings.HasPrefix(line, "Destination") {
-			skip = false
-			continue
-		}
 
 		fields := strings.Fields(line)
-		//don't care about the 0.0.0.0 routes
-		if skip || len(fields) == 0 || len(fields) > 0 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
+
+		//don't care about the routes that 0.0.0.0
+		if len(fields) == 0 ||
+				len(fields) > 0 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
 			continue
 		}
+
 		if len(fields) > 2 {
-			dstCIDRIP := net.ParseIP(fields[0])
-			dstCIDRMask := fields[2]
-			dstMaskIP := net.ParseIP(dstCIDRMask)
-			gatewayIP := net.ParseIP(fields[1])
 
-			if dstCIDRIP == nil || gatewayIP == nil || dstMaskIP == nil {
-				glog.V(8).Infof("skipping line: can't parse: %s", line)
+			//assuming "10.96.0.0/12 via 192.168.39.47 dev virbr1"
+			dstCIDRString := fields[0]
+			gatewayIPString := fields[2]
+			gatewayIP := net.ParseIP(gatewayIPString)
+
+			//if not via format, then gateway is assumed to be 0.0.0.0
+			// "1.2.3.0/24 dev eno1 proto kernel scope link src 1.2.3.54 metric 100"
+			if fields[1] != "via" {
+				gatewayIP = net.ParseIP("0.0.0.0")
+			}
+
+			_, ipNet, err := net.ParseCIDR(dstCIDRString)
+			if err != nil {
+				glog.V(4).Infof("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
+			} else if gatewayIP == nil {
+				glog.V(4).Infof("skipping line: can't parse IP from routing table: %s", gatewayIPString)
 			} else {
-
-				dstCIDR := &net.IPNet{
-					IP:   dstCIDRIP,
-					Mask: net.IPv4Mask(dstMaskIP[12], dstMaskIP[13], dstMaskIP[14], dstMaskIP[15]),
-				}
 
 				tableLine := routingTableLine{
 					route: &Route{
-						DestCIDR: dstCIDR,
+						DestCIDR: ipNet,
 						Gateway:  gatewayIP,
 					},
 					line: line,
