@@ -50,8 +50,13 @@ func testMounting(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	mountCmd := fmt.Sprintf("mount %s:/mount-9p", tempDir)
-	cmd, _ := minikubeRunner.RunDaemon(mountCmd)
+	var mountCmd string
+	if len(minikubeRunner.MountArgs) > 0 {
+		mountCmd = fmt.Sprintf("mount %s %s:/mount-9p", minikubeRunner.MountArgs, tempDir)
+	} else {
+		mountCmd = fmt.Sprintf("mount %s:/mount-9p", tempDir)
+	}
+	cmd, _, _ := minikubeRunner.RunDaemon2(mountCmd)
 	defer func() {
 		err := cmd.Process.Kill()
 		if err != nil {
@@ -117,6 +122,26 @@ func testMounting(t *testing.T) {
 		}
 		if string(out) != expected {
 			t.Fatalf("Expected file %s to contain text %s, was %s.", path, expected, out)
+		}
+
+		// test file timestamps are correct
+		files := []string{"fromhost", "frompod"}
+		for _, file := range files {
+			statCmd := fmt.Sprintf("stat /mount-9p/%s", file)
+			statOutput, err := minikubeRunner.SSH(statCmd)
+			if err != nil {
+				t.Fatalf("Unable to stat %s via SSH. error %v, %s", file, err, statOutput)
+			}
+
+			if runtime.GOOS == "windows" {
+				if strings.Contains(statOutput, "Access: 1970-01-01") {
+					t.Fatalf("Invalid access time\n%s", statOutput)
+				}
+			}
+
+			if strings.Contains(statOutput, "Modify: 1970-01-01") {
+				t.Fatalf("Invalid modify time\n%s", statOutput)
+			}
 		}
 
 		// test that fromhostremove was deleted by the pod from the mount via rm /mount-9p/fromhostremove

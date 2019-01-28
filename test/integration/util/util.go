@@ -45,6 +45,7 @@ type MinikubeRunner struct {
 	BinaryPath string
 	Args       string
 	StartArgs  string
+	MountArgs  string
 	Runtime    string
 }
 
@@ -164,6 +165,26 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 
 }
 
+func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command(path, commandArr...)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		m.T.Fatalf("stderr pipe failed: %s %v", command, err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		m.T.Fatalf("Error running command: %s %v", command, err)
+	}
+	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
+}
+
 // SetRuntime saves the runtime backend
 func (m *MinikubeRunner) SetRuntime(runtime string) {
 	m.Runtime = runtime
@@ -183,13 +204,16 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 func (m *MinikubeRunner) Start() {
+	opts := ""
+	// TODO(tstromberg): Deprecate this in favor of making it possible for tests to define explicit flags.
 	switch r := m.Runtime; r {
 	case constants.ContainerdRuntime:
-		containerdFlags := "--container-runtime=containerd --network-plugin=cni --enable-default-cni --docker-opt containerd=/var/run/containerd/containerd.sock"
-		m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, containerdFlags), true)
-	default:
-		m.RunCommand(fmt.Sprintf("start %s %s --alsologtostderr --v=5", m.StartArgs, m.Args), true)
+		opts = "--container-runtime=containerd --network-plugin=cni --enable-default-cni --docker-opt containerd=/var/run/containerd/containerd.sock"
+	case constants.CrioRuntime:
+		opts = "--container-runtime=crio --network-plugin=cni --enable-default-cni"
 	}
+	m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, opts), true)
+
 }
 
 func (m *MinikubeRunner) EnsureRunning() {

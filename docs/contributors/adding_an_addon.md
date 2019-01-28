@@ -4,6 +4,7 @@ To add a new addon to minikube the following steps are required:
 * For the new addon's .yaml file(s):
   * Put the required .yaml files for the addon in the `minikube/deploy/addons` directory.
   * Add the `kubernetes.io/minikube-addons: <NEW_ADDON_NAME>` label to each piece of the addon (ReplicationController, Service, etc.)
+  * Also, `addonmanager.kubernetes.io/mode` annotation is needed so that your resources are picked up by the `addon-manager` minikube addon.
   * In order to have `minikube addons open <NEW_ADDON_NAME>` work properly, the `kubernetes.io/minikube-addons-endpoint: <NEW_ADDON_NAME>` label must be added to the appropriate endpoint service (what the user would want to open/interact with).  This service must be of type NodePort.
 
 * To add the addon into minikube commands/VM:

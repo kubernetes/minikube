@@ -111,23 +111,6 @@ var Addons = map[string]*Addon{
 			"storage-privisioner-glusterfile.yaml",
 			"0640"),
 	}, false, "storage-provisioner-gluster"),
-	"kube-dns": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-controller.yaml",
-			constants.AddonsPath,
-			"kube-dns-controller.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-cm.yaml",
-			constants.AddonsPath,
-			"kube-dns-cm.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-svc.yaml",
-			constants.AddonsPath,
-			"kube-dns-svc.yaml",
-			"0640"),
-	}, false, "kube-dns"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml",
@@ -266,6 +249,18 @@ var Addons = map[string]*Addon{
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
 	}, false, "nvidia-gpu-device-plugin"),
+	"logviewer": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml",
+			constants.AddonsPath,
+			"logviewer-dp-and-svc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-rbac.yaml",
+			constants.AddonsPath,
+			"logviewer-rbac.yaml",
+			"0640"),
+	}, false, "logviewer"),
 	"gvisor": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/gvisor/gvisor-pod.yaml",

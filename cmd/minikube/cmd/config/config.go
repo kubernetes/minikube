@@ -20,9 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
-
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -219,6 +218,11 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "logviewer",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+	},
+	{
 		name:        "gvisor",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon, IsContainerdRuntime},
@@ -254,7 +258,7 @@ Configurable fields: ` + "\n\n" + configurableFields(),
 }
 
 func configurableFields() string {
-	var fields []string
+	fields := []string{}
 	for _, s := range settings {
 		fields = append(fields, " * "+s.name)
 	}
