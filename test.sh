@@ -34,7 +34,7 @@ echo "Running go tests..."
 cd ${GOPATH}/src/${REPO_PATH}
 rm -f out/$COV_FILE || true
 echo "mode: count" > out/$COV_FILE
-for pkg in $(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./...); do
+for pkg in $(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./cmd/... ./pkg/...); do
     go test -tags "container_image_ostree_stub containers_image_openpgp" -v $pkg -covermode=count -coverprofile=out/$COV_TMP_FILE
     # tail -n +2 skips the first line of the file
     # for coverprofile the first line is the `mode: count` line which we only want once in our file
@@ -43,7 +43,7 @@ done
 rm out/$COV_TMP_FILE
 
 # Ignore these paths in the following tests.
-ignore="vendor\|\_gopath\|assets.go\|out"
+ignore="vendor\|\_gopath\|assets.go\|out\/"
 
 # Check gofmt
 echo "Checking gofmt..."
@@ -51,6 +51,7 @@ set +e
 files=$(gofmt -l -s . | grep -v ${ignore})
 set -e
 if [[ $files ]]; then
+  gofmt -d ${files}
   echo "Gofmt errors in files: $files"
   exit 1
 fi

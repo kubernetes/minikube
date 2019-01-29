@@ -40,7 +40,8 @@ var dockerkillcmd = fmt.Sprintf(`docker rm $(%s)`, dockerstopcmd)
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-	URL string
+	URL              string
+	ContainerRuntime string
 }
 
 func NewDriver(hostName, storePath string) *Driver {
@@ -54,11 +55,13 @@ func NewDriver(hostName, storePath string) *Driver {
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
-	// check that docker is on path
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		return errors.Wrap(err, "docker cannot be found on the path for this machine. "+
-			"A docker installation is a requirement for using the none driver")
+	if d.ContainerRuntime == "" {
+		// check that docker is on path
+		_, err := exec.LookPath("docker")
+		if err != nil {
+			return errors.Wrap(err, "docker cannot be found on the path for this machine. "+
+				"A docker installation is a requirement for using the none driver")
+		}
 	}
 
 	return nil
@@ -124,7 +127,7 @@ func (d *Driver) Kill() error {
 	} {
 		cmd := exec.Command("sudo", cmdStr...)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			glog.Warningf("Error %s running command: %s. Output: %s", err, cmdStr, string(out))
+			glog.Warningf("Error %v running command: %s. Output: %s", err, cmdStr, out)
 		}
 	}
 	return nil
@@ -136,9 +139,14 @@ func (d *Driver) Remove() error {
 	sudo rm -rf /etc/kubernetes/manifests
 	sudo rm -rf /var/lib/minikube || true`
 
-	for _, cmdStr := range []string{rmCmd, dockerkillcmd} {
+	for _, cmdStr := range []string{rmCmd} {
 		if out, err := runCommand(cmdStr, true); err != nil {
-			glog.Warningf("Error %s running command: %s, Output: %s", err, cmdStr, out)
+			glog.Warningf("Error %v running command: %s, Output: %s", err, cmdStr, out)
+		}
+	}
+	if d.ContainerRuntime == "" {
+		if out, err := runCommand(dockerkillcmd, true); err != nil {
+			glog.Warningf("Error %v running command: %s, Output: %s", err, dockerkillcmd, out)
 		}
 	}
 
@@ -191,8 +199,10 @@ fi
 			break
 		}
 	}
-	if out, err := runCommand(dockerstopcmd, false); err != nil {
-		glog.Warningf("Error %s running command %s. Output: %s", err, dockerstopcmd, out)
+	if d.ContainerRuntime == "" {
+		if out, err := runCommand(dockerstopcmd, false); err != nil {
+			glog.Warningf("Error %v running command %s. Output: %s", err, dockerstopcmd, out)
+		}
 	}
 	return nil
 }

@@ -106,8 +106,7 @@ func GenerateBashCompletion(w io.Writer, cmd *cobra.Command) error {
 }
 
 func GenerateZshCompletion(out io.Writer, cmd *cobra.Command) error {
-	zsh_initialization := `
-#compdef minikube
+	zsh_initialization := `#compdef minikube
 
 __minikube_bash_source() {
 	alias shopt=':'

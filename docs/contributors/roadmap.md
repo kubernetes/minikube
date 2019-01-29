@@ -1,48 +1,50 @@
-# Minikube Roadmap
-This document contains the goals, plans, and priorities for the minikube project.
-Note that these priorities are not set in stone. Please file an issue if you'd like to discuss adding or reordering these :)
+# minikube roadmap (2019)
 
-## Goals
-The primary goal of minikube is to make it simple to run Kubernetes on your local machine, both for getting started and day-to-day development workflows.
-Here are some specific features that align with our goal:
-* Single command setup and teardown UX.
-* Support most portable Kubernetes core features (local storage, networking, auto-scaling, loadbalancing, etc.)
-* Unified UX across OSes.
-* Minimal dependencies on third party software.
-* Minimal resource overhead.
-* Becoming the default local-cluster setup for Kubernetes
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2019, divided by how they apply to our [guiding principles](principles.md)
 
-## Non-Goals
-* Simplifying Kubernetes production deployment experience. Kube-deploy is attempting to tackle this problem.
-* Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
+Please send a PR to suggest any improvements to it.
 
-## Priorities
-This section contains the overall priorities of the minikube project, in rough order.
+## (#1) User-friendly and accessible
 
- * Setting up a well-tested, secure and complete Kubernetes cluster locally.
- * Cross Platform support (macOS, Linux, Windows)
- * Supporting existing Kubernetes features:
-    * Load Balancer support.
-    * Persistent disks.
- * Keeping up with new Kubernetes releases and features.
- * Development-focused features like:
-   * Mounting host directories.
-   * VPN/proxy networking.
- * Native hypervisor integration.
- * Support for alternative Kubernetes runtimes, like rkt.
- * Removing the VirtualBox dependency and replacing it with Hypervisor.framework/Hyper-V.
+- Creation of a user-centric minikube website for installation & documentation
+- Localized output to 5+ written languages
+- Make minikube usable in environments with challenging connectivity requirements
+- Support lightweight deployment methods for environments where VM's are impractical
+- Add offline support
 
-## Timelines
-Minikube will release much faster than this, so this section is fairly speculative.
-This section is subject to change based on feedback and staffing.
+## (#2) Inclusive and community-driven
 
-### Q1 2017
+- Increase community involvement in planning and decision making
+- Make the continuous integration and release infrastructure publicly available
+- Double the number of active maintainers
 
-* Release Kubernetes 1.6.0 alpha and beta releases packaged with minikube
-* Release Kubernetes 1.6.0 packaged with minikube within two days of GA upstream build
-* Run local e2e Kubernetes tests with minikube
-* Minikube no longer depends on libmachine
-* Minikube no longer depends on existing KVM driver
-* Native drivers are made default and packaged with minikube
-* Improve minikube start time by 30%
-* Add a no-vm driver for linux CI environments
+## (#3) Cross-platform
+
+- Simplified installation process across all supported platforms
+- Users should never need to separately install supporting binaries
+
+## (#4) Support all Kubernetes features
+
+- Add multi-node support
+
+## (#5) High-fidelity
+
+- Reduce guest VM overhead by 50%
+- Disable swap in the guest VM
+
+## (#6) Compatible with all supported Kubernetes releases
+
+- Continuous Integration testing across all supported Kubernetes releases
+- Automatic PR generation for updating the default Kubernetes release minikube uses
+
+## (#7) Support for all Kubernetes-friendly container runtimes
+
+- Run all integration tests across all supported container runtimes
+- Support for Kata Containers (help wanted!)
+
+## (#8) Stable and easy to debug
+
+- Pre-flight error checks for common connectivity and configuration errors
+- Improve the `minikube status` command so that it can diagnose common issues
+- Mark all features not covered by continuous integration as `experimental`
+- Stabilize and improve profiles support (AKA multi-cluster)

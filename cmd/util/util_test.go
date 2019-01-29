@@ -19,8 +19,10 @@ package util
 import (
 	"bytes"
 	"fmt"
+	"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -30,6 +32,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
+
+func startTestHTTPServer(returnError bool, response string) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if returnError {
+			http.Error(w, response, 400)
+		} else {
+			fmt.Fprintf(w, response)
+		}
+	}))
+}
 
 func TestFormatError(t *testing.T) {
 	var testErr error
@@ -48,7 +60,7 @@ func TestFormatError(t *testing.T) {
 
 	_, err := FormatError(testErr)
 	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
@@ -59,7 +71,7 @@ func TestMarshallError(t *testing.T) {
 
 	errMsg, _ := FormatError(testErr)
 	if _, err := MarshallError(errMsg, "default", version.GetVersion()); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
@@ -70,19 +82,23 @@ func TestUploadError(t *testing.T) {
 	errMsg, _ := FormatError(testErr)
 	jsonErrMsg, _ := MarshallError(errMsg, "default", version.GetVersion())
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello, world!")
-	}))
-
+	server := startTestHTTPServer(false, "http test")
 	if err := UploadError(jsonErrMsg, server.URL); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
-	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "failed to write report", 400)
-	}))
+	server = startTestHTTPServer(true, "failed to write report")
 	if err := UploadError(jsonErrMsg, server.URL); err == nil {
 		t.Fatalf("UploadError should have errored from a 400 response")
+	}
+}
+
+func TestReportError(t *testing.T) {
+	testErr := errors.New("TestError 1")
+
+	server := startTestHTTPServer(false, "http test")
+	if err := ReportError(testErr, server.URL); err != nil {
+		t.Fatalf("ReportError")
 	}
 }
 
@@ -161,5 +177,28 @@ func TestKubectlDownloadMsg(t *testing.T) {
 				t.Errorf("Output did not contain substring expected got output %s", actual)
 			}
 		})
+	}
+}
+
+func TestGetKubeConfigPath(t *testing.T) {
+	var tests = []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "/home/fake/.kube/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+		{
+			input: "/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+	}
+
+	for _, test := range tests {
+		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
+		if result := GetKubeConfigPath(); result != test.want {
+			t.Errorf("Expected first splitted chunk, got: %s", result)
+		}
 	}
 }

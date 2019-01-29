@@ -17,22 +17,24 @@ limitations under the License.
 package util
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
-
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -43,6 +45,17 @@ type MinikubeRunner struct {
 	BinaryPath string
 	Args       string
 	StartArgs  string
+	MountArgs  string
+	Runtime    string
+}
+
+// Logf writes logs to stdout if -v is set.
+func Logf(str string, args ...interface{}) {
+	if !testing.Verbose() {
+		return
+	}
+	fmt.Printf(" %s | ", time.Now().Format("15:04:05"))
+	fmt.Println(fmt.Sprintf(str, args...))
 }
 
 func (m *MinikubeRunner) Run(cmd string) error {
@@ -53,6 +66,7 @@ func (m *MinikubeRunner) Run(cmd string) error {
 func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
+	Logf("Running: %s", cmd.Args)
 	return cmd.Run()
 }
 
@@ -65,46 +79,141 @@ func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
 	return err
 }
 
+// teeRun runs a command, streaming stdout, stderr to console
+func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return "", "", err
+	}
+	outPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", "", err
+	}
+
+	cmd.Start()
+	var outB bytes.Buffer
+	var errB bytes.Buffer
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		if err := commonutil.TeePrefix(commonutil.ErrPrefix, errPipe, &errB, Logf); err != nil {
+			m.T.Logf("tee: %v", err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		if err := commonutil.TeePrefix(commonutil.OutPrefix, outPipe, &outB, Logf); err != nil {
+			m.T.Logf("tee: %v", err)
+		}
+		wg.Done()
+	}()
+	err = cmd.Wait()
+	wg.Wait()
+	return outB.String(), errB.String(), err
+}
+
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
-	stdout, err := cmd.Output()
-
+	Logf("Run: %s", cmd.Args)
+	stdout, stderr, err := m.teeRun(cmd)
 	if checkError && err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
 		} else {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", command, err, stdout)
+			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stderr)
 		}
 	}
-	return string(stdout)
+	return stdout
 }
 
-func (m *MinikubeRunner) RunDaemon(command string) *exec.Cmd {
+// RunWithContext calls the minikube command with a context, useful for timeouts.
+func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (string, string, error) {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.CommandContext(ctx, path, commandArr...)
+	Logf("Run: %s", cmd.Args)
+	return m.teeRun(cmd)
+}
+
+func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
-	err := cmd.Start()
+	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %s", command, err)
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
 	}
-	return cmd
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		m.T.Fatalf("stderr pipe failed: %s %v", command, err)
+	}
+
+	var errB bytes.Buffer
+	go func() {
+		if err := commonutil.TeePrefix(commonutil.ErrPrefix, stderrPipe, &errB, Logf); err != nil {
+			m.T.Logf("tee: %v", err)
+		}
+	}()
+
+	err = cmd.Start()
+	if err != nil {
+		m.T.Fatalf("Error running command: %s %v", command, err)
+	}
+	return cmd, bufio.NewReader(stdoutPipe)
+
+}
+
+func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
+	commandArr := strings.Split(command, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command(path, commandArr...)
+	stdoutPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
+	}
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		m.T.Fatalf("stderr pipe failed: %s %v", command, err)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		m.T.Fatalf("Error running command: %s %v", command, err)
+	}
+	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
+}
+
+// SetRuntime saves the runtime backend
+func (m *MinikubeRunner) SetRuntime(runtime string) {
+	m.Runtime = runtime
 }
 
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
+	Logf("SSH: %s", command)
+
 	stdout, err := cmd.CombinedOutput()
+	Logf("Output: %s", stdout)
 	if err, ok := err.(*exec.ExitError); ok {
 		return string(stdout), err
 	}
-
 	return string(stdout), nil
 }
 
 func (m *MinikubeRunner) Start() {
-	m.RunCommand(fmt.Sprintf("start %s %s", m.StartArgs, m.Args), true)
+	opts := ""
+	// TODO(tstromberg): Deprecate this in favor of making it possible for tests to define explicit flags.
+	switch r := m.Runtime; r {
+	case constants.ContainerdRuntime:
+		opts = "--container-runtime=containerd --network-plugin=cni --enable-default-cni --docker-opt containerd=/var/run/containerd/containerd.sock"
+	case constants.CrioRuntime:
+		opts = "--container-runtime=crio --network-plugin=cni --enable-default-cni"
+	}
+	m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, opts), true)
+
 }
 
 func (m *MinikubeRunner) EnsureRunning() {
@@ -114,23 +223,18 @@ func (m *MinikubeRunner) EnsureRunning() {
 	m.CheckStatus("Running")
 }
 
-func (m *MinikubeRunner) SetEnvFromEnvCmdOutput(dockerEnvVars string) error {
+// ParseEnvCmdOutput parses the output of `env` (assumes bash)
+func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
+	env := map[string]string{}
 	re := regexp.MustCompile(`(\w+?) ?= ?"?(.+?)"?\n`)
-	matches := re.FindAllStringSubmatch(dockerEnvVars, -1)
-	seenEnvVar := false
-	for _, m := range matches {
-		seenEnvVar = true
-		key, val := m[1], m[2]
-		os.Setenv(key, val)
+	for _, m := range re.FindAllStringSubmatch(out, -1) {
+		env[m[1]] = m[2]
 	}
-	if !seenEnvVar {
-		return fmt.Errorf("Error: No environment variables were found in docker-env command output: %s", dockerEnvVars)
-	}
-	return nil
+	return env
 }
 
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.MinikubeStatus}} %s", m.Args), false)
+	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.Args), false)
 }
 
 func (m *MinikubeRunner) GetLogs() string {
@@ -146,7 +250,7 @@ func (m *MinikubeRunner) CheckStatus(desired string) {
 func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
 	s := m.GetStatus()
 	if s != desired {
-		return fmt.Errorf("Machine is in the wrong state: %s, expected  %s", s, desired)
+		return fmt.Errorf("got state: %q, expected %q", s, desired)
 	}
 	return nil
 }
@@ -182,8 +286,9 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			k.T.Logf("Error %s running command %s. Return code: %s", stdout, args, err)
-			return &commonutil.RetriableError{Err: fmt.Errorf("Error running command. Error  %s. Output: %s", err, stdout)}
+			retriable := &commonutil.RetriableError{Err: fmt.Errorf("error running command %s: %v. Stdout: \n %s", args, err, stdout)}
+			k.T.Log(retriable)
+			return retriable
 		}
 		return nil
 	}
@@ -196,7 +301,7 @@ func (k *KubectlRunner) CreateRandomNamespace() string {
 	const strLen = 20
 	name := genRandString(strLen)
 	if _, err := k.RunCommand([]string{"create", "namespace", name}); err != nil {
-		k.T.Fatalf("Error creating namespace: %s", err)
+		k.T.Fatalf("Error creating namespace: %v", err)
 	}
 	return name
 }
@@ -225,18 +330,6 @@ func WaitForBusyboxRunning(t *testing.T, namespace string) error {
 	return commonutil.WaitForPodsWithLabelRunning(client, namespace, selector)
 }
 
-func WaitForDashboardRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
-	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
-	}
-	if err := commonutil.WaitForDeploymentToStabilize(client, "kube-system", "kubernetes-dashboard", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for dashboard deployment to stabilize")
-	}
-
-	return nil
-}
-
 func WaitForIngressControllerRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 	if err != nil {
@@ -247,7 +340,7 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 		return errors.Wrap(err, "waiting for ingress-controller deployment to stabilize")
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app": "nginx-ingress-controller"}))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app.kubernetes.io/name": "nginx-ingress-controller"}))
 	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for ingress-controller pods")
 	}
@@ -276,6 +369,60 @@ func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 	return nil
 }
 
+// WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
+func WaitForGvisorControllerRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
+	}
+	return nil
+}
+
+// WaitForGvisorControllerDeleted waits for the gvisor controller pod to be deleted
+func WaitForGvisorControllerDeleted() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
+	if err := commonutil.WaitForPodDelete(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for gvisor controller pod deletion")
+	}
+	return nil
+}
+
+// WaitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
+func WaitForUntrustedNginxRunning() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for nginx pods")
+	}
+	return nil
+}
+
+// WaitForFailedCreatePodSandBoxEvent waits for a FailedCreatePodSandBox event to appear
+func WaitForFailedCreatePodSandBoxEvent() error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+	if err := commonutil.WaitForEvent(client, "default", "FailedCreatePodSandBox"); err != nil {
+		return errors.Wrap(err, "waiting for FailedCreatePodSandBox event")
+	}
+	return nil
+}
+
 func WaitForNginxRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 
@@ -300,7 +447,6 @@ func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (
 		if err == nil {
 			return nil
 		}
-		t.Logf("Error: %s, Retrying in %s. %d Retries remaining.", err, d, attempts-i)
 		time.Sleep(d)
 	}
 	return err

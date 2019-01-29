@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
@@ -58,6 +60,7 @@ var SupportedVMDrivers = [...]string{
 	"hyperv",
 	"hyperkit",
 	"kvm2",
+	"vmware",
 	"none",
 }
 
@@ -87,6 +90,10 @@ const DefaultStorageClassProvisioner = "standard"
 // Used to modify the cache field in the config file
 const Cache = "cache"
 
+func TunnelRegistryPath() string {
+	return filepath.Join(GetMinipath(), "tunnels.json")
+}
+
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
 	args := []string{GetMinipath()}
@@ -104,22 +111,25 @@ const (
 	DefaultDiskSize     = "20g"
 	MinimumDiskSizeMB   = 2000
 	DefaultVMDriver     = "virtualbox"
-	DefaultStatusFormat = "minikube: {{.MinikubeStatus}}\n" +
-		"cluster: {{.ClusterStatus}}\n" + "kubectl: {{.KubeconfigStatus}}\n"
+	DefaultStatusFormat = `host: {{.Host}}
+kubelet: {{.Kubelet}}
+apiserver: {{.ApiServer}}
+kubectl: {{.Kubeconfig}}
+`
 	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 	DefaultCacheListFormat     = "{{.CacheImage}}\n"
 	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
-	KubernetesVersionGCSURL    = "https://storage.googleapis.com/minikube/k8s_releases.json"
 	DefaultWait                = 20
 	DefaultInterval            = 6
+	DefaultK8sClientTimeout    = 60 * time.Second
 	DefaultClusterBootstrapper = "kubeadm"
 )
 
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
 var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
-var DefaultKubernetesVersion = "v1.10.0"
+var DefaultKubernetesVersion = "v1.13.2"
 
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
@@ -138,9 +148,11 @@ const AddonsPath = "/etc/kubernetes/addons"
 const FilesPath = "/files"
 
 const (
-	KubeletServiceFile     = "/lib/systemd/system/kubelet.service"
-	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	KubeadmConfigFile      = "/var/lib/kubeadm.yaml"
+	KubeletServiceFile      = "/lib/systemd/system/kubelet.service"
+	KubeletSystemdConfFile  = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	KubeadmConfigFile       = "/var/lib/kubeadm.yaml"
+	DefaultCNIConfigPath    = "/etc/cni/net.d/k8s.conf"
+	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 var Preflights = []string{
@@ -161,6 +173,23 @@ var Preflights = []string{
 	"CRI",
 }
 
+// AlternateRuntimePreflights are additional preflight checks that are skipped when running
+// any container runtime that isn't Docker
+var AlternateRuntimePreflights = append(Preflights, []string{
+	"Service-Docker",
+	"Port-8443",
+	"Port-10251",
+	"Port-10252",
+	"Port-2379",
+}...)
+
+const (
+	ContainerdRuntime = "containerd"
+	RktRuntime        = "rkt"
+	CrioRuntime       = "crio"
+	Cri_oRuntime      = "cri-o"
+)
+
 const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
@@ -170,7 +199,7 @@ const (
 )
 
 func GetKubernetesReleaseURL(binaryName, version string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/amd64/%s", version, binaryName)
+	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/%s/%s", version, runtime.GOARCH, binaryName)
 }
 
 func GetKubernetesReleaseURLSha1(binaryName, version string) string {
@@ -190,7 +219,8 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		"k8s.gcr.io/kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
 
-	gt_v1_10 := semver.MustParseRange(">=1.11.0")
+	gt_v1_11 := semver.MustParseRange(">=1.12.0")
+	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
 	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
 	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
@@ -200,7 +230,19 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		glog.Errorln("Error parsing version semver: ", err)
 	}
 
-	if v1_10(kubernetesVersion) || gt_v1_10(kubernetesVersion) {
+	if v1_11(kubernetesVersion) || gt_v1_11(kubernetesVersion) {
+		images = append(images, []string{
+			"k8s.gcr.io/pause-amd64:3.1",
+			"k8s.gcr.io/pause:3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
+			"k8s.gcr.io/etcd-amd64:3.2.18",
+			"k8s.gcr.io/coredns:1.1.3",
+			"k8s.gcr.io/coredns:1.2.2",
+		}...)
+
+	} else if v1_10(kubernetesVersion) {
 		images = append(images, []string{
 			"k8s.gcr.io/pause-amd64:3.1",
 			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
@@ -229,7 +271,7 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 	}
 
 	images = append(images, []string{
-		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.8.1",
+		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1",
 		"k8s.gcr.io/kube-addon-manager:v8.6",
 		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 	}...)
@@ -238,3 +280,24 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 }
 
 var ImageCacheDir = MakeMiniPath("cache", "images")
+
+const (
+	// GvisorFilesPath is the path to the gvisor files saved by go-bindata
+	GvisorFilesPath = "/tmp/gvisor"
+	// ContainerdConfigTomlPath is the path to the containerd config.toml
+	ContainerdConfigTomlPath = "/etc/containerd/config.toml"
+	// GvisorContainerdShimTomlPath is the path to givosr-containerd-shim.toml
+	GvisorContainerdShimTomlPath = "/etc/containerd/gvisor-containerd-shim.toml"
+	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
+	StoredContainerdConfigTomlPath = "/tmp/config.toml"
+
+	//GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
+	GvisorConfigTomlTargetName = "gvisor-config.toml"
+	// GvisorContainerdShimTargetName is the go-bindata target name for gvisor-containerd-shim
+	GvisorContainerdShimTargetName = "gvisor-containerd-shim.toml"
+
+	// GvisorContainerdShimURL is the url to download gvisor-containerd-shim
+	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
+	// GvisorURL is the url to download gvisor
+	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
+)

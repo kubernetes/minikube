@@ -14,8 +14,8 @@
 
 # Bump these on release
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 30
-VERSION_BUILD ?= 0
+VERSION_MINOR ?= 33
+VERSION_BUILD ?= 1
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -23,10 +23,11 @@ BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
-BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.10.1-1
+# NOTE: "latest" as of 2018-12-04. kube-cross images aren't updated as often as Kubernetes
+BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.30.0
+ISO_VERSION ?= v0.33.1
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -69,7 +70,7 @@ HYPERKIT_FILES := ./cmd/drivers/hyperkit
 STORAGE_PROVISIONER_FILES := ./cmd/storage-provisioner
 KVM_DRIVER_FILES := ./cmd/drivers/kvm/
 
-MINIKUBE_TEST_FILES := ./...
+MINIKUBE_TEST_FILES := ./cmd/... ./pkg/...
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
@@ -101,19 +102,19 @@ out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
 out/minikube.d: pkg/minikube/assets/assets.go
-	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) $(ORG) $(MINIKUBEFILES) $^ > $@
+	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) $(ORG) $^ $(MINIKUBEFILES) > $@
 
 -include out/minikube.d
 out/minikube-%-$(GOARCH): pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-ifneq ($(GOPATH)/src/$(REPOPATH),$(PWD))
+ifneq ($(GOPATH)/src/$(REPOPATH),$(CURDIR))
 	$(warning ******************************************************************************)
 	$(warning WARNING: You are building minikube outside the expected GOPATH:)
 	$(warning )
 	$(warning expected: $(GOPATH)/src/$(REPOPATH) )
-	$(warning   got:      $(PWD) )
+	$(warning   got:      $(CURDIR) )
 	$(warning )
 	$(warning You will likely encounter unusual build failures. For proper setup, read: )
 	$(warning https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md)
@@ -196,7 +197,7 @@ integration-versioned: out/minikube
 
 .PHONY: test
 out/test.d: pkg/minikube/assets/assets.go
-	$(MAKEDEPEND) -t test $(ORG) $(MINIKUBE_TEST_FILES) $^ > $@
+	$(MAKEDEPEND) -t test $(ORG) $^ $(MINIKUBE_TEST_FILES) > $@
 
 -include out/test.d
 test:
@@ -270,7 +271,7 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
 
 out/docker-machine-driver-hyperkit.d:
-	$(MAKEDEPEND) out/docker-machine-driver-hyperkit $(ORG) $(HYPERKIT_FILES) $^ > $@
+	$(MAKEDEPEND) out/docker-machine-driver-hyperkit $(ORG) $^ $(HYPERKIT_FILES) > $@
 
 -include out/docker-machine-driver-hyperkit.d
 out/docker-machine-driver-hyperkit:
@@ -297,7 +298,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner.d:
-	$(MAKEDEPEND) out/storage-provisioner $(ORG) $(STORAGE_PROVISIONER_FILES) $^ > $@
+	$(MAKEDEPEND) out/storage-provisioner $(ORG) $^ $(STORAGE_PROVISIONER_FILES) > $@
 
 -include out/storage-provisioner.d
 out/storage-provisioner:
@@ -310,6 +311,18 @@ storage-provisioner-image: out/storage-provisioner
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image
 	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+
+.PHONY: out/gvisor-addon
+out/gvisor-addon:
+	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
+
+.PHONY: gvisor-addon-image
+gvisor-addon-image: out/gvisor-addon
+	docker build -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
+
+.PHONY: push-gvisor-addon-image
+push-gvisor-addon-image: gvisor-addon-image
+	gcloud docker -- push $(REGISTRY)/gvisor-addon:latest
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum
@@ -334,7 +347,7 @@ test-linux-kvm:
 	ssh -F hack/prow/ssh_config -i $(JUMPHOST_KEY) kvmnode "mkdir -p $(REMOTE_TEST_DIR) && gsutil cp -r $(BUILD_UPLOAD_LOCATION)/* $(REMOTE_TEST_DIR) && cd $(REMOTE_TEST_DIR) && bash -x linux_integration_tests_kvm.sh"
 
 out/docker-machine-driver-kvm2.d:
-	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $(KVM_DRIVER_FILES) $^ > $@
+	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $^ $(KVM_DRIVER_FILES) > $@
 
 -include out/docker-machine-driver-kvm2.d
 out/docker-machine-driver-kvm2:

@@ -60,7 +60,7 @@ type DriverDef struct {
 	Name string
 
 	// BuiltIn indicates if the driver is builtin minikube binary, or the driver is
-	// triggerred through RPC.
+	// triggered through RPC.
 	Builtin bool
 
 	// ConfigCreator generate a raw driver object by minikube's machine config.

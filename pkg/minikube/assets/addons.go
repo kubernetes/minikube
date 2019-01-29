@@ -74,7 +74,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
-	}, true, "dashboard"),
+	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/storageclass/storageclass.yaml",
@@ -89,55 +89,28 @@ var Addons = map[string]*Addon{
 			"storage-provisioner.yaml",
 			"0640"),
 	}, true, "storage-provisioner"),
-	"coredns": NewAddon([]*BinDataAsset{
+	"storage-provisioner-gluster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-controller.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml",
 			constants.AddonsPath,
-			"coreDNS-controller.yaml",
+			"storage-gluster-ns.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-configmap.yaml",
+			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml",
 			constants.AddonsPath,
-			"coreDNS-configmap.yaml",
+			"glusterfs-daemonset.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-svc.yaml",
+			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml",
 			constants.AddonsPath,
-			"coreDNS-svc.yaml",
+			"heketi-deployment.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-crbinding.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml",
 			constants.AddonsPath,
-			"coreDNS-crbinding.yaml",
+			"storage-privisioner-glusterfile.yaml",
 			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-sa.yaml",
-			constants.AddonsPath,
-			"coreDNS-sa.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/coredns/coreDNS-clusterrole.yaml",
-			constants.AddonsPath,
-			"coreDNS-clusterrole.yaml",
-			"0640"),
-	}, true, "coredns"),
-	"kube-dns": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-controller.yaml",
-			constants.AddonsPath,
-			"kube-dns-controller.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-cm.yaml",
-			constants.AddonsPath,
-			"kube-dns-cm.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons/kube-dns/kube-dns-svc.yaml",
-			constants.AddonsPath,
-			"kube-dns-svc.yaml",
-			"0640"),
-	}, false, "kube-dns"),
+	}, false, "storage-provisioner-gluster"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml",
@@ -202,6 +175,11 @@ var Addons = map[string]*Addon{
 			"deploy/addons/ingress/ingress-configmap.yaml",
 			constants.AddonsPath,
 			"ingress-configmap.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/ingress/ingress-rbac.yaml",
+			constants.AddonsPath,
+			"ingress-rbac.yaml",
 			"0640"),
 		NewBinDataAsset(
 			"deploy/addons/ingress/ingress-dp.yaml",
@@ -271,6 +249,35 @@ var Addons = map[string]*Addon{
 			"nvidia-gpu-device-plugin.yaml",
 			"0640"),
 	}, false, "nvidia-gpu-device-plugin"),
+	"logviewer": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml",
+			constants.AddonsPath,
+			"logviewer-dp-and-svc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-rbac.yaml",
+			constants.AddonsPath,
+			"logviewer-rbac.yaml",
+			"0640"),
+	}, false, "logviewer"),
+	"gvisor": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-pod.yaml",
+			constants.AddonsPath,
+			"gvisor-pod.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-config.toml",
+			constants.GvisorFilesPath,
+			constants.GvisorConfigTomlTargetName,
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-containerd-shim.toml",
+			constants.GvisorFilesPath,
+			constants.GvisorContainerdShimTargetName,
+			"0640"),
+	}, false, "gvisor"),
 }
 
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {

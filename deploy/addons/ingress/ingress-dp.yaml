@@ -18,17 +18,19 @@ metadata:
   name: default-http-backend
   namespace: kube-system
   labels:
+    app.kubernetes.io/name: default-http-backend
+    app.kubernetes.io/part-of: kube-system
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: default-http-backend
+      app.kubernetes.io/name: default-http-backend
       addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
-        app: default-http-backend
+        app.kubernetes.io/name: default-http-backend
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       terminationGracePeriodSeconds: 60
@@ -37,7 +39,7 @@ spec:
         # Any image is permissible as long as:
         # 1. It serves a 404 page at /
         # 2. It serves 200 on a /healthz endpoint
-        image: k8s.gcr.io/defaultbackend:1.4
+        image: gcr.io/google_containers/defaultbackend:1.4
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -50,11 +52,11 @@ spec:
         - containerPort: 8080
         resources:
           limits:
-            cpu: 10m
-            memory: 20Mi
+            cpu: 20m
+            memory: 30Mi
           requests:
-            cpu: 10m
-            memory: 20Mi
+            cpu: 20m
+            memory: 30Mi
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -62,24 +64,30 @@ metadata:
   name: nginx-ingress-controller
   namespace: kube-system
   labels:
-    app: nginx-ingress-controller
+    app.kubernetes.io/name: nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx-ingress-controller
+      app.kubernetes.io/name: nginx-ingress-controller
+      app.kubernetes.io/part-of: kube-system
       addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
-        app: nginx-ingress-controller
-        name: nginx-ingress-controller
+        app.kubernetes.io/name: nginx-ingress-controller
+        app.kubernetes.io/part-of: kube-system
         addonmanager.kubernetes.io/mode: Reconcile
+      annotations:
+        prometheus.io/port: '10254'
+        prometheus.io/scrape: 'true'
     spec:
+      serviceAccountName: nginx-ingress
       terminationGracePeriodSeconds: 60
       containers:
-      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.16.2
+      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
         name: nginx-ingress-controller
         imagePullPolicy: IfNotPresent
         readinessProbe:
@@ -108,8 +116,7 @@ spec:
           hostPort: 80
         - containerPort: 443
           hostPort: 443
-        # we expose 18080 to access nginx stats in url /nginx-status
-        # this is optional
+        # (Optional) we expose 18080 to access nginx stats in url /nginx-status
         - containerPort: 18080
           hostPort: 18080
         args:
@@ -118,6 +125,7 @@ spec:
         - --configmap=$(POD_NAMESPACE)/nginx-load-balancer-conf
         - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
         - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
+        - --annotations-prefix=nginx.ingress.kubernetes.io
         # use minikube IP address in ingress status field
         - --report-node-internal-ip-address
         securityContext:

@@ -26,7 +26,7 @@ import (
 func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
 	path, err := ioutil.TempDir("", "repwindl2vn")
 	if err != nil {
-		t.Fatalf("Error make tmp directory: %s", err)
+		t.Fatalf("Error make tmp directory: %v", err)
 	}
 	defer os.RemoveAll(path)
 
@@ -40,7 +40,7 @@ func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
 	}
 
 	if _, err := replaceWinDriveLetterToVolumeName(path); err != nil {
-		t.Errorf("Error replace a Windows drive letter to a volume name: %s", err)
+		t.Errorf("Error replace a Windows drive letter to a volume name: %v", err)
 	}
 }
 

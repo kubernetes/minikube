@@ -32,6 +32,7 @@ import (
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -69,13 +70,17 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		glog.Infoln("Machine does not exist... provisioning new machine")
 		glog.Infof("Provisioning machine with config: %+v", config)
 		return createHost(api, config)
-	} else {
-		glog.Infoln("Skipping create...Using existing machine configuration")
 	}
+
+	glog.Infoln("Skipping create...Using existing machine configuration")
 
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
+	}
+
+	if h.Driver.DriverName() != config.VMDriver {
+		fmt.Printf("Skipping %s driver, existing host has %s driver.\n", config.VMDriver, h.Driver.DriverName())
 	}
 
 	s, err := h.Driver.GetState()
@@ -93,6 +98,18 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		}
 	}
 
+	e := engineOptions(config)
+	if len(e.Env) > 0 {
+		h.HostOptions.EngineOptions.Env = e.Env
+		provisioner, err := provision.DetectProvisioner(h.Driver)
+		if err != nil {
+			return nil, errors.Wrap(err, "detecting provisioner")
+		}
+		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
+			return nil, errors.Wrap(err, "provision")
+		}
+	}
+
 	if h.Driver.DriverName() != "none" {
 		if err := h.ConfigureAuth(); err != nil {
 			return nil, &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
@@ -105,14 +122,14 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 func StopHost(api libmachine.API) error {
 	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return errors.Wrapf(err, "Error loading host: %s", cfg.GetMachineName())
+		return errors.Wrapf(err, "Load: %s", cfg.GetMachineName())
 	}
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
 		}
-		return errors.Wrapf(err, "Error stopping host: %s", cfg.GetMachineName())
+		return &util.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
 	}
 	return nil
 }
@@ -121,7 +138,7 @@ func StopHost(api libmachine.API) error {
 func DeleteHost(api libmachine.API) error {
 	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		return errors.Wrapf(err, "Error deleting host: %s", cfg.GetMachineName())
+		return errors.Wrapf(err, "Load: %s", cfg.GetMachineName())
 	}
 	m := util.MultiError{}
 	m.Collect(host.Driver.Remove())
@@ -152,8 +169,8 @@ func GetHostStatus(api libmachine.API) (string, error) {
 }
 
 // GetHostDriverIP gets the ip address of the current minikube cluster
-func GetHostDriverIP(api libmachine.API) (net.IP, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
+	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +181,7 @@ func GetHostDriverIP(api libmachine.API) (net.IP, error) {
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		return nil, errors.Wrap(err, "Error parsing IP")
+		return nil, fmt.Errorf("error parsing IP: %s", ipStr)
 	}
 	return ip, nil
 }
@@ -195,6 +212,13 @@ Please consider switching to the hyperkit driver, which is intended to replace t
 See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
 To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
+	case "vmwarefusion":
+		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+			fmt.Fprintln(os.Stderr, `WARNING: The vmwarefusion driver is now deprecated and support for it will be removed in a future release.
+				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
+				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
+				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+		}
 	}
 
 	return nil
@@ -217,7 +241,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 	if config.VMDriver != "none" {
 		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
-			return nil, errors.Wrap(err, "Error attempting to cache minikube ISO from URL")
+			return nil, errors.Wrap(err, "unable to cache ISO")
 		}
 	}
 
@@ -251,7 +275,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := CheckIfApiExistsAndLoad(api)
+	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -273,7 +297,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 
 // MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
 func MountHost(api libmachine.API, ip net.IP, path, port, mountVersion string, uid, gid, msize int) error {
-	host, err := CheckIfApiExistsAndLoad(api)
+	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -344,24 +368,25 @@ func getIPForInterface(name string) (net.IP, error) {
 	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
 }
 
-func CheckIfApiExistsAndLoad(api libmachine.API) (*host.Host, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
+	exists, err := api.Exists(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error checking that api exists for: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)
 	}
 	if !exists {
-		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", cfg.GetMachineName())
+		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", machineName)
 	}
 
-	host, err := api.Load(cfg.GetMachineName())
+	host, err := api.Load(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading api for: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
 	}
 	return host, nil
 }
 
 func CreateSSHShell(api libmachine.API, args []string) error {
-	host, err := CheckIfApiExistsAndLoad(api)
+	machineName := cfg.GetMachineName()
+	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -372,7 +397,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	}
 
 	if currentState != state.Running {
-		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", cfg.GetMachineName())
+		return errors.Errorf("Error: Cannot run ssh command: Host %q is not running", machineName)
 	}
 
 	client, err := host.CreateSSHClient()

@@ -1,4 +1,6 @@
-# Adding new driver
+# Adding new driver (Deprecated)
+
+New drivers should be added into https://github.com/machine-drivers
 
 Minikube relies on docker machine drivers to manage machines. This document talks about how to
 add an existing docker machine driver into minikube registry, so that minikube can use the driver
@@ -10,7 +12,7 @@ create a new docker machine driver.
 First of all, before started, you need to understand your driver in terms of:
 
 - Which operating system is your driver running on?
-- Is your driver builtin the minikube binary or triggerred through RPC?
+- Is your driver builtin the minikube binary or triggered through RPC?
 - How to translate minikube config to driver config?
 - If builtin, how to instantiate the driver instance?
 

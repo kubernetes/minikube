@@ -41,11 +41,11 @@ var listCacheCmd = &cobra.Command{
 		// list images from config file
 		images, err := cmdConfig.ListConfigMap(constants.Cache)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error listing image entries from config: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error listing image entries from config: %v\n", err)
 			os.Exit(1)
 		}
 		if err := cacheList(images); err != nil {
-			fmt.Fprintf(os.Stderr, "Error listing images: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error listing images: %v\n", err)
 			os.Exit(1)
 		}
 	},
@@ -62,13 +62,13 @@ func cacheList(images []string) error {
 	for _, image := range images {
 		tmpl, err := template.New("list").Parse(cacheListFormat)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error creating list template: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error creating list template: %v\n", err)
 			os.Exit(1)
 		}
 		listTmplt := CacheListTemplate{image}
 		err = tmpl.Execute(os.Stdout, listTmplt)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error executing list template: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Error executing list template: %v\n", err)
 			os.Exit(1)
 		}
 	}

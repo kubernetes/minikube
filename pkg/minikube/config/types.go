@@ -35,6 +35,7 @@ type MachineConfig struct {
 	CPUs                int
 	DiskSize            int
 	VMDriver            string
+	ContainerRuntime    string
 	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
 	XhyveDiskDriver     string   // Only used by the xhyve driver
@@ -57,16 +58,19 @@ type MachineConfig struct {
 type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
+	NodePort          int
 	NodeName          string
 	APIServerName     string
 	APIServerNames    []string
 	APIServerIPs      []net.IP
 	DNSDomain         string
 	ContainerRuntime  string
+	CRISocket         string
 	NetworkPlugin     string
 	FeatureGates      string
 	ServiceCIDR       string
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
+	EnableDefaultCNI       bool
 }
