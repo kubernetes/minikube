@@ -137,7 +137,7 @@ func StartStorageProvisioner() error {
 	// PVs
 	pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
 
-	glog.Info("...Done initializing succesfully, now starting storage the provisioner service !")
+	glog.Info("Storage provisioner initialized, now starting service!")
 	pc.Run(wait.NeverStop)
 	return nil
 }
