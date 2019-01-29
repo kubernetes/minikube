@@ -90,23 +90,30 @@ func TestLinuxRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 
 func TestParseTable(t *testing.T) {
 
-	const table = `Kernel IP routing table
-Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
-0.0.0.0         172.31.126.254  0.0.0.0         UG        0 0          0 eno1
-10.96.0.0       127.0.0.1   		255.240.0.0			UG        0 0          0 eno1
-172.31.126.0    0.0.0.0         255.255.255.0   U         0 0          0 eno1
-`
+	const table = `default via 172.31.126.254 dev eno1 proto dhcp metric 100
+10.96.0.0/12 via 192.168.39.47 dev virbr1
+10.110.0.0/16 via 127.0.0.1 dev lo
+172.31.126.0/24 dev eno1 proto kernel scope link src 172.31.126.54 metric 100
+192.168.9.0/24 dev docker0 proto kernel scope link src 192.168.9.1`
 
 	rt := (&osRouter{}).parseTable([]byte(table))
 
 	expectedRt := routingTable{
 		routingTableLine{
-			route: unsafeParseRoute("127.0.0.1", "10.96.0.0/12"),
-			line: "10.96.0.0       127.0.0.1   		255.240.0.0			UG        0 0          0 eno1",
+			route: unsafeParseRoute("192.168.39.47", "10.96.0.0/12"),
+			line:  "10.96.0.0/12 via 192.168.39.47 dev virbr1",
+		},
+		routingTableLine{
+			route: unsafeParseRoute("127.0.0.1", "10.110.0.0/16"),
+			line:  "10.110.0.0/16 via 127.0.0.1 dev lo",
 		},
 		routingTableLine{
 			route: unsafeParseRoute("0.0.0.0", "172.31.126.0/24"),
-			line:  "172.31.126.0    0.0.0.0         255.255.255.0   U         0 0          0 eno1",
+			line:  "172.31.126.0/24 dev eno1 proto kernel scope link src 172.31.126.54 metric 100",
+		},
+		routingTableLine{
+			route: unsafeParseRoute("0.0.0.0", "192.168.9.0/24"),
+			line:  "192.168.9.0/24 dev docker0 proto kernel scope link src 192.168.9.1",
 		},
 	}
 	if !expectedRt.Equal(&rt) {
