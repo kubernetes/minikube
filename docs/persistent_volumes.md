@@ -3,7 +3,7 @@ Minikube supports [PersistentVolumes](https://kubernetes.io/docs/concepts/storag
 
 ### A note on mounts, persistence, and Minikube hosts
 
-Minikube is configured to persist files stored under the following directories, which are made  in the Minikube VM (or on your localhost if running on bare metal).  You may lose data from other directories on reboots.
+Minikube is configured to persist files stored under the following directories, which are made in the Minikube VM (or on your localhost if running on bare metal).  You may lose data from other directories on reboots.
 
 * `/data`
 * `/var/lib/minikube`
