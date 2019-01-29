@@ -31,7 +31,9 @@ ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
 MINIKUBE_BUCKET ?= minikube/releases
+MINIKUBE_UPLOAD_KEY ?= $(HOME)/.config/gcloud/k8s-minikube-20e2437ce844.json
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
+JUMPHOST_KEY ?= /root/keys/id_rsa
 
 #PULL_NUMBER env variable will usually come from the Prow environment
 BUILD_BUCKET ?= minikube-builds
@@ -322,11 +324,14 @@ release-minikube: out/minikube checksum
 .PHONY: push-build
 push-build: out/minikube checksum
 	cp -r test/integration/testdata out
+	gcloud auth activate-service-account --key-file=$(MINIKUBE_UPLOAD_KEY)
 	gsutil cp -r out/*  $(BUILD_UPLOAD_LOCATION)
 	gsutil cp -r hack/jenkins/*  $(BUILD_UPLOAD_LOCATION)
 
 .PHONY: test-linux-kvm
-    ssh -f hack/prow/ssh_config kvmnode "mkdir -p $(REMOTE_TEST_DIR) && gsutil cp -r $(BUILD_UPLOAD_LOCATION)/* $(REMOTE_TEST_DIR) && cd $(REMOTE_TEST_DIR) && bash -x linux_integration_tests_kvm.sh"
+test-linux-kvm:
+	ssh-agent bash -c "ssh-add $(JUMPHOST_KEY)"
+	ssh -F hack/prow/ssh_config -i $(JUMPHOST_KEY) kvmnode "mkdir -p $(REMOTE_TEST_DIR) && gsutil cp -r $(BUILD_UPLOAD_LOCATION)/* $(REMOTE_TEST_DIR) && cd $(REMOTE_TEST_DIR) && bash -x linux_integration_tests_kvm.sh"
 
 out/docker-machine-driver-kvm2.d:
 	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $(KVM_DRIVER_FILES) $^ > $@

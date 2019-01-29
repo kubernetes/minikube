@@ -23,4 +23,3 @@ Host kvmnode
 	ProxyCommand ssh 35.188.31.95 nc localhost 19996
 	Port 19996
 	User jenkins
-	IdentityFile ~/.ssh/id_rsa
