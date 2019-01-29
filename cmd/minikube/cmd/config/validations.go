@@ -128,6 +128,7 @@ func IsValidAddon(name string, val string) error {
 	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
 }
 
+// IsContainerdRuntime is a validator which returns an error if the current runtime is not containerd
 func IsContainerdRuntime(_, _ string) error {
 	config, err := config.Load()
 	if err != nil {

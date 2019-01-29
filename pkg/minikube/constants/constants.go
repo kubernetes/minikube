@@ -184,10 +184,12 @@ var AlternateRuntimePreflights = append(Preflights, []string{
 }...)
 
 const (
-	ContainerdRuntime = "containerd"
-	RktRuntime        = "rkt"
-	CrioRuntime       = "crio"
-	Cri_oRuntime      = "cri-o"
+	ContainerdRuntime       = "containerd"
+	RktRuntime              = "rkt"
+	CrioRuntime             = "crio"
+	Cri_oRuntime            = "cri-o"
+	DockerRuntime           = "docker"
+	DefaultContainerRuntime = DockerRuntime
 )
 
 const (
@@ -286,7 +288,7 @@ const (
 	GvisorFilesPath = "/tmp/gvisor"
 	// ContainerdConfigTomlPath is the path to the containerd config.toml
 	ContainerdConfigTomlPath = "/etc/containerd/config.toml"
-	// GvisorContainerdShimTomlPath is the path to givosr-containerd-shim.toml
+	// GvisorContainerdShimTomlPath is the path to gvisor-containerd-shim.toml
 	GvisorContainerdShimTomlPath = "/etc/containerd/gvisor-containerd-shim.toml"
 	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
 	StoredContainerdConfigTomlPath = "/tmp/config.toml"

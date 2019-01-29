@@ -22,13 +22,13 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/golang/glog"
-
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/runtime"
 )
 
 const driverName = "none"
@@ -55,15 +55,14 @@ func NewDriver(hostName, storePath string) *Driver {
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
-	if d.ContainerRuntime == "" {
-		// check that docker is on path
-		_, err := exec.LookPath("docker")
-		if err != nil {
-			return errors.Wrap(err, "docker cannot be found on the path for this machine. "+
-				"A docker installation is a requirement for using the none driver")
-		}
+	if !runtime.IsDocker(d.ContainerRuntime) {
+		return nil
 	}
-
+	// check that docker is on path
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return errors.Wrap(err, "docker not found, but is required for the none driver")
+	}
 	return nil
 }
 
@@ -144,12 +143,12 @@ func (d *Driver) Remove() error {
 			glog.Warningf("Error %v running command: %s, Output: %s", err, cmdStr, out)
 		}
 	}
-	if d.ContainerRuntime == "" {
-		if out, err := runCommand(dockerkillcmd, true); err != nil {
-			glog.Warningf("Error %v running command: %s, Output: %s", err, dockerkillcmd, out)
-		}
+	if !runtime.IsDocker(d.ContainerRuntime) {
+		return nil
 	}
-
+	if out, err := runCommand(dockerkillcmd, true); err != nil {
+		return errors.Wrapf(err, "failed: %s\nOutput: %s", dockerkillcmd, out)
+	}
 	return nil
 }
 
@@ -199,7 +198,7 @@ fi
 			break
 		}
 	}
-	if d.ContainerRuntime == "" {
+	if runtime.IsDocker(d.ContainerRuntime) {
 		if out, err := runCommand(dockerstopcmd, false); err != nil {
 			glog.Warningf("Error %v running command %s. Output: %s", err, dockerstopcmd, out)
 		}

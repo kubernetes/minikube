@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/runtime"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -139,7 +140,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	b := bytes.Buffer{}
 	preflights := constants.Preflights
-	if k8s.ContainerRuntime != "" {
+	if !runtime.IsDocker(k8s.ContainerRuntime) {
 		preflights = constants.AlternateRuntimePreflights
 		out, err := k.c.CombinedOutput("sudo modprobe br_netfilter")
 		if err != nil {
@@ -208,6 +209,7 @@ func addAddons(files *[]assets.CopyableFile) error {
 	return nil
 }
 
+// RestartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -241,58 +243,18 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 	return nil
 }
 
+// PullImages downloads images that will be used by RestartCluster
+func (k *KubeadmBootstrapper) PullImages(k8s config.KubernetesConfig) error {
+	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)
+	if err := k.c.Run(cmd); err != nil {
+		return errors.Wrapf(err, "running cmd: %s", cmd)
+	}
+	return nil
+}
+
+// SetupCerts sets up certificates within the cluster.
 func (k *KubeadmBootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 	return bootstrapper.SetupCerts(k.c, k8s)
-}
-
-// SetContainerRuntime possibly sets the container runtime, if it hasn't already
-// been specified by the extra-config option.  It has a set of defaults known to
-// work for a particular runtime.
-func SetContainerRuntime(cfg map[string]string, runtime string) map[string]string {
-	if _, ok := cfg["container-runtime"]; ok {
-		glog.Infoln("Container runtime already set through extra options, ignoring --container-runtime flag.")
-		return cfg
-	}
-
-	if runtime == "" {
-		glog.Infoln("Container runtime flag provided with no value, using defaults.")
-		return cfg
-	}
-
-	switch runtime {
-	case "crio", "cri-o":
-		cfg["container-runtime"] = "remote"
-		cfg["container-runtime-endpoint"] = "/var/run/crio/crio.sock"
-		cfg["image-service-endpoint"] = "/var/run/crio/crio.sock"
-		cfg["runtime-request-timeout"] = "15m"
-	case "containerd":
-		cfg["container-runtime"] = "remote"
-		cfg["container-runtime-endpoint"] = "unix:///run/containerd/containerd.sock"
-		cfg["image-service-endpoint"] = "unix:///run/containerd/containerd.sock"
-		cfg["runtime-request-timeout"] = "15m"
-	default:
-		cfg["container-runtime"] = runtime
-	}
-
-	return cfg
-}
-
-func GetCRISocket(path string, runtime string) string {
-	if path != "" {
-		glog.Infoln("Container runtime interface socket provided, using path.")
-		return path
-	}
-
-	switch runtime {
-	case "crio", "cri-o":
-		path = "/var/run/crio/crio.sock"
-	case "containerd":
-		path = "/run/containerd/containerd.sock"
-	default:
-		path = ""
-	}
-
-	return path
 }
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
@@ -308,8 +270,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra configuration for kubelet")
 	}
 
-	extraOpts = SetContainerRuntime(extraOpts, k8s.ContainerRuntime)
-
+	extraOpts = runtime.KubeletOptions(k8s.ContainerRuntime, extraOpts)
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
@@ -422,7 +383,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	criSocket := GetCRISocket(k8s.CRISocket, k8s.ContainerRuntime)
+	criSocket := runtime.SocketPath(k8s.CRISocket, k8s.ContainerRuntime)
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
@@ -513,11 +474,10 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 	options.Checksum = constants.GetKubernetesReleaseURLSha1(binary, version)
 	options.ChecksumHash = crypto.SHA1
 
-	fmt.Printf("Downloading %s %s\n", binary, version)
+	glog.Infof("Downloading %s %s", binary, version)
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
-	fmt.Printf("Finished Downloading %s %s\n", binary, version)
-
+	glog.Infof("Finished Downloading %s %s", binary, version)
 	return targetFilepath, nil
 }
