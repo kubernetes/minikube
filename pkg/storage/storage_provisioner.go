@@ -55,6 +55,8 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*v1.PersistentVolume, error) {
+	glog.Infof("Provisioning volume %v", options)
+
 	path := path.Join(p.pvDir, options.PVName)
 
 	if err := os.MkdirAll(path, 0777); err != nil {
@@ -93,6 +95,7 @@ func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*v1.P
 // Delete removes the storage asset that was created by Provision represented
 // by the given PV.
 func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
+	glog.Infof("Deleting volume %v", volume)
 	ann, ok := volume.Annotations["hostPathProvisionerIdentity"]
 	if !ok {
 		return errors.New("identity annotation not found on PV")
@@ -111,6 +114,8 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 
 // Start storage provisioner server
 func StartStorageProvisioner() error {
+	glog.Infof("Initializing the Minikube CSI storage provisioner...")
+	
 	config, err := restclient.InClusterConfig()
 	if err != nil {
 		return err
@@ -135,7 +140,7 @@ func StartStorageProvisioner() error {
 	// PVs
 	pc := controller.NewProvisionController(clientset, provisionerName, hostPathProvisioner, serverVersion.GitVersion)
 
-	glog.Info("Starting storage provisioner server")
+	glog.Info("...Done initializing succesfully, now starting storage the CSI provisioner service !")
 	pc.Run(wait.NeverStop)
 	return nil
 }
