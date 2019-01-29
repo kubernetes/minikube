@@ -113,7 +113,6 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 // Start storage provisioner server
 func StartStorageProvisioner() error {
 	glog.Infof("Initializing the Minikube CSI storage provisioner...")
-	
 	config, err := restclient.InClusterConfig()
 	if err != nil {
 		return err
