@@ -1,5 +1,4 @@
 #!/bin/bash
-# https://github.com/coreos/toolbox
 
 set -e
 set -o pipefail
@@ -8,12 +7,12 @@ machine=$(uname -m)
 
 case ${machine} in
 	aarch64 )
-		TOOLBOX_NAME=fedora-base-24-1.1.aarch64
-		TOOLBOX_DOCKER_ARCHIVE="https://dl.fedoraproject.org/pub/fedora-secondary/releases/24/Docker/aarch64/images/Fedora-Docker-Base-24-1.1.aarch64.tar.xz"
+		TOOLBOX_DOCKER_IMAGE=arm64v8/fedora
+		TOOLBOX_DOCKER_TAG=29
 		;;
 	x86_64 )
 		TOOLBOX_DOCKER_IMAGE=fedora
-		TOOLBOX_DOCKER_TAG=24
+		TOOLBOX_DOCKER_TAG=29
 		;;
 	* )
 		echo "Warning: Unknown machine type ${machine}" >&2
@@ -51,9 +50,9 @@ if [ ! -f "${osrelease}" ] || systemctl is-failed -q "${machinename}" ; then
 	sudo chown "${USER}:" "${machinepath}"
 
 	if [[ -n "${have_docker_image}" ]]; then
-		riid=$(sudo rkt --insecure-options=image fetch "docker://${TOOLBOX_DOCKER_IMAGE}:${TOOLBOX_DOCKER_TAG}")
-		sudo rkt image extract --overwrite --rootfs-only "${riid}" "${machinepath}"
-		sudo rkt image rm "${riid}"
+		riid=$(sudo --preserve-env rkt --insecure-options=image fetch "docker://${TOOLBOX_DOCKER_IMAGE}:${TOOLBOX_DOCKER_TAG}")
+		sudo --preserve-env rkt image extract --overwrite --rootfs-only "${riid}" "${machinepath}"
+		sudo --preserve-env rkt image rm "${riid}"
 	elif [[ -n "${TOOLBOX_DOCKER_ARCHIVE}" ]]; then
 		tmpdir=$(mktemp -d -p /var/tmp/)
 		trap "sudo rm -rf ${tmpdir}" EXIT PIPE
@@ -67,6 +66,11 @@ if [ ! -f "${osrelease}" ] || systemctl is-failed -q "${machinename}" ; then
 		exit 1
 	fi
 	sudo touch "${osrelease}"
+fi
+
+# Special case for when SSH tries to pass a shell command with -c
+if [ "x${1-}" == x-c ]; then
+	set /bin/sh "$@"
 fi
 
 sudo systemd-nspawn \
