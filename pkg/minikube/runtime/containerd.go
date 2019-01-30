@@ -22,12 +22,12 @@ func (r *Containerd) SocketPath() string {
 }
 
 // Active returns if containerd is active on the host
-func (r *Containerd) Active(cr *CommandRunner) bool {
+func (r *Containerd) Active(cr CommandRunner) bool {
 	return false
 }
 
 // Enable idempotently enables containerd on a host
-func (r *Containerd) Enable(cr *CommandRunner) error {
+func (r *Containerd) Enable(cr CommandRunner) error {
 	if err := disableOthers(r, cr); r != nil {
 		glog.Warningf("disable: %v", err)
 	}
@@ -35,12 +35,12 @@ func (r *Containerd) Enable(cr *CommandRunner) error {
 }
 
 // Disable idempotently disables containerd on a host
-func (r *Containerd) Disable(cr *CommandRunner) error {
+func (r *Containerd) Disable(cr CommandRunner) error {
 	return cr.Run("sudo systemctl stop containerd")
 }
 
 // LoadImage loads an image into this runtime
-func (r *Containerd) LoadImage(cr *CommandRunner, path string) error {
+func (r *Containerd) LoadImage(cr CommandRunner, path string) error {
 	return nil
 }
 

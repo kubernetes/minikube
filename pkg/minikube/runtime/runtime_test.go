@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -67,45 +68,37 @@ func TestKubeletOptions(t *testing.T) {
 	}
 }
 
-
-
-type fakeServiceState int
-const (
-	Mounted ServiceState = iota
-	Running
-	Exited
-	Waiting
-)
-
-// FakeSystemdHost is a command runner that isn't very smart.
-type FakeSystemdHost struct {
-	cmds []string{}
+// fakeHost is a command runner that isn't very smart.
+type fakeHost struct {
+	cmds []string
 }
 
 // Run the fake command!
-func (f *FakeSystemdHost) Run() error {
+func (f *fakeHost) Run(cmd string) error {
+	f.cmds = append(f.cmds, cmd)
+	return fmt.Errorf("unknown command: %s", cmd)
 }
 
-
-func TestEnable() {
-	runner := &fakeSystemdHost{
-		// These values reflect the default minikube guest VM state
-		state: map[string]fakeServiceState{
-			"docker.service": Started,
-			"docker.socket": Started,
-			"etc-rkt.mount": 
-		},
-	}
-
+func TestEnable(t *testing.T) {
 	var tests = []struct {
 		runtime string
 		want    string
 	}{
-		{"", "Docker"},
 		{"docker", "Docker"},
 		{"crio", "CRIO"},
-		{"cri-o", "CRIO"},
 		{"containerd", "containerd"},
-	}	
+	}
+	for _, tc := range tests {
+		t.Run(tc.runtime, func(t *testing.T) {
+			r, err := New(Config{Type: tc.runtime})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.runtime, err)
+			}
+			runner := &fakeHost{}
+			err = r.Disable(runner)
+			if err != nil {
+				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
+			}
+		})
+	}
 }
-

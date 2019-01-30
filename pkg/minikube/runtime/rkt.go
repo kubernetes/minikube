@@ -20,27 +20,25 @@ func (r *Rkt) SocketPath() string {
 }
 
 // Active returns if rkt is active on the host
-func (r *Rkt) Active(cr *CommandRunner) bool {
+func (r *Rkt) Active(cr CommandRunner) bool {
 	return false
 }
 
 // Enable idempotently enables rkt on a host
-func (r *Rkt) Enable(cr *CommandRunner) error {
+func (r *Rkt) Enable(cr CommandRunner) error {
 	if err := disableOthers(r, cr); r != nil {
 		glog.Warningf("disable: %v", err)
 	}
 	return cr.Run("sudo systemctl restart rkt-api rkt-metadata")
-	return err
 }
 
 // Disable idempotently disables rkt on a host
-func (r *Rkt) Disable(cr *CommandRunner) error {
+func (r *Rkt) Disable(cr CommandRunner) error {
 	return cr.Run("sudo systemctl stop rkt-api rkt-metadata")
-	return err
 }
 
 // LoadImage loads an image into this runtime
-func (r *Rkt) LoadImage(cr *CommandRunner, path string) error {
+func (r *Rkt) LoadImage(cr CommandRunner, path string) error {
 	return nil
 }
 

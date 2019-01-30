@@ -22,12 +22,12 @@ func (r *CRIO) SocketPath() string {
 }
 
 // Active returns if CRIO is active on the host
-func (r *CRIO) Active(cr *CommandRunner) bool {
+func (r *CRIO) Active(cr CommandRunner) bool {
 	return false
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(cr *CommandRunner) error {
+func (r *CRIO) Enable(cr CommandRunner) error {
 	if err := disableOthers(r, cr); r != nil {
 		glog.Warningf("disable: %v", err)
 	}
@@ -35,12 +35,12 @@ func (r *CRIO) Enable(cr *CommandRunner) error {
 }
 
 // Disable idempotently disables CRIO on a host
-func (r *CRIO) Disable(cr *CommandRunner) error {
+func (r *CRIO) Disable(cr CommandRunner) error {
 	return cr.Run("sudo systemctl stop crio")
 }
 
 // LoadImage loads an image into this runtime
-func (r *CRIO) LoadImage(cr *CommandRunner, path string) error {
+func (r *CRIO) LoadImage(cr CommandRunner, path string) error {
 	return cr.Run(fmt.Sprintf("sudo podman load -i %s", path))
 }
 

@@ -17,13 +17,13 @@ type Manager interface {
 	// Name is a human readable name for a runtime
 	Name() string
 	// Enable idempotently enables this runtime on a host
-	Enable(Runner) error
+	Enable(CommandRunner) error
 	// Disable idempotently disables this runtime on a host
-	Disable(Runner) error
+	Disable(CommandRunner) error
 	// Load an image idempotently into the runtime on a host
-	LoadImage(Runner, string) error
+	LoadImage(CommandRunner, string) error
 	// Active returns whether or not a runtime is active on a host
-	Active(Runner) bool
+	Active(CommandRunner) bool
 	// KubeletOptions returns kubelet options for a runtime.
 	KubeletOptions(map[string]string) map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
@@ -31,7 +31,7 @@ type Manager interface {
 }
 
 // disableOthers disables all other runtimes except for me.
-func disableOthers(me Manager, h Runner) error {
+func disableOthers(me Manager, h CommandRunner) error {
 	// valid values returned by manager.Name()
 	runtimes := []string{"containerd", "crio", "docker", "rkt"}
 	for _, name := range runtimes {

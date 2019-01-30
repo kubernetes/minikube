@@ -22,29 +22,26 @@ func (r *Docker) SocketPath() string {
 }
 
 // Active returns if docker is active on the host
-func (r *Docker) Active(cr *CommandRunner) bool {
+func (r *Docker) Active(cr CommandRunner) bool {
 	return false
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(cr *CommandRunner) error {
+func (r *Docker) Enable(cr CommandRunner) error {
 	if err := disableOthers(r, cr); r != nil {
 		glog.Warningf("disable: %v", err)
 	}
 	return cr.Run("sudo systemctl restart docker")
-	return err
 }
 
 // Disable idempotently disables Docker on a host
-func (r *Docker) Disable(cr *CommandRunner) error {
+func (r *Docker) Disable(cr CommandRunner) error {
 	return cr.Run("sudo systemctl stop docker")
-	return err
 }
 
 // LoadImage loads an image into this runtime
-func (r *Docker) LoadImage(cr *CommandRunner, path string) error {
+func (r *Docker) LoadImage(cr CommandRunner, path string) error {
 	return cr.Run(fmt.Sprintf("docker load -i %s", path))
-	return err
 }
 
 // KubeletOptions returns kubelet options for a runtime.
