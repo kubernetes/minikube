@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 
@@ -47,6 +48,8 @@ import (
 const tempLoadDir = "/tmp"
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
+
+var podmanLoad sync.Mutex
 
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
@@ -85,12 +88,17 @@ func CacheImages(images []string, cacheDir string) error {
 
 func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
 	var g errgroup.Group
+	// Load profile cluster config from file
+	cc, err := config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorln("Error loading profile config: ", err)
+	}
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := LoadFromCacheBlocking(cmd, src); err != nil {
+			if err := LoadFromCacheBlocking(cmd, cc.KubernetesConfig, src); err != nil {
 				return errors.Wrapf(err, "loading image %s", src)
 			}
 			return nil
@@ -190,7 +198,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
+func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
 	for {
@@ -207,10 +215,24 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
 		return errors.Wrap(err, "transferring cached image")
 	}
 
-	dockerLoadCmd := "docker load -i " + dst
+	var dockerLoadCmd string
+	crio := k8s.ContainerRuntime == constants.CrioRuntime || k8s.ContainerRuntime == constants.Cri_oRuntime
+	if crio {
+		dockerLoadCmd = "sudo podman load -i " + dst
+	} else {
+		dockerLoadCmd = "docker load -i " + dst
+	}
+
+	if crio {
+		podmanLoad.Lock()
+	}
 
 	if err := cmd.Run(dockerLoadCmd); err != nil {
 		return errors.Wrapf(err, "loading docker image: %s", dst)
+	}
+
+	if crio {
+		podmanLoad.Unlock()
 	}
 
 	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
