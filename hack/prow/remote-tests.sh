@@ -25,8 +25,6 @@ set -x
 
 SCRIPTDIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-TESTPACKAGEFILES="./test.sh test out hack deploy"
-
 # First test connectivity and build readiness
 # If any starting condition tests fail, fail test completely
 
@@ -52,20 +50,28 @@ echo "--- PASS: ssh to macnode"
 #[$(ssh -q -F ${SCRIPTDIR}/ssh_config macnode exit)] && echo "FAIL:ssh -F ${SCRIPTDIR}/ssh_config macnode" && exit -1
 #echo "--- PASS: ssh to gpunode"
 
-# Package entire build dir
-tar cvzf ${SCRIPTDIR}/minikube-tests.tgz ${TESTPACKAGEFILES}
+function runtests() {
+  MINIKUBE_LOCATION=$1
+  MINIKUBE_TESTNAME=$2
+  MINIKUBE_TESTSCRIPT=$3
+  MINIKUBE_TESTNODE=$4
+  # Delivery dir
+  REMOTEBASE="minikube-prow-tests/${MINIKUBE_LOCATION}/${MINIKUBE_TESTNAME}"
+  REMOTEDIR="${REMOTEBASE}/src/k8s.io/minikube"
 
-# Delivery dir
-REMOTEBASE="minikube-tests-$(dbus-uuidgen)"
-REMOTEDIR="${REMOTEBASE}/src/k8s.io/minikube"
+  # Deliver to macnode
+  ssh -F ${SCRIPTDIR}/ssh_config ${MINIKUBE_TESTNODE} "mkdir -p ${REMOTEDIR}"
+  scp -F ${SCRIPTDIR}/ssh_config ${SCRIPTDIR}/${MINIKUBE_TESTSCRIPT} ${MINIKUBE_TESTNODE}:${REMOTEDIR}
+  ssh -F ${SCRIPTDIR}/ssh_config ${MINIKUBE_TESTNODE} "MINIKUBE_LOCATION=${MINIKUBE_LOCATION} cd ${REMOTEDIR} && ${MINIKUBE_TESTSCRIPT}"
+   
+  # Test build outputs for out/minikube-darwin-amd64 
+  ssh -F ${SCRIPTDIR}/ssh_config macnode "cd ${REMOTEDIR} && GOPATH=\$HOME/${REMOTEBASE} ./test.sh"
 
-# Deliver to macnode
-ssh -F ${SCRIPTDIR}/ssh_config macnode "mkdir -p ${REMOTEDIR}"
-scp -F ${SCRIPTDIR}/ssh_config ${SCRIPTDIR}/minikube-tests.tgz macnode:${REMOTEDIR}
-ssh -F ${SCRIPTDIR}/ssh_config macnode "cd ${REMOTEDIR} && tar xvzf minikube-tests.tgz"
- 
-# Test build outputs for out/minikube-darwin-amd64 
-ssh -F ${SCRIPTDIR}/ssh_config macnode "cd ${REMOTEDIR} && GOPATH=\$HOME/${REMOTEBASE} ./test.sh"
+}
+
+# out/minikube-osx
+runtests($MINIKUBE_LOCATION, "Integration_hyperkit", "osx_integration_tests_hyperkit.sh", "macnode")
+
 # out/minikube-linux-amd64
 
 # out/minikube-windows-amd64

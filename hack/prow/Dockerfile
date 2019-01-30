@@ -37,6 +37,7 @@ RUN mkdir -p "$GOPATH/src" "$GOPATH/bin" &&  chmod -R 777 "$GOPATH"
 ARG CLOUD_SDK_VERSION=221.0.0
 ENV CLOUD_SDK_VERSION=$CLOUD_SDK_VERSION
 COPY --from=static-docker-source /usr/local/bin/docker /usr/local/bin/docker
+ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=DontWarn
 RUN easy_install -U pip && \
     pip install -U crcmod   && \
     export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
@@ -66,7 +67,7 @@ ENV KUBE_DYNAMIC_CROSSPLATFORMS="armhf arm64 s390x ppc64el"
 ENV KUBE_CROSSPLATFORMS="linux/386 linux/arm linux/arm64 linux/ppc64le linux/s390x darwin/amd64 darwin/386 windows/amd64 windows/386"
 RUN for platform in ${KUBE_CROSSPLATFORMS}; do GOOS=${platform%/*} GOARCH=${platform##*/} go install std; done
 RUN echo "deb http://archive.ubuntu.com/ubuntu xenial main universe" > /etc/apt/sources.list.d/cgocrosscompiling.list \
-   &&  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
+   &&  apt-key adv --no-tty --keyserver keyserver.ubuntu.com --recv-keys 40976EAF437D05B5 3B4FE6ACC0B21F32 \
    &&  apt-get update \
    &&  apt-get install -y build-essential \
    &&  for platform in ${KUBE_DYNAMIC_CROSSPLATFORMS}; do apt-get install -y crossbuild-essential-${platform}; done \
