@@ -3,7 +3,6 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 )
 
@@ -22,19 +21,27 @@ func (r *Containerd) SocketPath() string {
 	return "/run/containerd/containerd.sock"
 }
 
+// Active returns if containerd is active on the host
+func (r *Containerd) Active(cr *CommandRunner) bool {
+	return false
+}
+
 // Enable idempotently enables containerd on a host
-func (r *Containerd) Enable(h *host.Host) error {
-	if err := disableOthers(r, r.config); r != nil {
+func (r *Containerd) Enable(cr *CommandRunner) error {
+	if err := disableOthers(r, cr); r != nil {
 		glog.Warningf("disable: %v", err)
 	}
-	_, err := h.RunSSHCommand("sudo systemctl restart containerd")
-	return err
+	return cr.Run("sudo systemctl restart containerd")
 }
 
 // Disable idempotently disables containerd on a host
-func (r *Containerd) Disable(h *host.Host) error {
-	_, err := h.RunSSHCommand("sudo systemctl stop containerd")
-	return err
+func (r *Containerd) Disable(cr *CommandRunner) error {
+	return cr.Run("sudo systemctl stop containerd")
+}
+
+// LoadImage loads an image into this runtime
+func (r *Containerd) LoadImage(cr *CommandRunner, path string) error {
+	return nil
 }
 
 // KubeletOptions returns kubelet options for a containerd

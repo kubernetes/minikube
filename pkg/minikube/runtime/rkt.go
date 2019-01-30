@@ -1,6 +1,8 @@
 package runtime
 
-import "github.com/docker/machine/libmachine/host"
+import (
+	"github.com/golang/glog"
+)
 
 // Rkt contains Rkt runtime state
 type Rkt struct {
@@ -17,19 +19,29 @@ func (r *Rkt) SocketPath() string {
 	return "/run/Rkt/Rkt.sock"
 }
 
+// Active returns if rkt is active on the host
+func (r *Rkt) Active(cr *CommandRunner) bool {
+	return false
+}
+
 // Enable idempotently enables rkt on a host
-func (r *Rkt) Enable(h *host.Host) error {
-	if err := disableOthers(r, r.config); r != nil {
-		log.Warningf("disable: %v", err)
+func (r *Rkt) Enable(cr *CommandRunner) error {
+	if err := disableOthers(r, cr); r != nil {
+		glog.Warningf("disable: %v", err)
 	}
-	_, err := h.RunSSHCommand("sudo systemctl restart rkt-api rkt-metadata")
+	return cr.Run("sudo systemctl restart rkt-api rkt-metadata")
 	return err
 }
 
 // Disable idempotently disables rkt on a host
-func (r *Rkt) Disable(h *host.Host) error {
-	_, err := h.RunSSHCommand("sudo systemctl stop rkt-api rkt-metadata")
+func (r *Rkt) Disable(cr *CommandRunner) error {
+	return cr.Run("sudo systemctl stop rkt-api rkt-metadata")
 	return err
+}
+
+// LoadImage loads an image into this runtime
+func (r *Rkt) LoadImage(cr *CommandRunner, path string) error {
+	return nil
 }
 
 // KubeletOptions returns kubelet options for a rkt

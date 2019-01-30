@@ -1,7 +1,8 @@
 package runtime
 
 import (
-	"github.com/docker/machine/libmachine/host"
+	"fmt"
+
 	"github.com/golang/glog"
 )
 
@@ -20,26 +21,34 @@ func (r *Docker) SocketPath() string {
 	return ""
 }
 
+// Active returns if docker is active on the host
+func (r *Docker) Active(cr *CommandRunner) bool {
+	return false
+}
+
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(h *host.Host) error {
-	if err := disableOthers(r, r.config); r != nil {
+func (r *Docker) Enable(cr *CommandRunner) error {
+	if err := disableOthers(r, cr); r != nil {
 		glog.Warningf("disable: %v", err)
 	}
-	_, err := h.RunSSHCommand("sudo systemctl restart docker")
+	return cr.Run("sudo systemctl restart docker")
 	return err
 }
 
 // Disable idempotently disables Docker on a host
-func (r *Docker) Disable(h *host.Host) error {
-	_, err := h.RunSSHCommand("sudo systemctl stop docker")
+func (r *Docker) Disable(cr *CommandRunner) error {
+	return cr.Run("sudo systemctl stop docker")
+	return err
+}
+
+// LoadImage loads an image into this runtime
+func (r *Docker) LoadImage(cr *CommandRunner, path string) error {
+	return cr.Run(fmt.Sprintf("docker load -i %s", path))
 	return err
 }
 
 // KubeletOptions returns kubelet options for a runtime.
 func (r *Docker) KubeletOptions(cfg map[string]string) map[string]string {
-	cfg["container-runtime"] = "remote"
-	cfg["container-runtime-endpoint"] = socket
-	cfg["image-service-endpoint"] = socket
-	cfg["runtime-request-timeout"] = "15m"
+	cfg["container-runtime"] = "docker"
 	return cfg
 }

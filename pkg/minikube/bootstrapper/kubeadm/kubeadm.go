@@ -138,21 +138,10 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
+	r := runtime.New(k8s.ContainerRuntime)
 	b := bytes.Buffer{}
-	preflights := constants.Preflights
-	if !runtime.IsDocker(k8s.ContainerRuntime) {
-		preflights = constants.AlternateRuntimePreflights
-		out, err := k.c.CombinedOutput("sudo modprobe br_netfilter")
-		if err != nil {
-			glog.Infoln(out)
-			return errors.Wrap(err, "sudo modprobe br_netfilter")
-		}
-		out, err = k.c.CombinedOutput("sudo sh -c \"echo '1' > /proc/sys/net/ipv4/ip_forward\"")
-		if err != nil {
-			glog.Infoln(out)
-			return errors.Wrap(err, "creating /proc/sys/net/ipv4/ip_forward")
-		}
-	}
+	preflights := SkipPreflights
+	preflights = append(preflights, SkipAdditionalPreflights[r.ID()]...)
 
 	templateContext := struct {
 		KubeadmConfigFile   string
@@ -270,7 +259,13 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra configuration for kubelet")
 	}
 
-	extraOpts = runtime.KubeletOptions(k8s.ContainerRuntime, extraOpts)
+	r, err := runtime.New(k8s.ContainerRuntime)
+	if err != nil {
+		return "", errors.Wrap(err, "runtime")
+	}
+	for k, v := range r.KubeletOptions() {
+		extraOpts[k] = v
+	}
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}

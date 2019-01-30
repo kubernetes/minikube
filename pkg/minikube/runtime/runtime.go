@@ -4,50 +4,60 @@ package runtime
 import (
 	"fmt"
 
-	"github.com/docker/machine/libmachine/host"
+	"github.com/golang/glog"
 )
 
-// Runtime is a common interface for container runtimes
-type Runtime interface {
+// CommandRunner is the subset of bootstrapper.CommandRunner this package consumes
+type CommandRunner interface {
+	Run(string) error
+}
+
+// Manager is a common interface for container runtimes
+type Manager interface {
 	// Name is a human readable name for a runtime
 	Name() string
 	// Enable idempotently enables this runtime on a host
-	Enable(h *host.Host) error
+	Enable(Runner) error
 	// Disable idempotently disables this runtime on a host
-	Disable(h *host.Host) error
-	// Load idempotently images into this runtime on a host
-	// LoadImages(h *host.Host) error
+	Disable(Runner) error
+	// Load an image idempotently into the runtime on a host
+	LoadImage(Runner, string) error
 	// Active returns whether or not a runtime is active on a host
-	Active(h *host.Host) bool
+	Active(Runner) bool
 	// KubeletOptions returns kubelet options for a runtime.
 	KubeletOptions(map[string]string) map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
 }
 
-// types is a string reference for the authoritative name for each supported runtime
-var types = []string{
-	"crio",
-	"docker",
-	"containerd",
-	"rkt",
-}
-
 // disableOthers disables all other runtimes except for me.
-func disableOthers(me Runtime, c Config) error {
-	for _, other := range types {
-		o := New(Config{Type: other})
-		if !o.Active {
+func disableOthers(me Manager, h Runner) error {
+	// valid values returned by manager.Name()
+	runtimes := []string{"containerd", "crio", "docker", "rkt"}
+	for _, name := range runtimes {
+		r, err := New(Config{Type: name})
+		if err != nil {
+			return fmt.Errorf("New(%s): %v", name, err)
+		}
+
+		// Don't disable myself.
+		if r.Name() == me.Name() {
 			continue
 		}
-		err := o.Disable(h)
-		if err != nil {
-			log.Warningf("disable failed: %v", error)
+		// runtime is already disabled, nothing to do.
+		if !r.Active(h) {
+			continue
 		}
-		if o.Active {
-			return fmt.Errorf("%s is still active after being disabled", other)
+		err = r.Disable(h)
+		if err != nil {
+			glog.Warningf("disable failed: %v", err)
+		}
+		// Validate that the runtime really is offline - and that Active & Disable are properly written.
+		if r.Active(h) {
+			return fmt.Errorf("%s is still active after being disabled! 😱", r.Name())
 		}
 	}
+	return nil
 }
 
 // Config is runtime configuration
@@ -57,16 +67,16 @@ type Config struct {
 }
 
 // New returns an appropriately configured runtime
-func New(c Config) (*Runtime, error) {
-	switch c.Type() {
+func New(c Config) (Manager, error) {
+	switch c.Type {
 	case "", "docker":
-		return nil, Docker{config: c}
+		return &Docker{config: c}, nil
 	case "crio", "cri-o":
-		return nil, CRIO{config: c}
+		return &CRIO{config: c}, nil
 	case "rkt":
-		return nil, Rkt{config: c}
+		return &Rkt{config: c}, nil
 	case "containerd":
-		return nil, Containerd{config: c}
+		return &Containerd{config: c}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}

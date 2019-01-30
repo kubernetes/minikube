@@ -18,14 +18,14 @@ func TestName(t *testing.T) {
 		{"containerd", "containerd"},
 	}
 	for _, tc := range tests {
-		t.Run(tc.input, func(t *testing.T) {
+		t.Run(tc.runtime, func(t *testing.T) {
 			r, err := New(Config{Type: tc.runtime})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
-			got := r.Name(tc.input)
+			got := r.Name()
 			if got != tc.want {
-				t.Errorf("Name(%s) = %q, want: %q", tc.input, got, tc.want)
+				t.Errorf("Name(%s) = %q, want: %q", tc.runtime, got, tc.want)
 			}
 		})
 	}
@@ -38,24 +38,18 @@ func TestKubeletOptions(t *testing.T) {
 		cfg     map[string]string
 		want    map[string]string
 	}{
-		{"empty", "", map[string]string{}, map[string]string{"container-runtime": ""}},
+		{"empty", "", map[string]string{}, map[string]string{"container-runtime": "docker"}},
 		{"crio", "crio", map[string]string{}, map[string]string{
-			"container-runtime":          "crio",
+			"container-runtime":          "remote",
 			"container-runtime-endpoint": "/var/run/crio/crio.sock",
 			"image-service-endpoint":     "/var/run/crio/crio.sock",
 			"runtime-request-timeout":    "15m",
 		}},
-		{"crio-in-map", "", map[string]string{"container-runtime": "crio"}, map[string]string{
-			"container-runtime": "crio",
-		}},
 		{"containerd", "containerd", map[string]string{}, map[string]string{
-			"container-runtime":          "containerd",
+			"container-runtime":          "remote",
 			"container-runtime-endpoint": "unix:///run/containerd/containerd.sock",
 			"image-service-endpoint":     "unix:///run/containerd/containerd.sock",
 			"runtime-request-timeout":    "15m",
-		}},
-		{"conflicting-runtimes", "crio", map[string]string{"container-runtime": "containerd"}, map[string]string{
-			"container-runtime": "containerd",
 		}},
 	}
 	for _, tc := range tests {
@@ -72,3 +66,46 @@ func TestKubeletOptions(t *testing.T) {
 		})
 	}
 }
+
+
+
+type fakeServiceState int
+const (
+	Mounted ServiceState = iota
+	Running
+	Exited
+	Waiting
+)
+
+// FakeSystemdHost is a command runner that isn't very smart.
+type FakeSystemdHost struct {
+	cmds []string{}
+}
+
+// Run the fake command!
+func (f *FakeSystemdHost) Run() error {
+}
+
+
+func TestEnable() {
+	runner := &fakeSystemdHost{
+		// These values reflect the default minikube guest VM state
+		state: map[string]fakeServiceState{
+			"docker.service": Started,
+			"docker.socket": Started,
+			"etc-rkt.mount": 
+		},
+	}
+
+	var tests = []struct {
+		runtime string
+		want    string
+	}{
+		{"", "Docker"},
+		{"docker", "Docker"},
+		{"crio", "CRIO"},
+		{"cri-o", "CRIO"},
+		{"containerd", "containerd"},
+	}	
+}
+

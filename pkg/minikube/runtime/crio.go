@@ -1,7 +1,8 @@
 package runtime
 
 import (
-	"github.com/docker/machine/libmachine/host"
+	"fmt"
+
 	"github.com/golang/glog"
 )
 
@@ -20,19 +21,27 @@ func (r *CRIO) SocketPath() string {
 	return "/var/run/crio/crio.sock"
 }
 
+// Active returns if CRIO is active on the host
+func (r *CRIO) Active(cr *CommandRunner) bool {
+	return false
+}
+
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(h *host.Host) error {
-	if err := disableOthers(r, r.config); r != nil {
+func (r *CRIO) Enable(cr *CommandRunner) error {
+	if err := disableOthers(r, cr); r != nil {
 		glog.Warningf("disable: %v", err)
 	}
-	_, err := h.RunSSHCommand("sudo systemctl restart crio")
-	return err
+	return cr.Run("sudo systemctl restart crio")
 }
 
 // Disable idempotently disables CRIO on a host
-func (r *CRIO) Disable(h *host.Host) error {
-	_, err := h.RunSSHCommand("sudo systemctl stop crio")
-	return err
+func (r *CRIO) Disable(cr *CommandRunner) error {
+	return cr.Run("sudo systemctl stop crio")
+}
+
+// LoadImage loads an image into this runtime
+func (r *CRIO) LoadImage(cr *CommandRunner, path string) error {
+	return cr.Run(fmt.Sprintf("sudo podman load -i %s", path))
 }
 
 // KubeletOptions returns kubelet options for a runtime.
