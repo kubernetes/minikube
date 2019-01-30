@@ -30,11 +30,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mitchellh/go-ps"
+
+	"io/ioutil"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
-	nfsexports "github.com/johanneswuerbach/nfsexports"
-	hyperkit "github.com/moby/hyperkit/go"
+	"github.com/johanneswuerbach/nfsexports"
+	"github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -169,7 +173,11 @@ func (d *Driver) Restart() error {
 
 // Start a host
 func (d *Driver) Start() error {
-	h, err := hyperkit.New("", d.VpnKitSock, filepath.Join(d.StorePath, "machines", d.MachineName))
+	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
+	if err := d.recoverFromUncleanShutdown(); err != nil {
+		return err
+	}
+	h, err := hyperkit.New("", d.VpnKitSock, stateDir)
 	if err != nil {
 		return errors.Wrap(err, "new-ing Hyperkit")
 	}
@@ -235,6 +243,56 @@ func (d *Driver) Start() error {
 			log.Errorf("NFS setup failed: %v", err)
 			return err
 		}
+	}
+
+	return nil
+}
+
+//recoverFromUncleanShutdown searches for an existing hyperkit.pid file in
+//the machine directory. If it can't find it, a clean shutdown is assumed.
+//If it finds the pid file, it checks for a running hyperkit process with that pid
+//as the existence of a file might not indicate an unclean shutdown but an actual running
+//hyperkit server. This is an error situation - we shouldn't start minikube as there is likely
+//an instance running already. If the PID in the pidfile does not belong to a running hyperkit
+//process, we can safely delete it, and there is a good chance the machine will recover when restarted.
+func (d *Driver) recoverFromUncleanShutdown() error {
+	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
+	pidFile := filepath.Join(stateDir, pidFileName)
+
+	_, err := os.Stat(pidFile)
+
+	if os.IsNotExist(err) {
+		log.Infof("clean start, hyperkit pid file doesn't exist: %s", pidFile)
+		return nil
+	}
+
+	if err != nil {
+		return errors.Wrap(err, "checking hyperkit pid file existence")
+	}
+
+	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
+
+	content, err := ioutil.ReadFile(pidFile)
+	if err != nil {
+		return errors.Wrapf(err, "reading pidfile %s", pidFile)
+	}
+	pid, err := strconv.Atoi(string(content))
+	if err != nil {
+		return errors.Wrapf(err, "parsing pidfile %s", pidFile)
+	}
+
+	p, err := ps.FindProcess(pid)
+	if err != nil {
+		return errors.Wrapf(err, "trying to find process for PID %s", pid)
+	}
+
+	if p != nil && !strings.Contains(p.Executable(), "hyperkit") {
+		return fmt.Errorf("something is not right...please stop all minikube instances, seemingly a hyperkit server is already running with pid %d, executable: %s", pid, p.Executable())
+	}
+
+	log.Infof("No running hyperkit process found with PID %d, removing %s...", pid, pidFile)
+	if err := os.Remove(pidFile); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
 	}
 
 	return nil
