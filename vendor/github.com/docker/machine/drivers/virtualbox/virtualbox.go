@@ -707,37 +707,6 @@ func (d *Driver) GetState() (state.State, error) {
 	return state.None, nil
 }
 
-func (d *Driver) getHostOnlyMACAddress() (string, error) {
-	// Return the MAC address of the host-only adapter
-	// assigned to this machine. The returned address
-	// is lower-cased and does not contain colons.
-
-	stdout, stderr, err := d.vbmOutErr("showvminfo", d.MachineName, "--machinereadable")
-	if err != nil {
-		if reMachineNotFound.FindString(stderr) != "" {
-			return "", ErrMachineNotExist
-		}
-		return "", err
-	}
-
-	// First, we get the number of the host-only interface
-	re := regexp.MustCompile(`(?m)^hostonlyadapter([\d]+)`)
-	groups := re.FindStringSubmatch(stdout)
-	if len(groups) < 2 {
-		return "", errors.New("Machine does not have a host-only adapter")
-	}
-
-	// Then we grab the MAC address based on that number
-	adapterNumber := groups[1]
-	re = regexp.MustCompile(fmt.Sprintf("(?m)^macaddress%s=\"(.*)\"", adapterNumber))
-	groups = re.FindStringSubmatch(stdout)
-	if len(groups) < 2 {
-		return "", fmt.Errorf("Could not find MAC address for adapter %v", adapterNumber)
-	}
-
-	return strings.ToLower(groups[1]), nil
-}
-
 func (d *Driver) GetIP() (string, error) {
 	// DHCP is used to get the IP, so virtualbox hosts don't have IPs unless
 	// they are running
@@ -748,13 +717,6 @@ func (d *Driver) GetIP() (string, error) {
 	if s != state.Running {
 		return "", drivers.ErrHostIsNotRunning
 	}
-
-	macAddress, err := d.getHostOnlyMACAddress()
-	if err != nil {
-		return "", err
-	}
-
-	log.Debugf("Host-only MAC: %s\n", macAddress)
 
 	// It's more than slightly crazy to have to SSH in to discover the host IP.
 	// From ssh(1): SSH_CONNECTION identifies the client and server ends of the connection.
