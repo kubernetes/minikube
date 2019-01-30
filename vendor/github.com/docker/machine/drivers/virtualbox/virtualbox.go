@@ -756,6 +756,10 @@ func (d *Driver) GetIP() (string, error) {
 
 	log.Debugf("Host-only MAC: %s\n", macAddress)
 
+	// It's more than slightly crazy to have to SSH in to discover the host IP.
+	// From ssh(1): SSH_CONNECTION identifies the client and server ends of the connection.
+	// The variable contains four space-separated values: client IP address, client port number,
+	// server IP address, and server port number.
 	out, err := drivers.RunSSHCommandFromDriver(d, "echo $SSH_CONNECTION")
 	if err != nil {
 		return "", err
