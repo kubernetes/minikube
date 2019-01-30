@@ -738,36 +738,6 @@ func (d *Driver) getHostOnlyMACAddress() (string, error) {
 	return strings.ToLower(groups[1]), nil
 }
 
-func (d *Driver) parseIPForMACFromIPAddr(ipAddrOutput string, macAddress string) (string, error) {
-	// Given the output of "ip addr show" on the VM, return the IPv4 address
-	// of the interface with the given MAC address.
-
-	lines := strings.Split(ipAddrOutput, "\n")
-	returnNextIP := false
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-
-		if strings.HasPrefix(line, "link") { // line contains MAC address
-			vals := strings.Split(line, " ")
-			if len(vals) >= 2 {
-				macBlock := vals[1]
-				macWithoutColons := strings.Replace(macBlock, ":", "", -1)
-				if macWithoutColons == macAddress { // we are in the correct device block
-					returnNextIP = true
-				}
-			}
-		} else if strings.HasPrefix(line, "inet") && !strings.HasPrefix(line, "inet6") && returnNextIP {
-			vals := strings.Split(line, " ")
-			if len(vals) >= 2 {
-				return vals[1][:strings.Index(vals[1], "/")], nil
-			}
-		}
-	}
-
-	return "", fmt.Errorf("Could not find matching IP for MAC address %v", macAddress)
-}
-
 func (d *Driver) GetIP() (string, error) {
 	// DHCP is used to get the IP, so virtualbox hosts don't have IPs unless
 	// they are running
@@ -786,19 +756,17 @@ func (d *Driver) GetIP() (string, error) {
 
 	log.Debugf("Host-only MAC: %s\n", macAddress)
 
-	output, err := drivers.RunSSHCommandFromDriver(d, "ip addr show")
+	out, err := drivers.RunSSHCommandFromDriver(d, "echo $SSH_CONNECTION")
 	if err != nil {
 		return "", err
 	}
-
-	log.Debugf("SSH returned: %s\nEND SSH\n", output)
-
-	ipAddress, err := d.parseIPForMACFromIPAddr(output, macAddress)
-	if err != nil {
-		return "", err
+	parts := strings.Split(out, " ")
+	if len(parts) < 3 {
+		return "", fmt.Errorf("unable to parse SSH_CONNECTION, %d parts: %s", len(parts), out)
 	}
-
-	return ipAddress, nil
+	ip := parts[2]
+	log.Infof("ip addr: %s", ip)
+	return ip, nil
 }
 
 func (d *Driver) publicSSHKeyPath() string {
