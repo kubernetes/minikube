@@ -95,11 +95,11 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// EnableOrDisableAddon does what it says, executing any commands necessary.
 func EnableOrDisableAddon(name string, val string) error {
-
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
+		errors.Wrapf(err, "parsing bool: %s", name)
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
@@ -119,20 +119,20 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}
-	cmd, err := machine.GetCommandRunner(host)
+	cmd, err := machine.CommandRunner(host)
 	if err != nil {
-		return errors.Wrap(err, "getting command runner")
+		return errors.Wrap(err, "command runner")
 	}
 	if enable {
 		for _, addon := range addon.Assets {
 			if err := cmd.Copy(addon); err != nil {
-				return errors.Wrapf(err, "error enabling addon %s", addon.AssetName)
+				return errors.Wrapf(err, "enabling addon %s", addon.AssetName)
 			}
 		}
 	} else {
 		for _, addon := range addon.Assets {
 			if err := cmd.Remove(addon); err != nil {
-				return errors.Wrapf(err, "error disabling addon %s", addon.AssetName)
+				return errors.Wrapf(err, "disabling addon %s", addon.AssetName)
 			}
 		}
 	}
