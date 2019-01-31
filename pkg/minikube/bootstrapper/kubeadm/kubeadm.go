@@ -40,11 +40,32 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/runtime"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
+
+// SkipPreflights are preflight checks we always skip.
+var SkipPreflights = []string{
+	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
+	// that we also stick in /etc/kubernetes/manifests
+	"DirAvailable--etc-kubernetes-manifests",
+	"DirAvailable--data-minikube",
+	"Port-10250",
+	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
+	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
+	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
+	"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
+	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
+	// (it should probably stop doing this, though...)
+	"Swap",
+	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
+	// (because we start kubelet with an invalid config)
+	"CRI",
+}
+
+// SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
+var SkipAdditionalPreflights = map[string][]string{}
 
 type KubeadmBootstrapper struct {
 	c bootstrapper.CommandRunner
@@ -55,20 +76,11 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
-	var cmd bootstrapper.CommandRunner
-	// The none driver executes commands directly on the host
-	if h.Driver.DriverName() == constants.DriverNone {
-		cmd = &bootstrapper.ExecRunner{}
-	} else {
-		client, err := sshutil.NewSSHClient(h.Driver)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting ssh client")
-		}
-		cmd = bootstrapper.NewSSHRunner(client)
+	runner, err := machine.CommandRunner(h)
+	if err != nil {
+		return nil, errors.Wrap(err, "command runner")
 	}
-	return &KubeadmBootstrapper{
-		c: cmd,
-	}, nil
+	return &KubeadmBootstrapper{c: runner}, nil
 }
 
 func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
@@ -138,10 +150,13 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	r := runtime.New(k8s.ContainerRuntime)
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
+	if err != nil {
+		return err
+	}
 	b := bytes.Buffer{}
 	preflights := SkipPreflights
-	preflights = append(preflights, SkipAdditionalPreflights[r.ID()]...)
+	preflights = append(preflights, SkipAdditionalPreflights[r.Name()]...)
 
 	templateContext := struct {
 		KubeadmConfigFile   string
@@ -248,7 +263,7 @@ func (k *KubeadmBootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
+func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing kubernetes version")
@@ -259,10 +274,6 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra configuration for kubelet")
 	}
 
-	r, err := runtime.New(k8s.ContainerRuntime)
-	if err != nil {
-		return "", errors.Wrap(err, "runtime")
-	}
 	for k, v := range r.KubeletOptions() {
 		extraOpts[k] = v
 	}
@@ -302,16 +313,17 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 			return errors.Wrap(err, "loading cached images")
 		}
 	}
-
-	kubeadmCfg, err := generateConfig(cfg)
+	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
+	kubeadmCfg, err := generateConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	kubeletCfg, err := NewKubeletConfig(cfg)
+	kubeletCfg, err := NewKubeletConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
+	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
 
 	files := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
@@ -372,13 +384,11 @@ sudo systemctl start kubelet
 	return nil
 }
 
-func generateConfig(k8s config.KubernetesConfig) (string, error) {
+func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing kubernetes version")
 	}
-
-	criSocket := runtime.SocketPath(k8s.CRISocket, k8s.ContainerRuntime)
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
@@ -418,7 +428,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
-		CRISocket:         criSocket,
+		CRISocket:         r.SocketPath(),
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
