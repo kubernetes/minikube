@@ -1,6 +1,8 @@
 package cruntime
 
 import (
+	"fmt"
+
 	"github.com/golang/glog"
 )
 
@@ -51,4 +53,19 @@ func (r *Rkt) KubeletOptions() map[string]string {
 	return map[string]string{
 		"container-runtime": "rkt",
 	}
+}
+
+// Containers returns a list of managed by this container runtime
+func (r *Rkt) Containers(CommandRunner) ([]string, error) {
+	return nil, []string{"unimplemented"}
+}
+
+// KillContainers removes containers based on ID
+func (r *Rkt) KillContainers(CommandRunner, []string) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// StopContainers stops containers based on ID
+func (r *Rkt) StopContainers(CommandRunner, []string) error {
+	return fmt.Errorf("unimplemented")
 }

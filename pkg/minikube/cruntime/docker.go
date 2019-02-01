@@ -2,6 +2,8 @@ package cruntime
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/golang/glog"
 )
@@ -19,6 +21,13 @@ func (r *Docker) Name() string {
 // SocketPath returns the path to the socket file for Docker
 func (r *Docker) SocketPath() string {
 	return ""
+}
+
+// Available returns an error if it is not possible to use this runtime on a host
+func (r *Docker) Available(CommandRunner) error {
+	if _, err := exec.LookPath("docker"); err != nil {
+		return err
+	}
 }
 
 // Active returns if docker is active on the host
@@ -53,4 +62,23 @@ func (r *Docker) KubeletOptions() map[string]string {
 	return map[string]string{
 		"container-runtime": "docker",
 	}
+}
+
+// Containers returns a list of containers
+func (r *Docker) Containers(cr CommandRunner, filter string) ([]string, error) {
+	content, err := cr.Run(fmt.Sprintf(`docker ps -a --filter="%s" --format="{{.ID}}"`, filter))
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(content, "\n")
+}
+
+// KillPod removes a running pod based on ID
+func (r *Docker) KillContainers(cr CommandRunner, ids []string) error {
+	return cr.Run(fmt.Sprintf("docker rm %s", strings.Join(ids, " ")))
+}
+
+// StopPod stops a running pod based on ID
+func (r *Docker) StopContainers(cr CommandRunner, ids []string) error {
+	return cr.Run(fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
 }

@@ -3,14 +3,18 @@ package cruntime
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
+const MinikubeContainerPrefix = "k8s_"
+
 // CommandRunner is the subset of bootstrapper.CommandRunner this package consumes
 type CommandRunner interface {
 	Run(string) error
+	CombinedOutput(string) (string, error)
 }
 
 // Manager is a common interface for container runtimes
@@ -21,14 +25,25 @@ type Manager interface {
 	Enable(CommandRunner) error
 	// Disable idempotently disables this runtime on a host
 	Disable(CommandRunner) error
-	// Load an image idempotently into the runtime on a host
-	LoadImage(CommandRunner, string) error
 	// Active returns whether or not a runtime is active on a host
 	Active(CommandRunner) bool
+	// Available returns an error if it is not possible to use this runtime on a host
+	Available(CommandRunner) error
+
 	// KubeletOptions returns kubelet options for a runtime.
 	KubeletOptions() map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
+
+	// Load an image idempotently into the runtime on a host
+	LoadImage(CommandRunner, string) error
+
+	// Containers returns a list of managed by this container runtime
+	Containers(CommandRunner, string) ([]string, error)
+	// KillContainers removes containers based on ID
+	KillContainers(CommandRunner, []string) error
+	// StopContainers stops containers based on ID
+	StopContainers(CommandRunner, []string) error
 }
 
 // Config is runtime configuration
@@ -94,4 +109,24 @@ func enableIPForwarding(cr CommandRunner) error {
 		return errors.Wrap(err, "ip_forward")
 	}
 	return nil
+}
+
+// listCRIContainers returns a list of containers using crictl
+func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
+	content, err := cr.Run(fmt.Sprintf(`criocker ps -a --filter="%s" --format="{{.ID}}"`, filter))
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(content, "\n")
+	return nil, []string{"unimplemented"}
+}
+
+// criCRIContainers kills a list of containers using crictl
+func killCRIContainers(CommandRunner, []string) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// StopCRIContainers stops containers using crictl
+func stopCRIContainers(CommandRunner, []string) error {
+	return fmt.Errorf("unimplemented")
 }

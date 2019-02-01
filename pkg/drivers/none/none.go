@@ -28,13 +28,10 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/minikube/runtime"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
 const driverName = "none"
-const dockerstopcmd = `docker kill $(docker ps -a --filter="name=k8s_" --format="{{.ID}}")`
-
-var dockerkillcmd = fmt.Sprintf(`docker rm $(%s)`, dockerstopcmd)
 
 // none Driver is a driver designed to run kubeadm w/o a VM
 type Driver struct {
@@ -44,26 +41,30 @@ type Driver struct {
 	ContainerRuntime string
 }
 
-func NewDriver(hostName, storePath string) *Driver {
+func Config struct {
+	MachineName string
+	StorePath string
+	ContainerRuntime cruntime.Manager
+}
+
+func NewDriver(Config) *Driver {
+	runtime, err := cruntime.New(d.ContainerRuntime)
+	// Libraries shouldn't panic, but there is no way for drivers to return error :(
+	if err != nil {
+		glog.Fatalf("unable to create container runtime: %v", err)
+	}
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: hostName,
-			StorePath:   storePath,
+			MachineName: Config.MachineName,
+			StorePath:   Config.StorePath,
 		},
+		ContainerRuntime: runtime
 	}
 }
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
-	if !runtime.IsDocker(d.ContainerRuntime) {
-		return nil
-	}
-	// check that docker is on path
-	_, err := exec.LookPath("docker")
-	if err != nil {
-		return errors.Wrap(err, "docker not found, but is required for the none driver")
-	}
-	return nil
+	return d.runtime.Available()
 }
 
 func (d *Driver) Create() error {
@@ -143,11 +144,13 @@ func (d *Driver) Remove() error {
 			glog.Warningf("Error %v running command: %s, Output: %s", err, cmdStr, out)
 		}
 	}
-	if !runtime.IsDocker(d.ContainerRuntime) {
-		return nil
+
+	containers, err := d.runtime.Containers(cruntime.MinikubeContainerPrefix)
+	if err != nil {
+		return errors.Wrap(err, "containers")
 	}
-	if out, err := runCommand(dockerkillcmd, true); err != nil {
-		return errors.Wrapf(err, "failed: %s\nOutput: %s", dockerkillcmd, out)
+	if err := d.runtime.KillContainers(containers) {
+		return errors.Wrap(err, "kill")
 	}
 	return nil
 }
@@ -198,10 +201,13 @@ fi
 			break
 		}
 	}
-	if runtime.IsDocker(d.ContainerRuntime) {
-		if out, err := runCommand(dockerstopcmd, false); err != nil {
-			glog.Warningf("Error %v running command %s. Output: %s", err, dockerstopcmd, out)
-		}
+
+	containers, err := d.runtime.Containers(cruntime.MinikubeContainerPrefix)
+	if err != nil {
+		return errors.Wrap(err, "containers")
+	}
+	if err := d.runtime.StopContainers(containers) {
+		return errors.Wrap(err, "kill")
 	}
 	return nil
 }

@@ -2,6 +2,7 @@ package cruntime
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/golang/glog"
 )
@@ -28,6 +29,12 @@ func (r *Containerd) Active(cr CommandRunner) bool {
 		return true
 	}
 	return false
+}
+
+// Available returns an error if it is not possible to use this runtime on a host
+func (r *Containerd) Available(CommandRunner) error {
+	_, err := exec.LookPath("containerd")
+	return err
 }
 
 // Enable idempotently enables containerd on a host
@@ -59,4 +66,19 @@ func (r *Containerd) KubeletOptions() map[string]string {
 		"image-service-endpoint":     fmt.Sprintf("unix://%s", r.SocketPath()),
 		"runtime-request-timeout":    "15m",
 	}
+}
+
+// Containers returns a list of managed by this container runtime
+func (r *Containerd) Containers(CommandRunner) ([]string, error) {
+	return nil, []string{"unimplemented"}
+}
+
+// KillContainers removes containers based on ID
+func (r *Containerd) KillContainers(CommandRunner, []string) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// StopContainers stops containers based on ID
+func (r *Containerd) StopContainers(CommandRunner, []string) error {
+	return fmt.Errorf("unimplemented")
 }
