@@ -25,18 +25,14 @@ func (r *Docker) SocketPath() string {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available(CommandRunner) error {
-	if _, err := exec.LookPath("docker"); err != nil {
-		return err
-	}
+	_, err := exec.LookPath("docker")
+	return err
 }
 
 // Active returns if docker is active on the host
 func (r *Docker) Active(cr CommandRunner) bool {
 	err := cr.Run("systemctl is-active --quiet service docker")
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 // Enable idempotently enables Docker on a host
@@ -65,12 +61,12 @@ func (r *Docker) KubeletOptions() map[string]string {
 }
 
 // Containers returns a list of containers
-func (r *Docker) Containers(cr CommandRunner, filter string) ([]string, error) {
-	content, err := cr.Run(fmt.Sprintf(`docker ps -a --filter="%s" --format="{{.ID}}"`, filter))
+func (r *Docker) ListContainers(cr CommandRunner, filter string) ([]string, error) {
+	content, err := cr.CombinedOutput(fmt.Sprintf(`docker ps -a --filter="name=%s" --format="{{.ID}}"`, filter))
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(content, "\n")
+	return strings.Split(content, "\n"), nil
 }
 
 // KillPod removes a running pod based on ID

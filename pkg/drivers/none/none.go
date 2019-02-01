@@ -38,7 +38,8 @@ type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
 	URL              string
-	ContainerRuntime string
+	runtime cruntime.Manager
+	cmd    *bootstrap.CommandRunner
 }
 
 func Config struct {
@@ -58,13 +59,14 @@ func NewDriver(Config) *Driver {
 			MachineName: Config.MachineName,
 			StorePath:   Config.StorePath,
 		},
-		ContainerRuntime: runtime
+		runtime: runtime,
+		cmd: &bootstrapper.ExecRunner{}
 	}
 }
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
-	return d.runtime.Available()
+	return d.runtime.Available(d.CommandRunner)
 }
 
 func (d *Driver) Create() error {
@@ -98,39 +100,18 @@ func (d *Driver) GetURL() (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
 func (d *Driver) GetState() (state.State, error) {
-	var statuscmd = fmt.Sprintf(
-		`sudo systemctl is-active kubelet &>/dev/null && echo "Running" || echo "Stopped"`)
-
-	out, err := runCommand(statuscmd, true)
-	if err != nil {
-		return state.None, err
-	}
-	s := strings.TrimSpace(out)
-	if state.Running.String() == s {
-		return state.Running, nil
-	} else if state.Stopped.String() == s {
+	if err := cr.Run("systemctl is-active --quiet service kubelet"); err != nil {
 		return state.Stopped, nil
-	} else {
-		return state.None, fmt.Errorf("Error: Unrecognize output from GetState: %s", s)
 	}
+	return state.Running
 }
 
 func (d *Driver) Kill() error {
-	for _, cmdStr := range [][]string{
-		{"systemctl", "stop", "kubelet.service"},
-		{"rm", "-rf", "/var/lib/minikube"},
-	} {
-		cmd := exec.Command("sudo", cmdStr...)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			glog.Warningf("Error %v running command: %s. Output: %s", err, cmdStr, out)
-		}
-	}
-	return nil
+	return cr.Run("sudo systemctl stop kubelet.service && sudo rm -rf /var/lib/minikube")
 }
 
 func (d *Driver) Remove() error {
@@ -188,7 +169,7 @@ for svc in "kubelet"; do
 done
 fi
 `)
-	_, err := runCommand(stopcmd, false)
+	if err := d.(stopcmd, false)
 	if err != nil {
 		return err
 	}
@@ -214,20 +195,4 @@ fi
 
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support ssh commands")
-}
-
-func runCommand(command string, sudo bool) (string, error) {
-	cmd := exec.Command("/bin/bash", "-c", command)
-	if sudo {
-		cmd = exec.Command("sudo", "/bin/bash", "-c", command)
-	}
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	if err != nil {
-		return "", errors.Wrap(err, stderr.String())
-	}
-	return out.String(), nil
 }

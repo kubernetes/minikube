@@ -3,7 +3,6 @@ package cruntime
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -38,8 +37,8 @@ type Manager interface {
 	// Load an image idempotently into the runtime on a host
 	LoadImage(CommandRunner, string) error
 
-	// Containers returns a list of managed by this container runtime
-	Containers(CommandRunner, string) ([]string, error)
+	// ListContainers returns a list of managed by this container runtime
+	ListContainers(CommandRunner, string) ([]string, error)
 	// KillContainers removes containers based on ID
 	KillContainers(CommandRunner, []string) error
 	// StopContainers stops containers based on ID
@@ -61,8 +60,6 @@ func New(c Config) (Manager, error) {
 		return &Docker{config: c}, nil
 	case "crio", "cri-o":
 		return &CRIO{config: c}, nil
-	case "rkt":
-		return &Rkt{config: c}, nil
 	case "containerd":
 		return &Containerd{config: c}, nil
 	default:
@@ -77,7 +74,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 	for _, name := range runtimes {
 		r, err := New(Config{Type: name})
 		if err != nil {
-			return fmt.Errorf("New(%s): %v", name, err)
+			return fmt.Errorf("runtime(%s): %v", name, err)
 		}
 
 		// Don't disable myself.
@@ -93,7 +90,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 		}
 		// Validate that the runtime really is offline - and that Active & Disable are properly written.
 		if r.Active(cr) {
-			return fmt.Errorf("%s is still active after being disabled!", r.Name())
+			return fmt.Errorf("%s is still active", r.Name())
 		}
 	}
 	return nil
@@ -109,24 +106,4 @@ func enableIPForwarding(cr CommandRunner) error {
 		return errors.Wrap(err, "ip_forward")
 	}
 	return nil
-}
-
-// listCRIContainers returns a list of containers using crictl
-func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
-	content, err := cr.Run(fmt.Sprintf(`criocker ps -a --filter="%s" --format="{{.ID}}"`, filter))
-	if err != nil {
-		return nil, err
-	}
-	return strings.Split(content, "\n")
-	return nil, []string{"unimplemented"}
-}
-
-// criCRIContainers kills a list of containers using crictl
-func killCRIContainers(CommandRunner, []string) error {
-	return fmt.Errorf("unimplemented")
-}
-
-// StopCRIContainers stops containers using crictl
-func stopCRIContainers(CommandRunner, []string) error {
-	return fmt.Errorf("unimplemented")
 }

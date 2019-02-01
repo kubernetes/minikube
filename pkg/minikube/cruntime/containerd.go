@@ -25,10 +25,7 @@ func (r *Containerd) SocketPath() string {
 // Active returns if containerd is active on the host
 func (r *Containerd) Active(cr CommandRunner) bool {
 	err := cr.Run("systemctl is-active --quiet service containerd")
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
@@ -68,17 +65,17 @@ func (r *Containerd) KubeletOptions() map[string]string {
 	}
 }
 
-// Containers returns a list of managed by this container runtime
-func (r *Containerd) Containers(CommandRunner) ([]string, error) {
-	return nil, []string{"unimplemented"}
+// ListContainers returns a list of managed by this container runtime
+func (r *Containerd) ListContainers(cr CommandRunner, filter string) ([]string, error) {
+	return listCRIContainers(cr, filter)
 }
 
 // KillContainers removes containers based on ID
-func (r *Containerd) KillContainers(CommandRunner, []string) error {
-	return fmt.Errorf("unimplemented")
+func (r *Containerd) KillContainers(cr CommandRunner, ids []string) error {
+	return killCRIContainers(cr, ids)
 }
 
 // StopContainers stops containers based on ID
-func (r *Containerd) StopContainers(CommandRunner, []string) error {
-	return fmt.Errorf("unimplemented")
+func (r *Containerd) StopContainers(cr CommandRunner, ids []string) error {
+	return stopCRIContainers(cr, ids)
 }

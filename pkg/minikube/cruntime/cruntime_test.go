@@ -81,8 +81,9 @@ type fakeHost struct {
 }
 
 // Run a fake command!
-func (f *fakeHost) Run(cmd string) error {
+func (f *fakeHost) CombinedOutput(cmd string) (string, error) {
 	f.cmds = append(f.cmds, cmd)
+	out := ""
 
 	root := false
 	args := strings.Split(cmd, " ")
@@ -94,14 +95,24 @@ func (f *fakeHost) Run(cmd string) error {
 	if bin == "systemctl" {
 		return f.systemctl(args, root)
 	}
+	if bin == "docker" {
+		return && args[0] == "ps" {
+		return "1\n2\n3\n"
+	}
+	return out, nil
+}
 
-	return fmt.Errorf("unknown command: %s", cmd)
+// Run a fake command!
+func (f *fakeHost) Run(cmd string) error {
+	_, err := f.CombinedOutput(cmd)
+	return err
 }
 
 // systemctl is a fake implementation of systemctl
-func (f *fakeHost) systemctl(args []string, root bool) error {
+func (f *fakeHost) systemctl(args []string, root bool) (string, error) {
 	action := args[0]
 	svcs := args[1:]
+	out := ""
 
 	for i, arg := range args {
 		// systemctl is-active --quiet service crio
@@ -113,24 +124,30 @@ func (f *fakeHost) systemctl(args []string, root bool) error {
 	for _, svc := range svcs {
 		state, ok := f.services[svc]
 		if !ok {
-			return fmt.Errorf("unknown fake service: %s", svc)
+			return out, fmt.Errorf("unknown fake service: %s", svc)
 		}
 
 		switch action {
 		case "stop":
+			if !root {
+				return out, fmt.Errorf("not root")
+			}
 			f.services[svc] = Exited
 		case "start", "restart":
+			if !root {
+				return out, fmt.Errorf("not root")
+			}
 			f.services[svc] = Running
 		case "is-active":
 			if state == Running {
-				return nil
+				return out, nil
 			}
-			return fmt.Errorf("%s in state: %v", svc, state)
+			return out, fmt.Errorf("%s in state: %v", svc, state)
 		default:
-			return fmt.Errorf("unimplemented fake action: %q", action)
+			return out, fmt.Errorf("unimplemented fake action: %q", action)
 		}
 	}
-	return nil
+	return out, nil
 }
 
 // The settings here should reflect the default boot state for minikube
@@ -172,10 +189,29 @@ func TestDisable(t *testing.T) {
 func TestEnable(t *testing.T) {
 	var tests = []struct {
 		runtime string
-		want    []string
+		want    map[string]serviceState
 	}{
-		{"docker", []string{"systemctl is-active --quiet service crio", "sudo systemctl restart docker"}},
-		{"containerd", []string{"systemctl is-active --quiet service crio", "sudo systemctl restart containerd"}},
+		{"docker", map[string]serviceState{
+			"docker":        Running,
+			"docker.socket": Running,
+			"containerd":    Exited,
+			"crio":          Exited,
+			"crio-shutdown": Exited,
+		}},
+		{"containerd", map[string]serviceState{
+			"docker":        Exited,
+			"docker.socket": Exited,
+			"containerd":    Running,
+			"crio":          Exited,
+			"crio-shutdown": Exited,
+		}},
+		{"crio", map[string]serviceState{
+			"docker":        Exited,
+			"docker.socket": Exited,
+			"containerd":    Exited,
+			"crio":          Running,
+			"crio-shutdown": Exited,
+		}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
@@ -188,8 +224,8 @@ func TestEnable(t *testing.T) {
 			if err != nil {
 				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
 			}
-			if diff := cmp.Diff(tc.want, runner.cmds); diff != "" {
-				t.Errorf("Disable(%s) commands diff (-want +got):\n%s", tc.runtime, diff)
+			if diff := cmp.Diff(tc.want, runner.services); diff != "" {
+				t.Errorf("service diff (-want +got):\n%s", diff)
 			}
 		})
 	}

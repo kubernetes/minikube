@@ -27,13 +27,15 @@ func (r *CRIO) SocketPath() string {
 	return "/var/run/crio/crio.sock"
 }
 
+// Available returns an error if it is not possible to use this runtime on a host
+func (r *CRIO) Available(cr CommandRunner) error {
+	return cr.Run("command -v crio")
+}
+
 // Active returns if CRIO is active on the host
 func (r *CRIO) Active(cr CommandRunner) bool {
 	err := cr.Run("systemctl is-active --quiet service crio")
-	if err == nil {
-		return true
-	}
-	return false
+	return err == nil
 }
 
 // createConfigFile runs the commands necessary to create crictl.yaml
@@ -59,7 +61,8 @@ image-endpoint: {{.ImageEndpoint}}
 	if err := t.Execute(&crictlYamlBuf, opts); err != nil {
 		return err
 	}
-	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crictlYamlPath), crictlYamlBuf.String(), crictlYamlPath))
+	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s",
+		path.Dir(crictlYamlPath), crictlYamlBuf.String(), crictlYamlPath))
 }
 
 // Enable idempotently enables CRIO on a host
@@ -94,4 +97,19 @@ func (r *CRIO) KubeletOptions() map[string]string {
 		"image-service-endpoint":     r.SocketPath(),
 		"runtime-request-timeout":    "15m",
 	}
+}
+
+// ListContainers returns a list of managed by this container runtime
+func (r *CRIO) ListContainers(cr CommandRunner, filter string) ([]string, error) {
+	return listCRIContainers(cr, filter)
+}
+
+// KillContainers removes containers based on ID
+func (r *CRIO) KillContainers(cr CommandRunner, ids []string) error {
+	return killCRIContainers(cr, ids)
+}
+
+// StopContainers stops containers based on ID
+func (r *CRIO) StopContainers(cr CommandRunner, ids []string) error {
+	return stopCRIContainers(cr, ids)
 }
