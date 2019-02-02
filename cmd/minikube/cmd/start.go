@@ -237,9 +237,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	// default network plugin (cni)
 	if selectedContainerRuntime != "" {
-		if !viper.IsSet(networkPlugin) {
+		if !cmd.Flags().Changed(networkPlugin) {
 			selectedNetworkPlugin = "cni"
-			if !viper.IsSet(enableDefaultCNI) {
+			if !cmd.Flags().Changed(enableDefaultCNI) {
 				selectedEnableDefaultCNI = true
 			}
 		}
