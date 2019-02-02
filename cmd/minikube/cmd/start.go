@@ -219,9 +219,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
+	selectedContainerRuntime := viper.GetString(containerRuntime)
+	selectedNetworkPlugin := viper.GetString(networkPlugin)
+	selectedEnableDefaultCNI := viper.GetBool(enableDefaultCNI)
+
 	// common config (currently none)
 	var cricfg = map[string]string{}
-	selectedContainerRuntime := viper.GetString(containerRuntime)
 	if cricfg := SetContainerRuntime(cricfg, selectedContainerRuntime); cricfg != nil {
 		var command string
 		fmt.Println("Writing crictl config...")
@@ -267,11 +270,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		FeatureGates:           viper.GetString(featureGates),
 		ContainerRuntime:       selectedContainerRuntime,
 		CRISocket:              viper.GetString(criSocket),
-		NetworkPlugin:          viper.GetString(networkPlugin),
+		NetworkPlugin:          selectedNetworkPlugin,
 		ServiceCIDR:            viper.GetString(serviceCIDR),
 		ExtraOptions:           extraOptions,
 		ShouldLoadCachedImages: shouldCacheImages,
-		EnableDefaultCNI:       viper.GetBool(enableDefaultCNI),
+		EnableDefaultCNI:       selectedEnableDefaultCNI,
 	}
 
 	k8sBootstrapper, err := GetClusterBootstrapper(api, clusterBootstrapper)
