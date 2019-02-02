@@ -235,6 +235,15 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorln("Error writing crictl config: ", err)
 		}
 	}
+	// default network plugin (cni)
+	if selectedContainerRuntime != "" {
+		if !viper.IsSet(networkPlugin) {
+			selectedNetworkPlugin = "cni"
+			if !viper.IsSet(enableDefaultCNI) {
+				selectedEnableDefaultCNI = true
+			}
+		}
+	}
 
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 	if strings.Compare(selectedKubernetesVersion, "") == 0 {
