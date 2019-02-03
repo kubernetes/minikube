@@ -86,7 +86,7 @@ func (provisioner *DebianProvisioner) Provision(swarmOptions swarm.Options, auth
 	provisioner.EngineOptions = engineOptions
 	swarmOptions.Env = engineOptions.Env
 
-	storageDriver, err := decideStorageDriver(provisioner, "aufs", engineOptions.StorageDriver)
+	storageDriver, err := decideStorageDriver(provisioner, "overlay2", engineOptions.StorageDriver)
 	if err != nil {
 		return err
 	}

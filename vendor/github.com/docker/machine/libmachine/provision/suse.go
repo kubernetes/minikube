@@ -15,32 +15,14 @@ import (
 )
 
 func init() {
-	Register("openSUSE", &RegisteredProvisioner{
-		New: NewOpenSUSEProvisioner,
-	})
-	Register("SUSE Linux Enterprise Desktop", &RegisteredProvisioner{
-		New: NewSLEDProvisioner,
-	})
-	Register("SUSE Linux Enterprise Server", &RegisteredProvisioner{
-		New: NewSLESProvisioner,
+	Register("SUSE", &RegisteredProvisioner{
+		New: NewSUSEProvisioner,
 	})
 }
 
-func NewSLEDProvisioner(d drivers.Driver) Provisioner {
+func NewSUSEProvisioner(d drivers.Driver) Provisioner {
 	return &SUSEProvisioner{
-		NewSystemdProvisioner("sled", d),
-	}
-}
-
-func NewSLESProvisioner(d drivers.Driver) Provisioner {
-	return &SUSEProvisioner{
-		NewSystemdProvisioner("sles", d),
-	}
-}
-
-func NewOpenSUSEProvisioner(d drivers.Driver) Provisioner {
-	return &SUSEProvisioner{
-		NewSystemdProvisioner("openSUSE", d),
+		NewSystemdProvisioner("SUSE", d),
 	}
 }
 
@@ -49,11 +31,17 @@ type SUSEProvisioner struct {
 }
 
 func (provisioner *SUSEProvisioner) CompatibleWithHost() bool {
-	return strings.ToLower(provisioner.OsReleaseInfo.ID) == strings.ToLower(provisioner.OsReleaseID)
+	ids := strings.Split(provisioner.OsReleaseInfo.IDLike, " ")
+	for _, id := range ids {
+		if id == "suse" {
+			return true
+		}
+	}
+	return false
 }
 
 func (provisioner *SUSEProvisioner) String() string {
-	return "openSUSE"
+	return "SUSE"
 }
 
 func (provisioner *SUSEProvisioner) Package(name string, action pkgaction.PackageAction) error {
@@ -135,7 +123,7 @@ func (provisioner *SUSEProvisioner) Provision(swarmOptions swarm.Options, authOp
 		return err
 	}
 
-	if strings.ToLower(provisioner.OsReleaseInfo.ID) != "opensuse" {
+	if !strings.HasPrefix(strings.ToLower(provisioner.OsReleaseInfo.ID), "opensuse") {
 		// This is a SLE machine, enable the containers module to have access
 		// to the docker packages
 		if _, err := provisioner.SSHCommand("sudo -E SUSEConnect -p sle-module-containers/12/$(uname -m) -r ''"); err != nil {
@@ -157,10 +145,10 @@ func (provisioner *SUSEProvisioner) Provision(swarmOptions swarm.Options, authOp
 		return err
 	}
 
-	// create symlinks for containerd, containerd-shim and runc.
+	// create symlinks for containerd, containerd-shim and optional runc.
 	// We have to do that because machine overrides the openSUSE systemd
 	// unit of docker
-	if _, err := provisioner.SSHCommand("sudo -E ln -sf /usr/sbin/runc /usr/sbin/docker-runc"); err != nil {
+	if _, err := provisioner.SSHCommand("yes no | sudo -E ln -si /usr/sbin/runc /usr/sbin/docker-runc"); err != nil {
 		return err
 	}
 	if _, err := provisioner.SSHCommand("sudo -E ln -sf /usr/sbin/containerd /usr/sbin/docker-containerd"); err != nil {
