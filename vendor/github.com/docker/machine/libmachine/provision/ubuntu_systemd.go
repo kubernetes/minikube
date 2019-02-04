@@ -102,7 +102,7 @@ func (provisioner *UbuntuSystemdProvisioner) Provision(swarmOptions swarm.Option
 	provisioner.EngineOptions = engineOptions
 	swarmOptions.Env = engineOptions.Env
 
-	storageDriver, err := decideStorageDriver(provisioner, "aufs", engineOptions.StorageDriver)
+	storageDriver, err := decideStorageDriver(provisioner, "overlay2", engineOptions.StorageDriver)
 	if err != nil {
 		return err
 	}
