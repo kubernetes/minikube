@@ -96,8 +96,7 @@ func (f *fakeHost) CombinedOutput(cmd string) (string, error) {
 		return f.systemctl(args, root)
 	}
 	if bin == "docker" {
-		return && args[0] == "ps" {
-		return "1\n2\n3\n"
+		return f.docker(args, root)
 	}
 	return out, nil
 }
@@ -106,6 +105,11 @@ func (f *fakeHost) CombinedOutput(cmd string) (string, error) {
 func (f *fakeHost) Run(cmd string) error {
 	_, err := f.CombinedOutput(cmd)
 	return err
+}
+
+// docker is a fake implementation of docker
+func (f *fakeHost) docker(args []string, root bool) (string, error) {
+	return "", nil
 }
 
 // systemctl is a fake implementation of systemctl
@@ -150,8 +154,8 @@ func (f *fakeHost) systemctl(args []string, root bool) (string, error) {
 	return out, nil
 }
 
-// The settings here should reflect the default boot state for minikube
-var defaultBootState = map[string]serviceState{
+// defaultServices reflects the default boot state for the minikube VM
+var defaultServices = map[string]serviceState{
 	"docker":        Running,
 	"docker.socket": Running,
 	"crio":          Exited,
@@ -174,7 +178,7 @@ func TestDisable(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
-			runner := &fakeHost{services: defaultBootState}
+			runner := &fakeHost{services: defaultServices}
 			err = r.Disable(runner)
 			if err != nil {
 				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
@@ -219,7 +223,7 @@ func TestEnable(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
-			runner := &fakeHost{services: defaultBootState}
+			runner := &fakeHost{services: defaultServices}
 			err = r.Enable(runner)
 			if err != nil {
 				t.Errorf("%s disable unexpected error: %v", tc.runtime, err)
