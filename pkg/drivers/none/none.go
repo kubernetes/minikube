@@ -17,9 +17,7 @@ limitations under the License.
 package none
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -48,22 +46,21 @@ var cleanupPaths = []string{
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-
-	URL              string
+	URL     string
 	runtime cruntime.Manager
 	exec    bootstrapper.CommandRunner
 }
 
 // Config is configuration for the None driver
 type Config struct {
-	MachineName string
-	StorePath string
+	MachineName      string
+	StorePath        string
 	ContainerRuntime cruntime.Manager
 }
 
 // NewDriver returns a fully configured None driver
 func NewDriver(c Config) *Driver {
-	runtime, err := cruntime.New(d.ContainerRuntime)
+	runtime, err := cruntime.New(c.ContainerRuntime)
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
 	if err != nil {
 		glog.Fatalf("unable to create container runtime: %v", err)
@@ -74,13 +71,13 @@ func NewDriver(c Config) *Driver {
 			StorePath:   c.StorePath,
 		},
 		runtime: c.ContainerRuntime,
-		exec: &bootstrapper.ExecRunner{},
+		exec:    &bootstrapper.ExecRunner{},
 	}
 }
 
 // PreCreateCheck checks for correct privileges and dependencies
 func (d *Driver) PreCreateCheck() error {
-	return d.runtime.Available(d.CommandRunner)
+	return d.runtime.Available(d.exec)
 }
 
 func (d *Driver) Create() error {
@@ -125,20 +122,20 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	if err := runningKubelet(d.exec); err != nil {
-		glog.Infof("kubelet status: %v", err)
+		glog.Infof("kubelet not running: %v", err)
 		return state.Stopped, nil
 	}
-	return state.Running
+	return state.Running, nil
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
 	return stopKubelet(d.exec)
-	containers, err := d.runtime.Containers(cruntime.MinikubeContainerPrefix)
+	containers, err := d.runtime.ListContainers(d.exec, cruntime.MinikubeContainerPrefix)
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
-	if err := d.runtime.KillContainers(containers); err != nil {
+	if err := d.runtime.KillContainers(d.exec, containers); err != nil {
 		return errors.Wrap(err, "kill")
 	}
 	return nil
@@ -146,14 +143,15 @@ func (d *Driver) Kill() error {
 
 // Remove a host, including any data which may have been written by it.
 func (d *Driver) Remove() error {
-	if err != d.Kill(); err != nil {
+	if err := d.Kill(); err != nil {
 		return err
 	}
 
 	cmd := fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " "))
 	if err := d.exec.Run(cmd); err != nil {
-		glog.Errorf("unable to fully cleanup: %v", err)
+		glog.Errorf("cleanup incomplete: %v", err)
 	}
+	return nil
 }
 
 // Restart a host
