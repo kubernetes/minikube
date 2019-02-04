@@ -95,7 +95,7 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
-// EnableOrDisableAddon does what it says, executing any commands necessary.
+// EnableOrDisableAddon updates addon status executing any commands necessary
 func EnableOrDisableAddon(name string, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {

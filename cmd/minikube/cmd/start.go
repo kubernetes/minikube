@@ -264,17 +264,17 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Moving files into cluster...")
-	bootstrap, err := GetClusterBootstrapper(api, clusterBootstrapper)
+	bs, err := GetClusterBootstrapper(api, clusterBootstrapper)
 	if err != nil {
 		glog.Exitf("Error getting cluster bootstrapper: %v", err)
 	}
-	if err := bootstrap.UpdateCluster(kubernetesConfig); err != nil {
+	if err := bs.UpdateCluster(kubernetesConfig); err != nil {
 		glog.Errorln("Error updating cluster: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
 	fmt.Println("Setting up certs...")
-	if err := bootstrap.SetupCerts(kubernetesConfig); err != nil {
+	if err := bs.SetupCerts(kubernetesConfig); err != nil {
 		glog.Errorln("Error configuring authentication: ", err)
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
@@ -350,13 +350,13 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 
 	if !exists || config.VMDriver == constants.DriverNone {
 		fmt.Println("Starting cluster components...")
-		if err := bootstrap.StartCluster(kubernetesConfig); err != nil {
+		if err := bs.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorf("Error starting cluster: %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
 	} else {
 		fmt.Println("Machine exists, restarting cluster components...")
-		if err := bootstrap.RestartCluster(kubernetesConfig); err != nil {
+		if err := bs.RestartCluster(kubernetesConfig); err != nil {
 			glog.Errorln("Error restarting cluster: ", err)
 			cmdutil.MaybeReportErrorAndExit(err)
 		}
@@ -365,7 +365,7 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	// Block until the cluster is healthy.
 	fmt.Print("Verifying kubelet health ...")
 	kStat := func() (err error) {
-		st, err := bootstrap.GetKubeletStatus()
+		st, err := bs.GetKubeletStatus()
 		if err != nil || st != state.Running.String() {
 			fmt.Printf(".")
 			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
@@ -379,7 +379,7 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	}
 	fmt.Print("\nVerifying apiserver health ...")
 	aStat := func() (err error) {
-		st, err := bootstrap.GetApiServerStatus(net.ParseIP(ip))
+		st, err := bs.GetApiServerStatus(net.ParseIP(ip))
 		if err != nil || st != state.Running.String() {
 			fmt.Print(".")
 			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
