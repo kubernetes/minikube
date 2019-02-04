@@ -61,7 +61,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:031cfe09be23486aed11668813dd112b5f79ed9926ca411bb3dac32e9e20fc4a"
+  digest = "1:47b479ee07f66c92682bcf27e3a65b411b7ba52bfc28fd0b6b74a742620fc61a"
   name = "github.com/docker/machine"
   packages = [
     "commands/mcndirs",
@@ -98,7 +98,7 @@
     "version",
   ]
   pruneopts = "NUT"
-  revision = "19035310d4ba1b58056aae427ea669d1db5fc618"
+  revision = "a773edc6f013c9fab13360fea0192fd335023a16"
   source = "github.com/machine-drivers/machine"
 
 [[projects]]
@@ -284,6 +284,14 @@
   pruneopts = "NUT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3526ea57285a47f99273a9b00252869d06888b08cd7358d6f89c35db6ec1605b"
+  name = "github.com/intel-go/cpuid"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "1a4a6f06a1c643c8fbd339bd61d980960627d09e"
 
 [[projects]]
   branch = "master"
