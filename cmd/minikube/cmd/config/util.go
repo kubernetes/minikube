@@ -95,11 +95,11 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// EnableOrDisableAddon updates addon status executing any commands necessary
 func EnableOrDisableAddon(name string, val string) error {
-
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
+		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
@@ -111,28 +111,25 @@ func EnableOrDisableAddon(name string, val string) error {
 	defer api.Close()
 	cluster.EnsureMinikubeRunningOrExit(api, 0)
 
-	addon, _ := assets.Addons[name] // validation done prior
-	if err != nil {
-		return err
-	}
+	addon := assets.Addons[name]
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}
-	cmd, err := machine.GetCommandRunner(host)
+	cmd, err := machine.CommandRunner(host)
 	if err != nil {
-		return errors.Wrap(err, "getting command runner")
+		return errors.Wrap(err, "command runner")
 	}
 	if enable {
 		for _, addon := range addon.Assets {
 			if err := cmd.Copy(addon); err != nil {
-				return errors.Wrapf(err, "error enabling addon %s", addon.AssetName)
+				return errors.Wrapf(err, "enabling addon %s", addon.AssetName)
 			}
 		}
 	} else {
 		for _, addon := range addon.Assets {
 			if err := cmd.Remove(addon); err != nil {
-				return errors.Wrapf(err, "error disabling addon %s", addon.AssetName)
+				return errors.Wrapf(err, "disabling addon %s", addon.AssetName)
 			}
 		}
 	}

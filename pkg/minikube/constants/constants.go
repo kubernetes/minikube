@@ -155,41 +155,6 @@ const (
 	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
-var Preflights = []string{
-	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
-	// that we also stick in /etc/kubernetes/manifests
-	"DirAvailable--etc-kubernetes-manifests",
-	"DirAvailable--data-minikube",
-	"Port-10250",
-	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
-	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
-	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
-	"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
-	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
-	// (it should probably stop doing this, though...)
-	"Swap",
-	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
-	// (because we start kubelet with an invalid config)
-	"CRI",
-}
-
-// AlternateRuntimePreflights are additional preflight checks that are skipped when running
-// any container runtime that isn't Docker
-var AlternateRuntimePreflights = append(Preflights, []string{
-	"Service-Docker",
-	"Port-8443",
-	"Port-10251",
-	"Port-10252",
-	"Port-2379",
-}...)
-
-const (
-	ContainerdRuntime = "containerd"
-	RktRuntime        = "rkt"
-	CrioRuntime       = "crio"
-	Cri_oRuntime      = "cri-o"
-)
-
 const (
 	DefaultUfsPort       = "5640"
 	DefaultUfsDebugLvl   = 0
@@ -286,7 +251,7 @@ const (
 	GvisorFilesPath = "/tmp/gvisor"
 	// ContainerdConfigTomlPath is the path to the containerd config.toml
 	ContainerdConfigTomlPath = "/etc/containerd/config.toml"
-	// GvisorContainerdShimTomlPath is the path to givosr-containerd-shim.toml
+	// GvisorContainerdShimTomlPath is the path to gvisor-containerd-shim.toml
 	GvisorContainerdShimTomlPath = "/etc/containerd/gvisor-containerd-shim.toml"
 	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
 	StoredContainerdConfigTomlPath = "/tmp/config.toml"

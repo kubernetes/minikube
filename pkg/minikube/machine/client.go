@@ -25,12 +25,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/sshutil"
-	"k8s.io/minikube/pkg/provision"
-
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/cert"
@@ -48,6 +42,11 @@ import (
 	"github.com/docker/machine/libmachine/version"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/sshutil"
+	"k8s.io/minikube/pkg/provision"
 )
 
 func NewRPCClient(storePath, certsDir string) libmachine.API {
@@ -142,16 +141,16 @@ func (api *LocalClient) Close() error {
 	return nil
 }
 
-func GetCommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
-	if h.DriverName != constants.DriverNone {
-		client, err := sshutil.NewSSHClient(h.Driver)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
-		}
-		return bootstrapper.NewSSHRunner(client), nil
+// CommandRunner returns best available command runner for this host
+func CommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
+	if h.DriverName == constants.DriverNone {
+		return &bootstrapper.ExecRunner{}, nil
 	}
-
-	return &bootstrapper.ExecRunner{}, nil
+	client, err := sshutil.NewSSHClient(h.Driver)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
+	}
+	return bootstrapper.NewSSHRunner(client), nil
 }
 
 func (api *LocalClient) Create(h *host.Host) error {
