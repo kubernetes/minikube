@@ -20,9 +20,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -35,7 +39,9 @@ var stopCmd = &cobra.Command{
 	Long: `Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		console.OutStyle("stopping", "Stopping local Kubernetes cluster...")
+		profile := viper.GetString(pkg_config.MachineProfile)
+		console.OutStyle("stopping", "Stopping %q Kubernetes cluster...", profile)
+
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			console.Fatal("Error getting client: %v", err)
@@ -43,17 +49,29 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 		}
 		defer api.Close()
 
+		nonexistent := false
+
 		stop := func() (err error) {
-			return cluster.StopHost(api)
+			err = cluster.StopHost(api)
+			switch err := errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				console.OutStyle("meh", "%q VM does not exist, nothing to stop", profile)
+				nonexistent = true
+				return nil
+			default:
+				return err
+			}
 		}
 		if err := pkgutil.RetryAfter(5, stop, 1*time.Second); err != nil {
-			console.Fatal("Error stopping machine: %v", err)
+			console.Fatal("Unable to stop VM: %v", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		console.OutStyle("stopped", "Machine stopped.")
+		if !nonexistent {
+			console.OutStyle("stopped", "%q stopped.", profile)
+		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			console.Fatal("Errors occurred deleting mount process: %v", err)
+			console.Fatal("Unable to kill mount process: %v", err)
 		}
 	},
 }

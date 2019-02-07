@@ -19,7 +19,6 @@ package machine
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -121,7 +120,7 @@ func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error loading host from store")
+		return nil, errors.Wrap(err, "filestore")
 	}
 
 	var def registry.DriverDef
@@ -166,25 +165,25 @@ func (api *LocalClient) Create(h *host.Host) error {
 		f    func() error
 	}{
 		{
-			"Bootstrapping certs.",
+			"bootstrapping certificates",
 			func() error { return cert.BootstrapCertificates(h.AuthOptions()) },
 		},
 		{
-			"Running precreate checks.",
+			"precreate",
 			h.Driver.PreCreateCheck,
 		},
 		{
-			"Saving driver.",
+			"saving",
 			func() error {
 				return api.Save(h)
 			},
 		},
 		{
-			"Creating VM.",
+			"creating",
 			h.Driver.Create,
 		},
 		{
-			"Waiting for VM to start.",
+			"waiting",
 			func() error {
 				if h.Driver.DriverName() == "none" {
 					return nil
@@ -193,7 +192,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 			},
 		},
 		{
-			"Provisioning VM.",
+			"provisioning",
 			func() error {
 				if h.Driver.DriverName() == "none" {
 					return nil
@@ -206,7 +205,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 
 	for _, step := range steps {
 		if err := step.f(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Error executing step: %s\n", step.name))
+			return errors.Wrap(err, step.name)
 		}
 	}
 

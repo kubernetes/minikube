@@ -383,10 +383,10 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 			}
 			f, err := assets.NewFileAsset(path, "/usr/bin", bin, "0641")
 			if err != nil {
-				return errors.Wrap(err, "making new file asset")
+				return errors.Wrap(err, "new file asset")
 			}
 			if err := k.c.Copy(f); err != nil {
-				return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+				return errors.Wrapf(err, "copy")
 			}
 			return nil
 		})
@@ -396,15 +396,16 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	}
 
 	if err := addAddons(&files); err != nil {
-		return errors.Wrap(err, "adding addons to copyable files")
+		return errors.Wrap(err, "adding addons")
 	}
 
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+			return errors.Wrapf(err, "copy")
 		}
 	}
 
+	console.OutStyle("celebrate", "Starting kubelet %s ...", cfg.KubernetesVersion)
 	err = k.c.Run(`
 sudo systemctl daemon-reload &&
 sudo systemctl enable kubelet &&
