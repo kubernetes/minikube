@@ -957,6 +957,7 @@
     "github.com/johanneswuerbach/nfsexports",
     "github.com/libvirt/libvirt-go",
     "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
+    "github.com/mitchellh/go-ps",
     "github.com/moby/hyperkit/go",
     "github.com/olekukonko/tablewriter",
     "github.com/pborman/uuid",
