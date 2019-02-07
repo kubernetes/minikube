@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -25,6 +24,7 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	kcfg "k8s.io/minikube/pkg/util/kubeconfig"
@@ -39,7 +39,7 @@ var updateContextCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
@@ -55,9 +55,9 @@ var updateContextCmd = &cobra.Command{
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 		if ok {
-			fmt.Println("Reconfigured kubeconfig IP, now pointing at " + ip.String())
+			console.Fatal("Reconfigured kubeconfig IP, now pointing at %s", ip)
 		} else {
-			fmt.Println("Kubeconfig IP correctly configured, pointing at " + ip.String())
+			console.OutStyle("celebrate", "Kubeconfig IP has been updated to point at %s", ip)
 		}
 
 	},

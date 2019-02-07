@@ -30,11 +30,10 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
-
-	"strconv"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -42,6 +41,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 	minikubeConfig "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/version"
 )
@@ -138,7 +138,7 @@ func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
 	if viper.GetBool(config.WantReportError) {
 		err = ReportError(errToReport, constants.ReportingURL)
 	} else if viper.GetBool(config.WantReportErrorPrompt) {
-		fmt.Println(
+		console.Err(
 			`================================================================================
 An error has occurred. Would you like to opt in to sending anonymized crash
 information to minikube to help prevent future errors?
@@ -151,7 +151,7 @@ To disable this prompt, run: 'minikube config set WantReportErrorPrompt false'
 				err = ReportError(errToReport, constants.ReportingURL)
 			}
 		} else {
-			fmt.Println("Bummer, perhaps next time!")
+			console.ErrStyle("meh", "Bummer, perhaps next time!")
 		}
 	}
 
@@ -159,13 +159,13 @@ To disable this prompt, run: 'minikube config set WantReportErrorPrompt false'
 	if err != nil {
 		glog.Infof("report error failed: %v", err)
 	}
-	fmt.Printf("\n\nminikube failed :( exiting with error code %d\n", returnCode)
+	console.ErrStyle("embarassed", "minikube failed, exiting with error code %d", returnCode)
 	os.Exit(returnCode)
 }
 
 func getInput(input chan string, r io.Reader) {
 	reader := bufio.NewReader(r)
-	fmt.Print("Please enter your response [Y/n]: ")
+	console.OutLn("Please enter your response [Y/n]: ")
 	response, err := reader.ReadString('\n')
 	if err != nil {
 		glog.Errorf(err.Error())
@@ -187,11 +187,11 @@ func PromptUserForAccept(r io.Reader) bool {
 		} else if response == "n" || response == "no" {
 			return false
 		} else {
-			fmt.Println("Invalid response, error reporting remains disabled. Must be in form [Y/n]")
+			console.Warning("Invalid response, error reporting remains disabled. Must be in form [Y/n]")
 			return false
 		}
 	case <-time.After(30 * time.Second):
-		fmt.Println("Prompt timed out.")
+		console.Warning("Prompt timed out.")
 		return false
 	}
 }

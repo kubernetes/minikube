@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -25,6 +24,7 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -37,30 +37,30 @@ var deleteCmd = &cobra.Command{
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
-			fmt.Fprintln(os.Stderr, "usage: minikube delete")
+			console.ErrStyle("usage", "usage: minikube delete")
 			os.Exit(1)
 		}
 
-		fmt.Println("Deleting local Kubernetes cluster...")
+		console.OutStyle("stopping", "Deleting local Kubernetes cluster ...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
 
 		if err = cluster.DeleteHost(api); err != nil {
-			fmt.Println("Errors occurred deleting machine: ", err)
+			console.Fatal("Errors occurred deleting machine: %v", err)
 			os.Exit(1)
 		}
-		fmt.Println("Machine deleted.")
+		console.Success("Machine deleted.")
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			fmt.Println("Errors occurred deleting mount process: ", err)
+			console.Fatal("Errors occurred deleting mount process: %v", err)
 		}
 
 		if err := os.Remove(constants.GetProfileFile(viper.GetString(pkg_config.MachineProfile))); err != nil {
-			fmt.Println("Error deleting machine profile config")
+			console.Fatal("Error deleting machine profile config: %v", err)
 			os.Exit(1)
 		}
 	},

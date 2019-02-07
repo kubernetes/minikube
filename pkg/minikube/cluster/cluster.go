@@ -38,8 +38,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-
 	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/util"
@@ -80,7 +80,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if h.Driver.DriverName() != config.VMDriver {
-		fmt.Printf("Skipping %s driver, existing host has %s driver.\n", config.VMDriver, h.Driver.DriverName())
+		console.Warning("Ignoring configuration which specifies %s driver, as the existing host is using the %s driver.", config.VMDriver, h.Driver.DriverName())
 	}
 
 	s, err := h.Driver.GetState()
@@ -200,21 +200,21 @@ func preCreateHost(config *cfg.MachineConfig) error {
 	switch config.VMDriver {
 	case "kvm":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			fmt.Fprintln(os.Stderr, `WARNING: The kvm driver is now deprecated and support for it will be removed in a future release.
+			console.Warning(`The kvm driver is deprecated and support for it will be removed in a future release.
 				Please consider switching to the kvm2 driver, which is intended to replace the kvm driver.
 				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
 				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
 	case "xhyve":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			fmt.Fprintln(os.Stderr, `WARNING: The xhyve driver is now deprecated and support for it will be removed in a future release.
+			console.Warning(`The xhyve driver is deprecated and support for it will be removed in a future release.
 Please consider switching to the hyperkit driver, which is intended to replace the xhyve driver.
 See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
 To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
 	case "vmwarefusion":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			fmt.Fprintln(os.Stderr, `WARNING: The vmwarefusion driver is now deprecated and support for it will be removed in a future release.
+			console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
 				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
@@ -412,11 +412,11 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	s, err := GetHostStatus(api)
 	if err != nil {
-		glog.Errorln("Error getting machine status:", err)
+		console.Fatal("Error getting machine status:", err)
 		os.Exit(1)
 	}
 	if s != state.Running.String() {
-		fmt.Fprintln(os.Stderr, "minikube is not currently running so the service cannot be accessed")
+		console.ErrStyle("conflict", "minikube is not running, so the service cannot be accessed")
 		os.Exit(exitStatus)
 	}
 }
