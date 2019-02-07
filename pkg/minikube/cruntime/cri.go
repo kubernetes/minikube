@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"html/template"
 	"path"
+
+	"github.com/golang/glog"
 )
 
 // listCRIContainers returns a list of containers using crictl
@@ -29,12 +31,18 @@ func listCRIContainers(_ CommandRunner, _ string) ([]string, error) {
 	return []string{}, fmt.Errorf("unimplemented")
 }
 
+// pullImageCRI uses ctr to pull images into a CRI runtime
+func pullImageCRI(cr CommandRunner, path string) error {
+	glog.Infof("Loading image: %s", path)
+	return cr.Run(fmt.Sprintf("sudo ctr cri load %s", path))
+}
+
 // criCRIContainers kills a list of containers using crictl
 func killCRIContainers(CommandRunner, []string) error {
 	return fmt.Errorf("unimplemented")
 }
 
-// StopCRIContainers stops containers using crictl
+// stopCRIContainers stops containers using crictl
 func stopCRIContainers(CommandRunner, []string) error {
 	return fmt.Errorf("unimplemented")
 }

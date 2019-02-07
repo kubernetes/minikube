@@ -122,7 +122,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	if err := runningKubelet(d.exec); err != nil {
+	if err := checkKubelet(d.exec); err != nil {
 		glog.Infof("kubelet not running: %v", err)
 		return state.Stopped, nil
 	}
@@ -153,7 +153,7 @@ func (d *Driver) Remove() error {
 	if err := d.Kill(); err != nil {
 		return errors.Wrap(err, "kill")
 	}
-	// TODO(tstromberg): Make sure this calls into the bootstrapper to perform `kubeadm reset`
+	// TODO(#3637): Make sure this calls into the bootstrapper to perform `kubeadm reset`
 	cmd := fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " "))
 	if err := d.exec.Run(cmd); err != nil {
 		glog.Errorf("cleanup incomplete: %v", err)
@@ -212,8 +212,8 @@ func restartKubelet(exec bootstrapper.CommandRunner) error {
 	return exec.Run("sudo systemctl restart kubelet.service")
 }
 
-// runningKubelet returns an error if the kubelet is not running.
-func runningKubelet(exec bootstrapper.CommandRunner) error {
+// checkKubelet returns an error if the kubelet is not running.
+func checkKubelet(exec bootstrapper.CommandRunner) error {
 	glog.Infof("checking for running kubelet ...")
 	return exec.Run("systemctl is-active --quiet service kubelet")
 }
