@@ -33,7 +33,7 @@ func (r *Containerd) Active() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Containerd) Available() error {
-	return r.Runner.Run("command -v crio")
+	return r.Runner.Run("command -v containerd")
 }
 
 // Enable idempotently enables containerd on a host
