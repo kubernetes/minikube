@@ -62,9 +62,11 @@ func applyPrefix(prefix, format string) string {
 // Apply styling to a format string
 func applyStyle(style string, useColor bool, format string, a ...interface{}) (string, error) {
 	p := message.NewPrinter(preferredLanguage)
+	out := p.Sprintf(format, a...)
+
 	s, ok := styles[style]
 	if !s.OmitNewline {
-		format = format + "\n"
+		out += "\n"
 	}
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
@@ -73,9 +75,9 @@ func applyStyle(style string, useColor bool, format string, a ...interface{}) (s
 	}
 
 	prefix := s.Prefix
-	if useColor && prefix != "" {
+	if !useColor && prefix != "" {
 		prefix = "-"
 	}
-	format = applyPrefix(prefix, format)
-	return p.Sprintf(format, a...), nil
+	out = applyPrefix(prefix, out)
+	return out, nil
 }
