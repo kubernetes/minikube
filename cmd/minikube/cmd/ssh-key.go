@@ -17,12 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -32,7 +31,7 @@ var sshKeyCmd = &cobra.Command{
 	Short: "Retrieve the ssh identity key path of the specified cluster",
 	Long:  "Retrieve the ssh identity key path of the specified cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), "id_rsa"))
+		console.OutLn(filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), "id_rsa"))
 	},
 }
 

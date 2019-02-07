@@ -34,6 +34,7 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -308,25 +309,24 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Sets up docker env variables; similar to '$(docker-machine env)'",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
 		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting host: %v\n", err)
+			console.Fatal("Error getting host: %v", err)
 			os.Exit(1)
 		}
 		if host.Driver.DriverName() == "none" {
-			fmt.Println(`'none' driver does not support 'minikube docker-env' command`)
-			os.Exit(0)
+			console.Fatal(`'none' driver does not support 'minikube docker-env' command`)
+			os.Exit(1)
 		}
 		docker, err := GetDockerActive(host)
 		if !docker {
-			fmt.Println(`# The docker service is currently not active`)
+			console.OutLn(`# The docker service is currently not active`)
 			os.Exit(1)
 		}
 

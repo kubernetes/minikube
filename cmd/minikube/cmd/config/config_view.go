@@ -17,13 +17,13 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"os"
 	"text/template"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -41,7 +41,7 @@ var configViewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := configView()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			console.Fatal("config view failed: %v", err)
 			os.Exit(1)
 		}
 	},

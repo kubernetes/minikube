@@ -17,12 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"text/template"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
@@ -48,7 +48,7 @@ var serviceCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("serviceURL").Parse(serviceURLFormat)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "The value passed to --format is invalid:\n\n", err)
+			console.Fatal("The value passed to --format is invalid: %v", err)
 			os.Exit(1)
 		}
 		serviceURLTemplate = t
@@ -57,15 +57,14 @@ var serviceCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 || len(args) > 1 {
-			errText := "Please specify a service name."
-			fmt.Fprintln(os.Stderr, errText)
+			console.Fatal("No service name was specified.")
 			os.Exit(1)
 		}
 
 		svc := args[0]
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
@@ -74,7 +73,7 @@ var serviceCmd = &cobra.Command{
 		err = service.WaitAndMaybeOpenService(api, namespace, svc,
 			serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error opening service: %v\n", err)
+			console.Fatal("Error opening service: %v", err)
 			os.Exit(1)
 		}
 	},
