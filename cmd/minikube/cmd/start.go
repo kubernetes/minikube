@@ -350,7 +350,10 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	}
 
 	if !exists || config.VMDriver == constants.DriverNone {
-		fmt.Println("Starting cluster components...")
+		fmt.Println("Pulling images...")
+		if err := bs.PullImages(kubernetesConfig); err != nil {
+			fmt.Printf("Unable to pull images, which may be OK: %v", err)
+		}
 		if err := bs.StartCluster(kubernetesConfig); err != nil {
 			glog.Errorf("Error starting cluster: %v", err)
 			cmdutil.MaybeReportErrorAndExit(err)

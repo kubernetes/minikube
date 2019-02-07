@@ -74,7 +74,7 @@ func (r *Containerd) Disable() error {
 
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
-	return nil
+	return pullImageCRI(r.Runner, path)
 }
 
 // KubeletOptions returns kubelet options for a containerd
