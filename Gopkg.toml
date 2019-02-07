@@ -110,3 +110,6 @@
   go-tests = true
   non-go = true
   unused-packages = true
+
+[[constraint]]
+  name = "golang.org/x/text"
