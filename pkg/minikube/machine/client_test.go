@@ -158,7 +158,7 @@ func TestRunDriver(t *testing.T) {
 	}
 	os.Stdout = old
 
-	fmt.Prinln(string(addr))
+	fmt.Println(string(addr))
 
 	// Now that we got the port, make sure we can connect.
 	if _, err := net.Dial("tcp", string(addr)); err != nil {

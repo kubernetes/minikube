@@ -159,7 +159,6 @@ To disable this prompt, run: 'minikube config set WantReportErrorPrompt false'
 	if err != nil {
 		glog.Infof("report error failed: %v", err)
 	}
-	console.ErrStyle("embarassed", "minikube failed, exiting with error code %d", returnCode)
 	os.Exit(returnCode)
 }
 

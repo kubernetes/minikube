@@ -655,12 +655,20 @@
   revision = "95c6576299259db960f6c5b9b69ea52422860fce"
 
 [[projects]]
-  digest = "1:5b12278b98e82aecd7d0b84e0b5fba67f37aba8fde89fa86d51e30556d381a4c"
+  branch = "master"
+  digest = "1:11d290de3457882172ce8d9ffe930999cfb62929b58e486e1ff1b6adcf3c52bc"
   name = "golang.org/x/text"
   packages = [
+    "collate",
+    "collate/build",
+    "feature/plural",
     "internal",
     "internal/catmsg",
+    "internal/colltab",
+    "internal/format",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
     "internal/number",
     "internal/stringset",
     "internal/tag",
@@ -677,7 +685,7 @@
     "unicode/rangetable",
   ]
   pruneopts = "NUT"
-  revision = "b19bf474d317b857955b12035d2c5acb57ce8b01"
+  revision = "e6919f6577db79269a6443b9dc46d18f2238fb5d"
 
 [[projects]]
   digest = "1:d37b0ef2944431fe9e8ef35c6fffc8990d9e2ca300588df94a6890f3649ae365"
