@@ -161,6 +161,19 @@
   revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
 
 [[projects]]
+  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = "NUT"
+  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
+  version = "v0.2.0"
+
+[[projects]]
   digest = "1:186f7de0e878b5ff1fca82271ce36a7abf9747be09d03b3f08a921584c2f26fc"
   name = "github.com/google/go-containerregistry"
   packages = [
@@ -933,6 +946,7 @@
     "github.com/docker/machine/libmachine/swarm",
     "github.com/docker/machine/libmachine/version",
     "github.com/golang/glog",
+    "github.com/google/go-cmp/cmp",
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1/remote",
@@ -943,6 +957,7 @@
     "github.com/johanneswuerbach/nfsexports",
     "github.com/libvirt/libvirt-go",
     "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
+    "github.com/mitchellh/go-ps",
     "github.com/moby/hyperkit/go",
     "github.com/olekukonko/tablewriter",
     "github.com/pborman/uuid",

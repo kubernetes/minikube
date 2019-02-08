@@ -110,3 +110,7 @@
   go-tests = true
   non-go = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/google/go-cmp"
+  version = "0.2.0"
