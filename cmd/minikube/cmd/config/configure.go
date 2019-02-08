@@ -149,8 +149,6 @@ var addonsConfigureCmd = &cobra.Command{
 			if err != nil {
 				console.Warning("ERROR creating `registry-creds-dpr` secret")
 			}
-
-			break
 		default:
 			console.Failure("%s has no available configuration options", addon)
 			return

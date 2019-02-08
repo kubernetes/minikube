@@ -74,8 +74,7 @@ type URLHandlerCorrect struct {
 func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	b, err := json.Marshal(h.releases)
 	if err != nil {
-		// TODO(tstrombxerg): Do something else with this?
-		fmt.ErrLn(err)
+		fmt.Println(err)
 		return
 	}
 	w.Header().Set("Content-Type", "application/javascript")
