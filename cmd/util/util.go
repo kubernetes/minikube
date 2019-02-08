@@ -27,14 +27,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
-	"strings"
-	"text/template"
-	"time"
-
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -229,33 +226,6 @@ minikube config set WantKubectlDownloadMsg false
 `,
 			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, goos, runtime.GOARCH))
 	}
-}
-
-// Return a command to run, that will generate the crictl config file
-func GetCrictlConfigCommand(cfg map[string]string) (string, error) {
-	var (
-		crictlYamlTmpl = `runtime-endpoint: {{.RuntimeEndpoint}}
-image-endpoint: {{.ImageEndpoint}}
-`
-		crictlYamlPath = "/etc/crictl.yaml"
-	)
-	t, err := template.New("crictlYaml").Parse(crictlYamlTmpl)
-	if err != nil {
-		return "", err
-	}
-	opts := struct {
-		RuntimeEndpoint string
-		ImageEndpoint   string
-	}{
-		RuntimeEndpoint: cfg["runtime-endpoint"],
-		ImageEndpoint:   cfg["image-endpoint"],
-	}
-	var crictlYamlBuf bytes.Buffer
-	if err := t.Execute(&crictlYamlBuf, opts); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crictlYamlPath), crictlYamlBuf.String(), crictlYamlPath), nil
 }
 
 // Ask the kernel for a free open port that is ready to use

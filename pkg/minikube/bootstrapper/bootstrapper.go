@@ -26,6 +26,8 @@ import (
 
 // Bootstrapper contains all the methods needed to bootstrap a kubernetes cluster
 type Bootstrapper interface {
+	// PullImages pulls images necessary for a cluster. Success should not be required.
+	PullImages(config.KubernetesConfig) error
 	StartCluster(config.KubernetesConfig) error
 	UpdateCluster(config.KubernetesConfig) error
 	RestartCluster(config.KubernetesConfig) error
