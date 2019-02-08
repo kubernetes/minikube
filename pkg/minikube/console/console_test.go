@@ -53,7 +53,7 @@ func TestOutStyle(t *testing.T) {
 		t.Errorf("unexpected error: %q", err)
 	}
 	got := f.String()
-	want := "😄 This is a happy message.\n"
+	want := "😄  This is a happy message.\n"
 
 	if got != want {
 		t.Errorf("OutStyle() = %q, want %q", got, want)
@@ -120,7 +120,7 @@ func TestErrStyle(t *testing.T) {
 		t.Errorf("unexpected error: %q", err)
 	}
 	got := f.String()
-	want := "💣 It broke\n"
+	want := "💣  It broke\n"
 	if got != want {
 		t.Errorf("ErrStyle() = %q, want %q", got, want)
 	}

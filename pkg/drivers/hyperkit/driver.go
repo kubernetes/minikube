@@ -21,6 +21,7 @@ package hyperkit
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/user"
 	"path"
@@ -30,14 +31,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/mitchellh/go-ps"
-
-	"io/ioutil"
-
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/johanneswuerbach/nfsexports"
+	"github.com/mitchellh/go-ps"
 	"github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
@@ -283,7 +281,7 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 
 	p, err := ps.FindProcess(pid)
 	if err != nil {
-		return errors.Wrapf(err, "trying to find process for PID %s", pid)
+		return errors.Wrapf(err, "trying to find process for PID %d", pid)
 	}
 
 	if p != nil && !strings.Contains(p.Executable(), "hyperkit") {
