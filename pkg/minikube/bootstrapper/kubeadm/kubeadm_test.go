@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -257,8 +258,13 @@ apiServerExtraArgs:
 	}
 
 	for _, test := range tests {
+		runtime, err := cruntime.New(cruntime.Config{Type: "docker"})
+		if err != nil {
+			t.Fatalf("runtime: %v", err)
+		}
+
 		t.Run(test.description, func(t *testing.T) {
-			actualCfg, err := generateConfig(test.cfg)
+			actualCfg, err := generateConfig(test.cfg, runtime)
 			if err != nil && !test.shouldErr {
 				t.Errorf("got unexpected error generating config: %v", err)
 				return
