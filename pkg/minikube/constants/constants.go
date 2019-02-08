@@ -54,6 +54,7 @@ func GetMinipath() string {
 // used in gendocs.
 var SupportedVMDrivers = [...]string{
 	"virtualbox",
+	"parallels",
 	"vmwarefusion",
 	"kvm",
 	"xhyve",
