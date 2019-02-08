@@ -161,6 +161,19 @@
   revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
 
 [[projects]]
+  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = "NUT"
+  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
+  version = "v0.2.0"
+
+[[projects]]
   digest = "1:186f7de0e878b5ff1fca82271ce36a7abf9747be09d03b3f08a921584c2f26fc"
   name = "github.com/google/go-containerregistry"
   packages = [
@@ -346,6 +359,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "61b492c03cf472e0c6419be5899b8e0dc28b1b88"
+
+[[projects]]
+  digest = "1:bffa444ca07c69c599ae5876bc18b25bfd5fa85b297ca10a25594d284a7e9c5d"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   digest = "1:f2d263faf8641cd0a31bba2d034eb2f9ab9f3c3348b06ac9ad54b9a4ea692dee"
@@ -647,12 +668,20 @@
   revision = "95c6576299259db960f6c5b9b69ea52422860fce"
 
 [[projects]]
-  digest = "1:97337ef8cb438f9e3a99ea91a300e916ed9a96fbf3ad50f9a020d30ea9f8692f"
+  digest = "1:5b12278b98e82aecd7d0b84e0b5fba67f37aba8fde89fa86d51e30556d381a4c"
   name = "golang.org/x/text"
   packages = [
+    "internal",
+    "internal/catmsg",
     "internal/gen",
+    "internal/number",
+    "internal/stringset",
+    "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "language",
+    "message",
+    "message/catalog",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -933,6 +962,7 @@
     "github.com/docker/machine/libmachine/swarm",
     "github.com/docker/machine/libmachine/version",
     "github.com/golang/glog",
+    "github.com/google/go-cmp/cmp",
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1/remote",
@@ -943,6 +973,8 @@
     "github.com/johanneswuerbach/nfsexports",
     "github.com/libvirt/libvirt-go",
     "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
+    "github.com/mattn/go-isatty",
+    "github.com/mitchellh/go-ps",
     "github.com/moby/hyperkit/go",
     "github.com/olekukonko/tablewriter",
     "github.com/pborman/uuid",
@@ -963,6 +995,8 @@
     "golang.org/x/sync/errgroup",
     "golang.org/x/sync/syncmap",
     "golang.org/x/sys/windows/registry",
+    "golang.org/x/text/language",
+    "golang.org/x/text/message",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1beta1",
