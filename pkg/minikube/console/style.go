@@ -1,3 +1,19 @@
+/*
+Copyright 2019 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package console
 
 import (
@@ -15,39 +31,50 @@ type style struct {
 }
 
 // styles is a map of style name to style struct
+// For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[string]style{
-	// General purpose
-	"happy":      style{Prefix: "😄"},
-	"success":    style{Prefix: "✅ "},
-	"failure":    style{Prefix: "❌"},
-	"conflict":   style{Prefix: "💥"},
-	"fatal":      style{Prefix: "💣"},
-	"notice":     style{Prefix: "📌"},
-	"ready":      style{Prefix: "🏄"},
-	"restarting": style{Prefix: "🔁"},
-	"stopping":   style{Prefix: "🚦"},
-	"stopped":    style{Prefix: "🛑"},
-	"warning":    style{Prefix: "⚠️"},
-	"waiting":    style{Prefix: "⌛"},
-	"usage":      style{Prefix: "💡"},
-	"launch":     style{Prefix: "🚀"},
+	"happy":      {Prefix: "😄"},
+	"success":    {Prefix: "✅"},
+	"failure":    {Prefix: "❌"},
+	"conflict":   {Prefix: "💥"},
+	"fatal":      {Prefix: "💣"},
+	"notice":     {Prefix: "📌"},
+	"ready":      {Prefix: "🏄"},
+	"restarting": {Prefix: "🔄"},
+	"stopping":   {Prefix: "✋"},
+	"stopped":    {Prefix: "🛑"},
+	"warning":    {Prefix: "⚠️"},
+	"waiting":    {Prefix: "⌛"},
+	"usage":      {Prefix: "💡"},
+	"launch":     {Prefix: "🚀"},
+	"thumbs-up":  {Prefix: "👍"},
+	"option":     {Prefix: "   ▪ "},
+	"crushed":    {Prefix: "💔"},
 
-	// Specialized purpose
-	"iso-download":      style{Prefix: "💿"},
-	"file-download":     style{Prefix: "💾"},
-	"caching":           style{Prefix: "🤹"},
-	"starting-vm":       style{Prefix: "🔥"},
-	"copying":           style{Prefix: "✨"},
-	"connectivity":      style{Prefix: "📡"},
-	"mounting":          style{Prefix: "📁"},
-	"celebrate":         style{Prefix: "🎉"},
-	"container-runtime": style{Prefix: "🎁"},
-	"enabling":          style{Prefix: "🔌"},
-	"pulling":           style{Prefix: "🚜"},
-	"verifying":         style{Prefix: "🤔"},
-	"kubectl":           style{Prefix: "❤️"},
-	"meh":               style{Prefix: "🙄"},
-	"embarassed":        style{Prefix: "🤦"},
+	// Specialized purpose styles
+	"iso-download":      {Prefix: "💿"},
+	"file-download":     {Prefix: "💾"},
+	"caching":           {Prefix: "🤹"},
+	"starting-vm":       {Prefix: "🔥"},
+	"starting-none":     {Prefix: "🤹"},
+	"deleting-vm":       {Prefix: "🔥"},
+	"copying":           {Prefix: "✨"},
+	"connectivity":      {Prefix: "📶"},
+	"mounting":          {Prefix: "📁"},
+	"celebrate":         {Prefix: "🎉"},
+	"container-runtime": {Prefix: "🎁"},
+	"Docker":            {Prefix: "🐳"},
+	"CRIO":              {Prefix: "🎁"}, // This should be a snow-flake, but the emoji has a strange width on macOS
+	"containerd":        {Prefix: "📦"},
+	"permissions":       {Prefix: "🔑"},
+	"enabling":          {Prefix: "🔌"},
+	"pulling":           {Prefix: "🚜"},
+	"verifying":         {Prefix: "🤔"},
+	"verifying-noline":  {Prefix: "🤔", OmitNewline: true},
+	"kubectl":           {Prefix: "💗"},
+	"meh":               {Prefix: "🙄"},
+	"embarassed":        {Prefix: "🤦"},
+	"tip":               {Prefix: "💡"},
 }
 
 // Add a prefix to a string
@@ -56,15 +83,17 @@ func applyPrefix(prefix, format string) string {
 		return format
 	}
 	// TODO(tstromberg): Ensure compatibility with RTL languages.
-	return prefix + " " + format
+	return prefix + "  " + format
 }
 
 // Apply styling to a format string
 func applyStyle(style string, useColor bool, format string, a ...interface{}) (string, error) {
 	p := message.NewPrinter(preferredLanguage)
+	out := p.Sprintf(format, a...)
+
 	s, ok := styles[style]
 	if !s.OmitNewline {
-		format = format + "\n"
+		out += "\n"
 	}
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
@@ -73,9 +102,9 @@ func applyStyle(style string, useColor bool, format string, a ...interface{}) (s
 	}
 
 	prefix := s.Prefix
-	if useColor && prefix != "" {
+	if !useColor && prefix != "" {
 		prefix = "-"
 	}
-	format = applyPrefix(prefix, format)
-	return p.Sprintf(format, a...), nil
+	out = applyPrefix(prefix, out)
+	return out, nil
 }

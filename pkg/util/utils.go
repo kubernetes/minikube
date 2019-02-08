@@ -114,7 +114,7 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 			glog.Infof("non-retriable error: %v", err)
 			return m.ToError()
 		}
-		glog.V(2).Infof("sleeping %s", d)
+		glog.V(2).Infof("error: %v - sleeping %s", err, d)
 		time.Sleep(d)
 	}
 	return m.ToError()

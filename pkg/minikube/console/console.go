@@ -1,3 +1,19 @@
+/*
+Copyright 2019 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 // Package console provides a mechanism for sending localized, stylized output to the console.
 package console
 
@@ -23,6 +39,8 @@ import (
 // console.SetErrFile(os.Stderr)
 // console.Fatal("Oh no, everything failed.")
 
+// NOTE: If you do not want colorized output, set MINIKUBE_IN_COLOR=0 in your environment.
+
 var (
 	// outFile is where Out* functions send output to. Set using SetOutFile()
 	outFile fdWriter
@@ -32,10 +50,10 @@ var (
 	preferredLanguage = language.AmericanEnglish
 	// our default language
 	defaultLanguage = language.AmericanEnglish
-	// ignoreTTYCheck ignores the result of the TTY check (for testing!)
-	ignoreTTYCheck = false
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
+	// OverrideEnv is the environment variable used to override color/emoji usage
+	OverrideEnv = "MINIKUBE_IN_COLOR"
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
@@ -48,9 +66,9 @@ type fdWriter interface {
 func OutStyle(style, format string, a ...interface{}) error {
 	OutStyle, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
 	if err != nil {
-		// Try anyways
-		if err := Out(OutStyle); err != nil {
-			glog.Errorf("Out failed: %v", err)
+		glog.Errorf("applyStyle(%s): %v", style, err)
+		if oerr := OutLn(format, a...); oerr != nil {
+			glog.Errorf("Out failed: %v", oerr)
 		}
 		return err
 	}
@@ -61,7 +79,10 @@ func OutStyle(style, format string, a ...interface{}) error {
 func Out(format string, a ...interface{}) error {
 	p := message.NewPrinter(preferredLanguage)
 	if outFile == nil {
-		return fmt.Errorf("No output file has been set")
+		if _, err := p.Fprintf(os.Stdout, "(stdout unset)"+format, a...); err != nil {
+			return err
+		}
+		return fmt.Errorf("no output file has been set")
 	}
 	_, err := p.Fprintf(outFile, format, a...)
 	return err
@@ -76,9 +97,9 @@ func OutLn(format string, a ...interface{}) error {
 func ErrStyle(style, format string, a ...interface{}) error {
 	format, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
 	if err != nil {
-		// Try anyways.
-		if err := Err(format); err != nil {
-			glog.Errorf("Err failed: %v", err)
+		glog.Errorf("applyStyle(%s): %v", style, err)
+		if oerr := ErrLn(format, a...); oerr != nil {
+			glog.Errorf("Err(%s) failed: %v", format, oerr)
 		}
 		return err
 	}
@@ -89,7 +110,10 @@ func ErrStyle(style, format string, a ...interface{}) error {
 func Err(format string, a ...interface{}) error {
 	p := message.NewPrinter(preferredLanguage)
 	if errFile == nil {
-		return fmt.Errorf("No error output file has been set")
+		if _, err := p.Fprintf(os.Stderr, "(stderr unset)"+format, a...); err != nil {
+			return err
+		}
+		return fmt.Errorf("no error file has been set")
 	}
 	_, err := p.Fprintf(errFile, format, a...)
 	return err
@@ -120,16 +144,16 @@ func Failure(format string, a ...interface{}) error {
 	return ErrStyle("failure", format, a...)
 }
 
-// SetLanguageTag configures which language future messages should use.
-func SetLanguageTag(l language.Tag) {
+// SetPreferredLanguageTag configures which language future messages should use.
+func SetPreferredLanguageTag(l language.Tag) {
 	glog.Infof("Setting Language to %s ...", l)
 	preferredLanguage = l
 }
 
-// SetLanguage configures which language future messages should use, based on a LANG string.
-func SetLanguage(s string) error {
+// SetPreferredLanguage configures which language future messages should use, based on a LANG string.
+func SetPreferredLanguage(s string) error {
 	if s == "" || s == "C" {
-		SetLanguageTag(defaultLanguage)
+		SetPreferredLanguageTag(defaultLanguage)
 		return nil
 	}
 	// Ignore encoding preferences: we always output utf8. Handles "de_DE.utf8"
@@ -138,40 +162,42 @@ func SetLanguage(s string) error {
 	if err != nil {
 		return err
 	}
-	SetLanguageTag(l)
+	SetPreferredLanguageTag(l)
 	return nil
 }
 
 // SetOutFile configures which writer standard output goes to.
 func SetOutFile(w fdWriter) {
-	glog.Infof("Setting OutFile to %v (fd=%d) ...", w, w.Fd())
+	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
 	useColor = wantsColor(w.Fd())
 }
 
 // SetErrFile configures which writer error output goes to.
 func SetErrFile(w fdWriter) {
-	glog.Infof("Setting ErrFile to %v (fd=%d)...", w, w.Fd())
+	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
 	useColor = wantsColor(w.Fd())
 }
 
 // wantsColor determines if the user might want colorized output.
 func wantsColor(fd uintptr) bool {
-	// As in: term-256color
-	if !strings.Contains(os.Getenv("TERM"), "color") {
-		glog.Infof("TERM does not appear to support color")
+	glog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
+	switch os.Getenv(OverrideEnv) {
+	case "0":
 		return false
-	}
-	// Allow boring people to continue to be boring people.
-	if os.Getenv("MINIKUBE_IS_BORING") == "1" {
-		glog.Infof("minikube is boring.")
-		return false
-	}
-	if ignoreTTYCheck {
+	case "1":
 		return true
 	}
+
+	term := os.Getenv("TERM")
+	// As in: term-256color
+	if !strings.Contains(term, "color") {
+		glog.Infof("TERM=%s, which probably does not support color", term)
+		return false
+	}
+
 	isT := isatty.IsTerminal(fd)
-	glog.Infof("IsTerminal(%d) = %v", fd, isT)
+	glog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
 	return isT
 }

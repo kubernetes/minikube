@@ -19,6 +19,8 @@ package cmd
 import (
 	"os"
 
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdUtil "k8s.io/minikube/cmd/util"
@@ -40,8 +42,8 @@ associated files.`,
 			console.ErrStyle("usage", "usage: minikube delete")
 			os.Exit(1)
 		}
-
-		console.OutStyle("stopping", "Deleting local Kubernetes cluster ...")
+		profile := viper.GetString(pkg_config.MachineProfile)
+		console.OutStyle("deleting-vm", "Deleting %q Kubernetes cluster ...", profile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			console.Fatal("Error getting client: %v", err)
@@ -50,19 +52,30 @@ associated files.`,
 		defer api.Close()
 
 		if err = cluster.DeleteHost(api); err != nil {
-			console.Fatal("Errors occurred deleting machine: %v", err)
-			os.Exit(1)
+			switch err := errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				console.OutStyle("meh", "%q VM does not exist", profile)
+			default:
+				console.Fatal("Failed to delete VM: %v", err)
+				os.Exit(1)
+			}
+		} else {
+			console.OutStyle("crushed", "VM deleted.")
 		}
-		console.Success("Machine deleted.")
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			console.Fatal("Errors occurred deleting mount process: %v", err)
+			console.Fatal("Failed to kill mount process: %v", err)
 		}
 
 		if err := os.Remove(constants.GetProfileFile(viper.GetString(pkg_config.MachineProfile))); err != nil {
-			console.Fatal("Error deleting machine profile config: %v", err)
+			if os.IsNotExist(err) {
+				console.OutStyle("meh", "%q profile does not exist", profile)
+				os.Exit(0)
+			}
+			console.Fatal("Failed to remove profile: %v", err)
 			os.Exit(1)
 		}
+		console.Success("Removed %q profile!", profile)
 	},
 }
 
