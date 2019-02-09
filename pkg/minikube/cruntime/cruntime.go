@@ -49,6 +49,8 @@ type Manager interface {
 	KubeletOptions() map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
 	SocketPath() string
+	// DefaultCNI returns whether to use CNI networking by default
+	DefaultCNI() bool
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
