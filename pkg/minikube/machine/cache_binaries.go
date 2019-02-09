@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"os"
 	"path"
+	"runtime"
 
 	"github.com/golang/glog"
 	"github.com/jimmidyson/go-download"
@@ -39,7 +40,7 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 	for _, bin := range binaries {
 		bin := bin
 		g.Go(func() error {
-			if _, err := CacheBinary(bin, version); err != nil {
+			if _, err := CacheBinary(bin, version, "linux", runtime.GOARCH); err != nil {
 				return errors.Wrapf(err, "caching image %s", bin)
 			}
 			return nil
@@ -49,11 +50,11 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 }
 
 // CacheBinary will cache a binary on the host
-func CacheBinary(binary, version string) (string, error) {
+func CacheBinary(binary, version, osName, archName string) (string, error) {
 	targetDir := constants.MakeMiniPath("cache", version)
 	targetFilepath := path.Join(targetDir, binary)
 
-	url := constants.GetKubernetesReleaseURL(binary, version)
+	url := constants.GetKubernetesReleaseURL(binary, version, osName, archName)
 
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
@@ -73,12 +74,17 @@ func CacheBinary(binary, version string) (string, error) {
 		Mkdirs: download.MkdirAll,
 	}
 
-	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version)
+	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version, osName, archName)
 	options.ChecksumHash = crypto.SHA1
 
 	console.OutStyle("file-download", "Downloading %s %s", binary, version)
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
+	}
+	if osName == runtime.GOOS && archName == runtime.GOARCH {
+		if err = os.Chmod(targetFilepath, 0755); err != nil {
+			return "", errors.Wrapf(err, "chmod +x %s", targetFilepath)
+		}
 	}
 	return targetFilepath, nil
 }

@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -572,7 +573,7 @@ func downloadBinaries(cfg config.KubernetesConfig, c bootstrapper.CommandRunner)
 	for _, bin := range constants.GetKubeadmCachedBinaries() {
 		bin := bin
 		g.Go(func() error {
-			path, err := machine.CacheBinary(bin, cfg.KubernetesVersion)
+			path, err := machine.CacheBinary(bin, cfg.KubernetesVersion, "linux", runtime.GOARCH)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", bin)
 			}
