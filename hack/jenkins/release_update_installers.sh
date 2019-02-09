@@ -23,8 +23,8 @@ REPLACE_MINIKUBE_DRIVER_KVM_SHA256=$(awk '{ print $1 }' out/docker-machine-drive
 REPLACE_MINIKUBE_DARWIN_SHA256=$(awk '{ print $1 }' out/minikube-darwin-amd64.sha256)
 MINIKUBE_ROOT=$PWD
 
-git clone ssh://aur@aur.archlinux.org/minikube.git aur-minikube
-pushd aur-minikube >/dev/null
+git clone ssh://aur@aur.archlinux.org/minikube-bin.git aur-minikube-bin
+pushd aur-minikube-bin >/dev/null
     sed -e "s/\$PKG_VERSION/${REPLACE_PKG_VERSION}/g" \
         -e "s/\$MINIKUBE_LINUX_SHA256/${REPLACE_MINIKUBE_LINUX_SHA256}/g" \
         $MINIKUBE_ROOT/installers/linux/archlinux/PKGBUILD > PKGBUILD

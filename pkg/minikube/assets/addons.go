@@ -19,6 +19,7 @@ package assets
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -307,7 +308,8 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 					return errors.Wrap(err, "generating relative path")
 				}
 				rPath = filepath.Dir(rPath)
-				vmpath = filepath.Join("/", rPath)
+				rPath = filepath.ToSlash(rPath)
+				vmpath = path.Join("/", rPath)
 			}
 			permString := fmt.Sprintf("%o", info.Mode().Perm())
 			// The conversion will strip the leading 0 if present, so add it back

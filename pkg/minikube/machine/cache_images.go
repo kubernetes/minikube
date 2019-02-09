@@ -26,30 +26,27 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
-
+	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
-
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
-
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/sshutil"
-
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 const tempLoadDir = "/tmp"
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
-var podmanLoad sync.Mutex
+// loadImageLock is used to serialize image loads to avoid overloading the guest VM
+var loadImageLock sync.Mutex
 
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
@@ -198,7 +195,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
+func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
 	for {
@@ -211,34 +208,26 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, k8s config.Kubernetes
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
-	if err := cmd.Copy(f); err != nil {
+	if err := cr.Copy(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}
 
-	var dockerLoadCmd string
-	crio := k8s.ContainerRuntime == constants.CrioRuntime || k8s.ContainerRuntime == constants.Cri_oRuntime
-	if crio {
-		dockerLoadCmd = "sudo podman load -i " + dst
-	} else {
-		dockerLoadCmd = "docker load -i " + dst
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
 	}
+	loadImageLock.Lock()
+	defer loadImageLock.Unlock()
 
-	if crio {
-		podmanLoad.Lock()
+	err = r.LoadImage(dst)
+	if err != nil {
+		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
+	loadImageLock.Unlock()
 
-	if err := cmd.Run(dockerLoadCmd); err != nil {
-		return errors.Wrapf(err, "loading docker image: %s", dst)
-	}
-
-	if crio {
-		podmanLoad.Unlock()
-	}
-
-	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
+	if err := cr.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
 	}
-
 	glog.Infof("Successfully loaded image %s from cache", src)
 	return nil
 }
