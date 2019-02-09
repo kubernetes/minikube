@@ -61,7 +61,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:031cfe09be23486aed11668813dd112b5f79ed9926ca411bb3dac32e9e20fc4a"
+  digest = "1:47b479ee07f66c92682bcf27e3a65b411b7ba52bfc28fd0b6b74a742620fc61a"
   name = "github.com/docker/machine"
   packages = [
     "commands/mcndirs",
@@ -98,7 +98,7 @@
     "version",
   ]
   pruneopts = "NUT"
-  revision = "19035310d4ba1b58056aae427ea669d1db5fc618"
+  revision = "a773edc6f013c9fab13360fea0192fd335023a16"
   source = "github.com/machine-drivers/machine"
 
 [[projects]]
@@ -159,6 +159,19 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
+
+[[projects]]
+  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
+  name = "github.com/google/go-cmp"
+  packages = [
+    "cmp",
+    "cmp/internal/diff",
+    "cmp/internal/function",
+    "cmp/internal/value",
+  ]
+  pruneopts = "NUT"
+  revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
+  version = "v0.2.0"
 
 [[projects]]
   digest = "1:186f7de0e878b5ff1fca82271ce36a7abf9747be09d03b3f08a921584c2f26fc"
@@ -284,6 +297,14 @@
   pruneopts = "NUT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:3526ea57285a47f99273a9b00252869d06888b08cd7358d6f89c35db6ec1605b"
+  name = "github.com/intel-go/cpuid"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "1a4a6f06a1c643c8fbd339bd61d980960627d09e"
 
 [[projects]]
   branch = "master"
@@ -925,6 +946,7 @@
     "github.com/docker/machine/libmachine/swarm",
     "github.com/docker/machine/libmachine/version",
     "github.com/golang/glog",
+    "github.com/google/go-cmp/cmp",
     "github.com/google/go-containerregistry/pkg/authn",
     "github.com/google/go-containerregistry/pkg/name",
     "github.com/google/go-containerregistry/pkg/v1/remote",
@@ -935,6 +957,7 @@
     "github.com/johanneswuerbach/nfsexports",
     "github.com/libvirt/libvirt-go",
     "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
+    "github.com/mitchellh/go-ps",
     "github.com/moby/hyperkit/go",
     "github.com/olekukonko/tablewriter",
     "github.com/pborman/uuid",

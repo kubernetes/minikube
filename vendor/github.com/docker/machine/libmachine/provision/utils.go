@@ -233,7 +233,7 @@ func decideStorageDriver(p Provisioner, defaultDriver, suppliedDriver string) (s
 		if remoteFilesystemType == "btrfs" {
 			bestSuitedDriver = "btrfs"
 		} else {
-			bestSuitedDriver = "aufs"
+			bestSuitedDriver = defaultDriver
 		}
 	}
 	return bestSuitedDriver, nil
