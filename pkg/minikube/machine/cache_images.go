@@ -223,7 +223,6 @@ func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesC
 	if err != nil {
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
-	loadImageLock.Unlock()
 
 	if err := cr.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
