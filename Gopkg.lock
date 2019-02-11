@@ -12,6 +12,14 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
+  digest = "1:f314424048778dd9cd7bb5c7807a8396b0c6b2a133935f15ad350dcd36c27286"
+  name = "github.com/Parallels/docker-machine-parallels"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "f23cb0b3d3de98df376bbfed9d97bc1f355df864"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:aba270497eb2d49f5cba6f4162d524b9a1195a24cbce8be20bf56a0051f47deb"
   name = "github.com/blang/semver"
   packages = ["."]
@@ -248,6 +256,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "8c5f0ad9360406a3807ce7de6bc73269a91a6e51"
+
+[[projects]]
+  digest = "1:c7d9de42b661ba85788f5f631cbac165795a2ff7dc1c59a4241d6228b129c3e4"
+  name = "github.com/hashicorp/go-version"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "d40cf49b3a77bba84a7afdbd7f1dc295d114efb1"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:475b179287e8afdcd352014b2c2500e67decdf63e66125e2129286873453e1cd"
@@ -942,6 +958,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Parallels/docker-machine-parallels",
     "github.com/blang/semver",
     "github.com/docker/go-units",
     "github.com/docker/machine/drivers/hyperv",

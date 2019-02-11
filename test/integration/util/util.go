@@ -207,9 +207,9 @@ func (m *MinikubeRunner) Start() {
 	// TODO(tstromberg): Deprecate this in favor of making it possible for tests to define explicit flags.
 	switch r := m.Runtime; r {
 	case "containerd":
-		opts = "--container-runtime=containerd --network-plugin=cni --enable-default-cni --docker-opt containerd=/var/run/containerd/containerd.sock"
+		opts = "--container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock"
 	case "crio":
-		opts = "--container-runtime=crio --network-plugin=cni --enable-default-cni"
+		opts = "--container-runtime=crio"
 	}
 	m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, opts), true)
 

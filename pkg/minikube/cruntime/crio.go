@@ -41,6 +41,11 @@ func (r *CRIO) SocketPath() string {
 	return "/var/run/crio/crio.sock"
 }
 
+// DefaultCNI returns whether to use CNI networking by default
+func (r *CRIO) DefaultCNI() bool {
+	return true
+}
+
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
 	return r.Runner.Run("command -v crio")
