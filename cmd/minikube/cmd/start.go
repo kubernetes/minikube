@@ -204,6 +204,21 @@ func runStart(cmd *cobra.Command, args []string) {
 		cmdutil.MaybeReportErrorAndExit(err)
 	}
 
+	selectedContainerRuntime := viper.GetString(containerRuntime)
+	selectedNetworkPlugin := viper.GetString(networkPlugin)
+	selectedEnableDefaultCNI := viper.GetBool(enableDefaultCNI)
+
+	// default network plugin (cni)
+	r, err := cruntime.New(cruntime.Config{Type: selectedContainerRuntime})
+	if err == nil && r.DefaultCNI() {
+		if !cmd.Flags().Changed(networkPlugin) {
+			selectedNetworkPlugin = "cni"
+			if !cmd.Flags().Changed(enableDefaultCNI) {
+				selectedEnableDefaultCNI = true
+			}
+		}
+	}
+
 	selectedKubernetesVersion := viper.GetString(kubernetesVersion)
 	if strings.Compare(selectedKubernetesVersion, "") == 0 {
 		selectedKubernetesVersion = constants.DefaultKubernetesVersion
@@ -226,7 +241,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	selectedContainerRuntime := viper.GetString(containerRuntime)
 	kubernetesConfig := cfg.KubernetesConfig{
 		KubernetesVersion:      selectedKubernetesVersion,
 		NodeIP:                 ip,
@@ -239,11 +253,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		FeatureGates:           viper.GetString(featureGates),
 		ContainerRuntime:       selectedContainerRuntime,
 		CRISocket:              viper.GetString(criSocket),
-		NetworkPlugin:          viper.GetString(networkPlugin),
+		NetworkPlugin:          selectedNetworkPlugin,
 		ServiceCIDR:            viper.GetString(serviceCIDR),
 		ExtraOptions:           extraOptions,
 		ShouldLoadCachedImages: shouldCacheImages,
-		EnableDefaultCNI:       viper.GetBool(enableDefaultCNI),
+		EnableDefaultCNI:       selectedEnableDefaultCNI,
 	}
 
 	// Write profile cluster configuration to file
