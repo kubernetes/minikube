@@ -360,14 +360,20 @@ func validateNetwork(h *host.Host) string {
 	if err != nil {
 		reportErrAndExit("Unable to get VM IP address", err)
 	}
-	console.OutStyle("connectivity", "%q IP address is %s.", cfg.GetMachineName(), ip)
+	console.OutStyle("connectivity", "%q IP address is %s", cfg.GetMachineName(), ip)
 
-	// Here is where we should be checking connectivity to/from the VM
+	optSeen := false
 	for _, k := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
 		if v := os.Getenv(k); v != "" {
+			if !optSeen {
+				console.OutStyle("internet", "Found network options:")
+				optSeen = true
+			}
 			console.OutStyle("option", "%s=%s", k, v)
 		}
 	}
+
+	// Here is where we should be checking connectivity to/from the VM
 	return ip
 }
 

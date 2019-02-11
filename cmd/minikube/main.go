@@ -40,9 +40,5 @@ func main() {
 	}
 	console.SetOutFile(os.Stdout)
 	console.SetErrFile(os.Stderr)
-	err := console.SetPreferredLanguage(os.Getenv("LANG"))
-	if err != nil {
-		glog.Warningf("unable to detect language: %v", err)
-	}
 	cmd.Execute()
 }
