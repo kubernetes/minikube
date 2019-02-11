@@ -34,7 +34,7 @@ type CommandRunner interface {
 	//
 	//          var b bytes.Buffer
 	//          CombinedOutput(cmd, &b)
-	//          console.Fatal(b.Bytes())
+	//          fmt.Println(b.Bytes())
 	//
 	// Or, you can set out to os.Stdout, the command output and
 	// error would show on your terminal immediately before you

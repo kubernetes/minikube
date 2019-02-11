@@ -45,7 +45,7 @@ var sshCmd = &cobra.Command{
 		}
 		if host.Driver.DriverName() == "none" {
 			console.Fatal(`'none' driver does not support 'minikube ssh' command`)
-			os.Exit(0)
+			os.Exit(1)
 		}
 		err = cluster.CreateSSHShell(api, args)
 		if err != nil {

@@ -49,15 +49,15 @@ var updateContextCmd = &cobra.Command{
 			glog.Errorln("Error host driver ip status:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		ok, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
+		updated, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
 		if err != nil {
 			glog.Errorln("Error kubeconfig status:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
-		if ok {
-			console.Fatal("Reconfigured kubeconfig IP, now pointing at %s", ip)
+		if updated {
+			console.OutStyle("celebrate", "IP has been updated to point at %s", ip)
 		} else {
-			console.OutStyle("celebrate", "Kubeconfig IP has been updated to point at %s", ip)
+			console.OutStyle("meh", "IP was already correctly configured for %s", ip)
 		}
 
 	},

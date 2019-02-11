@@ -153,11 +153,13 @@ func SetPreferredLanguageTag(l language.Tag) {
 
 // SetPreferredLanguage configures which language future messages should use, based on a LANG string.
 func SetPreferredLanguage(s string) error {
+	// "C" is commonly used to denote a neutral POSIX locale. See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap07.html#tag_07_02
 	if s == "" || s == "C" {
 		SetPreferredLanguageTag(defaultLanguage)
 		return nil
 	}
-	// Ignore encoding preferences: we always output utf8. Handles "de_DE.utf8"
+	// Handles "de_DE" or "de_DE.utf8"
+	// We don't process encodings, since Rob Pike invented utf8 and we're mostly stuck with it.
 	parts := strings.Split(s, ".")
 	l, err := language.Parse(parts[0])
 	if err != nil {
@@ -187,25 +189,22 @@ func wantsColor(fd uintptr) bool {
 	//
 	// MINIKUBE_IN_COLOR=[1, T, true, TRUE]
 	// MINIKUBE_IN_COLOR=[0, f, false, FALSE]
+	//
+	// If unset, we try to automatically determine suitability from the environment.
 	val := os.Getenv(OverrideEnv)
 	if val != "" {
+		glog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
 		override, err := strconv.ParseBool(val)
 		if err != nil {
+			// That's OK, we will just fall-back to automatic detection.
 			glog.Errorf("ParseBool(%s): %v", OverrideEnv, err)
+		} else {
+			return override
 		}
-		return override
-	}
-
-	glog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
-	switch os.Getenv(OverrideEnv) {
-	case "0":
-		return false
-	case "1":
-		return true
 	}
 
 	term := os.Getenv("TERM")
-	// As in: term-256color
+	// Example: term-256color
 	if !strings.Contains(term, "color") {
 		glog.Infof("TERM=%s, which probably does not support color", term)
 		return false
