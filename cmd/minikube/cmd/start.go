@@ -146,7 +146,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a local kubernetes cluster",
 	Long: `Starts a local kubernetes cluster using VM. This command
-assumes you have already installed one of the VM drivers: virtualbox/vmwarefusion/kvm/xhyve/hyperv.`,
+assumes you have already installed one of the VM drivers: virtualbox/parallels/vmwarefusion/kvm/xhyve/hyperv.`,
 	Run: runStart,
 }
 
@@ -160,20 +160,24 @@ func runStart(cmd *cobra.Command, args []string) {
 		fatalExit("Unable to load config: %v", err)
 	}
 	kVersion := validateKubernetesVersions(oldConfig)
+	config, err := generateConfig(cmd, kVersion)
+	if err != nil {
+		reportErrAndExit("Failed to generate config: %v", err)
+	}
+
 	var cacheGroup errgroup.Group
 	beginCacheImages(&cacheGroup, kVersion)
-	config := generateConfig(kVersion)
+
+	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
+	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
+	if err := saveConfig(config); err != nil {
+		reportErrAndExit("Failed to save config", err)
+	}
 
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		reportErrAndExit("Failed to get machine client: %v", err)
 	}
-
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot :(
-	if err := saveConfig(config); err != nil {
-		reportErrAndExit("Failed to save config", err)
-	}
-
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
@@ -228,9 +232,23 @@ func beginCacheImages(g *errgroup.Group, kVersion string) {
 }
 
 // generateConfig generates cfg.Config based on flags and supplied arguments
-func generateConfig(kVersion string) cfg.Config {
-	// Write profile cluster configuration to file
-	return cfg.Config{
+func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
+	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
+	if err != nil {
+		return cfg.Config{}, err
+	}
+
+	// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
+	selectedEnableDefaultCNI := viper.GetBool(enableDefaultCNI)
+	selectedNetworkPlugin := viper.GetString(networkPlugin)
+	if r.DefaultCNI() && !cmd.Flags().Changed(networkPlugin) {
+		selectedNetworkPlugin = "cni"
+		if !cmd.Flags().Changed(enableDefaultCNI) {
+			selectedEnableDefaultCNI = true
+		}
+	}
+
+	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			MinikubeISO:         viper.GetString(isoURL),
 			Memory:              viper.GetInt(memory),
@@ -266,13 +284,14 @@ func generateConfig(kVersion string) cfg.Config {
 			FeatureGates:           viper.GetString(featureGates),
 			ContainerRuntime:       viper.GetString(containerRuntime),
 			CRISocket:              viper.GetString(criSocket),
-			NetworkPlugin:          viper.GetString(networkPlugin),
+			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
-			EnableDefaultCNI:       viper.GetBool(enableDefaultCNI),
+			EnableDefaultCNI:       selectedEnableDefaultCNI,
 		},
 	}
+	return cfg, nil
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver

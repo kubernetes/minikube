@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
@@ -39,7 +40,7 @@ import (
 // console.SetErrFile(os.Stderr)
 // console.Fatal("Oh no, everything failed.")
 
-// NOTE: If you do not want colorized output, set MINIKUBE_IN_COLOR=0 in your environment.
+// NOTE: If you do not want colorized output, set MINIKUBE_IN_COLOR=false in your environment.
 
 var (
 	// outFile is where Out* functions send output to. Set using SetOutFile()
@@ -182,6 +183,19 @@ func SetErrFile(w fdWriter) {
 
 // wantsColor determines if the user might want colorized output.
 func wantsColor(fd uintptr) bool {
+	// First process the environment: we allow users to force colors on or off.
+	//
+	// MINIKUBE_IN_COLOR=[1, T, true, TRUE]
+	// MINIKUBE_IN_COLOR=[0, f, false, FALSE]
+	val := os.Getenv(OverrideEnv)
+	if val != "" {
+		override, err := strconv.ParseBool(val)
+		if err != nil {
+			glog.Errorf("ParseBool(%s): %v", OverrideEnv, err)
+		}
+		return override
+	}
+
 	glog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
 	switch os.Getenv(OverrideEnv) {
 	case "0":
