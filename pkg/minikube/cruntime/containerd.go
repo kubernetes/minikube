@@ -79,7 +79,8 @@ func (r *Containerd) Disable() error {
 
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
-	return pullImageCRI(r.Runner, path)
+	glog.Infof("Loading image: %s", path)
+	return r.Runner.Run(fmt.Sprintf("sudo ctr cri load %s", path))
 }
 
 // KubeletOptions returns kubelet options for a containerd
