@@ -331,10 +331,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		prepareNone()
 	} else {
 		if exists {
-			if cfg.GetMachineName() == constants.DefaultMachineName {
-				console.OutStyle("tip", "Tip: To create another VM, use 'minikube start -p <new name>' or use 'minikube delete' to delete this one.")
-			}
-			console.OutStyle("waiting", "Waiting for existing %q VM to start ...", cfg.GetMachineName())
+			console.OutStyle("waiting", "Spinning up existing VM for %q ...", cfg.GetMachineName())
 		} else {
 			console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", mc.VMDriver, mc.CPUs, mc.Memory, mc.DiskSize)
 		}

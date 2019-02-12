@@ -80,10 +80,14 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if h.Driver.DriverName() != config.VMDriver {
-		console.Warning("Ignoring --vm-driver=%s, as the %q host was created using the %s driver.",
+		console.Out("\n")
+		console.Warning("Ignoring --vm-driver=%s, as the existing %q VM was created using the %s driver.",
 			config.VMDriver, cfg.GetMachineName(), h.Driver.DriverName())
-		console.Warning("To change drivers, create a new host using `minikube start -p <name>` or run `minikube delete -p %s`",
-			h.Driver.DriverName(), cfg.GetMachineName())
+		console.Warning("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver=%s`", config.VMDriver)
+		console.Warning("Alternatively, you may delete the existing VM using `minikube delete -p %s`", cfg.GetMachineName())
+		console.Out("\n")
+	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
+		console.OutStyle("tip", "Tip: To create a new cluster, use 'minikube start -p <new name>' or use 'minikube delete' to delete this one.")
 	}
 
 	s, err := h.Driver.GetState()
