@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -186,6 +187,8 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
+	// NOTE: We have not yet asserted that we can access the apiserver. Now would be a great time to do so.
+	console.OutStyle("permissions", "Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
@@ -240,6 +243,9 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 			return errors.Wrapf(err, "running cmd: %s", cmd)
 		}
 	}
+
+	// NOTE: Perhaps now would be a good time to check apiserver health?
+	console.OutStyle("waiting", "Restarting kube-proxy ...")
 	if err := restartKubeProxy(k8s); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
 	}
@@ -353,10 +359,10 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 			}
 			f, err := assets.NewFileAsset(path, "/usr/bin", bin, "0641")
 			if err != nil {
-				return errors.Wrap(err, "making new file asset")
+				return errors.Wrap(err, "new file asset")
 			}
 			if err := k.c.Copy(f); err != nil {
-				return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+				return errors.Wrapf(err, "copy")
 			}
 			return nil
 		})
@@ -366,15 +372,14 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	}
 
 	if err := addAddons(&files); err != nil {
-		return errors.Wrap(err, "adding addons to copyable files")
+		return errors.Wrap(err, "adding addons")
 	}
 
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+			return errors.Wrapf(err, "copy")
 		}
 	}
-
 	err = k.c.Run(`
 sudo systemctl daemon-reload &&
 sudo systemctl enable kubelet &&
@@ -482,10 +487,9 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 	options.Checksum = constants.GetKubernetesReleaseURLSha1(binary, version)
 	options.ChecksumHash = crypto.SHA1
 
-	glog.Infof("Downloading %s %s", binary, version)
+	console.OutStyle("file-download", "Downloading %s %s", binary, version)
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
-	glog.Infof("Finished Downloading %s %s", binary, version)
 	return targetFilepath, nil
 }

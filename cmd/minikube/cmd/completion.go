@@ -18,13 +18,13 @@ package cmd
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	cmdutil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/console"
 )
 
 const longDescription = `
@@ -70,11 +70,11 @@ var completionCmd = &cobra.Command{
 	Long:  longDescription,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			fmt.Println("Usage: minikube completion SHELL")
+			console.ErrStyle("usage", "Usage: minikube completion SHELL")
 			os.Exit(1)
 		}
 		if args[0] != "bash" && args[0] != "zsh" {
-			fmt.Println("Only bash and zsh are supported for minikube completion")
+			console.Fatal("Sorry, completion support is not yet implemented for %q", args[0])
 			os.Exit(1)
 		} else if args[0] == "bash" {
 			err := GenerateBashCompletion(os.Stdout, cmd.Parent())

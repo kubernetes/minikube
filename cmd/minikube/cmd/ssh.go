@@ -17,14 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -36,22 +34,22 @@ var sshCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
 		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting host: %v\n", err)
+			console.Fatal("Error getting host: %v", err)
 			os.Exit(1)
 		}
 		if host.Driver.DriverName() == "none" {
-			fmt.Println(`'none' driver does not support 'minikube ssh' command`)
-			os.Exit(0)
+			console.Fatal(`'none' driver does not support 'minikube ssh' command`)
+			os.Exit(1)
 		}
 		err = cluster.CreateSSHShell(api, args)
 		if err != nil {
-			glog.Errorln(errors.Wrap(err, "Error attempting to ssh/run-ssh-command"))
+			console.Fatal("Error creating SSH shell: %v", err)
 			os.Exit(1)
 		}
 	},

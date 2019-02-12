@@ -28,6 +28,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
@@ -42,7 +43,7 @@ func IsValidDriver(string, driver string) error {
 }
 
 func RequiresRestartMsg(string, string) error {
-	fmt.Fprintln(os.Stdout, "These changes will take effect upon a minikube delete and then a minikube start")
+	console.OutStyle("warning", "These changes will take effect upon a minikube delete and then a minikube start")
 	return nil
 }
 

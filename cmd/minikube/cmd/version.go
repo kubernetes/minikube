@@ -17,10 +17,8 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
-
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -33,8 +31,7 @@ var versionCmd = &cobra.Command{
 		enableUpdateNotification = false
 	},
 	Run: func(command *cobra.Command, args []string) {
-
-		fmt.Println("minikube version:", version.GetVersion())
+		console.OutLn("minikube version: %v", version.GetVersion())
 	},
 }
 

@@ -17,18 +17,17 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"net"
 	"os"
-	"sync"
-
 	"strings"
+	"sync"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/third_party/go9p/ufs"
@@ -49,42 +48,36 @@ var mountCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if isKill {
 			if err := cmdUtil.KillMountProcess(); err != nil {
-				fmt.Println("Errors occurred deleting mount process: ", err)
+				console.Fatal("Error killing mount process: ", err)
 				os.Exit(1)
 			}
 			os.Exit(0)
 		}
 
 		if len(args) != 1 {
-			errText := `Please specify the directory to be mounted: 
-	minikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")
-`
-			fmt.Fprintln(os.Stderr, errText)
+			console.ErrStyle("usage", `Please specify the directory to be mounted: 
+	minikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")`)
 			os.Exit(1)
 		}
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
-			errText := `Mount directory must be in the form: 
-	HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`
-			fmt.Fprintln(os.Stderr, errText)
+			console.ErrStyle("usage", `Mount directory must be in the form: 
+	HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`)
 			os.Exit(1)
 		}
 		hostPath := mountString[:idx]
 		vmPath := mountString[idx+1:]
 		if _, err := os.Stat(hostPath); err != nil {
 			if os.IsNotExist(err) {
-				errText := fmt.Sprintf("Cannot find directory %s for mount", hostPath)
-				fmt.Fprintln(os.Stderr, errText)
+				console.Fatal("Cannot find directory %s for mount", hostPath)
 			} else {
-				errText := fmt.Sprintf("Error accessing directory %s for mount", hostPath)
-				fmt.Fprintln(os.Stderr, errText)
+				console.Fatal("Error accessing directory %s for mount", hostPath)
 			}
 			os.Exit(1)
 		}
 		if len(vmPath) == 0 || !strings.HasPrefix(vmPath, "/") {
-			errText := fmt.Sprintf("The :VM_MOUNT_DIRECTORY must be an absolute path")
-			fmt.Fprintln(os.Stderr, errText)
+			console.ErrStyle("usage", "The :VM_MOUNT_DIRECTORY must be an absolute path")
 			os.Exit(1)
 		}
 		var debugVal int
@@ -93,17 +86,17 @@ var mountCmd = &cobra.Command{
 		}
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
 		host, err := api.Load(config.GetMachineName())
 		if err != nil {
-			glog.Errorln("Error loading api: ", err)
+			console.Fatal("Error loading api: %v", err)
 			os.Exit(1)
 		}
 		if host.Driver.DriverName() == "none" {
-			fmt.Println(`'none' driver does not support 'minikube mount' command`)
+			console.Fatal(`'none' driver does not support 'minikube mount' command`)
 			os.Exit(0)
 		}
 		var ip net.IP
@@ -120,11 +113,11 @@ var mountCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
-		fmt.Printf("Mounting %s into %s on the minikube VM\n", hostPath, vmPath)
-		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
+		console.OutStyle("mounting", "Mounting %s into %s on the minikube VM", hostPath, vmPath)
+		console.OutStyle("notice", "This daemon process needs to stay alive for the mount to be accessible ...")
 		port, err := cmdUtil.GetPort()
 		if err != nil {
-			glog.Errorln("Error finding port for mount: ", err)
+			console.Fatal("Error finding port for mount: %v", err)
 			os.Exit(1)
 		}
 		var wg sync.WaitGroup
@@ -135,7 +128,7 @@ var mountCmd = &cobra.Command{
 		}()
 		err = cluster.MountHost(api, ip, vmPath, port, mountVersion, uid, gid, msize)
 		if err != nil {
-			fmt.Println(err.Error())
+			console.Fatal(err.Error())
 			os.Exit(1)
 		}
 		wg.Wait()

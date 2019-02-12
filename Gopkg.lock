@@ -12,6 +12,14 @@
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
 
 [[projects]]
+  digest = "1:f314424048778dd9cd7bb5c7807a8396b0c6b2a133935f15ad350dcd36c27286"
+  name = "github.com/Parallels/docker-machine-parallels"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "f23cb0b3d3de98df376bbfed9d97bc1f355df864"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:aba270497eb2d49f5cba6f4162d524b9a1195a24cbce8be20bf56a0051f47deb"
   name = "github.com/blang/semver"
   packages = ["."]
@@ -250,6 +258,14 @@
   revision = "8c5f0ad9360406a3807ce7de6bc73269a91a6e51"
 
 [[projects]]
+  digest = "1:c7d9de42b661ba85788f5f631cbac165795a2ff7dc1c59a4241d6228b129c3e4"
+  name = "github.com/hashicorp/go-version"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "d40cf49b3a77bba84a7afdbd7f1dc295d114efb1"
+  version = "v1.1.0"
+
+[[projects]]
   digest = "1:475b179287e8afdcd352014b2c2500e67decdf63e66125e2129286873453e1cd"
   name = "github.com/hashicorp/golang-lru"
   packages = [
@@ -359,6 +375,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "61b492c03cf472e0c6419be5899b8e0dc28b1b88"
+
+[[projects]]
+  digest = "1:bffa444ca07c69c599ae5876bc18b25bfd5fa85b297ca10a25594d284a7e9c5d"
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c"
+  version = "v0.0.4"
 
 [[projects]]
   digest = "1:f2d263faf8641cd0a31bba2d034eb2f9ab9f3c3348b06ac9ad54b9a4ea692dee"
@@ -660,12 +684,28 @@
   revision = "95c6576299259db960f6c5b9b69ea52422860fce"
 
 [[projects]]
-  digest = "1:97337ef8cb438f9e3a99ea91a300e916ed9a96fbf3ad50f9a020d30ea9f8692f"
+  branch = "master"
+  digest = "1:11d290de3457882172ce8d9ffe930999cfb62929b58e486e1ff1b6adcf3c52bc"
   name = "golang.org/x/text"
   packages = [
+    "collate",
+    "collate/build",
+    "feature/plural",
+    "internal",
+    "internal/catmsg",
+    "internal/colltab",
+    "internal/format",
     "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/number",
+    "internal/stringset",
+    "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "language",
+    "message",
+    "message/catalog",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -674,7 +714,7 @@
     "unicode/rangetable",
   ]
   pruneopts = "NUT"
-  revision = "b19bf474d317b857955b12035d2c5acb57ce8b01"
+  revision = "e6919f6577db79269a6443b9dc46d18f2238fb5d"
 
 [[projects]]
   digest = "1:d37b0ef2944431fe9e8ef35c6fffc8990d9e2ca300588df94a6890f3649ae365"
@@ -918,6 +958,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Parallels/docker-machine-parallels",
     "github.com/blang/semver",
     "github.com/docker/go-units",
     "github.com/docker/machine/drivers/hyperv",
@@ -957,6 +998,7 @@
     "github.com/johanneswuerbach/nfsexports",
     "github.com/libvirt/libvirt-go",
     "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config",
+    "github.com/mattn/go-isatty",
     "github.com/mitchellh/go-ps",
     "github.com/moby/hyperkit/go",
     "github.com/olekukonko/tablewriter",
@@ -978,6 +1020,8 @@
     "golang.org/x/sync/errgroup",
     "golang.org/x/sync/syncmap",
     "golang.org/x/sys/windows/registry",
+    "golang.org/x/text/language",
+    "golang.org/x/text/message",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1beta1",

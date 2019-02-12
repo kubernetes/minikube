@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"os"
 	"sort"
 	"text/template"
@@ -25,6 +24,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -41,12 +41,12 @@ var addonsListCmd = &cobra.Command{
 	Long:  "Lists all available minikube addons as well as their current statuses (enabled/disabled)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			fmt.Fprintln(os.Stderr, "usage: minikube addons list")
+			console.ErrStyle("usage", "usage: minikube addons list")
 			os.Exit(1)
 		}
 		err := addonList()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			console.Fatal("addon list failed: %v", err)
 			os.Exit(1)
 		}
 	},
