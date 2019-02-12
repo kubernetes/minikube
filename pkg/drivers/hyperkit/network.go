@@ -25,6 +25,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/docker/machine/libmachine/log"
 )
 
 const (
@@ -46,6 +48,7 @@ func GetIPAddressByMACAddress(mac string) (string, error) {
 }
 
 func getIpAddressFromFile(mac, path string) (string, error) {
+	log.Infof("Searching for %s in %s ...", mac, path)
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -56,8 +59,11 @@ func getIpAddressFromFile(mac, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	log.Infof("Found %d entries in %s!", len(dhcpEntries), path)
 	for _, dhcpEntry := range dhcpEntries {
+		log.Infof("dhcp entry: %+v", dhcpEntry)
 		if dhcpEntry.HWAddress == mac {
+			log.Infof("Found match: %s", mac)
 			return dhcpEntry.IPAddress, nil
 		}
 	}
