@@ -31,6 +31,7 @@ type Bootstrapper interface {
 	StartCluster(config.KubernetesConfig) error
 	UpdateCluster(config.KubernetesConfig) error
 	RestartCluster(config.KubernetesConfig) error
+	DeleteCluster(config.KubernetesConfig) error
 	GetClusterLogsTo(follow bool, out io.Writer) error
 	SetupCerts(cfg config.KubernetesConfig) error
 	GetKubeletStatus() (string, error)
