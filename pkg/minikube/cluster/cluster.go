@@ -96,7 +96,10 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error getting state for host")
 	}
 
-	if s != state.Running {
+	if s == state.Running {
+		console.OutStyle("running", "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+	} else {
+		console.OutStyle("restarting", "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -106,6 +109,11 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	e := engineOptions(config)
+	glog.Infof("engine options: %+v", e)
+
+	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
+	console.OutStyle("waiting", "Waiting for SSH access ...")
+
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		provisioner, err := provision.DetectProvisioner(h.Driver)
@@ -240,6 +248,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, err
 	}
 
+	console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {

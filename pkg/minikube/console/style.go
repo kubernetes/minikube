@@ -33,23 +33,25 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[string]style{
-	"happy":      {Prefix: "😄  "},
-	"success":    {Prefix: "✅  "},
-	"failure":    {Prefix: "❌  "},
-	"conflict":   {Prefix: "💥  "},
-	"fatal":      {Prefix: "💣  "},
-	"notice":     {Prefix: "📌  "},
-	"ready":      {Prefix: "🏄  "},
-	"restarting": {Prefix: "🔄  "},
-	"stopping":   {Prefix: "✋  "},
-	"stopped":    {Prefix: "🛑  "},
-	"warning":    {Prefix: "⚠️  "},
-	"waiting":    {Prefix: "⌛  "},
-	"usage":      {Prefix: "💡  "},
-	"launch":     {Prefix: "🚀  "},
-	"thumbs-up":  {Prefix: "👍  "},
-	"option":     {Prefix: "    ▪ "}, // Indented bullet
-	"crushed":    {Prefix: "💔  "},
+	"happy":        {Prefix: "😄  "},
+	"success":      {Prefix: "✅  "},
+	"failure":      {Prefix: "❌  "},
+	"conflict":     {Prefix: "💥  "},
+	"fatal":        {Prefix: "💣  "},
+	"notice":       {Prefix: "📌  "},
+	"ready":        {Prefix: "🏄  "},
+	"restarting":   {Prefix: "🔄  "},
+	"running":      {Prefix: "🏃  "},
+	"provisioning": {Prefix: "🌱  "},
+	"stopping":     {Prefix: "✋  "},
+	"stopped":      {Prefix: "🛑  "},
+	"warning":      {Prefix: "⚠️  "},
+	"waiting":      {Prefix: "⌛  "},
+	"usage":        {Prefix: "💡  "},
+	"launch":       {Prefix: "🚀  "},
+	"thumbs-up":    {Prefix: "👍  "},
+	"option":       {Prefix: "    ▪ "}, // Indented bullet
+	"crushed":      {Prefix: "💔  "},
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  "},
