@@ -188,7 +188,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// NOTE: We have not yet asserted that we can access the apiserver. Now would be a great time to do so.
-	console.OutStyle("permissions", "Setting up cluster admin privileges ...")
+	console.OutStyle("permissions", "Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
