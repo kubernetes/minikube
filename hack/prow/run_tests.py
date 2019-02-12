@@ -122,14 +122,13 @@ def run_tests(test, build_log, exit_status, started, finished, test_results):
 def main(argv):
 
   parser = argparse.ArgumentParser(description='Run tests and upload results to GCS bucket', usage='./run_tests.py --test path/to/test.sh')
-  parser.add_argument('--test', required=True, help='give full path to test script you want to run')
-  parser.add_argument('--buildnum', required=True, help='buildnumber for uploading to GCS')
+  parser.add_argument('--test', required=True, help='full path to test script you want to run')
+  parser.add_argument('--build-num', dest="buildnum", required=True, help='buildnumber for uploading to GCS')
   parser.add_argument('--bucket', default="k8s-minikube-prow", help='Name of the GCS bucket to upload to.  Default: k8s-minkube-prow')
   parser.add_argument('--outdir', default="gcs_out", help='Path of the directory to store all results, artifacts, and logs')
   args = parser.parse_args()
 
   if not os.path.exists(args.outdir):
-    os.makedirs(args.outdir)
     os.makedirs(os.path.join(args.outdir, "artifacts"))
 
   build_log = os.path.join(args.outdir, "build_log.txt")
@@ -141,12 +140,13 @@ def main(argv):
   run_tests(args.test, build_log, exit_status, started, finished, test_results)
 
   finished['timestamp'] = calendar.timegm(time.gmtime())
+  #if the test script in run_tests exits with a non-zero status then mark the test run as FAILED
   if exit_status != "0":
-    finished['passed'] = "true"
-    finished['result'] = "SUCCESS"
-  else:
     finished['passed'] = "false"
     finished['result'] = "FAIL"
+  else:
+    finished['passed'] = "true"
+    finished['result'] = "SUCCESS"
 
   write_results(args.outdir, started, finished, test_results)
   upload_results(args.outdir, args.test, args.buildnum, args.bucket)
