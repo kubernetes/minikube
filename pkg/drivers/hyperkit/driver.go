@@ -79,19 +79,28 @@ func NewDriver(hostName, storePath string) *Driver {
 
 // PreCreateCheck is called to enforce pre-creation steps
 func (d *Driver) PreCreateCheck() error {
+	return d.verifyRootPermissions()
+}
+
+// verifyRootPermissions is called before any step which needs root access
+func (d *Driver) verifyRootPermissions() error {
 	exe, err := os.Executable()
 	if err != nil {
 		return err
 	}
-
-	if syscall.Geteuid() != 0 {
+	euid := syscall.Geteuid()
+	log.Infof("exe=%s uid=%d", exe, euid)
+	if euid != 0 {
 		return fmt.Errorf(permErr, filepath.Base(exe), exe, exe)
 	}
-
 	return nil
 }
 
 func (d *Driver) Create() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
+
 	// TODO: handle different disk types.
 	if err := pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "making disk image")
@@ -127,20 +136,27 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	pid := d.getPid()
-	if pid == 0 {
-		return state.Stopped, nil
-	}
-	p, err := os.FindProcess(pid)
-	if err != nil {
+	if err := d.verifyRootPermissions(); err != nil {
 		return state.Error, err
 	}
 
-	// Sending a signal of 0 can be used to check the existence of a process.
-	if err := p.Signal(syscall.Signal(0)); err != nil {
+	pid := d.getPid()
+	log.Infof("hyperkit pid from json: %d", pid)
+	if pid == 0 {
 		return state.Stopped, nil
 	}
+
+	p, err := ps.FindProcess(pid)
+	if err != nil {
+		log.Errorf("findprocess %d failed: %v", pid, err)
+		return state.Error, err
+	}
 	if p == nil {
+		log.Infof("hyperkit pid not running: %v", err)
+		return state.Stopped, nil
+	}
+	if !strings.Contains(p.Executable(), "hyperkit") {
+		log.Infof("pid %d is stale -- executable is %s, not hyperkit", pid, p.Executable())
 		return state.Stopped, nil
 	}
 	return state.Running, nil
@@ -148,11 +164,18 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully
 func (d *Driver) Kill() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
 	return d.sendSignal(syscall.SIGKILL)
 }
 
 // Remove a host
 func (d *Driver) Remove() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
+
 	s, err := d.GetState()
 	if err != nil || s == state.Error {
 		log.Infof("Error checking machine status: %v, assuming it has been removed already", err)
@@ -171,6 +194,10 @@ func (d *Driver) Restart() error {
 
 // Start a host
 func (d *Driver) Start() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
+
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	if err := d.recoverFromUncleanShutdown(); err != nil {
 		return err
@@ -219,7 +246,14 @@ func (d *Driver) Start() error {
 	}
 
 	getIP := func() error {
-		var err error
+		st, err := d.GetState()
+		if err != nil {
+			return errors.Wrap(err, "get state")
+		}
+		if st == state.Error || st == state.Stopped {
+			return fmt.Errorf("hyperkit crashed! command line:\n  hyperkit %s", d.Cmdline)
+		}
+
 		d.IPAddress, err = GetIPAddressByMACAddress(mac)
 		if err != nil {
 			return &commonutil.RetriableError{Err: err}
@@ -230,6 +264,7 @@ func (d *Driver) Start() error {
 	if err := commonutil.RetryAfter(30, getIP, 2*time.Second); err != nil {
 		return fmt.Errorf("IP address never found in dhcp leases file %v", err)
 	}
+	log.Infof("IP: %s", d.IPAddress)
 
 	if len(d.NFSShares) > 0 {
 		log.Info("Setting up NFS mounts")
@@ -298,6 +333,9 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 
 // Stop a host gracefully
 func (d *Driver) Stop() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
 	d.cleanupNfsExports()
 	return d.sendSignal(syscall.SIGTERM)
 }
