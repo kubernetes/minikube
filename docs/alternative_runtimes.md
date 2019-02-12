@@ -9,7 +9,7 @@ $ minikube start --container-runtime=rkt
 
 ### Using CRI-O
 
-To use [CRI-O](https://github.com/kubernetes-incubator/cri-o) as the container runtime, run:
+To use [CRI-O](https://github.com/kubernetes-sigs/cri-o) as the container runtime, run:
 
 ```shell
 $ minikube start --container-runtime=cri-o

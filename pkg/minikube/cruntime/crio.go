@@ -30,7 +30,7 @@ type CRIO struct {
 
 // Name is a human readable name for CRIO
 func (r *CRIO) Name() string {
-	return "CRIO"
+	return "CRI-O"
 }
 
 // SocketPath returns the path to the socket file for CRIO

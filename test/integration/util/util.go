@@ -209,7 +209,7 @@ func (m *MinikubeRunner) Start() {
 	case "containerd":
 		opts = "--container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock"
 	case "crio":
-		opts = "--container-runtime=crio"
+		opts = "--container-runtime=cri-o"
 	}
 	m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, opts), true)
 

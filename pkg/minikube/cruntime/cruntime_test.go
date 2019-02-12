@@ -31,8 +31,8 @@ func TestName(t *testing.T) {
 	}{
 		{"", "Docker"},
 		{"docker", "Docker"},
-		{"crio", "CRIO"},
-		{"cri-o", "CRIO"},
+		{"crio", "CRI-O"},
+		{"cri-o", "CRI-O"},
 		{"containerd", "containerd"},
 	}
 	for _, tc := range tests {
