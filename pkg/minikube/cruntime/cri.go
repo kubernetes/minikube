@@ -21,22 +21,26 @@ import (
 	"fmt"
 	"html/template"
 	"path"
+	"strings"
 )
 
 // listCRIContainers returns a list of containers using crictl
-func listCRIContainers(_ CommandRunner, _ string) ([]string, error) {
-	// Should use crictl ps -a, but needs some massaging and testing.
-	return []string{}, fmt.Errorf("unimplemented")
+func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
+	content, err := cr.CombinedOutput(fmt.Sprintf(`sudo crictl ps -a --name=%s --quiet`, filter))
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(content, "\n"), nil
 }
 
 // criCRIContainers kills a list of containers using crictl
-func killCRIContainers(CommandRunner, []string) error {
-	return fmt.Errorf("unimplemented")
+func killCRIContainers(cr CommandRunner, ids []string) error {
+	return cr.Run(fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
 }
 
 // stopCRIContainers stops containers using crictl
-func stopCRIContainers(CommandRunner, []string) error {
-	return fmt.Errorf("unimplemented")
+func stopCRIContainers(cr CommandRunner, ids []string) error {
+	return cr.Run(fmt.Sprintf("sudo crictl stop %s", strings.Join(ids, " ")))
 }
 
 // populateCRIConfig sets up /etc/crictl.yaml
