@@ -132,7 +132,15 @@ func MaybeReportErrorAndExit(errToReport error) {
 
 // MaybeReportErrorAndExitWithCode prompts the user if they would like to report a stack trace, and exits.
 func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
+	// TODO(#3623,3178): Replace with maybeReportErrorAndExitWithCode once StackDriver integration is improved.
+	glog.Infof("Error reporting is disabled in this release of minikube")
+	os.Exit(returnCode)
+}
+
+// maybeReportErrorAndExitWithCode is deadcode
+func maybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
 	var err error
+
 	if viper.GetBool(config.WantReportError) {
 		err = ReportError(errToReport, constants.ReportingURL)
 	} else if viper.GetBool(config.WantReportErrorPrompt) {
