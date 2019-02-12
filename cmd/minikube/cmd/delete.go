@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
@@ -43,7 +44,6 @@ associated files.`,
 			os.Exit(1)
 		}
 		profile := viper.GetString(pkg_config.MachineProfile)
-		console.OutStyle("deleting-vm", "Deleting %q Kubernetes cluster ...", profile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			console.Fatal("Error getting client: %v", err)
@@ -51,6 +51,22 @@ associated files.`,
 		}
 		defer api.Close()
 
+		cc, err := pkg_config.Load()
+		if err != nil && !os.IsNotExist(err) {
+			console.ErrLn("Error loading profile config: %v", err)
+		} else if err == nil {
+			kc := cc.KubernetesConfig
+			bsName := viper.GetString(cmdcfg.Bootstrapper) // Name ?
+			console.OutStyle("resetting", "Reverting Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
+			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+			if err != nil {
+				if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+					console.ErrLn("Failed to delete cluster: %v", err)
+				}
+			}
+		}
+
+		console.OutStyle("deleting-vm", "Deleting %q Kubernetes VM ...", profile)
 		if err = cluster.DeleteHost(api); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
