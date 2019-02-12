@@ -57,6 +57,7 @@ var styles = map[string]style{
 	"caching":           {Prefix: "🤹  "},
 	"starting-vm":       {Prefix: "🔥  "},
 	"starting-none":     {Prefix: "🤹  "},
+	"resetting":         {Prefix: "🔄  "},
 	"deleting-vm":       {Prefix: "🔥  "},
 	"copying":           {Prefix: "✨  "},
 	"connectivity":      {Prefix: "📶  "},
