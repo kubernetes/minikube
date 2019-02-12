@@ -20,28 +20,25 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
-
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"text/template"
-
-	"github.com/spf13/viper"
-	"k8s.io/apimachinery/pkg/labels"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
@@ -242,9 +239,9 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
 		if urlMode || !isHTTPSchemedURL {
-			fmt.Fprintln(os.Stdout, urlString)
+			console.OutLn(urlString)
 		} else {
-			fmt.Fprintln(os.Stderr, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
+			console.OutStyle("celebrate", "Opening kubernetes service %s/%s in default browser...", namespace, service)
 			browser.OpenURL(urlString)
 		}
 	}
@@ -312,7 +309,6 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 
 	_, err = secrets.Create(secretObj)
 	if err != nil {
-		fmt.Println("err: ", err)
 		return &util.RetriableError{Err: err}
 	}
 

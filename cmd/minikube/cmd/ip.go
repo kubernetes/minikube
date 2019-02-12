@@ -17,12 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -34,21 +33,21 @@ var ipCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
 		host, err := api.Load(config.GetMachineName())
 		if err != nil {
-			glog.Errorln("Error getting IP: ", err)
+			console.Fatal("Error getting host: %v", err)
 			os.Exit(1)
 		}
 		ip, err := host.Driver.GetIP()
 		if err != nil {
-			glog.Errorln("Error getting IP: ", err)
+			console.Fatal("Error getting IP: %v", err)
 			os.Exit(1)
 		}
-		fmt.Println(ip)
+		console.OutLn(ip)
 	},
 }
 

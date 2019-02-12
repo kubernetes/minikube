@@ -114,3 +114,7 @@
 [[constraint]]
   name = "github.com/google/go-cmp"
   version = "0.2.0"
+
+[[constraint]]
+  name = "golang.org/x/text"
+  branch = "master"

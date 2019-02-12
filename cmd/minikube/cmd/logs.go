@@ -17,8 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"log"
 	"os"
 
 	"github.com/golang/glog"
@@ -26,6 +24,7 @@ import (
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -41,7 +40,7 @@ var logsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		defer api.Close()
@@ -52,7 +51,7 @@ var logsCmd = &cobra.Command{
 
 		err = clusterBootstrapper.GetClusterLogsTo(follow, os.Stdout)
 		if err != nil {
-			log.Println("Error getting machine logs:", err)
+			console.Fatal("Error getting machine logs:", err)
 			cmdUtil.MaybeReportErrorAndExit(err)
 		}
 	},

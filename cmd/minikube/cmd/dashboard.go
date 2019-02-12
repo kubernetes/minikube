@@ -33,6 +33,7 @@ import (
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
@@ -60,46 +61,47 @@ var dashboardCmd = &cobra.Command{
 		}()
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
+			console.Fatal("Error getting client: %v", err)
 			os.Exit(1)
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
-		fmt.Fprintln(os.Stderr, "Enabling dashboard ...")
+		// Send status messages to stderr for folks re-using this output.
+		console.ErrStyle("enabling", "Enabling dashboard ...")
 		// Enable the dashboard add-on
 		err = configcmd.Set("dashboard", "true")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to enable dashboard: %v\n", err)
+			console.Fatal("Unable to enable dashboard: %v", err)
 			os.Exit(1)
 		}
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
-		fmt.Fprintln(os.Stderr, "Verifying dashboard health ...")
+		console.ErrStyle("verifying", "Verifying dashboard health ...")
 		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "%s:%s is not running: %v\n", ns, svc, err)
+			console.Fatal("%s:%s is not running: %v", ns, svc, err)
 			os.Exit(1)
 		}
 
-		fmt.Fprintln(os.Stderr, "Launching proxy ...")
+		console.ErrStyle("launch", "Launching proxy ...")
 		p, hostPort, err := kubectlProxy()
 		if err != nil {
 			glog.Fatalf("kubectl proxy: %v", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
-		fmt.Fprintln(os.Stderr, "Verifying proxy health ...")
+		console.ErrStyle("verifying", "Verifying proxy health ...")
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "%s is not responding properly: %v\n", url, err)
+			console.Fatal("%s is not responding properly: %v", url, err)
 			os.Exit(1)
 		}
 
 		if dashboardURLMode {
-			fmt.Fprintln(os.Stdout, url)
+			console.OutLn(url)
 		} else {
-			fmt.Fprintln(os.Stdout, fmt.Sprintf("Opening %s in your default browser...", url))
+			console.ErrStyle("celebrate", "Opening %s in your default browser...", url)
 			if err = browser.OpenURL(url); err != nil {
-				fmt.Fprintf(os.Stderr, fmt.Sprintf("failed to open browser: %v", err))
+				console.Failure("failed to open browser: %v", err)
 			}
 		}
 
