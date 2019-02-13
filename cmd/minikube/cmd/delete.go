@@ -59,7 +59,7 @@ associated files.`,
 			bsName := viper.GetString(cmdcfg.Bootstrapper) // Name ?
 			console.OutStyle("resetting", "Reverting Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
 			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
-			if err != nil {
+			if err == nil {
 				if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
 					console.ErrLn("Failed to delete cluster: %v", err)
 				}
