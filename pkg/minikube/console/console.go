@@ -63,6 +63,11 @@ type fdWriter interface {
 	Fd() uintptr
 }
 
+// HasStyle checks if a style exists
+func HasStyle(style string) bool {
+	return hasStyle(style)
+}
+
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style, format string, a ...interface{}) error {
 	OutStyle, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
