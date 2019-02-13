@@ -87,7 +87,7 @@ minikube addons enable %s`, addonName, addonName)
 
 		serviceList, err := service.GetServiceListByLabel(namespace, key, addonName)
 		if err != nil {
-			exit.Fail("Error getting service with namespace: %s and labels %s:%s: %v", namespace, key, addonName, err)
+			exit.WithCode(exit.Unavailable, "Error getting service with namespace: %s and labels %s:%s: %v", namespace, key, addonName, err)
 		}
 		if len(serviceList.Items) == 0 {
 			exit.WithCode(exit.Config, `This addon does not have an endpoint defined for the 'addons open' command.
