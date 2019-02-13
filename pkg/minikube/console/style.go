@@ -70,6 +70,7 @@ var styles = map[string]style{
 	"containerd":        {Prefix: "📦  "},
 	"permissions":       {Prefix: "🔑  "},
 	"enabling":          {Prefix: "🔌  "},
+	"shutdown":          {Prefix: "🙅  "},
 	"pulling":           {Prefix: "🚜  "},
 	"verifying":         {Prefix: "🤔  "},
 	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},
