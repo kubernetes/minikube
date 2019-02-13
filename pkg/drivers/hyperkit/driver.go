@@ -134,6 +134,27 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
+// Return the state of the hyperkit pid
+func pidState(pid int) (state.State, error) {
+	if pid == 0 {
+		return state.Stopped, nil
+	}
+	p, err := ps.FindProcess(pid)
+	if err != nil {
+		return state.Error, err
+	}
+	if p == nil {
+		log.Infof("hyperkit pid missing from process table, err=%v", err)
+		return state.Stopped, nil
+	}
+	// hyperkit or com.docker.hyper
+	if !strings.Contains(p.Executable(), "hyper") {
+		log.Infof("pid %d is stale, and is being used by %s", pid, p.Executable())
+		return state.Stopped, nil
+	}
+	return state.Running, nil
+}
+
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	if err := d.verifyRootPermissions(); err != nil {
@@ -142,24 +163,7 @@ func (d *Driver) GetState() (state.State, error) {
 
 	pid := d.getPid()
 	log.Infof("hyperkit pid from json: %d", pid)
-	if pid == 0 {
-		return state.Stopped, nil
-	}
-
-	p, err := ps.FindProcess(pid)
-	if err != nil {
-		log.Errorf("findprocess %d failed: %v", pid, err)
-		return state.Error, err
-	}
-	if p == nil {
-		log.Infof("hyperkit pid not running: %v", err)
-		return state.Stopped, nil
-	}
-	if !strings.Contains(p.Executable(), "hyperkit") {
-		log.Infof("pid %d is stale -- executable is %s, not hyperkit", pid, p.Executable())
-		return state.Stopped, nil
-	}
-	return state.Running, nil
+	return pidState(pid)
 }
 
 // Kill stops a host forcefully
@@ -292,42 +296,38 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	pidFile := filepath.Join(stateDir, pidFileName)
 
-	_, err := os.Stat(pidFile)
-
-	if os.IsNotExist(err) {
-		log.Infof("clean start, hyperkit pid file doesn't exist: %s", pidFile)
-		return nil
-	}
-
-	if err != nil {
-		return errors.Wrap(err, "checking hyperkit pid file existence")
+	if _, err := os.Stat(pidFile); err != nil {
+		if os.IsNotExist(err) {
+			log.Infof("clean start, hyperkit pid file doesn't exist: %s", pidFile)
+			return nil
+		}
+		return errors.Wrap(err, "stat")
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
-
-	content, err := ioutil.ReadFile(pidFile)
+	bs, err := ioutil.ReadFile(pidFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading pidfile %s", pidFile)
 	}
-	pid, err := strconv.Atoi(string(content))
+	content := strings.TrimSpace(string(bs))
+	pid, err := strconv.Atoi(content)
 	if err != nil {
 		return errors.Wrapf(err, "parsing pidfile %s", pidFile)
 	}
 
-	p, err := ps.FindProcess(pid)
+	st, err := pidState(pid)
 	if err != nil {
-		return errors.Wrapf(err, "trying to find process for PID %d", pid)
+		return errors.Wrap(err, "pidState")
 	}
 
-	if p != nil && !strings.Contains(p.Executable(), "hyperkit") {
-		return fmt.Errorf("something is not right...please stop all minikube instances, seemingly a hyperkit server is already running with pid %d, executable: %s", pid, p.Executable())
+	log.Infof("pid %d is in state %q", pid, st)
+	if st == state.Running {
+		return nil
 	}
-
-	log.Infof("No running hyperkit process found with PID %d, removing %s...", pid, pidFile)
+	log.Infof("Removing stale pid file %s...", pidFile)
 	if err := os.Remove(pidFile); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
 	}
-
 	return nil
 }
 
@@ -372,9 +372,7 @@ func (d *Driver) extractVSockPorts() ([]int, error) {
 	for _, port := range d.VSockPorts {
 		p, err := strconv.Atoi(port)
 		if err != nil {
-			var err InvalidPortNumberError
-			err = InvalidPortNumberError(port)
-			return nil, err
+			return nil, InvalidPortNumberError(port)
 		}
 		vsockPorts = append(vsockPorts, p)
 	}
