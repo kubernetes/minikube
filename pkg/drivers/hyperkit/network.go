@@ -30,9 +30,9 @@ import (
 )
 
 const (
-	DHCPLeasesFile = "/var/db/dhcpd_leases"
-	CONFIG_PLIST   = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
-	NET_ADDR_KEY   = "Shared_Net_Address"
+	LeasesPath       = "/var/db/dhcpd_leases"
+	VMNetDomain      = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
+	SharedNetAddrKey = "Shared_Net_Address"
 )
 
 type DHCPEntry struct {
@@ -44,10 +44,10 @@ type DHCPEntry struct {
 }
 
 func GetIPAddressByMACAddress(mac string) (string, error) {
-	return getIpAddressFromFile(mac, DHCPLeasesFile)
+	return getIPAddressFromFile(mac, LeasesPath)
 }
 
-func getIpAddressFromFile(mac, path string) (string, error) {
+func getIPAddressFromFile(mac, path string) (string, error) {
 	log.Infof("Searching for %s in %s ...", mac, path)
 	file, err := os.Open(path)
 	if err != nil {
@@ -120,12 +120,11 @@ func trimMacAddress(rawUUID string) string {
 }
 
 func GetNetAddr() (net.IP, error) {
-	_, err := os.Stat(CONFIG_PLIST + ".plist")
-	if err != nil {
-		return nil, fmt.Errorf("Does not exist %s", CONFIG_PLIST+".plist")
+	plistPath := VMNetDomain + ".plist"
+	if _, err := os.Stat(plistPath); err != nil {
+		return nil, fmt.Errorf("stat: %v", err)
 	}
-
-	out, err := exec.Command("defaults", "read", CONFIG_PLIST, NET_ADDR_KEY).Output()
+	out, err := exec.Command("defaults", "read", VMNetDomain, SharedNetAddrKey).Output()
 	if err != nil {
 		return nil, err
 	}
