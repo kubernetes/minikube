@@ -255,9 +255,10 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 
 // DeleteCluster removes the components that were started earlier
 func (k *KubeadmBootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
-	cmd := fmt.Sprintf("sudo kubeadm reset --config %s", constants.KubeadmConfigFile)
-	if err := k.c.Run(cmd); err != nil {
-		return errors.Wrapf(err, "running cmd: %s", cmd)
+	cmd := fmt.Sprintf("sudo kubeadm reset --force")
+	out, err := k.c.CombinedOutput(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "kubeadm reset: %s\n%s\n", cmd, out)
 	}
 
 	return nil
