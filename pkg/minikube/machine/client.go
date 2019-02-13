@@ -259,9 +259,10 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 
 func registerDriver(driverName string) {
 	def, err := registry.Driver(driverName)
-	if err == registry.ErrDriverNotFound {
-		exit.Usage("unsupported driver: %s", driverName)
-	} else {
+	if err != nil {
+		if err == registry.ErrDriverNotFound {
+			exit.Usage("unsupported driver: %s", driverName)
+		}
 		exit.WithError("error getting driver", err)
 	}
 	plugin.RegisterDriver(def.DriverCreator())

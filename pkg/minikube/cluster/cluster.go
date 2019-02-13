@@ -244,9 +244,8 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
 			exit.Usage("unsupported driver: %s", config.VMDriver)
-		} else {
-			exit.WithError("error getting driver", err)
 		}
+		exit.WithError("error getting driver", err)
 	}
 
 	if config.VMDriver != "none" {
