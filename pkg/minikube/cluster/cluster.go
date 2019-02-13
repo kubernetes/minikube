@@ -170,7 +170,7 @@ func DeleteHost(api libmachine.API) error {
 		return errors.Wrap(err, "load")
 	}
 	tryPowerOff(host)
-	console.OutStyle("deleting-vm", "Deleting %q from %s...", cfg.GetMachineName(), host.DriverName)
+	console.OutStyle("deleting-vm", "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
