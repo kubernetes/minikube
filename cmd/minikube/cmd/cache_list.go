@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 var cacheListFormat string
@@ -40,12 +40,10 @@ var listCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		images, err := cmdConfig.ListConfigMap(constants.Cache)
 		if err != nil {
-			console.Fatal("Failed to get image map: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to get image map", err)
 		}
 		if err := cacheList(images); err != nil {
-			console.Fatal("Failed to list cached images: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to list cached images", err)
 		}
 	},
 }
@@ -61,14 +59,12 @@ func cacheList(images []string) error {
 	for _, image := range images {
 		tmpl, err := template.New("list").Parse(cacheListFormat)
 		if err != nil {
-			console.Fatal("Unable to parse template: %v", err)
-			os.Exit(1)
+			exit.WithError("Unable to parse template", err)
 		}
 		listTmplt := CacheListTemplate{image}
 		err = tmpl.Execute(os.Stdout, listTmplt)
 		if err != nil {
-			console.Fatal("Unable to process template: %v", err)
-			os.Exit(1)
+			exit.WithError("Unable to process template", err)
 		}
 	}
 	return nil

@@ -20,11 +20,10 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 var configViewFormat string
@@ -41,8 +40,7 @@ var configViewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := configView()
 		if err != nil {
-			console.Fatal("config view failed: %v", err)
-			os.Exit(1)
+			exit.WithError("config view failed", err)
 		}
 	},
 }
@@ -62,14 +60,12 @@ func configView() error {
 	for k, v := range cfg {
 		tmpl, err := template.New("view").Parse(configViewFormat)
 		if err != nil {
-			glog.Errorln("Error creating view template:", err)
-			os.Exit(1)
+			exit.WithError("Error creating view template", err)
 		}
 		viewTmplt := ConfigViewTemplate{k, v}
 		err = tmpl.Execute(os.Stdout, viewTmplt)
 		if err != nil {
-			glog.Errorln("Error executing view template:", err)
-			os.Exit(1)
+			exit.WithError("Error executing view template", err)
 		}
 	}
 	return nil

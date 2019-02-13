@@ -14,44 +14,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// package util is a hodge-podge of utility functions that should be moved elsewhere.
 package util
 
 import (
-	"bufio"
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"strings"
-	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/ssh/terminal"
-	minikubeConfig "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/version"
 )
 
 type ServiceContext struct {
 	Service string `json:"service"`
 	Version string `json:"version"`
-}
-
-type Message struct {
-	Message        string `json:"message"`
-	ServiceContext `json:"serviceContext"`
 }
 
 type LookPath func(filename string) (string, error)
@@ -60,145 +45,6 @@ var lookPath LookPath
 
 func init() {
 	lookPath = exec.LookPath
-}
-
-func ReportError(err error, url string) error {
-	errMsg, err := FormatError(err)
-	if err != nil {
-		return errors.Wrap(err, "Error formatting error message")
-	}
-	jsonErrorMsg, err := MarshallError(errMsg, "default", version.GetVersion())
-	if err != nil {
-		return errors.Wrap(err, "Error marshalling error message to JSON")
-	}
-	err = UploadError(jsonErrorMsg, url)
-	if err != nil {
-		return errors.Wrap(err, "Error uploading error message")
-	}
-	return nil
-}
-
-func FormatError(err error) (string, error) {
-	if err == nil {
-		return "", errors.New("Error: ReportError was called with nil error value")
-	}
-
-	type stackTracer interface {
-		StackTrace() errors.StackTrace
-	}
-
-	errOutput := []string{}
-	errOutput = append(errOutput, err.Error())
-
-	if err, ok := err.(stackTracer); ok {
-		for _, f := range err.StackTrace() {
-			errOutput = append(errOutput, fmt.Sprintf("\tat %n(%v)", f, f))
-		}
-	} else {
-		return "", errors.New("Error msg with no stack trace cannot be reported")
-	}
-	return strings.Join(errOutput, "\n"), nil
-}
-
-func MarshallError(errMsg, service, version string) ([]byte, error) {
-	m := Message{errMsg, ServiceContext{service, version}}
-	b, err := json.Marshal(m)
-	if err != nil {
-		return nil, errors.Wrap(err, "")
-	}
-	return b, nil
-}
-
-func UploadError(b []byte, url string) error {
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(b))
-	if err != nil {
-		return errors.Wrap(err, "")
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "")
-	} else if resp.StatusCode != 200 {
-		return errors.Errorf("Error sending error report to %s, got response code %d", url, resp.StatusCode)
-	}
-	return nil
-}
-
-func MaybeReportErrorAndExit(errToReport error) {
-	MaybeReportErrorAndExitWithCode(errToReport, 1)
-}
-
-// MaybeReportErrorAndExitWithCode prompts the user if they would like to report a stack trace, and exits.
-func MaybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
-	// TODO(#3623,3178): Replace with maybeReportErrorAndExitWithCode once StackDriver integration is improved.
-	glog.Infof("Error reporting is disabled in this release of minikube")
-	os.Exit(returnCode)
-}
-
-// maybeReportErrorAndExitWithCode is deadcode
-func maybeReportErrorAndExitWithCode(errToReport error, returnCode int) {
-	var err error
-
-	if viper.GetBool(config.WantReportError) {
-		err = ReportError(errToReport, constants.ReportingURL)
-	} else if viper.GetBool(config.WantReportErrorPrompt) {
-		console.Err(
-			`================================================================================
-An error has occurred. Would you like to opt in to sending anonymized crash
-information to minikube to help prevent future errors?
-
-To disable this prompt, run: 'minikube config set WantReportErrorPrompt false'
-================================================================================`)
-		if PromptUserForAccept(os.Stdin) {
-			err = minikubeConfig.Set(config.WantReportError, "true")
-			if err == nil {
-				err = ReportError(errToReport, constants.ReportingURL)
-			}
-		} else {
-			console.ErrStyle("meh", "Bummer, perhaps next time!")
-		}
-	}
-
-	// This happens when the error was created without errors.Wrap(), and thus has no trace data.
-	if err != nil {
-		glog.Infof("report error failed: %v", err)
-	}
-	os.Exit(returnCode)
-}
-
-func getInput(input chan string, r io.Reader) {
-	reader := bufio.NewReader(r)
-	console.OutLn("Please enter your response [Y/n]: ")
-	response, err := reader.ReadString('\n')
-	if err != nil {
-		glog.Errorf(err.Error())
-	}
-	input <- response
-}
-
-func PromptUserForAccept(r io.Reader) bool {
-	if !terminal.IsTerminal(int(os.Stdout.Fd())) {
-		return false
-	}
-	input := make(chan string, 1)
-	go getInput(input, r)
-	select {
-	case response := <-input:
-		response = strings.ToLower(strings.TrimSpace(response))
-		if response == "y" || response == "yes" || response == "" {
-			return true
-		} else if response == "n" || response == "no" {
-			return false
-		} else {
-			console.Warning("Invalid response, error reporting remains disabled. Must be in form [Y/n]")
-			return false
-		}
-	case <-time.After(30 * time.Second):
-		console.Warning("Prompt timed out.")
-		return false
-	}
 }
 
 func MaybePrintKubectlDownloadMsg(goos string, out io.Writer) {

@@ -29,6 +29,7 @@ import (
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -40,14 +41,12 @@ var deleteCmd = &cobra.Command{
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
-			console.ErrStyle("usage", "usage: minikube delete")
-			os.Exit(1)
+			exit.Usage("usage: minikube delete")
 		}
 		profile := viper.GetString(pkg_config.MachineProfile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 
@@ -72,8 +71,7 @@ associated files.`,
 			case mcnerror.ErrHostDoesNotExist:
 				console.OutStyle("meh", "%q VM does not exist", profile)
 			default:
-				console.Fatal("Failed to delete VM: %v", err)
-				os.Exit(1)
+				exit.WithError("Failed to delete VM", err)
 			}
 		} else {
 			console.OutStyle("crushed", "VM deleted.")
@@ -88,8 +86,7 @@ associated files.`,
 				console.OutStyle("meh", "%q profile does not exist", profile)
 				os.Exit(0)
 			}
-			console.Fatal("Failed to remove profile: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to remove profile", err)
 		}
 		console.Success("Removed %q profile!", profile)
 	},
