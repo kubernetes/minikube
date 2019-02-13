@@ -18,10 +18,10 @@ package config
 
 import (
 	"io/ioutil"
-	"os"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/service"
 )
 
@@ -31,8 +31,7 @@ var addonsConfigureCmd = &cobra.Command{
 	Long:  "Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list ",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			console.ErrStyle("usage", "usage: minikube addons configure ADDON_NAME")
-			os.Exit(1)
+			exit.Usage("usage: minikube addons configure ADDON_NAME")
 		}
 
 		addon := args[0]

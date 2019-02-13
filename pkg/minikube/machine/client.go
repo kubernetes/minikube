@@ -39,10 +39,10 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/provision"
@@ -259,9 +259,10 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 
 func registerDriver(driverName string) {
 	def, err := registry.Driver(driverName)
-	if err != nil {
-		glog.Exitf("Unsupported driver: %s\n", driverName)
+	if err == registry.ErrDriverNotFound {
+		exit.Usage("unsupported driver: %s", driverName)
+	} else {
+		exit.WithError("error getting driver", err)
 	}
-
 	plugin.RegisterDriver(def.DriverCreator())
 }

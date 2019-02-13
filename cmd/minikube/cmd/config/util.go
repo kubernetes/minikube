@@ -18,7 +18,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -26,7 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/storageclass"
@@ -106,8 +104,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	//TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		console.Fatal("Error getting client: %v", err)
-		os.Exit(1)
+		return errors.Wrap(err, "machine client")
 	}
 	defer api.Close()
 	cluster.EnsureMinikubeRunningOrExit(api, 0)

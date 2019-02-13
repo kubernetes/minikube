@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"html/template"
 	"net"
-	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -41,6 +40,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -243,9 +243,9 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
+			exit.Usage("unsupported driver: %s", config.VMDriver)
 		} else {
-			glog.Exit(err.Error())
+			exit.WithError("error getting driver", err)
 		}
 	}
 
@@ -422,12 +422,10 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	s, err := GetHostStatus(api)
 	if err != nil {
-		console.Fatal("Error getting machine status:", err)
-		os.Exit(1)
+		exit.WithError("Error getting machine status", err)
 	}
 	if s != state.Running.String() {
-		console.ErrStyle("conflict", "minikube is not running, so the service cannot be accessed")
-		os.Exit(exitStatus)
+		exit.WithCode(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
 	}
 }
 

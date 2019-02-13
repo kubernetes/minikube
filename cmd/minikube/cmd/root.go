@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/notify"
 )
 
@@ -70,7 +71,7 @@ var RootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
-				glog.Exitf("Error creating minikube directory: %v", err)
+				exit.WithError("Error creating minikube directory", err)
 			}
 		}
 
@@ -101,7 +102,8 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		os.Exit(1)
+		// Cobra already outputs the error, typically because the user provided an unknown command.
+		os.Exit(exit.BadUsage)
 	}
 }
 
