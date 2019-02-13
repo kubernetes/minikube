@@ -77,8 +77,6 @@ associated files.`,
 				console.Fatal("Failed to delete VM: %v", err)
 				os.Exit(1)
 			}
-		} else {
-			console.OutStyle("crushed", "VM deleted.")
 		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
@@ -93,7 +91,7 @@ associated files.`,
 			console.Fatal("Failed to remove profile: %v", err)
 			os.Exit(1)
 		}
-		console.Success("Removed %q profile!", profile)
+		console.OutStyle("crushed", "The %q cluster is now deleted. I hope you are happy.", profile)
 	},
 }
 

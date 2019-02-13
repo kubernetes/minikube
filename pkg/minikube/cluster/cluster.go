@@ -140,7 +140,7 @@ func tryPowerOff(h *host.Host) {
 		return
 	}
 
-	console.OutStyle("shutdown", "Powering off %q via SSH ...", cfg.GetMachineName())
+	console.OutStyle("shutdown", "Powering off %q VM via SSH ...", cfg.GetMachineName())
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
@@ -170,7 +170,7 @@ func DeleteHost(api libmachine.API) error {
 		return errors.Wrap(err, "load")
 	}
 	tryPowerOff(host)
-	console.OutStyle("deleting-vm", "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
+	console.OutStyle("deleting-host", "Deleting %q host from %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
