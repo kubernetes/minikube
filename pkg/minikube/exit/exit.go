@@ -23,7 +23,7 @@ const (
 
 // Usage outputs a usage error and exits with error code 64
 func Usage(format string, a ...interface{}) {
-	console.OutStyle("usage", format, a...)
+	console.ErrStyle("usage", format, a...)
 	os.Exit(BadUsage)
 }
 
@@ -38,9 +38,9 @@ func WithCode(code int, format string, a ...interface{}) {
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
 	console.Fatal(msg+": %v", err)
-	console.Out("\n")
-	console.OutStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
-	console.OutStyle("url", "https://github.com/kubernetes/minikube/issues/new")
+	console.Err("\n")
+	console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
+	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(msg)
 	// Here is where we would insert code to optionally upload a stack trace.
