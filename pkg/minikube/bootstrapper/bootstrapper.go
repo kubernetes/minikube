@@ -17,7 +17,6 @@ limitations under the License.
 package bootstrapper
 
 import (
-	"io"
 	"net"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -32,7 +31,8 @@ type Bootstrapper interface {
 	UpdateCluster(config.KubernetesConfig) error
 	RestartCluster(config.KubernetesConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	GetClusterLogsTo(follow bool, out io.Writer) error
+	// LogCommands returns a map of log type to a command which will display that log.
+	LogCommands(int, bool) map[string]string
 	SetupCerts(cfg config.KubernetesConfig) error
 	GetKubeletStatus() (string, error)
 	GetApiServerStatus(net.IP) (string, error)
