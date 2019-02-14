@@ -31,7 +31,7 @@ func TestIsProblem(t *testing.T) {
 		{"kubelet-eviction #", true, "I0213 07:16:44.041623    2410 eviction_manager.go:187] eviction manager: pods kube-apiserver-minikube_kube-system(87f41e2e0629c3deb5c2239e08d8045d) evicted, waiting for pod to be cleaned up"},
 		{"kubelet-unknown-flag #3655", true, "F0212 14:55:46.443031    2693 server.go:148] unknown flag: --AllowedUnsafeSysctls"},
 		{"apiserver-auth-mode #2852", true, `{"log":"Error: unknown flag: --Authorization.Mode\n","stream":"stderr","time":"2018-06-17T22:16:35.134161966Z"}`},
-		{"apiserver-admmission #3524", true, "error: unknown flag: --GenericServerRunOptions.AdmissionControl"},
+		{"apiserver-admission #3524", true, "error: unknown flag: --GenericServerRunOptions.AdmissionControl"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
