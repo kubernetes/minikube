@@ -253,6 +253,17 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 	return nil
 }
 
+// DeleteCluster removes the components that were started earlier
+func (k *KubeadmBootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
+	cmd := fmt.Sprintf("sudo kubeadm reset --force")
+	out, err := k.c.CombinedOutput(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "kubeadm reset: %s\n%s\n", cmd, out)
+	}
+
+	return nil
+}
+
 // PullImages downloads images that will be used by RestartCluster
 func (k *KubeadmBootstrapper) PullImages(k8s config.KubernetesConfig) error {
 	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)

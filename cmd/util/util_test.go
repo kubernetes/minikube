@@ -19,18 +19,16 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/version"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 func startTestHTTPServer(returnError bool, response string) *httptest.Server {
@@ -41,65 +39,6 @@ func startTestHTTPServer(returnError bool, response string) *httptest.Server {
 			fmt.Fprintf(w, response)
 		}
 	}))
-}
-
-func TestFormatError(t *testing.T) {
-	var testErr error
-	if _, err := FormatError(testErr); err == nil {
-		t.Fatalf("FormatError should have errored with a nil error input")
-	}
-	testErr = fmt.Errorf("Not a valid error to format as there is no stacktrace")
-
-	if out, err := FormatError(testErr); err == nil {
-		t.Fatalf("FormatError should have errored with a non pkg/errors error (no stacktrace info): %s", out)
-	}
-
-	testErr = errors.New("TestFormatError 1")
-	errors.Wrap(testErr, "TestFormatError 2")
-	errors.Wrap(testErr, "TestFormatError 3")
-
-	_, err := FormatError(testErr)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-}
-
-func TestMarshallError(t *testing.T) {
-	testErr := errors.New("TestMarshallError 1")
-	errors.Wrap(testErr, "TestMarshallError 2")
-	errors.Wrap(testErr, "TestMarshallError 3")
-
-	errMsg, _ := FormatError(testErr)
-	if _, err := MarshallError(errMsg, "default", version.GetVersion()); err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-}
-
-func TestUploadError(t *testing.T) {
-	testErr := errors.New("TestUploadError 1")
-	errors.Wrap(testErr, "TestUploadError 2")
-	errors.Wrap(testErr, "TestUploadError 3")
-	errMsg, _ := FormatError(testErr)
-	jsonErrMsg, _ := MarshallError(errMsg, "default", version.GetVersion())
-
-	server := startTestHTTPServer(false, "http test")
-	if err := UploadError(jsonErrMsg, server.URL); err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	server = startTestHTTPServer(true, "failed to write report")
-	if err := UploadError(jsonErrMsg, server.URL); err == nil {
-		t.Fatalf("UploadError should have errored from a 400 response")
-	}
-}
-
-func TestReportError(t *testing.T) {
-	testErr := errors.New("TestError 1")
-
-	server := startTestHTTPServer(false, "http test")
-	if err := ReportError(testErr, server.URL); err != nil {
-		t.Fatalf("ReportError")
-	}
 }
 
 func revertLookPath(l LookPath) {

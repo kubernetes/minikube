@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/console"
 )
 
 func TestName(t *testing.T) {
@@ -31,8 +32,8 @@ func TestName(t *testing.T) {
 	}{
 		{"", "Docker"},
 		{"docker", "Docker"},
-		{"crio", "CRIO"},
-		{"cri-o", "CRIO"},
+		{"crio", "CRI-O"},
+		{"cri-o", "CRI-O"},
 		{"containerd", "containerd"},
 	}
 	for _, tc := range tests {
@@ -44,6 +45,9 @@ func TestName(t *testing.T) {
 			got := r.Name()
 			if got != tc.want {
 				t.Errorf("Name(%s) = %q, want: %q", tc.runtime, got, tc.want)
+			}
+			if !console.HasStyle(got) {
+				t.Fatalf("console.HasStyle(%s): %v", got, false)
 			}
 		})
 	}

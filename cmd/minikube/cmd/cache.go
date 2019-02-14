@@ -17,13 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -42,13 +40,11 @@ var addCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Cache and load images into docker daemon
 		if err := machine.CacheAndLoadImages(args); err != nil {
-			console.Fatal("Failed to cache and load images: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to cache and load images", err)
 		}
 		// Add images to config file
 		if err := cmdConfig.AddToConfigMap(constants.Cache, args); err != nil {
-			console.Fatal("Failed to update config: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to update config", err)
 		}
 	},
 }
@@ -61,13 +57,11 @@ var deleteCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Delete images from config file
 		if err := cmdConfig.DeleteFromConfigMap(constants.Cache, args); err != nil {
-			console.Fatal("Failed to delete images from config: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to delete images from config", err)
 		}
 		// Delete images from cache/images directory
 		if err := machine.DeleteFromImageCacheDir(args); err != nil {
-			console.Fatal("Failed to delete images: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to delete images", err)
 		}
 	},
 }

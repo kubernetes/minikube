@@ -19,12 +19,10 @@ package cmd
 import (
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	cmdUtil "k8s.io/minikube/cmd/util"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -40,19 +38,17 @@ var logsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
-			glog.Exitf("Error getting cluster bootstrapper: %v", err)
+			exit.WithError("Error getting cluster bootstrapper", err)
 		}
 
 		err = clusterBootstrapper.GetClusterLogsTo(follow, os.Stdout)
 		if err != nil {
-			console.Fatal("Error getting machine logs:", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			exit.WithError("Error getting machine logs", err)
 		}
 	},
 }

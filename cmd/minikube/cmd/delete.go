@@ -23,11 +23,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -39,28 +41,40 @@ var deleteCmd = &cobra.Command{
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
-			console.ErrStyle("usage", "usage: minikube delete")
-			os.Exit(1)
+			exit.Usage("usage: minikube delete")
 		}
 		profile := viper.GetString(pkg_config.MachineProfile)
-		console.OutStyle("deleting-vm", "Deleting %q Kubernetes cluster ...", profile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
+
+		cc, err := pkg_config.Load()
+		if err != nil && !os.IsNotExist(err) {
+			console.ErrLn("Error loading profile config: %v", err)
+		}
+
+		// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
+		if err == nil && cc.MachineConfig.VMDriver == "none" {
+			kc := cc.KubernetesConfig
+			bsName := viper.GetString(cmdcfg.Bootstrapper)
+			console.OutStyle("resetting", "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
+			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+			if err == nil {
+				if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+					console.ErrLn("Failed to delete cluster: %v", err)
+				}
+			}
+		}
 
 		if err = cluster.DeleteHost(api); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
 				console.OutStyle("meh", "%q VM does not exist", profile)
 			default:
-				console.Fatal("Failed to delete VM: %v", err)
-				os.Exit(1)
+				exit.WithError("Failed to delete VM", err)
 			}
-		} else {
-			console.OutStyle("crushed", "VM deleted.")
 		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
@@ -72,10 +86,9 @@ associated files.`,
 				console.OutStyle("meh", "%q profile does not exist", profile)
 				os.Exit(0)
 			}
-			console.Fatal("Failed to remove profile: %v", err)
-			os.Exit(1)
+			exit.WithError("Failed to remove profile", err)
 		}
-		console.Success("Removed %q profile!", profile)
+		console.OutStyle("crushed", "The %q cluster is now deleted. I hope you are happy.", profile)
 	},
 }
 
