@@ -70,6 +70,7 @@ var styles = map[string]style{
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
 	"Docker":            {Prefix: "🐳  "},
+	"rkt":               {Prefix: "🚀  "},
 	"CRI-O":             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	"containerd":        {Prefix: "📦  "},
 	"permissions":       {Prefix: "🔑  "},

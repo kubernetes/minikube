@@ -78,6 +78,8 @@ func New(c Config) (Manager, error) {
 	switch c.Type {
 	case "", "docker":
 		return &Docker{Socket: c.Socket, Runner: c.Runner}, nil
+	case "rkt":
+		return &Rkt{Socket: c.Socket, Runner: c.Runner}, nil
 	case "crio", "cri-o":
 		return &CRIO{Socket: c.Socket, Runner: c.Runner}, nil
 	case "containerd":
@@ -90,7 +92,7 @@ func New(c Config) (Manager, error) {
 // disableOthers disables all other runtimes except for me.
 func disableOthers(me Manager, cr CommandRunner) error {
 	// valid values returned by manager.Name()
-	runtimes := []string{"containerd", "crio", "docker"}
+	runtimes := []string{"containerd", "crio", "rkt", "docker"}
 	for _, name := range runtimes {
 		r, err := New(Config{Type: name, Runner: cr})
 		if err != nil {
