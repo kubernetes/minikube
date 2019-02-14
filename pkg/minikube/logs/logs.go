@@ -18,13 +18,14 @@ limitations under the License.
 package logs
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/docker/machine/libmachine/log"
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -40,6 +41,10 @@ var importantPods = []string{
 	"k8s_coredns_coredns",
 	"k8s_kube-scheduler",
 }
+
+// lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
+// include usage messages from a failed binary, but small enough to not include irrelevant problems.
+const lookBackwardsCount = 200
 
 // Follow follows logs from multiple files in tail(1) format
 func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner) error {
@@ -59,18 +64,19 @@ func IsProblem(line string) bool {
 // FindProblems finds possible root causes among the logs
 func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner) map[string][]string {
 	pMap := map[string][]string{}
-	cmds := logCommands(r, bs, 200, false)
+	cmds := logCommands(r, bs, lookBackwardsCount, false)
 	for name, cmd := range cmds {
-		log.Infof("Gathering logs for %s ...", name)
-		out, err := runner.CombinedOutput(cmds[name])
+		glog.Infof("Gathering logs for %s ...", name)
+		var b bytes.Buffer
+		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
 			glog.Warningf("failed %s: %s: %v", name, cmd, err)
 			continue
 		}
-		log.Infof("log length: %d", len(out))
-
+		scanner := bufio.NewScanner(&b)
 		problems := []string{}
-		for _, l := range strings.Split(out, "\n") {
+		for scanner.Scan() {
+			l := scanner.Text()
 			if IsProblem(l) {
 				glog.Warningf("Found %s problem: %s", name, l)
 				problems = append(problems, l)
@@ -108,13 +114,17 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrappe
 	failed := []string{}
 	for _, name := range names {
 		console.OutLn("==> %s <==", name)
-		out, err := runner.CombinedOutput(cmds[name])
+		var b bytes.Buffer
+		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
 			glog.Errorf("failed: %v", err)
 			failed = append(failed, name)
 			continue
 		}
-		console.OutLn(out)
+		scanner := bufio.NewScanner(&b)
+		for scanner.Scan() {
+			console.OutLn(scanner.Text())
+		}
 	}
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
@@ -124,15 +134,16 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrappe
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, follow bool) map[string]string {
-	cmds := bs.LogCommands(length, follow)
+	cmds := bs.LogCommands(bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
 		ids, err := r.ListContainers(pod)
 		if err != nil {
 			glog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue
 		}
+		glog.Infof("%d containers: %s", len(ids), ids)
 		if len(ids) == 0 {
-			glog.Errorf("No containers found matching %q", pod)
+			cmds[pod] = fmt.Sprintf("No container was found matching %q", pod)
 			continue
 		}
 		cmds[pod] = r.ContainerLogCmd(ids[0], length, follow)
