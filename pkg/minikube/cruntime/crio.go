@@ -106,3 +106,8 @@ func (r *CRIO) KillContainers(ids []string) error {
 func (r *CRIO) StopContainers(ids []string) error {
 	return stopCRIContainers(r.Runner, ids)
 }
+
+// ContainerLogCmd returns the command to retrieve the log for a container based on ID
+func (r *CRIO) ContainerLogCmd(id string, len int, follow bool) string {
+	return criContainerLogCmd(id, len, follow)
+}
