@@ -67,7 +67,7 @@ var styles = map[string]style{
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
 	"Docker":            {Prefix: "🐳  "},
-	"CRIO":              {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
+	"CRI-O":             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	"containerd":        {Prefix: "📦  "},
 	"permissions":       {Prefix: "🔑  "},
 	"enabling":          {Prefix: "🔌  "},
@@ -87,6 +87,11 @@ func applyPrefix(prefix, format string) string {
 	}
 	// TODO(tstromberg): Ensure compatibility with RTL languages.
 	return prefix + format
+}
+
+func hasStyle(style string) bool {
+	_, exists := styles[style]
+	return exists
 }
 
 // Apply styling to a format string
