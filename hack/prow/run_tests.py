@@ -103,8 +103,7 @@ def run_tests(test, build_log, exit_status, started, finished, test_results):
   """
   classname = os.path.basename(test).split('.')[0]
   build_log_file = open(build_log, 'w')
-  args = shlex.split('bash -x %s' % test)
-  p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  p = subprocess.Popen(['bash','-x',test], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   for line in p.stdout:
     build_log_file.write(line)
     print line.rstrip()
