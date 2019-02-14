@@ -129,7 +129,7 @@ func (k *KubeadmBootstrapper) LogCommands(len int, follow bool) map[string]strin
 	}
 	if follow {
 		kcmd.WriteString(" -f")
-		}
+	}
 	return map[string]string{"kubelet": kcmd.String()}
 }
 
