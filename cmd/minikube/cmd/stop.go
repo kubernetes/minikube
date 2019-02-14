@@ -40,8 +40,6 @@ var stopCmd = &cobra.Command{
 itself, leaving all files intact. The cluster can be started again with the "start" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		profile := viper.GetString(pkg_config.MachineProfile)
-		console.OutStyle("stopping", "Stopping %q Kubernetes cluster...", profile)
-
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			console.Fatal("Error getting client: %v", err)

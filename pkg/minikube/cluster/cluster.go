@@ -125,12 +125,34 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
-// StopHost stops the host VM.
+// tryPowerOff runs the poweroff command on the guest VM to speed up deletion
+func tryPowerOff(h *host.Host) {
+	if h.Driver.DriverName() == "none" {
+		return
+	}
+	s, err := h.Driver.GetState()
+	if err != nil {
+		glog.Warningf("unable to get state: %v", err)
+		return
+	}
+	if s != state.Running {
+		glog.Infof("host is in state %s", s)
+		return
+	}
+
+	console.OutStyle("shutdown", "Powering off %q via SSH ...", cfg.GetMachineName())
+	out, err := h.RunSSHCommand("sudo poweroff")
+	// poweroff always results in an error, since the host disconnects.
+	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+}
+
+// StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API) error {
 	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
+	console.OutStyle("stopping", "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
@@ -147,6 +169,8 @@ func DeleteHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
+	tryPowerOff(host)
+	console.OutStyle("deleting-host", "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
