@@ -330,12 +330,6 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	if mc.VMDriver == constants.DriverNone {
 		console.OutStyle("starting-none", "Configuring local host environment ...")
 		prepareNone()
-	} else {
-		if exists {
-			console.OutStyle("waiting", "Spinning up existing VM for %q ...", cfg.GetMachineName())
-		} else {
-			console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", mc.VMDriver, mc.CPUs, mc.Memory, mc.DiskSize)
-		}
 	}
 
 	var host *host.Host

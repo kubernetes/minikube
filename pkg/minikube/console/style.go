@@ -33,25 +33,27 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[string]style{
-	"happy":      {Prefix: "😄  "},
-	"success":    {Prefix: "✅  "},
-	"failure":    {Prefix: "❌  "},
-	"conflict":   {Prefix: "💥  "},
-	"fatal":      {Prefix: "💣  "},
-	"notice":     {Prefix: "📌  "},
-	"ready":      {Prefix: "🏄  "},
-	"restarting": {Prefix: "🔄  "},
-	"stopping":   {Prefix: "✋  "},
-	"stopped":    {Prefix: "🛑  "},
-	"warning":    {Prefix: "⚠️  "},
-	"waiting":    {Prefix: "⌛  "},
-	"usage":      {Prefix: "💡  "},
-	"launch":     {Prefix: "🚀  "},
-	"sad":        {Prefix: "😿  "},
-	"thumbs-up":  {Prefix: "👍  "},
-	"option":     {Prefix: "    ▪ "}, // Indented bullet
-	"url":        {Prefix: "👉  "},
-	"crushed":    {Prefix: "💔  "},
+	"happy":        {Prefix: "😄  "},
+	"success":      {Prefix: "✅  "},
+	"failure":      {Prefix: "❌  "},
+	"conflict":     {Prefix: "💥  "},
+	"fatal":        {Prefix: "💣  "},
+	"notice":       {Prefix: "📌  "},
+	"ready":        {Prefix: "🏄  "},
+	"running":      {Prefix: "🏃  "},
+	"provisioning": {Prefix: "🌱  "},
+	"restarting":   {Prefix: "🔄  "},
+	"stopping":     {Prefix: "✋  "},
+	"stopped":      {Prefix: "🛑  "},
+	"warning":      {Prefix: "⚠️  "},
+	"waiting":      {Prefix: "⌛  "},
+	"usage":        {Prefix: "💡  "},
+	"launch":       {Prefix: "🚀  "},
+	"sad":          {Prefix: "😿  "},
+	"thumbs-up":    {Prefix: "👍  "},
+	"option":       {Prefix: "    ▪ "}, // Indented bullet
+	"url":          {Prefix: "👉  "},
+	"crushed":      {Prefix: "💔  "},
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  "},
@@ -60,7 +62,7 @@ var styles = map[string]style{
 	"starting-vm":       {Prefix: "🔥  "},
 	"starting-none":     {Prefix: "🤹  "},
 	"resetting":         {Prefix: "🔄  "},
-	"deleting-vm":       {Prefix: "🔥  "},
+	"deleting-host":     {Prefix: "🔥  "},
 	"copying":           {Prefix: "✨  "},
 	"connectivity":      {Prefix: "📶  "},
 	"internet":          {Prefix: "🌐  "},
@@ -68,10 +70,11 @@ var styles = map[string]style{
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
 	"Docker":            {Prefix: "🐳  "},
-	"CRIO":              {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
+	"CRI-O":             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	"containerd":        {Prefix: "📦  "},
 	"permissions":       {Prefix: "🔑  "},
 	"enabling":          {Prefix: "🔌  "},
+	"shutdown":          {Prefix: "🛑  "},
 	"pulling":           {Prefix: "🚜  "},
 	"verifying":         {Prefix: "🤔  "},
 	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},
@@ -88,6 +91,11 @@ func applyPrefix(prefix, format string) string {
 	}
 	// TODO(tstromberg): Ensure compatibility with RTL languages.
 	return prefix + format
+}
+
+func hasStyle(style string) bool {
+	_, exists := styles[style]
+	return exists
 }
 
 // Apply styling to a format string
