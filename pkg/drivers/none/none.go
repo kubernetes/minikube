@@ -25,9 +25,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
-
-	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	// TODO(tstromberg): Extract CommandRunner into its own package
+	pkgdrivers "k8s.io/minikube/pkg/drivers" // TODO(tstromberg): Extract CommandRunner into its own package
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )

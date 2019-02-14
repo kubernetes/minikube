@@ -17,11 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/version"
 )
@@ -38,13 +37,11 @@ var updateCheckCmd = &cobra.Command{
 		url := constants.GithubMinikubeReleasesURL
 		r, err := notify.GetAllVersionsFromURL(url)
 		if err != nil {
-			console.Fatal("Unable to fetch latest version info: %v", err)
-			os.Exit(1)
+			exit.WithError("Unable to fetch latest version info", err)
 		}
 
 		if len(r) < 1 {
-			console.Fatal("Update server returned an empty list")
-			os.Exit(2)
+			exit.WithCode(exit.Data, "Update server returned an empty list")
 		}
 
 		console.OutLn("CurrentVersion: %s", version.GetVersion())

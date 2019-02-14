@@ -17,12 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -34,23 +32,19 @@ var sshCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
-			console.Fatal("Error getting host: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting host", err)
 		}
 		if host.Driver.DriverName() == "none" {
-			console.Fatal(`'none' driver does not support 'minikube ssh' command`)
-			os.Exit(1)
+			exit.Usage("'none' driver does not support 'minikube ssh' command")
 		}
 		err = cluster.CreateSSHShell(api, args)
 		if err != nil {
-			console.Fatal("Error creating SSH shell: %v", err)
-			os.Exit(1)
+			exit.WithError("Error creating SSH shell", err)
 		}
 	},
 }
