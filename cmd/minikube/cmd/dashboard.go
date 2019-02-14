@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -34,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
@@ -61,8 +61,7 @@ var dashboardCmd = &cobra.Command{
 		}()
 
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
@@ -71,29 +70,26 @@ var dashboardCmd = &cobra.Command{
 		// Enable the dashboard add-on
 		err = configcmd.Set("dashboard", "true")
 		if err != nil {
-			console.Fatal("Unable to enable dashboard: %v", err)
-			os.Exit(1)
+			exit.WithError("Unable to enable dashboard", err)
 		}
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
 		console.ErrStyle("verifying", "Verifying dashboard health ...")
 		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
-			console.Fatal("%s:%s is not running: %v", ns, svc, err)
-			os.Exit(1)
+			exit.WithCode(exit.Unavailable, "%s:%s is not running: %v", ns, svc, err)
 		}
 
 		console.ErrStyle("launch", "Launching proxy ...")
 		p, hostPort, err := kubectlProxy()
 		if err != nil {
-			glog.Fatalf("kubectl proxy: %v", err)
+			exit.WithError("kubectl proxy", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
 		console.ErrStyle("verifying", "Verifying proxy health ...")
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
-			console.Fatal("%s is not responding properly: %v", url, err)
-			os.Exit(1)
+			exit.WithCode(exit.Unavailable, "%s is not responding properly: %v", url, err)
 		}
 
 		if dashboardURLMode {

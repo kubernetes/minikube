@@ -20,14 +20,15 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel"
-	"time"
 )
 
 var cleanup bool
@@ -54,7 +55,7 @@ var tunnelCmd = &cobra.Command{
 		glog.Infof("Creating docker machine client...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			glog.Fatalf("error creating dockermachine client: %s", err)
+			exit.WithError("error creating machine client", err)
 		}
 		glog.Infof("Creating k8s client...")
 
@@ -64,7 +65,7 @@ var tunnelCmd = &cobra.Command{
 		//doesn't hang on the API server call during startup and shutdown time or if there is a temporary error.
 		clientset, err := service.K8s.GetClientset(1 * time.Second)
 		if err != nil {
-			glog.Fatalf("error creating K8S clientset: %s", err)
+			exit.WithError("error creating clientset", err)
 		}
 
 		ctrlC := make(chan os.Signal, 1)
@@ -77,7 +78,7 @@ var tunnelCmd = &cobra.Command{
 
 		done, err := manager.StartTunnel(ctx, config.GetMachineName(), api, config.DefaultLoader, clientset.CoreV1())
 		if err != nil {
-			glog.Fatalf("error starting tunnel: %s", err)
+			exit.WithError("error starting tunnel", err)
 		}
 		<-done
 	},

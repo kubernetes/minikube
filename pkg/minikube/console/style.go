@@ -40,17 +40,19 @@ var styles = map[string]style{
 	"fatal":        {Prefix: "💣  "},
 	"notice":       {Prefix: "📌  "},
 	"ready":        {Prefix: "🏄  "},
-	"restarting":   {Prefix: "🔄  "},
 	"running":      {Prefix: "🏃  "},
 	"provisioning": {Prefix: "🌱  "},
+	"restarting":   {Prefix: "🔄  "},
 	"stopping":     {Prefix: "✋  "},
 	"stopped":      {Prefix: "🛑  "},
 	"warning":      {Prefix: "⚠️  "},
 	"waiting":      {Prefix: "⌛  "},
 	"usage":        {Prefix: "💡  "},
 	"launch":       {Prefix: "🚀  "},
+	"sad":          {Prefix: "😿  "},
 	"thumbs-up":    {Prefix: "👍  "},
 	"option":       {Prefix: "    ▪ "}, // Indented bullet
+	"url":          {Prefix: "👉  "},
 	"crushed":      {Prefix: "💔  "},
 
 	// Specialized purpose styles
