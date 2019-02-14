@@ -89,7 +89,7 @@ func (d *Driver) verifyRootPermissions() error {
 		return err
 	}
 	euid := syscall.Geteuid()
-	log.Infof("exe=%s uid=%d", exe, euid)
+	log.Debugf("exe=%s uid=%d", exe, euid)
 	if euid != 0 {
 		return fmt.Errorf(permErr, filepath.Base(exe), exe, exe)
 	}
@@ -144,12 +144,12 @@ func pidState(pid int) (state.State, error) {
 		return state.Error, err
 	}
 	if p == nil {
-		log.Infof("hyperkit pid missing from process table, err=%v", err)
+		log.Warnf("hyperkit pid missing from process table, err=%v", err)
 		return state.Stopped, nil
 	}
 	// hyperkit or com.docker.hyper
 	if !strings.Contains(p.Executable(), "hyper") {
-		log.Infof("pid %d is stale, and is being used by %s", pid, p.Executable())
+		log.Warnf("pid %d is stale, and is being used by %s", pid, p.Executable())
 		return state.Stopped, nil
 	}
 	return state.Running, nil
@@ -162,7 +162,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 
 	pid := d.getPid()
-	log.Infof("hyperkit pid from json: %d", pid)
+	log.Debugf("hyperkit pid from json: %d", pid)
 	return pidState(pid)
 }
 
@@ -182,7 +182,7 @@ func (d *Driver) Remove() error {
 
 	s, err := d.GetState()
 	if err != nil || s == state.Error {
-		log.Infof("Error checking machine status: %v, assuming it has been removed already", err)
+		log.Debugf("Error checking machine status: %v, assuming it has been removed already", err)
 	}
 	if s == state.Running {
 		if err := d.Stop(); err != nil {
@@ -228,7 +228,7 @@ func (d *Driver) Start() error {
 		h.VSockPorts = vsockPorts
 	}
 
-	log.Infof("Using UUID %s", h.UUID)
+	log.Debugf("Using UUID %s", h.UUID)
 	mac, err := GetMACAddressFromUUID(h.UUID)
 	if err != nil {
 		return errors.Wrap(err, "getting MAC address from UUID")
@@ -236,7 +236,7 @@ func (d *Driver) Start() error {
 
 	// Need to strip 0's
 	mac = trimMacAddress(mac)
-	log.Infof("Generated MAC %s", mac)
+	log.Debugf("Generated MAC %s", mac)
 	h.Disks = []hyperkit.DiskConfig{
 		{
 			Path:   pkgdrivers.GetDiskPath(d.BaseDriver),
@@ -244,7 +244,7 @@ func (d *Driver) Start() error {
 			Driver: "virtio-blk",
 		},
 	}
-	log.Infof("Starting with cmdline: %s", d.Cmdline)
+	log.Debugf("Starting with cmdline: %s", d.Cmdline)
 	if err := h.Start(d.Cmdline); err != nil {
 		return errors.Wrapf(err, "starting with cmd line: %s", d.Cmdline)
 	}
@@ -268,7 +268,7 @@ func (d *Driver) Start() error {
 	if err := commonutil.RetryAfter(30, getIP, 2*time.Second); err != nil {
 		return fmt.Errorf("IP address never found in dhcp leases file %v", err)
 	}
-	log.Infof("IP: %s", d.IPAddress)
+	log.Debugf("IP: %s", d.IPAddress)
 
 	if len(d.NFSShares) > 0 {
 		log.Info("Setting up NFS mounts")
@@ -298,7 +298,7 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 
 	if _, err := os.Stat(pidFile); err != nil {
 		if os.IsNotExist(err) {
-			log.Infof("clean start, hyperkit pid file doesn't exist: %s", pidFile)
+			log.Debugf("clean start, hyperkit pid file doesn't exist: %s", pidFile)
 			return nil
 		}
 		return errors.Wrap(err, "stat")
@@ -320,11 +320,11 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 		return errors.Wrap(err, "pidState")
 	}
 
-	log.Infof("pid %d is in state %q", pid, st)
+	log.Debugf("pid %d is in state %q", pid, st)
 	if st == state.Running {
 		return nil
 	}
-	log.Infof("Removing stale pid file %s...", pidFile)
+	log.Debugf("Removing stale pid file %s...", pidFile)
 	if err := os.Remove(pidFile); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
 	}
