@@ -43,6 +43,5 @@ func createParallelsHost(config cfg.MachineConfig) interface{} {
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
-	d.ISO = d.ResolveStorePath("boot2docker.iso")
 	return d
 }
