@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	golog "log"
 	"os"
 	"os/user"
 	"path"
@@ -220,6 +221,9 @@ func (d *Driver) Start() error {
 	h.CPUs = d.CPU
 	h.Memory = d.Memory
 	h.UUID = d.UUID
+	// This should stream logs from hyperkit, but doesn't seem to work.
+	logger := glog.New(os.Stderr, "hyperkit", golog.LstdFlags)
+	h.SetLogger(logger)
 
 	if vsockPorts, err := d.extractVSockPorts(); err != nil {
 		return err
