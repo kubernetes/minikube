@@ -67,7 +67,7 @@ func getIPAddressFromFile(mac, path string) (string, error) {
 			return dhcpEntry.IPAddress, nil
 		}
 	}
-	return "", fmt.Errorf("Could not find an IP address for %s", mac)
+	return "", fmt.Errorf("could not find an IP address for %s", mac)
 }
 
 func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
@@ -105,7 +105,7 @@ func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
 		case "lease":
 			dhcpEntry.Lease = val
 		default:
-			return dhcpEntries, fmt.Errorf("Unable to parse line: %s", line)
+			return dhcpEntries, fmt.Errorf("unable to parse line: %s", line)
 		}
 	}
 	return dhcpEntries, scanner.Err()
@@ -130,7 +130,7 @@ func GetNetAddr() (net.IP, error) {
 	}
 	ip := net.ParseIP(strings.TrimSpace(string(out)))
 	if ip == nil {
-		return nil, fmt.Errorf("Could not get the network address for vmnet")
+		return nil, fmt.Errorf("could not get the network address for vmnet")
 	}
 	return ip, nil
 }
