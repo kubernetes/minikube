@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"html/template"
 	"net"
-	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -41,6 +40,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -96,7 +96,10 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error getting state for host")
 	}
 
-	if s != state.Running {
+	if s == state.Running {
+		console.OutStyle("running", "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+	} else {
+		console.OutStyle("restarting", "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -106,6 +109,11 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	e := engineOptions(config)
+	glog.Infof("engine options: %+v", e)
+
+	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
+	console.OutStyle("waiting", "Waiting for SSH access ...")
+
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		provisioner, err := provision.DetectProvisioner(h.Driver)
@@ -125,12 +133,34 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
-// StopHost stops the host VM.
+// tryPowerOff runs the poweroff command on the guest VM to speed up deletion
+func tryPowerOff(h *host.Host) {
+	if h.Driver.DriverName() == "none" {
+		return
+	}
+	s, err := h.Driver.GetState()
+	if err != nil {
+		glog.Warningf("unable to get state: %v", err)
+		return
+	}
+	if s != state.Running {
+		glog.Infof("host is in state %s", s)
+		return
+	}
+
+	console.OutStyle("shutdown", "Powering off %q via SSH ...", cfg.GetMachineName())
+	out, err := h.RunSSHCommand("sudo poweroff")
+	// poweroff always results in an error, since the host disconnects.
+	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+}
+
+// StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API) error {
 	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
+	console.OutStyle("stopping", "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
@@ -147,6 +177,8 @@ func DeleteHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
+	tryPowerOff(host)
+	console.OutStyle("deleting-host", "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
@@ -240,13 +272,13 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, err
 	}
 
+	console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			glog.Exitf("Unsupported driver: %s\n", config.VMDriver)
-		} else {
-			glog.Exit(err.Error())
+			exit.Usage("unsupported driver: %s", config.VMDriver)
 		}
+		exit.WithError("error getting driver", err)
 	}
 
 	if config.VMDriver != "none" {
@@ -422,12 +454,10 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	s, err := GetHostStatus(api)
 	if err != nil {
-		console.Fatal("Error getting machine status:", err)
-		os.Exit(1)
+		exit.WithError("Error getting machine status", err)
 	}
 	if s != state.Running.String() {
-		console.ErrStyle("conflict", "minikube is not running, so the service cannot be accessed")
-		os.Exit(exitStatus)
+		exit.WithCode(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
 	}
 }
 

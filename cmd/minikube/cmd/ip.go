@@ -17,11 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -33,19 +34,22 @@ var ipCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
+
 		host, err := api.Load(config.GetMachineName())
 		if err != nil {
-			console.Fatal("Error getting host: %v", err)
-			os.Exit(1)
+			switch err := errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				exit.WithCode(exit.NoInput, "%q host does not exist, unable to show an IP", config.GetMachineName())
+			default:
+				exit.WithError("Error getting host", err)
+			}
 		}
 		ip, err := host.Driver.GetIP()
 		if err != nil {
-			console.Fatal("Error getting IP: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting IP", err)
 		}
 		console.OutLn(ip)
 	},

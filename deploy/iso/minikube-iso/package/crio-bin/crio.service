@@ -1,6 +1,6 @@
 [Unit]
 Description=Open Container Initiative Daemon
-Documentation=https://github.com/kubernetes-incubator/cri-o
+Documentation=https://github.com/kubernetes-sigs/cri-o
 After=network-online.target minikube-automount.service
 Requires=minikube-automount.service
 
