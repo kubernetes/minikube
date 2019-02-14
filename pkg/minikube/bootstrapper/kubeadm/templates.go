@@ -47,10 +47,12 @@ nodeName: {{.NodeName}}
 
 var kubeadmConfigTemplateV1Alpha3 = template.Must(template.New("kubeadmConfigTemplate-v1alpha3").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
-}).Parse(`apiEndpoint:
+}).Parse(`
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: InitConfiguration
+apiEndpoint:
   advertiseAddress: {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
-apiVersion: kubeadm.k8s.io/v1alpha3
 bootstrapTokens:
 - groups:
   - system:bootstrappers:kubeadm:default-node-token
@@ -58,30 +60,40 @@ bootstrapTokens:
   usages:
   - signing
   - authentication
-kind: InitConfiguration
 nodeRegistration:
   criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
   name: {{.NodeName}}
   taints: []
 ---
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: ClusterConfiguration
 {{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
 {{end}}
-apiVersion: kubeadm.k8s.io/v1alpha3
 certificatesDir: {{.CertDir}}
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
-kind: ClusterConfiguration
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
-  serviceSubnet: {{.ServiceCIDR}}`))
+  serviceSubnet: {{.ServiceCIDR}}
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# disable disk resource management by default, as it doesn't work well within the minikube environment.
+imageGCHighThresholdPercent: 100
+# Don't evict jobs, as we only have a single node to run on.
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"
+  `))
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Unit]

@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
@@ -40,12 +40,9 @@ var stopCmd = &cobra.Command{
 itself, leaving all files intact. The cluster can be started again with the "start" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		profile := viper.GetString(pkg_config.MachineProfile)
-		console.OutStyle("stopping", "Stopping %q Kubernetes cluster...", profile)
-
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 
@@ -63,15 +60,14 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 			}
 		}
 		if err := pkgutil.RetryAfter(5, stop, 1*time.Second); err != nil {
-			console.Fatal("Unable to stop VM: %v", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			exit.WithError("Unable to stop VM", err)
 		}
 		if !nonexistent {
 			console.OutStyle("stopped", "%q stopped.", profile)
 		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			console.Fatal("Unable to kill mount process: %v", err)
+			exit.WithError("Unable to kill mount process", err)
 		}
 	},
 }

@@ -45,6 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -158,12 +159,12 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	oldConfig, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
-		fatalExit("Unable to load config: %v", err)
+		exit.WithCode(exit.Data, "Unable to load config: %v", err)
 	}
 	kVersion := validateKubernetesVersions(oldConfig)
 	config, err := generateConfig(cmd, kVersion)
 	if err != nil {
-		reportErrAndExit("Failed to generate config: %v", err)
+		exit.WithError("Failed to generate config", err)
 	}
 
 	var cacheGroup errgroup.Group
@@ -172,12 +173,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
 	if err := saveConfig(config); err != nil {
-		reportErrAndExit("Failed to save config", err)
+		exit.WithError("Failed to save config", err)
 	}
 
 	m, err := machine.NewAPIClient()
 	if err != nil {
-		reportErrAndExit("Failed to get machine client: %v", err)
+		exit.WithError("Failed to get machine client", err)
 	}
 	host, preexisting := startHost(m, config.MachineConfig)
 
@@ -185,11 +186,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
-		reportErrAndExit("Failed to save config", err)
+		exit.WithError("Failed to save config", err)
 	}
 	runner, err := machine.CommandRunner(host)
 	if err != nil {
-		reportErrAndExit("Failed to get command runner", err)
+		exit.WithError("Failed to get command runner", err)
 	}
 
 	cr := configureRuntimes(host, runner)
@@ -217,11 +218,11 @@ func runStart(cmd *cobra.Command, args []string) {
 func validateConfig() {
 	diskSizeMB := pkgutil.CalculateDiskSizeInMB(viper.GetString(humanReadableDiskSize))
 	if diskSizeMB < constants.MinimumDiskSizeMB {
-		fatalExit("Requested disk size (%dMB) is less than minimum of %dMB", diskSizeMB, constants.MinimumDiskSizeMB)
+		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of %dMB", diskSizeMB, constants.MinimumDiskSizeMB)
 	}
 
 	if viper.GetBool(gpu) && viper.GetString(vmDriver) != "kvm2" {
-		fatalExit("Sorry, the --gpu feature is currently only supported with --vm-driver=kvm2")
+		exit.Usage("Sorry, the --gpu feature is currently only supported with --vm-driver=kvm2")
 	}
 }
 
@@ -321,7 +322,7 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 	}
 
 	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
-		fatalExit("Failed to chown %s: %v", constants.GetMinipath(), err)
+		exit.WithCode(exit.Permissions, "Failed to chown %s: %v", constants.GetMinipath(), err)
 	}
 }
 
@@ -329,17 +330,11 @@ This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_
 func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		reportErrAndExit("Failed to check if machine exists", err)
+		exit.WithError("Failed to check if machine exists", err)
 	}
 	if mc.VMDriver == constants.DriverNone {
 		console.OutStyle("starting-none", "Configuring local host environment ...")
 		prepareNone()
-	} else {
-		if exists {
-			console.OutStyle("waiting", "Spinning up existing VM for %q ...", cfg.GetMachineName())
-		} else {
-			console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", mc.VMDriver, mc.CPUs, mc.Memory, mc.DiskSize)
-		}
 	}
 
 	var host *host.Host
@@ -351,7 +346,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		return err
 	}
 	if err = pkgutil.RetryAfter(3, start, 2*time.Second); err != nil {
-		reportErrAndExit("Unable to start VM", err)
+		exit.WithError("Unable to start VM", err)
 	}
 	return host, exists
 }
@@ -360,7 +355,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 func validateNetwork(h *host.Host) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
-		reportErrAndExit("Unable to get VM IP address", err)
+		exit.WithError("Unable to get VM IP address", err)
 	}
 	console.OutStyle("connectivity", "%q IP address is %s", cfg.GetMachineName(), ip)
 
@@ -387,7 +382,7 @@ func validateKubernetesVersions(old *cfg.Config) string {
 	}
 	nvs, err := semver.Make(strings.TrimPrefix(nv, version.VersionPrefix))
 	if err != nil {
-		fatalExit("Unable to parse %q: %v", nv, err)
+		exit.WithCode(exit.Data, "Unable to parse %q: %v", nv, err)
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
@@ -414,7 +409,7 @@ func validateKubernetesVersions(old *cfg.Config) string {
 func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
 	bs, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
-		reportErrAndExit("Failed to get bootstrapper", err)
+		exit.WithError("Failed to get bootstrapper", err)
 	}
 	console.OutStyle("copying", "Preparing Kubernetes environment ...")
 	for _, eo := range extraOptions {
@@ -422,10 +417,10 @@ func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstr
 	}
 	// Loads cached images, generates config files, download binaries
 	if err := bs.UpdateCluster(kc); err != nil {
-		reportErrAndExit("Failed to update cluster", err)
+		exit.WithError("Failed to update cluster", err)
 	}
 	if err := bs.SetupCerts(kc); err != nil {
-		reportErrAndExit("Failed to setup certs", err)
+		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
 }
@@ -434,7 +429,7 @@ func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstr
 func updateKubeConfig(h *host.Host, c *cfg.Config) *kubeconfig.KubeConfigSetup {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
-		reportErrAndExit("Failed to get driver URL", err)
+		exit.WithError("Failed to get driver URL", err)
 	}
 	addr = strings.Replace(addr, "tcp://", "https://", -1)
 	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
@@ -450,7 +445,7 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *kubeconfig.KubeConfigSetup {
 	}
 	kcs.SetKubeConfigFile(cmdutil.GetKubeConfigPath())
 	if err := kubeconfig.SetupKubeConfig(kcs); err != nil {
-		reportErrAndExit("Failed to setup kubeconfig", err)
+		exit.WithError("Failed to setup kubeconfig", err)
 	}
 	return kcs
 }
@@ -460,8 +455,7 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {
-		reportErrAndExit(fmt.Sprintf("Failed runtime for %+v", config), err)
-		cmdutil.MaybeReportErrorAndExit(err)
+		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
 	console.OutStyle(cr.Name(), "Configuring %s as your container runtime ...", cr.Name())
 	for _, v := range dockerOpt {
@@ -473,7 +467,7 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 
 	err = cr.Enable()
 	if err != nil {
-		cmdutil.MaybeReportErrorAndExit(err)
+		exit.WithError("Failed to enable container runtime", err)
 	}
 	return cr
 }
@@ -493,7 +487,7 @@ func waitCacheImages(g *errgroup.Group) {
 func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, kc cfg.KubernetesConfig, preexisting bool) {
 	console.OutStyle("pulling", "Pulling images used by Kubernetes %s ...", kc.KubernetesVersion)
 	if err := bs.PullImages(kc); err != nil {
-		fmt.Printf("Unable to pull images, which may be OK: %v", err)
+		console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
 	}
 	// hum. bootstrapper.Bootstrapper should probably have a Name function.
 	bsName := viper.GetString(cmdcfg.Bootstrapper)
@@ -501,14 +495,14 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	if preexisting {
 		console.OutStyle("restarting", "Relaunching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
 		if err := bs.RestartCluster(kc); err != nil {
-			reportProblemsAndExit("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
+			exit.WithProblems("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
 		}
 		return
 	}
 
 	console.OutStyle("launch", "Launching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
 	if err := bs.StartCluster(kc); err != nil {
-		reportProblemsAndExit("Error starting cluster", err, logs.FindProblems(r, bs, runner))
+		exit.WithProblems("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}
 }
 
@@ -525,7 +519,7 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 	}
 	err := pkgutil.RetryAfter(20, kStat, 3*time.Second)
 	if err != nil {
-		reportProblemsAndExit("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
+		exit.WithProblems("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
 	}
 	aStat := func() (err error) {
 		st, err := bs.GetApiServerStatus(net.ParseIP(ip))
@@ -538,7 +532,7 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 
 	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
 	if err != nil {
-		reportProblemsAndExit("apiserver checks failed", err, logs.FindProblems(r, bs, runner))
+		exit.WithProblems("apiserver checks failed", err, logs.FindProblems(r, bs, runner))
 	}
 	console.OutLn("")
 }
@@ -562,12 +556,10 @@ func configureMounts() {
 		mountCmd.Stderr = os.Stderr
 	}
 	if err := mountCmd.Start(); err != nil {
-		glog.Errorf("Error running command minikube mount %v", err)
-		cmdutil.MaybeReportErrorAndExit(err)
+		exit.WithError("Error starting mount", err)
 	}
 	if err := ioutil.WriteFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
-		glog.Errorf("Error writing mount process pid to file: %v", err)
-		cmdutil.MaybeReportErrorAndExit(err)
+		exit.WithError("Error writing mount pid", err)
 	}
 }
 
@@ -613,27 +605,4 @@ func saveConfig(clusterConfig cfg.Config) error {
 		return err
 	}
 	return nil
-}
-
-// fatalExit is a shortcut for outputting a failure message and exiting.
-func fatalExit(format string, a ...interface{}) {
-	// use Warning because Error will display a duplicate message
-	glog.Warningf(format, a...)
-	console.Fatal(format, a...)
-	os.Exit(1)
-}
-
-// reportErrAndExit is a shortcut for outputting an error, reporting it, and exiting.
-func reportErrAndExit(msg string, err error) {
-	console.Fatal(msg+": %v", err)
-	cmdutil.MaybeReportErrorAndExit(err)
-	os.Exit(1)
-}
-
-// reportFatalExit is a shortcut for outputting an error, reporting it, and exiting.
-func reportProblemsAndExit(msg string, err error, problems map[string][]string) {
-	console.Fatal(msg+": %v", err)
-	logs.OutputProblems(problems, 3)
-	cmdutil.MaybeReportErrorAndExit(err)
-	os.Exit(1)
 }

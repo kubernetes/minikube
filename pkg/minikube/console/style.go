@@ -33,24 +33,28 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[string]style{
-	"happy":      {Prefix: "😄  "},
-	"success":    {Prefix: "✅  "},
-	"failure":    {Prefix: "❌  "},
-	"conflict":   {Prefix: "💥  "},
-	"fatal":      {Prefix: "💣  "},
-	"notice":     {Prefix: "📌  "},
-	"ready":      {Prefix: "🏄  "},
-	"restarting": {Prefix: "🔄  "},
-	"stopping":   {Prefix: "✋  "},
-	"stopped":    {Prefix: "🛑  "},
-	"warning":    {Prefix: "⚠️  "},
-	"waiting":    {Prefix: "⌛  "},
-	"usage":      {Prefix: "💡  "},
-	"launch":     {Prefix: "🚀  "},
-	"thumbs-up":  {Prefix: "👍  "},
-	"option":     {Prefix: "    ▪ "}, // Indented bullet
-	"bullet":     {Prefix: "    ▪ "}, // Indented bullet
-	"crushed":    {Prefix: "💔  "},
+	"happy":        {Prefix: "😄  "},
+	"success":      {Prefix: "✅  "},
+	"failure":      {Prefix: "❌  "},
+	"conflict":     {Prefix: "💥  "},
+	"fatal":        {Prefix: "💣  "},
+	"notice":       {Prefix: "📌  "},
+	"ready":        {Prefix: "🏄  "},
+	"restarting":   {Prefix: "🔄  "},
+	"stopping":     {Prefix: "✋  "},
+	"stopped":      {Prefix: "🛑  "},
+	"warning":      {Prefix: "⚠️  "},
+	"waiting":      {Prefix: "⌛  "},
+	"usage":        {Prefix: "💡  "},
+	"launch":       {Prefix: "🚀  "},
+	"thumbs-up":    {Prefix: "👍  "},
+	"option":       {Prefix: "    ▪ "}, // Indented bullet
+	"log-entry":    {Prefix: "    "},   // Indent
+	"crushed":      {Prefix: "💔  "},
+	"running":      {Prefix: "🏃  "},
+	"provisioning": {Prefix: "🌱  "},
+	"sad":          {Prefix: "😿  "},
+	"url":          {Prefix: "👉  "},
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  "},
@@ -59,7 +63,7 @@ var styles = map[string]style{
 	"starting-vm":       {Prefix: "🔥  "},
 	"starting-none":     {Prefix: "🤹  "},
 	"resetting":         {Prefix: "🔄  "},
-	"deleting-vm":       {Prefix: "🔥  "},
+	"deleting-host":     {Prefix: "🔥  "},
 	"copying":           {Prefix: "✨  "},
 	"connectivity":      {Prefix: "📶  "},
 	"internet":          {Prefix: "🌐  "},
@@ -71,6 +75,7 @@ var styles = map[string]style{
 	"containerd":        {Prefix: "📦  "},
 	"permissions":       {Prefix: "🔑  "},
 	"enabling":          {Prefix: "🔌  "},
+	"shutdown":          {Prefix: "🛑  "},
 	"pulling":           {Prefix: "🚜  "},
 	"verifying":         {Prefix: "🤔  "},
 	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},

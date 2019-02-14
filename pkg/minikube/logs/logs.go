@@ -91,7 +91,7 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			console.OutStyle("bullet", l)
+			console.OutStyle("log-entry", l)
 		}
 	}
 }

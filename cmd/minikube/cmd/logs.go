@@ -17,15 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -52,37 +49,36 @@ var logsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := config.Load()
 		if err != nil {
-			console.Fatal("Error getting config: %v", err)
+			exit.WithError("Error getting config", err)
 		}
 
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 
 		h, err := api.Load(config.GetMachineName())
 		if err != nil {
-			glog.Exitf("api load: %v", err)
+			exit.WithError("api load", err)
 		}
 		runner, err := machine.CommandRunner(h)
 		if err != nil {
-			glog.Exitf("command runner: %v", err)
+			exit.WithError("command runner", err)
 		}
 		bs, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
-			glog.Exitf("Error getting cluster bootstrapper: %v", err)
+			exit.WithError("Error getting cluster bootstrapper", err)
 		}
 
 		cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: runner})
 		if err != nil {
-			glog.Exitf("Unable to get runtime: %v", err)
+			exit.WithError("Unable to get runtime", err)
 		}
 		if followLogs {
 			err := logs.Follow(cr, bs, runner)
 			if err != nil {
-				console.Failure("output: %v", err)
+				exit.WithError("Follow", err)
 			}
 			return
 		}
@@ -93,7 +89,7 @@ var logsCmd = &cobra.Command{
 		}
 		err = logs.Output(cr, bs, runner, numberOfLines)
 		if err != nil {
-			console.Failure("output: %v", err)
+			exit.WithError("Error getting machine logs", err)
 		}
 	},
 }
