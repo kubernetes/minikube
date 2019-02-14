@@ -21,6 +21,11 @@ the host PATH:
 The KVM2 driver is intended to replace KVM driver.
 The KVM2 driver is maintained by the minikube team, and is built, tested and released with minikube.
 
+NOTE: Currently the following instruction doesn't work for
+Ubuntu prior to 18.04 because the docker-machine-driver-kvm2 binary
+provided by the URL needs libvirt 3.0.0 or later.
+You can workaround it by building the binary by yourself.
+
 To install the KVM2 driver, first install and configure the prereqs:
 
 ```shell
