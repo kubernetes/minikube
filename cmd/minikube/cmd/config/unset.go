@@ -17,11 +17,9 @@ limitations under the License.
 package config
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 var configUnsetCmd = &cobra.Command{
@@ -30,12 +28,11 @@ var configUnsetCmd = &cobra.Command{
 	Long:  "unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			console.ErrStyle("usage", "usage: minikube config unset PROPERTY_NAME")
-			os.Exit(1)
+			exit.Usage("usage: minikube config unset PROPERTY_NAME")
 		}
 		err := unset(args[0])
 		if err != nil {
-			console.Fatal("unset failed: %v", err)
+			exit.WithError("unset failed", err)
 		}
 	},
 }

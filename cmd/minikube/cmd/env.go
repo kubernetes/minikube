@@ -28,14 +28,12 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/shell"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -311,23 +309,19 @@ var dockerEnvCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			console.Fatal("Error getting client: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
-			console.Fatal("Error getting host: %v", err)
-			os.Exit(1)
+			exit.WithError("Error getting host", err)
 		}
 		if host.Driver.DriverName() == "none" {
-			console.Fatal(`'none' driver does not support 'minikube docker-env' command`)
-			os.Exit(1)
+			exit.Usage(`'none' driver does not support 'minikube docker-env' command`)
 		}
 		docker, err := GetDockerActive(host)
 		if !docker {
-			console.OutLn(`# The docker service is currently not active`)
-			os.Exit(1)
+			exit.WithCode(exit.Unavailable, `# The docker service is currently not active`)
 		}
 
 		var shellCfg *ShellConfig
@@ -335,14 +329,12 @@ var dockerEnvCmd = &cobra.Command{
 		if unset {
 			shellCfg, err = shellCfgUnset()
 			if err != nil {
-				glog.Errorln("Error setting machine env variable(s):", err)
-				cmdUtil.MaybeReportErrorAndExit(err)
+				exit.WithError("Error unsetting shell variables", err)
 			}
 		} else {
 			shellCfg, err = shellCfgSet(api)
 			if err != nil {
-				glog.Errorln("Error setting machine env variable(s):", err)
-				cmdUtil.MaybeReportErrorAndExit(err)
+				exit.WithError("Error setting shell variables", err)
 			}
 		}
 
