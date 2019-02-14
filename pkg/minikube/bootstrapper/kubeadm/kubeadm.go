@@ -121,13 +121,13 @@ func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
 }
 
 // LogCommands returns a map of log type to a command which will display that log.
-func (k *KubeadmBootstrapper) LogCommands(len int, follow bool) map[string]string {
+func (k *KubeadmBootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
 	var kcmd strings.Builder
 	kcmd.WriteString("journalctl -u kubelet")
-	if len > 0 {
-		kcmd.WriteString(fmt.Sprintf(" -n %d", len))
+	if o.Lines > 0 {
+		kcmd.WriteString(fmt.Sprintf(" -n %d", o.Lines))
 	}
-	if follow {
+	if o.Follow {
 		kcmd.WriteString(" -f")
 	}
 	return map[string]string{"kubelet": kcmd.String()}

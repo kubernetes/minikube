@@ -18,6 +18,7 @@ limitations under the License.
 package exit
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -80,10 +81,10 @@ func WithProblems(msg string, err error, problems map[string][]string) {
 }
 
 func displayError(msg string, err error) {
+	// use Warning because Error will display a duplicate message to stderr
+	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	console.Fatal(msg+": %v", err)
 	console.Err("\n")
 	console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
 	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
-	// use Warning because Error will display a duplicate message to stderr
-	glog.Warningf(msg+"%s: %v", msg)
 }
