@@ -63,7 +63,7 @@ func WithError(msg string, err error) {
 	os.Exit(Software)
 }
 
-// WithError outputs an error along with any autodetected problems, and exits.
+// WithProblems outputs an error along with any autodetected problems, and exits.
 func WithProblems(msg string, err error, problems map[string][]string) {
 	displayError(msg, err)
 
