@@ -7,7 +7,7 @@ Read more about OpenID Connect Authentication for Kubernetes here: https://kuber
 
 ## Configuring the API Server
 
-Configuration values can be passed to the API server using the `--extra-config` flag on the `minikube start` command. See [configuring_kubernetes.md](configuring_kubernetes.md) for more details.
+Configuration values can be passed to the API server using the `--extra-config` flag on the `minikube start` command. See [configuring_kubernetes.md](https://github.com/kubernetes/minikube/blob/master/docs/configuring_kubernetes.md) for more details.
 
 The following example configures your Minikube cluster to support RBAC and OIDC:
 
@@ -16,7 +16,7 @@ minikube start \
   --extra-config=apiserver.authorization-mode=RBAC \
   --extra-config=apiserver.oidc-issuer-url=https://example.com \
   --extra-config=apiserver.oidc-username-claim=email \
-  --extra-config=apiserver.oidc-client-id="kubernetes-local"
+  --extra-config=apiserver.oidc-client-id=kubernetes-local
 ```
 
 ## Configuring kubectl
