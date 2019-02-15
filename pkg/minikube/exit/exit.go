@@ -18,6 +18,7 @@ limitations under the License.
 package exit
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -35,6 +36,9 @@ const (
 	IO          = 74 // IO represents an I/O error
 	Config      = 78 // Config represents an unconfigured or miscon­figured state
 	Permissions = 77 // Permissions represents a permissions error
+
+	// MaxProblems controls the number of problems to show for each source
+	MaxProblems = 3
 )
 
 // Usage outputs a usage error and exits with error code 64
@@ -53,14 +57,34 @@ func WithCode(code int, format string, a ...interface{}) {
 
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
-	console.Fatal(msg+": %v", err)
-	console.Err("\n")
-	console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
-	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
-	// use Warning because Error will display a duplicate message to stderr
-	glog.Warningf(msg)
+	displayError(msg, err)
 	// Here is where we would insert code to optionally upload a stack trace.
 
 	// We can be smarter about guessing exit codes, but EX_SOFTWARE should suffice.
 	os.Exit(Software)
+}
+
+// WithProblems outputs an error along with any autodetected problems, and exits.
+func WithProblems(msg string, err error, problems map[string][]string) {
+	displayError(msg, err)
+
+	for name, lines := range problems {
+		console.OutStyle("failure", "Problems detected in %q:", name)
+		if len(lines) > MaxProblems {
+			lines = lines[:MaxProblems]
+		}
+		for _, l := range lines {
+			console.OutStyle("log-entry", l)
+		}
+	}
+	os.Exit(Software)
+}
+
+func displayError(msg string, err error) {
+	// use Warning because Error will display a duplicate message to stderr
+	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
+	console.Fatal(msg+": %v", err)
+	console.Err("\n")
+	console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
+	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
 }
