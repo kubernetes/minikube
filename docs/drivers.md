@@ -10,9 +10,7 @@ The following drivers currently require driver plugin binaries to be present in
 the host PATH:
 
 * [KVM2](#kvm2-driver)
-* [KVM](#kvm-driver)
 * [Hyperkit](#hyperkit-driver)
-* [xhyve](#xhyve-driver)
 * [HyperV](#hyperv-driver)
 * [VMware](#vmware-unified-driver)
 
@@ -88,18 +86,6 @@ If you encountered errors like `Could not find hyperkit executable`, you might n
 If you are using [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) in your setup and cluster creation fails (stuck at kube-dns initialization) you might need to add `listen-address=192.168.64.1` to `dnsmasq.conf`.
 
 *Note: If `dnsmasq.conf` contains `listen-address=127.0.0.1` kubernetes discovers dns at 127.0.0.1:53 and tries to use it using bridge ip address, but dnsmasq replies only to requests from 127.0.0.1*
-
-#### xhyve driver
-
-From https://github.com/zchee/docker-machine-driver-xhyve#install:
-
-```shell
-brew install docker-machine-driver-xhyve
-
-# docker-machine-driver-xhyve need root owner and uid
-sudo chown root:wheel $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
-sudo chmod u+s $(brew --prefix)/opt/docker-machine-driver-xhyve/bin/docker-machine-driver-xhyve
-```
 
 #### HyperV driver
 
