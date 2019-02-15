@@ -18,7 +18,7 @@ the host PATH:
 
 #### KVM2 driver
 
-NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing #3206 - "Error creating new host: dial tcp: missing address." you will need to build your own driver until #3689 is resolved:
+NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved:
 
 ```
 sudo apt install libvirt-dev libvirt
@@ -56,33 +56,6 @@ To use the driver you would do:
 
 ```shell
 minikube start --vm-driver kvm2
-```
-
-#### KVM driver
-
-Minikube is currently tested against [`docker-machine-driver-kvm` v0.10.0](https://github.com/dhiltgen/docker-machine-kvm/releases).
-
-After following the instructions on the KVM driver releases page, you need to make sure that have the necessary packages and permissions by following these instructions:
-```shell
-# Install libvirt and qemu-kvm on your system, e.g.
-# Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
-sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
-# Fedora/CentOS/RHEL
-sudo yum install libvirt-daemon-kvm qemu-kvm
-
-# Add yourself to the libvirt group so you don't need to sudo
-# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-sudo usermod -a -G libvirt $(whoami)
-
-# Update your current session for the group change to take effect
-# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-newgrp libvirt
-```
-
-To use the driver you would do:
-
-```shell
-minikube start --vm-driver kvm
 ```
 
 #### Hyperkit driver
