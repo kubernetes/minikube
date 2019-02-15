@@ -23,21 +23,21 @@ Our [goals](https://github.com/kubernetes/minikube/blob/master/docs/contributors
 * 2019-01-18 - v0.33.1 released to address [CVE-2019-5736](https://www.openwall.com/lists/oss-security/2019/02/11/2) [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0331---2019-01-18)]
 * 2019-01-17 - v0.33.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0330---2019-01-17)]
 
-## Kubernetes features
+## Features
 
-minikube runs the official stable release of Kubernetes, with support for features such as:
+minikube runs the official stable release of Kubernetes, with support for standard Kubernetes features like:
 
-* NodePorts - access via `minikube service`
+* NodePorts - `minikube service`
 * Ingress
-* LoadBalancer - access via `minikube tunnel` [docs](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md)
-* Persistent Volumes [docs](https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md)
+* [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - `minikube tunnel` 
+* [Persistent Volumes](https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md)
 * ConfigMaps
 * RBAC
 * Secrets
-* Dashboard - access via `minikube dashboard`
-* Container runtimes - Docker, CRI-O, containerd
+* Dashboard - `minikube dashboard`
+* [Multiple container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md) - `start --container-runtime`
 
-## Developer Features
+minikube also supports features for developer convenience:
 
 * [Addons](https://github.com/kubernetes/minikube/blob/master/docs/addons.md) - a marketplace for developers to share configurations for running services on minikube
 * [GPU support](https://github.com/kubernetes/minikube/blob/master/docs/gpu.md) - for machine learning
@@ -78,11 +78,7 @@ minikube runs the official stable release of Kubernetes, with support for featur
 * *Windows 10 with Choco* `choco install minikube` (if [Chocolatey](https://chocolatey.org/ is installed)
 * *Windows 10 without Choco* - Download [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe`, and add it to your path.
 
-* *Generic Linux* `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`
-* [Arch Linux AUR](https://aur.archlinux.org/packages/minikube/)
-* [Fedora/CentOS/Red Hat COPR](https://copr.fedorainfracloud.org/coprs/antonpatsev/minikube-rpm/)
-* [Void Linux](https://github.com/void-linux/void-packages/tree/master/srcpkgs/minikube/template)
-* [openSUSE/SUSE Linux Enterprise](https://build.opensuse.org/package/show/Virtualization:containers/minikube)
+* *Linux* `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`
 
 For full installation instructions, please see https://kubernetes.io/docs/tasks/tools/install-minikube/
 
