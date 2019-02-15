@@ -21,7 +21,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-
 	"strings"
 
 	"github.com/hooklift/iso9660"
