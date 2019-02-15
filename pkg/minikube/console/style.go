@@ -62,8 +62,6 @@ var styles = map[string]style{
 	"option":       {Prefix: "    ▪ "}, // Indented bullet
 	"log-entry":    {Prefix: "    "},   // Indent
 	"crushed":      {Prefix: "💔  "},
-	"running":      {Prefix: "🏃  "},
-	"provisioning": {Prefix: "🌱  "},
 	"url":          {Prefix: "👉  "},
 
 	// Specialized purpose styles
