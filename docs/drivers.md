@@ -18,7 +18,8 @@ the host PATH:
 
 To install the KVM2 driver, first install and configure the prereqs:
 
-* Debian: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
+* Debian or Ubuntu 18.x: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
+* Ubuntu 16.x or older: `sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm`
 * Fedora/CentOS/RHEL: `sudo yum install libvirt-daemon-kvm qemu-kvm`
 
 Then you will need to add yourself to libvirt group (older distributions may use libvirtd instead)
@@ -39,7 +40,7 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-
 NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved:
 
 ```
-sudo apt install libvirt-dev libvirt
+sudo apt install libvirt-dev
 test -d $HOME/go/src/k8s.io/minikube || \
   git clone https://github.com/kubernetes/minikube.git $HOME/go/src/k8s.io/minikube |
 cd $HOME/go/src/k8s.io/minikube
