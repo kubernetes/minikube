@@ -42,6 +42,8 @@ sudo kubeadm reset || sudo kubeadm reset -f || true
 sudo rm -rf /data/*
 # Cleanup old Kubernetes configs
 sudo rm -rf /etc/kubernetes/*
+# Cleanup old minikube files
+sudo rm -rf /var/lib/minikube/*
 # Stop any leftover kubelets
 systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
