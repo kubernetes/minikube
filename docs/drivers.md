@@ -37,7 +37,7 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-
   && sudo install docker-machine-driver-kvm2 /usr/local/bin/
 ```
 
-NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved:
+NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved. Building this binary will require [Go v1.11](https://golang.org/dl/) or newer to be installed. 
 
 ```
 sudo apt install libvirt-dev
