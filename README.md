@@ -113,9 +113,9 @@ $ kubectl expose deployment hello-minikube --type=NodePort
 service "hello-minikube" exposed
 ```
 
-You can get the URL for the NodePort deployment by using:
+Open the endpoint in your browser:
 
-`minikube service hello-minikube --url`
+`minikube service hello-minikube`
 
 Start a second local cluster:
 
