@@ -87,7 +87,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		console.Warning("Alternatively, you may delete the existing VM using `minikube delete -p %s`", cfg.GetMachineName())
 		console.Out("\n")
 	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
-		console.OutStyle("tip", "Tip: To create a new cluster, use 'minikube start -p <new name>' or use 'minikube delete' to delete this one.")
+		console.OutStyle("tip", "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
 	s, err := h.Driver.GetState()
