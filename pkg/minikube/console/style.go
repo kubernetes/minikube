@@ -60,8 +60,11 @@ var styles = map[string]style{
 	"sad":          {Prefix: "😿  ", LowPrefix: "*   "},
 	"thumbs-up":    {Prefix: "👍  "},
 	"option":       {Prefix: "    ▪ "}, // Indented bullet
-	"url":          {Prefix: "👉  "},
+	"log-entry":    {Prefix: "    "},   // Indent
 	"crushed":      {Prefix: "💔  "},
+	"running":      {Prefix: "🏃  "},
+	"provisioning": {Prefix: "🌱  "},
+	"url":          {Prefix: "👉  "},
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  ", LowPrefix: "@   "},
