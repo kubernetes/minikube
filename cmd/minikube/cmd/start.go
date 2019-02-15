@@ -464,7 +464,7 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	if err != nil {
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
-	console.OutStyle(cr.Name(), "Configuring %s as your container runtime ...", cr.Name())
+	console.OutStyle(cr.Name(), "Configuring %s as the container runtime ...", cr.Name())
 	for _, v := range dockerOpt {
 		console.OutStyle("option", "opt %s", v)
 	}
@@ -492,7 +492,7 @@ func waitCacheImages(g *errgroup.Group) {
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
 func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, kc cfg.KubernetesConfig, preexisting bool) {
-	console.OutStyle("pulling", "Pulling images used by Kubernetes %s ...", kc.KubernetesVersion)
+	console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
 	if err := bs.PullImages(kc); err != nil {
 		console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
 	}

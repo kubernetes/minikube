@@ -18,14 +18,22 @@ package console
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/text/message"
+)
+
+var (
+	defaultLowPrefix       = "-   "
+	defautlLowIndentPrefix = "    - "
 )
 
 // style describes how to stylize a message.
 type style struct {
 	// Prefix is a string to place in the beginning of a message
 	Prefix string
+	// LowPrefix is the 7-bit compatible prefix we fallback to for less-awesome terminals
+	LowPrefix string
 	// OmitNewline omits a newline at the end of a message.
 	OmitNewline bool
 }
@@ -33,41 +41,41 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[string]style{
-	"happy":        {Prefix: "😄  "},
+	"happy":        {Prefix: "😄  ", LowPrefix: "o   "},
 	"success":      {Prefix: "✅  "},
-	"failure":      {Prefix: "❌  "},
-	"conflict":     {Prefix: "💥  "},
-	"fatal":        {Prefix: "💣  "},
-	"notice":       {Prefix: "📌  "},
-	"ready":        {Prefix: "🏄  "},
-	"restarting":   {Prefix: "🔄  "},
-	"stopping":     {Prefix: "✋  "},
+	"failure":      {Prefix: "❌  ", LowPrefix: "X   "},
+	"conflict":     {Prefix: "💥  ", LowPrefix: "x   "},
+	"fatal":        {Prefix: "💣  ", LowPrefix: "!   "},
+	"notice":       {Prefix: "📌  ", LowPrefix: "*   "},
+	"ready":        {Prefix: "🏄  ", LowPrefix: "=   "},
+	"running":      {Prefix: "🏃  ", LowPrefix: ":   "},
+	"provisioning": {Prefix: "🌱  ", LowPrefix: ">   "},
+	"restarting":   {Prefix: "🔄  ", LowPrefix: ":   "},
+	"stopping":     {Prefix: "✋  ", LowPrefix: ":   "},
 	"stopped":      {Prefix: "🛑  "},
-	"warning":      {Prefix: "⚠️  "},
-	"waiting":      {Prefix: "⌛  "},
+	"warning":      {Prefix: "⚠️  ", LowPrefix: "!   "},
+	"waiting":      {Prefix: "⌛  ", LowPrefix: ":   "},
 	"usage":        {Prefix: "💡  "},
 	"launch":       {Prefix: "🚀  "},
+	"sad":          {Prefix: "😿  ", LowPrefix: "*   "},
 	"thumbs-up":    {Prefix: "👍  "},
 	"option":       {Prefix: "    ▪ "}, // Indented bullet
 	"command":      {Prefix: "    ▪ "}, // Indented bullet
 	"log-entry":    {Prefix: "    "},   // Indent
 	"crushed":      {Prefix: "💔  "},
-	"running":      {Prefix: "🏃  "},
-	"provisioning": {Prefix: "🌱  "},
-	"sad":          {Prefix: "😿  "},
 	"url":          {Prefix: "👉  "},
 
 	// Specialized purpose styles
-	"iso-download":      {Prefix: "💿  "},
-	"file-download":     {Prefix: "💾  "},
-	"caching":           {Prefix: "🤹  "},
-	"starting-vm":       {Prefix: "🔥  "},
-	"starting-none":     {Prefix: "🤹  "},
-	"resetting":         {Prefix: "🔄  "},
-	"deleting-host":     {Prefix: "🔥  "},
+	"iso-download":      {Prefix: "💿  ", LowPrefix: "@   "},
+	"file-download":     {Prefix: "💾  ", LowPrefix: "@   "},
+	"caching":           {Prefix: "🤹  ", LowPrefix: "$   "},
+	"starting-vm":       {Prefix: "🔥  ", LowPrefix: ">   "},
+	"starting-none":     {Prefix: "🤹  ", LowPrefix: ">   "},
+	"resetting":         {Prefix: "🔄  ", LowPrefix: "#   "},
+	"deleting-host":     {Prefix: "🔥  ", LowPrefix: "x   "},
 	"copying":           {Prefix: "✨  "},
 	"connectivity":      {Prefix: "📶  "},
-	"internet":          {Prefix: "🌐  "},
+	"internet":          {Prefix: "🌐  ", LowPrefix: "o   "},
 	"mounting":          {Prefix: "📁  "},
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
@@ -80,10 +88,10 @@ var styles = map[string]style{
 	"pulling":           {Prefix: "🚜  "},
 	"verifying":         {Prefix: "🤔  "},
 	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},
-	"kubectl":           {Prefix: "💗  "},
-	"meh":               {Prefix: "🙄  "},
-	"embarassed":        {Prefix: "🤦  "},
-	"tip":               {Prefix: "💡  "},
+	"kubectl":           {Prefix: "💗  ", LowPrefix: "+   "},
+	"meh":               {Prefix: "🙄  ", LowPrefix: "?   "},
+	"embarassed":        {Prefix: "🤦  ", LowPrefix: "*   "},
+	"tip":               {Prefix: "💡  ", LowPrefix: "i   "},
 }
 
 // Add a prefix to a string
@@ -98,6 +106,17 @@ func applyPrefix(prefix, format string) string {
 func hasStyle(style string) bool {
 	_, exists := styles[style]
 	return exists
+}
+
+// lowPrefix returns a 7-bit compatible prefix for a style
+func lowPrefix(s style) string {
+	if s.LowPrefix != "" {
+		return s.LowPrefix
+	}
+	if strings.HasPrefix(s.Prefix, "  ") {
+		return defautlLowIndentPrefix
+	}
+	return defaultLowPrefix
 }
 
 // Apply styling to a format string
@@ -115,10 +134,8 @@ func applyStyle(style string, useColor bool, format string, a ...interface{}) (s
 		return p.Sprintf(format, a...), fmt.Errorf("unknown style: %q", style)
 	}
 
-	prefix := s.Prefix
-	if !useColor && prefix != "" {
-		prefix = "-"
+	if !useColor {
+		return applyPrefix(lowPrefix(s), out), nil
 	}
-	out = applyPrefix(prefix, out)
-	return out, nil
+	return applyPrefix(s.Prefix, out), nil
 }
