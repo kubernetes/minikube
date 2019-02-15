@@ -40,7 +40,8 @@ NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206:
 
 ```
 sudo apt install libvirt-dev libvirt
-test -d $HOME/go/src/k8s.io/minikube || git clone https://github.com/kubernetes/minikube.git
+test -d $HOME/go/src/k8s.io/minikube || \
+  git clone https://github.com/kubernetes/minikube.git $HOME/go/src/k8s.io/minikube |
 cd $HOME/go/src/k8s.io/minikube
 git pull
 make install-kvm
