@@ -43,18 +43,18 @@ func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
 // criCRIContainers kills a list of containers using crictl
 func killCRIContainers(cr CommandRunner, ids []string) error {
 	if len(ids) == 0 {
-		glog.Warningf("KillContainers was called with an empty list of ids, nothing to do.")
 		return nil
 	}
+	glog.Infof("Killing containers: %s", ids)
 	return cr.Run(fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
 }
 
 // stopCRIContainers stops containers using crictl
 func stopCRIContainers(cr CommandRunner, ids []string) error {
 	if len(ids) == 0 {
-		glog.Warningf("StopContainers was called with an empty list of ids, nothing to do.")
 		return nil
 	}
+	glog.Infof("Stopping containers: %s", ids)
 	return cr.Run(fmt.Sprintf("sudo crictl stop %s", strings.Join(ids, " ")))
 }
 
