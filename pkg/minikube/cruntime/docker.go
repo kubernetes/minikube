@@ -89,12 +89,13 @@ func (r *Docker) ListContainers(filter string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	content = strings.TrimSpace(content)
-	// Otherwise, strings.Split will return []string{""}
-	if content == "" {
-		return []string{}, nil
+	var ids []string
+	for _, line := range strings.Split(content, "\n") {
+		if line != "" {
+			ids = append(ids, line)
+		}
 	}
-	return strings.Split(content, "\n"), nil
+	return ids, nil
 }
 
 // KillContainers forcibly removes a running container based on ID
