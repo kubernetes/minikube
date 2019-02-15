@@ -185,7 +185,8 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		"k8s.gcr.io/kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
 
-	gt_v1_11 := semver.MustParseRange(">=1.12.0")
+	ge_v1_13 := semver.MustParseRange(">=1.13.0")
+	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
 	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
@@ -196,7 +197,29 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		glog.Errorln("Error parsing version semver: ", err)
 	}
 
-	if v1_11(kubernetesVersion) || gt_v1_11(kubernetesVersion) {
+	if ge_v1_13(kubernetesVersion) {
+		images = append(images, []string{
+			"k8s.gcr.io/pause-amd64:3.1",
+			"k8s.gcr.io/pause:3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
+			"k8s.gcr.io/etcd-amd64:3.2.24",
+			"k8s.gcr.io/coredns:1.2.6",
+		}...)
+
+	} else if v1_12(kubernetesVersion) {
+		images = append(images, []string{
+			"k8s.gcr.io/pause-amd64:3.1",
+			"k8s.gcr.io/pause:3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
+			"k8s.gcr.io/etcd-amd64:3.2.24",
+			"k8s.gcr.io/coredns:1.2.2",
+		}...)
+
+	} else if v1_11(kubernetesVersion) {
 		images = append(images, []string{
 			"k8s.gcr.io/pause-amd64:3.1",
 			"k8s.gcr.io/pause:3.1",
@@ -205,7 +228,6 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
 			"k8s.gcr.io/etcd-amd64:3.2.18",
 			"k8s.gcr.io/coredns:1.1.3",
-			"k8s.gcr.io/coredns:1.2.2",
 		}...)
 
 	} else if v1_10(kubernetesVersion) {
