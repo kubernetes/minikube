@@ -18,69 +18,15 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
-
-type ServiceContext struct {
-	Service string `json:"service"`
-	Version string `json:"version"`
-}
-
-type LookPath func(filename string) (string, error)
-
-var lookPath LookPath
-
-func init() {
-	lookPath = exec.LookPath
-}
-
-func MaybePrintKubectlDownloadMsg(goos string, out io.Writer) {
-	if !viper.GetBool(config.WantKubectlDownloadMsg) {
-		return
-	}
-
-	verb := "run"
-	installInstructions := "curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl && chmod +x kubectl && sudo cp kubectl /usr/local/bin/ && rm kubectl"
-	if goos == "windows" {
-		verb = "do"
-		installInstructions = `download kubectl from:
-https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/kubectl.exe
-Add kubectl to your system PATH`
-	}
-
-	_, err := lookPath("kubectl")
-	if err != nil && goos == "windows" {
-		_, err = lookPath("kubectl.exe")
-	}
-	if err != nil {
-		fmt.Fprintf(out,
-			`========================================
-kubectl could not be found on your path. kubectl is a requirement for using minikube
-To install kubectl, please %s the following:
-
-%s
-
-To disable this message, run the following:
-
-minikube config set WantKubectlDownloadMsg false
-========================================
-`,
-			verb, fmt.Sprintf(installInstructions, constants.DefaultKubernetesVersion, goos, runtime.GOARCH))
-	}
-}
 
 // Ask the kernel for a free open port that is ready to use
 func GetPort() (string, error) {
