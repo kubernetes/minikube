@@ -22,6 +22,8 @@ import (
 	"html/template"
 	"path"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 // listCRIContainers returns a list of containers using crictl
@@ -30,16 +32,29 @@ func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	content = strings.TrimSpace(content)
+	// Otherwise, strings.Split will return []string{""}
+	if content == "" {
+		return []string{}, nil
+	}
 	return strings.Split(content, "\n"), nil
 }
 
 // criCRIContainers kills a list of containers using crictl
 func killCRIContainers(cr CommandRunner, ids []string) error {
+	if len(ids) == 0 {
+		glog.Warningf("KillContainers was called with an empty list of ids, nothing to do.")
+		return nil
+	}
 	return cr.Run(fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
 }
 
 // stopCRIContainers stops containers using crictl
 func stopCRIContainers(cr CommandRunner, ids []string) error {
+	if len(ids) == 0 {
+		glog.Warningf("StopContainers was called with an empty list of ids, nothing to do.")
+		return nil
+	}
 	return cr.Run(fmt.Sprintf("sudo crictl stop %s", strings.Join(ids, " ")))
 }
 
