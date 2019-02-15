@@ -13,13 +13,15 @@
 
 ## What is minikube?
 
-A local Kubernetes cluster.
+minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. 
 
-minikube makes running a local Kubernetes cluster fast and easy, supporting macOS, Linux, and Windows. Our goals are to enable fast local development, single command setup and teardown, and support for all Kubernetes features that fit.
+Our [goals](https://github.com/kubernetes/minikube/blob/master/docs/contributors/principles.md) are to enable fast local development, and support all Kubernetes features that fit. We hope you enjoy it!
 
 ## News
 
-* 2019-02-15 - minikube v0.34.0 was released! See the [releases](https://github.com/kubernetes/minikube/releases) page for more.
+* 2019-02-15 - v0.34.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0340---2019-02-15)]
+* 2019-01-18 - v0.33.1 released to address [CVE-2019-5736](https://www.openwall.com/lists/oss-security/2019/02/11/2) [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0331---2019-01-18)]
+* 2019-01-17 - v0.33.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0330---2019-01-17)]
 
 ## Kubernetes features
 
@@ -39,8 +41,8 @@ minikube runs the official stable release of Kubernetes, with support for featur
 
 * [Addons](https://github.com/kubernetes/minikube/blob/master/docs/addons.md) - a marketplace for developers to share configurations for running services on minikube
 * [GPU support](https://github.com/kubernetes/minikube/blob/master/docs/gpu.md) - for machine learning
-* Automatic failure analysis - so you know why your deployment failed
 * [Filesystem mounts](https://github.com/kubernetes/minikube/blob/master/docs/host_folder_mount.md)
+* Automatic failure analysis
 
 ## Community & Documentation
 
@@ -51,6 +53,7 @@ minikube runs the official stable release of Kubernetes, with support for featur
 * [**Advanced Topics and Tutorials**](https://github.com/kubernetes/minikube/blob/master/docs/README.md)
 * [Contributing](https://github.com/kubernetes/minikube/blob/master/CONTRIBUTING.md)
 * [Development Guide](https://github.com/kubernetes/minikube/blob/master/docs/contributors/README.md)
+* [Development Roadmap](https://github.com/kubernetes/minikube/blob/master/docs/contributors/roadmap.md)
 
 ## Requirements
 
@@ -92,16 +95,19 @@ For full installation instructions, please see https://kubernetes.io/docs/tasks/
 * virtualbox - Recommended Windows driver
 * [none](https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md) - bare-metal execution on Linux, at the expense of system security and reliability
 
-Other drivers which are supported but not part of our continuous integration system are:
+Other drivers which are not yet part of our continuous integration system are:
 
 * [hyperv](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
 * [vmware](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver)
 
 ## Quick Start
 
-To start a cluster, run `minikube start`
+Start a cluster:
 
-You can then interact with it using `kubectl`, just like any other kubernetes cluster:
+`minikube start`
+
+Interact with it using `kubectl`, just like any other kubernetes cluster:
+
 
 ```
 $ kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.4 --port=8080
