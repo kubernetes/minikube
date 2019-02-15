@@ -73,7 +73,7 @@ var styles = map[string]style{
 	"deleting-host":     {Prefix: "🔥  ", LowPrefix: "x   "},
 	"copying":           {Prefix: "✨  "},
 	"connectivity":      {Prefix: "📶  "},
-	"internet":          {Prefix: "🌐  ", LowPrefix: "&   "},
+	"internet":          {Prefix: "🌐  ", LowPrefix: "o   "},
 	"mounting":          {Prefix: "📁  "},
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
