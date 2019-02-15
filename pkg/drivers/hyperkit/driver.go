@@ -145,12 +145,12 @@ func pidState(pid int) (state.State, error) {
 		return state.Error, err
 	}
 	if p == nil {
-		log.Warnf("hyperkit pid missing from process table, err=%v", err)
+		log.Debugf("hyperkit pid %d missing from process table", pid)
 		return state.Stopped, nil
 	}
 	// hyperkit or com.docker.hyper
 	if !strings.Contains(p.Executable(), "hyper") {
-		log.Warnf("pid %d is stale, and is being used by %s", pid, p.Executable())
+		log.Debugf("pid %d is stale, and is being used by %s", pid, p.Executable())
 		return state.Stopped, nil
 	}
 	return state.Running, nil
