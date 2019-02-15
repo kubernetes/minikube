@@ -298,22 +298,21 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 // prepareNone prepares the user and host for the joy of the "none" driver
 func prepareNone() {
 	if viper.GetBool(cfg.WantNoneDriverWarning) {
-		console.ErrLn(`===================
-WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
-The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks` + "\n")
+		console.OutLn("")
+		console.Warning("The 'none' driver provides limited isolation and may reduce system security and reliability.")
+		console.OutStyle("url", "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
+		console.OutLn("")
 	}
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-		console.Fatal(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
-You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
+		console.Warning("kubectl and minikube configuration will be stored in %s", os.Getenv("HOME"))
+		console.Warning("To use kubectl or minikube commands as your own user, you may")
+		console.Warning("need to relocate them. For example, to overwrite your own settings:")
 
-sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
-sudo chown -R $USER:$USER $HOME/.kube
+		console.OutStyle("command", "sudo mv %s/.kube %s/.minikube $HOME", os.Getenv("HOME"))
+		console.OutStyle("command", "sudo chown -R $USER %s/.kube %s/.minikube", os.Getenv("HOME"))
 
-sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
-sudo chown -R $USER:$USER $HOME/.minikube
-
-This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
+		console.OutStyle("tip", "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
 	}
 
 	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
