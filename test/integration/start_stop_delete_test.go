@@ -40,7 +40,7 @@ func TestStartStop(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.runtime, func(t *testing.T) {
 			runner := NewMinikubeRunner(t)
-			if test.runtime != "" && usingNoneDriver(runner) {
+			if test.runtime != "docker" && usingNoneDriver(runner) {
 				t.Skipf("skipping, can't use %s with none driver", test.runtime)
 			}
 
