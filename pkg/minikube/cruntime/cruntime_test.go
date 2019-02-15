@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"k8s.io/minikube/pkg/minikube/console"
 )
 
@@ -97,24 +98,25 @@ const (
 
 // FakeRunner is a command runner that isn't very smart.
 type FakeRunner struct {
-	cmds     []string
-	services map[string]serviceState
-	t        *testing.T
+	cmds       []string
+	services   map[string]serviceState
+	containers map[string]string
+	t          *testing.T
 }
 
 // NewFakeRunner returns a CommandRunner which emulates a systemd host
 func NewFakeRunner(t *testing.T) *FakeRunner {
 	return &FakeRunner{
-		services: map[string]serviceState{},
-		cmds:     []string{},
-		t:        t,
+		services:   map[string]serviceState{},
+		cmds:       []string{},
+		t:          t,
+		containers: map[string]string{},
 	}
 }
 
 // Run a fake command!
 func (f *FakeRunner) CombinedOutput(cmd string) (string, error) {
 	f.cmds = append(f.cmds, cmd)
-	out := ""
 
 	root := false
 	args := strings.Split(cmd, " ")
@@ -124,13 +126,16 @@ func (f *FakeRunner) CombinedOutput(cmd string) (string, error) {
 		root = true
 		bin, args = args[0], args[1:]
 	}
-	if bin == "systemctl" {
+	switch bin {
+	case "systemctl":
 		return f.systemctl(args, root)
-	}
-	if bin == "docker" {
+	case "docker":
 		return f.docker(args, root)
+	case "crictl":
+		return f.crictl(args, root)
+	default:
+		return "", nil
 	}
-	return out, nil
 }
 
 // Run a fake command!
@@ -141,6 +146,81 @@ func (f *FakeRunner) Run(cmd string) error {
 
 // docker is a fake implementation of docker
 func (f *FakeRunner) docker(args []string, root bool) (string, error) {
+	switch cmd := args[0]; cmd {
+	case "ps":
+		// ps -a --filter="name=apiserver" --format="{{.ID}}"
+		if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {
+			filter := strings.Split(args[2], `"`)[1]
+			fname := strings.Split(filter, "=")[1]
+			ids := []string{}
+			f.t.Logf("fake docker: Looking for containers matching %q", fname)
+			for id, cname := range f.containers {
+				if strings.Contains(cname, fname) {
+					ids = append(ids, id)
+				}
+			}
+			f.t.Logf("fake docker: Found containers: %v", ids)
+			return strings.Join(ids, "\n"), nil
+		}
+	case "stop":
+		for _, id := range args[1:] {
+			f.t.Logf("fake docker: Stopping id %q", id)
+			if f.containers[id] == "" {
+				return "", fmt.Errorf("no such container")
+			}
+			delete(f.containers, id)
+		}
+	case "rm":
+		// Skip "-f" argument
+		for _, id := range args[2:] {
+			f.t.Logf("fake docker: Removing id %q", id)
+			if f.containers[id] == "" {
+				return "", fmt.Errorf("no such container")
+			}
+			delete(f.containers, id)
+
+		}
+
+	}
+	return "", nil
+}
+
+// crictl is a fake implementation of crictl
+func (f *FakeRunner) crictl(args []string, root bool) (string, error) {
+	switch cmd := args[0]; cmd {
+	case "ps":
+		// crictl ps -a --name=apiserver --quiet
+		if args[1] == "-a" && strings.HasPrefix(args[2], "--name") {
+			fname := strings.Split(args[2], "=")[1]
+			ids := []string{}
+			f.t.Logf("fake crictl: Looking for containers matching %q", fname)
+			for id, cname := range f.containers {
+				if strings.Contains(cname, fname) {
+					ids = append(ids, id)
+				}
+			}
+			f.t.Logf("fake crictl: Found containers: %v", ids)
+			return strings.Join(ids, "\n"), nil
+		}
+	case "stop":
+		for _, id := range args[1:] {
+			f.t.Logf("fake crictl: Stopping id %q", id)
+			if f.containers[id] == "" {
+				return "", fmt.Errorf("no such container")
+			}
+			delete(f.containers, id)
+		}
+	case "rm":
+		for _, id := range args[1:] {
+			f.t.Logf("fake crictl: Removing id %q", id)
+			if f.containers[id] == "" {
+				return "", fmt.Errorf("no such container")
+			}
+			delete(f.containers, id)
+
+		}
+
+	}
 	return "", nil
 }
 
@@ -169,21 +249,21 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) {
 				return out, fmt.Errorf("not root")
 			}
 			f.services[svc] = Exited
-			f.t.Logf("stopped %s", svc)
+			f.t.Logf("fake systemctl: stopped %s", svc)
 		case "start":
 			if !root {
 				return out, fmt.Errorf("not root")
 			}
 			f.services[svc] = Running
-			f.t.Logf("started %s", svc)
+			f.t.Logf("fake systemctl: started %s", svc)
 		case "restart":
 			if !root {
 				return out, fmt.Errorf("not root")
 			}
 			f.services[svc] = Restarted
-			f.t.Logf("restarted %s", svc)
+			f.t.Logf("fake systemctl: restarted %s", svc)
 		case "is-active":
-			f.t.Logf("%s is-status: %v", svc, state)
+			f.t.Logf("fake systemctl: %s is-status: %v", svc, state)
 			if state == Running {
 				return out, nil
 			}
@@ -277,6 +357,74 @@ func TestEnable(t *testing.T) {
 			}
 			if diff := cmp.Diff(tc.want, runner.services); diff != "" {
 				t.Errorf("service diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestContainerFunctions(t *testing.T) {
+	var tests = []struct {
+		runtime string
+	}{
+		{"docker"},
+		{"crio"},
+		{"containerd"},
+	}
+
+	sortSlices := cmpopts.SortSlices(func(a, b string) bool { return a < b })
+	for _, tc := range tests {
+		t.Run(tc.runtime, func(t *testing.T) {
+			runner := NewFakeRunner(t)
+			runner.containers = map[string]string{
+				"abc0": "k8s_apiserver",
+				"fgh1": "k8s_coredns",
+				"xyz2": "k8s_storage",
+				"zzz":  "unrelated",
+			}
+			cr, err := New(Config{Type: tc.runtime, Runner: runner})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.runtime, err)
+			}
+
+			// Get the list of apiservers
+			got, err := cr.ListContainers("apiserver")
+			if err != nil {
+				t.Fatalf("ListContainers: %v", err)
+			}
+			want := []string{"abc0"}
+			if !cmp.Equal(got, want) {
+				t.Errorf("ListContainers(apiserver) = %v, want %v", got, want)
+			}
+
+			// Stop the containers and assert that they have disappeared
+			cr.StopContainers(got)
+			got, err = cr.ListContainers("apiserver")
+			if err != nil {
+				t.Fatalf("ListContainers: %v", err)
+			}
+			want = nil
+			if diff := cmp.Diff(got, want, sortSlices); diff != "" {
+				t.Errorf("ListContainers(apiserver) unexpected results, diff (-got + want): %s", diff)
+			}
+
+			// Get the list of everything else.
+			got, err = cr.ListContainers(MinikubeContainerPrefix)
+			if err != nil {
+				t.Fatalf("ListContainers: %v", err)
+			}
+			want = []string{"fgh1", "xyz2"}
+			if diff := cmp.Diff(got, want, sortSlices); diff != "" {
+				t.Errorf("ListContainers(apiserver) unexpected results, diff (-got + want): %s", diff)
+			}
+
+			// Kill the containers and assert that they have disappeared
+			cr.KillContainers(got)
+			got, err = cr.ListContainers(MinikubeContainerPrefix)
+			if err != nil {
+				t.Fatalf("ListContainers: %v", err)
+			}
+			if len(got) > 0 {
+				t.Errorf("ListContainers(apiserver) = %v, want 0 items", got)
 			}
 		})
 	}
