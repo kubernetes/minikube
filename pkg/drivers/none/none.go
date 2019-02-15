@@ -132,13 +132,26 @@ func (d *Driver) Kill() error {
 	if err := stopKubelet(d.exec); err != nil {
 		return errors.Wrap(err, "kubelet")
 	}
+
+	// First try to gracefully stop containers
 	containers, err := d.runtime.ListContainers(cruntime.MinikubeContainerPrefix)
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
+	if len(containers) == 0 {
+		return nil
+	}
 	// Try to be graceful before sending SIGKILL everywhere.
 	if err := d.runtime.StopContainers(containers); err != nil {
 		return errors.Wrap(err, "stop")
+	}
+
+	containers, err = d.runtime.ListContainers(cruntime.MinikubeContainerPrefix)
+	if err != nil {
+		return errors.Wrap(err, "containers")
+	}
+	if len(containers) == 0 {
+		return nil
 	}
 	if err := d.runtime.KillContainers(containers); err != nil {
 		return errors.Wrap(err, "kill")
@@ -151,7 +164,7 @@ func (d *Driver) Remove() error {
 	if err := d.Kill(); err != nil {
 		return errors.Wrap(err, "kill")
 	}
-	// TODO(#3637): Make sure this calls into the bootstrapper to perform `kubeadm reset`
+	glog.Infof("Removing: %s", cleanupPaths)
 	cmd := fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " "))
 	if err := d.exec.Run(cmd); err != nil {
 		glog.Errorf("cleanup incomplete: %v", err)
@@ -187,8 +200,10 @@ func (d *Driver) Stop() error {
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
-	if err := d.runtime.StopContainers(containers); err != nil {
-		return errors.Wrap(err, "stop")
+	if len(containers) > 0 {
+		if err := d.runtime.StopContainers(containers); err != nil {
+			return errors.Wrap(err, "stop")
+		}
 	}
 	return nil
 }

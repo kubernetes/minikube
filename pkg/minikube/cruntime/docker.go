@@ -89,15 +89,30 @@ func (r *Docker) ListContainers(filter string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	content = strings.TrimSpace(content)
+	// Otherwise, strings.Split will return []string{""}
+	if content == "" {
+		return []string{}, nil
+	}
 	return strings.Split(content, "\n"), nil
 }
 
-// KillContainers forcibly removes a running pod based on ID
+// KillContainers forcibly removes a running container based on ID
 func (r *Docker) KillContainers(ids []string) error {
+	if len(ids) == 0 {
+		glog.Warningf("KillContainers was called with an empty list of ids, nothing to do.")
+		return nil
+	}
+	glog.Infof("Killing containers: %s", ids)
 	return r.Runner.Run(fmt.Sprintf("docker rm -f %s", strings.Join(ids, " ")))
 }
 
-// StopContainers stops a running pod based on ID
+// StopContainers stops a running container based on ID
 func (r *Docker) StopContainers(ids []string) error {
+	if len(ids) == 0 {
+		glog.Warningf("StopContainers was called with an empty list of ids, nothing to do.")
+		return nil
+	}
+	glog.Infof("Killing containers: %s", ids)
 	return r.Runner.Run(fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
 }
