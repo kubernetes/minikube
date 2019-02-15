@@ -16,6 +16,26 @@ the host PATH:
 
 #### KVM2 driver
 
+To install the KVM2 driver, first install and configure the prereqs:
+
+* Debian: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
+* Fedora/CentOS/RHEL: `sudo yum install libvirt-daemon-kvm qemu-kvm`
+
+Then you will need to add yourself to libvirt group (older distributions may use libvirtd instead)
+
+`sudo usermod -a -G libvirt $(whoami)`
+
+Then to join the group with your current user session:
+
+`newgrp libvirt`
+
+Now install the driver:
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
+  && sudo install docker-machine-driver-kvm2 /usr/local/bin/
+```
+
 NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved:
 
 ```
@@ -25,32 +45,8 @@ cd $HOME/go/src/k8s.io/minikube
 git pull
 make install-kvm
 ```
-To install the KVM2 driver, first install and configure the prereqs:
 
-```shell
-# Install libvirt and qemu-kvm on your system, e.g.
-# Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
-sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
-# Fedora/CentOS/RHEL
-sudo yum install libvirt-daemon-kvm qemu-kvm
-
-# Add yourself to the libvirt group so you don't need to sudo
-# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-sudo usermod -a -G libvirt $(whoami)
-
-# Update your current session for the group change to take effect
-# NOTE: For older Debian/Ubuntu versions change the group to `libvirtd`
-newgrp libvirt
-```
-
-Then install the driver itself:
-
-```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
-  && sudo install docker-machine-driver-kvm2 /usr/local/bin/
-```
-
-To use the driver you would do:
+To use the driver:
 
 ```shell
 minikube start --vm-driver kvm2
