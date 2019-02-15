@@ -110,10 +110,9 @@ func (r *Docker) KillContainers(ids []string) error {
 // StopContainers stops a running container based on ID
 func (r *Docker) StopContainers(ids []string) error {
 	if len(ids) == 0 {
-		glog.Warningf("StopContainers was called with an empty list of ids, nothing to do.")
 		return nil
 	}
-	glog.Infof("Killing containers: %s", ids)
+	glog.Infof("Stopping containers: %s", ids)
 	return r.Runner.Run(fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
 }
 
