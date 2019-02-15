@@ -21,7 +21,6 @@ import (
 	"crypto"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -121,28 +120,17 @@ func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
 	return state.Running.String(), nil
 }
 
-// TODO(r2d4): Should this aggregate all the logs from the control plane?
-// Maybe subcommands for each component? minikube logs apiserver?
-func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error {
-	var flags []string
-	if follow {
-		flags = append(flags, "-f")
+// LogCommands returns a map of log type to a command which will display that log.
+func (k *KubeadmBootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
+	var kcmd strings.Builder
+	kcmd.WriteString("journalctl -u kubelet")
+	if o.Lines > 0 {
+		kcmd.WriteString(fmt.Sprintf(" -n %d", o.Lines))
 	}
-	logsCommand := fmt.Sprintf("sudo journalctl %s -u kubelet", strings.Join(flags, " "))
-
-	if follow {
-		if err := k.c.CombinedOutputTo(logsCommand, out); err != nil {
-			return errors.Wrap(err, "getting cluster logs")
-		}
-	} else {
-
-		logs, err := k.c.CombinedOutput(logsCommand)
-		if err != nil {
-			return errors.Wrap(err, "getting cluster logs")
-		}
-		fmt.Fprint(out, logs)
+	if o.Follow {
+		kcmd.WriteString(" -f")
 	}
-	return nil
+	return map[string]string{"kubelet": kcmd.String()}
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {

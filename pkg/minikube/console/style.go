@@ -40,8 +40,6 @@ var styles = map[string]style{
 	"fatal":        {Prefix: "💣  "},
 	"notice":       {Prefix: "📌  "},
 	"ready":        {Prefix: "🏄  "},
-	"running":      {Prefix: "🏃  "},
-	"provisioning": {Prefix: "🌱  "},
 	"restarting":   {Prefix: "🔄  "},
 	"stopping":     {Prefix: "✋  "},
 	"stopped":      {Prefix: "🛑  "},
@@ -49,11 +47,14 @@ var styles = map[string]style{
 	"waiting":      {Prefix: "⌛  "},
 	"usage":        {Prefix: "💡  "},
 	"launch":       {Prefix: "🚀  "},
-	"sad":          {Prefix: "😿  "},
 	"thumbs-up":    {Prefix: "👍  "},
 	"option":       {Prefix: "    ▪ "}, // Indented bullet
-	"url":          {Prefix: "👉  "},
+	"log-entry":    {Prefix: "    "},   // Indent
 	"crushed":      {Prefix: "💔  "},
+	"running":      {Prefix: "🏃  "},
+	"provisioning": {Prefix: "🌱  "},
+	"sad":          {Prefix: "😿  "},
+	"url":          {Prefix: "👉  "},
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  "},

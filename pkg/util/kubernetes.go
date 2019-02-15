@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
-
+	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -29,16 +32,15 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
-
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/golang/glog"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
+)
+
+var (
+	ReasonableMutateTime = time.Minute * 1
+	ReasonableStartTime  = time.Minute * 5
 )
 
 type PodStore struct {
@@ -108,11 +110,11 @@ func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunn
 	return nil
 }
 
-// Wait up to 10 minutes for all matching pods to become Running and at least one
-// matching pod exists.
+// WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
+	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
 	lastKnownPodNumber := -1
-	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableStartTime, func() (bool, error) {
 		listOpts := metav1.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
@@ -139,9 +141,9 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 	})
 }
 
-// Wait up to 10 minutes for a pod to be deleted
+// WaitForPodDelete waits for a pod to be deleted
 func WaitForPodDelete(c kubernetes.Interface, ns string, label labels.Selector) error {
-	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
 		listOpts := metav1.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
@@ -152,9 +154,9 @@ func WaitForPodDelete(c kubernetes.Interface, ns string, label labels.Selector) 
 	})
 }
 
-// Wait up to 10 minutes for the given event to appear
+// WaitForEvent waits for the given event to appear
 func WaitForEvent(c kubernetes.Interface, ns string, reason string) error {
-	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
 		events, err := c.Events().Events("default").List(metav1.ListOptions{})
 		if err != nil {
 			glog.Infof("error getting events: %v", err)
