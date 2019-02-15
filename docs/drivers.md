@@ -18,14 +18,15 @@ the host PATH:
 
 #### KVM2 driver
 
-The KVM2 driver is intended to replace KVM driver.
-The KVM2 driver is maintained by the minikube team, and is built, tested and released with minikube.
+NOTE: Ubuntu users on a release older than 18.04, or anyone else experiencing "Error creating new host: dial tcp: missing address." errors (https://github.com/kubernetes/minikube/issues/3206), you will need to build your own driver until https://github.com/kubernetes/minikube/issues/3689 is resolved:
 
-NOTE: Currently the following instruction doesn't work for
-Ubuntu prior to 18.04 because the docker-machine-driver-kvm2 binary
-provided by the URL needs libvirt 3.0.0 or later.
-You can workaround it by building the binary by yourself.
-
+```
+sudo apt install libvirt-dev libvirt
+test -d $HOME/go/src/k8s.io/minikube || git clone https://github.com/kubernetes/minikube.git
+cd $HOME/go/src/k8s.io/minikube
+git pull
+make install-kvm
+```
 To install the KVM2 driver, first install and configure the prereqs:
 
 ```shell
