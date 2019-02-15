@@ -101,7 +101,6 @@ func (r *Docker) ListContainers(filter string) ([]string, error) {
 // KillContainers forcibly removes a running container based on ID
 func (r *Docker) KillContainers(ids []string) error {
 	if len(ids) == 0 {
-		glog.Warningf("KillContainers was called with an empty list of ids, nothing to do.")
 		return nil
 	}
 	glog.Infof("Killing containers: %s", ids)
