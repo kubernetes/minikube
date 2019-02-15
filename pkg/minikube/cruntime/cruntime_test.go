@@ -153,18 +153,18 @@ func (f *FakeRunner) docker(args []string, root bool) (string, error) {
 			filter := strings.Split(args[2], `"`)[1]
 			fname := strings.Split(filter, "=")[1]
 			ids := []string{}
-			f.t.Logf("Looking for containers matching %q", fname)
+			f.t.Logf("fake docker: Looking for containers matching %q", fname)
 			for id, cname := range f.containers {
 				if strings.Contains(cname, fname) {
 					ids = append(ids, id)
 				}
 			}
-			f.t.Logf("Found containers: %v", ids)
+			f.t.Logf("fake docker: Found containers: %v", ids)
 			return strings.Join(ids, "\n"), nil
 		}
 	case "stop":
 		for _, id := range args[1:] {
-			f.t.Logf("Stopping id %q", id)
+			f.t.Logf("fake docker: Stopping id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
 			}
@@ -173,7 +173,7 @@ func (f *FakeRunner) docker(args []string, root bool) (string, error) {
 	case "rm":
 		// Skip "-f" argument
 		for _, id := range args[2:] {
-			f.t.Logf("Removing id %q", id)
+			f.t.Logf("fake docker: Removing id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
 			}
@@ -193,18 +193,18 @@ func (f *FakeRunner) crictl(args []string, root bool) (string, error) {
 		if args[1] == "-a" && strings.HasPrefix(args[2], "--name") {
 			fname := strings.Split(args[2], "=")[1]
 			ids := []string{}
-			f.t.Logf("Looking for containers matching %q", fname)
+			f.t.Logf("fake crictl: Looking for containers matching %q", fname)
 			for id, cname := range f.containers {
 				if strings.Contains(cname, fname) {
 					ids = append(ids, id)
 				}
 			}
-			f.t.Logf("Found containers: %v", ids)
+			f.t.Logf("fake crictl: Found containers: %v", ids)
 			return strings.Join(ids, "\n"), nil
 		}
 	case "stop":
 		for _, id := range args[1:] {
-			f.t.Logf("Stopping id %q", id)
+			f.t.Logf("fake crictl: Stopping id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
 			}
@@ -212,7 +212,7 @@ func (f *FakeRunner) crictl(args []string, root bool) (string, error) {
 		}
 	case "rm":
 		for _, id := range args[1:] {
-			f.t.Logf("Removing id %q", id)
+			f.t.Logf("fake crictl: Removing id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
 			}
@@ -249,21 +249,21 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) {
 				return out, fmt.Errorf("not root")
 			}
 			f.services[svc] = Exited
-			f.t.Logf("stopped %s", svc)
+			f.t.Logf("fake systemctl: stopped %s", svc)
 		case "start":
 			if !root {
 				return out, fmt.Errorf("not root")
 			}
 			f.services[svc] = Running
-			f.t.Logf("started %s", svc)
+			f.t.Logf("fake systemctl: started %s", svc)
 		case "restart":
 			if !root {
 				return out, fmt.Errorf("not root")
 			}
 			f.services[svc] = Restarted
-			f.t.Logf("restarted %s", svc)
+			f.t.Logf("fake systemctl: restarted %s", svc)
 		case "is-active":
-			f.t.Logf("%s is-status: %v", svc, state)
+			f.t.Logf("fake systemctl: %s is-status: %v", svc, state)
 			if state == Running {
 				return out, nil
 			}
@@ -402,7 +402,7 @@ func TestContainerFunctions(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
-			want = []string{}
+			want = nil
 			if diff := cmp.Diff(got, want, sortSlices); diff != "" {
 				t.Errorf("ListContainers(apiserver) unexpected results, diff (-got + want): %s", diff)
 			}
