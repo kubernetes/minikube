@@ -88,7 +88,7 @@ associated files.`,
 			}
 			exit.WithError("Failed to remove profile", err)
 		}
-		console.OutStyle("crushed", "The %q cluster is now deleted. I hope you are happy.", profile)
+		console.OutStyle("crushed", "The %q cluster has been deleted.", profile)
 	},
 }
 

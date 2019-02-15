@@ -233,7 +233,7 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 	}
 
 	// NOTE: Perhaps now would be a good time to check apiserver health?
-	console.OutStyle("waiting", "Restarting kube-proxy ...")
+	console.OutStyle("waiting", "Waiting for kube-proxy to come back up ...")
 	if err := restartKubeProxy(k8s); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
 	}
