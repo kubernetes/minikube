@@ -75,8 +75,8 @@ minikube also supports features for developer convenience:
 * *macOS* with [brew](https://brew.sh/): `brew cask install minikube`
 * *macOS*: `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 && sudo install minikube-darwin-amd64 /usr/local/bin/minikube`
 
-* *Windows 10 with Choco* `choco install minikube` (if [Chocolatey](https://chocolatey.org/ is installed)
-* *Windows 10 without Choco* - Download [minikube-windows-amd64.exe](https://storage.googleapis.com/minikube/releases/latest/minikube-windows-amd64.exe) file, rename it to `minikube.exe`, and add it to your path.
+* *Windows with [Chocolatey](https://chocolatey.org/)* `choco install minikube`
+* *Windows without Choco* - Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
 * *Linux* `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`
 
