@@ -400,6 +400,7 @@ func (d *Driver) CreateVM() error {
 		"--largepages", "on",
 		"--vtxvpid", "on",
 		"--accelerate3d", "off",
+		"--audio", "none",
 		"--boot1", "dvd"}
 
 	if runtime.GOOS == "windows" && runtime.GOARCH == "386" {
