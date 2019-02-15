@@ -14,6 +14,8 @@
 
 * **GPUs** ([gpu.md](gpu.md)): Using NVIDIA GPUs on minikube
 
+* **OpenID Connect Authentication** ([openid_connect_auth](openid_connect_auth)): Using OIDC Authentication on minikube
+
 ### Installation and debugging
 
 * **Driver installation** ([drivers.md](drivers.md)): In depth instructions for installing the various hypervisor drivers
