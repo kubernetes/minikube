@@ -52,6 +52,11 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		kubectl, err := exec.LookPath("kubectl")
+		if err != nil {
+			exit.WithCode(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		}
+
 		api, err := machine.NewAPIClient()
 		defer func() {
 			err := api.Close()
@@ -81,7 +86,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		console.ErrStyle("launch", "Launching proxy ...")
-		p, hostPort, err := kubectlProxy()
+		p, hostPort, err := kubectlProxy(kubectl)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}
@@ -109,12 +114,7 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy() (*exec.Cmd, string, error) {
-	path, err := exec.LookPath("kubectl")
-	if err != nil {
-		return nil, "", errors.Wrap(err, "kubectl not found in PATH")
-	}
-
+func kubectlProxy(path string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 	// config.GetMachineName() respects the -p (profile) flag
 	cmd := exec.Command(path, "--context", config.GetMachineName(), "proxy", "--port=0")

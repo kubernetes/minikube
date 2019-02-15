@@ -211,6 +211,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	} else {
 		console.OutStyle("kubectl", "kubectl is now configured to use %q", cfg.GetMachineName())
 	}
+	_, err = exec.LookPath("kubectl")
+	if err != nil {
+		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+	}
 	console.OutStyle("ready", "Done! Thank you for using minikube!")
 }
 
@@ -305,17 +309,21 @@ func prepareNone() {
 	if viper.GetBool(cfg.WantNoneDriverWarning) {
 		console.OutLn("")
 		console.Warning("The 'none' driver provides limited isolation and may reduce system security and reliability.")
+		console.Warning("For more information, see:")
 		console.OutStyle("url", "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
 		console.OutLn("")
 	}
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-		console.Warning("kubectl and minikube configuration will be stored in %s", os.Getenv("HOME"))
+		home := os.Getenv("HOME")
+		console.Warning("kubectl and minikube configuration will be stored in %s", home)
 		console.Warning("To use kubectl or minikube commands as your own user, you may")
 		console.Warning("need to relocate them. For example, to overwrite your own settings:")
 
-		console.OutStyle("command", "sudo mv %s/.kube %s/.minikube $HOME", os.Getenv("HOME"))
-		console.OutStyle("command", "sudo chown -R $USER %s/.kube %s/.minikube", os.Getenv("HOME"))
+		console.OutLn("")
+		console.OutStyle("command", "sudo mv %s/.kube %s/.minikube $HOME", home, home)
+		console.OutStyle("command", "sudo chown -R $USER %s/.kube %s/.minikube", home, home)
+		console.OutLn("")
 
 		console.OutStyle("tip", "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
 	}
