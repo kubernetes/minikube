@@ -46,17 +46,34 @@ func (f *fakeFile) String() string {
 }
 
 func TestOutStyle(t *testing.T) {
-	os.Setenv(OverrideEnv, "1")
-	f := newFakeFile()
-	SetOutFile(f)
-	if err := OutStyle("happy", "This is a happy message."); err != nil {
-		t.Errorf("unexpected error: %q", err)
-	}
-	got := f.String()
-	want := "😄  This is a happy message.\n"
 
-	if got != want {
-		t.Errorf("OutStyle() = %q, want %q", got, want)
+	var tests = []struct {
+		style    string
+		envValue string
+		message  string
+		want     string
+	}{
+		{"happy", "true", "This is happy.", "😄  This is happy.\n"},
+		{"Docker", "true", "This is Docker.", "🐳  This is Docker.\n"},
+		{"option", "true", "This is option.", "    ▪ This is option.\n"},
+
+		{"happy", "false", "This is happy.", "o   This is happy.\n"},
+		{"Docker", "false", "This is Docker.", "-   This is Docker.\n"},
+		{"option", "false", "This is option.", "    - This is option.\n"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.style+"-"+tc.envValue, func(t *testing.T) {
+			os.Setenv(OverrideEnv, tc.envValue)
+			f := newFakeFile()
+			SetOutFile(f)
+			if err := OutStyle(tc.style, tc.message); err != nil {
+				t.Errorf("unexpected error: %q", err)
+			}
+			got := f.String()
+			if got != tc.want {
+				t.Errorf("OutStyle() = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
 
