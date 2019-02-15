@@ -18,7 +18,7 @@ the host PATH:
 
 #### KVM2 driver
 
-NOTE: Ubuntu users on a release older than 18.04, or anyone else experiencing "Error creating new host: dial tcp: missing address." errors (https://github.com/kubernetes/minikube/issues/3206), you will need to build your own driver until https://github.com/kubernetes/minikube/issues/3689 is resolved:
+NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing #3206 - "Error creating new host: dial tcp: missing address." you will need to build your own driver until #3689 is resolved:
 
 ```
 sudo apt install libvirt-dev libvirt
