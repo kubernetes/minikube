@@ -33,13 +33,7 @@
 * Remove redundant newline in `minikube status` [#3565](https://github.com/kubernetes/minikube/pull/3565)
 * Fix for issue #3044 - mounted timestamps incorrect with windows host [#3285](https://github.com/kubernetes/minikube/pull/3285)
 
-+ echo 'Huge thank you for this release towards our contributors: '
 Huge thank you for this release towards our contributors:
-+ sort
-+ awk '{printf "- %s\n", $0 }'
-+ uniq
-++ git describe --abbrev=0
-+ git log v0.33.1.. --format=%aN --reverse
 - Abhilash Pallerlamudi
 - Alberto Alvarez
 - Anders Björklund
