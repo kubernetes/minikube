@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	golog "log"
 	"os"
 	"os/user"
 	"path"
@@ -79,19 +80,28 @@ func NewDriver(hostName, storePath string) *Driver {
 
 // PreCreateCheck is called to enforce pre-creation steps
 func (d *Driver) PreCreateCheck() error {
+	return d.verifyRootPermissions()
+}
+
+// verifyRootPermissions is called before any step which needs root access
+func (d *Driver) verifyRootPermissions() error {
 	exe, err := os.Executable()
 	if err != nil {
 		return err
 	}
-
-	if syscall.Geteuid() != 0 {
+	euid := syscall.Geteuid()
+	log.Debugf("exe=%s uid=%d", exe, euid)
+	if euid != 0 {
 		return fmt.Errorf(permErr, filepath.Base(exe), exe, exe)
 	}
-
 	return nil
 }
 
 func (d *Driver) Create() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
+
 	// TODO: handle different disk types.
 	if err := pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "making disk image")
@@ -125,37 +135,55 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
-// GetState returns the state that the host is in (running, stopped, etc)
-func (d *Driver) GetState() (state.State, error) {
-	pid := d.getPid()
+// Return the state of the hyperkit pid
+func pidState(pid int) (state.State, error) {
 	if pid == 0 {
 		return state.Stopped, nil
 	}
-	p, err := os.FindProcess(pid)
+	p, err := ps.FindProcess(pid)
 	if err != nil {
 		return state.Error, err
 	}
-
-	// Sending a signal of 0 can be used to check the existence of a process.
-	if err := p.Signal(syscall.Signal(0)); err != nil {
+	if p == nil {
+		log.Debugf("hyperkit pid %d missing from process table", pid)
 		return state.Stopped, nil
 	}
-	if p == nil {
+	// hyperkit or com.docker.hyper
+	if !strings.Contains(p.Executable(), "hyper") {
+		log.Debugf("pid %d is stale, and is being used by %s", pid, p.Executable())
 		return state.Stopped, nil
 	}
 	return state.Running, nil
 }
 
+// GetState returns the state that the host is in (running, stopped, etc)
+func (d *Driver) GetState() (state.State, error) {
+	if err := d.verifyRootPermissions(); err != nil {
+		return state.Error, err
+	}
+
+	pid := d.getPid()
+	log.Debugf("hyperkit pid from json: %d", pid)
+	return pidState(pid)
+}
+
 // Kill stops a host forcefully
 func (d *Driver) Kill() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
 	return d.sendSignal(syscall.SIGKILL)
 }
 
 // Remove a host
 func (d *Driver) Remove() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
+
 	s, err := d.GetState()
 	if err != nil || s == state.Error {
-		log.Infof("Error checking machine status: %v, assuming it has been removed already", err)
+		log.Debugf("Error checking machine status: %v, assuming it has been removed already", err)
 	}
 	if s == state.Running {
 		if err := d.Stop(); err != nil {
@@ -171,6 +199,10 @@ func (d *Driver) Restart() error {
 
 // Start a host
 func (d *Driver) Start() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
+
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	if err := d.recoverFromUncleanShutdown(); err != nil {
 		return err
@@ -189,6 +221,9 @@ func (d *Driver) Start() error {
 	h.CPUs = d.CPU
 	h.Memory = d.Memory
 	h.UUID = d.UUID
+	// This should stream logs from hyperkit, but doesn't seem to work.
+	logger := golog.New(os.Stderr, "hyperkit", golog.LstdFlags)
+	h.SetLogger(logger)
 
 	if vsockPorts, err := d.extractVSockPorts(); err != nil {
 		return err
@@ -197,7 +232,7 @@ func (d *Driver) Start() error {
 		h.VSockPorts = vsockPorts
 	}
 
-	log.Infof("Using UUID %s", h.UUID)
+	log.Debugf("Using UUID %s", h.UUID)
 	mac, err := GetMACAddressFromUUID(h.UUID)
 	if err != nil {
 		return errors.Wrap(err, "getting MAC address from UUID")
@@ -205,7 +240,7 @@ func (d *Driver) Start() error {
 
 	// Need to strip 0's
 	mac = trimMacAddress(mac)
-	log.Infof("Generated MAC %s", mac)
+	log.Debugf("Generated MAC %s", mac)
 	h.Disks = []hyperkit.DiskConfig{
 		{
 			Path:   pkgdrivers.GetDiskPath(d.BaseDriver),
@@ -213,13 +248,20 @@ func (d *Driver) Start() error {
 			Driver: "virtio-blk",
 		},
 	}
-	log.Infof("Starting with cmdline: %s", d.Cmdline)
+	log.Debugf("Starting with cmdline: %s", d.Cmdline)
 	if err := h.Start(d.Cmdline); err != nil {
 		return errors.Wrapf(err, "starting with cmd line: %s", d.Cmdline)
 	}
 
 	getIP := func() error {
-		var err error
+		st, err := d.GetState()
+		if err != nil {
+			return errors.Wrap(err, "get state")
+		}
+		if st == state.Error || st == state.Stopped {
+			return fmt.Errorf("hyperkit crashed! command line:\n  hyperkit %s", d.Cmdline)
+		}
+
 		d.IPAddress, err = GetIPAddressByMACAddress(mac)
 		if err != nil {
 			return &commonutil.RetriableError{Err: err}
@@ -230,6 +272,7 @@ func (d *Driver) Start() error {
 	if err := commonutil.RetryAfter(30, getIP, 2*time.Second); err != nil {
 		return fmt.Errorf("IP address never found in dhcp leases file %v", err)
 	}
+	log.Debugf("IP: %s", d.IPAddress)
 
 	if len(d.NFSShares) > 0 {
 		log.Info("Setting up NFS mounts")
@@ -257,47 +300,46 @@ func (d *Driver) recoverFromUncleanShutdown() error {
 	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	pidFile := filepath.Join(stateDir, pidFileName)
 
-	_, err := os.Stat(pidFile)
-
-	if os.IsNotExist(err) {
-		log.Infof("clean start, hyperkit pid file doesn't exist: %s", pidFile)
-		return nil
-	}
-
-	if err != nil {
-		return errors.Wrap(err, "checking hyperkit pid file existence")
+	if _, err := os.Stat(pidFile); err != nil {
+		if os.IsNotExist(err) {
+			log.Debugf("clean start, hyperkit pid file doesn't exist: %s", pidFile)
+			return nil
+		}
+		return errors.Wrap(err, "stat")
 	}
 
 	log.Warnf("minikube might have been shutdown in an unclean way, the hyperkit pid file still exists: %s", pidFile)
-
-	content, err := ioutil.ReadFile(pidFile)
+	bs, err := ioutil.ReadFile(pidFile)
 	if err != nil {
 		return errors.Wrapf(err, "reading pidfile %s", pidFile)
 	}
-	pid, err := strconv.Atoi(string(content))
+	content := strings.TrimSpace(string(bs))
+	pid, err := strconv.Atoi(content)
 	if err != nil {
 		return errors.Wrapf(err, "parsing pidfile %s", pidFile)
 	}
 
-	p, err := ps.FindProcess(pid)
+	st, err := pidState(pid)
 	if err != nil {
-		return errors.Wrapf(err, "trying to find process for PID %d", pid)
+		return errors.Wrap(err, "pidState")
 	}
 
-	if p != nil && !strings.Contains(p.Executable(), "hyperkit") {
-		return fmt.Errorf("something is not right...please stop all minikube instances, seemingly a hyperkit server is already running with pid %d, executable: %s", pid, p.Executable())
+	log.Debugf("pid %d is in state %q", pid, st)
+	if st == state.Running {
+		return nil
 	}
-
-	log.Infof("No running hyperkit process found with PID %d, removing %s...", pid, pidFile)
+	log.Debugf("Removing stale pid file %s...", pidFile)
 	if err := os.Remove(pidFile); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("removing pidFile %s", pidFile))
 	}
-
 	return nil
 }
 
 // Stop a host gracefully
 func (d *Driver) Stop() error {
+	if err := d.verifyRootPermissions(); err != nil {
+		return err
+	}
 	d.cleanupNfsExports()
 	return d.sendSignal(syscall.SIGTERM)
 }
@@ -334,9 +376,7 @@ func (d *Driver) extractVSockPorts() ([]int, error) {
 	for _, port := range d.VSockPorts {
 		p, err := strconv.Atoi(port)
 		if err != nil {
-			var err InvalidPortNumberError
-			err = InvalidPortNumberError(port)
-			return nil, err
+			return nil, InvalidPortNumberError(port)
 		}
 		vsockPorts = append(vsockPorts, p)
 	}

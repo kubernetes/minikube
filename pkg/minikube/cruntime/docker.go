@@ -116,3 +116,18 @@ func (r *Docker) StopContainers(ids []string) error {
 	glog.Infof("Killing containers: %s", ids)
 	return r.Runner.Run(fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
 }
+
+// ContainerLogCmd returns the command to retrieve the log for a container based on ID
+func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
+	var cmd strings.Builder
+	cmd.WriteString("docker logs ")
+	if len > 0 {
+		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
+	}
+	if follow {
+		cmd.WriteString("--follow ")
+	}
+
+	cmd.WriteString(id)
+	return cmd.String()
+}

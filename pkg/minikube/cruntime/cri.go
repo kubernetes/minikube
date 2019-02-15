@@ -75,3 +75,18 @@ image-endpoint: unix://{{.Socket}}
 	}
 	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
 }
+
+// criContainerLogCmd returns the command to retrieve the log for a container based on ID
+func criContainerLogCmd(id string, len int, follow bool) string {
+	var cmd strings.Builder
+	cmd.WriteString("crictl logs ")
+	if len > 0 {
+		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
+	}
+	if follow {
+		cmd.WriteString("--follow ")
+	}
+
+	cmd.WriteString(id)
+	return cmd.String()
+}
