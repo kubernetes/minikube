@@ -17,107 +17,11 @@ limitations under the License.
 package util
 
 import (
-	"bytes"
-	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/minikube/pkg/minikube/config"
 )
-
-func startTestHTTPServer(returnError bool, response string) *httptest.Server {
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if returnError {
-			http.Error(w, response, 400)
-		} else {
-			fmt.Fprintf(w, response)
-		}
-	}))
-}
-
-func revertLookPath(l LookPath) {
-	lookPath = l
-}
-
-func fakeLookPathFound(string) (string, error) { return "/usr/local/bin/kubectl", nil }
-func fakeLookPathError(string) (string, error) { return "", errors.New("") }
-
-func TestKubectlDownloadMsg(t *testing.T) {
-	var tests = []struct {
-		description    string
-		lp             LookPath
-		goos           string
-		matches        string
-		noOutput       bool
-		warningEnabled bool
-	}{
-		{
-			description:    "No output when binary is found windows",
-			goos:           "windows",
-			lp:             fakeLookPathFound,
-			noOutput:       true,
-			warningEnabled: true,
-		},
-		{
-			description:    "No output when binary is found darwin",
-			goos:           "darwin",
-			lp:             fakeLookPathFound,
-			noOutput:       true,
-			warningEnabled: true,
-		},
-		{
-			description:    "windows kubectl not found, has .exe in output",
-			goos:           "windows",
-			lp:             fakeLookPathError,
-			matches:        ".exe",
-			warningEnabled: true,
-		},
-		{
-			description:    "linux kubectl not found",
-			goos:           "linux",
-			lp:             fakeLookPathError,
-			matches:        "WantKubectlDownloadMsg",
-			warningEnabled: true,
-		},
-		{
-			description:    "warning disabled",
-			goos:           "linux",
-			lp:             fakeLookPathError,
-			noOutput:       true,
-			warningEnabled: false,
-		},
-	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.description, func(t *testing.T) {
-			defer revertLookPath(lookPath)
-
-			// Remember the original config value and revert to it.
-			origConfig := viper.GetBool(config.WantKubectlDownloadMsg)
-			defer func() {
-				viper.Set(config.WantKubectlDownloadMsg, origConfig)
-			}()
-			viper.Set(config.WantKubectlDownloadMsg, test.warningEnabled)
-			lookPath = test.lp
-			var b bytes.Buffer
-			MaybePrintKubectlDownloadMsg(test.goos, &b)
-			actual := b.String()
-			if actual != "" && test.noOutput {
-				t.Errorf("Got output, but kubectl binary was found")
-			}
-			if !strings.Contains(actual, test.matches) {
-				t.Errorf("Output did not contain substring expected got output %s", actual)
-			}
-		})
-	}
-}
 
 func TestGetKubeConfigPath(t *testing.T) {
 	var tests = []struct {

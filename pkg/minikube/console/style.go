@@ -49,6 +49,7 @@ var styles = map[string]style{
 	"launch":       {Prefix: "🚀  "},
 	"thumbs-up":    {Prefix: "👍  "},
 	"option":       {Prefix: "    ▪ "}, // Indented bullet
+	"command":      {Prefix: "    ▪ "}, // Indented bullet
 	"log-entry":    {Prefix: "    "},   // Indent
 	"crushed":      {Prefix: "💔  "},
 	"running":      {Prefix: "🏃  "},
