@@ -154,3 +154,9 @@ export LATEST_VERSION=$(curl -L -s -H 'Accept: application/json' https://github.
 && chmod +x docker-machine-driver-vmware \
 && mv docker-machine-driver-vmware /usr/local/bin/
 ```
+
+To use the driver you would do:
+
+```shell
+minikube start --vm-driver vmware
+```
