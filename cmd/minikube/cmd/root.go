@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
@@ -32,7 +31,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -94,7 +92,6 @@ var RootCmd = &cobra.Command{
 		if enableUpdateNotification {
 			notify.MaybePrintUpdateTextFromGithub(os.Stderr)
 		}
-		util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
 	},
 }
 

@@ -61,7 +61,9 @@ associated files.`,
 			bsName := viper.GetString(cmdcfg.Bootstrapper)
 			console.OutStyle("resetting", "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
 			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
-			if err == nil {
+			if err != nil {
+				console.ErrLn("Unable to get bootstrapper: %v", err)
+			} else {
 				if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
 					console.ErrLn("Failed to delete cluster: %v", err)
 				}
@@ -71,9 +73,9 @@ associated files.`,
 		if err = cluster.DeleteHost(api); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				console.OutStyle("meh", "%q VM does not exist", profile)
+				console.OutStyle("meh", "%q cluster does not exist", profile)
 			default:
-				exit.WithError("Failed to delete VM", err)
+				exit.WithError("Failed to delete cluster", err)
 			}
 		}
 

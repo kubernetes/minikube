@@ -211,6 +211,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	} else {
 		console.OutStyle("kubectl", "kubectl is now configured to use %q", cfg.GetMachineName())
 	}
+	_, err = exec.LookPath("kubectl")
+	if err != nil {
+		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+	}
 	console.OutStyle("ready", "Done! Thank you for using minikube!")
 }
 
@@ -303,22 +307,25 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 // prepareNone prepares the user and host for the joy of the "none" driver
 func prepareNone() {
 	if viper.GetBool(cfg.WantNoneDriverWarning) {
-		console.ErrLn(`===================
-WARNING: IT IS RECOMMENDED NOT TO RUN THE NONE DRIVER ON PERSONAL WORKSTATIONS
-The 'none' driver will run an insecure kubernetes apiserver as root that may leave the host vulnerable to CSRF attacks` + "\n")
+		console.OutLn("")
+		console.Warning("The 'none' driver provides limited isolation and may reduce system security and reliability.")
+		console.Warning("For more information, see:")
+		console.OutStyle("url", "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
+		console.OutLn("")
 	}
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-		console.Fatal(`When using the none driver, the kubectl config and credentials generated will be root owned and will appear in the root home directory.
-You will need to move the files to the appropriate location and then set the correct permissions.  An example of this is below:
+		home := os.Getenv("HOME")
+		console.Warning("kubectl and minikube configuration will be stored in %s", home)
+		console.Warning("To use kubectl or minikube commands as your own user, you may")
+		console.Warning("need to relocate them. For example, to overwrite your own settings:")
 
-sudo mv /root/.kube $HOME/.kube # this will write over any previous configuration
-sudo chown -R $USER:$USER $HOME/.kube
+		console.OutLn("")
+		console.OutStyle("command", "sudo mv %s/.kube %s/.minikube $HOME", home, home)
+		console.OutStyle("command", "sudo chown -R $USER %s/.kube %s/.minikube", home, home)
+		console.OutLn("")
 
-sudo mv /root/.minikube $HOME/.minikube # this will write over any previous configuration
-sudo chown -R $USER:$USER $HOME/.minikube
-
-This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true`)
+		console.OutStyle("tip", "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
 	}
 
 	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
