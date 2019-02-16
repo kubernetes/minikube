@@ -1,5 +1,66 @@
 # Minikube Release Notes
 
+# Version 0.34.0 - 2019-02-15
+
+* Initial implementation of 'console' package for stylized & localized console output 😂 [#3638](https://github.com/kubernetes/minikube/pull/3638)
+* Podman 1.0.0 [#3584](https://github.com/kubernetes/minikube/pull/3584)
+* fix netstat -f error on linux distros [#3592](https://github.com/kubernetes/minikube/pull/3592)
+* addons: Fixes multiple files behavior in files rootfs [#3501](https://github.com/kubernetes/minikube/pull/3501)
+* Make hyperkit driver more robust: detect crashing, misinstallation, other process names [#3660](https://github.com/kubernetes/minikube/pull/3660)
+* Include pod output in 'logs' command & display detected problems during start [#3673](https://github.com/kubernetes/minikube/pull/3673)
+* Upgrade Docker, from 18.06.1-ce to 18.06.2-ce [#3666](https://github.com/kubernetes/minikube/pull/3666)
+* Upgrade opencontainers/runc to 0a012df [#3669](https://github.com/kubernetes/minikube/pull/3669)
+* Clearer output when re-using VM's so that users know what they are waiting on [#3659](https://github.com/kubernetes/minikube/pull/3659)
+* Disable kubelet disk eviction by default [#3671](https://github.com/kubernetes/minikube/pull/3671)
+* Run poweroff before delete, only call uninstall if driver is None [#3665](https://github.com/kubernetes/minikube/pull/3665)
+* Add DeleteCluster to bootstrapper [#3656](https://github.com/kubernetes/minikube/pull/3656)
+* Enable CNI for alternative runtimes [#3617](https://github.com/kubernetes/minikube/pull/3617)
+* machine: add parallels support [#953](https://github.com/kubernetes/minikube/pull/953)
+* When copying assets from .minikube/files on windows, directories get squashed during transfer. ie /etc/ssl/certs/test.pem becomes ~minikube/etcsslcerts/test.pem. This pull request ensures any window style directories are converted into unix style. [#3258](https://github.com/kubernetes/minikube/pull/3258)
+* Updated the default kubernetes version [#3625](https://github.com/kubernetes/minikube/pull/3625)
+* Update crictl to v1.13.0 [#3616](https://github.com/kubernetes/minikube/pull/3616)
+* Upgrade libmachine to version 0.16.1 [#3619](https://github.com/kubernetes/minikube/pull/3619)
+* updated to fedora-29 [#3607](https://github.com/kubernetes/minikube/pull/3607)
+* fix stale hyperkit.pid making minikube start hang [#3593](https://github.com/kubernetes/minikube/pull/3593)
+* CRI: try to use "sudo podman load" instead of "docker load" [#2757](https://github.com/kubernetes/minikube/pull/2757)
+* Use mac as identifier for dhcp [#3572](https://github.com/kubernetes/minikube/pull/3572)
+* Still generate docker.service unit, even if unused [#3560](https://github.com/kubernetes/minikube/pull/3560)
+* Initial commit of logviewer addon [#3391](https://github.com/kubernetes/minikube/pull/3391)
+* Add images and improve parsing for kubernetes 1.11  [#3262](https://github.com/kubernetes/minikube/pull/3262)
+* Stop containerd from running, if it is not desired [#3549](https://github.com/kubernetes/minikube/pull/3549)
+* Re-remove kube-dns addon [#3556](https://github.com/kubernetes/minikube/pull/3556)
+* Update docker env during minikube start if VM has already been created [#3387](https://github.com/kubernetes/minikube/pull/3387)
+* Remove redundant newline in `minikube status` [#3565](https://github.com/kubernetes/minikube/pull/3565)
+* Fix for issue #3044 - mounted timestamps incorrect with windows host [#3285](https://github.com/kubernetes/minikube/pull/3285)
+
+Huge thank you for this release towards our contributors:
+- Abhilash Pallerlamudi
+- Alberto Alvarez
+- Anders Björklund
+- Anders F Björklund
+- Balint Pato
+- Bassam Tabbara
+- Denis Denisov
+- Hidekazu Nakamura
+- Himanshu Pandey
+- ivans3
+- jay vyas
+- Jeff Wu
+- Kauê Doretto Grecchi
+- Kubernetes Prow Robot
+- Leif Ringstad
+- Mark Gibbons
+- Nicholas Goozeff
+- Nicholas Irving
+- Rob Richardson
+- Roy Lenferink
+- Skip Baney
+- Thomas Strömberg
+- todd densmore
+- YAMAMOTO Takashi
+- Yugo Horie
+- Zhongcheng Lao
+
 # Version 0.33.1 - 2019-01-18
 
 * Install upstream runc into /usr/bin/docker-runc [#3545](https://github.com/kubernetes/minikube/pull/3545)
