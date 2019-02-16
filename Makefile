@@ -30,6 +30,8 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 # NOTE: "latest" as of 2018-12-04. kube-cross images aren't updated as often as Kubernetes
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
+KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image
+
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -37,6 +39,8 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 
 KERNEL_VERSION ?= 4.16.14
+
+GO_VERSION ?= $(shell go version | cut -d' ' -f3 | sed -e 's/go//')
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
@@ -256,7 +260,7 @@ out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
 	tar -cvf $@ $^
 
 .PHONY: cross-tars
-cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+cross-tars: kvm_in_docker out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
@@ -349,10 +353,22 @@ out/docker-machine-driver-kvm2:
 		k8s.io/minikube/cmd/drivers/kvm
 	chmod +X $@
 
+kvm-image: $(KVM_BUILD_IMAGE) # convenient alias to build the docker container
+$(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
+	docker build --build-arg "GO_VERSION=$(GO_VERSION)" -t $@ -f $< $(dir $<)
+	@echo ""
+	@echo "$(@) successfully built"
+
+kvm_in_docker:
+	docker inspect $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
+	rm -f out/docker-machine-driver-kvm2
+	docker run --rm -v $(PWD):/go/src/k8s.io/minikube $(KVM_BUILD_IMAGE) \
+		/usr/bin/make -C /go/src/k8s.io/minikube out/docker-machine-driver-kvm2
+
 .PHONY: install-kvm
 install-kvm: out/docker-machine-driver-kvm2
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 .PHONY: release-kvm-driver
-release-kvm-driver: install-kvm
+release-kvm-driver: kvm_in_docker install-kvm
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
