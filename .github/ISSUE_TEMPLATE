@@ -1,51 +1,10 @@
-<!-- Thanks for filing an issue! Before hitting the button, please answer these questions.-->
+<!-- Thanks for filing an issue! The more detail you can provide, the faster we will be able to respond.
 
-**Is this a BUG REPORT or FEATURE REQUEST?** (choose one):
+If this is a bug report, please include the following:
 
-<!--
-If this is a BUG REPORT, please:
-  - Fill in as much of the template below as you can.  If you leave out
-    information, we can't help you as well.
+[ ] The exact command used, including all options and flags.
+[ ] The full output of the command that failed
+[ ] The version of minikube used
+[ ] The output of `minikube logs`, if applicable.
 
-If this is a FEATURE REQUEST, please:
-  - Describe *in detail* the feature/behavior/change you'd like to see.
-
-In both cases, be ready for followup questions, and please respond in a timely
-manner.  If we can't reproduce a bug or think a feature already exists, we
-might close your issue.  If we're wrong, PLEASE feel free to reopen it and
-explain why.
 -->
-
-Please provide the following details:
-
-**Environment**:
-
-**Minikube version** (use `minikube version`):
-- **OS** (e.g. from /etc/os-release):
-- **VM Driver** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep DriverName`):
-- **ISO version** (e.g. `cat ~/.minikube/machines/minikube/config.json | grep -i ISO` or `minikube ssh cat /etc/VERSION`):
-- **Install tools**:
-- **Others**:
-The above can be generated in one go with the following commands (can be copied and pasted directly into your terminal):
-```
-minikube version
-echo "";
-echo "OS:";
-cat /etc/os-release
-echo "";
-echo "VM driver:"; 
-grep DriverName ~/.minikube/machines/minikube/config.json
-echo "";
-echo "ISO version";
-grep -i ISO ~/.minikube/machines/minikube/config.json
-```
-
-**What happened**:
-
-**What you expected to happen**:
-
-**How to reproduce it** (as minimally and precisely as possible):
-
-**Output of `minikube logs` (if applicable)**:
-
-**Anything else do we need to know**:
