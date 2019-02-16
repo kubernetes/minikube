@@ -1,5 +1,19 @@
 # Minikube Release Notes
 
+# Version 0.34.1 - 2019-02-16
+
+* Make non-zero ssh error codes less dramatic [#3703](https://github.com/kubernetes/minikube/pull/3703)
+* Only call trySSHPowerOff if we are using hyperv [#3702](https://github.com/kubernetes/minikube/pull/3702)
+* Improve reporting when docker host/service is down [#3698](https://github.com/kubernetes/minikube/pull/3698)
+* Use the new ISO version, for features and security [#3699](https://github.com/kubernetes/minikube/pull/3699)
+* Added and unified driver usage instructions. [#3690](https://github.com/kubernetes/minikube/pull/3690)
+
+Thank you to the folks who contributed to this bugfix release:
+
+- Anders F Björklund
+- Joerg Schad
+- Thomas Strömberg
+
 # Version 0.34.0 - 2019-02-15
 
 * Initial implementation of 'console' package for stylized & localized console output 😂 [#3638](https://github.com/kubernetes/minikube/pull/3638)
