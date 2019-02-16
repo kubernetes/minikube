@@ -29,60 +29,55 @@ Our [goal](https://github.com/kubernetes/minikube/blob/master/docs/contributors/
 
 minikube runs the official stable release of Kubernetes, with support for standard Kubernetes features like:
 
-* NodePorts - `minikube service`
-* Ingress
-* [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - `minikube tunnel` 
+* [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - using `minikube tunnel` 
+* Multi-cluster - using `minikube start -p <name>`
+* NodePorts - using `minikube service`
 * [Persistent Volumes](https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md)
-* ConfigMaps
+* Ingress
 * RBAC
-* Secrets
 * Dashboard - `minikube dashboard`
-* [Multiple container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md) - `start --container-runtime`
+* [Container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md) - `start --container-runtime`
 
-minikube also supports features for developer convenience:
+As well as developer-friendly features:
 
 * [Addons](https://github.com/kubernetes/minikube/blob/master/docs/addons.md) - a marketplace for developers to share configurations for running services on minikube
 * [GPU support](https://github.com/kubernetes/minikube/blob/master/docs/gpu.md) - for machine learning
 * [Filesystem mounts](https://github.com/kubernetes/minikube/blob/master/docs/host_folder_mount.md)
 * Automatic failure analysis
 
-## Community & Documentation
+## Documentation
+
+* [**Installation**](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+* [Advanced Topics and Tutorials](https://github.com/kubernetes/minikube/blob/master/docs/README.md)
+* [Contributors Guide](https://github.com/kubernetes/minikube/blob/master/docs/contributors/README.md)
+
+## Community
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com) - Live chat with minikube developers!
 * [minikube-users mailing list](https://groups.google.com/forum/#!forum/minikube-users)
 * [minikube-dev mailing list](https://groups.google.com/forum/#!forum/minikube-dev)
-
-* [**Advanced Topics and Tutorials**](https://github.com/kubernetes/minikube/blob/master/docs/README.md)
 * [Contributing](https://github.com/kubernetes/minikube/blob/master/CONTRIBUTING.md)
-* [Development Guide](https://github.com/kubernetes/minikube/blob/master/docs/contributors/README.md)
 * [Development Roadmap](https://github.com/kubernetes/minikube/blob/master/docs/contributors/roadmap.md)
-
-## Requirements
-
-* 4GB of memory (VM reserves 2GB by default), 32GB of disk space
-* An internet connection - preferably one that does not require a VPN or SSL proxy to access the internet
-* macOS 10.12 (Sierra) or higher
-  * Requires a hypervisor, such as:
-     * hyperkit (recommended)
-     * VirtualBox
-* Linux
-  * libvirt for the KVM driver, or VirtualBox
-  * VT-x/AMD-v virtualization must be enabled in BIOS
-* Windows 10
-  * HyperV (Windows 10 Pro) or a 3rd party hypervisor, such as VirtualBox.
-  * VT-x/AMD-v virtualization must be enabled in BIOS
 
 ## Installation
 
-* *macOS* with [brew](https://brew.sh/): `brew cask install minikube`
-* *macOS*: `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 && sudo install minikube-darwin-amd64 /usr/local/bin/minikube`
+For detailed steps, see the [installation guide](https://kubernetes.io/docs/tasks/tools/install-minikube/)
 
-* *Windows with [Chocolatey](https://chocolatey.org/)* `choco install minikube`
-* *Windows without Choco* - Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
+* macOS 10.12 (Sierra) or higher
+  * Requires installing hypervisor, such as hyperkit (recommended) or VirtualBox
+  * using [brew](https://brew.sh/): `brew cask install minikube`
+  * manually: `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 && sudo install minikube-darwin-amd64 /usr/local/bin/minikube`
 
-* *Linux* `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`
+* *Windows 10
+  * Requires a hypervisor, such as VirtualBox (recommended) or HyperV
+  * VT-x/AMD-v virtualization must be enabled in BIOS
+  * using [chocolatey](https://chocolatey.org/)* `choco install minikube`
+  * manually: Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
-For full installation instructions, please see https://kubernetes.io/docs/tasks/tools/install-minikube/
+* *Linux* 
+  * Requires either the [kvm2 driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver) (recommended), or VirtualBox
+  * VT-x/AMD-v virtualization must be enabled in BIOS
+  * manually: curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`
 
 ### Supported Hypervisors
 
