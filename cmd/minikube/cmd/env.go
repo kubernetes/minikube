@@ -28,6 +28,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/shell"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -319,9 +320,16 @@ var dockerEnvCmd = &cobra.Command{
 		if host.Driver.DriverName() == "none" {
 			exit.Usage(`'none' driver does not support 'minikube docker-env' command`)
 		}
+		hostSt, err := cluster.GetHostStatus(api)
+		if err != nil {
+			exit.WithError("Error getting host status", err)
+		}
+		if hostSt != state.Running.String() {
+			exit.WithCode(exit.Unavailable, `The docker host is currently not running`)
+		}
 		docker, err := GetDockerActive(host)
 		if !docker {
-			exit.WithCode(exit.Unavailable, `# The docker service is currently not active`)
+			exit.WithCode(exit.Unavailable, `The docker service is currently not active`)
 		}
 
 		var shellCfg *ShellConfig
