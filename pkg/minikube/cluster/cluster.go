@@ -133,11 +133,8 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
-// tryPowerOff runs the poweroff command on the guest VM to speed up deletion
-func tryPowerOff(h *host.Host) {
-	if h.Driver.DriverName() == "none" {
-		return
-	}
+// trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
+func trySSHPowerOff(h *host.Host) {
 	s, err := h.Driver.GetState()
 	if err != nil {
 		glog.Warningf("unable to get state: %v", err)
@@ -177,7 +174,11 @@ func DeleteHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
-	tryPowerOff(host)
+	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
+	if host.Driver.DriverName() == "hyperv" {
+		trySSHPowerOff(host)
+	}
+
 	console.OutStyle("deleting-host", "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
