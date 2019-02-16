@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Bump these on release
+# Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 0
 VERSION_MINOR ?= 34
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
+# Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
+
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
@@ -26,8 +29,6 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 # NOTE: "latest" as of 2018-12-04. kube-cross images aren't updated as often as Kubernetes
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
-
-ISO_VERSION ?= v0.34.0
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
