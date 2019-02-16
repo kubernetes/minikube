@@ -1,10 +1,11 @@
-<!-- Thanks for filing an issue! The more detail you can provide, the faster we will be able to respond.
+<!-- Thanks for filing an issue!
 
-If this is a bug report, please include the following:
+If this is a bug report, please include:
 
 [ ] The exact command used, including all options and flags.
 [ ] The full output of the command that failed
 [ ] The version of minikube used
 [ ] The output of `minikube logs`, if applicable.
 
+Please write what's happening in minikube versus your expectations below this line:
 -->
