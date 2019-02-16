@@ -46,10 +46,10 @@ test -d $HOME/go/src/k8s.io/minikube || \
 cd $HOME/go/src/k8s.io/minikube
 git pull
 make out/docker-machine-driver-kvm2
-install out/docker-machine-driver-kvm2 /usr/local/bin
+sudo install out/docker-machine-driver-kvm2 /usr/local/bin
 ```
 
-To use the driver:
+To use the kvm2 driver:
 
 ```shell
 minikube start --vm-driver kvm2
