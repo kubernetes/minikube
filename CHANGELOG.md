@@ -37,7 +37,6 @@ Huge thank you for this release towards our contributors:
 - Abhilash Pallerlamudi
 - Alberto Alvarez
 - Anders Björklund
-- Anders F Björklund
 - Balint Pato
 - Bassam Tabbara
 - Denis Denisov
@@ -47,7 +46,6 @@ Huge thank you for this release towards our contributors:
 - jay vyas
 - Jeff Wu
 - Kauê Doretto Grecchi
-- Kubernetes Prow Robot
 - Leif Ringstad
 - Mark Gibbons
 - Nicholas Goozeff
