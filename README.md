@@ -13,11 +13,14 @@
 [CodeCovResult]: https://codecov.io/gh/kubernetes/minikube
 [CodeCovWidget]: https://codecov.io/gh/kubernetes/minikube/branch/master/graph/badge.svg
 
-<img src="https://github.com/kubernetes/minikube/raw/master/logo/logo.png" width="100">
+<img src="https://github.com/kubernetes/minikube/raw/master/images/logo/logo.png" width="100">
 
 ## What is Minikube?
 
 Minikube is a tool that makes it easy to run Kubernetes locally. Minikube runs a single-node Kubernetes cluster inside a VM on your laptop for users looking to try out Kubernetes or develop with it day-to-day.
+
+<img src="https://github.com/kubernetes/minikube/raw/master/images/start.jpg" width="100">
+
 
 # Newsflash
 
