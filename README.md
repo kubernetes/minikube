@@ -21,6 +21,7 @@ Our [goal](https://github.com/kubernetes/minikube/blob/master/docs/contributors/
 
 ## News
 
+* 2019-02-16 - v0.34.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0341---2019-02-16)]
 * 2019-02-15 - v0.34.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0340---2019-02-15)]
 * 2019-01-18 - v0.33.1 released to address [CVE-2019-5736](https://www.openwall.com/lists/oss-security/2019/02/11/2) [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0331---2019-01-18)]
 * 2019-01-17 - v0.33.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0330---2019-01-17)]
