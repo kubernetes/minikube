@@ -27,7 +27,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 
-ISO_VERSION ?= v0.33.1
+ISO_VERSION ?= v0.34.0
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
