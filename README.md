@@ -37,6 +37,7 @@ minikube runs the official stable release of Kubernetes, with support for standa
 * RBAC
 * Dashboard - `minikube dashboard`
 * [Container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md) - `start --container-runtime`
+* Ability to [configure apiserver and kubelet options](https://github.com/kubernetes/minikube/blob/master/docs/configuring_kubernetes.md) via command-line flags
 
 As well as developer-friendly features:
 
@@ -95,22 +96,19 @@ Other drivers which are not yet part of our continuous integration system are:
 
 ## Quick Start
 
-Start a cluster:
+Start a cluster by running:
 
 `minikube start`
 
-Interact with it using `kubectl`, just like any other kubernetes cluster:
+Once started, you can interact with your cluster using `kubectl`, just like any other Kubernetes cluster. For instance, starting a server:
 
+`kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.4 --port=8080`
 
-```
-$ kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.4 --port=8080
-deployment "hello-minikube" created
+Exposing a service as a NodePort
 
-$ kubectl expose deployment hello-minikube --type=NodePort
-service "hello-minikube" exposed
-```
+`kubectl expose deployment hello-minikube --type=NodePort`
 
-Open the endpoint in your browser:
+minikube makes it easy to open this exposed endpoint in your browser:
 
 `minikube service hello-minikube`
 
