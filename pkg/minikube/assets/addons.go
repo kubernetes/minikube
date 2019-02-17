@@ -127,7 +127,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/heapster/grafana-svc.yaml",
 			constants.AddonsPath,
@@ -145,7 +145,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"heapster-rc.yaml",
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/heapster/heapster-svc.yaml",
 			constants.AddonsPath,
@@ -159,7 +159,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"elasticsearch-rc.yaml",
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/efk/elasticsearch-svc.yaml",
 			constants.AddonsPath,
@@ -171,7 +171,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"fluentd-es-rc.yaml",
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/efk/fluentd-es-configmap.yaml",
 			constants.AddonsPath,
@@ -209,7 +209,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"ingress-dp.yaml",
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/ingress/ingress-svc.yaml",
 			constants.AddonsPath,
@@ -229,7 +229,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"metrics-server-deployment.yaml",
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/metrics-server/metrics-server-service.yaml",
 			constants.AddonsPath,
@@ -265,7 +265,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"freshpod-rc.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "freshpod"),
 	"nvidia-driver-installer": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
@@ -273,7 +273,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"nvidia-driver-installer.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "nvidia-driver-installer"),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
@@ -281,7 +281,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
-			false),
+			true),
 	}, false, "nvidia-gpu-device-plugin"),
 	"logviewer": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
@@ -303,13 +303,13 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"gvisor-pod.yaml",
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/gvisor/gvisor-config.toml",
 			constants.GvisorFilesPath,
 			constants.GvisorConfigTomlTargetName,
 			"0640",
-			false),
+			true),
 		NewBinDataAsset(
 			"deploy/addons/gvisor/gvisor-containerd-shim.toml",
 			constants.GvisorFilesPath,
