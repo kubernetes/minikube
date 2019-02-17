@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/util"
@@ -26,10 +27,11 @@ import (
 
 func TestGenerateConfig(t *testing.T) {
 	tests := []struct {
-		description string
-		cfg         config.KubernetesConfig
-		expectedCfg string
-		shouldErr   bool
+		description  string
+		cfg          config.KubernetesConfig
+		expectedCfg  string
+		expectedOpts interface{}
+		shouldErr    bool
 	}{
 		{
 			description: "no extra args",
@@ -55,6 +57,37 @@ nodeName: minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 `,
+			expectedOpts: struct {
+				CertDir           string
+				ServiceCIDR       string
+				AdvertiseAddress  string
+				APIServerPort     int
+				KubernetesVersion string
+				EtcdDataDir       string
+				NodeName          string
+				CRISocket         string
+				ImageRepository   string
+				ExtraArgs         []ComponentExtraArgs
+				FeatureArgs       map[string]bool
+				NoTaintMaster     bool
+			}{
+				CertDir:           util.DefaultCertPath,
+				ServiceCIDR:       util.DefaultServiceCIDR,
+				AdvertiseAddress:  "192.168.1.100",
+				APIServerPort:     8443,
+				KubernetesVersion: "v1.10.0",
+				EtcdDataDir:       "/data/minikube",
+				NodeName:          "minikube",
+				ExtraArgs: []ComponentExtraArgs{
+					{
+						Component: "apiServerExtraArgs",
+						Options: map[string]string{
+							"admission-control": "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota",
+						},
+					},
+				},
+				FeatureArgs:   map[string]bool{},
+				NoTaintMaster: true},
 		},
 		{
 			description: "extra args all components",
@@ -255,6 +288,65 @@ apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 `,
 		},
+		{
+			description: "custom image repository",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				KubernetesVersion: "v1.10.0",
+				NodeName:          "minikube",
+				ImageRepository:   "docker-proxy-image.io/google_containers",
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+noTaintMaster: true
+api:
+  advertiseAddress: 192.168.1.100
+  bindPort: 8443
+  controlPlaneEndpoint: localhost
+kubernetesVersion: v1.10.0
+certificatesDir: /var/lib/minikube/certs/
+networking:
+  serviceSubnet: 10.96.0.0/12
+etcd:
+  dataDir: /data/minikube
+nodeName: minikube
+imageRepository: docker-proxy-image.io/google_containers
+apiServerExtraArgs:
+  admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+`,
+			expectedOpts: struct {
+				CertDir           string
+				ServiceCIDR       string
+				AdvertiseAddress  string
+				APIServerPort     int
+				KubernetesVersion string
+				EtcdDataDir       string
+				NodeName          string
+				CRISocket         string
+				ImageRepository   string
+				ExtraArgs         []ComponentExtraArgs
+				FeatureArgs       map[string]bool
+				NoTaintMaster     bool
+			}{
+				CertDir:           util.DefaultCertPath,
+				ServiceCIDR:       util.DefaultServiceCIDR,
+				AdvertiseAddress:  "192.168.1.100",
+				APIServerPort:     8443,
+				KubernetesVersion: "v1.10.0",
+				EtcdDataDir:       "/data/minikube",
+				NodeName:          "minikube",
+				ExtraArgs: []ComponentExtraArgs{
+					{
+						Component: "apiServerExtraArgs",
+						Options: map[string]string{
+							"admission-control": "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota",
+						},
+					},
+				},
+				ImageRepository: "docker-proxy-image.io/google_containers",
+				FeatureArgs:     map[string]bool{},
+				NoTaintMaster:   true},
+		},
 	}
 
 	for _, test := range tests {
@@ -264,7 +356,7 @@ apiServerExtraArgs:
 		}
 
 		t.Run(test.description, func(t *testing.T) {
-			actualCfg, _, err := generateConfig(test.cfg, runtime)
+			actualCfg, actualOpts, err := generateConfig(test.cfg, runtime)
 			if err != nil && !test.shouldErr {
 				t.Errorf("got unexpected error generating config: %v", err)
 				return
@@ -276,6 +368,11 @@ apiServerExtraArgs:
 			if actualCfg != test.expectedCfg {
 				t.Errorf("actual config does not match expected.  actual:\n%sexpected:\n%s", actualCfg, test.expectedCfg)
 				return
+			}
+			if test.expectedOpts != nil {
+				if diff := cmp.Diff(test.expectedOpts, actualOpts); diff != "" {
+					t.Errorf("opts differ: (-want +got)\n%s", diff)
+				}
 			}
 		})
 	}
