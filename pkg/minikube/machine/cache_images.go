@@ -48,8 +48,8 @@ var getWindowsVolumeName = getWindowsVolumeNameCmd
 // loadImageLock is used to serialize image loads to avoid overloading the guest VM
 var loadImageLock sync.Mutex
 
-func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
-	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
+func CacheImagesForBootstrapper(imageRepository string, version string, clusterBootstrapper string) error {
+	images := bootstrapper.GetCachedImageList(imageRepository, version, clusterBootstrapper)
 
 	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)

@@ -50,10 +50,11 @@ const (
 	BootstrapperTypeKubeadm = "kubeadm"
 )
 
-func GetCachedImageList(version string, bootstrapper string) []string {
+func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		return constants.GetKubeadmCachedImages(version)
+		_, images := constants.GetKubeadmImages(imageRepository, version)
+		return images
 	default:
 		return []string{}
 	}

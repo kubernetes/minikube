@@ -264,7 +264,7 @@ apiServerExtraArgs:
 		}
 
 		t.Run(test.description, func(t *testing.T) {
-			actualCfg, err := generateConfig(test.cfg, runtime)
+			actualCfg, _, err := generateConfig(test.cfg, runtime)
 			if err != nil && !test.shouldErr {
 				t.Errorf("got unexpected error generating config: %v", err)
 				return

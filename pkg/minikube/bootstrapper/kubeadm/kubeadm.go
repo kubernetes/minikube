@@ -32,7 +32,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	download "github.com/jimmidyson/go-download"
+	"github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -184,7 +184,7 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-func addAddons(files *[]assets.CopyableFile) error {
+func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 	// add addons to file list
 	// custom addons
 	if err := assets.AddMinikubeDirAssets(files); err != nil {
@@ -194,7 +194,16 @@ func addAddons(files *[]assets.CopyableFile) error {
 	for _, addonBundle := range assets.Addons {
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
 			for _, addon := range addonBundle.Assets {
-				*files = append(*files, addon)
+				if addon.IsTemplate() {
+					addonFile, err := addon.Evaluate(data)
+					if err != nil {
+						return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+					}
+
+					*files = append(*files, addonFile)
+				} else {
+					*files = append(*files, addon)
+				}
 			}
 		} else if err != nil {
 			return nil
@@ -286,7 +295,10 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
 
-	extraFlags := convertToFlags(extraOpts)
+	podInfraContainerImage, _ := constants.GetKubeadmImages(k8s.ImageRepository, k8s.KubernetesVersion)
+	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && podInfraContainerImage != "" {
+		extraOpts["pod-infra-container-image"] = podInfraContainerImage
+	}
 
 	// parses a map of the feature gates for kubelet
 	_, kubeletFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
@@ -294,14 +306,18 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 		return "", errors.Wrap(err, "parses feature gate config for kubelet")
 	}
 
+	if kubeletFeatureArgs != "" {
+		extraOpts["feature-gates"] = kubeletFeatureArgs
+	}
+
+	extraFlags := convertToFlags(extraOpts)
+
 	b := bytes.Buffer{}
 	opts := struct {
 		ExtraOptions     string
-		FeatureGates     string
 		ContainerRuntime string
 	}{
 		ExtraOptions:     extraFlags,
-		FeatureGates:     kubeletFeatureArgs,
 		ContainerRuntime: k8s.ContainerRuntime,
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
@@ -312,8 +328,9 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 }
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
+	_, images := constants.GetKubeadmImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
-		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
+		err := machine.LoadImages(k.c, images, constants.ImageCacheDir)
 		if err != nil {
 			return errors.Wrap(err, "loading cached images")
 		}
@@ -322,7 +339,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
-	kubeadmCfg, err := generateConfig(cfg, r)
+	kubeadmCfg, opts, err := generateConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
@@ -370,7 +387,7 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	if err := addAddons(&files); err != nil {
+	if err := addAddons(&files, opts); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
 
@@ -391,22 +408,22 @@ sudo systemctl start kubelet
 	return nil
 }
 
-func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
+func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, interface{}, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return "", errors.Wrap(err, "parsing kubernetes version")
+		return "", nil, errors.Wrap(err, "parsing kubernetes version")
 	}
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
-		return "", errors.Wrap(err, "parses feature gate config for kubeadm and component")
+		return "", nil, errors.Wrap(err, "parses feature gate config for kubeadm and component")
 	}
 
 	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
 	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version, componentFeatureArgs)
 	if err != nil {
-		return "", errors.Wrap(err, "generating extra component config for kubeadm")
+		return "", nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
 	// In case of no port assigned, use util.APIServerPort
@@ -424,6 +441,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		EtcdDataDir       string
 		NodeName          string
 		CRISocket         string
+		ImageRepository   string
 		ExtraArgs         []ComponentExtraArgs
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
@@ -436,6 +454,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		CRISocket:         r.SocketPath(),
+		ImageRepository:   k8s.ImageRepository,
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
@@ -455,10 +474,10 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		kubeadmConfigTemplate = kubeadmConfigTemplateV1Alpha3
 	}
 	if err := kubeadmConfigTemplate.Execute(&b, opts); err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return b.String(), nil
+	return b.String(), opts, nil
 }
 
 func maybeDownloadAndCache(binary, version string) (string, error) {
