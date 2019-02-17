@@ -38,7 +38,8 @@ networking:
 etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
-{{if .CRISocket}}criSocket: {{.CRISocket}}
+{{if .ImageRepository}}imageRepository: {{.ImageRepository}}
+{{end}}{{if .CRISocket}}criSocket: {{.CRISocket}}
 {{end}}{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
@@ -67,7 +68,8 @@ nodeRegistration:
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
-{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
+{{if .ImageRepository}}imageRepository: {{.ImageRepository}}
+{{end}}{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
@@ -101,7 +103,7 @@ var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate"
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
+ExecStart=/usr/bin/kubelet{{if .ExtraOptions}} {{.ExtraOptions}}{{end}}
 
 [Install]
 `))

@@ -77,6 +77,7 @@ const (
 	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
+	imageRepository       = "image-repository"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
 	cacheImages           = "cache-images"
@@ -123,6 +124,7 @@ func init() {
 	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
+	startCmd.Flags().String(imageRepository, "", "Image repository to pull down docker images.")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
@@ -237,7 +239,7 @@ func beginCacheImages(g *errgroup.Group, kVersion string) {
 	}
 	console.OutStyle("caching", "Caching images in the background ...")
 	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(kVersion, viper.GetString(cmdcfg.Bootstrapper))
+		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), kVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
 }
 
@@ -296,6 +298,7 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
+			ImageRepository:        viper.GetString(imageRepository),
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,

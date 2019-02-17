@@ -18,6 +18,7 @@ package assets
 
 import (
 	"bytes"
+	"html/template"
 	"io"
 	"os"
 	"path"
@@ -134,30 +135,71 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 
 type BinDataAsset struct {
 	BaseAsset
+	template *template.Template
 }
 
-func NewBinDataAsset(assetName, targetDir, targetName, permissions string) *BinDataAsset {
+func NewBinDataAsset(assetName, targetDir, targetName, permissions string, isTemplate bool) *BinDataAsset {
 	m := &BinDataAsset{
-		BaseAsset{
+		BaseAsset: BaseAsset{
 			AssetName:   assetName,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
+		template: nil,
 	}
-	m.loadData()
+	m.loadData(isTemplate)
 	return m
 }
 
-func (m *BinDataAsset) loadData() error {
+func defaultValue(defValue string, val interface{}) string {
+	if val == nil {
+		return defValue
+	}
+	strVal, ok := val.(string)
+	if !ok || strVal == "" {
+		return defValue
+	}
+	return strVal
+}
+
+func (m *BinDataAsset) loadData(isTemplate bool) error {
 	contents, err := Asset(m.AssetName)
 	if err != nil {
 		return err
 	}
+
+	if isTemplate {
+		tpl, err := template.New(m.AssetName).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
+		if err != nil {
+			return err
+		}
+
+		m.template = tpl
+	}
+
 	m.data = contents
 	m.Length = len(contents)
 	m.reader = bytes.NewReader(m.data)
 	return nil
+}
+
+func (m *BinDataAsset) IsTemplate() bool {
+	return m.template != nil
+}
+
+func (m *BinDataAsset) Evaluate(data interface{}) (*MemoryAsset, error){
+	if !m.IsTemplate() {
+		return nil, errors.Errorf("the asset %s is not a template", m.AssetName)
+
+	}
+
+	var buf bytes.Buffer
+	if err := m.template.Execute(&buf, data); err != nil {
+		return nil, err
+	}
+
+	return NewMemoryAsset(buf.Bytes(), m.GetTargetDir(), m.GetTargetName(), m.GetPermissions()), nil
 }
 
 func (m *BinDataAsset) GetLength() int {

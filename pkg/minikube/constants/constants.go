@@ -176,13 +176,24 @@ const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 const DriverNone = "none"
 const FileScheme = "file"
 
-func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
+func GetKubeadmImages(imageRepository string, kubernetesVersionStr string) (string, []string) {
+	minikubeRepository := imageRepository
+	if imageRepository == "" {
+		imageRepository = "k8s.gcr.io"
+		minikubeRepository = "gcr.io/k8s-minikube"
+	}
+	if !strings.HasSuffix(imageRepository, "/") {
+		imageRepository += "/"
+	}
+	if !strings.HasSuffix(minikubeRepository, "/") {
+		minikubeRepository += "/"
+	}
 
 	var images = []string{
-		"k8s.gcr.io/kube-proxy-amd64:" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-scheduler-amd64:" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-controller-manager-amd64:" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-apiserver-amd64:" + kubernetesVersionStr,
+		imageRepository + "kube-proxy-amd64:" + kubernetesVersionStr,
+		imageRepository + "kube-scheduler-amd64:" + kubernetesVersionStr,
+		imageRepository + "kube-controller-manager-amd64:" + kubernetesVersionStr,
+		imageRepository + "kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
 
 	ge_v1_13 := semver.MustParseRange(">=1.13.0")
@@ -197,74 +208,84 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		glog.Errorln("Error parsing version semver: ", err)
 	}
 
+	var podInfraContainerImage string
 	if ge_v1_13(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.24",
-			"k8s.gcr.io/coredns:1.2.6",
+			podInfraContainerImage,
+			imageRepository + "pause:3.1",
+			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
+			imageRepository + "etcd-amd64:3.2.24",
+			imageRepository + "coredns:1.2.6",
 		}...)
 
 	} else if v1_12(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.24",
-			"k8s.gcr.io/coredns:1.2.2",
+			podInfraContainerImage,
+			imageRepository + "pause:3.1",
+			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
+			imageRepository + "etcd-amd64:3.2.24",
+			imageRepository + "coredns:1.2.2",
 		}...)
 
 	} else if v1_11(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.18",
-			"k8s.gcr.io/coredns:1.1.3",
+			podInfraContainerImage,
+			imageRepository + "pause:3.1",
+			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
+			imageRepository + "etcd-amd64:3.2.18",
+			imageRepository + "coredns:1.1.3",
 		}...)
 
 	} else if v1_10(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.1.12",
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
+			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
+			imageRepository + "etcd-amd64:3.1.12",
 		}...)
 
 	} else if v1_9(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause-amd64:3.0"
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.0",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.7",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.7",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.7",
-			"k8s.gcr.io/etcd-amd64:3.1.10",
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns-amd64:1.14.7",
+			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.7",
+			imageRepository + "k8s-dns-sidecar-amd64:1.14.7",
+			imageRepository + "etcd-amd64:3.1.10",
 		}...)
 
 	} else if v1_8(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause-amd64:3.0"
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.0",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.5",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.5",
-			"k8s.gcr.io/etcd-amd64:3.0.17",
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns-amd64:1.14.5",
+			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.5",
+			imageRepository + "k8s-dns-sidecar-amd64:1.14.5",
+			imageRepository + "etcd-amd64:3.0.17",
 		}...)
+
+	} else {
+		podInfraContainerImage = imageRepository + "/pause-amd64:3.0"
 	}
 
 	images = append(images, []string{
-		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1",
-		"k8s.gcr.io/kube-addon-manager:v8.6",
-		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
+		imageRepository + "kubernetes-dashboard-amd64:v1.10.1",
+		imageRepository + "kube-addon-manager:v8.6",
+		minikubeRepository + "storage-provisioner:v1.8.1",
 	}...)
 
-	return images
+	return podInfraContainerImage, images
 }
 
 var ImageCacheDir = MakeMiniPath("cache", "images")
