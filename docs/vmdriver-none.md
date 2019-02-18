@@ -10,7 +10,7 @@ The `none` driver allows advanced minikube users to skip VM creation, allowing m
 
 The `none` driver supports releases of Debian, Ubuntu, and Fedora that are less than 2 years old. In practice, any systemd-based modern distribution is likely to work, and we will accept pull requests which improve compatibility with other systems.
 
-## Can vm-driver=none be used outside of a VM?
+## Can the none driver be used outside of a VM?
 
 Not if you can avoid it.
 
@@ -30,7 +30,7 @@ When using the `none` driver, it is highly recommended that your host is isolate
 
 Additionally, minikube with the `none` driver has a very confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard"). In a future release, we intend to disallow running `minikube`, and instead call into `sudo` when necesarry to avoid permissions issues.
 
-# Uninstall
+## Uninstalling
 
 The `none` driver now supports uninstallation via `minikube delete`. Please note that it will not fully remove /etc/kubernetes, since it does not track which files in /etc/kubernetes existed before the installation.
 
