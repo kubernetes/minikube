@@ -55,25 +55,29 @@ As well as developer-friendly features:
 
 ## Community
 
+minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project. 
+
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com) - Live chat with minikube developers!
 * [minikube-users mailing list](https://groups.google.com/forum/#!forum/minikube-users)
 * [minikube-dev mailing list](https://groups.google.com/forum/#!forum/minikube-dev)
+* [Bi-weekly office hours, Mondays @ 10am PST](https://tinyurl.com/minikube-oh)
+
 * [Contributing](https://github.com/kubernetes/minikube/blob/master/CONTRIBUTING.md)
 * [Development Roadmap](https://github.com/kubernetes/minikube/blob/master/docs/contributors/roadmap.md)
 
 ## Installation
 
-For detailed steps, see the [installation guide](https://kubernetes.io/docs/tasks/tools/install-minikube/)
+See the [installation guide](https://kubernetes.io/docs/tasks/tools/install-minikube/). For the impatient, here is the TL;DR:
 
-* macOS 10.12 (Sierra) or higher
+* *macOS 10.12 (Sierra)*
   * Requires installing hypervisor, such as hyperkit (recommended) or VirtualBox
   * using [brew](https://brew.sh/): `brew cask install minikube`
   * manually: `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 && sudo install minikube-darwin-amd64 /usr/local/bin/minikube`
 
-* *Windows 10
+* *Windows 10*
   * Requires a hypervisor, such as VirtualBox (recommended) or HyperV
   * VT-x/AMD-v virtualization must be enabled in BIOS
-  * using [chocolatey](https://chocolatey.org/)* `choco install minikube`
+  * using [chocolatey](https://chocolatey.org/) `choco install minikube`
   * manually: Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
 * *Linux* 
