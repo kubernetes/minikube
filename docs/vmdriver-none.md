@@ -12,7 +12,7 @@ The `none` driver supports releases of Debian, Ubuntu, and Fedora that are less 
 
 ## Can the none driver be used outside of a VM?
 
-Yes, but please avoid it if possible.
+Yes, *but please avoid doing so if at all possible.*
 
 minikube was designed to run Kubernetes within a dedicated VM, and assumes that it has complete control over the machine it is executing on.  With the `none` driver, minikube and Kubernetes run in an environment with very limited isolation, which could result in:
 
