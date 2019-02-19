@@ -6,10 +6,10 @@ minikube requires access to the internet via HTTP, HTTPS, and DNS protocols. If 
 * `HTTPS_PROXY` - The URL to your HTTPS proxy
 * `NO_PROXY` - A comma-separated list of hosts which should not go through the proxy.
 
-The NO_PROXY variable here is important: Without setting it, minikube may not be able to access resources within the VM. minikube has two important ranges of internal IP's:
+The NO_PROXY variable here is important: Without setting it, minikube may not be able to access resources within the VM. minikube uses two IP ranges, which should not go through the proxy:
 
-* *192.168.99.1/24*: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
-* *10.96.0.0/12*: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
+* **192.168.99.1/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
+* **10.96.0.0/12**: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
 
 ## Example Usage
 
