@@ -2,14 +2,14 @@
 
 minikube requires access to the internet via HTTP, HTTPS, and DNS protocols. If a HTTP proxy is required to access the internet, you may need to pass the proxy connection information to both minikube and Docker using environment variables:
 
-* HTTP_PROXY - The URL to your HTTP proxy
-* HTTPS_PROXY - The URL to your HTTPS proxy
-* NO_PROXY - A comma-separated list of hosts which should not go through the proxy.
+* `HTTP_PROXY` - The URL to your HTTP proxy
+* `HTTPS_PROXY` - The URL to your HTTPS proxy
+* `NO_PROXY` - A comma-separated list of hosts which should not go through the proxy.
 
 The NO_PROXY variable here is important: Without setting it, minikube may not be able to access resources within the VM. minikube has two important ranges of internal IP's:
 
-* 192.168.0.0/12: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
-* 10.96.0.0/12: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
+* *192.168.99.1/24*: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
+* *10.96.0.0/12*: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
 
 ## Example Usage
 
@@ -18,7 +18,7 @@ The NO_PROXY variable here is important: Without setting it, minikube may not be
 ```
 export HTTP_PROXY=http://<proxy hostname:port>
 export HTTPS_PROXY=https://<proxy hostname:port>
-export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16
+export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24
 
 minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTTPS_PROXY \
   --docker-env NO_PROXY=$NO_PROXY
@@ -31,7 +31,7 @@ To make the exported variables permanent, consider adding the declarations to ~/
 ```
 set HTTP_PROXY=http://<proxy hostname:port>
 set HTTPS_PROXY=https://<proxy hostname:port>
-set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.0.0/16
+set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24
 
 minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTTPS_PROXY \
   --docker-env NO_PROXY=$NO_PROXY
