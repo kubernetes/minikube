@@ -322,7 +322,7 @@ func prepareNone() {
 
 		console.OutLn("")
 		console.OutStyle("command", "sudo mv %s/.kube %s/.minikube $HOME", home, home)
-		console.OutStyle("command", "sudo chown -R $USER %s/.kube %s/.minikube", home, home)
+		console.OutStyle("command", "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
 		console.OutLn("")
 
 		console.OutStyle("tip", "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
