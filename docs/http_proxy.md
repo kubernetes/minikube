@@ -51,7 +51,7 @@ failed to download: failed to download to temp file: download failed: 5 error(s)
 proxyconnect tcp: dial tcp <host>:<port>: connect: connection refused
 ```
 
-This error indicates that the host:port combination defined by HTTPS_PROXY is incorrect, or that the proxy is unavailable.
+This error indicates that the host:port combination defined by HTTPS_PROXY or HTTP_PROXY is incorrect, or that the proxy is unavailable.
 
 ## Unable to pull images..Client.Timeout exceeded while awaiting headers
 
