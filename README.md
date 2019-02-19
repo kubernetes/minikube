@@ -38,7 +38,7 @@ minikube runs the official stable release of Kubernetes, with support for standa
 * RBAC
 * Dashboard - `minikube dashboard`
 * [Container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md) - `start --container-runtime`
-* [Cnfigure apiserver and kubelet options](https://github.com/kubernetes/minikube/blob/master/docs/configuring_kubernetes.md) via command-line flags
+* [Configure apiserver and kubelet options](https://github.com/kubernetes/minikube/blob/master/docs/configuring_kubernetes.md) via command-line flags
 
 As well as developer-friendly features:
 
