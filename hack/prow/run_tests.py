@@ -84,7 +84,7 @@ def upload_results(outdir, test, buildnum, bucket):
   for line in p.stdout:
     print line
 
-def run_tests(test, build_log, exit_status, started, finished, test_results):
+def run_tests(test, log_path, exit_status, started, finished, test_results):
   """ execute the test, grab the start time, finish time, build logs and exit status
       Pull test results and important information out of the build log 
       test results format should be:
@@ -102,7 +102,7 @@ def run_tests(test, build_log, exit_status, started, finished, test_results):
        tests_results: a list of dicts containing test results
   """
   classname = os.path.basename(test).split('.')[0]
-  build_log_file = open(build_log, 'w')
+  build_log_file = open(log_path, 'w')
   p = subprocess.Popen(['bash','-x',test], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   for line in p.stdout:
     build_log_file.write(line)
