@@ -6,15 +6,14 @@ Some features can only be accessed by environment variables, here is a list of t
 
 * **MINIKUBE_HOME** - (string) sets the path for the .minikube directory that minikube uses for state/configuration
 
+* **MINIKUBE_IN_COLOR** - (bool) manually sets whether or not emoji and colors should appear in minikube. Set to false or 0 to disable this feature, true or 1 to force it to be turned on.
+
 * **MINIKUBE_WANTUPDATENOTIFICATION** - (bool) sets whether the user wants an update notification for new minikube versions
 
 * **MINIKUBE_REMINDERWAITPERIODINHOURS** - (int) sets the number of hours to check for an update notification
-* **MINIKUBE_WANTREPORTERROR** - (bool) sets whether the user wants to send anonymous errors reports to help improve minikube
-
-* **MINIKUBE_WANTREPORTERRORPROMPT** - (bool) sets whether the user wants to be prompted on an error that they can report them to help improve minikube
 
 * **MINIKUBE_WANTKUBECTLDOWNLOADMSG** - (bool) sets whether minikube should tell a user that `kubectl` cannot be found on there path
-* **MINIKUBE_WANTNONEDRIVERWARNING** - (bool) sets whether minikube should warn a user about running the 'none' driver (CSRF attacks)
+* **MINIKUBE_WANTNONEDRIVERWARNING** - (bool) sets whether minikube should warn a user about running the 'none' driver
 
 * **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube which can be analyzed via:
 
