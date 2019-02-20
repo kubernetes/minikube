@@ -1,12 +1,14 @@
-<!-- Thanks for filing an issue!
+<!-- <HIDDEN-TEXT>
+
+If this is a feature request, please include the expected impact to users if your feature was to be implemented.
 
 If this is a bug report, please include:
 
-[ ] The exact command used, including all options and flags.
-[ ] The full output of the command that failed
-[ ] The version of minikube used
-[ ] The operating system name and version used
-[ ] The output of `minikube logs`, if applicable.
+- [ ] The exact command-line used, including all options and flags.
+- [ ] The full output of the command that failed
+- [ ] The version of minikube used
+- [ ] The operating system name and version used
+- [ ] The output of `minikube logs`, if applicable.
+- [ ] What you expect to happen instead.
 
-Please write what's happening in minikube versus your expectations below this line:
--->
+<END-HIDDEN-TEXT> - Please write your issue below this line. Thank you for your contribution!  -->
