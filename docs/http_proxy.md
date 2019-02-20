@@ -68,7 +68,8 @@ This error indicates that the container runtime running within the VM does not h
 ## x509: certificate signed by unknown authority
 
 ```
-[ERROR ImagePull]: failed to pull image k8s.gcr.io/kube-apiserver:v1.13.3: output: Error response from daemon: Get https://k8s.gcr.io/v2/: x509: certificate signed by unknown authority
+[ERROR ImagePull]: failed to pull image k8s.gcr.io/kube-apiserver:v1.13.3: output: Error response from daemon:
+Get https://k8s.gcr.io/v2/: x509: certificate signed by unknown authority
 ```
 
 This is because minikube VM is stuck behind a proxy that rewrites HTTPS responses to contain it's own certificate. The [solution](https://github.com/kubernetes/minikube/issues/3613#issuecomment-461034222) is to install the proxy certificate into a location that is copied to the VM at startup. Ask your IT department for the appropriate PEM file, and add it to:
