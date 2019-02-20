@@ -22,6 +22,11 @@
 
 import os, sys, json, re, argparse, calendar, time, subprocess, shlex
 
+def get_classname(test_script):
+  """ parse out the test classname from the full path of the test script"""
+  classname = os.path.basename(test).split('.')[0]
+  return classname
+
 def write_results(outdir, started, finished, test_results):
   """ write current results into artifacts/junit_runner.xml 
       format:
@@ -69,23 +74,23 @@ def write_results(outdir, started, finished, test_results):
 
   return
 
-def upload_results(outdir, test, buildnum, bucket):
+def upload_results(outdir, test_script, buildnum, bucket):
   """ push the contents of gcs_out/* into bucket/test/logs/buildnum
 
       Args:
        outdir: a string containing the results storage directory
-       test: a string containing path to the test script
+       test_script: a string containing path to the test script
        buildnum: a string containing the buildnum
        bucket: a string containing the bucket to upload results to
   """
-  classname = os.path.basename(test).split('.')[0]
+  classname = get_classname(test_script)
   args = shlex.split("gsutil cp -R gcs_out/ gs://%s/logs/%s/%s" % (bucket, classname, buildnum))
   p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   for line in p.stdout:
     print line
 
-def run_tests(test, log_path, exit_status, started, finished, test_results):
-  """ execute the test, grab the start time, finish time, build logs and exit status
+def run_tests(test_script, log_path, exit_status, started, finished, test_results):
+  """ execute the test script, grab the start time, finish time, build logs and exit status
       Pull test results and important information out of the build log 
       test results format should be:
       === RUN   TestFunctional/Mounting
@@ -94,16 +99,16 @@ def run_tests(test, log_path, exit_status, started, finished, test_results):
           --- FAIL: SOMETESTSUITE/TESTNAME (seconds)
 
       Args:
-       test: a string containing path to the test script
+       test_script: a string containing path to the test script
        build_log: a string containing path to the build_log
        exit_status: a string that will contain the test script's exit_status
        started: a dict containing the starting data
        finished: a dict containing the finished data
        tests_results: a list of dicts containing test results
   """
-  classname = os.path.basename(test).split('.')[0]
+  classname = get_classname(test_script)
   build_log_file = open(log_path, 'w')
-  p = subprocess.Popen(['bash','-x',test], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+  p = subprocess.Popen(['bash','-x',test_script], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
   for line in p.stdout:
     build_log_file.write(line)
     print line.rstrip()
