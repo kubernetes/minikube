@@ -1,13 +1,9 @@
-<!-- <HIDDEN-TEXT>
+<!-- <START-HIDDEN-TEXT>
 
-If this is a feature request, please include the expected impact to users if your feature was to be implemented. If this is a bug report, please include:
+If this is a bug report, please include:
 
-- [ ] The command-line used, including all options and flags.
+- [ ] How to replicate the error, including the exact command-lines used.
 - [ ] The full output of the command that failed
-- [ ] The version of minikube used
 - [ ] The operating system name and version used
-- [ ] The output from the `minikube logs` command, if applicable.
-
-NOTE: You may attach log files by dragging them into this window.
 
 <END-HIDDEN-TEXT> - Please write your issue below this line. Thank you for your contribution!  -->
