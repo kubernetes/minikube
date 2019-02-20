@@ -68,7 +68,8 @@ This error indicates that the container runtime running within the VM does not h
 ## x509: certificate signed by unknown authority
 
 ```
-[ERROR ImagePull]: failed to pull image k8s.gcr.io/kube-apiserver:v1.13.3: output: Error response from daemon:
+[ERROR ImagePull]: failed to pull image k8s.gcr.io/kube-apiserver:v1.13.3:
+output: Error response from daemon:
 Get https://k8s.gcr.io/v2/: x509: certificate signed by unknown authority
 ```
 
