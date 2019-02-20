@@ -41,7 +41,7 @@ minikube start
 ### Example: Profiling
 
 ```shell
-$ MINIKUBE_ENABLE_PROFILING=1 ./out/minikube start
+MINIKUBE_ENABLE_PROFILING=1 minikube start
 ```
 
 Output:
