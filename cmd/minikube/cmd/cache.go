@@ -81,6 +81,18 @@ func imagesInConfigFile() ([]string, error) {
 	return []string{}, nil
 }
 
+// CacheImagesInConfigFile caches the images currently in the config file (minikube start)
+func CacheImagesInConfigFile() error {
+	images, err := imagesInConfigFile()
+	if err != nil {
+		return err
+	}
+	if len(images) == 0 {
+		return nil
+	}
+	return machine.CacheImages(images, constants.ImageCacheDir)
+}
+
 // LoadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
 func LoadCachedImagesInConfigFile() error {
 	images, err := imagesInConfigFile()

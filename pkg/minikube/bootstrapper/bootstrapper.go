@@ -51,6 +51,16 @@ const (
 	BootstrapperTypeKubeadm = "kubeadm"
 )
 
+// GetCachedBinaryList returns the list of binaries
+func GetCachedBinaryList(bootstrapper string) []string {
+	switch bootstrapper {
+	case BootstrapperTypeKubeadm:
+		return constants.GetKubeadmCachedBinaries()
+	default:
+		return []string{}
+	}
+}
+
 // GetCachedImageList returns the list of images for a version
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
 	switch bootstrapper {

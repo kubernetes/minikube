@@ -69,6 +69,7 @@ var styles = map[string]style{
 	"documentation": {Prefix: "🗎   "},
 	"issues":        {Prefix: "📚  "},
 	"issue":         {Prefix: "    ▪ "}, // Indented bullet
+	"check":         {Prefix: "✔️  "},
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  ", LowPrefix: "@   "},
