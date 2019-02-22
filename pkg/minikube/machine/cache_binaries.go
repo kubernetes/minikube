@@ -31,6 +31,23 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// CacheBinariesForBootstrapper will cache binaries for a bootstrapper
+func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) error {
+	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
+
+	var g errgroup.Group
+	for _, bin := range binaries {
+		bin := bin
+		g.Go(func() error {
+			if _, err := CacheBinary(bin, version); err != nil {
+				return errors.Wrapf(err, "caching image %s", bin)
+			}
+			return nil
+		})
+	}
+	return g.Wait()
+}
+
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version string) (string, error) {
 	targetDir := constants.MakeMiniPath("cache", version)
