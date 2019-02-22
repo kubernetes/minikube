@@ -129,7 +129,7 @@ def main(argv):
   parser.add_argument('--test', required=True, help='full path to test script you want to run')
   parser.add_argument('--build-num', dest="buildnum", required=True, help='buildnumber for uploading to GCS')
   parser.add_argument('--bucket', default="k8s-minikube-prow", help='Name of the GCS bucket to upload to.  Default: k8s-minkube-prow')
-  parser.add_argument('--outdir', default="gcs_out", help='Path of the directory to store all results, artifacts, and logs')
+  parser.add_argument('--out-dir', dest="outdir", default="gcs_out", help='Path of the directory to store all results, artifacts, and logs')
   args = parser.parse_args()
 
   if not os.path.exists(args.outdir):
