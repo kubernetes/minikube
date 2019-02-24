@@ -235,7 +235,7 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
 	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	dpkg-deb --build out/minikube_$(DEB_VERSION)
+	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
 
 .SECONDEXPANSION:
