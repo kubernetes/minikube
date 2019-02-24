@@ -64,6 +64,9 @@ Feel free to leave off \`\`\`sudo cp minikube /usr/local/bin/ && rm minikube\`\`
 ### Debian Package (.deb) [Experimental]
 Download the \`minikube_${DEB_VERSION}.deb\` file, and install it using \`sudo dpkg -i minikube_$(DEB_VERSION).deb\`
 
+### RPM Package (.rpm) [Experimental]
+Download the \`minikube-${RPM_VERSION}.rpm\` file, and install it using \`sudo rpm -i minikube-$(RPM_VERSION).rpm\`
+
 ### Windows [Experimental]
 Download the \`minikube-windows-amd64.exe\` file, rename it to \`minikube.exe\` and add it to your path.
 
