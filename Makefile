@@ -21,6 +21,7 @@ ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+RPM_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
@@ -237,6 +238,14 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin/minikube
 	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
+
+out/minikube-$(RPM_VERSION).rpm: out/minikube-linux-amd64
+	cp -r installers/linux/rpm/minikube_rpm_template out/minikube-$(RPM_VERSION)
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/minikube-$(RPM_VERSION)/minikube.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename minikube-$(RPM_VERSION).rpm" \
+		 out/minikube-$(RPM_VERSION)/minikube.spec
+	rm -rf out/minikube-$(RPM_VERSION)
 
 .SECONDEXPANSION:
 TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
