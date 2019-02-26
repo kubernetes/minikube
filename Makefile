@@ -20,7 +20,7 @@ VERSION_BUILD ?= 1
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
-DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
+DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
@@ -235,7 +235,7 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
 	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	dpkg-deb --build out/minikube_$(DEB_VERSION)
+	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
 
 .SECONDEXPANSION:
