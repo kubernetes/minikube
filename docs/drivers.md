@@ -36,6 +36,14 @@ sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm
 sudo yum install libvirt-daemon-kvm qemu-kvm
 ```
 
+Enable,start, and verify the libvirtd service has started. 
+```shell
+sudo systemctl enable libvirtd.service
+sudo systemctl start libvirtd.service
+sudo systemctl status libvirtd.service
+```
+
+
 Then you will need to add yourself to libvirt group (older distributions may use libvirtd instead)
 
 `sudo usermod -a -G libvirt $(whoami)`
@@ -50,6 +58,7 @@ Now install the driver:
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
   && sudo install docker-machine-driver-kvm2 /usr/local/bin/
 ```
+
 
 NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved. Building this binary will require [Go v1.11](https://golang.org/dl/) or newer to be installed. 
 
