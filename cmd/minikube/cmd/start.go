@@ -427,6 +427,11 @@ func validateKubernetesVersions(old *cfg.Config) string {
 	if nv == "" {
 		nv = constants.DefaultKubernetesVersion
 	}
+
+	if nv[0] != version.VersionPrefix {
+		exit.WithCode(exit.Usage, "the --kubernetes-version flag requires the version to start with a 'v'")
+	}
+
 	nvs, err := semver.Make(strings.TrimPrefix(nv, version.VersionPrefix))
 	if err != nil {
 		exit.WithCode(exit.Data, "Unable to parse %q: %v", nv, err)

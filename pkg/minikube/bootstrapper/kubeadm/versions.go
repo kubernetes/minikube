@@ -25,6 +25,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
+	"github.com/kubernetes/minikube/pkg/version"
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -158,10 +159,13 @@ func Supports(featureName string) bool {
 	return false
 }
 
-// ParseKubernetesVersion parses the kubernetes version
-func ParseKubernetesVersion(version string) (semver.Version, error) {
-	// Strip leading 'v' prefix from version for semver parsing
-	v, err := semver.Make(version[1:])
+// ParseKubernetesVersion validates the kubernetes version as legitimate
+func ParseKubernetesVersion(input string) (semver.Version, error) {
+	if input[0] != version.VersionPrefix {
+		return semver.Version{}, fmt.Errorf("version numbers must begin with %v", version.VersionPrefix)
+	}
+
+	v, err := semver.Make(strings.TrimPrefix(input, version.VersionPrefix))
 	if err != nil {
 		return semver.Version{}, errors.Wrap(err, "invalid version, must begin with 'v'")
 	}

@@ -94,12 +94,45 @@ func TestVersionIsBetween(t *testing.T) {
 }
 
 func TestParseKubernetesVersion(t *testing.T) {
-	version, err := ParseKubernetesVersion("v1.8.0-alpha.5")
-	if err != nil {
-		t.Fatalf("Error parsing version: %v", err)
+	tests := []struct {
+		description string
+		version     string
+		comparison  string
+		expected    boolean
+	}{
+		{
+			description: "regular 1.x.x version",
+			version:     "1.8.0",
+			comparison:  "1.8.0",
+			expected:    true,
+		},
+		{
+			description: "alpha version",
+			version:     "v1.8.0-alpha.5",
+			comparison:  "1.8.0-alpha.5",
+			expected:    true,
+		},
+		{
+			description: "missing `v` prefix: considered invalid",
+			version:     "1.8.0",
+			comparison:  "1.8.0",
+			expected:    false,
+		},
 	}
-	if version.NE(semver.MustParse("1.8.0-alpha.5")) {
-		t.Errorf("Expected: %s, Actual:%s", "1.8.0-alpha.5", version)
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			version, err := ParseKubernetesVersion(test.input)
+			if err != nil {
+				t.Fatalf("Error parsing version: %v", err)
+			}
+
+			comparison := semver.MustParse(test.comparison)
+
+			if version.NE(comparison) == test.expected {
+				t.Errorf("Expected: %s, Actual: %s", test.expected, version)
+			}
+		})
 	}
 }
 
