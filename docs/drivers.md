@@ -25,9 +25,9 @@ To install the KVM2 driver, first install and configure the prereqs:
 ```
 Enable,start, and verify the libvirtd service has started. 
 ```shell
-systemctl enable libvirtd.service
-systemctl start libvirtd.service
-systemctl status libvirtd.service
+sudo systemctl enable libvirtd.service
+sudo systemctl start libvirtd.service
+sudo systemctl status libvirtd.service
 ```
 
 
@@ -44,7 +44,7 @@ Now install the driver:
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
   && sudo install docker-machine-driver-kvm2 /usr/local/bin/
-
+```
 
 
 NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved. Building this binary will require [Go v1.11](https://golang.org/dl/) or newer to be installed. 
@@ -63,6 +63,18 @@ To use the kvm2 driver:
 
 ```shell
 minikube start --vm-driver kvm2
+```
+
+or, to use kvm2 as a default driver:
+
+```shell
+minikube config set vm-driver kvm2
+```
+
+and run minikube as usual:
+
+```shell
+minikube start
 ```
 
 #### Hyperkit driver
