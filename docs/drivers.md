@@ -22,7 +22,6 @@ To install the KVM2 driver, first install and configure the prereqs:
 * Ubuntu 16.x or older: `sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm`
 * Fedora/CentOS/RHEL: `sudo yum install libvirt-daemon-kvm qemu-kvm`
 
-```
 Enable,start, and verify the libvirtd service has started. 
 ```shell
 sudo systemctl enable libvirtd.service
