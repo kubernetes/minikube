@@ -85,6 +85,7 @@ const (
 	vsockPorts            = "hyperkit-vsock-ports"
 	gpu                   = "gpu"
 	embedCerts            = "embed-certs"
+	noVTXCheck            = "no-vtx-check"
 )
 
 var (
@@ -139,6 +140,7 @@ func init() {
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
+	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }
@@ -282,6 +284,7 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 			DisableDriverMounts: viper.GetBool(disableDriverMounts),
 			UUID:                viper.GetString(uuid),
 			GPU:                 viper.GetBool(gpu),
+			NoVTXCheck:          viper.GetBool(noVTXCheck),
 		},
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      kVersion,
