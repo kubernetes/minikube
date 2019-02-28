@@ -48,22 +48,24 @@ func (f *fakeFile) String() string {
 func TestOutStyle(t *testing.T) {
 
 	var tests = []struct {
-		style    string
-		envValue string
-		message  string
-		want     string
+		style      string
+		colorValue string
+		emojiValue string
+		message    string
+		want       string
 	}{
-		{"happy", "true", "This is happy.", "😄  This is happy.\n"},
-		{"Docker", "true", "This is Docker.", "🐳  This is Docker.\n"},
-		{"option", "true", "This is option.", "    ▪ This is option.\n"},
+		{"happy", "true", "true", "This is happy.", "😄  This is happy.\n"},
+		{"Docker", "true", "true", "This is Docker.", "🐳  This is Docker.\n"},
+		{"option", "true", "true", "This is option.", "    ▪ This is option.\n"},
 
-		{"happy", "false", "This is happy.", "o   This is happy.\n"},
-		{"Docker", "false", "This is Docker.", "-   This is Docker.\n"},
-		{"option", "false", "This is option.", "    - This is option.\n"},
+		{"happy", "false", "false", "This is happy.", "o   This is happy.\n"},
+		{"Docker", "false", "false", "This is Docker.", "-   This is Docker.\n"},
+		{"option", "false", "false", "This is option.", "    - This is option.\n"},
 	}
 	for _, tc := range tests {
-		t.Run(tc.style+"-"+tc.envValue, func(t *testing.T) {
-			os.Setenv(OverrideEnv, tc.envValue)
+		t.Run(tc.style+"-"+tc.colorValue+"-"+tc.emojiValue, func(t *testing.T) {
+			os.Setenv(OverrideColorEnv, tc.colorValue)
+			os.Setenv(OverrideEmojiEnv, tc.emojiValue)
 			f := newFakeFile()
 			SetOutFile(f)
 			if err := OutStyle(tc.style, tc.message); err != nil {
@@ -78,7 +80,7 @@ func TestOutStyle(t *testing.T) {
 }
 
 func TestOut(t *testing.T) {
-	os.Setenv(OverrideEnv, "")
+	os.Setenv(OverrideColorEnv, "")
 	// An example translation just to assert that this code path is executed.
 	err := message.SetString(language.Arabic, "Installing Kubernetes version %s ...", "... %s تثبيت Kubernetes الإصدار")
 	if err != nil {
@@ -113,7 +115,7 @@ func TestOut(t *testing.T) {
 }
 
 func TestErr(t *testing.T) {
-	os.Setenv(OverrideEnv, "0")
+	os.Setenv(OverrideColorEnv, "0")
 	f := newFakeFile()
 	SetErrFile(f)
 	if err := Err("xyz123\n"); err != nil {
@@ -130,7 +132,8 @@ func TestErr(t *testing.T) {
 }
 
 func TestErrStyle(t *testing.T) {
-	os.Setenv(OverrideEnv, "1")
+	os.Setenv(OverrideColorEnv, "1")
+	os.Setenv(OverrideEmojiEnv, "1")
 	f := newFakeFile()
 	SetErrFile(f)
 	if err := ErrStyle("fatal", "It broke"); err != nil {
@@ -144,7 +147,8 @@ func TestErrStyle(t *testing.T) {
 }
 
 func TestSetPreferredLanguage(t *testing.T) {
-	os.Setenv(OverrideEnv, "0")
+	os.Setenv(OverrideColorEnv, "0")
+	os.Setenv(OverrideEmojiEnv, "1")
 	var tests = []struct {
 		input string
 		want  language.Tag

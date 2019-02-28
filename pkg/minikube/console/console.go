@@ -40,7 +40,7 @@ import (
 // console.SetErrFile(os.Stderr)
 // console.Fatal("Oh no, everything failed.")
 
-// NOTE: If you do not want colorized output, set MINIKUBE_IN_COLOR=false in your environment.
+// NOTE: If you do not want colorized output, set MINIKUBE_COLOR=false in your environment.
 
 var (
 	// outFile is where Out* functions send output to. Set using SetOutFile()
@@ -53,8 +53,12 @@ var (
 	defaultLanguage = language.AmericanEnglish
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
-	// OverrideEnv is the environment variable used to override color/emoji usage
-	OverrideEnv = "MINIKUBE_IN_COLOR"
+	// useEmoji is whether or not emoji output should be used, updated by Set*Writer.
+	useEmoji = false
+	// OverrideColorEnv is the environment variable used to override color usage
+	OverrideColorEnv = "MINIKUBE_COLOR"
+	// OverrideEmojiEnv is the environment variable used to override emoji usage
+	OverrideEmojiEnv = "MINIKUBE_EMOJI"
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
@@ -70,7 +74,7 @@ func HasStyle(style string) bool {
 
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style, format string, a ...interface{}) error {
-	OutStyle, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+	OutStyle, err := applyStyle(style, useColor, useEmoji, fmt.Sprintf(format, a...))
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := OutLn(format, a...); oerr != nil {
@@ -101,7 +105,7 @@ func OutLn(format string, a ...interface{}) error {
 
 // ErrStyle writes a stylized and formatted error message to stderr
 func ErrStyle(style, format string, a ...interface{}) error {
-	format, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+	format, err := applyStyle(style, useColor, useEmoji, fmt.Sprintf(format, a...))
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := ErrLn(format, a...); oerr != nil {
@@ -179,6 +183,7 @@ func SetOutFile(w fdWriter) {
 	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
 	useColor = wantsColor(w.Fd())
+	useEmoji = wantsEmoji(w.Fd())
 }
 
 // SetErrFile configures which writer error output goes to.
@@ -186,23 +191,24 @@ func SetErrFile(w fdWriter) {
 	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
 	useColor = wantsColor(w.Fd())
+	useEmoji = wantsEmoji(w.Fd())
 }
 
 // wantsColor determines if the user might want colorized output.
 func wantsColor(fd uintptr) bool {
 	// First process the environment: we allow users to force colors on or off.
 	//
-	// MINIKUBE_IN_COLOR=[1, T, true, TRUE]
-	// MINIKUBE_IN_COLOR=[0, f, false, FALSE]
+	// MINIKUBE_COLOR=[1, T, true, TRUE]
+	// MINIKUBE_COLOR=[0, f, false, FALSE]
 	//
 	// If unset, we try to automatically determine suitability from the environment.
-	val := os.Getenv(OverrideEnv)
+	val := os.Getenv(OverrideColorEnv)
 	if val != "" {
-		glog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
+		glog.Infof("%s=%q\n", OverrideColorEnv, os.Getenv(OverrideColorEnv))
 		override, err := strconv.ParseBool(val)
 		if err != nil {
 			// That's OK, we will just fall-back to automatic detection.
-			glog.Errorf("ParseBool(%s): %v", OverrideEnv, err)
+			glog.Errorf("ParseBool(%s): %v", OverrideColorEnv, err)
 		} else {
 			return override
 		}
@@ -212,6 +218,38 @@ func wantsColor(fd uintptr) bool {
 	// Example: term-256color
 	if !strings.Contains(term, "color") {
 		glog.Infof("TERM=%s, which probably does not support color", term)
+		return false
+	}
+
+	isT := isatty.IsTerminal(fd)
+	glog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
+	return isT
+}
+
+// wantsEmoji determines if the user might want unicode emojis.
+func wantsEmoji(fd uintptr) bool {
+	// First process the environment: we allow users to force emoji on or off.
+	//
+	// MINIKUBE_EMOJI=[1, T, true, TRUE]
+	// MINIKUBE_EMOJI=[0, f, false, FALSE]
+	//
+	// If unset, we try to automatically determine suitability from the environment.
+	val := os.Getenv(OverrideEmojiEnv)
+	if val != "" {
+		glog.Infof("%s=%q\n", OverrideEmojiEnv, os.Getenv(OverrideEmojiEnv))
+		override, err := strconv.ParseBool(val)
+		if err != nil {
+			// That's OK, we will just fall-back to automatic detection.
+			glog.Errorf("ParseBool(%s): %v", OverrideEmojiEnv, err)
+		} else {
+			return override
+		}
+	}
+
+	lang := os.Getenv("LANG")
+	// Example: en_US.UTF-8
+	if !strings.Contains(lang, "UTF-8") && !strings.Contains(lang, "utf8") {
+		glog.Infof("LANG=%s, which probably does not support unicode", lang)
 		return false
 	}
 

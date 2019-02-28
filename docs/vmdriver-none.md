@@ -92,7 +92,8 @@ Some environment variables may be useful for using the `none` driver:
 * **MINIKUBE_HOME**: Saves all files to this directory instead of $HOME
 * **MINIKUBE_WANTUPDATENOTIFICATION**: Toggles the notification that your version of minikube is obsolete
 * **MINIKUBE_WANTREPORTERRORPROMPT**: Toggles the error reporting prompt
-* **MINIKUBE_IN_COLOR**: Toggles color output and emoji usage
+* **MINIKUBE_COLOR**: Toggles color output
+* **MINIKUBE_EMOJI**: Toggles emoji usage
 
 ## Known Issues
 

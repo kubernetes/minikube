@@ -121,7 +121,7 @@ func lowPrefix(s style) string {
 }
 
 // Apply styling to a format string
-func applyStyle(style string, useColor bool, format string, a ...interface{}) (string, error) {
+func applyStyle(style string, useColor bool, useEmoji bool, format string, a ...interface{}) (string, error) {
 	p := message.NewPrinter(preferredLanguage)
 	out := p.Sprintf(format, a...)
 
@@ -135,7 +135,7 @@ func applyStyle(style string, useColor bool, format string, a ...interface{}) (s
 		return p.Sprintf(format, a...), fmt.Errorf("unknown style: %q", style)
 	}
 
-	if !useColor {
+	if !useEmoji {
 		return applyPrefix(lowPrefix(s), out), nil
 	}
 	return applyPrefix(s.Prefix, out), nil
