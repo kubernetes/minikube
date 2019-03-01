@@ -35,6 +35,7 @@ import (
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -62,6 +63,25 @@ var SkipPreflights = []string{
 	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
 	// (because we start kubelet with an invalid config)
 	"CRI",
+}
+
+type pod struct {
+	// Human friendly name
+	name  string
+	key   string
+	value string
+}
+
+// PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
+var PodsByLayer = []pod{
+	{"apiserver", "component", "kube-apiserver"},
+	{"proxy", "k8s-app", "kube-proxy"},
+	{"etcd", "component", "etcd"},
+	{"dns", "k8s-app", "kube-dns"},
+	{"controller", "component", "kube-controller-manager"},
+	{"scheduler", "component", "kube-scheduler"},
+	{"storage-provisioner", "integration-test", "storage-provisioner"},
+	{"addon-manager", "component", "kube-addon-manager"},
 }
 
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
@@ -175,10 +195,18 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	// NOTE: We have not yet asserted that we can access the apiserver. Now would be a great time to do so.
+	if err := waitForPods(false); err != nil {
+		return errors.Wrap(err, "wait")
+	}
+
 	console.OutStyle("permissions", "Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	}
+
+	// Make sure elevating privileges didn't screw anything up
+	if err := waitForPods(true); err != nil {
+		return errors.Wrap(err, "wait")
 	}
 
 	return nil
@@ -201,6 +229,31 @@ func addAddons(files *[]assets.CopyableFile) error {
 		}
 	}
 
+	return nil
+}
+
+// waitForPods waits until the important Kubernetes pods are in running state
+func waitForPods(quiet bool) error {
+	if !quiet {
+		console.OutStyle("waiting-pods", "Waiting for pods:")
+	}
+	client, err := util.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "k8s client")
+	}
+
+	for _, p := range PodsByLayer {
+		if !quiet {
+			console.Out(" %s", p.name)
+		}
+		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
+		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
+		}
+	}
+	if !quiet {
+		console.OutLn("")
+	}
 	return nil
 }
 
@@ -232,10 +285,18 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 		}
 	}
 
-	// NOTE: Perhaps now would be a good time to check apiserver health?
-	console.OutStyle("waiting", "Waiting for kube-proxy to come back up ...")
+	if err := waitForPods(false); err != nil {
+		return errors.Wrap(err, "wait")
+	}
+
+	console.OutStyle("waiting", "Updating kube-proxy configmap ...")
 	if err := restartKubeProxy(k8s); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
+	}
+
+	// Make sure the kube-proxy restart didn't screw anything up.
+	if err := waitForPods(true); err != nil {
+		return errors.Wrap(err, "wait")
 	}
 
 	return nil
