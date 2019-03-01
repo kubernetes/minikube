@@ -192,6 +192,8 @@ func updateKubeProxyConfigMap(k8s config.KubernetesConfig) error {
 
 	updated := strings.TrimSuffix(kubeconfig.String(), "\n")
 	glog.Infof("updated kube-proxy config: %s", updated)
+
+	// An optimization, but also one that's unlikely, as kubeadm writes the address as 'localhost'
 	if cfgMap.Data[kubeconfigConf] == updated {
 		glog.Infof("kube-proxy config appears to require no change, not restarting kube-proxy")
 		return nil
