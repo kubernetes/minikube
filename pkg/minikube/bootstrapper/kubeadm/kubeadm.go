@@ -289,7 +289,7 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 		return errors.Wrap(err, "wait")
 	}
 
-	console.OutStyle("waiting", "Updating kube-proxy configmap ...")
+	console.OutStyle("reconfiguring", "Reconfiguring kube-proxy ...")
 	if err := restartKubeProxy(k8s); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
 	}
