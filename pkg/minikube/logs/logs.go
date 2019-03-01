@@ -37,9 +37,9 @@ var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|
 
 // importantPods are a list of pods to retrieve logs for, in addition to the bootstrapper logs.
 var importantPods = []string{
-	"k8s_kube-apiserver",
-	"k8s_coredns_coredns",
-	"k8s_kube-scheduler",
+	"kube-apiserver",
+	"coredns",
+	"kube-scheduler",
 }
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
@@ -143,7 +143,7 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 		}
 		glog.Infof("%d containers: %s", len(ids), ids)
 		if len(ids) == 0 {
-			cmds[pod] = fmt.Sprintf("No container was found matching %q", pod)
+			glog.Warningf("No container was found matching %q", pod)
 			continue
 		}
 		cmds[pod] = r.ContainerLogCmd(ids[0], length, follow)
