@@ -77,11 +77,10 @@ var PodsByLayer = []pod{
 	{"apiserver", "component", "kube-apiserver"},
 	{"proxy", "k8s-app", "kube-proxy"},
 	{"etcd", "component", "etcd"},
-	{"dns", "k8s-app", "kube-dns"},
-	{"controller", "component", "kube-controller-manager"},
 	{"scheduler", "component", "kube-scheduler"},
-	{"storage-provisioner", "integration-test", "storage-provisioner"},
+	{"controller", "component", "kube-controller-manager"},
 	{"addon-manager", "component", "kube-addon-manager"},
+	{"dns", "k8s-app", "kube-dns"},
 }
 
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
@@ -289,8 +288,8 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 		return errors.Wrap(err, "wait")
 	}
 
-	console.OutStyle("reconfiguring", "Reconfiguring kube-proxy ...")
-	if err := restartKubeProxy(k8s); err != nil {
+	console.OutStyle("reconfiguring", "Updating kube-proxy configuration ...")
+	if err = util.RetryAfter(5, func() error { return updateKubeProxyConfigMap(k8s) }, 5*time.Second); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
 	}
 
