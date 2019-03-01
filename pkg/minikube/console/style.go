@@ -41,30 +41,31 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[string]style{
-	"happy":        {Prefix: "😄  ", LowPrefix: "o   "},
-	"success":      {Prefix: "✅  "},
-	"failure":      {Prefix: "❌  ", LowPrefix: "X   "},
-	"conflict":     {Prefix: "💥  ", LowPrefix: "x   "},
-	"fatal":        {Prefix: "💣  ", LowPrefix: "!   "},
-	"notice":       {Prefix: "📌  ", LowPrefix: "*   "},
-	"ready":        {Prefix: "🏄  ", LowPrefix: "=   "},
-	"running":      {Prefix: "🏃  ", LowPrefix: ":   "},
-	"provisioning": {Prefix: "🌱  ", LowPrefix: ">   "},
-	"restarting":   {Prefix: "🔄  ", LowPrefix: ":   "},
-	"stopping":     {Prefix: "✋  ", LowPrefix: ":   "},
-	"stopped":      {Prefix: "🛑  "},
-	"warning":      {Prefix: "⚠️  ", LowPrefix: "!   "},
-	"waiting":      {Prefix: "⌛  ", LowPrefix: ":   "},
-	"waiting-pods": {Prefix: "⌛  ", LowPrefix: ":   ", OmitNewline: true},
-	"usage":        {Prefix: "💡  "},
-	"launch":       {Prefix: "🚀  "},
-	"sad":          {Prefix: "😿  ", LowPrefix: "*   "},
-	"thumbs-up":    {Prefix: "👍  "},
-	"option":       {Prefix: "    ▪ "}, // Indented bullet
-	"command":      {Prefix: "    ▪ "}, // Indented bullet
-	"log-entry":    {Prefix: "    "},   // Indent
-	"crushed":      {Prefix: "💔  "},
-	"url":          {Prefix: "👉  "},
+	"happy":         {Prefix: "😄  ", LowPrefix: "o   "},
+	"success":       {Prefix: "✅  "},
+	"failure":       {Prefix: "❌  ", LowPrefix: "X   "},
+	"conflict":      {Prefix: "💥  ", LowPrefix: "x   "},
+	"fatal":         {Prefix: "💣  ", LowPrefix: "!   "},
+	"notice":        {Prefix: "📌  ", LowPrefix: "*   "},
+	"ready":         {Prefix: "🏄  ", LowPrefix: "=   "},
+	"running":       {Prefix: "🏃  ", LowPrefix: ":   "},
+	"provisioning":  {Prefix: "🌱  ", LowPrefix: ">   "},
+	"restarting":    {Prefix: "🔄  ", LowPrefix: ":   "},
+	"reconfiguring": {Prefix: "📯  ", LowPrefix: ":   "},
+	"stopping":      {Prefix: "✋  ", LowPrefix: ":   "},
+	"stopped":       {Prefix: "🛑  "},
+	"warning":       {Prefix: "⚠️  ", LowPrefix: "!   "},
+	"waiting":       {Prefix: "⌛  ", LowPrefix: ":   "},
+	"waiting-pods":  {Prefix: "⌛  ", LowPrefix: ":   ", OmitNewline: true},
+	"usage":         {Prefix: "💡  "},
+	"launch":        {Prefix: "🚀  "},
+	"sad":           {Prefix: "😿  ", LowPrefix: "*   "},
+	"thumbs-up":     {Prefix: "👍  "},
+	"option":        {Prefix: "    ▪ "}, // Indented bullet
+	"command":       {Prefix: "    ▪ "}, // Indented bullet
+	"log-entry":     {Prefix: "    "},   // Indent
+	"crushed":       {Prefix: "💔  "},
+	"url":           {Prefix: "👉  "},
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  ", LowPrefix: "@   "},
