@@ -42,7 +42,7 @@ var (
 	// ReasonableMutateTime is how long to wait for basic object mutations, such as deletions, to show up
 	ReasonableMutateTime = time.Minute * 1
 	// ReasonableStartTime is how long to wait for pods to start, considering dependency chains & slow networks.
-	ReasonableStartTime = time.Minute * 9
+	ReasonableStartTime = time.Minute * 8
 )
 
 type PodStore struct {
