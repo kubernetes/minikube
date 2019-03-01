@@ -155,7 +155,8 @@ users:
 `
 )
 
-func restartKubeProxy(k8s config.KubernetesConfig) error {
+// updateKubeProxyConfigMap updates the IP & port kube-proxy listens on, and restarts it.
+func updateKubeProxyConfigMap(k8s config.KubernetesConfig) error {
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
@@ -168,9 +169,9 @@ func restartKubeProxy(k8s config.KubernetesConfig) error {
 
 	cfgMap, err := client.CoreV1().ConfigMaps("kube-system").Get("kube-proxy", metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrap(err, "getting kube-proxy configmap")
+		return &util.RetriableError{Err: errors.Wrap(err, "getting kube-proxy configmap")}
 	}
-
+	glog.Infof("kube-proxy config: %v", cfgMap.Data[kubeconfigConf])
 	t := template.Must(template.New("kubeProxyTmpl").Parse(kubeProxyConfigmapTmpl))
 	opts := struct {
 		AdvertiseAddress string
@@ -188,10 +189,19 @@ func restartKubeProxy(k8s config.KubernetesConfig) error {
 	if cfgMap.Data == nil {
 		cfgMap.Data = map[string]string{}
 	}
-	cfgMap.Data[kubeconfigConf] = strings.TrimSuffix(kubeconfig.String(), "\n")
 
+	updated := strings.TrimSuffix(kubeconfig.String(), "\n")
+	glog.Infof("updated kube-proxy config: %s", updated)
+	if cfgMap.Data[kubeconfigConf] == updated {
+		glog.Infof("kube-proxy config appears to require no change, not restarting kube-proxy")
+		return nil
+	}
+	cfgMap.Data[kubeconfigConf] = updated
+
+	// Make this step retriable, as it can fail with:
+	// "Operation cannot be fulfilled on configmaps "kube-proxy": the object has been modified; please apply your changes to the latest version and try again"
 	if _, err := client.CoreV1().ConfigMaps("kube-system").Update(cfgMap); err != nil {
-		return errors.Wrap(err, "updating configmap")
+		return &util.RetriableError{Err: errors.Wrap(err, "updating configmap")}
 	}
 
 	pods, err := client.CoreV1().Pods("kube-system").List(metav1.ListOptions{
@@ -201,9 +211,15 @@ func restartKubeProxy(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "listing kube-proxy pods")
 	}
 	for _, pod := range pods.Items {
+		// Retriable, as known to fail with: pods "<name>" not found
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
-			return errors.Wrapf(err, "deleting pod %+v", pod)
+			return &util.RetriableError{Err: errors.Wrapf(err, "deleting pod %+v", pod)}
 		}
+	}
+
+	// Wait for the scheduler to restart kube-proxy
+	if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "kube-proxy not running")
 	}
 
 	return nil
