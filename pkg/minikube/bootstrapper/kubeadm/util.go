@@ -28,8 +28,8 @@ import (
 	clientv1 "k8s.io/api/core/v1"
 	rbacv1beta1 "k8s.io/api/rbac/v1beta1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
@@ -163,7 +163,7 @@ func restartKubeProxy(k8s config.KubernetesConfig) error {
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"k8s-app": "kube-proxy"}))
 	if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		return errors.Wrap(err, "waiting for kube-proxy to be up for configmap update")
+		return errors.Wrap(err, "kube-proxy not running")
 	}
 
 	cfgMap, err := client.CoreV1().ConfigMaps("kube-system").Get("kube-proxy", metav1.GetOptions{})

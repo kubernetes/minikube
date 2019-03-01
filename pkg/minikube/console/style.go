@@ -55,6 +55,7 @@ var styles = map[string]style{
 	"stopped":      {Prefix: "🛑  "},
 	"warning":      {Prefix: "⚠️  ", LowPrefix: "!   "},
 	"waiting":      {Prefix: "⌛  ", LowPrefix: ":   "},
+	"waiting-pods": {Prefix: "⌛  ", LowPrefix: ":   ", OmitNewline: true},
 	"usage":        {Prefix: "💡  "},
 	"launch":       {Prefix: "🚀  "},
 	"sad":          {Prefix: "😿  ", LowPrefix: "*   "},
