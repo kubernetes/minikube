@@ -82,8 +82,8 @@ func Pad(str string) string {
 	return fmt.Sprintf("\n%s\n", str)
 }
 
-// If the file represented by path exists and
-// readable, return true otherwise return false.
+// CanReadFile returns true if the file represented
+// by path exists and is readable, otherwise false.
 func CanReadFile(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {

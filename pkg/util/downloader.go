@@ -67,8 +67,8 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 	}
 
 	// Validate the ISO if it was the default URL, before writing it to disk.
-	if isoURL == constants.DefaultIsoUrl {
-		options.Checksum = constants.DefaultIsoShaUrl
+	if isoURL == constants.DefaultISOURL {
+		options.Checksum = constants.DefaultISOSHAURL
 		options.ChecksumHash = crypto.SHA256
 	}
 

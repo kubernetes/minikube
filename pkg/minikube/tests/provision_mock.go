@@ -26,7 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 )
 
-// Provisioner defines distribution specific actions
+// MockProvisioner defines distribution specific actions
 type MockProvisioner struct {
 	Provisioned bool
 }

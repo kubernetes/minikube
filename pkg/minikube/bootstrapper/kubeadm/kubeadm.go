@@ -120,7 +120,7 @@ func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
 	return state.Error.String(), nil
 }
 
-func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
+func (k *KubeadmBootstrapper) GetAPIServerStatus(ip net.IP) (string, error) {
 	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
@@ -543,7 +543,7 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 		Mkdirs: download.MkdirAll,
 	}
 
-	options.Checksum = constants.GetKubernetesReleaseURLSha1(binary, version)
+	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version)
 	options.ChecksumHash = crypto.SHA1
 
 	console.OutStyle("file-download", "Downloading %s %s", binary, version)

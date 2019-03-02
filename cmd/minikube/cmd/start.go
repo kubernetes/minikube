@@ -103,7 +103,7 @@ func init() {
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
-	startCmd.Flags().String(isoURL, constants.DefaultIsoUrl, "Location of the minikube iso")
+	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM in MB")
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
@@ -163,14 +163,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCode(exit.Data, "Unable to load config: %v", err)
 	}
-	kVersion := validateKubernetesVersions(oldConfig)
-	config, err := generateConfig(cmd, kVersion)
+	k8sVersion := validateKubernetesVersions(oldConfig)
+	config, err := generateConfig(cmd, k8sVersion)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
 
 	var cacheGroup errgroup.Group
-	beginCacheImages(&cacheGroup, kVersion)
+	beginCacheImages(&cacheGroup, k8sVersion)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -233,18 +233,18 @@ func validateConfig() {
 }
 
 // beginCacheImages caches Docker images in the background
-func beginCacheImages(g *errgroup.Group, kVersion string) {
+func beginCacheImages(g *errgroup.Group, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
 	console.OutStyle("caching", "Caching images in the background ...")
 	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(kVersion, viper.GetString(cmdcfg.Bootstrapper))
+		return machine.CacheImagesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
 }
 
 // generateConfig generates cfg.Config based on flags and supplied arguments
-func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
+func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 	if err != nil {
 		return cfg.Config{}, err
@@ -287,7 +287,7 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 			NoVTXCheck:          viper.GetBool(noVTXCheck),
 		},
 		KubernetesConfig: cfg.KubernetesConfig{
-			KubernetesVersion:      kVersion,
+			KubernetesVersion:      k8sVersion,
 			NodePort:               viper.GetInt(apiServerPort),
 			NodeName:               constants.DefaultNodeName,
 			APIServerName:          viper.GetString(apiServerName),
@@ -519,7 +519,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 // validateCluster validates that the cluster is well-configured and healthy
 func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string) {
 	console.OutStyle("verifying-noline", "Verifying component health ...")
-	kStat := func() (err error) {
+	k8sStat := func() (err error) {
 		st, err := bs.GetKubeletStatus()
 		console.Out(".")
 		if err != nil || st != state.Running.String() {
@@ -527,12 +527,12 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 		}
 		return nil
 	}
-	err := pkgutil.RetryAfter(20, kStat, 3*time.Second)
+	err := pkgutil.RetryAfter(20, k8sStat, 3*time.Second)
 	if err != nil {
 		exit.WithProblems("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
 	}
 	aStat := func() (err error) {
-		st, err := bs.GetApiServerStatus(net.ParseIP(ip))
+		st, err := bs.GetAPIServerStatus(net.ParseIP(ip))
 		console.Out(".")
 		if err != nil || st != state.Running.String() {
 			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}

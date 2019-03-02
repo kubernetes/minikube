@@ -91,7 +91,7 @@ func NewDriver(hostName, storePath string) *Driver {
 			SSHUser:     "docker",
 		},
 		CommonDriver:   &pkgdrivers.CommonDriver{},
-		Boot2DockerURL: constants.DefaultIsoUrl,
+		Boot2DockerURL: constants.DefaultISOURL,
 		CPU:            constants.DefaultCPUS,
 		DiskSize:       util.CalculateDiskSizeInMB(constants.DefaultDiskSize),
 		Memory:         constants.DefaultMemory,

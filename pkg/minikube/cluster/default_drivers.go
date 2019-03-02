@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	// Import all the default drivers
 	_ "k8s.io/minikube/pkg/minikube/drivers/hyperkit"
 	_ "k8s.io/minikube/pkg/minikube/drivers/hyperv"
 	_ "k8s.io/minikube/pkg/minikube/drivers/kvm"

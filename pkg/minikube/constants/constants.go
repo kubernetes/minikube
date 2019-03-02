@@ -39,7 +39,7 @@ const (
 
 const MinikubeHome = "MINIKUBE_HOME"
 
-// Minipath is the path to the user's minikube dir
+// GetMinipath returns the path to the user's minikube dir
 func GetMinipath() string {
 	if os.Getenv(MinikubeHome) == "" {
 		return DefaultMinipath
@@ -85,10 +85,10 @@ const DefaultMachineName = "minikube"
 // DefaultNodeName is the default name for the kubeadm node within the VM
 const DefaultNodeName = "minikube"
 
-// The name of the default storage class provisioner
+// DefaultStorageClassProvisioner is the name of the default storage class provisioner
 const DefaultStorageClassProvisioner = "standard"
 
-// Used to modify the cache field in the config file
+// Cache is used to modify the cache field in the config file
 const Cache = "cache"
 
 func TunnelRegistryPath() string {
@@ -106,7 +106,7 @@ var MountProcessFileName = ".mount-process"
 
 const (
 	DefaultKeepContext  = false
-	ShaSuffix           = ".sha256"
+	SHASuffix           = ".sha256"
 	DefaultMemory       = 2048
 	DefaultCPUS         = 2
 	DefaultDiskSize     = "20g"
@@ -127,8 +127,8 @@ kubectl: {{.Kubeconfig}}
 	DefaultClusterBootstrapper = "kubeadm"
 )
 
-var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
-var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
+var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
+var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 var DefaultKubernetesVersion = "v1.13.3"
 
@@ -168,7 +168,7 @@ func GetKubernetesReleaseURL(binaryName, version string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/%s/%s", version, runtime.GOARCH, binaryName)
 }
 
-func GetKubernetesReleaseURLSha1(binaryName, version string) string {
+func GetKubernetesReleaseURLSHA1(binaryName, version string) string {
 	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
 }
 
@@ -185,7 +185,7 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		"k8s.gcr.io/kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
 
-	ge_v1_13 := semver.MustParseRange(">=1.13.0")
+	v1_13 := semver.MustParseRange(">=1.13.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
@@ -197,7 +197,7 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		glog.Errorln("Error parsing version semver: ", err)
 	}
 
-	if ge_v1_13(kubernetesVersion) {
+	if v1_13(kubernetesVersion) {
 		images = append(images, []string{
 			"k8s.gcr.io/pause-amd64:3.1",
 			"k8s.gcr.io/pause:3.1",

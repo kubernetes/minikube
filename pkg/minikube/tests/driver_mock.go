@@ -66,7 +66,7 @@ func (driver *MockDriver) GetSSHHostname() (string, error) {
 	return "localhost", nil
 }
 
-// GetSSHHostname returns the hostname for SSH
+// GetSSHKeyPath returns the key path for SSH
 func (driver *MockDriver) GetSSHKeyPath() string {
 	return driver.BaseDriver.SSHKeyPath
 }

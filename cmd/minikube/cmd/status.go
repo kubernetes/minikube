@@ -39,7 +39,7 @@ var statusFormat string
 type Status struct {
 	Host       string
 	Kubelet    string
-	ApiServer  string
+	APIServer  string
 	Kubeconfig string
 }
 
@@ -91,7 +91,7 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverSt, err = clusterBootstrapper.GetApiServerStatus(ip)
+			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip)
 			if err != nil {
 				glog.Errorln("Error apiserver status:", err)
 			} else if apiserverSt != state.Running.String() {
@@ -116,7 +116,7 @@ var statusCmd = &cobra.Command{
 		status := Status{
 			Host:       hostSt,
 			Kubelet:    kubeletSt,
-			ApiServer:  apiserverSt,
+			APIServer:  apiserverSt,
 			Kubeconfig: kubeconfigSt,
 		}
 		tmpl, err := template.New("status").Parse(statusFormat)

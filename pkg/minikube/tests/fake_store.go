@@ -21,7 +21,7 @@ import (
 	"github.com/docker/machine/libmachine/mcnerror"
 )
 
-//implements persist.Store from libmachine
+// FakeStore implements persist.Store from libmachine
 type FakeStore struct {
 	Hosts map[string]*host.Host
 }
