@@ -39,7 +39,7 @@ var cleanupPaths = []string{
 	"/var/lib/minikube",
 }
 
-// none Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
+// Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
 // https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md
 type Driver struct {
 	*drivers.BaseDriver

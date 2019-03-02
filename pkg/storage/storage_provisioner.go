@@ -110,7 +110,7 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 	return nil
 }
 
-// Start storage provisioner server
+// StartStorageProvisioner will start storage provisioner server
 func StartStorageProvisioner() error {
 	glog.Infof("Initializing the Minikube storage provisioner...")
 	config, err := restclient.InClusterConfig()

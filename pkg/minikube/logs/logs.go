@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// package logs are convenience methods for fetching logs from a minikube cluster
+// Package logs are convenience methods for fetching logs from a minikube cluster
 package logs
 
 import (

@@ -60,7 +60,7 @@ func setElement(e reflect.Value, v string) error {
 	case net.IP:
 		ip := net.ParseIP(v)
 		if ip == nil {
-			return fmt.Errorf("Error converting input %s to an IP.", v)
+			return fmt.Errorf("Error converting input %s to an IP", v)
 		}
 		e.Set(reflect.ValueOf(ip))
 	case net.IPNet:
@@ -99,7 +99,7 @@ func setElement(e reflect.Value, v string) error {
 		case reflect.Bool:
 			return convertBool(e, v)
 		default:
-			return fmt.Errorf("Unable to set type %T.", e.Kind())
+			return fmt.Errorf("Unable to set type %T", e.Kind())
 		}
 	}
 

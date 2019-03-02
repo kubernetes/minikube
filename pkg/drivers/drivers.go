@@ -36,12 +36,12 @@ func GetDiskPath(d *drivers.BaseDriver) string {
 
 type CommonDriver struct{}
 
-//Not implemented yet
+// GetCreateFlags is not implemented yet
 func (d *CommonDriver) GetCreateFlags() []mcnflag.Flag {
 	return nil
 }
 
-//Not implemented yet
+// SetConfigFromFlags is not implemented yet
 func (d *CommonDriver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
 }

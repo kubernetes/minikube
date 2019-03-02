@@ -43,7 +43,7 @@ type Bootstrapper interface {
 	LogCommands(LogOptions) map[string]string
 	SetupCerts(cfg config.KubernetesConfig) error
 	GetKubeletStatus() (string, error)
-	GetApiServerStatus(net.IP) (string, error)
+	GetAPIServerStatus(net.IP) (string, error)
 }
 
 const (

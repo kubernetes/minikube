@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// package util is a hodge-podge of utility functions that should be moved elsewhere.
+// Package util is a hodge-podge of utility functions that should be moved elsewhere.
 package util
 
 import (
@@ -28,7 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// Ask the kernel for a free open port that is ready to use
+// GetPort asks the kernel for a free open port that is ready to use
 func GetPort() (string, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {

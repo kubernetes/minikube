@@ -60,6 +60,7 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 // The certificate will be created with file mode 0644. The key will be created with file mode 0600.
 // If the certificate or key files already exist, they will be overwritten.
 // Any parent directories of the certPath or keyPath will be created as needed with file mode 0755.
+
 func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
 	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
 	if err != nil {
@@ -67,7 +68,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	}
 	decodedSignerCert, _ := pem.Decode(signerCertBytes)
 	if decodedSignerCert == nil {
-		return errors.New("Unable to decode certificate.")
+		return errors.New("Unable to decode certificate")
 	}
 	signerCert, err := x509.ParseCertificate(decodedSignerCert.Bytes)
 	if err != nil {
@@ -79,7 +80,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	}
 	decodedSignerKey, _ := pem.Decode(signerKeyBytes)
 	if decodedSignerKey == nil {
-		return errors.New("Unable to decode key.")
+		return errors.New("Unable to decode key")
 	}
 	signerKey, err := x509.ParsePKCS1PrivateKey(decodedSignerKey.Bytes)
 	if err != nil {

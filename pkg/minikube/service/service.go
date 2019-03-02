@@ -95,7 +95,7 @@ type URL struct {
 
 type URLs []URL
 
-// Returns all the node port URLs for every service in a particular namespace
+// GetServiceURLs returns all the node port URLs for every service in a particular namespace
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
@@ -132,7 +132,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 	return serviceURLs, nil
 }
 
-// Returns all the node ports for a service in a namespace
+// GetServiceURLsForService returns all the node ports for a service in a namespace
 // with optional formatting
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())

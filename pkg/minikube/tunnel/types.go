@@ -82,7 +82,7 @@ type Patch struct {
 	BodyContent  string
 }
 
-// State represents the status of a host
+// HostState represents the status of a host
 type HostState int
 
 const (
