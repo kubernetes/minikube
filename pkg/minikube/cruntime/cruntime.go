@@ -34,6 +34,8 @@ type CommandRunner interface {
 type Manager interface {
 	// Name is a human readable name for a runtime
 	Name() string
+	// Version retrieves the current version of this runtime
+	Version() string
 	// Enable idempotently enables this runtime on a host
 	Enable() error
 	// Disable idempotently disables this runtime on a host

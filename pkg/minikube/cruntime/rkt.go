@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/golang/glog"
 )
@@ -31,6 +32,19 @@ type Rkt struct {
 // Name is a human readable name for rkt
 func (r *Rkt) Name() string {
 	return "rkt"
+}
+
+// Version retrieves the current version of this runtime
+func (r *Rkt) Version() string {
+	ver, err := r.Runner.CombinedOutput("rkt version")
+	if err != nil {
+		return ""
+	}
+
+	// rkt Version: 1.24.0
+	// appc Version: 0.8.10
+	line := strings.Split(ver, "\n")[0]
+	return strings.Replace(line, "rkt Version: ", "", 1)
 }
 
 // SocketPath returns the path to the socket file for rkt/rktlet
