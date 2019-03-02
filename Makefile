@@ -227,6 +227,10 @@ gendocs: out/docs/minikube.md
 fmt:
 	@gofmt -l -s -w $(SOURCE_DIRS)
 
+.PHONY: lint
+lint:
+	@golint $(MINIKUBE_TEST_FILES)
+
 out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
 	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(MINIKUBE_LDFLAGS)" hack/gen_help_text.go
 
