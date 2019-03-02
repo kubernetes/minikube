@@ -37,6 +37,17 @@ func (r *Docker) Name() string {
 	return "Docker"
 }
 
+// Version retrieves the current version of this runtime
+func (r *Docker) Version() string {
+	// Note: the server daemon has to be running, for this call to return successfully
+	ver, err := r.Runner.CombinedOutput("docker version --format '{{.Server.Version}}'")
+	if err != nil {
+		return ""
+	}
+
+	return strings.Split(ver, "\n")[0]
+}
+
 // SocketPath returns the path to the socket file for Docker
 func (r *Docker) SocketPath() string {
 	return r.Socket
