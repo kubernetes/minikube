@@ -34,6 +34,9 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -77,6 +80,7 @@ const (
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
 	imageRepository       = "image-repository"
+	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
 	cacheImages           = "cache-images"
@@ -128,6 +132,7 @@ func init() {
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
+	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
@@ -172,8 +177,30 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
+	if config.KubernetesConfig.ImageRepository == "" {
+		console.OutStyle("connectivity", "checking main repository and mirrors for images")
+		found, repository, err := selectImageRepository(config)
+		if err != nil {
+			exit.WithError("Failed to check main repository and mirrors for images for images", err)
+		}
+
+		if !found {
+			if repository == "" {
+				exit.WithCode(exit.Failure, "None of known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
+			} else {
+				console.Warning("None of known repositories in your location is accessible. Use %s as fallback.", repository)
+			}
+		}
+
+		config.KubernetesConfig.ImageRepository = repository
+	}
+
+	if config.KubernetesConfig.ImageRepository != "" {
+		console.OutStyle("success", "using image repository %s", config.KubernetesConfig.ImageRepository)
+	}
+
 	var cacheGroup errgroup.Group
-	beginCacheImages(&cacheGroup, k8sVersion)
+	beginCacheImages(&cacheGroup, config.KubernetesConfig.ImageRepository, k8sVersion)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -228,6 +255,60 @@ func runStart(cmd *cobra.Command, args []string) {
 	console.OutStyle("ready", "Done! Thank you for using minikube!")
 }
 
+func selectImageRepository(config cfg.Config) (bool, string, error) {
+	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
+	repos := constants.ImageRepositories
+	var countries []string
+	if mirrorCountry != "" {
+		_, ok := repos[mirrorCountry]
+		if !ok {
+			return false, "", fmt.Errorf("invalid image mirror country code: %s", mirrorCountry)
+		}
+		countries = []string{mirrorCountry, ""}
+
+	} else {
+		// make sure global is preferred
+		countries = []string{""}
+		for k := range repos {
+			if k != "" {
+				countries = append(countries, k)
+			}
+		}
+	}
+
+	checkRepository := func(repo string) error {
+		podInfraContainerImage, _ := constants.GetKubeadmCachedImages(repo, config.KubernetesConfig.KubernetesVersion)
+
+		ref, err := name.ParseReference(podInfraContainerImage, name.WeakValidation)
+		if err != nil {
+			return err
+		}
+
+		_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+		return err
+	}
+
+	for _, code := range countries {
+		localRepos := repos[code]
+		for _, repo := range localRepos {
+			err := checkRepository(repo)
+			if err == nil {
+				return true, repo, nil
+			}
+		}
+	}
+
+	if mirrorCountry != "" {
+		if localRepos, ok := constants.ImageRepositories[mirrorCountry]; ok && len(localRepos) > 0 {
+			// none of the mirrors in the given location is available
+			// use the first as fallback
+			return false, localRepos[0], nil
+		}
+	}
+
+	return false, "", nil
+}
+
 // validateConfig validates the supplied configuration against known bad combinations
 func validateConfig() {
 	diskSizeMB := pkgutil.CalculateDiskSizeInMB(viper.GetString(humanReadableDiskSize))
@@ -241,13 +322,13 @@ func validateConfig() {
 }
 
 // beginCacheImages caches Docker images in the background
-func beginCacheImages(g *errgroup.Group, k8sVersion string) {
+func beginCacheImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
 	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", k8sVersion)
 	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+		return machine.CacheImagesForBootstrapper(imageRepository, k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
 }
 
