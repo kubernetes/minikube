@@ -161,7 +161,7 @@ const (
 	DefaultUfsDebugLvl   = 0
 	DefaultMountEndpoint = "/minikube-host"
 	DefaultMsize         = 262144
-	DefaultMountVersion  = "9p2000.u"
+	DefaultMountVersion  = "9p2000.L"
 )
 
 func GetKubernetesReleaseURL(binaryName, version string) string {
