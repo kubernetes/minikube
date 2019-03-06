@@ -32,8 +32,8 @@ const (
 	DefaultServiceCIDR       = "10.96.0.0/12"
 )
 
-var DefaultAdmissionControllers = []string{
-	"Initializers",
+// DefaultV114AdmissionControllers are admission controllers we default to in v1.14.x
+var DefaultV114AdmissionControllers = []string{
 	"NamespaceLifecycle",
 	"LimitRanger",
 	"ServiceAccount",
@@ -44,6 +44,9 @@ var DefaultAdmissionControllers = []string{
 	"ValidatingAdmissionWebhook",
 	"ResourceQuota",
 }
+
+// DefaultLegacyAdmissionControllers are admission controllers we default to in order Kubernetes releases
+var DefaultLegacyAdmissionControllers = append(DefaultV114AdmissionControllers, "Initializers")
 
 // GetServiceClusterIP returns the first IP of the ServiceCIDR
 func GetServiceClusterIP(serviceCIDR string) (net.IP, error) {
