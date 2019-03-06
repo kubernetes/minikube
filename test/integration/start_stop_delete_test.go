@@ -66,7 +66,7 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
 
-			r.Start()
+			r.Start(test.args...)
 			r.CheckStatus(state.Running.String())
 
 			r.RunCommand("delete", true)
