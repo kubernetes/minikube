@@ -1,5 +1,10 @@
 # Steps to Release Minikube
 
+## Preparation
+
+* Announce release intent on #minikube
+* Pause merge requests so that they are not accidentally left out of the ISO or release notes
+
 ## Build a new ISO
 
 Major releases always get a new ISO. Minor bugfixes may or may not require it: check for changes in the `deploy/iso` folder. 
@@ -110,3 +115,9 @@ After you've finished the release, run this command from the release commit to v
 ## Update kubernetes.io docs
 
 If there are major changes, please send a PR to update the official setup guide: [Running Kubernetes Locally via Minikube](https://kubernetes.io/docs/setup/minikube/)
+
+## Announce
+
+- #minikube on Slack
+- minikube-dev, minikube-users mailing list
+- Twitter
