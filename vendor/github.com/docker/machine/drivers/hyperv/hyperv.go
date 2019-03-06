@@ -273,7 +273,7 @@ func (d *Driver) Create() error {
 func (d *Driver) chooseVirtualSwitch() (string, error) {
 	if d.VSwitch == "" {
 		// Default to the first external switche and in the process avoid DockerNAT
-		stdout, err := cmdOut("(Hyper-V\\Get-VMSwitch -SwitchType External).Name")
+		stdout, err := cmdOut("[Console]::OutputEncoding = [Text.Encoding]::UTF8; (Hyper-V\\Get-VMSwitch -SwitchType External).Name")
 		if err != nil {
 			return "", err
 		}
@@ -287,7 +287,7 @@ func (d *Driver) chooseVirtualSwitch() (string, error) {
 		return switches[0], nil
 	}
 
-	stdout, err := cmdOut("(Hyper-V\\Get-VMSwitch).Name")
+	stdout, err := cmdOut("[Console]::OutputEncoding = [Text.Encoding]::UTF8; (Hyper-V\\Get-VMSwitch).Name")
 	if err != nil {
 		return "", err
 	}
