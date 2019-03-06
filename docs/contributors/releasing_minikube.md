@@ -98,25 +98,19 @@ These are downstream packages that are being maintained by others and how to upg
 | Arch Linux AUR | https://aur.archlinux.org/packages/minikube/ | "Flag as package out-of-date"
 | Brew Cask | https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created.
 
-#### Updating the arch linux package
-The Arch Linux AUR is maintained at https://aur.archlinux.org/packages/minikube/.  The installer PKGBUILD is hosted in its own repository.  The public read-only repository is hosted here `https://aur.archlinux.org/minikube.git` and the private read-write repository is hosted here `ssh://aur@aur.archlinux.org/minikube.git`
-
-The repository is tracked in this repo under a submodule `installers/linux/arch_linux`.  Currently, its configured to point at the public readonly repository so if you want to push you should run this command to overwrite
-
-`git config submodule.archlinux.url ssh://aur@aur.archlinux.org/minikube.git `
-
-To actually update the package, you should bump the version and update the sha512 checksum.  You should also run `makepkg --printsrcinfo > .SRCINFO` to update the srcinfo file.  You can edit this manually if you don't have `makepkg` on your machine.
+HEADS UP: Brew automation is currently broken: https://github.com/kubernetes/minikube/issues/3694 - send a PR out yourself.
 
 ## Verification
 
-After you've finished the release, run this command from the release commit to verify the release was done correctly:
-`make check-release`.
+Verify release checksums by running`make check-release`
 
-## Update kubernetes.io docs
+## Update docs
 
-If there are major changes, please send a PR to update the official setup guide: [Running Kubernetes Locally via Minikube](https://kubernetes.io/docs/setup/minikube/)
+If there are major changes, please send a PR to update [Running Kubernetes Locally via Minikube(https://kubernetes.io/docs/setup/minikube/)
 
-## Announce
+## Announce!
+
+Places we generally announce releases:
 
 - #minikube on Slack
 - minikube-dev, minikube-users mailing list
