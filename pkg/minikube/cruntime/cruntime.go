@@ -24,8 +24,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-const MinikubeContainerPrefix = "k8s_"
-
 // CommandRunner is the subset of bootstrapper.CommandRunner this package consumes
 type CommandRunner interface {
 	Run(string) error

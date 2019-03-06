@@ -553,7 +553,7 @@ func configureMounts() {
 		return
 	}
 
-	console.OutStyle("mount", "Creating mount %s ...", viper.GetString(mountString))
+	console.OutStyle("mounting", "Creating mount %s ...", viper.GetString(mountString))
 	path := os.Args[0]
 	mountDebugVal := 0
 	if glog.V(8) {

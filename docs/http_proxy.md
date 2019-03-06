@@ -39,7 +39,7 @@ minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTT
 
 To set these environment variables permanently, consider adding these to your [system settings](https://support.microsoft.com/en-au/help/310519/how-to-manage-environment-variables-in-windows-xp) or using [setx](https://stackoverflow.com/questions/5898131/set-a-persistent-environment-variable-from-cmd-exe)
 
-## Debugging
+## Troubleshooting
 
 ### unable to cache ISO... connection refused
 

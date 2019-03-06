@@ -1,8 +1,14 @@
 # Steps to Release Minikube
 
+## Preparation
+
+* Announce release intent on #minikube
+* Pause merge requests so that they are not accidentally left out of the ISO or release notes
+
 ## Build a new ISO
 
-You only need to build the minikube ISO when the there are changes in the `deploy/iso` folder. 
+Major releases always get a new ISO. Minor bugfixes may or may not require it: check for changes in the `deploy/iso` folder. 
+
 Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally.
 
  * navigate to the minikube ISO jenkins job
@@ -18,8 +24,8 @@ The build will take roughly 50 minutes.
 
 Edit the minikube `Makefile`, updating the version number values at the top:
 
-* `VERSION_MINOR` (and `VERSION_MAJOR`, `VERSION_BUILD` as necessary)
-* `ISO_VERSION` (only update this if there is a new ISO release - though there almost always is)
+* `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD` as necessary
+* `ISO_VERSION` - defaults to MAJOR.MINOR.0 - update if point release requires a new ISO to be built.
 
 ## Run Local Integration Test
 
@@ -109,3 +115,9 @@ After you've finished the release, run this command from the release commit to v
 ## Update kubernetes.io docs
 
 If there are major changes, please send a PR to update the official setup guide: [Running Kubernetes Locally via Minikube](https://kubernetes.io/docs/setup/minikube/)
+
+## Announce
+
+- #minikube on Slack
+- minikube-dev, minikube-users mailing list
+- Twitter

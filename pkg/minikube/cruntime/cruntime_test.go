@@ -190,7 +190,7 @@ func (f *FakeRunner) docker(args []string, root bool) (string, error) {
 func (f *FakeRunner) crictl(args []string, root bool) (string, error) {
 	switch cmd := args[0]; cmd {
 	case "ps":
-		// crictl ps -a --name=apiserver --quiet
+		// crictl ps -a --name=apiserver --state=Running --quiet
 		if args[1] == "-a" && strings.HasPrefix(args[2], "--name") {
 			fname := strings.Split(args[2], "=")[1]
 			ids := []string{}
@@ -202,6 +202,14 @@ func (f *FakeRunner) crictl(args []string, root bool) (string, error) {
 			}
 			f.t.Logf("fake crictl: Found containers: %v", ids)
 			return strings.Join(ids, "\n"), nil
+		} else if args[1] == "-a" {
+			ids := []string{}
+			for id := range f.containers {
+				ids = append(ids, id)
+			}
+			f.t.Logf("fake crictl: Found containers: %v", ids)
+			return strings.Join(ids, "\n"), nil
+
 		}
 	case "stop":
 		for _, id := range args[1:] {
@@ -376,11 +384,17 @@ func TestContainerFunctions(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
 			runner := NewFakeRunner(t)
+			prefix := ""
+			if tc.runtime == "docker" {
+				prefix = "k8s_"
+			}
 			runner.containers = map[string]string{
-				"abc0": "k8s_apiserver",
-				"fgh1": "k8s_coredns",
-				"xyz2": "k8s_storage",
-				"zzz":  "unrelated",
+				"abc0": prefix + "apiserver",
+				"fgh1": prefix + "coredns",
+				"xyz2": prefix + "storage",
+			}
+			if tc.runtime == "docker" {
+				runner.containers["zzz"] = "unrelated"
 			}
 			cr, err := New(Config{Type: tc.runtime, Runner: runner})
 			if err != nil {
@@ -409,7 +423,7 @@ func TestContainerFunctions(t *testing.T) {
 			}
 
 			// Get the list of everything else.
-			got, err = cr.ListContainers(MinikubeContainerPrefix)
+			got, err = cr.ListContainers("")
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
@@ -420,7 +434,7 @@ func TestContainerFunctions(t *testing.T) {
 
 			// Kill the containers and assert that they have disappeared
 			cr.KillContainers(got)
-			got, err = cr.ListContainers(MinikubeContainerPrefix)
+			got, err = cr.ListContainers("")
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
