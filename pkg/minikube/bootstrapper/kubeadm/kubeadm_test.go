@@ -17,8 +17,10 @@ limitations under the License.
 package kubeadm
 
 import (
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/util"
@@ -104,6 +106,72 @@ schedulerExtraArgs:
 `,
 		},
 		{
+			description: "extra args, v1.14.0",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.101",
+				KubernetesVersion: "v1.14.0-beta1",
+				NodeName:          "extra-args-minikube-114",
+				ExtraOptions: util.ExtraOptionSlice{
+					util.ExtraOption{
+						Component: Apiserver,
+						Key:       "fail-no-swap",
+						Value:     "true",
+					},
+					util.ExtraOption{
+						Component: ControllerManager,
+						Key:       "kube-api-burst",
+						Value:     "32",
+					},
+				},
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1beta1
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.1.101
+  bindPort: 8443
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+nodeRegistration:
+  criSocket: /var/run/dockershim.sock
+  name: extra-args-minikube-114
+  taints: []
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+apiServer:
+  extraArgs:
+    enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"fail-no-swap: "true"
+controllerManager:
+  extraArgs:
+    kube-api-burst: "32"
+certificatesDir: /var/lib/minikube/certs/
+clusterName: kubernetes
+controlPlaneEndpoint: localhost:8443
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: /data/minikube
+kubernetesVersion: v1.14.0-beta1
+networking:
+  dnsDomain: cluster.local
+  podSubnet: ""
+  serviceSubnet: 10.96.0.0/12
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+imageGCHighThresholdPercent: 100
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"
+`,
+		}, {
 			description: "two extra args for one component",
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.101",
@@ -264,18 +332,21 @@ apiServerExtraArgs:
 		}
 
 		t.Run(test.description, func(t *testing.T) {
-			actualCfg, err := generateConfig(test.cfg, runtime)
+			got, err := generateConfig(test.cfg, runtime)
 			if err != nil && !test.shouldErr {
 				t.Errorf("got unexpected error generating config: %v", err)
 				return
 			}
 			if err == nil && test.shouldErr {
-				t.Errorf("expected error but got none, config: %s", actualCfg)
+				t.Errorf("expected error but got none, config: %s", got)
 				return
 			}
-			if actualCfg != test.expectedCfg {
-				t.Errorf("actual config does not match expected.  actual:\n%sexpected:\n%s", actualCfg, test.expectedCfg)
-				return
+
+			// cmp.Diff doesn't present diffs of multi-line text well
+			gotSplit := strings.Split(got, "\n")
+			wantSplit := strings.Split(test.expectedCfg, "\n")
+			if diff := cmp.Diff(gotSplit, wantSplit); diff != "" {
+				t.Errorf("unexpected diff: (-want +got)\n%s\ngot: %s\n", diff, got)
 			}
 		})
 	}
