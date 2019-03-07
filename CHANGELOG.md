@@ -1,6 +1,6 @@
 # Minikube Release Notes
 
-# Version 0.35.0 - 2019-03-05
+# Version 0.35.0 - 2019-03-06
 
 * Update default Kubernetes version to v1.13.4 (latest stable) [#3807](https://github.com/kubernetes/minikube/pull/3807)
 * Update docker/machine to fix the AMD bug [#3809](https://github.com/kubernetes/minikube/pull/3809)
