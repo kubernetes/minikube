@@ -98,15 +98,13 @@ These are downstream packages that are being maintained by others and how to upg
 | Arch Linux AUR | https://aur.archlinux.org/packages/minikube/ | "Flag as package out-of-date"
 | Brew Cask | https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created.
 
-HEADS UP: Brew automation is currently broken: https://github.com/kubernetes/minikube/issues/3694 - send a PR out yourself.
-
 ## Verification
 
 Verify release checksums by running`make check-release`
 
 ## Update docs
 
-If there are major changes, please send a PR to update [Running Kubernetes Locally via Minikube(https://kubernetes.io/docs/setup/minikube/)
+If there are major changes, please send a PR to update https://kubernetes.io/docs/setup/minikube/
 
 ## Announce!
 
