@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -253,29 +252,6 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 
 	if err := DeleteHost(api); err == nil {
 		t.Fatal("Expected error deleting host.")
-	}
-}
-
-func TestDeleteHostMultipleErrors(t *testing.T) {
-	api := tests.NewMockAPI()
-	api.RemoveError = true
-	h, _ := createHost(api, defaultMachineConfig)
-
-	d := &tests.MockDriver{RemoveError: true}
-
-	h.Driver = d
-
-	err := DeleteHost(api)
-
-	if err == nil {
-		t.Fatal("Expected error deleting host, didn't get one.")
-	}
-
-	expectedErrors := []string{"error removing " + config.GetMachineName(), "error deleting machine"}
-	for _, expectedError := range expectedErrors {
-		if !strings.Contains(err.Error(), expectedError) {
-			t.Fatalf("Error %v expected to contain: %s.", err, expectedError)
-		}
 	}
 }
 

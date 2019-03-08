@@ -72,7 +72,7 @@ type Plugin struct {
 	Addr        string
 	MachineName string
 	addrCh      chan string
-	stopCh      chan bool
+	stopCh      chan struct{}
 	timeout     time.Duration
 }
 
@@ -121,7 +121,7 @@ func NewPlugin(driverName string) (*Plugin, error) {
 	log.Debugf("Found binary path at %s", binaryPath)
 
 	return &Plugin{
-		stopCh: make(chan bool),
+		stopCh: make(chan struct{}),
 		addrCh: make(chan string, 1),
 		Executor: &Executor{
 			DriverName: driverName,
@@ -168,19 +168,23 @@ func (lbe *Executor) Close() error {
 	return nil
 }
 
-func stream(scanner *bufio.Scanner, streamOutCh chan<- string) {
+func stream(scanner *bufio.Scanner, streamOutCh chan<- string, stopCh <-chan struct{}) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		if err := scanner.Err(); err != nil {
 			log.Warnf("Scanning stream: %s", err)
 		}
-		streamOutCh <- strings.Trim(line, "\n")
+		select {
+		case streamOutCh <- strings.Trim(line, "\n"):
+		case <-stopCh:
+			return
+		}
 	}
 }
 
 func (lbp *Plugin) AttachStream(scanner *bufio.Scanner) <-chan string {
 	streamOutCh := make(chan string)
-	go stream(scanner, streamOutCh)
+	go stream(scanner, streamOutCh, lbp.stopCh)
 	return streamOutCh
 }
 
@@ -241,6 +245,6 @@ func (lbp *Plugin) Address() (string, error) {
 }
 
 func (lbp *Plugin) Close() error {
-	lbp.stopCh <- true
+	close(lbp.stopCh)
 	return nil
 }

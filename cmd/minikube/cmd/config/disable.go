@@ -17,10 +17,9 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 var addonsDisableCmd = &cobra.Command{
@@ -29,17 +28,15 @@ var addonsDisableCmd = &cobra.Command{
 	Long:  "Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list ",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			fmt.Fprintln(os.Stderr, "usage: minikube addons disable ADDON_NAME")
-			os.Exit(1)
+			exit.Usage("usage: minikube addons disable ADDON_NAME")
 		}
 
 		addon := args[0]
 		err := Set(addon, "false")
 		if err != nil {
-			fmt.Fprintln(os.Stdout, err)
-			os.Exit(1)
+			exit.WithError("disable failed", err)
 		}
-		fmt.Fprintln(os.Stdout, fmt.Sprintf("%s was successfully disabled", addon))
+		console.Success("%s was successfully disabled", addon)
 	},
 }
 

@@ -53,7 +53,7 @@
 //		Indexes of starter blocks in case of multiple trie roots.
 //
 // It is recommended that users test the generated trie by checking the returned
-// value for every rune. Such exhaustive tests are possible as the the number of
+// value for every rune. Such exhaustive tests are possible as the number of
 // runes in Unicode is limited.
 package triegen // import "golang.org/x/text/internal/triegen"
 

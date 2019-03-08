@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Bump these on release
+# Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 33
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 35
+VERSION_BUILD ?= 0
+# Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
+
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
-DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR)-$(VERSION_BUILD)
+DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+RPM_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
@@ -26,8 +30,6 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
 # NOTE: "latest" as of 2018-12-04. kube-cross images aren't updated as often as Kubernetes
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
-
-ISO_VERSION ?= v0.33.1
 ISO_BUCKET ?= minikube/iso
 
 MINIKUBE_VERSION ?= $(ISO_VERSION)
@@ -126,7 +128,7 @@ minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 	if [ ! -d $(BUILD_DIR)/buildroot ]; then \
 		mkdir -p $(BUILD_DIR); \
-		git clone --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
+		git clone --depth=1 --branch=$(BUILDROOT_BRANCH) https://github.com/buildroot/buildroot $(BUILD_DIR)/buildroot; \
 	fi;
 	$(MAKE) BR2_EXTERNAL=../../deploy/iso/minikube-iso minikube_defconfig -C $(BUILD_DIR)/buildroot
 	$(MAKE) -C $(BUILD_DIR)/buildroot
@@ -234,8 +236,16 @@ out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
 	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	dpkg-deb --build out/minikube_$(DEB_VERSION)
+	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION)
 	rm -rf out/minikube_$(DEB_VERSION)
+
+out/minikube-$(RPM_VERSION).rpm: out/minikube-linux-amd64
+	cp -r installers/linux/rpm/minikube_rpm_template out/minikube-$(RPM_VERSION)
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/minikube-$(RPM_VERSION)/minikube.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename minikube-$(RPM_VERSION).rpm" \
+		 out/minikube-$(RPM_VERSION)/minikube.spec
+	rm -rf out/minikube-$(RPM_VERSION)
 
 .SECONDEXPANSION:
 TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2

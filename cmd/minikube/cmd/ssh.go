@@ -17,14 +17,13 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -36,23 +35,22 @@ var sshCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting host: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting host", err)
 		}
 		if host.Driver.DriverName() == "none" {
-			fmt.Println(`'none' driver does not support 'minikube ssh' command`)
-			os.Exit(0)
+			exit.Usage("'none' driver does not support 'minikube ssh' command")
 		}
 		err = cluster.CreateSSHShell(api, args)
 		if err != nil {
-			glog.Errorln(errors.Wrap(err, "Error attempting to ssh/run-ssh-command"))
-			os.Exit(1)
+			// This is typically due to a non-zero exit code, so no need for flourish.
+			console.ErrLn("ssh: %v", err)
+			// It'd be nice if we could pass up the correct error code here :(
+			os.Exit(exit.Failure)
 		}
 	},
 }

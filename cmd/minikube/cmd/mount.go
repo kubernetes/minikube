@@ -17,19 +17,19 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"net"
 	"os"
-	"sync"
-
 	"strings"
+	"sync"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
@@ -49,43 +49,32 @@ var mountCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if isKill {
 			if err := cmdUtil.KillMountProcess(); err != nil {
-				fmt.Println("Errors occurred deleting mount process: ", err)
-				os.Exit(1)
+				exit.WithError("Error killing mount process", err)
 			}
 			os.Exit(0)
 		}
 
 		if len(args) != 1 {
-			errText := `Please specify the directory to be mounted: 
-	minikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")
-`
-			fmt.Fprintln(os.Stderr, errText)
-			os.Exit(1)
+			exit.Usage(`Please specify the directory to be mounted: 
+	minikube mount HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY(ex:"/host-home:/vm-home")`)
 		}
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
-			errText := `Mount directory must be in the form: 
-	HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`
-			fmt.Fprintln(os.Stderr, errText)
-			os.Exit(1)
+			exit.Usage(`Mount directory must be in the form: 
+	HOST_MOUNT_DIRECTORY:VM_MOUNT_DIRECTORY`)
 		}
 		hostPath := mountString[:idx]
 		vmPath := mountString[idx+1:]
 		if _, err := os.Stat(hostPath); err != nil {
 			if os.IsNotExist(err) {
-				errText := fmt.Sprintf("Cannot find directory %s for mount", hostPath)
-				fmt.Fprintln(os.Stderr, errText)
+				exit.WithCode(exit.NoInput, "Cannot find directory %s for mount", hostPath)
 			} else {
-				errText := fmt.Sprintf("Error accessing directory %s for mount", hostPath)
-				fmt.Fprintln(os.Stderr, errText)
+				exit.WithError("stat failed", err)
 			}
-			os.Exit(1)
 		}
 		if len(vmPath) == 0 || !strings.HasPrefix(vmPath, "/") {
-			errText := fmt.Sprintf("The :VM_MOUNT_DIRECTORY must be an absolute path")
-			fmt.Fprintln(os.Stderr, errText)
-			os.Exit(1)
+			exit.Usage("The :VM_MOUNT_DIRECTORY must be an absolute path")
 		}
 		var debugVal int
 		if glog.V(1) {
@@ -93,39 +82,33 @@ var mountCmd = &cobra.Command{
 		}
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		host, err := api.Load(config.GetMachineName())
 		if err != nil {
-			glog.Errorln("Error loading api: ", err)
-			os.Exit(1)
+			exit.WithError("Error loading api", err)
 		}
 		if host.Driver.DriverName() == "none" {
-			fmt.Println(`'none' driver does not support 'minikube mount' command`)
-			os.Exit(0)
+			exit.Usage(`'none' driver does not support 'minikube mount' command`)
 		}
 		var ip net.IP
 		if mountIP == "" {
 			ip, err = cluster.GetVMHostIP(host)
 			if err != nil {
-				glog.Errorln("Error getting the host IP address to use from within the VM: ", err)
-				os.Exit(1)
+				exit.WithError("Error getting the host IP address to use from within the VM", err)
 			}
 		} else {
 			ip = net.ParseIP(mountIP)
 			if ip == nil {
-				glog.Errorln("error parsing the input ip address for mount")
-				os.Exit(1)
+				exit.WithCode(exit.Data, "error parsing the input ip address for mount")
 			}
 		}
-		fmt.Printf("Mounting %s into %s on the minikube VM\n", hostPath, vmPath)
-		fmt.Println("This daemon process needs to stay alive for the mount to still be accessible...")
+		console.OutStyle("mounting", "Mounting %s into %s on the minikube VM", hostPath, vmPath)
+		console.OutStyle("notice", "This daemon process needs to stay alive for the mount to be accessible ...")
 		port, err := cmdUtil.GetPort()
 		if err != nil {
-			glog.Errorln("Error finding port for mount: ", err)
-			os.Exit(1)
+			exit.WithError("Error finding port for mount", err)
 		}
 		var wg sync.WaitGroup
 		wg.Add(1)
@@ -135,8 +118,7 @@ var mountCmd = &cobra.Command{
 		}()
 		err = cluster.MountHost(api, ip, vmPath, port, mountVersion, uid, gid, msize)
 		if err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
+			exit.WithError("failed to mount host", err)
 		}
 		wg.Wait()
 	},

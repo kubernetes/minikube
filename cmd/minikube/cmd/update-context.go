@@ -17,15 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	kcfg "k8s.io/minikube/pkg/util/kubeconfig"
 )
@@ -39,25 +36,22 @@ var updateContextCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		machineName := config.GetMachineName()
 		ip, err := cluster.GetHostDriverIP(api, machineName)
 		if err != nil {
-			glog.Errorln("Error host driver ip status:", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			exit.WithError("Error host driver ip status", err)
 		}
-		ok, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
+		updated, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
 		if err != nil {
-			glog.Errorln("Error kubeconfig status:", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			exit.WithError("update config", err)
 		}
-		if ok {
-			fmt.Println("Reconfigured kubeconfig IP, now pointing at " + ip.String())
+		if updated {
+			console.OutStyle("celebrate", "IP has been updated to point at %s", ip)
 		} else {
-			fmt.Println("Kubeconfig IP correctly configured, pointing at " + ip.String())
+			console.OutStyle("meh", "IP was already correctly configured for %s", ip)
 		}
 
 	},

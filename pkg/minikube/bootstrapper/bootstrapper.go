@@ -17,19 +17,30 @@ limitations under the License.
 package bootstrapper
 
 import (
-	"io"
 	"net"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// LogOptions are options to be passed to LogCommands
+type LogOptions struct {
+	// Lines is the number of recent log lines to include, as in tail -n.
+	Lines int
+	// Follow is whether or not to actively follow the logs, as in tail -f.
+	Follow bool
+}
+
 // Bootstrapper contains all the methods needed to bootstrap a kubernetes cluster
 type Bootstrapper interface {
+	// PullImages pulls images necessary for a cluster. Success should not be required.
+	PullImages(config.KubernetesConfig) error
 	StartCluster(config.KubernetesConfig) error
 	UpdateCluster(config.KubernetesConfig) error
 	RestartCluster(config.KubernetesConfig) error
-	GetClusterLogsTo(follow bool, out io.Writer) error
+	DeleteCluster(config.KubernetesConfig) error
+	// LogCommands returns a map of log type to a command which will display that log.
+	LogCommands(LogOptions) map[string]string
 	SetupCerts(cfg config.KubernetesConfig) error
 	GetKubeletStatus() (string, error)
 	GetApiServerStatus(net.IP) (string, error)

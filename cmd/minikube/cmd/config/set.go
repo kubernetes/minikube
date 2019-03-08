@@ -17,12 +17,9 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
-	"os"
-
-	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-
 	"github.com/spf13/cobra"
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 var configSetCmd = &cobra.Command{
@@ -32,13 +29,11 @@ var configSetCmd = &cobra.Command{
 	These values can be overwritten by flags or environment variables at runtime.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
-			fmt.Fprintln(os.Stderr, "usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
-			os.Exit(1)
+			exit.Usage("usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
 		}
 		err := Set(args[0], args[1])
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			exit.WithError("Set failed", err)
 		}
 	},
 }

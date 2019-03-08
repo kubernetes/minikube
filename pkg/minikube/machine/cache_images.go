@@ -24,29 +24,29 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
-
+	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
-
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
-
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/sshutil"
-
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 const tempLoadDir = "/tmp"
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
+
+// loadImageLock is used to serialize image loads to avoid overloading the guest VM
+var loadImageLock sync.Mutex
 
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
@@ -85,12 +85,17 @@ func CacheImages(images []string, cacheDir string) error {
 
 func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
 	var g errgroup.Group
+	// Load profile cluster config from file
+	cc, err := config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorln("Error loading profile config: ", err)
+	}
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := LoadFromCacheBlocking(cmd, src); err != nil {
+			if err := LoadFromCacheBlocking(cmd, cc.KubernetesConfig, src); err != nil {
 				return errors.Wrapf(err, "loading image %s", src)
 			}
 			return nil
@@ -190,7 +195,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
+func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
 	for {
@@ -203,20 +208,25 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
-	if err := cmd.Copy(f); err != nil {
+	if err := cr.Copy(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}
 
-	dockerLoadCmd := "docker load -i " + dst
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+	loadImageLock.Lock()
+	defer loadImageLock.Unlock()
 
-	if err := cmd.Run(dockerLoadCmd); err != nil {
-		return errors.Wrapf(err, "loading docker image: %s", dst)
+	err = r.LoadImage(dst)
+	if err != nil {
+		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 
-	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
+	if err := cr.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
 	}
-
 	glog.Infof("Successfully loaded image %s from cache", src)
 	return nil
 }

@@ -17,13 +17,17 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"time"
 
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
@@ -35,25 +39,35 @@ var stopCmd = &cobra.Command{
 	Long: `Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Stopping local Kubernetes cluster...")
+		profile := viper.GetString(pkg_config.MachineProfile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 
+		nonexistent := false
+
 		stop := func() (err error) {
-			return cluster.StopHost(api)
+			err = cluster.StopHost(api)
+			switch err := errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				console.OutStyle("meh", "%q VM does not exist, nothing to stop", profile)
+				nonexistent = true
+				return nil
+			default:
+				return err
+			}
 		}
 		if err := pkgutil.RetryAfter(5, stop, 1*time.Second); err != nil {
-			fmt.Println("Error stopping machine: ", err)
-			cmdUtil.MaybeReportErrorAndExit(err)
+			exit.WithError("Unable to stop VM", err)
 		}
-		fmt.Println("Machine stopped.")
+		if !nonexistent {
+			console.OutStyle("stopped", "%q stopped.", profile)
+		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			fmt.Println("Errors occurred deleting mount process: ", err)
+			exit.WithError("Unable to kill mount process", err)
 		}
 	},
 }

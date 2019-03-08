@@ -17,15 +17,14 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"os"
 	"sort"
 	"text/template"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 var addonListFormat string
@@ -41,13 +40,11 @@ var addonsListCmd = &cobra.Command{
 	Long:  "Lists all available minikube addons as well as their current statuses (enabled/disabled)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			fmt.Fprintln(os.Stderr, "usage: minikube addons list")
-			os.Exit(1)
+			exit.Usage("usage: minikube addons list")
 		}
 		err := addonList()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			exit.WithError("addon list failed", err)
 		}
 	},
 }
@@ -81,14 +78,12 @@ func addonList() error {
 		}
 		tmpl, err := template.New("list").Parse(addonListFormat)
 		if err != nil {
-			glog.Errorln("Error creating list template:", err)
-			os.Exit(1)
+			exit.WithError("Error creating list template", err)
 		}
 		listTmplt := AddonListTemplate{addonName, stringFromStatus(addonStatus)}
 		err = tmpl.Execute(os.Stdout, listTmplt)
 		if err != nil {
-			glog.Errorln("Error executing list template:", err)
-			os.Exit(1)
+			exit.WithError("Error executing list template", err)
 		}
 	}
 	return nil

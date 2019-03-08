@@ -48,25 +48,43 @@ func NewCodeWriter() *CodeWriter {
 }
 
 // WriteGoFile appends the buffer with the total size of all created structures
-// and writes it as a Go file to the the given file with the given package name.
+// and writes it as a Go file to the given file with the given package name.
 func (w *CodeWriter) WriteGoFile(filename, pkg string) {
 	f, err := os.Create(filename)
 	if err != nil {
 		log.Fatalf("Could not create file %s: %v", filename, err)
 	}
 	defer f.Close()
-	if _, err = w.WriteGo(f, pkg); err != nil {
+	if _, err = w.WriteGo(f, pkg, ""); err != nil {
+		log.Fatalf("Error writing file %s: %v", filename, err)
+	}
+}
+
+// WriteVersionedGoFile appends the buffer with the total size of all created
+// structures and writes it as a Go file to the given file with the given
+// package name and build tags for the current Unicode version,
+func (w *CodeWriter) WriteVersionedGoFile(filename, pkg string) {
+	tags := buildTags()
+	if tags != "" {
+		filename = insertVersion(filename, UnicodeVersion())
+	}
+	f, err := os.Create(filename)
+	if err != nil {
+		log.Fatalf("Could not create file %s: %v", filename, err)
+	}
+	defer f.Close()
+	if _, err = w.WriteGo(f, pkg, tags); err != nil {
 		log.Fatalf("Error writing file %s: %v", filename, err)
 	}
 }
 
 // WriteGo appends the buffer with the total size of all created structures and
-// writes it as a Go file to the the given writer with the given package name.
-func (w *CodeWriter) WriteGo(out io.Writer, pkg string) (n int, err error) {
+// writes it as a Go file to the given writer with the given package name.
+func (w *CodeWriter) WriteGo(out io.Writer, pkg, tags string) (n int, err error) {
 	sz := w.Size
 	w.WriteComment("Total table size %d bytes (%dKiB); checksum: %X\n", sz, sz/1024, w.Hash.Sum32())
 	defer w.buf.Reset()
-	return WriteGo(out, pkg, w.buf.Bytes())
+	return WriteGo(out, pkg, tags, w.buf.Bytes())
 }
 
 func (w *CodeWriter) printf(f string, x ...interface{}) {
@@ -181,7 +199,6 @@ func (w *CodeWriter) writeValue(v reflect.Value) {
 
 // WriteString writes a string literal.
 func (w *CodeWriter) WriteString(s string) {
-	s = strings.Replace(s, `\`, `\\`, -1)
 	io.WriteString(w.Hash, s) // content hash
 	w.Size += len(s)
 
@@ -232,6 +249,9 @@ func (w *CodeWriter) WriteString(s string) {
 				out = fmt.Sprintf("\\U%08x", r)
 			}
 			chars = len(out)
+		} else if r == '\\' {
+			out = "\\" + string(r)
+			chars = 2
 		}
 		if n -= chars; n < 0 {
 			nLines++

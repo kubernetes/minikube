@@ -17,15 +17,19 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -37,32 +41,56 @@ var deleteCmd = &cobra.Command{
 associated files.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
-			fmt.Fprintln(os.Stderr, "usage: minikube delete")
-			os.Exit(1)
+			exit.Usage("usage: minikube delete")
 		}
-
-		fmt.Println("Deleting local Kubernetes cluster...")
+		profile := viper.GetString(pkg_config.MachineProfile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 
-		if err = cluster.DeleteHost(api); err != nil {
-			fmt.Println("Errors occurred deleting machine: ", err)
-			os.Exit(1)
+		cc, err := pkg_config.Load()
+		if err != nil && !os.IsNotExist(err) {
+			console.ErrLn("Error loading profile config: %v", err)
 		}
-		fmt.Println("Machine deleted.")
+
+		// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
+		if err == nil && cc.MachineConfig.VMDriver == "none" {
+			kc := cc.KubernetesConfig
+			bsName := viper.GetString(cmdcfg.Bootstrapper)
+			console.OutStyle("resetting", "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
+			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+			if err != nil {
+				console.ErrLn("Unable to get bootstrapper: %v", err)
+			} else {
+				if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+					console.ErrLn("Failed to delete cluster: %v", err)
+				}
+			}
+		}
+
+		if err = cluster.DeleteHost(api); err != nil {
+			switch err := errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				console.OutStyle("meh", "%q cluster does not exist", profile)
+			default:
+				exit.WithError("Failed to delete cluster", err)
+			}
+		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			fmt.Println("Errors occurred deleting mount process: ", err)
+			console.Fatal("Failed to kill mount process: %v", err)
 		}
 
 		if err := os.Remove(constants.GetProfileFile(viper.GetString(pkg_config.MachineProfile))); err != nil {
-			fmt.Println("Error deleting machine profile config")
-			os.Exit(1)
+			if os.IsNotExist(err) {
+				console.OutStyle("meh", "%q profile does not exist", profile)
+				os.Exit(0)
+			}
+			exit.WithError("Failed to remove profile", err)
 		}
+		console.OutStyle("crushed", "The %q cluster has been deleted.", profile)
 	},
 }
 

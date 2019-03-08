@@ -32,17 +32,16 @@ func init() {
 		Builtin:       true,
 		ConfigCreator: createNoneHost,
 		DriverCreator: func() drivers.Driver {
-			return none.NewDriver("", "")
+			return none.NewDriver(none.Config{})
 		},
 	})
 }
 
+// createNoneHost creates a none Driver from a MachineConfig
 func createNoneHost(config cfg.MachineConfig) interface{} {
-	return &none.Driver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: cfg.GetMachineName(),
-			StorePath:   constants.GetMinipath(),
-		},
+	return none.NewDriver(none.Config{
+		MachineName:      cfg.GetMachineName(),
+		StorePath:        constants.GetMinipath(),
 		ContainerRuntime: config.ContainerRuntime,
-	}
+	})
 }
