@@ -184,11 +184,6 @@ func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *
 	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
 }
 
-// SetRuntime saves the runtime backend
-func (m *MinikubeRunner) SetRuntime(runtime string) {
-	m.Runtime = runtime
-}
-
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
