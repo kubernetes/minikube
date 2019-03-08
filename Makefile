@@ -14,8 +14,8 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 34
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 35
+VERSION_BUILD ?= 0
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 
