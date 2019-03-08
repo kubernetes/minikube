@@ -96,6 +96,9 @@ var (
 	apiServerNames   []string
 	apiServerIPs     []net.IP
 	extraOptions     pkgutil.ExtraOptionSlice
+
+	// proxyVars are variables we plumb through to the underlying container runtime
+	proxyVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
 )
 
 func init() {
@@ -260,6 +263,17 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 		}
 	}
 
+	// Feed Docker our host proxy environment by default, so that it can pull images
+	if _, ok := r.(*cruntime.Docker); ok {
+		if !cmd.Flags().Changed("docker-env") {
+			for _, k := range proxyVars {
+				if v := os.Getenv(k); v != "" {
+					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
+				}
+			}
+		}
+	}
+
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			MinikubeISO:         viper.GetString(isoURL),
@@ -370,7 +384,7 @@ func validateNetwork(h *host.Host) string {
 	console.OutStyle("connectivity", "%q IP address is %s", cfg.GetMachineName(), ip)
 
 	optSeen := false
-	for _, k := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
+	for _, k := range proxyVars {
 		if v := os.Getenv(k); v != "" {
 			if !optSeen {
 				console.OutStyle("internet", "Found network options:")
