@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"text/template"
 
@@ -26,10 +25,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	cmdUtil "k8s.io/minikube/cmd/util"
+	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 )
@@ -42,8 +42,6 @@ type Status struct {
 	ApiServer  string
 	Kubeconfig string
 }
-
-const internalErrorCode = -1
 
 const (
 	minikubeNotRunningStatusFlag = 1 << 0
@@ -62,15 +60,13 @@ var statusCmd = &cobra.Command{
 		var returnCode = 0
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(internalErrorCode)
+			exit.WithCode(exit.Unavailable, "Error getting client: %v", err)
 		}
 		defer api.Close()
 
 		hostSt, err := cluster.GetHostStatus(api)
 		if err != nil {
-			glog.Errorln("Error getting machine status:", err)
-			cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
+			exit.WithError("Error getting host status", err)
 		}
 
 		kubeletSt := state.None.String()
@@ -80,13 +76,12 @@ var statusCmd = &cobra.Command{
 		if hostSt == state.Running.String() {
 			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
-				glog.Errorf("Error getting cluster bootstrapper: %v", err)
-				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
+				exit.WithError("Error getting bootstrapper", err)
 			}
 			kubeletSt, err = clusterBootstrapper.GetKubeletStatus()
 			if err != nil {
-				glog.Errorln("Error kubelet status:", err)
-				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
+				glog.Warningf("kubelet err: %v", err)
+				returnCode |= clusterNotRunningStatusFlag
 			} else if kubeletSt != state.Running.String() {
 				returnCode |= clusterNotRunningStatusFlag
 			}
@@ -94,21 +89,18 @@ var statusCmd = &cobra.Command{
 			ip, err := cluster.GetHostDriverIP(api, config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error host driver ip status:", err)
-				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			}
 
 			apiserverSt, err = clusterBootstrapper.GetApiServerStatus(ip)
 			if err != nil {
 				glog.Errorln("Error apiserver status:", err)
-				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			} else if apiserverSt != state.Running.String() {
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := kubeconfig.GetKubeConfigStatus(ip, cmdUtil.GetKubeConfigPath(), config.GetMachineName())
+			ks, err := kubeconfig.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
-				cmdUtil.MaybeReportErrorAndExitWithCode(err, internalErrorCode)
 			}
 			if ks {
 				kubeconfigSt = "Correctly Configured: pointing to minikube-vm at " + ip.String()
@@ -129,13 +121,11 @@ var statusCmd = &cobra.Command{
 		}
 		tmpl, err := template.New("status").Parse(statusFormat)
 		if err != nil {
-			glog.Errorln("Error creating status template:", err)
-			os.Exit(internalErrorCode)
+			exit.WithError("Error creating status template", err)
 		}
 		err = tmpl.Execute(os.Stdout, status)
 		if err != nil {
-			glog.Errorln("Error executing status template:", err)
-			os.Exit(internalErrorCode)
+			exit.WithError("Error executing status template", err)
 		}
 
 		os.Exit(returnCode)

@@ -321,11 +321,14 @@ func (client *NativeClient) Shell(args ...string) error {
 		if err := session.Shell(); err != nil {
 			return err
 		}
-		session.Wait()
+		if err := session.Wait(); err != nil {
+			return err
+		}
 	} else {
-		session.Run(strings.Join(args, " "))
+		if err := session.Run(strings.Join(args, " ")); err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 

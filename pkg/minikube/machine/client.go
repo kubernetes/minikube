@@ -19,17 +19,10 @@ package machine
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
 	"time"
-
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/sshutil"
-	"k8s.io/minikube/pkg/provision"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/auth"
@@ -46,8 +39,13 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/sshutil"
+	"k8s.io/minikube/pkg/provision"
 )
 
 func NewRPCClient(storePath, certsDir string) libmachine.API {
@@ -121,7 +119,7 @@ func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error loading host from store")
+		return nil, errors.Wrap(err, "filestore")
 	}
 
 	var def registry.DriverDef
@@ -142,16 +140,16 @@ func (api *LocalClient) Close() error {
 	return nil
 }
 
-func GetCommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
-	if h.DriverName != constants.DriverNone {
-		client, err := sshutil.NewSSHClient(h.Driver)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
-		}
-		return bootstrapper.NewSSHRunner(client), nil
+// CommandRunner returns best available command runner for this host
+func CommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
+	if h.DriverName == constants.DriverNone {
+		return &bootstrapper.ExecRunner{}, nil
 	}
-
-	return &bootstrapper.ExecRunner{}, nil
+	client, err := sshutil.NewSSHClient(h.Driver)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
+	}
+	return bootstrapper.NewSSHRunner(client), nil
 }
 
 func (api *LocalClient) Create(h *host.Host) error {
@@ -166,25 +164,25 @@ func (api *LocalClient) Create(h *host.Host) error {
 		f    func() error
 	}{
 		{
-			"Bootstrapping certs.",
+			"bootstrapping certificates",
 			func() error { return cert.BootstrapCertificates(h.AuthOptions()) },
 		},
 		{
-			"Running precreate checks.",
+			"precreate",
 			h.Driver.PreCreateCheck,
 		},
 		{
-			"Saving driver.",
+			"saving",
 			func() error {
 				return api.Save(h)
 			},
 		},
 		{
-			"Creating VM.",
+			"creating",
 			h.Driver.Create,
 		},
 		{
-			"Waiting for VM to start.",
+			"waiting",
 			func() error {
 				if h.Driver.DriverName() == "none" {
 					return nil
@@ -193,7 +191,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 			},
 		},
 		{
-			"Provisioning VM.",
+			"provisioning",
 			func() error {
 				if h.Driver.DriverName() == "none" {
 					return nil
@@ -206,7 +204,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 
 	for _, step := range steps {
 		if err := step.f(); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Error executing step: %s\n", step.name))
+			return errors.Wrap(err, step.name)
 		}
 	}
 
@@ -262,8 +260,10 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 func registerDriver(driverName string) {
 	def, err := registry.Driver(driverName)
 	if err != nil {
-		glog.Exitf("Unsupported driver: %s\n", driverName)
+		if err == registry.ErrDriverNotFound {
+			exit.Usage("unsupported driver: %s", driverName)
+		}
+		exit.WithError("error getting driver", err)
 	}
-
 	plugin.RegisterDriver(def.DriverCreator())
 }

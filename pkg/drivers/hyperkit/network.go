@@ -25,12 +25,14 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/docker/machine/libmachine/log"
 )
 
 const (
-	DHCPLeasesFile = "/var/db/dhcpd_leases"
-	CONFIG_PLIST   = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
-	NET_ADDR_KEY   = "Shared_Net_Address"
+	LeasesPath       = "/var/db/dhcpd_leases"
+	VMNetDomain      = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
+	SharedNetAddrKey = "Shared_Net_Address"
 )
 
 type DHCPEntry struct {
@@ -42,10 +44,11 @@ type DHCPEntry struct {
 }
 
 func GetIPAddressByMACAddress(mac string) (string, error) {
-	return getIpAddressFromFile(mac, DHCPLeasesFile)
+	return getIPAddressFromFile(mac, LeasesPath)
 }
 
-func getIpAddressFromFile(mac, path string) (string, error) {
+func getIPAddressFromFile(mac, path string) (string, error) {
+	log.Debugf("Searching for %s in %s ...", mac, path)
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -56,12 +59,15 @@ func getIpAddressFromFile(mac, path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	log.Debugf("Found %d entries in %s!", len(dhcpEntries), path)
 	for _, dhcpEntry := range dhcpEntries {
+		log.Debugf("dhcp entry: %+v", dhcpEntry)
 		if dhcpEntry.HWAddress == mac {
+			log.Debugf("Found match: %s", mac)
 			return dhcpEntry.IPAddress, nil
 		}
 	}
-	return "", fmt.Errorf("Could not find an IP address for %s", mac)
+	return "", fmt.Errorf("could not find an IP address for %s", mac)
 }
 
 func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
@@ -99,7 +105,7 @@ func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
 		case "lease":
 			dhcpEntry.Lease = val
 		default:
-			return dhcpEntries, fmt.Errorf("Unable to parse line: %s", line)
+			return dhcpEntries, fmt.Errorf("unable to parse line: %s", line)
 		}
 	}
 	return dhcpEntries, scanner.Err()
@@ -114,18 +120,17 @@ func trimMacAddress(rawUUID string) string {
 }
 
 func GetNetAddr() (net.IP, error) {
-	_, err := os.Stat(CONFIG_PLIST + ".plist")
-	if err != nil {
-		return nil, fmt.Errorf("Does not exist %s", CONFIG_PLIST+".plist")
+	plistPath := VMNetDomain + ".plist"
+	if _, err := os.Stat(plistPath); err != nil {
+		return nil, fmt.Errorf("stat: %v", err)
 	}
-
-	out, err := exec.Command("defaults", "read", CONFIG_PLIST, NET_ADDR_KEY).Output()
+	out, err := exec.Command("defaults", "read", VMNetDomain, SharedNetAddrKey).Output()
 	if err != nil {
 		return nil, err
 	}
 	ip := net.ParseIP(strings.TrimSpace(string(out)))
 	if ip == nil {
-		return nil, fmt.Errorf("Could not get the network address for vmnet")
+		return nil, fmt.Errorf("could not get the network address for vmnet")
 	}
 	return ip, nil
 }

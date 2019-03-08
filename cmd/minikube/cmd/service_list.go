@@ -17,14 +17,14 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	"k8s.io/api/core/v1"
-
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -39,15 +39,14 @@ var serviceListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		serviceURLs, err := service.GetServiceURLs(api, serviceListNamespace, serviceURLTemplate)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			fmt.Fprintln(os.Stderr, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
-			os.Exit(1)
+			console.Fatal("Failed to get service URL: %v", err)
+			console.ErrStyle("notice", "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
+			os.Exit(exit.Unavailable)
 		}
 
 		var data [][]string

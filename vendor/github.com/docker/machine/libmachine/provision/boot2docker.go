@@ -232,7 +232,7 @@ func (provisioner *Boot2DockerProvisioner) Provision(swarmOptions swarm.Options,
 	swarmOptions.Env = engineOptions.Env
 
 	if provisioner.EngineOptions.StorageDriver == "" {
-		provisioner.EngineOptions.StorageDriver = "aufs"
+		provisioner.EngineOptions.StorageDriver = "overlay2"
 	}
 
 	if err = provisioner.SetHostname(provisioner.Driver.GetMachineName()); err != nil {

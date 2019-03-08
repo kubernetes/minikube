@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -33,6 +32,8 @@ import (
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
@@ -51,6 +52,11 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		kubectl, err := exec.LookPath("kubectl")
+		if err != nil {
+			exit.WithCode(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		}
+
 		api, err := machine.NewAPIClient()
 		defer func() {
 			err := api.Close()
@@ -60,46 +66,43 @@ var dashboardCmd = &cobra.Command{
 		}()
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
-		fmt.Fprintln(os.Stderr, "Enabling dashboard ...")
+		// Send status messages to stderr for folks re-using this output.
+		console.ErrStyle("enabling", "Enabling dashboard ...")
 		// Enable the dashboard add-on
 		err = configcmd.Set("dashboard", "true")
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Unable to enable dashboard: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Unable to enable dashboard", err)
 		}
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
-		fmt.Fprintln(os.Stderr, "Verifying dashboard health ...")
+		console.ErrStyle("verifying", "Verifying dashboard health ...")
 		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "%s:%s is not running: %v\n", ns, svc, err)
-			os.Exit(1)
+			exit.WithCode(exit.Unavailable, "%s:%s is not running: %v", ns, svc, err)
 		}
 
-		fmt.Fprintln(os.Stderr, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy()
+		console.ErrStyle("launch", "Launching proxy ...")
+		p, hostPort, err := kubectlProxy(kubectl)
 		if err != nil {
-			glog.Fatalf("kubectl proxy: %v", err)
+			exit.WithError("kubectl proxy", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
-		fmt.Fprintln(os.Stderr, "Verifying proxy health ...")
+		console.ErrStyle("verifying", "Verifying proxy health ...")
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
-			fmt.Fprintf(os.Stderr, "%s is not responding properly: %v\n", url, err)
-			os.Exit(1)
+			exit.WithCode(exit.Unavailable, "%s is not responding properly: %v", url, err)
 		}
 
 		if dashboardURLMode {
-			fmt.Fprintln(os.Stdout, url)
+			console.OutLn(url)
 		} else {
-			fmt.Fprintln(os.Stdout, fmt.Sprintf("Opening %s in your default browser...", url))
+			console.ErrStyle("celebrate", "Opening %s in your default browser...", url)
 			if err = browser.OpenURL(url); err != nil {
-				fmt.Fprintf(os.Stderr, fmt.Sprintf("failed to open browser: %v", err))
+				console.Failure("failed to open browser: %v", err)
 			}
 		}
 
@@ -111,12 +114,7 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy() (*exec.Cmd, string, error) {
-	path, err := exec.LookPath("kubectl")
-	if err != nil {
-		return nil, "", errors.Wrap(err, "kubectl not found in PATH")
-	}
-
+func kubectlProxy(path string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 	// config.GetMachineName() respects the -p (profile) flag
 	cmd := exec.Command(path, "--context", config.GetMachineName(), "proxy", "--port=0")

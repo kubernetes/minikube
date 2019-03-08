@@ -21,7 +21,6 @@ import (
 	"crypto"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"os"
@@ -36,14 +35,56 @@ import (
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
+
+// SkipPreflights are preflight checks we always skip.
+var SkipPreflights = []string{
+	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
+	// that we also stick in /etc/kubernetes/manifests
+	"DirAvailable--etc-kubernetes-manifests",
+	"DirAvailable--data-minikube",
+	"Port-10250",
+	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
+	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
+	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
+	"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
+	// We use --ignore-preflight-errors=Swap since minikube.iso allocates a swap partition.
+	// (it should probably stop doing this, though...)
+	"Swap",
+	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
+	// (because we start kubelet with an invalid config)
+	"CRI",
+}
+
+type pod struct {
+	// Human friendly name
+	name  string
+	key   string
+	value string
+}
+
+// PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
+var PodsByLayer = []pod{
+	{"apiserver", "component", "kube-apiserver"},
+	{"proxy", "k8s-app", "kube-proxy"},
+	{"etcd", "component", "etcd"},
+	{"scheduler", "component", "kube-scheduler"},
+	{"controller", "component", "kube-controller-manager"},
+	{"addon-manager", "component", "kube-addon-manager"},
+	{"dns", "k8s-app", "kube-dns"},
+}
+
+// SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
+var SkipAdditionalPreflights = map[string][]string{}
 
 type KubeadmBootstrapper struct {
 	c bootstrapper.CommandRunner
@@ -54,20 +95,11 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
-	var cmd bootstrapper.CommandRunner
-	// The none driver executes commands directly on the host
-	if h.Driver.DriverName() == constants.DriverNone {
-		cmd = &bootstrapper.ExecRunner{}
-	} else {
-		client, err := sshutil.NewSSHClient(h.Driver)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting ssh client")
-		}
-		cmd = bootstrapper.NewSSHRunner(client)
+	runner, err := machine.CommandRunner(h)
+	if err != nil {
+		return nil, errors.Wrap(err, "command runner")
 	}
-	return &KubeadmBootstrapper{
-		c: cmd,
-	}, nil
+	return &KubeadmBootstrapper{c: runner}, nil
 }
 
 func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
@@ -107,28 +139,17 @@ func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
 	return state.Running.String(), nil
 }
 
-// TODO(r2d4): Should this aggregate all the logs from the control plane?
-// Maybe subcommands for each component? minikube logs apiserver?
-func (k *KubeadmBootstrapper) GetClusterLogsTo(follow bool, out io.Writer) error {
-	var flags []string
-	if follow {
-		flags = append(flags, "-f")
+// LogCommands returns a map of log type to a command which will display that log.
+func (k *KubeadmBootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
+	var kcmd strings.Builder
+	kcmd.WriteString("journalctl -u kubelet")
+	if o.Lines > 0 {
+		kcmd.WriteString(fmt.Sprintf(" -n %d", o.Lines))
 	}
-	logsCommand := fmt.Sprintf("sudo journalctl %s -u kubelet", strings.Join(flags, " "))
-
-	if follow {
-		if err := k.c.CombinedOutputTo(logsCommand, out); err != nil {
-			return errors.Wrap(err, "getting cluster logs")
-		}
-	} else {
-
-		logs, err := k.c.CombinedOutput(logsCommand)
-		if err != nil {
-			return errors.Wrap(err, "getting cluster logs")
-		}
-		fmt.Fprint(out, logs)
+	if o.Follow {
+		kcmd.WriteString(" -f")
 	}
-	return nil
+	return map[string]string{"kubelet": kcmd.String()}
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
@@ -137,21 +158,13 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	b := bytes.Buffer{}
-	preflights := constants.Preflights
-	if k8s.ContainerRuntime != "" {
-		preflights = constants.AlternateRuntimePreflights
-		out, err := k.c.CombinedOutput("sudo modprobe br_netfilter")
-		if err != nil {
-			glog.Infoln(out)
-			return errors.Wrap(err, "sudo modprobe br_netfilter")
-		}
-		out, err = k.c.CombinedOutput("sudo sh -c \"echo '1' > /proc/sys/net/ipv4/ip_forward\"")
-		if err != nil {
-			glog.Infoln(out)
-			return errors.Wrap(err, "creating /proc/sys/net/ipv4/ip_forward")
-		}
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
+	if err != nil {
+		return err
 	}
+	b := bytes.Buffer{}
+	preflights := SkipPreflights
+	preflights = append(preflights, SkipAdditionalPreflights[r.Name()]...)
 
 	templateContext := struct {
 		KubeadmConfigFile   string
@@ -181,8 +194,18 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
+	if err := waitForPods(false); err != nil {
+		return errors.Wrap(err, "wait")
+	}
+
+	console.OutStyle("permissions", "Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	}
+
+	// Make sure elevating privileges didn't screw anything up
+	if err := waitForPods(true); err != nil {
+		return errors.Wrap(err, "wait")
 	}
 
 	return nil
@@ -208,6 +231,32 @@ func addAddons(files *[]assets.CopyableFile) error {
 	return nil
 }
 
+// waitForPods waits until the important Kubernetes pods are in running state
+func waitForPods(quiet bool) error {
+	if !quiet {
+		console.OutStyle("waiting-pods", "Waiting for pods:")
+	}
+	client, err := util.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "k8s client")
+	}
+
+	for _, p := range PodsByLayer {
+		if !quiet {
+			console.Out(" %s", p.name)
+		}
+		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
+		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
+		}
+	}
+	if !quiet {
+		console.OutLn("")
+	}
+	return nil
+}
+
+// RestartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -234,70 +283,52 @@ func (k *KubeadmBootstrapper) RestartCluster(k8s config.KubernetesConfig) error 
 			return errors.Wrapf(err, "running cmd: %s", cmd)
 		}
 	}
-	if err := restartKubeProxy(k8s); err != nil {
+
+	if err := waitForPods(false); err != nil {
+		return errors.Wrap(err, "wait")
+	}
+
+	console.OutStyle("reconfiguring", "Updating kube-proxy configuration ...")
+	if err = util.RetryAfter(5, func() error { return updateKubeProxyConfigMap(k8s) }, 5*time.Second); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
+	}
+
+	// Make sure the kube-proxy restart didn't screw anything up.
+	if err := waitForPods(true); err != nil {
+		return errors.Wrap(err, "wait")
 	}
 
 	return nil
 }
 
+// DeleteCluster removes the components that were started earlier
+func (k *KubeadmBootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
+	cmd := fmt.Sprintf("sudo kubeadm reset --force")
+	out, err := k.c.CombinedOutput(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "kubeadm reset: %s\n%s\n", cmd, out)
+	}
+
+	return nil
+}
+
+// PullImages downloads images that will be used by RestartCluster
+func (k *KubeadmBootstrapper) PullImages(k8s config.KubernetesConfig) error {
+	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)
+	if err := k.c.Run(cmd); err != nil {
+		return errors.Wrapf(err, "running cmd: %s", cmd)
+	}
+	return nil
+}
+
+// SetupCerts sets up certificates within the cluster.
 func (k *KubeadmBootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
-// SetContainerRuntime possibly sets the container runtime, if it hasn't already
-// been specified by the extra-config option.  It has a set of defaults known to
-// work for a particular runtime.
-func SetContainerRuntime(cfg map[string]string, runtime string) map[string]string {
-	if _, ok := cfg["container-runtime"]; ok {
-		glog.Infoln("Container runtime already set through extra options, ignoring --container-runtime flag.")
-		return cfg
-	}
-
-	if runtime == "" {
-		glog.Infoln("Container runtime flag provided with no value, using defaults.")
-		return cfg
-	}
-
-	switch runtime {
-	case "crio", "cri-o":
-		cfg["container-runtime"] = "remote"
-		cfg["container-runtime-endpoint"] = "/var/run/crio/crio.sock"
-		cfg["image-service-endpoint"] = "/var/run/crio/crio.sock"
-		cfg["runtime-request-timeout"] = "15m"
-	case "containerd":
-		cfg["container-runtime"] = "remote"
-		cfg["container-runtime-endpoint"] = "unix:///run/containerd/containerd.sock"
-		cfg["image-service-endpoint"] = "unix:///run/containerd/containerd.sock"
-		cfg["runtime-request-timeout"] = "15m"
-	default:
-		cfg["container-runtime"] = runtime
-	}
-
-	return cfg
-}
-
-func GetCRISocket(path string, runtime string) string {
-	if path != "" {
-		glog.Infoln("Container runtime interface socket provided, using path.")
-		return path
-	}
-
-	switch runtime {
-	case "crio", "cri-o":
-		path = "/var/run/crio/crio.sock"
-	case "containerd":
-		path = "/run/containerd/containerd.sock"
-	default:
-		path = ""
-	}
-
-	return path
-}
-
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
+func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing kubernetes version")
@@ -308,8 +339,9 @@ func NewKubeletConfig(k8s config.KubernetesConfig) (string, error) {
 		return "", errors.Wrap(err, "generating extra configuration for kubelet")
 	}
 
-	extraOpts = SetContainerRuntime(extraOpts, k8s.ContainerRuntime)
-
+	for k, v := range r.KubeletOptions() {
+		extraOpts[k] = v
+	}
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
@@ -346,16 +378,20 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 			return errors.Wrap(err, "loading cached images")
 		}
 	}
-
-	kubeadmCfg, err := generateConfig(cfg)
+	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+	kubeadmCfg, err := generateConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	kubeletCfg, err := NewKubeletConfig(cfg)
+	kubeletCfg, err := NewKubeletConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
+	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
 
 	files := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
@@ -382,10 +418,10 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 			}
 			f, err := assets.NewFileAsset(path, "/usr/bin", bin, "0641")
 			if err != nil {
-				return errors.Wrap(err, "making new file asset")
+				return errors.Wrap(err, "new file asset")
 			}
 			if err := k.c.Copy(f); err != nil {
-				return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+				return errors.Wrapf(err, "copy")
 			}
 			return nil
 		})
@@ -395,15 +431,14 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	}
 
 	if err := addAddons(&files); err != nil {
-		return errors.Wrap(err, "adding addons to copyable files")
+		return errors.Wrap(err, "adding addons")
 	}
 
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring kubeadm file: %+v", f)
+			return errors.Wrapf(err, "copy")
 		}
 	}
-
 	err = k.c.Run(`
 sudo systemctl daemon-reload &&
 sudo systemctl enable kubelet &&
@@ -416,13 +451,11 @@ sudo systemctl start kubelet
 	return nil
 }
 
-func generateConfig(k8s config.KubernetesConfig) (string, error) {
+func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing kubernetes version")
 	}
-
-	criSocket := GetCRISocket(k8s.CRISocket, k8s.ContainerRuntime)
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
@@ -462,7 +495,7 @@ func generateConfig(k8s config.KubernetesConfig) (string, error) {
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
-		CRISocket:         criSocket,
+		CRISocket:         r.SocketPath(),
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
@@ -513,11 +546,9 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 	options.Checksum = constants.GetKubernetesReleaseURLSha1(binary, version)
 	options.ChecksumHash = crypto.SHA1
 
-	fmt.Printf("Downloading %s %s\n", binary, version)
+	console.OutStyle("file-download", "Downloading %s %s", binary, version)
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
-	fmt.Printf("Finished Downloading %s %s\n", binary, version)
-
 	return targetFilepath, nil
 }

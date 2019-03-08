@@ -46,6 +46,7 @@ func createVirtualboxHost(config cfg.MachineConfig) interface{} {
 	d.DiskSize = int(config.DiskSize)
 	d.HostOnlyCIDR = config.HostOnlyCIDR
 	d.NoShare = config.DisableDriverMounts
+	d.NoVTXCheck = config.NoVTXCheck
 	d.NatNicType = defaultVirtualboxNicType
 	d.HostOnlyNicType = defaultVirtualboxNicType
 	d.DNSProxy = false

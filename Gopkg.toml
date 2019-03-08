@@ -102,7 +102,19 @@
   name = "github.com/json-iterator/go"
   version = "1.1.3-22-gf2b4162"
 
+[[override]]
+  branch = "master"
+  name = "github.com/intel-go/cpuid"
+
 [prune]
   go-tests = true
   non-go = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/google/go-cmp"
+  version = "0.2.0"
+
+[[constraint]]
+  name = "golang.org/x/text"
+  branch = "master"

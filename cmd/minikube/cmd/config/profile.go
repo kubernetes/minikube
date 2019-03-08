@@ -17,11 +17,10 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 var ProfileCmd = &cobra.Command{
@@ -30,8 +29,7 @@ var ProfileCmd = &cobra.Command{
 	Long:  "profile sets the current minikube profile.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			fmt.Fprintln(os.Stderr, "usage: minikube profile MINIKUBE_PROFILE_NAME")
-			os.Exit(1)
+			exit.Usage("usage: minikube profile MINIKUBE_PROFILE_NAME")
 		}
 
 		profile := args[0]
@@ -40,9 +38,9 @@ var ProfileCmd = &cobra.Command{
 		}
 		err := Set(pkgConfig.MachineProfile, profile)
 		if err != nil {
-			fmt.Fprintln(os.Stdout, err)
+			exit.WithError("set failed", err)
 		} else {
-			fmt.Fprintln(os.Stdout, fmt.Sprintf("minikube profile was successfully set to %s", profile))
+			console.Success("minikube profile was successfully set to %s", profile)
 		}
 	},
 }

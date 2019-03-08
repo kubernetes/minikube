@@ -25,34 +25,22 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func TestStartStop(t *testing.T) {
 	tests := []struct {
-		name    string
 		runtime string
 	}{
-		{
-			name:    "default",
-			runtime: "",
-		},
-		{
-			name:    "containerd",
-			runtime: constants.ContainerdRuntime,
-		},
-		{
-			name:    "crio",
-			runtime: constants.CrioRuntime,
-		},
-		// TODO(tstromberg): Add test for crio w/o cni
+		{runtime: "docker"},
+		{runtime: "containerd"},
+		{runtime: "crio"},
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		t.Run(test.runtime, func(t *testing.T) {
 			runner := NewMinikubeRunner(t)
-			if test.runtime != "" && usingNoneDriver(runner) {
+			if test.runtime != "docker" && usingNoneDriver(runner) {
 				t.Skipf("skipping, can't use %s with none driver", test.runtime)
 			}
 

@@ -28,13 +28,13 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/shell"
-	"github.com/golang/glog"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -308,26 +308,28 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Sets up docker env variables; similar to '$(docker-machine env)'",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
 		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting host: %v\n", err)
-			os.Exit(1)
+			exit.WithError("Error getting host", err)
 		}
 		if host.Driver.DriverName() == "none" {
-			fmt.Println(`'none' driver does not support 'minikube docker-env' command`)
-			os.Exit(0)
+			exit.Usage(`'none' driver does not support 'minikube docker-env' command`)
+		}
+		hostSt, err := cluster.GetHostStatus(api)
+		if err != nil {
+			exit.WithError("Error getting host status", err)
+		}
+		if hostSt != state.Running.String() {
+			exit.WithCode(exit.Unavailable, `The docker host is currently not running`)
 		}
 		docker, err := GetDockerActive(host)
 		if !docker {
-			fmt.Println(`# The docker service is currently not active`)
-			os.Exit(1)
+			exit.WithCode(exit.Unavailable, `The docker service is currently not active`)
 		}
 
 		var shellCfg *ShellConfig
@@ -335,14 +337,12 @@ var dockerEnvCmd = &cobra.Command{
 		if unset {
 			shellCfg, err = shellCfgUnset()
 			if err != nil {
-				glog.Errorln("Error setting machine env variable(s):", err)
-				cmdUtil.MaybeReportErrorAndExit(err)
+				exit.WithError("Error unsetting shell variables", err)
 			}
 		} else {
 			shellCfg, err = shellCfgSet(api)
 			if err != nil {
-				glog.Errorln("Error setting machine env variable(s):", err)
-				cmdUtil.MaybeReportErrorAndExit(err)
+				exit.WithError("Error setting shell variables", err)
 			}
 		}
 
