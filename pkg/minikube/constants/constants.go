@@ -130,7 +130,7 @@ kubectl: {{.Kubeconfig}}
 var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
 var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
 
-var DefaultKubernetesVersion = "v1.13.3"
+var DefaultKubernetesVersion = "v1.13.4"
 
 var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
@@ -161,7 +161,7 @@ const (
 	DefaultUfsDebugLvl   = 0
 	DefaultMountEndpoint = "/minikube-host"
 	DefaultMsize         = 262144
-	DefaultMountVersion  = "9p2000.u"
+	DefaultMountVersion  = "9p2000.L"
 )
 
 func GetKubernetesReleaseURL(binaryName, version string) string {
