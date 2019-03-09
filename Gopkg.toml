@@ -118,3 +118,14 @@
 [[constraint]]
   name = "golang.org/x/text"
   branch = "master"
+
+[[constraint]]
+  name = "github.com/rapid7/go-get-proxied"
+  version = "1.2.0"
+
+# go-get-proxied wants sys @ master, but it conflicts with others.
+[[override]]
+  name = "golang.org/x/sys"
+  branch = "master"
+#   version = "release-branch.go1.12"
+

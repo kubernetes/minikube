@@ -518,6 +518,17 @@
   revision = "8c0e8605dc7b85893e144efd8e76d4a473f4bc7d"
 
 [[projects]]
+  digest = "1:01ee634347d0a6ac8ac0da38be9850421a8984c9024a763002df8f2190970944"
+  name = "github.com/rapid7/go-get-proxied"
+  packages = [
+    "proxy",
+    "winhttp",
+  ]
+  pruneopts = "NUT"
+  revision = "16249a544090ff549b357cfc72bccf76fc5a8b8d"
+  version = "1.2.0"
+
+[[projects]]
   digest = "1:118f00f400c10c1dd21a267fd04697c758dbe9a38cf5fa3fab3bb3625af9efe7"
   name = "github.com/russross/blackfriday"
   packages = ["."]
@@ -674,7 +685,8 @@
   revision = "f52d1811a62927559de87708c8913c1650ce4f26"
 
 [[projects]]
-  digest = "1:fbad6d1464c4ff2c233f9f04181ff573960d469636b208b87458c8b5606b9b78"
+  branch = "master"
+  digest = "1:68aa8302a83374dd0cfb48739f6427449bce0c5a0241b49783c21ea06f2e70ec"
   name = "golang.org/x/sys"
   packages = [
     "unix",
@@ -682,7 +694,7 @@
     "windows/registry",
   ]
   pruneopts = "NUT"
-  revision = "95c6576299259db960f6c5b9b69ea52422860fce"
+  revision = "584f3b12f43e1e55248c90e84804777009eed0a4"
 
 [[projects]]
   branch = "master"
@@ -1009,6 +1021,7 @@
     "github.com/pkg/errors",
     "github.com/pkg/profile",
     "github.com/r2d4/external-storage/lib/controller",
+    "github.com/rapid7/go-get-proxied/proxy",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
