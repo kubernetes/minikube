@@ -43,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -406,6 +407,15 @@ func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		files = append(files,
 			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"),
 			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultRktNetConfigPath, "0644"))
+	}
+
+	if proxy.Detected() {
+		content := proxy.EnvContent(cfg)
+		glog.Infof("Detected proxy, will update /etc/environment with:\n%s", content)
+		// Only mutate /etc/environment if the runner is executing on a remote VM
+		if _, local := k.c.(*bootstrapper.ExecRunner); !local {
+			files = append(files, assets.NewMemoryAssetTarget(content, "/etc/environment", "0444"))
+		}
 	}
 
 	var g errgroup.Group

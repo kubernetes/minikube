@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/kubeconfig"
 	"k8s.io/minikube/pkg/version"
@@ -184,7 +185,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	host, preexisting := startHost(m, config.MachineConfig)
 
-	ip := validateNetwork(host)
+	ip := validateNetwork(host, config.KubernetesConfig)
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
@@ -260,6 +261,33 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 		}
 	}
 
+	k8s := cfg.KubernetesConfig{
+		KubernetesVersion:      kVersion,
+		NodePort:               viper.GetInt(apiServerPort),
+		NodeName:               constants.DefaultNodeName,
+		APIServerName:          viper.GetString(apiServerName),
+		APIServerNames:         apiServerNames,
+		APIServerIPs:           apiServerIPs,
+		DNSDomain:              viper.GetString(dnsDomain),
+		FeatureGates:           viper.GetString(featureGates),
+		ContainerRuntime:       viper.GetString(containerRuntime),
+		CRISocket:              viper.GetString(criSocket),
+		NetworkPlugin:          selectedNetworkPlugin,
+		ServiceCIDR:            viper.GetString(serviceCIDR),
+		ExtraOptions:           extraOptions,
+		ShouldLoadCachedImages: viper.GetBool(cacheImages),
+		EnableDefaultCNI:       selectedEnableDefaultCNI,
+	}
+
+	// Feed Docker our proxy environment by default, so that it can pull remote images
+	if _, ok := r.(*cruntime.Docker); ok {
+		if proxy.Detected() && !cmd.Flags().Changed("docker-env") {
+			for k, v := range proxy.Recommended(k8s) {
+				dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
+			}
+		}
+	}
+
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			MinikubeISO:         viper.GetString(isoURL),
@@ -286,23 +314,7 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 			GPU:                 viper.GetBool(gpu),
 			NoVTXCheck:          viper.GetBool(noVTXCheck),
 		},
-		KubernetesConfig: cfg.KubernetesConfig{
-			KubernetesVersion:      kVersion,
-			NodePort:               viper.GetInt(apiServerPort),
-			NodeName:               constants.DefaultNodeName,
-			APIServerName:          viper.GetString(apiServerName),
-			APIServerNames:         apiServerNames,
-			APIServerIPs:           apiServerIPs,
-			DNSDomain:              viper.GetString(dnsDomain),
-			FeatureGates:           viper.GetString(featureGates),
-			ContainerRuntime:       viper.GetString(containerRuntime),
-			CRISocket:              viper.GetString(criSocket),
-			NetworkPlugin:          selectedNetworkPlugin,
-			ServiceCIDR:            viper.GetString(serviceCIDR),
-			ExtraOptions:           extraOptions,
-			ShouldLoadCachedImages: viper.GetBool(cacheImages),
-			EnableDefaultCNI:       selectedEnableDefaultCNI,
-		},
+		KubernetesConfig: k8s,
 	}
 	return cfg, nil
 }
@@ -362,21 +374,22 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host) string {
+func validateNetwork(h *host.Host, k8s cfg.KubernetesConfig) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
 	}
 	console.OutStyle("connectivity", "%q IP address is %s", cfg.GetMachineName(), ip)
+	if proxy.Detected() {
+		console.OutStyle("internet", "Detected proxy configuration:")
+		proxyEnv := proxy.Environment()
+		for k, v := range proxyEnv {
+			console.OutStyle("option", "%s: %s", k, v)
+		}
 
-	optSeen := false
-	for _, k := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
-		if v := os.Getenv(k); v != "" {
-			if !optSeen {
-				console.OutStyle("internet", "Found network options:")
-				optSeen = true
-			}
-			console.OutStyle("option", "%s=%s", k, v)
+		np := proxy.NoProxy(cfg.KubernetesConfig{NodeIP: ip, ServiceCIDR: k8s.ServiceCIDR})
+		if proxyEnv["NO_PROXY"] != np {
+			console.OutStyle("tip", "Suggested NO_PROXY value: %s", np)
 		}
 	}
 
