@@ -1,0 +1,6 @@
+{
+  "no-inline-html": false,
+  "no-trailing-punctuation": false,
+  "ul-style": false,
+  "line_length": false
+}
