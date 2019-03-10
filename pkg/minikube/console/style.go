@@ -93,7 +93,7 @@ var styles = map[string]style{
 	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},
 	"kubectl":           {Prefix: "💗  ", LowPrefix: "+   "},
 	"meh":               {Prefix: "🙄  ", LowPrefix: "?   "},
-	"embarassed":        {Prefix: "🤦  ", LowPrefix: "*   "},
+	"embarrassed":       {Prefix: "🤦  ", LowPrefix: "*   "},
 	"tip":               {Prefix: "💡  ", LowPrefix: "i   "},
 }
 
