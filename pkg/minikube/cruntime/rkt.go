@@ -35,16 +35,16 @@ func (r *Rkt) Name() string {
 }
 
 // Version retrieves the current version of this runtime
-func (r *Rkt) Version() string {
+func (r *Rkt) Version() (string, error) {
 	ver, err := r.Runner.CombinedOutput("rkt version")
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	// rkt Version: 1.24.0
 	// appc Version: 0.8.10
 	line := strings.Split(ver, "\n")[0]
-	return strings.Replace(line, "rkt Version: ", "", 1)
+	return strings.Replace(line, "rkt Version: ", "", 1), nil
 }
 
 // SocketPath returns the path to the socket file for rkt/rktlet

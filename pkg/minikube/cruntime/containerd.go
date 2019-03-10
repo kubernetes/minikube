@@ -35,18 +35,18 @@ func (r *Containerd) Name() string {
 }
 
 // Version retrieves the current version of this runtime
-func (r *Containerd) Version() string {
+func (r *Containerd) Version() (string, error) {
 	ver, err := r.Runner.CombinedOutput("containerd --version")
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	// containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39
 	words := strings.Split(ver, " ")
 	if len(words) >= 4 && words[0] == "containerd" {
-		return strings.Replace(words[2], "v", "", 1)
+		return strings.Replace(words[2], "v", "", 1), nil
 	}
-	return ""
+	return "", fmt.Errorf("unknown version: %q", ver)
 }
 
 // SocketPath returns the path to the socket file for containerd
