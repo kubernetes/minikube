@@ -29,15 +29,16 @@ import (
 
 // Exit codes based on sysexits(3)
 const (
-	Failure     = 1  // Failure represents a general failure code
-	BadUsage    = 64 // Usage represents an incorrect command line
-	Data        = 65 // Data represents incorrect data supplied by the user
-	NoInput     = 66 // NoInput represents that the input file did not exist or was not readable
-	Unavailable = 69 // Unavailable represents when a service was unavailable
-	Software    = 70 // Software represents an internal software error.
-	IO          = 74 // IO represents an I/O error
-	Config      = 78 // Config represents an unconfigured or miscon­figured state
-	Permissions = 77 // Permissions represents a permissions error
+	Failure     = 1   // Failure represents a general failure code
+	BadUsage    = 64  // Usage represents an incorrect command line
+	Data        = 65  // Data represents incorrect data supplied by the user
+	NoInput     = 66  // NoInput represents that the input file did not exist or was not readable
+	Unavailable = 69  // Unavailable represents when a service was unavailable
+	Software    = 70  // Software represents an internal software error.
+	IO          = 74  // IO represents an I/O error
+	Config      = 78  // Config represents an unconfigured or miscon­figured state
+	Permissions = 77  // Permissions represents a permissions error
+	Interrupted = 130 // Script terminated by Control-C
 
 	// MaxProblems controls the number of problems to show for each source
 	MaxProblems = 3
