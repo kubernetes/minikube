@@ -136,13 +136,13 @@ var mountCmd = &cobra.Command{
 
 		console.OutStyle("mounting", "Mounting host path %s into VM as %s ...", hostPath, vmPath)
 		console.OutStyle("mount-options", "Mount options:")
-		console.OutStyle("option", "Type:    %s", cfg.Type)
-		console.OutStyle("option", "UID:     %d", cfg.UID)
-		console.OutStyle("option", "GID:     %d", cfg.GID)
-		console.OutStyle("option", "Version: %s", cfg.Version)
-		console.OutStyle("option", "MSize:   %d", cfg.MSize)
-		console.OutStyle("option", "Mode:    %s (%o)", cfg.Mode, mode)
-		console.OutStyle("option", "Options: %s", cfg.Options)
+		console.OutStyle("option", "Type:     %s", cfg.Type)
+		console.OutStyle("option", "UID:      %d", cfg.UID)
+		console.OutStyle("option", "GID:      %d", cfg.GID)
+		console.OutStyle("option", "Version:  %s", cfg.Version)
+		console.OutStyle("option", "MSize:    %d", cfg.MSize)
+		console.OutStyle("option", "Mode:     %o (%s)", cfg.Mode, cfg.Mode)
+		console.OutStyle("option", "Options:  %s", cfg.Options)
 
 		var wg sync.WaitGroup
 		wg.Add(1)
