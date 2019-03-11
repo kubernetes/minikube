@@ -36,7 +36,7 @@ const (
 	Unavailable = 69  // Unavailable represents when a service was unavailable
 	Software    = 70  // Software represents an internal software error.
 	IO          = 74  // IO represents an I/O error
-	Config      = 78  // Config represents an unconfigured or miscon­figured state
+	Config      = 78  // Config represents an unconfigured or misconfigured state
 	Permissions = 77  // Permissions represents a permissions error
 	Interrupted = 130 // Script terminated by Control-C
 
