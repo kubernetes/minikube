@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: metrics-server
-        image: k8s.gcr.io/metrics-server-s390x:v0.2.1
+        image: k8s.gcr.io/metrics-server-IMAGETAG:v0.2.1
         imagePullPolicy: Always
         command:
         - /metrics-server

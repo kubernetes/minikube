@@ -1,4 +1,4 @@
-# Copyright 2018 The Kubernetes Authors.
+# Copyright 2016 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,36 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: ReplicationController
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: freshpod
+  name: kubernetes-dashboard
   namespace: kube-system
   labels:
-    k8s-app: freshpod
-    kubernetes.io/minikube-addons: freshpod
+    version: v1.10.1
     addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/minikube-addons: dashboard
 spec:
   replicas: 1
   selector:
-    k8s-app: freshpod
-    addonmanager.kubernetes.io/mode: Reconcile
+    matchLabels:
+      app: kubernetes-dashboard
+      version: v1.10.1
+      addonmanager.kubernetes.io/mode: Reconcile
   template:
     metadata:
       labels:
-        k8s-app: freshpod
+        app: kubernetes-dashboard
+        version: v1.10.1
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - name: freshpod
-        image: gcr.io/google-samples/freshpod:v0.0.1
+      - name: kubernetes-dashboard
+        image: k8s.gcr.io/kubernetes-dashboard-IMAGETAG:v1.10.1
         imagePullPolicy: IfNotPresent
-        volumeMounts:
-        - name: docker
-          mountPath: /var/run/docker.sock
-      volumes:
-      - name: docker
-        hostPath:
-          type: Socket
-          path: /var/run/docker.sock
-      terminationGracePeriodSeconds: 1
+        ports:
+        - containerPort: 9090
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 9090
+          initialDelaySeconds: 30
+          timeoutSeconds: 30

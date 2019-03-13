@@ -70,11 +70,6 @@ MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 SOURCE_DIRS = cmd pkg test
 
-ADDON_PATH := deploy/addons
-ifeq ($(GOARCH),s390x)
-	ADDON_PATH=deploy/addons-s390x
-endif
-
 # $(call DOCKER, image, command)
 define DOCKER
 	docker run --rm -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /go/src/$(REPOPATH) -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
@@ -94,6 +89,23 @@ endif
 ifeq ($(GOOS),windows)
 	IS_EXE = ".exe"
 endif
+ifeq ($(GOARCH),amd64)
+	IMAGETAG ?= -amd64
+	IMAGETAG_NONE ?=
+else
+	IMAGETAG ?= -$(GOARCH)
+	IMAGETAG_NONE ?= -$(GOARCH)
+endif
+.PHONY: makedeploys
+makedeploys:
+	sed "s|\-IMAGETAG_NONE|$(IMAGETAG_NONE)|g" deploy/addons/addon-manager.tmp > deploy/addons/addon-manager.yaml
+	sed "s|\-IMAGETAG|$(IMAGETAG)|g" deploy/addons/dashboard/dashboard-dp.tmp > deploy/addons/dashboard/dashboard-dp.yaml
+	sed "s|\-IMAGETAG|$(IMAGETAG)|g" deploy/addons/heapster/heapster-rc.tmp > deploy/addons/heapster/heapster-rc.yaml
+	sed "s|\-IMAGETAG|$(IMAGETAG)|g" deploy/addons/heapster/influx-grafana-rc.tmp > deploy/addons/heapster/influx-grafana-rc.yaml
+	sed "s|\-IMAGETAG_NONE|$(IMAGETAG_NONE)|g" deploy/addons/ingress/ingress-dp.tmp > deploy/addons/ingress/ingress-dp.yaml
+	sed "s|\-IMAGETAG|$(IMAGETAG)|g" deploy/addons/metrics-server/metrics-server-deployment.tmp > deploy/addons/metrics-server/metrics-server-deployment.yaml
+	sed "s|\-IMAGETAG_NONE|$(IMAGETAG_NONE)|g" deploy/addons/storage-provisioner/storage-provisioner.tmp > deploy/addons/storage-provisioner/storage-provisioner.yaml
+
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
@@ -104,7 +116,10 @@ out/minikube.d: pkg/minikube/assets/assets.go
 	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) $(ORG) $^ $(MINIKUBEFILES) > $@
 
 -include out/minikube.d
-out/minikube-%-$(GOARCH): pkg/minikube/assets/assets.go
+
+.PHONY: out/minikube-%-$(GOARCH)
+out/minikube-%-$(GOARCH):makedeploys pkg/minikube/assets/assets.go
+
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -122,12 +137,9 @@ endif
 	GOOS=$* GOARCH=$(GOARCH) go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-.PHONY: e2e-%-amd64
-e2e-%-amd64: out/minikube-%-amd64
-	GOOS=$* GOARCH=amd64 go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
-
-e2e-linux-s390x: out/minikube-linux-s390x
-	GOOS=linux GOARCH=s390x go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
+.PHONY: e2e-%-$(GOARCH)
+e2e-%-$(GOARCH): out/minikube-%-$(GOARCH)
+	GOOS=$* GOARCH=$(GOARCH) go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
 
 e2e-windows-amd64.exe: e2e-windows-amd64
 	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
@@ -191,12 +203,7 @@ integration: out/minikube
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)
-ifeq ($(GOARCH),amd64)
-	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
-endif
-ifeq ($(GOARCH),s390x)
-	sudo -E out/e2e-linux-s390x -testdata-dir "test/integration/testdata-s390x" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-s390x $(TEST_ARGS)
-endif
+	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-$(GOARCH) $(TEST_ARGS)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
@@ -215,14 +222,14 @@ pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
 
 .PHONY: cross
-cross: out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube-linux-s390x
+cross: out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
 
 .PHONY: e2e-cross
-e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe e2e-linux-s390x
+e2e-cross: e2e-linux-$(GOARCH) e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
-	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso; do \
+	for f in out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
 		fi ; \
@@ -321,16 +328,19 @@ out/storage-provisioner:
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
-ifeq ($(GOARCH),amd64)
-	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile .
-endif
 ifeq ($(GOARCH),s390x)
 	docker build -t $(REGISTRY)/storage-provisioner-s390x:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-s390x .
+else
+	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile .
 endif
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image
+ifeq ($(GOARCH),s390x)
+	gcloud docker -- push $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
+else
 	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+endif
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon:

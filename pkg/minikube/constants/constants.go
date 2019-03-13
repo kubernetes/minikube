@@ -50,6 +50,18 @@ func GetMinipath() string {
 	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
 }
 
+func SupportedArchTag(hasTag bool) string {
+	if runtime.GOARCH == "s390x" {
+		return "-s390x:"
+	} else {
+		if hasTag == true {
+			return "-amd64:"
+		} else {
+			return ":"
+		}
+	}
+}
+
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently
 // used in gendocs.
 var SupportedVMDrivers = [...]string{
@@ -100,18 +112,6 @@ func MakeMiniPath(fileName ...string) string {
 	args := []string{GetMinipath()}
 	args = append(args, fileName...)
 	return filepath.Join(args...)
-}
-
-func SupportedArchTag(hasAmdTag bool) string {
-	if runtime.GOARCH == "s390x" {
-		return "-s390x"
-	} else {
-		if hasAmdTag == true {
-			return "-amd64"
-		} else {
-			return ""
-		}
-	}
 }
 
 var MountProcessFileName = ".mount-process"
@@ -191,10 +191,10 @@ const FileScheme = "file"
 func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 
 	var images = []string{
-		"k8s.gcr.io/kube-proxy" + SupportedArchTag(true) + ":" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-scheduler" + SupportedArchTag(true) + ":" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-controller-manager" + SupportedArchTag(true) + ":" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-apiserver" + SupportedArchTag(true) + ":" + kubernetesVersionStr,
+		"k8s.gcr.io/kube-proxy" + SupportedArchTag(true) + kubernetesVersionStr,
+		"k8s.gcr.io/kube-scheduler" + SupportedArchTag(true) + kubernetesVersionStr,
+		"k8s.gcr.io/kube-controller-manager" + SupportedArchTag(true) + kubernetesVersionStr,
+		"k8s.gcr.io/kube-apiserver" + SupportedArchTag(true) + kubernetesVersionStr,
 	}
 
 	ge_v1_13 := semver.MustParseRange(">=1.13.0")
@@ -211,68 +211,68 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 
 	if ge_v1_13(kubernetesVersion) {
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.24",
+			"k8s.gcr.io/pause" + SupportedArchTag(true) + "3.1",
+			"k8s.gcr.io/pause" + SupportedArchTag(false) + "3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/etcd" + SupportedArchTag(true) + "3.2.24",
 			"k8s.gcr.io/coredns:1.2.6",
 		}...)
 
 	} else if v1_12(kubernetesVersion) {
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.24",
+			"k8s.gcr.io/pause" + SupportedArchTag(true) + "3.1",
+			"k8s.gcr.io/pause" + SupportedArchTag(false) + "3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/etcd" + SupportedArchTag(false) + "3.2.24",
 			"k8s.gcr.io/coredns:1.2.2",
 		}...)
 
 	} else if v1_11(kubernetesVersion) {
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.18",
+			"k8s.gcr.io/pause" + SupportedArchTag(true) + "3.1",
+			"k8s.gcr.io/pause" + SupportedArchTag(false) + "3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/etcd" + SupportedArchTag(true) + "3.2.18",
 			"k8s.gcr.io/coredns:1.1.3",
 		}...)
 
 	} else if v1_10(kubernetesVersion) {
 		images = append(images, []string{
-			"k8s.gcr.io/pause" + SupportedArchTag(true) + ":3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + ":1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + ":1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + ":1.14.8",
-			"k8s.gcr.io/etcd" + SupportedArchTag(true) + ":3.1.12",
+			"k8s.gcr.io/pause" + SupportedArchTag(true) + "3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + "1.14.8",
+			"k8s.gcr.io/etcd" + SupportedArchTag(true) + "3.1.12",
 		}...)
 
 	} else if v1_9(kubernetesVersion) {
 		images = append(images, []string{
-			"k8s.gcr.io/pause" + SupportedArchTag(true) + ":3.0",
-			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + ":1.14.7",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + ":1.14.7",
-			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + ":1.14.7",
-			"k8s.gcr.io/etcd" + SupportedArchTag(true) + ":3.1.10",
+			"k8s.gcr.io/pause" + SupportedArchTag(true) + "3.0",
+			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + "1.14.7",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + "1.14.7",
+			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + "1.14.7",
+			"k8s.gcr.io/etcd" + SupportedArchTag(true) + "3.1.10",
 		}...)
 
 	} else if v1_8(kubernetesVersion) {
 		images = append(images, []string{
-			"k8s.gcr.io/pause" + SupportedArchTag(true) + ":3.0",
-			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + ":1.14.5",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + ":1.14.5",
-			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + ":1.14.5",
-			"k8s.gcr.io/etcd" + SupportedArchTag(true) + ":3.0.17",
+			"k8s.gcr.io/pause" + SupportedArchTag(true) + "3.0",
+			"k8s.gcr.io/k8s-dns-kube-dns" + SupportedArchTag(true) + "1.14.5",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny" + SupportedArchTag(true) + "1.14.5",
+			"k8s.gcr.io/k8s-dns-sidecar" + SupportedArchTag(true) + "1.14.5",
+			"k8s.gcr.io/etcd" + SupportedArchTag(true) + "3.0.17",
 		}...)
 	}
 
 	images = append(images, []string{
-		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1",
-		"k8s.gcr.io/kube-addon-manager:v8.6",
+		"k8s.gcr.io/kubernetes-dashboard" + SupportedArchTag(true) + "v1.10.1",
+		"k8s.gcr.io/kube-addon-manager" + SupportedArchTag(false) + "v8.6",
 		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 	}...)
 
