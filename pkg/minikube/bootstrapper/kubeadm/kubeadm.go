@@ -170,6 +170,12 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
+	extraOpts, err := ExtraConfigForComponent(Kubeadm, k8s.ExtraOptions, version)
+	if err != nil {
+		return errors.Wrap(err, "generating extra configuration for kubelet")
+	}
+	extraFlags := convertToFlags(extraOpts)
+
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
 	if err != nil {
 		return err
@@ -182,12 +188,14 @@ func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		KubeadmConfigFile   string
 		SkipPreflightChecks bool
 		Preflights          []string
+		ExtraOptions        string
 	}{
 		KubeadmConfigFile: constants.KubeadmConfigFile,
 		SkipPreflightChecks: !VersionIsBetween(version,
 			semver.MustParse("1.9.0-alpha.0"),
 			semver.Version{}),
-		Preflights: preflights,
+		Preflights:   preflights,
+		ExtraOptions: extraFlags,
 	}
 	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
