@@ -118,8 +118,8 @@ FILES_TO_UPLOAD=(
     'minikube-linux-amd64.sha256'
     'minikube-darwin-amd64'
     'minikube-darwin-amd64.sha256'
-    'minikube-windows-amd64'
-    'minikube-windows-amd64.sha256'
+    'minikube-windows-amd64.exe'
+    'minikube-windows-amd64.exe.sha256'
     'minikube-installer.exe'
     "minikube_${DEB_VERSION}.deb"
     "minikube-${RPM_VERSION}.rpm"
