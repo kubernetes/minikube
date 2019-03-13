@@ -35,6 +35,7 @@ import (
 // through the "extra-config"
 const (
 	Kubelet           = "kubelet"
+	Kubeadm           = "kubeadm"
 	Apiserver         = "apiserver"
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
@@ -70,6 +71,7 @@ var componentToKubeadmConfigKey = map[string]string{
 	Apiserver:         "apiServer",
 	ControllerManager: "controllerManager",
 	Scheduler:         "scheduler",
+	Kubeadm:           "kubeadm",
 	// The Kubelet is not configured in kubeadm, only in systemd.
 	Kubelet: "",
 }
