@@ -26,7 +26,8 @@
 
 set -e
 export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
-export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}-${VERSION_BUILD}
+export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
+export RPM_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 
 export GITHUB_ORGANIZATION="kubernetes"
 export GITHUB_REPO="minikube"
@@ -63,6 +64,9 @@ Feel free to leave off \`\`\`sudo cp minikube /usr/local/bin/ && rm minikube\`\`
 
 ### Debian Package (.deb) [Experimental]
 Download the \`minikube_${DEB_VERSION}.deb\` file, and install it using \`sudo dpkg -i minikube_$(DEB_VERSION).deb\`
+
+### RPM Package (.rpm) [Experimental]
+Download the \`minikube-${RPM_VERSION}.rpm\` file, and install it using \`sudo rpm -i minikube-$(RPM_VERSION).rpm\`
 
 ### Windows [Experimental]
 Download the \`minikube-windows-amd64.exe\` file, rename it to \`minikube.exe\` and add it to your path.
@@ -114,10 +118,11 @@ FILES_TO_UPLOAD=(
     'minikube-linux-amd64.sha256'
     'minikube-darwin-amd64'
     'minikube-darwin-amd64.sha256'
-    'minikube-windows-amd64'
-    'minikube-windows-amd64.sha256'
+    'minikube-windows-amd64.exe'
+    'minikube-windows-amd64.exe.sha256'
     'minikube-installer.exe'
     "minikube_${DEB_VERSION}.deb"
+    "minikube-${RPM_VERSION}.rpm"
     'docker-machine-driver-kvm2'
     'docker-machine-driver-hyperkit'
 )

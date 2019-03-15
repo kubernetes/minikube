@@ -86,6 +86,7 @@ const (
 	vsockPorts            = "hyperkit-vsock-ports"
 	gpu                   = "gpu"
 	embedCerts            = "embed-certs"
+	noVTXCheck            = "no-vtx-check"
 )
 
 var (
@@ -141,6 +142,7 @@ func init() {
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
+	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
 }
@@ -237,7 +239,7 @@ func beginCacheImages(g *errgroup.Group, kVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("caching", "Caching images in the background ...")
+	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", kVersion)
 	g.Go(func() error {
 		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), kVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
@@ -284,6 +286,7 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 			DisableDriverMounts: viper.GetBool(disableDriverMounts),
 			UUID:                viper.GetString(uuid),
 			GPU:                 viper.GetBool(gpu),
+			NoVTXCheck:          viper.GetBool(noVTXCheck),
 		},
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      kVersion,
@@ -325,7 +328,7 @@ func prepareNone() {
 
 		console.OutLn("")
 		console.OutStyle("command", "sudo mv %s/.kube %s/.minikube $HOME", home, home)
-		console.OutStyle("command", "sudo chown -R $USER %s/.kube %s/.minikube", home, home)
+		console.OutStyle("command", "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
 		console.OutLn("")
 
 		console.OutStyle("tip", "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
@@ -487,7 +490,7 @@ func waitCacheImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("waiting", "Waiting for image caching to complete ...")
+	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error caching images: ", err)
 	}
@@ -553,7 +556,7 @@ func configureMounts() {
 		return
 	}
 
-	console.OutStyle("mount", "Creating mount %s ...", viper.GetString(mountString))
+	console.OutStyle("mounting", "Creating mount %s ...", viper.GetString(mountString))
 	path := os.Args[0]
 	mountDebugVal := 0
 	if glog.V(8) {

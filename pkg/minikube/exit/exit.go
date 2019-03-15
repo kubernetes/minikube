@@ -20,8 +20,10 @@ package exit
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/console"
 )
 
@@ -85,6 +87,15 @@ func displayError(msg string, err error) {
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	console.Fatal(msg+": %v", err)
 	console.Err("\n")
-	console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
-	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
+	// unfortunately Cause only supports one level of actual error wrapping
+	cause := errors.Cause(err)
+	text := cause.Error()
+	if strings.Contains(text, "VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path") ||
+		strings.Contains(text, "Driver \"kvm2\" not found. Do you have the plugin binary \"docker-machine-driver-kvm2\" accessible in your PATH?") {
+		console.ErrStyle("usage", "Make sure to install all necessary requirements, according to the documentation:")
+		console.ErrStyle("url", "https://kubernetes.io/docs/tasks/tools/install-minikube/")
+	} else {
+		console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
+		console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
+	}
 }

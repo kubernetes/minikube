@@ -23,7 +23,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -39,8 +39,10 @@ import (
 )
 
 var (
+	// ReasonableMutateTime is how long to wait for basic object mutations, such as deletions, to show up
 	ReasonableMutateTime = time.Minute * 1
-	ReasonableStartTime  = time.Minute * 5
+	// ReasonableStartTime is how long to wait for pods to start, considering dependency chains & slow networks.
+	ReasonableStartTime = time.Minute * 10
 )
 
 type PodStore struct {
