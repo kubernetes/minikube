@@ -1,5 +1,39 @@
 # Minikube Release Notes
 
+# Version 0.35.0 - 2019-03-06
+
+* Update default Kubernetes version to v1.13.4 (latest stable) [#3807](https://github.com/kubernetes/minikube/pull/3807)
+* Update docker/machine to fix the AMD bug [#3809](https://github.com/kubernetes/minikube/pull/3809)
+* Enable tap and vhost-net in minikube iso [#3758](https://github.com/kubernetes/minikube/pull/3758)
+* Enable kernel modules necessary for IPVS [#3783](https://github.com/kubernetes/minikube/pull/3783)
+* Add Netfilter `xt_socket` module to complete support for Transparent Proxying (TPROXY) [#3712](https://github.com/kubernetes/minikube/pull/3712)
+* Change DefaultMountVersion to 9p2000.L [#3796](https://github.com/kubernetes/minikube/pull/3796)
+* fix incorrect style name mount [#3789](https://github.com/kubernetes/minikube/pull/3789)
+* When missing a hypervisor, omit the bug report prompt [#3787](https://github.com/kubernetes/minikube/pull/3787)
+* Fix minikube logs for other container runtimes [#3780](https://github.com/kubernetes/minikube/pull/3780)
+* Improve reliability of kube-proxy configmap updates (retry, block until pods are up) [#3774](https://github.com/kubernetes/minikube/pull/3774)
+* update libvirtd [#3711](https://github.com/kubernetes/minikube/pull/3711)
+* Add flag for disabling the VirtualBox VTX check [#3734](https://github.com/kubernetes/minikube/pull/3734)
+* Add make target for building a rpm file [#3742](https://github.com/kubernetes/minikube/pull/3742)
+* Improve building of deb package (versioning and permissions) [#3745](https://github.com/kubernetes/minikube/pull/3745)
+* chown command should be against user $HOME, not roots home directory. [#3719](https://github.com/kubernetes/minikube/pull/3719)
+
+Thank you to the following contributors who made this release possible:
+
+- Anders F Björklund
+- Artiom Diomin
+- Don McCasland
+- Elijah Oyekunle
+- Filip Havlíček
+- Ihor Dvoretskyi
+- karmab
+- Mas
+- Miel Donkers
+- Thomas Strömberg
+- Tom Reznik
+- Yaroslav Skopets
+- Yoan Blanc
+
 # Version 0.34.1 - 2019-02-16
 
 * Make non-zero ssh error codes less dramatic [#3703](https://github.com/kubernetes/minikube/pull/3703)

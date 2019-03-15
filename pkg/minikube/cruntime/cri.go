@@ -28,7 +28,14 @@ import (
 
 // listCRIContainers returns a list of containers using crictl
 func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
-	content, err := cr.CombinedOutput(fmt.Sprintf(`sudo crictl ps -a --name=%s --quiet`, filter))
+	var content string
+	var err error
+	state := "Running"
+	if filter != "" {
+		content, err = cr.CombinedOutput(fmt.Sprintf(`sudo crictl ps -a --name=%s --state=%s --quiet`, filter, state))
+	} else {
+		content, err = cr.CombinedOutput(fmt.Sprintf(`sudo crictl ps -a --state=%s --quiet`, state))
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +87,7 @@ image-endpoint: unix://{{.Socket}}
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
 func criContainerLogCmd(id string, len int, follow bool) string {
 	var cmd strings.Builder
-	cmd.WriteString("crictl logs ")
+	cmd.WriteString("sudo crictl logs ")
 	if len > 0 {
 		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
 	}

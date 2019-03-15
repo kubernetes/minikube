@@ -14,7 +14,7 @@
 
 * **GPUs** ([gpu.md](gpu.md)): Using NVIDIA GPUs on minikube
 
-* **OpenID Connect Authentication** ([openid_connect_auth](openid_connect_auth)): Using OIDC Authentication on minikube
+* **OpenID Connect Authentication** ([openid_connect_auth.md](openid_connect_auth.md)): Using OIDC Authentication on minikube
 
 ### Installation and debugging
 
