@@ -22,4 +22,5 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// DefaultMountDir is the default mount dir
 var DefaultMountDir = homedir.HomeDir()

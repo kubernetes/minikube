@@ -28,10 +28,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// Bootstrapper is the name for bootstrapper
 const Bootstrapper = "bootstrapper"
 
 type setFn func(string, string) error
 
+// Setting represents a setting
 type Setting struct {
 	name        string
 	set         func(config.MinikubeConfig, string, string) error
@@ -247,6 +249,7 @@ var settings = []Setting{
 	},
 }
 
+// ConfigCmd represents the config command
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
 	Short: "Modify minikube config",

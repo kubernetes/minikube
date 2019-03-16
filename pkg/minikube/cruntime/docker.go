@@ -24,6 +24,7 @@ import (
 	"github.com/golang/glog"
 )
 
+// KubernetesContainerPrefix is the prefix of each kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
 // Docker contains Docker runtime state

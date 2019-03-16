@@ -47,9 +47,11 @@ type Bootstrapper interface {
 }
 
 const (
+	// BootstrapperTypeKubeadm is the kubeadm bootstrapper type
 	BootstrapperTypeKubeadm = "kubeadm"
 )
 
+// GetCachedImageList returns the list of images for a version
 func GetCachedImageList(version string, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:

@@ -88,6 +88,7 @@ var completionCmd = &cobra.Command{
 	},
 }
 
+// GenerateBashCompletion generates the completion for the bash shell
 func GenerateBashCompletion(w io.Writer, cmd *cobra.Command) error {
 	_, err := w.Write([]byte(boilerPlate))
 	if err != nil {
@@ -102,6 +103,7 @@ func GenerateBashCompletion(w io.Writer, cmd *cobra.Command) error {
 	return nil
 }
 
+// GenerateZshCompletion generates the completion for the zsh shell
 func GenerateZshCompletion(out io.Writer, cmd *cobra.Command) error {
 	zshInitialization := `#compdef minikube
 

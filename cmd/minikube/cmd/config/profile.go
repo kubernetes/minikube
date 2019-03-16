@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
+// ProfileCmd represents the profile command
 var ProfileCmd = &cobra.Command{
 	Use:   "profile MINIKUBE_PROFILE_NAME.  You can return to the default minikube profile by running `minikube profile default`",
 	Short: "Profile sets the current minikube profile",

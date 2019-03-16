@@ -36,6 +36,7 @@ import (
 
 var statusFormat string
 
+// Status represents the status
 type Status struct {
 	Host       string
 	Kubelet    string

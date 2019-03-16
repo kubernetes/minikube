@@ -33,6 +33,7 @@ type MockAPI struct {
 	SaveCalled  bool
 }
 
+// NewMockAPI returns a new MockAPI
 func NewMockAPI() *MockAPI {
 	m := MockAPI{
 		FakeStore: FakeStore{
