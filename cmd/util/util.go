@@ -43,6 +43,7 @@ func GetPort() (string, error) {
 	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
 }
 
+// KillMountProcess kills the mount process, if it is running
 func KillMountProcess() error {
 	out, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName))
 	if err != nil {
@@ -59,6 +60,7 @@ func KillMountProcess() error {
 	return mountProc.Kill()
 }
 
+// GetKubeConfigPath gets the path to the first kubeconfig
 func GetKubeConfigPath() string {
 	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
 	if kubeConfigEnv == "" {

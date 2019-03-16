@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// GenerateCACert generates a CA certificate and RSA key for a common name
 func GenerateCACert(certPath, keyPath string, name string) error {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -61,6 +62,7 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 // If the certificate or key files already exist, they will be overwritten.
 // Any parent directories of the certPath or keyPath will be created as needed with file mode 0755.
 
+// GenerateSignedCert generates a signed certificate and key
 func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
 	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
 	if err != nil {

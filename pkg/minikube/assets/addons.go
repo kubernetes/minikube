@@ -29,12 +29,14 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// Addon is a named list of assets, that can be enabled
 type Addon struct {
 	Assets    []*BinDataAsset
 	enabled   bool
 	addonName string
 }
 
+// NewAddon creates a new Addon
 func NewAddon(assets []*BinDataAsset, enabled bool, addonName string) *Addon {
 	a := &Addon{
 		Assets:    assets,
@@ -44,6 +46,7 @@ func NewAddon(assets []*BinDataAsset, enabled bool, addonName string) *Addon {
 	return a
 }
 
+// IsEnabled checks if an Addon is enabled
 func (a *Addon) IsEnabled() (bool, error) {
 	addonStatusText, err := config.Get(a.addonName)
 	if err == nil {
@@ -56,6 +59,7 @@ func (a *Addon) IsEnabled() (bool, error) {
 	return a.enabled, nil
 }
 
+// Addons is the list of addons
 var Addons = map[string]*Addon{
 	"addon-manager": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
@@ -281,6 +285,8 @@ var Addons = map[string]*Addon{
 	}, false, "gvisor"),
 }
 
+// AddMinikubeDirAssets adds all addons and files to the list
+// of files to be copied to the vm.
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
 	if err := addMinikubeDirToAssets(constants.MakeMiniPath("addons"), constants.AddonsPath, assets); err != nil {
 		return errors.Wrap(err, "adding addons folder to assets")

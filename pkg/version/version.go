@@ -22,6 +22,7 @@ import (
 	"github.com/blang/semver"
 )
 
+// VersionPrefix is the prefix of the git tag for a version
 const VersionPrefix = "v"
 
 // The current version of the minikube
@@ -34,18 +35,22 @@ var isoVersion = "v0.0.0-unset"
 
 var isoPath = "minikube/iso"
 
+// GetVersion returns the current minikube version
 func GetVersion() string {
 	return version
 }
 
+// GetISOVersion returns the current minikube.iso version
 func GetISOVersion() string {
 	return isoVersion
 }
 
+// GetISOPath returns the remote path to the minikube.iso
 func GetISOPath() string {
 	return isoPath
 }
 
+// GetSemverVersion returns the current minikube semantic version (semver)
 func GetSemverVersion() (semver.Version, error) {
 	return semver.Make(strings.TrimPrefix(GetVersion(), VersionPrefix))
 }
