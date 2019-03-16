@@ -111,6 +111,16 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
+	err = waitForSSHAccess(h, e)
+	if err != nil {
+		return nil, err
+	}
+
+	return h, nil
+}
+
+func waitForSSHAccess(h *host.Host, e *engine.Options) error {
+
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
 	console.OutStyle("waiting", "Waiting for SSH access ...")
 
@@ -118,19 +128,20 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		h.HostOptions.EngineOptions.Env = e.Env
 		provisioner, err := provision.DetectProvisioner(h.Driver)
 		if err != nil {
-			return nil, errors.Wrap(err, "detecting provisioner")
+			return errors.Wrap(err, "detecting provisioner")
 		}
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
-			return nil, errors.Wrap(err, "provision")
+			return errors.Wrap(err, "provision")
 		}
 	}
 
 	if h.Driver.DriverName() != "none" {
 		if err := h.ConfigureAuth(); err != nil {
-			return nil, &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
+			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
 	}
-	return h, nil
+
+	return nil
 }
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
