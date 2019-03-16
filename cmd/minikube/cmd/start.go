@@ -49,7 +49,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/pkg/util/kubeconfig"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -436,7 +435,7 @@ func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstr
 }
 
 // updateKubeConfig sets up kubectl
-func updateKubeConfig(h *host.Host, c *cfg.Config) *kubeconfig.KubeConfigSetup {
+func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)
@@ -444,7 +443,7 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *kubeconfig.KubeConfigSetup {
 	addr = strings.Replace(addr, "tcp://", "https://", -1)
 	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
 
-	kcs := &kubeconfig.KubeConfigSetup{
+	kcs := &pkgutil.KubeConfigSetup{
 		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: addr,
 		ClientCertificate:    constants.MakeMiniPath("client.crt"),
@@ -454,7 +453,7 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *kubeconfig.KubeConfigSetup {
 		EmbedCerts:           viper.GetBool(embedCerts),
 	}
 	kcs.SetKubeConfigFile(cmdutil.GetKubeConfigPath())
-	if err := kubeconfig.SetupKubeConfig(kcs); err != nil {
+	if err := pkgutil.SetupKubeConfig(kcs); err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
 	return kcs

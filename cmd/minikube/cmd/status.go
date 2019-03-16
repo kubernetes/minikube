@@ -31,7 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/util/kubeconfig"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 var statusFormat string
@@ -99,7 +99,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := kubeconfig.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
+			ks, err := pkgutil.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}
