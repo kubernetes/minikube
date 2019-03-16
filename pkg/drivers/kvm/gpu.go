@@ -50,6 +50,7 @@ const devicesTmpl = `
 {{end}}
 `
 
+// PCIDevice holds a parsed PCI device
 type PCIDevice struct {
 	Domain   string
 	Bus      string

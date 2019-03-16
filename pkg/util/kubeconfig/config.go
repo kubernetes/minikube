@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// KubeConfigSetup is the kubeconfig setup
 type KubeConfigSetup struct {
 	// The name of the cluster for this context
 	ClusterName string
@@ -61,10 +62,12 @@ type KubeConfigSetup struct {
 	kubeConfigFile atomic.Value
 }
 
+// SetKubeConfigFile sets the kubeconfig file
 func (k *KubeConfigSetup) SetKubeConfigFile(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
+// GetKubeConfigFile gets the kubeconfig file
 func (k *KubeConfigSetup) GetKubeConfigFile() string {
 	return k.kubeConfigFile.Load().(string)
 }

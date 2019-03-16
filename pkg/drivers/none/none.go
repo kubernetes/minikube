@@ -79,6 +79,7 @@ func (d *Driver) PreCreateCheck() error {
 	return d.runtime.Available()
 }
 
+// Create a host using the driver's config
 func (d *Driver) Create() error {
 	// creation for the none driver is handled by commands.go
 	return nil

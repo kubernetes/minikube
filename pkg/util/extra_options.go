@@ -21,6 +21,7 @@ import (
 	"strings"
 )
 
+// ExtraOption is an extra option
 type ExtraOption struct {
 	Component string
 	Key       string
@@ -31,8 +32,10 @@ func (e *ExtraOption) String() string {
 	return fmt.Sprintf("%s.%s=%s", e.Component, e.Key, e.Value)
 }
 
+// ExtraOptionSlice is a slice of ExtraOption
 type ExtraOptionSlice []ExtraOption
 
+// Set parses the string value into a slice
 func (es *ExtraOptionSlice) Set(value string) error {
 	// The component is the value before the first dot.
 	componentSplit := strings.SplitN(value, ".", 2)
@@ -56,6 +59,7 @@ func (es *ExtraOptionSlice) Set(value string) error {
 	return nil
 }
 
+// String converts the slice to a string value
 func (es *ExtraOptionSlice) String() string {
 	s := []string{}
 	for _, e := range *es {
@@ -64,6 +68,7 @@ func (es *ExtraOptionSlice) String() string {
 	return strings.Join(s, " ")
 }
 
+// Type returns the type
 func (es *ExtraOptionSlice) Type() string {
 	return "ExtraOption"
 }

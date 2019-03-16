@@ -39,6 +39,7 @@ import (
 
 const kubectlBinary = "kubectl"
 
+// MinikubeRunner runs a command
 type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
@@ -57,11 +58,13 @@ func Logf(str string, args ...interface{}) {
 	fmt.Println(fmt.Sprintf(str, args...))
 }
 
+// Run executes a command
 func (m *MinikubeRunner) Run(cmd string) error {
 	_, err := m.SSH(cmd)
 	return err
 }
 
+// Copy copies a file
 func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
@@ -69,10 +72,12 @@ func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
 	return cmd.Run()
 }
 
+// CombinedOutput executes a command, returning the combined stdout and stderr
 func (m *MinikubeRunner) CombinedOutput(cmd string) (string, error) {
 	return m.SSH(cmd)
 }
 
+// Remove removes a file
 func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
 	_, err := m.SSH(fmt.Sprintf("rm -rf %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
 	return err
@@ -111,6 +116,7 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 	return outB.String(), errB.String(), err
 }
 
+// RunCommand executes a command, optionally checking for error
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -136,6 +142,7 @@ func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (st
 	return m.teeRun(cmd)
 }
 
+// RunDaemon executes a command, returning the stdout
 func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -164,6 +171,7 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 
 }
 
+// RunDaemon2 executes a command, returning the stdout and stderr
 func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -189,6 +197,7 @@ func (m *MinikubeRunner) SetRuntime(runtime string) {
 	m.Runtime = runtime
 }
 
+// SSH returns the output of running a command using SSH
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
@@ -202,6 +211,7 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 	return string(stdout), nil
 }
 
+// Start starts the container runtime
 func (m *MinikubeRunner) Start() {
 	opts := ""
 	// TODO(tstromberg): Deprecate this in favor of making it possible for tests to define explicit flags.
@@ -215,6 +225,7 @@ func (m *MinikubeRunner) Start() {
 
 }
 
+// EnsureRunning makes sure the container runtime is running
 func (m *MinikubeRunner) EnsureRunning() {
 	if m.GetStatus() != "Running" {
 		m.Start()
@@ -232,20 +243,24 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 	return env
 }
 
+// GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
 	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.Args), false)
 }
 
+// GetLogs returns the logs of a service
 func (m *MinikubeRunner) GetLogs() string {
 	return m.RunCommand(fmt.Sprintf("logs %s", m.Args), true)
 }
 
+// CheckStatus makes sure the service has the desired status, or cause fatal error
 func (m *MinikubeRunner) CheckStatus(desired string) {
 	if err := m.CheckStatusNoFail(desired); err != nil {
 		m.T.Fatalf("%v", err)
 	}
 }
 
+// CheckStatusNoFail makes sure the service has the desired status, returning error
 func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
 	s := m.GetStatus()
 	if s != desired {
@@ -254,11 +269,13 @@ func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
 	return nil
 }
 
+// KubectlRunner runs a command using kubectl
 type KubectlRunner struct {
 	T          *testing.T
 	BinaryPath string
 }
 
+// NewKubectlRunner creates a new KubectlRunner
 func NewKubectlRunner(t *testing.T) *KubectlRunner {
 	p, err := exec.LookPath(kubectlBinary)
 	if err != nil {
@@ -267,6 +284,7 @@ func NewKubectlRunner(t *testing.T) *KubectlRunner {
 	return &KubectlRunner{BinaryPath: p, T: t}
 }
 
+// RunCommandParseOutput runs a command and parses the JSON output
 func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}) error {
 	args = append(args, "-o=json")
 	output, err := k.RunCommand(args)
@@ -280,6 +298,7 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 	return nil
 }
 
+// RunCommand runs a command, returning stdout
 func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 	inner := func() error {
 		cmd := exec.Command(k.BinaryPath, args...)
@@ -296,6 +315,7 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 	return stdout, err
 }
 
+// CreateRandomNamespace creates a random namespace
 func (k *KubectlRunner) CreateRandomNamespace() string {
 	const strLen = 20
 	name := genRandString(strLen)
@@ -315,11 +335,13 @@ func genRandString(strLen int) string {
 	return string(result)
 }
 
+// DeleteNamespace deletes the namespace
 func (k *KubectlRunner) DeleteNamespace(namespace string) error {
 	_, err := k.RunCommand([]string{"delete", "namespace", namespace})
 	return err
 }
 
+// WaitForBusyboxRunning waits until busybox pod to be running
 func WaitForBusyboxRunning(t *testing.T, namespace string) error {
 	client, err := commonutil.GetClient()
 	if err != nil {
@@ -329,6 +351,7 @@ func WaitForBusyboxRunning(t *testing.T, namespace string) error {
 	return commonutil.WaitForPodsWithLabelRunning(client, namespace, selector)
 }
 
+// WaitForIngressControllerRunning waits until ingress controller pod to be running
 func WaitForIngressControllerRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 	if err != nil {
@@ -347,6 +370,7 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 	return nil
 }
 
+// WaitForIngressDefaultBackendRunning waits until ingress default backend pod to be running
 func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 	if err != nil {
@@ -422,6 +446,7 @@ func WaitForFailedCreatePodSandBoxEvent() error {
 	return nil
 }
 
+// WaitForNginxRunning waits for nginx service to be up
 func WaitForNginxRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
 
@@ -440,6 +465,7 @@ func WaitForNginxRunning(t *testing.T) error {
 	return nil
 }
 
+// Retry tries the callback for a number of attempts, with a delay between attempts
 func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (err error) {
 	for i := 0; i < attempts; i++ {
 		err = callback()
