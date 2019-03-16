@@ -178,7 +178,7 @@ func (s *SSHServer) SetSessionRequested(b bool) {
 	atomic.StoreInt32(&s.hadASessionRequested, i)
 }
 
-// IsSessionRequested gets session requested
+// IsSessionRequested gcode ets session requested
 func (s *SSHServer) IsSessionRequested() bool {
 	return atomic.LoadInt32(&s.hadASessionRequested) != 0
 }
