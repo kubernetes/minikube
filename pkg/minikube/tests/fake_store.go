@@ -32,6 +32,7 @@ func (s *FakeStore) Exists(name string) (bool, error) {
 	return ok, nil
 }
 
+// List returns the list of hosts.
 func (s *FakeStore) List() ([]string, error) {
 	hostNames := []string{}
 	for h := range s.Hosts {

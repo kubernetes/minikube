@@ -28,6 +28,7 @@ import (
 
 var configViewFormat string
 
+// ConfigViewTemplate represents the config view template
 type ConfigViewTemplate struct {
 	ConfigKey   string
 	ConfigValue interface{}

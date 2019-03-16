@@ -28,6 +28,7 @@ import (
 
 var cacheListFormat string
 
+// CacheListTemplate represents the cache list template
 type CacheListTemplate struct {
 	CacheImage string
 }

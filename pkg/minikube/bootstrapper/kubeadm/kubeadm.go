@@ -86,10 +86,12 @@ var PodsByLayer = []pod{
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
 
+// KubeadmBootstrapper is a bootstrapper using kubeadm
 type KubeadmBootstrapper struct {
 	c bootstrapper.CommandRunner
 }
 
+// NewKubeadmBootstrapper creates a new KubeadmBootstrapper
 func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	h, err := api.Load(config.GetMachineName())
 	if err != nil {
@@ -102,6 +104,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*KubeadmBootstrapper, error) {
 	return &KubeadmBootstrapper{c: runner}, nil
 }
 
+// GetKubeletStatus returns the kubelet status
 func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
 	statusCmd := `sudo systemctl is-active kubelet`
 	status, err := k.c.CombinedOutput(statusCmd)
@@ -120,6 +123,7 @@ func (k *KubeadmBootstrapper) GetKubeletStatus() (string, error) {
 	return state.Error.String(), nil
 }
 
+// GetAPIServerStatus returns the api-server status
 func (k *KubeadmBootstrapper) GetAPIServerStatus(ip net.IP) (string, error) {
 	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
 	// To avoid: x509: certificate signed by unknown authority
@@ -152,6 +156,7 @@ func (k *KubeadmBootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]
 	return map[string]string{"kubelet": kcmd.String()}
 }
 
+// StartCluster starts the cluster
 func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -371,6 +376,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 	return b.String(), nil
 }
 
+// UpdateCluster updates the cluster
 func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
 		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)

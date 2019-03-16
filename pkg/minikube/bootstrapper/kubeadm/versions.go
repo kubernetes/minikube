@@ -60,6 +60,7 @@ func ExtraConfigForComponent(component string, opts util.ExtraOptionSlice, versi
 	return versionedOpts, nil
 }
 
+// ComponentExtraArgs holds extra args for a component
 type ComponentExtraArgs struct {
 	Component string
 	Options   map[string]string
@@ -73,6 +74,7 @@ var componentToKubeadmConfigKey = map[string]string{
 	Kubelet: "",
 }
 
+// NewComponentExtraArgs creates a new ComponentExtraArgs
 func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
 	var kubeadmExtraArgs []ComponentExtraArgs
 	for _, extraOpt := range opts {
@@ -110,6 +112,7 @@ func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, f
 	return kubeadmExtraArgs, nil
 }
 
+// ParseFeatureArgs parses feature args into extra args
 func ParseFeatureArgs(featureGates string) (map[string]bool, string, error) {
 	kubeadmFeatureArgs := map[string]bool{}
 	componentFeatureArgs := ""
@@ -152,6 +155,7 @@ func Supports(featureName string) bool {
 	return false
 }
 
+// ParseKubernetesVersion parses the kubernetes version
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	// Strip leading 'v' prefix from version for semver parsing
 	v, err := semver.Make(version[1:])
@@ -269,6 +273,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 	},
 }
 
+// VersionIsBetween checks if a version is between (or including) two given versions
 func VersionIsBetween(version, gte, lte semver.Version) bool {
 	if gte.NE(semver.Version{}) && !version.GTE(gte) {
 		return false
@@ -280,6 +285,7 @@ func VersionIsBetween(version, gte, lte semver.Version) bool {
 	return true
 }
 
+// DefaultOptionsForComponentAndVersion returns the default option for a component and version
 func DefaultOptionsForComponentAndVersion(component string, version semver.Version) (map[string]string, error) {
 	versionedOpts := map[string]string{}
 	for _, opts := range versionSpecificOpts {

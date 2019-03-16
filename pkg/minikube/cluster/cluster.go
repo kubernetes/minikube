@@ -411,6 +411,7 @@ func getIPForInterface(name string) (net.IP, error) {
 	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
 }
 
+// CheckIfHostExistsAndLoad checks if a host exists, and loads it if it does
 func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
 	exists, err := api.Exists(machineName)
 	if err != nil {
@@ -427,6 +428,7 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 	return host, nil
 }
 
+// CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, args []string) error {
 	machineName := cfg.GetMachineName()
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
@@ -462,6 +464,7 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	}
 }
 
+// GetMountCleanupCommand returns the unmount command
 func GetMountCleanupCommand(path string) string {
 	return fmt.Sprintf("sudo umount %s;", path)
 }
@@ -471,6 +474,7 @@ sudo mkdir -p {{.Path}} || true;
 sudo mount -t 9p -o trans=tcp,port={{.Port}},dfltuid={{.UID}},dfltgid={{.GID}},version={{.Version}},msize={{.Msize}} {{.IP}} {{.Path}};
 sudo chmod 775 {{.Path}} || true;`
 
+// GetMountCommand returns the mount command
 func GetMountCommand(ip net.IP, path, port, mountVersion string, uid, gid, msize int) (string, error) {
 	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
 	buf := bytes.Buffer{}

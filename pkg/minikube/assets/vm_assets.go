@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CopyableFile is something that can be copied
 type CopyableFile interface {
 	io.Reader
 	GetLength() int
@@ -34,6 +35,7 @@ type CopyableFile interface {
 	GetPermissions() string
 }
 
+// BaseAsset is the base asset class
 type BaseAsset struct {
 	data        []byte
 	reader      io.Reader
@@ -44,30 +46,37 @@ type BaseAsset struct {
 	Permissions string
 }
 
+// GetAssetName returns asset name
 func (b *BaseAsset) GetAssetName() string {
 	return b.AssetName
 }
 
+// GetTargetDir returns target dir
 func (b *BaseAsset) GetTargetDir() string {
 	return b.TargetDir
 }
 
+// GetTargetName returns target name
 func (b *BaseAsset) GetTargetName() string {
 	return b.TargetName
 }
 
+// GetPermissions returns permissions
 func (b *BaseAsset) GetPermissions() string {
 	return b.Permissions
 }
 
+// FileAsset is an asset using a file
 type FileAsset struct {
 	BaseAsset
 }
 
+// NewMemoryAssetTarget creates a new MemoryAsset, with target
 func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset {
 	return NewMemoryAsset(d, path.Dir(targetPath), path.Base(targetPath), permissions)
 }
 
+// NewFileAsset creates a new FileAsset
 func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAsset, error) {
 	f := &FileAsset{
 		BaseAsset{
@@ -85,6 +94,7 @@ func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAs
 	return f, nil
 }
 
+// GetLength returns the file length, or 0 (on error)
 func (f *FileAsset) GetLength() int {
 	file, err := os.Open(f.AssetName)
 	defer file.Close()
@@ -105,18 +115,22 @@ func (f *FileAsset) Read(p []byte) (int, error) {
 	return f.reader.Read(p)
 }
 
+// MemoryAsset is a memory-based asset
 type MemoryAsset struct {
 	BaseAsset
 }
 
+// GetLength returns length
 func (m *MemoryAsset) GetLength() int {
 	return m.Length
 }
 
+// Read reads the asset
 func (m *MemoryAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
 }
 
+// NewMemoryAsset creates a new MemoryAsset
 func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *MemoryAsset {
 	m := &MemoryAsset{
 		BaseAsset{
@@ -132,10 +146,12 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 	return m
 }
 
+// BinDataAsset is a bindata (binary data) asset
 type BinDataAsset struct {
 	BaseAsset
 }
 
+// NewBinDataAsset creates a new BinDataAsset
 func NewBinDataAsset(assetName, targetDir, targetName, permissions string) *BinDataAsset {
 	m := &BinDataAsset{
 		BaseAsset{
@@ -160,10 +176,12 @@ func (m *BinDataAsset) loadData() error {
 	return nil
 }
 
+// GetLength returns length
 func (m *BinDataAsset) GetLength() int {
 	return m.Length
 }
 
+// Read reads the asset
 func (m *BinDataAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
 }

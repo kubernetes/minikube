@@ -42,10 +42,12 @@ var (
 	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
 )
 
+// MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub(output io.Writer) {
 	MaybePrintUpdateText(output, constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
+// MaybePrintUpdateText prints update text if needed
 func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
@@ -80,11 +82,13 @@ func shouldCheckURLVersion(filePath string) bool {
 	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
 }
 
+// Release represents a release
 type Release struct {
 	Name      string
 	Checksums map[string]string
 }
 
+// Releases represents several release
 type Releases []Release
 
 func getJSON(url string, target *Releases) error {
@@ -116,6 +120,7 @@ func getLatestVersionFromURL(url string) (semver.Version, error) {
 	return semver.Make(strings.TrimPrefix(r[0].Name, version.VersionPrefix))
 }
 
+// GetAllVersionsFromURL get all versions from a JSON URL
 func GetAllVersionsFromURL(url string) (Releases, error) {
 	var releases Releases
 	glog.Info("Checking for updates...")

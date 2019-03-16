@@ -37,6 +37,7 @@ const (
 	ClusterDNSDomain = "cluster.local"
 )
 
+// MinikubeHome is the name of the minikube home directory variable.
 const MinikubeHome = "MINIKUBE_HOME"
 
 // GetMinipath returns the path to the user's minikube dir
@@ -65,6 +66,7 @@ var SupportedVMDrivers = [...]string{
 	"none",
 }
 
+// DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 // KubeconfigPath is the path to the Kubernetes client config
@@ -91,6 +93,7 @@ const DefaultStorageClassProvisioner = "standard"
 // Cache is used to modify the cache field in the config file
 const Cache = "cache"
 
+// TunnelRegistryPath returns the path to the runnel registry file
 func TunnelRegistryPath() string {
 	return filepath.Join(GetMinipath(), "tunnels.json")
 }
@@ -102,37 +105,61 @@ func MakeMiniPath(fileName ...string) string {
 	return filepath.Join(args...)
 }
 
+// MountProcessFileName is the filename of the mount process
 var MountProcessFileName = ".mount-process"
 
 const (
-	DefaultKeepContext  = false
-	SHASuffix           = ".sha256"
-	DefaultMemory       = 2048
-	DefaultCPUS         = 2
-	DefaultDiskSize     = "20g"
-	MinimumDiskSizeMB   = 2000
-	DefaultVMDriver     = "virtualbox"
+	// DefaultKeepContext is if we should keep context by default
+	DefaultKeepContext = false
+	// SHASuffix is the suffix of a SHA-256 checksum file
+	SHASuffix = ".sha256"
+	// DefaultMemory is the default memory of a host, in megabytes
+	DefaultMemory = 2048
+	// DefaultCPUS is the default number of cpus of a host
+	DefaultCPUS = 2
+	// DefaultDiskSize is the default disk image size, parseable
+	DefaultDiskSize = "20g"
+	// MinimumDiskSizeMB is the minimum disk image size, in megabytes
+	MinimumDiskSizeMB = 2000
+	// DefaultVMDriver is the default virtual machine driver name
+	DefaultVMDriver = "virtualbox"
+	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.ApiServer}}
 kubectl: {{.Kubeconfig}}
 `
-	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
-	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
-	DefaultCacheListFormat     = "{{.CacheImage}}\n"
-	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
-	DefaultWait                = 20
-	DefaultInterval            = 6
-	DefaultK8sClientTimeout    = 60 * time.Second
+	// DefaultAddonListFormat is the default format of addon list
+	DefaultAddonListFormat = "- {{.AddonName}}: {{.AddonStatus}}\n"
+	// DefaultConfigViewFormat is the default format of config view
+	DefaultConfigViewFormat = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
+	// DefaultCacheListFormat is the default format of cache list
+	DefaultCacheListFormat = "{{.CacheImage}}\n"
+	// GithubMinikubeReleasesURL is the URL of the minikube github releases JSON file
+	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
+	// DefaultWait is the default wait time, in seconds
+	DefaultWait = 20
+	// DefaultInterval is the default interval, in seconds
+	DefaultInterval = 6
+	// DefaultK8sClientTimeout is the default kubernetes client timeout
+	DefaultK8sClientTimeout = 60 * time.Second
+	// DefaultClusterBootstrapper is the default cluster bootstrapper
 	DefaultClusterBootstrapper = "kubeadm"
 )
 
+// DefaultISOURL is the default location of the minikube.iso file
 var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
+
+// DefaultISOSHAURL is the default location of the minikube.iso.sha256 file
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
+// DefaultKubernetesVersion is the default kubernetes version
 var DefaultKubernetesVersion = "v1.13.3"
 
+// ConfigFilePath is the path of the config directory
 var ConfigFilePath = MakeMiniPath("config")
+
+// ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
 
 // GetProfileFile returns the Minikube profile config file
@@ -143,39 +170,61 @@ func GetProfileFile(profile string) string {
 // DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
 const DockerAPIVersion = "1.35"
 
+// ReportingURL is the URL for reporting a minikube error
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
 
+// AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
+
+// FilesPath is the default path of files
 const FilesPath = "/files"
 
 const (
-	KubeletServiceFile      = "/lib/systemd/system/kubelet.service"
-	KubeletSystemdConfFile  = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	KubeadmConfigFile       = "/var/lib/kubeadm.yaml"
-	DefaultCNIConfigPath    = "/etc/cni/net.d/k8s.conf"
+	// KubeletServiceFile is the path to the kubelet systemd service
+	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
+	// KubeletSystemdConfFile is the path to the kubelet systemd configuration
+	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	// KubeadmConfigFile is the path to the kubeadm configuration
+	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
+	// DefaultCNIConfigPath is the path to the CNI configuration
+	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
+	// DefaultRktNetConfigPath is the path to the rkt net configuration
 	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 const (
-	DefaultUfsPort       = "5640"
-	DefaultUfsDebugLvl   = 0
+	// DefaultUfsPort is the default port of UFS
+	DefaultUfsPort = "5640"
+	// DefaultUfsDebugLvl is the default debug level of UFS
+	DefaultUfsDebugLvl = 0
+	// DefaultMountEndpoint is the default mount endpoint
 	DefaultMountEndpoint = "/minikube-host"
-	DefaultMsize         = 262144
-	DefaultMountVersion  = "9p2000.u"
+	// DefaultMsize is the default number of bytes to use for 9p packet payload
+	DefaultMsize = 262144
+	// DefaultMountVersion is the default 9p version to use for mount
+	DefaultMountVersion = "9p2000.u"
 )
 
+// GetKubernetesReleaseURL gets the location of a kubernetes client
 func GetKubernetesReleaseURL(binaryName, version string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/%s/%s", version, runtime.GOARCH, binaryName)
 }
 
+// GetKubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
 func GetKubernetesReleaseURLSHA1(binaryName, version string) string {
 	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
 }
 
+// IsMinikubeChildProcess is the name of "is minikube child process" variable
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
+
+// DriverNone is the none driver
 const DriverNone = "none"
+
+// FileScheme is the file scheme
 const FileScheme = "file"
 
+// GetKubeadmCachedImages gets the images to cache for kubeadm for a version
 func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 
 	var images = []string{
@@ -267,6 +316,7 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 	return images
 }
 
+// ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = MakeMiniPath("cache", "images")
 
 const (
