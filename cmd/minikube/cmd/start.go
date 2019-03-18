@@ -79,6 +79,7 @@ const (
 	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
+	podSubnet             = "pod-network-cidr"
 	imageRepository       = "image-repository"
 	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
@@ -131,6 +132,7 @@ func init() {
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
 	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
+	startCmd.Flags().String(podSubnet, "", "Specify range of IP addresses for the pod network. If set, the control plane will automatically allocate CIDRs for every node.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
@@ -457,6 +459,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
+			PodSubnet:              viper.GetString(podSubnet),
 			ImageRepository:        repository,
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),

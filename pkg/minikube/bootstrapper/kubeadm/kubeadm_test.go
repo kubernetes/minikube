@@ -177,6 +177,7 @@ func TestGenerateConfig(t *testing.T) {
 		{"crio-options-gates", "crio", false, config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}},
 		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: util.ExtraOptionSlice{util.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
 		{"containerd-api-port", "containerd", false, config.KubernetesConfig{NodePort: 12345}},
+		{"containerd-pod-network-cidr", "containerd", false, config.KubernetesConfig{PodSubnet: "192.168.32.0/20"}},
 		{"image-repository", "docker", false, config.KubernetesConfig{ImageRepository: "test/repo"}},
 	}
 	for vname, version := range versions {

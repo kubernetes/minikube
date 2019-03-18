@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
 	"strings"
@@ -32,13 +33,14 @@ import (
 
 func TestStartStop(t *testing.T) {
 	tests := []struct {
-		name string
-		args []string
+		name         string
+		args         []string
+		assertCustom func(t *testing.T)
 	}{
 		{"nocache_oldest", []string{
 			"--cache-images=false",
 			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
-		}},
+		}, nil},
 		{"feature_gates_newest_cni", []string{
 			"--feature-gates",
 			"ServerSideApply=true",
@@ -55,7 +57,10 @@ func TestStartStop(t *testing.T) {
 			"--container-runtime=crio",
 			"--extra-config",
 			"kubeadm.ignore-preflight-errors=SystemVerification",
-		}},
+		}, nil},
+		{"podCidr", []string{
+			"--pod-network-cidr=192.168.111.111/16",
+		}, assertPodCIDR},
 	}
 
 	for _, test := range tests {
@@ -70,6 +75,10 @@ func TestStartStop(t *testing.T) {
 			r.CheckStatus(state.None.String())
 			r.Start(test.args...)
 			r.CheckStatus(state.Running.String())
+
+			if test.assertCustom != nil {
+				test.assertCustom(t)
+			}
 
 			ip := r.RunCommand("ip", true)
 			ip = strings.TrimRight(ip, "\n")
@@ -107,5 +116,26 @@ func TestStartStop(t *testing.T) {
 			r.RunCommand("delete", true)
 			r.CheckStatus(state.None.String())
 		})
+	}
+}
+
+func assertPodCIDR(t *testing.T) {
+	kr := util.NewKubectlRunner(t)
+	out, err := kr.RunCommand([]string{"get", "nodes", "-o", "json"})
+	if err != nil {
+		t.Fatalf("Failed to obtain nodes info")
+	}
+
+	var result map[string]interface{}
+	json.Unmarshal([]byte(out), &result)
+
+	items := result["items"].([]interface{})
+	for _, item := range items {
+		spec := item.(map[string]interface{})["spec"]
+		podCidr := spec.(map[string]interface{})["podCIDR"].(string)
+
+		if !strings.HasPrefix(podCidr, "192.168.0.0") {
+			t.Errorf("Unexpected podCIDR: %s", podCidr)
+		}
 	}
 }
