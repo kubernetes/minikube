@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package remote
+package transport
 
 import (
 	"encoding/json"
@@ -35,7 +35,7 @@ var _ error = (*Error)(nil)
 func (e *Error) Error() string {
 	switch len(e.Errors) {
 	case 0:
-		return "<empty remote.Error response>"
+		return "<empty transport.Error response>"
 	case 1:
 		return e.Errors[0].String()
 	default:
@@ -55,9 +55,13 @@ type Diagnostic struct {
 	Detail  interface{} `json:"detail,omitempty"`
 }
 
-// String stringifies the Diagnostic
+// String stringifies the Diagnostic in the form: $Code: $Message[; $Detail]
 func (d Diagnostic) String() string {
-	return fmt.Sprintf("%s: %q", d.Code, d.Message)
+	msg := fmt.Sprintf("%s: %s", d.Code, d.Message)
+	if d.Detail != nil {
+		msg = fmt.Sprintf("%s; %v", msg, d.Detail)
+	}
+	return msg
 }
 
 // ErrorCode is an enumeration of supported error codes.
@@ -83,6 +87,7 @@ const (
 	UnsupportedErrorCode         ErrorCode = "UNSUPPORTED"
 )
 
+// CheckError returns a structured error if the response status is not in codes.
 func CheckError(resp *http.Response, codes ...int) error {
 	for _, code := range codes {
 		if resp.StatusCode == code {

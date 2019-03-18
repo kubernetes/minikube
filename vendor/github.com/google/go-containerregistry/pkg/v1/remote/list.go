@@ -25,12 +25,12 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 )
 
-type Tags struct {
+type tags struct {
 	Name string   `json:"name"`
 	Tags []string `json:"tags"`
 }
 
-// TODO(jonjohnsonjr): return []name.Tag?
+// List calls /tags/list for the given repository.
 func List(repo name.Repository, auth authn.Authenticator, t http.RoundTripper) ([]string, error) {
 	scopes := []string{repo.Scope(transport.PullScope)}
 	tr, err := transport.New(repo.Registry, auth, t, scopes)
@@ -51,14 +51,14 @@ func List(repo name.Repository, auth authn.Authenticator, t http.RoundTripper) (
 	}
 	defer resp.Body.Close()
 
-	if err := CheckError(resp, http.StatusOK); err != nil {
+	if err := transport.CheckError(resp, http.StatusOK); err != nil {
 		return nil, err
 	}
 
-	tags := Tags{}
-	if err := json.NewDecoder(resp.Body).Decode(&tags); err != nil {
+	parsed := tags{}
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
 		return nil, err
 	}
 
-	return tags.Tags, nil
+	return parsed.Tags, nil
 }
