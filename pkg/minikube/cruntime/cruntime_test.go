@@ -33,7 +33,6 @@ func TestName(t *testing.T) {
 	}{
 		{"", "Docker"},
 		{"docker", "Docker"},
-		{"rkt", "rkt"},
 		{"crio", "CRI-O"},
 		{"cri-o", "CRI-O"},
 		{"containerd", "containerd"},
