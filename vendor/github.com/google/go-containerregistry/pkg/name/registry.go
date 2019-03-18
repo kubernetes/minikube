@@ -15,12 +15,14 @@
 package name
 
 import (
+	"net"
 	"net/url"
 	"regexp"
 	"strings"
 )
 
 const (
+	// DefaultRegistry is Docker Hub, assumed when a hostname is omitted.
 	DefaultRegistry      = "index.docker.io"
 	defaultRegistryAlias = "docker.io"
 )
@@ -63,9 +65,27 @@ func (r Registry) Scope(string) string {
 	return "registry:catalog:*"
 }
 
+func (r Registry) isRFC1918() bool {
+	ipStr := strings.Split(r.Name(), ":")[0]
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	for _, cidr := range []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"} {
+		_, block, _ := net.ParseCIDR(cidr)
+		if block.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
 // Scheme returns https scheme for all the endpoints except localhost or when explicitly defined.
 func (r Registry) Scheme() string {
 	if r.insecure {
+		return "http"
+	}
+	if r.isRFC1918() {
 		return "http"
 	}
 	if strings.HasPrefix(r.Name(), "localhost:") {

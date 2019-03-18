@@ -26,7 +26,7 @@ import (
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/go-containerregistry/pkg/v1/v1util"
@@ -54,6 +54,7 @@ type compressedImage struct {
 var _ partial.UncompressedImageCore = (*uncompressedImage)(nil)
 var _ partial.CompressedImageCore = (*compressedImage)(nil)
 
+// Opener is a thunk for opening a tar file.
 type Opener func() (io.ReadCloser, error)
 
 func pathOpener(path string) Opener {
@@ -62,6 +63,7 @@ func pathOpener(path string) Opener {
 	}
 }
 
+// ImageFromPath returns a v1.Image from a tarball located on path.
 func ImageFromPath(path string, tag *name.Tag) (v1.Image, error) {
 	return Image(pathOpener(path), tag)
 }

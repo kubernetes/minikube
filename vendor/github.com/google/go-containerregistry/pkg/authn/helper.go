@@ -72,7 +72,7 @@ func (h *helper) Authorization() (string, error) {
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	err := h.r.Run(cmd)
+	cmdErr := h.r.Run(cmd)
 
 	// If we see this specific message, it means the domain wasn't found
 	// and we should fall back on anonymous auth.
@@ -81,16 +81,22 @@ func (h *helper) Authorization() (string, error) {
 		return Anonymous.Authorization()
 	}
 
-	if err != nil {
-		return "", err
-	}
-
 	// Any other output should be parsed as JSON and the Username / Secret
 	// fields used for Basic authentication.
 	ho := helperOutput{}
 	if err := json.Unmarshal([]byte(output), &ho); err != nil {
+		if cmdErr != nil {
+			// If we failed to parse output, it won't contain Secret, so returning it
+			// in an error should be fine.
+			return "", fmt.Errorf("invoking %s: %v; output: %s", helperName, cmdErr, output)
+		}
 		return "", err
 	}
+
+	if cmdErr != nil {
+		return "", fmt.Errorf("invoking %s: %v", helperName, cmdErr)
+	}
+
 	b := Basic{Username: ho.Username, Password: ho.Secret}
 	return b.Authorization()
 }

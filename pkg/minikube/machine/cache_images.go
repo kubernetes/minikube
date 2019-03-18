@@ -318,7 +318,7 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	err = tarball.Write(tag, img, nil, f)
+	err = tarball.Write(tag, img, f)
 	if err != nil {
 		return err
 	}

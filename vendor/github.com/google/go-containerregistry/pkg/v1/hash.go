@@ -49,7 +49,7 @@ func NewHash(s string) (Hash, error) {
 }
 
 // MarshalJSON implements json.Marshaler
-func (h *Hash) MarshalJSON() ([]byte, error) {
+func (h Hash) MarshalJSON() ([]byte, error) {
 	return json.Marshal(h.String())
 }
 
