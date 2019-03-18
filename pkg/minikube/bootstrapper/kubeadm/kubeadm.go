@@ -477,6 +477,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
+		PodSubnet         string
 		AdvertiseAddress  string
 		APIServerPort     int
 		KubernetesVersion string
@@ -489,6 +490,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
+		PodSubnet:         k8s.PodSubnet,
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,

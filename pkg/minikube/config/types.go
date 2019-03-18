@@ -70,6 +70,7 @@ type KubernetesConfig struct {
 	NetworkPlugin     string
 	FeatureGates      string
 	ServiceCIDR       string
+	PodSubnet         string
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool

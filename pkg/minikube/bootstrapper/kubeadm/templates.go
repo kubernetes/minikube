@@ -47,8 +47,7 @@ nodeName: {{.NodeName}}
 
 var kubeadmConfigTemplateV1Alpha3 = template.Must(template.New("kubeadmConfigTemplate-v1alpha3").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
-}).Parse(`
-apiVersion: kubeadm.k8s.io/v1alpha3
+}).Parse(`apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
 apiEndpoint:
   advertiseAddress: {{.AdvertiseAddress}}
@@ -81,7 +80,7 @@ etcd:
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: cluster.local
-  podSubnet: ""
+  podSubnet: {{if .PodSubnet}}{{.PodSubnet}}{{else}}""{{end}}
   serviceSubnet: {{.ServiceCIDR}}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
@@ -92,8 +91,7 @@ imageGCHighThresholdPercent: 100
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
-  imagefs.available: "0%"
-  `))
+  imagefs.available: "0%"`))
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Unit]

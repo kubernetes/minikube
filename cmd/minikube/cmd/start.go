@@ -77,6 +77,7 @@ const (
 	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
+	podSubnet             = "pod-network-cidr"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
 	cacheImages           = "cache-images"
@@ -122,6 +123,7 @@ func init() {
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
 	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
+	startCmd.Flags().String(podSubnet, "", "Specify range of IP addresses for the pod network. If set, the control plane will automatically allocate CIDRs for every node.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
@@ -299,6 +301,7 @@ func generateConfig(cmd *cobra.Command, kVersion string) (cfg.Config, error) {
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
+			PodSubnet:              viper.GetString(podSubnet),
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,

@@ -255,6 +255,110 @@ apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 `,
 		},
+		{
+			description: "no PodSubnet",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				KubernetesVersion: "v1.12.0",
+				NodeName:          "minikube",
+				PodSubnet:         "  ",
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha3
+kind: InitConfiguration
+apiEndpoint:
+  advertiseAddress: 192.168.1.100
+  bindPort: 8443
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+nodeRegistration:
+  criSocket: /var/run/dockershim.sock
+  name: minikube
+  taints: []
+---
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: ClusterConfiguration
+apiServerExtraArgs:
+  enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+
+certificatesDir: /var/lib/minikube/certs/
+clusterName: kubernetes
+controlPlaneEndpoint: localhost:8443
+etcd:
+  local:
+    dataDir: /data/minikube
+kubernetesVersion: v1.12.0
+networking:
+  dnsDomain: cluster.local
+  podSubnet: ""
+  serviceSubnet: 10.96.0.0/12
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# disable disk resource management by default, as it doesn't work well within the minikube environment.
+imageGCHighThresholdPercent: 100
+# Don't evict jobs, as we only have a single node to run on.
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"`,
+		},
+		{
+			description: "with PodSubnet",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				KubernetesVersion: "v1.12.0",
+				NodeName:          "minikube",
+				PodSubnet:         "192.168.32.0/20",
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha3
+kind: InitConfiguration
+apiEndpoint:
+  advertiseAddress: 192.168.1.100
+  bindPort: 8443
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+nodeRegistration:
+  criSocket: /var/run/dockershim.sock
+  name: minikube
+  taints: []
+---
+apiVersion: kubeadm.k8s.io/v1alpha3
+kind: ClusterConfiguration
+apiServerExtraArgs:
+  enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+
+certificatesDir: /var/lib/minikube/certs/
+clusterName: kubernetes
+controlPlaneEndpoint: localhost:8443
+etcd:
+  local:
+    dataDir: /data/minikube
+kubernetesVersion: v1.12.0
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 192.168.32.0/20
+  serviceSubnet: 10.96.0.0/12
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# disable disk resource management by default, as it doesn't work well within the minikube environment.
+imageGCHighThresholdPercent: 100
+# Don't evict jobs, as we only have a single node to run on.
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"`,
+		},
 	}
 
 	for _, test := range tests {
