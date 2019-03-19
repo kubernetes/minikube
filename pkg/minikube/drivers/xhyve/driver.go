@@ -30,7 +30,7 @@ import (
 
 const errMsg = `
 The Xhyve driver is not included in minikube yet.  Please follow the directions at
-https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#xhyve-driver
+https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver
 `
 
 func init() {
