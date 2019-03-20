@@ -11,6 +11,8 @@ The NO_PROXY variable here is important: Without setting it, minikube may not be
 * **192.168.99.1/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
 * **10.96.0.0/12**: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
 
+One important note: If NO_PROXY is required by non-Kubernetes applications, such as Firefox or Chrome, you may want to specifically add the minikube IP to the comma-separated list, as they may not understand IP ranges ([#3827](https://github.com/kubernetes/minikube/issues/3827)).
+
 ## Example Usage
 
 ### macOS and Linux
@@ -39,7 +41,7 @@ minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTT
 
 To set these environment variables permanently, consider adding these to your [system settings](https://support.microsoft.com/en-au/help/310519/how-to-manage-environment-variables-in-windows-xp) or using [setx](https://stackoverflow.com/questions/5898131/set-a-persistent-environment-variable-from-cmd-exe)
 
-## Debugging
+## Troubleshooting
 
 ### unable to cache ISO... connection refused
 

@@ -154,7 +154,7 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.13.3"
+var DefaultKubernetesVersion = "v1.13.4"
 
 // ConfigFilePath is the path of the config directory
 var ConfigFilePath = MakeMiniPath("config")
@@ -202,7 +202,7 @@ const (
 	// DefaultMsize is the default number of bytes to use for 9p packet payload
 	DefaultMsize = 262144
 	// DefaultMountVersion is the default 9p version to use for mount
-	DefaultMountVersion = "9p2000.u"
+	DefaultMountVersion  = "9p2000.L"
 )
 
 // GetKubernetesReleaseURL gets the location of a kubernetes client
