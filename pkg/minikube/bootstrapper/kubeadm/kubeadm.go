@@ -314,6 +314,14 @@ func (k *KubeadmBootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // PullImages downloads images that will be used by RestartCluster
 func (k *KubeadmBootstrapper) PullImages(k8s config.KubernetesConfig) error {
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
+	}
+	if version.LT(semver.MustParse("1.11.0")) {
+		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
+	}
+
 	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)
 	if err := k.c.Run(cmd); err != nil {
 		return errors.Wrapf(err, "running cmd: %s", cmd)
@@ -373,9 +381,8 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
-		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
-		if err != nil {
-			return errors.Wrap(err, "loading cached images")
+		if err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir); err != nil {
+			console.Failure("Unable to load cached images: %v", err)
 		}
 	}
 	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})

@@ -1,4 +1,5 @@
-#### Adding a New Dependency
+# Adding a New Dependency
+
 Minikube uses `dep` to manage vendored dependencies.
 
 See the `dep` [documentation](https://golang.github.io/dep/docs/introduction.html) for installation and usage instructions.
