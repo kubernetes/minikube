@@ -45,7 +45,7 @@ var DefaultV114AdmissionControllers = []string{
 	"ResourceQuota",
 }
 
-// DefaultLegacyAdmissionControllers are admission controllers we default to in order Kubernetes releases
+// DefaultLegacyAdmissionControllers are admission controllers we include with Kubernetes <1.14.0
 var DefaultLegacyAdmissionControllers = append(DefaultV114AdmissionControllers, "Initializers")
 
 // GetServiceClusterIP returns the first IP of the ServiceCIDR
