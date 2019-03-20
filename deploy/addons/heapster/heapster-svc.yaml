@@ -19,6 +19,7 @@ metadata:
     kubernetes.io/name: heapster
     kubernetes.io/minikube-addons: heapster
     addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/minikube-addons-endpoint: heapster
   name: heapster
   namespace: kube-system
 spec:
