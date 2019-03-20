@@ -36,7 +36,7 @@ sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm
 sudo yum install libvirt-daemon-kvm qemu-kvm
 ```
 
-Enable,start, and verify the libvirtd service has started.
+Enable,start, and verify the `libvirtd` service has started. 
 
 ```shell
 sudo systemctl enable libvirtd.service
@@ -44,13 +44,17 @@ sudo systemctl start libvirtd.service
 sudo systemctl status libvirtd.service
 ```
 
-Then you will need to add yourself to libvirt group (older distributions may use libvirtd instead)
+Then you will need to add yourself to `libvirt` group (older distributions may use `libvirtd` instead)
 
-`sudo usermod -a -G libvirt $(whoami)`
+```shell
+sudo usermod -a -G libvirt $(whoami)
+```
 
 Then to join the group with your current user session:
 
-`newgrp libvirt`
+```shell
+newgrp libvirt
+```
 
 Now install the driver:
 
@@ -63,9 +67,9 @@ NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206:
 
 ```shell
 sudo apt install libvirt-dev
-test -d $HOME/go/src/k8s.io/minikube || \
-  git clone https://github.com/kubernetes/minikube.git $HOME/go/src/k8s.io/minikube
-cd $HOME/go/src/k8s.io/minikube
+test -d $GOPATH/src/k8s.io/minikube || \
+  git clone https://github.com/kubernetes/minikube.git $GOPATH/src/k8s.io/minikube
+cd $GOPATH/src/k8s.io/minikube
 git pull
 make out/docker-machine-driver-kvm2
 sudo install out/docker-machine-driver-kvm2 /usr/local/bin
