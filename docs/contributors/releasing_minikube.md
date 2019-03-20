@@ -64,12 +64,7 @@ NOTE: Confirm that all release-related PR's have been submitted before doing thi
 Do this in a direct clone of the upstream kubernetes/minikube repository (not your fork!):
 
 ```shell
-version=<new version number>
-git fetch
-git checkout master
-git pull
-git tag -a v$version -m "$version Release"
-git push origin v$version
+hack/tag_release.sh <new version number>
 ```
 
 ## Build the Release
