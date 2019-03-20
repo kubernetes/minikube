@@ -318,11 +318,13 @@ func (k *KubeadmBootstrapper) PullImages(k8s config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
+
+	cFlag := "config"
 	if version.LT(semver.MustParse("1.11.0")) {
-		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
+		cFlag := "kubeconfig"
 	}
 
-	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)
+	cmd := fmt.Sprintf("sudo kubeadm config images pull --%s %s", cFlag, constants.KubeadmConfigFile)
 	if err := k.c.Run(cmd); err != nil {
 		return errors.Wrapf(err, "running cmd: %s", cmd)
 	}
