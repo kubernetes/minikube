@@ -141,15 +141,27 @@ func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
 
 // LogCommands returns a map of log type to a command which will display that log.
 func (k *KubeadmBootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
-	var kcmd strings.Builder
-	kcmd.WriteString("journalctl -u kubelet")
+	var kubelet strings.Builder
+	kubelet.WriteString("journalctl -u kubelet")
 	if o.Lines > 0 {
-		kcmd.WriteString(fmt.Sprintf(" -n %d", o.Lines))
+		kubelet.WriteString(fmt.Sprintf(" -n %d", o.Lines))
 	}
 	if o.Follow {
-		kcmd.WriteString(" -f")
+		kubelet.WriteString(" -f")
 	}
-	return map[string]string{"kubelet": kcmd.String()}
+
+	var dmesg strings.Builder
+	dmesg.WriteString("sudo dmesg -PH -L=never --level warn,err,crit,alert,emerg")
+	if o.Follow {
+		dmesg.WriteString(" --follow")
+	}
+	if o.Lines > 0 {
+		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
+	}
+	return map[string]string{
+		"kubelet": kubelet.String(),
+		"dmesg":   dmesg.String(),
+	}
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
