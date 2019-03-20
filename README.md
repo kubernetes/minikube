@@ -13,7 +13,7 @@
 
 ## What is minikube?
 
-minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. 
+minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
 <img src="https://github.com/kubernetes/minikube/raw/master/images/start.jpg" width="800">
 
@@ -21,6 +21,7 @@ Our [goal](https://github.com/kubernetes/minikube/blob/master/docs/contributors/
 
 ## News
 
+* 2019-03-06 - v0.35.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.35.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0350---2019-03-06)]
 * 2019-02-16 - v0.34.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0341---2019-02-16)]
 * 2019-02-15 - v0.34.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0340---2019-02-15)]
 * 2019-01-18 - v0.33.1 released to address [CVE-2019-5736](https://www.openwall.com/lists/oss-security/2019/02/11/2) [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0331---2019-01-18)]
@@ -30,7 +31,7 @@ Our [goal](https://github.com/kubernetes/minikube/blob/master/docs/contributors/
 
 minikube runs the official stable release of Kubernetes, with support for standard Kubernetes features like:
 
-* [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - using `minikube tunnel` 
+* [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - using `minikube tunnel`
 * Multi-cluster - using `minikube start -p <name>`
 * NodePorts - using `minikube service`
 * [Persistent Volumes](https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md)
@@ -55,7 +56,7 @@ As well as developer-friendly features:
 
 ## Community
 
-minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project. 
+minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project.
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com) - Live chat with minikube developers!
 * [minikube-users mailing list](https://groups.google.com/forum/#!forum/minikube-users)
@@ -80,7 +81,7 @@ See the [installation guide](https://kubernetes.io/docs/tasks/tools/install-mini
   * using [chocolatey](https://chocolatey.org/) `choco install minikube`
   * manually: Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
-* *Linux* 
+* *Linux*
   * Requires either the [kvm2 driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver) (recommended), or VirtualBox
   * VT-x/AMD-v virtualization must be enabled in BIOS
   * manually:  `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`

@@ -1,4 +1,5 @@
-#### Adding a New Addon
+# Adding a New Addon
+
 To add a new addon to minikube the following steps are required:
 
 * For the new addon's .yaml file(s):
@@ -15,12 +16,12 @@ To add a new addon to minikube the following steps are required:
   var settings = []Setting{
     ...,
     // add other addon setting
-  	{
-  		name:        "efk",
-  		set:         SetBool,
-  		validations: []setFn{IsValidAddon},
-  		callbacks:   []setFn{EnableOrDisableAddon},
-  	},
+    {
+      name:        "efk",
+      set:         SetBool,
+      validations: []setFn{IsValidAddon},
+      callbacks:   []setFn{EnableOrDisableAddon},
+    },
   }
   ```
 
@@ -32,22 +33,22 @@ To add a new addon to minikube the following steps are required:
     ...,
     // add other addon asset
     "efk": NewAddon([]*BinDataAsset{
-  		NewBinDataAsset(
-  			"deploy/addons/efk/efk-configmap.yaml",
-  			constants.AddonsPath,
-  			"efk-configmap.yaml",
-  			"0640"),
-  		NewBinDataAsset(
-  			"deploy/addons/efk/efk-rc.yaml",
-  			constants.AddonsPath,
-  			"efk-rc.yaml",
-  			"0640"),
-  		NewBinDataAsset(
-  			"deploy/addons/efk/efk-svc.yaml",
-  			constants.AddonsPath,
-  			"efk-svc.yaml",
-  			"0640"),
-  	}, false, "efk"),
+      NewBinDataAsset(
+        "deploy/addons/efk/efk-configmap.yaml",
+        constants.AddonsPath,
+        "efk-configmap.yaml",
+        "0640"),
+      NewBinDataAsset(
+        "deploy/addons/efk/efk-rc.yaml",
+        constants.AddonsPath,
+        "efk-rc.yaml",
+        "0640"),
+      NewBinDataAsset(
+        "deploy/addons/efk/efk-svc.yaml",
+        constants.AddonsPath,
+        "efk-svc.yaml",
+        "0640"),
+    }, false, "efk"),
   }
   ```
 

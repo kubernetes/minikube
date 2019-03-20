@@ -1,5 +1,5 @@
-If this is a bug report, please include:
-
-- [ ] How to replicate the error, including the exact command-lines used.
-- [ ] The full output of the command that failed
-- [ ] The operating system name and version used
+<!-- Thank you for sharing your experience! If you are reporting a bug, please include: -->
+<!--    *  The exact command-lines used so that we can replicate the issue -->
+<!--    *  The full output of the command that failed -->
+<!--    *  The output of the "minikube logs" command, if applicable -->
+<!--    *  Which operating system version was used -->
