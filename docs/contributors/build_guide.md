@@ -1,20 +1,23 @@
-### Build Requirements
+# Build Guide
+
+## Build Requirements
+
 * A recent Go distribution (>=1.12)
 * If you're not on Linux, you'll need a Docker installation
 * minikube requires at least 4GB of RAM to compile, which can be problematic when using docker-machine
 
-#### Prerequisites for different GNU/Linux distributions
+### Prerequisites for different GNU/Linux distributions
 
-##### Fedora
+#### Fedora
+
 On Fedora you need to install _glibc-static_
-
 ```shell
 $ sudo dnf install -y glibc-static
 ```
 
 ### Building from Source
-Clone minikube into your go path under `$GOPATH/src/k8s.io`
 
+Clone minikube into your go path under `$GOPATH/src/k8s.io`
 ```shell
 $ git clone https://github.com/kubernetes/minikube.git $GOPATH/src/k8s.io/minikube
 $ cd $GOPATH/src/k8s.io/minikube
@@ -25,20 +28,23 @@ Note: Make sure that you uninstall any previous versions of minikube before buil
 from the source.
 
 ### Building from Source in Docker (using Debian stretch image with golang)
+
 Clone minikube:
 ```shell
 $ git clone https://github.com/kubernetes/minikube.git
 ```
+
 Build (cross compile for linux / OS X and Windows) using make:
 ```shell
 $ cd minikube
 $ docker run --rm -v "$PWD":/go/src/k8s.io/minikube -w /go/src/k8s.io/minikube golang:stretch make cross
 ```
+
 Check "out" directory:
 ```shell
 $ ls out/
-docker-machine-driver-hyperkit.d	minikube				minikube.d				test.d
-docker-machine-driver-kvm2.d		minikube-linux-amd64			storage-provisioner.d
+docker-machine-driver-hyperkit.d    minikube                minikube.d             test.d
+docker-machine-driver-kvm2.d        minikube-linux-amd64            storage-provisioner.d
 ```
 
 ### Run Instructions
@@ -77,11 +83,14 @@ You can run these against minikube by following these steps:
 * Run `make quick-release` in the k8s repo.
 * Start up a minikube cluster with: `minikube start`.
 * Set following two environment variables:
+
 ```shell
 export KUBECONFIG=$HOME/.kube/config
 export KUBERNETES_CONFORMANCE_TEST=y
 ```
+
 * Run the tests (from the k8s repo):
+
 ```shell
 go run hack/e2e.go -v --test --test_args="--ginkgo.focus=\[Conformance\]" --check-version-skew=false
 ```
