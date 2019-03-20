@@ -314,7 +314,7 @@ func (k *KubeadmBootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // PullImages downloads images that will be used by RestartCluster
 func (k *KubeadmBootstrapper) PullImages(k8s config.KubernetesConfig) error {
-	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)
+	cmd := fmt.Sprintf("sudo kubeadm config images pull --kubeconfig %s", constants.KubeadmConfigFile)
 	if err := k.c.Run(cmd); err != nil {
 		return errors.Wrapf(err, "running cmd: %s", cmd)
 	}
