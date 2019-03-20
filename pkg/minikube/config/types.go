@@ -35,6 +35,7 @@ type MachineConfig struct {
 	CPUs                int
 	DiskSize            int
 	VMDriver            string
+	ContainerRuntime    string
 	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
 	XhyveDiskDriver     string   // Only used by the xhyve driver
@@ -50,22 +51,27 @@ type MachineConfig struct {
 	NFSShare            []string
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
+	GPU                 bool   // Only used by kvm2
+	NoVTXCheck          bool   // Only used by virtualbox
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
+	NodePort          int
 	NodeName          string
 	APIServerName     string
 	APIServerNames    []string
 	APIServerIPs      []net.IP
 	DNSDomain         string
 	ContainerRuntime  string
+	CRISocket         string
 	NetworkPlugin     string
 	FeatureGates      string
 	ServiceCIDR       string
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
+	EnableDefaultCNI       bool
 }

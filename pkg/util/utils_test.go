@@ -17,13 +17,16 @@ limitations under the License.
 package util
 
 import (
+	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Returns a function that will return n errors, then return successfully forever.
@@ -92,29 +95,6 @@ type getTestArgs struct {
 	expectedError bool
 }
 
-func TestGetLocalkubeDownloadURL(t *testing.T) {
-	argsList := [...]getTestArgs{
-		{"v1.3.0",
-			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.0/localkube-linux" + constants.SupportedArchTag(true), false},
-		{"v1.3.3",
-			"https://storage.googleapis.com/minikube/k8sReleases/v1.3.3/localkube-linux" + constants.SupportedArchTag(true), false},
-		{"http://www.example.com/my-localkube", "http://www.example.com/my-localkube", false},
-		{"abc", "", true},
-		{"1.2.3.4", "", true},
-	}
-	for _, args := range argsList {
-		url, err := GetLocalkubeDownloadURL(args.input, constants.LocalkubeLinuxFilename)
-		wasError := err != nil
-		if wasError != args.expectedError {
-			t.Errorf("GetLocalkubeDownloadURL Expected error was: %t, Actual Error was: %s",
-				args.expectedError, err)
-		}
-		if url != args.expected {
-			t.Errorf("GetLocalkubeDownloadURL: Expected %s, Actual: %s", args.expected, url)
-		}
-	}
-}
-
 var testSHAString = "test"
 
 func TestParseSHAFromURL(t *testing.T) {
@@ -154,12 +134,12 @@ func TestMultiError(t *testing.T) {
 	expected := `Error 1
 Error 2`
 	if err.Error() != expected {
-		t.Fatalf("%s != %s", err, expected)
+		t.Fatalf("%s != %s", err.Error(), expected)
 	}
 
 	m = MultiError{}
 	if err := m.ToError(); err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 }
 
@@ -181,4 +161,40 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 		}
 	}
 
+}
+
+func TestTeePrefix(t *testing.T) {
+	var in bytes.Buffer
+	var out bytes.Buffer
+	var logged strings.Builder
+
+	logSink := func(format string, args ...interface{}) {
+		logged.WriteString("(" + fmt.Sprintf(format, args...) + ")")
+	}
+
+	// Simulate the primary use case: tee in the background. This also helps avoid I/O races.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		TeePrefix(":", &in, &out, logSink)
+		wg.Done()
+	}()
+
+	in.Write([]byte("goo"))
+	in.Write([]byte("\n"))
+	in.Write([]byte("g\r\n\r\n"))
+	in.Write([]byte("le"))
+	wg.Wait()
+
+	gotBytes := out.Bytes()
+	wantBytes := []byte("goo\ng\r\n\r\nle")
+	if !bytes.Equal(gotBytes, wantBytes) {
+		t.Errorf("output=%q, want: %q", gotBytes, wantBytes)
+	}
+
+	gotLog := logged.String()
+	wantLog := "(:goo)(:g)(:le)"
+	if gotLog != wantLog {
+		t.Errorf("log=%q, want: %q", gotLog, wantLog)
+	}
 }

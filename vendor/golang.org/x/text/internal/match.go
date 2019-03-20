@@ -6,7 +6,7 @@ package internal
 
 // This file contains matchers that implement CLDR inheritance.
 //
-//     See http://unicode.org/reports/tr35/#Locale_Inheritance.
+//     See https://unicode.org/reports/tr35/#Locale_Inheritance.
 //
 // Some of the inheritance described in this document is already handled by
 // the cldr package.

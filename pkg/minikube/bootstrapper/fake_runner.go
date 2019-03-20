@@ -104,7 +104,7 @@ func (f *FakeCommandRunner) SetCommandToOutput(cmdToOutput map[string]string) {
 	}
 }
 
-// SetFileToContents stores the file to contents map for the FakeCommandRunner
+// GetFileToContents stores the file to contents map for the FakeCommandRunner
 func (f *FakeCommandRunner) GetFileToContents(filename string) (string, error) {
 	contents, ok := f.fileMap.Load(filename)
 	if !ok {

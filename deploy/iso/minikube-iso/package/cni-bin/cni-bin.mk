@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_BIN_VERSION = v0.6.0-rc1
+CNI_BIN_VERSION = v0.6.0
 CNI_BIN_SITE = https://github.com/containernetworking/cni/releases/download/$(CNI_BIN_VERSION)
 CNI_BIN_SOURCE = cni-amd64-$(CNI_BIN_VERSION).tgz
 

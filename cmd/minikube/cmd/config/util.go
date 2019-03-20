@@ -18,7 +18,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -26,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 )
@@ -94,62 +94,70 @@ func SetBool(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// EnableOrDisableAddon updates addon status executing any commands necessary
 func EnableOrDisableAddon(name string, val string) error {
-
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
-		errors.Wrapf(err, "error attempted to parse enabled/disable value addon %s", name)
+		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 
 	//TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting client: %s\n", err)
-		os.Exit(1)
+		return errors.Wrap(err, "machine client")
 	}
 	defer api.Close()
 	cluster.EnsureMinikubeRunningOrExit(api, 0)
 
-	addon, _ := assets.Addons[name] // validation done prior
-	if err != nil {
-		return err
-	}
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	addon := assets.Addons[name]
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}
-	cmd, err := machine.GetCommandRunner(host)
+	cmd, err := machine.CommandRunner(host)
 	if err != nil {
-		return errors.Wrap(err, "getting command runner")
+		return errors.Wrap(err, "command runner")
 	}
 	if enable {
 		for _, addon := range addon.Assets {
 			if err := cmd.Copy(addon); err != nil {
-				return errors.Wrapf(err, "error enabling addon %s", addon.AssetName)
+				return errors.Wrapf(err, "enabling addon %s", addon.AssetName)
 			}
 		}
 	} else {
 		for _, addon := range addon.Assets {
 			if err := cmd.Remove(addon); err != nil {
-				return errors.Wrapf(err, "error disabling addon %s", addon.AssetName)
+				return errors.Wrapf(err, "disabling addon %s", addon.AssetName)
 			}
 		}
 	}
 	return nil
 }
 
-func EnableOrDisableDefaultStorageClass(name, val string) error {
+func EnableOrDisableStorageClasses(name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrap(err, "Error parsing boolean")
 	}
 
-	// Special logic to disable the default storage class
-	if !enable {
-		err := storageclass.DisableDefaultStorageClass()
+	class := constants.DefaultStorageClassProvisioner
+	if name == "storage-provisioner-gluster" {
+		class = "glusterfile"
+	}
+
+	if enable {
+		// Only StorageClass for 'name' should be marked as default
+		err := storageclass.SetDefaultStorageClass(class)
 		if err != nil {
-			return errors.Wrap(err, "Error disabling default storage class")
+			return errors.Wrapf(err, "Error making %s the default storage class", class)
+		}
+	} else {
+		// Unset the StorageClass as default
+		err := storageclass.DisableDefaultStorageClass(class)
+		if err != nil {
+			return errors.Wrapf(err, "Error disabling %s as the default storage class", class)
 		}
 	}
+
 	return EnableOrDisableAddon(name, val)
 }

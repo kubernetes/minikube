@@ -68,14 +68,15 @@ const (
 var (
 	baseSSHArgs = []string{
 		"-F", "/dev/null",
-		"-o", "PasswordAuthentication=no",
-		"-o", "StrictHostKeyChecking=no",
-		"-o", "UserKnownHostsFile=/dev/null",
-		"-o", "LogLevel=quiet", // suppress "Warning: Permanently added '[localhost]:2022' (ECDSA) to the list of known hosts."
 		"-o", "ConnectionAttempts=3", // retry 3 times if SSH connection fails
 		"-o", "ConnectTimeout=10", // timeout after 10 seconds
 		"-o", "ControlMaster=no", // disable ssh multiplexing
 		"-o", "ControlPath=none",
+		"-o", "LogLevel=quiet", // suppress "Warning: Permanently added '[localhost]:2022' (ECDSA) to the list of known hosts."
+		"-o", "PasswordAuthentication=no",
+		"-o", "ServerAliveInterval=60", // prevents connection to be dropped if command takes too long
+		"-o", "StrictHostKeyChecking=no",
+		"-o", "UserKnownHostsFile=/dev/null",
 	}
 	defaultClientType = External
 )
@@ -320,11 +321,14 @@ func (client *NativeClient) Shell(args ...string) error {
 		if err := session.Shell(); err != nil {
 			return err
 		}
-		session.Wait()
+		if err := session.Wait(); err != nil {
+			return err
+		}
 	} else {
-		session.Run(strings.Join(args, " "))
+		if err := session.Run(strings.Join(args, " ")); err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 

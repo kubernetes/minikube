@@ -20,4 +20,4 @@ limitations under the License.
 // they aren't all here, are PodDisruptionBudget, PodSecurityPolicy,
 // NetworkPolicy, etc.
 // +k8s:openapi-gen=true
-package v1beta1
+package v1beta1 // import "k8s.io/api/policy/v1beta1"

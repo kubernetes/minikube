@@ -20,51 +20,13 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
-	"strings"
 	"testing"
-
-	"k8s.io/minikube/pkg/minikube/constants"
 )
-
-func TestGetSrcRef(t *testing.T) {
-	for _, image := range constants.LocalkubeCachedImages {
-		if _, err := getSrcRef(image); err != nil {
-			t.Errorf("Error getting src ref for %s: %s", image, err)
-		}
-	}
-}
-
-func TestGetDstRef(t *testing.T) {
-	paths := []struct {
-		path, separator string
-	}{
-		{`/Users/foo/.minikube/cache/images`, `/`},
-		{`/home/foo/.minikube/cache/images`, `/`},
-		{`\\?\Volume{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}\Users\foo\.minikube\cache\images`, `\`},
-		{`\\?\Volume{aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee}\minikube\.minikube\cache\images`, `\`},
-	}
-
-	cases := []struct {
-		image, dst string
-	}{}
-	for _, tp := range paths {
-		for _, image := range constants.LocalkubeCachedImages {
-			dst := strings.Join([]string{tp.path, strings.Replace(image, ":", "_", -1)}, tp.separator)
-			cases = append(cases, struct{ image, dst string }{image, dst})
-		}
-	}
-
-	for _, tc := range cases {
-		if _, err := _getDstRef(tc.image, tc.dst); err != nil {
-			t.Errorf("Error getting dst ref for %s: %s", tc.dst, err)
-		}
-	}
-}
 
 func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
 	path, err := ioutil.TempDir("", "repwindl2vn")
 	if err != nil {
-		t.Fatalf("Error make tmp directory: %s", err)
+		t.Fatalf("Error make tmp directory: %v", err)
 	}
 	defer os.RemoveAll(path)
 
@@ -78,7 +40,7 @@ func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
 	}
 
 	if _, err := replaceWinDriveLetterToVolumeName(path); err != nil {
-		t.Errorf("Error replace a Windows drive letter to a volume name: %s", err)
+		t.Errorf("Error replace a Windows drive letter to a volume name: %v", err)
 	}
 }
 

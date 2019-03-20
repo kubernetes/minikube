@@ -12,6 +12,10 @@
 
 * **Caching Images** ([cache.md](cache.md)): Caching non-minikube images in minikube
 
+* **GPUs** ([gpu.md](gpu.md)): Using NVIDIA GPUs on minikube
+
+* **OpenID Connect Authentication** ([openid_connect_auth.md](openid_connect_auth.md)): Using OIDC Authentication on minikube
+
 ### Installation and debugging
 
 * **Driver installation** ([drivers.md](drivers.md)): In depth instructions for installing the various hypervisor drivers

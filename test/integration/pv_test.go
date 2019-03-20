@@ -26,9 +26,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	api "k8s.io/api/core/v1"
+	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	api "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/apis/storage"
 	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -43,7 +43,9 @@ func testProvisioning(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	defer func() {
-		kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName})
+		if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
+			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
+		}
 	}()
 
 	// We have to make sure the addon-manager has created the StorageClass before creating
@@ -51,7 +53,10 @@ func testProvisioning(t *testing.T) {
 
 	checkStorageClass := func() error {
 		scl := storage.StorageClassList{}
-		kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl)
+		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
+			return fmt.Errorf("get storageclass: %v", err)
+		}
+
 		if len(scl.Items) > 0 {
 			return nil
 		}
@@ -59,7 +64,7 @@ func testProvisioning(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
-		t.Fatalf("No default storage class: %s", err)
+		t.Fatalf("no default storage class after retry: %v", err)
 	}
 
 	// Check that the storage provisioner pod is running
@@ -78,13 +83,13 @@ func testProvisioning(t *testing.T) {
 	}
 
 	if err := checkPodRunning(); err != nil {
-		t.Fatal("Check storage-provisioner pod running failed with error: ", err)
+		t.Fatalf("Check storage-provisioner pod running failed with error: %v", err)
 	}
 
 	// Now create the PVC
 	pvcPath := filepath.Join(*testdataDir, "pvc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
-		t.Fatalf("Error creating pvc")
+		t.Fatalf("Error creating pvc: %v", err)
 	}
 
 	// And check that it gets bound to a PV.
@@ -101,7 +106,7 @@ func testProvisioning(t *testing.T) {
 	}
 
 	if err := util.Retry(t, checkStorage, 2*time.Second, 5); err != nil {
-		t.Fatal("PV Creation failed with error:", err)
+		t.Fatalf("PV Creation failed with error: %v", err)
 	}
 
 }

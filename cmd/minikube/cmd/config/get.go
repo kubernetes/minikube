@@ -17,13 +17,12 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
-	"os"
-
-	"k8s.io/minikube/pkg/minikube/config"
-
 	"errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 )
 
 var configGetCmd = &cobra.Command{
@@ -45,7 +44,7 @@ var configGetCmd = &cobra.Command{
 			return fmt.Errorf("no value for key '%s'", args[0])
 		}
 
-		fmt.Fprintln(os.Stdout, val)
+		console.OutLn(val)
 		return nil
 	},
 }

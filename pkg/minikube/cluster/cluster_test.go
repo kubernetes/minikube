@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -229,7 +228,7 @@ func TestDeleteHost(t *testing.T) {
 	createHost(api, defaultMachineConfig)
 
 	if err := DeleteHost(api); err != nil {
-		t.Fatalf("Unexpected error deleting host: %s", err)
+		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
 
@@ -256,36 +255,13 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	}
 }
 
-func TestDeleteHostMultipleErrors(t *testing.T) {
-	api := tests.NewMockAPI()
-	api.RemoveError = true
-	h, _ := createHost(api, defaultMachineConfig)
-
-	d := &tests.MockDriver{RemoveError: true}
-
-	h.Driver = d
-
-	err := DeleteHost(api)
-
-	if err == nil {
-		t.Fatal("Expected error deleting host, didn't get one.")
-	}
-
-	expectedErrors := []string{"Error removing " + config.GetMachineName(), "Error deleting machine"}
-	for _, expectedError := range expectedErrors {
-		if !strings.Contains(err.Error(), expectedError) {
-			t.Fatalf("Error %s expected to contain: %s.", err, expectedError)
-		}
-	}
-}
-
 func TestGetHostStatus(t *testing.T) {
 	api := tests.NewMockAPI()
 
 	checkState := func(expected string) {
 		s, err := GetHostStatus(api)
 		if err != nil {
-			t.Fatalf("Unexpected error getting status: %s", err)
+			t.Fatalf("Unexpected error getting status: %v", err)
 		}
 		if s != expected {
 			t.Fatalf("Expected status: %s, got %s", s, expected)
@@ -319,7 +295,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 
 	envMap, err := GetHostDockerEnv(api)
 	if err != nil {
-		t.Fatalf("Unexpected error getting env: %s", err)
+		t.Fatalf("Unexpected error getting env: %v", err)
 	}
 
 	dockerEnvKeys := [...]string{
@@ -352,7 +328,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 
 	envMap, err := GetHostDockerEnv(api)
 	if err != nil {
-		t.Fatalf("Unexpected error getting env: %s", err)
+		t.Fatalf("Unexpected error getting env: %v", err)
 	}
 
 	expected := "tcp://[fe80::215:5dff:fe00:a903]:2376"
@@ -368,7 +344,7 @@ func TestCreateSSHShell(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
+		t.Fatalf("Error starting ssh server: %v", err)
 	}
 
 	d := &tests.MockDriver{
@@ -383,7 +359,7 @@ func TestCreateSSHShell(t *testing.T) {
 
 	cliArgs := []string{"exit"}
 	if err := CreateSSHShell(api, cliArgs); err != nil {
-		t.Fatalf("Error running ssh command: %s", err)
+		t.Fatalf("Error running ssh command: %v", err)
 	}
 
 	if !s.IsSessionRequested() {

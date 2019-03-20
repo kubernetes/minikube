@@ -4,7 +4,8 @@
 #
 ################################################################################
 
-RUNC_MASTER_VERSION = 0fdc908bf1ee7b7da85f9e5adbd1e256060f2486
+# HEAD as of 2019-02-13
+RUNC_MASTER_VERSION = 0a012df867a2d525f62a146d8ebdf2e6ab8a5ad5
 RUNC_MASTER_SITE = https://github.com/opencontainers/runc/archive
 RUNC_MASTER_SOURCE = $(RUNC_MASTER_VERSION).tar.gz
 RUNC_MASTER_LICENSE = Apache-2.0
@@ -46,6 +47,8 @@ endef
 
 define RUNC_MASTER_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/bin/runc $(TARGET_DIR)/usr/bin/runc
+	# Install the binary in the location where Docker expects it, so that we can keep runc releases in sync.
+	ln $(@D)/bin/runc $(TARGET_DIR)/usr/bin/docker-runc
 endef
 
 $(eval $(generic-package))

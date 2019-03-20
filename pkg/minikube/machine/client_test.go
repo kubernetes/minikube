@@ -102,7 +102,7 @@ func TestLocalClientNewHost(t *testing.T) {
 				}
 			}
 			if err != nil && !test.err {
-				t.Errorf("Unexpected error: %s", err)
+				t.Errorf("Unexpected error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("No error returned, but expected err")

@@ -59,6 +59,8 @@ spec:
               fieldPath: metadata.namespace
         - name: MINIMUM_MASTER_NODES
           value: "1"
+        - name: ES_JAVA_OPTS
+          value: "-Xms1024m -Xmx1024m"
       initContainers:
       - image: registry.hub.docker.com/library/alpine:3.6
         command: ["/sbin/sysctl", "-w", "vm.max_map_count=262144"]

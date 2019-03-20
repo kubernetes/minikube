@@ -1,0 +1,12 @@
+config BR2_PACKAGE_GLUSTER
+	bool "gluster"
+	default y
+	depends on BR2_x86_64
+	select BR2_PACKAGE_LIBURCU
+	select BR2_PACKAGE_LIBXML2
+	help
+	  Gluster is a scalable, distributed file system that
+	  aggregates disk storage resources from multiple servers into
+	  a single global namespace.
+
+	  https://www.gluster.org/

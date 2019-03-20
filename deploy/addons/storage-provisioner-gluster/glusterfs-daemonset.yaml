@@ -1,0 +1,138 @@
+---
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  namespace: storage-gluster
+  name: glusterfs
+  labels:
+    glusterfs: daemonset
+    k8s-app: storage-provisioner-gluster
+    kubernetes.io/minikube-addons: storage-provisioner-gluster
+    addonmanager.kubernetes.io/mode: Reconcile
+  annotations:
+    description: GlusterFS DaemonSet
+    tags: glusterfs
+spec:
+  selector:
+    matchLabels:
+      k8s-app: storage-provisioner-gluster
+  template:
+    metadata:
+      namespace: storage-gluster
+      name: glusterfs
+      labels:
+        glusterfs: pod
+        glusterfs-node: pod
+        k8s-app: storage-provisioner-gluster
+    spec:
+      #nodeSelector:
+      #  kubernetes.io/hostname: minikube
+      hostNetwork: true
+      containers:
+      - image: quay.io/nixpanic/glusterfs-server:pr_fake-disk
+        imagePullPolicy: IfNotPresent
+        name: glusterfs
+        env:
+        - name: USE_FAKE_DISK
+          value: "enabled"
+        #- name: USE_FAKE_FILE
+        #  value: "/srv/fake-disk.img"
+        #- name: USE_FAKE_SIZE
+        #  value: "10G"
+        #- name: USE_FAKE_DEV
+        #  value: "/dev/fake"
+        resources:
+          requests:
+            memory: 100Mi
+            cpu: 100m
+        volumeMounts:
+        # default location for fake-disk.img, it needs to be persistent
+        - name: fake-disk
+          mountPath: /srv
+        # the fstab for the bricks is under /var/lib/heketi
+        - name: glusterfs-heketi
+          mountPath: "/var/lib/heketi"
+        - name: glusterfs-run
+          mountPath: "/run"
+        - name: glusterfs-lvm
+          mountPath: "/run/lvm"
+        #- name: glusterfs-etc
+        #  mountPath: "/etc/glusterfs"
+        - name: glusterfs-logs
+          mountPath: "/var/log/glusterfs"
+        - name: glusterfs-config
+          mountPath: "/var/lib/glusterd"
+        - name: glusterfs-dev
+          mountPath: "/dev"
+        # glusterfind uses /var/lib/misc/glusterfsd, yuck
+        - name: glusterfs-misc
+          mountPath: "/var/lib/misc/glusterfsd"
+        - name: glusterfs-cgroup
+          mountPath: "/sys/fs/cgroup"
+          readOnly: true
+        - name: glusterfs-ssl
+          mountPath: "/etc/ssl"
+          readOnly: true
+        - name: kernel-modules
+          mountPath: "/usr/lib/modules"
+          readOnly: true
+        securityContext:
+          capabilities: {}
+          privileged: true
+        readinessProbe:
+          timeoutSeconds: 3
+          initialDelaySeconds: 40
+          exec:
+            command:
+            - "/bin/bash"
+            - "-c"
+            - systemctl status glusterd.service
+          periodSeconds: 25
+          successThreshold: 1
+          failureThreshold: 50
+        livenessProbe:
+          timeoutSeconds: 3
+          initialDelaySeconds: 40
+          exec:
+            command:
+            - "/bin/bash"
+            - "-c"
+            - systemctl status glusterd.service
+          periodSeconds: 25
+          successThreshold: 1
+          failureThreshold: 50
+      volumes:
+      - name: fake-disk
+        hostPath:
+          path: /srv
+      - name: glusterfs-heketi
+        hostPath:
+          path: "/var/lib/heketi"
+      - name: glusterfs-run
+      - name: glusterfs-lvm
+        hostPath:
+          path: "/run/lvm"
+      - name: glusterfs-etc
+        hostPath:
+          path: "/etc/glusterfs"
+      - name: glusterfs-logs
+        hostPath:
+          path: "/var/log/glusterfs"
+      - name: glusterfs-config
+        hostPath:
+          path: "/var/lib/glusterd"
+      - name: glusterfs-dev
+        hostPath:
+          path: "/dev"
+      - name: glusterfs-misc
+        hostPath:
+          path: "/var/lib/misc/glusterfsd"
+      - name: glusterfs-cgroup
+        hostPath:
+          path: "/sys/fs/cgroup"
+      - name: glusterfs-ssl
+        hostPath:
+          path: "/etc/ssl"
+      - name: kernel-modules
+        hostPath:
+          path: "/usr/lib/modules"

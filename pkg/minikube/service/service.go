@@ -20,32 +20,32 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"text/template"
-
-	"github.com/spf13/viper"
-	"k8s.io/apimachinery/pkg/labels"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
 
 type K8sClient interface {
 	GetCoreClient() (corev1.CoreV1Interface, error)
-	GetClientset() (*kubernetes.Clientset, error)
+	GetClientset(timeout time.Duration) (*kubernetes.Clientset, error)
 }
 
 type K8sClientGetter struct{}
@@ -57,14 +57,14 @@ func init() {
 }
 
 func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
-	client, err := k.GetClientset()
+	client, err := k.GetClientset(constants.DefaultK8sClientTimeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}
 	return client.Core(), nil
 }
 
-func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
+func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	profile := viper.GetString(config.MachineProfile)
 	configOverrides := &clientcmd.ConfigOverrides{
@@ -76,8 +76,9 @@ func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	clientConfig, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
+	clientConfig.Timeout = timeout
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
@@ -86,18 +87,18 @@ func (*K8sClientGetter) GetClientset() (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-type ServiceURL struct {
+type URL struct {
 	Namespace string
 	Name      string
 	URLs      []string
 }
 
-type ServiceURLs []ServiceURL
+type URLs []URL
 
 // Returns all the node port URLs for every service in a particular namespace
 // Accepts a template for formatting
-func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (ServiceURLs, error) {
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return nil, err
 	}
@@ -119,13 +120,13 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 		return nil, err
 	}
 
-	var serviceURLs []ServiceURL
+	var serviceURLs []URL
 	for _, svc := range svcs.Items {
 		urls, err := printURLsForService(client, ip, svc.Name, svc.Namespace, t)
 		if err != nil {
 			return nil, err
 		}
-		serviceURLs = append(serviceURLs, ServiceURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls})
+		serviceURLs = append(serviceURLs, URL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls})
 	}
 
 	return serviceURLs, nil
@@ -134,7 +135,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 // Returns all the node ports for a service in a namespace
 // with optional formatting
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
-	host, err := cluster.CheckIfApiExistsAndLoad(api)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -184,56 +185,44 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 			return nil, err
 		}
 
-		u, err := url.Parse(doc.String())
-		if err != nil {
-			return nil, err
-		}
-
-		urls = append(urls, u.String())
+		urls = append(urls, doc.String())
 	}
 	return urls, nil
 }
 
-// CheckService waits for the specified service to be ready by returning an error until the service is up
-// The check is done by polling the endpoint associated with the service and when the endpoint exists, returning no error->service-online
+// CheckService checks if a service is listening on a port.
 func CheckService(namespace string, service string) error {
 	client, err := K8s.GetCoreClient()
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
-	services := client.Services(namespace)
-	err = validateService(services, service)
-	if err != nil {
-		return errors.Wrap(err, "Error validating service")
-	}
-	endpoints := client.Endpoints(namespace)
-	return checkEndpointReady(endpoints, service)
-}
 
-func validateService(s corev1.ServiceInterface, service string) error {
-	if _, err := s.Get(service, metav1.GetOptions{}); err != nil {
-		return errors.Wrapf(err, "Error getting service %s", service)
-	}
-	return nil
-}
-
-func checkEndpointReady(endpoints corev1.EndpointsInterface, service string) error {
-	endpoint, err := endpoints.Get(service, metav1.GetOptions{})
+	svc, err := client.Services(namespace).Get(service, metav1.GetOptions{})
 	if err != nil {
-		return &util.RetriableError{Err: errors.Errorf("Error getting endpoints for service %s", service)}
-	}
-	const notReadyMsg = "Waiting, endpoint for service is not ready yet...\n"
-	if len(endpoint.Subsets) == 0 {
-		fmt.Fprintf(os.Stderr, notReadyMsg)
-		return &util.RetriableError{Err: errors.New("Endpoint for service is not ready yet")}
-	}
-	for _, subset := range endpoint.Subsets {
-		if len(subset.Addresses) == 0 {
-			fmt.Fprintf(os.Stderr, notReadyMsg)
-			return &util.RetriableError{Err: errors.New("No endpoints for service are ready yet")}
+		return &util.RetriableError{
+			Err: errors.Wrapf(err, "Error getting service %s", service),
 		}
 	}
+	if len(svc.Spec.Ports) == 0 {
+		return fmt.Errorf("%s:%s has no ports", namespace, service)
+	}
+	glog.Infof("Found service: %+v", svc)
 	return nil
+}
+
+func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string, bool) {
+	httpsFormattedString := bareURLString
+	isHTTPSchemedURL := false
+
+	if u, parseErr := url.Parse(bareURLString); parseErr == nil {
+		isHTTPSchemedURL = u.Scheme == "http"
+	}
+
+	if isHTTPSchemedURL && https {
+		httpsFormattedString = strings.Replace(bareURLString, "http", "https", 1)
+	}
+
+	return httpsFormattedString, isHTTPSchemedURL
 }
 
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
@@ -246,15 +235,14 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
-	for _, url := range urls {
-		if https {
-			url = strings.Replace(url, "http", "https", 1)
-		}
-		if urlMode || !strings.HasPrefix(url, "http") {
-			fmt.Fprintln(os.Stdout, url)
+	for _, bareURLString := range urls {
+		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
+
+		if urlMode || !isHTTPSchemedURL {
+			console.OutLn(urlString)
 		} else {
-			fmt.Fprintln(os.Stderr, "Opening kubernetes service "+namespace+"/"+service+" in default browser...")
-			browser.OpenURL(url)
+			console.OutStyle("celebrate", "Opening kubernetes service %s/%s in default browser...", namespace, service)
+			browser.OpenURL(urlString)
 		}
 	}
 	return nil
@@ -321,7 +309,6 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 
 	_, err = secrets.Create(secretObj)
 	if err != nil {
-		fmt.Println("err: ", err)
 		return &util.RetriableError{Err: err}
 	}
 

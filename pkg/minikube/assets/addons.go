@@ -19,6 +19,7 @@ package assets
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -74,7 +75,7 @@ var Addons = map[string]*Addon{
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640"),
-	}, true, "dashboard"),
+	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons"+constants.SupportedArchTag(false)+"/storageclass/storageclass.yaml",
@@ -89,55 +90,28 @@ var Addons = map[string]*Addon{
 			"storage-provisioner.yaml",
 			"0640"),
 	}, true, "storage-provisioner"),
-	"coredns": NewAddon([]*BinDataAsset{
+	"storage-provisioner-gluster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-controller.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml",
 			constants.AddonsPath,
-			"coreDNS-controller.yaml",
+			"storage-gluster-ns.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-configmap.yaml",
+			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml",
 			constants.AddonsPath,
-			"coreDNS-configmap.yaml",
+			"glusterfs-daemonset.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-svc.yaml",
+			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml",
 			constants.AddonsPath,
-			"coreDNS-svc.yaml",
+			"heketi-deployment.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-crbinding.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml",
 			constants.AddonsPath,
-			"coreDNS-crbinding.yaml",
+			"storage-privisioner-glusterfile.yaml",
 			"0640"),
-		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-sa.yaml",
-			constants.AddonsPath,
-			"coreDNS-sa.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/coredns/coreDNS-clusterrole.yaml",
-			constants.AddonsPath,
-			"coreDNS-clusterrole.yaml",
-			"0640"),
-	}, false, "coredns"),
-	"kube-dns": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/kube-dns/kube-dns-controller.yaml",
-			constants.AddonsPath,
-			"kube-dns-controller.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/kube-dns/kube-dns-cm.yaml",
-			constants.AddonsPath,
-			"kube-dns-cm.yaml",
-			"0640"),
-		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/kube-dns/kube-dns-svc.yaml",
-			constants.AddonsPath,
-			"kube-dns-svc.yaml",
-			"0640"),
-	}, true, "kube-dns"),
+	}, false, "storage-provisioner-gluster"),
 	"heapster": NewAddon([]*BinDataAsset{
 		NewBinDataAsset(
 			"deploy/addons"+constants.SupportedArchTag(false)+"/heapster/influx-grafana-rc.yaml",
@@ -204,7 +178,12 @@ var Addons = map[string]*Addon{
 			"ingress-configmap.yaml",
 			"0640"),
 		NewBinDataAsset(
-			"deploy/addons"+constants.SupportedArchTag(false)+"/ingress/ingress-dp.yaml",
+			"deploy/addons/ingress/ingress-rbac.yaml",
+			constants.AddonsPath,
+			"ingress-rbac.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/ingress/ingress-dp.yaml",
 			constants.AddonsPath,
 			"ingress-dp.yaml",
 			"0640"),
@@ -257,6 +236,49 @@ var Addons = map[string]*Addon{
 			"freshpod-rc.yaml",
 			"0640"),
 	}, false, "freshpod"),
+	"nvidia-driver-installer": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gpu/nvidia-driver-installer.yaml",
+			constants.AddonsPath,
+			"nvidia-driver-installer.yaml",
+			"0640"),
+	}, false, "nvidia-driver-installer"),
+	"nvidia-gpu-device-plugin": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
+			constants.AddonsPath,
+			"nvidia-gpu-device-plugin.yaml",
+			"0640"),
+	}, false, "nvidia-gpu-device-plugin"),
+	"logviewer": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml",
+			constants.AddonsPath,
+			"logviewer-dp-and-svc.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/logviewer/logviewer-rbac.yaml",
+			constants.AddonsPath,
+			"logviewer-rbac.yaml",
+			"0640"),
+	}, false, "logviewer"),
+	"gvisor": NewAddon([]*BinDataAsset{
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-pod.yaml",
+			constants.AddonsPath,
+			"gvisor-pod.yaml",
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-config.toml",
+			constants.GvisorFilesPath,
+			constants.GvisorConfigTomlTargetName,
+			"0640"),
+		NewBinDataAsset(
+			"deploy/addons/gvisor/gvisor-containerd-shim.toml",
+			constants.GvisorFilesPath,
+			constants.GvisorContainerdShimTargetName,
+			"0640"),
+	}, false, "gvisor"),
 }
 
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
@@ -280,13 +302,15 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 			return errors.Wrapf(err, "checking if %s is directory", hostpath)
 		}
 		if !isDir {
-			if vmpath == "" {
+			vmdir := vmpath
+			if vmdir == "" {
 				rPath, err := filepath.Rel(basedir, hostpath)
 				if err != nil {
 					return errors.Wrap(err, "generating relative path")
 				}
 				rPath = filepath.Dir(rPath)
-				vmpath = filepath.Join("/", rPath)
+				rPath = filepath.ToSlash(rPath)
+				vmdir = path.Join("/", rPath)
 			}
 			permString := fmt.Sprintf("%o", info.Mode().Perm())
 			// The conversion will strip the leading 0 if present, so add it back
@@ -295,7 +319,7 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 				permString = fmt.Sprintf("0%s", permString)
 			}
 
-			f, err := NewFileAsset(hostpath, vmpath, filepath.Base(hostpath), permString)
+			f, err := NewFileAsset(hostpath, vmdir, filepath.Base(hostpath), permString)
 			if err != nil {
 				return errors.Wrapf(err, "creating file asset for %s", hostpath)
 			}

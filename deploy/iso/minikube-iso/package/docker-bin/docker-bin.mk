@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-DOCKER_BIN_VERSION = 17.12.1-ce
+DOCKER_BIN_VERSION = 18.06.2-ce
 DOCKER_BIN_SITE = https://download.docker.com/linux/static/stable/x86_64
 DOCKER_BIN_SOURCE = docker-$(DOCKER_BIN_VERSION).tgz
 
@@ -21,13 +21,16 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 		$(@D)/docker-containerd-shim \
 		$(TARGET_DIR)/bin/docker-containerd-shim
 
+	# TODO(tstromberg): Remove once we can upgrade to docker 18.09, which can call standard containerd.
 	$(INSTALL) -D -m 0755 \
 		$(@D)/docker-containerd \
 		$(TARGET_DIR)/bin/docker-containerd
 
+	# As of 2019-01, we use upstream runc so that we may update it independently of docker.
+	# TODO(tstromberg): Remove once we can upgrade to docker 18.09, which can call standard runc.
 	$(INSTALL) -D -m 0755 \
 		$(@D)/docker-runc \
-		$(TARGET_DIR)/bin/docker-runc
+		$(TARGET_DIR)/bin/docker-runc.orig
 
 	$(INSTALL) -D -m 0755 \
 		$(@D)/docker-containerd-ctr \

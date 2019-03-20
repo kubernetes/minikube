@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -33,21 +34,35 @@ import (
 )
 
 func testMounting(t *testing.T) {
-	t.Parallel()
+	if runtime.GOOS == "darwin" {
+		t.Skip("mount tests disabled in darwin due to timeout (issue#3200)")
+	}
 	if strings.Contains(*args, "--vm-driver=none") {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
+
+	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
-		t.Fatalf("Unexpected error while creating tempDir: %s", err)
+		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}
 	defer os.RemoveAll(tempDir)
 
-	mountCmd := fmt.Sprintf("mount %s:/mount-9p", tempDir)
-	cmd := minikubeRunner.RunDaemon(mountCmd)
-	defer cmd.Process.Kill()
+	var mountCmd string
+	if len(minikubeRunner.MountArgs) > 0 {
+		mountCmd = fmt.Sprintf("mount %s %s:/mount-9p", minikubeRunner.MountArgs, tempDir)
+	} else {
+		mountCmd = fmt.Sprintf("mount %s:/mount-9p", tempDir)
+	}
+	cmd, _, _ := minikubeRunner.RunDaemon2(mountCmd)
+	defer func() {
+		err := cmd.Process.Kill()
+		if err != nil {
+			t.Logf("Failed to kill mount command: %v", err)
+		}
+	}()
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox-mount"
@@ -60,7 +75,7 @@ func testMounting(t *testing.T) {
 		path := filepath.Join(tempDir, file)
 		err = ioutil.WriteFile(path, []byte(expected), 0644)
 		if err != nil {
-			t.Fatalf("Unexpected error while writing file %s: %s.", path, err)
+			t.Fatalf("Unexpected error while writing file %s: %v", path, err)
 		}
 	}
 
@@ -71,7 +86,11 @@ func testMounting(t *testing.T) {
 		}
 		return nil
 	}
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
+	defer func() {
+		if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", podPath}); err != nil {
+			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
+		}
+	}()
 
 	if err := util.Retry(t, setupTest, 5*time.Second, 40); err != nil {
 		t.Fatal("mountTest failed with error:", err)
@@ -79,11 +98,11 @@ func testMounting(t *testing.T) {
 
 	client, err := pkgutil.GetClient()
 	if err != nil {
-		t.Fatalf("getting kubernetes client: %s", err)
+		t.Fatalf("getting kubernetes client: %v", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Fatalf("Error waiting for busybox mount pod to be up: %s", err)
+		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
 	}
 
 	mountTest := func() error {
@@ -105,6 +124,26 @@ func testMounting(t *testing.T) {
 			t.Fatalf("Expected file %s to contain text %s, was %s.", path, expected, out)
 		}
 
+		// test file timestamps are correct
+		files := []string{"fromhost", "frompod"}
+		for _, file := range files {
+			statCmd := fmt.Sprintf("stat /mount-9p/%s", file)
+			statOutput, err := minikubeRunner.SSH(statCmd)
+			if err != nil {
+				t.Fatalf("Unable to stat %s via SSH. error %v, %s", file, err, statOutput)
+			}
+
+			if runtime.GOOS == "windows" {
+				if strings.Contains(statOutput, "Access: 1970-01-01") {
+					t.Fatalf("Invalid access time\n%s", statOutput)
+				}
+			}
+
+			if strings.Contains(statOutput, "Modify: 1970-01-01") {
+				t.Fatalf("Invalid modify time\n%s", statOutput)
+			}
+		}
+
 		// test that fromhostremove was deleted by the pod from the mount via rm /mount-9p/fromhostremove
 		path = filepath.Join(tempDir, "fromhostremove")
 		if _, err := os.Stat(path); err == nil {
@@ -114,13 +153,13 @@ func testMounting(t *testing.T) {
 		// test that frompodremove can be deleted on the host
 		path = filepath.Join(tempDir, "frompodremove")
 		if err := os.Remove(path); err != nil {
-			t.Fatalf("Unexpected error removing file %s: %s", path, err)
+			t.Fatalf("Unexpected error removing file %s: %v", path, err)
 		}
 
 		return nil
 	}
 	if err := util.Retry(t, mountTest, 5*time.Second, 40); err != nil {
-		t.Fatal("mountTest failed with error:", err)
+		t.Fatalf("mountTest failed with error: %v", err)
 	}
 
 }

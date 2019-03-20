@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -39,11 +40,13 @@ func TestGenerateConfig(t *testing.T) {
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.100
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -79,11 +82,13 @@ apiServerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -119,11 +124,13 @@ schedulerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -145,11 +152,13 @@ apiServerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -181,11 +190,13 @@ schedulerExtraArgs:
 			},
 			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
+noTaintMaster: true
 api:
   advertiseAddress: 192.168.1.101
   bindPort: 8443
+  controlPlaneEndpoint: localhost
 kubernetesVersion: v1.10.0-alpha.0
-certificatesDir: /var/lib/localkube/certs/
+certificatesDir: /var/lib/minikube/certs/
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
@@ -218,13 +229,44 @@ schedulerExtraArgs:
 			},
 			shouldErr: true,
 		},
+		{
+			description: "custom api server port",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				NodePort:          18443,
+				KubernetesVersion: "v1.10.0",
+				NodeName:          "minikube",
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+noTaintMaster: true
+api:
+  advertiseAddress: 192.168.1.100
+  bindPort: 18443
+  controlPlaneEndpoint: localhost
+kubernetesVersion: v1.10.0
+certificatesDir: /var/lib/minikube/certs/
+networking:
+  serviceSubnet: 10.96.0.0/12
+etcd:
+  dataDir: /data/minikube
+nodeName: minikube
+apiServerExtraArgs:
+  admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+`,
+		},
 	}
 
 	for _, test := range tests {
+		runtime, err := cruntime.New(cruntime.Config{Type: "docker"})
+		if err != nil {
+			t.Fatalf("runtime: %v", err)
+		}
+
 		t.Run(test.description, func(t *testing.T) {
-			actualCfg, err := generateConfig(test.cfg)
+			actualCfg, err := generateConfig(test.cfg, runtime)
 			if err != nil && !test.shouldErr {
-				t.Errorf("got unexpected error generating config: %s", err)
+				t.Errorf("got unexpected error generating config: %v", err)
 				return
 			}
 			if err == nil && test.shouldErr {

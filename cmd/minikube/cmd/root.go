@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
@@ -32,12 +31,11 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/localkube"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/notify"
 )
 
@@ -47,7 +45,6 @@ var dirs = [...]string{
 	constants.MakeMiniPath("machines"),
 	constants.MakeMiniPath("cache"),
 	constants.MakeMiniPath("cache", "iso"),
-	constants.MakeMiniPath("cache", "localkube"),
 	constants.MakeMiniPath("config"),
 	constants.MakeMiniPath("addons"),
 	constants.MakeMiniPath("files"),
@@ -72,7 +69,7 @@ var RootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		for _, path := range dirs {
 			if err := os.MkdirAll(path, 0777); err != nil {
-				glog.Exitf("Error creating minikube directory: %s", err)
+				exit.WithError("Error creating minikube directory", err)
 			}
 		}
 
@@ -95,7 +92,6 @@ var RootCmd = &cobra.Command{
 		if enableUpdateNotification {
 			notify.MaybePrintUpdateTextFromGithub(os.Stderr)
 		}
-		util.MaybePrintKubectlDownloadMsg(runtime.GOOS, os.Stderr)
 	},
 }
 
@@ -103,7 +99,8 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		os.Exit(1)
+		// Cobra already outputs the error, typically because the user provided an unknown command.
+		os.Exit(exit.BadUsage)
 	}
 }
 
@@ -145,7 +142,7 @@ func initConfig() {
 	viper.SetConfigType("json")
 	err := viper.ReadInConfig()
 	if err != nil {
-		glog.Warningf("Error reading config file at %s: %s", configPath, err)
+		glog.Warningf("Error reading config file at %s: %v", configPath, err)
 	}
 	setupViper()
 }
@@ -173,17 +170,6 @@ func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
-	case bootstrapper.BootstrapperTypeLocalkube:
-		if viper.GetBool(config.ShowBootstrapperDeprecationNotification) {
-			fmt.Fprintln(os.Stderr, `WARNING: The localkube bootstrapper is now deprecated and support for it
-will be removed in a future release. Please consider switching to the kubeadm bootstrapper, which
-is intended to replace the localkube bootstrapper. To disable this message, run
-[minikube config set ShowBootstrapperDeprecationNotification false]`)
-		}
-		b, err = localkube.NewLocalkubeBootstrapper(api)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting localkube bootstrapper")
-		}
 	case bootstrapper.BootstrapperTypeKubeadm:
 		b, err = kubeadm.NewKubeadmBootstrapper(api)
 		if err != nil {

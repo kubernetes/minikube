@@ -1,6 +1,6 @@
 [Unit]
 Description=Open Container Initiative Daemon
-Documentation=https://github.com/kubernetes-incubator/cri-o
+Documentation=https://github.com/kubernetes-sigs/cri-o
 After=network-online.target minikube-automount.service
 Requires=minikube-automount.service
 
@@ -10,11 +10,9 @@ EnvironmentFile=-/etc/sysconfig/crio
 EnvironmentFile=-/etc/sysconfig/crio.minikube
 EnvironmentFile=/var/run/minikube/env
 Environment=GOTRACEBACK=crash
-ExecStartPre=/bin/mkdir -p ${PERSISTENT_DIR}/var/lib/containers
 ExecStart=/usr/bin/crio \
     $CRIO_OPTIONS \
-    $CRIO_MINIKUBE_OPTIONS \
-    --root ${PERSISTENT_DIR}/var/lib/containers
+    $CRIO_MINIKUBE_OPTIONS
 ExecReload=/bin/kill -s HUP $MAINPID
 TasksMax=8192
 LimitNOFILE=1048576

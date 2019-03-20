@@ -16,28 +16,31 @@ import (
 
 type Driver struct {
 	*drivers.BaseDriver
-	Boot2DockerURL string
-	VSwitch        string
-	DiskSize       int
-	MemSize        int
-	CPU            int
-	MacAddr        string
-	VLanID         int
+	Boot2DockerURL       string
+	VSwitch              string
+	DiskSize             int
+	MemSize              int
+	CPU                  int
+	MacAddr              string
+	VLanID               int
+	DisableDynamicMemory bool
 }
 
 const (
-	defaultDiskSize = 20000
-	defaultMemory   = 1024
-	defaultCPU      = 1
-	defaultVLanID   = 0
+	defaultDiskSize             = 20000
+	defaultMemory               = 1024
+	defaultCPU                  = 1
+	defaultVLanID               = 0
+	defaultDisableDynamicMemory = false
 )
 
 // NewDriver creates a new Hyper-v driver with default settings.
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
-		DiskSize: defaultDiskSize,
-		MemSize:  defaultMemory,
-		CPU:      defaultCPU,
+		DiskSize:             defaultDiskSize,
+		MemSize:              defaultMemory,
+		CPU:                  defaultCPU,
+		DisableDynamicMemory: defaultDisableDynamicMemory,
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: hostName,
 			StorePath:   storePath,
@@ -88,6 +91,11 @@ func (d *Driver) GetCreateFlags() []mcnflag.Flag {
 			Value:  defaultVLanID,
 			EnvVar: "HYPERV_VLAN_ID",
 		},
+		mcnflag.BoolFlag{
+			Name:   "hyperv-disable-dynamic-memory",
+			Usage:  "Disable dynamic memory management setting",
+			EnvVar: "HYPERV_DISABLE_DYNAMIC_MEMORY",
+		},
 	}
 }
 
@@ -100,6 +108,7 @@ func (d *Driver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	d.MacAddr = flags.String("hyperv-static-macaddress")
 	d.VLanID = flags.Int("hyperv-vlan-id")
 	d.SSHUser = "docker"
+	d.DisableDynamicMemory = flags.Bool("hyperv-disable-dynamic-memory")
 	d.SetSwarmConfigFromFlags(flags)
 
 	return nil
@@ -212,6 +221,13 @@ func (d *Driver) Create() error {
 		"-MemoryStartupBytes", toMb(d.MemSize)); err != nil {
 		return err
 	}
+	if d.DisableDynamicMemory {
+		if err := cmd("Hyper-V\\Set-VMMemory",
+			"-VMName", d.MachineName,
+			"-DynamicMemoryEnabled", "$false"); err != nil {
+			return err
+		}
+	}
 
 	if d.CPU > 1 {
 		if err := cmd("Hyper-V\\Set-VMProcessor",
@@ -257,7 +273,7 @@ func (d *Driver) Create() error {
 func (d *Driver) chooseVirtualSwitch() (string, error) {
 	if d.VSwitch == "" {
 		// Default to the first external switche and in the process avoid DockerNAT
-		stdout, err := cmdOut("(Hyper-V\\Get-VMSwitch -SwitchType External).Name")
+		stdout, err := cmdOut("[Console]::OutputEncoding = [Text.Encoding]::UTF8; (Hyper-V\\Get-VMSwitch -SwitchType External).Name")
 		if err != nil {
 			return "", err
 		}
@@ -271,7 +287,7 @@ func (d *Driver) chooseVirtualSwitch() (string, error) {
 		return switches[0], nil
 	}
 
-	stdout, err := cmdOut("(Hyper-V\\Get-VMSwitch).Name")
+	stdout, err := cmdOut("[Console]::OutputEncoding = [Text.Encoding]::UTF8; (Hyper-V\\Get-VMSwitch).Name")
 	if err != nil {
 		return "", err
 	}

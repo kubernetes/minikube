@@ -28,7 +28,7 @@ func TestNewSSHClient(t *testing.T) {
 	s, _ := tests.NewSSHServer()
 	port, err := s.Start()
 	if err != nil {
-		t.Fatalf("Error starting ssh server: %s", err)
+		t.Fatalf("Error starting ssh server: %v", err)
 	}
 	d := &tests.MockDriver{
 		Port: port,
@@ -39,7 +39,7 @@ func TestNewSSHClient(t *testing.T) {
 	}
 	c, err := NewSSHClient(d)
 	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	cmd := "foo"
@@ -75,7 +75,7 @@ func TestNewSSHHost(t *testing.T) {
 
 	h, err := newSSHHost(&d)
 	if err != nil {
-		t.Fatalf("Unexpected error creating host: %s", err)
+		t.Fatalf("Unexpected error creating host: %v", err)
 	}
 
 	if h.SSHKeyPath != sshKeyPath {

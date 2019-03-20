@@ -1,10 +1,16 @@
+# See the OWNERS docs at https://go.k8s.io/owners
+
 reviewers:
   - dlorenc
-  - aaron-prindle
-  - r2d4
+  - balopat
+  - tstromberg
+  - priyawadhwa
+  - afbjorklund
 approvers:
   - dlorenc
   - luxas
-  - aaron-prindle
   - jimmidyson
-  - r2d4
+  - balopat
+  - tstromberg
+  - priyawadhwa
+  - afbjorklund

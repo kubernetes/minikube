@@ -20,8 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
-
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -29,16 +32,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
-
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/golang/glog"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
+)
+
+var (
+	// ReasonableMutateTime is how long to wait for basic object mutations, such as deletions, to show up
+	ReasonableMutateTime = time.Minute * 1
+	// ReasonableStartTime is how long to wait for pods to start, considering dependency chains & slow networks.
+	ReasonableStartTime = time.Minute * 10
 )
 
 type PodStore struct {
@@ -66,7 +70,7 @@ func GetClient() (kubernetes.Interface, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %s", err)
+		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
@@ -108,11 +112,11 @@ func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunn
 	return nil
 }
 
-// Wait up to 10 minutes for all matching pods to become Running and at least one
-// matching pod exists.
+// WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
+	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
 	lastKnownPodNumber := -1
-	return wait.PollImmediate(constants.APICallRetryInterval, time.Minute*10, func() (bool, error) {
+	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableStartTime, func() (bool, error) {
 		listOpts := metav1.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
@@ -136,6 +140,36 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		}
 
 		return true, nil
+	})
+}
+
+// WaitForPodDelete waits for a pod to be deleted
+func WaitForPodDelete(c kubernetes.Interface, ns string, label labels.Selector) error {
+	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
+		listOpts := metav1.ListOptions{LabelSelector: label.String()}
+		pods, err := c.CoreV1().Pods(ns).List(listOpts)
+		if err != nil {
+			glog.Infof("error getting Pods with label selector %q [%v]\n", label.String(), err)
+			return false, nil
+		}
+		return len(pods.Items) == 0, nil
+	})
+}
+
+// WaitForEvent waits for the given event to appear
+func WaitForEvent(c kubernetes.Interface, ns string, reason string) error {
+	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
+		events, err := c.Events().Events("default").List(metav1.ListOptions{})
+		if err != nil {
+			glog.Infof("error getting events: %v", err)
+			return false, nil
+		}
+		for _, e := range events.Items {
+			if e.Reason == reason {
+				return true, nil
+			}
+		}
+		return false, nil
 	})
 }
 
@@ -211,7 +245,7 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 			glog.Infof("Service %s in namespace %s disappeared.", name, namespace)
 			return !exist, nil
 		case !IsRetryableAPIError(err):
-			glog.Infof("Non-retryable failure while getting service.")
+			glog.Info("Non-retryable failure while getting service.")
 			return false, err
 		default:
 			glog.Infof("Get service %s in namespace %s failed: %v", name, namespace, err)

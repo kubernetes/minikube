@@ -45,10 +45,12 @@ func (f FakeNoProxyGetter) GetNoProxyVar() (string, string) {
 }
 
 var defaultAPI = &tests.MockAPI{
-	Hosts: map[string]*host.Host{
-		config.GetMachineName(): {
-			Name:   config.GetMachineName(),
-			Driver: &tests.MockDriver{},
+	FakeStore: tests.FakeStore{
+		Hosts: map[string]*host.Host{
+			config.GetMachineName(): {
+				Name:   config.GetMachineName(),
+				Driver: &tests.MockDriver{},
+			},
 		},
 	},
 }
@@ -81,7 +83,9 @@ func TestShellCfgSet(t *testing.T) {
 		{
 			description: "no host specified",
 			api: &tests.MockAPI{
-				Hosts: make(map[string]*host.Host),
+				FakeStore: tests.FakeStore{
+					Hosts: make(map[string]*host.Host),
+				},
 			},
 			shell:            "bash",
 			expectedShellCfg: nil,
@@ -244,7 +248,7 @@ func TestShellCfgSet(t *testing.T) {
 				t.Errorf("Shell cfgs differ: expected %+v, \n\n got %+v", test.expectedShellCfg, shellCfg)
 			}
 			if err != nil && !test.shouldErr {
-				t.Errorf("Test should have failed but didn't return error: %s, error: %s", test.description, err)
+				t.Errorf("Test should have failed but didn't return error: %s, error: %v", test.description, err)
 			}
 			if err == nil && test.shouldErr {
 				t.Errorf("Test didn't return error but should have: %s", test.description)

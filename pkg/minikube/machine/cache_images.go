@@ -24,27 +24,29 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
+	"github.com/golang/glog"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
-
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/sshutil"
-
-	"github.com/containers/image/copy"
-	"github.com/containers/image/docker"
-	"github.com/containers/image/docker/archive"
-	"github.com/containers/image/signature"
-	"github.com/containers/image/types"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 )
 
 const tempLoadDir = "/tmp"
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
+
+// loadImageLock is used to serialize image loads to avoid overloading the guest VM
+var loadImageLock sync.Mutex
 
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
@@ -83,12 +85,17 @@ func CacheImages(images []string, cacheDir string) error {
 
 func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
 	var g errgroup.Group
+	// Load profile cluster config from file
+	cc, err := config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		glog.Errorln("Error loading profile config: ", err)
+	}
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := LoadFromCacheBlocking(cmd, src); err != nil {
+			if err := LoadFromCacheBlocking(cmd, cc.KubernetesConfig, src); err != nil {
 				return errors.Wrapf(err, "loading image %s", src)
 			}
 			return nil
@@ -142,7 +149,7 @@ func hasWindowsDriveLetter(s string) bool {
 	}
 
 	drive := s[:3]
-	for _, b := range "CDEFGHIJKLMNOPQRSTUVWXYZAB" {
+	for _, b := range "CDEFGHIJKLMNOPQRSTUVWXYZABcdefghijklmnopqrstuvwxyzab" {
 		if d := string(b) + ":"; drive == d+`\` || drive == d+`/` {
 			return true
 		}
@@ -158,9 +165,6 @@ func replaceWinDriveLetterToVolumeName(s string) (string, error) {
 		return "", err
 	}
 	path := vname + s[3:]
-	if _, err := os.Stat(filepath.Dir(path)); err != nil {
-		return "", err
-	}
 
 	return path, nil
 }
@@ -191,7 +195,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
+func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
 	for {
@@ -204,20 +208,25 @@ func LoadFromCacheBlocking(cmd bootstrapper.CommandRunner, src string) error {
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
-	if err := cmd.Copy(f); err != nil {
+	if err := cr.Copy(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}
 
-	dockerLoadCmd := "docker load -i " + dst
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+	loadImageLock.Lock()
+	defer loadImageLock.Unlock()
 
-	if err := cmd.Run(dockerLoadCmd); err != nil {
-		return errors.Wrapf(err, "loading docker image: %s", dst)
+	err = r.LoadImage(dst)
+	if err != nil {
+		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 
-	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
+	if err := cr.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
 	}
-
 	glog.Infof("Successfully loaded image %s from cache", src)
 	return nil
 }
@@ -260,33 +269,17 @@ func cleanImageCacheDir() error {
 	return err
 }
 
-func getSrcRef(image string) (types.ImageReference, error) {
-	srcRef, err := docker.ParseReference("//" + image)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing docker image src ref")
-	}
-	return srcRef, nil
-}
-
-func getDstRef(image, dst string) (types.ImageReference, error) {
+func getDstPath(image, dst string) (string, error) {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(dst) {
 		// ParseReference does not support a Windows drive letter.
 		// Therefore, will replace the drive letter to a volume name.
 		var err error
 		if dst, err = replaceWinDriveLetterToVolumeName(dst); err != nil {
-			return nil, errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
+			return "", errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
 		}
 	}
 
-	return _getDstRef(image, dst)
-}
-
-func _getDstRef(image, dst string) (types.ImageReference, error) {
-	dstRef, err := archive.ParseReference(dst + ":" + image)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing docker archive dst ref")
-	}
-	return dstRef, nil
+	return dst, nil
 }
 
 func CacheImage(image, dst string) error {
@@ -295,44 +288,30 @@ func CacheImage(image, dst string) error {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
+	dstPath, err := getDstPath(image, dst)
+	if err != nil {
+		return errors.Wrap(err, "getting destination path")
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dstPath), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
-	srcRef, err := getSrcRef(image)
+	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
-		return errors.Wrap(err, "creating docker image src ref")
+		return errors.Wrap(err, "creating docker image name")
 	}
 
-	dstRef, err := getDstRef(image, dst)
+	img, err := remote.Image(tag, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
-		return errors.Wrap(err, "creating docker archive dst ref")
+		return errors.Wrap(err, "fetching remote image")
 	}
 
-	policy := &signature.Policy{Default: []signature.PolicyRequirement{signature.NewPRInsecureAcceptAnything()}}
-	policyContext, err := signature.NewPolicyContext(policy)
+	glog.Infoln("OPENING: ", dstPath)
+	f, err := os.Create(dstPath)
 	if err != nil {
-		return errors.Wrap(err, "getting policy context")
+		return err
 	}
-
-	tmp, err := ioutil.TempDir("", "")
-	if err != nil {
-		return errors.Wrap(err, "making temp dir")
-	}
-	defer os.RemoveAll(tmp)
-	sourceCtx := &types.SystemContext{
-		// By default, the image library will try to look at /etc/docker/certs.d
-		// As a non-root user, this would result in a permissions error,
-		// so, we skip this step by just looking in a newly created tmpdir.
-		DockerCertPath: tmp,
-	}
-
-	err = copy.Image(policyContext, dstRef, srcRef, &copy.Options{
-		SourceCtx: sourceCtx,
-	})
-	if err != nil {
-		return errors.Wrap(err, "copying image")
-	}
-
-	return nil
+	defer f.Close()
+	return tarball.Write(tag, img, nil, f)
 }

@@ -19,14 +19,18 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	"k8s.io/apimachinery/pkg/labels"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
@@ -36,7 +40,7 @@ func testAddons(t *testing.T) {
 	t.Parallel()
 	client, err := pkgutil.GetClient()
 	if err != nil {
-		t.Fatalf("Could not get kubernetes client: %s", err)
+		t.Fatalf("Could not get kubernetes client: %v", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
@@ -44,28 +48,72 @@ func testAddons(t *testing.T) {
 	}
 }
 
+func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error) {
+	s := make(chan string)
+	e := make(chan error)
+	go func() {
+		read, err := b.ReadString('\n')
+		if err != nil {
+			e <- err
+		} else {
+			s <- read
+		}
+		close(s)
+		close(e)
+	}()
+
+	select {
+	case line := <-s:
+		return line, nil
+	case err := <-e:
+		return "", err
+	case <-time.After(timeout):
+		return "", fmt.Errorf("timeout after %s", timeout)
+	}
+}
+
 func testDashboard(t *testing.T) {
 	t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
+	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
+	defer func() {
+		err := cmd.Process.Kill()
+		if err != nil {
+			t.Logf("Failed to kill dashboard command: %v", err)
+		}
+	}()
 
-	if err := util.WaitForDashboardRunning(t); err != nil {
-		t.Fatalf("waiting for dashboard to be up: %s", err)
-	}
-
-	dashboardURL := minikubeRunner.RunCommand("dashboard --url", true)
-	u, err := url.Parse(strings.TrimSpace(dashboardURL))
+	s, err := readLineWithTimeout(out, 180*time.Second)
 	if err != nil {
-		t.Fatalf("failed to parse dashboard URL %s: %v", dashboardURL, err)
+		t.Fatalf("failed to read url: %v", err)
 	}
+
+	u, err := url.Parse(strings.TrimSpace(s))
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", s, err)
+	}
+
 	if u.Scheme != "http" {
-		t.Fatalf("wrong scheme in dashboard URL, expected http, actual %s", u.Scheme)
+		t.Errorf("got Scheme %s, expected http", u.Scheme)
 	}
-	_, port, err := net.SplitHostPort(u.Host)
+	host, _, err := net.SplitHostPort(u.Host)
 	if err != nil {
-		t.Fatalf("failed to split dashboard host %s: %v", u.Host, err)
+		t.Fatalf("failed SplitHostPort: %v", err)
 	}
-	if port != "30000" {
-		t.Fatalf("Dashboard is exposed on wrong port, expected 30000, actual %s", port)
+	if host != "127.0.0.1" {
+		t.Errorf("got host %s, expected 127.0.0.1", host)
+	}
+
+	resp, err := http.Get(u.String())
+	if err != nil {
+		t.Fatalf("failed get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("Unable to read http response body: %v", err)
+		}
+		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
 	}
 }
 
@@ -76,25 +124,25 @@ func testIngressController(t *testing.T) {
 
 	minikubeRunner.RunCommand("addons enable ingress", true)
 	if err := util.WaitForIngressControllerRunning(t); err != nil {
-		t.Fatalf("waiting for ingress-controller to be up: %s", err)
+		t.Fatalf("waiting for ingress-controller to be up: %v", err)
 	}
 
 	if err := util.WaitForIngressDefaultBackendRunning(t); err != nil {
-		t.Fatalf("waiting for default-http-backend to be up: %s", err)
+		t.Fatalf("waiting for default-http-backend to be up: %v", err)
 	}
 
 	ingressPath, _ := filepath.Abs("testdata/nginx-ing.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
-		t.Fatalf("creating nginx ingress resource: %s", err)
+		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
 	podPath, _ := filepath.Abs("testdata/nginx-pod-svc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("creating nginx ingress resource: %s", err)
+		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
 	if err := util.WaitForNginxRunning(t); err != nil {
-		t.Fatalf("waiting for nginx to be up: %s", err)
+		t.Fatalf("waiting for nginx to be up: %v", err)
 	}
 
 	checkIngress := func() error {
@@ -111,8 +159,13 @@ func testIngressController(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", podPath})
-	defer kubectlRunner.RunCommand([]string{"delete", "-f", ingressPath})
+	defer func() {
+		for _, p := range []string{podPath, ingressPath} {
+			if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", p}); err != nil {
+				t.Logf("delete -f %s failed: %v\noutput: %s\n", p, err, out)
+			}
+		}
+	}()
 	minikubeRunner.RunCommand("addons disable ingress", true)
 }
 
@@ -129,5 +182,83 @@ func testServicesList(t *testing.T) {
 	}
 	if err := util.Retry(t, checkServices, 2*time.Second, 5); err != nil {
 		t.Fatalf(err.Error())
+	}
+}
+
+func testGvisor(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner.RunCommand("addons enable gvisor", true)
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	createUntrustedWorkload(t)
+
+	t.Log("making sure untrusted workload is Running")
+	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+
+	t.Log("disabling gvisor addon")
+	minikubeRunner.RunCommand("addons disable gvisor", true)
+	t.Log("waiting for gvisor controller pod to be deleted")
+	if err := util.WaitForGvisorControllerDeleted(); err != nil {
+		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
+	}
+
+	createUntrustedWorkload(t)
+
+	t.Log("waiting for FailedCreatePodSandBox event")
+	if err := util.WaitForFailedCreatePodSandBoxEvent(); err != nil {
+		t.Fatalf("waiting for FailedCreatePodSandBox event: %v", err)
+	}
+	deleteUntrustedWorkload(t)
+}
+
+func testGvisorRestart(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner.EnsureRunning()
+	minikubeRunner.RunCommand("addons enable gvisor", true)
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	// TODO: @priyawadhwa to add test for stop as well
+	minikubeRunner.RunCommand("delete", false)
+	minikubeRunner.CheckStatus(state.None.String())
+	minikubeRunner.Start()
+	minikubeRunner.CheckStatus(state.Running.String())
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	createUntrustedWorkload(t)
+	t.Log("making sure untrusted workload is Running")
+	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+	deleteUntrustedWorkload(t)
+}
+
+func createUntrustedWorkload(t *testing.T) {
+	kubectlRunner := util.NewKubectlRunner(t)
+	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	t.Log("creating pod with untrusted workload annotation")
+	if _, err := kubectlRunner.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
+		t.Fatalf("creating untrusted nginx resource: %v", err)
+	}
+}
+
+func deleteUntrustedWorkload(t *testing.T) {
+	kubectlRunner := util.NewKubectlRunner(t)
+	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	if _, err := kubectlRunner.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
+		t.Logf("error deleting untrusted nginx resource: %v", err)
 	}
 }
