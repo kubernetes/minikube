@@ -64,9 +64,9 @@ NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206:
 
 ```shell
 sudo apt install libvirt-dev
-test -d $HOME/go/src/k8s.io/minikube || \
-  git clone https://github.com/kubernetes/minikube.git $HOME/go/src/k8s.io/minikube
-cd $HOME/go/src/k8s.io/minikube
+test -d $GOPATH/src/k8s.io/minikube || \
+  git clone https://github.com/kubernetes/minikube.git $GOPATH/src/k8s.io/minikube
+cd $GOPATH/src/k8s.io/minikube
 git pull
 make out/docker-machine-driver-kvm2
 sudo install out/docker-machine-driver-kvm2 /usr/local/bin
