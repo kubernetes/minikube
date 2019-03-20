@@ -1,8 +1,14 @@
 # Steps to Release Minikube
 
+## Preparation
+
+* Announce release intent on #minikube
+* Pause merge requests so that they are not accidentally left out of the ISO or release notes
+
 ## Build a new ISO
 
-You only need to build the minikube ISO when the there are changes in the `deploy/iso` folder. 
+Major releases always get a new ISO. Minor bugfixes may or may not require it: check for changes in the `deploy/iso` folder. 
+
 Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally.
 
  * navigate to the minikube ISO jenkins job
@@ -18,8 +24,8 @@ The build will take roughly 50 minutes.
 
 Edit the minikube `Makefile`, updating the version number values at the top:
 
-* `VERSION_MINOR` (and `VERSION_MAJOR`, `VERSION_BUILD` as necessary)
-* `ISO_VERSION` (only update this if there is a new ISO release - though there almost always is)
+* `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD` as necessary
+* `ISO_VERSION` - defaults to MAJOR.MINOR.0 - update if point release requires a new ISO to be built.
 
 ## Run Local Integration Test
 
@@ -55,15 +61,8 @@ Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/
 
 NOTE: Confirm that all release-related PR's have been submitted before doing this step. 
 
-Do this in a direct clone of the upstream kubernetes/minikube repository (not your fork!):
-
-```
-version=<new version number>
-git fetch
-git checkout master
-git pull
-git tag -a v$version -m "$version Release"
-git push origin v$version
+```shell
+hack/tag_release.sh <new version number>
 ```
 
 ## Build the Release
@@ -92,20 +91,18 @@ These are downstream packages that are being maintained by others and how to upg
 | Arch Linux AUR | https://aur.archlinux.org/packages/minikube/ | "Flag as package out-of-date"
 | Brew Cask | https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created.
 
-#### Updating the arch linux package
-The Arch Linux AUR is maintained at https://aur.archlinux.org/packages/minikube/.  The installer PKGBUILD is hosted in its own repository.  The public read-only repository is hosted here `https://aur.archlinux.org/minikube.git` and the private read-write repository is hosted here `ssh://aur@aur.archlinux.org/minikube.git`
-
-The repository is tracked in this repo under a submodule `installers/linux/arch_linux`.  Currently, its configured to point at the public readonly repository so if you want to push you should run this command to overwrite
-
-`git config submodule.archlinux.url ssh://aur@aur.archlinux.org/minikube.git `
-
-To actually update the package, you should bump the version and update the sha512 checksum.  You should also run `makepkg --printsrcinfo > .SRCINFO` to update the srcinfo file.  You can edit this manually if you don't have `makepkg` on your machine.
-
 ## Verification
 
-After you've finished the release, run this command from the release commit to verify the release was done correctly:
-`make check-release`.
+Verify release checksums by running`make check-release`
 
-## Update kubernetes.io docs
+## Update docs
 
-If there are major changes, please send a PR to update the official setup guide: [Running Kubernetes Locally via Minikube](https://kubernetes.io/docs/setup/minikube/)
+If there are major changes, please send a PR to update https://kubernetes.io/docs/setup/minikube/
+
+## Announce!
+
+Places we generally announce releases:
+
+- #minikube on Slack
+- minikube-dev, minikube-users mailing list
+- Twitter

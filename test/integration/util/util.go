@@ -191,12 +191,6 @@ func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *
 	}
 	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
 }
-
-// SetRuntime saves the runtime backend
-func (m *MinikubeRunner) SetRuntime(runtime string) {
-	m.Runtime = runtime
-}
-
 // SSH returns the output of running a command using SSH
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -212,17 +206,9 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 // Start starts the container runtime
-func (m *MinikubeRunner) Start() {
-	opts := ""
-	// TODO(tstromberg): Deprecate this in favor of making it possible for tests to define explicit flags.
-	switch r := m.Runtime; r {
-	case "containerd":
-		opts = "--container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock"
-	case "crio":
-		opts = "--container-runtime=cri-o"
-	}
-	m.RunCommand(fmt.Sprintf("start %s %s %s --alsologtostderr --v=5", m.StartArgs, m.Args, opts), true)
-
+func (m *MinikubeRunner) Start(opts ...string) {
+	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, strings.Join(opts, " "))
+	m.RunCommand(cmd, true)
 }
 
 // EnsureRunning makes sure the container runtime is running

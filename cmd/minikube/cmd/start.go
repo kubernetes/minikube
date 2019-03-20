@@ -236,7 +236,7 @@ func beginCacheImages(g *errgroup.Group, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("caching", "Caching images in the background ...")
+	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", kVersion)
 	g.Go(func() error {
 		return machine.CacheImagesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
@@ -486,7 +486,7 @@ func waitCacheImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("waiting", "Waiting for image caching to complete ...")
+	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error caching images: ", err)
 	}
@@ -552,7 +552,7 @@ func configureMounts() {
 		return
 	}
 
-	console.OutStyle("mount", "Creating mount %s ...", viper.GetString(mountString))
+	console.OutStyle("mounting", "Creating mount %s ...", viper.GetString(mountString))
 	path := os.Args[0]
 	mountDebugVal := 0
 	if glog.V(8) {

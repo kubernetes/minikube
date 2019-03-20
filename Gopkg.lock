@@ -69,7 +69,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:47b479ee07f66c92682bcf27e3a65b411b7ba52bfc28fd0b6b74a742620fc61a"
+  digest = "1:d4104968fb55cff5276444ffcf4693fa03deadc7cd98ed15005bf55e26a2ded1"
   name = "github.com/docker/machine"
   packages = [
     "commands/mcndirs",
@@ -106,7 +106,7 @@
     "version",
   ]
   pruneopts = "NUT"
-  revision = "a773edc6f013c9fab13360fea0192fd335023a16"
+  revision = "533ea58a3e7efb4b2b6cc24bb0b7b565e64d6b0e"
   source = "github.com/machine-drivers/machine"
 
 [[projects]]
