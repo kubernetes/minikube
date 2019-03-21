@@ -1,11 +1,11 @@
-## Configuring Kubernetes
+# Configuring Kubernetes
 
 Minikube has a "configurator" feature that allows users to configure the Kubernetes components with arbitrary values.
 To use this feature, you can use the `--extra-config` flag on the `minikube start` command.
 
 This flag is repeated, so you can pass it several times with several different values to set multiple options.
 
-### Kubeadm bootstrapper
+## Kubeadm bootstrapper
 
 The kubeadm bootstrapper can be configured by the `--extra-config` flag on the `minikube start` command.  It takes a string of the form `component.key=value` where `component` is one of the strings
 

@@ -54,7 +54,7 @@ func TestMount(t *testing.T) {
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700)},
 			want: []string{
-				"findmnt -qT target && sudo umount target || true",
+				"findmnt -T target && sudo umount target || true",
 				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=0,dfltuid=0 src target",
 			},
 		},
@@ -67,7 +67,7 @@ func TestMount(t *testing.T) {
 				"cache":    "fscache",
 			}},
 			want: []string{
-				"findmnt -qT /target && sudo umount /target || true",
+				"findmnt -T /target && sudo umount /target || true",
 				"sudo mkdir -m 777 -p /target && sudo mount -t 9p -o cache=fscache,dfltgid=72,dfltuid=82,noextend,version=9p2000.u 10.0.0.1 /target",
 			},
 		},
@@ -79,7 +79,7 @@ func TestMount(t *testing.T) {
 				"version": "9p2000.L",
 			}},
 			want: []string{
-				"findmnt -qT tgt && sudo umount tgt || true",
+				"findmnt -T tgt && sudo umount tgt || true",
 				"sudo mkdir -m 700 -p tgt && sudo mount -t 9p -o dfltgid=0,dfltuid=0,version=9p2000.L src tgt",
 			},
 		},
@@ -105,7 +105,7 @@ func TestUnmount(t *testing.T) {
 		t.Fatalf("Unmount(/mnt): %v", err)
 	}
 
-	want := []string{"findmnt -qT /mnt && sudo umount /mnt || true"}
+	want := []string{"findmnt -T /mnt && sudo umount /mnt || true"}
 	if diff := cmp.Diff(h.cmds, want); diff != "" {
 		t.Errorf("command diff (-want +got): %s", diff)
 	}

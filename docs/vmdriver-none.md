@@ -14,7 +14,7 @@ The `none` driver supports releases of Debian, Ubuntu, and Fedora that are less 
 
 Most continuous integration environments are already running inside a VM, and may not supported nested virtualization. The `none` driver was designed for this use case. Here is an example, that runs minikube from a non-root user, and ensures that the latest stable kubectl is installed:
 
-```
+```shell
 curl -Lo minikube \
   https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
   && sudo install minikube /usr/local/bin/
@@ -96,7 +96,7 @@ Some environment variables may be useful for using the `none` driver:
 
 ## Known Issues
 
-* You cannot run more than one `--vm-driver=none` instance on a single host
+* `-p` (profiles) are unsupported: It is not possible to run more than one `--vm-driver=none` instance
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
 * CoreDNS detects resolver loop, goes into CrashloopBackoff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
