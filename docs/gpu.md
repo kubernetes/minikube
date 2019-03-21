@@ -32,34 +32,37 @@ host to the minikube VM. Doing so has a few prerequisites:
 
 - Once you reboot the system after doing the above, you should be ready to use
   GPUs with kvm2. Run the following command to start minikube:
-  ```
+  ```shell
   minikube start --vm-driver kvm2 --gpu
   ```
+
   This command will check if all the above conditions are satisfied and
   passthrough spare GPUs found on the host to the VM.
 
   If this succeeded, run the following commands:
-  ```
+  ```shell
   minikube addons enable nvidia-gpu-device-plugin
   minikube addons enable nvidia-driver-installer
   ```
+
   This will install the NVIDIA driver (that works for GeForce/Quadro cards)
   on the VM.
 
 - If everything succeeded, you should be able to see `nvidia.com/gpu` in the
   capacity:
-  ```
+  ```shell
   kubectl get nodes -ojson | jq .items[].status.capacity
   ```
 
 ### Where can I learn more about GPU passthrough?
+
 See the excellent documentation at
-https://wiki.archlinux.org/index.php/PCI_passthrough_via_OVMF
+<https://wiki.archlinux.org/index.php/PCI_passthrough_via_OVMF>
 
 ### Why are so many manual steps required to use GPUs with kvm2 on minikube?
+
 These steps require elevated privileges which minikube doesn't run with and they
 are disruptive to the host, so we decided to not do them automatically.
-
 
 ## Using NVIDIA GPU on minikube on Linux with `--vm-driver=none`
 
@@ -70,26 +73,28 @@ to expose GPUs with `--vm-driver=kvm2`. Please don't mix these instructions.
 
 - Install the nvidia driver, nvidia-docker and configure docker with nvidia as
   the default runtime. See instructions at
-  https://github.com/NVIDIA/nvidia-docker
+  <https://github.com/NVIDIA/nvidia-docker>
 
 - Start minikube:
-  ```
+  ```shell
   minikube start --vm-driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost
   ```
 
 - Install NVIDIA's device plugin:
-  ```
+  ```shell
   kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.10/nvidia-device-plugin.yml
   ```
 
-
 ## Why does minikube not support NVIDIA GPUs on macOS?
+
 VM drivers supported by minikube for macOS doesn't support GPU passthrough:
+
 - [mist64/xhyve#108](https://github.com/mist64/xhyve/issues/108)
 - [moby/hyperkit#159](https://github.com/moby/hyperkit/issues/159)
 - [VirtualBox docs](http://www.virtualbox.org/manual/ch09.html#pcipassthrough)
 
 Also:
+
 - For quite a while, all Mac hardware (both laptops and desktops) have come with
   Intel or AMD GPUs (and not with NVIDIA GPUs). Recently, Apple added [support
   for eGPUs](https://support.apple.com/en-us/HT208544), but even then all the
@@ -98,8 +103,8 @@ Also:
 - nvidia-docker [doesn't support
   macOS](https://github.com/NVIDIA/nvidia-docker/issues/101) either.
 
-
 ## Why does minikube not support NVIDIA GPUs on Windows?
+
 minikube supports Windows host through Hyper-V or VirtualBox.
 
 - VirtualBox doesn't support PCI passthrough for [Windows

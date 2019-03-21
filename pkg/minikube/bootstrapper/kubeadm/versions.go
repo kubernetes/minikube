@@ -65,10 +65,11 @@ type ComponentExtraArgs struct {
 	Options   map[string]string
 }
 
+// mapping of component to the section name in kubeadm.
 var componentToKubeadmConfigKey = map[string]string{
-	Apiserver:         "apiServerExtraArgs",
-	ControllerManager: "controllerManagerExtraArgs",
-	Scheduler:         "schedulerExtraArgs",
+	Apiserver:         "apiServer",
+	ControllerManager: "controllerManager",
+	Scheduler:         "scheduler",
 	// The Kubelet is not configured in kubeadm, only in systemd.
 	Kubelet: "",
 }
@@ -246,7 +247,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		Option: util.ExtraOption{
 			Component: Apiserver,
 			Key:       "admission-control",
-			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
 		},
 		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
 		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
@@ -255,10 +256,20 @@ var versionSpecificOpts = []VersionedExtraOption{
 		Option: util.ExtraOption{
 			Component: Apiserver,
 			Key:       "enable-admission-plugins",
-			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
 		},
 		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
+		LessThanOrEqual:    semver.MustParse("1.13.1000"),
 	},
+	{
+		Option: util.ExtraOption{
+			Component: Apiserver,
+			Key:       "enable-admission-plugins",
+			Value:     strings.Join(util.DefaultV114AdmissionControllers, ","),
+		},
+		GreaterThanOrEqual: semver.MustParse("1.14.0-alpha.0"),
+	},
+
 	{
 		Option: util.ExtraOption{
 			Component: Kubelet,
