@@ -55,7 +55,7 @@ Start the cluster using your built minikube with:
 $ ./out/minikube start
 ```
 
-### Running Tests
+## Running Tests
 
 #### Unit Tests
 
@@ -65,7 +65,7 @@ Unit tests are run on Travis before code is merged. To run as part of a developm
 make test
 ```
 
-#### Integration Tests
+### Integration Tests
 
 Integration tests are currently run manually.
 To run them, build the binary and run the tests:
@@ -74,7 +74,13 @@ To run them, build the binary and run the tests:
 make integration
 ```
 
-#### Conformance Tests
+You may find it useful to set various options to test only a particular test against a non-default driver. For instance:
+
+```shell
+ env TEST_ARGS="-minikube-start-args=--vm-driver=hyperkit -test.run TestStartStop" make integration
+ ```
+
+### Conformance Tests
 
 These are Kubernetes tests that run against an arbitrary cluster and exercise a wide range of Kubernetes features.
 You can run these against minikube by following these steps:
