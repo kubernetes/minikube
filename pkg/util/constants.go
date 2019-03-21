@@ -46,7 +46,7 @@ var DefaultV114AdmissionControllers = []string{
 }
 
 // DefaultLegacyAdmissionControllers are admission controllers we include with Kubernetes <1.14.0
-var DefaultLegacyAdmissionControllers = append(DefaultV114AdmissionControllers, "Initializers")
+var DefaultLegacyAdmissionControllers = append([]string{"Initializers"}, DefaultV114AdmissionControllers...)
 
 // GetServiceClusterIP returns the first IP of the ServiceCIDR
 func GetServiceClusterIP(serviceCIDR string) (net.IP, error) {
