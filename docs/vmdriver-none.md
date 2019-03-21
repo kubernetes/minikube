@@ -14,7 +14,7 @@ The `none` driver supports releases of Debian, Ubuntu, and Fedora that are less 
 
 Most continuous integration environments are already running inside a VM, and may not supported nested virtualization. The `none` driver was designed for this use case. Here is an example, that runs minikube from a non-root user, and ensures that the latest stable kubectl is installed:
 
-```
+```shell
 curl -Lo minikube \
   https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
   && sudo install minikube /usr/local/bin/

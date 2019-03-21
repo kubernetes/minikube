@@ -1,5 +1,5 @@
+# Mounting Host Folders
 
-## Mounting Host Folders
 `minikube mount /path/to/dir/to/mount:/vm-mount-path` is the recommended way to mount directories into minikube so that they can be used in your local Kubernetes cluster. The command works on all supported platforms. Below is an example workflow for using `minikube mount`:
 
 ```shell

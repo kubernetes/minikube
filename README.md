@@ -13,7 +13,7 @@
 
 ## What is minikube?
 
-minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. 
+minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
 <img src="https://github.com/kubernetes/minikube/raw/master/images/start.jpg" width="800">
 
@@ -31,7 +31,7 @@ Our [goal](https://github.com/kubernetes/minikube/blob/master/docs/contributors/
 
 minikube runs the official stable release of Kubernetes, with support for standard Kubernetes features like:
 
-* [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - using `minikube tunnel` 
+* [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - using `minikube tunnel`
 * Multi-cluster - using `minikube start -p <name>`
 * NodePorts - using `minikube service`
 * [Persistent Volumes](https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md)
@@ -56,7 +56,7 @@ As well as developer-friendly features:
 
 ## Community
 
-minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project. 
+minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project.
 
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com) - Live chat with minikube developers!
 * [minikube-users mailing list](https://groups.google.com/forum/#!forum/minikube-users)
@@ -81,7 +81,7 @@ See the [installation guide](https://kubernetes.io/docs/tasks/tools/install-mini
   * using [chocolatey](https://chocolatey.org/) `choco install minikube`
   * manually: Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 
-* *Linux* 
+* *Linux*
   * Requires either the [kvm2 driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver) (recommended), or VirtualBox
   * VT-x/AMD-v virtualization must be enabled in BIOS
   * manually:  `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`
