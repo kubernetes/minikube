@@ -28,6 +28,8 @@ import (
 
 // There is one tunnel registry per user, shared across multiple vms.
 // It can register, list and check for existing and running tunnels
+
+// ID represents a registry ID
 type ID struct {
 	//Route is the key
 	Route *Route
@@ -36,6 +38,7 @@ type ID struct {
 	Pid         int
 }
 
+// Equal checks if two ID are equal
 func (t *ID) Equal(other *ID) bool {
 	return t.Route.Equal(other.Route) &&
 		t.MachineName == other.MachineName &&

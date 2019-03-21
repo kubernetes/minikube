@@ -48,6 +48,7 @@ var getWindowsVolumeName = getWindowsVolumeNameCmd
 // loadImageLock is used to serialize image loads to avoid overloading the guest VM
 var loadImageLock sync.Mutex
 
+// CacheImagesForBootstrapper will cache images for a bootstrapper
 func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
 
@@ -83,6 +84,7 @@ func CacheImages(images []string, cacheDir string) error {
 	return nil
 }
 
+// LoadImages loads previously cached images into the container runtime
 func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
 	var g errgroup.Group
 	// Load profile cluster config from file
@@ -108,6 +110,7 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 	return nil
 }
 
+// CacheAndLoadImages caches and loads images
 func CacheAndLoadImages(images []string) error {
 	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
 		return err
@@ -195,6 +198,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
+// LoadFromCacheBlocking loads images from cache, blocking until loaded
 func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
@@ -231,6 +235,7 @@ func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesC
 	return nil
 }
 
+// DeleteFromImageCacheDir deletes images from the cache
 func DeleteFromImageCacheDir(images []string) error {
 	for _, image := range images {
 		path := filepath.Join(constants.ImageCacheDir, image)
@@ -282,6 +287,7 @@ func getDstPath(image, dst string) (string, error) {
 	return dst, nil
 }
 
+// CacheImage caches an image
 func CacheImage(image, dst string) error {
 	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)
 	if _, err := os.Stat(dst); err == nil {

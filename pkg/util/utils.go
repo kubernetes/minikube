@@ -35,19 +35,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrPrefix notes an error
 const ErrPrefix = "! "
+
+// OutPrefix notes output
 const OutPrefix = "> "
 
 const (
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
 )
 
+// RetriableError is an error that can be tried again
 type RetriableError struct {
 	Err error
 }
 
 func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
 
+// CalculateDiskSizeInMB returns the number of MB in the human readable string
 func CalculateDiskSizeInMB(humanReadableDiskSize string) int {
 	diskSize, err := units.FromHumanSize(humanReadableDiskSize)
 	if err != nil {
@@ -78,12 +83,13 @@ func Until(fn func() error, w io.Writer, name string, sleep time.Duration, done 
 	}
 }
 
+// Pad pads the string with newlines
 func Pad(str string) string {
 	return fmt.Sprintf("\n%s\n", str)
 }
 
-// If the file represented by path exists and
-// readable, return true otherwise return false.
+// CanReadFile returns true if the file represented
+// by path exists and is readable, otherwise false.
 func CanReadFile(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
@@ -95,10 +101,12 @@ func CanReadFile(path string) bool {
 	return true
 }
 
+// Retry retries a number of attempts
 func Retry(attempts int, callback func() error) (err error) {
 	return RetryAfter(attempts, callback, 0)
 }
 
+// RetryAfter retries a number of attempts, after a delay
 func RetryAfter(attempts int, callback func() error, d time.Duration) (err error) {
 	m := MultiError{}
 	for i := 0; i < attempts; i++ {
@@ -120,6 +128,7 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 	return m.ToError()
 }
 
+// ParseSHAFromURL downloads and reads a SHA checksum from an URL
 func ParseSHAFromURL(url string) (string, error) {
 	r, err := http.Get(url)
 	if err != nil {
@@ -137,6 +146,7 @@ func ParseSHAFromURL(url string) (string, error) {
 	return strings.Trim(string(body), "\n"), nil
 }
 
+// GetBinaryDownloadURL returns a suitable URL for the platform
 func GetBinaryDownloadURL(version, platform string) string {
 	switch platform {
 	case "windows":
@@ -146,16 +156,19 @@ func GetBinaryDownloadURL(version, platform string) string {
 	}
 }
 
+// MultiError holds multiple errors
 type MultiError struct {
 	Errors []error
 }
 
+// Collect adds the error
 func (m *MultiError) Collect(err error) {
 	if err != nil {
 		m.Errors = append(m.Errors, err)
 	}
 }
 
+// ToError converts all errors into one
 func (m MultiError) ToError() error {
 	if len(m.Errors) == 0 {
 		return nil
@@ -168,6 +181,7 @@ func (m MultiError) ToError() error {
 	return errors.New(strings.Join(errStrings, "\n"))
 }
 
+// IsDirectory checks if path is a directory
 func IsDirectory(path string) (bool, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
@@ -176,6 +190,7 @@ func IsDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), nil
 }
 
+// ChownR does a recursive os.Chown
 func ChownR(path string, uid, gid int) error {
 	return filepath.Walk(path, func(name string, info os.FileInfo, err error) error {
 		if err == nil {
@@ -185,6 +200,7 @@ func ChownR(path string, uid, gid int) error {
 	})
 }
 
+// MaybeChownDirRecursiveToMinikubeUser changes ownership of a dir, if requested
 func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") != "" && os.Getenv("SUDO_USER") != "" {
 		username := os.Getenv("SUDO_USER")

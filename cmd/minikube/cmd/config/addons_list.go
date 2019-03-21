@@ -29,6 +29,7 @@ import (
 
 var addonListFormat string
 
+// AddonListTemplate represents the addon list template
 type AddonListTemplate struct {
 	AddonName   string
 	AddonStatus string

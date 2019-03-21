@@ -104,6 +104,7 @@ REM @FOR /f "tokens=*" %i IN ('minikube docker-env') DO @%i
 `,
 }
 
+// ShellConfig represents the shell config
 type ShellConfig struct {
 	Prefix           string
 	Delimiter        string
@@ -125,16 +126,20 @@ var (
 	defaultNoProxyGetter NoProxyGetter
 )
 
+// ShellDetector detects shell
 type ShellDetector interface {
 	GetShell(string) (string, error)
 }
 
+// LibmachineShellDetector detects shell, using libmachine
 type LibmachineShellDetector struct{}
 
+// NoProxyGetter gets the no_proxy variable
 type NoProxyGetter interface {
 	GetNoProxyVar() (string, string)
 }
 
+// EnvNoProxyGetter gets the no_proxy variable, using environment
 type EnvNoProxyGetter struct{}
 
 func generateUsageHint(userShell string) string {
@@ -274,6 +279,7 @@ func executeTemplateStdout(shellCfg *ShellConfig) error {
 	return tmpl.Execute(os.Stdout, shellCfg)
 }
 
+// GetShell detects the shell
 func (LibmachineShellDetector) GetShell(userShell string) (string, error) {
 	if userShell != "" {
 		return userShell, nil
@@ -281,6 +287,7 @@ func (LibmachineShellDetector) GetShell(userShell string) (string, error) {
 	return shell.Detect()
 }
 
+// GetNoProxyVar gets the no_proxy var
 func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	// first check for an existing lower case no_proxy var
 	noProxyVar := "no_proxy"
@@ -294,6 +301,7 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	return noProxyVar, noProxyValue
 }
 
+// GetDockerActive checks if Docker is active
 func GetDockerActive(host *host.Host) (bool, error) {
 	statusCmd := `sudo systemctl is-active docker`
 	status, err := host.RunSSHCommand(statusCmd)
