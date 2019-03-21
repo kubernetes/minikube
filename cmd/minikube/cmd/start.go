@@ -479,6 +479,10 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
 	}
+	version, err := cr.Version()
+	if err == nil {
+		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
+	}
 	return cr
 }
 

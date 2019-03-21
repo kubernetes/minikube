@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/golang/glog"
 )
@@ -31,6 +32,19 @@ type CRIO struct {
 // Name is a human readable name for CRIO
 func (r *CRIO) Name() string {
 	return "CRI-O"
+}
+
+// Version retrieves the current version of this runtime
+func (r *CRIO) Version() (string, error) {
+	ver, err := r.Runner.CombinedOutput("crio --version")
+	if err != nil {
+		return "", err
+	}
+
+	// crio version 1.13.0
+	// commit: ""
+	line := strings.Split(ver, "\n")[0]
+	return strings.Replace(line, "crio version ", "", 1), nil
 }
 
 // SocketPath returns the path to the socket file for CRIO
