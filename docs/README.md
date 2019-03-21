@@ -1,6 +1,6 @@
-## Advanced Topics and Tutorials
+# Advanced Topics and Tutorials
 
-### Cluster Configuration
+## Cluster Configuration
 
 * **Alternative Runtimes** ([alternative_runtimes.md](alternative_runtimes.md)): How to run minikube with rkt as the container runtime
 
