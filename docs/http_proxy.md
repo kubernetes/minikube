@@ -1,4 +1,4 @@
-## Using Minikube with an HTTP Proxy
+# Using Minikube with an HTTP Proxy
 
 minikube requires access to the internet via HTTP, HTTPS, and DNS protocols. If a HTTP proxy is required to access the internet, you may need to pass the proxy connection information to both minikube and Docker using environment variables:
 
@@ -17,7 +17,7 @@ One important note: If NO_PROXY is required by non-Kubernetes applications, such
 
 ### macOS and Linux
 
-```
+```shell
 export HTTP_PROXY=http://<proxy hostname:port>
 export HTTPS_PROXY=https://<proxy hostname:port>
 export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24
@@ -30,7 +30,7 @@ To make the exported variables permanent, consider adding the declarations to ~/
 
 ### Windows
 
-```
+```shell
 set HTTP_PROXY=http://<proxy hostname:port>
 set HTTPS_PROXY=https://<proxy hostname:port>
 set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24
@@ -45,7 +45,7 @@ To set these environment variables permanently, consider adding these to your [s
 
 ### unable to cache ISO... connection refused
 
-```
+```text
 Unable to start VM: unable to cache ISO: https://storage.googleapis.com/minikube/iso/minikube.iso:
 failed to download: failed to download to temp file: download failed: 5 error(s) occurred:
 
@@ -57,8 +57,8 @@ This error indicates that the host:port combination defined by HTTPS_PROXY or HT
 
 ## Unable to pull images..Client.Timeout exceeded while awaiting headers
 
-```
-Unable to pull images, which may be OK: 
+```text
+Unable to pull images, which may be OK:
 
 failed to pull image "k8s.gcr.io/kube-apiserver:v1.13.3": output: Error response from daemon:
 Get https://k8s.gcr.io/v2/: net/http: request canceled while waiting for connection
@@ -69,7 +69,7 @@ This error indicates that the container runtime running within the VM does not h
 
 ## x509: certificate signed by unknown authority
 
-```
+```text
 [ERROR ImagePull]: failed to pull image k8s.gcr.io/kube-apiserver:v1.13.3:
 output: Error response from daemon:
 Get https://k8s.gcr.io/v2/: x509: certificate signed by unknown authority
@@ -83,7 +83,6 @@ Ask your IT department for the appropriate PEM file, and add it to:
 
 Then run `minikube delete` and `minikube start`.
 
-
 ## Additional Information
 
-- [Configure Docker to use a proxy server](https://docs.docker.com/network/proxy/)
+* [Configure Docker to use a proxy server](https://docs.docker.com/network/proxy/)

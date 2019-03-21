@@ -95,6 +95,9 @@ var (
 	apiServerNames   []string
 	apiServerIPs     []net.IP
 	extraOptions     pkgutil.ExtraOptionSlice
+
+	// proxyVars are variables we plumb through to the underlying container runtime
+	proxyVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
 )
 
 func init() {
@@ -207,6 +210,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		console.Failure("Unable to load cached images from config file.")
 	}
 
+	if config.MachineConfig.VMDriver == constants.DriverNone {
+		console.OutStyle("starting-none", "Configuring local host environment ...")
+		prepareNone()
+	}
+
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
@@ -256,6 +264,17 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 		selectedNetworkPlugin = "cni"
 		if !cmd.Flags().Changed(enableDefaultCNI) {
 			selectedEnableDefaultCNI = true
+		}
+	}
+
+	// Feed Docker our host proxy environment by default, so that it can pull images
+	if _, ok := r.(*cruntime.Docker); ok {
+		if !cmd.Flags().Changed("docker-env") {
+			for _, k := range proxyVars {
+				if v := os.Getenv(k); v != "" {
+					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
+				}
+			}
 		}
 	}
 
@@ -341,10 +360,6 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}
-	if mc.VMDriver == constants.DriverNone {
-		console.OutStyle("starting-none", "Configuring local host environment ...")
-		prepareNone()
-	}
 
 	var host *host.Host
 	start := func() (err error) {
@@ -369,7 +384,7 @@ func validateNetwork(h *host.Host) string {
 	console.OutStyle("connectivity", "%q IP address is %s", cfg.GetMachineName(), ip)
 
 	optSeen := false
-	for _, k := range []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"} {
+	for _, k := range proxyVars {
 		if v := os.Getenv(k); v != "" {
 			if !optSeen {
 				console.OutStyle("internet", "Found network options:")
@@ -477,6 +492,10 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	err = cr.Enable()
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
+	}
+	version, err := cr.Version()
+	if err == nil {
+		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
 	}
 	return cr
 }
