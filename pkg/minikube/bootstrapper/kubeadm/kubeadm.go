@@ -529,11 +529,15 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	}
 
 	b := bytes.Buffer{}
-	kubeadmConfigTemplate := kubeadmConfigTemplateV1Alpha1
+	configTmpl := configTmplV1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {
-		kubeadmConfigTemplate = kubeadmConfigTemplateV1Alpha3
+		configTmpl = configTmplV1Alpha3
 	}
-	if err := kubeadmConfigTemplate.Execute(&b, opts); err != nil {
+	// v1beta1 works in v1.13, but isn't required until v1.14.
+	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
+		configTmpl = configTmplV1Beta1
+	}
+	if err := configTmpl.Execute(&b, opts); err != nil {
 		return "", err
 	}
 
