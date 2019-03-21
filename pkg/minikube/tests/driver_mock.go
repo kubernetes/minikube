@@ -39,6 +39,7 @@ func (driver *MockDriver) Create() error {
 	return nil
 }
 
+// GetIP returns the IP address
 func (driver *MockDriver) GetIP() (string, error) {
 	if driver.IP != "" {
 		return driver.IP, nil
@@ -54,6 +55,7 @@ func (driver *MockDriver) GetCreateFlags() []mcnflag.Flag {
 	return []mcnflag.Flag{}
 }
 
+// GetSSHPort returns the SSH port
 func (driver *MockDriver) GetSSHPort() (int, error) {
 	return driver.Port, nil
 }
@@ -66,7 +68,7 @@ func (driver *MockDriver) GetSSHHostname() (string, error) {
 	return "localhost", nil
 }
 
-// GetSSHHostname returns the hostname for SSH
+// GetSSHKeyPath returns the key path for SSH
 func (driver *MockDriver) GetSSHKeyPath() string {
 	return driver.BaseDriver.SSHKeyPath
 }

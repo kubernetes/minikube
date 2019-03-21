@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/config"
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 )
 
@@ -36,7 +36,7 @@ var configGetCmd = &cobra.Command{
 		}
 
 		cmd.SilenceUsage = true
-		val, err := config.Get(args[0])
+		val, err := Get(args[0])
 		if err != nil {
 			return err
 		}
@@ -51,4 +51,9 @@ var configGetCmd = &cobra.Command{
 
 func init() {
 	ConfigCmd.AddCommand(configGetCmd)
+}
+
+// Get gets a property
+func Get(name string) (string, error) {
+	return pkgConfig.Get(name)
 }

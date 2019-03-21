@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// AddonsCmd represents the addons command
 var AddonsCmd = &cobra.Command{
 	Use:   "addons SUBCOMMAND [flags]",
 	Short: "Modify minikube's kubernetes addons",

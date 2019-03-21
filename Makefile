@@ -236,6 +236,10 @@ gendocs: out/docs/minikube.md
 fmt:
 	@gofmt -l -s -w $(SOURCE_DIRS)
 
+.PHONY: lint
+lint:
+	@golint $(MINIKUBE_TEST_FILES)
+
 .PHONY: reportcard
 reportcard:
 	goreportcard-cli -v

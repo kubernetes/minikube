@@ -44,6 +44,7 @@ type hostPathProvisioner struct {
 	identity types.UID
 }
 
+// NewHostPathProvisioner creates a new Provisioner using host paths
 func NewHostPathProvisioner() controller.Provisioner {
 	return &hostPathProvisioner{
 		pvDir:    "/tmp/hostpath-provisioner",
@@ -110,7 +111,7 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 	return nil
 }
 
-// Start storage provisioner server
+// StartStorageProvisioner will start storage provisioner server
 func StartStorageProvisioner() error {
 	glog.Infof("Initializing the Minikube storage provisioner...")
 	config, err := restclient.InClusterConfig()

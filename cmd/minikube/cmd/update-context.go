@@ -24,7 +24,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	kcfg "k8s.io/minikube/pkg/util/kubeconfig"
+	"k8s.io/minikube/pkg/util"
 )
 
 // updateContextCmd represents the update-context command
@@ -44,7 +44,7 @@ var updateContextCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error host driver ip status", err)
 		}
-		updated, err := kcfg.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
+		updated, err := util.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
 		if err != nil {
 			exit.WithError("update config", err)
 		}

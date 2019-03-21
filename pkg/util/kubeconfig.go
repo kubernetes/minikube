@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeconfig
+package util
 
 import (
 	"fmt"
@@ -31,9 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
-	"k8s.io/minikube/pkg/util"
 )
 
+// KubeConfigSetup is the kubeconfig setup
 type KubeConfigSetup struct {
 	// The name of the cluster for this context
 	ClusterName string
@@ -61,10 +61,12 @@ type KubeConfigSetup struct {
 	kubeConfigFile atomic.Value
 }
 
+// SetKubeConfigFile sets the kubeconfig file
 func (k *KubeConfigSetup) SetKubeConfigFile(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
+// GetKubeConfigFile gets the kubeconfig file
 func (k *KubeConfigSetup) GetKubeConfigFile() string {
 	return k.kubeConfigFile.Load().(string)
 }
@@ -197,7 +199,7 @@ func WriteConfig(config *api.Config, filename string) error {
 	if err := ioutil.WriteFile(filename, data, 0600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", filename)
 	}
-	if err := util.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
+	if err := MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
 		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
 	}
 
@@ -301,11 +303,11 @@ func getPortFromKubeConfig(filename, machineName string) (int, error) {
 	}
 	kurl, err := url.Parse(cluster.Server)
 	if err != nil {
-		return util.APIServerPort, nil
+		return APIServerPort, nil
 	}
 	_, kport, err := net.SplitHostPort(kurl.Host)
 	if err != nil {
-		return util.APIServerPort, nil
+		return APIServerPort, nil
 	}
 	port, err := strconv.Atoi(kport)
 	return port, err
