@@ -1,6 +1,9 @@
-## Accessing Host Resources From Inside A Pod
-### When you have a VirtualBox driver
+# Accessing Host Resources From Inside A Pod
+
+## When you have a VirtualBox driver
+
 In order to access host resources from inside a pod, run the following command to determine the host IP you can use:
+
 ```shell
 ip addr
 ```

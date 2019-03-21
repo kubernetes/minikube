@@ -1,4 +1,4 @@
-# Copyright 2017 The Kubernetes Authors All rights reserved.
+# Copyright 2019 The Kubernetes Authors All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    kubernetes.io/name: heapster
-    kubernetes.io/minikube-addons: heapster
-    addonmanager.kubernetes.io/mode: Reconcile
-    kubernetes.io/minikube-addons-endpoint: heapster
-  name: heapster
-  namespace: kube-system
-spec:
-  ports:
-  - port: 80
-    targetPort: 8082
-  selector:
-    addonmanager.kubernetes.io/mode: Reconcile
-    k8s-app: heapster
+FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+		gcc \
+		libc6-dev \
+		make \
+		pkg-config \
+		curl \
+		libvirt-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
+ARG GO_VERSION
+
+RUN curl -sSL https://golang.org/dl/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf -
+
+ENV GOPATH /go
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/go/bin:/go/bin

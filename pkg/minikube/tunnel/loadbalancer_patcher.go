@@ -103,9 +103,9 @@ func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core
 	request := l.patchConverter.convert(restClient, patch)
 	result, err := l.requestSender.send(request)
 	if err != nil {
-		glog.Infof("Patched %s with IP %s", svc.Name, clusterIP)
-	} else {
 		glog.Errorf("error patching %s with IP %s: %s", svc.Name, clusterIP, err)
+	} else {
+		glog.Infof("Patched %s with IP %s", svc.Name, clusterIP)
 	}
 	return result, err
 }
