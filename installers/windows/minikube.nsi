@@ -25,7 +25,7 @@
 
 RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on)
 
-InstallDir "$PROGRAMFILES\${COMPANYNAME}\${APPNAME}"
+InstallDir "$PROGRAMFILES64\${COMPANYNAME}\${APPNAME}"
 !define UNINSTALLDIR "Software\Microsoft\Windows\CurrentVersion\Uninstall\${COMPANYNAME} ${APPNAME}"
 BrandingText " "
 

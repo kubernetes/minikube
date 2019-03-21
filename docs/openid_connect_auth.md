@@ -2,8 +2,7 @@
 
 Minikube `kube-apiserver` can be configured to support OpenID Connect Authentication.
 
-Read more about OpenID Connect Authentication for Kubernetes here: https://kubernetes.io/docs/reference/access-authn-authz/authentication/#openid-connect-tokens
-
+Read more about OpenID Connect Authentication for Kubernetes here: <https://kubernetes.io/docs/reference/access-authn-authz/authentication/#openid-connect-tokens>
 
 ## Configuring the API Server
 
@@ -21,7 +20,7 @@ minikube start \
 
 ## Configuring kubectl
 
-You can use the kubectl `oidc` authenticator to create a kubeconfig as shown in the Kubernetes docs: https://kubernetes.io/docs/reference/access-authn-authz/authentication/#option-1-oidc-authenticator
+You can use the kubectl `oidc` authenticator to create a kubeconfig as shown in the Kubernetes docs: <https://kubernetes.io/docs/reference/access-authn-authz/authentication/#option-1-oidc-authenticator>
 
 `minikube start` already creates a kubeconfig that includes a `cluster`, in order to use it with your `oidc` authenticator kubeconfig, you can run:
 

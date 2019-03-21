@@ -196,7 +196,8 @@ func GetKubeadmImages(imageRepository string, kubernetesVersionStr string) (stri
 		imageRepository + "kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
 
-	ge_v1_13 := semver.MustParseRange(">=1.13.0")
+	ge_v1_14 := semver.MustParseRange(">=1.14.0")
+	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
@@ -209,7 +210,19 @@ func GetKubeadmImages(imageRepository string, kubernetesVersionStr string) (stri
 	}
 
 	var podInfraContainerImage string
-	if ge_v1_13(kubernetesVersion) {
+	if ge_v1_14(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "pause:3.1",
+			imageRepository + "k8s-dns-kube-dns-amd64:1.14.13",
+			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.13",
+			imageRepository + "k8s-dns-sidecar-amd64:1.14.13",
+			imageRepository + "etcd:3.3.10",
+			imageRepository + "coredns:1.3.1",
+		}...)
+
+	} else if v1_13(kubernetesVersion) {
 		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,

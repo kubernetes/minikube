@@ -1,0 +1,8 @@
+{
+  "no-inline-html": false,
+  "no-trailing-punctuation": false,
+  "blanks-around-fences": false,
+  "commands-show-output": false,
+  "ul-style": false,
+  "line-length": false
+}

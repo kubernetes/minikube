@@ -22,5 +22,4 @@ Here are some specific minikube features that align with our goal:
 ## Non-Goals
 
 * Simplifying Kubernetes production deployment experience
- * Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.
-
+* Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.

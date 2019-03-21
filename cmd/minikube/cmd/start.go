@@ -210,6 +210,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		console.Failure("Unable to load cached images from config file.")
 	}
 
+	if config.MachineConfig.VMDriver == constants.DriverNone {
+		console.OutStyle("starting-none", "Configuring local host environment ...")
+		prepareNone()
+	}
+
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
@@ -345,10 +350,6 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}
-	if mc.VMDriver == constants.DriverNone {
-		console.OutStyle("starting-none", "Configuring local host environment ...")
-		prepareNone()
-	}
 
 	var host *host.Host
 	start := func() (err error) {
@@ -481,6 +482,10 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	err = cr.Enable()
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
+	}
+	version, err := cr.Version()
+	if err == nil {
+		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
 	}
 	return cr
 }

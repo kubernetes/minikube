@@ -1,4 +1,6 @@
-### Using rkt container engine
+# Alternative runtimes
+
+## Using rkt container engine
 
 To use [rkt](https://github.com/coreos/rkt) as the container runtime run:
 
@@ -6,8 +8,7 @@ To use [rkt](https://github.com/coreos/rkt) as the container runtime run:
 $ minikube start --container-runtime=rkt
 ```
 
-
-### Using CRI-O
+## Using CRI-O
 
 To use [CRI-O](https://github.com/kubernetes-sigs/cri-o) as the container runtime, run:
 
@@ -27,7 +28,7 @@ $ minikube start --container-runtime=cri-o \
     --extra-config=kubelet.image-service-endpoint=unix:///var/run/crio/crio.sock
 ```
 
-### Using containerd
+## Using containerd
 
 To use [containerd](https://github.com/containerd/containerd) as the container runtime, run:
 
