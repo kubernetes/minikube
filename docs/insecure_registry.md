@@ -1,4 +1,4 @@
-## Enabling Docker Insecure Registry
+# Enabling Docker Insecure Registry
 
 Minikube allows users to configure the docker engine's `--insecure-registry` flag. You can use the `--insecure-registry` flag on the
 `minikube start` command to enable insecure communication between the docker engine and registries listening to requests from the CIDR range.
@@ -8,7 +8,9 @@ with TLS certificates. Because the default service cluster IP is known to be ava
 deployed inside the cluster by creating the cluster with `minikube start --insecure-registry "10.0.0.0/24"`.
 
 ## Private Container Registries
+
 **GCR/ECR/Docker**: Minikube has an addon, `registry-creds` which maps credentials into Minikube to support pulling from Google Container Registry (GCR), Amazon's EC2 Container Registry (ECR), and Private Docker registries.  You will need to run `minikube addons configure registry-creds` and `minikube addons enable registry-creds` to get up and running.  An example of this is below:
+
 ```shell
 $ minikube addons configure registry-creds
 Do you want to enable AWS Elastic Container Registry? [y/n]: n
