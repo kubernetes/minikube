@@ -197,7 +197,8 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		"k8s.gcr.io/kube-apiserver" + SupportedArchTag(true) + kubernetesVersionStr,
 	}
 
-	ge_v1_13 := semver.MustParseRange(">=1.13.0")
+	ge_v1_14 := semver.MustParseRange(">=1.14.0")
+	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
@@ -209,7 +210,17 @@ func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
 		glog.Errorln("Error parsing version semver: ", err)
 	}
 
-	if ge_v1_13(kubernetesVersion) {
+	if ge_v1_14(kubernetesVersion) {
+		images = append(images, []string{
+			"k8s.gcr.io/pause:3.1",
+			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.13",
+			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.13",
+			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.13",
+			"k8s.gcr.io/etcd:3.3.10",
+			"k8s.gcr.io/coredns:1.3.1",
+		}...)
+
+	} else if v1_13(kubernetesVersion) {
 		images = append(images, []string{
 			"k8s.gcr.io/pause" + SupportedArchTag(true) + "3.1",
 			"k8s.gcr.io/pause" + SupportedArchTag(false) + "3.1",

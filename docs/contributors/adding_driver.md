@@ -1,6 +1,6 @@
 # Adding new driver (Deprecated)
 
-New drivers should be added into https://github.com/machine-drivers
+New drivers should be added into <https://github.com/machine-drivers>
 
 Minikube relies on docker machine drivers to manage machines. This document talks about how to
 add an existing docker machine driver into minikube registry, so that minikube can use the driver
@@ -26,7 +26,7 @@ Registry is what minikube uses to register all the supported drivers. The driver
 their drivers in registry, and minikube runtime will look at the registry to find a driver and use the
 driver metadata to determine what workflow to apply while those drivers are being used.
 
-The godoc of registry is available here: https://godoc.org/k8s.io/minikube/pkg/minikube/registry
+The godoc of registry is available here: <https://godoc.org/k8s.io/minikube/pkg/minikube/registry>
 
 [DriverDef](https://godoc.org/k8s.io/minikube/pkg/minikube/registry#DriverDef) is the main
 struct to define a driver metadata. Essentially, you need to define 4 things at most, which is
@@ -52,33 +52,33 @@ All drivers are located in `k8s.io/minikube/pkg/minikube/drivers`. Take `vmwaref
 package vmwarefusion
 
 import (
-	"github.com/docker/machine/drivers/vmwarefusion"
-	"github.com/docker/machine/libmachine/drivers"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/registry"
+    "github.com/docker/machine/drivers/vmwarefusion"
+    "github.com/docker/machine/libmachine/drivers"
+    cfg "k8s.io/minikube/pkg/minikube/config"
+    "k8s.io/minikube/pkg/minikube/constants"
+    "k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
-		Name:          "vmwarefusion",
-		Builtin:       true,
-		ConfigCreator: createVMwareFusionHost,
-		DriverCreator: func() drivers.Driver {
-			return vmwarefusion.NewDriver("", "")
-		},
-	})
+    registry.Register(registry.DriverDef{
+        Name:          "vmwarefusion",
+        Builtin:       true,
+        ConfigCreator: createVMwareFusionHost,
+        DriverCreator: func() drivers.Driver {
+            return vmwarefusion.NewDriver("", "")
+        },
+    })
 }
 
 func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
-	d := vmwarefusion.NewDriver(cfg.GetMachineName(), constants.GetMinipath()).(*vmwarefusion.Driver)
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
-	d.SSHPort = 22
-	d.ISO = d.ResolveStorePath("boot2docker.iso")
-	return d
+    d := vmwarefusion.NewDriver(cfg.GetMachineName(), constants.GetMinipath()).(*vmwarefusion.Driver)
+    d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
+    d.Memory = config.Memory
+    d.CPU = config.CPUs
+    d.DiskSize = config.DiskSize
+    d.SSHPort = 22
+    d.ISO = d.ResolveStorePath("boot2docker.iso")
+    return d
 }
 ```
 
@@ -98,4 +98,3 @@ In summary, the process includes the following steps:
 2. Add import in `pkg/minikube/cluster/default_drivers.go`
 
 Any Questions: please ping your friend [@anfernee](https://github.com/anfernee)
-
