@@ -210,7 +210,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(false); err != nil {
+	if err := waitForPods(k8s, false); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
@@ -220,7 +220,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// Make sure elevating privileges didn't screw anything up
-	if err := waitForPods(true); err != nil {
+	if err := waitForPods(k8s, true); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
@@ -248,7 +248,12 @@ func addAddons(files *[]assets.CopyableFile) error {
 }
 
 // waitForPods waits until the important Kubernetes pods are in running state
-func waitForPods(quiet bool) error {
+func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
+	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
+	// by a CNI plugin which is usually started after minikube has been brought
+	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
+	componentsOnly := k8s.NetworkPlugin == "cni"
+
 	if !quiet {
 		console.OutStyle("waiting-pods", "Waiting for pods:")
 	}
@@ -258,6 +263,10 @@ func waitForPods(quiet bool) error {
 	}
 
 	for _, p := range PodsByLayer {
+		if componentsOnly && p.key != "component" {
+			continue
+		}
+
 		if !quiet {
 			console.Out(" %s", p.name)
 		}
@@ -300,7 +309,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(false); err != nil {
+	if err := waitForPods(k8s, false); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
@@ -310,7 +319,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// Make sure the kube-proxy restart didn't screw anything up.
-	if err := waitForPods(true); err != nil {
+	if err := waitForPods(k8s, true); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
