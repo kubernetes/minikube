@@ -37,15 +37,22 @@ import (
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
+// nineP is the value of --type used for the 9p filesystem.
+const nineP = "9p"
+
 // placeholders for flag values
 var mountIP string
 var mountVersion string
+var mountType string
 var isKill bool
 var uid int
 var gid int
 var mSize int
 var options []string
 var mode uint
+
+// supportedFilesystems is a map of filesystem types to not warn against.
+var supportedFilesystems = map[string]bool{nineP: true}
 
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
@@ -115,7 +122,7 @@ var mountCmd = &cobra.Command{
 		}
 
 		cfg := &cluster.MountConfig{
-			Type:    "9p",
+			Type:    mountType,
 			UID:     uid,
 			GID:     gid,
 			Version: mountVersion,
@@ -144,13 +151,21 @@ var mountCmd = &cobra.Command{
 		console.OutStyle("option", "Mode:     %o (%s)", cfg.Mode, cfg.Mode)
 		console.OutStyle("option", "Options:  %s", cfg.Options)
 
+		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
+		if !supportedFilesystems[cfg.Type] {
+			console.OutLn("")
+			console.OutStyle("warning", "%s is not yet a supported filesystem. We will try anyways!", cfg.Type)
+		}
+
 		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			console.OutStyle("fileserver", "Userspace file server: ")
-			ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
-			wg.Done()
-		}()
+		if cfg.Type == nineP {
+			wg.Add(1)
+			go func() {
+				console.OutStyle("fileserver", "Userspace file server: ")
+				ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
+				wg.Done()
+			}()
+		}
 
 		// Unmount if Ctrl-C or kill request is received.
 		c := make(chan os.Signal, 1)
@@ -176,6 +191,7 @@ var mountCmd = &cobra.Command{
 
 func init() {
 	mountCmd.Flags().StringVar(&mountIP, "ip", "", "Specify the ip that the mount should be setup on")
+	mountCmd.Flags().StringVar(&mountType, "type", nineP, "Specify the mount filesystem type (supported types: 9p)")
 	mountCmd.Flags().StringVar(&mountVersion, "9p-version", constants.DefaultMountVersion, "Specify the 9p version that the mount should use")
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
 	mountCmd.Flags().IntVar(&uid, "uid", 1001, "Default user id used for the mount")
