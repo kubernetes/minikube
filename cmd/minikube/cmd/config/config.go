@@ -52,6 +52,11 @@ var settings = []Setting{
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
+		name:      "feature-gates",
+		set:       SetString,
+		callbacks: []setFn{RequiresRestartMsg},
+	},
+	{
 		name:        "v",
 		set:         SetInt,
 		validations: []setFn{IsPositive},

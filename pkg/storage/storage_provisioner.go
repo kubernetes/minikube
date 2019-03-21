@@ -100,7 +100,7 @@ func (p *hostPathProvisioner) Delete(volume *v1.PersistentVolume) error {
 		return errors.New("identity annotation not found on PV")
 	}
 	if ann != string(p.identity) {
-		return &controller.IgnoredError{"identity annotation on PV does not match ours"}
+		return &controller.IgnoredError{Reason: "identity annotation on PV does not match ours"}
 	}
 
 	path := path.Join(p.pvDir, volume.Name)
