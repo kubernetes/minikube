@@ -141,15 +141,27 @@ func (k *KubeadmBootstrapper) GetApiServerStatus(ip net.IP) (string, error) {
 
 // LogCommands returns a map of log type to a command which will display that log.
 func (k *KubeadmBootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
-	var kcmd strings.Builder
-	kcmd.WriteString("journalctl -u kubelet")
+	var kubelet strings.Builder
+	kubelet.WriteString("journalctl -u kubelet")
 	if o.Lines > 0 {
-		kcmd.WriteString(fmt.Sprintf(" -n %d", o.Lines))
+		kubelet.WriteString(fmt.Sprintf(" -n %d", o.Lines))
 	}
 	if o.Follow {
-		kcmd.WriteString(" -f")
+		kubelet.WriteString(" -f")
 	}
-	return map[string]string{"kubelet": kcmd.String()}
+
+	var dmesg strings.Builder
+	dmesg.WriteString("sudo dmesg -PH -L=never --level warn,err,crit,alert,emerg")
+	if o.Follow {
+		dmesg.WriteString(" --follow")
+	}
+	if o.Lines > 0 {
+		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
+	}
+	return map[string]string{
+		"kubelet": kubelet.String(),
+		"dmesg":   dmesg.String(),
+	}
 }
 
 func (k *KubeadmBootstrapper) StartCluster(k8s config.KubernetesConfig) error {
@@ -314,6 +326,14 @@ func (k *KubeadmBootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // PullImages downloads images that will be used by RestartCluster
 func (k *KubeadmBootstrapper) PullImages(k8s config.KubernetesConfig) error {
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
+	}
+	if version.LT(semver.MustParse("1.11.0")) {
+		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
+	}
+
 	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)
 	if err := k.c.Run(cmd); err != nil {
 		return errors.Wrapf(err, "running cmd: %s", cmd)
@@ -373,9 +393,8 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 
 func (k *KubeadmBootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if cfg.ShouldLoadCachedImages {
-		err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir)
-		if err != nil {
-			return errors.Wrap(err, "loading cached images")
+		if err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir); err != nil {
+			console.Failure("Unable to load cached images: %v", err)
 		}
 	}
 	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
@@ -510,11 +529,15 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	}
 
 	b := bytes.Buffer{}
-	kubeadmConfigTemplate := kubeadmConfigTemplateV1Alpha1
+	configTmpl := configTmplV1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {
-		kubeadmConfigTemplate = kubeadmConfigTemplateV1Alpha3
+		configTmpl = configTmplV1Alpha3
 	}
-	if err := kubeadmConfigTemplate.Execute(&b, opts); err != nil {
+	// v1beta1 works in v1.13, but isn't required until v1.14.
+	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
+		configTmpl = configTmplV1Beta1
+	}
+	if err := configTmpl.Execute(&b, opts); err != nil {
 		return "", err
 	}
 

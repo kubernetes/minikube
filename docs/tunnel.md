@@ -57,7 +57,7 @@ and deleted via:
 sudo ip route delete 10.0.0.0/8
 ```
 
-The routing table can be queried with `netstat -nr -f inet` 
+The routing table can be queried with `netstat -nr -f inet`
 
 ### OSX
 
@@ -87,41 +87,41 @@ route ADD 10.0.0.0 MASK 255.0.0.0 <minikube ip>
 and deleted via:
 
 ```shell
-route DELETE 10.0.0.0 
+route DELETE 10.0.0.0
 ```
 
 The routing table can be queried with `route print -4`
 
-### Handling unclean shutdowns 
+### Handling unclean shutdowns
 
-Unclean shutdowns of the tunnel process can result in partially executed cleanup process, leaving network routes in the routing table. 
-We will keep track of the routes created by each tunnel in a centralized location in the main minikube config directory. 
-This list serves as a registry for tunnels containing information about 
-- machine profile 
-- process ID 
+Unclean shutdowns of the tunnel process can result in partially executed cleanup process, leaving network routes in the routing table.
+We will keep track of the routes created by each tunnel in a centralized location in the main minikube config directory.
+This list serves as a registry for tunnels containing information about
+
+- machine profile
+- process ID
 - and the route that was created
 
-The cleanup command cleans the routes from both the routing table and the registry for tunnels that are not running: 
- 
-``` 
+The cleanup command cleans the routes from both the routing table and the registry for tunnels that are not running:
+
+```shell
 minikube tunnel --cleanup
 ```
 
-Updating the tunnel registry and the routing table is an atomic transaction: 
+Updating the tunnel registry and the routing table is an atomic transaction:
 
-- create route in the routing table + create registry entry if both are successful, otherwise rollback  
-- delete route in the routing table + remove registry entry if both are successful, otherwise rollback 
+- create route in the routing table + create registry entry if both are successful, otherwise rollback
+- delete route in the routing table + remove registry entry if both are successful, otherwise rollback
 
-*Note*: because we don't support currently real multi cluster setup (due to overlapping CIDRs), the handling of running/not-running processes is not strictly required however it is forward looking.  
+*Note*: because we don't support currently real multi cluster setup (due to overlapping CIDRs), the handling of running/not-running processes is not strictly required however it is forward looking.
 
-### Handling routing table conflicts  
+### Handling routing table conflicts
 
-A routing table conflict happens when a destination CIDR of the route required by the tunnel overlaps with an existing route. 
-Minikube tunnel will warn the user if this happens and should not create the rule. 
+A routing table conflict happens when a destination CIDR of the route required by the tunnel overlaps with an existing route.
+Minikube tunnel will warn the user if this happens and should not create the rule.
 There should not be any automated removal of conflicting routes.
 
-*Note*: If the user removes the minikube config directory, this might leave conflicting rules in the network routing table that will have to be cleaned up manually.  
-
+*Note*: If the user removes the minikube config directory, this might leave conflicting rules in the network routing table that will have to be cleaned up manually.
 
 ## Load Balancer Controller
 
@@ -138,7 +138,7 @@ sleep
 
 Note that the Minikube ClusterIP can change over time (during system reboots) and this loop should also handle reconciliation of those changes.
 
-## Handling multiple clusters 
+## Handling multiple clusters
 
-Multiple clusters are currently not supported due to our inability to specify ServiceCIDR. 
+Multiple clusters are currently not supported due to our inability to specify ServiceCIDR.
 This causes conflicting routes having the same destination CIDR.
