@@ -17,11 +17,9 @@ limitations under the License.
 package cluster
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"html/template"
 	"net"
 	"os/exec"
 	"regexp"
@@ -338,30 +336,6 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	return envMap, nil
 }
 
-// MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
-func MountHost(api libmachine.API, ip net.IP, path, port, mountVersion string, uid, gid, msize int) error {
-	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
-	if err != nil {
-		return errors.Wrap(err, "Error checking that api exists and loading it")
-	}
-	if ip == nil {
-		ip, err = GetVMHostIP(host)
-		if err != nil {
-			return errors.Wrap(err, "Error getting the host IP address to use from within the VM")
-		}
-	}
-	host.RunSSHCommand(GetMountCleanupCommand(path))
-	mountCmd, err := GetMountCommand(ip, path, port, mountVersion, uid, gid, msize)
-	if err != nil {
-		return errors.Wrap(err, "mount command")
-	}
-	_, err = host.RunSSHCommand(mountCmd)
-	if err != nil {
-		return errors.Wrap(err, "running mount")
-	}
-	return nil
-}
-
 // GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
 func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
@@ -460,39 +434,4 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	if s != state.Running.String() {
 		exit.WithCode(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
 	}
-}
-
-func GetMountCleanupCommand(path string) string {
-	return fmt.Sprintf("sudo umount %s;", path)
-}
-
-var mountTemplate = `
-sudo mkdir -p {{.Path}} || true;
-sudo mount -t 9p -o trans=tcp,port={{.Port}},dfltuid={{.UID}},dfltgid={{.GID}},version={{.Version}},msize={{.Msize}} {{.IP}} {{.Path}};
-sudo chmod 775 {{.Path}} || true;`
-
-func GetMountCommand(ip net.IP, path, port, mountVersion string, uid, gid, msize int) (string, error) {
-	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
-	buf := bytes.Buffer{}
-	data := struct {
-		IP      string
-		Path    string
-		Port    string
-		Version string
-		UID     int
-		GID     int
-		Msize   int
-	}{
-		IP:      ip.String(),
-		Path:    path,
-		Port:    port,
-		Version: mountVersion,
-		UID:     uid,
-		GID:     gid,
-		Msize:   msize,
-	}
-	if err := t.Execute(&buf, data); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
 }
