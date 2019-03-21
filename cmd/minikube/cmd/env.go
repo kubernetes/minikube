@@ -336,6 +336,9 @@ var dockerEnvCmd = &cobra.Command{
 			exit.WithCode(exit.Unavailable, `The docker host is currently not running`)
 		}
 		docker, err := GetDockerActive(host)
+		if err != nil {
+			exit.WithError("Error getting service status", err)
+		}
 		if !docker {
 			exit.WithCode(exit.Unavailable, `The docker service is currently not active`)
 		}

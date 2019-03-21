@@ -240,6 +240,12 @@ fmt:
 lint:
 	@golint $(MINIKUBE_TEST_FILES)
 
+.PHONY: reportcard
+reportcard:
+	goreportcard-cli -v
+	# "disabling misspell on large repo..."
+	-misspell -error $(SOURCE_DIRS)
+
 .PHONY: mdlint
 mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)

@@ -73,7 +73,7 @@ func (r *persistentRegistry) IsAlreadyDefinedAndRunning(tunnel *ID) (*ID, error)
 	return nil, nil
 }
 
-func (r *persistentRegistry) Register(tunnel *ID) error {
+func (r *persistentRegistry) Register(tunnel *ID) (rerr error) {
 	glog.V(3).Infof("registering tunnel: %s", tunnel)
 	if tunnel.Route == nil {
 		return errors.New("tunnel.Route should not be nil")
@@ -124,7 +124,7 @@ func (r *persistentRegistry) Register(tunnel *ID) error {
 	defer func() {
 		err := f.Close()
 		if err != nil {
-			fmt.Errorf("error closing registry file: %s", err)
+			rerr = fmt.Errorf("error closing registry file: %s", err)
 		}
 	}()
 
@@ -136,7 +136,7 @@ func (r *persistentRegistry) Register(tunnel *ID) error {
 	return nil
 }
 
-func (r *persistentRegistry) Remove(route *Route) error {
+func (r *persistentRegistry) Remove(route *Route) (rerr error) {
 	glog.V(3).Infof("removing tunnel from registry: %s", route)
 	tunnels, err := r.List()
 	if err != nil {
@@ -161,7 +161,7 @@ func (r *persistentRegistry) Remove(route *Route) error {
 	defer func() {
 		err := f.Close()
 		if err != nil {
-			fmt.Errorf("error closing tunnel registry file: %s", err)
+			rerr = fmt.Errorf("error closing tunnel registry file: %s", err)
 		}
 	}()
 
