@@ -20,7 +20,6 @@ define PODMAN_CONFIGURE_CMDS
 	ln -sf $(@D) $(PODMAN_GOPATH)/src/github.com/containers/libpod
 	mkdir -p $(PODMAN_GOPATH)/src/github.com/varlink
 	ln -sf $(@D)/vendor/github.com/varlink/go $(PODMAN_GOPATH)/src/github.com/varlink/go
-	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.tools DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
 endef
 
 define PODMAN_BUILD_CMDS
