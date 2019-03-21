@@ -243,7 +243,7 @@ func beginCacheImages(g *errgroup.Group, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", kVersion)
+	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", k8sVersion)
 	g.Go(func() error {
 		return machine.CacheImagesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
