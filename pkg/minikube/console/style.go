@@ -95,6 +95,9 @@ var styles = map[string]style{
 	"meh":               {Prefix: "🙄  ", LowPrefix: "?   "},
 	"embarassed":        {Prefix: "🤦  ", LowPrefix: "*   "},
 	"tip":               {Prefix: "💡  ", LowPrefix: "i   "},
+	"unmount":           {Prefix: "🔥  ", LowPrefix: "x   "},
+	"mount-options":     {Prefix: "💾  ", LowPrefix: "o   "},
+	"fileserver":        {Prefix: "🚀  ", LowPrefix: "@   ", OmitNewline: true},
 }
 
 // Add a prefix to a string
