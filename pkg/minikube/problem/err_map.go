@@ -83,6 +83,16 @@ var netProblems = map[string]match{
 		URL:      proxyDoc,
 		Issues:   []int{3898},
 	},
+	"SSH_AUTH_FAILURE": match{
+		Regexp:   r(`ssh: handshake failed: ssh: unable to authenticate.*, no supported methods remain`),
+		Solution: "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.",
+		Issues:   []int{3930},
+	},
+	"SSH_TCP_FAILURE": match{
+		Regexp:   r(`dial tcp .*:22: connectex: A connection attempt failed because the connected party did not properly respond`),
+		Solution: "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.",
+		Issues:   []int{3388},
+	},
 }
 
 // deployProblems are Kubernetes deployment problems.
