@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// package util is a hodge-podge of utility functions that should be moved elsewhere.
+// Package util is a hodge-podge of utility functions that should be moved elsewhere.
 package util
 
 import (
@@ -28,8 +28,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// Ask the kernel for a free open port that is ready to use
-func GetPort() (string, error) {
+// GetPort asks the kernel for a free open port that is ready to use
+func GetPort() (int, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		panic(err)
@@ -37,12 +37,13 @@ func GetPort() (string, error) {
 
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		return "", errors.Errorf("Error accessing port %d", addr.Port)
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
 	}
 	defer l.Close()
-	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
+// KillMountProcess kills the mount process, if it is running
 func KillMountProcess() error {
 	out, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName))
 	if err != nil {
@@ -59,6 +60,7 @@ func KillMountProcess() error {
 	return mountProc.Kill()
 }
 
+// GetKubeConfigPath gets the path to the first kubeconfig
 func GetKubeConfigPath() string {
 	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
 	if kubeConfigEnv == "" {
