@@ -18,6 +18,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 )
@@ -123,15 +125,42 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		return errors.Wrap(err, "command runner")
 	}
+
+	cfg, err := config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		exit.WithCode(exit.Data, "Unable to load config: %v", err)
+	}
+
+	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
 	if enable {
 		for _, addon := range addon.Assets {
-			if err := cmd.Copy(addon); err != nil {
+			var addonFile assets.CopyableFile
+			if addon.IsTemplate() {
+				addonFile, err = addon.Evaluate(data)
+				if err != nil {
+					return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+				}
+
+			} else {
+				addonFile = addon
+			}
+			if err := cmd.Copy(addonFile); err != nil {
 				return errors.Wrapf(err, "enabling addon %s", addon.AssetName)
 			}
 		}
 	} else {
 		for _, addon := range addon.Assets {
-			if err := cmd.Remove(addon); err != nil {
+			var addonFile assets.CopyableFile
+			if addon.IsTemplate() {
+				addonFile, err = addon.Evaluate(data)
+				if err != nil {
+					return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+				}
+
+			} else {
+				addonFile = addon
+			}
+			if err := cmd.Remove(addonFile); err != nil {
 				return errors.Wrapf(err, "disabling addon %s", addon.AssetName)
 			}
 		}

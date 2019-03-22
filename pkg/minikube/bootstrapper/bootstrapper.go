@@ -52,10 +52,11 @@ const (
 )
 
 // GetCachedImageList returns the list of images for a version
-func GetCachedImageList(version string, bootstrapper string) []string {
+func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		return constants.GetKubeadmCachedImages(version)
+		_, images := constants.GetKubeadmCachedImages(imageRepository, version)
+		return images
 	default:
 		return []string{}
 	}

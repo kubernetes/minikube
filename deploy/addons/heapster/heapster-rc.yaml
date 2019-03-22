@@ -37,7 +37,7 @@ spec:
     spec:
       containers:
       - name: heapster
-        image: k8s.gcr.io/heapster-amd64:v1.5.3
+        image: {{default "k8s.gcr.io" .ImageRepository}}/heapster-amd64:v1.5.3
         imagePullPolicy: IfNotPresent
         command:
         - /heapster
