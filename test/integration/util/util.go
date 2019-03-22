@@ -191,6 +191,7 @@ func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *
 	}
 	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
 }
+
 // SSH returns the output of running a command using SSH
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
