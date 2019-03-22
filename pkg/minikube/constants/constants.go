@@ -202,7 +202,7 @@ const (
 	// DefaultMsize is the default number of bytes to use for 9p packet payload
 	DefaultMsize = 262144
 	// DefaultMountVersion is the default 9p version to use for mount
-	DefaultMountVersion  = "9p2000.L"
+	DefaultMountVersion = "9p2000.L"
 )
 
 // GetKubernetesReleaseURL gets the location of a kubernetes client
