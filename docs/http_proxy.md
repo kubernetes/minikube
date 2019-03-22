@@ -8,7 +8,8 @@ minikube requires access to the internet via HTTP, HTTPS, and DNS protocols. If 
 
 The NO_PROXY variable here is important: Without setting it, minikube may not be able to access resources within the VM. minikube uses two IP ranges, which should not go through the proxy:
 
-* **192.168.99.1/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
+* **192.168.99.0/24**: Used by the minikube VM. Configurable for some hypervisors via `--host-only-cidr`
+* **192.168.39.0/24**: Used by the minikube kvm2 driver.
 * **10.96.0.0/12**: Used by service cluster IP's. Configurable via  `--service-cluster-ip-range`
 
 One important note: If NO_PROXY is required by non-Kubernetes applications, such as Firefox or Chrome, you may want to specifically add the minikube IP to the comma-separated list, as they may not understand IP ranges ([#3827](https://github.com/kubernetes/minikube/issues/3827)).
@@ -20,7 +21,7 @@ One important note: If NO_PROXY is required by non-Kubernetes applications, such
 ```shell
 export HTTP_PROXY=http://<proxy hostname:port>
 export HTTPS_PROXY=https://<proxy hostname:port>
-export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24
+export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.0/24,192.168.39.0/24
 
 minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTTPS_PROXY \
   --docker-env NO_PROXY=$NO_PROXY
@@ -33,7 +34,7 @@ To make the exported variables permanent, consider adding the declarations to ~/
 ```shell
 set HTTP_PROXY=http://<proxy hostname:port>
 set HTTPS_PROXY=https://<proxy hostname:port>
-set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24
+set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24,192.168.39.0/24
 
 minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTTPS_PROXY \
   --docker-env NO_PROXY=$NO_PROXY
