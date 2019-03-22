@@ -42,6 +42,7 @@ func init() {
 	ConfigCmd.AddCommand(configSetCmd)
 }
 
+// Set sets a property to a value
 func Set(name string, value string) error {
 	s, err := findSetting(name)
 	if err != nil {

@@ -45,12 +45,14 @@ var (
 	ReasonableStartTime = time.Minute * 10
 )
 
+// PodStore stores pods
 type PodStore struct {
 	cache.Store
 	stopCh    chan struct{}
 	Reflector *cache.Reflector
 }
 
+// List lists the pods
 func (s *PodStore) List() []*v1.Pod {
 	objects := s.Store.List()
 	pods := make([]*v1.Pod, 0)
@@ -60,10 +62,12 @@ func (s *PodStore) List() []*v1.Pod {
 	return pods
 }
 
+// Stop stops the pods
 func (s *PodStore) Stop() {
 	close(s.stopCh)
 }
 
+// GetClient gets the client from config
 func GetClient() (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
@@ -79,6 +83,7 @@ func GetClient() (kubernetes.Interface, error) {
 	return client, nil
 }
 
+// NewPodStore creates a new PodStore
 func NewPodStore(c kubernetes.Interface, namespace string, label labels.Selector, field fields.Selector) *PodStore {
 	lw := &cache.ListWatch{
 		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
@@ -100,6 +105,7 @@ func NewPodStore(c kubernetes.Interface, namespace string, label labels.Selector
 	return &PodStore{Store: store, stopCh: stopCh, Reflector: reflector}
 }
 
+// StartPods starts all pods
 func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunning bool) error {
 	pod.ObjectMeta.Labels["name"] = pod.Name
 	if waitForRunning {
@@ -285,6 +291,7 @@ func countEndpointsNum(e *v1.Endpoints) int {
 	return num
 }
 
+// IsRetryableAPIError returns if this error is retryable or not
 func IsRetryableAPIError(err error) bool {
 	return apierrs.IsTimeout(err) || apierrs.IsServerTimeout(err) || apierrs.IsTooManyRequests(err) || apierrs.IsInternalError(err)
 }

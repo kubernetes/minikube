@@ -39,7 +39,7 @@ var cleanupPaths = []string{
 	"/var/lib/minikube",
 }
 
-// none Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
+// Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
 // https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md
 type Driver struct {
 	*drivers.BaseDriver
@@ -79,6 +79,7 @@ func (d *Driver) PreCreateCheck() error {
 	return d.runtime.Available()
 }
 
+// Create a host using the driver's config
 func (d *Driver) Create() error {
 	// creation for the none driver is handled by commands.go
 	return nil

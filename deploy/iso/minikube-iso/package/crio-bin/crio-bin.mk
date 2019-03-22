@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.13.0
+CRIO_BIN_VERSION = v1.13.1
 CRIO_BIN_SITE = https://github.com/kubernetes-sigs/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
@@ -24,7 +24,6 @@ endef
 define CRIO_BIN_CONFIGURE_CMDS
 	mkdir -p $(CRIO_BIN_GOPATH)/src/github.com/kubernetes-sigs
 	ln -sf $(@D) $(CRIO_BIN_GOPATH)/src/github.com/kubernetes-sigs/cri-o
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.tools DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
 endef
 
 define CRIO_BIN_BUILD_CMDS

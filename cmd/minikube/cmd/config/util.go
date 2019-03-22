@@ -56,16 +56,19 @@ func findSetting(name string) (Setting, error) {
 
 // Set Functions
 
+// SetString sets a string value
 func SetString(m config.MinikubeConfig, name string, val string) error {
 	m[name] = val
 	return nil
 }
 
+// SetMap sets a map value
 func SetMap(m config.MinikubeConfig, name string, val map[string]interface{}) error {
 	m[name] = val
 	return nil
 }
 
+// SetConfigMap sets a config map value
 func SetConfigMap(m config.MinikubeConfig, name string, val string) error {
 	list := strings.Split(val, ",")
 	v := make(map[string]interface{})
@@ -76,6 +79,7 @@ func SetConfigMap(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// SetInt sets an int value
 func SetInt(m config.MinikubeConfig, name string, val string) error {
 	i, err := strconv.Atoi(val)
 	if err != nil {
@@ -85,6 +89,7 @@ func SetInt(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// SetBool sets a bool value
 func SetBool(m config.MinikubeConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
@@ -134,6 +139,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	return nil
 }
 
+// EnableOrDisableStorageClasses enables or disables storage classes
 func EnableOrDisableStorageClasses(name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
