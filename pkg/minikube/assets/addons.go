@@ -377,3 +377,14 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 	}
 	return nil
 }
+
+// GenerateTemplateData generates template data for template assets
+func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
+	opts := struct {
+		ImageRepository string
+	}{
+		ImageRepository: cfg.ImageRepository,
+	}
+
+	return opts
+}

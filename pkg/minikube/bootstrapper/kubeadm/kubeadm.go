@@ -432,7 +432,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
-	kubeadmCfg, opts, err := generateConfig(cfg, r)
+	kubeadmCfg, err := generateConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
@@ -480,7 +480,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	if err := addAddons(&files, opts); err != nil {
+	if err := addAddons(&files, assets.GenerateTemplateData(cfg)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
 
@@ -501,22 +501,22 @@ sudo systemctl start kubelet
 	return nil
 }
 
-func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, interface{}, error) {
+func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "parsing kubernetes version")
+		return "", errors.Wrap(err, "parsing kubernetes version")
 	}
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "parses feature gate config for kubeadm and component")
+		return "", errors.Wrap(err, "parses feature gate config for kubeadm and component")
 	}
 
 	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
 	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version, componentFeatureArgs)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "generating extra component config for kubeadm")
+		return "", errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
 	// In case of no port assigned, use util.APIServerPort
@@ -571,10 +571,10 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, in
 		configTmpl = configTmplV1Beta1
 	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
-		return "", nil, err
+		return "", err
 	}
 
-	return b.String(), opts, nil
+	return b.String(), nil
 }
 
 func maybeDownloadAndCache(binary, version string) (string, error) {

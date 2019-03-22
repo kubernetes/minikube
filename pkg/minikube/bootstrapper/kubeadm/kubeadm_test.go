@@ -118,11 +118,10 @@ ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook 
 
 func TestGenerateConfig(t *testing.T) {
 	tests := []struct {
-		description  string
-		cfg          config.KubernetesConfig
-		expectedCfg  string
-		expectedOpts interface{}
-		shouldErr    bool
+		description string
+		cfg         config.KubernetesConfig
+		expectedCfg string
+		shouldErr   bool
 	}{
 		{
 			description: "no extra args",
@@ -148,37 +147,6 @@ nodeName: minikube
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 `,
-			expectedOpts: struct {
-				CertDir           string
-				ServiceCIDR       string
-				AdvertiseAddress  string
-				APIServerPort     int
-				KubernetesVersion string
-				EtcdDataDir       string
-				NodeName          string
-				CRISocket         string
-				ImageRepository   string
-				ExtraArgs         []ComponentExtraArgs
-				FeatureArgs       map[string]bool
-				NoTaintMaster     bool
-			}{
-				CertDir:           util.DefaultCertPath,
-				ServiceCIDR:       util.DefaultServiceCIDR,
-				AdvertiseAddress:  "192.168.1.100",
-				APIServerPort:     8443,
-				KubernetesVersion: "v1.10.0",
-				EtcdDataDir:       "/data/minikube",
-				NodeName:          "minikube",
-				ExtraArgs: []ComponentExtraArgs{
-					{
-						Component: "apiServer",
-						Options: map[string]string{
-							"admission-control": "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota",
-						},
-					},
-				},
-				FeatureArgs:   map[string]bool{},
-				NoTaintMaster: true},
 		},
 		{
 			description: "extra args all components",
@@ -471,38 +439,6 @@ imageRepository: docker-proxy-image.io/google_containers
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 `,
-			expectedOpts: struct {
-				CertDir           string
-				ServiceCIDR       string
-				AdvertiseAddress  string
-				APIServerPort     int
-				KubernetesVersion string
-				EtcdDataDir       string
-				NodeName          string
-				CRISocket         string
-				ImageRepository   string
-				ExtraArgs         []ComponentExtraArgs
-				FeatureArgs       map[string]bool
-				NoTaintMaster     bool
-			}{
-				CertDir:           util.DefaultCertPath,
-				ServiceCIDR:       util.DefaultServiceCIDR,
-				AdvertiseAddress:  "192.168.1.100",
-				APIServerPort:     8443,
-				KubernetesVersion: "v1.10.0",
-				EtcdDataDir:       "/data/minikube",
-				NodeName:          "minikube",
-				ExtraArgs: []ComponentExtraArgs{
-					{
-						Component: "apiServer",
-						Options: map[string]string{
-							"admission-control": "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota",
-						},
-					},
-				},
-				ImageRepository: "docker-proxy-image.io/google_containers",
-				FeatureArgs:     map[string]bool{},
-				NoTaintMaster:   true},
 		},
 	}
 
@@ -513,7 +449,7 @@ apiServerExtraArgs:
 		}
 
 		t.Run(test.description, func(t *testing.T) {
-			gotCfg, gotOpts, err := generateConfig(test.cfg, runtime)
+			gotCfg, err := generateConfig(test.cfg, runtime)
 			if err != nil && !test.shouldErr {
 				t.Errorf("got unexpected error generating config: %v", err)
 				return
@@ -528,11 +464,6 @@ apiServerExtraArgs:
 			wantSplit := strings.Split(test.expectedCfg, "\n")
 			if diff := cmp.Diff(gotSplit, wantSplit); diff != "" {
 				t.Errorf("unexpected diff: (-want +got)\n%s\ngot: %s\n", diff, gotCfg)
-			}
-			if test.expectedOpts != nil {
-				if diff := cmp.Diff(test.expectedOpts, gotOpts); diff != "" {
-					t.Errorf("opts differ: (-want +got)\n%s", diff)
-				}
 			}
 		})
 	}
