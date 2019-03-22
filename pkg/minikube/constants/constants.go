@@ -238,13 +238,6 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		minikubeRepository += "/"
 	}
 
-	var images = []string{
-		imageRepository + "kube-proxy-amd64:" + kubernetesVersionStr,
-		imageRepository + "kube-scheduler-amd64:" + kubernetesVersionStr,
-		imageRepository + "kube-controller-manager-amd64:" + kubernetesVersionStr,
-		imageRepository + "kube-apiserver-amd64:" + kubernetesVersionStr,
-	}
-
 	ge_v1_14 := semver.MustParseRange(">=1.14.0")
 	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
@@ -252,18 +245,35 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
 	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
 	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
+	ge_v1_12 := semver.MustParseRange(">=1.12.0")
 
 	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
 	if err != nil {
 		glog.Errorln("Error parsing version semver: ", err)
 	}
 
+	var images []string
+	if ge_v1_12(kubernetesVersion) {
+		images = append(images, []string{
+			imageRepository + "kube-proxy:" + kubernetesVersionStr,
+			imageRepository + "kube-scheduler:" + kubernetesVersionStr,
+			imageRepository + "kube-controller-manager:" + kubernetesVersionStr,
+			imageRepository + "kube-apiserver:" + kubernetesVersionStr,
+		}...)
+	} else {
+		images = append(images, []string{
+			imageRepository + "kube-proxy-amd64:" + kubernetesVersionStr,
+			imageRepository + "kube-scheduler-amd64:" + kubernetesVersionStr,
+			imageRepository + "kube-controller-manager-amd64:" + kubernetesVersionStr,
+			imageRepository + "kube-apiserver-amd64:" + kubernetesVersionStr,
+		}...)
+	}
+
 	var podInfraContainerImage string
 	if ge_v1_14(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
+		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "pause:3.1",
 			imageRepository + "k8s-dns-kube-dns-amd64:1.14.13",
 			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.13",
 			imageRepository + "k8s-dns-sidecar-amd64:1.14.13",
@@ -272,34 +282,31 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		}...)
 
 	} else if v1_13(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
+		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "pause:3.1",
 			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
 			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
 			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
-			imageRepository + "etcd-amd64:3.2.24",
+			imageRepository + "etcd:3.2.24",
 			imageRepository + "coredns:1.2.6",
 		}...)
 
 	} else if v1_12(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
+		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "pause:3.1",
 			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
 			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
 			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
-			imageRepository + "etcd-amd64:3.2.24",
+			imageRepository + "etcd:3.2.24",
 			imageRepository + "coredns:1.2.2",
 		}...)
 
 	} else if v1_11(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
+		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "pause:3.1",
 			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
 			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
 			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
@@ -308,7 +315,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		}...)
 
 	} else if v1_10(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
+		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
@@ -318,7 +325,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		}...)
 
 	} else if v1_9(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause-amd64:3.0"
+		podInfraContainerImage = imageRepository + "pause:3.0"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns-amd64:1.14.7",
@@ -328,7 +335,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		}...)
 
 	} else if v1_8(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause-amd64:3.0"
+		podInfraContainerImage = imageRepository + "pause:3.0"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns-amd64:1.14.5",
@@ -338,7 +345,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		}...)
 
 	} else {
-		podInfraContainerImage = imageRepository + "/pause-amd64:3.0"
+		podInfraContainerImage = imageRepository + "pause:3.0"
 	}
 
 	images = append(images, []string{
