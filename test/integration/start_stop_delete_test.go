@@ -34,6 +34,7 @@ func TestStartStop(t *testing.T) {
 		args []string
 	}{
 		{"docker+cache", []string{"--container-runtime=docker", "--cache-images"}},
+		{"docker+cache+ignore_verifications", []string{"--container-runtime=docker", "--cache-images", "--extra-config", "kubeadm.ignore-preflight-errors=SystemVerification"}},
 		{"containerd+cache", []string{"--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock", "--cache-images"}},
 		{"crio+cache", []string{"--container-runtime=crio", "--cache-images"}},
 	}

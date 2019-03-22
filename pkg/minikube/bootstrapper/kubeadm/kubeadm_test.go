@@ -237,6 +237,8 @@ apiServerExtraArgs:
   feature-gates: "HugePages=true,OtherFeature=false"
 controllerManagerExtraArgs:
   feature-gates: "HugePages=true,OtherFeature=false"
+kubeadmExtraArgs:
+  feature-gates: "HugePages=true,OtherFeature=false"
 schedulerExtraArgs:
   feature-gates: "HugePages=true,OtherFeature=false"
 `,
@@ -275,6 +277,8 @@ apiServerExtraArgs:
   fail-no-swap: "true"
   feature-gates: "HugePages=true,OtherFeature=false"
 controllerManagerExtraArgs:
+  feature-gates: "HugePages=true,OtherFeature=false"
+kubeadmExtraArgs:
   feature-gates: "HugePages=true,OtherFeature=false"
 schedulerExtraArgs:
   feature-gates: "HugePages=true,OtherFeature=false"
