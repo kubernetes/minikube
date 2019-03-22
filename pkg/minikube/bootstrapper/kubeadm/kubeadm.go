@@ -32,7 +32,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	download "github.com/jimmidyson/go-download"
+	"github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
@@ -235,7 +235,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-func addAddons(files *[]assets.CopyableFile) error {
+func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 	// add addons to file list
 	// custom addons
 	if err := assets.AddMinikubeDirAssets(files); err != nil {
@@ -245,7 +245,16 @@ func addAddons(files *[]assets.CopyableFile) error {
 	for _, addonBundle := range assets.Addons {
 		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
 			for _, addon := range addonBundle.Assets {
-				*files = append(*files, addon)
+				if addon.IsTemplate() {
+					addonFile, err := addon.Evaluate(data)
+					if err != nil {
+						return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+					}
+
+					*files = append(*files, addonFile)
+				} else {
+					*files = append(*files, addon)
+				}
 			}
 		} else if err != nil {
 			return nil
@@ -387,7 +396,10 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
 
-	extraFlags := convertToFlags(extraOpts)
+	podInfraContainerImage, _ := constants.GetKubeadmCachedImages(k8s.ImageRepository, k8s.KubernetesVersion)
+	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && podInfraContainerImage != "" {
+		extraOpts["pod-infra-container-image"] = podInfraContainerImage
+	}
 
 	// parses a map of the feature gates for kubelet
 	_, kubeletFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
@@ -395,14 +407,18 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 		return "", errors.Wrap(err, "parses feature gate config for kubelet")
 	}
 
+	if kubeletFeatureArgs != "" {
+		extraOpts["feature-gates"] = kubeletFeatureArgs
+	}
+
+	extraFlags := convertToFlags(extraOpts)
+
 	b := bytes.Buffer{}
 	opts := struct {
 		ExtraOptions     string
-		FeatureGates     string
 		ContainerRuntime string
 	}{
 		ExtraOptions:     extraFlags,
-		FeatureGates:     kubeletFeatureArgs,
 		ContainerRuntime: k8s.ContainerRuntime,
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
@@ -414,8 +430,9 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
+	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
-		if err := machine.LoadImages(k.c, constants.GetKubeadmCachedImages(cfg.KubernetesVersion), constants.ImageCacheDir); err != nil {
+		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
 			console.Failure("Unable to load cached images: %v", err)
 		}
 	}
@@ -471,7 +488,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	if err := addAddons(&files); err != nil {
+	if err := addAddons(&files, assets.GenerateTemplateData(cfg)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
 
@@ -525,6 +542,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		EtcdDataDir       string
 		NodeName          string
 		CRISocket         string
+		ImageRepository   string
 		ExtraArgs         []ComponentExtraArgs
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
@@ -537,6 +555,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		CRISocket:         r.SocketPath(),
+		ImageRepository:   k8s.ImageRepository,
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+

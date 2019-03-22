@@ -26,6 +26,96 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+func TestGenerateKubeletConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         config.KubernetesConfig
+		expectedCfg string
+		shouldErr   bool
+	}{
+		{
+			description: "docker runtime",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				KubernetesVersion: "v1.1.0",
+				NodeName:          "minikube",
+				ContainerRuntime:  "docker",
+			},
+			expectedCfg: `
+[Unit]
+Wants=docker.socket
+
+[Service]
+ExecStart=
+ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --require-kubeconfig=true
+
+[Install]
+`,
+		},
+		{
+			description: "cri runtime",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				KubernetesVersion: "v1.1.0",
+				NodeName:          "minikube",
+				ContainerRuntime:  "cri-o",
+			},
+			expectedCfg: `
+[Unit]
+Wants=crio.service
+
+[Service]
+ExecStart=
+ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --require-kubeconfig=true --runtime-request-timeout=15m
+
+[Install]
+`,
+		},
+		{
+			description: "docker runtime with custom image repository",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				KubernetesVersion: "v1.1.0",
+				NodeName:          "minikube",
+				ContainerRuntime:  "docker",
+				ImageRepository:   "docker-proxy-image.io/google_containers",
+			},
+			expectedCfg: `
+[Unit]
+Wants=docker.socket
+
+[Service]
+ExecStart=
+ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers//pause-amd64:3.0 --pod-manifest-path=/etc/kubernetes/manifests --require-kubeconfig=true
+
+[Install]
+`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			runtime, err := cruntime.New(cruntime.Config{Type: test.cfg.ContainerRuntime})
+			if err != nil {
+				t.Fatalf("runtime: %v", err)
+			}
+
+			actualCfg, err := NewKubeletConfig(test.cfg, runtime)
+			if err != nil && !test.shouldErr {
+				t.Errorf("got unexpected error generating config: %v", err)
+				return
+			}
+			if err == nil && test.shouldErr {
+				t.Errorf("expected error but got none, config: %s", actualCfg)
+				return
+			}
+			if diff := cmp.Diff(test.expectedCfg, actualCfg); diff != "" {
+				t.Errorf("actual config does not match expected.  (-want +got)\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestGenerateConfig(t *testing.T) {
 	tests := []struct {
 		description string
@@ -327,6 +417,33 @@ apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 `,
 		},
+		{
+			description: "custom image repository",
+			cfg: config.KubernetesConfig{
+				NodeIP:            "192.168.1.100",
+				KubernetesVersion: "v1.10.0",
+				NodeName:          "minikube",
+				ImageRepository:   "docker-proxy-image.io/google_containers",
+			},
+			expectedCfg: `apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+noTaintMaster: true
+api:
+  advertiseAddress: 192.168.1.100
+  bindPort: 8443
+  controlPlaneEndpoint: localhost
+kubernetesVersion: v1.10.0
+certificatesDir: /var/lib/minikube/certs/
+networking:
+  serviceSubnet: 10.96.0.0/12
+etcd:
+  dataDir: /data/minikube
+nodeName: minikube
+imageRepository: docker-proxy-image.io/google_containers
+apiServerExtraArgs:
+  admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+`,
+		},
 	}
 
 	for _, test := range tests {
@@ -336,21 +453,21 @@ apiServerExtraArgs:
 		}
 
 		t.Run(test.description, func(t *testing.T) {
-			got, err := generateConfig(test.cfg, runtime)
+			gotCfg, err := generateConfig(test.cfg, runtime)
 			if err != nil && !test.shouldErr {
 				t.Errorf("got unexpected error generating config: %v", err)
 				return
 			}
 			if err == nil && test.shouldErr {
-				t.Errorf("expected error but got none, config: %s", got)
+				t.Errorf("expected error but got none, config: %s", gotCfg)
 				return
 			}
 
 			// cmp.Diff doesn't present diffs of multi-line text well
-			gotSplit := strings.Split(got, "\n")
+			gotSplit := strings.Split(gotCfg, "\n")
 			wantSplit := strings.Split(test.expectedCfg, "\n")
 			if diff := cmp.Diff(gotSplit, wantSplit); diff != "" {
-				t.Errorf("unexpected diff: (-want +got)\n%s\ngot: %s\n", diff, got)
+				t.Errorf("unexpected diff: (-want +got)\n%s\ngot: %s\n", diff, gotCfg)
 			}
 		})
 	}

@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: metrics-server
-        image: k8s.gcr.io/metrics-server-amd64:v0.2.1
+        image: {{default "k8s.gcr.io" .ImageRepository}}/metrics-server-amd64:v0.2.1
         imagePullPolicy: Always
         command:
         - /metrics-server

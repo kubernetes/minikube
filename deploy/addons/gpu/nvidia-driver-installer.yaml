@@ -50,7 +50,7 @@ spec:
         hostPath:
           path: /
       initContainers:
-      - image: k8s.gcr.io/minikube-nvidia-driver-installer@sha256:492d46f2bc768d6610ec5940b6c3c33c75e03e201cc8786e04cc488659fd6342
+      - image: {{default "k8s.gcr.io" .ImageRepository}}/minikube-nvidia-driver-installer@sha256:492d46f2bc768d6610ec5940b6c3c33c75e03e201cc8786e04cc488659fd6342
         name: nvidia-driver-installer
         resources:
           requests:
@@ -72,5 +72,5 @@ spec:
         - name: root-mount
           mountPath: /root
       containers:
-      - image: "gcr.io/google-containers/pause:2.0"
+      - image: "{{default "gcr.io/google-containers" .ImageRepository}}/pause:2.0"
         name: pause
