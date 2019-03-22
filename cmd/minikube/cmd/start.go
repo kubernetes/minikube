@@ -136,7 +136,7 @@ func init() {
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
-		Valid components are: kubelet, apiserver, controller-manager, etcd, proxy, scheduler.`)
+		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler.`)
 	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
