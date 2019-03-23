@@ -50,9 +50,13 @@ if [ ! -f "${osrelease}" ] || systemctl is-failed -q "${machinename}" ; then
 	sudo chown "${USER}:" "${machinepath}"
 
 	if [[ -n "${have_docker_image}" ]]; then
-		riid=$(sudo --preserve-env rkt --insecure-options=image fetch "docker://${TOOLBOX_DOCKER_IMAGE}:${TOOLBOX_DOCKER_TAG}")
-		sudo --preserve-env rkt image extract --overwrite --rootfs-only "${riid}" "${machinepath}"
-		sudo --preserve-env rkt image rm "${riid}"
+		piid=$(sudo --preserve-env podman pull "docker://${TOOLBOX_DOCKER_IMAGE}:${TOOLBOX_DOCKER_TAG}")
+		pcid=$(sudo --preserve-env podman create "${piid}")
+		mnt=$(sudo --preserve-env podman mount "${pcid}")
+		sudo --preserve-env rsync -ax "${mnt}"/ "${machinepath}"/
+		sudo --preserve-env podman unmount "${pcid}"
+		sudo --preserve-env podman rm "${pcid}"
+		sudo --preserve-env podman rmi "${piid}"
 	else
 		echo "Error: No toolbox filesystem specified." >&2
 		exit 1
