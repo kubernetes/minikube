@@ -78,6 +78,7 @@ MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 SOURCE_DIRS = cmd pkg test
+SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # $(call DOCKER, image, command)
 define DOCKER
@@ -236,9 +237,13 @@ gendocs: out/docs/minikube.md
 fmt:
 	@gofmt -l -s -w $(SOURCE_DIRS)
 
+.PHONY: vet
+vet:
+	@go vet $(SOURCE_PACKAGES)
+
 .PHONY: lint
 lint:
-	@golint $(MINIKUBE_TEST_FILES)
+	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: reportcard
 reportcard:

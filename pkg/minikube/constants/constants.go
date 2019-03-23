@@ -245,7 +245,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		imageRepository + "kube-apiserver-amd64:" + kubernetesVersionStr,
 	}
 
-	ge_v1_14 := semver.MustParseRange(">=1.14.0")
+	v1_14plus := semver.MustParseRange(">=1.14.0")
 	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
@@ -259,7 +259,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	}
 
 	var podInfraContainerImage string
-	if ge_v1_14(kubernetesVersion) {
+	if v1_14plus(kubernetesVersion) {
 		podInfraContainerImage = imageRepository + "pause-amd64:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
