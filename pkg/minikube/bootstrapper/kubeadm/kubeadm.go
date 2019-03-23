@@ -466,19 +466,16 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	}
 
 	var g errgroup.Group
-	for _, bin := range []string{"kubelet", "kubeadm"} {
+	for _, bin := range constants.GetKubeadmCachedBinaries() {
 		bin := bin
 		g.Go(func() error {
-			path, err := maybeDownloadAndCache(bin, cfg.KubernetesVersion)
+			path, err := CacheBinary(bin, cfg.KubernetesVersion)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", bin)
 			}
-			f, err := assets.NewFileAsset(path, "/usr/bin", bin, "0641")
+			err = CopyBinary(k.c, bin, path)
 			if err != nil {
-				return errors.Wrap(err, "new file asset")
-			}
-			if err := k.c.Copy(f); err != nil {
-				return errors.Wrapf(err, "copy")
+				return errors.Wrapf(err, "copying %s", bin)
 			}
 			return nil
 		})
@@ -584,13 +581,17 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	return b.String(), nil
 }
 
-func maybeDownloadAndCache(binary, version string) (string, error) {
+// CacheBinary will cache a binary on the host
+func CacheBinary(binary, version string) (string, error) {
 	targetDir := constants.MakeMiniPath("cache", version)
 	targetFilepath := path.Join(targetDir, binary)
+
+	url := constants.GetKubernetesReleaseURL(binary, version)
 
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
 	if err == nil {
+		glog.Infof("Not caching binary, using %s", url)
 		return targetFilepath, nil
 	}
 	if !os.IsNotExist(err) {
@@ -601,7 +602,6 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 		return "", errors.Wrapf(err, "mkdir %s", targetDir)
 	}
 
-	url := constants.GetKubernetesReleaseURL(binary, version)
 	options := download.FileOptions{
 		Mkdirs: download.MkdirAll,
 	}
@@ -614,4 +614,16 @@ func maybeDownloadAndCache(binary, version string) (string, error) {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
 	return targetFilepath, nil
+}
+
+// CopyBinary copies previously cached binaries into the path
+func CopyBinary(cr bootstrapper.CommandRunner, binary, path string) error {
+	f, err := assets.NewFileAsset(path, "/usr/bin", binary, "0641")
+	if err != nil {
+		return errors.Wrap(err, "new file asset")
+	}
+	if err := cr.Copy(f); err != nil {
+		return errors.Wrapf(err, "copy")
+	}
+	return nil
 }
