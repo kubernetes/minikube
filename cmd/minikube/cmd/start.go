@@ -199,8 +199,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	cr := configureRuntimes(host, runner)
-	bs := prepareHostEnvironment(m, config.KubernetesConfig)
 	waitCacheImages(&cacheGroup)
+	bs := prepareHostEnvironment(m, config.KubernetesConfig)
 
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)

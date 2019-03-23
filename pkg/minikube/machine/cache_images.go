@@ -202,10 +202,8 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
-	for {
-		if _, err := os.Stat(src); err == nil {
-			break
-		}
+	if _, err := os.Stat(src); err != nil {
+		return err
 	}
 	dst := path.Join(tempLoadDir, filename)
 	f, err := assets.NewFileAsset(src, tempLoadDir, filename, "0777")
