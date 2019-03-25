@@ -126,7 +126,7 @@ const (
 	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
-apiserver: {{.ApiServer}}
+apiserver: {{.APIServer}}
 kubectl: {{.Kubeconfig}}
 `
 	// DefaultAddonListFormat is the default format of addon list
