@@ -1,2 +1,1 @@
-rkt    -1 rkt    -1 -       /home/rkt    /bin/bash rkt-admin,wheel,vboxsf     -
-docker -1 docker -1 =tcuser /home/docker /bin/bash rkt,rkt-admin,wheel,vboxsf -
+docker -1 docker -1 =tcuser /home/docker /bin/bash wheel,vboxsf -
