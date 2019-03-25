@@ -44,15 +44,15 @@ type match struct {
 
 // Display problem metadata to the console
 func (p *Problem) Display() {
-	console.ErrStyle("failure", "Error:       [%s] %v", p.ID, p.Err)
+	console.ErrStyle("failure", "Error:         [%s] %v", p.ID, p.Err)
 	console.ErrStyle("tip", "Advice:        %s", p.Advice)
-	console.ErrStyle("documentation", "Documentation: %s", p.URL)
-	console.ErrStyle("issues", "Related issues:")
-	//	if p.URL != "" {
-	//	}
+	if p.URL != "" {
+		console.ErrStyle("documentation", "Documentation: %s", p.URL)
+	}
 	if len(p.Issues) == 0 {
 		return
 	}
+	console.ErrStyle("issues", "Related issues:")
 	issues := p.Issues
 	if len(issues) > 3 {
 		issues = issues[0:3]
