@@ -92,7 +92,7 @@ func displayError(msg string, err error) {
 		console.Fatal(msg)
 		p.Display()
 		console.Err("\n")
-		console.ErrStyle("sad", "If the solution does not help, please let us know:")
+		console.ErrStyle("sad", "If the advice does not help, please let us know: ")
 		console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
 		return
 	}
