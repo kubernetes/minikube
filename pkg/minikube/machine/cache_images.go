@@ -49,8 +49,8 @@ var getWindowsVolumeName = getWindowsVolumeNameCmd
 var loadImageLock sync.Mutex
 
 // CacheImagesForBootstrapper will cache images for a bootstrapper
-func CacheImagesForBootstrapper(version string, clusterBootstrapper string) error {
-	images := bootstrapper.GetCachedImageList(version, clusterBootstrapper)
+func CacheImagesForBootstrapper(imageRepository string, version string, clusterBootstrapper string) error {
+	images := bootstrapper.GetCachedImageList(imageRepository, version, clusterBootstrapper)
 
 	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
