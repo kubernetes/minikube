@@ -163,6 +163,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /var/lib/minikube
     mount --bind /mnt/$PARTNAME/var/lib/minikube /var/lib/minikube
 
+    mkdir -p /mnt/$PARTNAME/var/lib/toolbox
+    mkdir /var/lib/toolbox
+    mount --bind /mnt/$PARTNAME/var/lib/toolbox /var/lib/toolbox
+
     mkdir -p /mnt/$PARTNAME/var/lib/minishift
     mkdir /var/lib/minishift
     mount --bind /mnt/$PARTNAME/var/lib/minishift /var/lib/minishift
