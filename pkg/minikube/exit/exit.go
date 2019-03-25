@@ -59,11 +59,23 @@ func WithCode(code int, format string, a ...interface{}) {
 
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
+	p := problem.FromError(err)
+	if p != nil {
+		WithProblem(msg, p)
+	}
 	displayError(msg, err)
-	// Here is where we would insert code to optionally upload a stack trace.
-
-	// We can be smarter about guessing exit codes, but EX_SOFTWARE should suffice.
 	os.Exit(Software)
+}
+
+// WithProblem outputs info related to a known problem and exits.
+func WithProblem(msg string, p *problem.Problem) {
+	console.Err("\n")
+	console.Fatal(msg)
+	p.Display()
+	console.Err("\n")
+	console.ErrStyle("sad", "If the advice does not help, please let us know: ")
+	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
+	os.Exit(Config)
 }
 
 // WithLogEntries outputs an error along with any important log entries, and exits.
@@ -85,22 +97,9 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 func displayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
-	p := problem.FromError(err)
-
-	if p != nil {
-		console.Err("\n")
-		console.Fatal(msg)
-		p.Display()
-		console.Err("\n")
-		console.ErrStyle("sad", "If the solution does not help, please let us know:")
-		console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
-		return
-	}
-
 	console.Err("\n")
 	console.Fatal(msg+": %v", err)
 	console.Err("\n")
 	console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
 	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
-
 }
