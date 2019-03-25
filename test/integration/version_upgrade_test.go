@@ -21,12 +21,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"runtime"
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -35,51 +35,45 @@ func TestVersionUpgrade(t *testing.T) {
 	currentRunner.RunCommand("delete", true)
 	currentRunner.CheckStatus(state.None.String())
 
-	isoName := "minikube-linux-amd64"
-	if runtime.GOOS == "darwin" {
-		isoName = "minikube-darwin-amd64"
-	} else if runtime.GOOS == "windows" {
-		isoName = "minikube-windows-amd64.exe"
-	}
 	// Grab latest release binary
-	url := "https://storage.googleapis.com/minikube/releases/latest/" + isoName
+	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
 	resp, err := http.Get(url)
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "Failed to get latest release binary"))
 	}
 	defer resp.Body.Close()
 
-	iso, err := ioutil.TempFile("", isoName)
+	tf, err := ioutil.TempFile("", "minikube")
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "Failed to create binary file"))
 	}
-	defer os.Remove(iso.Name())
+	defer os.Remove(tf.Name())
 
-	_, err = io.Copy(iso, resp.Body)
+	_, err = io.Copy(tf, resp.Body)
 	if err != nil {
-		t.Fatal(errors.Wrap(err, "Failed to populate iso file"))
+		t.Fatal(errors.Wrap(err, "Failed to populate temp file"))
 	}
-	if err := iso.Close(); err != nil {
-		t.Fatal(errors.Wrap(err, "Failed to close iso"))
+	if err := tf.Close(); err != nil {
+		t.Fatal(errors.Wrap(err, "Failed to close temp file"))
 	}
 
 	if runtime.GOOS != "windows" {
-		if err := exec.Command("chmod", "+x", iso.Name()).Run(); err != nil {
+		if err := os.Chmod(tf.Name(), 0700); err != nil {
 			t.Fatal(errors.Wrap(err, "Failed to make binary executable."))
 		}
 	}
 
-	latestRunner := util.MinikubeRunner{
+	releaseRunner := util.MinikubeRunner{
 		Args:       currentRunner.Args,
-		BinaryPath: iso.Name(),
+		BinaryPath: tf.Name(),
 		StartArgs:  currentRunner.StartArgs,
 		MountArgs:  currentRunner.MountArgs,
 		T:          t,
 	}
-	latestRunner.Start()
-	latestRunner.CheckStatus(state.Running.String())
-	latestRunner.RunCommand("stop", true)
-	latestRunner.CheckStatus(state.Stopped.String())
+	releaseRunner.Start()
+	releaseRunner.CheckStatus(state.Running.String())
+	releaseRunner.RunCommand("stop", true)
+	releaseRunner.CheckStatus(state.Stopped.String())
 
 	currentRunner.Start()
 	currentRunner.CheckStatus(state.Running.String())
