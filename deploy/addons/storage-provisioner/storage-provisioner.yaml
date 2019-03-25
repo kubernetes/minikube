@@ -51,7 +51,7 @@ spec:
   hostNetwork: true
   containers:
   - name: storage-provisioner
-    image: gcr.io/k8s-minikube/storage-provisioner:v1.8.1
+    image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/storage-provisioner:v1.8.1
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
     volumeMounts:

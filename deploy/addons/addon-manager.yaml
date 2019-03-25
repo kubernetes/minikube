@@ -25,7 +25,7 @@ spec:
   hostNetwork: true
   containers:
   - name: kube-addon-manager
-    image: k8s.gcr.io/kube-addon-manager:v8.6
+    image: {{default "k8s.gcr.io" .ImageRepository}}/kube-addon-manager:v8.6
     env:
     - name: KUBECONFIG
       value: /var/lib/minikube/kubeconfig

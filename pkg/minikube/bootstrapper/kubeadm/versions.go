@@ -35,6 +35,7 @@ import (
 // through the "extra-config"
 const (
 	Kubelet           = "kubelet"
+	Kubeadm           = "kubeadm"
 	Apiserver         = "apiserver"
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
@@ -71,6 +72,7 @@ var componentToKubeadmConfigKey = map[string]string{
 	Apiserver:         "apiServer",
 	ControllerManager: "controllerManager",
 	Scheduler:         "scheduler",
+	Kubeadm:           "kubeadm",
 	// The Kubelet is not configured in kubeadm, only in systemd.
 	Kubelet: "",
 }
@@ -169,8 +171,13 @@ func ParseKubernetesVersion(version string) (semver.Version, error) {
 
 func convertToFlags(opts map[string]string) string {
 	var flags []string
-	for k, v := range opts {
-		flags = append(flags, fmt.Sprintf("--%s=%s", k, v))
+	var keys []string
+	for k := range opts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		flags = append(flags, fmt.Sprintf("--%s=%s", k, opts[k]))
 	}
 	return strings.Join(flags, " ")
 }
