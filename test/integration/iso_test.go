@@ -89,6 +89,7 @@ func testPersistence(t *testing.T) {
 		"/var/lib/cni",
 		"/var/lib/kubelet",
 		"/var/lib/minikube",
+		"/var/lib/toolbox",
 		"/var/lib/rkt",
 		"/var/lib/boot2docker",
 	} {
