@@ -109,6 +109,11 @@ var netProblems = map[string]match{
 		Advice: "Your host is failing to route packets to the minikube VM. If you have VPN software, try turning it off or configuring it so that it does not re-route traffic to the VM IP. If not, check your VM environment routing options.",
 		Issues: []int{3388},
 	},
+	"INVALID_PROXY_HOSTNAME": {
+		Regexp: re(`dial tcp: lookup.*: no such host`),
+		Advice: "Verify that your HTTP_PROXY and HTTPS_PROXY environment variables are set correctly.",
+		URL:    proxyDoc,
+	},
 }
 
 // deployProblems are Kubernetes deployment problems.
