@@ -35,6 +35,7 @@ import (
 // through the "extra-config"
 const (
 	Kubelet           = "kubelet"
+	Kubeadm           = "kubeadm"
 	Apiserver         = "apiserver"
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
@@ -60,19 +61,23 @@ func ExtraConfigForComponent(component string, opts util.ExtraOptionSlice, versi
 	return versionedOpts, nil
 }
 
+// ComponentExtraArgs holds extra args for a component
 type ComponentExtraArgs struct {
 	Component string
 	Options   map[string]string
 }
 
+// mapping of component to the section name in kubeadm.
 var componentToKubeadmConfigKey = map[string]string{
-	Apiserver:         "apiServerExtraArgs",
-	ControllerManager: "controllerManagerExtraArgs",
-	Scheduler:         "schedulerExtraArgs",
+	Apiserver:         "apiServer",
+	ControllerManager: "controllerManager",
+	Scheduler:         "scheduler",
+	Kubeadm:           "kubeadm",
 	// The Kubelet is not configured in kubeadm, only in systemd.
 	Kubelet: "",
 }
 
+// NewComponentExtraArgs creates a new ComponentExtraArgs
 func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
 	var kubeadmExtraArgs []ComponentExtraArgs
 	for _, extraOpt := range opts {
@@ -110,6 +115,7 @@ func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, f
 	return kubeadmExtraArgs, nil
 }
 
+// ParseFeatureArgs parses feature args into extra args
 func ParseFeatureArgs(featureGates string) (map[string]bool, string, error) {
 	kubeadmFeatureArgs := map[string]bool{}
 	componentFeatureArgs := ""
@@ -152,11 +158,12 @@ func Supports(featureName string) bool {
 	return false
 }
 
+// ParseKubernetesVersion parses the kubernetes version
 func ParseKubernetesVersion(version string) (semver.Version, error) {
 	// Strip leading 'v' prefix from version for semver parsing
 	v, err := semver.Make(version[1:])
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "parsing kubernetes version")
+		return semver.Version{}, errors.Wrap(err, "invalid version, must begin with 'v'")
 	}
 
 	return v, nil
@@ -164,8 +171,13 @@ func ParseKubernetesVersion(version string) (semver.Version, error) {
 
 func convertToFlags(opts map[string]string) string {
 	var flags []string
-	for k, v := range opts {
-		flags = append(flags, fmt.Sprintf("--%s=%s", k, v))
+	var keys []string
+	for k := range opts {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		flags = append(flags, fmt.Sprintf("--%s=%s", k, opts[k]))
 	}
 	return strings.Join(flags, " ")
 }
@@ -246,7 +258,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		Option: util.ExtraOption{
 			Component: Apiserver,
 			Key:       "admission-control",
-			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
 		},
 		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
 		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
@@ -255,10 +267,20 @@ var versionSpecificOpts = []VersionedExtraOption{
 		Option: util.ExtraOption{
 			Component: Apiserver,
 			Key:       "enable-admission-plugins",
-			Value:     strings.Join(util.DefaultAdmissionControllers, ","),
+			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
 		},
 		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
+		LessThanOrEqual:    semver.MustParse("1.13.1000"),
 	},
+	{
+		Option: util.ExtraOption{
+			Component: Apiserver,
+			Key:       "enable-admission-plugins",
+			Value:     strings.Join(util.DefaultV114AdmissionControllers, ","),
+		},
+		GreaterThanOrEqual: semver.MustParse("1.14.0-alpha.0"),
+	},
+
 	{
 		Option: util.ExtraOption{
 			Component: Kubelet,
@@ -269,6 +291,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 	},
 }
 
+// VersionIsBetween checks if a version is between (or including) two given versions
 func VersionIsBetween(version, gte, lte semver.Version) bool {
 	if gte.NE(semver.Version{}) && !version.GTE(gte) {
 		return false
@@ -280,6 +303,7 @@ func VersionIsBetween(version, gte, lte semver.Version) bool {
 	return true
 }
 
+// DefaultOptionsForComponentAndVersion returns the default option for a component and version
 func DefaultOptionsForComponentAndVersion(component string, version semver.Version) (map[string]string, error) {
 	versionedOpts := map[string]string{}
 	for _, opts := range versionSpecificOpts {

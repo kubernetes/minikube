@@ -117,7 +117,7 @@ func runsc() error {
 	return downloadFileToDest(constants.GvisorURL, dest)
 }
 
-// downloadFileToDest downlaods the given file to the dest
+// downloadFileToDest downloads the given file to the dest
 // if something already exists at dest, first remove it
 func downloadFileToDest(url, dest string) error {
 	client := &http.Client{}

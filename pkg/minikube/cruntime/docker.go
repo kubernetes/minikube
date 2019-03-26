@@ -24,6 +24,7 @@ import (
 	"github.com/golang/glog"
 )
 
+// KubernetesContainerPrefix is the prefix of each kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
 // Docker contains Docker runtime state
@@ -35,6 +36,17 @@ type Docker struct {
 // Name is a human readable name for Docker
 func (r *Docker) Name() string {
 	return "Docker"
+}
+
+// Version retrieves the current version of this runtime
+func (r *Docker) Version() (string, error) {
+	// Note: the server daemon has to be running, for this call to return successfully
+	ver, err := r.Runner.CombinedOutput("docker version --format '{{.Server.Version}}'")
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Split(ver, "\n")[0], nil
 }
 
 // SocketPath returns the path to the socket file for Docker

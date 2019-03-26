@@ -89,14 +89,17 @@ var (
 	registry = createRegistry()
 )
 
+// ListDrivers lists all drivers in registry
 func ListDrivers() []DriverDef {
 	return registry.List()
 }
 
+// Register registers driver
 func Register(driver DriverDef) error {
 	return registry.Register(driver)
 }
 
+// Driver gets a named driver
 func Driver(name string) (DriverDef, error) {
 	return registry.Driver(name)
 }

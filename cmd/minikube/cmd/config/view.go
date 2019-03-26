@@ -26,9 +26,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
-var configViewFormat string
+var viewFormat string
 
-type ConfigViewTemplate struct {
+// ViewTemplate represents the view template
+type ViewTemplate struct {
 	ConfigKey   string
 	ConfigValue interface{}
 }
@@ -38,7 +39,7 @@ var configViewCmd = &cobra.Command{
 	Short: "Display values currently set in the minikube config file",
 	Long:  "Display values currently set in the minikube config file.",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := configView()
+		err := View()
 		if err != nil {
 			exit.WithError("config view failed", err)
 		}
@@ -46,23 +47,24 @@ var configViewCmd = &cobra.Command{
 }
 
 func init() {
-	configViewCmd.Flags().StringVar(&configViewFormat, "format", constants.DefaultConfigViewFormat,
+	configViewCmd.Flags().StringVar(&viewFormat, "format", constants.DefaultConfigViewFormat,
 		`Go template format string for the config view output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#ConfigViewTemplate`)
 	ConfigCmd.AddCommand(configViewCmd)
 }
 
-func configView() error {
+// View displays the current config
+func View() error {
 	cfg, err := config.ReadConfig()
 	if err != nil {
 		return err
 	}
 	for k, v := range cfg {
-		tmpl, err := template.New("view").Parse(configViewFormat)
+		tmpl, err := template.New("view").Parse(viewFormat)
 		if err != nil {
 			exit.WithError("Error creating view template", err)
 		}
-		viewTmplt := ConfigViewTemplate{k, v}
+		viewTmplt := ViewTemplate{k, v}
 		err = tmpl.Execute(os.Stdout, viewTmplt)
 		if err != nil {
 			exit.WithError("Error executing view template", err)

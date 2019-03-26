@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
+// TestMain is the test main
 func TestMain(m *testing.M) {
 	flag.Parse()
 	os.Exit(m.Run())
@@ -35,6 +36,7 @@ var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to min
 var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to minikube mount")
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
 
+// NewMinikubeRunner creates a new MinikubeRunner
 func NewMinikubeRunner(t *testing.T) util.MinikubeRunner {
 	return util.MinikubeRunner{
 		Args:       *args,

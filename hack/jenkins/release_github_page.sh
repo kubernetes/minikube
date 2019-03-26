@@ -27,6 +27,7 @@
 set -e
 export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
+export RPM_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 
 export GITHUB_ORGANIZATION="kubernetes"
 export GITHUB_REPO="minikube"
@@ -117,12 +118,15 @@ FILES_TO_UPLOAD=(
     'minikube-linux-amd64.sha256'
     'minikube-darwin-amd64'
     'minikube-darwin-amd64.sha256'
-    'minikube-windows-amd64'
-    'minikube-windows-amd64.sha256'
+    'minikube-windows-amd64.exe'
+    'minikube-windows-amd64.exe.sha256'
     'minikube-installer.exe'
     "minikube_${DEB_VERSION}.deb"
+    "minikube-${RPM_VERSION}.rpm"
     'docker-machine-driver-kvm2'
+    'docker-machine-driver-kvm2.sha256'
     'docker-machine-driver-hyperkit'
+    'docker-machine-driver-hyperkit.sha256'
 )
 
 for UPLOAD in "${FILES_TO_UPLOAD[@]}"

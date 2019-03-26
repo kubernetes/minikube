@@ -1,4 +1,0 @@
-config BR2_PACKAGE_RKT_BIN
-	bool "rkt-bin"
-	default y
-	depends on BR2_x86_64

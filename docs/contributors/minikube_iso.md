@@ -1,10 +1,10 @@
-## minikube ISO image
+# minikube ISO image
 
 This includes the configuration for an alternative bootable ISO image meant to be used in conjunction with minikube.
 
 It includes:
+
 - systemd as the init system
-- rkt
 - docker
 - CRI-O
 
@@ -13,9 +13,10 @@ It includes:
 ### Requirements
 
 * Linux
+
 ```shell
 sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
-	unzip bc gcc-multilib automake libtool locales
+    unzip bc gcc-multilib automake libtool locales
 ```
 
 Either import your private key or generate a sign-only key using `gpg2 --gen-key`.
@@ -38,7 +39,6 @@ The bootable ISO image will be available in `out/minikube.iso`.
 
 ```shell
 $ ./out/minikube start \
-    --container-runtime=rkt \
     --iso-url=file://$GOPATH/src/k8s.io/minikube/out/minikube.iso
 ```
 
@@ -68,7 +68,6 @@ $ git status
 ```
 
 ### Saving buildroot/kernel configuration changes
-
 
 To make any kernel configuration changes and save them, execute:
 

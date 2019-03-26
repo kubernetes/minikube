@@ -41,6 +41,7 @@ type Manager struct {
 //stateCheckInterval defines how frequently the cluster and route states are checked
 const stateCheckInterval = 5 * time.Second
 
+// NewManager creates a new Manager
 func NewManager() *Manager {
 	return &Manager{
 		delay: stateCheckInterval,
@@ -50,6 +51,8 @@ func NewManager() *Manager {
 		router: &osRouter{},
 	}
 }
+
+// StartTunnel starts the tunnel
 func (mgr *Manager) StartTunnel(ctx context.Context, machineName string, machineAPI libmachine.API, configLoader config.Loader, v1Core v1.CoreV1Interface) (done chan bool, err error) {
 	tunnel, err := newTunnel(machineName, machineAPI, configLoader, v1Core, mgr.registry, mgr.router)
 	if err != nil {
@@ -117,6 +120,7 @@ func (mgr *Manager) cleanup(t controller) *Status {
 	return t.cleanup()
 }
 
+// CleanupNotRunningTunnels cleans up tunnels that are not running
 func (mgr *Manager) CleanupNotRunningTunnels() error {
 	tunnels, err := mgr.registry.List()
 	if err != nil {

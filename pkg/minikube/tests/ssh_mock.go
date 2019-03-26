@@ -154,10 +154,12 @@ func (s *SSHServer) Start() (int, error) {
 	return port, nil
 }
 
+// SetCommandToOutput sets command to output
 func (s *SSHServer) SetCommandToOutput(cmdToOutput map[string]string) {
 	s.commandToOutput.Store(cmdToOutput)
 }
 
+// GetCommandToOutput gets command to output
 func (s *SSHServer) GetCommandToOutput(cmd string) (string, error) {
 	cmdMap := s.commandToOutput.Load().(map[string]string)
 	val, ok := cmdMap[cmd]
@@ -167,6 +169,7 @@ func (s *SSHServer) GetCommandToOutput(cmd string) (string, error) {
 	return val, nil
 }
 
+// SetSessionRequested sets session requested
 func (s *SSHServer) SetSessionRequested(b bool) {
 	var i int32
 	if b {
@@ -175,6 +178,7 @@ func (s *SSHServer) SetSessionRequested(b bool) {
 	atomic.StoreInt32(&s.hadASessionRequested, i)
 }
 
+// IsSessionRequested gcode ets session requested
 func (s *SSHServer) IsSessionRequested() bool {
 	return atomic.LoadInt32(&s.hadASessionRequested) != 0
 }

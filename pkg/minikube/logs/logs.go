@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// package logs are convenience methods for fetching logs from a minikube cluster
+// Package logs are convenience methods for fetching logs from a minikube cluster
 package logs
 
 import (
@@ -33,13 +33,14 @@ import (
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
-var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --`)
+var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted`)
 
 // importantPods are a list of pods to retrieve logs for, in addition to the bootstrapper logs.
 var importantPods = []string{
 	"kube-apiserver",
 	"coredns",
 	"kube-scheduler",
+	"kube-proxy",
 }
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
@@ -105,6 +106,10 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 // Output displays logs from multiple sources in tail(1) format
 func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner, lines int) error {
 	cmds := logCommands(r, bs, lines, false)
+
+	// These are not technically logs, but are useful to have in bug reports.
+	cmds["kernel"] = "uptime && uname -a"
+
 	names := []string{}
 	for k := range cmds {
 		names = append(names, k)
@@ -112,7 +117,10 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrappe
 	sort.Strings(names)
 
 	failed := []string{}
-	for _, name := range names {
+	for i, name := range names {
+		if i > 0 {
+			console.OutLn("")
+		}
 		console.OutLn("==> %s <==", name)
 		var b bytes.Buffer
 		err := runner.CombinedOutputTo(cmds[name], &b)

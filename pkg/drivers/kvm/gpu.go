@@ -31,7 +31,7 @@ import (
 var sysFsPCIDevicesPath = "/sys/bus/pci/devices/"
 var sysKernelIOMMUGroupsPath = "/sys/kernel/iommu_groups/"
 
-const nvidiaVendorId = "0x10de"
+const nvidiaVendorID = "0x10de"
 
 const devicesTmpl = `
 <graphics type='spice' autoport='yes'>
@@ -50,6 +50,7 @@ const devicesTmpl = `
 {{end}}
 `
 
+// PCIDevice holds a parsed PCI device
 type PCIDevice struct {
 	Domain   string
 	Bus      string
@@ -127,8 +128,8 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 		}
 
 		// Check if this is an NVIDIA device
-		if strings.EqualFold(strings.TrimSpace(string(content)), nvidiaVendorId) {
-			log.Infof("Found device %v with NVIDIA's vendorId %v", device.Name(), nvidiaVendorId)
+		if strings.EqualFold(strings.TrimSpace(string(content)), nvidiaVendorID) {
+			log.Infof("Found device %v with NVIDIA's vendorId %v", device.Name(), nvidiaVendorID)
 			found = true
 
 			// Check whether it's unbound. We don't want the device to be bound to nvidia/nouveau etc.
@@ -195,14 +196,12 @@ func isUnbound(device string) bool {
 	if os.IsNotExist(err) {
 		log.Infof("%v is not bound to any driver", device)
 		return true
-	} else {
-		module := filepath.Base(modulePath)
-		if module == "pci_stub" || module == "vfio_pci" {
-			log.Infof("%v is bound to a stub module: %v", device, module)
-			return true
-		} else {
-			log.Infof("%v is bound to a non-stub module: %v", device, module)
-			return false
-		}
 	}
+	module := filepath.Base(modulePath)
+	if module == "pci_stub" || module == "vfio_pci" {
+		log.Infof("%v is bound to a stub module: %v", device, module)
+		return true
+	}
+	log.Infof("%v is bound to a non-stub module: %v", device, module)
+	return false
 }
