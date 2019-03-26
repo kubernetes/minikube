@@ -1,8 +1,8 @@
-## Advanced Topics and Tutorials
+# Advanced Topics and Tutorials
 
-### Cluster Configuration
+## Cluster Configuration
 
-* **Alternative Runtimes** ([alternative_runtimes.md](alternative_runtimes.md)): How to run minikube with rkt as the container runtime
+* **Alternative Runtimes** ([alternative_runtimes.md](alternative_runtimes.md)): How to run minikube without Docker as the container runtime
 
 * **Environment Variables** ([env_vars.md](env_vars.md)): The different environment variables that minikube understands
 

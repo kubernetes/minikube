@@ -30,18 +30,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+// GetDiskPath returns the path of the machine disk image
 func GetDiskPath(d *drivers.BaseDriver) string {
 	return filepath.Join(d.ResolveStorePath("."), d.GetMachineName()+".rawdisk")
 }
 
+// CommonDriver is the common driver base class
 type CommonDriver struct{}
 
-//Not implemented yet
+// GetCreateFlags is not implemented yet
 func (d *CommonDriver) GetCreateFlags() []mcnflag.Flag {
 	return nil
 }
 
-//Not implemented yet
+// SetConfigFromFlags is not implemented yet
 func (d *CommonDriver) SetConfigFromFlags(flags drivers.DriverOptions) error {
 	return nil
 }
@@ -87,6 +89,7 @@ func Restart(d drivers.Driver) error {
 	return nil
 }
 
+// MakeDiskImage makes a boot2docker VM disk image.
 func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) error {
 	//TODO(r2d4): rewrite this, not using b2dutils
 	b2dutils := mcnutils.NewB2dUtils(d.StorePath)

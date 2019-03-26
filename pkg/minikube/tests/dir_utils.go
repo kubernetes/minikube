@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// MakeTempDir creates the temp dir and returns the path
 func MakeTempDir() string {
 	tempDir, err := ioutil.TempDir("", "minipath")
 	if err != nil {

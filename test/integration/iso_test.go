@@ -89,7 +89,7 @@ func testPersistence(t *testing.T) {
 		"/var/lib/cni",
 		"/var/lib/kubelet",
 		"/var/lib/minikube",
-		"/var/lib/rkt",
+		"/var/lib/toolbox",
 		"/var/lib/boot2docker",
 	} {
 		output, err := minikubeRunner.SSH(fmt.Sprintf("df %s | tail -n 1 | awk '{print $1}'", dir))

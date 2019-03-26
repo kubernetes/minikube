@@ -32,8 +32,8 @@ const (
 	DefaultServiceCIDR       = "10.96.0.0/12"
 )
 
-var DefaultAdmissionControllers = []string{
-	"Initializers",
+// DefaultV114AdmissionControllers are admission controllers we default to in v1.14.x
+var DefaultV114AdmissionControllers = []string{
 	"NamespaceLifecycle",
 	"LimitRanger",
 	"ServiceAccount",
@@ -44,6 +44,9 @@ var DefaultAdmissionControllers = []string{
 	"ValidatingAdmissionWebhook",
 	"ResourceQuota",
 }
+
+// DefaultLegacyAdmissionControllers are admission controllers we include with Kubernetes <1.14.0
+var DefaultLegacyAdmissionControllers = append([]string{"Initializers"}, DefaultV114AdmissionControllers...)
 
 // GetServiceClusterIP returns the first IP of the ServiceCIDR
 func GetServiceClusterIP(serviceCIDR string) (net.IP, error) {
@@ -67,6 +70,7 @@ func GetDNSIP(serviceCIDR string) (net.IP, error) {
 	return ip, nil
 }
 
+// GetAlternateDNS returns a list of alternate names for a domain
 func GetAlternateDNS(domain string) []string {
 	return []string{"kubernetes.default.svc." + domain, "kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
 }

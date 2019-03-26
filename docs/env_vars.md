@@ -3,7 +3,7 @@
 
 ## Config option variables
 
-minikube supports passing environment variables instead of flags for every value listed in `minikube config list`.  This is done by passing an environment variable with the prefix `MINIKUBE_`. 
+minikube supports passing environment variables instead of flags for every value listed in `minikube config list`.  This is done by passing an environment variable with the prefix `MINIKUBE_`.
 
 For example the `minikube start --iso-url="$ISO_URL"` flag can also be set by setting the `MINIKUBE_ISO_URL="$ISO_URL"` environment variable.
 
@@ -46,7 +46,7 @@ MINIKUBE_ENABLE_PROFILING=1 minikube start
 
 Output:
 
-```
+``` text
 2017/01/09 13:18:00 profile: cpu profiling enabled, /tmp/profile933201292/cpu.pprof
 Starting local Kubernetes cluster...
 Kubectl is now configured to use the cluster.

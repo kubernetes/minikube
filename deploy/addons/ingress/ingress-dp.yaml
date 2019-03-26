@@ -39,7 +39,7 @@ spec:
         # Any image is permissible as long as:
         # 1. It serves a 404 page at /
         # 2. It serves 200 on a /healthz endpoint
-        image: gcr.io/google_containers/defaultbackend:1.4
+        image: {{default "gcr.io/google_containers" .ImageRepository}}/defaultbackend:1.4
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -87,7 +87,7 @@ spec:
       serviceAccountName: nginx-ingress
       terminationGracePeriodSeconds: 60
       containers:
-      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.21.0
+      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.23.0
         name: nginx-ingress-controller
         imagePullPolicy: IfNotPresent
         readinessProbe:

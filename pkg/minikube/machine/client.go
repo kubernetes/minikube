@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/provision"
 )
 
+// NewRPCClient gets a new client.
 func NewRPCClient(storePath, certsDir string) libmachine.API {
 	c := libmachine.NewClient(storePath, certsDir)
 	c.SSHClientType = ssh.Native
@@ -76,6 +77,7 @@ type LocalClient struct {
 	legacyClient libmachine.API
 }
 
+// NewHost creates a new Host
 func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
 	var def registry.DriverDef
 	var err error
@@ -116,6 +118,7 @@ func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host
 	}, nil
 }
 
+// Load a new client, creating driver
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
@@ -133,6 +136,7 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 	return h, json.Unmarshal(h.RawDriver, h.Driver)
 }
 
+// Close closes the client
 func (api *LocalClient) Close() error {
 	if api.legacyClient != nil {
 		return api.legacyClient.Close()
@@ -152,6 +156,7 @@ func CommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
 	return bootstrapper.NewSSHRunner(client), nil
 }
 
+// Create creates the host
 func (api *LocalClient) Create(h *host.Host) error {
 	if def, err := registry.Driver(h.DriverName); err != nil {
 		return err
@@ -211,6 +216,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 	return nil
 }
 
+// StartDriver starts the driver
 func StartDriver() {
 	cert.SetCertGenerator(&CertGenerator{})
 	check.DefaultConnChecker = &ConnChecker{}
@@ -221,9 +227,11 @@ func StartDriver() {
 	localbinary.CurrentBinaryIsDockerMachine = true
 }
 
+// ConnChecker can check the connection
 type ConnChecker struct {
 }
 
+// Check checks the connection
 func (cc *ConnChecker) Check(h *host.Host, swarm bool) (string, *auth.Options, error) {
 	authOptions := h.AuthOptions()
 	dockerHost, err := h.Driver.GetURL()

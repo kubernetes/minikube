@@ -42,6 +42,7 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// BuildrootProvisioner provisions the custom system based on Buildroot
 type BuildrootProvisioner struct {
 	provision.SystemdProvisioner
 }
@@ -52,6 +53,7 @@ func init() {
 	})
 }
 
+// NewBuildrootProvisioner creates a new BuildrootProvisioner
 func NewBuildrootProvisioner(d drivers.Driver) provision.Provisioner {
 	return &BuildrootProvisioner{
 		provision.NewSystemdProvisioner("buildroot", d),
@@ -62,6 +64,7 @@ func (p *BuildrootProvisioner) String() string {
 	return "buildroot"
 }
 
+// GenerateDockerOptions generates the *provision.DockerOptions for this provisioner
 func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision.DockerOptions, error) {
 	var engineCfg bytes.Buffer
 
@@ -134,10 +137,12 @@ WantedBy=multi-user.target
 	}, nil
 }
 
+// Package installs a package
 func (p *BuildrootProvisioner) Package(name string, action pkgaction.PackageAction) error {
 	return nil
 }
 
+// Provision does the provisioning
 func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
 	p.SwarmOptions = swarmOptions
 	p.AuthOptions = authOptions

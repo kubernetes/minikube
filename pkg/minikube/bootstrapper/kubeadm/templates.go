@@ -22,7 +22,8 @@ import (
 	"text/template"
 )
 
-var kubeadmConfigTemplateV1Alpha1 = template.Must(template.New("kubeadmConfigTemplate-v1alpha1").Funcs(template.FuncMap{
+// configTmplV1Alpha1 is for Kubernetes v1.11
+var configTmplV1Alpha1 = template.Must(template.New("configTmpl-v1alpha1").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
@@ -38,17 +39,18 @@ networking:
 etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
-{{if .CRISocket}}criSocket: {{.CRISocket}}
-{{end}}{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
+{{if .ImageRepository}}imageRepository: {{.ImageRepository}}
+{{end}}{{if .CRISocket}}criSocket: {{.CRISocket}}
+{{end}}{{range .ExtraArgs}}{{.Component}}ExtraArgs:{{range $i, $val := printMapInOrder .Options ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
 {{end}}`))
 
-var kubeadmConfigTemplateV1Alpha3 = template.Must(template.New("kubeadmConfigTemplate-v1alpha3").Funcs(template.FuncMap{
+// configTmplV1Alpha3 is for Kubernetes v1.12
+var configTmplV1Alpha3 = template.Must(template.New("configTmpl-v1alpha3").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
-}).Parse(`
-apiVersion: kubeadm.k8s.io/v1alpha3
+}).Parse(`apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
 apiEndpoint:
   advertiseAddress: {{.AdvertiseAddress}}
@@ -67,7 +69,8 @@ nodeRegistration:
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
-{{range .ExtraArgs}}{{.Component}}:{{range $i, $val := printMapInOrder .Options ": " }}
+{{if .ImageRepository}}imageRepository: {{.ImageRepository}}
+{{end}}{{range .ExtraArgs}}{{.Component}}ExtraArgs:{{range $i, $val := printMapInOrder .Options ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
@@ -86,14 +89,63 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
-# disable disk resource management by default, as it doesn't work well within the minikube environment.
-imageGCHighThresholdPercent: 100
-# Don't evict jobs, as we only have a single node to run on.
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
-  `))
+`))
+
+// configTmplV1Beta1 is for Kubernetes v1.13+
+var configTmplV1Beta1 = template.Must(template.New("configTmpl-v1beta1").Funcs(template.FuncMap{
+	"printMapInOrder": printMapInOrder,
+}).Parse(`apiVersion: kubeadm.k8s.io/v1beta1
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{.AdvertiseAddress}}
+  bindPort: {{.APIServerPort}}
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+nodeRegistration:
+  criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
+  name: {{.NodeName}}
+  taints: []
+---
+apiVersion: kubeadm.k8s.io/v1beta1
+kind: ClusterConfiguration
+{{if .ImageRepository}}imageRepository: {{.ImageRepository}}
+{{end}}{{range .ExtraArgs}}{{.Component}}:
+  extraArgs:
+    {{range $i, $val := printMapInOrder .Options ": " }}{{$val}}{{end}}
+{{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
+  {{$i}}: {{$val}}{{end}}
+{{end -}}
+certificatesDir: {{.CertDir}}
+clusterName: kubernetes
+controlPlaneEndpoint: localhost:{{.APIServerPort}}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: {{.EtcdDataDir}}
+kubernetesVersion: {{.KubernetesVersion}}
+networking:
+  dnsDomain: cluster.local
+  podSubnet: ""
+  serviceSubnet: {{.ServiceCIDR}}
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+imageGCHighThresholdPercent: 100
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"
+`))
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Unit]
@@ -101,7 +153,7 @@ var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate"
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet {{.ExtraOptions}} {{if .FeatureGates}}--feature-gates={{.FeatureGates}}{{end}}
+ExecStart=/usr/bin/kubelet{{if .ExtraOptions}} {{.ExtraOptions}}{{end}}
 
 [Install]
 `))
@@ -122,7 +174,7 @@ WantedBy=multi-user.target
 `
 
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(`
-sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}
+sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{.ExtraOptions}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}
 `))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key

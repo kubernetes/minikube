@@ -32,6 +32,7 @@ type MockHost struct {
 	Driver        drivers.Driver
 }
 
+// NewMockHost creates a new MockHost
 func NewMockHost() *MockHost {
 	return &MockHost{
 		CommandOutput: make(map[string]string),
@@ -40,6 +41,7 @@ func NewMockHost() *MockHost {
 	}
 }
 
+// RunSSHCommand runs a SSH command, returning output
 func (m MockHost) RunSSHCommand(cmd string) (string, error) {
 	m.Commands[cmd] = 1
 	output, ok := m.CommandOutput[cmd]

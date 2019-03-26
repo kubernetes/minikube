@@ -66,6 +66,9 @@ var styles = map[string]style{
 	"log-entry":     {Prefix: "    "},   // Indent
 	"crushed":       {Prefix: "💔  "},
 	"url":           {Prefix: "👉  "},
+	"documentation": {Prefix: "🗎   "},
+	"issues":        {Prefix: "📚  "},
+	"issue":         {Prefix: "    ▪ "}, // Indented bullet
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  ", LowPrefix: "@   "},
@@ -82,7 +85,6 @@ var styles = map[string]style{
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
 	"Docker":            {Prefix: "🐳  "},
-	"rkt":               {Prefix: "🚀  "},
 	"CRI-O":             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	"containerd":        {Prefix: "📦  "},
 	"permissions":       {Prefix: "🔑  "},
@@ -93,8 +95,11 @@ var styles = map[string]style{
 	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},
 	"kubectl":           {Prefix: "💗  ", LowPrefix: "+   "},
 	"meh":               {Prefix: "🙄  ", LowPrefix: "?   "},
-	"embarassed":        {Prefix: "🤦  ", LowPrefix: "*   "},
+	"embarrassed":       {Prefix: "🤦  ", LowPrefix: "*   "},
 	"tip":               {Prefix: "💡  ", LowPrefix: "i   "},
+	"unmount":           {Prefix: "🔥  ", LowPrefix: "x   "},
+	"mount-options":     {Prefix: "💾  ", LowPrefix: "o   "},
+	"fileserver":        {Prefix: "🚀  ", LowPrefix: "@   ", OmitNewline: true},
 }
 
 // Add a prefix to a string

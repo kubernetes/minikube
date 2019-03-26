@@ -210,8 +210,6 @@ func (conn *Conn) send() {
 			}
 		}
 	}
-
-	panic("unreached")
 }
 
 func (conn *Conn) RemoteAddr() net.Addr {
@@ -259,5 +257,4 @@ func (srv *Srv) StartListener(l net.Listener) error {
 
 		srv.NewConn(c)
 	}
-	return nil
 }

@@ -33,7 +33,6 @@ func TestName(t *testing.T) {
 	}{
 		{"", "Docker"},
 		{"docker", "Docker"},
-		{"rkt", "rkt"},
 		{"crio", "CRI-O"},
 		{"cri-o", "CRI-O"},
 		{"containerd", "containerd"},
@@ -134,6 +133,10 @@ func (f *FakeRunner) CombinedOutput(cmd string) (string, error) {
 		return f.docker(args, root)
 	case "crictl":
 		return f.crictl(args, root)
+	case "crio":
+		return f.crio(args, root)
+	case "containerd":
+		return f.containerd(args, root)
 	default:
 		return "", nil
 	}
@@ -181,7 +184,29 @@ func (f *FakeRunner) docker(args []string, root bool) (string, error) {
 			delete(f.containers, id)
 
 		}
+	case "version":
+		if args[1] == "--format" && args[2] == "'{{.Server.Version}}'" {
+			return "18.06.2-ce", nil
+		}
 
+	}
+	return "", nil
+}
+
+// crio is a fake implementation of crio
+func (f *FakeRunner) crio(args []string, root bool) (string, error) {
+	switch cmd := args[0]; cmd {
+	case "--version":
+		return "crio version 1.13.0", nil
+	}
+	return "", nil
+}
+
+// containerd is a fake implementation of containerd
+func (f *FakeRunner) containerd(args []string, root bool) (string, error) {
+	switch cmd := args[0]; cmd {
+	case "--version":
+		return "containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39", nil
 	}
 	return "", nil
 }
@@ -282,6 +307,33 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) {
 		}
 	}
 	return out, nil
+}
+
+func TestVersion(t *testing.T) {
+	var tests = []struct {
+		runtime string
+		want    string
+	}{
+		{"docker", "18.06.2-ce"},
+		{"cri-o", "1.13.0"},
+		{"containerd", "1.2.0"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.runtime, func(t *testing.T) {
+			runner := NewFakeRunner(t)
+			r, err := New(Config{Type: tc.runtime, Runner: runner})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.runtime, err)
+			}
+			got, err := r.Version()
+			if err != nil {
+				t.Fatalf("Version(%s): %v", tc.runtime, err)
+			}
+			if got != tc.want {
+				t.Errorf("Version(%s) = %q, want: %q", tc.runtime, got, tc.want)
+			}
+		})
+	}
 }
 
 // defaultServices reflects the default boot state for the minikube VM

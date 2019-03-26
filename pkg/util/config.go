@@ -107,9 +107,8 @@ func convertKind(e reflect.Value, v string) error {
 	case reflect.Bool:
 		return convertBool(e, v)
 	default:
-		return fmt.Errorf("Unable to set type %T.", e.Kind())
+		return fmt.Errorf("Unable to set type %T", e.Kind())
 	}
-	return nil
 }
 
 func convertInt(e reflect.Value, v string) error {
@@ -147,7 +146,7 @@ func convertBool(e reflect.Value, v string) error {
 func convertIP(e reflect.Value, v string) error {
 	ip := net.ParseIP(v)
 	if ip == nil {
-		return fmt.Errorf("Error converting input %s to an IP.", v)
+		return fmt.Errorf("Error converting input %s to an IP", v)
 	}
 	e.Set(reflect.ValueOf(ip))
 	return nil

@@ -19,14 +19,12 @@ func atime(stat *syscall.Stat_t) time.Time {
 func isBlock(d os.FileInfo) bool {
 	stat := d.Sys().(*syscall.Stat_t)
 	return (stat.Mode & syscall.S_IFMT) == syscall.S_IFBLK
-	return true
 }
 
 // IsChar reports if the file is a character device
 func isChar(d os.FileInfo) bool {
 	stat := d.Sys().(*syscall.Stat_t)
 	return (stat.Mode & syscall.S_IFMT) == syscall.S_IFCHR
-	return true
 }
 
 func dir2Qid(d os.FileInfo) *Qid {
@@ -42,11 +40,11 @@ func dir2Qid(d os.FileInfo) *Qid {
 func dir2Dir(path string, d os.FileInfo, dotu bool, upool Users) (*Dir, error) {
 	if r := recover(); r != nil {
 		fmt.Print("stat failed: ", r)
-		return nil, &os.PathError{"dir2Dir", path, nil}
+		return nil, &os.PathError{Op: "dir2Dir", Path: path, Err: nil}
 	}
 	sysif := d.Sys()
 	if sysif == nil {
-		return nil, &os.PathError{"dir2Dir: sysif is nil", path, nil}
+		return nil, &os.PathError{Op: "dir2Dir: sysif is nil", Path: path, Err: nil}
 	}
 	sysMode := sysif.(*syscall.Stat_t)
 

@@ -26,25 +26,8 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
             dd if=$UNPARTITIONED_HD of=/userdata.tar bs=1 count=4096 2>/dev/null
             # Create the partition, format it and then mount it
             echo "NEW boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
-
-            # Add a swap partition (so Docker doesn't complain about it missing)
-            (echo n; echo p; echo 2; echo ; echo +1000M ; echo w) | fdisk $UNPARTITIONED_HD
             # Let kernel re-read partition table
             partprobe
-            (echo t; echo 82; echo w) | fdisk $UNPARTITIONED_HD
-            # Let kernel re-read partition table
-            partprobe
-            # wait for the partition to actually exist, timeout after about 5 seconds
-            timer=0
-            while [ "$timer" -lt 10 ]; do
-                if [ -b "${UNPARTITIONED_HD}2" ]; then
-                    mkswap "${UNPARTITIONED_HD}2" && break
-                fi
-                echo "Waiting for ${UNPARTITIONED_HD}2 to exist."
-                timer=$((timer + 1))
-                sleep 0.5
-            done
-
             # Add the data partition
             (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
             # Let kernel re-read partition table
@@ -74,12 +57,6 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                 if [ $NON_NUL == 0 ]; then
                     # Create the partition, format it and then mount it
                     echo "NEW VMware boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
-
-                    # Add a swap partition (so Docker doesn't complain about it missing)
-                    (echo n; echo p; echo 2; echo ; echo +1000M ; echo w) | fdisk $UNPARTITIONED_HD
-                    (echo t; echo 82) | fdisk $UNPARTITIONED_HD
-                    mkswap "${UNPARTITIONED_HD}2"
-                    # Add the data partition
                     (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
                     BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
                     mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
@@ -152,28 +129,6 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /tmp/hostpath-provisioner
     mount --bind /mnt/$PARTNAME/hostpath-provisioner /tmp/hostpath-provisioner
 
-    rm -rf /var/lib/rkt
-    if [ ! -d /mnt/$PARTNAME/var/lib/rkt ]; then
-        mkdir -p /mnt/$PARTNAME/var/lib/rkt
-        chown root:rkt /mnt/$PARTNAME/var/lib/rkt
-    fi
-    mkdir /var/lib/rkt
-    mount --bind /mnt/$PARTNAME/var/lib/rkt /var/lib/rkt
-
-    if [ ! -d /mnt/$PARTNAME/var/lib/rkt-etc ]; then
-        mkdir -p /mnt/$PARTNAME/var/lib/rkt-etc
-        cp -rp /etc/rkt/* /mnt/$PARTNAME/var/lib/rkt-etc
-        chown root:rkt-admin /mnt/$PARTNAME/var/lib/rkt-etc
-        chmod ug+rw /mnt/$PARTNAME/var/lib/rkt-etc
-    fi
-    rm -rf /etc/rkt
-    mkdir /etc/rkt
-    mount --bind /mnt/$PARTNAME/var/lib/rkt-etc /etc/rkt
-
-    if [ ! -d /var/lib/rkt/pods ]; then
-        systemd-tmpfiles --create rkt.conf
-    fi
-
     if [ -e "/userdata.tar" ]; then
         mv /userdata.tar /var/lib/boot2docker/
     fi
@@ -186,6 +141,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /var/lib/minikube
     mount --bind /mnt/$PARTNAME/var/lib/minikube /var/lib/minikube
 
+    mkdir -p /mnt/$PARTNAME/var/lib/toolbox
+    mkdir /var/lib/toolbox
+    mount --bind /mnt/$PARTNAME/var/lib/toolbox /var/lib/toolbox
+
     mkdir -p /mnt/$PARTNAME/var/lib/minishift
     mkdir /var/lib/minishift
     mount --bind /mnt/$PARTNAME/var/lib/minishift /var/lib/minishift
@@ -194,7 +153,6 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /var/run/minikube
     echo "PERSISTENT_DIR=\"/mnt/$PARTNAME\"" > /var/run/minikube/env
 fi
-swapon "${UNPARTITIONED_HD}2"
 
 # /etc dirs are initialised from /usr/local, to allow the user/admin to customise
 mkdir -p /var/lib/boot2docker/etc/

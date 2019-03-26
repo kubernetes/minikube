@@ -26,6 +26,7 @@ import (
 	"github.com/hooklift/iso9660"
 )
 
+// ExtractFile extracts a file from an ISO
 func ExtractFile(isoPath, srcPath, destPath string) error {
 	iso, err := os.Open(isoPath)
 	defer iso.Close()
@@ -53,7 +54,7 @@ func ExtractFile(isoPath, srcPath, destPath string) error {
 	return err
 }
 
-func ReadFile(isoPath, srcPath string) (string, error) {
+func readFile(isoPath, srcPath string) (string, error) {
 	iso, err := os.Open(isoPath)
 	defer iso.Close()
 	if err != nil {

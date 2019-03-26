@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+// Status represents the tunnel status
 type Status struct {
 	TunnelID ID
 
@@ -35,6 +36,7 @@ type Status struct {
 	LoadBalancerEmulatorError error
 }
 
+// Clone clones an existing Status
 func (t *Status) Clone() *Status {
 	return &Status{
 		TunnelID:                  t.TunnelID,
@@ -57,6 +59,7 @@ func (t *Status) String() string {
 		t.LoadBalancerEmulatorError)
 }
 
+// Route represents a route
 type Route struct {
 	Gateway  net.IP
 	DestCIDR *net.IPNet
@@ -66,12 +69,14 @@ func (r *Route) String() string {
 	return fmt.Sprintf("%s -> %s", r.DestCIDR.String(), r.Gateway.String())
 }
 
+// Equal checks if two routes are equal
 func (r *Route) Equal(other *Route) bool {
 	return other != nil && r.DestCIDR.IP.Equal(other.DestCIDR.IP) &&
 		r.DestCIDR.Mask.String() == other.DestCIDR.Mask.String() &&
 		r.Gateway.Equal(other.Gateway)
 }
 
+// Patch represents a patch
 type Patch struct {
 	Type         types.PatchType
 	NameSpace    string
@@ -82,12 +87,15 @@ type Patch struct {
 	BodyContent  string
 }
 
-// State represents the status of a host
+// HostState represents the status of a host
 type HostState int
 
 const (
+	// Unknown represents an unknown state
 	Unknown HostState = iota
+	// Running represents a running state
 	Running
+	// Stopped represents a stopped state
 	Stopped
 )
 
