@@ -350,7 +350,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 
 	images = append(images, []string{
 		imageRepository + "kubernetes-dashboard-amd64:v1.10.1",
-		imageRepository + "kube-addon-manager:v8.6",
+		imageRepository + "kube-addon-manager:v9.0",
 		minikubeRepository + "storage-provisioner:v1.8.1",
 	}...)
 
