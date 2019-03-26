@@ -528,14 +528,14 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	if preexisting {
 		console.OutStyle("restarting", "Relaunching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
 		if err := bs.RestartCluster(kc); err != nil {
-			exit.WithProblems("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
+			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
 		}
 		return
 	}
 
 	console.OutStyle("launch", "Launching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
 	if err := bs.StartCluster(kc); err != nil {
-		exit.WithProblems("Error starting cluster", err, logs.FindProblems(r, bs, runner))
+		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}
 }
 
@@ -552,7 +552,7 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 	}
 	err := pkgutil.RetryAfter(20, k8sStat, 3*time.Second)
 	if err != nil {
-		exit.WithProblems("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
+		exit.WithLogEntries("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
 	}
 	aStat := func() (err error) {
 		st, err := bs.GetAPIServerStatus(net.ParseIP(ip))
@@ -565,7 +565,7 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 
 	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
 	if err != nil {
-		exit.WithProblems("apiserver checks failed", err, logs.FindProblems(r, bs, runner))
+		exit.WithLogEntries("apiserver checks failed", err, logs.FindProblems(r, bs, runner))
 	}
 	console.OutLn("")
 }
