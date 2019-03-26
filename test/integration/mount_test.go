@@ -56,6 +56,8 @@ func testMounting(t *testing.T) {
 	} else {
 		mountCmd = fmt.Sprintf("mount %s:/mount-9p", tempDir)
 	}
+
+	t.Logf("Starting mount: %s", mountCmd)
 	cmd, _, _ := minikubeRunner.RunDaemon2(mountCmd)
 	defer func() {
 		err := cmd.Process.Kill()
@@ -81,12 +83,14 @@ func testMounting(t *testing.T) {
 
 	// Create the pods we need outside the main test loop.
 	setupTest := func() error {
+		t.Logf("Deploying pod from: %s", podPath)
 		if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
 			return err
 		}
 		return nil
 	}
 	defer func() {
+		t.Logf("Deleting pod from: %s", podPath)
 		if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", podPath}); err != nil {
 			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
 		}
@@ -104,6 +108,7 @@ func testMounting(t *testing.T) {
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
 	}
+	t.Logf("Pods appear to be running")
 
 	mountTest := func() error {
 		path := filepath.Join(tempDir, "frompod")
@@ -161,5 +166,4 @@ func testMounting(t *testing.T) {
 	if err := util.Retry(t, mountTest, 5*time.Second, 40); err != nil {
 		t.Fatalf("mountTest failed with error: %v", err)
 	}
-
 }
