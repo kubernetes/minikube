@@ -45,8 +45,8 @@ var mountIP string
 var mountVersion string
 var mountType string
 var isKill bool
-var uid int
-var gid int
+var uid string
+var gid string
 var mSize int
 var options []string
 var mode uint
@@ -144,8 +144,8 @@ var mountCmd = &cobra.Command{
 		console.OutStyle("mounting", "Mounting host path %s into VM as %s ...", hostPath, vmPath)
 		console.OutStyle("mount-options", "Mount options:")
 		console.OutStyle("option", "Type:     %s", cfg.Type)
-		console.OutStyle("option", "UID:      %d", cfg.UID)
-		console.OutStyle("option", "GID:      %d", cfg.GID)
+		console.OutStyle("option", "UID:      %s", cfg.UID)
+		console.OutStyle("option", "GID:      %s", cfg.GID)
 		console.OutStyle("option", "Version:  %s", cfg.Version)
 		console.OutStyle("option", "MSize:    %d", cfg.MSize)
 		console.OutStyle("option", "Mode:     %o (%s)", cfg.Mode, cfg.Mode)
@@ -194,8 +194,8 @@ func init() {
 	mountCmd.Flags().StringVar(&mountType, "type", nineP, "Specify the mount filesystem type (supported types: 9p)")
 	mountCmd.Flags().StringVar(&mountVersion, "9p-version", constants.DefaultMountVersion, "Specify the 9p version that the mount should use")
 	mountCmd.Flags().BoolVar(&isKill, "kill", false, "Kill the mount process spawned by minikube start")
-	mountCmd.Flags().IntVar(&uid, "uid", 1001, "Default user id used for the mount")
-	mountCmd.Flags().IntVar(&gid, "gid", 1001, "Default group id used for the mount")
+	mountCmd.Flags().StringVar(&uid, "uid", "docker", "Default user id used for the mount")
+	mountCmd.Flags().StringVar(&gid, "gid", "docker", "Default group id used for the mount")
 	mountCmd.Flags().UintVar(&mode, "mode", 0755, "File permissions used for the mount")
 	mountCmd.Flags().StringSliceVar(&options, "options", []string{}, "Additional mount options, such as cache=fscache")
 	mountCmd.Flags().IntVar(&mSize, "msize", constants.DefaultMsize, "The number of bytes to use for 9p packet payload")
