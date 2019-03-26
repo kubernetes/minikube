@@ -28,7 +28,7 @@ type mockMountHost struct {
 	T    *testing.T
 }
 
-func NewMockMountHost(t *testing.T) *mockMountHost {
+func newMockMountHost(t *testing.T) *mockMountHost {
 	return &mockMountHost{
 		T:    t,
 		cmds: []string{},
@@ -96,7 +96,7 @@ func TestMount(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h := NewMockMountHost(t)
+			h := newMockMountHost(t)
 			err := Mount(h, tc.source, tc.target, tc.cfg)
 			if err != nil {
 				t.Fatalf("Mount(%s, %s, %+v): %v", tc.source, tc.target, tc.cfg, err)
@@ -109,7 +109,7 @@ func TestMount(t *testing.T) {
 }
 
 func TestUnmount(t *testing.T) {
-	h := NewMockMountHost(t)
+	h := newMockMountHost(t)
 	err := Unmount(h, "/mnt")
 	if err != nil {
 		t.Fatalf("Unmount(/mnt): %v", err)

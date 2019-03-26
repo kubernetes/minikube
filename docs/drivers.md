@@ -36,7 +36,7 @@ sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm
 sudo yum install libvirt-daemon-kvm qemu-kvm
 ```
 
-Enable,start, and verify the `libvirtd` service has started. 
+Enable,start, and verify the `libvirtd` service has started.
 
 ```shell
 sudo systemctl enable libvirtd.service

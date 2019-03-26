@@ -92,7 +92,7 @@ Some environment variables may be useful for using the `none` driver:
 * **MINIKUBE_HOME**: Saves all files to this directory instead of $HOME
 * **MINIKUBE_WANTUPDATENOTIFICATION**: Toggles the notification that your version of minikube is obsolete
 * **MINIKUBE_WANTREPORTERRORPROMPT**: Toggles the error reporting prompt
-* **MINIKUBE_IN_COLOR**: Toggles color output and emoji usage
+* **MINIKUBE_IN_STYLE**: Toggles color output and emoji usage
 
 ## Known Issues
 
@@ -101,4 +101,5 @@ Some environment variables may be useful for using the `none` driver:
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
 * CoreDNS detects resolver loop, goes into CrashloopBackoff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
 * Some versions of Linux have a version of docker that is newer then what Kubernetes expects. To overwrite this, run minikube with the following parameters: `sudo -E minikube start --vm-driver=none --kubernetes-version v1.11.8 --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
+* On Ubuntu 18.04 (and probably others), because of how `systemd-resolve` is configured by default, one needs to bypass the default `resolv.conf` file and use a different one instead: `sudo -E minikube --vm-driver=none start --extra-config=kubelet.resolv-conf=/run/systemd/resolve/resolv.conf`
 * [Full list of open 'none' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fnone-driver)
