@@ -31,9 +31,9 @@ type MountConfig struct {
 	// Type is the filesystem type (Typically 9p)
 	Type string
 	// UID is the User ID which this path will be mounted as
-	UID int
+	UID string
 	// GID is the Group ID which this path will be mounted as
-	GID int
+	GID string
 	// Version is the 9P protocol version. Valid options: 9p2000, 9p200.u, 9p2000.L
 	Version string
 	// MSize is the number of bytes to use for 9p packet payload
@@ -65,11 +65,38 @@ func Mount(h hostRunner, source string, target string, c *MountConfig) error {
 	return nil
 }
 
+// returns either a raw UID number, or the subshell to resolve it.
+func resolveUID(id string) string {
+	_, err := strconv.ParseInt(id, 10, 64)
+	if err == nil {
+		return id
+	}
+	// Preserve behavior where unset ID == 0
+	if id == "" {
+		return "0"
+	}
+	return fmt.Sprintf(`$(id -u %s)`, id)
+}
+
+// returns either a raw GID number, or the subshell to resolve it.
+func resolveGID(id string) string {
+	_, err := strconv.ParseInt(id, 10, 64)
+	if err == nil {
+		return id
+	}
+	// Preserve behavior where unset ID == 0
+	if id == "" {
+		return "0"
+	}
+	// Because `getent` isn't part of our ISO
+	return fmt.Sprintf(`$(grep ^%s: /etc/group | cut -d: -f3)`, id)
+}
+
 // mntCmd returns a mount command based on a config.
 func mntCmd(source string, target string, c *MountConfig) string {
 	options := map[string]string{
-		"dfltgid": strconv.Itoa(c.GID),
-		"dfltuid": strconv.Itoa(c.UID),
+		"dfltgid": resolveGID(c.GID),
+		"dfltuid": resolveUID(c.UID),
 	}
 	if c.Port != 0 {
 		options["port"] = strconv.Itoa(c.Port)
