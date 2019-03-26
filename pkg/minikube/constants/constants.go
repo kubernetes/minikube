@@ -126,7 +126,7 @@ const (
 	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
-apiserver: {{.ApiServer}}
+apiserver: {{.APIServer}}
 kubectl: {{.Kubeconfig}}
 `
 	// DefaultAddonListFormat is the default format of addon list
@@ -238,14 +238,14 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		minikubeRepository += "/"
 	}
 
-	ge_v1_14 := semver.MustParseRange(">=1.14.0")
+	v1_14plus := semver.MustParseRange(">=1.14.0")
 	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
 	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
 	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
-	ge_v1_12 := semver.MustParseRange(">=1.12.0")
+	v1_12plus := semver.MustParseRange(">=1.12.0")
 
 	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
 	if err != nil {
@@ -253,7 +253,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	}
 
 	var images []string
-	if ge_v1_12(kubernetesVersion) {
+	if v1_12plus(kubernetesVersion) {
 		images = append(images, []string{
 			imageRepository + "kube-proxy:" + kubernetesVersionStr,
 			imageRepository + "kube-scheduler:" + kubernetesVersionStr,
@@ -270,7 +270,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	}
 
 	var podInfraContainerImage string
-	if ge_v1_14(kubernetesVersion) {
+	if v1_14plus(kubernetesVersion) {
 		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,

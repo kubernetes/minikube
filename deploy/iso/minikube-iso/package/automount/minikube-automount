@@ -129,28 +129,6 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /tmp/hostpath-provisioner
     mount --bind /mnt/$PARTNAME/hostpath-provisioner /tmp/hostpath-provisioner
 
-    rm -rf /var/lib/rkt
-    if [ ! -d /mnt/$PARTNAME/var/lib/rkt ]; then
-        mkdir -p /mnt/$PARTNAME/var/lib/rkt
-        chown root:rkt /mnt/$PARTNAME/var/lib/rkt
-    fi
-    mkdir /var/lib/rkt
-    mount --bind /mnt/$PARTNAME/var/lib/rkt /var/lib/rkt
-
-    if [ ! -d /mnt/$PARTNAME/var/lib/rkt-etc ]; then
-        mkdir -p /mnt/$PARTNAME/var/lib/rkt-etc
-        cp -rp /etc/rkt/* /mnt/$PARTNAME/var/lib/rkt-etc
-        chown root:rkt-admin /mnt/$PARTNAME/var/lib/rkt-etc
-        chmod ug+rw /mnt/$PARTNAME/var/lib/rkt-etc
-    fi
-    rm -rf /etc/rkt
-    mkdir /etc/rkt
-    mount --bind /mnt/$PARTNAME/var/lib/rkt-etc /etc/rkt
-
-    if [ ! -d /var/lib/rkt/pods ]; then
-        systemd-tmpfiles --create rkt.conf
-    fi
-
     if [ -e "/userdata.tar" ]; then
         mv /userdata.tar /var/lib/boot2docker/
     fi
@@ -162,6 +140,10 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir -p /mnt/$PARTNAME/var/lib/minikube
     mkdir /var/lib/minikube
     mount --bind /mnt/$PARTNAME/var/lib/minikube /var/lib/minikube
+
+    mkdir -p /mnt/$PARTNAME/var/lib/toolbox
+    mkdir /var/lib/toolbox
+    mount --bind /mnt/$PARTNAME/var/lib/toolbox /var/lib/toolbox
 
     mkdir -p /mnt/$PARTNAME/var/lib/minishift
     mkdir /var/lib/minishift

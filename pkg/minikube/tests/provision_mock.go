@@ -84,7 +84,7 @@ func (provisioner *MockProvisioner) GetOsReleaseInfo() (*provision.OsRelease, er
 	return nil, nil
 }
 
-// AttemptIPContact attemps to contact an IP and port
+// AttemptIPContact attempts to contact an IP and port
 func (provisioner *MockProvisioner) AttemptIPContact(dockerPort int) {
 }
 

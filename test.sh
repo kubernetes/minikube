@@ -20,9 +20,9 @@ REPO_PATH="k8s.io/minikube"
 
 # Check for python on host, and use it if possible, otherwise fall back on python dockerized
 if [[ -f $(which python 2>&1) ]]; then
-	PYTHON="python"
+    PYTHON="python"
 else
-	PYTHON="docker run --rm -it -v $(pwd):/minikube -w /minikube python python"
+    PYTHON="docker run --rm -it -v $(pwd):/minikube -w /minikube python python"
 fi
 
 
@@ -51,9 +51,9 @@ set +e
 files=$(gofmt -l -s . | grep -v ${ignore})
 set -e
 if [[ $files ]]; then
-  gofmt -d ${files}
-  echo "Gofmt errors in files: $files"
-  exit 1
+    gofmt -d ${files}
+    echo "Gofmt errors in files: $files"
+    exit 1
 fi
 
 # Check boilerplate
@@ -64,8 +64,8 @@ set +e
 files=$(${PYTHON} ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
 set -e
 if [[ ! -z ${files} ]]; then
-	echo "Boilerplate missing in: ${files}."
-	exit 1
+    echo "Boilerplate missing in: ${files}."
+    exit 1
 fi
 
 echo "Checking releases.json schema"
