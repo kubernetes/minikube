@@ -66,8 +66,8 @@ var styles = map[string]style{
 	"log-entry":     {Prefix: "    "},   // Indent
 	"crushed":       {Prefix: "💔  "},
 	"url":           {Prefix: "👉  "},
-	"documentation": {Prefix: "🗎   "},
-	"issues":        {Prefix: "📚  "},
+	"documentation": {Prefix: "📘  "},
+	"issues":        {Prefix: "⁉️   "},
 	"issue":         {Prefix: "    ▪ "}, // Indented bullet
 
 	// Specialized purpose styles
