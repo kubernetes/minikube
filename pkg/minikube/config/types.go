@@ -52,6 +52,7 @@ type MachineConfig struct {
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
 	GPU                 bool   // Only used by kvm2
+	Hidden              bool   // Only used by kvm2
 	NoVTXCheck          bool   // Only used by virtualbox
 }
 
@@ -70,6 +71,7 @@ type KubernetesConfig struct {
 	NetworkPlugin     string
 	FeatureGates      string
 	ServiceCIDR       string
+	ImageRepository   string
 	ExtraOptions      util.ExtraOptionSlice
 
 	ShouldLoadCachedImages bool

@@ -19,13 +19,13 @@ metadata:
   namespace: kube-system
   labels:
     component: kube-addon-manager
-    version: v8.6
+    version: v9.0
     kubernetes.io/minikube-addons: addon-manager
 spec:
   hostNetwork: true
   containers:
   - name: kube-addon-manager
-    image: k8s.gcr.io/kube-addon-manager:v8.6
+    image: {{default "k8s.gcr.io" .ImageRepository}}/kube-addon-manager:v9.0
     env:
     - name: KUBECONFIG
       value: /var/lib/minikube/kubeconfig

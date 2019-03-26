@@ -385,6 +385,7 @@ func getIPForInterface(name string) (net.IP, error) {
 	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
 }
 
+// CheckIfHostExistsAndLoad checks if a host exists, and loads it if it does
 func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
 	exists, err := api.Exists(machineName)
 	if err != nil {
@@ -401,6 +402,7 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 	return host, nil
 }
 
+// CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, args []string) error {
 	machineName := cfg.GetMachineName()
 	host, err := CheckIfHostExistsAndLoad(api, machineName)

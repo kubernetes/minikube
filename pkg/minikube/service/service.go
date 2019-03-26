@@ -43,19 +43,23 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// K8sClient represents a kubernetes client
 type K8sClient interface {
 	GetCoreClient() (corev1.CoreV1Interface, error)
 	GetClientset(timeout time.Duration) (*kubernetes.Clientset, error)
 }
 
+// K8sClientGetter can get a K8sClient
 type K8sClientGetter struct{}
 
+// K8s is the current K8sClient
 var K8s K8sClient
 
 func init() {
 	K8s = &K8sClientGetter{}
 }
 
+// GetCoreClient returns a core client
 func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	client, err := k.GetClientset(constants.DefaultK8sClientTimeout)
 	if err != nil {
@@ -64,6 +68,7 @@ func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	return client.Core(), nil
 }
 
+// GetClientset returns a clientset
 func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	profile := viper.GetString(config.MachineProfile)
@@ -87,15 +92,17 @@ func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clients
 	return client, nil
 }
 
+// URL represents service URL
 type URL struct {
 	Namespace string
 	Name      string
 	URLs      []string
 }
 
+// URLs represents a list of URL
 type URLs []URL
 
-// Returns all the node port URLs for every service in a particular namespace
+// GetServiceURLs returns all the node port URLs for every service in a particular namespace
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
@@ -132,7 +139,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 	return serviceURLs, nil
 }
 
-// Returns all the node ports for a service in a namespace
+// GetServiceURLsForService returns all the node ports for a service in a namespace
 // with optional formatting
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
@@ -210,6 +217,7 @@ func CheckService(namespace string, service string) error {
 	return nil
 }
 
+// OptionallyHTTPSFormattedURLString returns a formatted URL string, optionally HTTPS
 func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string, bool) {
 	httpsFormattedString := bareURLString
 	isHTTPSchemedURL := false
@@ -225,6 +233,7 @@ func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string
 	return httpsFormattedString, isHTTPSchemedURL
 }
 
+// WaitAndMaybeOpenService waits for a service, and opens it when running
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
 	wait int, interval int) error {
 	if err := util.RetryAfter(wait, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
@@ -248,6 +257,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	return nil
 }
 
+// GetServiceListByLabel returns a ServiceList by label
 func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
 	client, err := K8s.GetCoreClient()
 	if err != nil {

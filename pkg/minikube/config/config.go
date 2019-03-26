@@ -30,19 +30,30 @@ import (
 )
 
 const (
-	WantUpdateNotification                  = "WantUpdateNotification"
-	ReminderWaitPeriodInHours               = "ReminderWaitPeriodInHours"
-	WantReportError                         = "WantReportError"
-	WantReportErrorPrompt                   = "WantReportErrorPrompt"
-	WantKubectlDownloadMsg                  = "WantKubectlDownloadMsg"
-	WantNoneDriverWarning                   = "WantNoneDriverWarning"
-	MachineProfile                          = "profile"
-	ShowDriverDeprecationNotification       = "ShowDriverDeprecationNotification"
+	// WantUpdateNotification is the key for WantUpdateNotification
+	WantUpdateNotification = "WantUpdateNotification"
+	// ReminderWaitPeriodInHours is the key for WantUpdateNotification
+	ReminderWaitPeriodInHours = "ReminderWaitPeriodInHours"
+	// WantReportError is the key for WantReportError
+	WantReportError = "WantReportError"
+	// WantReportErrorPrompt is the key for WantReportErrorPrompt
+	WantReportErrorPrompt = "WantReportErrorPrompt"
+	// WantKubectlDownloadMsg is the key for WantKubectlDownloadMsg
+	WantKubectlDownloadMsg = "WantKubectlDownloadMsg"
+	// WantNoneDriverWarning is the key for WantNoneDriverWarning
+	WantNoneDriverWarning = "WantNoneDriverWarning"
+	// MachineProfile is the key for MachineProfile
+	MachineProfile = "profile"
+	// ShowDriverDeprecationNotification is the key for ShowDriverDeprecationNotification
+	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
+	// ShowBootstrapperDeprecationNotification is the key for ShowBootstrapperDeprecationNotification
 	ShowBootstrapperDeprecationNotification = "ShowBootstrapperDeprecationNotification"
 )
 
+// MinikubeConfig represents minikube config
 type MinikubeConfig map[string]interface{}
 
+// Get gets a named value from config
 func Get(name string) (string, error) {
 	m, err := ReadConfig()
 	if err != nil {
@@ -103,6 +114,7 @@ type Loader interface {
 
 type simpleConfigLoader struct{}
 
+// DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
 func (c *simpleConfigLoader) LoadConfigFromFile(profile string) (*Config, error) {

@@ -86,12 +86,12 @@ func TestMount(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h := newMockMountRunner(t)
-			err := Mount(h, tc.source, tc.target, tc.cfg)
+			r := newMockMountRunner(t)
+			err := Mount(r, tc.source, tc.target, tc.cfg)
 			if err != nil {
 				t.Fatalf("Mount(%s, %s, %+v): %v", tc.source, tc.target, tc.cfg, err)
 			}
-			if diff := cmp.Diff(h.cmds, tc.want); diff != "" {
+			if diff := cmp.Diff(r.cmds, tc.want); diff != "" {
 				t.Errorf("command diff (-want +got): %s", diff)
 			}
 		})
@@ -99,14 +99,14 @@ func TestMount(t *testing.T) {
 }
 
 func TestUnmount(t *testing.T) {
-	h := newMockMountRunner(t)
-	err := Unmount(h, "/mnt")
+	r := newMockMountRunner(t)
+	err := Unmount(r, "/mnt")
 	if err != nil {
 		t.Fatalf("Unmount(/mnt): %v", err)
 	}
 
 	want := []string{"findmnt -T /mnt | grep /mnt && sudo umount /mnt || true"}
-	if diff := cmp.Diff(h.cmds, want); diff != "" {
+	if diff := cmp.Diff(r.cmds, want); diff != "" {
 		t.Errorf("command diff (-want +got): %s", diff)
 	}
 }

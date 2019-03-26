@@ -21,7 +21,7 @@ import (
 	"github.com/docker/machine/libmachine/mcnerror"
 )
 
-//implements persist.Store from libmachine
+// FakeStore implements persist.Store from libmachine
 type FakeStore struct {
 	Hosts map[string]*host.Host
 }
@@ -32,6 +32,7 @@ func (s *FakeStore) Exists(name string) (bool, error) {
 	return ok, nil
 }
 
+// List returns the list of hosts.
 func (s *FakeStore) List() ([]string, error) {
 	hostNames := []string{}
 	for h := range s.Hosts {

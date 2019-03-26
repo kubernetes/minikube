@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: freshpod
-        image: gcr.io/google-samples/freshpod:v0.0.1
+        image: {{default "gcr.io/google-samples" .ImageRepository}}/freshpod:v0.0.1
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - name: docker

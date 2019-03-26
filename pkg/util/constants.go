@@ -70,6 +70,7 @@ func GetDNSIP(serviceCIDR string) (net.IP, error) {
 	return ip, nil
 }
 
+// GetAlternateDNS returns a list of alternate names for a domain
 func GetAlternateDNS(domain string) []string {
 	return []string{"kubernetes.default.svc." + domain, "kubernetes.default.svc", "kubernetes.default", "kubernetes", "localhost"}
 }

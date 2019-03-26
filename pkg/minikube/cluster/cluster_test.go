@@ -37,7 +37,7 @@ func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return ni
 
 var defaultMachineConfig = config.MachineConfig{
 	VMDriver:    constants.DefaultVMDriver,
-	MinikubeISO: constants.DefaultIsoUrl,
+	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
 }
 

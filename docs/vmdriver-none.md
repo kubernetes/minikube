@@ -23,7 +23,7 @@ kv=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.tx
 curl -Lo kubectl \
   https://storage.googleapis.com/kubernetes-release/release/$kv/bin/linux/amd64/kubectl \
   && sudo install kubectl /usr/local/bin/
-  
+
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
@@ -66,7 +66,7 @@ We'll cover these in detail below:
 
 * When run in `none` mode, minikube has no built-in resource limit mechanism, which means you could deploy pods which would consume all of the hosts resources.
 
-* minikube and the Kubernetes services it starts may interfere with other running software on the system. For instance, minikube will start and stop container runtimes via systemd, such as docker, rkt, containerd, cri-o.
+* minikube and the Kubernetes services it starts may interfere with other running software on the system. For instance, minikube will start and stop container runtimes via systemd, such as docker, containerd, cri-o.
 
 ### Data loss
 
@@ -92,7 +92,7 @@ Some environment variables may be useful for using the `none` driver:
 * **MINIKUBE_HOME**: Saves all files to this directory instead of $HOME
 * **MINIKUBE_WANTUPDATENOTIFICATION**: Toggles the notification that your version of minikube is obsolete
 * **MINIKUBE_WANTREPORTERRORPROMPT**: Toggles the error reporting prompt
-* **MINIKUBE_IN_COLOR**: Toggles color output and emoji usage
+* **MINIKUBE_IN_STYLE**: Toggles color output and emoji usage
 
 ## Known Issues
 
@@ -100,4 +100,6 @@ Some environment variables may be useful for using the `none` driver:
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
 * CoreDNS detects resolver loop, goes into CrashloopBackoff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
+* Some versions of Linux have a version of docker that is newer then what Kubernetes expects. To overwrite this, run minikube with the following parameters: `sudo -E minikube start --vm-driver=none --kubernetes-version v1.11.8 --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
+* On Ubuntu 18.04 (and probably others), because of how `systemd-resolve` is configured by default, one needs to bypass the default `resolv.conf` file and use a different one instead: `sudo -E minikube --vm-driver=none start --extra-config=kubelet.resolv-conf=/run/systemd/resolve/resolv.conf`
 * [Full list of open 'none' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fnone-driver)

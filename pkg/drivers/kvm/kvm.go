@@ -34,6 +34,7 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
+// Driver is the machine driver for KVM
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -73,6 +74,9 @@ type Driver struct {
 	// Whether to passthrough GPU devices from the host to the VM.
 	GPU bool
 
+	// Whether to hide the KVM hypervisor signature from the guest
+	Hidden bool
+
 	// XML that needs to be added to passthrough GPU devices.
 	DevicesXML string
 }
@@ -83,6 +87,7 @@ const (
 	defaultNetworkName        = "default"
 )
 
+// NewDriver creates a new driver for a host
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
@@ -91,7 +96,7 @@ func NewDriver(hostName, storePath string) *Driver {
 			SSHUser:     "docker",
 		},
 		CommonDriver:   &pkgdrivers.CommonDriver{},
-		Boot2DockerURL: constants.DefaultIsoUrl,
+		Boot2DockerURL: constants.DefaultISOURL,
 		CPU:            constants.DefaultCPUS,
 		DiskSize:       util.CalculateDiskSizeInMB(constants.DefaultDiskSize),
 		Memory:         constants.DefaultMemory,
@@ -102,6 +107,7 @@ func NewDriver(hostName, storePath string) *Driver {
 	}
 }
 
+// PreCommandCheck checks the connection before issuing a command
 func (d *Driver) PreCommandCheck() error {
 	conn, err := getConnection()
 	if err != nil {
@@ -116,6 +122,7 @@ func (d *Driver) PreCommandCheck() error {
 	return nil
 }
 
+// GetURL returns a Docker compatible host URL for connecting to this host
 func (d *Driver) GetURL() (string, error) {
 	if err := d.PreCommandCheck(); err != nil {
 		return "", errors.Wrap(err, "getting URL, precheck failed")
@@ -132,6 +139,7 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
+// GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	dom, conn, err := d.getDomain()
 	if err != nil {
@@ -176,6 +184,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 }
 
+// GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
 	s, err := d.GetState()
 	if err != nil {
@@ -192,14 +201,17 @@ func (d *Driver) GetIP() (string, error) {
 	return ip, nil
 }
 
+// GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
 	return d.GetIP()
 }
 
+// DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
 	return "kvm2"
 }
 
+// Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
 	dom, conn, err := d.getDomain()
 	if err != nil {
@@ -210,10 +222,12 @@ func (d *Driver) Kill() error {
 	return dom.Destroy()
 }
 
+// Restart a host
 func (d *Driver) Restart() error {
 	return pkgdrivers.Restart(d)
 }
 
+// Start a host
 func (d *Driver) Start() error {
 	// if somebody/something deleted the network in the meantime,
 	// we might need to recreate it. It's (nearly) a noop if the network exists.
@@ -274,6 +288,7 @@ func (d *Driver) Start() error {
 	return nil
 }
 
+// Create a host using the driver's config
 func (d *Driver) Create() error {
 	log.Info("Creating machine...")
 	log.Info("Creating network...")
@@ -323,6 +338,7 @@ func (d *Driver) Create() error {
 	return d.Start()
 }
 
+// Stop a host gracefully
 func (d *Driver) Stop() error {
 	d.IPAddress = ""
 	s, err := d.GetState()
@@ -359,6 +375,7 @@ func (d *Driver) Stop() error {
 	return fmt.Errorf("Could not stop VM, current state %s", s.String())
 }
 
+// Remove a host
 func (d *Driver) Remove() error {
 	log.Debug("Removing machine...")
 	conn, err := getConnection()
