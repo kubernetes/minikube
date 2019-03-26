@@ -40,7 +40,7 @@ import (
 // console.SetErrFile(os.Stderr)
 // console.Fatal("Oh no, everything failed.")
 
-// NOTE: If you do not want colorized output, set MINIKUBE_IN_COLOR=false in your environment.
+// NOTE: If you do not want colorized output, set MINIKUBE_IN_STYLE=false in your environment.
 
 var (
 	// outFile is where Out* functions send output to. Set using SetOutFile()
@@ -54,7 +54,7 @@ var (
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
 	// OverrideEnv is the environment variable used to override color/emoji usage
-	OverrideEnv = "MINIKUBE_IN_COLOR"
+	OverrideEnv = "MINIKUBE_IN_STYLE"
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
@@ -192,8 +192,8 @@ func SetErrFile(w fdWriter) {
 func wantsColor(fd uintptr) bool {
 	// First process the environment: we allow users to force colors on or off.
 	//
-	// MINIKUBE_IN_COLOR=[1, T, true, TRUE]
-	// MINIKUBE_IN_COLOR=[0, f, false, FALSE]
+	// MINIKUBE_IN_STYLE=[1, T, true, TRUE]
+	// MINIKUBE_IN_STYLE=[0, f, false, FALSE]
 	//
 	// If unset, we try to automatically determine suitability from the environment.
 	val := os.Getenv(OverrideEnv)
