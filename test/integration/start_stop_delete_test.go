@@ -19,12 +19,14 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"net"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -33,10 +35,25 @@ func TestStartStop(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"docker+cache", []string{"--container-runtime=docker", "--cache-images"}},
-		{"docker+cache+ignore_verifications", []string{"--container-runtime=docker", "--cache-images", "--extra-config", "kubeadm.ignore-preflight-errors=SystemVerification"}},
-		{"containerd+cache", []string{"--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock", "--cache-images"}},
-		{"crio+cache", []string{"--container-runtime=crio", "--cache-images"}},
+		{"docker+no-cache+oldest", []string{
+			"--container-runtime=docker",
+			"--cache-images=false",
+			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+		}},
+		{"docker+ignore_verifications+newest+gates", []string{
+			"--container-runtime=docker",
+			"--extra-config",
+			"kubeadm.ignore-preflight-errors=SystemVerification",
+			"--feature-gates",
+			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
+		}},
+		{"containerd", []string{
+			"--container-runtime=containerd",
+			"--docker-opt containerd=/var/run/containerd/containerd.sock",
+		}},
+		{"crio", []string{
+			"--container-runtime=crio",
+		}},
 	}
 
 	for _, test := range tests {
