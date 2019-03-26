@@ -5,7 +5,6 @@ This includes the configuration for an alternative bootable ISO image meant to b
 It includes:
 
 - systemd as the init system
-- rkt
 - docker
 - CRI-O
 
@@ -40,7 +39,6 @@ The bootable ISO image will be available in `out/minikube.iso`.
 
 ```shell
 $ ./out/minikube start \
-    --container-runtime=rkt \
     --iso-url=file://$GOPATH/src/k8s.io/minikube/out/minikube.iso
 ```
 

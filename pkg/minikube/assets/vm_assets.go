@@ -200,11 +200,13 @@ func (m *BinDataAsset) loadData(isTemplate bool) error {
 	return nil
 }
 
+// IsTemplate returns if the asset is a template
 func (m *BinDataAsset) IsTemplate() bool {
 	return m.template != nil
 }
 
-func (m *BinDataAsset) Evaluate(data interface{}) (*MemoryAsset, error){
+// Evaluate evaluates the template to a new asset
+func (m *BinDataAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
 	if !m.IsTemplate() {
 		return nil, errors.Errorf("the asset %s is not a template", m.AssetName)
 
