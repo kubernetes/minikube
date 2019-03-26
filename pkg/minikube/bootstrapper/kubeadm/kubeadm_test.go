@@ -62,7 +62,7 @@ ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook 
 `,
 		},
 		{
-			description: "cri runtime",
+			description: "newest cri runtime",
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.100",
 				KubernetesVersion: constants.NewestKubernetesVersion,
@@ -81,7 +81,7 @@ ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook 
 `,
 		},
 		{
-			description: "newest docker with custom image repository",
+			description: "docker with custom image repository",
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.100",
 				KubernetesVersion: constants.DefaultKubernetesVersion,
@@ -95,7 +95,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.0 --pod-manifest-path=/etc/kubernetes/manifests --require-kubeconfig=true
+ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
