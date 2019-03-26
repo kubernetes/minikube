@@ -35,24 +35,23 @@ func TestStartStop(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"docker+no-cache+oldest", []string{
-			"--container-runtime=docker",
+		{"nocache_oldest", []string{
 			"--cache-images=false",
 			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
 		}},
-		{"docker+ignore_verifications+newest+gates", []string{
-			"--container-runtime=docker",
-			"--extra-config",
-			"kubeadm.ignore-preflight-errors=SystemVerification",
+		{"feature_gates_newest", []string{
 			"--feature-gates",
+			"ServerSideApply=true",
 			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 		}},
 		{"containerd", []string{
 			"--container-runtime=containerd",
 			"--docker-opt containerd=/var/run/containerd/containerd.sock",
 		}},
-		{"crio", []string{
+		{"crio_ignore_preflights", []string{
 			"--container-runtime=crio",
+			"--extra-config",
+			"kubeadm.ignore-preflight-errors=SystemVerification",
 		}},
 	}
 
