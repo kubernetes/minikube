@@ -201,8 +201,16 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	cr := configureRuntimes(host, runner)
+
+	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
+	if viper.GetBool(cacheImages) {
+		console.OutStyle("waiting", "Waiting for image downloads to complete ...")
+		if err := cacheGroup.Wait(); err != nil {
+			glog.Errorln("Error caching images: ", err)
+		}
+	}
+
 	bs := prepareHostEnvironment(m, config.KubernetesConfig)
-	waitCacheImages(&cacheGroup)
 
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
@@ -509,17 +517,6 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
 	}
 	return cr
-}
-
-// waitCacheImages blocks until the image cache jobs complete
-func waitCacheImages(g *errgroup.Group) {
-	if !viper.GetBool(cacheImages) {
-		return
-	}
-	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
-	if err := g.Wait(); err != nil {
-		glog.Errorln("Error caching images: ", err)
-	}
 }
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
