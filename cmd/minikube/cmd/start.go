@@ -84,6 +84,7 @@ const (
 	vpnkitSock            = "hyperkit-vpnkit-sock"
 	vsockPorts            = "hyperkit-vsock-ports"
 	gpu                   = "gpu"
+	hidden                = "hidden"
 	embedCerts            = "embed-certs"
 	noVTXCheck            = "no-vtx-check"
 )
@@ -143,6 +144,7 @@ func init() {
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
+	startCmd.Flags().Bool(hidden, false, "Hide the hypervisor signature from the guest in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	viper.BindPFlags(startCmd.Flags())
 	RootCmd.AddCommand(startCmd)
@@ -238,6 +240,9 @@ func validateConfig() {
 	if viper.GetBool(gpu) && viper.GetString(vmDriver) != "kvm2" {
 		exit.Usage("Sorry, the --gpu feature is currently only supported with --vm-driver=kvm2")
 	}
+	if viper.GetBool(hidden) && viper.GetString(vmDriver) != "kvm2" {
+		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
+	}
 }
 
 // beginCacheImages caches Docker images in the background
@@ -303,6 +308,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			DisableDriverMounts: viper.GetBool(disableDriverMounts),
 			UUID:                viper.GetString(uuid),
 			GPU:                 viper.GetBool(gpu),
+			Hidden:              viper.GetBool(hidden),
 			NoVTXCheck:          viper.GetBool(noVTXCheck),
 		},
 		KubernetesConfig: cfg.KubernetesConfig{
