@@ -78,7 +78,6 @@ var PodsByLayer = []pod{
 	{"etcd", "component", "etcd"},
 	{"scheduler", "component", "kube-scheduler"},
 	{"controller", "component", "kube-controller-manager"},
-	{"addon-manager", "component", "kube-addon-manager"},
 	{"dns", "k8s-app", "kube-dns"},
 }
 
