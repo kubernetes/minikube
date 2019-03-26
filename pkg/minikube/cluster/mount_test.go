@@ -59,10 +59,20 @@ func TestMount(t *testing.T) {
 			},
 		},
 		{
+			name:   "named uid",
+			source: "src",
+			target: "target",
+			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700), UID: "docker", GID: "docker"},
+			want: []string{
+				"findmnt -T target && sudo umount target || true",
+				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker) src target",
+			},
+		},
+		{
 			name:   "everything",
 			source: "10.0.0.1",
 			target: "/target",
-			cfg: &MountConfig{Type: "9p", Mode: os.FileMode(0777), UID: 82, GID: 72, Version: "9p2000.u", Options: map[string]string{
+			cfg: &MountConfig{Type: "9p", Mode: os.FileMode(0777), UID: "82", GID: "72", Version: "9p2000.u", Options: map[string]string{
 				"noextend": "",
 				"cache":    "fscache",
 			}},
