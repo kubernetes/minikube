@@ -23,19 +23,19 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type mockMountHost struct {
+type mockmountRunner struct {
 	cmds []string
 	T    *testing.T
 }
 
-func NewMockMountHost(t *testing.T) *mockMountHost {
-	return &mockMountHost{
+func NewMockmountRunner(t *testing.T) *mockmountRunner {
+	return &mockmountRunner{
 		T:    t,
 		cmds: []string{},
 	}
 }
 
-func (m *mockMountHost) RunSSHCommand(cmd string) (string, error) {
+func (m *mockmountRunner) CombinedOutput(cmd string) (string, error) {
 	m.cmds = append(m.cmds, cmd)
 	return "", nil
 }
@@ -54,7 +54,7 @@ func TestMount(t *testing.T) {
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700)},
 			want: []string{
-				"findmnt -T target && sudo umount target || true",
+				"findmnt -T target | grep target && sudo umount target || true",
 				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=0,dfltuid=0 src target",
 			},
 		},
@@ -67,7 +67,7 @@ func TestMount(t *testing.T) {
 				"cache":    "fscache",
 			}},
 			want: []string{
-				"findmnt -T /target && sudo umount /target || true",
+				"findmnt -T /target | grep /target && sudo umount /target || true",
 				"sudo mkdir -m 777 -p /target && sudo mount -t 9p -o cache=fscache,dfltgid=72,dfltuid=82,noextend,version=9p2000.u 10.0.0.1 /target",
 			},
 		},
@@ -79,14 +79,14 @@ func TestMount(t *testing.T) {
 				"version": "9p2000.L",
 			}},
 			want: []string{
-				"findmnt -T tgt && sudo umount tgt || true",
+				"findmnt -T tgt | grep tgt && sudo umount tgt || true",
 				"sudo mkdir -m 700 -p tgt && sudo mount -t 9p -o dfltgid=0,dfltuid=0,version=9p2000.L src tgt",
 			},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h := NewMockMountHost(t)
+			h := NewMockmountRunner(t)
 			err := Mount(h, tc.source, tc.target, tc.cfg)
 			if err != nil {
 				t.Fatalf("Mount(%s, %s, %+v): %v", tc.source, tc.target, tc.cfg, err)
@@ -99,13 +99,13 @@ func TestMount(t *testing.T) {
 }
 
 func TestUnmount(t *testing.T) {
-	h := NewMockMountHost(t)
+	h := NewMockmountRunner(t)
 	err := Unmount(h, "/mnt")
 	if err != nil {
 		t.Fatalf("Unmount(/mnt): %v", err)
 	}
 
-	want := []string{"findmnt -T /mnt && sudo umount /mnt || true"}
+	want := []string{"findmnt -T /mnt | grep /mnt && sudo umount /mnt || true"}
 	if diff := cmp.Diff(h.cmds, want); diff != "" {
 		t.Errorf("command diff (-want +got): %s", diff)
 	}

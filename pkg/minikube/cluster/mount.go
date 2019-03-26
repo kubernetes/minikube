@@ -47,20 +47,20 @@ type MountConfig struct {
 	Options map[string]string
 }
 
-// hostRunner is the subset of host.Host used for mounting
-type hostRunner interface {
+// mountRunner is the subset of CommandRunner used for mounting
+type mountRunner interface {
 	CombinedOutput(string) (string, error)
 }
 
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
-func Mount(h hostRunner, source string, target string, c *MountConfig) error {
-	if err := Unmount(h, target); err != nil {
+func Mount(r mountRunner, source string, target string, c *MountConfig) error {
+	if err := Unmount(r, target); err != nil {
 		return errors.Wrap(err, "umount")
 	}
 
 	cmd := fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))
 	glog.Infof("Will run: %s", cmd)
-	out, err := h.CombinedOutput(cmd)
+	out, err := r.CombinedOutput(cmd)
 	glog.Infof("mount err=%s, out=%s", err, out)
 	if err != nil {
 		return errors.Wrap(err, out)
@@ -107,17 +107,17 @@ func mntCmd(source string, target string, c *MountConfig) string {
 func umountCmd(target string, force bool) string {
 	flag := ""
 	if force {
-		flag = "-f"
+		flag = "-f "
 	}
 	// grep because findmnt will also display the parent!
-	return fmt.Sprintf("findmnt -T %s | grep %s && sudo umount %s %s && echo unmounted || true", target, target, flag, target)
+	return fmt.Sprintf("findmnt -T %s | grep %s && sudo umount %s%s || true", target, target, flag, target)
 }
 
 // Unmount unmounts a path
-func Unmount(h hostRunner, target string) error {
+func Unmount(r mountRunner, target string) error {
 	cmd := umountCmd(target, false)
 	glog.Infof("Will run: %s", cmd)
-	out, err := h.CombinedOutput(cmd)
+	out, err := r.CombinedOutput(cmd)
 	if err == nil {
 		return nil
 	}
@@ -126,7 +126,7 @@ func Unmount(h hostRunner, target string) error {
 	// Try again, using force if needed.
 	cmd = umountCmd(target, true)
 	glog.Infof("Will run: %s", cmd)
-	out, err = h.CombinedOutput(cmd)
+	out, err = r.CombinedOutput(cmd)
 	glog.Infof("unmount force err=%v, out=%s", err, out)
 	if err != nil {
 		return errors.Wrap(err, out)
