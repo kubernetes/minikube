@@ -314,10 +314,21 @@ func CacheImage(image, dst string) error {
 	}
 
 	glog.Infoln("OPENING: ", dstPath)
-	f, err := os.Create(dstPath)
+	f, err := ioutil.TempFile(filepath.Dir(dstPath), filepath.Base(dstPath)+".*.tmp")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	return tarball.Write(tag, img, nil, f)
+	err = tarball.Write(tag, img, nil, f)
+	if err != nil {
+		return err
+	}
+	err = f.Close()
+	if err != nil {
+		return err
+	}
+	err = os.Rename(f.Name(), dstPath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
