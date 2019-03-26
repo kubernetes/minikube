@@ -98,6 +98,7 @@ var mountCmd = &cobra.Command{
 		}
 		defer api.Close()
 		host, err := api.Load(config.GetMachineName())
+
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}
@@ -163,8 +164,15 @@ var mountCmd = &cobra.Command{
 			go func() {
 				console.OutStyle("fileserver", "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
+				console.OutStyle("stopped", "Userspace file server is shutdown")
 				wg.Done()
 			}()
+		}
+
+		// Use CommandRunner, as the native docker ssh service dies when Ctrl-C is received.
+		runner, err := machine.CommandRunner(host)
+		if err != nil {
+			exit.WithError("Failed to get command runner", err)
 		}
 
 		// Unmount if Ctrl-C or kill request is received.
@@ -173,12 +181,15 @@ var mountCmd = &cobra.Command{
 		go func() {
 			for sig := range c {
 				console.OutStyle("unmount", "Unmounting %s ...", vmPath)
-				cluster.Unmount(host, vmPath)
+				err := cluster.Unmount(runner, vmPath)
+				if err != nil {
+					console.ErrStyle("failure", "Failed unmount: %v", err)
+				}
 				exit.WithCode(exit.Interrupted, "Exiting due to %s signal", sig)
 			}
 		}()
 
-		err = cluster.Mount(host, ip.String(), vmPath, cfg)
+		err = cluster.Mount(runner, ip.String(), vmPath, cfg)
 		if err != nil {
 			exit.WithError("mount failed", err)
 		}
