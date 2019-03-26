@@ -78,6 +78,7 @@ MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 SOURCE_DIRS = cmd pkg test
+SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # $(call DOCKER, image, command)
 define DOCKER
@@ -175,7 +176,7 @@ test-iso:
 
 .PHONY: test-pkg
 test-pkg/%:
-	go test -v -test.timeout=30m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
+	go test -v -test.timeout=60m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: depend
 depend: out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d
@@ -188,15 +189,15 @@ drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
 
 .PHONY: integration
 integration: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+	go test -v -test.timeout=60m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
-	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
+	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
+	go test -v -test.timeout=60m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
 out/test.d: pkg/minikube/assets/assets.go
@@ -237,9 +238,13 @@ gendocs: out/docs/minikube.md
 fmt:
 	@gofmt -l -s -w $(SOURCE_DIRS)
 
+.PHONY: vet
+vet:
+	@go vet $(SOURCE_PACKAGES)
+
 .PHONY: lint
 lint:
-	@golint $(MINIKUBE_TEST_FILES)
+	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: reportcard
 reportcard:
