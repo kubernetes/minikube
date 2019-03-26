@@ -23,19 +23,19 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-type mockmountRunner struct {
+type mockMountRunner struct {
 	cmds []string
 	T    *testing.T
 }
 
-func NewMockmountRunner(t *testing.T) *mockmountRunner {
-	return &mockmountRunner{
+func newMockMountRunner(t *testing.T) *mockMountRunner {
+	return &mockMountRunner{
 		T:    t,
 		cmds: []string{},
 	}
 }
 
-func (m *mockmountRunner) CombinedOutput(cmd string) (string, error) {
+func (m *mockMountRunner) CombinedOutput(cmd string) (string, error) {
 	m.cmds = append(m.cmds, cmd)
 	return "", nil
 }
@@ -86,7 +86,7 @@ func TestMount(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			h := NewMockmountRunner(t)
+			h := newMockMountRunner(t)
 			err := Mount(h, tc.source, tc.target, tc.cfg)
 			if err != nil {
 				t.Fatalf("Mount(%s, %s, %+v): %v", tc.source, tc.target, tc.cfg, err)
@@ -99,7 +99,7 @@ func TestMount(t *testing.T) {
 }
 
 func TestUnmount(t *testing.T) {
-	h := NewMockmountRunner(t)
+	h := newMockMountRunner(t)
 	err := Unmount(h, "/mnt")
 	if err != nil {
 		t.Fatalf("Unmount(/mnt): %v", err)
