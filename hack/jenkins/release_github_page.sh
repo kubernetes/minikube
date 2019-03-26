@@ -124,7 +124,9 @@ FILES_TO_UPLOAD=(
     "minikube_${DEB_VERSION}.deb"
     "minikube-${RPM_VERSION}.rpm"
     'docker-machine-driver-kvm2'
+    'docker-machine-driver-kvm2.sha256'
     'docker-machine-driver-hyperkit'
+    'docker-machine-driver-hyperkit.sha256'
 )
 
 for UPLOAD in "${FILES_TO_UPLOAD[@]}"

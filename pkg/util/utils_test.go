@@ -34,13 +34,12 @@ func errorGenerator(n int, retryable bool) func() error {
 	errorCount := 0
 	return func() (err error) {
 		if errorCount < n {
-			errorCount += 1
-			e := errors.New("Error!")
+			errorCount++
+			e := errors.New("Error")
 			if retryable {
 				return &RetriableError{Err: e}
-			} else {
-				return e
 			}
+			return e
 
 		}
 
