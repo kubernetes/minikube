@@ -64,7 +64,7 @@ func TestMount(t *testing.T) {
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700), UID: "docker", GID: "docker"},
 			want: []string{
-				"findmnt -T target && sudo umount target || true",
+				"findmnt -T target | grep target && sudo umount target || true",
 				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker) src target",
 			},
 		},
