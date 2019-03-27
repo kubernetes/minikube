@@ -109,6 +109,10 @@ Start a cluster by running:
 
 `minikube start`
 
+Access Minikube Dashboard UI:
+
+`minikube dashboard`
+
 Once started, you can interact with your cluster using `kubectl`, just like any other Kubernetes cluster. For instance, starting a server:
 
 `kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.4 --port=8080`
