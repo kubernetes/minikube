@@ -170,29 +170,36 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 	if err != nil {
 		return nil, errors.Wrapf(err, "service '%s' could not be found running", service)
 	}
-	var nodePorts []int32
-	if len(svc.Spec.Ports) > 0 {
-		for _, port := range svc.Spec.Ports {
-			if port.NodePort > 0 {
-				nodePorts = append(nodePorts, port.NodePort)
+
+	e := c.Endpoints(namespace)
+	endpoints, err := e.Get(service, metav1.GetOptions{})
+	m := make(map[int32]string)
+	if endpoints != nil && len(endpoints.Subsets) > 0 {
+		for _, ept := range endpoints.Subsets {
+			for _, p := range ept.Ports {
+				m[int32(p.Port)] = p.Name
 			}
 		}
 	}
-	urls := []string{}
-	for _, port := range nodePorts {
-		var doc bytes.Buffer
-		err = t.Execute(&doc, struct {
-			IP   string
-			Port int32
-		}{
-			ip,
-			port,
-		})
-		if err != nil {
-			return nil, err
-		}
 
-		urls = append(urls, doc.String())
+	urls := []string{}
+	for _, port := range svc.Spec.Ports {
+		if port.NodePort > 0 {
+			var doc bytes.Buffer
+			err = t.Execute(&doc, struct {
+				IP   string
+				Port int32
+				Name string
+			}{
+				ip,
+				port.NodePort,
+				m[port.TargetPort.IntVal],
+			})
+			if err != nil {
+				return nil, err
+			}
+			urls = append(urls, doc.String())
+		}
 	}
 	return urls, nil
 }
