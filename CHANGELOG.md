@@ -3,6 +3,7 @@
 ## Version 1.0.0 - 2019-03-27
 
 * Update default Kubernetes version to v1.14.0 [#3967](https://github.com/kubernetes/minikube/pull/3967)
+  * NOTE: To avoid interaction issues, we also recommend updating kubectl to a recent release (v1.13+)
 * Upgrade addon-manager to v9.0 for compatibility with Kubernetes v1.14 [#3984](https://github.com/kubernetes/minikube/pull/3984)
 * Add --image-repository flag so that users can select an alternative repository mirror [#3714](https://github.com/kubernetes/minikube/pull/3714)
 * Rename MINIKUBE_IN_COLOR to MINIKUBE_IN_STYLE [#3976](https://github.com/kubernetes/minikube/pull/3976)
