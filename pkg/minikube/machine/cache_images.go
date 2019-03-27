@@ -97,7 +97,7 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := LoadFromCacheBlocking(cmd, cc.KubernetesConfig, src); err != nil {
+			if err := loadImageFromCache(cmd, cc.KubernetesConfig, src); err != nil {
 				return errors.Wrapf(err, "loading image %s", src)
 			}
 			return nil
@@ -198,14 +198,12 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-// LoadFromCacheBlocking loads images from cache, blocking until loaded
-func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
+// loadImageFromCache loads a single image from the cache
+func loadImageFromCache(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
 	glog.Infoln("Loading image from cache at ", src)
 	filename := filepath.Base(src)
-	for {
-		if _, err := os.Stat(src); err == nil {
-			break
-		}
+	if _, err := os.Stat(src); err == nil {
+		return err
 	}
 	dst := path.Join(tempLoadDir, filename)
 	f, err := assets.NewFileAsset(src, tempLoadDir, filename, "0777")
