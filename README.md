@@ -21,6 +21,7 @@ Our [goal](https://github.com/kubernetes/minikube/blob/master/docs/contributors/
 
 ## News
 
+* 2019-03-27 - v1.0.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.0.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-1000---2019-03-27)]
 * 2019-03-06 - v0.35.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.35.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0350---2019-03-06)]
 * 2019-02-16 - v0.34.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0341---2019-02-16)]
 * 2019-02-15 - v0.34.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0340---2019-02-15)]
