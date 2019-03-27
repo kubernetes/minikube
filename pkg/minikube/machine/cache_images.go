@@ -98,6 +98,7 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
 			if err := loadImageFromCache(cmd, cc.KubernetesConfig, src); err != nil {
+				glog.Warningf("Failed to load %s: %v", src, err)
 				return errors.Wrapf(err, "loading image %s", src)
 			}
 			return nil
@@ -200,9 +201,9 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 
 // loadImageFromCache loads a single image from the cache
 func loadImageFromCache(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
-	glog.Infoln("Loading image from cache at ", src)
+	glog.Infof("Loading image from cache: %s", src)
 	filename := filepath.Base(src)
-	if _, err := os.Stat(src); err == nil {
+	if _, err := os.Stat(src); err != nil {
 		return err
 	}
 	dst := path.Join(tempLoadDir, filename)
