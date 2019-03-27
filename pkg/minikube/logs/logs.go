@@ -41,6 +41,9 @@ var importantPods = []string{
 	"coredns",
 	"kube-scheduler",
 	"kube-proxy",
+	"kube-addon-manager",
+	"kubernetes-dashboard",
+	"storage-provisioner",
 }
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
