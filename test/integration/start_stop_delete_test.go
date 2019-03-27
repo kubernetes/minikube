@@ -39,9 +39,11 @@ func TestStartStop(t *testing.T) {
 			"--cache-images=false",
 			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
 		}},
-		{"feature_gates_newest", []string{
+		{"feature_gates_newest_cni", []string{
 			"--feature-gates",
 			"ServerSideApply=true",
+			"--network-plugin=cni",
+			"--extra-config=kubelet.network-plugin=cni",
 			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 		}},
 		{"containerd", []string{
