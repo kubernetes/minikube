@@ -154,7 +154,13 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.13.4"
+var DefaultKubernetesVersion = "v1.14.0"
+
+// NewestKubernetesVersion is the newest Kubernetes version to test against
+var NewestKubernetesVersion = "v1.14.0"
+
+// OldestKubernetesVersion is the oldest Kubernetes version to test against
+var OldestKubernetesVersion = "v1.10.13"
 
 // ConfigFilePath is the path of the config directory
 var ConfigFilePath = MakeMiniPath("config")

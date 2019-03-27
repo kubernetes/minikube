@@ -506,6 +506,14 @@
   revision = "4d0e916071f68db74f8a73926335f809396d6b42"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  pruneopts = "NUT"
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   digest = "1:1b6f62a965e4b2e004184bf2d38ef2915af240befa4d44e5f0e83925bcf89727"
   name = "github.com/r2d4/external-storage"
@@ -1008,6 +1016,7 @@
     "github.com/pkg/browser",
     "github.com/pkg/errors",
     "github.com/pkg/profile",
+    "github.com/pmezard/go-difflib/difflib",
     "github.com/r2d4/external-storage/lib/controller",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
