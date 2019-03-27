@@ -78,6 +78,10 @@ This step uses the git tag to publish new binaries to GCS and create a github re
 * For `ISO_SHA256`, run: `gsutil cat gs://minikube/iso/minikube-v<version>.iso.sha256`
 * Click *Build*
 
+## Check the release logs
+
+Once the release completes, click "Console Output" to look or anything unusual. This is typically where you will see the brew automation fail, for instance.
+
 ## Check releases.json
 
 This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
@@ -92,6 +96,8 @@ These are downstream packages that are being maintained by others and how to upg
 | --- | --- | --- |
 | Arch Linux AUR | <https://aur.archlinux.org/packages/minikube/> | "Flag as package out-of-date"
 | Brew Cask | <https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb> | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created.
+
+WARNING: The Brew cask automation is error-prone. please ensure that a PR was created.
 
 ## Verification
 
