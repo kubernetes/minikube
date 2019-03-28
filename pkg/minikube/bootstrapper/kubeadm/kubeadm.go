@@ -318,6 +318,10 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		fmt.Sprintf("sudo kubeadm %s phase etcd local --config %s", phase, constants.KubeadmConfigFile),
 	}
 
+	if version.GTE(semver.MustParse("1.13.0")) {
+		cmds = append(cmds, fmt.Sprintf("sudo kubeadm init phase addon all --config %s", constants.KubeadmConfigFile))
+	}
+
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, cmd := range cmds {
 		if err := k.c.Run(cmd); err != nil {
