@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-HV_KVP_DAEMON_VERSION = 4.4.27
+HV_KVP_DAEMON_VERSION = 4.15.1
 HV_KVP_DAEMON_SITE = https://www.kernel.org/pub/linux/kernel/v${HV_KVP_DAEMON_VERSION%%.*}.x
 HV_KVP_DAEMON_SOURCE = linux-$(HV_KVP_DAEMON_VERSION).tar.xz
 
@@ -16,6 +16,15 @@ define HV_KVP_DAEMON_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 \
 		$(@D)/tools/hv/hv_kvp_daemon \
 		$(TARGET_DIR)/usr/sbin/hv_kvp_daemon
+	$(INSTALL) -D -m 0755 \
+		$(@D)/tools/hv/hv_get_dhcp_info.sh \
+		$(TARGET_DIR)/usr/libexec/hypervkvpd/hv_get_dhcp_info
+	$(INSTALL) -D -m 0755 \
+		$(@D)/tools/hv/hv_get_dns_info.sh \
+		$(TARGET_DIR)/usr/libexec/hypervkvpd/hv_get_dns_info
+	$(INSTALL) -D -m 0755 \
+		$(@D)/tools/hv/hv_set_ifconfig.sh \
+		$(TARGET_DIR)/usr/libexec/hypervkvpd/hv_set_ifconfig
 endef
 
 define HV_KVP_DAEMON_INSTALL_INIT_SYSTEMD
