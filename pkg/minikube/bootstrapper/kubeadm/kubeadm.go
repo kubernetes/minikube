@@ -217,7 +217,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
+	if err := waitForPods(k8s, false, false); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
@@ -227,7 +227,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// Make sure elevating privileges didn't screw anything up
-	if err := waitForPods(k8s, true); err != nil {
+	if err := waitForPods(k8s, true, false); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
@@ -264,11 +264,11 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 }
 
 // waitForPods waits until the important Kubernetes pods are in running state
-func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
+func waitForPods(k8s config.KubernetesConfig, quiet bool, componentsOnly bool) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
-	componentsOnly := k8s.NetworkPlugin == "cni"
+	componentsOnly = k8s.NetworkPlugin == "cni" || componentsOnly
 
 	if !quiet {
 		console.OutStyle("waiting-pods", "Waiting for pods:")
@@ -318,10 +318,6 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		fmt.Sprintf("sudo kubeadm %s phase etcd local --config %s", phase, constants.KubeadmConfigFile),
 	}
 
-	if version.GTE(semver.MustParse("1.13.0")) {
-		cmds = append(cmds, fmt.Sprintf("sudo kubeadm init phase addon all --config %s", constants.KubeadmConfigFile))
-	}
-
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, cmd := range cmds {
 		if err := k.c.Run(cmd); err != nil {
@@ -329,7 +325,18 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
+	if err := waitForPods(k8s, false, true); err != nil {
+		return errors.Wrap(err, "wait")
+	}
+
+	if version.GTE(semver.MustParse("1.13.0")) {
+		cmd := fmt.Sprintf("sudo kubeadm init phase addon all --config %s", constants.KubeadmConfigFile)
+		if err := k.c.Run(cmd); err != nil {
+			return errors.Wrapf(err, "running cmd: %s", cmd)
+		}
+	}
+
+	if err := waitForPods(k8s, false, false); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
@@ -339,7 +346,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// Make sure the kube-proxy restart didn't screw anything up.
-	if err := waitForPods(k8s, true); err != nil {
+	if err := waitForPods(k8s, true, false); err != nil {
 		return errors.Wrap(err, "wait")
 	}
 
