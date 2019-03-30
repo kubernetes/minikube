@@ -1,4 +1,0 @@
-config BR2_PACKAGE_HV_KVP_DAEMON
-	bool "hv-kvp-daemon"
-	default y
-	depends on BR2_x86_64
