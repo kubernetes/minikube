@@ -1,0 +1,13 @@
+[Unit]
+Description=Hyper-V VSS Daemon
+Documentation=https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/reference/integration-services#hyper-v-volume-shadow-copy-requestor
+ConditionVirtualization=microsoft
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+ExecStart=/usr/sbin/hv_vss_daemon -n
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,4 @@
+config BR2_PACKAGE_HV_VSS_DAEMON
+	bool "hv-vss-daemon"
+	default y
+	depends on BR2_x86_64
