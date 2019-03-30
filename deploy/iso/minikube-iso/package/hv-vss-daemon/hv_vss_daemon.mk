@@ -20,6 +20,10 @@ endef
 
 define HV_VSS_DAEMON_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
+		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hv-vss-daemon/70-hv_vss.rules \
+		$(TARGET_DIR)/etc/udev/rules.d/70-hv_vss.rules
+
+	$(INSTALL) -D -m 644 \
 		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hv-vss-daemon/hv_vss_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_vss_daemon.service
 
