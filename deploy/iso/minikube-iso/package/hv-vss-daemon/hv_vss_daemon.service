@@ -1,7 +1,7 @@
 [Unit]
 Description=Hyper-V VSS Daemon
 Documentation=https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/reference/integration-services#hyper-v-volume-shadow-copy-requestor
-ConditionVirtualization=microsoft
+BindsTo=sys-devices-virtual-misc-vmbus\x21hv_vss.device
 
 [Service]
 Type=simple
