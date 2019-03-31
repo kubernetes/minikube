@@ -4,9 +4,6 @@ Documentation=https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows
 BindsTo=sys-devices-virtual-misc-vmbus\x21hv_fcopy.device
 
 [Service]
-Type=simple
-Restart=always
-RestartSec=3
 ExecStart=/usr/sbin/hv_fcopy_daemon -n
 
 [Install]
