@@ -8,15 +8,15 @@ Please send a PR to suggest any improvements to it.
 
 - [ ] Creation of a user-centric minikube website for installation & documentation
 - [ ] Localized output to 5+ written languages
-- [✅] Make minikube usable in environments with challenging connectivity requirements
+- [x] Make minikube usable in environments with challenging connectivity requirements
 - [ ] Support lightweight deployment methods for environments where VM's are impractical
 - [ ] Add offline support
 
 ## (#2) Inclusive and community-driven
 
-- [✅] Increase community involvement in planning and decision making
+- [x] Increase community involvement in planning and decision making
 - [ ] Make the continuous integration and release infrastructure publicly available
-- [✅] Double the number of active maintainers
+- [x] Double the number of active maintainers
 
 ## (#3) Cross-platform
 
@@ -34,12 +34,12 @@ Please send a PR to suggest any improvements to it.
 
 ## (#6) Compatible with all supported Kubernetes releases
 
-- [✅] Continuous Integration testing across all supported Kubernetes releases
+- [x] Continuous Integration testing across all supported Kubernetes releases
 - [ ] Automatic PR generation for updating the default Kubernetes release minikube uses
 
 ## (#7) Support for all Kubernetes-friendly container runtimes
 
-- [✅] Run all integration tests across all supported container runtimes
+- [x] Run all integration tests across all supported container runtimes
 - [ ] Support for Kata Containers (help wanted!)
 
 ## (#8) Stable and easy to debug
@@ -47,4 +47,4 @@ Please send a PR to suggest any improvements to it.
 - [ ] Pre-flight error checks for common connectivity and configuration errors
 - [ ] Improve the `minikube status` command so that it can diagnose common issues
 - [ ] Mark all features not covered by continuous integration as `experimental`
-- [✅] Stabilize and improve profiles support (AKA multi-cluster)
+- [x] Stabilize and improve profiles support (AKA multi-cluster)
