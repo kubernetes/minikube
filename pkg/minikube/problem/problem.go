@@ -23,7 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/console"
 )
 
-const issueBase = "https://github.com/kubernetes/minikube/issue"
+const issueBase = "https://github.com/kubernetes/minikube/issues"
 
 // Problem represents a known problem in minikube.
 type Problem struct {
