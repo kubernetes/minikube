@@ -95,7 +95,7 @@ minikube start
 
 ## Hyperkit driver
 
-Install the (hyperkit)[http://github.com/moby/hyperkit] VM manager using (brew)[https://brew.sh]:
+Install the [hyperkit](http://github.com/moby/hyperkit) VM manager using [brew](https://brew.sh):
 
 ```shell
 brew install hyperkit
