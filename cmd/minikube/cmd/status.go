@@ -92,7 +92,13 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip)
+			apiserverPort, err := pkgutil.GetPortFromKubeConfig(util.GetKubeConfigPath(), config.GetMachineName())
+			if err != nil {
+				// Fallback to presuming default apiserver port
+				apiserverPort = pkgutil.APIServerPort
+			}
+
+			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, apiserverPort)
 			if err != nil {
 				glog.Errorln("Error apiserver status:", err)
 			} else if apiserverSt != state.Running.String() {
