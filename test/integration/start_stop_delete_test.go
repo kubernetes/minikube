@@ -55,6 +55,9 @@ func TestStartStop(t *testing.T) {
 			"--extra-config",
 			"kubeadm.ignore-preflight-errors=SystemVerification",
 		}},
+		{"apiserver_port_non_default", []string{
+			"--apiserver-port=8444",
+		}},
 	}
 
 	for _, test := range tests {
