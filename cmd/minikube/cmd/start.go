@@ -187,7 +187,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		`docker load -i ~/.minikube/cache/some_images` is unecessary and takes time.
 		As a bonus, we save disk space.
 		*/
-		console.OutStyle("starting-none", "Caching of container images is disabled when --vm-driver=none")
 		viper.Set(cacheImages, false)
 	}
 
