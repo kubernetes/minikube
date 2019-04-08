@@ -215,7 +215,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting)
-	validateCluster(bs, cr, runner, ip)
+
+	apiserverPort := config.KubernetesConfig.NodePort
+	validateCluster(bs, cr, runner, ip, apiserverPort)
 	configureMounts()
 	if err = LoadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
@@ -543,7 +545,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 }
 
 // validateCluster validates that the cluster is well-configured and healthy
-func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string) {
+func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
 	console.OutStyle("verifying-noline", "Verifying component health ...")
 	k8sStat := func() (err error) {
 		st, err := bs.GetKubeletStatus()
@@ -558,7 +560,7 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 		exit.WithLogEntries("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
 	}
 	aStat := func() (err error) {
-		st, err := bs.GetAPIServerStatus(net.ParseIP(ip))
+		st, err := bs.GetAPIServerStatus(net.ParseIP(ip), apiserverPort)
 		console.Out(".")
 		if err != nil || st != state.Running.String() {
 			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}

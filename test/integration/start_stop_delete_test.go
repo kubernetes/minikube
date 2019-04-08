@@ -46,9 +46,10 @@ func TestStartStop(t *testing.T) {
 			"--extra-config=kubelet.network-plugin=cni",
 			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 		}},
-		{"containerd", []string{
+		{"containerd_and_non_default_apiserver_port", []string{
 			"--container-runtime=containerd",
 			"--docker-opt containerd=/var/run/containerd/containerd.sock",
+			"--apiserver-port=8444",
 		}},
 		{"crio_ignore_preflights", []string{
 			"--container-runtime=crio",
