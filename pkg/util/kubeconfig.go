@@ -251,7 +251,7 @@ func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, e
 	if kip.Equal(ip) {
 		return false, nil
 	}
-	kport, err := getPortFromKubeConfig(filename, machineName)
+	kport, err := GetPortFromKubeConfig(filename, machineName)
 	if err != nil {
 		return false, err
 	}
@@ -291,8 +291,8 @@ func getIPFromKubeConfig(filename, machineName string) (net.IP, error) {
 	return ip, nil
 }
 
-// getPortFromKubeConfig returns the Port number stored for minikube in the kubeconfig specified
-func getPortFromKubeConfig(filename, machineName string) (int, error) {
+// GetPortFromKubeConfig returns the Port number stored for minikube in the kubeconfig specified
+func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 	con, err := ReadConfigOrNew(filename)
 	if err != nil {
 		return 0, errors.Wrap(err, "Error getting kubeconfig status")
