@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
@@ -36,12 +37,14 @@ import (
 )
 
 type MockClientGetter struct {
-	servicesMap map[string]corev1.ServiceInterface
+	servicesMap  map[string]corev1.ServiceInterface
+	endpointsMap map[string]corev1.EndpointsInterface
 }
 
 func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	return &MockCoreClient{
-		servicesMap: m.servicesMap,
+		servicesMap:  m.servicesMap,
+		endpointsMap: m.endpointsMap,
 	}, nil
 }
 
@@ -51,7 +54,8 @@ func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clie
 
 type MockCoreClient struct {
 	fake.FakeCoreV1
-	servicesMap map[string]corev1.ServiceInterface
+	servicesMap  map[string]corev1.ServiceInterface
+	endpointsMap map[string]corev1.EndpointsInterface
 }
 
 var serviceNamespaces = map[string]corev1.ServiceInterface{
@@ -68,8 +72,18 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 				},
 				Spec: v1.ServiceSpec{
 					Ports: []v1.ServicePort{
-						{NodePort: int32(1111)},
-						{NodePort: int32(2222)},
+						{
+							NodePort: int32(1111),
+							TargetPort: intstr.IntOrString{
+								IntVal: int32(11111),
+							},
+						},
+						{
+							NodePort: int32(2222),
+							TargetPort: intstr.IntOrString{
+								IntVal: int32(22222),
+							},
+						},
 					},
 				},
 			},
@@ -86,8 +100,14 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 	},
 }
 
+var endpointNamespaces = map[string]corev1.EndpointsInterface{
+	"default": defaultNamespaceEndpointInterface,
+}
+
+var defaultNamespaceEndpointInterface = &MockEndpointsInterface{}
+
 func (m *MockCoreClient) Endpoints(namespace string) corev1.EndpointsInterface {
-	return &MockEndpointsInterface{}
+	return m.endpointsMap[namespace]
 }
 
 func (m *MockCoreClient) Services(namespace string) corev1.ServiceInterface {
@@ -120,6 +140,22 @@ var endpointMap = map[string]*v1.Endpoints{
 				},
 				NotReadyAddresses: []v1.EndpointAddress{
 					{IP: "2.2.2.2"},
+				},
+			},
+		},
+	},
+	"mock-dashboard": {
+		Subsets: []v1.EndpointSubset{
+			{
+				Ports: []v1.EndpointPort{
+					{
+						Name: "port1",
+						Port: int32(11111),
+					},
+					{
+						Name: "port2",
+						Port: int32(22222),
+					},
 				},
 			},
 		},
@@ -195,7 +231,8 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 func TestPrintURLsForService(t *testing.T) {
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 	client := &MockCoreClient{
-		servicesMap: serviceNamespaces,
+		servicesMap:  serviceNamespaces,
+		endpointsMap: endpointNamespaces,
 	}
 	var tests = []struct {
 		description    string
@@ -218,6 +255,13 @@ func TestPrintURLsForService(t *testing.T) {
 			namespace:      "default",
 			tmpl:           template.Must(template.New("svc-arbitrary-template").Parse("{{.IP}}:{{.Port}}")),
 			expectedOutput: []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+		},
+		{
+			description:    "should get the name of all target ports with arbitrary format",
+			serviceName:    "mock-dashboard",
+			namespace:      "default",
+			tmpl:           template.Must(template.New("svc-arbitrary-template").Parse("{{.Name}}={{.IP}}:{{.Port}}")),
+			expectedOutput: []string{"port1=127.0.0.1:1111", "port2=127.0.0.1:2222"},
 		},
 		{
 			description:    "empty slice for no node ports",
@@ -361,7 +405,8 @@ func TestGetServiceURLs(t *testing.T) {
 			t.Parallel()
 
 			K8s = &MockClientGetter{
-				servicesMap: serviceNamespaces,
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
 			}
 			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
 			if err != nil && !test.err {
@@ -428,7 +473,8 @@ func TestGetServiceURLsForService(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			K8s = &MockClientGetter{
-				servicesMap: serviceNamespaces,
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
 			}
 			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
