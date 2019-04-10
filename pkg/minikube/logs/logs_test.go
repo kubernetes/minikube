@@ -33,6 +33,7 @@ func TestIsProblem(t *testing.T) {
 		{"apiserver-auth-mode #2852", true, `{"log":"Error: unknown flag: --Authorization.Mode\n","stream":"stderr","time":"2018-06-17T22:16:35.134161966Z"}`},
 		{"apiserver-admission #3524", true, "error: unknown flag: --GenericServerRunOptions.AdmissionControl"},
 		{"no-providers-available #3818", true, ` kubelet.go:1662] Failed creating a mirror pod for "kube-apiserver-minikube_kube-system(c7d572aebd3d33b17fa78ae6395b6d0a)": pods "kube-apiserver-minikube" is forbidden: no providers available to validate pod request`},
+		{"no-objects-passed-to-apply #4010", false, "error: no objects passed to apply"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
