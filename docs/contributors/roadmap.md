@@ -8,7 +8,7 @@ Please send a PR to suggest any improvements to it.
 
 - [ ] Creation of a user-centric minikube website for installation & documentation
 - [ ] Localized output to 5+ written languages
-- [x] Make minikube usable in environments with challenging connectivity requirements
+- [ ] Make minikube usable in environments with challenging connectivity requirements
 - [ ] Support lightweight deployment methods for environments where VM's are impractical
 - [ ] Add offline support
 
