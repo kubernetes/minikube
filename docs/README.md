@@ -41,3 +41,5 @@
 * **Accessing etcd from inside the cluster** ([accessing_etcd.md](accessing_etcd.md))
 
 * **Networking** ([networking.md](networking.md)): FAQ about networking between the host and minikube VM
+
+* **Offline** ([offline.md](offline.md)): Details about using minikube offline
