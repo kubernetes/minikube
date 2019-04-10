@@ -175,7 +175,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if viper.GetString(vmDriver) == constants.DriverNone {
-		// Optimization: images will be persistently loaded into host Docker, so no need to duplicate work.
+		// Optimization: images will be persistently loaded into the host's container runtime, so no need to duplicate work.
 		viper.Set(cacheImages, false)
 	}
 
