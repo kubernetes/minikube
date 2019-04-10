@@ -175,18 +175,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if viper.GetString(vmDriver) == constants.DriverNone {
-		/*
-		Caching images means:
-			- minikube download the images
-			- minikube saves them in ~/.minikube/cache
-			- minikube loads them to the host machine with `docker load -i ~/.minikube/cache/some_images`
-
-		This makes complete sense, except that when --vm-driver=none, the host machine is the local machine.
-		That means once the images is loaded into docker, it stays there even after reboots and `minikube delete`.
-		That means they are already cached and nothing needs to be done. Not only that, loading the container with
-		`docker load -i ~/.minikube/cache/some_images` is unecessary and takes time.
-		As a bonus, we save disk space.
-		*/
+		// Optimization: images will be persistently loaded into host Docker, so no need to duplicate work.
 		viper.Set(cacheImages, false)
 	}
 
