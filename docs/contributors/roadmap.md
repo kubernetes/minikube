@@ -10,7 +10,7 @@ Please send a PR to suggest any improvements to it.
 - [ ] Localized output to 5+ written languages
 - [ ] Make minikube usable in environments with challenging connectivity requirements
 - [ ] Support lightweight deployment methods for environments where VM's are impractical
-- [ ] Add offline support
+- [x] Add offline support
 
 ## (#2) Inclusive and community-driven
 
