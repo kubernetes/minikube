@@ -6,6 +6,13 @@ As of v1.0, `minikube start` is offline compatible out of the box. Here are some
 
 * On the initial run for a given Kubernetes release, `minikube start` must have access to the internet, or a configured `--image-repository` to pull from.
 
+## Cache location
+
+* `~/.minikube/cache` - Top-level folder
+* `~/.minikube/cache/iso` - VM ISO image. Typically updated once per major minikube release.
+* `~/.minikube/cache/images` - Docker images used by Kubernetes.
+* `~/.minikube/<version>` - Kubernetes binaries, such as `kubeadm` and `kubelet`
+
 ## Sharing the minikube cache
 
 For offline use on other hosts, one can copy the contents of `~/.minikube/cache`. As of the v1.0 release, this directory
@@ -30,6 +37,6 @@ cache/v1.14.0/kubeadm
 cache/v1.14.0/kubelet
 ```
 
-
+If any of these files exist, minikube will use copy them into the VM directly rather than pulling them from the internet.
 
 
