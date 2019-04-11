@@ -70,7 +70,7 @@ func HasStyle(style string) bool {
 
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style, format string, a ...interface{}) error {
-	OutStyle, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+	outStyled, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := OutLn(format, a...); oerr != nil {
@@ -78,7 +78,12 @@ func OutStyle(style, format string, a ...interface{}) error {
 		}
 		return err
 	}
-	return Out(OutStyle)
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	outStyled = strings.Replace(outStyled, "%", "%%", -1)
+
+	return Out(outStyled)
 }
 
 // Out writes a basic formatted string to stdout
@@ -101,7 +106,7 @@ func OutLn(format string, a ...interface{}) error {
 
 // ErrStyle writes a stylized and formatted error message to stderr
 func ErrStyle(style, format string, a ...interface{}) error {
-	format, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+	format, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := ErrLn(format, a...); oerr != nil {
@@ -109,6 +114,11 @@ func ErrStyle(style, format string, a ...interface{}) error {
 		}
 		return err
 	}
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	format = strings.Replace(format, "%", "%%", -1)
+
 	return Err(format)
 }
 
