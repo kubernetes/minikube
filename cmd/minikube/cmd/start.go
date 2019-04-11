@@ -87,6 +87,7 @@ const (
 	hidden                = "hidden"
 	embedCerts            = "embed-certs"
 	noVTXCheck            = "no-vtx-check"
+	downloadOnly          = "download-only"
 )
 
 var (
@@ -135,6 +136,7 @@ func init() {
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
+	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
@@ -192,6 +194,22 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
+
+	if viper.GetBool(downloadOnly) {
+		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
+		if err := doCacheBinaries(k8sVersion); err != nil {
+			exit.WithError("Failed to cache binaries", err)
+		}
+		waitCacheImages(&cacheGroup)
+		if err := CacheImagesInConfigFile(); err != nil {
+			exit.WithError("Failed to cache images", err)
+		}
+		console.OutStyle("check", "Download complete!")
+		return
+	}
+
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
@@ -258,6 +276,11 @@ func validateConfig() {
 	if viper.GetBool(hidden) && viper.GetString(vmDriver) != "kvm2" {
 		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
 	}
+}
+
+// doCacheBinaries caches Kubernetes binaries in the foreground
+func doCacheBinaries(k8sVersion string) error {
+	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
 // beginCacheImages caches Docker images in the background

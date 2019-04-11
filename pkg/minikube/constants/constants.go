@@ -230,6 +230,11 @@ const DriverNone = "none"
 // FileScheme is the file scheme
 const FileScheme = "file"
 
+// GetKubeadmCachedBinaries gets the binaries to cache for kubeadm
+func GetKubeadmCachedBinaries() []string {
+	return []string{"kubelet", "kubeadm"}
+}
+
 // GetKubeadmCachedImages gets the images to cache for kubeadm for a version
 func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {
 	minikubeRepository := imageRepository
