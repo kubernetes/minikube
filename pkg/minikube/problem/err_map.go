@@ -43,7 +43,7 @@ var vmProblems = map[string]match{
 	},
 	"KVM2_NO_IP": {
 		Regexp: re(`Error starting stopped host: Machine didn't return an IP after 120 seconds`),
-		Advice: "The KVM driver is unable to ressurect this old VM. Please run `minikube delete` to delete it and try again.",
+		Advice: "The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.",
 		Issues: []int{3901, 3566, 3434},
 	},
 	"VM_DOES_NOT_EXIST": {

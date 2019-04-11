@@ -1,5 +1,69 @@
 # Minikube Release Notes
 
+## Version 1.0.0 - 2019-03-27
+
+* Update default Kubernetes version to v1.14.0 [#3967](https://github.com/kubernetes/minikube/pull/3967)
+  * NOTE: To avoid interaction issues, we also recommend updating kubectl to a recent release (v1.13+)
+* Upgrade addon-manager to v9.0 for compatibility with Kubernetes v1.14 [#3984](https://github.com/kubernetes/minikube/pull/3984)
+* Add --image-repository flag so that users can select an alternative repository mirror [#3714](https://github.com/kubernetes/minikube/pull/3714)
+* Rename MINIKUBE_IN_COLOR to MINIKUBE_IN_STYLE [#3976](https://github.com/kubernetes/minikube/pull/3976)
+* mount: Allow names to be passed in for gid/uid  [#3989](https://github.com/kubernetes/minikube/pull/3989)
+* mount: unmount on sigint/sigterm, add --options and --mode, improve UI [#3855](https://github.com/kubernetes/minikube/pull/3855)
+* --extra-config now work for kubeadm as well [#3879](https://github.com/kubernetes/minikube/pull/3879)
+* start: Set the default value of --cache to true [#3917](https://github.com/kubernetes/minikube/pull/3917)
+* Remove the swap partition from minikube.iso [#3927](https://github.com/kubernetes/minikube/pull/3927)
+* Add solution catalog to help users who run into known problems [#3931](https://github.com/kubernetes/minikube/pull/3931)
+* Automatically propagate proxy environment variables to docker env [#3834](https://github.com/kubernetes/minikube/pull/3834)
+* More reliable unmount w/ SIGINT, particularly on kvm2 [#3985](https://github.com/kubernetes/minikube/pull/3985)
+* Remove arch suffixes in image names [#3942](https://github.com/kubernetes/minikube/pull/3942)
+* Issue #3253, improve kubernetes-version error string [#3596](https://github.com/kubernetes/minikube/pull/3596)
+* Update kubeadm bootstrap logic so it does not wait for addon-manager [#3958](https://github.com/kubernetes/minikube/pull/3958)
+* Add explicit kvm2 flag for hidden KVM signature [#3947](https://github.com/kubernetes/minikube/pull/3947)
+* Remove the rkt container runtime [#3944](https://github.com/kubernetes/minikube/pull/3944)
+* Store the toolbox on the disk instead of rootfs [#3951](https://github.com/kubernetes/minikube/pull/3951)
+* fix CHANGE_MINIKUBE_NONE_USER regression from recent changes [#3875](https://github.com/kubernetes/minikube/pull/3875)
+* Do not wait for k8s-app pods when starting with CNI [#3896](https://github.com/kubernetes/minikube/pull/3896)
+* Replace server name in updateKubeConfig if --apiserver-name exists #3878 [#3897](https://github.com/kubernetes/minikube/pull/3897)
+* feature-gates via minikube config set [#3861](https://github.com/kubernetes/minikube/pull/3861)
+* Upgrade crio to v1.13.1, skip install.tools target as it isn't necessary [#3919](https://github.com/kubernetes/minikube/pull/3919)
+* Update Ingress-NGINX to 0.23 Release [#3877](https://github.com/kubernetes/minikube/pull/3877)
+* Add addon-manager, dashboard, and storage-provisioner to minikube logs [#3982](https://github.com/kubernetes/minikube/pull/3982)
+* logs: Add kube-proxy, dmesg, uptime, uname + newlines between log sources [#3872](https://github.com/kubernetes/minikube/pull/3872)
+* Skip "pull" command if using Kubernetes 1.10, which does not support it. [#3832](https://github.com/kubernetes/minikube/pull/3832)
+* Allow building minikube for any architecture [#3887](https://github.com/kubernetes/minikube/pull/3887)
+* Windows installer using installation path for x64 applications [#3895](https://github.com/kubernetes/minikube/pull/3895)
+* caching: Fix containerd, improve console messages, add integration tests [#3767](https://github.com/kubernetes/minikube/pull/3767)
+* Fix `minikube addons open heapster` [#3826](https://github.com/kubernetes/minikube/pull/3826)
+
+We couldn't have gotten here without the folks who contributed to this release:
+
+- Anders F Björklund
+- Andy Daniels
+- Calin Don
+- Cristian Măgherușan-Stanciu @magheru_san
+- Dmitry Budaev
+- Guang Ya Liu
+- Igor Akkerman
+- Joel Smith
+- Marco Vito Moscaritolo
+- Marcos Diez
+- Martynas Pumputis
+- RA489
+- Sharif Elgamal
+- Steven Davidovitz
+- Thomas Strömberg
+- Zhongcheng Lao
+- flyingcircle
+- jay vyas
+- morvencao
+- u5surf
+
+We all stand on the shoulders of the giants who came before us. A special shout-out to all [813 people who have contributed to minikube](https://github.com/kubernetes/minikube/graphs/contributors), and especially our former maintainers who made minikube into what it is today:
+
+- Matt Rickard
+- Dan Lorenc
+- Aaron Prindle
+
 ## Version 0.35.0 - 2019-03-06
 
 * Update default Kubernetes version to v1.13.4 (latest stable) [#3807](https://github.com/kubernetes/minikube/pull/3807)
