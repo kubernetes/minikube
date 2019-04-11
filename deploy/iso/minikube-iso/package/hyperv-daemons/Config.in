@@ -1,0 +1,4 @@
+config BR2_PACKAGE_HYPERV_DAEMONS
+	bool "hyperv-daemons"
+	default y
+	depends on BR2_x86_64

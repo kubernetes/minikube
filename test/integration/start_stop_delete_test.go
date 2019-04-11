@@ -19,12 +19,14 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"net"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -33,10 +35,27 @@ func TestStartStop(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"docker+cache", []string{"--container-runtime=docker", "--cache-images"}},
-		{"docker+cache+ignore_verifications", []string{"--container-runtime=docker", "--cache-images", "--extra-config", "kubeadm.ignore-preflight-errors=SystemVerification"}},
-		{"containerd+cache", []string{"--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock", "--cache-images"}},
-		{"crio+cache", []string{"--container-runtime=crio", "--cache-images"}},
+		{"nocache_oldest", []string{
+			"--cache-images=false",
+			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+		}},
+		{"feature_gates_newest_cni", []string{
+			"--feature-gates",
+			"ServerSideApply=true",
+			"--network-plugin=cni",
+			"--extra-config=kubelet.network-plugin=cni",
+			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
+		}},
+		{"containerd_and_non_default_apiserver_port", []string{
+			"--container-runtime=containerd",
+			"--docker-opt containerd=/var/run/containerd/containerd.sock",
+			"--apiserver-port=8444",
+		}},
+		{"crio_ignore_preflights", []string{
+			"--container-runtime=crio",
+			"--extra-config",
+			"kubeadm.ignore-preflight-errors=SystemVerification",
+		}},
 	}
 
 	for _, test := range tests {
