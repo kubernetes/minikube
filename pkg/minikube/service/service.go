@@ -174,7 +174,7 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 	e := c.Endpoints(namespace)
 	endpoints, err := e.Get(service, metav1.GetOptions{})
 	m := make(map[int32]string)
-	if endpoints != nil && len(endpoints.Subsets) > 0 {
+	if err == nil && endpoints != nil && len(endpoints.Subsets) > 0 {
 		for _, ept := range endpoints.Subsets {
 			for _, p := range ept.Ports {
 				m[int32(p.Port)] = p.Name
