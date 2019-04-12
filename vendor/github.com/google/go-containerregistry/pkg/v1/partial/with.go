@@ -19,8 +19,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
 
@@ -49,8 +50,6 @@ func ConfigName(i WithRawConfigFile) (v1.Hash, error) {
 	return h, err
 }
 
-// configLayer implements v1.Layer from the raw config bytes.
-// This is so that clients (e.g. remote) can access the config as a blob.
 type configLayer struct {
 	hash    v1.Hash
 	content []byte
@@ -68,12 +67,12 @@ func (cl *configLayer) DiffID() (v1.Hash, error) {
 
 // Uncompressed implements v1.Layer
 func (cl *configLayer) Uncompressed() (io.ReadCloser, error) {
-	return v1util.NopReadCloser(bytes.NewBuffer(cl.content)), nil
+	return ioutil.NopCloser(bytes.NewBuffer(cl.content)), nil
 }
 
 // Compressed implements v1.Layer
 func (cl *configLayer) Compressed() (io.ReadCloser, error) {
-	return v1util.NopReadCloser(bytes.NewBuffer(cl.content)), nil
+	return ioutil.NopCloser(bytes.NewBuffer(cl.content)), nil
 }
 
 // Size implements v1.Layer
@@ -83,6 +82,8 @@ func (cl *configLayer) Size() (int64, error) {
 
 var _ v1.Layer = (*configLayer)(nil)
 
+// ConfigLayer implements v1.Layer from the raw config bytes.
+// This is so that clients (e.g. remote) can access the config as a blob.
 func ConfigLayer(i WithRawConfigFile) (v1.Layer, error) {
 	h, err := ConfigName(i)
 	if err != nil {
@@ -188,20 +189,6 @@ func FSLayers(i WithManifest) ([]v1.Hash, error) {
 		fsl[i] = l.Digest
 	}
 	return fsl, nil
-}
-
-// BlobSet is a helper for implementing v1.Image
-func BlobSet(i WithManifest) (map[v1.Hash]struct{}, error) {
-	m, err := i.Manifest()
-	if err != nil {
-		return nil, err
-	}
-	bs := make(map[v1.Hash]struct{})
-	for _, l := range m.Layers {
-		bs[l.Digest] = struct{}{}
-	}
-	bs[m.Config.Digest] = struct{}{}
-	return bs, nil
 }
 
 // BlobSize is a helper for implementing v1.Image
