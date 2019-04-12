@@ -23,3 +23,6 @@ spec:
         ports:
         - containerPort: 5000
           protocol: TCP
+        env:
+        - name: REGISTRY_STORAGE_DELETE_ENABLED
+          value: true  

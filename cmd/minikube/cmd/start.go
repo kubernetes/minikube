@@ -87,6 +87,7 @@ const (
 	hidden                = "hidden"
 	embedCerts            = "embed-certs"
 	noVTXCheck            = "no-vtx-check"
+	downloadOnly          = "download-only"
 )
 
 var (
@@ -135,7 +136,8 @@ func init() {
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
-	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine.")
+	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
+	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
@@ -174,6 +176,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
+	if viper.GetString(vmDriver) == constants.DriverNone {
+		// Optimization: images will be persistently loaded into the host's container runtime, so no need to duplicate work.
+		viper.Set(cacheImages, false)
+	}
+
 	var cacheGroup errgroup.Group
 	beginCacheImages(&cacheGroup, k8sVersion)
 
@@ -187,6 +194,22 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
+
+	if viper.GetBool(downloadOnly) {
+		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
+		if err := doCacheBinaries(k8sVersion); err != nil {
+			exit.WithError("Failed to cache binaries", err)
+		}
+		waitCacheImages(&cacheGroup)
+		if err := CacheImagesInConfigFile(); err != nil {
+			exit.WithError("Failed to cache images", err)
+		}
+		console.OutStyle("check", "Download complete!")
+		return
+	}
+
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
@@ -201,13 +224,18 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	cr := configureRuntimes(host, runner)
-	bs := prepareHostEnvironment(m, config.KubernetesConfig)
+
+	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
+
+	bs := prepareHostEnvironment(m, config.KubernetesConfig)
 
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting)
-	validateCluster(bs, cr, runner, ip)
+
+	apiserverPort := config.KubernetesConfig.NodePort
+	validateCluster(bs, cr, runner, ip, apiserverPort)
 	configureMounts()
 	if err = LoadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
@@ -245,6 +273,11 @@ func validateConfig() {
 	}
 }
 
+// doCacheBinaries caches Kubernetes binaries in the foreground
+func doCacheBinaries(k8sVersion string) error {
+	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+}
+
 // beginCacheImages caches Docker images in the background
 func beginCacheImages(g *errgroup.Group, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
@@ -254,6 +287,17 @@ func beginCacheImages(g *errgroup.Group, k8sVersion string) {
 	g.Go(func() error {
 		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
+}
+
+// waitCacheImages blocks until the image cache jobs complete
+func waitCacheImages(g *errgroup.Group) {
+	if !viper.GetBool(cacheImages) {
+		return
+	}
+	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
+	if err := g.Wait(); err != nil {
+		glog.Errorln("Error caching images: ", err)
+	}
 }
 
 // generateConfig generates cfg.Config based on flags and supplied arguments
@@ -511,17 +555,6 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	return cr
 }
 
-// waitCacheImages blocks until the image cache jobs complete
-func waitCacheImages(g *errgroup.Group) {
-	if !viper.GetBool(cacheImages) {
-		return
-	}
-	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
-	if err := g.Wait(); err != nil {
-		glog.Errorln("Error caching images: ", err)
-	}
-}
-
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
 func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, kc cfg.KubernetesConfig, preexisting bool) {
 	console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
@@ -546,7 +579,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 }
 
 // validateCluster validates that the cluster is well-configured and healthy
-func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string) {
+func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
 	console.OutStyle("verifying-noline", "Verifying component health ...")
 	k8sStat := func() (err error) {
 		st, err := bs.GetKubeletStatus()
@@ -561,7 +594,7 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 		exit.WithLogEntries("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
 	}
 	aStat := func() (err error) {
-		st, err := bs.GetAPIServerStatus(net.ParseIP(ip))
+		st, err := bs.GetAPIServerStatus(net.ParseIP(ip), apiserverPort)
 		console.Out(".")
 		if err != nil || st != state.Running.String() {
 			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}

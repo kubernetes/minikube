@@ -73,7 +73,7 @@ func WithProblem(msg string, p *problem.Problem) {
 	console.Fatal(msg)
 	p.Display()
 	console.Err("\n")
-	console.ErrStyle("sad", "If the advice does not help, please let us know: ")
+	console.ErrStyle("sad", "If the above advice does not help, please let us know: ")
 	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
 	os.Exit(Config)
 }

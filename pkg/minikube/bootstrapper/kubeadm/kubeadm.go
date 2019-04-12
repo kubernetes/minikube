@@ -18,13 +18,10 @@ package kubeadm
 
 import (
 	"bytes"
-	"crypto"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
-	"os"
-	"path"
 	"strings"
 	"time"
 
@@ -32,7 +29,6 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
@@ -122,8 +118,8 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 }
 
 // GetAPIServerStatus returns the api-server status
-func (k *Bootstrapper) GetAPIServerStatus(ip net.IP) (string, error) {
-	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
+func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
+	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},

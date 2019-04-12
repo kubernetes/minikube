@@ -19,7 +19,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
@@ -37,8 +37,12 @@ type UncompressedLayer interface {
 // uncompressedLayerExtender implements v1.Image using the uncompressed base properties.
 type uncompressedLayerExtender struct {
 	UncompressedLayer
-	// TODO(mattmoor): Memoize size/hash so that the methods aren't twice as
+	// Memoize size/hash so that the methods aren't twice as
 	// expensive as doing this manually.
+	hash          v1.Hash
+	size          int64
+	hashSizeError error
+	once          sync.Once
 }
 
 // Compressed implements v1.Layer
@@ -52,29 +56,31 @@ func (ule *uncompressedLayerExtender) Compressed() (io.ReadCloser, error) {
 
 // Digest implements v1.Layer
 func (ule *uncompressedLayerExtender) Digest() (v1.Hash, error) {
-	r, err := ule.Compressed()
-	if err != nil {
-		return v1.Hash{}, err
-	}
-	defer r.Close()
-	h, _, err := v1.SHA256(r)
-	return h, err
+	ule.calcSizeHash()
+	return ule.hash, ule.hashSizeError
 }
 
 // Size implements v1.Layer
 func (ule *uncompressedLayerExtender) Size() (int64, error) {
-	r, err := ule.Compressed()
-	if err != nil {
-		return -1, err
-	}
-	defer r.Close()
-	_, i, err := v1.SHA256(r)
-	return i, err
+	ule.calcSizeHash()
+	return ule.size, ule.hashSizeError
+}
+
+func (ule *uncompressedLayerExtender) calcSizeHash() {
+	ule.once.Do(func() {
+		var r io.ReadCloser
+		r, ule.hashSizeError = ule.Compressed()
+		if ule.hashSizeError != nil {
+			return
+		}
+		defer r.Close()
+		ule.hash, ule.size, ule.hashSizeError = v1.SHA256(r)
+	})
 }
 
 // UncompressedToLayer fills in the missing methods from an UncompressedLayer so that it implements v1.Layer
 func UncompressedToLayer(ul UncompressedLayer) (v1.Layer, error) {
-	return &uncompressedLayerExtender{ul}, nil
+	return &uncompressedLayerExtender{UncompressedLayer: ul}, nil
 }
 
 // UncompressedImageCore represents the bare minimum interface a natively
@@ -105,11 +111,6 @@ type uncompressedImageExtender struct {
 
 // Assert that our extender type completes the v1.Image interface
 var _ v1.Image = (*uncompressedImageExtender)(nil)
-
-// BlobSet implements v1.Image
-func (i *uncompressedImageExtender) BlobSet() (map[v1.Hash]struct{}, error) {
-	return BlobSet(i)
-}
 
 // Digest implements v1.Image
 func (i *uncompressedImageExtender) Digest() (v1.Hash, error) {
@@ -214,13 +215,6 @@ func (i *uncompressedImageExtender) LayerByDiffID(diffID v1.Hash) (v1.Layer, err
 
 // LayerByDigest implements v1.Image
 func (i *uncompressedImageExtender) LayerByDigest(h v1.Hash) (v1.Layer, error) {
-	// Support returning the ConfigFile when asked for its hash.
-	if cfgName, err := i.ConfigName(); err != nil {
-		return nil, err
-	} else if cfgName == h {
-		return ConfigLayer(i)
-	}
-
 	diffID, err := BlobToDiffID(i, h)
 	if err != nil {
 		return nil, err

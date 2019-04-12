@@ -97,7 +97,8 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := LoadFromCacheBlocking(cmd, cc.KubernetesConfig, src); err != nil {
+			if err := loadImageFromCache(cmd, cc.KubernetesConfig, src); err != nil {
+				glog.Warningf("Failed to load %s: %v", src, err)
 				return errors.Wrapf(err, "loading image %s", src)
 			}
 			return nil
@@ -198,14 +199,12 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-// LoadFromCacheBlocking loads images from cache, blocking until loaded
-func LoadFromCacheBlocking(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
-	glog.Infoln("Loading image from cache at ", src)
+// loadImageFromCache loads a single image from the cache
+func loadImageFromCache(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
+	glog.Infof("Loading image from cache: %s", src)
 	filename := filepath.Base(src)
-	for {
-		if _, err := os.Stat(src); err == nil {
-			break
-		}
+	if _, err := os.Stat(src); err != nil {
+		return err
 	}
 	dst := path.Join(tempLoadDir, filename)
 	f, err := assets.NewFileAsset(src, tempLoadDir, filename, "0777")
@@ -303,12 +302,12 @@ func CacheImage(image, dst string) error {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
-	tag, err := name.NewTag(image, name.WeakValidation)
+	ref, err := name.ParseReference(image, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "creating docker image name")
 	}
 
-	img, err := remote.Image(tag, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return errors.Wrap(err, "fetching remote image")
 	}
@@ -318,7 +317,7 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	err = tarball.Write(tag, img, nil, f)
+	err = tarball.Write(ref, img, f)
 	if err != nil {
 		return err
 	}

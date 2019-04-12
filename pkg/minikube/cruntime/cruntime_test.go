@@ -445,9 +445,6 @@ func TestContainerFunctions(t *testing.T) {
 				"fgh1": prefix + "coredns",
 				"xyz2": prefix + "storage",
 			}
-			if tc.runtime == "docker" {
-				runner.containers["zzz"] = "unrelated"
-			}
 			cr, err := New(Config{Type: tc.runtime, Runner: runner})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
