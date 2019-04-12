@@ -1,0 +1,10 @@
+[Unit]
+Description=Hyper-V Key Value Pair Daemon
+Documentation=https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/reference/integration-services#hyper-v-data-exchange-service-kvp
+BindsTo=sys-devices-virtual-misc-vmbus\x21hv_kvp.device
+
+[Service]
+ExecStart=/usr/sbin/hv_kvp_daemon -n
+
+[Install]
+WantedBy=multi-user.target

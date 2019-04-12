@@ -21,27 +21,28 @@ import (
 )
 
 // ConfigFile is the configuration file that holds the metadata describing
-// how to launch a container.  The names of the fields are chosen to reflect
-// the JSON payload of the ConfigFile as defined here: https://git.io/vrAEY
+// how to launch a container. See:
+// https://github.com/opencontainers/image-spec/blob/master/config.md
 type ConfigFile struct {
 	Architecture    string    `json:"architecture"`
-	Container       string    `json:"container"`
-	Created         Time      `json:"created"`
-	DockerVersion   string    `json:"docker_version"`
-	History         []History `json:"history"`
+	Author          string    `json:"author,omitempty"`
+	Container       string    `json:"container,omitempty"`
+	Created         Time      `json:"created,omitempty"`
+	DockerVersion   string    `json:"docker_version,omitempty"`
+	History         []History `json:"history,omitempty"`
 	OS              string    `json:"os"`
 	RootFS          RootFS    `json:"rootfs"`
 	Config          Config    `json:"config"`
-	ContainerConfig Config    `json:"container_config"`
-	OSVersion       string    `json:"osversion"`
+	ContainerConfig Config    `json:"container_config,omitempty"`
+	OSVersion       string    `json:"osversion,omitempty"`
 }
 
 // History is one entry of a list recording how this container image was built.
 type History struct {
-	Author     string `json:"author"`
-	Created    Time   `json:"created"`
-	CreatedBy  string `json:"created_by"`
-	Comment    string `json:"comment"`
+	Author     string `json:"author,omitempty"`
+	Created    Time   `json:"created,omitempty"`
+	CreatedBy  string `json:"created_by,omitempty"`
+	Comment    string `json:"comment,omitempty"`
 	EmptyLayer bool   `json:"empty_layer,omitempty"`
 }
 

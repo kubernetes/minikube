@@ -40,7 +40,7 @@ import (
 // console.SetErrFile(os.Stderr)
 // console.Fatal("Oh no, everything failed.")
 
-// NOTE: If you do not want colorized output, set MINIKUBE_IN_COLOR=false in your environment.
+// NOTE: If you do not want colorized output, set MINIKUBE_IN_STYLE=false in your environment.
 
 var (
 	// outFile is where Out* functions send output to. Set using SetOutFile()
@@ -54,7 +54,7 @@ var (
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
 	// OverrideEnv is the environment variable used to override color/emoji usage
-	OverrideEnv = "MINIKUBE_IN_COLOR"
+	OverrideEnv = "MINIKUBE_IN_STYLE"
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
@@ -70,7 +70,7 @@ func HasStyle(style string) bool {
 
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style, format string, a ...interface{}) error {
-	OutStyle, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+	outStyled, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := OutLn(format, a...); oerr != nil {
@@ -78,7 +78,12 @@ func OutStyle(style, format string, a ...interface{}) error {
 		}
 		return err
 	}
-	return Out(OutStyle)
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	outStyled = strings.Replace(outStyled, "%", "%%", -1)
+
+	return Out(outStyled)
 }
 
 // Out writes a basic formatted string to stdout
@@ -101,7 +106,7 @@ func OutLn(format string, a ...interface{}) error {
 
 // ErrStyle writes a stylized and formatted error message to stderr
 func ErrStyle(style, format string, a ...interface{}) error {
-	format, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+	format, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := ErrLn(format, a...); oerr != nil {
@@ -109,6 +114,11 @@ func ErrStyle(style, format string, a ...interface{}) error {
 		}
 		return err
 	}
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	format = strings.Replace(format, "%", "%%", -1)
+
 	return Err(format)
 }
 
@@ -192,8 +202,8 @@ func SetErrFile(w fdWriter) {
 func wantsColor(fd uintptr) bool {
 	// First process the environment: we allow users to force colors on or off.
 	//
-	// MINIKUBE_IN_COLOR=[1, T, true, TRUE]
-	// MINIKUBE_IN_COLOR=[0, f, false, FALSE]
+	// MINIKUBE_IN_STYLE=[1, T, true, TRUE]
+	// MINIKUBE_IN_STYLE=[0, f, false, FALSE]
 	//
 	// If unset, we try to automatically determine suitability from the environment.
 	val := os.Getenv(OverrideEnv)

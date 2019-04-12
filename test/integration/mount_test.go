@@ -71,12 +71,14 @@ func testMounting(t *testing.T) {
 
 	// Create the pods we need outside the main test loop.
 	setupTest := func() error {
+		t.Logf("Deploying pod from: %s", podPath)
 		if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
 			return err
 		}
 		return nil
 	}
 	defer func() {
+		t.Logf("Deleting pod from: %s", podPath)
 		if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", podPath}); err != nil {
 			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
 		}
@@ -89,6 +91,7 @@ func testMounting(t *testing.T) {
 	if err := waitForPods(map[string]string{"integration-test": "busybox-mount"}); err != nil {
 		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
 	}
+	t.Logf("Pods appear to be running")
 
 	mountTest := func() error {
 		if err := verifyFiles(minikubeRunner, kubectlRunner, tempDir, podName, expected); err != nil {

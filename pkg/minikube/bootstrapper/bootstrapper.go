@@ -43,13 +43,23 @@ type Bootstrapper interface {
 	LogCommands(LogOptions) map[string]string
 	SetupCerts(cfg config.KubernetesConfig) error
 	GetKubeletStatus() (string, error)
-	GetAPIServerStatus(net.IP) (string, error)
+	GetAPIServerStatus(net.IP, int) (string, error)
 }
 
 const (
 	// BootstrapperTypeKubeadm is the kubeadm bootstrapper type
 	BootstrapperTypeKubeadm = "kubeadm"
 )
+
+// GetCachedBinaryList returns the list of binaries
+func GetCachedBinaryList(bootstrapper string) []string {
+	switch bootstrapper {
+	case BootstrapperTypeKubeadm:
+		return constants.GetKubeadmCachedBinaries()
+	default:
+		return []string{}
+	}
+}
 
 // GetCachedImageList returns the list of images for a version
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {

@@ -24,9 +24,6 @@ type Image interface {
 	// The order of the list is oldest/base layer first, and most-recent/top layer last.
 	Layers() ([]Layer, error)
 
-	// BlobSet returns an unordered collection of all the blobs in the image.
-	BlobSet() (map[Hash]struct{}, error)
-
 	// MediaType of this image's manifest.
 	MediaType() (types.MediaType, error)
 
