@@ -302,12 +302,12 @@ func CacheImage(image, dst string) error {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
-	tag, err := name.NewTag(image, name.WeakValidation)
+	ref, err := name.ParseReference(image, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "creating docker image name")
 	}
 
-	img, err := remote.Image(tag, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return errors.Wrap(err, "fetching remote image")
 	}
@@ -317,7 +317,7 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	err = tarball.Write(tag, img, nil, f)
+	err = tarball.Write(ref, img, f)
 	if err != nil {
 		return err
 	}
