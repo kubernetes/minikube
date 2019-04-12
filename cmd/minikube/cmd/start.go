@@ -226,12 +226,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	cr := configureRuntimes(host, runner)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
-	if viper.GetBool(cacheImages) {
-		console.OutStyle("waiting", "Waiting for image downloads to complete ...")
-		if err := cacheGroup.Wait(); err != nil {
-			glog.Errorln("Error caching images: ", err)
-		}
-	}
+	waitCacheImages(&cacheGroup)
 
 	bs := prepareHostEnvironment(m, config.KubernetesConfig)
 
@@ -292,6 +287,17 @@ func beginCacheImages(g *errgroup.Group, k8sVersion string) {
 	g.Go(func() error {
 		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
+}
+
+// waitCacheImages blocks until the image cache jobs complete
+func waitCacheImages(g *errgroup.Group) {
+	if !viper.GetBool(cacheImages) {
+		return
+	}
+	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
+	if err := g.Wait(); err != nil {
+		glog.Errorln("Error caching images: ", err)
+	}
 }
 
 // generateConfig generates cfg.Config based on flags and supplied arguments
