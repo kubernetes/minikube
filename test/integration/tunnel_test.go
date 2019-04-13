@@ -98,34 +98,41 @@ func testTunnel(t *testing.T) {
 		t.Fatal("svc should have ingress after tunnel is created, but it was empty!")
 	}
 
+	responseBody, err := getResponseBody(nginxIP)
+	if err != nil {
+		t.Fatalf("error reading from nginx at address(%s): %s", nginxIP, err)
+	}
+	if !strings.Contains(responseBody, "Welcome to nginx!") {
+		t.Fatalf("response body doesn't seem like an nginx response:\n%s", responseBody)
+	}
+}
+
+func getResponseBody(address string) (string, error) {
 	httpClient := http.DefaultClient
 	httpClient.Timeout = 5 * time.Second
 
 	var resp *http.Response
+	var err error
 
 	request := func() error {
-		resp, err = httpClient.Get(fmt.Sprintf("http://%s", nginxIP))
+		resp, err = httpClient.Get(fmt.Sprintf("http://%s", address))
 		if err != nil {
 			retriable := &commonutil.RetriableError{Err: err}
-			t.Log(retriable)
 			return retriable
 		}
 		return nil
 	}
 
 	if err = commonutil.RetryAfter(5, request, 1*time.Second); err != nil {
-		t.Fatalf("error reading from nginx at address(%s): %s", nginxIP, err)
+		return "", err
 	}
 
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil || len(body) == 0 {
-		t.Fatalf("error reading body from nginx at address(%s): error: %s, len bytes read: %d", nginxIP, err, len(body))
+		return "", errors.Wrapf(err, "error reading body, len bytes read: %d", len(body))
 	}
 
-	responseBody := string(body)
-	if !strings.Contains(responseBody, "Welcome to nginx!") {
-		t.Fatalf("response body doesn't seem like an nginx response:\n%s", responseBody)
-	}
+	return string(body), nil
 }

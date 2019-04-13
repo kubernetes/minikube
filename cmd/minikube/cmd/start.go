@@ -246,16 +246,20 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
+	showKubectlConnectInfo(kubeconfig)
+	console.OutStyle("ready", "Done! Thank you for using minikube!")
+}
+
+func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
 		console.OutStyle("kubectl", "kubectl is now configured to use %q", cfg.GetMachineName())
 	}
-	_, err = exec.LookPath("kubectl")
+	_, err := exec.LookPath("kubectl")
 	if err != nil {
 		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 	}
-	console.OutStyle("ready", "Done! Thank you for using minikube!")
 }
 
 // validateConfig validates the supplied configuration against known bad combinations
