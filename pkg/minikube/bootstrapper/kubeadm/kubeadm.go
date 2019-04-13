@@ -446,37 +446,10 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	}
 	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
 
-	files := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
-		assets.NewMemoryAssetTarget([]byte(kubeletCfg), constants.KubeletSystemdConfFile, "0640"),
-		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"),
-	}
+	var files []assets.CopyableFile
+	files = copyConfig(cfg, files, kubeadmCfg, kubeletCfg)
 
-	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
-	// start a Pod in the case a user hasn't manually installed any CNI plugin
-	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
-	if cfg.EnableDefaultCNI {
-		files = append(files,
-			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"),
-			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultRktNetConfigPath, "0644"))
-	}
-
-	var g errgroup.Group
-	for _, bin := range constants.GetKubeadmCachedBinaries() {
-		bin := bin
-		g.Go(func() error {
-			path, err := machine.CacheBinary(bin, cfg.KubernetesVersion)
-			if err != nil {
-				return errors.Wrapf(err, "downloading %s", bin)
-			}
-			err = machine.CopyBinary(k.c, bin, path)
-			if err != nil {
-				return errors.Wrapf(err, "copying %s", bin)
-			}
-			return nil
-		})
-	}
-	if err := g.Wait(); err != nil {
+	if err := downloadBinaries(cfg, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
@@ -575,4 +548,41 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	}
 
 	return b.String(), nil
+}
+
+func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubeadmCfg string, kubeletCfg string) []assets.CopyableFile {
+	files = append(files,
+		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeletCfg), constants.KubeletSystemdConfFile, "0640"),
+		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"))
+
+	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
+	// start a Pod in the case a user hasn't manually installed any CNI plugin
+	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
+	if cfg.EnableDefaultCNI {
+		files = append(files,
+			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"),
+			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultRktNetConfigPath, "0644"))
+	}
+
+	return files
+}
+
+func downloadBinaries(cfg config.KubernetesConfig, c bootstrapper.CommandRunner) error {
+	var g errgroup.Group
+	for _, bin := range constants.GetKubeadmCachedBinaries() {
+		bin := bin
+		g.Go(func() error {
+			path, err := machine.CacheBinary(bin, cfg.KubernetesVersion)
+			if err != nil {
+				return errors.Wrapf(err, "downloading %s", bin)
+			}
+			err = machine.CopyBinary(c, bin, path)
+			if err != nil {
+				return errors.Wrapf(err, "copying %s", bin)
+			}
+			return nil
+		})
+	}
+	return g.Wait()
 }
