@@ -51,6 +51,15 @@ func GetMinipath() string {
 	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
 }
 
+// ArchTag returns the archtag for images
+func ArchTag(hasTag bool) string {
+	if runtime.GOARCH == "amd64" && hasTag == false {
+		return ":"
+	} else {
+		return "-" + runtime.GOARCH + ":"
+	}
+}
+
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently
 // used in gendocs.
 var SupportedVMDrivers = [...]string{
@@ -266,17 +275,17 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	var images []string
 	if v1_12plus(kubernetesVersion) {
 		images = append(images, []string{
-			imageRepository + "kube-proxy:" + kubernetesVersionStr,
-			imageRepository + "kube-scheduler:" + kubernetesVersionStr,
-			imageRepository + "kube-controller-manager:" + kubernetesVersionStr,
-			imageRepository + "kube-apiserver:" + kubernetesVersionStr,
+			imageRepository + "kube-proxy" + ArchTag(false) + kubernetesVersionStr,
+			imageRepository + "kube-scheduler" + ArchTag(false) + kubernetesVersionStr,
+			imageRepository + "kube-controller-manager" + ArchTag(false) + kubernetesVersionStr,
+			imageRepository + "kube-apiserver" + ArchTag(false) + kubernetesVersionStr,
 		}...)
 	} else {
 		images = append(images, []string{
-			imageRepository + "kube-proxy-amd64:" + kubernetesVersionStr,
-			imageRepository + "kube-scheduler-amd64:" + kubernetesVersionStr,
-			imageRepository + "kube-controller-manager-amd64:" + kubernetesVersionStr,
-			imageRepository + "kube-apiserver-amd64:" + kubernetesVersionStr,
+			imageRepository + "kube-proxy" + ArchTag(true) + kubernetesVersionStr,
+			imageRepository + "kube-scheduler" + ArchTag(true) + kubernetesVersionStr,
+			imageRepository + "kube-controller-manager" + ArchTag(true) + kubernetesVersionStr,
+			imageRepository + "kube-apiserver" + ArchTag(true) + kubernetesVersionStr,
 		}...)
 	}
 
@@ -285,21 +294,21 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns-amd64:1.14.13",
-			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.13",
-			imageRepository + "k8s-dns-sidecar-amd64:1.14.13",
-			imageRepository + "etcd:3.3.10",
-			imageRepository + "coredns:1.3.1",
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.13",
+			imageRepository + "etcd" + ArchTag(false) + "3.3.10",
+			imageRepository + "coredns" + ArchTag(false) + "1.3.1",
 		}...)
 
 	} else if v1_13(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
-			imageRepository + "etcd:3.2.24",
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(false) + "3.2.24",
 			imageRepository + "coredns:1.2.6",
 		}...)
 
@@ -307,62 +316,62 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
-			imageRepository + "etcd:3.2.24",
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(false) + "3.2.24",
 			imageRepository + "coredns:1.2.2",
 		}...)
 
 	} else if v1_11(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
-			imageRepository + "etcd-amd64:3.2.18",
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(true) + "3.2.18",
 			imageRepository + "coredns:1.1.3",
 		}...)
 
 	} else if v1_10(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns-amd64:1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			imageRepository + "k8s-dns-sidecar-amd64:1.14.8",
-			imageRepository + "etcd-amd64:3.1.12",
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(true) + "3.1.12",
 		}...)
 
 	} else if v1_9(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.0"
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns-amd64:1.14.7",
-			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.7",
-			imageRepository + "k8s-dns-sidecar-amd64:1.14.7",
-			imageRepository + "etcd-amd64:3.1.10",
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.7",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.7",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.7",
+			imageRepository + "etcd" + ArchTag(true) + "3.1.10",
 		}...)
 
 	} else if v1_8(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.0"
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
 		images = append(images, []string{
 			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns-amd64:1.14.5",
-			imageRepository + "k8s-dns-dnsmasq-nanny-amd64:1.14.5",
-			imageRepository + "k8s-dns-sidecar-amd64:1.14.5",
-			imageRepository + "etcd-amd64:3.0.17",
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.5",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.5",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.5",
+			imageRepository + "etcd" + ArchTag(true) + "3.0.17",
 		}...)
 
 	} else {
-		podInfraContainerImage = imageRepository + "pause:3.0"
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
 	}
 
 	images = append(images, []string{
-		imageRepository + "kubernetes-dashboard-amd64:v1.10.1",
-		imageRepository + "kube-addon-manager:v9.0",
-		minikubeRepository + "storage-provisioner:v1.8.1",
+		imageRepository + "kubernetes-dashboard" + ArchTag(true) + "v1.10.1",
+		imageRepository + "kube-addon-manager" + ArchTag(false) + "v9.0",
+		minikubeRepository + "storage-provisioner" + ArchTag(false) + "v1.8.1",
 	}...)
 
 	return podInfraContainerImage, images
