@@ -85,7 +85,7 @@ func testTunnel(t *testing.T) {
 	nginxIP := ""
 
 	for i := 1; i < 3 && len(nginxIP) == 0; i++ {
-		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"})
+		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath='{.status.loadBalancer.ingress[0].ip}'"})
 
 		if err != nil {
 			t.Fatalf("error listing nginx service: %s", err)
@@ -95,7 +95,7 @@ func testTunnel(t *testing.T) {
 	}
 
 	if len(nginxIP) == 0 {
-		stdout, err := kubectlRunner.RunCommand([]string{"describe", "svc", "nginx-svc"})
+		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath='{.status}'"})
 
 		if err != nil {
 			t.Errorf("error debugging nginx service: %s", err)
