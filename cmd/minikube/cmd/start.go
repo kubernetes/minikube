@@ -496,7 +496,10 @@ func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstr
 		console.OutStyle("option", "%s.%s=%s", eo.Component, eo.Key, eo.Value)
 	}
 	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(kc); err != nil {
+
+	autostart_cluster := viper.GetString(vmDriver) != constants.DriverNone
+
+	if err := bs.UpdateCluster(kc, autostart_cluster); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
 	if err := bs.SetupCerts(kc); err != nil {
