@@ -74,6 +74,9 @@ type Driver struct {
 	// Whether to passthrough GPU devices from the host to the VM.
 	GPU bool
 
+	// Whether to hide the KVM hypervisor signature from the guest
+	Hidden bool
+
 	// XML that needs to be added to passthrough GPU devices.
 	DevicesXML string
 }

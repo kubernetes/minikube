@@ -78,7 +78,6 @@ var PodsByLayer = []pod{
 	{"etcd", "component", "etcd"},
 	{"scheduler", "component", "kube-scheduler"},
 	{"controller", "component", "kube-controller-manager"},
-	{"addon-manager", "component", "kube-addon-manager"},
 	{"dns", "k8s-app", "kube-dns"},
 }
 
@@ -123,8 +122,8 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 }
 
 // GetAPIServerStatus returns the api-server status
-func (k *Bootstrapper) GetAPIServerStatus(ip net.IP) (string, error) {
-	url := fmt.Sprintf("https://%s:%d/healthz", ip, util.APIServerPort)
+func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
+	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},

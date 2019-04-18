@@ -66,6 +66,9 @@ var styles = map[string]style{
 	"log-entry":     {Prefix: "    "},   // Indent
 	"crushed":       {Prefix: "💔  "},
 	"url":           {Prefix: "👉  "},
+	"documentation": {Prefix: "📘  "},
+	"issues":        {Prefix: "⁉️   "},
+	"issue":         {Prefix: "    ▪ "}, // Indented bullet
 
 	// Specialized purpose styles
 	"iso-download":      {Prefix: "💿  ", LowPrefix: "@   "},
@@ -82,7 +85,6 @@ var styles = map[string]style{
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
 	"Docker":            {Prefix: "🐳  "},
-	"rkt":               {Prefix: "🚀  "},
 	"CRI-O":             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	"containerd":        {Prefix: "📦  "},
 	"permissions":       {Prefix: "🔑  "},

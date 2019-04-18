@@ -36,7 +36,7 @@ sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm
 sudo yum install libvirt-daemon-kvm qemu-kvm
 ```
 
-Enable,start, and verify the `libvirtd` service has started. 
+Enable,start, and verify the `libvirtd` service has started.
 
 ```shell
 sudo systemctl enable libvirtd.service
@@ -95,29 +95,18 @@ minikube start
 
 ## Hyperkit driver
 
-The Hyperkit driver will eventually replace the existing xhyve driver.
-It is built from the minikube source tree, and uses [moby/hyperkit](http://github.com/moby/hyperkit) as a Go library.
-
-To install the hyperkit driver via brew:
+Install the [hyperkit](http://github.com/moby/hyperkit) VM manager using [brew](https://brew.sh):
 
 ```shell
-brew install docker-machine-driver-hyperkit
-
-# docker-machine-driver-hyperkit need root owner and uid
-sudo chown root:wheel /usr/local/opt/docker-machine-driver-hyperkit/bin/docker-machine-driver-hyperkit
-sudo chmod u+s /usr/local/opt/docker-machine-driver-hyperkit/bin/docker-machine-driver-hyperkit
+brew install hyperkit
 ```
 
-To install the hyperkit driver manually:
+Then install the most recent version of minikube's fork of the hyperkit driver:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
 && sudo install -o root -g wheel -m 4755 docker-machine-driver-hyperkit /usr/local/bin/
 ```
-
-The hyperkit driver currently requires running as root to use the vmnet framework to setup networking.
-
-If you encountered errors like `Could not find hyperkit executable`, you might need to install [Docker for Mac](https://store.docker.com/editions/community/docker-ce-desktop-mac)
 
 If you are using [dnsmasq](http://www.thekelleys.org.uk/dnsmasq/doc.html) in your setup and cluster creation fails (stuck at kube-dns initialization) you might need to add `listen-address=192.168.64.1` to `dnsmasq.conf`.
 
@@ -129,16 +118,10 @@ To use the driver:
 minikube start --vm-driver hyperkit
 ```
 
-or, to use hyperkit as a default driver:
+or, to use hyperkit as a default driver for minikube:
 
 ```shell
 minikube config set vm-driver hyperkit
-```
-
-and run minikube as usual:
-
-```shell
-minikube start
 ```
 
 ## HyperV driver

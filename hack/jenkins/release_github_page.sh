@@ -63,10 +63,10 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/${TAGNAME}/mi
 Feel free to leave off \`\`\`sudo cp minikube /usr/local/bin/ && rm minikube\`\`\` if you would like to add minikube to your path manually.
 
 ### Debian Package (.deb) [Experimental]
-Download the \`minikube_${DEB_VERSION}.deb\` file, and install it using \`sudo dpkg -i minikube_$(DEB_VERSION).deb\`
+Download the \`minikube_${DEB_VERSION}.deb\` file, and install it using \`sudo dpkg -i minikube_${DEB_VERSION}.deb\`
 
 ### RPM Package (.rpm) [Experimental]
-Download the \`minikube-${RPM_VERSION}.rpm\` file, and install it using \`sudo rpm -i minikube-$(RPM_VERSION).rpm\`
+Download the \`minikube-${RPM_VERSION}.rpm\` file, and install it using \`sudo rpm -i minikube-${RPM_VERSION}.rpm\`
 
 ### Windows [Experimental]
 Download the \`minikube-windows-amd64.exe\` file, rename it to \`minikube.exe\` and add it to your path.
@@ -124,7 +124,9 @@ FILES_TO_UPLOAD=(
     "minikube_${DEB_VERSION}.deb"
     "minikube-${RPM_VERSION}.rpm"
     'docker-machine-driver-kvm2'
+    'docker-machine-driver-kvm2.sha256'
     'docker-machine-driver-hyperkit'
+    'docker-machine-driver-hyperkit.sha256'
 )
 
 for UPLOAD in "${FILES_TO_UPLOAD[@]}"

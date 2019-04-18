@@ -57,7 +57,7 @@ $ ./out/minikube start
 
 ## Running Tests
 
-#### Unit Tests
+### Unit Tests
 
 Unit tests are run on Travis before code is merged. To run as part of a development cycle:
 

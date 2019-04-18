@@ -13,8 +13,8 @@
 # limitations under the License.
 
 # Bump these on release - and please check ISO_VERSION for correctness.
-VERSION_MAJOR ?= 0
-VERSION_MINOR ?= 35
+VERSION_MAJOR ?= 1
+VERSION_MINOR ?= 0
 VERSION_BUILD ?= 0
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
@@ -78,6 +78,7 @@ MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 SOURCE_DIRS = cmd pkg test
+SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # $(call DOCKER, image, command)
 define DOCKER
@@ -175,7 +176,7 @@ test-iso:
 
 .PHONY: test-pkg
 test-pkg/%:
-	go test -v -test.timeout=30m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
+	go test -v -test.timeout=60m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: depend
 depend: out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d
@@ -188,15 +189,15 @@ drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
 
 .PHONY: integration
 integration: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+	go test -v -test.timeout=60m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-amd64 out/minikube-linux-amd64
-	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=30m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
+	sudo -E out/e2e-linux-amd64 -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
-	go test -v -test.timeout=30m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
+	go test -v -test.timeout=60m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
 out/test.d: pkg/minikube/assets/assets.go
@@ -218,7 +219,8 @@ e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
-	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso; do \
+	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso \
+		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
 		fi ; \
@@ -236,9 +238,13 @@ gendocs: out/docs/minikube.md
 fmt:
 	@gofmt -l -s -w $(SOURCE_DIRS)
 
+.PHONY: vet
+vet:
+	@go vet $(SOURCE_PACKAGES)
+
 .PHONY: lint
 lint:
-	@golint $(MINIKUBE_TEST_FILES)
+	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: reportcard
 reportcard:
@@ -389,5 +395,6 @@ install-kvm: out/docker-machine-driver-kvm2
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 .PHONY: release-kvm-driver
-release-kvm-driver: kvm_in_docker install-kvm
+release-kvm-driver: kvm_in_docker checksum install-kvm
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
+	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
