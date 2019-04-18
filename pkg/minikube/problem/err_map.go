@@ -56,6 +56,11 @@ var vmProblems = map[string]match{
 		Advice: "The minikube VM is offline. Please run 'minikube start' to start it again.",
 		Issues: []int{3849, 3648},
 	},
+	"VM_BOOT_FAILED_HYPERV_ENABLED": {
+		Regexp: re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
+		Advice: "Disable Hyper-V when you want to run VirtualBox to boot the VM",
+		Issues: []int{4051},
+	},
 }
 
 // proxyDoc is the URL to proxy documentation
