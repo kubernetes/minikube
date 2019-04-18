@@ -109,7 +109,7 @@ Start a cluster by running:
 
 `minikube start`
 
-Access Minikube Dashboard UI:
+Access Kubernetes Dashboard within Minikube:
 
 `minikube dashboard`
 
