@@ -163,7 +163,7 @@ func ParseKubernetesVersion(version string) (semver.Version, error) {
 	// Strip leading 'v' prefix from version for semver parsing
 	v, err := semver.Make(version[1:])
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "parsing kubernetes version")
+		return semver.Version{}, errors.Wrap(err, "invalid version, must begin with 'v'")
 	}
 
 	return v, nil

@@ -15,17 +15,15 @@
 
 minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
-<img src="https://github.com/kubernetes/minikube/raw/master/images/start.jpg" width="800">
+![screenshot](/images/start.jpg)
 
-Our [goal](https://github.com/kubernetes/minikube/blob/master/docs/contributors/principles.md) is to enable fast local development and to support all Kubernetes features that fit. We hope you enjoy it!
+Our [project goals](https://github.com/kubernetes/minikube/blob/master/docs/contributors/principles.md) are to enable fast local development and to support all Kubernetes features that fit. We hope you enjoy it!
 
 ## News
 
+* 2019-03-27 - v1.0.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.0.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-1000---2019-03-27)]
 * 2019-03-06 - v0.35.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.35.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0350---2019-03-06)]
 * 2019-02-16 - v0.34.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0341---2019-02-16)]
-* 2019-02-15 - v0.34.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0340---2019-02-15)]
-* 2019-01-18 - v0.33.1 released to address [CVE-2019-5736](https://www.openwall.com/lists/oss-security/2019/02/11/2) [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0331---2019-01-18)]
-* 2019-01-17 - v0.33.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.33.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0330---2019-01-17)]
 
 ## Features
 
@@ -55,6 +53,8 @@ As well as developer-friendly features:
 * [Contributors Guide](https://github.com/kubernetes/minikube/blob/master/docs/contributors/README.md)
 
 ## Community
+
+![Help Wanted!](/images/help_wanted.jpg)
 
 minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project.
 

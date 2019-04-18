@@ -105,8 +105,10 @@ func GenerateBashCompletion(w io.Writer, cmd *cobra.Command) error {
 
 // GenerateZshCompletion generates the completion for the zsh shell
 func GenerateZshCompletion(out io.Writer, cmd *cobra.Command) error {
-	zshInitialization := `#compdef minikube
+	zshAutoloadTag := `#compdef minikube
+`
 
+	zshInitialization := `
 __minikube_bash_source() {
 	alias shopt=':'
 	alias _expand=_bash_expand
@@ -239,7 +241,12 @@ __minikube_convert_bash_to_zsh() {
 	<<'BASH_COMPLETION_EOF'
 `
 
-	_, err := out.Write([]byte(boilerPlate))
+	_, err := out.Write([]byte(zshAutoloadTag))
+	if err != nil {
+		return err
+	}
+
+	_, err = out.Write([]byte(boilerPlate))
 	if err != nil {
 		return err
 	}

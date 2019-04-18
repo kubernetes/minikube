@@ -33,7 +33,6 @@ func TestName(t *testing.T) {
 	}{
 		{"", "Docker"},
 		{"docker", "Docker"},
-		{"rkt", "rkt"},
 		{"crio", "CRI-O"},
 		{"cri-o", "CRI-O"},
 		{"containerd", "containerd"},
@@ -445,9 +444,6 @@ func TestContainerFunctions(t *testing.T) {
 				"abc0": prefix + "apiserver",
 				"fgh1": prefix + "coredns",
 				"xyz2": prefix + "storage",
-			}
-			if tc.runtime == "docker" {
-				runner.containers["zzz"] = "unrelated"
 			}
 			cr, err := New(Config{Type: tc.runtime, Runner: runner})
 			if err != nil {

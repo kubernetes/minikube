@@ -35,12 +35,18 @@ import (
 // rootCauseRe is a regular expression that matches known failure root causes
 var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted`)
 
+// ignoreRe is a regular expression that matches spurious errors to not surface
+var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
+
 // importantPods are a list of pods to retrieve logs for, in addition to the bootstrapper logs.
 var importantPods = []string{
 	"kube-apiserver",
 	"coredns",
 	"kube-scheduler",
 	"kube-proxy",
+	"kube-addon-manager",
+	"kubernetes-dashboard",
+	"storage-provisioner",
 }
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
@@ -59,7 +65,7 @@ func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrappe
 
 // IsProblem returns whether this line matches a known problem
 func IsProblem(line string) bool {
-	return rootCauseRe.MatchString(line)
+	return rootCauseRe.MatchString(line) && !ignoreCauseRe.MatchString(line)
 }
 
 // FindProblems finds possible root causes among the logs

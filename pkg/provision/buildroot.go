@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	"strings"
 	"text/template"
 	"time"
 
@@ -47,6 +48,9 @@ type BuildrootProvisioner struct {
 	provision.SystemdProvisioner
 }
 
+// for escaping systemd template specifiers (e.g. '%i'), which are not supported by minikube
+var systemdSpecifierEscaper = strings.NewReplacer("%", "%%")
+
 func init() {
 	provision.Register("Buildroot", &provision.RegisteredProvisioner{
 		New: NewBuildrootProvisioner,
@@ -62,6 +66,17 @@ func NewBuildrootProvisioner(d drivers.Driver) provision.Provisioner {
 
 func (p *BuildrootProvisioner) String() string {
 	return "buildroot"
+}
+
+// escapeSystemdDirectives escapes special characters in the input variables used to create the
+// systemd unit file, which would otherwise be interpreted as systemd directives. An example
+// are template specifiers (e.g. '%i') which are predefined variables that get evaluated dynamically
+// (see systemd man pages for more info). This is not supported by minikube, thus needs to be escaped.
+func escapeSystemdDirectives(engineConfigContext *provision.EngineConfigContext) {
+	// escape '%' in Environment option so that it does not evaluate into a template specifier
+	engineConfigContext.EngineOptions.Env = util.ReplaceChars(engineConfigContext.EngineOptions.Env, systemdSpecifierEscaper)
+	// input might contain whitespaces, wrap it in quotes
+	engineConfigContext.EngineOptions.Env = util.ConcatStrings(engineConfigContext.EngineOptions.Env, "\"", "\"")
 }
 
 // GenerateDockerOptions generates the *provision.DockerOptions for this provisioner
@@ -126,6 +141,8 @@ WantedBy=multi-user.target
 		AuthOptions:   p.AuthOptions,
 		EngineOptions: p.EngineOptions,
 	}
+
+	escapeSystemdDirectives(&engineConfigContext)
 
 	if err := t.Execute(&engineCfg, engineConfigContext); err != nil {
 		return nil, err
