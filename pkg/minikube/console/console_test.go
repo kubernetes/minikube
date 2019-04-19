@@ -78,6 +78,7 @@ func TestOutStyle(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.style+"-"+tc.envValue, func(t *testing.T) {
+			os.Unsetenv(DisableEnv)
 			os.Setenv(OverrideEnv, tc.envValue)
 			f := newFakeFile()
 			SetOutFile(f)
@@ -92,7 +93,25 @@ func TestOutStyle(t *testing.T) {
 	}
 }
 
+func TestDisableStyle(t *testing.T) {
+	os.Setenv(DisableEnv, "")
+	os.Unsetenv(OverrideEnv)
+	f := newFakeFile()
+	SetOutFile(f)
+	if err := OutStyle("happy", "hello"); err != nil {
+		t.Errorf("unexpected error: %q", err)
+	}
+
+	got := f.String()
+	want := "hello\n"
+
+	if got != want {
+		t.Errorf("OutStyle() = %q, want %q", got, want)
+	}
+}
+
 func TestOut(t *testing.T) {
+	os.Unsetenv(DisableEnv)
 	os.Setenv(OverrideEnv, "")
 	// An example translation just to assert that this code path is executed.
 	err := message.SetString(language.Arabic, "Installing Kubernetes version %s ...", "... %s تثبيت Kubernetes الإصدار")
@@ -129,6 +148,7 @@ func TestOut(t *testing.T) {
 }
 
 func TestErr(t *testing.T) {
+	os.Unsetenv(DisableEnv)
 	os.Setenv(OverrideEnv, "0")
 	f := newFakeFile()
 	SetErrFile(f)
@@ -146,6 +166,7 @@ func TestErr(t *testing.T) {
 }
 
 func TestErrStyle(t *testing.T) {
+	os.Unsetenv(DisableEnv)
 	os.Setenv(OverrideEnv, "1")
 	f := newFakeFile()
 	SetErrFile(f)
@@ -160,6 +181,7 @@ func TestErrStyle(t *testing.T) {
 }
 
 func TestSetPreferredLanguage(t *testing.T) {
+	os.Unsetenv(DisableEnv)
 	os.Setenv(OverrideEnv, "0")
 	var tests = []struct {
 		input string

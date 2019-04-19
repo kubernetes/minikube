@@ -51,8 +51,12 @@ var (
 	preferredLanguage = language.AmericanEnglish
 	// our default language
 	defaultLanguage = language.AmericanEnglish
+	// usePrefix is whether the output should be prefixed by the style (at all)
+	usePrefix = true
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
+	// DisableEnv is the environment variable used to disable the style prefix
+	DisableEnv = "MINIKUBE_NO_STYLE"
 	// OverrideEnv is the environment variable used to override color/emoji usage
 	OverrideEnv = "MINIKUBE_IN_STYLE"
 )
@@ -70,7 +74,7 @@ func HasStyle(style string) bool {
 
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style, format string, a ...interface{}) error {
-	outStyled, err := applyStyle(style, useColor, format, a...)
+	outStyled, err := applyStyle(style, usePrefix, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := OutLn(format, a...); oerr != nil {
@@ -106,7 +110,7 @@ func OutLn(format string, a ...interface{}) error {
 
 // ErrStyle writes a stylized and formatted error message to stderr
 func ErrStyle(style, format string, a ...interface{}) error {
-	format, err := applyStyle(style, useColor, format, a...)
+	format, err := applyStyle(style, usePrefix, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
 		if oerr := ErrLn(format, a...); oerr != nil {
@@ -188,6 +192,7 @@ func SetPreferredLanguage(s string) error {
 func SetOutFile(w fdWriter) {
 	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
+	usePrefix = wantsPrefix()
 	useColor = wantsColor(w.Fd())
 }
 
@@ -195,7 +200,16 @@ func SetOutFile(w fdWriter) {
 func SetErrFile(w fdWriter) {
 	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
+	usePrefix = wantsPrefix()
 	useColor = wantsColor(w.Fd())
+}
+
+// wantsPrefix determines if the user might want prefixed output.
+func wantsPrefix() bool {
+	// MINIKUBE_NO_STYLE=""
+	//
+	_, present := os.LookupEnv(DisableEnv)
+	return !present
 }
 
 // wantsColor determines if the user might want colorized output.

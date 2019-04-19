@@ -13,6 +13,8 @@ Some features can only be accessed by environment variables, here is a list of t
 
 * **MINIKUBE_HOME** - (string) sets the path for the .minikube directory that minikube uses for state/configuration
 
+* **MINIKUBE_NO_STYLE** - disable the style prefix completely
+
 * **MINIKUBE_IN_STYLE** - (bool) manually sets whether or not emoji and colors should appear in minikube. Set to false or 0 to disable this feature, true or 1 to force it to be turned on.
 
 * **MINIKUBE_WANTUPDATENOTIFICATION** - (bool) sets whether the user wants an update notification for new minikube versions
