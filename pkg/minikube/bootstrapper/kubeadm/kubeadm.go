@@ -424,7 +424,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 }
 
 // UpdateCluster updates the cluster
-func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig, autostart_cluster bool) error {
+func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
 		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
@@ -464,17 +464,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig, autostart_clus
 	}
 	err = k.c.Run(`
 sudo systemctl daemon-reload &&
+sudo systemctl enable kubelet &&
 sudo systemctl start kubelet
 `)
 	if err != nil {
 		return errors.Wrap(err, "starting kubelet")
-	}
-
-	if autostart_cluster {
-		err = k.c.Run(`sudo systemctl enable kubelet`)
-		if err != nil {
-			return errors.Wrap(err, "making kubelet start on boot")
-		}
 	}
 
 	return nil
