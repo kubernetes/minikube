@@ -26,7 +26,9 @@ import (
 	"text/template"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/shell"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
@@ -301,13 +303,31 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	return noProxyVar, noProxyValue
 }
 
+// same as drivers.RunSSHCommandFromDriver, but allows errors
+func runSSHCommandFromDriver(d drivers.Driver, command string) (string, error) {
+	client, err := drivers.GetSSHClientFromDriver(d)
+	if err != nil {
+		return "", err
+	}
+
+	log.Debugf("About to run SSH command:\n%s", command)
+	output, err := client.Output(command)
+	log.Debugf("SSH cmd err, output: %v: %s", err, output)
+	return output, err
+}
+
+// same as host.RunSSHCommand, but allows errors
+func runSSHCommand(h *host.Host, command string) (string, error) {
+	return runSSHCommandFromDriver(h.Driver, command)
+}
+
 // GetDockerActive checks if Docker is active
 func GetDockerActive(host *host.Host) (bool, error) {
 	statusCmd := `sudo systemctl is-active docker`
-	status, err := host.RunSSHCommand(statusCmd)
+	status, err := runSSHCommand(host, statusCmd)
 	// systemd returns error code on inactive
 	s := strings.TrimSpace(status)
-	return err == nil && s == "active", err
+	return err == nil && s == "active", nil
 }
 
 // envCmd represents the docker-env command
