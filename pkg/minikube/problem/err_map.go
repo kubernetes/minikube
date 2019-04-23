@@ -61,6 +61,11 @@ var vmProblems = map[string]match{
 		Advice: "Disable Hyper-V when you want to run VirtualBox to boot the VM",
 		Issues: []int{4051},
 	},
+	"HYPERV_NO_VSWITCH": {
+		Regexp: re(`no External vswitch found. A valid vswitch must be available for this command to run.`),
+		Advice: "Hyper-V requires an external network switch to function properly.",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperv-driver",
+	},
 }
 
 // proxyDoc is the URL to proxy documentation
