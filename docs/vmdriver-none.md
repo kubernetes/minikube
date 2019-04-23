@@ -73,7 +73,7 @@ We'll cover these in detail below:
 With the `none` driver, minikube will overwrite the following system paths:
 
 * /usr/bin/kubeadm - Updated to match the exact version of Kubernetes selected
-* /usr/bin/kubectl - Updated to match the exact version of Kubernetes selected
+* /usr/bin/kubelet - Updated to match the exact version of Kubernetes selected
 * /etc/kubernetes - configuration files
 
 These paths will be erased when running `minikube delete`:
