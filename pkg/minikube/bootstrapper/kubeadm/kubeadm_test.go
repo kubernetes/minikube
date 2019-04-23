@@ -175,7 +175,7 @@ func TestGenerateConfig(t *testing.T) {
 		{"crio", "crio", false, config.KubernetesConfig{}},
 		{"options", "docker", false, config.KubernetesConfig{ExtraOptions: extraOpts}},
 		{"crio-options-gates", "crio", false, config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}},
-		{"unknown-omponent", "docker", true, config.KubernetesConfig{ExtraOptions: util.ExtraOptionSlice{util.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
+		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: util.ExtraOptionSlice{util.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
 		{"containerd-api-port", "containerd", false, config.KubernetesConfig{NodePort: 12345}},
 		{"image-repository", "docker", false, config.KubernetesConfig{ImageRepository: "test/repo"}},
 	}
