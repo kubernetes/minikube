@@ -176,17 +176,17 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	// The ISO is required to boot the VM, so block on completion before pulling images.
+	// For non-"none", the ISO is required to boot, so block until it is downloaded
 	if viper.GetString(vmDriver) != constants.DriverNone {
 		if err := cluster.CacheISO(config.MachineConfig); err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}
 	} else {
-		// With "none", images are  persistently loaded into Docker, so it's unneccessary to cache them in a second location.
+		// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
 		viper.Set(cacheImages, false)
 	}
 
-	// Now that the ISO is downloaded, we pull images in the backgfround while the VM boots.
+	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
 	beginCacheImages(&cacheGroup, k8sVersion)
 
