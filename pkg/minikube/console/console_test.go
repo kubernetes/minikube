@@ -51,22 +51,37 @@ func TestOutStyle(t *testing.T) {
 		style    string
 		envValue string
 		message  string
+		params   []interface{}
 		want     string
 	}{
-		{"happy", "true", "This is happy.", "😄  This is happy.\n"},
-		{"Docker", "true", "This is Docker.", "🐳  This is Docker.\n"},
-		{"option", "true", "This is option.", "    ▪ This is option.\n"},
+		{"happy", "true", "This is happy.", nil, "😄  This is happy.\n"},
+		{"Docker", "true", "This is Docker.", nil, "🐳  This is Docker.\n"},
+		{"option", "true", "This is option.", nil, "    ▪ This is option.\n"},
+		{
+			"option",
+			"true",
+			"Message with params: %s %s",
+			[]interface{}{"encode '%' signs", "%s%%%d"},
+			"    ▪ Message with params: encode '%' signs %s%%%d\n",
+		},
 
-		{"happy", "false", "This is happy.", "o   This is happy.\n"},
-		{"Docker", "false", "This is Docker.", "-   This is Docker.\n"},
-		{"option", "false", "This is option.", "    - This is option.\n"},
+		{"happy", "false", "This is happy.", nil, "o   This is happy.\n"},
+		{"Docker", "false", "This is Docker.", nil, "-   This is Docker.\n"},
+		{"option", "false", "This is option.", nil, "    - This is option.\n"},
+		{
+			"option",
+			"false",
+			"Message with params: %s %s",
+			[]interface{}{"encode '%' signs", "%s%%%d"},
+			"    - Message with params: encode '%' signs %s%%%d\n",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.style+"-"+tc.envValue, func(t *testing.T) {
 			os.Setenv(OverrideEnv, tc.envValue)
 			f := newFakeFile()
 			SetOutFile(f)
-			if err := OutStyle(tc.style, tc.message); err != nil {
+			if err := OutStyle(tc.style, tc.message, tc.params...); err != nil {
 				t.Errorf("unexpected error: %q", err)
 			}
 			got := f.String()
@@ -94,6 +109,7 @@ func TestOut(t *testing.T) {
 		{format: "xyz123", want: "xyz123"},
 		{format: "Installing Kubernetes version %s ...", lang: language.Arabic, arg: "v1.13", want: "... v1.13 تثبيت Kubernetes الإصدار"},
 		{format: "Installing Kubernetes version %s ...", lang: language.AmericanEnglish, arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
+		{format: "Parameter encoding: %s", arg: "%s%%%d", want: "Parameter encoding: %s%%%d"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.format, func(t *testing.T) {
@@ -116,13 +132,13 @@ func TestErr(t *testing.T) {
 	os.Setenv(OverrideEnv, "0")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := Err("xyz123\n"); err != nil {
+	if err := Err("xyz123 %s\n", "%s%%%d"); err != nil {
 		t.Errorf("unexpected error: %q", err)
 	}
 
 	OutLn("unrelated message")
 	got := f.String()
-	want := "xyz123\n"
+	want := "xyz123 %s%%%d\n"
 
 	if got != want {
 		t.Errorf("Err() = %q, want %q", got, want)
@@ -133,11 +149,11 @@ func TestErrStyle(t *testing.T) {
 	os.Setenv(OverrideEnv, "1")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := ErrStyle("fatal", "It broke"); err != nil {
+	if err := ErrStyle("fatal", "error: %s", "%s%%%d"); err != nil {
 		t.Errorf("unexpected error: %q", err)
 	}
 	got := f.String()
-	want := "💣  It broke\n"
+	want := "💣  error: %s%%%d\n"
 	if got != want {
 		t.Errorf("ErrStyle() = %q, want %q", got, want)
 	}

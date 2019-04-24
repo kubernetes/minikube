@@ -249,21 +249,9 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
-	execRunner := &bootstrapper.ExecRunner{}
-	hostCerts := map[string]string{
-		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
-		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
-		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
-	}
-
-	for src, dst := range hostCerts {
-		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
-		if err != nil {
-			return errors.Wrapf(err, "open cert file: %s", src)
-		}
-		if err := execRunner.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring file: %+v", f)
-		}
+	err = copyHostCerts(authOptions)
+	if err != nil {
+		return err
 	}
 
 	// The Host IP is always added to the certificate's SANs list
@@ -290,25 +278,9 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return fmt.Errorf("error generating server cert: %v", err)
 	}
 
-	remoteCerts := map[string]string{
-		authOptions.CaCertPath:     authOptions.CaCertRemotePath,
-		authOptions.ServerCertPath: authOptions.ServerCertRemotePath,
-		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
-	}
-
-	sshClient, err := sshutil.NewSSHClient(driver)
+	err = copyRemoteCerts(authOptions, driver)
 	if err != nil {
-		return errors.Wrap(err, "provisioning: error getting ssh client")
-	}
-	sshRunner := bootstrapper.NewSSHRunner(sshClient)
-	for src, dst := range remoteCerts {
-		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
-		if err != nil {
-			return errors.Wrapf(err, "error copying %s to %s", src, dst)
-		}
-		if err := sshRunner.Copy(f); err != nil {
-			return errors.Wrapf(err, "transferring file to machine %v", f)
-		}
+		return err
 	}
 
 	config, err := config.Load()
@@ -335,6 +307,52 @@ func configureAuth(p *BuildrootProvisioner) error {
 
 		if err := p.Service("docker", serviceaction.Restart); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func copyHostCerts(authOptions auth.Options) error {
+	execRunner := &bootstrapper.ExecRunner{}
+	hostCerts := map[string]string{
+		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
+		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
+		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
+	}
+
+	for src, dst := range hostCerts {
+		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
+		if err != nil {
+			return errors.Wrapf(err, "open cert file: %s", src)
+		}
+		if err := execRunner.Copy(f); err != nil {
+			return errors.Wrapf(err, "transferring file: %+v", f)
+		}
+	}
+
+	return nil
+}
+
+func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
+	remoteCerts := map[string]string{
+		authOptions.CaCertPath:     authOptions.CaCertRemotePath,
+		authOptions.ServerCertPath: authOptions.ServerCertRemotePath,
+		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
+	}
+
+	sshClient, err := sshutil.NewSSHClient(driver)
+	if err != nil {
+		return errors.Wrap(err, "provisioning: error getting ssh client")
+	}
+	sshRunner := bootstrapper.NewSSHRunner(sshClient)
+	for src, dst := range remoteCerts {
+		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
+		if err != nil {
+			return errors.Wrapf(err, "error copying %s to %s", src, dst)
+		}
+		if err := sshRunner.Copy(f); err != nil {
+			return errors.Wrapf(err, "transferring file to machine %v", f)
 		}
 	}
 

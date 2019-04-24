@@ -73,7 +73,7 @@ We'll cover these in detail below:
 With the `none` driver, minikube will overwrite the following system paths:
 
 * /usr/bin/kubeadm - Updated to match the exact version of Kubernetes selected
-* /usr/bin/kubectl - Updated to match the exact version of Kubernetes selected
+* /usr/bin/kubelet - Updated to match the exact version of Kubernetes selected
 * /etc/kubernetes - configuration files
 
 These paths will be erased when running `minikube delete`:
@@ -101,5 +101,12 @@ Some environment variables may be useful for using the `none` driver:
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
 * CoreDNS detects resolver loop, goes into CrashloopBackoff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
 * Some versions of Linux have a version of docker that is newer then what Kubernetes expects. To overwrite this, run minikube with the following parameters: `sudo -E minikube start --vm-driver=none --kubernetes-version v1.11.8 --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
-* On Ubuntu 18.04 (and probably others), because of how `systemd-resolve` is configured by default, one needs to bypass the default `resolv.conf` file and use a different one instead: `sudo -E minikube --vm-driver=none start --extra-config=kubelet.resolv-conf=/run/systemd/resolve/resolv.conf`
+* On Ubuntu 18.04 (and probably others), because of how `systemd-resolve` is configured by default, one needs to bypass the default `resolv.conf` file and use a different one instead.
+  - In this case, you should use this file: `/run/systemd/resolve/resolv.conf`
+  - `sudo -E minikube --vm-driver=none start --extra-config=kubelet.resolv-conf=/run/systemd/resolve/resolv.conf`
+  - Apperently, though, if `resolve.conf` is too big (about 10 lines!!!), one gets the following error: `Waiting for pods: apiserver proxy! Error restarting cluster: wait: waiting for k8s-app=kube-proxy: timed out waiting for the condition`
+  - This error happens in Kubernetes 0.11.x, 0.12.x and 0.13.x, but *not* in 0.14.x
+  - If that's your case, try this:
+  - `grep -E "^nameserver" /run/systemd/resolve/resolv.conf  |head -n 3 > /tmp/resolv.conf && sudo -E minikube --vm-driver=none start --extra-config=kubelet.resolv-conf=/tmp/resolv.conf`
+
 * [Full list of open 'none' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fnone-driver)
