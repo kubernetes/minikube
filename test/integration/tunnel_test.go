@@ -19,7 +19,6 @@ package integration
 import (
 	"fmt"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +26,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
@@ -77,7 +78,7 @@ func testTunnel(t *testing.T) {
 		t.Fatal(errors.Wrap(err, "waiting for nginx pods"))
 	}
 
-	if err := commonutil.WaitForService(client, "default", "nginx-svc", true, 1 * time.Second, 2 * time.Minute); err != nil {
+	if err := commonutil.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, 2*time.Minute); err != nil {
 		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
@@ -85,13 +86,13 @@ func testTunnel(t *testing.T) {
 
 	nginxIP := ""
 
-	err = wait.PollImmediate(1 * time.Second, 1* time.Minute, func() (bool, error) {
+	err = wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
 		cmd := []string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"}
 		stdout, err := kubectlRunner.RunCommand(cmd)
 		switch {
 		case err == nil:
 			nginxIP = string(stdout)
-			return len(stdout) != 0 , nil
+			return len(stdout) != 0, nil
 		case !commonutil.IsRetryableAPIError(err):
 			t.Errorf("`%s` failed with non retriable error: %v", cmd, err)
 			return false, err
@@ -100,7 +101,6 @@ func testTunnel(t *testing.T) {
 			return false, nil
 		}
 	})
-
 
 	if err != nil || len(nginxIP) == 0 {
 		t.Errorf("error getting ingress IP for nginx: %s", err)
