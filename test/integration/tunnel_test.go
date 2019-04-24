@@ -19,6 +19,7 @@ package integration
 import (
 	"fmt"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"os/exec"
 	"path/filepath"
@@ -76,7 +77,7 @@ func testTunnel(t *testing.T) {
 		t.Fatal(errors.Wrap(err, "waiting for nginx pods"))
 	}
 
-	if err := commonutil.WaitForService(client, "default", "nginx-svc", true, time.Millisecond*500, time.Minute*10); err != nil {
+	if err := commonutil.WaitForService(client, "default", "nginx-svc", true, 1 * time.Second, 2 * time.Minute); err != nil {
 		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
@@ -84,18 +85,27 @@ func testTunnel(t *testing.T) {
 
 	nginxIP := ""
 
-	for i := 1; i < 3 && len(nginxIP) == 0; i++ {
-		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath='{.status.loadBalancer.ingress[0].ip}'"})
-
-		if err != nil {
-			t.Fatalf("error listing nginx service: %s", err)
+	err = wait.PollImmediate(1 * time.Second, 1* time.Minute, func() (bool, error) {
+		cmd := []string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"}
+		stdout, err := kubectlRunner.RunCommand(cmd)
+		switch {
+		case err == nil:
+			nginxIP = string(stdout)
+			return len(stdout) != 0 , nil
+		case !commonutil.IsRetryableAPIError(err):
+			t.Errorf("`%s` failed with non retriable error: %v", cmd, err)
+			return false, err
+		default:
+			t.Errorf("`%s` failed: %v", cmd, err)
+			return false, nil
 		}
-		nginxIP = string(stdout)
-		time.Sleep(1 * time.Second)
-	}
+	})
 
-	if len(nginxIP) == 0 {
-		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath='{.status}'"})
+
+	if err != nil || len(nginxIP) == 0 {
+		t.Errorf("error getting ingress IP for nginx: %s", err)
+
+		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status}"})
 
 		if err != nil {
 			t.Errorf("error debugging nginx service: %s", err)
