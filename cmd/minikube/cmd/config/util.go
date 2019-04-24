@@ -24,6 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -132,6 +133,11 @@ func EnableOrDisableAddon(name string, val string) error {
 	}
 
 	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
+	return enableOrDisableAddonInternal(addon, cmd, data, enable)
+}
+
+func enableOrDisableAddonInternal(addon *assets.Addon, cmd bootstrapper.CommandRunner, data interface{}, enable bool) error {
+	var err error
 	if enable {
 		for _, addon := range addon.Assets {
 			var addonFile assets.CopyableFile

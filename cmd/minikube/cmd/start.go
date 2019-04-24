@@ -91,6 +91,7 @@ const (
 	hidden                = "hidden"
 	embedCerts            = "embed-certs"
 	noVTXCheck            = "no-vtx-check"
+	downloadOnly          = "download-only"
 )
 
 var (
@@ -140,6 +141,7 @@ func init() {
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
+	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
@@ -201,11 +203,17 @@ func runStart(cmd *cobra.Command, args []string) {
 		console.OutStyle("success", "using image repository %s", config.KubernetesConfig.ImageRepository)
 	}
 
-	if viper.GetString(vmDriver) == constants.DriverNone {
-		// Optimization: images will be persistently loaded into the host's container runtime, so no need to duplicate work.
+	// For non-"none", the ISO is required to boot, so block until it is downloaded
+	if viper.GetString(vmDriver) != constants.DriverNone {
+		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
+	} else {
+		// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
 		viper.Set(cacheImages, false)
 	}
 
+	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
 	beginCacheImages(&cacheGroup, config.KubernetesConfig.ImageRepository, k8sVersion)
 
@@ -219,6 +227,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
+
+	// If --download-only, complete the remaining downloads and exit.
+	if viper.GetBool(downloadOnly) {
+		if err := doCacheBinaries(k8sVersion); err != nil {
+			exit.WithError("Failed to cache binaries", err)
+		}
+		waitCacheImages(&cacheGroup)
+		if err := CacheImagesInConfigFile(); err != nil {
+			exit.WithError("Failed to cache images", err)
+		}
+		console.OutStyle("check", "Download complete!")
+		return
+	}
+
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
@@ -235,12 +257,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	cr := configureRuntimes(host, runner)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
-	if viper.GetBool(cacheImages) {
-		console.OutStyle("waiting", "Waiting for image downloads to complete ...")
-		if err := cacheGroup.Wait(); err != nil {
-			glog.Errorln("Error caching images: ", err)
-		}
-	}
+	waitCacheImages(&cacheGroup)
 
 	bs := prepareHostEnvironment(m, config.KubernetesConfig)
 
@@ -260,16 +277,20 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
+	showKubectlConnectInfo(kubeconfig)
+	console.OutStyle("ready", "Done! Thank you for using minikube!")
+}
+
+func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
 		console.OutStyle("kubectl", "kubectl is now configured to use %q", cfg.GetMachineName())
 	}
-	_, err = exec.LookPath("kubectl")
+	_, err := exec.LookPath("kubectl")
 	if err != nil {
 		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 	}
-	console.OutStyle("ready", "Done! Thank you for using minikube!")
 }
 
 func selectImageRepository(config cfg.Config) (bool, string, error) {
@@ -341,6 +362,11 @@ func validateConfig() {
 	}
 }
 
+// doCacheBinaries caches Kubernetes binaries in the foreground
+func doCacheBinaries(k8sVersion string) error {
+	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+}
+
 // beginCacheImages caches Docker images in the background
 func beginCacheImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
@@ -350,6 +376,17 @@ func beginCacheImages(g *errgroup.Group, imageRepository string, k8sVersion stri
 	g.Go(func() error {
 		return machine.CacheImagesForBootstrapper(imageRepository, k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
+}
+
+// waitCacheImages blocks until the image cache jobs complete
+func waitCacheImages(g *errgroup.Group) {
+	if !viper.GetBool(cacheImages) {
+		return
+	}
+	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
+	if err := g.Wait(); err != nil {
+		glog.Errorln("Error caching images: ", err)
+	}
 }
 
 // generateConfig generates cfg.Config based on flags and supplied arguments

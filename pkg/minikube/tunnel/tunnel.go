@@ -154,37 +154,8 @@ func setupRoute(t *tunnel, h *host.Host) {
 
 		if h.DriverName == "hyperkit" {
 			//the virtio-net interface acts up with ip tunnels :(
-			command := exec.Command("ifconfig", "bridge100")
-			glog.Infof("About to run command: %s\n", command.Args)
-			response, err := command.CombinedOutput()
-			if err != nil {
-				t.status.RouteError = fmt.Errorf("running %v: %v", command.Args, err)
-				return
-			}
-			iface := string(response)
-			pattern := regexp.MustCompile(`.*member: (en\d+) flags=.*`)
-			submatch := pattern.FindStringSubmatch(iface)
-			if len(submatch) != 2 {
-				t.status.RouteError = fmt.Errorf("couldn't find member in bridge100 interface: %s", iface)
-				return
-			}
-
-			member := submatch[1]
-			command = exec.Command("sudo", "ifconfig", "bridge100", "deletem", member)
-			glog.Infof("About to run command: %s\n", command.Args)
-			response, err = command.CombinedOutput()
-			glog.Infof(string(response))
-			if err != nil {
-				t.status.RouteError = fmt.Errorf("couldn't remove member %s: %s", member, err)
-				return
-			}
-
-			command = exec.Command("sudo", "ifconfig", "bridge100", "addm", member)
-			glog.Infof("About to run command: %s\n", command.Args)
-			response, err = command.CombinedOutput()
-			glog.Infof(string(response))
-			if err != nil {
-				t.status.RouteError = fmt.Errorf("couldn't re-add member %s: %s", member, err)
+			setupBridge(t, h)
+			if t.status.RouteError != nil {
 				return
 			}
 		}
@@ -220,4 +191,40 @@ func setupRoute(t *tunnel, h *host.Host) {
 		return
 	}
 
+}
+
+func setupBridge(t *tunnel, h *host.Host) {
+	command := exec.Command("ifconfig", "bridge100")
+	glog.Infof("About to run command: %s\n", command.Args)
+	response, err := command.CombinedOutput()
+	if err != nil {
+		t.status.RouteError = fmt.Errorf("running %v: %v", command.Args, err)
+		return
+	}
+	iface := string(response)
+	pattern := regexp.MustCompile(`.*member: (en\d+) flags=.*`)
+	submatch := pattern.FindStringSubmatch(iface)
+	if len(submatch) != 2 {
+		t.status.RouteError = fmt.Errorf("couldn't find member in bridge100 interface: %s", iface)
+		return
+	}
+
+	member := submatch[1]
+	command = exec.Command("sudo", "ifconfig", "bridge100", "deletem", member)
+	glog.Infof("About to run command: %s\n", command.Args)
+	response, err = command.CombinedOutput()
+	glog.Infof(string(response))
+	if err != nil {
+		t.status.RouteError = fmt.Errorf("couldn't remove member %s: %s", member, err)
+		return
+	}
+
+	command = exec.Command("sudo", "ifconfig", "bridge100", "addm", member)
+	glog.Infof("About to run command: %s\n", command.Args)
+	response, err = command.CombinedOutput()
+	glog.Infof(string(response))
+	if err != nil {
+		t.status.RouteError = fmt.Errorf("couldn't re-add member %s: %s", member, err)
+		return
+	}
 }

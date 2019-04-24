@@ -433,6 +433,24 @@ func configEquals(a, b *api.Config) bool {
 	}
 
 	// clusters
+	if !clustersEquals(a, b) {
+		return false
+	}
+
+	// users
+	if !authInfosEquals(a, b) {
+		return false
+	}
+
+	// contexts
+	if !contextsEquals(a, b) {
+		return false
+	}
+
+	return true
+}
+
+func clustersEquals(a, b *api.Config) bool {
 	if len(a.Clusters) != len(b.Clusters) {
 		return false
 	}
@@ -442,17 +460,26 @@ func configEquals(a, b *api.Config) bool {
 			return false
 		}
 
-		if aCluster.LocationOfOrigin != bCluster.LocationOfOrigin ||
-			aCluster.Server != bCluster.Server ||
-			aCluster.InsecureSkipTLSVerify != bCluster.InsecureSkipTLSVerify ||
-			aCluster.CertificateAuthority != bCluster.CertificateAuthority ||
-			len(aCluster.CertificateAuthorityData) != len(bCluster.CertificateAuthorityData) ||
-			len(aCluster.Extensions) != len(bCluster.Extensions) {
+		if !clusterEquals(aCluster, bCluster) {
 			return false
 		}
 	}
+	return true
+}
 
-	// users
+func clusterEquals(aCluster, bCluster *api.Cluster) bool {
+	if aCluster.LocationOfOrigin != bCluster.LocationOfOrigin ||
+		aCluster.Server != bCluster.Server ||
+		aCluster.InsecureSkipTLSVerify != bCluster.InsecureSkipTLSVerify ||
+		aCluster.CertificateAuthority != bCluster.CertificateAuthority ||
+		len(aCluster.CertificateAuthorityData) != len(bCluster.CertificateAuthorityData) ||
+		len(aCluster.Extensions) != len(bCluster.Extensions) {
+		return false
+	}
+	return true
+}
+
+func authInfosEquals(a, b *api.Config) bool {
 	if len(a.AuthInfos) != len(b.AuthInfos) {
 		return false
 	}
@@ -461,21 +488,29 @@ func configEquals(a, b *api.Config) bool {
 		if !exists {
 			return false
 		}
-		if aAuth.LocationOfOrigin != bAuth.LocationOfOrigin ||
-			aAuth.ClientCertificate != bAuth.ClientCertificate ||
-			len(aAuth.ClientCertificateData) != len(bAuth.ClientCertificateData) ||
-			aAuth.ClientKey != bAuth.ClientKey ||
-			len(aAuth.ClientKeyData) != len(bAuth.ClientKeyData) ||
-			aAuth.Token != bAuth.Token ||
-			aAuth.Username != bAuth.Username ||
-			aAuth.Password != bAuth.Password ||
-			len(aAuth.Extensions) != len(bAuth.Extensions) {
+		if !authInfoEquals(aAuth, bAuth) {
 			return false
 		}
-
 	}
+	return true
+}
 
-	// contexts
+func authInfoEquals(aAuth, bAuth *api.AuthInfo) bool {
+	if aAuth.LocationOfOrigin != bAuth.LocationOfOrigin ||
+		aAuth.ClientCertificate != bAuth.ClientCertificate ||
+		len(aAuth.ClientCertificateData) != len(bAuth.ClientCertificateData) ||
+		aAuth.ClientKey != bAuth.ClientKey ||
+		len(aAuth.ClientKeyData) != len(bAuth.ClientKeyData) ||
+		aAuth.Token != bAuth.Token ||
+		aAuth.Username != bAuth.Username ||
+		aAuth.Password != bAuth.Password ||
+		len(aAuth.Extensions) != len(bAuth.Extensions) {
+		return false
+	}
+	return true
+}
+
+func contextsEquals(a, b *api.Config) bool {
 	if len(a.Contexts) != len(b.Contexts) {
 		return false
 	}
@@ -484,14 +519,20 @@ func configEquals(a, b *api.Config) bool {
 		if !exists {
 			return false
 		}
-		if aContext.LocationOfOrigin != bContext.LocationOfOrigin ||
-			aContext.Cluster != bContext.Cluster ||
-			aContext.AuthInfo != bContext.AuthInfo ||
-			aContext.Namespace != bContext.Namespace ||
-			len(aContext.Extensions) != len(bContext.Extensions) {
+		if !contextEquals(aContext, bContext) {
 			return false
 		}
+	}
+	return true
+}
 
+func contextEquals(aContext, bContext *api.Context) bool {
+	if aContext.LocationOfOrigin != bContext.LocationOfOrigin ||
+		aContext.Cluster != bContext.Cluster ||
+		aContext.AuthInfo != bContext.AuthInfo ||
+		aContext.Namespace != bContext.Namespace ||
+		len(aContext.Extensions) != len(bContext.Extensions) {
+		return false
 	}
 	return true
 }

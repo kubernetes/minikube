@@ -183,7 +183,8 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:186f7de0e878b5ff1fca82271ce36a7abf9747be09d03b3f08a921584c2f26fc"
+  branch = "master"
+  digest = "1:dfed0914a28dd3a8561fbfdd5c7a1deb2b90dee8edea6f58c9285680fc37b5c2"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
@@ -192,12 +193,13 @@
     "pkg/v1/partial",
     "pkg/v1/remote",
     "pkg/v1/remote/transport",
+    "pkg/v1/stream",
     "pkg/v1/tarball",
     "pkg/v1/types",
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "3165313d6d3f973ec0b0ed3ec5a63b520e065d40"
+  revision = "019cdfc6adf96a4905a1b93a7aeaea1e50c0b6cf"
 
 [[projects]]
   digest = "1:63ede27834b468648817fb80cfb95d40abfc61341f89cb7a0d6779b6aa955425"

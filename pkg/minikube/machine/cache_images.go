@@ -17,7 +17,10 @@ limitations under the License.
 package machine
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -288,6 +291,21 @@ func getDstPath(image, dst string) (string, error) {
 
 // CacheImage caches an image
 func CacheImage(image, dst string) error {
+	// There are go-containerregistry calls here that result in
+	// ugly log messages getting printed to stdout. Capture
+	// stdout instead and writing it to info.
+	r, w, err := os.Pipe()
+	if err != nil {
+		return errors.Wrap(err, "opening writing buffer")
+	}
+	log.SetOutput(w)
+	defer func() {
+		log.SetOutput(os.Stdout)
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		glog.Infof(buf.String())
+	}()
+
 	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)
 	if _, err := os.Stat(dst); err == nil {
 		return nil
@@ -302,12 +320,12 @@ func CacheImage(image, dst string) error {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
-	tag, err := name.NewTag(image, name.WeakValidation)
+	ref, err := name.ParseReference(image, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "creating docker image name")
 	}
 
-	img, err := remote.Image(tag, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err != nil {
 		return errors.Wrap(err, "fetching remote image")
 	}
@@ -317,7 +335,7 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	err = tarball.Write(tag, img, nil, f)
+	err = tarball.Write(ref, img, f)
 	if err != nil {
 		return err
 	}

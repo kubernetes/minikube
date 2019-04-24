@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 // WithTransport is a functional option for overriding the default transport
@@ -51,6 +52,13 @@ func WithAuthFromKeychain(keys authn.Keychain) ImageOption {
 			log.Println("No matching credentials were found, falling back on anonymous")
 		}
 		i.auth = auth
+		return nil
+	}
+}
+
+func WithPlatform(p v1.Platform) ImageOption {
+	return func(i *imageOpener) error {
+		i.platform = p
 		return nil
 	}
 }

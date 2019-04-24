@@ -73,6 +73,7 @@ func New(reg name.Registry, auth authn.Authenticator, t http.RoundTripper, scope
 			registry: reg,
 			service:  service,
 			scopes:   scopes,
+			scheme:   pr.scheme,
 		}
 		if err := bt.refresh(); err != nil {
 			return nil, err

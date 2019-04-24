@@ -70,56 +70,14 @@ func GunzipReadCloser(r io.ReadCloser) (io.ReadCloser, error) {
 	}, nil
 }
 
-// GzipWriteCloser returns an io.WriteCloser to which uncompressed data may be
-// written, and the compressed data is then written to the provided
-// io.WriteCloser.
-func GzipWriteCloser(w io.WriteCloser) io.WriteCloser {
-	gw := gzip.NewWriter(w)
-	return &writeAndCloser{
-		Writer: gw,
-		CloseFunc: func() error {
-			if err := gw.Close(); err != nil {
-				return err
-			}
-			return w.Close()
-		},
-	}
-}
-
-// gunzipWriteCloser implements io.WriteCloser
-// It is used to implement GunzipWriteClose.
-type gunzipWriteCloser struct {
-	*bytes.Buffer
-	writer io.WriteCloser
-}
-
-// Close implements io.WriteCloser
-func (gwc *gunzipWriteCloser) Close() error {
-	// TODO(mattmoor): How to avoid buffering this whole thing into memory?
-	gr, err := gzip.NewReader(gwc.Buffer)
-	if err != nil {
-		return err
-	}
-	if _, err := io.Copy(gwc.writer, gr); err != nil {
-		return err
-	}
-	return gwc.writer.Close()
-}
-
-// GunzipWriteCloser returns an io.WriteCloser to which compressed data may be
-// written, and the uncompressed data is then written to the provided
-// io.WriteCloser.
-func GunzipWriteCloser(w io.WriteCloser) (io.WriteCloser, error) {
-	return &gunzipWriteCloser{
-		Buffer: bytes.NewBuffer(nil),
-		writer: w,
-	}, nil
-}
-
 // IsGzipped detects whether the input stream is compressed.
 func IsGzipped(r io.Reader) (bool, error) {
 	magicHeader := make([]byte, 2)
-	if _, err := r.Read(magicHeader); err != nil {
+	n, err := r.Read(magicHeader)
+	if n == 0 && err == io.EOF {
+		return false, nil
+	}
+	if err != nil {
 		return false, err
 	}
 	return bytes.Equal(magicHeader, gzipMagicHeader), nil
