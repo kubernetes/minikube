@@ -7,19 +7,15 @@
 * Add user-friendly error messages for VBOX_THIRD_PARTY & HYPERV_NO_VSWITCH [#4152](https://github.com/kubernetes/minikube/pull/4152)
 * Don't enable kubelet at boot, for consistency with other components [#4110](https://github.com/kubernetes/minikube/pull/4110)
 * Assert that docker has started rather than explicitly restarting it  [#4116](https://github.com/kubernetes/minikube/pull/4116)
-* Accessing minikube Dashboard UI [#4009](https://github.com/kubernetes/minikube/pull/4009)
 * fix tunnel integration tests for driver None [#4105](https://github.com/kubernetes/minikube/pull/4105)
 * Download ISO image before Docker images, as it's required first [#4141](https://github.com/kubernetes/minikube/pull/4141)
 * Reroute logs printed directly to stdout [#4115](https://github.com/kubernetes/minikube/pull/4115)
-* Fix the Data Loss section of vmdriver-none.md: kubectl -> kubelet [#4123](https://github.com/kubernetes/minikube/pull/4123)
 * Update default Kubernetes version to 1.14.1 [#4133](https://github.com/kubernetes/minikube/pull/4133)
 * Systemd returns error on inactive, so allow that [#4095](https://github.com/kubernetes/minikube/pull/4095)
 * Add known issue: VirtualBox won't boot a 64bits VM when Hyper-V is activated [#4112](https://github.com/kubernetes/minikube/pull/4112)
 * Upgrade Docker, from 18.06.2-ce to 18.06.3-ce [#4022](https://github.com/kubernetes/minikube/pull/4022)
 * Fixed ignored error, noticed by ineffassign [#4086](https://github.com/kubernetes/minikube/pull/4086)
-* Decrease cyclomatic complexity [#3886](https://github.com/kubernetes/minikube/pull/3886)
 * Use Reference, allow caching images with both Tag and Digest [#3899](https://github.com/kubernetes/minikube/pull/3899)
-* Fix broken build due to bad merge: restore waitCacheImages function. [#4082](https://github.com/kubernetes/minikube/pull/4082)
 * Added REGISTRY_STORAGE_DELETE_ENABLED environment variable for Registry addon [#4080](https://github.com/kubernetes/minikube/pull/4080)
 * Add --download-only option to start command [#3737](https://github.com/kubernetes/minikube/pull/3737)
 * Escape ‘%’ in console.OutStyle arguments [#4026](https://github.com/kubernetes/minikube/pull/4026)
@@ -35,7 +31,6 @@
 
 Huge thank you for this release towards our contributors:
 - Abdulla Bin Mustaqeem
-- AbdullahBM
 - Anders F Björklund
 - Andy Daniels
 - Arnaud Jardiné
