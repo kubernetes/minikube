@@ -14,6 +14,7 @@
 * Systemd returns error on inactive, so allow that [#4095](https://github.com/kubernetes/minikube/pull/4095)
 * Add known issue: VirtualBox won't boot a 64bits VM when Hyper-V is activated [#4112](https://github.com/kubernetes/minikube/pull/4112)
 * Upgrade Docker, from 18.06.2-ce to 18.06.3-ce [#4022](https://github.com/kubernetes/minikube/pull/4022)
+* Decrease cyclomatic complexity [#3886](https://github.com/kubernetes/minikube/pull/3886)
 * Use Reference, allow caching images with both Tag and Digest [#3899](https://github.com/kubernetes/minikube/pull/3899)
 * Added REGISTRY_STORAGE_DELETE_ENABLED environment variable for Registry addon [#4080](https://github.com/kubernetes/minikube/pull/4080)
 * Add --download-only option to start command [#3737](https://github.com/kubernetes/minikube/pull/3737)
