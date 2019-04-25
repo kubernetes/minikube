@@ -87,7 +87,7 @@ func (*ExecRunner) Copy(f assets.CopyableFile) error {
 	if err != nil {
 		return errors.Wrapf(err, "error creating file at %s", targetPath)
 	}
-	perms, err := strconv.Atoi(f.GetPermissions())
+	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil {
 		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
