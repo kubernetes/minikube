@@ -1,5 +1,76 @@
 # Minikube Release Notes
 
+## Version 1.0.1 - 2019-04-25
+
+* update-context is confusing with profiles [#4049](https://github.com/kubernetes/minikube/pull/4049)
+* BugFix:  ExecRunner.Copy now parses permissions strings as octal [#4139](https://github.com/kubernetes/minikube/pull/4139)
+* Add user-friendly error messages for VBOX_THIRD_PARTY & HYPERV_NO_VSWITCH [#4152](https://github.com/kubernetes/minikube/pull/4152)
+* Don't enable kubelet at boot, for consistency with other components [#4110](https://github.com/kubernetes/minikube/pull/4110)
+* Assert that docker has started rather than explicitly restarting it  [#4116](https://github.com/kubernetes/minikube/pull/4116)
+* fix tunnel integration tests for driver None [#4105](https://github.com/kubernetes/minikube/pull/4105)
+* Download ISO image before Docker images, as it's required first [#4141](https://github.com/kubernetes/minikube/pull/4141)
+* Reroute logs printed directly to stdout [#4115](https://github.com/kubernetes/minikube/pull/4115)
+* Update default Kubernetes version to 1.14.1 [#4133](https://github.com/kubernetes/minikube/pull/4133)
+* Systemd returns error on inactive, so allow that [#4095](https://github.com/kubernetes/minikube/pull/4095)
+* Add known issue: VirtualBox won't boot a 64bits VM when Hyper-V is activated [#4112](https://github.com/kubernetes/minikube/pull/4112)
+* Upgrade Docker, from 18.06.2-ce to 18.06.3-ce [#4022](https://github.com/kubernetes/minikube/pull/4022)
+* Use Reference, allow caching images with both Tag and Digest [#3899](https://github.com/kubernetes/minikube/pull/3899)
+* Added REGISTRY_STORAGE_DELETE_ENABLED environment variable for Registry addon [#4080](https://github.com/kubernetes/minikube/pull/4080)
+* Add --download-only option to start command [#3737](https://github.com/kubernetes/minikube/pull/3737)
+* Escape ‘%’ in console.OutStyle arguments [#4026](https://github.com/kubernetes/minikube/pull/4026)
+* Add port name to service struct used in minikube service [#4011](https://github.com/kubernetes/minikube/pull/4011)
+* Update Hyper-V daemons [#4030](https://github.com/kubernetes/minikube/pull/4030)
+* Avoid surfacing "error: no objects passed to apply" non-error from addon-manager [#4076](https://github.com/kubernetes/minikube/pull/4076)
+* Don't cache images when --vmdriver=none [#4059](https://github.com/kubernetes/minikube/pull/4059)
+* Enable CONFIG_NF_CONNTRACK_ZONES  [#3755](https://github.com/kubernetes/minikube/pull/3755)
+* Fixed status checking with non-default apiserver-port. [#4058](https://github.com/kubernetes/minikube/pull/4058)
+* Escape systemd special chars in docker-env [#3997](https://github.com/kubernetes/minikube/pull/3997)
+* Add conformance test script [#4040](https://github.com/kubernetes/minikube/pull/4040)
+* ```#compdef``` must be the first line [#4015](https://github.com/kubernetes/minikube/pull/4015)
+
+Huge thank you for this release towards our contributors:
+- Abdulla Bin Mustaqeem
+- Anders F Björklund
+- Andy Daniels
+- Arnaud Jardiné
+- Artiom Diomin
+- Balint Pato
+- Benn Linger
+- Calin Don
+- Cristian Măgherușan-Stanciu @magheru_san
+- Dmitry Budaev
+- Don McCasland
+- Douglas Thrift
+- Elijah Oyekunle
+- Filip Havlíček
+- flyingcircle
+- Guang Ya Liu
+- Himanshu Pandey
+- Igor Akkerman
+- Ihor Dvoretskyi
+- Jan Janik
+- Jat
+- jay vyas
+- Joel Smith
+- Joji Mekkatt
+- karmab
+- Marcos Diez
+- Marco Vito Moscaritolo
+- Martynas Pumputis
+- Mas
+- Miel Donkers
+- morvencao
+- Oleg Atamanenko
+- RA489
+- Sharif Elgamal
+- Steven Davidovitz
+- Thomas Strömberg
+- Tom Reznik
+- u5surf
+- Yaroslav Skopets
+- Yoan Blanc
+- Zhongcheng Lao
+
 ## Version 1.0.0 - 2019-03-27
 
 * Update default Kubernetes version to v1.14.0 [#3967](https://github.com/kubernetes/minikube/pull/3967)
