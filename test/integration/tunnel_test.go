@@ -111,7 +111,7 @@ func testTunnel(t *testing.T) {
 			t.Errorf("error debugging nginx service: %s", err)
 		}
 
-		t.Fatalf("svc should have ingress after tunnel is created, but it was empty! Result of `kubectl describe svc nginx-svc`:\n %s", string(stdout))
+		t.Fatalf("svc should have ingress after tunnel is created, but it was empty! Result of `kubectl describe svc nginx-svc`:\n %s, error: %s", string(stdout), err)
 	}
 
 	responseBody, err := getResponseBody(nginxIP)
