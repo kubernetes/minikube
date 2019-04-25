@@ -85,7 +85,7 @@ func CacheBinary(binary, version string) (string, error) {
 
 // CopyBinary copies previously cached binaries into the path
 func CopyBinary(cr bootstrapper.CommandRunner, binary, path string) error {
-	f, err := assets.NewFileAsset(path, "/usr/bin", binary, "0641")
+	f, err := assets.NewFileAsset(path, "/usr/bin", binary, "0755")
 	if err != nil {
 		return errors.Wrap(err, "new file asset")
 	}
