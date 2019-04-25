@@ -37,10 +37,10 @@ var vmProblems = map[string]match{
 		Issues: []int{3900},
 	},
 	"VBOX_THIRD_PARTY": {
-		Regexp: re(`The virtual machine 'minikube' has terminated unexpectedly during startup with exit code 1`),
+		Regexp: re(`The virtual machine * has terminated unexpectedly during startup with exit code 1`),
 		Advice: "A third-party program may be interfering with VirtualBox. Try disabling any real-time antivirus software, reinstalling VirtualBox and rebooting.",
 		Issues: []int{3910},
-	}
+	},
 	"KVM2_NOT_FOUND": {
 		Regexp: re(`Driver "kvm2" not found. Do you have the plugin binary .* accessible in your PATH`),
 		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
