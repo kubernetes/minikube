@@ -464,7 +464,6 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	}
 	err = k.c.Run(`
 sudo systemctl daemon-reload &&
-sudo systemctl enable kubelet &&
 sudo systemctl start kubelet
 `)
 	if err != nil {
