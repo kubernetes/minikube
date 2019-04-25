@@ -27,13 +27,7 @@ Edit the minikube `Makefile`, updating the version number values at the top:
 * `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD` as necessary
 * `ISO_VERSION` - defaults to MAJOR.MINOR.0 - update if point release requires a new ISO to be built.
 
-## Run Local Integration Test
-
-Once the ISO build completes, run run the integration tests with the updated Makefile:
-
-```shell
-env TEST_ARGS="-minikube-start-args=--vm-driver=kvm2" make integration
-```
+Make sure the integration tests run against this PR, once the new ISO is built.
 
 ## Ad-Hoc testing of other platforms
 
