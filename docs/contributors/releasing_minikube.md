@@ -8,6 +8,7 @@
 ## Build a new ISO
 
 Major releases always get a new ISO. Minor bugfixes may or may not require it: check for changes in the `deploy/iso` folder.
+To check, run `git log -- deploy/iso` from the root directory and see if there has been a commit since the most recent release.
 
 Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally.
 
