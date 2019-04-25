@@ -73,7 +73,7 @@ func (r *Docker) Enable() error {
 	if err := disableOthers(r, r.Runner); err != nil {
 		glog.Warningf("disableOthers: %v", err)
 	}
-	return r.Runner.Run("sudo systemctl restart docker")
+	return r.Runner.Run("sudo systemctl start docker")
 }
 
 // Disable idempotently disables Docker on a host
