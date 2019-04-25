@@ -32,7 +32,6 @@
 * Escape systemd special chars in docker-env [#3997](https://github.com/kubernetes/minikube/pull/3997)
 * Add conformance test script [#4040](https://github.com/kubernetes/minikube/pull/4040)
 * ```#compdef``` must be the first line [#4015](https://github.com/kubernetes/minikube/pull/4015)
-* update releases.json to include v1.0.0 [#3999](https://github.com/kubernetes/minikube/pull/3999)
 
 Huge thank you for this release towards our contributors:
 - Abdulla Bin Mustaqeem
