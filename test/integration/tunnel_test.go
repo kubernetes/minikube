@@ -102,16 +102,18 @@ func testTunnel(t *testing.T) {
 		}
 	})
 
-	if err != nil || len(nginxIP) == 0 {
+	if err != nil {
 		t.Errorf("error getting ingress IP for nginx: %s", err)
+	}
 
+	if len(nginxIP) == 0 {
 		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status}"})
 
 		if err != nil {
 			t.Errorf("error debugging nginx service: %s", err)
 		}
 
-		t.Fatalf("svc should have ingress after tunnel is created, but it was empty! Result of `kubectl describe svc nginx-svc`:\n %s, error: %s", string(stdout), err)
+		t.Fatalf("svc should have ingress after tunnel is created, but it was empty! Result of `kubectl describe svc nginx-svc`:\n %s", string(stdout))
 	}
 
 	responseBody, err := getResponseBody(nginxIP)
