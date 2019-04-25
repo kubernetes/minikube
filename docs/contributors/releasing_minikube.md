@@ -101,10 +101,12 @@ Verify release checksums by running`make check-release`
 
 If there are major changes, please send a PR to update <https://kubernetes.io/docs/setup/minikube/>
 
-## Announce!
+## Announce
 
-Places we generally announce releases:
+Please mention the new release https://github.com/kubernetes/minikube/blob/master/README.md
+
+Other places:
 
 - #minikube on Slack
 - minikube-dev, minikube-users mailing list
-- Twitter
+- Twitter (optional!)
