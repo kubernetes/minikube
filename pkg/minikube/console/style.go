@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"golang.org/x/text/message"
+	"golang.org/x/text/number"
 )
 
 var (
@@ -131,6 +132,11 @@ func lowPrefix(s style) string {
 // Apply styling to a format string
 func applyStyle(style string, useColor bool, format string, a ...interface{}) (string, error) {
 	p := message.NewPrinter(preferredLanguage)
+	for i, x := range a {
+		if _, ok := x.(int); ok {
+			a[i] = number.Decimal(x, number.NoSeparator())
+		}
+	}
 	out := p.Sprintf(format, a...)
 
 	s, ok := styles[style]
