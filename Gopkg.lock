@@ -696,7 +696,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:11d290de3457882172ce8d9ffe930999cfb62929b58e486e1ff1b6adcf3c52bc"
+  digest = "1:d3cc042f4e05e3edff799edb30d84c510d0c5f433a1ba5a139e0a88ec5f6b5a9"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -717,6 +717,7 @@
     "language",
     "message",
     "message/catalog",
+    "number",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -1035,6 +1036,7 @@
     "golang.org/x/sys/windows/registry",
     "golang.org/x/text/language",
     "golang.org/x/text/message",
+    "golang.org/x/text/number",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1beta1",
@@ -1046,6 +1048,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/net",
     "k8s.io/apimachinery/pkg/util/strategicpatch",
     "k8s.io/apimachinery/pkg/util/uuid",
