@@ -695,8 +695,7 @@
   revision = "95c6576299259db960f6c5b9b69ea52422860fce"
 
 [[projects]]
-  branch = "master"
-  digest = "1:11d290de3457882172ce8d9ffe930999cfb62929b58e486e1ff1b6adcf3c52bc"
+  digest = "1:2780cbd603ca1ee6f33330fb3a590ebaea0e95b99c7759f4d17e2337cca9352a"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -717,6 +716,7 @@
     "language",
     "message",
     "message/catalog",
+    "number",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -725,7 +725,7 @@
     "unicode/rangetable",
   ]
   pruneopts = "NUT"
-  revision = "e6919f6577db79269a6443b9dc46d18f2238fb5d"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
 
 [[projects]]
   digest = "1:d37b0ef2944431fe9e8ef35c6fffc8990d9e2ca300588df94a6890f3649ae365"
@@ -1035,6 +1035,7 @@
     "golang.org/x/sys/windows/registry",
     "golang.org/x/text/language",
     "golang.org/x/text/message",
+    "golang.org/x/text/number",
     "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1beta1",
@@ -1046,6 +1047,7 @@
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/net",
     "k8s.io/apimachinery/pkg/util/strategicpatch",
     "k8s.io/apimachinery/pkg/util/uuid",

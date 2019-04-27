@@ -117,4 +117,4 @@
 
 [[constraint]]
   name = "golang.org/x/text"
-  branch = "master"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
