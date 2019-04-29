@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script should be run from the minikube repo root, and requires
+# the following env variables to be set:
+#   VERSION_MAJOR
+#   VERSION_MINOR
+#   VERSION_BUILD
+#   BOT_PASSWORD
+
 set -eux -o pipefail
 
 readonly REPO_DIR=$PWD
