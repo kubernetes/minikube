@@ -27,11 +27,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/pkg/minikube/constants"
-
 )
 
 // stopCmd represents the stop command
@@ -73,7 +72,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 		}
 
 		machineName := pkg_config.GetMachineName()
-		err = pkgutil.UnsetCurrentContext( constants.KubeconfigPath, machineName)
+		err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, machineName)
 		if err != nil {
 			exit.WithError("update config", err)
 		}
