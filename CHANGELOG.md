@@ -1,6 +1,6 @@
 # Minikube Release Notes
 
-## Version 1.0.1 - 2019-04-25
+## Version 1.0.1 - 2019-04-29
 
 * update-context is confusing with profiles [#4049](https://github.com/kubernetes/minikube/pull/4049)
 * BugFix:  ExecRunner.Copy now parses permissions strings as octal [#4139](https://github.com/kubernetes/minikube/pull/4139)
