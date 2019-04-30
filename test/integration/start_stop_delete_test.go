@@ -77,7 +77,7 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("IP command returned an invalid address: %s", ip)
 			}
 
-			// check for the context
+			// check for the current-context before and after the stop
 			kubeRunner = util.NewKubeCtlRunner()
 			currentContext = kubeRunner.RunCommand("config", "current-context")
 			if currentContext != "minikube" {
