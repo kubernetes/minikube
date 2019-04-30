@@ -25,11 +25,11 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
-	"github.com/kubernetes/minikube/pkg/version"
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/version"
 )
 
 // These are the components that can be configured
