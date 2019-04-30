@@ -115,6 +115,7 @@ func PopulateKubeConfig(cfg *KubeConfigSetup, kubecfg *api.Config) error {
 	// Only set current context to minikube if the user has not used the keepContext flag
 	if !cfg.KeepContext {
 		kubecfg.CurrentContext = cfg.ClusterName
+		//kubecfg.CurrentContext = ""
 	}
 
 	return nil
@@ -311,4 +312,17 @@ func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 	}
 	port, err := strconv.Atoi(kport)
 	return port, err
+}
+
+//UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
+func UnsetCurrentContext(filename, machineName string)  error {
+	confg, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return  errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	confg.CurrentContext = ""
+	if err := WriteConfig(confg,filename); err != nil {
+		return  errors.Wrap(err, "writing kubeconfig")
+	}
+	return nil
 }
