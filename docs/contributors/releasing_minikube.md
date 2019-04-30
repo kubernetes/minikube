@@ -89,7 +89,7 @@ These are downstream packages that are being maintained by others and how to upg
 
 | Package Manager | URL | TODO |
 | --- | --- | --- |
-| Arch Linux AUR | <https://aur.archlinux.org/packages/minikube/> | "Flag as package out-of-date"
+| Arch Linux AUR | <https://aur.archlinux.org/packages/minikube-bin/> | "Flag as package out-of-date"
 | Brew Cask | <https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb> | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created.
 
 WARNING: The Brew cask automation is error-prone. please ensure that a PR was created.
