@@ -8,7 +8,7 @@ This flag is repeated, so you can pass it several times with several different v
 
 ## Selecting a Kubernetes version
 
-minikube defaults to the latest stable version of Kubernetes. You can select a different version by using the `--kubernetes-version` flag, for example:
+minikube defaults to the latest stable version of Kubernetes. You may select a different Kubernetes release by using the `--kubernetes-version` flag, for example:
 
   `minikube start --kubernetes-version=v1.10.13`
  
