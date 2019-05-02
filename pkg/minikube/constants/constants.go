@@ -213,8 +213,8 @@ const (
 
 // ImageRepositories contains all known image repositories
 var ImageRepositories = map[string][]string{
-	"":   {""}, // global
-	"cn": {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+	"global": {""},
+	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
 }
 
 // GetKubernetesReleaseURL gets the location of a kubernetes client

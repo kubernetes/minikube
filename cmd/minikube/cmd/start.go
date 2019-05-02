@@ -133,7 +133,7 @@ func init() {
 	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
-	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
+	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
 	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
@@ -179,28 +179,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	config, err := generateConfig(cmd, k8sVersion)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
-	}
-
-	if config.KubernetesConfig.ImageRepository == "" {
-		console.OutStyle("connectivity", "checking main repository and mirrors for images")
-		found, repository, err := selectImageRepository(config)
-		if err != nil {
-			exit.WithError("Failed to check main repository and mirrors for images for images", err)
-		}
-
-		if !found {
-			if repository == "" {
-				exit.WithCode(exit.Failure, "None of known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
-			} else {
-				console.Warning("None of known repositories in your location is accessible. Use %s as fallback.", repository)
-			}
-		}
-
-		config.KubernetesConfig.ImageRepository = repository
-	}
-
-	if config.KubernetesConfig.ImageRepository != "" {
-		console.OutStyle("success", "using image repository %s", config.KubernetesConfig.ImageRepository)
 	}
 
 	// For non-"none", the ISO is required to boot, so block until it is downloaded
@@ -293,29 +271,34 @@ func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	}
 }
 
-func selectImageRepository(config cfg.Config) (bool, string, error) {
-	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
-	repos := constants.ImageRepositories
-	var countries []string
+func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
+	var tryCountries []string
+	var fallback string
+
 	if mirrorCountry != "" {
-		_, ok := repos[mirrorCountry]
-		if !ok {
+		localRepos, ok := constants.ImageRepositories[mirrorCountry]
+		if !ok || len(localRepos) <= 0 {
 			return false, "", fmt.Errorf("invalid image mirror country code: %s", mirrorCountry)
 		}
-		countries = []string{mirrorCountry, ""}
+
+		tryCountries = append(tryCountries, mirrorCountry)
+
+		// we'll use the first repository as fallback
+		// when none of the mirrors in the given location is available
+		fallback = localRepos[0]
 
 	} else {
-		// make sure global is preferred
-		countries = []string{""}
-		for k := range repos {
-			if k != "" {
-				countries = append(countries, k)
+		// always make sure global is preferred
+		tryCountries = append(tryCountries, "global")
+		for k := range constants.ImageRepositories {
+			if strings.ToLower(k) != "global" {
+				tryCountries = append(tryCountries, k)
 			}
 		}
 	}
 
 	checkRepository := func(repo string) error {
-		podInfraContainerImage, _ := constants.GetKubeadmCachedImages(repo, config.KubernetesConfig.KubernetesVersion)
+		podInfraContainerImage, _ := constants.GetKubeadmCachedImages(repo, k8sVersion)
 
 		ref, err := name.ParseReference(podInfraContainerImage, name.WeakValidation)
 		if err != nil {
@@ -326,8 +309,8 @@ func selectImageRepository(config cfg.Config) (bool, string, error) {
 		return err
 	}
 
-	for _, code := range countries {
-		localRepos := repos[code]
+	for _, code := range tryCountries {
+		localRepos := constants.ImageRepositories[code]
 		for _, repo := range localRepos {
 			err := checkRepository(repo)
 			if err == nil {
@@ -336,15 +319,7 @@ func selectImageRepository(config cfg.Config) (bool, string, error) {
 		}
 	}
 
-	if mirrorCountry != "" {
-		if localRepos, ok := constants.ImageRepositories[mirrorCountry]; ok && len(localRepos) > 0 {
-			// none of the mirrors in the given location is available
-			// use the first as fallback
-			return false, localRepos[0], nil
-		}
-	}
-
-	return false, "", nil
+	return false, fallback, nil
 }
 
 // validateConfig validates the supplied configuration against known bad combinations
@@ -417,6 +392,30 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 		}
 	}
 
+	repository := viper.GetString(imageRepository)
+	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
+	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
+		console.OutStyle("connectivity", "checking main repository and mirrors for images")
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, k8sVersion)
+		if err != nil {
+			exit.WithError("Failed to check main repository and mirrors for images for images", err)
+		}
+
+		if !found {
+			if autoSelectedRepository == "" {
+				exit.WithCode(exit.Failure, "None of known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
+			} else {
+				console.Warning("None of known repositories in your location is accessible. Use %s as fallback.", autoSelectedRepository)
+			}
+		}
+
+		repository = autoSelectedRepository
+	}
+
+	if repository != "" {
+		console.OutStyle("success", "using image repository %s", repository)
+	}
+
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			MinikubeISO:         viper.GetString(isoURL),
@@ -457,7 +456,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
-			ImageRepository:        viper.GetString(imageRepository),
+			ImageRepository:        repository,
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
