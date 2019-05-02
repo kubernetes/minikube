@@ -17,13 +17,12 @@ minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
 ![screenshot](/images/start.jpg)
 
-Our [project goals](https://github.com/kubernetes/minikube/blob/master/docs/contributors/principles.md) are to enable fast local development and to support all Kubernetes features that fit. We hope you enjoy it!
+minikube's [primary goals](https://github.com/kubernetes/minikube/blob/master/docs/contributors/principles.md) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit. We hope you enjoy it!
 
 ## News
 
+* 2019-04-29 - v1.0.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.0.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-101---2019-04-29)]
 * 2019-03-27 - v1.0.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.0.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-1000---2019-03-27)]
-* 2019-03-06 - v0.35.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.35.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0350---2019-03-06)]
-* 2019-02-16 - v0.34.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v0.34.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-0341---2019-02-16)]
 
 ## Features
 
@@ -105,6 +104,10 @@ Other drivers which are not yet part of our continuous integration system are:
 Start a cluster by running:
 
 `minikube start`
+
+Access Kubernetes Dashboard within Minikube:
+
+`minikube dashboard`
 
 Once started, you can interact with your cluster using `kubectl`, just like any other Kubernetes cluster. For instance, starting a server:
 

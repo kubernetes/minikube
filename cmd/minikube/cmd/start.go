@@ -170,17 +170,23 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCode(exit.Data, "Unable to load config: %v", err)
 	}
-	k8sVersion := validateKubernetesVersions(oldConfig)
+	k8sVersion, isUpgrade := validateKubernetesVersions(oldConfig)
 	config, err := generateConfig(cmd, k8sVersion)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	if viper.GetString(vmDriver) == constants.DriverNone {
-		// Optimization: images will be persistently loaded into the host's container runtime, so no need to duplicate work.
+	// For non-"none", the ISO is required to boot, so block until it is downloaded
+	if viper.GetString(vmDriver) != constants.DriverNone {
+		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
+	} else {
+		// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
 		viper.Set(cacheImages, false)
 	}
 
+	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
 	beginCacheImages(&cacheGroup, k8sVersion)
 
@@ -195,10 +201,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get machine client", err)
 	}
 
+	// If --download-only, complete the remaining downloads and exit.
 	if viper.GetBool(downloadOnly) {
-		if err := cluster.CacheISO(config.MachineConfig); err != nil {
-			exit.WithError("Failed to cache ISO", err)
-		}
 		if err := doCacheBinaries(k8sVersion); err != nil {
 			exit.WithError("Failed to cache binaries", err)
 		}
@@ -232,7 +236,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
-	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting)
+	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
 
 	apiserverPort := config.KubernetesConfig.NodePort
 	validateCluster(bs, cr, runner, ip, apiserverPort)
@@ -455,8 +459,9 @@ func validateNetwork(h *host.Host) string {
 }
 
 // validateKubernetesVersions ensures that the requested version is reasonable
-func validateKubernetesVersions(old *cfg.Config) string {
+func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 	nv := viper.GetString(kubernetesVersion)
+	isUpgrade := false
 	if nv == "" {
 		nv = constants.DefaultKubernetesVersion
 	}
@@ -466,7 +471,7 @@ func validateKubernetesVersions(old *cfg.Config) string {
 	}
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv
+		return nv, isUpgrade
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
@@ -477,12 +482,13 @@ func validateKubernetesVersions(old *cfg.Config) string {
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
 		console.ErrStyle("conflict", "Kubernetes downgrade is not supported, will continue to use %v", nv)
-		return nv
+		return nv, isUpgrade
 	}
 	if nvs.GT(ovs) {
 		console.OutStyle("thumbs-up", "minikube will upgrade the local cluster from Kubernetes %s to %s", ovs, nvs)
+		isUpgrade = true
 	}
-	return nv
+	return nv, isUpgrade
 }
 
 // prepareHostEnvironment adds any requested files into the VM before Kubernetes is started
@@ -560,13 +566,16 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 }
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
-func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, kc cfg.KubernetesConfig, preexisting bool) {
-	console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
-	if err := bs.PullImages(kc); err != nil {
-		console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
-	}
+func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, kc cfg.KubernetesConfig, preexisting bool, isUpgrade bool) {
 	// hum. bootstrapper.Bootstrapper should probably have a Name function.
 	bsName := viper.GetString(cmdcfg.Bootstrapper)
+
+	if isUpgrade || !preexisting {
+		console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
+		if err := bs.PullImages(kc); err != nil {
+			console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
+		}
+	}
 
 	if preexisting {
 		console.OutStyle("restarting", "Relaunching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)

@@ -66,7 +66,9 @@ func (w *CodeWriter) WriteGoFile(filename, pkg string) {
 func (w *CodeWriter) WriteVersionedGoFile(filename, pkg string) {
 	tags := buildTags()
 	if tags != "" {
-		filename = insertVersion(filename, UnicodeVersion())
+		pattern := fileToPattern(filename)
+		updateBuildTags(pattern)
+		filename = fmt.Sprintf(pattern, UnicodeVersion())
 	}
 	f, err := os.Create(filename)
 	if err != nil {
@@ -82,7 +84,9 @@ func (w *CodeWriter) WriteVersionedGoFile(filename, pkg string) {
 // writes it as a Go file to the given writer with the given package name.
 func (w *CodeWriter) WriteGo(out io.Writer, pkg, tags string) (n int, err error) {
 	sz := w.Size
-	w.WriteComment("Total table size %d bytes (%dKiB); checksum: %X\n", sz, sz/1024, w.Hash.Sum32())
+	if sz > 0 {
+		w.WriteComment("Total table size %d bytes (%dKiB); checksum: %X\n", sz, sz/1024, w.Hash.Sum32())
+	}
 	defer w.buf.Reset()
 	return WriteGo(out, pkg, tags, w.buf.Bytes())
 }

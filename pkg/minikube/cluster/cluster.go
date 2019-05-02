@@ -301,13 +301,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		exit.WithError("error getting driver", err)
 	}
 
-	err = CacheISO(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to cache ISO")
-	}
-
 	driver := def.ConfigCreator(config)
-
 	data, err := json.Marshal(driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")

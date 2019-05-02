@@ -75,6 +75,8 @@ func TestOutStyle(t *testing.T) {
 			[]interface{}{"encode '%' signs", "%s%%%d"},
 			"  - Message with params: encode '%' signs %s%%%d\n",
 		},
+		{"issue", "true", "No separators for long ints: %d", []interface{}{10000}, "    ▪ No separators for long ints: 10000\n"},
+		{"issue", "false", "No separators for long ints: %d", []interface{}{5000}, "    - No separators for long ints: 5000\n"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.style+"-"+tc.envValue, func(t *testing.T) {
@@ -103,7 +105,7 @@ func TestOut(t *testing.T) {
 	var tests = []struct {
 		format string
 		lang   language.Tag
-		arg    string
+		arg    interface{}
 		want   string
 	}{
 		{format: "xyz123", want: "xyz123"},
