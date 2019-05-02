@@ -78,9 +78,12 @@ func TestStartStop(t *testing.T) {
 			}
 
 			// check for the current-context before and after the stop
-			kubeRunner := util.NewKubeCtlRunner()
-			currentContext := kubeRunner.RunCommand("config", "current-context")
-			if currentContext != "minikube" {
+			kubectlRunner := util.NewKubectlRunner(t)
+			currentContext, err := kubectlRunner.RunCommand([]string{"config", "current-context"})
+			if err != nil {
+				t.Fatalf("Failed to fetch current-context")
+			}
+			if string(currentContext) != "minikube" {
 				t.Fatalf("current-context not set to minikube")
 			}
 
@@ -89,8 +92,11 @@ func TestStartStop(t *testing.T) {
 				return r.CheckStatusNoFail(state.Stopped.String())
 			}
 
-			currentContext := kubeRunner.RunCommand("config", "current-context")
-			if currentContext != "" {
+			currentContext, err = kubectlRunner.RunCommand([]string{"config", "current-context"})
+			if err != nil {
+				t.Fatalf("Failed to fetch current-context")
+			}
+			if string(currentContext) != "" {
 				t.Fatalf("Failed to unset the current-context")
 			}
 
