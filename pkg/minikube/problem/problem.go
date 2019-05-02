@@ -69,6 +69,7 @@ func FromError(err error) *Problem {
 		vmProblems,
 		netProblems,
 		deployProblems,
+		stateProblems,
 	}
 	for _, m := range maps {
 		for k, v := range m {
