@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -220,13 +221,13 @@ const (
 )
 
 // GetKubernetesReleaseURL gets the location of a kubernetes client
-func GetKubernetesReleaseURL(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
+func GetKubernetesReleaseURL(binaryName, version string) string {
+	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/%s/%s", version, runtime.GOARCH, binaryName)
 }
 
 // GetKubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
-func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version, osName, archName))
+func GetKubernetesReleaseURLSHA1(binaryName, version string) string {
+	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
 }
 
 // IsMinikubeChildProcess is the name of "is minikube child process" variable
