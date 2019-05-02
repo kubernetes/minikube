@@ -1,4 +1,4 @@
-PODMAN_VERSION = v1.0.0
+PODMAN_VERSION = v1.2.0
 PODMAN_COMMIT = 82e80110c3f2d8728745c47e340f3bee4d408846
 PODMAN_SITE = https://github.com/containers/libpod/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
