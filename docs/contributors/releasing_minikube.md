@@ -8,6 +8,7 @@
 ## Build a new ISO
 
 Major releases always get a new ISO. Minor bugfixes may or may not require it: check for changes in the `deploy/iso` folder.
+To check, run `git log -- deploy/iso` from the root directory and see if there has been a commit since the most recent release.
 
 Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally.
 
@@ -27,13 +28,7 @@ Edit the minikube `Makefile`, updating the version number values at the top:
 * `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD` as necessary
 * `ISO_VERSION` - defaults to MAJOR.MINOR.0 - update if point release requires a new ISO to be built.
 
-## Run Local Integration Test
-
-Once the ISO build completes, run run the integration tests with the updated Makefile:
-
-```shell
-env TEST_ARGS="-minikube-start-args=--vm-driver=kvm2" make integration
-```
+Make sure the integration tests run against this PR, once the new ISO is built.
 
 ## Ad-Hoc testing of other platforms
 
@@ -94,7 +89,7 @@ These are downstream packages that are being maintained by others and how to upg
 
 | Package Manager | URL | TODO |
 | --- | --- | --- |
-| Arch Linux AUR | <https://aur.archlinux.org/packages/minikube/> | "Flag as package out-of-date"
+| Arch Linux AUR | <https://aur.archlinux.org/packages/minikube-bin/> | "Flag as package out-of-date"
 | Brew Cask | <https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb> | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created.
 
 WARNING: The Brew cask automation is error-prone. please ensure that a PR was created.
@@ -107,10 +102,12 @@ Verify release checksums by running`make check-release`
 
 If there are major changes, please send a PR to update <https://kubernetes.io/docs/setup/minikube/>
 
-## Announce!
+## Announce
 
-Places we generally announce releases:
+Please mention the new release https://github.com/kubernetes/minikube/blob/master/README.md
+
+Other places:
 
 - #minikube on Slack
 - minikube-dev, minikube-users mailing list
-- Twitter
+- Twitter (optional!)
