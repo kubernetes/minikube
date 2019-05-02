@@ -65,15 +65,15 @@ func TestOutStyle(t *testing.T) {
 			"    ▪ Message with params: encode '%' signs %s%%%d\n",
 		},
 
-		{"happy", "false", "This is happy.", nil, "o   This is happy.\n"},
-		{"Docker", "false", "This is Docker.", nil, "-   This is Docker.\n"},
-		{"option", "false", "This is option.", nil, "    - This is option.\n"},
+		{"happy", "false", "This is happy.", nil, "> This is happy.\n"},
+		{"Docker", "false", "This is Docker.", nil, "> This is Docker.\n"},
+		{"option", "false", "This is option.", nil, "  - This is option.\n"},
 		{
 			"option",
 			"false",
 			"Message with params: %s %s",
 			[]interface{}{"encode '%' signs", "%s%%%d"},
-			"    - Message with params: encode '%' signs %s%%%d\n",
+			"  - Message with params: encode '%' signs %s%%%d\n",
 		},
 	}
 	for _, tc := range tests {
