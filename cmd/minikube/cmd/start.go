@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/cloudfoundry-attic/jibber_jabber"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
@@ -163,6 +164,8 @@ assumes you have already installed one of the VM drivers: virtualbox/parallels/v
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	determineLocale()
+	
 	console.OutStyle("happy", "minikube %s on %s (%s)", version.GetVersion(), runtime.GOOS, runtime.GOARCH)
 	validateConfig()
 
@@ -690,4 +693,13 @@ func saveConfig(clusterConfig cfg.Config) error {
 		return err
 	}
 	return nil
+}
+
+func determineLocale() {
+	locale, err := jibber_jabber.DetectIETF()
+	if err != nil {
+		glog.Warningf("Getting system locale failed: %s", err)
+		locale = ""
+	}
+	console.SetPreferredLanguage(locale)
 }
