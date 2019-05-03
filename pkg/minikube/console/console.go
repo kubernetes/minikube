@@ -90,7 +90,6 @@ func OutStyle(style, format string, a ...interface{}) error {
 // Out writes a basic formatted string to stdout
 func Out(format string, a ...interface{}) error {
 	locale, err := jibber_jabber.DetectIETF()
-	fmt.Printf("LOCALE=%s", locale)
 	if err != nil {
 		glog.Warningf("Getting system locale failed: %s", err)
 		locale = ""
@@ -133,7 +132,6 @@ func ErrStyle(style, format string, a ...interface{}) error {
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) error {
 	locale, err := jibber_jabber.DetectIETF()
-	fmt.Printf("LOCALE=%s", locale)
 	if err != nil {
 		glog.Warningf("Getting system locale failed: %s", err)
 		locale = ""
