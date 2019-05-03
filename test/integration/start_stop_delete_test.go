@@ -83,7 +83,7 @@ func TestStartStop(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}
-			if string(currentContext) != "minikube" {
+			if strings.TrimRight(string(currentContext), "\n") != "minikube" {
 				t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), "minikube")
 			}
 
@@ -96,7 +96,7 @@ func TestStartStop(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}
-			if string(currentContext) != "" {
+			if strings.TrimRight(string(currentContext), "\n") != "" {
 				t.Fatalf("Failed to unset the current-context")
 			}
 
