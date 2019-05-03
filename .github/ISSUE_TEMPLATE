@@ -1,9 +1,4 @@
-<!-- Please use this template while reporting a bug and provide as much info as possible. Not doing so may result in your bug not being addressed in a timely manner. Thanks!
-
--->
-
-
-**The operating system version**:
+<!-- Please use this template while reporting an issue, providing as much information as possible. Failure to do so may result in a delayed response. Thank you! -->
 
 **The exact command to reproduce the issue**:
 
@@ -11,4 +6,4 @@
 
 **The output of the `minikube logs` command**:
 
-
+**The operating system version**:
