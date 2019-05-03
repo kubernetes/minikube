@@ -165,7 +165,6 @@ assumes you have already installed one of the VM drivers: virtualbox/parallels/v
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
 	determineLocale()
-	
 	console.OutStyle("happy", "minikube %s on %s (%s)", version.GetVersion(), runtime.GOOS, runtime.GOARCH)
 	validateConfig()
 
