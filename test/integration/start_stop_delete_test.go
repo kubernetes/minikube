@@ -97,7 +97,7 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("Failed to fetch current-context")
 			}
 			if strings.TrimRight(string(currentContext), "\n") != "" {
-				t.Fatalf("Failed to unset the current-context")
+				t.Fatalf("Failed to unset the current-context %q", string(currentContext))
 			}
 
 			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
