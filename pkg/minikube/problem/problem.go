@@ -27,10 +27,15 @@ const issueBase = "https://github.com/kubernetes/minikube/issues"
 
 // Problem represents a known problem in minikube.
 type Problem struct {
-	ID     string
-	Err    error
+	// ID is an arbitrary unique and stable string describing this issue
+	ID string
+	// Err is the original error
+	Err error
+	// Advice is actionable text that the user should follow
 	Advice string
-	URL    string
+	// URL is a reference URL for more information
+	URL string
+	// Issues are a list of related issues to this problem
 	Issues []int
 }
 
@@ -40,6 +45,8 @@ type match struct {
 	Advice string
 	URL    string
 	Issues []int
+	// GOOS is what platforms this problem may be specific to, when disambiguation is necessary.
+	GOOS string
 }
 
 // Display problem metadata to the console
@@ -62,16 +69,20 @@ func (p *Problem) Display() {
 	}
 }
 
-// FromError returns a known problem from an error.
-func FromError(err error) *Problem {
+// FromError returns a known problem from an error on an OS
+func FromError(err error, os string) *Problem {
 	maps := []map[string]match{
 		osProblems,
 		vmProblems,
 		netProblems,
 		deployProblems,
+		stateProblems,
 	}
 	for _, m := range maps {
 		for k, v := range m {
+			if v.GOOS != "" && v.GOOS != os {
+				continue
+			}
 			if v.Regexp.MatchString(err.Error()) {
 				return &Problem{
 					Err:    err,

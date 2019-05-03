@@ -20,6 +20,7 @@ package exit
 import (
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -59,7 +60,7 @@ func WithCode(code int, format string, a ...interface{}) {
 
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
-	p := problem.FromError(err)
+	p := problem.FromError(err, runtime.GOOS)
 	if p != nil {
 		WithProblem(msg, p)
 	}
