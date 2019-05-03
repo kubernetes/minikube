@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cloudfoundry-attic/jibber_jabber"
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
 	"golang.org/x/text/language"
@@ -88,6 +89,13 @@ func OutStyle(style, format string, a ...interface{}) error {
 
 // Out writes a basic formatted string to stdout
 func Out(format string, a ...interface{}) error {
+	locale, err := jibber_jabber.DetectIETF()
+	fmt.Printf("LOCALE=%s", locale)
+	if err != nil {
+		glog.Warningf("Getting system locale failed: %s", err)
+		locale = ""
+	}
+	SetPreferredLanguage(locale)
 	p := message.NewPrinter(preferredLanguage)
 	if outFile == nil {
 		if _, err := p.Fprintf(os.Stdout, "(stdout unset)"+format, a...); err != nil {
@@ -95,7 +103,7 @@ func Out(format string, a ...interface{}) error {
 		}
 		return fmt.Errorf("no output file has been set")
 	}
-	_, err := p.Fprintf(outFile, format, a...)
+	_, err = p.Fprintf(outFile, format, a...)
 	return err
 }
 
@@ -124,6 +132,13 @@ func ErrStyle(style, format string, a ...interface{}) error {
 
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) error {
+	locale, err := jibber_jabber.DetectIETF()
+	fmt.Printf("LOCALE=%s", locale)
+	if err != nil {
+		glog.Warningf("Getting system locale failed: %s", err)
+		locale = ""
+	}
+	SetPreferredLanguage(locale)
 	p := message.NewPrinter(preferredLanguage)
 	if errFile == nil {
 		if _, err := p.Fprintf(os.Stderr, "(stderr unset)"+format, a...); err != nil {
@@ -131,7 +146,7 @@ func Err(format string, a ...interface{}) error {
 		}
 		return fmt.Errorf("no error file has been set")
 	}
-	_, err := p.Fprintf(errFile, format, a...)
+	_, err = p.Fprintf(errFile, format, a...)
 	return err
 }
 
