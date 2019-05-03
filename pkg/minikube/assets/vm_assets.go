@@ -18,11 +18,13 @@ package assets
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
 	"os"
 	"path"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -197,6 +199,10 @@ func (m *BinDataAsset) loadData(isTemplate bool) error {
 	m.data = contents
 	m.Length = len(contents)
 	m.reader = bytes.NewReader(m.data)
+	glog.Infof("Created asset %s with %d bytes", m.AssetName, m.Length)
+	if m.Length == 0 {
+		return fmt.Errorf("%s is an empty asset", m.AssetName)
+	}
 	return nil
 }
 
@@ -227,5 +233,8 @@ func (m *BinDataAsset) GetLength() int {
 
 // Read reads the asset
 func (m *BinDataAsset) Read(p []byte) (int, error) {
+	if m.Length == 0 {
+		return 0, fmt.Errorf("attempted read from a 0 length asset")
+	}
 	return m.reader.Read(p)
 }
