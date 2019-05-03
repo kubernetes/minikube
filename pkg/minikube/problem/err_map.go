@@ -80,23 +80,6 @@ var vmProblems = map[string]match{
 		Advice: "Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.",
 		Issues: []int{4043},
 	},
-	"VBOX_DEVICE_MISSING": {
-		Regexp: re(`/dev/vboxdrv does not exist`),
-		Advice: "Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.",
-		Issues: []int{3974},
-	},
-	"VBOX_HARDENING": {
-		Regexp: re(`terminated unexpectedly.*VBoxHardening`),
-		Advice: "Disable real-time anti-virus software, reboot, and reinstall VirtualBox if the problem continues.",
-		Issues: []int{3859, 3910},
-		URL:    "https://forums.virtualbox.org/viewtopic.php?f=25&t=82106",
-	},
-	"VBOX_HOST_ADAPTER": {
-		Regexp: re(`The host-only adapter we just created is not visible`),
-		Advice: "Reboot to complete VirtualBox installation, and verify that VirtualBox is not blocked by your system",
-		Issues: []int{3614},
-		URL:    "https://stackoverflow.com/questions/52277019/how-to-fix-vm-issue-with-minikube-start",
-	},
 	"KVM2_NOT_FOUND": {
 		Regexp: re(`Driver "kvm2" not found. Do you have the plugin binary .* accessible in your PATH`),
 		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
