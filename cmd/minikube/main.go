@@ -40,5 +40,6 @@ func main() {
 	}
 	console.SetOutFile(os.Stdout)
 	console.SetErrFile(os.Stderr)
+	console.DetermineLocale()
 	cmd.Execute()
 }
