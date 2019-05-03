@@ -227,7 +227,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(host, runner,k8sVersion)
+	cr := configureRuntimes(host, runner, k8sVersion)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -251,7 +251,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	showKubectlConnectInfo(kubeconfig)
-	
+
 }
 
 func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
@@ -544,7 +544,7 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner, k8sVersi
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
 	version, _ := cr.Version()
-	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion,cr.Name(),version)
+	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
 	for _, v := range dockerOpt {
 		console.OutStyle("option", "opt %s", v)
 	}
