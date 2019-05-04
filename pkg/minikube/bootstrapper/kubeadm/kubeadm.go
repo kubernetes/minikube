@@ -217,7 +217,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "wait")
 	}
 
-	console.OutStyle("permissions", "Configuring cluster permissions ...")
+	glog.Infof("Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}

@@ -258,7 +258,7 @@ func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
-		console.OutStyle("kubectl", "Done! kubectl is now configured to use %q", cfg.GetMachineName())
+		console.OutStyle("ready", "Done! kubectl is now configured to use %q", cfg.GetMachineName())
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {
@@ -590,7 +590,6 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
 	k8sStat := func() (err error) {
 		st, err := bs.GetKubeletStatus()
-		console.Out(".")
 		if err != nil || st != state.Running.String() {
 			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
 		}
@@ -602,7 +601,6 @@ func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bo
 	}
 	aStat := func() (err error) {
 		st, err := bs.GetAPIServerStatus(net.ParseIP(ip), apiserverPort)
-		console.Out(".")
 		if err != nil || st != state.Running.String() {
 			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
 		}
