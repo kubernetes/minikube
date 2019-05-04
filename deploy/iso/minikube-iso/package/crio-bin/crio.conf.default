@@ -12,7 +12,7 @@ runroot = "/var/run/containers/storage"
 
 # storage_driver select which storage driver is used to manage storage
 # of images and containers.
-storage_driver = "overlay"
+storage_driver = ""
 
 # storage_option is used to pass an option to the storage driver.
 storage_option = [
@@ -67,10 +67,10 @@ runtime_untrusted_workload = ""
 default_workload_trust = "trusted"
 
 # no_pivot instructs the runtime to not use pivot_root, but instead use MS_MOVE
-no_pivot = true
+no_pivot = false
 
 # conmon is the path to conmon binary, used for managing the runtime.
-conmon = "/usr/libexec/crio/conmon"
+conmon = "/usr/local/libexec/crio/conmon"
 
 # conmon_env is the environment variable list for conmon process,
 # used for passing necessary environment variable to conmon or runtime.
@@ -118,7 +118,7 @@ log_size_max = -1
 default_transport = "docker://"
 
 # pause_image is the image which we use to instantiate infra containers.
-pause_image = "k8s.gcr.io/pause:3.1"
+pause_image = "kubernetes/pause"
 
 # pause_command is the command to run in a pause_image to have a container just
 # sit there.  If the image contains the necessary information, this value need
@@ -142,7 +142,6 @@ insecure_registries = [
 # registries is used to specify a comma separated list of registries to be used
 # when pulling an unqualified image (e.g. fedora:rawhide).
 registries = [
-	"docker.io"
 ]
 
 # The "crio.network" table contains settings pertaining to the
