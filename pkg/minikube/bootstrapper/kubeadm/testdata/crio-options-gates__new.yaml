@@ -26,9 +26,6 @@ controllerManager:
   extraArgs:
     feature-gates: "a=b"
     kube-api-burst: "32"
-kubeadm:
-  extraArgs:
-    feature-gates: "a=b"
 scheduler:
   extraArgs:
     feature-gates: "a=b"
