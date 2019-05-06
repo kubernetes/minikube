@@ -88,6 +88,7 @@ const (
 	embedCerts            = "embed-certs"
 	noVTXCheck            = "no-vtx-check"
 	downloadOnly          = "download-only"
+	reconfigure           = "reconfigure"
 )
 
 var (
@@ -108,6 +109,7 @@ func init() {
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
+	startCmd.Flags().String(reconfigure, "false", "Force Kubernetes to be reconfigured: true, false, or auto")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM in MB")
@@ -176,46 +178,44 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	// For non-"none", the ISO is required to boot, so block until it is downloaded
-	if viper.GetString(vmDriver) != constants.DriverNone {
-		if err := cluster.CacheISO(config.MachineConfig); err != nil {
-			exit.WithError("Failed to cache ISO", err)
-		}
-	} else {
-		// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
-		viper.Set(cacheImages, false)
-	}
-
-	// Now that the ISO is downloaded, pull images in the background while the VM boots.
-	var cacheGroup errgroup.Group
-	beginCacheImages(&cacheGroup, k8sVersion)
-
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := saveConfig(config); err != nil {
-		exit.WithError("Failed to save config", err)
-	}
-
+	cacheGroup := prepareCache(config)
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
 
-	// If --download-only, complete the remaining downloads and exit.
-	if viper.GetBool(downloadOnly) {
-		if err := doCacheBinaries(k8sVersion); err != nil {
-			exit.WithError("Failed to cache binaries", err)
-		}
-		waitCacheImages(&cacheGroup)
-		if err := CacheImagesInConfigFile(); err != nil {
-			exit.WithError("Failed to cache images", err)
-		}
-		console.OutStyle("check", "Download complete!")
-		return
+	if err := saveConfig(config); err != nil {
+		exit.WithError("Failed to save config", err)
+	}
+	host, preexisting := startHost(m, config.MachineConfig)
+	kubeconfig := updateKubeConfig(host, &config)
+
+	bs, err := GetClusterBootstrapper(m, viper.GetString(cmdcfg.Bootstrapper))
+	if err != nil {
+		exit.WithError("Failed to get bootstrapper", err)
 	}
 
-	host, preexisting := startHost(m, config.MachineConfig)
+	reconfig := shouldReconfigure(oldConfig, &config)
+	if reconfig {
+		runReconfigure(host, config, bs, cacheGroup)
+	}
 
+	apiserverPort := config.KubernetesConfig.NodePort
+	validateCluster(bs, cr, runner, ip, apiserverPort)
+	configureMounts()
+	if err = LoadCachedImagesInConfigFile(); err != nil {
+		console.Failure("Unable to load cached images from config file.")
+	}
+	if config.MachineConfig.VMDriver == constants.DriverNone {
+		console.OutStyle("starting-none", "Configuring local host environment ...")
+		prepareNone()
+	}
+
+	showKubectlConnectInfo(kubeconfig)
+	console.OutStyle("ready", "Done! Thank you for using minikube!")
+}
+
+func runReconfigure(host *host.Host, config cfg.Config, cgroup errgroup.Group) *pkgutil.KubeConfigSetup {
 	ip := validateNetwork(host)
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
@@ -230,28 +230,70 @@ func runStart(cmd *cobra.Command, args []string) {
 	cr := configureRuntimes(host, runner)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
-	waitCacheImages(&cacheGroup)
+	waitCacheImages(&cgroup)
 
-	bs := prepareHostEnvironment(m, config.KubernetesConfig)
+	console.OutStyle("copying", "Preparing Kubernetes environment ...")
+	for _, eo := range extraOptions {
+		console.OutStyle("option", "%s.%s=%s", eo.Component, eo.Key, eo.Value)
+	}
+	// Loads cached images, generates config files, download binaries
+	if err := bs.UpdateCluster(kc); err != nil {
+		exit.WithError("Failed to update cluster", err)
+	}
+	if err := bs.SetupCerts(kc); err != nil {
+		exit.WithError("Failed to setup certs", err)
+	}
 
-	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
-	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
+	return kubeconfig
+}
 
-	apiserverPort := config.KubernetesConfig.NodePort
-	validateCluster(bs, cr, runner, ip, apiserverPort)
-	configureMounts()
-	if err = LoadCachedImagesInConfigFile(); err != nil {
-		console.Failure("Unable to load cached images from config file.")
+// shouldReconfigure handles the logic associated to the --reconfigure flag
+func shouldReconfigure(old, new *cfg.Config) bool {
+	val := viper.GetString("reconfigure")
+	if val == "auto" {
+		if old != new {
+			glog.Infof("Must reconfigure. Old: %+v New: %+v", old, new)
+			return true
+		}
+		return false
 	}
 
-	if config.MachineConfig.VMDriver == constants.DriverNone {
-		console.OutStyle("starting-none", "Configuring local host environment ...")
-		prepareNone()
+	reconfigure, err := strconv.ParseBool(val)
+	if err != nil {
+		exit.WithError("Unable to parse --reconfigure value", err)
+	}
+	return reconfigure
+}
+
+// prepareCache warms up the cache before starting up a VM
+func prepareCache(config cfg.Config) errgroup.Group {
+	// For non-"none", the ISO is required to boot, so block until it is downloaded
+	if viper.GetString(vmDriver) != constants.DriverNone {
+		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
+	} else {
+		// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
+		viper.Set(cacheImages, false)
 	}
 
-	showKubectlConnectInfo(kubeconfig)
-	console.OutStyle("ready", "Done! Thank you for using minikube!")
+	// Now that the ISO is downloaded, pull images in the background while the VM boots.
+	var cacheGroup errgroup.Group
+	beginCacheImages(&cacheGroup, k8sVersion)
+
+	if viper.GetBool(downloadOnly) {
+		if err := doCacheBinaries(k8sVersion); err != nil {
+			exit.WithError("Failed to cache binaries", err)
+		}
+		waitCacheImages(&cacheGroup)
+		if err := CacheImagesInConfigFile(); err != nil {
+			exit.WithError("Failed to cache images", err)
+		}
+		console.OutStyle("check", "Download complete!")
+		os.Exit(0)
+	}
+	return cacheGroup
 }
 
 func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
@@ -489,26 +531,6 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 		isUpgrade = true
 	}
 	return nv, isUpgrade
-}
-
-// prepareHostEnvironment adds any requested files into the VM before Kubernetes is started
-func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
-	bs, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
-	if err != nil {
-		exit.WithError("Failed to get bootstrapper", err)
-	}
-	console.OutStyle("copying", "Preparing Kubernetes environment ...")
-	for _, eo := range extraOptions {
-		console.OutStyle("option", "%s.%s=%s", eo.Component, eo.Key, eo.Value)
-	}
-	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(kc); err != nil {
-		exit.WithError("Failed to update cluster", err)
-	}
-	if err := bs.SetupCerts(kc); err != nil {
-		exit.WithError("Failed to setup certs", err)
-	}
-	return bs
 }
 
 // updateKubeConfig sets up kubectl
