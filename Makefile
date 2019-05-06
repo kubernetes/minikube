@@ -229,7 +229,7 @@ out/test.d: pkg/minikube/assets/assets.go
 test:
 	GOPATH=$(GOPATH) ./test.sh
 
-pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
+pkg/minikube/assets/assets.go: $(DEPLOYS)
 	which go-bindata || GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
 
