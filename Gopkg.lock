@@ -35,6 +35,14 @@
   revision = "bcc06269efa974c4f098619d9aae436846e83d84"
 
 [[projects]]
+  branch = "master"
+  digest = "1:cd7ba2b29e93e2a8384e813dfc80ebb0f85d9214762e6ca89bb55a58092eab87"
+  name = "github.com/cloudfoundry-attic/jibber_jabber"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "bcc4c8345a21301bf47c032ff42dd1aae2fe3027"
+
+[[projects]]
   digest = "1:cc832d4c674b57b5c67f683f75fba043dd3eec6fcd9b936f00cc8ddf439f2131"
   name = "github.com/cpuguy83/go-md2man"
   packages = ["md2man"]
@@ -971,6 +979,7 @@
   input-imports = [
     "github.com/Parallels/docker-machine-parallels",
     "github.com/blang/semver",
+    "github.com/cloudfoundry-attic/jibber_jabber",
     "github.com/docker/go-units",
     "github.com/docker/machine/drivers/hyperv",
     "github.com/docker/machine/drivers/virtualbox",
