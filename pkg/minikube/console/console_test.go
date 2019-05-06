@@ -56,13 +56,13 @@ func TestOutStyle(t *testing.T) {
 		want      string
 		wantASCII string
 	}{
-		{"happy", "Happy", nil, "😄  Happy\n", "> Happy\n"},
+		{"happy", "Happy", nil, "😄  Happy\n", "* Happy\n"},
 		{"option", "Option", nil, "    ▪ Option\n", "  - Option\n"},
 		{"warning", "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
 		{"fatal", "Fatal: %v", []interface{}{"ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
-		{"waiting-pods", "wait", nil, "⌛  wait", "> wait"},
+		{"waiting-pods", "wait", nil, "⌛  wait", "* wait"},
 		{"issue", "http://i/%d", []interface{}{10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
-		{"usage", "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "> raw: '%' %d\n"},
+		{"usage", "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
 	}
 	for _, tc := range tests {
 		for _, override := range []bool{true, false} {

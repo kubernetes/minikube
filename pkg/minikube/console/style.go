@@ -26,7 +26,7 @@ import (
 
 var (
 	// lowBullet is a bullet-point prefix for low-fi mode
-	lowBullet = "> "
+	lowBullet = "* "
 	// lowBullet is an indented bullet-point prefix for low-fi mode
 	lowIndent = "  - "
 	// lowBullet is a warning prefix for low-fi mode
