@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -382,8 +383,10 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 	opts := struct {
 		ImageRepository string
+		Arch            string
 	}{
 		ImageRepository: cfg.ImageRepository,
+		Arch:            runtime.GOARCH,
 	}
 
 	return opts
