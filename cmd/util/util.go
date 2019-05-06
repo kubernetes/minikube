@@ -18,12 +18,15 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 
+	"github.com/golang/glog"
+	ps "github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -45,19 +48,50 @@ func GetPort() (int, error) {
 
 // KillMountProcess kills the mount process, if it is running
 func KillMountProcess() error {
-	out, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName))
-	if err != nil {
-		return nil // no mount process to kill
+	pidPath := filepath.Join(constants.GetMinipath(), constants.MountProcessFileName)
+	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
+		return nil
 	}
+
+	glog.Infof("Found %s ...", pidPath)
+	out, err := ioutil.ReadFile(pidPath)
+	if err != nil {
+		return errors.Wrap(err, "ReadFile")
+	}
+	glog.Infof("pidfile contents: %s", out)
 	pid, err := strconv.Atoi(string(out))
 	if err != nil {
-		return errors.Wrap(err, "error converting mount string to pid")
+		return errors.Wrap(err, "error parsing pid")
 	}
-	mountProc, err := os.FindProcess(pid)
+	// os.FindProcess does not check if pid is running :(
+	entry, err := ps.FindProcess(pid)
 	if err != nil {
-		return errors.Wrap(err, "error converting mount string to pid")
+		return errors.Wrap(err, "ps.FindProcess")
 	}
-	return mountProc.Kill()
+	if entry == nil {
+		glog.Infof("Stale pid: %d", pid)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing stale pid")
+		}
+		return nil
+	}
+
+	// We found a process, but it still may not be ours.
+	glog.Infof("Found process %d: %s", pid, entry.Executable())
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "os.FindProcess")
+	}
+
+	glog.Infof("Killing pid %d ...", pid)
+	if err := proc.Kill(); err != nil {
+		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing likely stale unkillable pid")
+		}
+		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
+	}
+	return nil
 }
 
 // GetKubeConfigPath gets the path to the first kubeconfig

@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cloudfoundry-attic/jibber_jabber"
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
 	"golang.org/x/text/language"
@@ -196,6 +197,15 @@ func SetErrFile(w fdWriter) {
 	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
 	useColor = wantsColor(w.Fd())
+}
+
+func DetermineLocale() {
+	locale, err := jibber_jabber.DetectIETF()
+	if err != nil {
+		glog.Warningf("Getting system locale failed: %s", err)
+		locale = ""
+	}
+	SetPreferredLanguage(locale)
 }
 
 // wantsColor determines if the user might want colorized output.

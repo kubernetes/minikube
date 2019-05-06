@@ -36,10 +36,44 @@ var vmProblems = map[string]match{
 		Advice: "In some environments, this message is incorrect. Try 'minikube start --no-vtx-check'",
 		Issues: []int{3900},
 	},
-	"VBOX_THIRD_PARTY": {
-		Regexp: re(`The virtual machine * has terminated unexpectedly during startup with exit code 1`),
-		Advice: "A third-party program may be interfering with VirtualBox. Try disabling any real-time antivirus software, reinstalling VirtualBox and rebooting.",
-		Issues: []int{3910},
+	"VBOX_VERR_VMX_NO_VMX": {
+		Regexp: re(`VT-x is not available.*VERR_VMX_NO_VMX`),
+		Advice: "Please check your BIOS, and ensure that you are running without HyperV or other nested virtualization that may interfere",
+		Issues: []int{1994},
+	},
+	"VBOX_BLOCKED": {
+		Regexp: re(`NS_ERROR_FAILURE.*0x80004005`),
+		Advice: "Reinstall VirtualBox and verify that it is not blocked: System Preferences -> Security & Privacy -> General -> Some system software was blocked from loading",
+		Issues: []int{4107},
+		GOOS:   "darwin",
+	},
+	"VBOX_DRV_NOT_LOADED": {
+		Regexp: re(`The vboxdrv kernel module is not loaded`),
+		Advice: "Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.",
+		Issues: []int{4043},
+	},
+	"VBOX_DEVICE_MISSING": {
+		Regexp: re(`/dev/vboxdrv does not exist`),
+		Advice: "Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.",
+		Issues: []int{3974},
+	},
+	"VBOX_HARDENING": {
+		Regexp: re(`terminated unexpectedly.*VBoxHardening`),
+		Advice: "Disable real-time anti-virus software, reboot, and reinstall VirtualBox if the problem continues.",
+		Issues: []int{3859, 3910},
+		URL:    "https://forums.virtualbox.org/viewtopic.php?f=25&t=82106",
+		GOOS:   "windows",
+	},
+	"VBOX_HOST_ADAPTER": {
+		Regexp: re(`The host-only adapter we just created is not visible`),
+		Advice: "Reboot to complete VirtualBox installation, and verify that VirtualBox is not blocked by your system",
+		Issues: []int{3614},
+		URL:    "https://stackoverflow.com/questions/52277019/how-to-fix-vm-issue-with-minikube-start",
+	},
+	"VBOX_KERNEL_MODULE_NOT_LOADED": {
+		Regexp: re(`The vboxdrv kernel module is not loaded`),
+		Advice: "Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.",
+		Issues: []int{4043},
 	},
 	"KVM2_NOT_FOUND": {
 		Regexp: re(`Driver "kvm2" not found. Do you have the plugin binary .* accessible in your PATH`),
@@ -51,15 +85,16 @@ var vmProblems = map[string]match{
 		Advice: "The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.",
 		Issues: []int{3901, 3566, 3434},
 	},
+	"KVM2_NETWORK_DEFINE_XML": {
+		Regexp: re(`not supported by the connection driver: virNetworkDefineXML`),
+		Advice: "Rebuild libvirt with virt-network support",
+		URL:    "https://forums.gentoo.org/viewtopic-t-981692-start-0.html",
+		Issues: []int{4195},
+	},
 	"VM_DOES_NOT_EXIST": {
 		Regexp: re(`Error getting state for host: machine does not exist`),
 		Advice: "Your system no longer knows about the VM previously created by minikube. Run 'minikube delete' to reset your local state.",
 		Issues: []int{3864},
-	},
-	"VM_IP_NOT_FOUND": {
-		Regexp: re(`Error getting ssh host name for driver: IP not found`),
-		Advice: "The minikube VM is offline. Please run 'minikube start' to start it again.",
-		Issues: []int{3849, 3648},
 	},
 	"VM_BOOT_FAILED_HYPERV_ENABLED": {
 		Regexp: re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
@@ -154,5 +189,19 @@ var osProblems = map[string]match{
 		Regexp: re(`.iso: The system cannot find the path specified.`),
 		Advice: "Run minikube from the C: drive.",
 		Issues: []int{1574},
+	},
+}
+
+// stateProblems are issues relating to local state
+var stateProblems = map[string]match{
+	"MACHINE_DOES_NOT_EXST": {
+		Regexp: re(`Error getting state for host: machine does not exist`),
+		Advice: "Run 'minikube delete' to delete the stale VM",
+		Issues: []int{3864},
+	},
+	"IP_NOT_FOUND": {
+		Regexp: re(`Error getting ssh host name for driver: IP not found`),
+		Advice: "The minikube VM is offline. Please run 'minikube start' to start it again.",
+		Issues: []int{3849, 3648},
 	},
 }

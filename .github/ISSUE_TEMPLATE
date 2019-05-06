@@ -1,5 +1,9 @@
-<!-- Thank you for sharing your experience! If you are reporting a bug, please include: -->
-<!--    *  The exact command-lines used so that we can replicate the issue -->
-<!--    *  The full output of the command that failed -->
-<!--    *  The output of the "minikube logs" command, if applicable -->
-<!--    *  Which operating system version was used -->
+<!-- Please use this template while reporting an issue, providing as much information as possible. Failure to do so may result in a delayed response. Thank you! -->
+
+**The exact command to reproduce the issue**:
+
+**The full output of the command that failed**:
+
+**The output of the `minikube logs` command**:
+
+**The operating system version**:
