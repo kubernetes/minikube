@@ -18,11 +18,13 @@ package assets
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io"
 	"os"
 	"path"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -147,25 +149,34 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 	return m
 }
 
-// BinDataAsset is a bindata (binary data) asset
-type BinDataAsset struct {
+// BinAsset is a bindata (binary data) asset
+type BinAsset struct {
 	BaseAsset
 	template *template.Template
 }
 
-// NewBinDataAsset creates a new BinDataAsset
-func NewBinDataAsset(assetName, targetDir, targetName, permissions string, isTemplate bool) *BinDataAsset {
-	m := &BinDataAsset{
+// MustBinAsset creates a new BinAsset, or panics if invalid
+func MustBinAsset(name, targetDir, targetName, permissions string, isTemplate bool) *BinAsset {
+	asset, err := NewBinAsset(name, targetDir, targetName, permissions, isTemplate)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to define asset %s: %v", name, err))
+	}
+	return asset
+}
+
+// NewBinAsset creates a new BinAsset
+func NewBinAsset(name, targetDir, targetName, permissions string, isTemplate bool) (*BinAsset, error) {
+	m := &BinAsset{
 		BaseAsset: BaseAsset{
-			AssetName:   assetName,
+			AssetName:   name,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
 		template: nil,
 	}
-	m.loadData(isTemplate)
-	return m
+	err := m.loadData(isTemplate)
+	return m, err
 }
 
 func defaultValue(defValue string, val interface{}) string {
@@ -179,7 +190,7 @@ func defaultValue(defValue string, val interface{}) string {
 	return strVal
 }
 
-func (m *BinDataAsset) loadData(isTemplate bool) error {
+func (m *BinAsset) loadData(isTemplate bool) error {
 	contents, err := Asset(m.AssetName)
 	if err != nil {
 		return err
@@ -197,16 +208,20 @@ func (m *BinDataAsset) loadData(isTemplate bool) error {
 	m.data = contents
 	m.Length = len(contents)
 	m.reader = bytes.NewReader(m.data)
+	glog.Infof("Created asset %s with %d bytes", m.AssetName, m.Length)
+	if m.Length == 0 {
+		return fmt.Errorf("%s is an empty asset", m.AssetName)
+	}
 	return nil
 }
 
 // IsTemplate returns if the asset is a template
-func (m *BinDataAsset) IsTemplate() bool {
+func (m *BinAsset) IsTemplate() bool {
 	return m.template != nil
 }
 
 // Evaluate evaluates the template to a new asset
-func (m *BinDataAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
+func (m *BinAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
 	if !m.IsTemplate() {
 		return nil, errors.Errorf("the asset %s is not a template", m.AssetName)
 
@@ -221,11 +236,14 @@ func (m *BinDataAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
 }
 
 // GetLength returns length
-func (m *BinDataAsset) GetLength() int {
+func (m *BinAsset) GetLength() int {
 	return m.Length
 }
 
 // Read reads the asset
-func (m *BinDataAsset) Read(p []byte) (int, error) {
+func (m *BinAsset) Read(p []byte) (int, error) {
+	if m.Length == 0 {
+		return 0, fmt.Errorf("attempted read from a 0 length asset")
+	}
 	return m.reader.Read(p)
 }
