@@ -70,11 +70,6 @@ var vmProblems = map[string]match{
 		Issues: []int{3614},
 		URL:    "https://stackoverflow.com/questions/52277019/how-to-fix-vm-issue-with-minikube-start",
 	},
-	"VBOX_BLOCKED_LOADING": {
-		Regexp: re(`NS_ERROR_FAILURE.*0x80004005`),
-		Advice: "Reinstall VirtualBox and verify that it is not blocked: System Preferences -> Security & Privacy -> General -> Some system software was blocked from loading",
-		Issues: []int{4107},
-	},
 	"VBOX_KERNEL_MODULE_NOT_LOADED": {
 		Regexp: re(`The vboxdrv kernel module is not loaded`),
 		Advice: "Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.",
