@@ -108,16 +108,18 @@ else
 	ARCHTAG_NONE ?= -$(GOARCH)
 endif
 
-.PHONY: makedeploys
-makedeploys:
-	sed "s|\-ARCHTAG_NONE|$(ARCHTAG_NONE)|g" deploy/addons/addon-manager.template > deploy/addons/addon-manager.yaml
-	sed "s|\-ARCHTAG|$(ARCHTAG)|g" deploy/addons/dashboard/dashboard-dp.template > deploy/addons/dashboard/dashboard-dp.yaml
-	sed "s|\-ARCHTAG|$(ARCHTAG)|g" deploy/addons/heapster/heapster-rc.template > deploy/addons/heapster/heapster-rc.yaml
-	sed "s|\-ARCHTAG|$(ARCHTAG)|g" deploy/addons/heapster/influx-grafana-rc.template > deploy/addons/heapster/influx-grafana-rc.yaml
-	sed "s|\-ARCHTAG_NONE|$(ARCHTAG_NONE)|g" deploy/addons/ingress/ingress-dp.template > deploy/addons/ingress/ingress-dp.yaml
-	sed "s|\-ARCHTAG|$(ARCHTAG)|g" deploy/addons/metrics-server/metrics-server-deployment.template > deploy/addons/metrics-server/metrics-server-deployment.yaml
-	sed "s|\-ARCHTAG_NONE|$(ARCHTAG_NONE)|g" deploy/addons/storage-provisioner/storage-provisioner.template > deploy/addons/storage-provisioner/storage-provisioner.yaml
-			
+DEPLOYS=\
+	deploy/addons/addon-manager.yaml \
+	deploy/addons/dashboard/dashboard-dp.yaml \
+	deploy/addons/heapster/heapster-rc.yaml \
+	deploy/addons/heapster/influx-grafana-rc.yaml \
+	deploy/addons/ingress/ingress-dp.yaml \
+	deploy/addons/metrics-server/metrics-server-deployment.yaml \
+	deploy/addons/storage-provisioner/storage-provisioner.yaml
+
+%.yaml: %.template
+	sed "s|\-ARCHTAG_NONE|$(ARCHTAG_NONE)|g;s|\-ARCHTAG|$(ARCHTAG)|g" $< > $@
+
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
@@ -129,8 +131,7 @@ out/minikube.d: pkg/minikube/assets/assets.go
 
 -include out/minikube.d
 
-PHONY: out/minikube-%
-out/minikube-%:makedeploys pkg/minikube/assets/assets.go
+out/minikube-%: $(DEPLOYS) pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else

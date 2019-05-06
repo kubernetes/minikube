@@ -67,7 +67,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			exit.WithError("Unable to kill mount process", err)
+			console.OutStyle("warning", "Unable to kill mount process: %s", err)
 		}
 	},
 }
