@@ -34,7 +34,7 @@ spec:
     spec:
       containers:
       - name: influxdb
-        image: {{default "k8s.gcr.io" .ImageRepository}}/heapster-influxdb-ARCHTAG:v1.3.3
+        image: {{default "k8s.gcr.io" .ImageRepository}}/heapster-influxdb-{{.Arch}}:v1.3.3
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
@@ -45,7 +45,7 @@ spec:
         - mountPath: /data
           name: influxdb-storage
       - name: grafana
-        image: {{default "k8s.gcr.io" .ImageRepository}}/heapster-grafana-ARCHTAG:v4.4.3
+        image: {{default "k8s.gcr.io" .ImageRepository}}/heapster-grafana-{{.Arch}}:v4.4.3
         imagePullPolicy: IfNotPresent
         env:
           - name: INFLUXDB_SERVICE_URL
