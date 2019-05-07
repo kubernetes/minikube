@@ -267,7 +267,7 @@ func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
 	componentsOnly := k8s.NetworkPlugin == "cni"
 
 	if !quiet {
-		console.OutStyle("waiting-pods", "Waiting for pods:")
+		console.OutStyle("waiting-pods", "Waiting for:")
 	}
 	client, err := util.GetClient()
 	if err != nil {
