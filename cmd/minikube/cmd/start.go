@@ -222,6 +222,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
+	updateNoProxy(ip)
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
@@ -514,6 +515,53 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	return host, exists
 }
 
+// isInNoProxy checks if ip is included in NO_PROXY env variable.
+func isInNoProxy(ip string) (bool, string) {
+	v := os.Getenv("NO_PROXY")
+
+	if v == "" {
+		return false, ""
+	}
+
+	//  Checking for when provided IP doesn't have CIDIR subnet.
+	if strings.Contains(v, ip) {
+		return true, v
+	}
+
+	// Checking if the ip is included in the CIDIR subnet ranges
+	noProxyBlocks := strings.Split(v, ",")
+	for _, b := range noProxyBlocks {
+		if yes, _ := isInBlock(ip, b); yes {
+			return true, v
+		}
+	}
+
+	return false, v
+}
+
+// isInBlock checks if ip is a CIDIR block
+func isInBlock(ip string, block string) (bool, error) {
+	_, b, err := net.ParseCIDR(block)
+	if err != nil {
+		return false, err
+	}
+	i := net.ParseIP(ip)
+	if b.Contains(i) {
+		return false, nil
+	}
+	return false, nil
+}
+
+//  updateNoProxy is used to whitelist minikube's VM ip from going through proxy
+//  It updates NO_PROXY environment variable, for the current run.
+func updateNoProxy(ip string) error {
+	yes, v := isInNoProxy(ip)
+	if yes { // skip if already whitelisted
+		return nil
+	}
+	return os.Setenv("NO_PROXY", fmt.Sprintf("%s,%s/32", v, ip))
+}
+
 // validateNetwork tries to catch network problems as soon as possible
 func validateNetwork(h *host.Host) string {
 	ip, err := h.Driver.GetIP()
@@ -529,6 +577,10 @@ func validateNetwork(h *host.Host) string {
 				optSeen = true
 			}
 			console.OutStyle("option", "%s=%s", k, v)
+			npSet, _ := isInNoProxy(ip)
+			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !npSet {
+				console.Warning("You are using a proxy, You need to add minikube IP to the NO_PROXY. Use `export NO_PROXY=$NO_PROXY,%s/32`", ip)
+			}
 		}
 	}
 
