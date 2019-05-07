@@ -227,7 +227,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(host, runner)
+	cr := configureRuntimes(host, runner,k8sVersion)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -251,14 +251,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	showKubectlConnectInfo(kubeconfig)
-	console.OutStyle("ready", "Done! Thank you for using minikube!")
+	
 }
 
 func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
-		console.OutStyle("kubectl", "kubectl is now configured to use %q", cfg.GetMachineName())
+		console.OutStyle("kubectl", "Done! kubectl is now configured to use %q", cfg.GetMachineName())
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {
@@ -291,7 +291,7 @@ func beginCacheImages(g *errgroup.Group, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", k8sVersion)
+
 	g.Go(func() error {
 		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
@@ -302,7 +302,6 @@ func waitCacheImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error caching images: ", err)
 	}
@@ -441,7 +440,6 @@ func validateNetwork(h *host.Host) string {
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
 	}
-	console.OutStyle("connectivity", "%q IP address is %s", cfg.GetMachineName(), ip)
 
 	optSeen := false
 	for _, k := range proxyVars {
@@ -497,7 +495,6 @@ func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstr
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
-	console.OutStyle("copying", "Preparing Kubernetes environment ...")
 	for _, eo := range extraOptions {
 		console.OutStyle("option", "%s.%s=%s", eo.Component, eo.Key, eo.Value)
 	}
@@ -540,13 +537,14 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime.Manager {
+func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner, k8sVersion string) cruntime.Manager {
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
-	console.OutStyle(cr.Name(), "Configuring %s as the container runtime ...", cr.Name())
+	version, _ := cr.Version()
+	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion,cr.Name(),version)
 	for _, v := range dockerOpt {
 		console.OutStyle("option", "opt %s", v)
 	}
@@ -558,10 +556,7 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
 	}
-	version, err := cr.Version()
-	if err == nil {
-		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
-	}
+
 	return cr
 }
 
@@ -571,7 +566,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	bsName := viper.GetString(cmdcfg.Bootstrapper)
 
 	if isUpgrade || !preexisting {
-		console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
+		console.OutStyle("pulling", "Pulling images ...")
 		if err := bs.PullImages(kc); err != nil {
 			console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
 		}
@@ -585,7 +580,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 		return
 	}
 
-	console.OutStyle("launch", "Launching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
+	console.OutStyle("launch", "Launching Kubernetes ... ")
 	if err := bs.StartCluster(kc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}
@@ -593,7 +588,6 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 
 // validateCluster validates that the cluster is well-configured and healthy
 func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
-	console.OutStyle("verifying-noline", "Verifying component health ...")
 	k8sStat := func() (err error) {
 		st, err := bs.GetKubeletStatus()
 		console.Out(".")
