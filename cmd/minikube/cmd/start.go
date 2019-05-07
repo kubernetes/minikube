@@ -109,7 +109,7 @@ func init() {
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
-	startCmd.Flags().String(reconfigure, "false", "Force Kubernetes to be reconfigured: true, false, or auto")
+	startCmd.Flags().String(reconfigure, "auto", "Force Kubernetes to be reconfigured: true, false, or auto")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM in MB")
@@ -178,16 +178,20 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	cacheGroup := prepareCache(config)
+	var cacheGroup errgroup.Group
+	if shouldReconfigure(oldConfig, &config) {
+		prepareCache(config, k8sVersion, &cacheGroup)
+	}
+
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
 
-	if err := saveConfig(config); err != nil {
-		exit.WithError("Failed to save config", err)
-	}
 	host, preexisting := startHost(m, config.MachineConfig)
+	ip := validateNetwork(host)
+	config.KubernetesConfig.NodeIP = ip
+
 	kubeconfig := updateKubeConfig(host, &config)
 
 	bs, err := GetClusterBootstrapper(m, viper.GetString(cmdcfg.Bootstrapper))
@@ -195,14 +199,39 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
 
-	reconfig := shouldReconfigure(oldConfig, &config)
-	if reconfig {
-		runReconfigure(host, config, bs, cacheGroup)
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
 	}
 
-	apiserverPort := config.KubernetesConfig.NodePort
-	validateCluster(bs, cr, runner, ip, apiserverPort)
+	cr, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner})
+	if err != nil {
+		exit.WithError("Failed to configure runtime", err)
+	}
+
+	if shouldReconfigure(oldConfig, &config) {
+		opts := configureOpts{
+			upgrade:  isUpgrade,
+			relaunch: preexisting,
+			pull:     isUpgrade || !preexisting,
+			config:   &config,
+			old:      oldConfig,
+		}
+		glog.Infof("reconfigure opts: %+v", opts)
+		runReconfigure(host, bs, cr, &cacheGroup, runner, opts)
+	} else {
+		glog.Infof("Evidently I should not reconfigure Kubernetes. Good luck!")
+	}
+
+	validateCluster(bs, cr, runner, ip, config.KubernetesConfig.NodePort)
 	configureMounts()
+	if &config != oldConfig {
+		glog.Infof("Config updated, saving ...")
+		if err := saveConfig(config); err != nil {
+			exit.WithError("Failed to save config", err)
+		}
+	}
+
 	if err = LoadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
 	}
@@ -215,37 +244,73 @@ func runStart(cmd *cobra.Command, args []string) {
 	console.OutStyle("ready", "Done! Thank you for using minikube!")
 }
 
-func runReconfigure(host *host.Host, config cfg.Config, cgroup errgroup.Group) *pkgutil.KubeConfigSetup {
-	ip := validateNetwork(host)
-	// Save IP to configuration file for subsequent use
-	config.KubernetesConfig.NodeIP = ip
-	if err := saveConfig(config); err != nil {
-		exit.WithError("Failed to save config", err)
+// configureOpts are options that can be passed to runReconfigure
+type configureOpts struct {
+	// Should pull images
+	pull bool
+	// Should be an upgrade
+	upgrade bool
+	// Should relaunch Kubernetes instead of launching it
+	relaunch bool
+	// new is the new configuration
+	config *cfg.Config
+	// old is the old configuration
+	old *cfg.Config
+}
+
+func runReconfigure(host *host.Host, bs bootstrapper.Bootstrapper, cr cruntime.Manager, cgroup *errgroup.Group, runner bootstrapper.CommandRunner, opts configureOpts) {
+	console.OutStyle(cr.Name(), "Configuring %s as the container runtime ...", cr.Name())
+	for _, v := range dockerOpt {
+		console.OutStyle("option", "opt %s", v)
 	}
-	runner, err := machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
+	for _, v := range dockerEnv {
+		console.OutStyle("option", "env %s", v)
 	}
 
-	cr := configureRuntimes(host, runner)
+	if err := cr.Enable(); err != nil {
+		exit.WithError("Failed to enable container runtime", err)
+	}
+	version, err := cr.Version()
+	if err == nil {
+		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
+	}
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
-	waitCacheImages(&cgroup)
+	waitCacheImages(cgroup)
 
 	console.OutStyle("copying", "Preparing Kubernetes environment ...")
 	for _, eo := range extraOptions {
 		console.OutStyle("option", "%s.%s=%s", eo.Component, eo.Key, eo.Value)
 	}
+
+	kc := opts.config.KubernetesConfig
 	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(kc); err != nil {
+	if err := bs.UpdateCluster(opts.config.KubernetesConfig); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
-	if err := bs.SetupCerts(kc); err != nil {
+	if err := bs.SetupCerts(opts.config.KubernetesConfig); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 
-	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
-	return kubeconfig
+	if opts.pull {
+		console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
+		if err := bs.PullImages(kc); err != nil {
+			console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
+		}
+	}
+
+	if opts.relaunch {
+		console.OutStyle("restarting", "Relaunching Kubernetes %s ... ", kc.KubernetesVersion)
+		if err := bs.RestartCluster(kc); err != nil {
+			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(cr, bs, runner))
+		}
+		return
+	}
+
+	console.OutStyle("launch", "Launching Kubernetes %s ... ", kc.KubernetesVersion)
+	if err := bs.StartCluster(kc); err != nil {
+		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, runner))
+	}
 }
 
 // shouldReconfigure handles the logic associated to the --reconfigure flag
@@ -256,6 +321,7 @@ func shouldReconfigure(old, new *cfg.Config) bool {
 			glog.Infof("Must reconfigure. Old: %+v New: %+v", old, new)
 			return true
 		}
+		glog.Infof("shouldReconfigure? No.")
 		return false
 	}
 
@@ -263,11 +329,12 @@ func shouldReconfigure(old, new *cfg.Config) bool {
 	if err != nil {
 		exit.WithError("Unable to parse --reconfigure value", err)
 	}
+	glog.Infof("--reconfigure=%s parsed as %v", val, reconfigure)
 	return reconfigure
 }
 
 // prepareCache warms up the cache before starting up a VM
-func prepareCache(config cfg.Config) errgroup.Group {
+func prepareCache(config cfg.Config, k8sVersion string, cg *errgroup.Group) {
 	// For non-"none", the ISO is required to boot, so block until it is downloaded
 	if viper.GetString(vmDriver) != constants.DriverNone {
 		if err := cluster.CacheISO(config.MachineConfig); err != nil {
@@ -278,22 +345,24 @@ func prepareCache(config cfg.Config) errgroup.Group {
 		viper.Set(cacheImages, false)
 	}
 
-	// Now that the ISO is downloaded, pull images in the background while the VM boots.
-	var cacheGroup errgroup.Group
-	beginCacheImages(&cacheGroup, k8sVersion)
+	if viper.GetBool(cacheImages) {
+		console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", k8sVersion)
+		cg.Go(func() error {
+			return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+		})
+	}
 
 	if viper.GetBool(downloadOnly) {
 		if err := doCacheBinaries(k8sVersion); err != nil {
 			exit.WithError("Failed to cache binaries", err)
 		}
-		waitCacheImages(&cacheGroup)
+		waitCacheImages(cg)
 		if err := CacheImagesInConfigFile(); err != nil {
 			exit.WithError("Failed to cache images", err)
 		}
 		console.OutStyle("check", "Download complete!")
 		os.Exit(0)
 	}
-	return cacheGroup
 }
 
 func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
@@ -326,17 +395,6 @@ func validateConfig() {
 // doCacheBinaries caches Kubernetes binaries in the foreground
 func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
-}
-
-// beginCacheImages caches Docker images in the background
-func beginCacheImages(g *errgroup.Group, k8sVersion string) {
-	if !viper.GetBool(cacheImages) {
-		return
-	}
-	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", k8sVersion)
-	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
-	})
 }
 
 // waitCacheImages blocks until the image cache jobs complete
@@ -559,58 +617,6 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
 	return kcs
-}
-
-// configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
-	cr, err := cruntime.New(config)
-	if err != nil {
-		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
-	}
-	console.OutStyle(cr.Name(), "Configuring %s as the container runtime ...", cr.Name())
-	for _, v := range dockerOpt {
-		console.OutStyle("option", "opt %s", v)
-	}
-	for _, v := range dockerEnv {
-		console.OutStyle("option", "env %s", v)
-	}
-
-	err = cr.Enable()
-	if err != nil {
-		exit.WithError("Failed to enable container runtime", err)
-	}
-	version, err := cr.Version()
-	if err == nil {
-		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
-	}
-	return cr
-}
-
-// bootstrapCluster starts Kubernetes using the chosen bootstrapper
-func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, kc cfg.KubernetesConfig, preexisting bool, isUpgrade bool) {
-	// hum. bootstrapper.Bootstrapper should probably have a Name function.
-	bsName := viper.GetString(cmdcfg.Bootstrapper)
-
-	if isUpgrade || !preexisting {
-		console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
-		if err := bs.PullImages(kc); err != nil {
-			console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
-		}
-	}
-
-	if preexisting {
-		console.OutStyle("restarting", "Relaunching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
-		if err := bs.RestartCluster(kc); err != nil {
-			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
-		}
-		return
-	}
-
-	console.OutStyle("launch", "Launching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
-	if err := bs.StartCluster(kc); err != nil {
-		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
-	}
 }
 
 // validateCluster validates that the cluster is well-configured and healthy

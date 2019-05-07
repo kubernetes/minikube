@@ -88,19 +88,14 @@ func CacheImages(images []string, cacheDir string) error {
 }
 
 // LoadImages loads previously cached images into the container runtime
-func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
+func LoadImages(kc config.KubernetesConfig, cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
 	var g errgroup.Group
-	// Load profile cluster config from file
-	cc, err := config.Load()
-	if err != nil && !os.IsNotExist(err) {
-		glog.Errorln("Error loading profile config: ", err)
-	}
 	for _, image := range images {
-		image := image
+		glog.Infof("LoadImages: %s", image)
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := loadImageFromCache(cmd, cc.KubernetesConfig, src); err != nil {
+			if err := loadImageFromCache(cmd, kc, src); err != nil {
 				glog.Warningf("Failed to load %s: %v", src, err)
 				return errors.Wrapf(err, "loading image %s", src)
 			}
