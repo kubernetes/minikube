@@ -74,13 +74,13 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/dashboard/dashboard-dp.yaml.tmpl",
 			constants.AddonsPath,
-			"dashboard-dp.yaml.tmpl",
+			"dashboard-dp.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/dashboard/dashboard-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"dashboard-svc.yaml.tmpl",
+			"dashboard-svc.yaml",
 			"0640",
 			false),
 	}, false, "dashboard"),
@@ -88,7 +88,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/storageclass/storageclass.yaml.tmpl",
 			constants.AddonsPath,
-			"storageclass.yaml.tmpl",
+			"storageclass.yaml",
 			"0640",
 			false),
 	}, true, "default-storageclass"),
@@ -96,7 +96,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/storage-provisioner/storage-provisioner.yaml.tmpl",
 			constants.AddonsPath,
-			"storage-provisioner.yaml.tmpl",
+			"storage-provisioner.yaml",
 			"0640",
 			true),
 	}, true, "storage-provisioner"),
@@ -104,25 +104,25 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml.tmpl",
 			constants.AddonsPath,
-			"storage-gluster-ns.yaml.tmpl",
+			"storage-gluster-ns.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml.tmpl",
 			constants.AddonsPath,
-			"glusterfs-daemonset.yaml.tmpl",
+			"glusterfs-daemonset.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
 			constants.AddonsPath,
-			"heketi-deployment.yaml.tmpl",
+			"heketi-deployment.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
 			constants.AddonsPath,
-			"storage-privisioner-glusterfile.yaml.tmpl",
+			"storage-privisioner-glusterfile.yaml",
 			"0640",
 			false),
 	}, false, "storage-provisioner-gluster"),
@@ -130,31 +130,31 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"influxGrafana-rc.yaml.tmpl",
+			"influxGrafana-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/heapster/grafana-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"grafana-svc.yaml.tmpl",
+			"grafana-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/heapster/influxdb-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"influxdb-svc.yaml.tmpl",
+			"influxdb-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/heapster/heapster-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"heapster-rc.yaml.tmpl",
+			"heapster-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/heapster/heapster-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"heapster-svc.yaml.tmpl",
+			"heapster-svc.yaml",
 			"0640",
 			false),
 	}, false, "heapster"),
@@ -162,37 +162,37 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/efk/elasticsearch-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"elasticsearch-rc.yaml.tmpl",
+			"elasticsearch-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/efk/elasticsearch-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"elasticsearch-svc.yaml.tmpl",
+			"elasticsearch-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/fluentd-es-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"fluentd-es-rc.yaml.tmpl",
+			"fluentd-es-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/efk/fluentd-es-configmap.yaml.tmpl",
 			constants.AddonsPath,
-			"fluentd-es-configmap.yaml.tmpl",
+			"fluentd-es-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/kibana-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"kibana-rc.yaml.tmpl",
+			"kibana-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/kibana-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"kibana-svc.yaml.tmpl",
+			"kibana-svc.yaml",
 			"0640",
 			false),
 	}, false, "efk"),
@@ -200,25 +200,25 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-configmap.yaml.tmpl",
 			constants.AddonsPath,
-			"ingress-configmap.yaml.tmpl",
+			"ingress-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-rbac.yaml.tmpl",
 			constants.AddonsPath,
-			"ingress-rbac.yaml.tmpl",
+			"ingress-rbac.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-dp.yaml.tmpl",
 			constants.AddonsPath,
-			"ingress-dp.yaml.tmpl",
+			"ingress-dp.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"ingress-svc.yaml.tmpl",
+			"ingress-svc.yaml",
 			"0640",
 			false),
 	}, false, "ingress"),
@@ -226,19 +226,19 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
 			constants.AddonsPath,
-			"metrics-apiservice.yaml.tmpl",
+			"metrics-apiservice.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-server-deployment.yaml.tmpl",
 			constants.AddonsPath,
-			"metrics-server-deployment.yaml.tmpl",
+			"metrics-server-deployment.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-server-service.yaml.tmpl",
 			constants.AddonsPath,
-			"metrics-server-service.yaml.tmpl",
+			"metrics-server-service.yaml",
 			"0640",
 			false),
 	}, false, "metrics-server"),
@@ -246,13 +246,13 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/registry/registry-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"registry-rc.yaml.tmpl",
+			"registry-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/registry/registry-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"registry-svc.yaml.tmpl",
+			"registry-svc.yaml",
 			"0640",
 			false),
 	}, false, "registry"),
@@ -260,7 +260,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/registry-creds/registry-creds-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"registry-creds-rc.yaml.tmpl",
+			"registry-creds-rc.yaml",
 			"0640",
 			false),
 	}, false, "registry-creds"),
@@ -268,7 +268,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
 			constants.AddonsPath,
-			"freshpod-rc.yaml.tmpl",
+			"freshpod-rc.yaml",
 			"0640",
 			true),
 	}, false, "freshpod"),
@@ -276,7 +276,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/gpu/nvidia-driver-installer.yaml.tmpl",
 			constants.AddonsPath,
-			"nvidia-driver-installer.yaml.tmpl",
+			"nvidia-driver-installer.yaml",
 			"0640",
 			true),
 	}, false, "nvidia-driver-installer"),
@@ -284,7 +284,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
 			constants.AddonsPath,
-			"nvidia-gpu-device-plugin.yaml.tmpl",
+			"nvidia-gpu-device-plugin.yaml",
 			"0640",
 			true),
 	}, false, "nvidia-gpu-device-plugin"),
@@ -292,13 +292,13 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml.tmpl",
 			constants.AddonsPath,
-			"logviewer-dp-and-svc.yaml.tmpl",
+			"logviewer-dp-and-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/logviewer/logviewer-rbac.yaml.tmpl",
 			constants.AddonsPath,
-			"logviewer-rbac.yaml.tmpl",
+			"logviewer-rbac.yaml",
 			"0640",
 			false),
 	}, false, "logviewer"),
@@ -306,7 +306,7 @@ var Addons = map[string]*Addon{
 		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-pod.yaml.tmpl",
 			constants.AddonsPath,
-			"gvisor-pod.yaml.tmpl",
+			"gvisor-pod.yaml",
 			"0640",
 			true),
 		MustBinAsset(
@@ -381,12 +381,22 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 
 // GenerateTemplateData generates template data for template assets
 func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
+
+	a := runtime.GOARCH
+	// Some legacy docker images still need the -arch suffix
+	// for  less common architectures blank suffix for amd64
+	ea := ""
+	if runtime.GOARCH != "amd64" {
+		ea = runtime.GOARCH
+	}
 	opts := struct {
-		ImageRepository string
 		Arch            string
+		ExoticArch      string
+		ImageRepository string
 	}{
+		Arch:            a,
+		ExoticArch:      ea,
 		ImageRepository: cfg.ImageRepository,
-		Arch:            runtime.GOARCH,
 	}
 
 	return opts
