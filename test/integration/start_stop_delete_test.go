@@ -92,16 +92,13 @@ func TestStartStop(t *testing.T) {
 				return r.CheckStatusNoFail(state.Stopped.String())
 			}
 
-			currentContext, err = kubectlRunner.RunCommand([]string{"config", "current-context"})
-			if err != nil {
-				t.Fatalf("Failed to fetch current-context")
-			}
-			if strings.TrimRight(string(currentContext), "\n") != "" {
-				t.Fatalf("Failed to unset the current-context %q", string(currentContext))
-			}
-
 			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 				t.Fatalf("timed out while checking stopped status: %v", err)
+			}
+
+			// running this command results in error when the current-context is not set
+			if err := r.Run("config current-context"); err != nil {
+				t.Logf("current-context is not set to minikube")
 			}
 
 			r.Start(test.args...)
