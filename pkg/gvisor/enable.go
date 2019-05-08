@@ -171,7 +171,7 @@ func copyConfigFiles() error {
 }
 
 func copyAssetToDest(targetName, dest string) error {
-	var asset *assets.BinDataAsset
+	var asset *assets.BinAsset
 	for _, a := range assets.Addons["gvisor"].Assets {
 		if a.GetTargetName() == targetName {
 			asset = a

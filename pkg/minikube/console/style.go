@@ -25,8 +25,14 @@ import (
 )
 
 var (
-	defaultLowPrefix       = "-   "
-	defautlLowIndentPrefix = "    - "
+	// lowBullet is a bullet-point prefix for low-fi mode
+	lowBullet = "* "
+	// lowBullet is an indented bullet-point prefix for low-fi mode
+	lowIndent = "  - "
+	// lowBullet is a warning prefix for low-fi mode
+	lowWarning = "! "
+	// lowBullet is an error prefix for low-fi mode
+	lowError = "X "
 )
 
 // style describes how to stylize a message.
@@ -42,47 +48,47 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[string]style{
-	"happy":         {Prefix: "😄  ", LowPrefix: "o   "},
+	"happy":         {Prefix: "😄  "},
 	"success":       {Prefix: "✅  "},
-	"failure":       {Prefix: "❌  ", LowPrefix: "X   "},
-	"conflict":      {Prefix: "💥  ", LowPrefix: "x   "},
-	"fatal":         {Prefix: "💣  ", LowPrefix: "!   "},
-	"notice":        {Prefix: "📌  ", LowPrefix: "*   "},
-	"ready":         {Prefix: "🏄  ", LowPrefix: "=   "},
-	"running":       {Prefix: "🏃  ", LowPrefix: ":   "},
-	"provisioning":  {Prefix: "🌱  ", LowPrefix: ">   "},
-	"restarting":    {Prefix: "🔄  ", LowPrefix: ":   "},
-	"reconfiguring": {Prefix: "📯  ", LowPrefix: ":   "},
-	"stopping":      {Prefix: "✋  ", LowPrefix: ":   "},
+	"failure":       {Prefix: "❌  "},
+	"conflict":      {Prefix: "💥  ", LowPrefix: lowWarning},
+	"fatal":         {Prefix: "💣  ", LowPrefix: lowError},
+	"notice":        {Prefix: "📌  "},
+	"ready":         {Prefix: "🏄  "},
+	"running":       {Prefix: "🏃  "},
+	"provisioning":  {Prefix: "🌱  "},
+	"restarting":    {Prefix: "🔄  "},
+	"reconfiguring": {Prefix: "📯  "},
+	"stopping":      {Prefix: "✋  "},
 	"stopped":       {Prefix: "🛑  "},
-	"warning":       {Prefix: "⚠️  ", LowPrefix: "!   "},
-	"waiting":       {Prefix: "⌛  ", LowPrefix: ":   "},
-	"waiting-pods":  {Prefix: "⌛  ", LowPrefix: ":   ", OmitNewline: true},
+	"warning":       {Prefix: "⚠️  ", LowPrefix: lowWarning},
+	"waiting":       {Prefix: "⌛  "},
+	"waiting-pods":  {Prefix: "⌛  ", OmitNewline: true},
 	"usage":         {Prefix: "💡  "},
 	"launch":        {Prefix: "🚀  "},
-	"sad":           {Prefix: "😿  ", LowPrefix: "*   "},
+	"sad":           {Prefix: "😿  "},
 	"thumbs-up":     {Prefix: "👍  "},
-	"option":        {Prefix: "    ▪ "}, // Indented bullet
-	"command":       {Prefix: "    ▪ "}, // Indented bullet
-	"log-entry":     {Prefix: "    "},   // Indent
+	"option":        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
+	"command":       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
+	"log-entry":     {Prefix: "    "},                         // Indent
 	"crushed":       {Prefix: "💔  "},
-	"url":           {Prefix: "👉  "},
+	"url":           {Prefix: "👉  ", LowPrefix: lowIndent},
 	"documentation": {Prefix: "📘  "},
 	"issues":        {Prefix: "⁉️   "},
-	"issue":         {Prefix: "    ▪ "}, // Indented bullet
+	"issue":         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	"check":         {Prefix: "✔️  "},
 
 	// Specialized purpose styles
-	"iso-download":      {Prefix: "💿  ", LowPrefix: "@   "},
-	"file-download":     {Prefix: "💾  ", LowPrefix: "@   "},
-	"caching":           {Prefix: "🤹  ", LowPrefix: "$   "},
-	"starting-vm":       {Prefix: "🔥  ", LowPrefix: ">   "},
-	"starting-none":     {Prefix: "🤹  ", LowPrefix: ">   "},
-	"resetting":         {Prefix: "🔄  ", LowPrefix: "#   "},
-	"deleting-host":     {Prefix: "🔥  ", LowPrefix: "x   "},
+	"iso-download":      {Prefix: "💿  "},
+	"file-download":     {Prefix: "💾  "},
+	"caching":           {Prefix: "🤹  "},
+	"starting-vm":       {Prefix: "🔥  "},
+	"starting-none":     {Prefix: "🤹  "},
+	"resetting":         {Prefix: "🔄  "},
+	"deleting-host":     {Prefix: "🔥  "},
 	"copying":           {Prefix: "✨  "},
 	"connectivity":      {Prefix: "📶  "},
-	"internet":          {Prefix: "🌐  ", LowPrefix: "o   "},
+	"internet":          {Prefix: "🌐  "},
 	"mounting":          {Prefix: "📁  "},
 	"celebrate":         {Prefix: "🎉  "},
 	"container-runtime": {Prefix: "🎁  "},
@@ -95,13 +101,13 @@ var styles = map[string]style{
 	"pulling":           {Prefix: "🚜  "},
 	"verifying":         {Prefix: "🤔  "},
 	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},
-	"kubectl":           {Prefix: "💗  ", LowPrefix: "+   "},
-	"meh":               {Prefix: "🙄  ", LowPrefix: "?   "},
-	"embarrassed":       {Prefix: "🤦  ", LowPrefix: "*   "},
-	"tip":               {Prefix: "💡  ", LowPrefix: "i   "},
-	"unmount":           {Prefix: "🔥  ", LowPrefix: "x   "},
-	"mount-options":     {Prefix: "💾  ", LowPrefix: "o   "},
-	"fileserver":        {Prefix: "🚀  ", LowPrefix: "@   ", OmitNewline: true},
+	"kubectl":           {Prefix: "💗  "},
+	"meh":               {Prefix: "🙄  ", LowPrefix: lowWarning},
+	"embarrassed":       {Prefix: "🤦  ", LowPrefix: lowWarning},
+	"tip":               {Prefix: "💡  "},
+	"unmount":           {Prefix: "🔥  "},
+	"mount-options":     {Prefix: "💾  "},
+	"fileserver":        {Prefix: "🚀  ", OmitNewline: true},
 }
 
 // Add a prefix to a string
@@ -124,9 +130,9 @@ func lowPrefix(s style) string {
 		return s.LowPrefix
 	}
 	if strings.HasPrefix(s.Prefix, "  ") {
-		return defautlLowIndentPrefix
+		return lowIndent
 	}
-	return defaultLowPrefix
+	return lowBullet
 }
 
 // Apply styling to a format string

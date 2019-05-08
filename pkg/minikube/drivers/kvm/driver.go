@@ -26,6 +26,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/util"
 )
 
 func init() {
@@ -64,7 +65,7 @@ func createKVMHost(config cfg.MachineConfig) interface{} {
 		CPU:            config.CPUs,
 		Network:        config.KvmNetwork,
 		PrivateNetwork: "docker-machines",
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
+		Boot2DockerURL: util.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
 		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),

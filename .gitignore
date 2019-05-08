@@ -29,15 +29,6 @@ _testmain.go
 /_gopath
 
 
-#.yaml files specific to deploy's .template extensions
-deploy/addons/addon-manager.yaml                           
-deploy/addons/dashboard/dashboard-dp.yaml                  
-deploy/addons/heapster/heapster-rc.yaml                    
-deploy/addons/heapster/influx-grafana-rc.yaml              
-deploy/addons/ingress/ingress-dp.yaml                      
-deploy/addons/metrics-server/metrics-server-deployment.yaml
-deploy/addons/storage-provisioner/storage-provisioner.yaml 
-
 #iso version file
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 

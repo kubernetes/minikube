@@ -173,12 +173,30 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	// StdinPipe is closed. But let's use a WaitGroup to make it expicit.
 	var wg sync.WaitGroup
 	wg.Add(1)
+	var ierr error
+	var copied int64
+
 	go func() {
 		defer wg.Done()
 		defer w.Close()
+		glog.Infof("Transferring %d bytes to %s", f.GetLength(), f.GetTargetName())
 		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
 		fmt.Fprint(w, header)
-		io.Copy(w, f)
+		if f.GetLength() == 0 {
+			glog.Warningf("%s is a 0 byte asset!", f.GetTargetName())
+			fmt.Fprint(w, "\x00")
+			return
+		}
+
+		copied, ierr = io.Copy(w, f)
+		if copied != int64(f.GetLength()) {
+			glog.Warningf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
+		} else {
+			glog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
+		}
+		if ierr != nil {
+			glog.Errorf("io.Copy failed: %v", ierr)
+		}
 		fmt.Fprint(w, "\x00")
 	}()
 
@@ -187,5 +205,5 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return err
 	}
 	wg.Wait()
-	return nil
+	return ierr
 }

@@ -22,6 +22,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/util"
 )
 
 const defaultVirtualboxNicType = "virtio"
@@ -40,7 +41,7 @@ func init() {
 func createVirtualboxHost(config cfg.MachineConfig) interface{} {
 	d := virtualbox.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
 
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
+	d.Boot2DockerURL = util.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = int(config.DiskSize)

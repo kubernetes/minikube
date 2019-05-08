@@ -100,25 +100,6 @@ ifeq ($(GOOS),windows)
 	IS_EXE = ".exe"
 endif
 
-ifeq ($(GOARCH),amd64)
-	ARCHTAG ?= -amd64
-	ARCHTAG_NONE ?=
-else
-	ARCHTAG ?= -$(GOARCH)
-	ARCHTAG_NONE ?= -$(GOARCH)
-endif
-
-DEPLOYS=\
-	deploy/addons/addon-manager.yaml \
-	deploy/addons/dashboard/dashboard-dp.yaml \
-	deploy/addons/heapster/heapster-rc.yaml \
-	deploy/addons/heapster/influx-grafana-rc.yaml \
-	deploy/addons/ingress/ingress-dp.yaml \
-	deploy/addons/metrics-server/metrics-server-deployment.yaml \
-	deploy/addons/storage-provisioner/storage-provisioner.yaml
-
-%.yaml: %.template
-	sed "s|\-ARCHTAG_NONE|$(ARCHTAG_NONE)|g;s|\-ARCHTAG|$(ARCHTAG)|g" $< > $@
 
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
@@ -131,7 +112,7 @@ out/minikube.d: pkg/minikube/assets/assets.go
 
 -include out/minikube.d
 
-out/minikube-%: $(DEPLOYS) pkg/minikube/assets/assets.go
+out/minikube-%: pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -229,6 +210,7 @@ out/test.d: pkg/minikube/assets/assets.go
 test:
 	GOPATH=$(GOPATH) ./test.sh
 
+# Regenerates assets.go when template files have been updated
 pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
 	which go-bindata || GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...

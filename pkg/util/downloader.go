@@ -31,17 +31,8 @@ import (
 
 const fileScheme = "file"
 
-// ISODownloader downloads an ISO
-type ISODownloader interface {
-	GetISOFileURI(isoURL string) string
-	CacheMinikubeISOFromURL(isoURL string) error
-}
-
-// DefaultDownloader is the default ISODownloader
-type DefaultDownloader struct{}
-
 // GetISOFileURI gets the local destination for a remote source
-func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
+func GetISOFileURI(isoURL string) string {
 	urlObj, err := url.Parse(isoURL)
 	if err != nil {
 		return isoURL
@@ -55,8 +46,8 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 }
 
 // CacheMinikubeISOFromURL downloads the ISO, if it doesn't exist in cache
-func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
-	if !f.ShouldCacheMinikubeISO(isoURL) {
+func CacheMinikubeISOFromURL(isoURL string) error {
+	if !shouldCacheMinikubeISO(isoURL) {
 		glog.Infof("Not caching ISO, using %s", isoURL)
 		return nil
 	}
@@ -77,15 +68,15 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 	}
 
 	console.OutStyle("iso-download", "Downloading Minikube ISO ...")
-	if err := download.ToFile(isoURL, f.GetISOCacheFilepath(isoURL), options); err != nil {
+	if err := download.ToFile(isoURL, getISOCacheFilepath(isoURL), options); err != nil {
 		return errors.Wrap(err, isoURL)
 	}
 
 	return nil
 }
 
-// ShouldCacheMinikubeISO returns if we need to download the ISO
-func (f DefaultDownloader) ShouldCacheMinikubeISO(isoURL string) bool {
+// shouldCacheMinikubeISO returns if we need to download the ISO
+func shouldCacheMinikubeISO(isoURL string) bool {
 	// store the minikube-iso inside the .minikube dir
 
 	urlObj, err := url.Parse(isoURL)
@@ -95,20 +86,20 @@ func (f DefaultDownloader) ShouldCacheMinikubeISO(isoURL string) bool {
 	if urlObj.Scheme == fileScheme {
 		return false
 	}
-	if f.IsMinikubeISOCached(isoURL) {
+	if isMinikubeISOCached(isoURL) {
 		return false
 	}
 	return true
 }
 
-// GetISOCacheFilepath returns the path of an ISO in the local cache
-func (f DefaultDownloader) GetISOCacheFilepath(isoURL string) string {
+// getISOCacheFilepath returns the path of an ISO in the local cache
+func getISOCacheFilepath(isoURL string) string {
 	return filepath.Join(constants.GetMinipath(), "cache", "iso", filepath.Base(isoURL))
 }
 
-// IsMinikubeISOCached returns if an ISO exists in the local cache
-func (f DefaultDownloader) IsMinikubeISOCached(isoURL string) bool {
-	if _, err := os.Stat(f.GetISOCacheFilepath(isoURL)); os.IsNotExist(err) {
+// isMinikubeISOCached returns if an ISO exists in the local cache
+func isMinikubeISOCached(isoURL string) bool {
+	if _, err := os.Stat(getISOCacheFilepath(isoURL)); os.IsNotExist(err) {
 		return false
 	}
 	return true

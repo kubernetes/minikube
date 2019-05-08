@@ -17,12 +17,16 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 // cacheCmd represents the cache command
@@ -39,7 +43,7 @@ var addCacheCmd = &cobra.Command{
 	Long:  "Add an image to local cache.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Cache and load images into docker daemon
-		if err := machine.CacheAndLoadImages(args); err != nil {
+		if err := cacheAndLoadImages(args); err != nil {
 			exit.WithError("Failed to cache and load images", err)
 		}
 		// Add images to config file
@@ -94,7 +98,7 @@ func CacheImagesInConfigFile() error {
 }
 
 // LoadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
-func LoadCachedImagesInConfigFile() error {
+func LoadCachedImagesFromConfig() error {
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return err
@@ -102,11 +106,48 @@ func LoadCachedImagesInConfigFile() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheAndLoadImages(images)
+	return cacheAndLoadImages(images)
 }
 
 func init() {
 	cacheCmd.AddCommand(addCacheCmd)
 	cacheCmd.AddCommand(deleteCacheCmd)
 	RootCmd.AddCommand(cacheCmd)
+}
+
+// cacheAndLoadImages caches and loads images
+func cacheAndLoadImages(images []string) error {
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return err
+	}
+	defer api.Close()
+	h, err := api.Load(config.GetMachineName())
+	if err != nil {
+		return err
+	}
+
+	client, err := sshutil.NewSSHClient(h.Driver)
+	if err != nil {
+		return err
+	}
+
+	cmd, err := bootstrapper.NewSSHRunner(client), nil
+	if err != nil {
+		return err
+	}
+
+	if err := machine.CacheImages(images, constants.ImageCacheDir); err != nil {
+		return err
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		exit.WithCode(exit.Data, "Unable to load config: %v", err)
+	}
+	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: cmd})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+	return machine.LoadImages(cmd, r, images, constants.ImageCacheDir)
 }

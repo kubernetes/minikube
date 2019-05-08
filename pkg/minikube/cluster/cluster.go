@@ -61,7 +61,7 @@ func init() {
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
 	if config.VMDriver != "none" {
-		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
+		if err := util.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
 			return err
 		}
 	}
@@ -70,6 +70,8 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+	glog.Infof("StartHost start")
+	defer glog.Infof("StartHost end")
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrapf(err, "machine name: %s", cfg.GetMachineName())
@@ -128,6 +130,8 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 }
 
 func waitForSSHAccess(h *host.Host, e *engine.Options) error {
+	glog.Infof("waitForSSHAccess start")
+	defer glog.Infof("waitForSSHAccess end")
 
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
 	console.OutStyle("waiting", "Waiting for SSH access ...")
@@ -210,6 +214,8 @@ func DeleteHost(api libmachine.API) error {
 
 // GetHostStatus gets the status of the host VM.
 func GetHostStatus(api libmachine.API) (string, error) {
+	glog.Infof("GetHostStatus start")
+	defer glog.Infof("GetHostStatus end")
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
 		return "", errors.Wrapf(err, "%s exists", cfg.GetMachineName())

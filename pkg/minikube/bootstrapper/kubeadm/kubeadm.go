@@ -218,7 +218,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "wait")
 	}
 
-	console.OutStyle("permissions", "Configuring cluster permissions ...")
+	glog.Infof("Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
@@ -268,7 +268,7 @@ func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
 	componentsOnly := k8s.NetworkPlugin == "cni"
 
 	if !quiet {
-		console.OutStyle("waiting-pods", "Waiting for pods:")
+		console.OutStyle("waiting-pods", "Waiting for:")
 	}
 	client, err := util.GetClient()
 	if err != nil {
@@ -426,16 +426,18 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
-	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
-	if cfg.ShouldLoadCachedImages {
-		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
-			console.Failure("Unable to load cached images: %v", err)
-		}
-	}
-	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
+	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
+
+	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
+	if cfg.ShouldLoadCachedImages {
+		if err := machine.LoadImages(k.c, r, images, constants.ImageCacheDir); err != nil {
+			console.Failure("Unable to load cached images: %v", err)
+		}
+	}
+
 	kubeadmCfg, err := generateConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")

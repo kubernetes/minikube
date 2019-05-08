@@ -47,7 +47,7 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 			StorePath:   constants.GetMinipath(),
 			SSHUser:     "docker",
 		},
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
+		Boot2DockerURL: util.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
 		Memory:         config.Memory,
 		CPU:            config.CPUs,

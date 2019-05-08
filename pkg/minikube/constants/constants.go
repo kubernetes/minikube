@@ -220,6 +220,12 @@ const (
 	DefaultMountVersion = "9p2000.L"
 )
 
+// ImageRepositories contains all known image repositories
+var ImageRepositories = map[string][]string{
+	"global": {""},
+	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+}
+
 // GetKubernetesReleaseURL gets the location of a kubernetes client
 func GetKubernetesReleaseURL(binaryName, version, osName, archName string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
