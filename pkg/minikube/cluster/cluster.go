@@ -94,8 +94,6 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		console.Warning("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver=%s`", config.VMDriver)
 		console.Warning("Alternatively, you may delete the existing VM using `minikube delete -p %s`", cfg.GetMachineName())
 		console.Out("\n")
-	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
-		console.OutStyle("tip", "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
 	s, err := h.Driver.GetState()
@@ -104,10 +102,8 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error getting state for host")
 	}
 
-	if s == state.Running {
-		console.OutStyle("running", "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
-	} else {
-		console.OutStyle("restarting", "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+	if s != state.Running {
+		console.OutStyle("restarting", "Restoring %q VM within %s ...", cfg.GetMachineName(), h.Driver.DriverName())
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -128,9 +124,8 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 }
 
 func waitForSSHAccess(h *host.Host, e *engine.Options) error {
-
-	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	console.OutStyle("waiting", "Waiting for SSH access ...")
+	glog.Infof("waitForSSHAccess start")
+	defer glog.Infof("waitForSSHAccess end")
 
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env

@@ -165,6 +165,8 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	glog.Infof("StartCluster start")
+	defer glog.Infof("StartCluster end")
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
@@ -262,6 +264,8 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 
 // waitForPods waits until the important Kubernetes pods are in running state
 func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
+	glog.Infof("waitForPods start")
+	defer glog.Infof("waitForPods end")
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
@@ -296,6 +300,8 @@ func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
+	glog.Infof("RestartCluster start")
+	defer glog.Infof("RestartCluster end")
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
@@ -426,6 +432,8 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
+	glog.Infof("UpdateCluster start")
+	defer glog.Infof("UpdateCluster end")
 	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
 		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {

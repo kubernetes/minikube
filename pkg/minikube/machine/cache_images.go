@@ -219,6 +219,7 @@ func loadImageFromCache(cr bootstrapper.CommandRunner, k8s config.KubernetesConf
 	}
 
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
@@ -303,7 +304,9 @@ func CacheImage(image, dst string) error {
 		log.SetOutput(os.Stdout)
 		var buf bytes.Buffer
 		io.Copy(&buf, r)
-		glog.Infof(buf.String())
+		if buf.String != "" {
+			glog.Infof(buf.String())
+		}
 	}()
 
 	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)

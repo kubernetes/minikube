@@ -255,20 +255,26 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
-	showKubectlConnectInfo(kubeconfig)
+	// Start showing tips at the end!
+	if err := showKubectlConnectInfo(kubeconfig); err != nil {
+		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		return
+	}
 
+	if preexisting && cfg.GetMachineName() == constants.DefaultMachineName {
+		console.OutStyle("tip", "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
+		return
+	}
 }
 
-func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
+func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) error {
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
 		console.OutStyle("ready", "Done! kubectl is now configured to use %q", cfg.GetMachineName())
 	}
 	_, err := exec.LookPath("kubectl")
-	if err != nil {
-		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
-	}
+	return err
 }
 
 func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
@@ -624,7 +630,7 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner, k8sVersi
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
 	version, _ := cr.Version()
-	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
+	console.OutStyle(cr.Name(), "Setting up Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
 	for _, v := range dockerOpt {
 		console.OutStyle("option", "opt %s", v)
 	}
@@ -642,9 +648,6 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner, k8sVersi
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
 func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, kc cfg.KubernetesConfig, preexisting bool, isUpgrade bool) {
-	// hum. bootstrapper.Bootstrapper should probably have a Name function.
-	bsName := viper.GetString(cmdcfg.Bootstrapper)
-
 	if isUpgrade || !preexisting {
 		console.OutStyle("pulling", "Pulling images ...")
 		if err := bs.PullImages(kc); err != nil {
@@ -653,7 +656,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	}
 
 	if preexisting {
-		console.OutStyle("restarting", "Relaunching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
+		console.OutStyle("restarting", "Restarting Kubernetes ... ", kc.KubernetesVersion)
 		if err := bs.RestartCluster(kc); err != nil {
 			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
 		}
@@ -668,6 +671,8 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 
 // validateCluster validates that the cluster is well-configured and healthy
 func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
+	glog.Infof("validateCluster start")
+	defer glog.Infof("validateCluster end")
 	k8sStat := func() (err error) {
 		st, err := bs.GetKubeletStatus()
 		if err != nil || st != state.Running.String() {
