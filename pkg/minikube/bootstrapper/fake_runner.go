@@ -21,10 +21,8 @@ import (
 	"fmt"
 	"io"
 
-	"golang.org/x/sync/syncmap"
-
 	"github.com/pkg/errors"
-
+	"golang.org/x/sync/syncmap"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
@@ -82,6 +80,15 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	}
 	f.fileMap.Store(file.GetAssetName(), b.String())
 	return nil
+}
+
+// FileSize returns the file size of a remote file
+func (f *FakeCommandRunner) FileSize(path string) (int64, error) {
+	c, err := f.GetFileToContents(path)
+	if err != nil {
+		return -1, err
+	}
+	return int64(len(c)), nil
 }
 
 // Remove removes the filename, file contents key value pair from the stored map

@@ -20,7 +20,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/golang/glog"
@@ -150,16 +152,17 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 	return out, nil
 }
 
+// FileSize returns the file size of a remote file
+func (s *SSHRunner) FileSize(path string) (int64, error) {
+	rstat, err := s.CombinedOutput(`stat -c %s ` + path)
+	if err != nil {
+		return -1, err
+	}
+	return strconv.ParseInt(strings.TrimSpace(rstat), 10, 64)
+}
+
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
-	deleteCmd := fmt.Sprintf("sudo rm -f %s", path.Join(f.GetTargetDir(), f.GetTargetName()))
-	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", f.GetTargetDir())
-	for _, cmd := range []string{deleteCmd, mkdirCmd} {
-		if err := s.Run(cmd); err != nil {
-			return errors.Wrapf(err, "pre-copy")
-		}
-	}
-
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "NewSession")
@@ -179,7 +182,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	go func() {
 		defer wg.Done()
 		defer w.Close()
-		glog.Infof("Transferring %d bytes to %s", f.GetLength(), f.GetTargetName())
+		glog.Infof("Transferring %d bytes to %s", f.GetLength(), filepath.Join(f.GetTargetDir(), f.GetTargetName()))
 		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
 		fmt.Fprint(w, header)
 		if f.GetLength() == 0 {
@@ -190,19 +193,23 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 		copied, ierr = io.Copy(w, f)
 		if copied != int64(f.GetLength()) {
-			glog.Warningf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
+			glog.Errorf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
 		} else {
 			glog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
 		}
 		if ierr != nil {
 			glog.Errorf("io.Copy failed: %v", ierr)
 		}
-		fmt.Fprint(w, "\x00")
+		_, err := fmt.Fprint(w, "\x00")
+		if err != nil {
+			glog.Errorf("unable to write file end: %v", err)
+			ierr = err
+		}
 	}()
 
-	_, err = sess.CombinedOutput(fmt.Sprintf("sudo scp -t %s", f.GetTargetDir()))
+	out, err := sess.CombinedOutput(fmt.Sprintf("sudo scp -t %s", f.GetTargetDir()))
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "scp -t %s: %s", f.GetTargetDir(), out)
 	}
 	wg.Wait()
 	return ierr

@@ -70,8 +70,8 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	glog.Infof("StartHost start")
-	defer glog.Infof("StartHost end")
+	glog.Infof("cluster.StartHost start")
+	defer glog.Infof("cluster.StartHost end")
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
 		return nil, errors.Wrapf(err, "machine name: %s", cfg.GetMachineName())
@@ -105,7 +105,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s != state.Running {
-		console.OutStyle("restarting", "Restoring %q VM within %s ...", cfg.GetMachineName(), h.Driver.DriverName())
+		// NOTE: minikube is missing out on a huge performance enhancement possibility: host.Start() 
+		// always power cycles a VM instead of restoring it from hibernation.
+		console.OutStyle("restarting", "Starting %q %s VM ...", cfg.GetMachineName(), h.Driver.DriverName())
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -139,13 +141,6 @@ func waitForSSHAccess(h *host.Host, e *engine.Options) error {
 			return errors.Wrap(err, "provision")
 		}
 	}
-
-	if h.Driver.DriverName() != "none" {
-		if err := h.ConfigureAuth(); err != nil {
-			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
-		}
-	}
-
 	return nil
 }
 

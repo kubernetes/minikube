@@ -191,8 +191,8 @@ const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/project
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
 
-// FilesPath is the default path of files
-const FilesPath = "/files"
+// DataPath is the path where persistant data should be stored within the VM (not tmpfs)
+const DataPath = "/data/minikube"
 
 const (
 	// KubeletServiceFile is the path to the kubelet systemd service
@@ -245,10 +245,8 @@ const DriverNone = "none"
 // FileScheme is the file scheme
 const FileScheme = "file"
 
-// GetKubeadmCachedBinaries gets the binaries to cache for kubeadm
-func GetKubeadmCachedBinaries() []string {
-	return []string{"kubelet", "kubeadm"}
-}
+// KubeadmBinaries are the binaries required by kubeadm
+var KubeadmBinaries = []string{"kubelet", "kubeadm"}
 
 // GetKubeadmCachedImages gets the images to cache for kubeadm for a version
 func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {

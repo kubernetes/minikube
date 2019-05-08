@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 
 	"github.com/golang/glog"
@@ -51,51 +52,51 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version, osName, archName string) (string, error) {
-	targetDir := constants.MakeMiniPath("cache", version)
-	targetFilepath := path.Join(targetDir, binary)
-
-	url := constants.GetKubernetesReleaseURL(binary, version, osName, archName)
-
-	_, err := os.Stat(targetFilepath)
-	// If it exists, do no verification and continue
+	glog.Infof("CacheBinary start: %s", binary)
+	defer glog.Infof("CacheBinary end: %s", binary)
+	dest := path.Join(constants.MakeMiniPath("cache", version), binary)
+	_, err := os.Stat(dest)
 	if err == nil {
-		glog.Infof("Not caching binary, using %s", url)
-		return targetFilepath, nil
+		glog.Infof("Found local cache: %s", dest)
+		return dest, nil
 	}
 	if !os.IsNotExist(err) {
-		return "", errors.Wrapf(err, "stat %s version %s at %s", binary, version, targetDir)
+		return "", errors.Wrapf(err, "stat")
 	}
+	url := constants.GetKubernetesReleaseURL(binary, version, osName, archName)
+	console.OutStyle("file-download", "Downloading %s", url)
 
-	if err = os.MkdirAll(targetDir, 0777); err != nil {
-		return "", errors.Wrapf(err, "mkdir %s", targetDir)
-	}
-
-	options := download.FileOptions{
-		Mkdirs: download.MkdirAll,
-	}
-
+	options := download.FileOptions{Mkdirs: download.MkdirAll}
 	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version, osName, archName)
 	options.ChecksumHash = crypto.SHA1
-
-	console.OutStyle("file-download", "Downloading %s %s", binary, version)
-	if err := download.ToFile(url, targetFilepath, options); err != nil {
+	if err := download.ToFile(url, dest, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
 	if osName == runtime.GOOS && archName == runtime.GOARCH {
-		if err = os.Chmod(targetFilepath, 0755); err != nil {
-			return "", errors.Wrapf(err, "chmod +x %s", targetFilepath)
+		if err = os.Chmod(dest, 0755); err != nil {
+			return "", errors.Wrapf(err, "chmod +x %s", dest)
 		}
 	}
-	return targetFilepath, nil
+	return dest, nil
 }
 
 // CopyBinary copies previously cached binaries into the path
-func CopyBinary(cr bootstrapper.CommandRunner, binary, path string) error {
-	f, err := assets.NewFileAsset(path, "/usr/bin", binary, "0755")
+func CopyBinary(cmd bootstrapper.CommandRunner, src string, dest string) error {
+	fi, err := os.Stat(src)
+	if err != nil {
+		return errors.Wrap(err, "Stat")
+	}
+	dsize, err := cmd.FileSize(dest)
+	if err == nil && dsize == fi.Size() {
+		glog.Infof("%s already exists and is %d bytes", dest, dsize)
+		return nil
+	}
+
+	f, err := assets.NewFileAsset(src, filepath.Dir(dest), filepath.Base(dest), "0755")
 	if err != nil {
 		return errors.Wrap(err, "new file asset")
 	}
-	if err := cr.Copy(f); err != nil {
+	if err := cmd.Copy(f); err != nil {
 		return errors.Wrapf(err, "copy")
 	}
 	return nil

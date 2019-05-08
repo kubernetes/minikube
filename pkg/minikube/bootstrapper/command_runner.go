@@ -46,10 +46,13 @@ type CommandRunner interface {
 	// output and standard error.
 	CombinedOutput(cmd string) (string, error)
 
-	// Copy is a convenience method that runs a command to copy a file
+	// Copy transfers a file.
 	Copy(assets.CopyableFile) error
 
-	// Remove is a convenience method that runs a command to remove a file
+	// FileSize returns the size of a file in bytes
+	FileSize(path string) (int64, error)
+
+	// Remove removes a file.
 	Remove(assets.CopyableFile) error
 }
 

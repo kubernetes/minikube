@@ -18,12 +18,12 @@ package machine
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -42,7 +42,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-const tempLoadDir = "/tmp"
+// guestLoadRoot is where images should be loaded from within the guest VM
+const guestLoadRoot = "/mnt/sda1/images"
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
@@ -87,14 +88,22 @@ func CacheImages(images []string, cacheDir string) error {
 
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cmd bootstrapper.CommandRunner, cr cruntime.Manager, images []string, cacheDir string) error {
+	glog.Infof("LoadImages start: %s", images)
+	defer glog.Infof("LoadImages end")
+
+	err := cmd.Run(fmt.Sprintf("mkdir -p %s -m 755", guestLoadRoot))
+	if err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+
 	var g errgroup.Group
 	for _, image := range images {
-		glog.Infof("LoadImages: %s", image)
+		// Copy the range variable so that it stays stable within the goroutine
+		i := image
 		g.Go(func() error {
-			src := filepath.Join(cacheDir, image)
-			src = sanitizeCacheDir(src)
-			if err := loadImageFromCache(cmd, cr, src); err != nil {
-				glog.Warningf("Failed to load %s: %v", src, err)
+			src := sanitizeCacheDir(filepath.Join(cacheDir, i))
+			if err := transferAndLoadImage(cmd, cr, src); err != nil {
+				glog.Errorf("Failed to load %s: %v", src, err)
 				return errors.Wrapf(err, "loading image %s", src)
 			}
 			return nil
@@ -103,7 +112,6 @@ func LoadImages(cmd bootstrapper.CommandRunner, cr cruntime.Manager, images []st
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "loading cached images")
 	}
-	glog.Infoln("Successfully loaded all cached images.")
 	return nil
 }
 
@@ -168,35 +176,53 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-// loadImageFromCache loads a single image from the cache
-func loadImageFromCache(cmd bootstrapper.CommandRunner, r cruntime.Manager, src string) error {
-	glog.Infof("Transferring %s into VM ...", src)
-	filename := filepath.Base(src)
-	if _, err := os.Stat(src); err != nil {
+// needsUpdate returns an error if a remote file needs an update
+func needsUpdate(cmd bootstrapper.CommandRunner, fi os.FileInfo, dst string) error {
+	rsize, err := cmd.FileSize(dst)
+	if err != nil {
 		return err
 	}
-	dst := path.Join(tempLoadDir, filename)
-	f, err := assets.NewFileAsset(src, tempLoadDir, filename, "0777")
-	if err != nil {
-		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
+	if rsize != fi.Size() {
+		return fmt.Errorf("remote size: %d, wanted %d", rsize, fi.Size())
 	}
-	if err := cmd.Copy(f); err != nil {
-		return errors.Wrap(err, "transferring cached image")
+	// TODO: compare timestamps
+	return nil
+}
+
+// guestImagePath returns where an image is stored within the guest VM
+func guestImagePath(name string) string {
+	return filepath.Join(constants.DataPath, "images", name)
+}
+
+// transferAndLoadImage transfers and loads a single image from the cache
+func transferAndLoadImage(cmd bootstrapper.CommandRunner, r cruntime.Manager, src string) error {
+	glog.Infof("transferAndLoadImage start: %s", src)
+	defer glog.Infof("transferAndLoadImage end: %s", src)
+
+	fi, err := os.Stat(src)
+	if err != nil {
+		return errors.Wrap(err, "local stat")
 	}
 
+	dst := guestImagePath(filepath.Base(src))
+	if err := needsUpdate(cmd, fi, dst); err != nil {
+		glog.Infof("%s needs update: %v", dst, err)
+		// Wide permissions because this writes as root & loads as docker
+		f, err := assets.NewFileAsset(src, filepath.Dir(dst), filepath.Base(dst), "0644")
+		if err != nil {
+			return errors.Wrapf(err, "NewAsset: %s", dst)
+		}
+		if err := cmd.Copy(f); err != nil {
+			return errors.Wrap(err, "Copy")
+		}
+
+	}
 	loadImageLock.Lock()
 	defer loadImageLock.Unlock()
-
-	glog.Infof("Loading image %s into %s", src, r.Name())
 	err = r.LoadImage(dst)
 	if err != nil {
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
-
-	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
-		return errors.Wrap(err, "deleting temp docker image location")
-	}
-	glog.Infof("Successfully loaded image %s from cache", src)
 	return nil
 }
 
@@ -254,6 +280,8 @@ func getDstPath(image, dst string) (string, error) {
 
 // CacheImage caches an image
 func CacheImage(image, dst string) error {
+	glog.Infof("CacheImage start: %s", image)
+	defer glog.Infof("CacheImage end: %s", image)
 	// There are go-containerregistry calls here that result in
 	// ugly log messages getting printed to stdout. Capture
 	// stdout instead and writing it to info.
@@ -265,16 +293,20 @@ func CacheImage(image, dst string) error {
 	defer func() {
 		log.SetOutput(os.Stdout)
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		if buf.String != "" {
+		copied, err := io.Copy(&buf, r)
+		if err != nil {
+			glog.Errorf("Failed copy: %v", err)
+		}
+		if copied > 0 {
 			glog.Infof(buf.String())
 		}
 	}()
 
-	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)
 	if _, err := os.Stat(dst); err == nil {
+		glog.Infof("%s exists, no need to cache", dst)
 		return nil
 	}
+	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)
 
 	dstPath, err := getDstPath(image, dst)
 	if err != nil {
@@ -295,11 +327,12 @@ func CacheImage(image, dst string) error {
 		return errors.Wrap(err, "fetching remote image")
 	}
 
-	glog.Infoln("OPENING: ", dstPath)
 	f, err := ioutil.TempFile(filepath.Dir(dstPath), filepath.Base(dstPath)+".*.tmp")
 	if err != nil {
 		return err
 	}
+	glog.Infoln("Saving to: ", f.Name())
+
 	err = tarball.Write(ref, img, f)
 	if err != nil {
 		return err

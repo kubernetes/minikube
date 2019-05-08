@@ -24,6 +24,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/util"
 )
 
 func init() {

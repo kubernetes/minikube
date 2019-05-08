@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -99,6 +100,9 @@ func CacheImagesInConfigFile() error {
 
 // LoadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
 func LoadCachedImagesFromConfig() error {
+	glog.Infof("LoadCachedImagesFromConfig start")
+	defer glog.Infof("LoadCachedImagesFromConfig end")
+
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return err

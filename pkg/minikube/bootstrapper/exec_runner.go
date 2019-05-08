@@ -71,6 +71,15 @@ func (e *ExecRunner) CombinedOutput(cmd string) (string, error) {
 
 }
 
+// FileSize returns the file size of a local file
+func (s *ExecRunner) FileSize(path string) (int64, error) {
+	st, err := os.Stat(path)
+	if err != nil {
+		return -1, err
+	}
+	return st.Size(), nil
+}
+
 // Copy copies a file and its permissions
 func (*ExecRunner) Copy(f assets.CopyableFile) error {
 	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {

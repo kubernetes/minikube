@@ -80,16 +80,17 @@ func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset
 }
 
 // NewFileAsset creates a new FileAsset
-func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAsset, error) {
+func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
 	f := &FileAsset{
 		BaseAsset{
-			AssetName:   assetName,
+			AssetName:   src,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
 	}
-	file, err := os.Open(f.AssetName)
+	glog.Infof("NewFileAsset: %+v", f)
+	file, err := os.Open(src)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error opening file asset: %s", f.AssetName)
 	}

@@ -44,6 +44,7 @@ type Bootstrapper interface {
 	SetupCerts(cfg config.KubernetesConfig) error
 	GetKubeletStatus() (string, error)
 	GetAPIServerStatus(net.IP, int) (string, error)
+	Wait(config.KubernetesConfig) error
 }
 
 const (
@@ -55,7 +56,7 @@ const (
 func GetCachedBinaryList(bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		return constants.GetKubeadmCachedBinaries()
+		return constants.KubeadmBinaries
 	default:
 		return []string{}
 	}

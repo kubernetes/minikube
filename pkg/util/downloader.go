@@ -47,6 +47,9 @@ func GetISOFileURI(isoURL string) string {
 
 // CacheMinikubeISOFromURL downloads the ISO, if it doesn't exist in cache
 func CacheMinikubeISOFromURL(isoURL string) error {
+	glog.Infof("CacheMinikubeISOFromURL start: %s", isoURL)
+	defer glog.Infof("CacheMinikubeISOFromURL end: %s", isoURL)
+
 	if !shouldCacheMinikubeISO(isoURL) {
 		glog.Infof("Not caching ISO, using %s", isoURL)
 		return nil

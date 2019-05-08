@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -78,6 +79,9 @@ var PodsByLayer = []pod{
 	{"dns", "k8s-app", "kube-dns"},
 }
 
+// binaryRoot are where kubeadm binaries are stored in the guest
+var binaryRoot = filepath.Join(constants.DataPath, "binaries")
+
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
 
@@ -120,6 +124,26 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 
 // GetAPIServerStatus returns the api-server status
 func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
+	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
+	// To avoid: x509: certificate signed by unknown authority
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(url)
+	glog.Infof("%s response: %v %+v", url, err, resp)
+	// Connection refused, usually.
+	if err != nil {
+		return state.Stopped.String(), nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		return state.Error.String(), nil
+	}
+	return state.Running.String(), nil
+}
+
+// GetAPIServerStatus returns the api-server status
+func (k *Bootstrapper) GetPodStatus(ip net.IP, apiserverPort int) (string, error) {
 	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
@@ -216,20 +240,10 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
-		return errors.Wrap(err, "wait")
-	}
-
 	glog.Infof("Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
-
-	// Make sure elevating privileges didn't screw anything up
-	if err := waitForPods(k8s, true); err != nil {
-		return errors.Wrap(err, "wait")
-	}
-
 	return nil
 }
 
@@ -262,18 +276,16 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 	return nil
 }
 
-// waitForPods waits until the important Kubernetes pods are in running state
-func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
-	glog.Infof("waitForPods start")
-	defer glog.Infof("waitForPods end")
+// Wait waits for all pods to be healthy
+func (k *Bootstrapper) Wait(k8s config.KubernetesConfig) error {
+	glog.Infof("kubeadm.Wait start")
+	defer glog.Infof("kubeadm.Wait end")
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
 
-	if !quiet {
-		console.OutStyle("waiting-pods", "Waiting for:")
-	}
+	console.OutStyle("waiting-pods", "Verifying ")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
@@ -284,17 +296,14 @@ func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
 			continue
 		}
 
-		if !quiet {
-			console.Out(" %s", p.name)
-		}
+		// glog.Infof("Waiting for %s", p.name)
+		console.Out(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
 		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
 		}
 	}
-	if !quiet {
-		console.OutLn("")
-	}
+	console.Out("")
 	return nil
 }
 
@@ -328,18 +337,9 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
-		return errors.Wrap(err, "wait")
-	}
-
 	console.OutStyle("reconfiguring", "Updating kube-proxy configuration ...")
 	if err = util.RetryAfter(5, func() error { return updateKubeProxyConfigMap(k8s) }, 5*time.Second); err != nil {
 		return errors.Wrap(err, "restarting kube-proxy")
-	}
-
-	// Make sure the kube-proxy restart didn't screw anything up.
-	if err := waitForPods(k8s, true); err != nil {
-		return errors.Wrap(err, "wait")
 	}
 
 	return nil
@@ -461,26 +461,35 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	files = copyConfig(cfg, files, kubeadmCfg, kubeletCfg)
 
 	if err := downloadBinaries(cfg, k.c); err != nil {
-		return errors.Wrap(err, "downloading binaries")
+		return errors.Wrap(err, "download binaries")
 	}
 
 	if err := addAddons(&files, assets.GenerateTemplateData(cfg)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
 
+	// Gather a unique list of directories to create
+	dstDirMap := map[string]bool{}
+	for _, f := range files {
+		dstDirMap[f.GetTargetDir()] = true
+	}
+	dstDirs := []string{}
+	for d := range dstDirMap {
+		dstDirs = append(dstDirs, d)
+	}
+	if err := k.c.Run(fmt.Sprintf("sudo mkdir -p %s", strings.Join(dstDirs, " "))); err != nil {
+		return err
+	}
+
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
-			return errors.Wrapf(err, "copy")
+			return errors.Wrapf(err, "copy %s", f.GetAssetName())
 		}
 	}
-	err = k.c.Run(`
-sudo systemctl daemon-reload &&
-sudo systemctl start kubelet
-`)
+	err = k.c.Run(`sudo systemctl daemon-reload && sudo systemctl start kubelet`)
 	if err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
-
 	return nil
 }
 
@@ -527,7 +536,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
-		EtcdDataDir:       "/data/minikube", //TODO(r2d4): change to something else persisted
+		EtcdDataDir:       filepath.Join(constants.DataPath, "etcd"), //TODO(r2d4): change to something else persisted
 		NodeName:          k8s.NodeName,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
@@ -578,18 +587,31 @@ func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubead
 	return files
 }
 
-func downloadBinaries(cfg config.KubernetesConfig, c bootstrapper.CommandRunner) error {
+// Return a persistant path for the given binary
+func binPath(name string, version string) string {
+	return filepath.Join(constants.DataPath, "binaries", version, name)
+}
+
+func downloadBinaries(cfg config.KubernetesConfig, cmd bootstrapper.CommandRunner) error {
+	glog.Infof("downloadBinaries start")
+	defer glog.Infof("downloadBinaries end")
 	var g errgroup.Group
-	for _, bin := range constants.GetKubeadmCachedBinaries() {
-		bin := bin
+
+	err := cmd.Run(fmt.Sprintf("sudo mkdir -p %s", binPath("", cfg.KubernetesVersion)))
+	if err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+
+	for _, name := range constants.KubeadmBinaries {
+		name := name
 		g.Go(func() error {
-			path, err := machine.CacheBinary(bin, cfg.KubernetesVersion, "linux", runtime.GOARCH)
+			src, err := machine.CacheBinary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
 			if err != nil {
-				return errors.Wrapf(err, "downloading %s", bin)
+				return errors.Wrapf(err, "downloading %s", name)
 			}
-			err = machine.CopyBinary(c, bin, path)
-			if err != nil {
-				return errors.Wrapf(err, "copying %s", bin)
+			dst := binPath(name, cfg.KubernetesVersion)
+			if err := machine.CopyBinary(cmd, src, dst); err != nil {
+				return errors.Wrapf(err, "copy %s->%s", src, dst)
 			}
 			return nil
 		})

@@ -198,20 +198,32 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	host, preexisting := startHost(m, config.MachineConfig)
+	runner, err := machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
+
+	// Optimization: Restart kubelet ASAP so we won't have to wait as long to pass validation
+	if preexisting && !shouldReconfigure(oldConfig, &config) {
+		glog.Infof("Attempting early kubelet startup ...")
+		if err := runner.Run("sudo systemctl start kubelet"); err != nil {
+			glog.Warningf("kubelet start: %v", err)
+		}
+	}
+
 	ip := validateNetwork(host)
 	glog.Infof("Host IP: %s", ip)
 	config.KubernetesConfig.NodeIP = ip
 
-	kubeconfig := updateKubeConfig(host, &config)
+	// We technically only need to update kubeconfig on name or IP changes, but be paranoid.
+	if diff := cmp.Diff(oldConfig, &config); diff != "" {
+		glog.Infof("config diff, updating kubeconfig: %s", diff)
+		updateKubeConfig(host, &config)
+	}
 
 	bs, err := GetClusterBootstrapper(m, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
-	}
-
-	runner, err := machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
 	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner})
@@ -220,15 +232,18 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	reconf := shouldReconfigure(oldConfig, &config)
+	validated := false
 	if !reconf {
 		err := validateCluster(bs, cr, runner, ip, config.KubernetesConfig.NodePort, 1)
 		if err != nil {
 			glog.Errorf("Cluster unhealthy, reconfigure required: %v", err)
-			reconf = true
+		} else {
+			validated = true
+			glog.Infof("Validation passed, skipping reconfiguration!")
 		}
 	}
 
-	if reconf {
+	if !validated {
 		opts := configureOpts{
 			upgrade:  isUpgrade,
 			relaunch: preexisting,
@@ -238,14 +253,15 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 		glog.Infof("reconfigure opts: %+v", opts)
 		runReconfigure(host, bs, cr, &cacheGroup, runner, opts)
-	} else {
-		glog.Infof("Evidently I should not reconfigure Kubernetes. Good luck!")
+		validateCluster(bs, cr, runner, ip, config.KubernetesConfig.NodePort, 20)
 	}
 
-	validateCluster(bs, cr, runner, ip, config.KubernetesConfig.NodePort, 20)
 	configureMounts()
-	if &config != oldConfig {
-		glog.Infof("Config updated, saving ...")
+
+	// Wait until health has been established to save the configuration. That
+	// way avoid saving an invalid config, and know to definitely attempt re-configuration.
+	if diff := cmp.Diff(&config, oldConfig); diff != "" {
+		glog.Infof("Config diff: %s - saving ...", diff)
 		if err := saveConfig(config); err != nil {
 			exit.WithError("Failed to save config", err)
 		}
@@ -259,12 +275,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
-	// Start showing tips at the end!
-	if err := showKubectlConnectInfo(kubeconfig); err != nil {
-		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
-		return
+	if err := bs.Wait(config.KubernetesConfig); err != nil {
+		exit.WithError("Wait failed", err)
 	}
 
+	if showKubectlInfo() {
+		return
+	}
 	if preexisting && cfg.GetMachineName() == constants.DefaultMachineName {
 		console.OutStyle("tip", "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 		return
@@ -285,7 +302,13 @@ type configureOpts struct {
 	old *cfg.Config
 }
 
-func runReconfigure(host *host.Host, bs bootstrapper.Bootstrapper, cr cruntime.Manager, cgroup *errgroup.Group, runner bootstrapper.CommandRunner, opts configureOpts) {
+func runReconfigure(h *host.Host, bs bootstrapper.Bootstrapper, cr cruntime.Manager, cgroup *errgroup.Group, runner bootstrapper.CommandRunner, opts configureOpts) {
+	if h.Driver.DriverName() != "none" {
+		if err := h.ConfigureAuth(); err != nil {
+			exit.WithError("Failed to configure authentication", err)
+		}
+	}
+
 	console.OutStyle(cr.Name(), "Configuring %s as the container runtime ...", cr.Name())
 	for _, v := range dockerOpt {
 		console.OutStyle("option", "opt %s", v)
@@ -320,7 +343,6 @@ func runReconfigure(host *host.Host, bs bootstrapper.Bootstrapper, cr cruntime.M
 	}
 
 	if opts.pull {
-		console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
 		if err := bs.PullImages(kc); err != nil {
 			console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
 		}
@@ -393,14 +415,19 @@ func prepareCache(config cfg.Config, k8sVersion string, cg *errgroup.Group) {
 	}
 }
 
-func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
-	if kubeconfig.KeepContext {
-		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
+// showKubectlInfo shows connection details, and returns whether or not a tip was displayed
+func showKubectlInfo() bool {
+	if viper.GetBool(keepContext) {
+		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", cfg.GetMachineName())
 	} else {
-		console.OutStyle("ready", "Done! kubectl is now configured to use %q", cfg.GetMachineName())
+		console.OutStyle("ready", "Done! kubectl is configured to use %q", cfg.GetMachineName())
 	}
 	_, err := exec.LookPath("kubectl")
-	return err
+	if err != nil {
+		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		return true
+	}
+	return false
 }
 
 func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
@@ -476,6 +503,10 @@ func doCacheBinaries(k8sVersion string) error {
 
 // waitCacheImages blocks until the image cache jobs complete
 func waitCacheImages(g *errgroup.Group) {
+	console.OutStyle("pulling", "Waiting for image downloads to complete: this may take some time!")
+
+	glog.Infof("waitCacheImages start")
+	defer glog.Infof("waitCacheImages end")
 	if !viper.GetBool(cacheImages) {
 		return
 	}
@@ -638,7 +669,8 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 
 // validateNetwork tries to catch network problems as soon as possible
 func validateNetwork(h *host.Host) string {
-	glog.Infof("validateNetwork")
+	glog.Infof("validateNetwork start")
+	defer glog.Infof("validateNetwork end")
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
@@ -661,7 +693,6 @@ func validateNetwork(h *host.Host) string {
 
 // validateKubernetesVersions ensures that the requested version is reasonable
 func validateKubernetesVersions(old *cfg.Config) (string, bool) {
-	glog.Infof("validateKubernetesVersions")
 	nv := viper.GetString(kubernetesVersion)
 	isUpgrade := false
 	if nv == "" {
@@ -785,7 +816,6 @@ func configureMounts() {
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func saveConfig(clusterConfig cfg.Config) error {
-	glog.Infof("saveConfig")
 	data, err := json.MarshalIndent(clusterConfig, "", "    ")
 	if err != nil {
 		return err
