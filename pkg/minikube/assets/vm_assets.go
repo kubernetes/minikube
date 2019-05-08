@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -89,7 +90,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 			Permissions: permissions,
 		},
 	}
-	glog.Infof("NewFileAsset: %+v", f)
+	glog.Infof("NewFileAsset: %s -> %s", src, filepath.Join(f.TargetDir, f.TargetName))
 	file, err := os.Open(src)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error opening file asset: %s", f.AssetName)

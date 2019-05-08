@@ -80,7 +80,10 @@ var PodsByLayer = []pod{
 }
 
 // binaryRoot are where kubeadm binaries are stored in the guest
-var binaryRoot = filepath.Join(constants.DataPath, "binaries")
+var binaryRoot = filepath.Join(constants.GuestPersistentDir, "binaries")
+
+// configFilePath is the path to the kubeadm configuration
+var configFilePath = filepath.Join(constants.GuestEphemeralDir, "kubeadm.yaml")
 
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
@@ -210,18 +213,23 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	preflights := SkipPreflights
 	preflights = append(preflights, SkipAdditionalPreflights[r.Name()]...)
 
+	path := binPath("kubeadm", k8s.KubernetesVersion)
 	templateContext := struct {
-		KubeadmConfigFile   string
+		ConfigPath          string
 		SkipPreflightChecks bool
 		Preflights          []string
 		ExtraOptions        string
+		KubeadmPath         string
+		BinariesDir         string
 	}{
-		KubeadmConfigFile: constants.KubeadmConfigFile,
+		ConfigPath: configFilePath,
 		SkipPreflightChecks: !VersionIsBetween(version,
 			semver.MustParse("1.9.0-alpha.0"),
 			semver.Version{}),
 		Preflights:   preflights,
 		ExtraOptions: extraFlags,
+		KubeadmPath:  path,
+		BinariesDir:  filepath.Dir(path),
 	}
 	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
 		return err
@@ -323,11 +331,15 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		controlPlane = "control-plane"
 	}
 
+	kubeadm := binPath("kubeadm", k8s.KubernetesVersion)
+	// kubeadm health checks assume that binaries are in PATH
+	baseCmd := fmt.Sprintf("sudo env PATH=%s:$PATH %s %s", filepath.Dir(kubeadm), kubeadm, phase)
+
 	cmds := []string{
-		fmt.Sprintf("sudo kubeadm %s phase certs all --config %s", phase, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase kubeconfig all --config %s", phase, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase %s all --config %s", phase, controlPlane, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase etcd local --config %s", phase, constants.KubeadmConfigFile),
+		fmt.Sprintf("%s phase certs all --config %s", baseCmd, configFilePath),
+		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, configFilePath),
+		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, configFilePath),
+		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, configFilePath),
 	}
 
 	// Run commands one at a time so that it is easier to root cause failures.
@@ -336,18 +348,25 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 			return errors.Wrapf(err, "running cmd: %s", cmd)
 		}
 	}
-
-	console.OutStyle("reconfiguring", "Updating kube-proxy configuration ...")
-	if err = util.RetryAfter(5, func() error { return updateKubeProxyConfigMap(k8s) }, 5*time.Second); err != nil {
-		return errors.Wrap(err, "restarting kube-proxy")
+	client, err := util.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "k8s client")
+	}
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-apiserver"}))
+	if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("waiting for kube-apiserver"))
 	}
 
+	// start the proxy
+	if err := k.c.Run(fmt.Sprintf("%s phase addon all --config %s", baseCmd, configFilePath)); err != nil {
+		return errors.Wrapf(err, "addon phase")
+	}
 	return nil
 }
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
-	cmd := fmt.Sprintf("sudo kubeadm reset --force")
+	cmd := fmt.Sprintf("sudo %s reset --force", binPath("kubeadm", k8s.KubernetesVersion))
 	out, err := k.c.CombinedOutput(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "kubeadm reset: %s\n%s\n", cmd, out)
@@ -366,7 +385,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
 	}
 
-	cmd := fmt.Sprintf("sudo kubeadm config images pull --config %s", constants.KubeadmConfigFile)
+	cmd := fmt.Sprintf("sudo %s config images pull --config %s", binPath("kubeadm", k8s.KubernetesVersion), configFilePath)
 	if err := k.c.Run(cmd); err != nil {
 		return errors.Wrapf(err, "running cmd: %s", cmd)
 	}
@@ -380,15 +399,15 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
+func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return "", errors.Wrap(err, "parsing kubernetes version")
+		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
 
 	extraOpts, err := ExtraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
 	if err != nil {
-		return "", errors.Wrap(err, "generating extra configuration for kubelet")
+		return nil, errors.Wrap(err, "generating extra configuration for kubelet")
 	}
 
 	for k, v := range r.KubeletOptions() {
@@ -406,7 +425,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 	// parses a map of the feature gates for kubelet
 	_, kubeletFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
-		return "", errors.Wrap(err, "parses feature gate config for kubelet")
+		return nil, errors.Wrap(err, "parses feature gate config for kubelet")
 	}
 
 	if kubeletFeatureArgs != "" {
@@ -415,19 +434,21 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 
 	extraFlags := convertToFlags(extraOpts)
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	opts := struct {
 		ExtraOptions     string
 		ContainerRuntime string
+		KubeletPath      string
 	}{
 		ExtraOptions:     extraFlags,
 		ContainerRuntime: k8s.ContainerRuntime,
+		KubeletPath:      binPath("kubelet", k8s.KubernetesVersion),
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return b.String(), nil
+	return b.Bytes(), nil
 }
 
 // UpdateCluster updates the cluster
@@ -455,10 +476,16 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
-	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
+	kubeletService, err := NewKubeletService(cfg)
+	if err != nil {
+		return errors.Wrap(err, "generating kubelet service")
+	}
 
 	var files []assets.CopyableFile
-	files = copyConfig(cfg, files, kubeadmCfg, kubeletCfg)
+	files = copyConfig(cfg, files, kubeadmCfg, kubeletCfg, kubeletService)
+	if err != nil {
+		return errors.Wrap(err, "copyConfig")
+	}
 
 	if err := downloadBinaries(cfg, k.c); err != nil {
 		return errors.Wrap(err, "download binaries")
@@ -493,28 +520,22 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	return nil
 }
 
-func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
+func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
-		return "", errors.Wrap(err, "parsing kubernetes version")
+		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
 
 	// parses a map of the feature gates for kubeadm and component
 	kubeadmFeatureArgs, componentFeatureArgs, err := ParseFeatureArgs(k8s.FeatureGates)
 	if err != nil {
-		return "", errors.Wrap(err, "parses feature gate config for kubeadm and component")
+		return nil, errors.Wrap(err, "parses feature gate config for kubeadm and component")
 	}
 
 	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
 	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version, componentFeatureArgs)
 	if err != nil {
-		return "", errors.Wrap(err, "generating extra component config for kubeadm")
-	}
-
-	// In case of no port assigned, use util.APIServerPort
-	nodePort := k8s.NodePort
-	if nodePort <= 0 {
-		nodePort = util.APIServerPort
+		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
 	opts := struct {
@@ -531,12 +552,12 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
 	}{
-		CertDir:           util.DefaultCertPath,
-		ServiceCIDR:       util.DefaultServiceCIDR,
+		CertDir:           constants.GuestCertsDir,
+		ServiceCIDR:       k8s.ServiceCIDR,
 		AdvertiseAddress:  k8s.NodeIP,
-		APIServerPort:     nodePort,
+		APIServerPort:     k8s.NodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
-		EtcdDataDir:       filepath.Join(constants.DataPath, "etcd"), //TODO(r2d4): change to something else persisted
+		EtcdDataDir:       filepath.Join(constants.GuestPersistentDir, "etcd"),
 		NodeName:          k8s.NodeName,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
@@ -553,7 +574,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		opts.NoTaintMaster = true
 	}
 
-	b := bytes.Buffer{}
+	var b bytes.Buffer
 	configTmpl := configTmplV1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {
 		configTmpl = configTmplV1Alpha3
@@ -563,17 +584,27 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		configTmpl = configTmplV1Beta1
 	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
-		return "", err
+		return nil, errors.Wrap(err, "template execute")
 	}
 
-	return b.String(), nil
+	return b.Bytes(), nil
 }
 
-func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubeadmCfg string, kubeletCfg string) []assets.CopyableFile {
+// NewKubeletService returns a generated systemd unit file for the kubelet
+func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
+	var b bytes.Buffer
+	opts := struct{ KubeletPath string }{KubeletPath: binPath("kubelet", cfg.KubernetesVersion)}
+	if err := kubeletServiceTemplate.Execute(&b, opts); err != nil {
+		return nil, errors.Wrap(err, "template execute")
+	}
+	return b.Bytes(), nil
+}
+
+func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubeadmCfg []byte, kubeletCfg []byte, kubeletService []byte) []assets.CopyableFile {
 	files = append(files,
-		assets.NewMemoryAssetTarget([]byte(kubeletService), constants.KubeletServiceFile, "0640"),
-		assets.NewMemoryAssetTarget([]byte(kubeletCfg), constants.KubeletSystemdConfFile, "0640"),
-		assets.NewMemoryAssetTarget([]byte(kubeadmCfg), constants.KubeadmConfigFile, "0640"))
+		assets.NewMemoryAssetTarget(kubeletService, constants.KubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget(kubeletCfg, constants.KubeletSystemdConfFile, "0640"),
+		assets.NewMemoryAssetTarget(kubeadmCfg, configFilePath, "0640"))
 
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
@@ -581,7 +612,7 @@ func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubead
 	if cfg.EnableDefaultCNI {
 		files = append(files,
 			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"),
-			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultRktNetConfigPath, "0644"))
+		)
 	}
 
 	return files
@@ -589,7 +620,7 @@ func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubead
 
 // Return a persistant path for the given binary
 func binPath(name string, version string) string {
-	return filepath.Join(constants.DataPath, "binaries", version, name)
+	return filepath.Join(constants.GuestPersistentDir, "binaries", version, name)
 }
 
 func downloadBinaries(cfg config.KubernetesConfig, cmd bootstrapper.CommandRunner) error {

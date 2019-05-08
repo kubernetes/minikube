@@ -394,7 +394,7 @@ func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"
 	cluster := api.NewCluster()
-	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(APIServerPort)
+	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(DefaultAPIServerPort)
 	cluster.CertificateAuthority = "/home/tux/.minikube/apiserver.crt"
 	config.Clusters[clusterName] = cluster
 

@@ -65,6 +65,11 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
+		cfg, err := config.Load()
+		if err != nil {
+			exit.WithError("Error loading config", err)
+		}
+
 		hostSt, err := cluster.GetHostStatus(api)
 		if err != nil {
 			exit.WithError("Error getting host status", err)
@@ -92,13 +97,7 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverPort, err := pkgutil.GetPortFromKubeConfig(util.GetKubeConfigPath(), config.GetMachineName())
-			if err != nil {
-				// Fallback to presuming default apiserver port
-				apiserverPort = pkgutil.APIServerPort
-			}
-
-			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, apiserverPort)
+			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, cfg.KubernetesConfig.NodePort)
 			if err != nil {
 				glog.Errorln("Error apiserver status:", err)
 			} else if apiserverSt != state.Running.String() {

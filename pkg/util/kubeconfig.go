@@ -33,6 +33,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 )
 
+// DefaultAPIServerPort is where the where the API server can be found.. by default.
+const DefaultAPIServerPort = 8443
+
 // KubeConfigSetup is the kubeconfig setup
 type KubeConfigSetup struct {
 	// The name of the cluster for this context
@@ -303,11 +306,11 @@ func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 	}
 	kurl, err := url.Parse(cluster.Server)
 	if err != nil {
-		return APIServerPort, nil
+		return DefaultAPIServerPort, nil
 	}
 	_, kport, err := net.SplitHostPort(kurl.Host)
 	if err != nil {
-		return APIServerPort, nil
+		return DefaultAPIServerPort, nil
 	}
 	port, err := strconv.Atoi(kport)
 	return port, err

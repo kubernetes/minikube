@@ -20,10 +20,6 @@ package hyperkit
 
 import (
 	"testing"
-
-	"k8s.io/minikube/pkg/minikube/constants"
-
-	commonutil "k8s.io/minikube/pkg/util"
 )
 
 func Test_portExtraction(t *testing.T) {
@@ -63,15 +59,6 @@ func Test_portExtraction(t *testing.T) {
 		if gotErr != tt.wantErr {
 			t.Errorf("extractVSockPorts() gotErr: %s, wantErr: %s", gotErr.Error(), tt.wantErr.Error())
 		}
-	}
-}
-
-func Test_defaultDiskSize(t *testing.T) {
-	expectedDefaultDiscSize := commonutil.CalculateDiskSizeInMB(constants.DefaultDiskSize)
-	driver := NewDriver("", "")
-	got := driver.DiskSize
-	if got != expectedDefaultDiscSize {
-		t.Errorf("Unexpected default disk size got: %v, want: %v", got, expectedDefaultDiscSize)
 	}
 }
 

@@ -121,6 +121,8 @@ func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunn
 // WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
 	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
+	defer glog.Infof("Done waiting for pod with label %q in ns %q ...", ns, label)
+
 	lastKnownPodNumber := -1
 	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableStartTime, func() (bool, error) {
 		listOpts := metav1.ListOptions{LabelSelector: label.String()}

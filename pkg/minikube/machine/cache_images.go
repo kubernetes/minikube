@@ -43,7 +43,7 @@ import (
 )
 
 // guestLoadRoot is where images should be loaded from within the guest VM
-const guestLoadRoot = "/mnt/sda1/images"
+var guestLoadRoot = filepath.Join(constants.GuestPersistentDir, "images")
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
@@ -91,8 +91,7 @@ func LoadImages(cmd bootstrapper.CommandRunner, cr cruntime.Manager, images []st
 	glog.Infof("LoadImages start: %s", images)
 	defer glog.Infof("LoadImages end")
 
-	err := cmd.Run(fmt.Sprintf("mkdir -p %s -m 755", guestLoadRoot))
-	if err != nil {
+	if err := cmd.Run(fmt.Sprintf("sudo mkdir -p %s -m 755", guestLoadRoot)); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
 
@@ -191,7 +190,7 @@ func needsUpdate(cmd bootstrapper.CommandRunner, fi os.FileInfo, dst string) err
 
 // guestImagePath returns where an image is stored within the guest VM
 func guestImagePath(name string) string {
-	return filepath.Join(constants.DataPath, "images", name)
+	return filepath.Join(constants.GuestPersistentDir, "images", name)
 }
 
 // transferAndLoadImage transfers and loads a single image from the cache

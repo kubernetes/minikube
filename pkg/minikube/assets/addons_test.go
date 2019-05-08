@@ -57,18 +57,18 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 			}{
 				{
 					relativePath: "/dir1/file1.txt",
-					expectedPath: constants.AddonsPath,
+					expectedPath: constants.GuestAddonsDir,
 				},
 				{
 					relativePath: "/dir1/file2.txt",
-					expectedPath: constants.AddonsPath,
+					expectedPath: constants.GuestAddonsDir,
 				},
 				{
 					relativePath: "/dir2/file1.txt",
-					expectedPath: constants.AddonsPath,
+					expectedPath: constants.GuestAddonsDir,
 				},
 			},
-			vmPath: constants.AddonsPath,
+			vmPath: constants.GuestAddonsDir,
 		},
 		{
 			description: "absolute path assets",

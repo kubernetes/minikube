@@ -35,9 +35,9 @@ type MockDownloader struct{}
 func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
-var defaultMachineConfig = config.MachineConfig{
-	VMDriver:    constants.DefaultVMDriver,
-	MinikubeISO: constants.DefaultISOURL,
+var testMachineConfig = config.MachineConfig{
+	VMDriver:    "virtualbox",
+	MinikubeISO: "somewhere",
 }
 
 func TestCreateHost(t *testing.T) {
@@ -47,7 +47,7 @@ func TestCreateHost(t *testing.T) {
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
-	_, err := createHost(api, defaultMachineConfig)
+	_, err := createHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestCreateHost(t *testing.T) {
 func TestStartHostExists(t *testing.T) {
 	api := tests.NewMockAPI()
 	// Create an initial host.
-	_, err := createHost(api, defaultMachineConfig)
+	_, err := createHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -96,7 +96,7 @@ func TestStartHostExists(t *testing.T) {
 	provision.SetDetector(md)
 
 	// This should pass without calling Create because the host exists already.
-	h, err := StartHost(api, defaultMachineConfig)
+	h, err := StartHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -114,7 +114,7 @@ func TestStartHostExists(t *testing.T) {
 func TestStartStoppedHost(t *testing.T) {
 	api := tests.NewMockAPI()
 	// Create an initial host.
-	h, err := createHost(api, defaultMachineConfig)
+	h, err := createHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -124,7 +124,7 @@ func TestStartStoppedHost(t *testing.T) {
 
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
-	h, err = StartHost(api, defaultMachineConfig)
+	h, err = StartHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -151,7 +151,7 @@ func TestStartHost(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	h, err := StartHost(api, defaultMachineConfig)
+	h, err := StartHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -212,7 +212,7 @@ func TestStopHostError(t *testing.T) {
 
 func TestStopHost(t *testing.T) {
 	api := tests.NewMockAPI()
-	h, _ := createHost(api, defaultMachineConfig)
+	h, _ := createHost(api, testMachineConfig)
 	if err := StopHost(api); err != nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
@@ -223,7 +223,7 @@ func TestStopHost(t *testing.T) {
 
 func TestDeleteHost(t *testing.T) {
 	api := tests.NewMockAPI()
-	createHost(api, defaultMachineConfig)
+	createHost(api, testMachineConfig)
 
 	if err := DeleteHost(api); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
@@ -232,7 +232,7 @@ func TestDeleteHost(t *testing.T) {
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	api := tests.NewMockAPI()
-	h, _ := createHost(api, defaultMachineConfig)
+	h, _ := createHost(api, testMachineConfig)
 
 	d := &tests.MockDriver{RemoveError: true}
 
@@ -246,7 +246,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	api := tests.NewMockAPI()
 	api.RemoveError = true
-	createHost(api, defaultMachineConfig)
+	createHost(api, testMachineConfig)
 
 	if err := DeleteHost(api); err == nil {
 		t.Fatal("Expected error deleting host.")
@@ -268,7 +268,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState(state.None.String())
 
-	createHost(api, defaultMachineConfig)
+	createHost(api, testMachineConfig)
 	checkState(state.Running.String())
 
 	StopHost(api)
@@ -280,7 +280,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	api := tests.NewMockAPI()
-	h, err := createHost(api, defaultMachineConfig)
+	h, err := createHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -313,7 +313,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	api := tests.NewMockAPI()
-	h, err := createHost(api, defaultMachineConfig)
+	h, err := createHost(api, testMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}

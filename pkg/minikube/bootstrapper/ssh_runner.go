@@ -179,10 +179,11 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	var ierr error
 	var copied int64
 
+	target := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	go func() {
 		defer wg.Done()
 		defer w.Close()
-		glog.Infof("Transferring %d bytes to %s", f.GetLength(), filepath.Join(f.GetTargetDir(), f.GetTargetName()))
+		glog.Infof("Transferring %d bytes to %s", f.GetLength(), target)
 		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
 		fmt.Fprint(w, header)
 		if f.GetLength() == 0 {
@@ -194,8 +195,6 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		copied, ierr = io.Copy(w, f)
 		if copied != int64(f.GetLength()) {
 			glog.Errorf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
-		} else {
-			glog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
 		}
 		if ierr != nil {
 			glog.Errorf("io.Copy failed: %v", ierr)
@@ -207,9 +206,9 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		}
 	}()
 
-	out, err := sess.CombinedOutput(fmt.Sprintf("sudo scp -t %s", f.GetTargetDir()))
+	out, err := sess.CombinedOutput(fmt.Sprintf("sudo scp -t %s", target))
 	if err != nil {
-		return errors.Wrapf(err, "scp -t %s: %s", f.GetTargetDir(), out)
+		return errors.Wrapf(err, "scp -t %s: %s", target, out)
 	}
 	wg.Wait()
 	return ierr

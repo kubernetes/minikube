@@ -22,16 +22,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
-
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Driver is the machine driver for KVM
@@ -98,7 +96,6 @@ func NewDriver(hostName, storePath string) *Driver {
 		CommonDriver:   &pkgdrivers.CommonDriver{},
 		Boot2DockerURL: constants.DefaultISOURL,
 		CPU:            constants.DefaultCPUS,
-		DiskSize:       util.CalculateDiskSizeInMB(constants.DefaultDiskSize),
 		Memory:         constants.DefaultMemory,
 		PrivateNetwork: defaultPrivateNetworkName,
 		Network:        defaultNetworkName,

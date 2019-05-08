@@ -77,6 +77,22 @@ var componentToKubeadmConfigKey = map[string]string{
 	Kubelet: "",
 }
 
+// DefaultV114AdmissionControllers are admission controllers we default to in v1.14.x
+var DefaultV114AdmissionControllers = []string{
+	"NamespaceLifecycle",
+	"LimitRanger",
+	"ServiceAccount",
+	"DefaultStorageClass",
+	"DefaultTolerationSeconds",
+	"NodeRestriction",
+	"MutatingAdmissionWebhook",
+	"ValidatingAdmissionWebhook",
+	"ResourceQuota",
+}
+
+// DefaultLegacyAdmissionControllers are admission controllers we include with Kubernetes <1.14.0
+var DefaultLegacyAdmissionControllers = append([]string{"Initializers"}, DefaultV114AdmissionControllers...)
+
 // NewComponentExtraArgs creates a new ComponentExtraArgs
 func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
 	var kubeadmExtraArgs []ComponentExtraArgs
@@ -250,7 +266,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 
 	// Auth args
 	NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(util.DefaultCertPath, "ca.crt")),
+	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(constants.GuestCertsDir, "ca.crt")),
 
 	// Cgroup args
 	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
@@ -258,7 +274,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		Option: util.ExtraOption{
 			Component: Apiserver,
 			Key:       "admission-control",
-			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
+			Value:     strings.Join(DefaultLegacyAdmissionControllers, ","),
 		},
 		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
 		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
@@ -267,7 +283,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		Option: util.ExtraOption{
 			Component: Apiserver,
 			Key:       "enable-admission-plugins",
-			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
+			Value:     strings.Join(DefaultLegacyAdmissionControllers, ","),
 		},
 		GreaterThanOrEqual: semver.MustParse("1.11.0-alpha.0"),
 		LessThanOrEqual:    semver.MustParse("1.13.1000"),
@@ -276,7 +292,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		Option: util.ExtraOption{
 			Component: Apiserver,
 			Key:       "enable-admission-plugins",
-			Value:     strings.Join(util.DefaultV114AdmissionControllers, ","),
+			Value:     strings.Join(DefaultV114AdmissionControllers, ","),
 		},
 		GreaterThanOrEqual: semver.MustParse("1.14.0-alpha.0"),
 	},

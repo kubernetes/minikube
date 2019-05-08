@@ -96,6 +96,8 @@ const (
 	noVTXCheck            = "no-vtx-check"
 	downloadOnly          = "download-only"
 	reconfigure           = "reconfigure"
+
+	defaultAPIServerName = "minikubeCA"
 )
 
 var (
@@ -112,16 +114,16 @@ var (
 )
 
 func init() {
-	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
+	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
 	startCmd.Flags().String(reconfigure, "auto", "Force Kubernetes to be reconfigured: true, false, or auto")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
-	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
-	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM in MB")
-	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
-	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
+	startCmd.Flags().String(vmDriver, "virtualbox", fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
+	startCmd.Flags().Int(memory, 2000, "Amount of RAM allocated to the minikube VM in MB")
+	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM")
+	startCmd.Flags().String(humanReadableDiskSize, "20g", "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
@@ -130,12 +132,12 @@ func init() {
 	startCmd.Flags().String(nfsSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
-	startCmd.Flags().Int(apiServerPort, pkgutil.APIServerPort, "The apiserver listening port")
-	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().Int(apiServerPort, 8443, "The apiserver listening port")
+	startCmd.Flags().String(apiServerName, defaultAPIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
-	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
+	startCmd.Flags().String(dnsDomain, "cluster.local", "The cluster dns domain name used in the kubernetes cluster")
+	startCmd.Flags().String(serviceCIDR, "10.96.0.0/12", "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
@@ -201,14 +203,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	runner, err := machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
-	}
-
-	// Optimization: Restart kubelet ASAP so we won't have to wait as long to pass validation
-	if preexisting && !shouldReconfigure(oldConfig, &config) {
-		glog.Infof("Attempting early kubelet startup ...")
-		if err := runner.Run("sudo systemctl start kubelet"); err != nil {
-			glog.Warningf("kubelet start: %v", err)
-		}
 	}
 
 	ip := validateNetwork(host)
@@ -483,9 +477,10 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 
 // validateConfig validates the supplied configuration against known bad combinations
 func validateConfig() {
+	minDiskSize := 2000
 	diskSizeMB := pkgutil.CalculateDiskSizeInMB(viper.GetString(humanReadableDiskSize))
-	if diskSizeMB < constants.MinimumDiskSizeMB {
-		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of %dMB", diskSizeMB, constants.MinimumDiskSizeMB)
+	if diskSizeMB < minDiskSize {
+		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of %dMB", diskSizeMB, minDiskSize)
 	}
 
 	if viper.GetBool(gpu) && viper.GetString(vmDriver) != "kvm2" {
@@ -585,6 +580,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			InsecureRegistry:    insecureRegistry,
 			RegistryMirror:      registryMirror,
 			HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
+			ServiceCIDR:         viper.GetString(serviceCIDR),
 			HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
 			KvmNetwork:          viper.GetString(kvmNetwork),
 			DisableDriverMounts: viper.GetBool(disableDriverMounts),
@@ -735,7 +731,8 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 	}
 	addr = strings.Replace(addr, "tcp://", "https://", -1)
 	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
+	// This seems suspicious?
+	if c.KubernetesConfig.APIServerName != defaultAPIServerName {
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
 

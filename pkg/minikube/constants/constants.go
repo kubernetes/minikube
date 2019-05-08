@@ -31,107 +31,34 @@ import (
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
-// APIServerPort is the port that the API server should listen on.
 const (
-	APIServerName    = "minikubeCA"
-	ClusterDNSDomain = "cluster.local"
-)
+	// KubeletServiceFile is the path to the kubelet systemd service
+	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
+	// KubeletSystemdConfFile is the path to the kubelet systemd configuration
+	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	// DefaultCNIConfigPath is the path to the CNI configuration
+	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
+	// GuestAddonsDir is the default path of the addons configuration
+	GuestAddonsDir = "/etc/kubernetes/addons"
+	// PersistentDir is the path where persistant data should be stored within the VM (not tmpfs)
+	GuestPersistentDir = "/data/minikube"
+	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
+	GuestEphemeralDir = "/var/tmp/minikube"
 
-// MinikubeHome is the name of the minikube home directory variable.
-const MinikubeHome = "MINIKUBE_HOME"
-
-// GetMinipath returns the path to the user's minikube dir
-func GetMinipath() string {
-	if os.Getenv(MinikubeHome) == "" {
-		return DefaultMinipath
-	}
-	if filepath.Base(os.Getenv(MinikubeHome)) == ".minikube" {
-		return os.Getenv(MinikubeHome)
-	}
-	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
-}
-
-// ArchTag returns the archtag for images
-func ArchTag(hasTag bool) string {
-	if runtime.GOARCH == "amd64" && hasTag == false {
-		return ":"
-	} else {
-		return "-" + runtime.GOARCH + ":"
-	}
-}
-
-// SupportedVMDrivers is a list of supported drivers on all platforms. Currently
-// used in gendocs.
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"parallels",
-	"vmwarefusion",
-	"kvm",
-	"xhyve",
-	"hyperv",
-	"hyperkit",
-	"kvm2",
-	"vmware",
-	"none",
-}
-
-// DefaultMinipath is the default Minikube path (under the home directory)
-var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
-
-// KubeconfigPath is the path to the Kubernetes client config
-var KubeconfigPath = clientcmd.RecommendedHomeFile
-
-// KubeconfigEnvVar is the env var to check for the Kubernetes client config
-var KubeconfigEnvVar = clientcmd.RecommendedConfigPathEnvVar
-
-// MinikubeContext is the kubeconfig context name used for minikube
-const MinikubeContext = "minikube"
-
-// MinikubeEnvPrefix is the prefix for the environmental variables
-const MinikubeEnvPrefix = "MINIKUBE"
-
-// DefaultMachineName is the default name for the VM
-const DefaultMachineName = "minikube"
-
-// DefaultNodeName is the default name for the kubeadm node within the VM
-const DefaultNodeName = "minikube"
-
-// DefaultStorageClassProvisioner is the name of the default storage class provisioner
-const DefaultStorageClassProvisioner = "standard"
-
-// Cache is used to modify the cache field in the config file
-const Cache = "cache"
-
-// TunnelRegistryPath returns the path to the runnel registry file
-func TunnelRegistryPath() string {
-	return filepath.Join(GetMinipath(), "tunnels.json")
-}
-
-// MakeMiniPath is a utility to calculate a relative path to our directory.
-func MakeMiniPath(fileName ...string) string {
-	args := []string{GetMinipath()}
-	args = append(args, fileName...)
-	return filepath.Join(args...)
-}
-
-// MountProcessFileName is the filename of the mount process
-var MountProcessFileName = ".mount-process"
-
-const (
-	// DefaultKeepContext is if we should keep context by default
-	DefaultKeepContext = false
+	// MinikubeHome is the name of the minikube home directory variable.
+	MinikubeHome = "MINIKUBE_HOME"
+	// MinikubeEnvPrefix is the prefix for the environmental variables
+	MinikubeEnvPrefix = "MINIKUBE"
+	// DefaultMachineName is the default name for the VM
+	DefaultMachineName = "minikube"
+	// DefaultNodeName is the default name for the kubeadm node within the VM
+	DefaultNodeName = DefaultMachineName
+	// DefaultStorageClassProvisioner is the name of the default storage class provisioner
+	DefaultStorageClassProvisioner = "standard"
+	// Cache is used to modify the cache field in the config file
+	Cache = "cache"
 	// SHASuffix is the suffix of a SHA-256 checksum file
 	SHASuffix = ".sha256"
-	// DefaultMemory is the default memory of a host, in megabytes
-	DefaultMemory = 2048
-	// DefaultCPUS is the default number of cpus of a host
-	DefaultCPUS = 2
-	// DefaultDiskSize is the default disk image size, parseable
-	DefaultDiskSize = "20g"
-	// MinimumDiskSizeMB is the minimum disk image size, in megabytes
-	MinimumDiskSizeMB = 2000
-	// DefaultVMDriver is the default virtual machine driver name
-	DefaultVMDriver = "virtualbox"
 	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
@@ -154,60 +81,7 @@ kubectl: {{.Kubeconfig}}
 	DefaultK8sClientTimeout = 60 * time.Second
 	// DefaultClusterBootstrapper is the default cluster bootstrapper
 	DefaultClusterBootstrapper = "kubeadm"
-)
 
-// DefaultISOURL is the default location of the minikube.iso file
-var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
-
-// DefaultISOSHAURL is the default location of the minikube.iso.sha256 file
-var DefaultISOSHAURL = DefaultISOURL + SHASuffix
-
-// DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.14.1"
-
-// NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.14.1"
-
-// OldestKubernetesVersion is the oldest Kubernetes version to test against
-var OldestKubernetesVersion = "v1.10.13"
-
-// ConfigFilePath is the path of the config directory
-var ConfigFilePath = MakeMiniPath("config")
-
-// ConfigFile is the path of the config file
-var ConfigFile = MakeMiniPath("config", "config.json")
-
-// GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string) string {
-	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
-}
-
-// DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
-const DockerAPIVersion = "1.35"
-
-// ReportingURL is the URL for reporting a minikube error
-const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
-
-// AddonsPath is the default path of the addons configuration
-const AddonsPath = "/etc/kubernetes/addons"
-
-// DataPath is the path where persistant data should be stored within the VM (not tmpfs)
-const DataPath = "/data/minikube"
-
-const (
-	// KubeletServiceFile is the path to the kubelet systemd service
-	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
-	// KubeletSystemdConfFile is the path to the kubelet systemd configuration
-	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	// KubeadmConfigFile is the path to the kubeadm configuration
-	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
-	// DefaultCNIConfigPath is the path to the CNI configuration
-	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
-	// DefaultRktNetConfigPath is the path to the rkt net configuration
-	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
-)
-
-const (
 	// DefaultUfsPort is the default port of UFS
 	DefaultUfsPort = "5640"
 	// DefaultUfsDebugLvl is the default debug level of UFS
@@ -218,12 +92,120 @@ const (
 	DefaultMsize = 262144
 	// DefaultMountVersion is the default 9p version to use for mount
 	DefaultMountVersion = "9p2000.L"
+	// MountProcessFileName is the filename of the mount process
+	MountProcessFileName = ".mount-process"
+
+	// GvisorFilesPath is the path to the gvisor files saved by go-bindata
+	GvisorFilesPath = "/tmp/gvisor"
+	// ContainerdConfigTomlPath is the path to the containerd config.toml
+	ContainerdConfigTomlPath = "/etc/containerd/config.toml"
+	// GvisorContainerdShimTomlPath is the path to gvisor-containerd-shim.toml
+	GvisorContainerdShimTomlPath = "/etc/containerd/gvisor-containerd-shim.toml"
+	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
+	StoredContainerdConfigTomlPath = "/tmp/config.toml"
+	//GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
+	GvisorConfigTomlTargetName = "gvisor-config.toml"
+	// GvisorContainerdShimTargetName is the go-bindata target name for gvisor-containerd-shim
+	GvisorContainerdShimTargetName = "gvisor-containerd-shim.toml"
+	// GvisorContainerdShimURL is the url to download gvisor-containerd-shim
+	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
+	// GvisorURL is the url to download gvisor
+	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
+
+	// IsMinikubeChildProcess is the name of "is minikube child process" variable
+	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
+	// DriverNone is the none driver
+	DriverNone = "none"
+
+	// DefaultKubernetesVersion is the default kubernetes version
+	DefaultKubernetesVersion = "v1.14.1"
+	// NewestKubernetesVersion is the newest Kubernetes version to test against
+	NewestKubernetesVersion = "v1.14.1"
+	// OldestKubernetesVersion is the oldest Kubernetes version to test against
+	OldestKubernetesVersion = "v1.10.13"
+	// DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
+	DockerAPIVersion = "1.35"
 )
 
-// ImageRepositories contains all known image repositories
-var ImageRepositories = map[string][]string{
-	"global": {""},
-	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+var (
+	// DefaultMinipath is the default Minikube path (under the home directory)
+	DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
+	// KubeconfigPath is the path to the Kubernetes client config
+	KubeconfigPath = clientcmd.RecommendedHomeFile
+	// KubeconfigEnvVar is the env var to check for the Kubernetes client config
+	KubeconfigEnvVar = clientcmd.RecommendedConfigPathEnvVar
+
+	// ImageRepositories contains all known image repositories
+	ImageRepositories = map[string][]string{
+		"global": {""},
+		"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+	}
+
+	// SupportedVMDrivers is a list of supported drivers on all platforms. Currently
+	// used in gendocs.
+	SupportedVMDrivers = [...]string{
+		"virtualbox",
+		"parallels",
+		"vmwarefusion",
+		"kvm",
+		"xhyve",
+		"hyperv",
+		"hyperkit",
+		"kvm2",
+		"vmware",
+		"none",
+	}
+	// DefaultISOURL is the default location of the minikube.iso file
+	DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
+	// DefaultISOSHAURL is the default location of the minikube.iso.sha256 file
+	DefaultISOSHAURL = DefaultISOURL + SHASuffix
+	// ConfigFilePath is the path of the config directory
+	ConfigFilePath = MakeMiniPath("config")
+	// ConfigFile is the path of the config file
+	ConfigFile = MakeMiniPath("config", "config.json")
+	// ImageCacheDir is the path to the image cache directory
+	ImageCacheDir = MakeMiniPath("cache", "images")
+	// KubeadmBinaries are the binaries required by kubeadm
+	KubeadmBinaries = []string{"kubelet", "kubeadm"}
+	// GuestCertsDir are where certificates are kept on the guest
+	GuestCertsDir = filepath.Join(GuestEphemeralDir, "certs")
+)
+
+// GetMinipath returns the path to the user's minikube dir
+func GetMinipath() string {
+	if os.Getenv(MinikubeHome) == "" {
+		return DefaultMinipath
+	}
+	if filepath.Base(os.Getenv(MinikubeHome)) == ".minikube" {
+		return os.Getenv(MinikubeHome)
+	}
+	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
+}
+
+// ArchTag returns the archtag for images
+func ArchTag(hasTag bool) string {
+	if runtime.GOARCH == "amd64" && hasTag == false {
+		return ":"
+	} else {
+		return "-" + runtime.GOARCH + ":"
+	}
+}
+
+// TunnelRegistryPath returns the path to the runnel registry file
+func TunnelRegistryPath() string {
+	return filepath.Join(GetMinipath(), "tunnels.json")
+}
+
+// MakeMiniPath is a utility to calculate a relative path to our directory.
+func MakeMiniPath(fileName ...string) string {
+	args := []string{GetMinipath()}
+	args = append(args, fileName...)
+	return filepath.Join(args...)
+}
+
+// GetProfileFile returns the Minikube profile config file
+func GetProfileFile(profile string) string {
+	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
 
 // GetKubernetesReleaseURL gets the location of a kubernetes client
@@ -235,18 +217,6 @@ func GetKubernetesReleaseURL(binaryName, version, osName, archName string) strin
 func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
 	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version, osName, archName))
 }
-
-// IsMinikubeChildProcess is the name of "is minikube child process" variable
-const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-
-// DriverNone is the none driver
-const DriverNone = "none"
-
-// FileScheme is the file scheme
-const FileScheme = "file"
-
-// KubeadmBinaries are the binaries required by kubeadm
-var KubeadmBinaries = []string{"kubelet", "kubeadm"}
 
 // GetKubeadmCachedImages gets the images to cache for kubeadm for a version
 func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {
@@ -380,27 +350,3 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 
 	return podInfraContainerImage, images
 }
-
-// ImageCacheDir is the path to the image cache directory
-var ImageCacheDir = MakeMiniPath("cache", "images")
-
-const (
-	// GvisorFilesPath is the path to the gvisor files saved by go-bindata
-	GvisorFilesPath = "/tmp/gvisor"
-	// ContainerdConfigTomlPath is the path to the containerd config.toml
-	ContainerdConfigTomlPath = "/etc/containerd/config.toml"
-	// GvisorContainerdShimTomlPath is the path to gvisor-containerd-shim.toml
-	GvisorContainerdShimTomlPath = "/etc/containerd/gvisor-containerd-shim.toml"
-	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
-	StoredContainerdConfigTomlPath = "/tmp/config.toml"
-
-	//GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
-	GvisorConfigTomlTargetName = "gvisor-config.toml"
-	// GvisorContainerdShimTargetName is the go-bindata target name for gvisor-containerd-shim
-	GvisorContainerdShimTargetName = "gvisor-containerd-shim.toml"
-
-	// GvisorContainerdShimURL is the url to download gvisor-containerd-shim
-	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
-	// GvisorURL is the url to download gvisor
-	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
-)

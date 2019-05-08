@@ -40,7 +40,6 @@ import (
 	"github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
@@ -74,7 +73,6 @@ func NewDriver(hostName, storePath string) *Driver {
 			SSHUser: "docker",
 		},
 		CommonDriver: &pkgdrivers.CommonDriver{},
-		DiskSize:     commonutil.CalculateDiskSizeInMB(constants.DefaultDiskSize),
 	}
 }
 

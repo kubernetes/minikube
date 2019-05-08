@@ -157,28 +157,28 @@ var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate"
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet{{if .ExtraOptions}} {{.ExtraOptions}}{{end}}
+ExecStart={{.KubeletPath}}{{if .ExtraOptions}} {{.ExtraOptions}}{{end}}
 
 [Install]
 `))
 
-const kubeletService = `
+var kubeletServiceTemplate = template.Must(template.New("kubeletServiceTemplate").Parse(`
 [Unit]
 Description=kubelet: The Kubernetes Node Agent
 Documentation=http://kubernetes.io/docs/
 
 [Service]
-ExecStart=/usr/bin/kubelet
+ExecStart={{.KubeletPath}}
 Restart=always
 StartLimitInterval=0
 RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
-`
+`))
 
 var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(`
-sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{.ExtraOptions}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}
+sudo env PATH={{.BinariesDir}}:$PATH {{.KubeadmPath}} init --config {{.ConfigPath}} {{.ExtraOptions}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}
 `))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key

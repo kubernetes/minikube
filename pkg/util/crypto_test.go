@@ -37,7 +37,7 @@ func TestGenerateCACert(t *testing.T) {
 
 	certPath := filepath.Join(tmpDir, "cert")
 	keyPath := filepath.Join(tmpDir, "key")
-	if err := GenerateCACert(certPath, keyPath, constants.APIServerName); err != nil {
+	if err := GenerateCACert(certPath, keyPath, "test"); err != nil {
 		t.Fatalf("GenerateCACert() error = %v", err)
 	}
 

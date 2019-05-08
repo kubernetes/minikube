@@ -121,7 +121,7 @@ ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook 
 
 			diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 				A:        difflib.SplitLines(tc.expected),
-				B:        difflib.SplitLines(got),
+				B:        difflib.SplitLines(string(got)),
 				FromFile: "Expected",
 				ToFile:   "Got",
 				Context:  1,
@@ -208,7 +208,7 @@ func TestGenerateConfig(t *testing.T) {
 				}
 				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 					A:        difflib.SplitLines(string(expected)),
-					B:        difflib.SplitLines(got),
+					B:        difflib.SplitLines(string(got)),
 					FromFile: "Expected",
 					ToFile:   "Got",
 					Context:  1,

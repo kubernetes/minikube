@@ -34,9 +34,8 @@ const driverName = "none"
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
 var cleanupPaths = []string{
-	"/data/minikube",
+	constants.GuestEphemeralDir,
 	"/etc/kubernetes/manifests",
-	"/var/lib/minikube",
 }
 
 // Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
