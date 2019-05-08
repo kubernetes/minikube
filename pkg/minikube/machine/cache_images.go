@@ -38,10 +38,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 const tempLoadDir = "/tmp"
@@ -88,19 +86,14 @@ func CacheImages(images []string, cacheDir string) error {
 }
 
 // LoadImages loads previously cached images into the container runtime
-func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
+func LoadImages(cmd bootstrapper.CommandRunner, cr cruntime.Manager, images []string, cacheDir string) error {
 	var g errgroup.Group
-	// Load profile cluster config from file
-	cc, err := config.Load()
-	if err != nil && !os.IsNotExist(err) {
-		glog.Errorln("Error loading profile config: ", err)
-	}
 	for _, image := range images {
-		image := image
+		glog.Infof("LoadImages: %s", image)
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := loadImageFromCache(cmd, cc.KubernetesConfig, src); err != nil {
+			if err := loadImageFromCache(cmd, cr, src); err != nil {
 				glog.Warningf("Failed to load %s: %v", src, err)
 				return errors.Wrapf(err, "loading image %s", src)
 			}
@@ -112,33 +105,6 @@ func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string
 	}
 	glog.Infoln("Successfully loaded all cached images.")
 	return nil
-}
-
-// CacheAndLoadImages caches and loads images
-func CacheAndLoadImages(images []string) error {
-	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
-		return err
-	}
-	api, err := NewAPIClient()
-	if err != nil {
-		return err
-	}
-	defer api.Close()
-	h, err := api.Load(config.GetMachineName())
-	if err != nil {
-		return err
-	}
-
-	client, err := sshutil.NewSSHClient(h.Driver)
-	if err != nil {
-		return err
-	}
-	cmdRunner, err := bootstrapper.NewSSHRunner(client), nil
-	if err != nil {
-		return err
-	}
-
-	return LoadImages(cmdRunner, images, constants.ImageCacheDir)
 }
 
 // # ParseReference cannot have a : in the directory path
@@ -203,8 +169,8 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 }
 
 // loadImageFromCache loads a single image from the cache
-func loadImageFromCache(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
-	glog.Infof("Loading image from cache: %s", src)
+func loadImageFromCache(cmd bootstrapper.CommandRunner, r cruntime.Manager, src string) error {
+	glog.Infof("Transferring %s into VM ...", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
 		return err
@@ -214,24 +180,20 @@ func loadImageFromCache(cr bootstrapper.CommandRunner, k8s config.KubernetesConf
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
-	if err := cr.Copy(f); err != nil {
+	if err := cmd.Copy(f); err != nil {
 		return errors.Wrap(err, "transferring cached image")
 	}
 
-	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
-
-	if err != nil {
-		return errors.Wrap(err, "runtime")
-	}
 	loadImageLock.Lock()
 	defer loadImageLock.Unlock()
 
+	glog.Infof("Loading image %s into %s", src, r.Name())
 	err = r.LoadImage(dst)
 	if err != nil {
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 
-	if err := cr.Run("sudo rm -rf " + dst); err != nil {
+	if err := cmd.Run("sudo rm -rf " + dst); err != nil {
 		return errors.Wrap(err, "deleting temp docker image location")
 	}
 	glog.Infof("Successfully loaded image %s from cache", src)

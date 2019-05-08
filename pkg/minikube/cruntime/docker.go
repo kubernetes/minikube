@@ -84,6 +84,9 @@ func (r *Docker) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
+	if r.Runner == nil {
+		return fmt.Errorf("Runtime not configured with a runner!")
+	}
 	return r.Runner.Run(fmt.Sprintf("docker load -i %s", path))
 }
 

@@ -25,6 +25,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/util"
 )
 
 func init() {
@@ -47,7 +48,7 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 			StorePath:   constants.GetMinipath(),
 			SSHUser:     "docker",
 		},
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
+		Boot2DockerURL: util.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
 		Memory:         config.Memory,
 		CPU:            config.CPUs,

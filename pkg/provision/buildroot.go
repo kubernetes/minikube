@@ -38,7 +38,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
 )
@@ -283,33 +282,15 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return err
 	}
 
-	config, err := config.Load()
-	if err != nil {
-		return errors.Wrap(err, "getting cluster config")
-	}
-
 	dockerCfg, err := p.GenerateDockerOptions(engine.DefaultPort)
 	if err != nil {
 		return errors.Wrap(err, "generating docker options")
 	}
 
 	log.Info("Setting Docker configuration on the remote daemon...")
-
 	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dockerCfg.EngineOptionsPath), dockerCfg.EngineOptions, dockerCfg.EngineOptionsPath)); err != nil {
 		return err
 	}
-
-	if config.MachineConfig.ContainerRuntime == "" {
-
-		if err := p.Service("docker", serviceaction.Enable); err != nil {
-			return err
-		}
-
-		if err := p.Service("docker", serviceaction.Restart); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

@@ -434,16 +434,18 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, 
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	glog.Infof("UpdateCluster start")
 	defer glog.Infof("UpdateCluster end")
-	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
-	if cfg.ShouldLoadCachedImages {
-		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
-			console.Failure("Unable to load cached images: %v", err)
-		}
-	}
-	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
+	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
+
+	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
+	if cfg.ShouldLoadCachedImages {
+		if err := machine.LoadImages(k.c, r, images, constants.ImageCacheDir); err != nil {
+			console.Failure("Unable to load cached images: %v", err)
+		}
+	}
+
 	kubeadmCfg, err := generateConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
