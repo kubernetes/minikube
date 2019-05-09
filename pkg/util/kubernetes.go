@@ -127,6 +127,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableStartTime, func() (bool, error) {
 		listOpts := metav1.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
+		glog.Infof("result: %+v err=%v", pods, err)
 		if err != nil {
 			glog.Infof("error getting Pods with label selector %q [%v]\n", label.String(), err)
 			return false, nil

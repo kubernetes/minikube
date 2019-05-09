@@ -34,6 +34,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -348,13 +349,9 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 			return errors.Wrapf(err, "running cmd: %s", cmd)
 		}
 	}
-	client, err := util.GetClient()
-	if err != nil {
-		return errors.Wrap(err, "k8s client")
-	}
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-apiserver"}))
-	if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("waiting for kube-apiserver"))
+
+	if err := k.waitForAPIServer(k8s); err != nil {
+		return errors.Wrap(err, "waiting for apiserver")
 	}
 
 	// start the proxy
@@ -362,6 +359,24 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrapf(err, "addon phase")
 	}
 	return nil
+}
+
+// waitForAPIServer waits for the apiserver to start up
+func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
+	glog.Infof("Waiting for apiserver ...")
+	defer glog.Infof("Done waiting for apiserver ...")
+
+	return wait.PollImmediate(time.Millisecond*200, time.Minute*1, func() (bool, error) {
+		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
+		glog.Infof("status: %s, err: %v", status, err)
+		if err != nil {
+			return false, err
+		}
+		if status != "Running" {
+			return false, nil
+		}
+		return true, nil
+	})
 }
 
 // DeleteCluster removes the components that were started earlier
