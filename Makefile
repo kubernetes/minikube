@@ -61,8 +61,6 @@ STORAGE_PROVISIONER_TAG := v1.8.1
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
 PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w"
 
-MAKEDEPEND := GOPATH=$(GOPATH) ./makedepend.sh
-
 MINIKUBEFILES := ./cmd/minikube/
 HYPERKIT_FILES := ./cmd/drivers/hyperkit
 STORAGE_PROVISIONER_FILES := ./cmd/storage-provisioner
@@ -106,11 +104,6 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
-
-out/minikube.d: pkg/minikube/assets/assets.go
-	$(MAKEDEPEND) out/minikube-$(GOOS)-$(GOARCH) $(ORG) $^ $(MINIKUBEFILES) > $@
-
--include out/minikube.d
 
 out/minikube-%: pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -181,9 +174,6 @@ test-iso:
 test-pkg/%:
 	go test -v -test.timeout=60m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
-.PHONY: depend
-depend: out/minikube.d out/test.d out/docker-machine-driver-hyperkit.d out/storage-provisioner.d out/docker-machine-driver-kvm2.d
-
 .PHONY: all
 all: cross drivers e2e-cross
 
@@ -203,10 +193,6 @@ integration-versioned: out/minikube
 	go test -v -test.timeout=60m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
-out/test.d: pkg/minikube/assets/assets.go
-	$(MAKEDEPEND) -t test $(ORG) $^ $(MINIKUBE_TEST_FILES) > $@
-
--include out/test.d
 test:
 	GOPATH=$(GOPATH) ./test.sh
 
@@ -305,10 +291,6 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
 
-out/docker-machine-driver-hyperkit.d:
-	$(MAKEDEPEND) out/docker-machine-driver-hyperkit $(ORG) $^ $(HYPERKIT_FILES) > $@
-
--include out/docker-machine-driver-hyperkit.d
 out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
@@ -332,10 +314,6 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo ""
 	@echo "$(@) successfully built"
 
-out/storage-provisioner.d:
-	$(MAKEDEPEND) out/storage-provisioner $(ORG) $^ $(STORAGE_PROVISIONER_FILES) > $@
-
--include out/storage-provisioner.d
 out/storage-provisioner:
 	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
@@ -377,10 +355,6 @@ release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
-out/docker-machine-driver-kvm2.d:
-	$(MAKEDEPEND) out/docker-machine-driver-kvm2 $(ORG) $^ $(KVM_DRIVER_FILES) > $@
-
--include out/docker-machine-driver-kvm2.d
 out/docker-machine-driver-kvm2:
 	go build 																		\
 		-installsuffix "static" 													\
