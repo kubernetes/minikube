@@ -26,9 +26,9 @@ INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2018.05
 REGISTRY?=gcr.io/k8s-minikube
 
-HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.10.x
-# NOTE: "latest" as of 2018-12-04. kube-cross images aren't updated as often as Kubernetes
-BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.11.1-1
+HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
+# NOTE: "latest" as of 2019-05-09. kube-cross images aren't updated as often as Kubernetes
+BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.12.5-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image
 
@@ -41,15 +41,13 @@ MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 KERNEL_VERSION ?= 4.16.14
 
 GO_VERSION ?= $(shell go version | cut -d' ' -f3 | sed -e 's/go//')
+export GO111MODULE := on
 
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= ./out
 $(shell mkdir -p $(BUILD_DIR))
-
-ORG := k8s.io
-REPOPATH ?= $(ORG)/minikube
 
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
@@ -80,7 +78,7 @@ SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /go/src/$(REPOPATH) -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -109,17 +107,6 @@ out/minikube-%: pkg/minikube/assets/assets.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-ifneq ($(GOPATH)/src/$(REPOPATH),$(CURDIR))
-	$(warning ******************************************************************************)
-	$(warning WARNING: You are building minikube outside the expected GOPATH:)
-	$(warning )
-	$(warning expected: $(GOPATH)/src/$(REPOPATH) )
-	$(warning   got:      $(CURDIR) )
-	$(warning )
-	$(warning You will likely encounter unusual build failures. For proper setup, read: )
-	$(warning https://github.com/kubernetes/minikube/blob/master/docs/contributors/build_guide.md)
-	$(warning ******************************************************************************)
-endif
 	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
@@ -167,12 +154,12 @@ iso_in_docker:
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
-test-iso:
-	go test -v $(REPOPATH)/test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
+test-iso: pkg/minikube/assets/assets.go
+	go test -v ./test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
-test-pkg/%:
-	go test -v -test.timeout=60m $(REPOPATH)/$* --tags="$(MINIKUBE_BUILD_TAGS)"
+test-pkg/%: pkg/minikube/assets/assets.go
+	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
 all: cross drivers e2e-cross
@@ -182,7 +169,7 @@ drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
 
 .PHONY: integration
 integration: out/minikube
-	go test -v -test.timeout=60m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)
@@ -190,15 +177,15 @@ integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube
-	go test -v -test.timeout=60m $(REPOPATH)/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
+	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
-test:
-	GOPATH=$(GOPATH) ./test.sh
+test: pkg/minikube/assets/assets.go
+	./test.sh
 
 # Regenerates assets.go when template files have been updated
 pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
-	which go-bindata || GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
+	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
 
 .PHONY: cross
@@ -247,7 +234,7 @@ mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
 
 out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
-	cd $(GOPATH)/src/$(REPOPATH) && go run -ldflags="$(MINIKUBE_LDFLAGS)" hack/gen_help_text.go
+	go run -ldflags="$(MINIKUBE_LDFLAGS)" hack/help_text/gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
@@ -373,8 +360,7 @@ $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
 kvm_in_docker:
 	docker inspect $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	rm -f out/docker-machine-driver-kvm2
-	docker run --rm -v $(PWD):/go/src/k8s.io/minikube $(KVM_BUILD_IMAGE) \
-		/usr/bin/make -C /go/src/k8s.io/minikube out/docker-machine-driver-kvm2
+	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2)
 
 .PHONY: install-kvm
 install-kvm: out/docker-machine-driver-kvm2
