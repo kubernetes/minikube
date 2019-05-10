@@ -18,9 +18,12 @@ package cmd
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -101,9 +104,7 @@ var dashboardCmd = &cobra.Command{
 			console.OutLn(url)
 		} else {
 			console.ErrStyle("celebrate", "Opening %s in your default browser...", url)
-			if err = browser.OpenURL(url); err != nil {
-				console.Failure("failed to open browser: %v", err)
-			}
+			openInBrowser(url)
 		}
 
 		glog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
@@ -111,6 +112,27 @@ var dashboardCmd = &cobra.Command{
 			glog.Errorf("Wait: %v", err)
 		}
 	},
+}
+
+func openInBrowser(url string) {
+	// Set browser package not to flood the terminal output
+	r, w, err := os.Pipe()
+	if err != nil {
+		glog.Errorf("Error setting dashboard's log output pipe %s", err)
+	}
+	log.SetOutput(w)
+	browser.Stdout = w
+	browser.Stderr = w
+	defer func() {
+		log.SetOutput(os.Stdout)
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		glog.Infof(buf.String())
+	}()
+	if err = browser.OpenURL(url); err != nil {
+		console.Failure("failed to open browser: %v", err)
+	}
+
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
