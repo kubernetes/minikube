@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -63,21 +64,21 @@ func (a *Addon) IsEnabled() (bool, error) {
 var Addons = map[string]*Addon{
 	"addon-manager": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/addon-manager.yaml",
+			"deploy/addons/addon-manager.yaml.tmpl",
 			"/etc/kubernetes/manifests/",
-			"addon-manager.yaml",
+			"addon-manager.yaml.tmpl",
 			"0640",
 			true),
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/dashboard/dashboard-dp.yaml",
+			"deploy/addons/dashboard/dashboard-dp.yaml.tmpl",
 			constants.AddonsPath,
 			"dashboard-dp.yaml",
 			"0640",
 			true),
 		MustBinAsset(
-			"deploy/addons/dashboard/dashboard-svc.yaml",
+			"deploy/addons/dashboard/dashboard-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640",
@@ -85,7 +86,7 @@ var Addons = map[string]*Addon{
 	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/storageclass/storageclass.yaml",
+			"deploy/addons/storageclass/storageclass.yaml.tmpl",
 			constants.AddonsPath,
 			"storageclass.yaml",
 			"0640",
@@ -93,7 +94,7 @@ var Addons = map[string]*Addon{
 	}, true, "default-storageclass"),
 	"storage-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/storage-provisioner/storage-provisioner.yaml",
+			"deploy/addons/storage-provisioner/storage-provisioner.yaml.tmpl",
 			constants.AddonsPath,
 			"storage-provisioner.yaml",
 			"0640",
@@ -101,25 +102,25 @@ var Addons = map[string]*Addon{
 	}, true, "storage-provisioner"),
 	"storage-provisioner-gluster": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml.tmpl",
 			constants.AddonsPath,
 			"storage-gluster-ns.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml",
+			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml.tmpl",
 			constants.AddonsPath,
 			"glusterfs-daemonset.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml",
+			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
 			constants.AddonsPath,
 			"heketi-deployment.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml",
+			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
 			constants.AddonsPath,
 			"storage-privisioner-glusterfile.yaml",
 			"0640",
@@ -127,31 +128,31 @@ var Addons = map[string]*Addon{
 	}, false, "storage-provisioner-gluster"),
 	"heapster": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/heapster/influx-grafana-rc.yaml",
+			"deploy/addons/heapster/influx-grafana-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
-			"deploy/addons/heapster/grafana-svc.yaml",
+			"deploy/addons/heapster/grafana-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"grafana-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/heapster/influxdb-svc.yaml",
+			"deploy/addons/heapster/influxdb-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"influxdb-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/heapster/heapster-rc.yaml",
+			"deploy/addons/heapster/heapster-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"heapster-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
-			"deploy/addons/heapster/heapster-svc.yaml",
+			"deploy/addons/heapster/heapster-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640",
@@ -159,37 +160,37 @@ var Addons = map[string]*Addon{
 	}, false, "heapster"),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/efk/elasticsearch-rc.yaml",
+			"deploy/addons/efk/elasticsearch-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"elasticsearch-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
-			"deploy/addons/efk/elasticsearch-svc.yaml",
+			"deploy/addons/efk/elasticsearch-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"elasticsearch-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/efk/fluentd-es-rc.yaml",
+			"deploy/addons/efk/fluentd-es-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"fluentd-es-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
-			"deploy/addons/efk/fluentd-es-configmap.yaml",
+			"deploy/addons/efk/fluentd-es-configmap.yaml.tmpl",
 			constants.AddonsPath,
 			"fluentd-es-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/efk/kibana-rc.yaml",
+			"deploy/addons/efk/kibana-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"kibana-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/efk/kibana-svc.yaml",
+			"deploy/addons/efk/kibana-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"kibana-svc.yaml",
 			"0640",
@@ -197,25 +198,25 @@ var Addons = map[string]*Addon{
 	}, false, "efk"),
 	"ingress": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/ingress/ingress-configmap.yaml",
+			"deploy/addons/ingress/ingress-configmap.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/ingress/ingress-rbac.yaml",
+			"deploy/addons/ingress/ingress-rbac.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-rbac.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/ingress/ingress-dp.yaml",
+			"deploy/addons/ingress/ingress-dp.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-dp.yaml",
 			"0640",
 			true),
 		MustBinAsset(
-			"deploy/addons/ingress/ingress-svc.yaml",
+			"deploy/addons/ingress/ingress-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-svc.yaml",
 			"0640",
@@ -223,19 +224,19 @@ var Addons = map[string]*Addon{
 	}, false, "ingress"),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/metrics-server/metrics-apiservice.yaml",
+			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
 			constants.AddonsPath,
 			"metrics-apiservice.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/metrics-server/metrics-server-deployment.yaml",
+			"deploy/addons/metrics-server/metrics-server-deployment.yaml.tmpl",
 			constants.AddonsPath,
 			"metrics-server-deployment.yaml",
 			"0640",
 			true),
 		MustBinAsset(
-			"deploy/addons/metrics-server/metrics-server-service.yaml",
+			"deploy/addons/metrics-server/metrics-server-service.yaml.tmpl",
 			constants.AddonsPath,
 			"metrics-server-service.yaml",
 			"0640",
@@ -243,13 +244,13 @@ var Addons = map[string]*Addon{
 	}, false, "metrics-server"),
 	"registry": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/registry/registry-rc.yaml",
+			"deploy/addons/registry/registry-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"registry-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/registry/registry-svc.yaml",
+			"deploy/addons/registry/registry-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"registry-svc.yaml",
 			"0640",
@@ -257,7 +258,7 @@ var Addons = map[string]*Addon{
 	}, false, "registry"),
 	"registry-creds": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/registry-creds/registry-creds-rc.yaml",
+			"deploy/addons/registry-creds/registry-creds-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"registry-creds-rc.yaml",
 			"0640",
@@ -265,7 +266,7 @@ var Addons = map[string]*Addon{
 	}, false, "registry-creds"),
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/freshpod/freshpod-rc.yaml",
+			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"freshpod-rc.yaml",
 			"0640",
@@ -273,7 +274,7 @@ var Addons = map[string]*Addon{
 	}, false, "freshpod"),
 	"nvidia-driver-installer": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/gpu/nvidia-driver-installer.yaml",
+			"deploy/addons/gpu/nvidia-driver-installer.yaml.tmpl",
 			constants.AddonsPath,
 			"nvidia-driver-installer.yaml",
 			"0640",
@@ -281,7 +282,7 @@ var Addons = map[string]*Addon{
 	}, false, "nvidia-driver-installer"),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
 			constants.AddonsPath,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
@@ -289,13 +290,13 @@ var Addons = map[string]*Addon{
 	}, false, "nvidia-gpu-device-plugin"),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml",
+			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"logviewer-dp-and-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
-			"deploy/addons/logviewer/logviewer-rbac.yaml",
+			"deploy/addons/logviewer/logviewer-rbac.yaml.tmpl",
 			constants.AddonsPath,
 			"logviewer-rbac.yaml",
 			"0640",
@@ -303,7 +304,7 @@ var Addons = map[string]*Addon{
 	}, false, "logviewer"),
 	"gvisor": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/gvisor/gvisor-pod.yaml",
+			"deploy/addons/gvisor/gvisor-pod.yaml.tmpl",
 			constants.AddonsPath,
 			"gvisor-pod.yaml",
 			"0640",
@@ -380,9 +381,21 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 
 // GenerateTemplateData generates template data for template assets
 func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
+
+	a := runtime.GOARCH
+	// Some legacy docker images still need the -arch suffix
+	// for  less common architectures blank suffix for amd64
+	ea := ""
+	if runtime.GOARCH != "amd64" {
+		ea = runtime.GOARCH
+	}
 	opts := struct {
+		Arch            string
+		ExoticArch      string
 		ImageRepository string
 	}{
+		Arch:            a,
+		ExoticArch:      ea,
 		ImageRepository: cfg.ImageRepository,
 	}
 

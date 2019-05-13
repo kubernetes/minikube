@@ -4,7 +4,6 @@ sudo: required
 
 go:
   - 1.x
-go_import_path: k8s.io/minikube
 
 install:
   - echo "Don't run anything."
