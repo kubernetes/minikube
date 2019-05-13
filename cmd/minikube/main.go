@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/translate"
 	_ "k8s.io/minikube/pkg/provision"
 )
 
@@ -40,6 +41,6 @@ func main() {
 	}
 	console.SetOutFile(os.Stdout)
 	console.SetErrFile(os.Stderr)
-	console.DetermineLocale()
+	translate.DetermineLocale()
 	cmd.Execute()
 }

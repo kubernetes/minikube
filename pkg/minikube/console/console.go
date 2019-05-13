@@ -24,11 +24,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cloudfoundry-attic/jibber_jabber"
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
-	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 // By design, this package uses global references to language and output objects, in preference
@@ -48,10 +47,6 @@ var (
 	outFile fdWriter
 	// errFile is where Err* functions send output to. Set using SetErrFile()
 	errFile fdWriter
-	// preferredLanguage is the default language messages will be output in
-	preferredLanguage = language.AmericanEnglish
-	// our default language
-	defaultLanguage = language.AmericanEnglish
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
 	// OverrideEnv is the environment variable used to override color/emoji usage
@@ -89,15 +84,13 @@ func OutStyle(style, format string, a ...interface{}) error {
 
 // Out writes a basic formatted string to stdout
 func Out(format string, a ...interface{}) error {
-	p := message.NewPrinter(preferredLanguage)
 	if outFile == nil {
-		if _, err := p.Fprintf(os.Stdout, "(stdout unset)"+format, a...); err != nil {
+		if err := PrintToConsole(os.Stdout, "(stdout unset)"+format, a...); err != nil {
 			return err
 		}
-		return fmt.Errorf("no output file has been set")
+		return fmt.Errorf("no out file has been set")
 	}
-	_, err := p.Fprintf(outFile, format, a...)
-	return err
+	return PrintToConsole(outFile, format, a...)
 }
 
 // OutLn writes a basic formatted string with a newline to stdout
@@ -125,14 +118,20 @@ func ErrStyle(style, format string, a ...interface{}) error {
 
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) error {
-	p := message.NewPrinter(preferredLanguage)
 	if errFile == nil {
-		if _, err := p.Fprintf(os.Stderr, "(stderr unset)"+format, a...); err != nil {
+		if err := PrintToConsole(os.Stderr, "(stderr unset)"+format, a...); err != nil {
 			return err
 		}
 		return fmt.Errorf("no error file has been set")
 	}
-	_, err := p.Fprintf(errFile, format, a...)
+	return PrintToConsole(errFile, format, a...)
+}
+
+// PrintToConsole writes a formatted string to the supplied writer
+func PrintToConsole(file fdWriter, format string, a ...interface{}) error {
+	p := message.NewPrinter(translate.GetPreferredLanguage())
+	format = translate.Translate(format)
+	_, err := p.Fprintf(file, format, a...)
 	return err
 }
 
@@ -161,30 +160,6 @@ func Failure(format string, a ...interface{}) error {
 	return ErrStyle("failure", format, a...)
 }
 
-// SetPreferredLanguageTag configures which language future messages should use.
-func SetPreferredLanguageTag(l language.Tag) {
-	glog.Infof("Setting Language to %s ...", l)
-	preferredLanguage = l
-}
-
-// SetPreferredLanguage configures which language future messages should use, based on a LANG string.
-func SetPreferredLanguage(s string) error {
-	// "C" is commonly used to denote a neutral POSIX locale. See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap07.html#tag_07_02
-	if s == "" || s == "C" {
-		SetPreferredLanguageTag(defaultLanguage)
-		return nil
-	}
-	// Handles "de_DE" or "de_DE.utf8"
-	// We don't process encodings, since Rob Pike invented utf8 and we're mostly stuck with it.
-	parts := strings.Split(s, ".")
-	l, err := language.Parse(parts[0])
-	if err != nil {
-		return err
-	}
-	SetPreferredLanguageTag(l)
-	return nil
-}
-
 // SetOutFile configures which writer standard output goes to.
 func SetOutFile(w fdWriter) {
 	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
@@ -197,15 +172,6 @@ func SetErrFile(w fdWriter) {
 	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
 	useColor = wantsColor(w.Fd())
-}
-
-func DetermineLocale() {
-	locale, err := jibber_jabber.DetectIETF()
-	if err != nil {
-		glog.Warningf("Getting system locale failed: %s", err)
-		locale = ""
-	}
-	SetPreferredLanguage(locale)
 }
 
 // wantsColor determines if the user might want colorized output.

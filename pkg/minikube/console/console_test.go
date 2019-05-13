@@ -23,6 +23,7 @@ import (
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 // fakeFile satisfies fdWriter
@@ -115,7 +116,7 @@ func TestOut(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.format, func(t *testing.T) {
-			SetPreferredLanguageTag(tc.lang)
+			translate.SetPreferredLanguageTag(tc.lang)
 			f := newFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
@@ -175,14 +176,13 @@ func TestSetPreferredLanguage(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
 			// Set something so that we can assert change.
-			SetPreferredLanguageTag(language.Icelandic)
-			if err := SetPreferredLanguage(tc.input); err != nil {
+			translate.SetPreferredLanguageTag(language.Icelandic)
+			if err := translate.SetPreferredLanguage(tc.input); err != nil {
 				t.Errorf("unexpected error: %q", err)
 			}
 
-			// Just compare the bases ("en", "fr"), since I can't seem to refer directly to them
 			want, _ := tc.want.Base()
-			got, _ := preferredLanguage.Base()
+			got, _ := translate.GetPreferredLanguage().Base()
 			if got != want {
 				t.Errorf("SetPreferredLanguage(%s) = %q, want %q", tc.input, got, want)
 			}

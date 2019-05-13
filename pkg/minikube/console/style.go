@@ -22,6 +22,7 @@ import (
 
 	"golang.org/x/text/message"
 	"golang.org/x/text/number"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 var (
@@ -131,12 +132,13 @@ func lowPrefix(s style) string {
 
 // Apply styling to a format string
 func applyStyle(style string, useColor bool, format string, a ...interface{}) (string, error) {
-	p := message.NewPrinter(preferredLanguage)
+	p := message.NewPrinter(translate.GetPreferredLanguage())
 	for i, x := range a {
 		if _, ok := x.(int); ok {
 			a[i] = number.Decimal(x, number.NoSeparator())
 		}
 	}
+	format = translate.Translate(format)
 	out := p.Sprintf(format, a...)
 
 	s, ok := styles[style]
