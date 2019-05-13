@@ -4,6 +4,7 @@
 *.so
 
 # Folders
+.cache
 _obj
 _test
 

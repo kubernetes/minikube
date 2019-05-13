@@ -17,10 +17,10 @@ $ sudo dnf install -y glibc-static
 
 ### Building from Source
 
-Clone minikube into your go path under `$GOPATH/src/k8s.io`
+Clone and build minikube:
 ```shell
-$ git clone https://github.com/kubernetes/minikube.git $GOPATH/src/k8s.io/minikube
-$ cd $GOPATH/src/k8s.io/minikube
+$ git clone https://github.com/kubernetes/minikube.git
+$ cd minikube
 $ make
 ```
 
@@ -37,14 +37,13 @@ $ git clone https://github.com/kubernetes/minikube.git
 Build (cross compile for linux / OS X and Windows) using make:
 ```shell
 $ cd minikube
-$ docker run --rm -v "$PWD":/go/src/k8s.io/minikube -w /go/src/k8s.io/minikube golang:stretch make cross
+$ MINIKUBE_BUILD_IN_DOCKER=y make cross
 ```
 
 Check "out" directory:
 ```shell
 $ ls out/
-docker-machine-driver-hyperkit.d    minikube                minikube.d             test.d
-docker-machine-driver-kvm2.d        minikube-linux-amd64            storage-provisioner.d
+minikube-darwin-amd64  minikube-linux-amd64  minikube-windows-amd64.exe
 ```
 
 ### Run Instructions
