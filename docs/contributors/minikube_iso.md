@@ -25,7 +25,7 @@ Also be sure to have an UTF-8 locale set up in order to build the ISO.
 ### Build instructions
 
 ```shell
-$ git clone https://github.com/kubernetes/minikube
+$ git clone https://github.com/kubernetes/minikube.git
 $ cd minikube
 $ make buildroot-image
 $ make out/minikube.iso
@@ -38,8 +38,7 @@ The bootable ISO image will be available in `out/minikube.iso`.
 ### Testing local minikube-iso changes
 
 ```shell
-$ ./out/minikube start \
-    --iso-url=file://$GOPATH/src/k8s.io/minikube/out/minikube.iso
+$ ./out/minikube start --iso-url=file://$(pwd)/out/minikube.iso
 ```
 
 ### Buildroot configuration
