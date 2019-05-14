@@ -29,11 +29,11 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -45,7 +45,7 @@ import (
 
 // K8sClient represents a kubernetes client
 type K8sClient interface {
-	GetCoreClient() (corev1.CoreV1Interface, error)
+	GetCoreClient() (typed_core.CoreV1Interface, error)
 	GetClientset(timeout time.Duration) (*kubernetes.Clientset, error)
 }
 
@@ -60,7 +60,7 @@ func init() {
 }
 
 // GetCoreClient returns a core client
-func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+func (k *K8sClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 	client, err := k.GetClientset(constants.DefaultK8sClientTimeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
@@ -122,7 +122,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 	serviceInterface := client.Services(namespace)
 
-	svcs, err := serviceInterface.List(metav1.ListOptions{})
+	svcs, err := serviceInterface.List(meta.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -160,19 +160,19 @@ func GetServiceURLsForService(api libmachine.API, namespace, service string, t *
 	return printURLsForService(client, ip, service, namespace, t)
 }
 
-func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string, t *template.Template) ([]string, error) {
+func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace string, t *template.Template) ([]string, error) {
 	if t == nil {
 		return nil, errors.New("Error, attempted to generate service url with nil --format template")
 	}
 
 	s := c.Services(namespace)
-	svc, err := s.Get(service, metav1.GetOptions{})
+	svc, err := s.Get(service, meta.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "service '%s' could not be found running", service)
 	}
 
 	e := c.Endpoints(namespace)
-	endpoints, err := e.Get(service, metav1.GetOptions{})
+	endpoints, err := e.Get(service, meta.GetOptions{})
 	m := make(map[int32]string)
 	if err == nil && endpoints != nil && len(endpoints.Subsets) > 0 {
 		for _, ept := range endpoints.Subsets {
@@ -211,7 +211,7 @@ func CheckService(namespace string, service string) error {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
 
-	svc, err := client.Services(namespace).Get(service, metav1.GetOptions{})
+	svc, err := client.Services(namespace).Get(service, meta.GetOptions{})
 	if err != nil {
 		return &util.RetriableError{
 			Err: errors.Wrapf(err, "Error getting service %s", service),
@@ -267,19 +267,19 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 }
 
 // GetServiceListByLabel returns a ServiceList by label
-func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
+func GetServiceListByLabel(namespace string, key string, value string) (*core.ServiceList, error) {
 	client, err := K8s.GetCoreClient()
 	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+		return &core.ServiceList{}, &util.RetriableError{Err: err}
 	}
 	return getServiceListFromServicesByLabel(client.Services(namespace), key, value)
 }
 
-func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
+func getServiceListFromServicesByLabel(services typed_core.ServiceInterface, key string, value string) (*core.ServiceList, error) {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
-	serviceList, err := services.List(metav1.ListOptions{LabelSelector: selector.String()})
+	serviceList, err := services.List(meta.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+		return &core.ServiceList{}, &util.RetriableError{Err: err}
 	}
 
 	return serviceList, nil
@@ -292,7 +292,7 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 		return &util.RetriableError{Err: err}
 	}
 	secrets := client.Secrets(namespace)
-	secret, _ := secrets.Get(name, metav1.GetOptions{})
+	secret, _ := secrets.Get(name, meta.GetOptions{})
 
 	// Delete existing secret
 	if len(secret.Name) > 0 {
@@ -309,13 +309,13 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 	}
 
 	// Create Secret
-	secretObj := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
+	secretObj := &core.Secret{
+		ObjectMeta: meta.ObjectMeta{
 			Name:   name,
 			Labels: labels,
 		},
 		Data: data,
-		Type: v1.SecretTypeOpaque,
+		Type: core.SecretTypeOpaque,
 	}
 
 	_, err = secrets.Create(secretObj)
@@ -334,7 +334,7 @@ func DeleteSecret(namespace, name string) error {
 	}
 
 	secrets := client.Secrets(namespace)
-	err = secrets.Delete(name, &metav1.DeleteOptions{})
+	err = secrets.Delete(name, &meta.DeleteOptions{})
 	if err != nil {
 		return &util.RetriableError{Err: err}
 	}
