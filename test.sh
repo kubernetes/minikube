@@ -18,9 +18,12 @@ set -eu -o pipefail
 
 exitcode=0
 
+echo "= go mod ================================================================"
+go mod download || ((exitcode+=1))
+go mod tidy -v && echo ok || ((exitcode+=2))
+
 echo "= make lint ============================================================="
-make -s lint && echo ok || ((exitcode+=1))
-echo ""
+make -s lint && echo ok || ((exitcode+=4))
 
 echo "= boilerplate ==========================================================="
 readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
@@ -33,11 +36,9 @@ if [[ -n "${missing}" ]]; then
 else
     echo "ok"
 fi
-echo ""
 
 echo "= schema_check =========================================================="
-go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode+=2))
-echo ""
+go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode+=8))
 
 echo "= go test ==============================================================="
 cov_tmp="$(mktemp)"
@@ -48,7 +49,7 @@ go test \
     -tags "container_image_ostree_stub containers_image_openpgp" \
     -covermode=count \
     -coverprofile="${cov_tmp}" \
-    ${pkgs} && echo ok || ((exitcode+=3))
+    ${pkgs} && echo ok || ((exitcode+=16))
 tail -n +2 "${cov_tmp}" >> "${COVERAGE_PATH}"
 
 exit "${exitcode}"
