@@ -84,7 +84,11 @@ func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/javascript")
-	fmt.Fprintf(w, string(b))
+	_, err = fmt.Fprint(w, string(b))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
 func TestGetLatestVersionFromURLCorrect(t *testing.T) {
