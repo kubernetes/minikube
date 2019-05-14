@@ -227,7 +227,7 @@ out/linters/golangci-lint:
 	mkdir -p out/linters \
 	  && cd out/linters \
 	  && test -f go.mod || go mod init linters \
-	  && go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@692dacb773b703162c091c2d8c59f9cd2d6801db
+	  && go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@692dacb773b703162c091c2d8c59f9cd2d6801db >/dev/null
 	cp -f $(GOPATH)/bin/golangci-lint out/linters/golangci-lint
 
 .PHONY: lint
