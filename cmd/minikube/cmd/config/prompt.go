@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	"golang.org/x/crypto/ssh/terminal"
 	"k8s.io/minikube/pkg/minikube/console"
 )
@@ -49,7 +50,6 @@ func AskForYesNoConfirmation(s string, posResponses, negResponses []string) bool
 			return false
 		default:
 			console.Err("Please type yes or no:")
-			return AskForYesNoConfirmation(s, posResponses, negResponses)
 		}
 	}
 }
@@ -111,7 +111,7 @@ func concealableAskForStaticValue(readWriter io.ReadWriter, promptString string,
 		response = strings.TrimSpace(response)
 		if len(response) == 0 {
 			console.Warning("Please enter a value:")
-			return concealableAskForStaticValue(readWriter, promptString, hidden)
+			continue
 		}
 		return response, nil
 	}
@@ -125,7 +125,11 @@ func AskForPasswordValue(s string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer terminal.Restore(stdInFd, oldState)
+	defer func() {
+		if err := terminal.Restore(stdInFd, oldState); err != nil {
+			glog.Errorf("terminal restore failed: %v", err)
+		}
+	}()
 
 	result, err := concealableAskForStaticValue(os.Stdin, s, true)
 	if err != nil {

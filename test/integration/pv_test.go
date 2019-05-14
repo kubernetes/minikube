@@ -60,7 +60,7 @@ func testProvisioning(t *testing.T) {
 		if len(scl.Items) > 0 {
 			return nil
 		}
-		return fmt.Errorf("No default StorageClass yet.")
+		return fmt.Errorf("no default StorageClass yet")
 	}
 
 	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {

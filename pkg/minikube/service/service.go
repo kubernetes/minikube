@@ -81,12 +81,12 @@ func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clients
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	clientConfig, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
+		return nil, fmt.Errorf("kubeConfig: %v", err)
 	}
 	clientConfig.Timeout = timeout
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
+		return nil, errors.Wrap(err, "client from config")
 	}
 
 	return client, nil
@@ -177,7 +177,7 @@ func printURLsForService(c corev1.CoreV1Interface, ip, service, namespace string
 	if err == nil && endpoints != nil && len(endpoints.Subsets) > 0 {
 		for _, ept := range endpoints.Subsets {
 			for _, p := range ept.Ports {
-				m[int32(p.Port)] = p.Name
+				m[p.Port] = p.Name
 			}
 		}
 	}
@@ -258,7 +258,9 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 			console.OutLn(urlString)
 		} else {
 			console.OutStyle("celebrate", "Opening kubernetes service %s/%s in default browser...", namespace, service)
-			browser.OpenURL(urlString)
+			if err := browser.OpenURL(urlString); err != nil {
+				console.Err("browser failed to open url: %v", err)
+			}
 		}
 	}
 	return nil
@@ -332,10 +334,6 @@ func DeleteSecret(namespace, name string) error {
 	}
 
 	secrets := client.Secrets(namespace)
-	if err != nil {
-		return &util.RetriableError{Err: err}
-	}
-
 	err = secrets.Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		return &util.RetriableError{Err: err}
