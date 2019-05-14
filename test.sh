@@ -30,11 +30,13 @@ if [[ -n "${missing}" ]]; then
     echo "boilerplate missing: $missing"
     echo "consider running: ${BDIR}/fix.sh"
     ((exitcode+=4))
+else
+    echo "ok"
 fi
 echo ""
 
 echo "= schema_check =========================================================="
-go run deploy/minikube/schema_check.go || ((exitcode+=2))
+go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode+=2))
 echo ""
 
 echo "= go test ==============================================================="
@@ -46,7 +48,7 @@ go test \
     -tags "container_image_ostree_stub containers_image_openpgp" \
     -covermode=count \
     -coverprofile="${cov_tmp}" \
-    ${pkgs} || ((exitcode+=3))
+    ${pkgs} && echo ok || ((exitcode+=3))
 tail -n +2 "${cov_tmp}" >> "${COVERAGE_PATH}"
 
 exit "${exitcode}"

@@ -298,7 +298,9 @@ func CacheImage(image, dst string) error {
 	defer func() {
 		log.SetOutput(os.Stdout)
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		if _, err := io.Copy(&buf, r); err != nil {
+			glog.Errorf("output copy failed: %v", err)
+		}
 		glog.Infof(buf.String())
 	}()
 

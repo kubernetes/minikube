@@ -21,20 +21,20 @@ import (
 
 	"reflect"
 
-	apiV1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
+	fake "k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/client-go/rest"
 )
 
 type stubCoreClient struct {
 	fake.FakeCoreV1
-	servicesList *apiV1.ServiceList
+	servicesList *core.ServiceList
 	restClient   *rest.RESTClient
 }
 
-func (c *stubCoreClient) Services(namespace string) v1.ServiceInterface {
+func (c *stubCoreClient) Services(namespace string) typed_core.ServiceInterface {
 	return &stubServices{
 		fake.FakeServices{Fake: &c.FakeCoreV1},
 		c.servicesList,
@@ -47,17 +47,17 @@ func (c *stubCoreClient) RESTClient() rest.Interface {
 
 type stubServices struct {
 	fake.FakeServices
-	servicesList *apiV1.ServiceList
+	servicesList *core.ServiceList
 }
 
-func (s *stubServices) List(opts metaV1.ListOptions) (*apiV1.ServiceList, error) {
+func (s *stubServices) List(opts meta.ListOptions) (*core.ServiceList, error) {
 	return s.servicesList, nil
 }
 
-func newStubCoreClient(servicesList *apiV1.ServiceList) *stubCoreClient {
+func newStubCoreClient(servicesList *core.ServiceList) *stubCoreClient {
 	if servicesList == nil {
-		servicesList = &apiV1.ServiceList{
-			Items: []apiV1.Service{}}
+		servicesList = &core.ServiceList{
+			Items: []core.Service{}}
 	}
 	return &stubCoreClient{
 		servicesList: servicesList,
@@ -84,8 +84,8 @@ func (r *recordingPatchConverter) convert(restClient rest.Interface, patch *Patc
 }
 
 func TestEmptyListOfServicesDoesNothing(t *testing.T) {
-	client := newStubCoreClient(&apiV1.ServiceList{
-		Items: []apiV1.Service{}})
+	client := newStubCoreClient(&core.ServiceList{
+		Items: []core.Service{}})
 
 	patcher := newLoadBalancerEmulator(client)
 
@@ -98,15 +98,15 @@ func TestEmptyListOfServicesDoesNothing(t *testing.T) {
 }
 
 func TestServicesWithNoLoadbalancerType(t *testing.T) {
-	client := newStubCoreClient(&apiV1.ServiceList{
-		Items: []apiV1.Service{
+	client := newStubCoreClient(&core.ServiceList{
+		Items: []core.Service{
 			{
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type: "ClusterIP",
 				},
 			},
 			{
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type: "NodeIP",
 				},
 			},
@@ -124,20 +124,20 @@ func TestServicesWithNoLoadbalancerType(t *testing.T) {
 }
 
 func TestServicesWithLoadbalancerType(t *testing.T) {
-	client := newStubCoreClient(&apiV1.ServiceList{
-		Items: []apiV1.Service{
+	client := newStubCoreClient(&core.ServiceList{
+		Items: []core.Service{
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "svc1-up-to-date",
 					Namespace: "ns1",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type:      "LoadBalancer",
 					ClusterIP: "10.96.0.3",
 				},
-				Status: apiV1.ServiceStatus{
-					LoadBalancer: apiV1.LoadBalancerStatus{
-						Ingress: []apiV1.LoadBalancerIngress{
+				Status: core.ServiceStatus{
+					LoadBalancer: core.LoadBalancerStatus{
+						Ingress: []core.LoadBalancerIngress{
 							{
 								IP: "10.96.0.3",
 							},
@@ -146,17 +146,17 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 				},
 			},
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "svc2-out-of-date",
 					Namespace: "ns2",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type:      "LoadBalancer",
 					ClusterIP: "10.96.0.4",
 				},
-				Status: apiV1.ServiceStatus{
-					LoadBalancer: apiV1.LoadBalancerStatus{
-						Ingress: []apiV1.LoadBalancerIngress{
+				Status: core.ServiceStatus{
+					LoadBalancer: core.LoadBalancerStatus{
+						Ingress: []core.LoadBalancerIngress{
 							{
 								IP: "10.96.0.5",
 							},
@@ -165,25 +165,25 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 				},
 			},
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "svc3-empty-ingress",
 					Namespace: "ns3",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type:      "LoadBalancer",
 					ClusterIP: "10.96.0.2",
 				},
-				Status: apiV1.ServiceStatus{
-					LoadBalancer: apiV1.LoadBalancerStatus{
-						Ingress: []apiV1.LoadBalancerIngress{},
+				Status: core.ServiceStatus{
+					LoadBalancer: core.LoadBalancerStatus{
+						Ingress: []core.LoadBalancerIngress{},
 					},
 				},
 			},
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name: "svc4-not-lb",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type: "NodeIP",
 				},
 			},
@@ -259,20 +259,20 @@ func TestCleanupPatchedIPs(t *testing.T) {
 		},
 	}
 
-	client := newStubCoreClient(&apiV1.ServiceList{
-		Items: []apiV1.Service{
+	client := newStubCoreClient(&core.ServiceList{
+		Items: []core.Service{
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "svc1-up-to-date",
 					Namespace: "ns1",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type:      "LoadBalancer",
 					ClusterIP: "10.96.0.3",
 				},
-				Status: apiV1.ServiceStatus{
-					LoadBalancer: apiV1.LoadBalancerStatus{
-						Ingress: []apiV1.LoadBalancerIngress{
+				Status: core.ServiceStatus{
+					LoadBalancer: core.LoadBalancerStatus{
+						Ingress: []core.LoadBalancerIngress{
 							{
 								IP: "10.96.0.3",
 							},
@@ -281,17 +281,17 @@ func TestCleanupPatchedIPs(t *testing.T) {
 				},
 			},
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "svc2-out-of-date",
 					Namespace: "ns2",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type:      "LoadBalancer",
 					ClusterIP: "10.96.0.4",
 				},
-				Status: apiV1.ServiceStatus{
-					LoadBalancer: apiV1.LoadBalancerStatus{
-						Ingress: []apiV1.LoadBalancerIngress{
+				Status: core.ServiceStatus{
+					LoadBalancer: core.LoadBalancerStatus{
+						Ingress: []core.LoadBalancerIngress{
 							{
 								IP: "10.96.0.5",
 							},
@@ -300,25 +300,25 @@ func TestCleanupPatchedIPs(t *testing.T) {
 				},
 			},
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "svc3-empty-ingress",
 					Namespace: "ns3",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type:      "LoadBalancer",
 					ClusterIP: "10.96.0.2",
 				},
-				Status: apiV1.ServiceStatus{
-					LoadBalancer: apiV1.LoadBalancerStatus{
-						Ingress: []apiV1.LoadBalancerIngress{},
+				Status: core.ServiceStatus{
+					LoadBalancer: core.LoadBalancerStatus{
+						Ingress: []core.LoadBalancerIngress{},
 					},
 				},
 			},
 			{
-				ObjectMeta: metaV1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name: "svc4-not-lb",
 				},
-				Spec: apiV1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Type: "NodeIP",
 				},
 			},

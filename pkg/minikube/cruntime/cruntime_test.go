@@ -482,7 +482,9 @@ func TestContainerFunctions(t *testing.T) {
 			}
 
 			// Kill the containers and assert that they have disappeared
-			cr.KillContainers(got)
+			if err := cr.KillContainers(got); err != nil {
+				t.Errorf("KillContainers: %v", err)
+			}
 			got, err = cr.ListContainers("")
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)

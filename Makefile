@@ -219,12 +219,16 @@ fmt:
 vet:
 	@go vet $(SOURCE_PACKAGES)
 
+out/linters/golangci-lint:
+	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
+	  | bash -s -- -b out/linters v1.16.0
+
 .PHONY: lint
-lint: pkg/minikube/assets/assets.go
-	@env GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
-	@golangci-lint run \
+lint: pkg/minikube/assets/assets.go out/linters/golangci-lint
+	./out/linters/golangci-lint run \
+	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
-	  --exclude 'Using variable on range scope.*in function literal' \
+	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
 	  ./...
 
 .PHONY: reportcard
