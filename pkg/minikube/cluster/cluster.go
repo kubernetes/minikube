@@ -258,7 +258,7 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 	return &o
 }
 
-func preCreateHost(config *cfg.MachineConfig) error {
+func preCreateHost(config *cfg.MachineConfig) {
 	switch config.VMDriver {
 	case "kvm":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
@@ -282,16 +282,10 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
 	}
-
-	return nil
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	err := preCreateHost(&config)
-	if err != nil {
-		return nil, err
-	}
-
+	preCreateHost(&config)
 	console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {

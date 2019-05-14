@@ -23,7 +23,6 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/docker/machine/libmachine/log"
@@ -114,14 +113,6 @@ func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
 		}
 	}
 	return dhcpEntries, scanner.Err()
-}
-
-// trimMacAddress trimming "0" of the ten's digit
-func trimMacAddress(rawUUID string) string {
-	re := regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
-	mac := re.ReplaceAllString(rawUUID, "$1")
-
-	return mac
 }
 
 // GetNetAddr gets the network address for vmnet

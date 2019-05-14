@@ -40,7 +40,7 @@ func IsValidDriver(string, driver string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Driver %s is not supported", driver)
+	return fmt.Errorf("driver %q is not supported", driver)
 }
 
 // RequiresRestartMsg returns the "requires restart" message

@@ -220,8 +220,12 @@ vet:
 	@go vet $(SOURCE_PACKAGES)
 
 .PHONY: lint
-lint:
-	@golint -set_exit_status $(SOURCE_PACKAGES)
+lint: pkg/minikube/assets/assets.go
+	@env GO111MODULE=off go get github.com/golangci/golangci-lint/cmd/golangci-lint
+	@golangci-lint run \
+	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
+	  --exclude 'Using variable on range scope.*in function literal' \
+	  ./...
 
 .PHONY: reportcard
 reportcard:

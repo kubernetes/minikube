@@ -42,13 +42,12 @@ func AskForYesNoConfirmation(s string, posResponses, negResponses []string) bool
 			log.Fatal(err)
 		}
 
-		response = strings.ToLower(strings.TrimSpace(response))
-
-		if containsString(posResponses, response) {
+		switch r := strings.ToLower(strings.TrimSpace(response)); {
+		case containsString(posResponses, r):
 			return true
-		} else if containsString(negResponses, response) {
+		case containsString(negResponses, r):
 			return false
-		} else {
+		default:
 			console.Err("Please type yes or no:")
 			return AskForYesNoConfirmation(s, posResponses, negResponses)
 		}
