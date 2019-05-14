@@ -20,7 +20,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/storage/v1"
+	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -31,7 +31,7 @@ func annotateDefaultStorageClass(client *kubernetes.Clientset, class *v1.Storage
 	isDefault := strconv.FormatBool(enable)
 
 	metav1.SetMetaDataAnnotation(&class.ObjectMeta, "storageclass.beta.kubernetes.io/is-default-class", isDefault)
-	_, err := client.Storage().StorageClasses().Update(class)
+	_, err := client.StorageV1().StorageClasses().Update(class)
 
 	return err
 }
@@ -50,7 +50,7 @@ func DisableDefaultStorageClass(class string) error {
 		return errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
 
-	sc, err := client.Storage().StorageClasses().Get(class, metav1.GetOptions{})
+	sc, err := client.StorageV1().StorageClasses().Get(class, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Error getting storage class %s", class)
 	}
@@ -77,7 +77,7 @@ func SetDefaultStorageClass(name string) error {
 		return errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
 
-	scList, err := client.Storage().StorageClasses().List(metav1.ListOptions{})
+	scList, err := client.StorageV1().StorageClasses().List(metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "Error listing StorageClasses")
 	}

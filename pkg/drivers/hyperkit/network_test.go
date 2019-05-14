@@ -52,10 +52,14 @@ func Test_getIpAddressFromFile(t *testing.T) {
 	defer os.RemoveAll(tmpdir)
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")
-	ioutil.WriteFile(dhcpFile, validLeases, 0644)
+	if err := ioutil.WriteFile(dhcpFile, validLeases, 0644); err != nil {
+		t.Fatalf("writefile: %v", err)
+	}
 
 	invalidFile := filepath.Join(tmpdir, "invalid")
-	ioutil.WriteFile(invalidFile, []byte("foo"), 0644)
+	if err := ioutil.WriteFile(invalidFile, []byte("foo"), 0644); err != nil {
+		t.Fatalf("writefile: %v", err)
+	}
 
 	type args struct {
 		mac  string

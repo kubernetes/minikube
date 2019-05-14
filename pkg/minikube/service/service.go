@@ -29,7 +29,7 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -65,7 +65,7 @@ func (k *K8sClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}
-	return client.Core(), nil
+	return client.CoreV1(), nil
 }
 
 // GetClientset returns a clientset
@@ -270,11 +270,7 @@ func GetServiceListByLabel(namespace string, key string, value string) (*v1.Serv
 	if err != nil {
 		return &v1.ServiceList{}, &util.RetriableError{Err: err}
 	}
-	services := client.Services(namespace)
-	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
-	}
-	return getServiceListFromServicesByLabel(services, key, value)
+	return getServiceListFromServicesByLabel(client.Services(namespace), key, value)
 }
 
 func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
@@ -294,10 +290,6 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 		return &util.RetriableError{Err: err}
 	}
 	secrets := client.Secrets(namespace)
-	if err != nil {
-		return &util.RetriableError{Err: err}
-	}
-
 	secret, _ := secrets.Get(name, metav1.GetOptions{})
 
 	// Delete existing secret

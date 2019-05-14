@@ -18,8 +18,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -123,34 +121,4 @@ func testTunnel(t *testing.T) {
 	if !strings.Contains(responseBody, "Welcome to nginx!") {
 		t.Fatalf("response body doesn't seem like an nginx response:\n%s", responseBody)
 	}
-}
-
-func getResponseBody(address string) (string, error) {
-	httpClient := http.DefaultClient
-	httpClient.Timeout = 5 * time.Second
-
-	var resp *http.Response
-	var err error
-
-	request := func() error {
-		resp, err = httpClient.Get(fmt.Sprintf("http://%s", address))
-		if err != nil {
-			retriable := &commonutil.RetriableError{Err: err}
-			return retriable
-		}
-		return nil
-	}
-
-	if err = commonutil.RetryAfter(5, request, 1*time.Second); err != nil {
-		return "", err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil || len(body) == 0 {
-		return "", errors.Wrapf(err, "error reading body, len bytes read: %d", len(body))
-	}
-
-	return string(body), nil
 }

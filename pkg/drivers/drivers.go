@@ -17,6 +17,7 @@ limitations under the License.
 package drivers
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -59,7 +60,9 @@ func createRawDiskImage(sshKeyPath, diskPath string, diskSizeMb int) error {
 		return err
 	}
 	defer file.Close()
-	file.Seek(0, os.SEEK_SET)
+	if _, err := file.Seek(0, io.SeekStart); err != nil {
+		return err
+	}
 
 	if _, err := file.Write(tarBuf.Bytes()); err != nil {
 		return err
@@ -116,7 +119,9 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 }
 
 func fixPermissions(path string) error {
-	os.Chown(path, syscall.Getuid(), syscall.Getegid())
+	if err := os.Chown(path, syscall.Getuid(), syscall.Getegid()); err != nil {
+		return err
+	}
 	files, _ := ioutil.ReadDir(path)
 	for _, f := range files {
 		fp := filepath.Join(path, f.Name())
