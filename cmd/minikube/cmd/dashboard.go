@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -55,7 +56,10 @@ var dashboardCmd = &cobra.Command{
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cc, err := pkg_config.Load()
-		proxy.UpdateNoProxy(cc.KubernetesConfig.NodeIP)
+		if err != nil && !os.IsNotExist(err) {
+			console.ErrLn("Error loading profile config: %v", err)
+		}
+		proxy.UpdateEnv(cc.KubernetesConfig.NodeIP, "NO_PROXY")
 
 		kubectl, err := exec.LookPath("kubectl")
 		if err != nil {
