@@ -21,6 +21,8 @@ github.com/docker/machine v0.16.1 h1:zrgroZounGVkxLmBqMyc1uT2GgapXVjIWHCfBf0udrA
 github.com/docker/machine v0.16.1/go.mod h1:I8mPNDeK1uH+JTcUU7X0ZW8KiYz0jyAgNaeSJ1rCfDI=
 github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f h1:8GDPb0tCY8LQ+OJ3dbHb5sA6YZWXFORQYZx5sdsTlMs=
 github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
+github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f h1:AUj1VoZUfhPhOPHULCQQDnGhRelpFWHMLhQVWDsS0v4=
+github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f/go.mod h1:gNh8nYJoAm43RfaxurUnxr+N1PwuFV3ZMl/efxlIlY8=
 github.com/fsnotify/fsnotify v0.0.0-20160816051541-f12c6236fe7b h1:lHoxUxMozh/yCASOoFep9dPMva62ztmxKK2VB8//Aoo=
 github.com/fsnotify/fsnotify v0.0.0-20160816051541-f12c6236fe7b/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 h1:ZktWZesgun21uEDrwW7iEV1zPCGQldM2atlJZ3TdvVM=
@@ -121,6 +123,7 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/r2d4/external-storage v0.0.0-20171222174501-8c0e8605dc7b h1:+wokSDzl6kjfWhVQsBhFOC2t4TYfdLfRXfWorEg3KUE=
 github.com/r2d4/external-storage v0.0.0-20171222174501-8c0e8605dc7b/go.mod h1:/UlUhYuWiiitqIPbAxyU96i/wDlBS8sRHX2lRN+ffgs=
+github.com/rogpeppe/go-charset v0.0.0-20180617210344-2471d30d28b4/go.mod h1:qgYeAmZ5ZIpBWTGllZSQnw97Dj+woV0toclVaRGI8pc=
 github.com/russross/blackfriday v0.0.0-20151117072312-300106c228d5 h1:+6eORf9Bt4C3Wjt91epyu6wvLW+P6+AEODb6uKgO+4g=
 github.com/russross/blackfriday v0.0.0-20151117072312-300106c228d5/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 h1:XRl74t6xHKI5EVIjDI5nPlHRq0bHED9/TjQuD8/UMkE=
