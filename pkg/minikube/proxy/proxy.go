@@ -111,8 +111,8 @@ func isValidEnv(env string) bool {
 	return false
 }
 
-// UpdateConfigTranport takes a k8s rest config and returns a config without a proxy.
-func UpdateConfigTranport(cfg *rest.Config) *rest.Config {
+// UpdateTransport takes a k8s client *rest.config and returns a config without a proxy.
+func UpdateTransport(cfg *rest.Config) *rest.Config {
 	wt := cfg.WrapTransport // Config might already have a transport wrapper
 	cfg.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
 		if wt != nil {
