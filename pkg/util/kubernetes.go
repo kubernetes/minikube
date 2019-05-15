@@ -77,7 +77,7 @@ func GetClient() (kubernetes.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
-	config = proxy.SetNoProxyK8s(config)
+	config = proxy.UpdateConfigTranport(config)
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
