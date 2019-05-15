@@ -49,7 +49,7 @@ func isInBlock(ip string, block string) (bool, error) {
 	if b.Contains(i) {
 		return true, nil
 	}
-	return false, nil
+	return false, errors.Wrapf(err, "Error ip not in block")
 }
 
 // UpdateEnv appends an ip to the environment variable
