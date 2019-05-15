@@ -13,6 +13,7 @@ require (
 	github.com/docker/docker v0.0.0-20180917213351-bbe08dc7f0b9
 	github.com/docker/go-units v0.0.0-20170127094116-9e638d38cf69
 	github.com/docker/machine v0.16.1
+	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/fsnotify/fsnotify v0.0.0-20160816051541-f12c6236fe7b
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e
@@ -56,6 +57,7 @@ require (
 	github.com/pelletier/go-toml v0.0.0-20160822122712-0049ab3dc4c4
 	github.com/petar/GoLLRB v0.0.0-20130427215148-53be0d36a84c
 	github.com/peterbourgon/diskv v2.0.1+incompatible
+	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
 	github.com/pkg/errors v0.8.0
 	github.com/pkg/profile v0.0.0-20161223203901-3a8809bd8a80
