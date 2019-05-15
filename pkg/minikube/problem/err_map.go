@@ -93,7 +93,8 @@ var vmProblems = map[string]match{
 	},
 	"KVM2_START_NO_IP": {
 		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after 120 seconds`),
-		Advice: "",
+		Advice: "The KVM driver is not providing an IP address to the VM. Try checking your libvirt configuration and/or opening an issue",
+		URL:    "https://fedoraproject.org/wiki/How_to_debug_Virtualization_problems#Networking",
 		Issues: []int{4249, 3566},
 	},
 	"KVM2_NETWORK_DEFINE_XML": {
@@ -159,7 +160,7 @@ var netProblems = map[string]match{
 	},
 	"DOWNLOAD_TLS_OVERSIZED": {
 		Regexp: re(`tls: oversized record received with length`),
-		Advice: "A firewall is interfering with minikube's ability to make outgoing HTTPS requests. You may need to configure minikube to use a proxy, or adjust your HTTPS_PROXY value to use http:// or https://",
+		Advice: "A firewall is interfering with minikube's ability to make outgoing HTTPS requests. You may need to change the value of the HTTPS_PROXY environment variable.",
 		URL:    proxyDoc,
 		Issues: []int{3857, 3759, 4252},
 	},
