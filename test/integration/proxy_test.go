@@ -33,7 +33,7 @@ import (
 )
 
 // setUpProxy runs a local http proxy and sets the env vars for it.
-func setUpProxy() error {
+func setUpProxy(t *testing.T) error {
 	port, err := freeport.GetFreePort()
 	if err != nil {
 		return errors.Wrap(err, "Failed to get an open port")
@@ -50,19 +50,18 @@ func setUpProxy() error {
 	}
 
 	proxy := goproxy.NewProxyHttpServer()
-	go func() error{ // TODO: handle error @medyagh 
-		return errors.Wrap(http.ListenAndServe(addr, proxy), "Error serving http server for proxy")
+	go func(){
+		t.Fatalf("Failed to server a http server for proxy : %s ", http.ListenAndServe(addr, proxy))
 	  }()
 	return nil
 }
 
 
 func TestProxy(t *testing.T) {
-	err := setUpProxy()
+	err := setUpProxy(t)
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
-
 	t.Run("ConsoleWarnning", testProxyWarning)
 	t.Run("DashboardProxy", testDashboard)
 
