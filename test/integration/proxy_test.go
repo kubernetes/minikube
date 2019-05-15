@@ -26,10 +26,11 @@ import (
 	"testing"
 	"time"
 
+	"net/http"
+
 	"github.com/elazarl/goproxy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
-	"net/http"
 )
 
 // setUpProxy runs a local http proxy and sets the env vars for it.
@@ -39,7 +40,7 @@ func setUpProxy(t *testing.T) error {
 		return errors.Wrap(err, "Failed to get an open port")
 	}
 
-	addr:= fmt.Sprintf("localhost:%d",port)
+	addr := fmt.Sprintf("localhost:%d", port)
 	err = os.Setenv("NO_PROXY", "")
 	if err != nil {
 		return errors.Wrap(err, "Failed to set no proxy env")
@@ -50,12 +51,12 @@ func setUpProxy(t *testing.T) error {
 	}
 
 	proxy := goproxy.NewProxyHttpServer()
-	go func(){
-		t.Fatalf("Failed to server a http server for proxy : %s ", http.ListenAndServe(addr, proxy))
-	  }()
+	go func() {
+		err := http.ListenAndServe(addr, proxy)
+		t.Fatalf("Failed to server a http server for proxy : %s ", err)
+	}()
 	return nil
 }
-
 
 func TestProxy(t *testing.T) {
 	err := setUpProxy(t)
@@ -66,7 +67,6 @@ func TestProxy(t *testing.T) {
 	t.Run("DashboardProxy", testDashboard)
 
 }
-
 
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
