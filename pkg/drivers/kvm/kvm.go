@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -323,15 +324,20 @@ func (d *Driver) Create() (err error) {
 		}
 	}
 
-	home := d.ResolveStorePath(".")
-	log.Infof("Setting up minikube home directory in %s ...", home)
-	if err := os.MkdirAll(home, 0755); err != nil {
-		return errors.Wrap(err, "creating home directory")
+	store := d.ResolveStorePath(".")
+	log.Infof("Setting up store path in %s ...", store)
+	// 0755 because it must be accessible by libvirt/qemu across a variety of configs
+	if err := os.MkdirAll(store, 0755); err != nil {
+		return errors.Wrap(err, "creating store")
 	}
 
 	log.Infof("Building disk image from %s", d.Boot2DockerURL)
 	if err = pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "Error creating disk")
+	}
+
+	if err := ensureDirPermissions(store); err != nil {
+		log.Errorf("unable to ensure permissions on %s: %v", store, err)
 	}
 
 	log.Info("Creating domain...")
@@ -345,6 +351,33 @@ func (d *Driver) Create() (err error) {
 		}
 	}()
 	return d.Start()
+}
+
+// ensureDirPermissions ensures that libvirt has access to access the image store directory
+func ensureDirPermissions(store string) error {
+	// traverse upwards from /home/user/.minikube/machines to ensure
+	// that libvirt/qemu has execute access
+	for dir := store; dir != "/"; dir = filepath.Dir(dir) {
+		log.Debugf("Checking permissions on dir: %s", dir)
+		s, err := os.Stat(dir)
+		if err != nil {
+			return err
+		}
+		owner := int(s.Sys().(*syscall.Stat_t).Uid)
+		if owner != os.Geteuid() {
+			log.Debugf("Skipping %s - not owner", dir)
+			continue
+		}
+		mode := s.Mode()
+		if mode&0011 != 1 {
+			log.Infof("Setting executable bit set on %s (perms=%s)", dir, mode)
+			mode |= 0011
+			if err := os.Chmod(dir, mode); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Stop a host gracefully
