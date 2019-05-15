@@ -96,6 +96,7 @@ Some environment variables may be useful for using the `none` driver:
 
 ## Known Issues
 
+* `systemctl` is required. [#2704](https://github.com/kubernetes/minikube/issues/2704)
 * `-p` (profiles) are unsupported: It is not possible to run more than one `--vm-driver=none` instance
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
