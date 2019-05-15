@@ -36,7 +36,7 @@ func isInBlock(ip string, block string) (bool, error) {
 	if ip == "" {
 		return false, fmt.Errorf("ip is nil")
 	}
-	if ip == "" {
+	if block == "" {
 		return false, fmt.Errorf("CIDR is nil")
 	}
 
@@ -55,12 +55,22 @@ func isInBlock(ip string, block string) (bool, error) {
 	return false, errors.Wrapf(err, "Error ip not in block")
 }
 
-// UpdateEnv appends an ip to the environment variable
-func UpdateEnv(ip string, env string) error {
+// ExcludeIP will exclude the ip from the http(s)_proxy
+func ExcludeIP(ip string) error {
+	return updateEnv(ip, "NO_PROXY")
+}
+
+// IsIPExcluded checks if an IP is excluded from http(s)_proxy
+func IsIPExcluded(ip string) bool {
+	return checkEnv(ip, "NO_PROXY")
+}
+
+// updateEnv appends an ip to the environment variable
+func updateEnv(ip string, env string) error {
 	if !isValidEnv(env) {
 		return fmt.Errorf("%s is not a valid env var name for proxy settings", env)
 	}
-	if !CheckEnv(ip, env) {
+	if !checkEnv(ip, env) {
 		v := os.Getenv(env)
 		if v == "" {
 			return os.Setenv(env, ip)
@@ -70,8 +80,8 @@ func UpdateEnv(ip string, env string) error {
 	return nil
 }
 
-// CheckEnv checks if ip in an environment variable
-func CheckEnv(ip string, env string) bool {
+// checkEnv checks if ip in an environment variable
+func checkEnv(ip string, env string) bool {
 	v := os.Getenv(env)
 	if v == "" {
 		return false
@@ -112,7 +122,7 @@ func SetNoProxyK8s(cfg *rest.Config) *rest.Config {
 			ht.Proxy = nil
 			rt = ht
 		} else {
-			glog.Errorf("Error while casting RoundTripper to *http.Transport : %v", ok)
+			glog.Errorf("Error while casting roundr tripper (of type %T) to *http.Transport : %v", rt, ok)
 		}
 		return rt
 	}

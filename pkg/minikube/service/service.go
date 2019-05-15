@@ -29,7 +29,7 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	v1 "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -267,23 +267,23 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 }
 
 // GetServiceListByLabel returns a ServiceList by label
-func GetServiceListByLabel(namespace string, key string, value string) (*v1.ServiceList, error) {
+func GetServiceListByLabel(namespace string, key string, value string) (*core.ServiceList, error) {
 	client, err := K8s.GetCoreClient()
 	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+		return &core.ServiceList{}, &util.RetriableError{Err: err}
 	}
 	services := client.Services(namespace)
 	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+		return &core.ServiceList{}, &util.RetriableError{Err: err}
 	}
 	return getServiceListFromServicesByLabel(services, key, value)
 }
 
-func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*v1.ServiceList, error) {
+func getServiceListFromServicesByLabel(services corev1.ServiceInterface, key string, value string) (*core.ServiceList, error) {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
 	serviceList, err := services.List(metav1.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
-		return &v1.ServiceList{}, &util.RetriableError{Err: err}
+		return &core.ServiceList{}, &util.RetriableError{Err: err}
 	}
 
 	return serviceList, nil
@@ -317,13 +317,13 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 	}
 
 	// Create Secret
-	secretObj := &v1.Secret{
+	secretObj := &core.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: labels,
 		},
 		Data: data,
-		Type: v1.SecretTypeOpaque,
+		Type: core.SecretTypeOpaque,
 	}
 
 	_, err = secrets.Create(secretObj)
