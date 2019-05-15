@@ -77,6 +77,16 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("IP command returned an invalid address: %s", ip)
 			}
 
+			// check for the current-context before and after the stop
+			kubectlRunner := util.NewKubectlRunner(t)
+			currentContext, err := kubectlRunner.RunCommand([]string{"config", "current-context"})
+			if err != nil {
+				t.Fatalf("Failed to fetch current-context")
+			}
+			if strings.TrimRight(string(currentContext), "\n") != "minikube" {
+				t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), "minikube")
+			}
+
 			checkStop := func() error {
 				r.RunCommand("stop", true)
 				return r.CheckStatusNoFail(state.Stopped.String())
@@ -84,6 +94,11 @@ func TestStartStop(t *testing.T) {
 
 			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 				t.Fatalf("timed out while checking stopped status: %v", err)
+			}
+
+			// running this command results in error when the current-context is not set
+			if err := r.Run("config current-context"); err != nil {
+				t.Logf("current-context is not set to minikube")
 			}
 
 			r.Start(test.args...)

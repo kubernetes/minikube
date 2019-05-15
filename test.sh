@@ -16,8 +16,6 @@
 
 set -e
 
-REPO_PATH="k8s.io/minikube"
-
 # Check for python on host, and use it if possible, otherwise fall back on python dockerized
 if [[ -f $(which python 2>&1) ]]; then
     PYTHON="python"
@@ -31,7 +29,6 @@ COV_TMP_FILE=coverage_tmp.txt
 
 # Run "go test" on packages that have test files.  Also create coverage profile
 echo "Running go tests..."
-cd ${GOPATH}/src/${REPO_PATH}
 rm -f out/$COV_FILE || true
 echo "mode: count" > out/$COV_FILE
 for pkg in $(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./cmd/... ./pkg/...); do
