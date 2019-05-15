@@ -506,7 +506,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
-			glog.Infof("StartHost: %v", err)
+			glog.Errorf("StartHost: %v", err)
 		}
 		return err
 	}
