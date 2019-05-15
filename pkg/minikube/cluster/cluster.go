@@ -70,7 +70,7 @@ func CacheISO(config cfg.MachineConfig) error {
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrapf(err, "machine name: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "exists: %s", cfg.GetMachineName())
 	}
 	if !exists {
 		glog.Infoln("Machine does not exist... provisioning new machine")
