@@ -19,10 +19,13 @@ package proxy
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/client-go/rest"
 )
 
 // EnvVars are variables we plumb through to the underlying container runtime
@@ -96,4 +99,22 @@ func isValidEnv(env string) bool {
 		}
 	}
 	return false
+}
+
+// SetNoProxyK8s takes a k8s config and upadates the proxy
+func SetNoProxyK8s(cfg *rest.Config) *rest.Config {
+	wt := cfg.WrapTransport // Config might already have a transport wrapper
+	cfg.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		if wt != nil {
+			rt = wt(rt)
+		}
+		if ht, ok := rt.(*http.Transport); ok {
+			ht.Proxy = nil
+			rt = ht
+		} else {
+			glog.Errorf("Error while casting RoundTripper to *http.Transport : %v", ok)
+		}
+		return rt
+	}
+	return cfg
 }

@@ -29,7 +29,7 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -84,6 +85,7 @@ func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clients
 		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
 	clientConfig.Timeout = timeout
+	clientConfig = proxy.SetNoProxyK8s(clientConfig)
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
