@@ -308,8 +308,9 @@ func (d *Driver) Start() (err error) {
 
 // Create a host using the driver's config
 func (d *Driver) Create() (err error) {
-	log.Info("Creating machine...")
-	log.Info("Creating network...")
+	log.Info("Creating KVM machine...")
+	defer log.Infof("KVM machine creation complete!")
+
 	err = d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
@@ -322,27 +323,13 @@ func (d *Driver) Create() (err error) {
 		}
 	}
 
-	log.Info("Setting up minikube home directory...")
-	if err := os.MkdirAll(d.ResolveStorePath("."), 0755); err != nil {
-		return errors.Wrap(err, "Error making store path directory")
+	home := d.ResolveStorePath(".")
+	log.Infof("Setting up minikube home directory in %s ...", home)
+	if err := os.MkdirAll(home, 0755); err != nil {
+		return errors.Wrap(err, "creating home directory")
 	}
 
-	for dir := d.ResolveStorePath("."); dir != "/"; dir = filepath.Dir(dir) {
-		info, err := os.Stat(dir)
-		if err != nil {
-			return err
-		}
-		mode := info.Mode()
-		if mode&0011 != 1 {
-			log.Debugf("Setting executable bit set on %s", dir)
-			mode |= 0011
-			if err := os.Chmod(dir, mode); err != nil {
-				return err
-			}
-		}
-	}
-
-	log.Info("Building disk image...")
+	log.Infof("Building disk image from %s", d.Boot2DockerURL)
 	if err = pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "Error creating disk")
 	}
@@ -357,7 +344,6 @@ func (d *Driver) Create() (err error) {
 			err = ferr
 		}
 	}()
-	log.Debug("Finished creating machine, now starting machine...")
 	return d.Start()
 }
 
