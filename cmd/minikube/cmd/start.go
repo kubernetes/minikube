@@ -525,6 +525,7 @@ func validateNetwork(h *host.Host) string {
 	}
 
 	optSeen := false
+	warnedOnce := false
 	for _, k := range proxy.EnvVars {
 		if v := os.Getenv(k); v != "" {
 			if !optSeen {
@@ -533,8 +534,9 @@ func validateNetwork(h *host.Host) string {
 			}
 			console.OutStyle("option", "%s=%s", k, v)
 			npIsSet := proxy.CheckEnv(ip, "NO_PROXY") // Skip warning if minikube ip is already in NO_PROXY
-			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !npIsSet {
-				console.Warning("You are using a proxy, You need to add minikube IP to the NO_PROXY. Use `export NO_PROXY=$NO_PROXY,%s`", ip)
+			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !npIsSet && !warnedOnce {
+				console.Warning("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP (%s). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", ip)
+				warnedOnce = true
 			}
 		}
 	}
