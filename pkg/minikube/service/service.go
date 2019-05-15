@@ -85,7 +85,7 @@ func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clients
 		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
 	clientConfig.Timeout = timeout
-	clientConfig = proxy.SetNoProxyK8s(clientConfig)
+	clientConfig = proxy.UpdateConfigTranport(clientConfig)
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
