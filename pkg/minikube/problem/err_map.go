@@ -25,6 +25,12 @@ func re(s string) *regexp.Regexp {
 
 // vmProblems are VM related problems
 var vmProblems = map[string]match{
+	"HYPERKIT_NO_IP": {
+		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),
+		Advice: "Install the latest minikube hyperkit driver, and run 'minikube delete'",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver",
+		Issues: []int{1926, 4206},
+	},
 	"VBOX_NOT_FOUND": {
 		Regexp: re(`VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path`),
 		Advice: "Install VirtualBox, ensure that VBoxManage is executable and in path, or select an alternative value for --vm-driver",
@@ -67,7 +73,7 @@ var vmProblems = map[string]match{
 	"VBOX_HOST_ADAPTER": {
 		Regexp: re(`The host-only adapter we just created is not visible`),
 		Advice: "Reboot to complete VirtualBox installation, and verify that VirtualBox is not blocked by your system",
-		Issues: []int{3614},
+		Issues: []int{3614, 4222},
 		URL:    "https://stackoverflow.com/questions/52277019/how-to-fix-vm-issue-with-minikube-start",
 	},
 	"VBOX_KERNEL_MODULE_NOT_LOADED": {
@@ -80,10 +86,15 @@ var vmProblems = map[string]match{
 		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
 		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
 	},
-	"KVM2_NO_IP": {
+	"KVM2_RESTART_NO_IP": {
 		Regexp: re(`Error starting stopped host: Machine didn't return an IP after 120 seconds`),
 		Advice: "The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.",
-		Issues: []int{3901, 3566, 3434},
+		Issues: []int{3901, 3434},
+	},
+	"KVM2_START_NO_IP": {
+		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after 120 seconds`),
+		Advice: "",
+		Issues: []int{4249, 3566},
 	},
 	"KVM2_NETWORK_DEFINE_XML": {
 		Regexp: re(`not supported by the connection driver: virNetworkDefineXML`),
@@ -105,6 +116,21 @@ var vmProblems = map[string]match{
 		Regexp: re(`no External vswitch found. A valid vswitch must be available for this command to run.`),
 		Advice: "Configure an external network switch following the official documentation, then add `--hyperv-virtual-switch=<switch-name>` to `minikube start`",
 		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
+	},
+	"HOST_CIDR_CONFLICT": {
+		Regexp: re(`host-only cidr conflicts with the network address of a host interface`),
+		Advice: "Specify an alternate --host-only-cidr value, such as 172.16.0.1/24",
+		Issues: []int{3594},
+	},
+	"OOM_KILL_SSH": {
+		Regexp: re(`Process exited with status 137 from signal KILL`),
+		Advice: "Disable dynamic memory in your VM manager, or pass in a larger --memory value",
+		Issues: []int{1766},
+	},
+	"OOM_KILL_SCP": {
+		Regexp: re(`An existing connection was forcibly closed by the remote host`),
+		Advice: "Disable dynamic memory in your VM manager, or pass in a larger --memory value",
+		Issues: []int{1766},
 	},
 }
 
@@ -132,10 +158,10 @@ var netProblems = map[string]match{
 		Issues: []int{3846},
 	},
 	"DOWNLOAD_TLS_OVERSIZED": {
-		Regexp: re(`failed to download.*tls: oversized record received with length`),
-		Advice: "A firewall is interfering with minikube's ability to make outgoing HTTPS requests. You may need to configure minikube to use a proxy.",
+		Regexp: re(`tls: oversized record received with length`),
+		Advice: "A firewall is interfering with minikube's ability to make outgoing HTTPS requests. You may need to configure minikube to use a proxy, or adjust your HTTPS_PROXY value to use http:// or https://",
 		URL:    proxyDoc,
-		Issues: []int{3857, 3759},
+		Issues: []int{3857, 3759, 4252},
 	},
 	"ISO_DOWNLOAD_FAILED": {
 		Regexp: re(`iso: failed to download`),
@@ -181,6 +207,11 @@ var deployProblems = map[string]match{
 		Regexp: re(`strconv.ParseUint: parsing "": invalid syntax`),
 		Advice: "Check that your --kubernetes-version has a leading 'v'. For example: 'v1.1.14'",
 	},
+	"APISERVER_TIMEOUT": {
+		Regexp: re(`wait: waiting for component=kube-apiserver: timed out waiting for the condition`),
+		Advice: "Run 'minikube delete'. If the problem persists, check your proxy or firewall configuration",
+		Issues: []int{4202, 3836, 4221},
+	},
 }
 
 // osProblems are operating-system specific issues
@@ -189,6 +220,12 @@ var osProblems = map[string]match{
 		Regexp: re(`.iso: The system cannot find the path specified.`),
 		Advice: "Run minikube from the C: drive.",
 		Issues: []int{1574},
+	},
+	"SYSTEMCTL_EXIT_1": {
+		Regexp: re(`Failed to enable container runtime: .*sudo systemctl start docker: exit status 1`),
+		Advice: "If using the none driver, ensure that systemctl is installed",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md",
+		Issues: []int{2704},
 	},
 }
 
