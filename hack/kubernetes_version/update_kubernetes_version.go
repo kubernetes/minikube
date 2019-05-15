@@ -74,8 +74,7 @@ func main() {
 		}
 		cf, err = ioutil.ReadFile(path)
 		if err != nil {
-			// Keep going if this errors out
-			fmt.Println(err)
+			return err
 		}
 		re = regexp.MustCompile(`kubernetesVersion: .*`)
 		cf = []byte(re.ReplaceAllString(string(cf), "kubernetesVersion: "+v))
