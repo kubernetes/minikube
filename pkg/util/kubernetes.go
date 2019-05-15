@@ -18,7 +18,6 @@ package util
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/golang/glog"
@@ -34,10 +33,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	rest "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/minikube/proxy"
 )
 
 var (
@@ -69,25 +68,6 @@ func (s *PodStore) Stop() {
 	close(s.stopCh)
 }
 
-// setNoProxyConfig takes a k8s config and returns a config without proxy
-// to avoid connectivity issues when http(s) proxy is used.
-func setNoProxyConfig(cfg *rest.Config) *rest.Config {
-	wt := cfg.WrapTransport // Config might already have a transport wrapper
-	cfg.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		if wt != nil {
-			rt = wt(rt)
-		}
-		if ht, ok := rt.(*http.Transport); ok {
-			ht.Proxy = nil
-			rt = ht
-		} else {
-			glog.Errorf("Error while casting RoundTripper to *http.Transport : %v", ok)
-		}
-		return rt
-	}
-	return cfg
-}
-
 // GetClient gets the client from config
 func GetClient() (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -97,7 +77,7 @@ func GetClient() (kubernetes.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
-	config = setNoProxyConfig(config)
+	config = proxy.SetNoProxyK8s(config)
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
