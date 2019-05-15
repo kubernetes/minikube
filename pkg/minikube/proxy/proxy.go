@@ -122,7 +122,7 @@ func UpdateTransport(cfg *rest.Config) *rest.Config {
 			ht.Proxy = nil
 			rt = ht
 		} else {
-			glog.Errorf("Error while casting roundr tripper (of type %T) to *http.Transport : %v", rt, ok)
+			glog.Errorf("Error while casting RoundTripper (of type %T) to *http.Transport : %v", rt, ok)
 		}
 		return rt
 	}

@@ -9,7 +9,7 @@ require (
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cpuguy83/go-md2man v1.0.4
-	github.com/davecgh/go-spew v0.0.0-20170626231645-782f4967f2dc
+	github.com/davecgh/go-spew v1.1.0
 	github.com/docker/docker v0.0.0-20180917213351-bbe08dc7f0b9
 	github.com/docker/go-units v0.0.0-20170127094116-9e638d38cf69
 	github.com/docker/machine v0.16.1
@@ -75,6 +75,7 @@ require (
 	github.com/spf13/jwalterweatherman v0.0.0-20160311093646-33c24e77fb80
 	github.com/spf13/pflag v1.0.1
 	github.com/spf13/viper v1.0.0
+	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20151027082146-e0fe6f683076
 	github.com/xeipuuv/gojsonreference v0.0.0-20150808065054-e02fc20de94c
 	github.com/xeipuuv/gojsonschema v0.0.0-20160623135812-c539bca196be

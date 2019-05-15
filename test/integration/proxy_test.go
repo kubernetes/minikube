@@ -74,8 +74,7 @@ func testProxyWarning(t *testing.T) {
 	// Start a timer for all remaining commands, to display failure output before a panic.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args,
-		"--alsologtostderr --v=5")
+	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args, "--alsologtostderr --v=5")
 	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
 	if err != nil {
 		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
