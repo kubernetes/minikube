@@ -11,7 +11,7 @@ As of v1.0, `minikube start` is offline compatible out of the box. Here are some
 * `~/.minikube/cache` - Top-level folder
 * `~/.minikube/cache/iso` - VM ISO image. Typically updated once per major minikube release.
 * `~/.minikube/cache/images` - Docker images used by Kubernetes.
-* `~/.minikube/<version>` - Kubernetes binaries, such as `kubeadm` and `kubelet`
+* `~/.minikube/cache/<version>` - Kubernetes binaries, such as `kubeadm` and `kubelet`
 
 ## Sharing the minikube cache
 
