@@ -59,7 +59,10 @@ var dashboardCmd = &cobra.Command{
 		if err != nil && !os.IsNotExist(err) {
 			console.ErrLn("Error loading profile config: %v", err)
 		}
-		proxy.UpdateEnv(cc.KubernetesConfig.NodeIP, "NO_PROXY") // to be used for http get calls
+		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
+		if err != nil {
+			glog.Errorf("Error Excluding IP from proxy: %s", err)
+		}
 
 		kubectl, err := exec.LookPath("kubectl")
 		if err != nil {
