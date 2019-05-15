@@ -103,10 +103,11 @@ var vmProblems = map[string]match{
 		URL:    "https://forums.gentoo.org/viewtopic-t-981692-start-0.html",
 		Issues: []int{4195},
 	},
-	"VM_DOES_NOT_EXIST": {
-		Regexp: re(`Error getting state for host: machine does not exist`),
-		Advice: "Your system no longer knows about the VM previously created by minikube. Run 'minikube delete' to reset your local state.",
-		Issues: []int{3864},
+	"KVM_UNAVAILABLE": {
+		Regexp: re(`invalid argument: could not find capabilities for domaintype=kvm`),
+		Advice: "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
+		URL:    "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
+		Issues: []int{2991},
 	},
 	"VM_BOOT_FAILED_HYPERV_ENABLED": {
 		Regexp: re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
