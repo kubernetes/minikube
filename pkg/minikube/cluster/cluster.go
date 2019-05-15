@@ -381,7 +381,15 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 	case "xhyve", "hyperkit":
 		return net.ParseIP("192.168.64.1"), nil
 	case "vmware":
-		return net.ParseIP("192.168.4.1"), nil
+		vmIPString, err := host.Driver.GetIP()
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error getting VM IP address")
+		}
+		vmIP := net.ParseIP(vmIPString).To4()
+		if vmIP == nil {
+			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
+		}
+		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	default:
 		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
 	}
