@@ -27,7 +27,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -43,10 +43,7 @@ func errorTunnelAlreadyExists(id *ID) error {
 	return fmt.Errorf("there is already a running tunnel for this machine: %s", id)
 }
 
-func newTunnel(machineName string,
-	machineAPI libmachine.API,
-	configLoader config.Loader,
-	v1Core v1.CoreV1Interface, registry *persistentRegistry, router router) (*tunnel, error) {
+func newTunnel(machineName string, machineAPI libmachine.API, configLoader config.Loader, v1Core typed_core.CoreV1Interface, registry *persistentRegistry, router router) (*tunnel, error) {
 	ci := &clusterInspector{
 		machineName:  machineName,
 		machineAPI:   machineAPI,
@@ -154,7 +151,7 @@ func setupRoute(t *tunnel, h *host.Host) {
 
 		if h.DriverName == "hyperkit" {
 			//the virtio-net interface acts up with ip tunnels :(
-			setupBridge(t, h)
+			setupBridge(t)
 			if t.status.RouteError != nil {
 				return
 			}
@@ -193,7 +190,7 @@ func setupRoute(t *tunnel, h *host.Host) {
 
 }
 
-func setupBridge(t *tunnel, h *host.Host) {
+func setupBridge(t *tunnel) {
 	command := exec.Command("ifconfig", "bridge100")
 	glog.Infof("About to run command: %s\n", command.Args)
 	response, err := command.CombinedOutput()

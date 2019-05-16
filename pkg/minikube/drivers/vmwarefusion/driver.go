@@ -19,6 +19,8 @@ limitations under the License.
 package vmwarefusion
 
 import (
+	"fmt"
+
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -27,14 +29,16 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	if err := registry.Register(registry.DriverDef{
 		Name:          "vmwarefusion",
 		Builtin:       true,
 		ConfigCreator: createVMwareFusionHost,
 		DriverCreator: func() drivers.Driver {
 			return vmwarefusion.NewDriver("", "")
 		},
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register: %v", err))
+	}
 }
 
 func createVMwareFusionHost(config cfg.MachineConfig) interface{} {

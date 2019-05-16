@@ -39,7 +39,7 @@ func findNestedElement(s string, c interface{}) (reflect.Value, error) {
 
 		// FieldByName returns the zero value if the field does not exist.
 		if e == (reflect.Value{}) {
-			return e, fmt.Errorf("Unable to find field by name: %s", field)
+			return e, fmt.Errorf("unable to find field by name: %s", field)
 		}
 		// Start the loop again, on the next level.
 	}
@@ -89,7 +89,7 @@ func convertMap(e reflect.Value, v string) error {
 			return c == '<' || c == '=' || c == '>'
 		})
 		if len(subvals) != 2 {
-			return fmt.Errorf("Unparsable %s", v)
+			return fmt.Errorf("unparsable %s", v)
 		}
 		e.SetMapIndex(reflect.ValueOf(subvals[0]), reflect.ValueOf(subvals[1]))
 	}
@@ -107,7 +107,7 @@ func convertKind(e reflect.Value, v string) error {
 	case reflect.Bool:
 		return convertBool(e, v)
 	default:
-		return fmt.Errorf("Unable to set type %T", e.Kind())
+		return fmt.Errorf("unable to set type %T", e.Kind())
 	}
 }
 

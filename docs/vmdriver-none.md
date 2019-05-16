@@ -10,6 +10,12 @@ The `none` driver allows advanced minikube users to skip VM creation, allowing m
 
 The `none` driver supports releases of Debian, Ubuntu, and Fedora that are less than 2 years old. In practice, any systemd-based modern distribution is likely to work, and we will accept pull requests which improve compatibility with other systems.
 
+## Example: basic usage
+
+`sudo minikube start`
+
+NOTE: The none driver requires minikube to be run as root, until [#3760](https://github.com/kubernetes/minikube/issues/3760) can be addressed.
+
 ## Example: Using minikube for continuous integration testing
 
 Most continuous integration environments are already running inside a VM, and may not supported nested virtualization. The `none` driver was designed for this use case. Here is an example, that runs minikube from a non-root user, and ensures that the latest stable kubectl is installed:
@@ -96,6 +102,7 @@ Some environment variables may be useful for using the `none` driver:
 
 ## Known Issues
 
+* `systemctl` is required. [#2704](https://github.com/kubernetes/minikube/issues/2704)
 * `-p` (profiles) are unsupported: It is not possible to run more than one `--vm-driver=none` instance
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")

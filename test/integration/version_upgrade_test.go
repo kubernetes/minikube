@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -26,6 +27,7 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -63,19 +65,14 @@ func TestVersionUpgrade(t *testing.T) {
 		}
 	}
 
-	releaseRunner := util.MinikubeRunner{
-		Args:       currentRunner.Args,
-		BinaryPath: tf.Name(),
-		StartArgs:  currentRunner.StartArgs,
-		MountArgs:  currentRunner.MountArgs,
-		T:          t,
-	}
-	releaseRunner.Start()
+	releaseRunner := util.MinikubeRunner{BinaryPath: tf.Name(), T: t}
+	// For full coverage: also test upgrading from oldest to newest supported k8s release
+	releaseRunner.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	releaseRunner.CheckStatus(state.Running.String())
 	releaseRunner.RunCommand("stop", true)
 	releaseRunner.CheckStatus(state.Stopped.String())
 
-	currentRunner.Start()
+	currentRunner.Start(fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
 	currentRunner.CheckStatus(state.Running.String())
 	currentRunner.RunCommand("delete", true)
 	currentRunner.CheckStatus(state.None.String())

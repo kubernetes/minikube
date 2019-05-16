@@ -33,6 +33,16 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
+// containerdOnlyMsg is the message shown when a containerd-only addon is enabled
+const containerdOnlyAddonMsg = `
+This addon can only be enabled with the containerd runtime backend. To enable this backend, please first stop minikube with:
+
+minikube stop
+
+and then start minikube again with the following flags:
+
+minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`
+
 // IsValidDriver checks if a driver is supported
 func IsValidDriver(string, driver string) error {
 	for _, d := range constants.SupportedVMDrivers {
@@ -40,7 +50,7 @@ func IsValidDriver(string, driver string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Driver %s is not supported", driver)
+	return fmt.Errorf("driver %q is not supported", driver)
 }
 
 // RequiresRestartMsg returns the "requires restart" message
@@ -53,7 +63,7 @@ func RequiresRestartMsg(string, string) error {
 func IsValidDiskSize(name string, disksize string) error {
 	_, err := units.FromHumanSize(disksize)
 	if err != nil {
-		return fmt.Errorf("Not valid disk size: %v", err)
+		return fmt.Errorf("invalid disk size: %v", err)
 	}
 	return nil
 }
@@ -117,7 +127,7 @@ func IsPositive(name string, val string) error {
 func IsValidCIDR(name string, cidr string) error {
 	_, _, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return fmt.Errorf("Error parsing CIDR: %v", err)
+		return fmt.Errorf("invalid CIDR: %v", err)
 	}
 	return nil
 }
@@ -151,16 +161,7 @@ func IsContainerdRuntime(_, _ string) error {
 	}
 	_, ok := r.(*cruntime.Containerd)
 	if !ok {
-		return fmt.Errorf(`This addon can only be enabled with the containerd runtime backend.
-
-To enable this backend, please first stop minikube with:
-
-minikube stop
-
-and then start minikube again with the following flags:
-
-minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`)
+		return fmt.Errorf(containerdOnlyAddonMsg)
 	}
-
 	return nil
 }

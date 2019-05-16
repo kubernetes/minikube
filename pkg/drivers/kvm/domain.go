@@ -1,3 +1,5 @@
+// +build linux
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -121,7 +123,7 @@ func randomMAC() (net.HardwareAddr, error) {
 	// The second LSB of the first octet
 	// 0 for universally administered addresses
 	// 1 for locally administered addresses
-	buf[0] = buf[0] & 0xfc
+	buf[0] &= 0xfc
 	return buf, nil
 }
 
@@ -149,11 +151,14 @@ func getConnection() (*libvirt.Connect, error) {
 }
 
 func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
-	dom.Free()
-	if res, _ := conn.Close(); res != 0 {
-		return fmt.Errorf("Error closing connection CloseConnection() == %d, expected 0", res)
+	if err := dom.Free(); err != nil {
+		return err
 	}
-	return nil
+	res, err := conn.Close()
+	if res != 0 {
+		return fmt.Errorf("CloseConnection() == %d, expected 0", res)
+	}
+	return err
 }
 
 func (d *Driver) createDomain() (*libvirt.Domain, error) {
