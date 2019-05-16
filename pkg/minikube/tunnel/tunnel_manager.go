@@ -24,7 +24,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -53,7 +53,7 @@ func NewManager() *Manager {
 }
 
 // StartTunnel starts the tunnel
-func (mgr *Manager) StartTunnel(ctx context.Context, machineName string, machineAPI libmachine.API, configLoader config.Loader, v1Core v1.CoreV1Interface) (done chan bool, err error) {
+func (mgr *Manager) StartTunnel(ctx context.Context, machineName string, machineAPI libmachine.API, configLoader config.Loader, v1Core typed_core.CoreV1Interface) (done chan bool, err error) {
 	tunnel, err := newTunnel(machineName, machineAPI, configLoader, v1Core, mgr.registry, mgr.router)
 	if err != nil {
 		return nil, fmt.Errorf("error creating tunnel: %s", err)

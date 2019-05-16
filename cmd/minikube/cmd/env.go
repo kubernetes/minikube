@@ -377,7 +377,9 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		executeTemplateStdout(shellCfg)
+		if err := executeTemplateStdout(shellCfg); err != nil {
+			exit.WithError("Error executing template", err)
+		}
 	},
 }
 

@@ -17,6 +17,8 @@ limitations under the License.
 package vmware
 
 import (
+	"fmt"
+
 	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -24,11 +26,14 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	err := registry.Register(registry.DriverDef{
 		Name:          "vmware",
 		Builtin:       false,
 		ConfigCreator: createVMwareHost,
 	})
+	if err != nil {
+		panic(fmt.Sprintf("unable to register: %v", err))
+	}
 }
 
 func createVMwareHost(config cfg.MachineConfig) interface{} {

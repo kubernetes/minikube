@@ -19,6 +19,8 @@ limitations under the License.
 package parallels
 
 import (
+	"fmt"
+
 	parallels "github.com/Parallels/docker-machine-parallels"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -27,7 +29,7 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	err := registry.Register(registry.DriverDef{
 		Name:          "parallels",
 		Builtin:       true,
 		ConfigCreator: createParallelsHost,
@@ -35,6 +37,10 @@ func init() {
 			return parallels.NewDriver("", "")
 		},
 	})
+	if err != nil {
+		panic(fmt.Sprintf("unable to register: %v", err))
+	}
+
 }
 
 func createParallelsHost(config cfg.MachineConfig) interface{} {
