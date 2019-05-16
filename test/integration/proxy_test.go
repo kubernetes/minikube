@@ -34,32 +34,41 @@ import (
 )
 
 // setUpProxy runs a local http proxy and sets the env vars for it.
-func setUpProxy(t *testing.T) error {
+func setUpProxy(t *testing.T) (*http.Server, error) {
 	port, err := freeport.GetFreePort()
 	if err != nil {
-		return errors.Wrap(err, "Failed to get an open port")
+		return nil, errors.Wrap(err, "Failed to get an open port")
 	}
 
 	addr := fmt.Sprintf("localhost:%d", port)
 	err = os.Setenv("NO_PROXY", "")
 	if err != nil {
-		return errors.Wrap(err, "Failed to set no proxy env")
+		return nil, errors.Wrap(err, "Failed to set no proxy env")
 	}
 	err = os.Setenv("HTTP_PROXY", addr)
 	if err != nil {
-		return errors.Wrap(err, "Failed to set http proxy env")
+		return nil, errors.Wrap(err, "Failed to set http proxy env")
 	}
 
 	proxy := goproxy.NewProxyHttpServer()
-	go func(t *testing.T) {
-		err := http.ListenAndServe(addr, proxy)
-		t.Errorf("Failed to server a http server for proxy : %s ", err)
-	}(t)
-	return nil
+	srv := &http.Server{Addr: addr, Handler: proxy}
+	go func(s *http.Server, t *testing.T) {
+		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+			t.Errorf("Failed to start http server for proxy mock")
+		}
+	}(srv, t)
+	return srv, nil
 }
 
 func TestProxy(t *testing.T) {
-	err := setUpProxy(t)
+	srv, err := setUpProxy(t)
+	defer func(t *testing.T) { // shutting down the http proxy after tests
+		err := srv.Shutdown(context.TODO())
+		if err != nil {
+			t.Errorf("Error shutting down the http proxy")
+		}
+	 } (t)
+	
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
