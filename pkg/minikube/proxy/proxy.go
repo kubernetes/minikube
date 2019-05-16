@@ -67,6 +67,9 @@ func IsIPExcluded(ip string) bool {
 
 // updateEnv appends an ip to the environment variable
 func updateEnv(ip string, env string) error {
+	if ip == "" {
+		return fmt.Errorf("IP %s is blank. ", ip)
+	}
 	if !isValidEnv(env) {
 		return fmt.Errorf("%s is not a valid env var name for proxy settings", env)
 	}
