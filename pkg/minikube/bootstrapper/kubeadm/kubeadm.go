@@ -71,7 +71,6 @@ type pod struct {
 
 // PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
 var PodsByLayer = []pod{
-	{"apiserver", "component", "kube-apiserver"},
 	{"proxy", "k8s-app", "kube-proxy"},
 	{"etcd", "component", "etcd"},
 	{"scheduler", "component", "kube-scheduler"},
@@ -257,10 +256,17 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
-	console.OutStyle("waiting-pods", "Verifying: ")
+	console.OutStyle("waiting-pods", "Verifying:")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
+	}
+
+	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
+	// pod shows up as registered, but need the webserver for all subsequent queries.
+	console.Out(" apiserver")
+	if err := k.waitForAPIServer(k8s); err != nil {
+		return errors.Wrap(err, "waiting for apiserver")
 	}
 
 	for _, p := range PodsByLayer {
