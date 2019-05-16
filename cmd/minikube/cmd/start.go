@@ -155,6 +155,7 @@ func init() {
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
+
 	}
 	RootCmd.AddCommand(startCmd)
 }
@@ -244,9 +245,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
-
-	apiserverPort := config.KubernetesConfig.NodePort
-	validateCluster(bs, cr, runner, ip, apiserverPort)
 	configureMounts()
 	if err = LoadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
@@ -257,6 +255,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
+	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+		exit.WithError("Wait failed", err)
+	}
 	showKubectlConnectInfo(kubeconfig)
 
 }
