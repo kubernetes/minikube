@@ -86,7 +86,9 @@ var RootCmd = &cobra.Command{
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
-			logDir.Value.Set(constants.MakeMiniPath("logs"))
+			if err := logDir.Value.Set(constants.MakeMiniPath("logs")); err != nil {
+				exit.WithError("logdir set failed", err)
+			}
 		}
 
 		if enableUpdateNotification {
@@ -116,7 +118,9 @@ func setFlagsUsingViper() {
 		}
 		// Viper will give precedence first to calls to the Set command,
 		// then to values from the config.yml
-		a.Value.Set(viper.GetString(a.Name))
+		if err := a.Value.Set(viper.GetString(a.Name)); err != nil {
+			exit.WithError(fmt.Sprintf("failed to set value for %q", a.Name), err)
+		}
 		a.Changed = true
 	}
 }
@@ -129,7 +133,9 @@ func init() {
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	RootCmd.AddCommand(configCmd.ProfileCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
-	viper.BindPFlags(RootCmd.PersistentFlags())
+	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
+		exit.WithError("Unable to bind flags", err)
+	}
 
 	cobra.OnInitialize(initConfig)
 
@@ -176,7 +182,7 @@ func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 			return nil, errors.Wrap(err, "getting kubeadm bootstrapper")
 		}
 	default:
-		return nil, fmt.Errorf("Unknown bootstrapper: %s", bootstrapperName)
+		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
 	}
 
 	return b, nil

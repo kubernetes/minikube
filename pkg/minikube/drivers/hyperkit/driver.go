@@ -19,6 +19,8 @@ limitations under the License.
 package hyperkit
 
 import (
+	"fmt"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pborman/uuid"
 	"k8s.io/minikube/pkg/drivers/hyperkit"
@@ -28,11 +30,13 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	if err := registry.Register(registry.DriverDef{
 		Name:          "hyperkit",
 		Builtin:       false,
 		ConfigCreator: createHyperkitHost,
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register: %v", err))
+	}
 }
 
 func createHyperkitHost(config cfg.MachineConfig) interface{} {

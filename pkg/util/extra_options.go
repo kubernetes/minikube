@@ -40,14 +40,14 @@ func (es *ExtraOptionSlice) Set(value string) error {
 	// The component is the value before the first dot.
 	componentSplit := strings.SplitN(value, ".", 2)
 	if len(componentSplit) < 2 {
-		return fmt.Errorf("Invalid value for ExtraOption flag. Value must contain at least one period: %s", value)
+		return fmt.Errorf("invalid value: must contain at least one period: %q", value)
 	}
 
 	remainder := strings.Join(componentSplit[1:], "")
 
 	keySplit := strings.SplitN(remainder, "=", 2)
 	if len(keySplit) != 2 {
-		return fmt.Errorf("Invalid value for ExtraOption flag. Value must contain one equal sign: %s", value)
+		return fmt.Errorf("invalid value: must contain one equal sign: %q", value)
 	}
 
 	e := ExtraOption{

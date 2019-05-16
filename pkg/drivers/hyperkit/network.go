@@ -1,3 +1,5 @@
+// +build darwin
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -36,6 +38,10 @@ const (
 	VMNetDomain = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
 	// SharedNetAddrKey is the key for the network address
 	SharedNetAddrKey = "Shared_Net_Address"
+)
+
+var (
+	leadingZeroRegexp = regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
 )
 
 // DHCPEntry holds a parsed DNS entry
@@ -118,10 +124,7 @@ func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
 
 // trimMacAddress trimming "0" of the ten's digit
 func trimMacAddress(rawUUID string) string {
-	re := regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
-	mac := re.ReplaceAllString(rawUUID, "$1")
-
-	return mac
+	return leadingZeroRegexp.ReplaceAllString(rawUUID, "$1")
 }
 
 // GetNetAddr gets the network address for vmnet

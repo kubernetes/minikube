@@ -18,6 +18,7 @@ package proxy
 
 import (
 	"fmt"
+	"os"
 	"testing"
 )
 
@@ -95,6 +96,48 @@ func TestUpdateEnv(t *testing.T) {
 			}
 			if gotErr != tc.wantErr {
 				t.Errorf("updateEnv(%v,%v) got error is %v ; want error is %v", tc.ip, tc.env, gotErr, tc.wantErr)
+			}
+
+		})
+	}
+
+}
+
+func TestCheckEnv(t *testing.T) {
+	var testCases = []struct {
+		ip           string
+		envName      string
+		want         bool
+		mockEnvValue string
+	}{
+		{"", "NO_PROXY", false, ""},
+		{"192.168.0.13", "NO_PROXY", false, ""},
+		{"192.168.0.13", "NO_PROXY", false, ","},
+		{"192.168.0.13", "NO_PROXY", true, "192.168.0.13"},
+		{"192.168.0.13", "NO_PROXY", true, ",192.168.0.13"},
+		{"192.168.0.13", "NO_PROXY", true, "10.10.0.13,192.168.0.13"},
+		{"192.168.0.13", "NO_PROXY", true, "192.168.0.13/22"},
+		{"192.168.0.13", "NO_PROXY", true, "10.10.0.13,192.168.0.13"},
+		{"192.168.0.13", "NO_PROXY", false, "10.10.0.13/22"},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s in %s", tc.ip, tc.envName), func(t *testing.T) {
+			originalEnv := os.Getenv(tc.envName)
+			defer func() { // revert to pre-test env var
+				err := os.Setenv(tc.envName, originalEnv)
+				if err != nil {
+					t.Fatalf("Error reverting env (%s) to its original value (%s) var after test ", tc.envName, originalEnv)
+				}
+			}()
+
+			// defer os.Setenv(tc.envName, originalEnv)
+			err := os.Setenv(tc.envName, tc.mockEnvValue) // setting up the test case
+			if err != nil {
+				t.Error("Error setting env var for taste case")
+			}
+			got := checkEnv(tc.ip, tc.envName)
+			if got != tc.want {
+				t.Errorf("CheckEnv(%v,%v) got  %v ; want is %v", tc.ip, tc.envName, got, tc.want)
 			}
 
 		})

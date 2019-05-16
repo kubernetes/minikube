@@ -53,11 +53,10 @@ func GetMinipath() string {
 
 // ArchTag returns the archtag for images
 func ArchTag(hasTag bool) string {
-	if runtime.GOARCH == "amd64" && hasTag == false {
+	if runtime.GOARCH == "amd64" && !hasTag {
 		return ":"
-	} else {
-		return "-" + runtime.GOARCH + ":"
 	}
+	return "-" + runtime.GOARCH + ":"
 }
 
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently

@@ -1,3 +1,5 @@
+// +build linux
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -320,7 +322,7 @@ func (d *Driver) lookupIPFromLeasesFile() (string, error) {
 		// ExpiryTime MAC IP Hostname ExtendedMAC
 		entry := strings.Split(lease, " ")
 		if len(entry) != 5 {
-			return "", fmt.Errorf("Malformed leases entry: %s", entry)
+			return "", fmt.Errorf("malformed leases entry: %s", entry)
 		}
 		if entry[1] == d.PrivateMAC {
 			ipAddress = entry[2]

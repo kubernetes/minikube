@@ -51,10 +51,10 @@ func setUpProxy(t *testing.T) error {
 	}
 
 	proxy := goproxy.NewProxyHttpServer()
-	go func() {
+	go func(t *testing.T) {
 		err := http.ListenAndServe(addr, proxy)
-		t.Fatalf("Failed to server a http server for proxy : %s ", err)
-	}()
+		t.Errorf("Failed to server a http server for proxy : %s ", err)
+	}(t)
 	return nil
 }
 
