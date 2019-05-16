@@ -153,7 +153,9 @@ func init() {
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(hidden, false, "Hide the hypervisor signature from the guest in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
-	viper.BindPFlags(startCmd.Flags())
+	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
+		exit.WithError("unable to bind flags", err)
+	}
 	RootCmd.AddCommand(startCmd)
 }
 
@@ -232,7 +234,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(host, runner, k8sVersion)
+	cr := configureRuntimes(runner, k8sVersion)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -277,7 +279,7 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 
 	if mirrorCountry != "" {
 		localRepos, ok := constants.ImageRepositories[mirrorCountry]
-		if !ok || len(localRepos) <= 0 {
+		if !ok || len(localRepos) == 0 {
 			return false, "", fmt.Errorf("invalid image mirror country code: %s", mirrorCountry)
 		}
 
@@ -504,7 +506,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
-			glog.Infof("StartHost: %v", err)
+			glog.Errorf("StartHost: %v", err)
 		}
 		return err
 	}
@@ -617,7 +619,7 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner, k8sVersion string) cruntime.Manager {
+func configureRuntimes(runner cruntime.CommandRunner, k8sVersion string) cruntime.Manager {
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {

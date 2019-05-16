@@ -44,15 +44,13 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-const (
-	defaultVirtualboxNicType = "virtio"
-)
-
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
-	flag.Set("logtostderr", "false")
+	if err := flag.Set("logtostderr", "false"); err != nil {
+		exit.WithError("unable to set logtostderr", err)
+	}
 
 	// Setting the default client to native gives much better performance.
 	ssh.SetDefaultClient(ssh.Native)
@@ -72,7 +70,7 @@ func CacheISO(config cfg.MachineConfig) error {
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrapf(err, "machine name: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "exists: %s", cfg.GetMachineName())
 	}
 	if !exists {
 		glog.Infoln("Machine does not exist... provisioning new machine")
@@ -258,7 +256,7 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 	return &o
 }
 
-func preCreateHost(config *cfg.MachineConfig) error {
+func preCreateHost(config *cfg.MachineConfig) {
 	switch config.VMDriver {
 	case "kvm":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
@@ -282,16 +280,10 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
 	}
-
-	return nil
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	err := preCreateHost(&config)
-	if err != nil {
-		return nil, err
-	}
-
+	preCreateHost(&config)
 	console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {

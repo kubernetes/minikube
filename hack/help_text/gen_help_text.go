@@ -25,9 +25,15 @@ import (
 )
 
 func main() {
-	os.MkdirAll("./out/docs", os.FileMode(0755))
+	if err := os.MkdirAll("./out/docs", os.FileMode(0755)); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	cmd.RootCmd.DisableAutoGenTag = true
-	doc.GenMarkdownTree(cmd.RootCmd, "./out/docs")
+	if err := doc.GenMarkdownTree(cmd.RootCmd, "./out/docs"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	f, err := os.Create("./out/docs/bash-completion")
 	if err != nil {
