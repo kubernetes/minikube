@@ -31,7 +31,7 @@ func TestIsValidEnv(t *testing.T) {
 		{"NOPROXY", false},
 	}
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%s", tc.env), func(t *testing.T) {
+		t.Run(tc.env, func(t *testing.T) {
 			got := isValidEnv(tc.env)
 			if got != tc.want {
 				t.Errorf("isValidEnv(\"%v\") got %v; want %v", tc.env, got, tc.want)
