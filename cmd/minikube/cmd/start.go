@@ -154,7 +154,6 @@ func init() {
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
-
 	}
 	RootCmd.AddCommand(startCmd)
 }
