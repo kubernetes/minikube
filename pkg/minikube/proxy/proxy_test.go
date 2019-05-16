@@ -72,5 +72,32 @@ func TestIsInBlock(t *testing.T) {
 
 		})
 	}
+}
+
+func TestUpdateEnv(t *testing.T) {
+	var testCases = []struct {
+		ip      string
+		env     string
+		wantErr bool
+	}{
+		{"192.168.0.13", "NO_PROXY", false},
+		{"", "NO_PROXY", true},
+		{"", "", true},
+		{"192.168.0.13", "", true},
+		{"192.168.0.13", "NPROXY", true},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s in %s", tc.ip, tc.env), func(t *testing.T) {
+			gotErr := false
+			err := updateEnv(tc.ip, tc.env)
+			if err != nil {
+				gotErr = true
+			}
+			if gotErr != tc.wantErr {
+				t.Errorf("updateEnv(%v,%v) got error is %v ; want error is %v", tc.ip, tc.env, gotErr, tc.wantErr)
+			}
+
+		})
+	}
 
 }
