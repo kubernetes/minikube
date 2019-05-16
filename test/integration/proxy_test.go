@@ -67,8 +67,8 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-	 } (t)
-	
+	}(t)
+
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
