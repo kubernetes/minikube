@@ -76,6 +76,7 @@ func (t *routingTable) Check(route *Route) (exists bool, conflict string, overla
 	exists = false
 	overlaps = []string{}
 	for _, tableLine := range *t {
+
 		if route.Equal(tableLine.route) {
 			exists = true
 		} else if route.DestCIDR.String() == tableLine.route.DestCIDR.String() &&
