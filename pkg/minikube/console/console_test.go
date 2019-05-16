@@ -72,9 +72,7 @@ func TestOutStyle(t *testing.T) {
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := newFakeFile()
 				SetOutFile(f)
-				if err := OutStyle(tc.style, tc.message, tc.params...); err != nil {
-					t.Errorf("unexpected error: %q", err)
-				}
+				OutStyle(tc.style, tc.message, tc.params...)
 				got := f.String()
 				want := tc.wantASCII
 				if override {
@@ -113,9 +111,7 @@ func TestOut(t *testing.T) {
 			f := newFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
-			if err := Out(tc.format, tc.arg); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
+			Out(tc.format, tc.arg)
 			got := f.String()
 			if got != tc.want {
 				t.Errorf("Out(%s, %s) = %q, want %q", tc.format, tc.arg, got, tc.want)
@@ -128,10 +124,7 @@ func TestErr(t *testing.T) {
 	os.Setenv(OverrideEnv, "0")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := Err("xyz123 %s\n", "%s%%%d"); err != nil {
-		t.Errorf("unexpected error: %q", err)
-	}
-
+	Err("xyz123 %s\n", "%s%%%d")
 	OutLn("unrelated message")
 	got := f.String()
 	want := "xyz123 %s%%%d\n"
@@ -145,9 +138,7 @@ func TestErrStyle(t *testing.T) {
 	os.Setenv(OverrideEnv, "1")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := ErrStyle("fatal", "error: %s", "%s%%%d"); err != nil {
-		t.Errorf("unexpected error: %q", err)
-	}
+	ErrStyle("fatal", "error: %s", "%s%%%d")
 	got := f.String()
 	want := "💣  error: %s%%%d\n"
 	if got != want {

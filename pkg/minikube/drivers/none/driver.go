@@ -1,5 +1,3 @@
-// +build linux
-
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -19,6 +17,8 @@ limitations under the License.
 package none
 
 import (
+	"fmt"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/none"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -27,14 +27,16 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	if err := registry.Register(registry.DriverDef{
 		Name:          "none",
 		Builtin:       true,
 		ConfigCreator: createNoneHost,
 		DriverCreator: func() drivers.Driver {
 			return none.NewDriver(none.Config{})
 		},
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register failed: %v", err))
+	}
 }
 
 // createNoneHost creates a none Driver from a MachineConfig

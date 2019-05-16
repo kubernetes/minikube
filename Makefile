@@ -219,9 +219,25 @@ fmt:
 vet:
 	@go vet $(SOURCE_PACKAGES)
 
+# Once v1.16.1+ is released, replace with
+# curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
+#  | bash -s -- -b out/linters v1.16.0
+
+out/linters/golangci-lint:
+	mkdir -p out/linters \
+	  && cd out/linters \
+	  && test -f go.mod || go mod init linters \
+	  && go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@692dacb773b703162c091c2d8c59f9cd2d6801db >/dev/null
+	cp -f $(GOPATH)/bin/golangci-lint out/linters/golangci-lint
+
 .PHONY: lint
-lint:
-	@golint -set_exit_status $(SOURCE_PACKAGES)
+lint: pkg/minikube/assets/assets.go out/linters/golangci-lint
+	./out/linters/golangci-lint run \
+	  --deadline 4m \
+	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
+	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
+	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
+	  ./...
 
 .PHONY: reportcard
 reportcard:

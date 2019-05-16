@@ -97,7 +97,7 @@ func printPullRequests() {
 }
 
 func getClient() *github.Client {
-	if len(token) <= 0 {
+	if len(token) == 0 {
 		return github.NewClient(nil)
 	}
 	ctx := context.Background()

@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -261,7 +262,9 @@ var ConfigCmd = &cobra.Command{
 	Long: `config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			glog.Errorf("help: %v", err)
+		}
 	},
 }
 
@@ -344,12 +347,12 @@ func DeleteFromConfigMap(name string, images []string) error {
 func WriteConfig(m config.MinikubeConfig) error {
 	f, err := os.Create(constants.ConfigFile)
 	if err != nil {
-		return fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
+		return fmt.Errorf("create %s: %s", constants.ConfigFile, err)
 	}
 	defer f.Close()
 	err = encode(f, m)
 	if err != nil {
-		return fmt.Errorf("Error encoding config %s: %s", constants.ConfigFile, err)
+		return fmt.Errorf("encode %s: %s", constants.ConfigFile, err)
 	}
 	return nil
 }

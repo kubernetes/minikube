@@ -29,11 +29,13 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	if err := registry.Register(registry.DriverDef{
 		Name:          "kvm2",
 		Builtin:       false,
 		ConfigCreator: createKVM2Host,
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register failed: %v", err))
+	}
 }
 
 // Delete this once the following PR is merged:

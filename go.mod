@@ -41,6 +41,7 @@ require (
 	github.com/johanneswuerbach/nfsexports v0.0.0-20181204082207-1aa528dcb345
 	github.com/json-iterator/go v1.1.5 // indirect
 	github.com/kr/fs v0.0.0-20131111012553-2788f0dbd169 // indirect
+	github.com/kr/pretty v0.1.0 // indirect
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/magiconair/properties v0.0.0-20160816085511-61b492c03cf4 // indirect
@@ -88,6 +89,7 @@ require (
 	golang.org/x/text v0.3.2
 	golang.org/x/time v0.0.0-20161028155119-f51c12702a4d // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.6 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/inf.v0 v0.9.0 // indirect

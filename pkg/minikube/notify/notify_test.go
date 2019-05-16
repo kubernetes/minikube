@@ -54,13 +54,19 @@ func TestShouldCheckURL(t *testing.T) {
 
 	// test that update notifications get triggered if it has been longer than 24 hours
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
-	writeTimeToFile(lastUpdateCheckFilePath, time.Time{}) //time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
+
+	//time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
+	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Time{}); err != nil {
+		t.Errorf("write failed: %v", err)
+	}
 	if !shouldCheckURLVersion(lastUpdateCheckFilePath) {
 		t.Fatalf("shouldCheckURLVersion returned false even though longer than 24 hours since last update")
 	}
 
 	// test that update notifications do not get triggered if it has been less than 24 hours
-	writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
+	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+		t.Errorf("write failed: %v", err)
+	}
 	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
 		t.Fatalf("shouldCheckURLVersion returned true even though less than 24 hours since last update")
 	}
@@ -78,7 +84,11 @@ func (h *URLHandlerCorrect) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/javascript")
-	fmt.Fprintf(w, string(b))
+	_, err = fmt.Fprint(w, string(b))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
 func TestGetLatestVersionFromURLCorrect(t *testing.T) {
