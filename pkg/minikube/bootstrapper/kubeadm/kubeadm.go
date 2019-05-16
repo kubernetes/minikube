@@ -327,7 +327,6 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 // waitForAPIServer waits for the apiserver to start up
 func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 	glog.Infof("Waiting for apiserver ...")
-	defer glog.Infof("Done waiting for apiserver ...")
 	return wait.PollImmediate(time.Millisecond*200, time.Minute*1, func() (bool, error) {
 		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
 		glog.Infof("status: %s, err: %v", status, err)
