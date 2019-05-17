@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -70,7 +71,6 @@ type pod struct {
 
 // PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
 var PodsByLayer = []pod{
-	{"apiserver", "component", "kube-apiserver"},
 	{"proxy", "k8s-app", "kube-proxy"},
 	{"etcd", "component", "etcd"},
 	{"scheduler", "component", "kube-scheduler"},
@@ -214,18 +214,9 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
-		return errors.Wrap(err, "wait")
-	}
-
 	glog.Infof("Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
-	}
-
-	// Make sure elevating privileges didn't screw anything up
-	if err := waitForPods(k8s, true); err != nil {
-		return errors.Wrap(err, "wait")
 	}
 
 	if err := k.adjustResourceLimits(); err != nil {
@@ -284,19 +275,23 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 	return nil
 }
 
-// waitForPods waits until the important Kubernetes pods are in running state
-func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
+// WaitCluster blocks until Kubernetes appears to be healthy.
+func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
-
-	if !quiet {
-		console.OutStyle("waiting-pods", "Waiting for:")
-	}
+	console.OutStyle("waiting-pods", "Verifying:")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
+	}
+
+	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
+	// pod shows up as registered, but need the webserver for all subsequent queries.
+	console.Out(" apiserver")
+	if err := k.waitForAPIServer(k8s); err != nil {
+		return errors.Wrap(err, "waiting for apiserver")
 	}
 
 	for _, p := range PodsByLayer {
@@ -304,17 +299,13 @@ func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
 			continue
 		}
 
-		if !quiet {
-			console.Out(" %s", p.name)
-		}
+		console.Out(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
 		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
 		}
 	}
-	if !quiet {
-		console.OutLn("")
-	}
+	console.OutLn("")
 	return nil
 }
 
@@ -332,11 +323,13 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		controlPlane = "control-plane"
 	}
 
+	configPath := constants.KubeadmConfigFile
+	baseCmd := fmt.Sprintf("sudo kubeadm %s", phase)
 	cmds := []string{
-		fmt.Sprintf("sudo kubeadm %s phase certs all --config %s", phase, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase kubeconfig all --config %s", phase, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase %s all --config %s", phase, controlPlane, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase etcd local --config %s", phase, constants.KubeadmConfigFile),
+		fmt.Sprintf("%s phase certs all --config %s", baseCmd, configPath),
+		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, configPath),
+		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, configPath),
+		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, configPath),
 	}
 
 	// Run commands one at a time so that it is easier to root cause failures.
@@ -346,24 +339,34 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
-		return errors.Wrap(err, "wait")
+	if err := k.waitForAPIServer(k8s); err != nil {
+		return errors.Wrap(err, "waiting for apiserver")
 	}
-
-	console.OutStyle("reconfiguring", "Updating kube-proxy configuration ...")
-	if err = util.RetryAfter(5, func() error { return updateKubeProxyConfigMap(k8s) }, 5*time.Second); err != nil {
-		return errors.Wrap(err, "restarting kube-proxy")
-	}
-
-	// Make sure the kube-proxy restart didn't screw anything up.
-	if err := waitForPods(k8s, true); err != nil {
-		return errors.Wrap(err, "wait")
+	// restart the proxy and coredns
+	if err := k.c.Run(fmt.Sprintf("%s phase addon all --config %s", baseCmd, configPath)); err != nil {
+		return errors.Wrapf(err, "addon phase")
 	}
 
 	if err := k.adjustResourceLimits(); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
+}
+
+// waitForAPIServer waits for the apiserver to start up
+func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
+	glog.Infof("Waiting for apiserver ...")
+	return wait.PollImmediate(time.Millisecond*200, time.Minute*1, func() (bool, error) {
+		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
+		glog.Infof("status: %s, err: %v", status, err)
+		if err != nil {
+			return false, err
+		}
+		if status != "Running" {
+			return false, nil
+		}
+		return true, nil
+	})
 }
 
 // DeleteCluster removes the components that were started earlier

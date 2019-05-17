@@ -32,7 +32,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -244,9 +243,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
-
-	apiserverPort := config.KubernetesConfig.NodePort
-	validateCluster(bs, cr, runner, ip, apiserverPort)
 	configureMounts()
 	if err = LoadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
@@ -257,6 +253,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
+	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+		exit.WithError("Wait failed", err)
+	}
 	showKubectlConnectInfo(kubeconfig)
 
 }
@@ -666,34 +665,6 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	if err := bs.StartCluster(kc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}
-}
-
-// validateCluster validates that the cluster is well-configured and healthy
-func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
-	k8sStat := func() (err error) {
-		st, err := bs.GetKubeletStatus()
-		if err != nil || st != state.Running.String() {
-			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
-		}
-		return nil
-	}
-	err := pkgutil.RetryAfter(20, k8sStat, 3*time.Second)
-	if err != nil {
-		exit.WithLogEntries("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
-	}
-	aStat := func() (err error) {
-		st, err := bs.GetAPIServerStatus(net.ParseIP(ip), apiserverPort)
-		if err != nil || st != state.Running.String() {
-			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
-		}
-		return nil
-	}
-
-	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
-	if err != nil {
-		exit.WithLogEntries("apiserver checks failed", err, logs.FindProblems(r, bs, runner))
-	}
-	console.OutLn("")
 }
 
 // configureMounts configures any requested filesystem mounts
