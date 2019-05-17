@@ -18,6 +18,7 @@ limitations under the License.
 package console
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -85,7 +86,7 @@ func OutStyle(style, format string, a ...interface{}) {
 func Out(format string, a ...interface{}) {
 	p := message.NewPrinter(preferredLanguage)
 	if outFile == nil {
-		glog.Errorf("no output file has been set")
+		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 	_, err := p.Fprintf(outFile, format, a...)
@@ -117,7 +118,7 @@ func ErrStyle(style, format string, a ...interface{}) {
 func Err(format string, a ...interface{}) {
 	p := message.NewPrinter(preferredLanguage)
 	if errFile == nil {
-		glog.Errorf("no error file has been set")
+		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 	_, err := p.Fprintf(errFile, format, a...)
