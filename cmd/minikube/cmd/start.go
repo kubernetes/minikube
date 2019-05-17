@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -476,6 +477,8 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 		console.OutStyle(console.SuccessType, "using image repository %s", repository)
 	}
 
+	validateRegistryMirror(registryMirror)
+
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			KeepContext:         viper.GetBool(keepContext),
@@ -807,4 +810,17 @@ func saveConfig(clusterConfig cfg.Config) error {
 		return err
 	}
 	return nil
+}
+
+// This function validates if the --registry--mirror args
+// match the format of http://localhost
+func validateRegistryMirror(registryMirror []string) {
+	urlRe := regexp.MustCompile(`http:\/\/(.+?)`)
+	if len(registryMirror) > 0 {
+		for _, loc := range registryMirror {
+			if !urlRe.MatchString(loc) {
+				exit.WithCode(exit.Failure, "url provided with --registry-mirror flag is invalid %q", loc)
+			}
+		}
+	}
 }
