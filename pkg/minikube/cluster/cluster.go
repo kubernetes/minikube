@@ -160,22 +160,22 @@ func forciblyAdjustSystemClock(h *host.Host) error {
 	if err != nil {
 		return errors.Wrap(err, "get clock")
 	}
-	clock, err := strconv.ParseInt(strings.TrimSpace(out), 10, 64)
+	local := time.Now().Unix()
+	remote, err := strconv.ParseInt(strings.TrimSpace(out), 10, 64)
 	if err != nil {
 		return errors.Wrap(err, "atoi")
 	}
-	glog.Infof("remote clock value: %d", clock)
+	diff := local - remote
+	glog.Infof("local clock: %d - remote clock: %d (diff: %d)", local, remote, diff)
 
-	// At this point, we are hoping that the guest and the VM manager are synced
-	// and we have nothing to do. We only interfere when the desync can cause
-	// certificate issues to arise.
-	switch diff := time.Now().Unix() - clock; {
+	// Only interfere if desync is large enough to cause certificate validation issues
+	switch {
 	case diff < -1:
-		glog.Warningf("VM clock is %d seconds faster than host.", diff)
+		glog.Warningf("VM clock is %d seconds ahead of the host.", diff*-1)
 	case diff > 1:
-		glog.Warningf("VM clock is %d seconds slower than host.", diff)
-	case diff > 3:
-		glog.Warningf("VM clock is running %d seconds faster than host: forcing sync.", diff)
+		glog.Warningf("VM clock is %d seconds behind the host.", diff)
+	case diff > 4:
+		glog.Errorf("VM clock is %d seconds behind the host: forcing sync.", diff)
 		// NOTE: This kind of barbarian one-shot time sync may cause applications to crash.
 		// However, proper approaches require access to an NTP service.
 		_, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", time.Now().Unix()))
