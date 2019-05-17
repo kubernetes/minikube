@@ -29,7 +29,7 @@ dns:
 etcd:
   local:
     dataDir: /data/minikube
-kubernetesVersion: v1.14.1
+kubernetesVersion: v1.14.2
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
