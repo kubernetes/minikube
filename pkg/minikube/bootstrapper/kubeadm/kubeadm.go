@@ -228,6 +228,30 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "wait")
 	}
 
+	if err := k.adjustResourceLimits(); err != nil {
+		glog.Warningf("unable to adjust resource limits: %v", err)
+	}
+	return nil
+}
+
+// adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
+func (k *Bootstrapper) adjustResourceLimits() error {
+	score, err := k.c.CombinedOutput("cat /proc/$(pgrep kube-apiserver)/oom_adj")
+	if err != nil {
+		return errors.Wrap(err, "oom_adj check")
+	}
+	glog.Infof("apiserver oom_adj: %s", score)
+	// oom_adj is already a negative number
+	if strings.HasPrefix(score, "-") {
+		return nil
+	}
+	glog.Infof("adjusting apiserver oom_adj to -10")
+
+	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
+	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
+	if err := k.c.Run("echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj"); err != nil {
+		return errors.Wrap(err, "oom_adj adjust")
+	}
 	return nil
 }
 
@@ -336,6 +360,9 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "wait")
 	}
 
+	if err := k.adjustResourceLimits(); err != nil {
+		glog.Warningf("unable to adjust resource limits: %v", err)
+	}
 	return nil
 }
 
