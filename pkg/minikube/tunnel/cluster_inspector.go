@@ -94,7 +94,7 @@ func getRoute(host *host.Host, clusterConfig config.Config) (*Route, error) {
 	if ip == nil {
 		return nil, fmt.Errorf("invalid IP for host %s", hostDriverIP)
 	}
-	dnsIp, err := util.GetDNSIP(ipNet.String())
+	dnsIP, err := util.GetDNSIP(ipNet.String())
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +102,6 @@ func getRoute(host *host.Host, clusterConfig config.Config) (*Route, error) {
 		Gateway:       ip,
 		DestCIDR:      ipNet,
 		ClusterDomain: clusterConfig.KubernetesConfig.DNSDomain,
-		ClusterDNSIP:  dnsIp,
+		ClusterDNSIP:  dnsIP,
 	}, nil
 }
