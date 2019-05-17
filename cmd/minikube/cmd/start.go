@@ -32,7 +32,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -153,7 +152,9 @@ func init() {
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(hidden, false, "Hide the hypervisor signature from the guest in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
-	viper.BindPFlags(startCmd.Flags())
+	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
+		exit.WithError("unable to bind flags", err)
+	}
 	RootCmd.AddCommand(startCmd)
 }
 
@@ -232,7 +233,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(host, runner, k8sVersion)
+	cr := configureRuntimes(runner, k8sVersion)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -242,9 +243,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
-
-	apiserverPort := config.KubernetesConfig.NodePort
-	validateCluster(bs, cr, runner, ip, apiserverPort)
 	configureMounts()
 	if err = LoadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
@@ -255,6 +253,9 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
+	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+		exit.WithError("Wait failed", err)
+	}
 	showKubectlConnectInfo(kubeconfig)
 
 }
@@ -277,7 +278,7 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 
 	if mirrorCountry != "" {
 		localRepos, ok := constants.ImageRepositories[mirrorCountry]
-		if !ok || len(localRepos) <= 0 {
+		if !ok || len(localRepos) == 0 {
 			return false, "", fmt.Errorf("invalid image mirror country code: %s", mirrorCountry)
 		}
 
@@ -504,7 +505,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
-			glog.Infof("StartHost: %v", err)
+			glog.Errorf("StartHost: %v", err)
 		}
 		return err
 	}
@@ -617,7 +618,7 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner, k8sVersion string) cruntime.Manager {
+func configureRuntimes(runner cruntime.CommandRunner, k8sVersion string) cruntime.Manager {
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {
@@ -664,34 +665,6 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	if err := bs.StartCluster(kc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}
-}
-
-// validateCluster validates that the cluster is well-configured and healthy
-func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
-	k8sStat := func() (err error) {
-		st, err := bs.GetKubeletStatus()
-		if err != nil || st != state.Running.String() {
-			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
-		}
-		return nil
-	}
-	err := pkgutil.RetryAfter(20, k8sStat, 3*time.Second)
-	if err != nil {
-		exit.WithLogEntries("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
-	}
-	aStat := func() (err error) {
-		st, err := bs.GetAPIServerStatus(net.ParseIP(ip), apiserverPort)
-		if err != nil || st != state.Running.String() {
-			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
-		}
-		return nil
-	}
-
-	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
-	if err != nil {
-		exit.WithLogEntries("apiserver checks failed", err, logs.FindProblems(r, bs, runner))
-	}
-	console.OutLn("")
 }
 
 // configureMounts configures any requested filesystem mounts

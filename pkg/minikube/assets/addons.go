@@ -341,7 +341,10 @@ func AddMinikubeDirAssets(assets *[]CopyableFile) error {
 // of files to be copied to the vm.  If vmpath is left blank, the files will be
 // transferred to the location according to their relative minikube folder path.
 func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) error {
-	err := filepath.Walk(basedir, func(hostpath string, info os.FileInfo, err error) error {
+	return filepath.Walk(basedir, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		isDir, err := util.IsDirectory(hostpath)
 		if err != nil {
 			return errors.Wrapf(err, "checking if %s is directory", hostpath)
@@ -373,10 +376,6 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 
 		return nil
 	})
-	if err != nil {
-		return errors.Wrap(err, "walking filepath")
-	}
-	return nil
 }
 
 // GenerateTemplateData generates template data for template assets

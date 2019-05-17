@@ -110,12 +110,16 @@ func (s *SSHServer) Start() (int, error) {
 						glog.Infoln("Got Req: ", req.Type)
 						// Store anything that comes in over stdin.
 						go func() {
-							io.Copy(s.Transfers, channel)
+							if _, err := io.Copy(s.Transfers, channel); err != nil {
+								panic(fmt.Sprintf("copy failed: %v", err))
+							}
 							channel.Close()
 						}()
 						switch req.Type {
 						case "exec":
-							req.Reply(true, nil)
+							if err := req.Reply(true, nil); err != nil {
+								panic(fmt.Sprintf("reply failed: %v", err))
+							}
 
 							// Note: string(req.Payload) adds additional characters to start of input.
 							var cmd execRequest
@@ -127,14 +131,26 @@ func (s *SSHServer) Start() (int, error) {
 
 							// Write specified command output as mocked ssh output
 							if val, err := s.GetCommandToOutput(cmd.Command); err == nil {
-								channel.Write([]byte(val))
+								if _, err := channel.Write([]byte(val)); err != nil {
+									glog.Errorf("Write failed: %v", err)
+									return
+								}
 							}
-							channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+							if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
+								glog.Errorf("SendRequest failed: %v", err)
+								return
+							}
 
 						case "pty-req":
-							req.Reply(true, nil)
+							if err := req.Reply(true, nil); err != nil {
+								glog.Errorf("Reply failed: %v", err)
+								return
+							}
 
-							channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
+							if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
+								glog.Errorf("SendRequest failed: %v", err)
+								return
+							}
 						}
 					}
 				}

@@ -133,12 +133,8 @@ func CacheAndLoadImages(images []string) error {
 	if err != nil {
 		return err
 	}
-	cmdRunner, err := bootstrapper.NewSSHRunner(client), nil
-	if err != nil {
-		return err
-	}
-
-	return LoadImages(cmdRunner, images, constants.ImageCacheDir)
+	runner := bootstrapper.NewSSHRunner(client)
+	return LoadImages(runner, images, constants.ImageCacheDir)
 }
 
 // # ParseReference cannot have a : in the directory path
@@ -276,7 +272,7 @@ func cleanImageCacheDir() error {
 	return err
 }
 
-func getDstPath(image, dst string) (string, error) {
+func getDstPath(dst string) (string, error) {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(dst) {
 		// ParseReference does not support a Windows drive letter.
 		// Therefore, will replace the drive letter to a volume name.
@@ -302,7 +298,9 @@ func CacheImage(image, dst string) error {
 	defer func() {
 		log.SetOutput(os.Stdout)
 		var buf bytes.Buffer
-		io.Copy(&buf, r)
+		if _, err := io.Copy(&buf, r); err != nil {
+			glog.Errorf("output copy failed: %v", err)
+		}
 		glog.Infof(buf.String())
 	}()
 
@@ -311,7 +309,7 @@ func CacheImage(image, dst string) error {
 		return nil
 	}
 
-	dstPath, err := getDstPath(image, dst)
+	dstPath, err := getDstPath(dst)
 	if err != nil {
 		return errors.Wrap(err, "getting destination path")
 	}

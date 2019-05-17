@@ -82,7 +82,7 @@ func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, f
 	var kubeadmExtraArgs []ComponentExtraArgs
 	for _, extraOpt := range opts {
 		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
-			return nil, fmt.Errorf("Unknown component %s.  Valid components and kubeadm config are %v", componentToKubeadmConfigKey, componentToKubeadmConfigKey)
+			return nil, fmt.Errorf("unknown component %q. valid components are: %v", componentToKubeadmConfigKey, componentToKubeadmConfigKey)
 		}
 	}
 
@@ -151,7 +151,7 @@ func ParseFeatureArgs(featureGates string) (map[string]bool, string, error) {
 // feature gates for kubeadm
 func Supports(featureName string) bool {
 	for k := range features.InitFeatureGates {
-		if featureName == string(k) {
+		if featureName == k {
 			return true
 		}
 	}
@@ -310,7 +310,7 @@ func DefaultOptionsForComponentAndVersion(component string, version semver.Versi
 		if opts.Option.Component == component {
 			if VersionIsBetween(version, opts.GreaterThanOrEqual, opts.LessThanOrEqual) {
 				if val, ok := versionedOpts[opts.Option.Key]; ok {
-					return nil, fmt.Errorf("Flag %s=%s already set %s=%s", opts.Option.Key, opts.Option.Value, opts.Option.Key, val)
+					return nil, fmt.Errorf("flag %s=%q already set %s=%q", opts.Option.Key, opts.Option.Value, opts.Option.Key, val)
 				}
 				versionedOpts[opts.Option.Key] = opts.Option.Value
 			}

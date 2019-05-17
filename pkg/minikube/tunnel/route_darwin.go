@@ -18,7 +18,9 @@ package tunnel
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -33,6 +35,9 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	}
 	if exists {
 		return nil
+	}
+	if err := writeResolverFile(route); err != nil {
+		return fmt.Errorf("could not write /etc/resolver/{cluster_domain} file: %s", err)
 	}
 
 	serviceCIDR := route.DestCIDR.String()
@@ -161,6 +166,38 @@ func (router *osRouter) Cleanup(route *Route) error {
 	re := regexp.MustCompile("^delete net ([^:]*)$")
 	if !re.MatchString(message) {
 		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
+	}
+	// idempotent removal of cluster domain dns
+	resolverFile := fmt.Sprintf("/etc/resolver/%s", route.ClusterDomain)
+	command = exec.Command("sudo", "rm", "-f", resolverFile)
+	if err := command.Run(); err != nil {
+		return fmt.Errorf("could not remove %s: %s", resolverFile, err)
+	}
+	return nil
+}
+
+func writeResolverFile(route *Route) error {
+	resolverFile := "/etc/resolver/" + route.ClusterDomain
+	content := fmt.Sprintf("nameserver %s\nsearch_order 1\n", route.ClusterDNSIP)
+	// write resolver content into tmpFile, then copy it to /etc/resolver/clusterDomain
+	tmpFile, err := ioutil.TempFile("", "minikube-tunnel-resolver-")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+	if _, err = tmpFile.WriteString(content); err != nil {
+		return err
+	}
+	if err = tmpFile.Close(); err != nil {
+		return err
+	}
+	command := exec.Command("sudo", "mkdir", "-p", "/etc/resolver")
+	if err := command.Run(); err != nil {
+		return err
+	}
+	command = exec.Command("sudo", "cp", "-f", tmpFile.Name(), resolverFile)
+	if err := command.Run(); err != nil {
+		return err
 	}
 	return nil
 }
