@@ -17,6 +17,7 @@ limitations under the License.
 package tunnel
 
 import (
+	"k8s.io/minikube/pkg/util"
 	"net"
 	"reflect"
 	"testing"
@@ -130,10 +131,12 @@ got
 func unsafeParseRoute(gatewayIP string, destCIDR string) *Route {
 	ip := net.ParseIP(gatewayIP)
 	_, ipNet, _ := net.ParseCIDR(destCIDR)
+	dnsIp, _ := util.GetDNSIP(ipNet.String())
 
 	expectedRoute := &Route{
-		Gateway:  ip,
-		DestCIDR: ipNet,
+		Gateway:      ip,
+		DestCIDR:     ipNet,
+		ClusterDNSIP: dnsIp,
 	}
 	return expectedRoute
 }
