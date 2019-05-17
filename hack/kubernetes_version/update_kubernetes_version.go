@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/golang/glog"
 )
 
 func main() {
@@ -56,21 +58,29 @@ func main() {
 	re = regexp.MustCompile(`var NewestKubernetesVersion = .*`)
 	f = re.ReplaceAllString(f, "var NewestKubernetesVersion = \""+v+"\"")
 
-	ioutil.WriteFile(constantsFile, []byte(f), mode)
+	if err := ioutil.WriteFile(constantsFile, []byte(f), mode); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	testData := "../../pkg/minikube/bootstrapper/kubeadm/testdata"
 
 	err = filepath.Walk(testData, func(path string, info os.FileInfo, err error) error {
-		if strings.HasSuffix(path, "default.yaml") {
-			cf, err = ioutil.ReadFile(path)
-			if err != nil {
-				// Keep going if this errors out
-				fmt.Println(err)
-			}
-			re = regexp.MustCompile(`kubernetesVersion: .*`)
-			cf = []byte(re.ReplaceAllString(string(cf), "kubernetesVersion: "+v))
-			ioutil.WriteFile(path, cf, info.Mode())
+		if err != nil {
+			return err
 		}
-		return nil
+		if !strings.HasSuffix(path, "default.yaml") {
+			return nil
+		}
+		cf, err = ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		re = regexp.MustCompile(`kubernetesVersion: .*`)
+		cf = []byte(re.ReplaceAllString(string(cf), "kubernetesVersion: "+v))
+		return ioutil.WriteFile(path, cf, info.Mode())
 	})
+	if err != nil {
+		glog.Errorf("Walk failed: %v", err)
+	}
 }

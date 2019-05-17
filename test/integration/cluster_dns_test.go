@@ -39,7 +39,11 @@ func testClusterDNS(t *testing.T) {
 
 	kr := util.NewKubectlRunner(t)
 	busybox := busyBoxPod(t, client, kr)
-	defer kr.RunCommand([]string{"delete", "po", busybox})
+	defer func() {
+		if _, err := kr.RunCommand([]string{"delete", "po", busybox}); err != nil {
+			t.Errorf("delete failed: %v", err)
+		}
+	}()
 
 	out := []byte{}
 

@@ -36,10 +36,11 @@ import (
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/johanneswuerbach/nfsexports"
-	"github.com/mitchellh/go-ps"
-	"github.com/moby/hyperkit/go"
+	ps "github.com/mitchellh/go-ps"
+	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+
 	"k8s.io/minikube/pkg/minikube/constants"
 	commonutil "k8s.io/minikube/pkg/util"
 )

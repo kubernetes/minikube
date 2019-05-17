@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	api "k8s.io/api/core/v1"
+	core "k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
@@ -60,7 +60,7 @@ func testProvisioning(t *testing.T) {
 		if len(scl.Items) > 0 {
 			return nil
 		}
-		return fmt.Errorf("No default StorageClass yet.")
+		return fmt.Errorf("no default StorageClass yet")
 	}
 
 	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
@@ -94,7 +94,7 @@ func testProvisioning(t *testing.T) {
 
 	// And check that it gets bound to a PV.
 	checkStorage := func() error {
-		pvc := api.PersistentVolumeClaim{}
+		pvc := core.PersistentVolumeClaim{}
 		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
 			return err
 		}

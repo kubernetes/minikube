@@ -147,7 +147,7 @@ func verifyFiles(minikubeRunner util.MinikubeRunner, kubectlRunner *util.Kubectl
 	}
 	// test that file written from pod can be read from host echo test > /mount-9p/frompod; in pod
 	if string(out) != expected {
-		return fmt.Errorf("Expected file %s to contain text %s, was %s.", path, expected, out)
+		return fmt.Errorf("expected file %s to contain text %q, was %q", path, expected, out)
 	}
 
 	// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
@@ -155,7 +155,7 @@ func verifyFiles(minikubeRunner util.MinikubeRunner, kubectlRunner *util.Kubectl
 		return err
 	}
 	if string(out) != expected {
-		return fmt.Errorf("Expected file %s to contain text %s, was %s.", path, expected, out)
+		return fmt.Errorf("expected file %s to contain text %q, was %q", path, expected, out)
 	}
 
 	// test file timestamps are correct
