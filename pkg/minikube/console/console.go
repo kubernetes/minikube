@@ -78,7 +78,7 @@ func OutStyle(style, format string, a ...interface{}) {
 
 // Out writes a basic formatted string to stdout
 func Out(format string, a ...interface{}) {
-	p := message.NewPrinter(preferredLanguage)
+	p := message.NewPrinter(translate.GetPreferredLanguage())
 	if outFile == nil {
 		glog.Errorf("no output file has been set")
 		return
@@ -110,7 +110,7 @@ func ErrStyle(style, format string, a ...interface{}) {
 
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) {
-	p := message.NewPrinter(preferredLanguage)
+	p := message.NewPrinter(translate.GetPreferredLanguage())
 	if errFile == nil {
 		glog.Errorf("no error file has been set")
 		return

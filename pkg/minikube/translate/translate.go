@@ -42,6 +42,10 @@ var (
 
 // Translate translates the given string to the supplied langauge.
 func Translate(s string) string {
+	if preferredLanguage == defaultLanguage {
+		return s
+	}
+
 	if len(Translations) == 0 {
 		return s
 	}
