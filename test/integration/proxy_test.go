@@ -62,11 +62,20 @@ func setUpProxy(t *testing.T) (*http.Server, error) {
 
 func TestProxy(t *testing.T) {
 	srv, err := setUpProxy(t)
-	defer func(t *testing.T) { // shutting down the http proxy after tests
-		err := srv.Shutdown(context.TODO())
+	defer func(t *testing.T) {
+		err := srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
+		err = os.Setenv("HTTP_PROXY", "")
+		if err != nil {
+			t.Errorf("Error reverting the HTTP_PROXY env")
+		}
+		err = os.Setenv("HTTPS_PROXY", "")
+		if err != nil {
+			t.Errorf("Error reverting the HTTPS_PROXY env")
+		}
+
 	}(t)
 
 	if err != nil {
