@@ -23,6 +23,8 @@ import (
 	"net"
 	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -119,16 +121,15 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
-	err = waitForSSHAccess(h, e)
+	err = configureHost(h, e)
 	if err != nil {
 		return nil, err
 	}
-
 	return h, nil
 }
 
-func waitForSSHAccess(h *host.Host, e *engine.Options) error {
-
+// configureHost handles any post-powerup configuration required
+func configureHost(h *host.Host, e *engine.Options) error {
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
 	console.OutStyle("waiting", "Waiting for SSH access ...")
 
@@ -147,8 +148,43 @@ func waitForSSHAccess(h *host.Host, e *engine.Options) error {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
+		if err := forciblyAdjustSystemClock(h); err != nil {
+			glog.Errorf("failed to adjust clock: %v", err)
+		}
 	}
 
+	return nil
+}
+
+// forciblyAdjustSystemClock adjusts the guests system clock if it differs significantly from the host
+func forciblyAdjustSystemClock(h *host.Host) error {
+	out, err := h.RunSSHCommand("date +%s")
+	if err != nil {
+		return errors.Wrap(err, "get clock")
+	}
+	clock, err := strconv.ParseInt(strings.TrimSpace(out), 10, 64)
+	if err != nil {
+		return errors.Wrap(err, "atoi")
+	}
+	glog.Infof("remote clock value: %d", clock)
+
+	// At this point, we are hoping that the guest and the VM manager are synced
+	// and we have nothing to do. We only interfere when the desync can cause
+	// certificate issues to arise.
+	switch diff := time.Now().Unix() - clock; {
+	case diff < -1:
+		glog.Warningf("VM clock is %d seconds faster than host.", diff)
+	case diff > 1:
+		glog.Warningf("VM clock is %d seconds slower than host.", diff)
+	case diff > 3:
+		glog.Warningf("VM clock is running %d seconds faster than host: forcing sync.", diff)
+		// NOTE: This kind of barbarian one-shot time sync may cause applications to crash.
+		// However, proper approaches require access to an NTP service.
+		_, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", time.Now().Unix()))
+		if err != nil {
+			return errors.Wrap(err, "set clock")
+		}
+	}
 	return nil
 }
 
