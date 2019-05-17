@@ -35,9 +35,14 @@ func TestDarwinRouteFailsOnConflictIntegrationTest(t *testing.T) {
 			IP:   net.IPv4(10, 96, 0, 0),
 			Mask: net.IPv4Mask(255, 240, 0, 0),
 		},
+		ClusterDomain: "cluster.local",
+		ClusterDNSIP:  net.IPv4(10, 96, 0, 10),
 	}
+	conflictingCfg := *cfg
+	conflictingCfg.Gateway = net.IPv4(127, 0, 0, 2)
 
-	addRoute(t, "10.96.0.0/12", "127.0.0.2")
+	addRoute(t, &conflictingCfg)
+	defer cleanRoute(t, &conflictingCfg)
 	err := (&osRouter{}).EnsureRouteIsAdded(cfg)
 	if err == nil {
 		t.Errorf("add should have error, but it is nil")
@@ -51,9 +56,11 @@ func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
 			IP:   net.IPv4(10, 96, 0, 0),
 			Mask: net.IPv4Mask(255, 240, 0, 0),
 		},
+		ClusterDomain: "cluster.local",
+		ClusterDNSIP:  net.IPv4(10, 96, 0, 10),
 	}
 
-	cleanRoute(t, "10.96.0.0/12")
+	cleanRoute(t, cfg)
 	err := (&osRouter{}).EnsureRouteIsAdded(cfg)
 	if err != nil {
 		t.Errorf("add error: %s", err)
@@ -64,7 +71,7 @@ func TestDarwinRouteIdempotentIntegrationTest(t *testing.T) {
 		t.Errorf("add error: %s", err)
 	}
 
-	cleanRoute(t, "10.96.0.0/12")
+	cleanRoute(t, cfg)
 }
 
 func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
@@ -75,10 +82,12 @@ func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 			IP:   net.IPv4(10, 96, 0, 0),
 			Mask: net.IPv4Mask(255, 240, 0, 0),
 		},
+		ClusterDomain: "cluster.local",
+		ClusterDNSIP:  net.IPv4(10, 96, 0, 10),
 	}
 
-	cleanRoute(t, "10.96.0.0/12")
-	addRoute(t, "10.96.0.0/12", "192.168.1.1")
+	cleanRoute(t, cfg)
+	addRoute(t, cfg)
 	err := (&osRouter{}).Cleanup(cfg)
 	if err != nil {
 		t.Errorf("cleanup failed with %s", err)
@@ -89,19 +98,31 @@ func TestDarwinRouteCleanupIdempontentIntegrationTest(t *testing.T) {
 	}
 }
 
-func addRoute(t *testing.T, cidr string, gw string) {
+func addRoute(t *testing.T, r *Route) {
+	cidr := r.DestCIDR.String()
+	gw := r.Gateway.String()
 	command := exec.Command("sudo", "route", "-n", "add", cidr, gw)
 	_, err := command.CombinedOutput()
 	if err != nil {
 		t.Logf("add route error (should be ok): %s", err)
 	}
+	err = writeResolverFile(r)
+	if err != nil {
+		t.Logf("add route DNS resolver error (should be ok): %s", err)
+	}
 }
 
-func cleanRoute(t *testing.T, cidr string) {
+func cleanRoute(t *testing.T, r *Route) {
+	cidr := r.DestCIDR.String()
 	command := exec.Command("sudo", "route", "-n", "delete", cidr)
 	_, err := command.CombinedOutput()
 	if err != nil {
 		t.Logf("cleanup error (should be ok): %s", err)
+	}
+	command = exec.Command("sudo", "rm", "-f", fmt.Sprintf("/etc/resolver/%s", r.ClusterDomain))
+	_, err = command.CombinedOutput()
+	if err != nil {
+		t.Logf("cleanup DNS resolver error (should be ok): %s", err)
 	}
 }
 

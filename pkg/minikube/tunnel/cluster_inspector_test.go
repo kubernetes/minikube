@@ -17,6 +17,7 @@ limitations under the License.
 package tunnel
 
 import (
+	"k8s.io/minikube/pkg/util"
 	"testing"
 
 	"net"
@@ -78,10 +79,12 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 
 	ip := net.ParseIP("1.2.3.4")
 	_, ipNet, _ := net.ParseCIDR("96.0.0.0/12")
+	dnsIp, _ := util.GetDNSIP(ipNet.String())
 
 	expectedRoute := &Route{
-		Gateway:  ip,
-		DestCIDR: ipNet,
+		Gateway:      ip,
+		DestCIDR:     ipNet,
+		ClusterDNSIP: dnsIp,
 	}
 
 	if s != Running {
