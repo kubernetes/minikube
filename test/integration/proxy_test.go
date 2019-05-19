@@ -73,9 +73,9 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error reverting the HTTP_PROXY env")
 		}
-		err = os.Setenv("NO_PROCY", origNP)
+		err = os.Setenv("NO_PROXY", origNP)
 		if err != nil {
-			t.Errorf("Error reverting the HTTP_PROXY env")
+			t.Errorf("Error reverting the NO_PROXY env")
 		}
 
 		err := srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
