@@ -61,26 +61,29 @@ func setUpProxy(t *testing.T) (*http.Server, error) {
 }
 
 func TestProxy(t *testing.T) {
+	origHP := os.Getenv("HTTP_PROXY")
+	origNP := os.Getenv("NO_PROXY")
 	srv, err := setUpProxy(t)
-	defer func(t *testing.T) {
+	if err != nil {
+		t.Fatalf("Failed to set up the test proxy: %s", err)
+	}
+
+	defer func(t *testing.T) { // Clean up after setting up proxy
+		err = os.Setenv("HTTP_PROXY", origHP)
+		if err != nil {
+			t.Errorf("Error reverting the HTTP_PROXY env")
+		}
+		err = os.Setenv("NO_PROCY", origNP)
+		if err != nil {
+			t.Errorf("Error reverting the HTTP_PROXY env")
+		}
+
 		err := srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-		err = os.Setenv("HTTP_PROXY", "")
-		if err != nil {
-			t.Errorf("Error reverting the HTTP_PROXY env")
-		}
-		err = os.Setenv("HTTPS_PROXY", "")
-		if err != nil {
-			t.Errorf("Error reverting the HTTPS_PROXY env")
-		}
-
 	}(t)
 
-	if err != nil {
-		t.Fatalf("Failed to set up the test proxy: %s", err)
-	}
 	t.Run("ConsoleWarnning", testProxyWarning)
 	t.Run("DashboardProxy", testDashboard)
 
