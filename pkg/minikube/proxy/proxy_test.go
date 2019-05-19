@@ -89,6 +89,7 @@ func TestUpdateEnv(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s in %s", tc.ip, tc.env), func(t *testing.T) {
+			origVal := os.Getenv(tc.env)
 			gotErr := false
 			err := updateEnv(tc.ip, tc.env)
 			if err != nil {
@@ -96,6 +97,10 @@ func TestUpdateEnv(t *testing.T) {
 			}
 			if gotErr != tc.wantErr {
 				t.Errorf("updateEnv(%v,%v) got error is %v ; want error is %v", tc.ip, tc.env, gotErr, tc.wantErr)
+			}
+			err = os.Setenv(tc.env, origVal)
+			if err != nil && tc.env != "" {
+				t.Errorf("Error reverting the env var (%s) to its original value (%s)", tc.env, origVal)
 			}
 
 		})
