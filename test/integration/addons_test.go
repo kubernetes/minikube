@@ -73,7 +73,7 @@ func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error)
 }
 
 func testDashboard(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	minikubeRunner := NewMinikubeRunner(t)
 	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
 	defer func() {
