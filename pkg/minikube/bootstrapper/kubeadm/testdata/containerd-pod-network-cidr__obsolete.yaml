@@ -12,14 +12,6 @@ networking:
 etcd:
   dataDir: /data/minikube
 nodeName: mk
-criSocket: /var/run/crio/crio.sock
+criSocket: /run/containerd/containerd.sock
 apiServerExtraArgs:
   admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-  fail-no-swap: "true"
-  feature-gates: "a=b"
-controllerManagerExtraArgs:
-  feature-gates: "a=b"
-  kube-api-burst: "32"
-schedulerExtraArgs:
-  feature-gates: "a=b"
-  scheduler-name: "mini-scheduler"
