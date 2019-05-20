@@ -146,7 +146,9 @@ func TestSetupKubeConfig(t *testing.T) {
 			}
 			test.cfg.SetKubeConfigFile(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				ioutil.WriteFile(test.cfg.GetKubeConfigFile(), test.existingCfg, 0600)
+				if err := ioutil.WriteFile(test.cfg.GetKubeConfigFile(), test.existingCfg, 0600); err != nil {
+					t.Fatalf("WriteFile: %v", err)
+				}
 			}
 			err = SetupKubeConfig(test.cfg)
 			if err != nil && !test.err {

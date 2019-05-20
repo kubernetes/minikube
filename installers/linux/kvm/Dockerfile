@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 		pkg-config \
 		curl \
 		libvirt-dev \
+		git \
 	&& rm -rf /var/lib/apt/lists/*
 
 ARG GO_VERSION

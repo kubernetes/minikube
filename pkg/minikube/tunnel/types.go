@@ -61,8 +61,10 @@ func (t *Status) String() string {
 
 // Route represents a route
 type Route struct {
-	Gateway  net.IP
-	DestCIDR *net.IPNet
+	Gateway       net.IP
+	DestCIDR      *net.IPNet
+	ClusterDomain string
+	ClusterDNSIP  net.IP
 }
 
 func (r *Route) String() string {

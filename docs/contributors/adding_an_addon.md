@@ -32,18 +32,18 @@ To add a new addon to minikube the following steps are required:
   var Addons = map[string]*Addon{
     ...,
     // add other addon asset
-    "efk": NewAddon([]*BinDataAsset{
-      NewBinDataAsset(
+    "efk": NewAddon([]*BinAsset{
+      MustBinAsset(
         "deploy/addons/efk/efk-configmap.yaml",
         constants.AddonsPath,
         "efk-configmap.yaml",
         "0640"),
-      NewBinDataAsset(
+      MustBinAsset(
         "deploy/addons/efk/efk-rc.yaml",
         constants.AddonsPath,
         "efk-rc.yaml",
         "0640"),
-      NewBinDataAsset(
+      MustBinAsset(
         "deploy/addons/efk/efk-svc.yaml",
         constants.AddonsPath,
         "efk-svc.yaml",

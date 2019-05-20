@@ -53,11 +53,10 @@ func GetMinipath() string {
 
 // ArchTag returns the archtag for images
 func ArchTag(hasTag bool) string {
-	if runtime.GOARCH == "amd64" && hasTag == false {
+	if runtime.GOARCH == "amd64" && !hasTag {
 		return ":"
-	} else {
-		return "-" + runtime.GOARCH + ":"
 	}
+	return "-" + runtime.GOARCH + ":"
 }
 
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently
@@ -163,10 +162,10 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.14.1"
+var DefaultKubernetesVersion = "v1.14.2"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.14.1"
+var NewestKubernetesVersion = "v1.14.2"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.10.13"
@@ -183,7 +182,7 @@ func GetProfileFile(profile string) string {
 }
 
 // DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
-const DockerAPIVersion = "1.35"
+const DockerAPIVersion = "1.39"
 
 // ReportingURL is the URL for reporting a minikube error
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
@@ -219,6 +218,12 @@ const (
 	// DefaultMountVersion is the default 9p version to use for mount
 	DefaultMountVersion = "9p2000.L"
 )
+
+// ImageRepositories contains all known image repositories
+var ImageRepositories = map[string][]string{
+	"global": {""},
+	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
+}
 
 // GetKubernetesReleaseURL gets the location of a kubernetes client
 func GetKubernetesReleaseURL(binaryName, version, osName, archName string) string {

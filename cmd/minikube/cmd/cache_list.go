@@ -56,16 +56,16 @@ For the list of accessible variables for the template, see the struct values her
 	cacheCmd.AddCommand(listCacheCmd)
 }
 
+// cacheList returns a formatted list of images found within the local cache
 func cacheList(images []string) error {
 	for _, image := range images {
 		tmpl, err := template.New("list").Parse(cacheListFormat)
 		if err != nil {
-			exit.WithError("Unable to parse template", err)
+			return err
 		}
 		listTmplt := CacheListTemplate{image}
-		err = tmpl.Execute(os.Stdout, listTmplt)
-		if err != nil {
-			exit.WithError("Unable to process template", err)
+		if err := tmpl.Execute(os.Stdout, listTmplt); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -42,6 +43,35 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 )
+
+// enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
+// KubeadmExtraArgsWhitelist variable below for more info)
+const (
+	KubeadmCmdParam    = iota
+	KubeadmConfigParam = iota
+)
+
+// KubeadmExtraArgsWhitelist is a whitelist of supported kubeadm params that can be supplied to kubeadm through
+// minikube's ExtraArgs parameter. The list is split into two parts - params that can be supplied as flags on the
+// command line and params that have to be inserted into the kubeadm config file. This is because of a kubeadm
+// constraint which allows only certain params to be provided from the command line when the --config parameter
+// is specified
+var KubeadmExtraArgsWhitelist = map[int][]string{
+	KubeadmCmdParam: {
+		"ignore-preflight-errors",
+		"dry-run",
+		"kubeconfig",
+		"kubeconfig-dir",
+		"node-name",
+		"cri-socket",
+		"experimental-upload-certs",
+		"certificate-key",
+		"rootfs",
+	},
+	KubeadmConfigParam: {
+		"pod-network-cidr",
+	},
+}
 
 // SkipPreflights are preflight checks we always skip.
 var SkipPreflights = []string{
@@ -70,7 +100,6 @@ type pod struct {
 
 // PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
 var PodsByLayer = []pod{
-	{"apiserver", "component", "kube-apiserver"},
 	{"proxy", "k8s-app", "kube-proxy"},
 	{"etcd", "component", "etcd"},
 	{"scheduler", "component", "kube-scheduler"},
@@ -123,6 +152,7 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
+		Proxy:           nil, // To avoid connectiv issue if http(s)_proxy is set.
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
@@ -163,6 +193,21 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 	}
 }
 
+// createFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the commad linne
+func createFlagsFromExtraArgs(extraOptions util.ExtraOptionSlice) string {
+	kubeadmExtraOpts := extraOptions.AsMap().Get(Kubeadm)
+
+	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
+	// is specified, here we remove those that are not allowed
+	for opt := range kubeadmExtraOpts {
+		if !util.ContainsString(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
+			// kubeadmExtraOpts is a copy so safe to delete
+			delete(kubeadmExtraOpts, opt)
+		}
+	}
+	return convertToFlags(kubeadmExtraOpts)
+}
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
@@ -170,11 +215,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	extraOpts, err := ExtraConfigForComponent(Kubeadm, k8s.ExtraOptions, version)
-	if err != nil {
-		return errors.Wrap(err, "generating extra configuration for kubelet")
-	}
-	extraFlags := convertToFlags(extraOpts)
+	extraFlags := createFlagsFromExtraArgs(k8s.ExtraOptions)
 
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
 	if err != nil {
@@ -214,20 +255,35 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
-		return errors.Wrap(err, "wait")
-	}
-
-	console.OutStyle("permissions", "Configuring cluster permissions ...")
+	glog.Infof("Configuring cluster permissions ...")
 	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 
-	// Make sure elevating privileges didn't screw anything up
-	if err := waitForPods(k8s, true); err != nil {
-		return errors.Wrap(err, "wait")
+	if err := k.adjustResourceLimits(); err != nil {
+		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
+	return nil
+}
 
+// adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
+func (k *Bootstrapper) adjustResourceLimits() error {
+	score, err := k.c.CombinedOutput("cat /proc/$(pgrep kube-apiserver)/oom_adj")
+	if err != nil {
+		return errors.Wrap(err, "oom_adj check")
+	}
+	glog.Infof("apiserver oom_adj: %s", score)
+	// oom_adj is already a negative number
+	if strings.HasPrefix(score, "-") {
+		return nil
+	}
+	glog.Infof("adjusting apiserver oom_adj to -10")
+
+	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
+	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
+	if err := k.c.Run("echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj"); err != nil {
+		return errors.Wrap(err, "oom_adj adjust")
+	}
 	return nil
 }
 
@@ -260,19 +316,23 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 	return nil
 }
 
-// waitForPods waits until the important Kubernetes pods are in running state
-func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
+// WaitCluster blocks until Kubernetes appears to be healthy.
+func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
-
-	if !quiet {
-		console.OutStyle("waiting-pods", "Waiting for pods:")
-	}
+	console.OutStyle("waiting-pods", "Verifying:")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
+	}
+
+	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
+	// pod shows up as registered, but need the webserver for all subsequent queries.
+	console.Out(" apiserver")
+	if err := k.waitForAPIServer(k8s); err != nil {
+		return errors.Wrap(err, "waiting for apiserver")
 	}
 
 	for _, p := range PodsByLayer {
@@ -280,17 +340,13 @@ func waitForPods(k8s config.KubernetesConfig, quiet bool) error {
 			continue
 		}
 
-		if !quiet {
-			console.Out(" %s", p.name)
-		}
+		console.Out(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
 		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
 		}
 	}
-	if !quiet {
-		console.OutLn("")
-	}
+	console.OutLn("")
 	return nil
 }
 
@@ -308,11 +364,13 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		controlPlane = "control-plane"
 	}
 
+	configPath := constants.KubeadmConfigFile
+	baseCmd := fmt.Sprintf("sudo kubeadm %s", phase)
 	cmds := []string{
-		fmt.Sprintf("sudo kubeadm %s phase certs all --config %s", phase, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase kubeconfig all --config %s", phase, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase %s all --config %s", phase, controlPlane, constants.KubeadmConfigFile),
-		fmt.Sprintf("sudo kubeadm %s phase etcd local --config %s", phase, constants.KubeadmConfigFile),
+		fmt.Sprintf("%s phase certs all --config %s", baseCmd, configPath),
+		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, configPath),
+		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, configPath),
+		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, configPath),
 	}
 
 	// Run commands one at a time so that it is easier to root cause failures.
@@ -322,21 +380,34 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := waitForPods(k8s, false); err != nil {
-		return errors.Wrap(err, "wait")
+	if err := k.waitForAPIServer(k8s); err != nil {
+		return errors.Wrap(err, "waiting for apiserver")
+	}
+	// restart the proxy and coredns
+	if err := k.c.Run(fmt.Sprintf("%s phase addon all --config %s", baseCmd, configPath)); err != nil {
+		return errors.Wrapf(err, "addon phase")
 	}
 
-	console.OutStyle("reconfiguring", "Updating kube-proxy configuration ...")
-	if err = util.RetryAfter(5, func() error { return updateKubeProxyConfigMap(k8s) }, 5*time.Second); err != nil {
-		return errors.Wrap(err, "restarting kube-proxy")
+	if err := k.adjustResourceLimits(); err != nil {
+		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
-
-	// Make sure the kube-proxy restart didn't screw anything up.
-	if err := waitForPods(k8s, true); err != nil {
-		return errors.Wrap(err, "wait")
-	}
-
 	return nil
+}
+
+// waitForAPIServer waits for the apiserver to start up
+func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
+	glog.Infof("Waiting for apiserver ...")
+	return wait.PollImmediate(time.Millisecond*200, time.Minute*1, func() (bool, error) {
+		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
+		glog.Infof("status: %s, err: %v", status, err)
+		if err != nil {
+			return false, err
+		}
+		if status != "Running" {
+			return false, nil
+		}
+		return true, nil
+	})
 }
 
 // DeleteCluster removes the components that were started earlier
@@ -474,6 +545,25 @@ sudo systemctl start kubelet
 	return nil
 }
 
+// createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm
+func createExtraComponentConfig(extraOptions util.ExtraOptionSlice, version semver.Version, componentFeatureArgs string) ([]ComponentExtraArgs, error) {
+	extraArgsSlice, err := NewComponentExtraArgs(extraOptions, version, componentFeatureArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// kubeadm extra args should not be included in the kubeadm config in the extra args section (instead, they must
+	// be inserted explicitly in the appropriate places or supplied from the command line); here we remove all of the
+	// kubeadm extra args from the slice
+	for i, extraArgs := range extraArgsSlice {
+		if extraArgs.Component == Kubeadm {
+			extraArgsSlice = append(extraArgsSlice[:i], extraArgsSlice[i+1:]...)
+			break
+		}
+	}
+	return extraArgsSlice, nil
+}
+
 func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, error) {
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -486,8 +576,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 		return "", errors.Wrap(err, "parses feature gate config for kubeadm and component")
 	}
 
-	// generates a map of component to extra args for apiserver, controller-manager, and scheduler
-	extraComponentConfig, err := NewComponentExtraArgs(k8s.ExtraOptions, version, componentFeatureArgs)
+	extraComponentConfig, err := createExtraComponentConfig(k8s.ExtraOptions, version, componentFeatureArgs)
 	if err != nil {
 		return "", errors.Wrap(err, "generating extra component config for kubeadm")
 	}
@@ -501,6 +590,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	opts := struct {
 		CertDir           string
 		ServiceCIDR       string
+		PodSubnet         string
 		AdvertiseAddress  string
 		APIServerPort     int
 		KubernetesVersion string
@@ -514,6 +604,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	}{
 		CertDir:           util.DefaultCertPath,
 		ServiceCIDR:       util.DefaultServiceCIDR,
+		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,

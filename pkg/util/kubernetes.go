@@ -22,10 +22,10 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apps "k8s.io/api/apps/v1"
+	core "k8s.io/api/core/v1"
+	apierr "k8s.io/apimachinery/pkg/api/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/minikube/proxy"
 )
 
 var (
@@ -53,11 +54,11 @@ type PodStore struct {
 }
 
 // List lists the pods
-func (s *PodStore) List() []*v1.Pod {
+func (s *PodStore) List() []*core.Pod {
 	objects := s.Store.List()
-	pods := make([]*v1.Pod, 0)
+	pods := make([]*core.Pod, 0)
 	for _, o := range objects {
-		pods = append(pods, o.(*v1.Pod))
+		pods = append(pods, o.(*core.Pod))
 	}
 	return pods
 }
@@ -76,6 +77,7 @@ func GetClient() (kubernetes.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
+	config = proxy.UpdateTransport(config)
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
@@ -84,29 +86,29 @@ func GetClient() (kubernetes.Interface, error) {
 }
 
 // NewPodStore creates a new PodStore
-func NewPodStore(c kubernetes.Interface, namespace string, label labels.Selector, field fields.Selector) *PodStore {
+func NewPodStore(c kubernetes.Interface, namespace string, label fmt.Stringer, field fmt.Stringer) *PodStore {
 	lw := &cache.ListWatch{
-		ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+		ListFunc: func(options meta.ListOptions) (runtime.Object, error) {
 			options.LabelSelector = label.String()
 			options.FieldSelector = field.String()
-			obj, err := c.Core().Pods(namespace).List(options)
+			obj, err := c.CoreV1().Pods(namespace).List(options)
 			return runtime.Object(obj), err
 		},
-		WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+		WatchFunc: func(options meta.ListOptions) (watch.Interface, error) {
 			options.LabelSelector = label.String()
 			options.FieldSelector = field.String()
-			return c.Core().Pods(namespace).Watch(options)
+			return c.CoreV1().Pods(namespace).Watch(options)
 		},
 	}
 	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
 	stopCh := make(chan struct{})
-	reflector := cache.NewReflector(lw, &v1.Pod{}, store, 0)
+	reflector := cache.NewReflector(lw, &core.Pod{}, store, 0)
 	go reflector.Run(stopCh)
 	return &PodStore{Store: store, stopCh: stopCh, Reflector: reflector}
 }
 
 // StartPods starts all pods
-func StartPods(c kubernetes.Interface, namespace string, pod v1.Pod, waitForRunning bool) error {
+func StartPods(c kubernetes.Interface, namespace string, pod core.Pod, waitForRunning bool) error {
 	pod.ObjectMeta.Labels["name"] = pod.Name
 	if waitForRunning {
 		label := labels.SelectorFromSet(labels.Set(map[string]string{"name": pod.Name}))
@@ -123,7 +125,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
 	lastKnownPodNumber := -1
 	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableStartTime, func() (bool, error) {
-		listOpts := metav1.ListOptions{LabelSelector: label.String()}
+		listOpts := meta.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
 			glog.Infof("error getting Pods with label selector %q [%v]\n", label.String(), err)
@@ -140,7 +142,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		}
 
 		for _, pod := range pods.Items {
-			if pod.Status.Phase != v1.PodRunning {
+			if pod.Status.Phase != core.PodRunning {
 				return false, nil
 			}
 		}
@@ -150,9 +152,9 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 }
 
 // WaitForPodDelete waits for a pod to be deleted
-func WaitForPodDelete(c kubernetes.Interface, ns string, label labels.Selector) error {
+func WaitForPodDelete(c kubernetes.Interface, ns string, label fmt.Stringer) error {
 	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
-		listOpts := metav1.ListOptions{LabelSelector: label.String()}
+		listOpts := meta.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
 			glog.Infof("error getting Pods with label selector %q [%v]\n", label.String(), err)
@@ -165,7 +167,7 @@ func WaitForPodDelete(c kubernetes.Interface, ns string, label labels.Selector) 
 // WaitForEvent waits for the given event to appear
 func WaitForEvent(c kubernetes.Interface, ns string, reason string) error {
 	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableMutateTime, func() (bool, error) {
-		events, err := c.Events().Events("default").List(metav1.ListOptions{})
+		events, err := c.EventsV1beta1().Events("default").List(meta.ListOptions{})
 		if err != nil {
 			glog.Infof("error getting events: %v", err)
 			return false, nil
@@ -181,21 +183,21 @@ func WaitForEvent(c kubernetes.Interface, ns string, reason string) error {
 
 // WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status.
 func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	options := metav1.ListOptions{FieldSelector: fields.Set{
+	options := meta.ListOptions{FieldSelector: fields.Set{
 		"metadata.name":      name,
 		"metadata.namespace": ns,
 	}.AsSelector().String()}
-	w, err := c.Core().ReplicationControllers(ns).Watch(options)
+	w, err := c.CoreV1().ReplicationControllers(ns).Watch(options)
 	if err != nil {
 		return err
 	}
 	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
-		switch event.Type {
-		case watch.Deleted:
-			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
+		if event.Type == watch.Deleted {
+			return false, apierr.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
 		}
-		switch rc := event.Object.(type) {
-		case *v1.ReplicationController:
+
+		rc, ok := event.Object.(*core.ReplicationController)
+		if ok {
 			if rc.Name == name && rc.Namespace == ns &&
 				rc.Generation <= rc.Status.ObservedGeneration &&
 				*(rc.Spec.Replicas) == rc.Status.Replicas {
@@ -211,7 +213,7 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 
 // WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status.
 func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	options := metav1.ListOptions{FieldSelector: fields.Set{
+	options := meta.ListOptions{FieldSelector: fields.Set{
 		"metadata.name":      name,
 		"metadata.namespace": ns,
 	}.AsSelector().String()}
@@ -220,12 +222,11 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 		return err
 	}
 	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
-		switch event.Type {
-		case watch.Deleted:
-			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
+		if event.Type == watch.Deleted {
+			return false, apierr.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}
-		switch dp := event.Object.(type) {
-		case *appsv1.Deployment:
+		dp, ok := event.Object.(*apps.Deployment)
+		if ok {
 			if dp.Name == name && dp.Namespace == ns &&
 				dp.Generation <= dp.Status.ObservedGeneration &&
 				*(dp.Spec.Replicas) == dp.Status.Replicas {
@@ -242,12 +243,12 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 // WaitForService waits until the service appears (exist == true), or disappears (exist == false)
 func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, interval, timeout time.Duration) error {
 	err := wait.PollImmediate(interval, timeout, func() (bool, error) {
-		_, err := c.Core().Services(namespace).Get(name, metav1.GetOptions{})
+		_, err := c.CoreV1().Services(namespace).Get(name, meta.GetOptions{})
 		switch {
 		case err == nil:
 			glog.Infof("Service %s in namespace %s found.", name, namespace)
 			return exist, nil
-		case apierrs.IsNotFound(err):
+		case apierr.IsNotFound(err):
 			glog.Infof("Service %s in namespace %s disappeared.", name, namespace)
 			return !exist, nil
 		case !IsRetryableAPIError(err):
@@ -269,7 +270,7 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 func WaitForServiceEndpointsNum(c kubernetes.Interface, namespace, serviceName string, expectNum int, interval, timeout time.Duration) error {
 	return wait.Poll(interval, timeout, func() (bool, error) {
 		glog.Infof("Waiting for amount of service:%s endpoints to be %d", serviceName, expectNum)
-		list, err := c.Core().Endpoints(namespace).List(metav1.ListOptions{})
+		list, err := c.CoreV1().Endpoints(namespace).List(meta.ListOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -283,7 +284,7 @@ func WaitForServiceEndpointsNum(c kubernetes.Interface, namespace, serviceName s
 	})
 }
 
-func countEndpointsNum(e *v1.Endpoints) int {
+func countEndpointsNum(e *core.Endpoints) int {
 	num := 0
 	for _, sub := range e.Subsets {
 		num += len(sub.Addresses)
@@ -293,5 +294,5 @@ func countEndpointsNum(e *v1.Endpoints) int {
 
 // IsRetryableAPIError returns if this error is retryable or not
 func IsRetryableAPIError(err error) bool {
-	return apierrs.IsTimeout(err) || apierrs.IsServerTimeout(err) || apierrs.IsTooManyRequests(err) || apierrs.IsInternalError(err)
+	return apierr.IsTimeout(err) || apierr.IsServerTimeout(err) || apierr.IsTooManyRequests(err) || apierr.IsInternalError(err)
 }

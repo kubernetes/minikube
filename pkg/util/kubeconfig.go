@@ -312,3 +312,16 @@ func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 	port, err := strconv.Atoi(kport)
 	return port, err
 }
+
+//UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
+func UnsetCurrentContext(filename, machineName string) error {
+	confg, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	confg.CurrentContext = ""
+	if err := WriteConfig(confg, filename); err != nil {
+		return errors.Wrap(err, "writing kubeconfig")
+	}
+	return nil
+}

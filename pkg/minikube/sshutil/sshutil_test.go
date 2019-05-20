@@ -44,10 +44,10 @@ func TestNewSSHClient(t *testing.T) {
 
 	cmd := "foo"
 	sess, err := c.NewSession()
-	defer sess.Close()
 	if err != nil {
 		t.Fatal("Error creating new session for ssh client")
 	}
+	defer sess.Close()
 
 	if err := sess.Run(cmd); err != nil {
 		t.Fatalf("Error running command: %s", cmd)

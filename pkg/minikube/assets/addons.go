@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -31,13 +32,13 @@ import (
 
 // Addon is a named list of assets, that can be enabled
 type Addon struct {
-	Assets    []*BinDataAsset
+	Assets    []*BinAsset
 	enabled   bool
 	addonName string
 }
 
 // NewAddon creates a new Addon
-func NewAddon(assets []*BinDataAsset, enabled bool, addonName string) *Addon {
+func NewAddon(assets []*BinAsset, enabled bool, addonName string) *Addon {
 	a := &Addon{
 		Assets:    assets,
 		enabled:   enabled,
@@ -61,260 +62,260 @@ func (a *Addon) IsEnabled() (bool, error) {
 
 // Addons is the list of addons
 var Addons = map[string]*Addon{
-	"addon-manager": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/addon-manager.yaml",
+	"addon-manager": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/addon-manager.yaml.tmpl",
 			"/etc/kubernetes/manifests/",
-			"addon-manager.yaml",
+			"addon-manager.yaml.tmpl",
 			"0640",
 			true),
 	}, true, "addon-manager"),
-	"dashboard": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/dashboard/dashboard-dp.yaml",
+	"dashboard": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/dashboard/dashboard-dp.yaml.tmpl",
 			constants.AddonsPath,
 			"dashboard-dp.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
-			"deploy/addons/dashboard/dashboard-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/dashboard/dashboard-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"dashboard-svc.yaml",
 			"0640",
 			false),
 	}, false, "dashboard"),
-	"default-storageclass": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/storageclass/storageclass.yaml",
+	"default-storageclass": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/storageclass/storageclass.yaml.tmpl",
 			constants.AddonsPath,
 			"storageclass.yaml",
 			"0640",
 			false),
 	}, true, "default-storageclass"),
-	"storage-provisioner": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/storage-provisioner/storage-provisioner.yaml",
+	"storage-provisioner": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/storage-provisioner/storage-provisioner.yaml.tmpl",
 			constants.AddonsPath,
 			"storage-provisioner.yaml",
 			"0640",
 			true),
 	}, true, "storage-provisioner"),
-	"storage-provisioner-gluster": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml",
+	"storage-provisioner-gluster": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml.tmpl",
 			constants.AddonsPath,
 			"storage-gluster-ns.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml",
+		MustBinAsset(
+			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml.tmpl",
 			constants.AddonsPath,
 			"glusterfs-daemonset.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml",
+		MustBinAsset(
+			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
 			constants.AddonsPath,
 			"heketi-deployment.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml",
+		MustBinAsset(
+			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
 			constants.AddonsPath,
 			"storage-privisioner-glusterfile.yaml",
 			"0640",
 			false),
 	}, false, "storage-provisioner-gluster"),
-	"heapster": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/heapster/influx-grafana-rc.yaml",
+	"heapster": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/heapster/influx-grafana-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"influxGrafana-rc.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
-			"deploy/addons/heapster/grafana-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/heapster/grafana-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"grafana-svc.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/heapster/influxdb-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/heapster/influxdb-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"influxdb-svc.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/heapster/heapster-rc.yaml",
+		MustBinAsset(
+			"deploy/addons/heapster/heapster-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"heapster-rc.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
-			"deploy/addons/heapster/heapster-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/heapster/heapster-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"heapster-svc.yaml",
 			"0640",
 			false),
 	}, false, "heapster"),
-	"efk": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/efk/elasticsearch-rc.yaml",
+	"efk": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/efk/elasticsearch-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"elasticsearch-rc.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
-			"deploy/addons/efk/elasticsearch-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/efk/elasticsearch-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"elasticsearch-svc.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/efk/fluentd-es-rc.yaml",
+		MustBinAsset(
+			"deploy/addons/efk/fluentd-es-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"fluentd-es-rc.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
-			"deploy/addons/efk/fluentd-es-configmap.yaml",
+		MustBinAsset(
+			"deploy/addons/efk/fluentd-es-configmap.yaml.tmpl",
 			constants.AddonsPath,
 			"fluentd-es-configmap.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/efk/kibana-rc.yaml",
+		MustBinAsset(
+			"deploy/addons/efk/kibana-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"kibana-rc.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/efk/kibana-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/efk/kibana-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"kibana-svc.yaml",
 			"0640",
 			false),
 	}, false, "efk"),
-	"ingress": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-configmap.yaml",
+	"ingress": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/ingress/ingress-configmap.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-configmap.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-rbac.yaml",
+		MustBinAsset(
+			"deploy/addons/ingress/ingress-rbac.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-rbac.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-dp.yaml",
+		MustBinAsset(
+			"deploy/addons/ingress/ingress-dp.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-dp.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
-			"deploy/addons/ingress/ingress-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/ingress/ingress-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"ingress-svc.yaml",
 			"0640",
 			false),
 	}, false, "ingress"),
-	"metrics-server": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/metrics-server/metrics-apiservice.yaml",
+	"metrics-server": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
 			constants.AddonsPath,
 			"metrics-apiservice.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/metrics-server/metrics-server-deployment.yaml",
+		MustBinAsset(
+			"deploy/addons/metrics-server/metrics-server-deployment.yaml.tmpl",
 			constants.AddonsPath,
 			"metrics-server-deployment.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
-			"deploy/addons/metrics-server/metrics-server-service.yaml",
+		MustBinAsset(
+			"deploy/addons/metrics-server/metrics-server-service.yaml.tmpl",
 			constants.AddonsPath,
 			"metrics-server-service.yaml",
 			"0640",
 			false),
 	}, false, "metrics-server"),
-	"registry": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/registry/registry-rc.yaml",
+	"registry": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/registry/registry-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"registry-rc.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/registry/registry-svc.yaml",
+		MustBinAsset(
+			"deploy/addons/registry/registry-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"registry-svc.yaml",
 			"0640",
 			false),
 	}, false, "registry"),
-	"registry-creds": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/registry-creds/registry-creds-rc.yaml",
+	"registry-creds": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/registry-creds/registry-creds-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"registry-creds-rc.yaml",
 			"0640",
 			false),
 	}, false, "registry-creds"),
-	"freshpod": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/freshpod/freshpod-rc.yaml",
+	"freshpod": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
 			constants.AddonsPath,
 			"freshpod-rc.yaml",
 			"0640",
 			true),
 	}, false, "freshpod"),
-	"nvidia-driver-installer": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/gpu/nvidia-driver-installer.yaml",
+	"nvidia-driver-installer": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/gpu/nvidia-driver-installer.yaml.tmpl",
 			constants.AddonsPath,
 			"nvidia-driver-installer.yaml",
 			"0640",
 			true),
 	}, false, "nvidia-driver-installer"),
-	"nvidia-gpu-device-plugin": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
+	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
 			constants.AddonsPath,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
 			true),
 	}, false, "nvidia-gpu-device-plugin"),
-	"logviewer": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml",
+	"logviewer": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"logviewer-dp-and-svc.yaml",
 			"0640",
 			false),
-		NewBinDataAsset(
-			"deploy/addons/logviewer/logviewer-rbac.yaml",
+		MustBinAsset(
+			"deploy/addons/logviewer/logviewer-rbac.yaml.tmpl",
 			constants.AddonsPath,
 			"logviewer-rbac.yaml",
 			"0640",
 			false),
 	}, false, "logviewer"),
-	"gvisor": NewAddon([]*BinDataAsset{
-		NewBinDataAsset(
-			"deploy/addons/gvisor/gvisor-pod.yaml",
+	"gvisor": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/gvisor/gvisor-pod.yaml.tmpl",
 			constants.AddonsPath,
 			"gvisor-pod.yaml",
 			"0640",
 			true),
-		NewBinDataAsset(
+		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-config.toml",
 			constants.GvisorFilesPath,
 			constants.GvisorConfigTomlTargetName,
 			"0640",
 			true),
-		NewBinDataAsset(
+		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-containerd-shim.toml",
 			constants.GvisorFilesPath,
 			constants.GvisorContainerdShimTargetName,
@@ -340,7 +341,10 @@ func AddMinikubeDirAssets(assets *[]CopyableFile) error {
 // of files to be copied to the vm.  If vmpath is left blank, the files will be
 // transferred to the location according to their relative minikube folder path.
 func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) error {
-	err := filepath.Walk(basedir, func(hostpath string, info os.FileInfo, err error) error {
+	return filepath.Walk(basedir, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		isDir, err := util.IsDirectory(hostpath)
 		if err != nil {
 			return errors.Wrapf(err, "checking if %s is directory", hostpath)
@@ -372,17 +376,25 @@ func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) erro
 
 		return nil
 	})
-	if err != nil {
-		return errors.Wrap(err, "walking filepath")
-	}
-	return nil
 }
 
 // GenerateTemplateData generates template data for template assets
 func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
+
+	a := runtime.GOARCH
+	// Some legacy docker images still need the -arch suffix
+	// for  less common architectures blank suffix for amd64
+	ea := ""
+	if runtime.GOARCH != "amd64" {
+		ea = runtime.GOARCH
+	}
 	opts := struct {
+		Arch            string
+		ExoticArch      string
 		ImageRepository string
 	}{
+		Arch:            a,
+		ExoticArch:      ea,
 		ImageRepository: cfg.ImageRepository,
 	}
 

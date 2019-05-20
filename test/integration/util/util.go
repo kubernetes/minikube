@@ -94,7 +94,9 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 		return "", "", err
 	}
 
-	cmd.Start()
+	if err := cmd.Start(); err != nil {
+		return "", "", err
+	}
 	var outB bytes.Buffer
 	var errB bytes.Buffer
 	var wg sync.WaitGroup

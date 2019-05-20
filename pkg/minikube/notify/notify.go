@@ -63,7 +63,9 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 		return
 	}
 	if localVersion.Compare(latestVersion) < 0 {
-		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
+		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+			glog.Errorf("write time failed: %v", err)
+		}
 		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
 %s%s
 

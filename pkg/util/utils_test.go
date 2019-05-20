@@ -98,11 +98,15 @@ var testSHAString = "test"
 
 func TestParseSHAFromURL(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, testSHAString)
+		if _, err := io.WriteString(w, testSHAString); err != nil {
+			t.Fatalf("WriteString: %v", err)
+		}
 	}))
 	serverBadResponse := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("500 HTTP status code returned!"))
+		if _, err := w.Write([]byte("500 HTTP status code returned!")); err != nil {
+			t.Fatalf("Write: %v", err)
+		}
 	}))
 
 	argsList := [...]getTestArgs{
@@ -175,7 +179,9 @@ func TestTeePrefix(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		TeePrefix(":", &in, &out, logSink)
+		if err := TeePrefix(":", &in, &out, logSink); err != nil {
+			t.Errorf("TeePrefix: %v", err)
+		}
 		wg.Done()
 	}()
 

@@ -32,14 +32,17 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -48,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -77,6 +81,7 @@ const (
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
 	imageRepository       = "image-repository"
+	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
 	cacheImages           = "cache-images"
@@ -98,9 +103,6 @@ var (
 	apiServerNames   []string
 	apiServerIPs     []net.IP
 	extraOptions     pkgutil.ExtraOptionSlice
-
-	// proxyVars are variables we plumb through to the underlying container runtime
-	proxyVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
 )
 
 func init() {
@@ -129,7 +131,8 @@ func init() {
 	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
-	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
+	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
+	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
@@ -141,14 +144,17 @@ func init() {
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
-		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler.`)
+		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
+		Valid kubeadm parameters: `+fmt.Sprintf("%s, %s", strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], ", "), strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], ",")))
 	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(hidden, false, "Hide the hypervisor signature from the guest in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
-	viper.BindPFlags(startCmd.Flags())
+	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
+		exit.WithError("unable to bind flags", err)
+	}
 	RootCmd.AddCommand(startCmd)
 }
 
@@ -188,7 +194,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheImages(&cacheGroup, k8sVersion)
+	beginCacheImages(&cacheGroup, config.KubernetesConfig.ImageRepository, k8sVersion)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -217,6 +223,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
+	// Makes minikube node ip to bypass http(s) proxy. since it is local traffic.
+	err = proxy.ExcludeIP(ip)
+	if err != nil {
+		console.ErrStyle("Failed to set NO_PROXY Env. please Use `export NO_PROXY=$NO_PROXY,%s`.", ip)
+	}
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
@@ -227,7 +238,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(host, runner)
+	cr := configureRuntimes(runner, k8sVersion)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -237,9 +248,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
-
-	apiserverPort := config.KubernetesConfig.NodePort
-	validateCluster(bs, cr, runner, ip, apiserverPort)
 	configureMounts()
 	if err = LoadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
@@ -250,20 +258,74 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
+	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+		exit.WithError("Wait failed", err)
+	}
 	showKubectlConnectInfo(kubeconfig)
-	console.OutStyle("ready", "Done! Thank you for using minikube!")
+
 }
 
 func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		console.OutStyle("kubectl", "To connect to this cluster, use: kubectl --context=%s", kubeconfig.ClusterName)
 	} else {
-		console.OutStyle("kubectl", "kubectl is now configured to use %q", cfg.GetMachineName())
+		console.OutStyle("ready", "Done! kubectl is now configured to use %q", cfg.GetMachineName())
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {
 		console.OutStyle("tip", "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 	}
+}
+
+func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
+	var tryCountries []string
+	var fallback string
+
+	if mirrorCountry != "" {
+		localRepos, ok := constants.ImageRepositories[mirrorCountry]
+		if !ok || len(localRepos) == 0 {
+			return false, "", fmt.Errorf("invalid image mirror country code: %s", mirrorCountry)
+		}
+
+		tryCountries = append(tryCountries, mirrorCountry)
+
+		// we'll use the first repository as fallback
+		// when none of the mirrors in the given location is available
+		fallback = localRepos[0]
+
+	} else {
+		// always make sure global is preferred
+		tryCountries = append(tryCountries, "global")
+		for k := range constants.ImageRepositories {
+			if strings.ToLower(k) != "global" {
+				tryCountries = append(tryCountries, k)
+			}
+		}
+	}
+
+	checkRepository := func(repo string) error {
+		podInfraContainerImage, _ := constants.GetKubeadmCachedImages(repo, k8sVersion)
+
+		ref, err := name.ParseReference(podInfraContainerImage, name.WeakValidation)
+		if err != nil {
+			return err
+		}
+
+		_, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+		return err
+	}
+
+	for _, code := range tryCountries {
+		localRepos := constants.ImageRepositories[code]
+		for _, repo := range localRepos {
+			err := checkRepository(repo)
+			if err == nil {
+				return true, repo, nil
+			}
+		}
+	}
+
+	return false, fallback, nil
 }
 
 // validateConfig validates the supplied configuration against known bad combinations
@@ -279,6 +341,14 @@ func validateConfig() {
 	if viper.GetBool(hidden) && viper.GetString(vmDriver) != "kvm2" {
 		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
 	}
+
+	// check that kubeadm extra args contain only whitelisted parameters
+	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
+		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
+			!pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
+			exit.Usage("Sorry, the kubeadm.%s parameter is currently not supported by --extra-config", param)
+		}
+	}
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
@@ -287,13 +357,13 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // beginCacheImages caches Docker images in the background
-func beginCacheImages(g *errgroup.Group, k8sVersion string) {
+func beginCacheImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("caching", "Downloading Kubernetes %s images in the background ...", k8sVersion)
+
 	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(viper.GetString(imageRepository), k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+		return machine.CacheImagesForBootstrapper(imageRepository, k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
 }
 
@@ -302,7 +372,6 @@ func waitCacheImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
-	console.OutStyle("waiting", "Waiting for image downloads to complete ...")
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error caching images: ", err)
 	}
@@ -328,12 +397,36 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	// Feed Docker our host proxy environment by default, so that it can pull images
 	if _, ok := r.(*cruntime.Docker); ok {
 		if !cmd.Flags().Changed("docker-env") {
-			for _, k := range proxyVars {
+			for _, k := range proxy.EnvVars {
 				if v := os.Getenv(k); v != "" {
 					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
 				}
 			}
 		}
+	}
+
+	repository := viper.GetString(imageRepository)
+	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
+	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
+		console.OutStyle("connectivity", "checking main repository and mirrors for images")
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, k8sVersion)
+		if err != nil {
+			exit.WithError("Failed to check main repository and mirrors for images for images", err)
+		}
+
+		if !found {
+			if autoSelectedRepository == "" {
+				exit.WithCode(exit.Failure, "None of known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
+			} else {
+				console.Warning("None of known repositories in your location is accessible. Use %s as fallback.", autoSelectedRepository)
+			}
+		}
+
+		repository = autoSelectedRepository
+	}
+
+	if repository != "" {
+		console.OutStyle("success", "using image repository %s", repository)
 	}
 
 	cfg := cfg.Config{
@@ -376,7 +469,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
-			ImageRepository:        viper.GetString(imageRepository),
+			ImageRepository:        repository,
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
@@ -425,7 +518,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
-			glog.Infof("StartHost: %v", err)
+			glog.Errorf("StartHost: %v", err)
 		}
 		return err
 	}
@@ -441,16 +534,21 @@ func validateNetwork(h *host.Host) string {
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
 	}
-	console.OutStyle("connectivity", "%q IP address is %s", cfg.GetMachineName(), ip)
 
 	optSeen := false
-	for _, k := range proxyVars {
+	warnedOnce := false
+	for _, k := range proxy.EnvVars {
 		if v := os.Getenv(k); v != "" {
 			if !optSeen {
 				console.OutStyle("internet", "Found network options:")
 				optSeen = true
 			}
 			console.OutStyle("option", "%s=%s", k, v)
+			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
+			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
+				console.Warning("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP (%s). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", ip)
+				warnedOnce = true
+			}
 		}
 	}
 
@@ -497,7 +595,6 @@ func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstr
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
-	console.OutStyle("copying", "Preparing Kubernetes environment ...")
 	for _, eo := range extraOptions {
 		console.OutStyle("option", "%s.%s=%s", eo.Component, eo.Key, eo.Value)
 	}
@@ -540,13 +637,14 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime.Manager {
+func configureRuntimes(runner cruntime.CommandRunner, k8sVersion string) cruntime.Manager {
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
-	console.OutStyle(cr.Name(), "Configuring %s as the container runtime ...", cr.Name())
+	version, _ := cr.Version()
+	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
 	for _, v := range dockerOpt {
 		console.OutStyle("option", "opt %s", v)
 	}
@@ -558,10 +656,7 @@ func configureRuntimes(h *host.Host, runner bootstrapper.CommandRunner) cruntime
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
 	}
-	version, err := cr.Version()
-	if err == nil {
-		console.OutStyle(cr.Name(), "Version of container runtime is %s", version)
-	}
+
 	return cr
 }
 
@@ -571,7 +666,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	bsName := viper.GetString(cmdcfg.Bootstrapper)
 
 	if isUpgrade || !preexisting {
-		console.OutStyle("pulling", "Pulling images required by Kubernetes %s ...", kc.KubernetesVersion)
+		console.OutStyle("pulling", "Pulling images ...")
 		if err := bs.PullImages(kc); err != nil {
 			console.OutStyle("failure", "Unable to pull images, which may be OK: %v", err)
 		}
@@ -585,41 +680,10 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 		return
 	}
 
-	console.OutStyle("launch", "Launching Kubernetes %s using %s ... ", kc.KubernetesVersion, bsName)
+	console.OutStyle("launch", "Launching Kubernetes ... ")
 	if err := bs.StartCluster(kc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}
-}
-
-// validateCluster validates that the cluster is well-configured and healthy
-func validateCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner bootstrapper.CommandRunner, ip string, apiserverPort int) {
-	console.OutStyle("verifying-noline", "Verifying component health ...")
-	k8sStat := func() (err error) {
-		st, err := bs.GetKubeletStatus()
-		console.Out(".")
-		if err != nil || st != state.Running.String() {
-			return &pkgutil.RetriableError{Err: fmt.Errorf("kubelet unhealthy: %v: %s", err, st)}
-		}
-		return nil
-	}
-	err := pkgutil.RetryAfter(20, k8sStat, 3*time.Second)
-	if err != nil {
-		exit.WithLogEntries("kubelet checks failed", err, logs.FindProblems(r, bs, runner))
-	}
-	aStat := func() (err error) {
-		st, err := bs.GetAPIServerStatus(net.ParseIP(ip), apiserverPort)
-		console.Out(".")
-		if err != nil || st != state.Running.String() {
-			return &pkgutil.RetriableError{Err: fmt.Errorf("apiserver status=%s err=%v", st, err)}
-		}
-		return nil
-	}
-
-	err = pkgutil.RetryAfter(30, aStat, 10*time.Second)
-	if err != nil {
-		exit.WithLogEntries("apiserver checks failed", err, logs.FindProblems(r, bs, runner))
-	}
-	console.OutLn("")
 }
 
 // configureMounts configures any requested filesystem mounts
