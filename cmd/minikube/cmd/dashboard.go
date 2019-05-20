@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -32,9 +33,11 @@ import (
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
 )
@@ -52,11 +55,19 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		cc, err := pkg_config.Load()
+		if err != nil && !os.IsNotExist(err) {
+			console.ErrLn("Error loading profile config: %v", err)
+		}
+		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
+		if err != nil {
+			glog.Errorf("Error excluding IP from proxy: %s", err)
+		}
+
 		kubectl, err := exec.LookPath("kubectl")
 		if err != nil {
 			exit.WithCode(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
-
 		api, err := machine.NewAPIClient()
 		defer func() {
 			err := api.Close()
@@ -117,7 +128,9 @@ var dashboardCmd = &cobra.Command{
 func kubectlProxy(path string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 	// config.GetMachineName() respects the -p (profile) flag
+
 	cmd := exec.Command(path, "--context", config.GetMachineName(), "proxy", "--port=0")
+
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, "", errors.Wrap(err, "cmd stdout")

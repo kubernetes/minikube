@@ -14,6 +14,8 @@ require (
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-units v0.0.0-20170127094116-9e638d38cf69
 	github.com/docker/machine v0.16.1
+	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
+	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 // indirect
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect
@@ -60,6 +62,7 @@ require (
 	github.com/pelletier/go-buffruneio v0.1.0 // indirect
 	github.com/pelletier/go-toml v0.0.0-20160822122712-0049ab3dc4c4 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
+	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
 	github.com/pkg/errors v0.8.0
 	github.com/pkg/profile v0.0.0-20161223203901-3a8809bd8a80

@@ -51,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -102,9 +103,6 @@ var (
 	apiServerNames   []string
 	apiServerIPs     []net.IP
 	extraOptions     pkgutil.ExtraOptionSlice
-
-	// proxyVars are variables we plumb through to the underlying container runtime
-	proxyVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
 )
 
 func init() {
@@ -225,6 +223,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
+	// Makes minikube node ip to bypass http(s) proxy. since it is local traffic.
+	err = proxy.ExcludeIP(ip)
+	if err != nil {
+		console.ErrStyle("Failed to set NO_PROXY Env. please Use `export NO_PROXY=$NO_PROXY,%s`.", ip)
+	}
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
@@ -394,7 +397,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	// Feed Docker our host proxy environment by default, so that it can pull images
 	if _, ok := r.(*cruntime.Docker); ok {
 		if !cmd.Flags().Changed("docker-env") {
-			for _, k := range proxyVars {
+			for _, k := range proxy.EnvVars {
 				if v := os.Getenv(k); v != "" {
 					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
 				}
@@ -533,13 +536,19 @@ func validateNetwork(h *host.Host) string {
 	}
 
 	optSeen := false
-	for _, k := range proxyVars {
+	warnedOnce := false
+	for _, k := range proxy.EnvVars {
 		if v := os.Getenv(k); v != "" {
 			if !optSeen {
 				console.OutStyle("internet", "Found network options:")
 				optSeen = true
 			}
 			console.OutStyle("option", "%s=%s", k, v)
+			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
+			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
+				console.Warning("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP (%s). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", ip)
+				warnedOnce = true
+			}
 		}
 	}
 
