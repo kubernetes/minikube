@@ -125,6 +125,7 @@ func testTunnel(t *testing.T) {
 	}
 }
 
+// getResponseBody returns the contents of a URL
 func getResponseBody(address string) (string, error) {
 	httpClient := http.DefaultClient
 	httpClient.Timeout = 5 * time.Second

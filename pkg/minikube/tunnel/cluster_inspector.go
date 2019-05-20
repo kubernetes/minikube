@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/util"
 )
 
 type clusterInspector struct {
@@ -93,9 +94,14 @@ func getRoute(host *host.Host, clusterConfig config.Config) (*Route, error) {
 	if ip == nil {
 		return nil, fmt.Errorf("invalid IP for host %s", hostDriverIP)
 	}
-
+	dnsIP, err := util.GetDNSIP(ipNet.String())
+	if err != nil {
+		return nil, err
+	}
 	return &Route{
-		Gateway:  ip,
-		DestCIDR: ipNet,
+		Gateway:       ip,
+		DestCIDR:      ipNet,
+		ClusterDomain: clusterConfig.KubernetesConfig.DNSDomain,
+		ClusterDNSIP:  dnsIP,
 	}, nil
 }

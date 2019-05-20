@@ -1,0 +1,26 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: metrics-server
+  namespace: kube-system
+  labels:
+    k8s-app: metrics-server
+    kubernetes.io/minikube-addons: metrics-server
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  selector:
+    matchLabels:
+      k8s-app: metrics-server
+  template:
+    metadata:
+      name: metrics-server
+      labels:
+        k8s-app: metrics-server
+    spec:
+      containers:
+      - name: metrics-server
+        image: {{default "k8s.gcr.io" .ImageRepository}}/metrics-server-{{.Arch}}:v0.2.1
+        imagePullPolicy: Always
+        command:
+        - /metrics-server
+        - --source=kubernetes.summary_api:''

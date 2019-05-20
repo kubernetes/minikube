@@ -70,95 +70,86 @@ func HasStyle(style string) bool {
 }
 
 // OutStyle writes a stylized and formatted message to stdout
-func OutStyle(style, format string, a ...interface{}) error {
+func OutStyle(style, format string, a ...interface{}) {
 	outStyled, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
-		if oerr := OutLn(format, a...); oerr != nil {
-			glog.Errorf("Out failed: %v", oerr)
-		}
-		return err
 	}
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line
 	outStyled = strings.Replace(outStyled, "%", "%%", -1)
-
-	return Out(outStyled)
+	Out(outStyled)
 }
 
 // Out writes a basic formatted string to stdout
-func Out(format string, a ...interface{}) error {
+func Out(format string, a ...interface{}) {
 	p := message.NewPrinter(preferredLanguage)
 	if outFile == nil {
-		if _, err := p.Fprintf(os.Stdout, "(stdout unset)"+format, a...); err != nil {
-			return err
-		}
-		return fmt.Errorf("no output file has been set")
+		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
+		return
 	}
 	_, err := p.Fprintf(outFile, format, a...)
-	return err
+	if err != nil {
+		glog.Errorf("Fprintf failed: %v", err)
+	}
 }
 
 // OutLn writes a basic formatted string with a newline to stdout
-func OutLn(format string, a ...interface{}) error {
-	return Out(format+"\n", a...)
+func OutLn(format string, a ...interface{}) {
+	Out(format+"\n", a...)
 }
 
 // ErrStyle writes a stylized and formatted error message to stderr
-func ErrStyle(style, format string, a ...interface{}) error {
+func ErrStyle(style, format string, a ...interface{}) {
 	format, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
-		if oerr := ErrLn(format, a...); oerr != nil {
-			glog.Errorf("Err(%s) failed: %v", format, oerr)
-		}
-		return err
+		ErrLn(format, a...)
 	}
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line
 	format = strings.Replace(format, "%", "%%", -1)
-
-	return Err(format)
+	Err(format)
 }
 
 // Err writes a basic formatted string to stderr
-func Err(format string, a ...interface{}) error {
+func Err(format string, a ...interface{}) {
 	p := message.NewPrinter(preferredLanguage)
 	if errFile == nil {
-		if _, err := p.Fprintf(os.Stderr, "(stderr unset)"+format, a...); err != nil {
-			return err
-		}
-		return fmt.Errorf("no error file has been set")
+		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
+		return
 	}
 	_, err := p.Fprintf(errFile, format, a...)
-	return err
+	if err != nil {
+		glog.Errorf("Fprint failed: %v", err)
+	}
 }
 
 // ErrLn writes a basic formatted string with a newline to stderr
-func ErrLn(format string, a ...interface{}) error {
-	return Err(format+"\n", a...)
+func ErrLn(format string, a ...interface{}) {
+	Err(format+"\n", a...)
 }
 
 // Success is a shortcut for writing a styled success message to stdout
-func Success(format string, a ...interface{}) error {
-	return OutStyle("success", format, a...)
+func Success(format string, a ...interface{}) {
+	OutStyle("success", format, a...)
 }
 
 // Fatal is a shortcut for writing a styled fatal message to stderr
-func Fatal(format string, a ...interface{}) error {
-	return ErrStyle("fatal", format, a...)
+func Fatal(format string, a ...interface{}) {
+	ErrStyle("fatal", format, a...)
 }
 
 // Warning is a shortcut for writing a styled warning message to stderr
-func Warning(format string, a ...interface{}) error {
-	return ErrStyle("warning", format, a...)
+func Warning(format string, a ...interface{}) {
+	ErrStyle("warning", format, a...)
 }
 
 // Failure is a shortcut for writing a styled failure message to stderr
-func Failure(format string, a ...interface{}) error {
-	return ErrStyle("failure", format, a...)
+func Failure(format string, a ...interface{}) {
+	ErrStyle("failure", format, a...)
 }
 
 // SetPreferredLanguageTag configures which language future messages should use.
@@ -205,7 +196,9 @@ func DetermineLocale() {
 		glog.Warningf("Getting system locale failed: %s", err)
 		locale = ""
 	}
-	SetPreferredLanguage(locale)
+	if err := SetPreferredLanguage(locale); err != nil {
+		glog.Errorf("Unable to set preferred language: %v", err)
+	}
 }
 
 // wantsColor determines if the user might want colorized output.

@@ -18,7 +18,9 @@ package console
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"golang.org/x/text/language"
@@ -48,49 +50,38 @@ func (f *fakeFile) String() string {
 func TestOutStyle(t *testing.T) {
 
 	var tests = []struct {
-		style    string
-		envValue string
-		message  string
-		params   []interface{}
-		want     string
+		style     string
+		message   string
+		params    []interface{}
+		want      string
+		wantASCII string
 	}{
-		{"happy", "true", "This is happy.", nil, "😄  This is happy.\n"},
-		{"Docker", "true", "This is Docker.", nil, "🐳  This is Docker.\n"},
-		{"option", "true", "This is option.", nil, "    ▪ This is option.\n"},
-		{
-			"option",
-			"true",
-			"Message with params: %s %s",
-			[]interface{}{"encode '%' signs", "%s%%%d"},
-			"    ▪ Message with params: encode '%' signs %s%%%d\n",
-		},
-
-		{"happy", "false", "This is happy.", nil, "o   This is happy.\n"},
-		{"Docker", "false", "This is Docker.", nil, "-   This is Docker.\n"},
-		{"option", "false", "This is option.", nil, "    - This is option.\n"},
-		{
-			"option",
-			"false",
-			"Message with params: %s %s",
-			[]interface{}{"encode '%' signs", "%s%%%d"},
-			"    - Message with params: encode '%' signs %s%%%d\n",
-		},
-		{"issue", "true", "No separators for long ints: %d", []interface{}{10000}, "    ▪ No separators for long ints: 10000\n"},
-		{"issue", "false", "No separators for long ints: %d", []interface{}{5000}, "    - No separators for long ints: 5000\n"},
+		{"happy", "Happy", nil, "😄  Happy\n", "* Happy\n"},
+		{"option", "Option", nil, "    ▪ Option\n", "  - Option\n"},
+		{"warning", "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
+		{"fatal", "Fatal: %v", []interface{}{"ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
+		{"waiting-pods", "wait", nil, "⌛  wait", "* wait"},
+		{"issue", "http://i/%d", []interface{}{10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
+		{"usage", "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
 	}
 	for _, tc := range tests {
-		t.Run(tc.style+"-"+tc.envValue, func(t *testing.T) {
-			os.Setenv(OverrideEnv, tc.envValue)
-			f := newFakeFile()
-			SetOutFile(f)
-			if err := OutStyle(tc.style, tc.message, tc.params...); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
-			got := f.String()
-			if got != tc.want {
-				t.Errorf("OutStyle() = %q, want %q", got, tc.want)
-			}
-		})
+		for _, override := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s-override-%v", tc.style, override), func(t *testing.T) {
+				// Set MINIKUBE_IN_STYLE=<override>
+				os.Setenv(OverrideEnv, strconv.FormatBool(override))
+				f := newFakeFile()
+				SetOutFile(f)
+				OutStyle(tc.style, tc.message, tc.params...)
+				got := f.String()
+				want := tc.wantASCII
+				if override {
+					want = tc.want
+				}
+				if got != want {
+					t.Errorf("OutStyle() = %q (%d runes), want %q (%d runes)", got, len(got), want, len(want))
+				}
+			})
+		}
 	}
 }
 
@@ -119,9 +110,7 @@ func TestOut(t *testing.T) {
 			f := newFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
-			if err := Out(tc.format, tc.arg); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
+			Out(tc.format, tc.arg)
 			got := f.String()
 			if got != tc.want {
 				t.Errorf("Out(%s, %s) = %q, want %q", tc.format, tc.arg, got, tc.want)
@@ -134,10 +123,7 @@ func TestErr(t *testing.T) {
 	os.Setenv(OverrideEnv, "0")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := Err("xyz123 %s\n", "%s%%%d"); err != nil {
-		t.Errorf("unexpected error: %q", err)
-	}
-
+	Err("xyz123 %s\n", "%s%%%d")
 	OutLn("unrelated message")
 	got := f.String()
 	want := "xyz123 %s%%%d\n"
@@ -151,9 +137,7 @@ func TestErrStyle(t *testing.T) {
 	os.Setenv(OverrideEnv, "1")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := ErrStyle("fatal", "error: %s", "%s%%%d"); err != nil {
-		t.Errorf("unexpected error: %q", err)
-	}
+	ErrStyle("fatal", "error: %s", "%s%%%d")
 	got := f.String()
 	want := "💣  error: %s%%%d\n"
 	if got != want {

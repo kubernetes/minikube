@@ -1,0 +1,50 @@
+# Copyright 2016 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-addon-manager
+  namespace: kube-system
+  labels:
+    component: kube-addon-manager
+    version: v9.0
+    kubernetes.io/minikube-addons: addon-manager
+spec:
+  hostNetwork: true
+  containers:
+  - name: kube-addon-manager
+    image: {{default "k8s.gcr.io" .ImageRepository}}/kube-addon-manager{{.ExoticArch}}:v9.0
+    env:
+    - name: KUBECONFIG
+      value: /var/lib/minikube/kubeconfig
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 5m
+        memory: 50Mi
+    volumeMounts:
+    - mountPath: /etc/kubernetes/
+      name: addons
+      readOnly: true
+    - mountPath: /var/lib/minikube/
+      name: kubeconfig
+      readOnly: true
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes/
+    name: addons
+  - hostPath:
+      path: /var/lib/minikube/
+    name: kubeconfig

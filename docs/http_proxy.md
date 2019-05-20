@@ -1,4 +1,4 @@
-# Using Minikube with an HTTP Proxy
+# minikube: Using HTTP/HTTPS proxies
 
 minikube requires access to the internet via HTTP, HTTPS, and DNS protocols. If a HTTP proxy is required to access the internet, you may need to pass the proxy connection information to both minikube and Docker using environment variables:
 
@@ -23,8 +23,7 @@ export HTTP_PROXY=http://<proxy hostname:port>
 export HTTPS_PROXY=https://<proxy hostname:port>
 export NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.0/24,192.168.39.0/24
 
-minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTTPS_PROXY \
-  --docker-env NO_PROXY=$NO_PROXY
+minikube start
 ```
 
 To make the exported variables permanent, consider adding the declarations to ~/.bashrc or wherever your user-set environment variables are stored.
@@ -36,11 +35,22 @@ set HTTP_PROXY=http://<proxy hostname:port>
 set HTTPS_PROXY=https://<proxy hostname:port>
 set NO_PROXY=localhost,127.0.0.1,10.96.0.0/12,192.168.99.1/24,192.168.39.0/24
 
-minikube start --docker-env=HTTP_PROXY=$HTTP_PROXY --docker-env HTTPS_PROXY=$HTTPS_PROXY \
-  --docker-env NO_PROXY=$NO_PROXY
+minikube start
 ```
 
 To set these environment variables permanently, consider adding these to your [system settings](https://support.microsoft.com/en-au/help/310519/how-to-manage-environment-variables-in-windows-xp) or using [setx](https://stackoverflow.com/questions/5898131/set-a-persistent-environment-variable-from-cmd-exe)
+
+## Configuring Docker to use a proxy
+
+As of v1.0, minikube automatically configures the Docker instance inside of the VM to use the proxy environment variables, unless you have specified a `--docker-env` override. If you need to manually configure Docker for a set of proxies, use:
+
+
+```shell
+minikube start \
+  --docker-env=HTTP_PROXY=$HTTP_PROXY \
+  --docker-env HTTPS_PROXY=$HTTPS_PROXY \
+  --docker-env NO_PROXY=$NO_PROXY
+```
 
 ## Troubleshooting
 
@@ -83,6 +93,10 @@ Ask your IT department for the appropriate PEM file, and add it to:
 `~/.minikube/files/etc/ssl/certs`
 
 Then run `minikube delete` and `minikube start`.
+
+## downloading binaries: proxyconnect tcp: tls: oversized record received with length 20527
+
+Your need to set a correct `HTTPS_PROXY` value.
 
 ## Additional Information
 

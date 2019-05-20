@@ -22,26 +22,27 @@ import (
 	"testing"
 	"text/template"
 
+	"time"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
-	"time"
 )
 
 type MockClientGetter struct {
-	servicesMap  map[string]corev1.ServiceInterface
-	endpointsMap map[string]corev1.EndpointsInterface
+	servicesMap  map[string]typed_core.ServiceInterface
+	endpointsMap map[string]typed_core.EndpointsInterface
 }
 
-func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 	return &MockCoreClient{
 		servicesMap:  m.servicesMap,
 		endpointsMap: m.endpointsMap,
@@ -54,24 +55,24 @@ func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clie
 
 type MockCoreClient struct {
 	fake.FakeCoreV1
-	servicesMap  map[string]corev1.ServiceInterface
-	endpointsMap map[string]corev1.EndpointsInterface
+	servicesMap  map[string]typed_core.ServiceInterface
+	endpointsMap map[string]typed_core.EndpointsInterface
 }
 
-var serviceNamespaces = map[string]corev1.ServiceInterface{
+var serviceNamespaces = map[string]typed_core.ServiceInterface{
 	"default": defaultNamespaceServiceInterface,
 }
 
 var defaultNamespaceServiceInterface = &MockServiceInterface{
-	ServiceList: &v1.ServiceList{
-		Items: []v1.Service{
+	ServiceList: &core.ServiceList{
+		Items: []core.Service{
 			{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "mock-dashboard",
 					Namespace: "default",
 				},
-				Spec: v1.ServiceSpec{
-					Ports: []v1.ServicePort{
+				Spec: core.ServiceSpec{
+					Ports: []core.ServicePort{
 						{
 							NodePort: int32(1111),
 							TargetPort: intstr.IntOrString{
@@ -88,44 +89,44 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 				},
 			},
 			{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "mock-dashboard-no-ports",
 					Namespace: "default",
 				},
-				Spec: v1.ServiceSpec{
-					Ports: []v1.ServicePort{},
+				Spec: core.ServiceSpec{
+					Ports: []core.ServicePort{},
 				},
 			},
 		},
 	},
 }
 
-var endpointNamespaces = map[string]corev1.EndpointsInterface{
+var endpointNamespaces = map[string]typed_core.EndpointsInterface{
 	"default": defaultNamespaceEndpointInterface,
 }
 
 var defaultNamespaceEndpointInterface = &MockEndpointsInterface{}
 
-func (m *MockCoreClient) Endpoints(namespace string) corev1.EndpointsInterface {
+func (m *MockCoreClient) Endpoints(namespace string) typed_core.EndpointsInterface {
 	return m.endpointsMap[namespace]
 }
 
-func (m *MockCoreClient) Services(namespace string) corev1.ServiceInterface {
+func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
 	return m.servicesMap[namespace]
 }
 
 type MockEndpointsInterface struct {
 	fake.FakeEndpoints
-	Endpoints *v1.Endpoints
+	Endpoints *core.Endpoints
 }
 
-var endpointMap = map[string]*v1.Endpoints{
+var endpointMap = map[string]*core.Endpoints{
 	"no-subsets": {},
 	"not-ready": {
-		Subsets: []v1.EndpointSubset{
+		Subsets: []core.EndpointSubset{
 			{
-				Addresses: []v1.EndpointAddress{},
-				NotReadyAddresses: []v1.EndpointAddress{
+				Addresses: []core.EndpointAddress{},
+				NotReadyAddresses: []core.EndpointAddress{
 					{IP: "1.1.1.1"},
 					{IP: "2.2.2.2"},
 				},
@@ -133,21 +134,21 @@ var endpointMap = map[string]*v1.Endpoints{
 		},
 	},
 	"one-ready": {
-		Subsets: []v1.EndpointSubset{
+		Subsets: []core.EndpointSubset{
 			{
-				Addresses: []v1.EndpointAddress{
+				Addresses: []core.EndpointAddress{
 					{IP: "1.1.1.1"},
 				},
-				NotReadyAddresses: []v1.EndpointAddress{
+				NotReadyAddresses: []core.EndpointAddress{
 					{IP: "2.2.2.2"},
 				},
 			},
 		},
 	},
 	"mock-dashboard": {
-		Subsets: []v1.EndpointSubset{
+		Subsets: []core.EndpointSubset{
 			{
-				Ports: []v1.EndpointPort{
+				Ports: []core.EndpointPort{
 					{
 						Name: "port1",
 						Port: int32(11111),
@@ -162,7 +163,7 @@ var endpointMap = map[string]*v1.Endpoints{
 	},
 }
 
-func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpoints, error) {
+func (e MockEndpointsInterface) Get(name string, _ meta.GetOptions) (*core.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -172,12 +173,12 @@ func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpo
 
 type MockServiceInterface struct {
 	fake.FakeServices
-	ServiceList *v1.ServiceList
+	ServiceList *core.ServiceList
 }
 
-func (s MockServiceInterface) List(opts metav1.ListOptions) (*v1.ServiceList, error) {
-	serviceList := &v1.ServiceList{
-		Items: []v1.Service{},
+func (s MockServiceInterface) List(opts meta.ListOptions) (*core.ServiceList, error) {
+	serviceList := &core.ServiceList{
+		Items: []core.Service{},
 	}
 	if opts.LabelSelector != "" {
 		keyValArr := strings.Split(opts.LabelSelector, "=")
@@ -194,7 +195,7 @@ func (s MockServiceInterface) List(opts metav1.ListOptions) (*v1.ServiceList, er
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(name string, _ metav1.GetOptions) (*v1.Service, error) {
+func (s MockServiceInterface) Get(name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
@@ -205,10 +206,10 @@ func (s MockServiceInterface) Get(name string, _ metav1.GetOptions) (*v1.Service
 }
 
 func TestGetServiceListFromServicesByLabel(t *testing.T) {
-	serviceList := &v1.ServiceList{
-		Items: []v1.Service{
+	serviceList := &core.ServiceList{
+		Items: []core.Service{
 			{
-				Spec: v1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Selector: map[string]string{
 						"foo": "bar",
 					},

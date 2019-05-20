@@ -41,12 +41,11 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 	tests := []struct {
 		description string
 		baseDir     string
+		vmPath      string
 		files       []struct {
 			relativePath string
 			expectedPath string
 		}
-		vmPath      string
-		expectedCfg string
 	}{
 		{
 			description: "relative path assets",
@@ -113,7 +112,7 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 
 			testDirs = append(testDirs, testDir)
 			testFileBaseDir := filepath.Join(testDir, test.baseDir)
-			want := make(map[string]string, 0)
+			want := make(map[string]string)
 			for _, fileDef := range test.files {
 				err := func() error {
 					path := filepath.Join(testFileBaseDir, fileDef.relativePath)
@@ -146,7 +145,7 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 				return
 			}
 
-			got := make(map[string]string, 0)
+			got := make(map[string]string)
 			for _, actualFile := range actualFiles {
 				got[actualFile.GetAssetName()] = actualFile.GetTargetDir()
 			}
