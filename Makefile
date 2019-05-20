@@ -73,7 +73,9 @@ MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
-SOURCE_DIRS = cmd pkg test
+
+CMD_SOURCE_DIRS = cmd pkg
+SOURCE_DIRS = $(SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # $(call DOCKER, image, command)
@@ -103,7 +105,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
-out/minikube-%: pkg/minikube/assets/assets.go
+out/minikube-%: pkg/minikube/assets/assets.go $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
