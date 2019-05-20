@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.14.0
-CRIO_BIN_COMMIT = 0b8a2dffba86ae8ef3316ff2030ed226c3f652a1
+CRIO_BIN_VERSION = v1.14.1
+CRIO_BIN_COMMIT = b7644f67e6383cc862b3e37fb74fba334b0b2721
 CRIO_BIN_SITE = https://github.com/kubernetes-sigs/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
