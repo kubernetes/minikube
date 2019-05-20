@@ -29,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/test/integration/util"
 )
 
 func TestVersionUpgrade(t *testing.T) {
@@ -65,7 +64,8 @@ func TestVersionUpgrade(t *testing.T) {
 		}
 	}
 
-	releaseRunner := util.MinikubeRunner{BinaryPath: tf.Name(), T: t}
+	releaseRunner := NewMinikubeRunner(t)
+	releaseRunner.BinaryPath = tf.Name()
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
 	releaseRunner.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	releaseRunner.CheckStatus(state.Running.String())
