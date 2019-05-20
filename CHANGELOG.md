@@ -1,5 +1,46 @@
 # Minikube Release Notes
 
+## Version 1.1.0 - 2019-05-20
+
+* Upgrade Docker, from 18.09.5 to 18.09.6 [#4296](https://github.com/kubernetes/minikube/pull/4296)
+* Expose ‘—pod-network-cidr’ argument in minikube [#3892](https://github.com/kubernetes/minikube/pull/3892)
+* Allow minikube to function with misconfigured NO_PROXY value [#4229](https://github.com/kubernetes/minikube/pull/4229)
+* Set apiserver oom_adj to -10 to avoid OOMing before other pods [#4282](https://github.com/kubernetes/minikube/pull/4282)
+* Upgrade Docker, from 18.06.3-ce to 18.09.5 [#4204](https://github.com/kubernetes/minikube/pull/4204)
+* Upgrade default Kubernetes release to v1.14.2 [#4279](https://github.com/kubernetes/minikube/pull/4279)
+* Restart kube-proxy using kubeadm & add bootstrapper.WaitCluster [#4276](https://github.com/kubernetes/minikube/pull/4276)
+* Allow macOS to resolve service FQDNs during 'minikube tunnel' [#3464](https://github.com/kubernetes/minikube/pull/3464)
+* Return host IP when using vmware as vm driver. [#4255](https://github.com/kubernetes/minikube/pull/4255)
+* Unset the current-context after minikube stop [#4177](https://github.com/kubernetes/minikube/pull/4177)
+* Add Go modules support [#4241](https://github.com/kubernetes/minikube/pull/4241)
+* Select an accessible image repository for some users [#3937](https://github.com/kubernetes/minikube/pull/3937)
+* Fix registry addon ReplicationController template [#4220](https://github.com/kubernetes/minikube/pull/4220)
+* Standardize ASCII prefix for info, warning, and error messages [#4162](https://github.com/kubernetes/minikube/pull/4162)
+* Make handling of stale mount pid files more robust [#4191](https://github.com/kubernetes/minikube/pull/4191)
+* Add new kubectl command [#4193](https://github.com/kubernetes/minikube/pull/4193)
+* Don't attempt to pull docker images on relaunch [#4129](https://github.com/kubernetes/minikube/pull/4129)
+* storageclass no longer beta #4148 [#4153](https://github.com/kubernetes/minikube/pull/4153)
+* Adding support for s390x [#4091](https://github.com/kubernetes/minikube/pull/4091)
+
+Thank you to the contributors whose work made v1.1 into something we could all be proud of:
+
+- Anders F Björklund
+- Chris Eason
+- Deepika Pandhi
+- Himanshu Pandey
+- Jan Janik
+- Marcos Diez
+- Maximilian Hess
+- Medya Gh
+- Sharif Elgamal
+- Thomas Strömberg
+- Tiago Ilieve
+- Tobias Bradtke
+- Zhongcheng Lao
+- Zoran Regvart
+- kerami
+- salamani
+
 ## Version 1.0.1 - 2019-04-29
 
 * update-context is confusing with profiles [#4049](https://github.com/kubernetes/minikube/pull/4049)
