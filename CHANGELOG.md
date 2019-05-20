@@ -4,8 +4,9 @@
 
 * Add new kubectl command [#4193](https://github.com/kubernetes/minikube/pull/4193)
 * Expose ‘—pod-network-cidr’ argument in minikube [#3892](https://github.com/kubernetes/minikube/pull/3892)
-* Adding support for s390x [#4091](https://github.com/kubernetes/minikube/pull/4091)
 * Allow macOS to resolve service FQDNs during 'minikube tunnel' [#3464](https://github.com/kubernetes/minikube/pull/3464)
+* Add support for s390x [#4091](https://github.com/kubernetes/minikube/pull/4091)
+* Update to Podman 1.3 & CRIO v1.14.1 [#4299](https://github.com/kubernetes/minikube/pull/4299)
 * Upgrade Docker, from 18.06.3-ce to 18.09.5 [#4204](https://github.com/kubernetes/minikube/pull/4204)
 * Upgrade Docker, from 18.09.5 to 18.09.6 [#4296](https://github.com/kubernetes/minikube/pull/4296)
 * Upgrade default Kubernetes release to v1.14.2 [#4279](https://github.com/kubernetes/minikube/pull/4279)
