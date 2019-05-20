@@ -24,8 +24,6 @@ apiServerExtraArgs:
 controllerManagerExtraArgs:
   feature-gates: "a=b"
   kube-api-burst: "32"
-kubeadmExtraArgs:
-  feature-gates: "a=b"
 schedulerExtraArgs:
   feature-gates: "a=b"
   scheduler-name: "mini-scheduler"

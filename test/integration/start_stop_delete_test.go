@@ -44,6 +44,7 @@ func TestStartStop(t *testing.T) {
 			"ServerSideApply=true",
 			"--network-plugin=cni",
 			"--extra-config=kubelet.network-plugin=cni",
+			"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 		}},
 		{"containerd_and_non_default_apiserver_port", []string{
