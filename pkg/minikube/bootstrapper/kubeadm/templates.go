@@ -177,10 +177,6 @@ RestartSec=10
 WantedBy=multi-user.target
 `
 
-var kubeadmInitTemplate = template.Must(template.New("kubeadmInitTemplate").Parse(`
-sudo /usr/bin/kubeadm init --config {{.KubeadmConfigFile}} {{.ExtraOptions}} {{if .SkipPreflightChecks}}--skip-preflight-checks{{else}}{{range .Preflights}}--ignore-preflight-errors={{.}} {{end}}{{end}}
-`))
-
 // printMapInOrder sorts the keys and prints the map in order, combining key
 // value pairs with the separator character
 //
