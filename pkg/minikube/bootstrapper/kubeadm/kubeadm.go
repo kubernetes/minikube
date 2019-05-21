@@ -218,6 +218,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	// Allow older kubeadm versions to function with newer Docker releases.
 	if version.LT(semver.MustParse("1.13.0")) {
+		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
 		ignore = append(ignore, "SystemVerification")
 	}
 
