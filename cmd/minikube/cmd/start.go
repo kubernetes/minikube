@@ -238,7 +238,15 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(runner, k8sVersion)
+	cr := configureRuntimes(runner)
+	version, _ := cr.Version()
+	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
+	for _, v := range dockerOpt {
+		console.OutStyle("option", "opt %s", v)
+	}
+	for _, v := range dockerEnv {
+		console.OutStyle("option", "env %s", v)
+	}
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -637,19 +645,11 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, k8sVersion string) cruntime.Manager {
+func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
-	}
-	version, _ := cr.Version()
-	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
-	for _, v := range dockerOpt {
-		console.OutStyle("option", "opt %s", v)
-	}
-	for _, v := range dockerEnv {
-		console.OutStyle("option", "env %s", v)
 	}
 
 	err = cr.Enable()

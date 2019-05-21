@@ -1,4 +1,4 @@
-# Driver plugin installation
+# VM Driver plugin installation
 
 Minikube uses Docker Machine to manage the Kubernetes VM so it benefits from the
 driver plugin architecture that Docker Machine uses to provide a consistent way to
@@ -184,4 +184,20 @@ and run minikube as usual:
 
 ```shell
 minikube start
+```
+
+# Troubleshooting
+
+minikube is currently unable to display the error message received back from the VM driver. Users can however reveal the error by passing `--alsologtostderr -v=8` to `minikube start`. For instance:
+
+```shell
+minikube start --vm-driver=kvm2 --alsologtostderr -v=8
+```
+
+Output:
+
+```
+Found binary path at /usr/local/bin/docker-machine-driver-kvm2
+Launching plugin server for driver kvm2
+Error starting plugin binary: fork/exec /usr/local/bin/docker-machine-driver-kvm2: exec format error   
 ```
