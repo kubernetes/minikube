@@ -217,7 +217,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	ignore = append(ignore, SkipAdditionalPreflights[r.Name()]...)
 
 	// Allow older kubeadm versions to function with newer Docker releases.
-	if version.GTE(semver.MustParse("1.13.0")) {
+	if version.LT(semver.MustParse("1.13.0")) {
 		ignore = append(ignore, "SystemVerification")
 	}
 
