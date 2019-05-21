@@ -117,9 +117,11 @@ func (d *Driver) createNetwork() error {
 
 	// network: default
 	// It is assumed that the libvirt/kvm installation has already created this network
+	if _, err := conn.LookupNetworkByName(d.Network); err != nil {
+		return errors.Wrapf(err, "network %s doesn't exist", d.Network)
+	}
 
 	// network: private
-
 	// Only create the private network if it does not already exist
 	if _, err := conn.LookupNetworkByName(d.PrivateNetwork); err != nil {
 		// create the XML for the private network from our networkTmpl
