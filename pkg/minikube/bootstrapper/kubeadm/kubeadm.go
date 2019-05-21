@@ -73,24 +73,6 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
-// SkipPreflights are preflight checks we always skip.
-var SkipPreflights = []string{
-	// We use --ignore-preflight-errors=DirAvailable since we have our own custom addons
-	// that we also stick in /etc/kubernetes/manifests
-	"DirAvailable--etc-kubernetes-manifests",
-	"DirAvailable--data-minikube",
-	"Port-10250",
-	"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
-	"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
-	"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
-	"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
-	// So that "none" driver users don't have to reconfigure their machine
-	"Swap",
-	// We use --ignore-preflight-errors=CRI since /var/run/dockershim.sock is not present.
-	// (because we start kubelet with an invalid config)
-	"CRI",
-}
-
 type pod struct {
 	// Human friendly name
 	name  string
@@ -221,30 +203,30 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	if err != nil {
 		return err
 	}
-	b := bytes.Buffer{}
-	preflights := SkipPreflights
-	preflights = append(preflights, SkipAdditionalPreflights[r.Name()]...)
 
-	templateContext := struct {
-		KubeadmConfigFile   string
-		SkipPreflightChecks bool
-		Preflights          []string
-		ExtraOptions        string
-	}{
-		KubeadmConfigFile: constants.KubeadmConfigFile,
-		SkipPreflightChecks: !VersionIsBetween(version,
-			semver.MustParse("1.9.0-alpha.0"),
-			semver.Version{}),
-		Preflights:   preflights,
-		ExtraOptions: extraFlags,
+	ignore := []string{
+		"DirAvailable--etc-kubernetes-manifests", // Addons are stored in /etc/kubernetes/manifests
+		"DirAvailable--data-minikube",
+		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
+		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
+		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
+		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
+		"Port-10250", // For "none" users who already have a kubelet online
+		"Swap",       // For "none" users who have swap configured
 	}
-	if err := kubeadmInitTemplate.Execute(&b, templateContext); err != nil {
-		return err
+	ignore = append(ignore, SkipAdditionalPreflights[r.Name()]...)
+
+	// Allow older kubeadm versions to function with newer Docker releases.
+	if version.LT(semver.MustParse("1.13.0")) {
+		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
+		ignore = append(ignore, "SystemVerification")
 	}
 
-	out, err := k.c.CombinedOutput(b.String())
+	cmd := fmt.Sprintf("sudo /usr/bin/kubeadm init --config %s %s --ignore-preflight-errors=%s",
+		constants.KubeadmConfigFile, extraFlags, strings.Join(ignore, ","))
+	out, err := k.c.CombinedOutput(cmd)
 	if err != nil {
-		return errors.Wrapf(err, "kubeadm init: %s\n%s\n", b.String(), out)
+		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
