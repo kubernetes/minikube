@@ -211,8 +211,8 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
 		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
-		//		"Port-10250", // Kubelet
-		"Swap", // For "none" driver users
+		"Port-10250", // For "none" users who already have a kubelet online
+		"Swap",       // For "none" users who have swap configured
 	}
 	ignore = append(ignore, SkipAdditionalPreflights[r.Name()]...)
 
