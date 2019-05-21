@@ -93,8 +93,8 @@ var vmProblems = map[string]match{
 	},
 	"KVM2_START_NO_IP": {
 		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after 120 seconds`),
-		Advice: "The KVM driver is not providing an IP address to the VM. Try checking your libvirt configuration and/or opening an issue",
-		URL:    "https://fedoraproject.org/wiki/How_to_debug_Virtualization_problems#Networking",
+		Advice: "Install the latest kvm2 driver and run 'virt-host-validate'",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
 		Issues: []int{4249, 3566},
 	},
 	"KVM2_NETWORK_DEFINE_XML": {
@@ -103,11 +103,26 @@ var vmProblems = map[string]match{
 		URL:    "https://forums.gentoo.org/viewtopic-t-981692-start-0.html",
 		Issues: []int{4195},
 	},
+	"KVM2_QEMU_MONITOR": {
+		Regexp: re(`qemu unexpectedly closed the monitor`),
+		Advice: "Upgrade to QEMU v3.1.0+, run 'virt-host-validate', or ensure that you are not running in a nested VM environment.",
+		Issues: []int{4277},
+	},
 	"KVM_UNAVAILABLE": {
 		Regexp: re(`invalid argument: could not find capabilities for domaintype=kvm`),
 		Advice: "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
 		URL:    "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
 		Issues: []int{2991},
+	},
+	"DRIVER_CRASHED": {
+		Regexp: re(`Error attempting to get plugin server address for RPC`),
+		Advice: "The VM driver exited with an error, and may be corrupt. Run 'minikube start' with --alsologtostderr -v=8 to see the error",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md",
+	},
+	"DRIVER_EXITED": {
+		Regexp: re(`Unable to start VM: create: creating: exit status 1`),
+		Advice: "Re-run 'minikube start' with --alsologtostderr -v=8 to see the VM driver error message",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#troubleshooting",
 	},
 	"VM_BOOT_FAILED_HYPERV_ENABLED": {
 		Regexp: re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
