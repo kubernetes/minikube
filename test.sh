@@ -19,7 +19,7 @@ set -eu -o pipefail
 exitcode=0
 
 echo "= go mod ================================================================"
-go mod download >/dev/null || ((exitcode+=1))
+go mod download 2>&1 | grep -v "go: finding" || true
 go mod tidy -v && echo ok || ((exitcode+=2))
 
 echo "= make lint ============================================================="
