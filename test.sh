@@ -19,11 +19,11 @@ set -eu -o pipefail
 exitcode=0
 
 echo "= go mod ================================================================"
-go mod download >/dev/null || ((exitcode+=1))
+go mod download 2>&1 | grep -v "go: finding"
 go mod tidy -v && echo ok || ((exitcode+=2))
 
 echo "= make lint ============================================================="
-make -s lint && echo ok || ((exitcode+=4))
+make -s lint  && echo ok || ((exitcode+=4))
 
 echo "= boilerplate ==========================================================="
 readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
