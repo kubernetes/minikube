@@ -8,7 +8,7 @@ minikube may require access from the host to the following IP ranges: 192.168.99
 
 * If you are using minikube with a VPN, you may need to configure the VPN to allow local routing for  traffic to the afforementioned IP ranges.
 
-* If you are using minikube with a local firewall, you will need to allow access to the afforementioned IP ranges on ports 22 and 8443.
+* If you are using minikube with a local firewall, you will need to allow access from the host to the afforementioned IP ranges on TCP ports 22 and 8443. You will also need to add access from these IP's to TCP ports 443 and 53 externally to pull images.
 
 ## Access to NodePort services
 
