@@ -38,6 +38,7 @@ func TestStartStop(t *testing.T) {
 		{"nocache_oldest", []string{
 			"--cache-images=false",
 			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+			"--kvm-network=default",
 		}},
 		{"feature_gates_newest_cni", []string{
 			"--feature-gates",
