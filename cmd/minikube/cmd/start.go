@@ -398,6 +398,18 @@ func validateConfig() {
 			exit.Usage("Sorry, the kubeadm.%s parameter is currently not supported by --extra-config", param)
 		}
 	}
+
+	// This validates if the --registry-mirror args
+	// match the format of http://localhost
+	urlRe := regexp.MustCompile(`^http(s{0,1}):\/\/(.+?)`)
+	if len(registryMirror) > 0 {
+		for _, loc := range registryMirror {
+			if !urlRe.MatchString(loc) {
+				exit.WithCode(exit.Failure, "url provided with --registry-mirror flag is invalid %q", loc)
+			}
+		}
+	}
+
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
@@ -476,8 +488,6 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	if repository != "" {
 		console.OutStyle(console.SuccessType, "using image repository %s", repository)
 	}
-
-	validateRegistryMirror(registryMirror)
 
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
@@ -810,17 +820,4 @@ func saveConfig(clusterConfig cfg.Config) error {
 		return err
 	}
 	return nil
-}
-
-// This function validates if the --registry--mirror args
-// match the format of http://localhost
-func validateRegistryMirror(registryMirror []string) {
-	urlRe := regexp.MustCompile(`http:\/\/(.+?)`)
-	if len(registryMirror) > 0 {
-		for _, loc := range registryMirror {
-			if !urlRe.MatchString(loc) {
-				exit.WithCode(exit.Failure, "url provided with --registry-mirror flag is invalid %q", loc)
-			}
-		}
-	}
 }
