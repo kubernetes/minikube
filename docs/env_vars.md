@@ -19,8 +19,7 @@ Some features can only be accessed by environment variables, here is a list of t
 
 * **MINIKUBE_REMINDERWAITPERIODINHOURS** - (int) sets the number of hours to check for an update notification
 
-* **MINIKUBE_WANTKUBECTLDOWNLOADMSG** - (bool) sets whether minikube should tell a user that `kubectl` cannot be found on there path
-* **MINIKUBE_WANTNONEDRIVERWARNING** - (bool) sets whether minikube should warn a user about running the 'none' driver
+* **CHANGE_MINIKUBE_NONE_USER** - (bool) automatically change ownership of of ~/.minikube to the value of $SUDO_USER
 
 * **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube
 
