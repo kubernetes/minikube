@@ -19,14 +19,14 @@ package config
 import "testing"
 
 func TestUnsetConfig(t *testing.T) {
-	propName := "dashboard"
-	propValue := "true"
+	propName := "cpus"
+	propValue := "1"
 	err := Set(propName, propValue)
 	if err != nil {
 		t.Errorf("Failed to set the property %q", propName)
 	}
 	err = unset(propName)
 	if err != nil {
-		t.Errorf("Failed to unset property")
+		t.Errorf("Failed to unset property %q", err)
 	}
 }
