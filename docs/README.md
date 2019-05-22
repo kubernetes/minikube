@@ -34,6 +34,8 @@
 
 * **Host Folder Mounting** ([host_folder_mount.md](host_folder_mount.md)): How to mount your files from your host into the minikube VM
 
+* **Syncing files into the VM** ([syncing-files.md](syncing-files.md)): How to sync files from your host into the minikube VM
+
 #### Networking
 
 * **HTTP Proxy** ([http_proxy.md](http_proxy.md)): Instruction on how to run minikube behind a HTTP Proxy
