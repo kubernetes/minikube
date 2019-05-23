@@ -36,7 +36,9 @@ var ProfileCmd = &cobra.Command{
 			profile := viper.GetString(pkgConfig.MachineProfile)
 			console.OutLn("%s", profile)
 			os.Exit(0)
-		} else if len(args) != 1 {
+		}
+		
+		if len(args) > 1 {
 			exit.Usage("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
 		}
 
