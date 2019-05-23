@@ -18,7 +18,7 @@ package config
 
 import (
 	"os"
-	
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
@@ -37,7 +37,7 @@ var ProfileCmd = &cobra.Command{
 			console.OutLn("%s", profile)
 			os.Exit(0)
 		}
-		
+
 		if len(args) > 1 {
 			exit.Usage("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
 		}
