@@ -175,7 +175,7 @@ func (d *Driver) deleteNetwork() error {
 	network, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	if err != nil {
 		// TODO: decide if we really wanna throw an error?
-		return errors.Wrap(err, "network %s does not exist")
+		return errors.Wrapf(err, "network %s does not exist", d.PrivateNetwork)
 	}
 	log.Debugf("Network %s exists", d.PrivateNetwork)
 
