@@ -174,8 +174,12 @@ func (d *Driver) deleteNetwork() error {
 	log.Debugf("Checking if network %s exists...", d.PrivateNetwork)
 	network, err := conn.LookupNetworkByName(d.PrivateNetwork)
 	if err != nil {
-		// TODO: decide if we really wanna throw an error?
-		return errors.Wrap(err, "network %s does not exist")
+		if libvirtErr, ok := err.(libvirt.Error); ok && libvirtErr.Code == libvirt.ERR_NO_NETWORK {
+			log.Warnf("Network %s does not exist. Skipping deletion", d.PrivateNetwork)
+			return nil
+		}
+
+		return errors.Wrapf(err, "failed looking for network %s", d.PrivateNetwork)
 	}
 	log.Debugf("Network %s exists", d.PrivateNetwork)
 
