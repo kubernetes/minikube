@@ -451,11 +451,7 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "destroying running domain")
 	}
 
-	if err := dom.Undefine(); err != nil {
-		return err
-	}
-
-	return nil
+	return dom.Undefine()
 }
 
 func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
