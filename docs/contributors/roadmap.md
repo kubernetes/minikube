@@ -8,7 +8,7 @@ Please send a PR to suggest any improvements to it.
 
 - [ ] Creation of a user-centric minikube website for installation & documentation
 - [ ] Localized output to 5+ written languages
-- [ ] Make minikube usable in environments with challenging connectivity requirements
+- [x] Make minikube usable in environments with challenging connectivity requirements
 - [ ] Support lightweight deployment methods for environments where VM's are impractical
 - [x] Add offline support
 
@@ -44,7 +44,7 @@ Please send a PR to suggest any improvements to it.
 
 ## (#8) Stable and easy to debug
 
-- [ ] Pre-flight error checks for common connectivity and configuration errors
+- [x] Pre-flight error checks for common connectivity and configuration errors
 - [ ] Improve the `minikube status` command so that it can diagnose common issues
 - [ ] Mark all features not covered by continuous integration as `experimental`
 - [x] Stabilize and improve profiles support (AKA multi-cluster)
