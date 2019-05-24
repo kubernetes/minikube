@@ -17,7 +17,10 @@ limitations under the License.
 package config
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -25,12 +28,18 @@ import (
 
 // ProfileCmd represents the profile command
 var ProfileCmd = &cobra.Command{
-	Use:   "profile MINIKUBE_PROFILE_NAME.  You can return to the default minikube profile by running `minikube profile default`",
-	Short: "Profile sets the current minikube profile",
-	Long:  "profile sets the current minikube profile.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
+	Use:   "profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default`",
+	Short: "Profile gets or sets the current minikube profile",
+	Long:  "profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 1 {
-			exit.Usage("usage: minikube profile MINIKUBE_PROFILE_NAME")
+		if len(args) == 0 {
+			profile := viper.GetString(pkgConfig.MachineProfile)
+			console.OutLn("%s", profile)
+			os.Exit(0)
+		}
+
+		if len(args) > 1 {
+			exit.Usage("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
 		}
 
 		profile := args[0]
