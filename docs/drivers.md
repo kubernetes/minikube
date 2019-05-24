@@ -16,54 +16,25 @@ the host PATH:
 
 ## KVM2 driver
 
-To install the KVM2 driver, first install and configure the prereqs:
+To install the KVM2 driver, first install and configure the prerequisites, namely libvirt 1.3.1 or higher, and qemu-kvm:
 
-* Debian or Ubuntu 18.x:
+* Debian or Ubuntu 18.x: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
+* Ubuntu 16.x or older: `sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm`
+* Fedora/CentOS/RHEL: `sudo yum install libvirt-daemon-kvm qemu-kvm`
 
-```shell
-sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
-```
+Check your installed virsh version:
 
-* Ubuntu 16.x or older:
+`virsh --version`
 
-```shell
-sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm
-```
+If your version of virsh is newer than 1.3.1 (January 2016), you may download our pre-built driver:
 
-* Fedora/CentOS/RHEL:
-
-```shell
-sudo yum install libvirt-daemon-kvm qemu-kvm
-```
-
-Enable,start, and verify the `libvirtd` service has started.
-
-```shell
-sudo systemctl enable libvirtd.service
-sudo systemctl start libvirtd.service
-sudo systemctl status libvirtd.service
-```
-
-Then you will need to add yourself to `libvirt` group (older distributions may use `libvirtd` instead)
-
-```shell
-sudo usermod -a -G libvirt $(whoami)
-```
-
-Then to join the group with your current user session:
-
-```shell
-newgrp libvirt
-```
-
-Now install the driver:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
   && sudo install docker-machine-driver-kvm2 /usr/local/bin/
 ```
 
-NOTE: Ubuntu users on a release older than 18.04, or anyone experiencing [#3206: Error creating new host: dial tcp: missing address.](https://github.com/kubernetes/minikube/issues/3206) you will need to build your own driver until [#3689](https://github.com/kubernetes/minikube/issues/3689) is resolved. Building this binary will require [Go v1.12](https://golang.org/dl/) or newer to be installed.
+If your version of virsh is older than 1.3.1 (Januarry 2016), you may build your own driver binary if you have go 1.12+ installed.
 
 ```shell
 $ sudo apt install libvirt-dev
@@ -73,22 +44,36 @@ $ make out/docker-machine-driver-kvm2
 $ sudo install out/docker-machine-driver-kvm2 /usr/local/bin
 ```
 
+To finish the kvm installation, start and verify the `libvirtd` service
+
+```shell
+sudo systemctl enable libvirtd.service
+sudo systemctl start libvirtd.service
+sudo systemctl status libvirtd.service
+```
+
+Add your user to `libvirt` group (older distributions may use `libvirtd` instead)
+
+```shell
+sudo usermod -a -G libvirt $(whoami)
+```
+
+Join the `libvirt` group with your current shell session:
+
+```shell
+newgrp libvirt
+```
+
 To use the kvm2 driver:
 
 ```shell
 minikube start --vm-driver kvm2
 ```
 
-or, to use kvm2 as a default driver:
+or, to use kvm2 as a default driver for `minikube start`:
 
 ```shell
 minikube config set vm-driver kvm2
-```
-
-and run minikube as usual:
-
-```shell
-minikube start
 ```
 
 ## Hyperkit driver
