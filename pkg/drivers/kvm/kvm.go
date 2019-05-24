@@ -461,7 +461,7 @@ func (d *Driver) Remove() error {
 func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
 	state, reason, err := dom.GetState()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting domain state")
 	}
 
 	if state == libvirt.DOMAIN_SHUTOFF && reason == int(libvirt.DOMAIN_SHUTOFF_DESTROYED) {
