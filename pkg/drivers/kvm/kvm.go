@@ -443,16 +443,31 @@ func (d *Driver) Remove() error {
 	dom, err := conn.LookupDomainByName(d.MachineName)
 	if err != nil {
 		log.Warnf("Domain %s does not exist, nothing to clean up...", d.MachineName)
+		return nil
 	}
-	if dom != nil {
-		log.Infof("Domain %s exists, removing...", d.MachineName)
-		if err := dom.Destroy(); err != nil {
-			return err
-		}
-		if err := dom.Undefine(); err != nil {
-			return err
-		}
+
+	log.Infof("Domain %s exists, removing...", d.MachineName)
+	if err := d.destroyRunningDomain(dom); err != nil {
+		return errors.Wrap(err, "destroying running domain")
+	}
+
+	if err := dom.Undefine(); err != nil {
+		return err
 	}
 
 	return nil
+}
+
+func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
+	state, reason, err := dom.GetState()
+	if err != nil {
+		return err
+	}
+
+	if state == libvirt.DOMAIN_SHUTOFF && reason == int(libvirt.DOMAIN_SHUTOFF_DESTROYED) {
+		log.Warnf("Domain %s already destroyed, skipping...", d.MachineName)
+		return nil
+	}
+
+	return dom.Destroy()
 }
