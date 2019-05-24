@@ -89,10 +89,9 @@ func (d *Driver) ensureNetwork() error {
 
 	// network: default
 
-	// Start the default network
 	// It is assumed that the libvirt/kvm installation has already created this network
-	log.Infof("Ensuring network %s is active", defaultNetworkName)
-	if err := setupNetwork(conn, defaultNetworkName); err != nil {
+	log.Infof("Ensuring network %s is active", d.Network)
+	if err := setupNetwork(conn, d.Network); err != nil {
 		return err
 	}
 
