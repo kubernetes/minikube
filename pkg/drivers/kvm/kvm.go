@@ -442,7 +442,7 @@ func (d *Driver) Remove() error {
 	log.Debug("Checking if the domain needs to be deleted")
 	dom, err := conn.LookupDomainByName(d.MachineName)
 	if err != nil {
-		log.Warn("Domain %s does not exist, nothing to clean up...", d.MachineName)
+		log.Warnf("Domain %s does not exist, nothing to clean up...", d.MachineName)
 	}
 	if dom != nil {
 		log.Infof("Domain %s exists, removing...", d.MachineName)
