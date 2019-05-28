@@ -292,24 +292,34 @@ func (d *Driver) lookupIPFromStatusFile(conn *libvirt.Connect) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "reading status file")
 	}
+
+	return parseStatusAndReturnIP(d.PrivateMAC, statuses)
+}
+
+func parseStatusAndReturnIP(privateMAC string, statuses []byte) (string, error) {
 	type StatusEntry struct {
 		IPAddress  string `json:"ip-address"`
 		MacAddress string `json:"mac-address"`
 	}
-
 	var statusEntries []StatusEntry
 
-	// If the status file is empty, parsing will fail, ignore this error.
-	_ = json.Unmarshal(statuses, &statusEntries)
+	// empty file return blank
+	if len(statuses) == 0 {
+		return "", nil
+	}
 
-	ipAddress := ""
+	err := json.Unmarshal(statuses, &statusEntries)
+	if err != nil {
+		return "", errors.Wrap(err, "reading status file")
+	}
+
 	for _, status := range statusEntries {
-		if status.MacAddress == d.PrivateMAC {
-			ipAddress = status.IPAddress
+		if status.MacAddress == privateMAC {
+			return status.IPAddress, nil
 		}
 	}
 
-	return ipAddress, nil
+	return "", nil
 }
 
 func (d *Driver) lookupIPFromLeasesFile() (string, error) {
