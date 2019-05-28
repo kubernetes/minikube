@@ -1,3 +1,17 @@
+<#
+	.DESCRIPTION
+    This script is used to add/remove the installation path of Minikube in the PATH Environment variable as part of installation/uninstallation of Minikube.
+    The script assumes that the PATH exists before running.
+    
+    .PARAMETER Add
+    This is a Switch parameter which tells the script to ADD the path supplied to the System's PATH Environment variable.
+    
+    .PARAMETER Remove
+    This is a Switch parameter which tells the script to REMOVE the path supplied from the System's PATH Environment variable.
+
+    .PARAMETER Path
+    This parameter accepts a string which needs to be added/removed from the System's PATH Environment Variable.
+#>
 
 param(
     [cmdletbinding()]
@@ -22,31 +36,31 @@ $currentSystemPath = [Environment]::GetEnvironmentVariable("Path", [EnvironmentV
 
 try {
     if ($Add) {
-        Write-Output "[Info]:: Path needs to be added."
-        Write-Output "[Info]:: Checking if the given path already exists or not"
+        Write-Output "Path needs to be added."
+        Write-Output "Checking if the given path already exists or not"
 
         if ($currentSystemPath -match [Regex]::Escape($Path)) {
-            Write-Output "[Info]:: The provided path already exists in the system. Exiting now."
+            Write-Output "The provided path already exists in the system. Exiting now."
         } else {
-            Write-Output "[Info]:: The given path was not found. Adding it now."
+            Write-Output "The given path was not found. Adding it now."
             if ($currentSystemPath.EndsWith(";")) {
                 $newSystemPath = $currentSystemPath + $Path.Trim() + ";"
             } else {
                 $newSystemPath = $currentSystemPath + ";" + $Path.Trim() + ";"
             }
             [Environment]::SetEnvironmentVariable("Path", $newSystemPath, [EnvironmentVariableTarget]::Machine)
-            Write-Output "[Info]:: Path has been added successfully."
+            Write-Output "Path has been added successfully."
         }
     } else {
-        Write-Output "[Info]:: Path needs to be added."
-        Write-Output "[Info]:: Checking if the given path already exists or not"
+        Write-Output "Path needs to be added."
+        Write-Output "Checking if the given path already exists or not"
 
         if ($currentSystemPath -match [Regex]::Escape($Path)) {
-            Write-Output "[Info]:: The provided path exists in the system. Removing now."
+            Write-Output "The provided path exists in the system. Removing now."
             $newSystemPath = $currentSystemPath.Replace(($Path.Trim() + ";"), "")
             [Environment]::SetEnvironmentVariable("Path", $newSystemPath, [EnvironmentVariableTarget]::Machine)
         } else {
-            Write-Output "[Info]:: The given path was not found. Exiting now."
+            Write-Output "The given path was not found. Exiting now."
         }
     }
 }
@@ -54,5 +68,3 @@ catch {
     Write-Output "[Error]:: There was an error while execution. Please see the details below. Ensure that the script is running with administrator privileges."
     Write-Output $_
 }
-
-Write-Output "[Exit]:: Program is now exiting"
