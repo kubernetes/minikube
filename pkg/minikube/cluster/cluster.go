@@ -158,20 +158,26 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
-		d, err := guestClockDelta(h, time.Now())
-		if err != nil {
-			glog.Warningf("Unable to measure system clock delta: %v", err)
-			return nil
-		}
-		if math.Abs(d.Seconds()) < maxClockDesyncSeconds {
-			glog.Infof("guest clock delta is within tolerance: %s", d)
-			return nil
-		}
-		if err := adjustGuestClock(h, d); err != nil {
-			return errors.Wrap(err, "adjusting system clock")
-		}
+		return ensureSyncedGuestClock(h)
 	}
 
+	return nil
+}
+
+// ensureGuestClockSync ensures that the guest system clock is relatively in-sync
+func ensureSyncedGuestClock(h hostRunner) error {
+	d, err := guestClockDelta(h, time.Now())
+	if err != nil {
+		glog.Warningf("Unable to measure system clock delta: %v", err)
+		return nil
+	}
+	if math.Abs(d.Seconds()) < maxClockDesyncSeconds {
+		glog.Infof("guest clock delta is within tolerance: %s", d)
+		return nil
+	}
+	if err := adjustGuestClock(h, time.Now()); err != nil {
+		return errors.Wrap(err, "adjusting system clock")
+	}
 	return nil
 }
 
@@ -194,13 +200,15 @@ func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	}
 	// NOTE: In a synced state, remote is a few hundred ms ahead of local
 	remote := time.Unix(secs, nsecs)
-	return remote.Sub(local), nil
+	d := remote.Sub(local)
+	glog.Infof("Guest: %s Remote: %s (delta=%s)", remote, local, d)
+	return d, nil
 }
 
 // adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
-func adjustGuestClock(h hostRunner, d time.Duration) error {
-	glog.Infof("Adjusting guest system clock by %s", d)
-	_, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", time.Now().Add(d).Unix()))
+func adjustGuestClock(h hostRunner, t time.Time) error {
+	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
+	glog.Infof("clock set: %s (err=%v)", out, err)
 	return err
 }
 
