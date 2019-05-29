@@ -22,6 +22,16 @@ We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 
 `minikube service --url $SERVICE`
 
+
+### Increasing the NodePort range
+
+By default, minikube only exposes ports 30000-32767. If this is not enough, you can configure the apiserver to allow all ports using:
+
+`minikube start --extra-config=apiserver.service-node-port-range=1-65535`
+
+This flag also accepts a comma separated list of ports and port ranges.
+
+
 ## Access to LoadBalancer services using `minikube tunnel`
 
 Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command.
