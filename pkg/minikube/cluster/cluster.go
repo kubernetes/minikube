@@ -20,9 +20,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"math"
 	"net"
 	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -42,6 +45,17 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+)
+
+// hostRunner is a minimal host.Host based interface for running commands
+type hostRunner interface {
+	RunSSHCommand(string) (string, error)
+}
+
+var (
+	// The maximum the guest VM clock is allowed to be ahead and behind. This value is intentionally
+	// large to allow for inaccurate methodology, but still small enough so that certificates are likely valid.
+	maxClockDesyncSeconds = 2.1
 )
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
@@ -117,16 +131,15 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
-	err = waitForSSHAccess(h, e)
+	err = configureHost(h, e)
 	if err != nil {
 		return nil, err
 	}
-
 	return h, nil
 }
 
-func waitForSSHAccess(h *host.Host, e *engine.Options) error {
-
+// configureHost handles any post-powerup configuration required
+func configureHost(h *host.Host, e *engine.Options) error {
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
 	console.OutStyle("waiting", "Waiting for SSH access ...")
 
@@ -145,9 +158,58 @@ func waitForSSHAccess(h *host.Host, e *engine.Options) error {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
+		return ensureSyncedGuestClock(h)
 	}
 
 	return nil
+}
+
+// ensureGuestClockSync ensures that the guest system clock is relatively in-sync
+func ensureSyncedGuestClock(h hostRunner) error {
+	d, err := guestClockDelta(h, time.Now())
+	if err != nil {
+		glog.Warningf("Unable to measure system clock delta: %v", err)
+		return nil
+	}
+	if math.Abs(d.Seconds()) < maxClockDesyncSeconds {
+		glog.Infof("guest clock delta is within tolerance: %s", d)
+		return nil
+	}
+	if err := adjustGuestClock(h, time.Now()); err != nil {
+		return errors.Wrap(err, "adjusting system clock")
+	}
+	return nil
+}
+
+// systemClockDelta returns the approximate difference between the host and guest system clock
+// NOTE: This does not currently take into account ssh latency.
+func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
+	out, err := h.RunSSHCommand("date +%s.%N")
+	if err != nil {
+		return 0, errors.Wrap(err, "get clock")
+	}
+	glog.Infof("guest clock: %s", out)
+	ns := strings.Split(strings.TrimSpace(out), ".")
+	secs, err := strconv.ParseInt(strings.TrimSpace(ns[0]), 10, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "atoi")
+	}
+	nsecs, err := strconv.ParseInt(strings.TrimSpace(ns[1]), 10, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "atoi")
+	}
+	// NOTE: In a synced state, remote is a few hundred ms ahead of local
+	remote := time.Unix(secs, nsecs)
+	d := remote.Sub(local)
+	glog.Infof("Guest: %s Remote: %s (delta=%s)", remote, local, d)
+	return d, nil
+}
+
+// adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
+func adjustGuestClock(h hostRunner, t time.Time) error {
+	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
+	glog.Infof("clock set: %s (err=%v)", out, err)
+	return err
 }
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
