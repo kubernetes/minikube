@@ -67,6 +67,7 @@ var kubectlCmd = &cobra.Command{
 
 		glog.Infof("Running %s %v", path, args)
 		c := exec.Command(path, args...)
+		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
 		if err := c.Run(); err != nil {
