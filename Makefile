@@ -14,10 +14,10 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 0
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 1
+VERSION_BUILD ?= 0
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).1
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 
 VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
@@ -73,7 +73,9 @@ MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
-SOURCE_DIRS = cmd pkg test
+
+CMD_SOURCE_DIRS = cmd pkg
+SOURCE_DIRS = $(SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # $(call DOCKER, image, command)
@@ -103,7 +105,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
-out/minikube-%: pkg/minikube/assets/assets.go
+out/minikube-%: pkg/minikube/assets/assets.go $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -221,13 +223,16 @@ vet:
 
 # Once v1.16.1+ is released, replace with
 # curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
-#  | bash -s -- -b out/linters v1.16.0
-
+#  | bash -s -- -b out/linters v1.16.1
 out/linters/golangci-lint:
-	mkdir -p out/linters \
-	  && cd out/linters \
-	  && test -f go.mod || go mod init linters \
-	  && go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@692dacb773b703162c091c2d8c59f9cd2d6801db >/dev/null
+	mkdir -p out/linters
+	cd out/linters
+	test -f go.mod || go mod init linters
+	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@692dacb773b703162c091c2d8c59f9cd2d6801db 2>&1 \
+	  | grep -v "go: finding"
+	test -x $(GOPATH)/bin/golangci-lint \
+	  || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
+	  | sh -s -- -b $(GOPATH)/bin v1.16.0
 	cp -f $(GOPATH)/bin/golangci-lint out/linters/golangci-lint
 
 .PHONY: lint

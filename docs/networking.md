@@ -1,7 +1,18 @@
 # Networking
 
-The minikube VM is exposed to the host system via a host-only IP address, that can be obtained with the `minikube ip` command.
-Any services of type `NodePort` can be accessed over that IP address, on the NodePort.
+## Firewalls, VPN's, and proxies
+
+minikube may require access from the host to the following IP ranges: 192.168.99.0/24, 192.168.39.0/24, and 10.96.0.0/12. These networks can be changed in minikube using `--host-only-cidr` and `--service-cluster-ip-range`.
+
+* To use minikube with a proxy, see [Using HTTP/HTTPS proxies](http_proxy.md).
+
+* If you are using minikube with a VPN, you may need to configure the VPN to allow local routing for  traffic to the afforementioned IP ranges.
+
+* If you are using minikube with a local firewall, you will need to allow access from the host to the afforementioned IP ranges on TCP ports 22 and 8443. You will also need to add access from these IP's to TCP ports 443 and 53 externally to pull images.
+
+## Access to NodePort services
+
+The minikube VM is exposed to the host system via a host-only IP address, that can be obtained with the `minikube ip` command. Any services of type `NodePort` can be accessed over that IP address, on the NodePort.
 
 To determine the NodePort for your service, you can use a `kubectl` command like this (note that `nodePort` begins with lowercase `n` in JSON output):
 
@@ -11,7 +22,7 @@ We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 
 `minikube service --url $SERVICE`
 
-## LoadBalancer emulation (`minikube tunnel`)
+## Access to LoadBalancer services using `minikube tunnel`
 
 Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command.
 
@@ -50,13 +61,11 @@ To cleanup orphaned routes, run:
 minikube tunnel --cleanup
 ````
 
-## (Advanced) Running tunnel as root to avoid entering password multiple times
+## Tunnel: Avoid entering password multiple times
 
-`minikube tunnel` runs as a separate daemon, creates a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway.
-Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS.
+`minikube tunnel` runs as a separate daemon, creates a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway. Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS.
 
-Recommended way to use on Linux with KVM2 driver and MacOSX with Hyperkit driver:
+If you want to avoid entering the root password, consider setting NOPASSWD for "ip" and "route" commands:
 
-`sudo -E minikube tunnel`
+https://superuser.com/questions/1328452/sudoers-nopasswd-for-single-executable-but-allowing-others
 
-Using VirtualBox on Windows, Mac and Linux _both_ `minikube start` and `minikube tunnel` needs to be started from the same Administrator user session otherwise [VBoxManage can't recognize the created VM](https://forums.virtualbox.org/viewtopic.php?f=6&t=81551).

@@ -38,12 +38,16 @@ func TestStartStop(t *testing.T) {
 		{"nocache_oldest", []string{
 			"--cache-images=false",
 			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+			// default is the network created by libvirt, if we change the name minikube won't boot
+			// because the given network doesn't exist
+			"--kvm-network=default",
 		}},
 		{"feature_gates_newest_cni", []string{
 			"--feature-gates",
 			"ServerSideApply=true",
 			"--network-plugin=cni",
 			"--extra-config=kubelet.network-plugin=cni",
+			"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 		}},
 		{"containerd_and_non_default_apiserver_port", []string{
