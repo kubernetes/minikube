@@ -46,6 +46,13 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
+var (
+	// The maximum the guest VM clock is allowed to be ahead and behind. This value is intentionally
+	// large to allow for inaccurate methodology, but still small enough so that certificates are likely valid.
+	maximumClockAhead  = time.Duration(-2 * time.Millisecond)
+	maximumClockBehind = time.Duration(2 * time.Millisecond)
+)
+
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
@@ -146,44 +153,51 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
-		if err := forciblyAdjustSystemClock(h); err != nil {
-			glog.Errorf("failed to adjust clock: %v", err)
+		d, err := guestClockDelta(h)
+		if err != nil {
+			glog.Warningf("Unable to measure system clock delta: %v", err)
+			return nil
+		}
+		if d > maximumClockBehind || d < maximumClockAhead {
+			glog.Infof("system clock delta is within tolerence: %s", d)
+			return nil
+		}
+		if err := adjustGuestClock(h, d); err != nil {
+			return errors.Wrap(err, "adjusting system clock")
 		}
 	}
 
 	return nil
 }
 
-// forciblyAdjustSystemClock adjusts the guests system clock if it differs significantly from the host
-func forciblyAdjustSystemClock(h *host.Host) error {
-	out, err := h.RunSSHCommand("date +%s")
+// systemClockDelta returns the approximate difference between the host and guest system clock
+// NOTE: This does not currently take into account ssh latency.
+func guestClockDelta(h *host.Host) (time.Duration, error) {
+	local := time.Now()
+	out, err := h.RunSSHCommand("date +%s.%N")
 	if err != nil {
-		return errors.Wrap(err, "get clock")
+		return 0, errors.Wrap(err, "get clock")
 	}
-	local := time.Now().Unix()
-	remote, err := strconv.ParseInt(strings.TrimSpace(out), 10, 64)
+	glog.Infof("guest clock: %s", out)
+	ns := strings.Split(strings.TrimSpace(out), ".")
+	secs, err := strconv.ParseInt(strings.TrimSpace(ns[0]), 10, 64)
 	if err != nil {
-		return errors.Wrap(err, "atoi")
+		return 0, errors.Wrap(err, "atoi")
 	}
-	diff := local - remote
-	glog.Infof("local clock: %d - remote clock: %d (diff: %d)", local, remote, diff)
+	nsecs, err := strconv.ParseInt(strings.TrimSpace(ns[1]), 10, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "atoi")
+	}
+	// In a synced state, "remote" will be ahead of "local" by a few ms
+	remote := time.Unix(secs, nsecs)
+	return remote.Sub(local), nil
+}
 
-	// Only interfere if desync is large enough to cause certificate validation issues
-	switch {
-	case diff < -1:
-		glog.Warningf("VM clock is %d seconds ahead of the host.", diff*-1)
-	case diff > 1:
-		glog.Warningf("VM clock is %d seconds behind the host.", diff)
-	case diff > 4:
-		glog.Errorf("VM clock is %d seconds behind the host: forcing sync.", diff)
-		// NOTE: This kind of barbarian one-shot time sync may cause applications to crash.
-		// However, proper approaches require access to an NTP service.
-		_, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", time.Now().Unix()))
-		if err != nil {
-			return errors.Wrap(err, "set clock")
-		}
-	}
-	return nil
+// adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
+func adjustGuestClock(h *host.Host, d time.Duration) error {
+	glog.Infof("Adjusting guest system clock by %s", d)
+	_, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", time.Now().Add(d).Unix()))
+	return err
 }
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
