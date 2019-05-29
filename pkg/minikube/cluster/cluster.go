@@ -181,7 +181,7 @@ func ensureSyncedGuestClock(h hostRunner) error {
 	return nil
 }
 
-// systemClockDelta returns the approximate difference between the host and guest system clock
+// guestClockDelta returns the approximate difference between the host and guest system clock
 // NOTE: This does not currently take into account ssh latency.
 func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	out, err := h.RunSSHCommand("date +%s.%N")
