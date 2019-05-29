@@ -181,9 +181,6 @@ func GetProfileFile(profile string) string {
 	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
 
-// DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
-const DockerAPIVersion = "1.39"
-
 // ReportingURL is the URL for reporting a minikube error
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
 
