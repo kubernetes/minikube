@@ -29,6 +29,7 @@ endef
 
 define PODMAN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 $(@D)/bin/podman $(TARGET_DIR)/usr/bin/podman
+	$(INSTALL) -Dm644 $(BR2_EXTERNAL_MINIKUBE_PATH)/package/podman/buildah.profile $(TARGET_DIR)/etc/profile.d/podman.sh
 endef
 
 $(eval $(generic-package))
