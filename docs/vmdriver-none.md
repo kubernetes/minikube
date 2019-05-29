@@ -12,7 +12,7 @@ The `none` driver supports releases of Debian, Ubuntu, and Fedora that are less 
 
 ## Example: basic usage
 
-`sudo minikube start`
+`sudo minikube start --vm-driver=none`
 
 NOTE: The none driver requires minikube to be run as root, until [#3760](https://github.com/kubernetes/minikube/issues/3760) can be addressed.
 

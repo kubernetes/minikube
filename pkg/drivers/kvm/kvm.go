@@ -442,17 +442,54 @@ func (d *Driver) Remove() error {
 	log.Debug("Checking if the domain needs to be deleted")
 	dom, err := conn.LookupDomainByName(d.MachineName)
 	if err != nil {
-		log.Warn("Domain %s does not exist, nothing to clean up...", d.MachineName)
+		log.Warnf("Domain %s does not exist, nothing to clean up...", d.MachineName)
+		return nil
 	}
-	if dom != nil {
-		log.Infof("Domain %s exists, removing...", d.MachineName)
-		if err := dom.Destroy(); err != nil {
-			return err
-		}
-		if err := dom.Undefine(); err != nil {
-			return err
-		}
+
+	log.Infof("Domain %s exists, removing...", d.MachineName)
+	if err := d.destroyRunningDomain(dom); err != nil {
+		return errors.Wrap(err, "destroying running domain")
+	}
+
+	if err := d.undefineDomain(conn, dom); err != nil {
+		return errors.Wrap(err, "undefine domain")
 	}
 
 	return nil
+}
+
+func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
+	state, reason, err := dom.GetState()
+	if err != nil {
+		return errors.Wrap(err, "getting domain state")
+	}
+
+	if state == libvirt.DOMAIN_SHUTOFF && reason == int(libvirt.DOMAIN_SHUTOFF_DESTROYED) {
+		log.Warnf("Domain %s already destroyed, skipping...", d.MachineName)
+		return nil
+	}
+
+	return dom.Destroy()
+}
+
+func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) error {
+	definedDomains, err := conn.ListDefinedDomains()
+	if err != nil {
+		return errors.Wrap(err, "list defined domains")
+	}
+
+	var found bool
+	for _, domain := range definedDomains {
+		if domain == d.MachineName {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		log.Warnf("Domain %s not defined, skipping undefine...", d.MachineName)
+		return nil
+	}
+
+	return dom.Undefine()
 }

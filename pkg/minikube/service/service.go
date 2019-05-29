@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -84,6 +85,7 @@ func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clients
 		return nil, fmt.Errorf("kubeConfig: %v", err)
 	}
 	clientConfig.Timeout = timeout
+	clientConfig = proxy.UpdateTransport(clientConfig)
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "client from config")

@@ -42,6 +42,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -50,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -101,9 +103,6 @@ var (
 	apiServerNames   []string
 	apiServerIPs     []net.IP
 	extraOptions     pkgutil.ExtraOptionSlice
-
-	// proxyVars are variables we plumb through to the underlying container runtime
-	proxyVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
 )
 
 func init() {
@@ -145,7 +144,8 @@ func init() {
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
-		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler.`)
+		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
+		Valid kubeadm parameters: `+fmt.Sprintf("%s, %s", strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], ", "), strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], ",")))
 	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
@@ -223,6 +223,11 @@ func runStart(cmd *cobra.Command, args []string) {
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
+	// Makes minikube node ip to bypass http(s) proxy. since it is local traffic.
+	err = proxy.ExcludeIP(ip)
+	if err != nil {
+		console.ErrStyle("Failed to set NO_PROXY Env. please Use `export NO_PROXY=$NO_PROXY,%s`.", ip)
+	}
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
@@ -233,7 +238,15 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(runner, k8sVersion)
+	cr := configureRuntimes(runner)
+	version, _ := cr.Version()
+	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
+	for _, v := range dockerOpt {
+		console.OutStyle("option", "opt %s", v)
+	}
+	for _, v := range dockerEnv {
+		console.OutStyle("option", "env %s", v)
+	}
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -336,6 +349,14 @@ func validateConfig() {
 	if viper.GetBool(hidden) && viper.GetString(vmDriver) != "kvm2" {
 		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
 	}
+
+	// check that kubeadm extra args contain only whitelisted parameters
+	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
+		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
+			!pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
+			exit.Usage("Sorry, the kubeadm.%s parameter is currently not supported by --extra-config", param)
+		}
+	}
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
@@ -384,7 +405,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	// Feed Docker our host proxy environment by default, so that it can pull images
 	if _, ok := r.(*cruntime.Docker); ok {
 		if !cmd.Flags().Changed("docker-env") {
-			for _, k := range proxyVars {
+			for _, k := range proxy.EnvVars {
 				if v := os.Getenv(k); v != "" {
 					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
 				}
@@ -523,13 +544,19 @@ func validateNetwork(h *host.Host) string {
 	}
 
 	optSeen := false
-	for _, k := range proxyVars {
+	warnedOnce := false
+	for _, k := range proxy.EnvVars {
 		if v := os.Getenv(k); v != "" {
 			if !optSeen {
 				console.OutStyle("internet", "Found network options:")
 				optSeen = true
 			}
 			console.OutStyle("option", "%s=%s", k, v)
+			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
+			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
+				console.Warning("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP (%s). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", ip)
+				warnedOnce = true
+			}
 		}
 	}
 
@@ -618,19 +645,11 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, k8sVersion string) cruntime.Manager {
+func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
-	}
-	version, _ := cr.Version()
-	console.OutStyle(cr.Name(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
-	for _, v := range dockerOpt {
-		console.OutStyle("option", "opt %s", v)
-	}
-	for _, v := range dockerEnv {
-		console.OutStyle("option", "env %s", v)
 	}
 
 	err = cr.Enable()

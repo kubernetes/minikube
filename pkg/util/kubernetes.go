@@ -36,6 +36,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/minikube/proxy"
 )
 
 var (
@@ -76,6 +77,7 @@ func GetClient() (kubernetes.Interface, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
 	}
+	config = proxy.UpdateTransport(config)
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
