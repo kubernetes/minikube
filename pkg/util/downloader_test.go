@@ -55,7 +55,9 @@ func TestCacheMinikubeISOFromURL(t *testing.T) {
 	isoPath := filepath.Join(constants.GetMinipath(), "cache", "iso", "minikube-test.iso")
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, testISOString)
+		if _, err := io.WriteString(w, testISOString); err != nil {
+			t.Fatalf("WriteString: %v", err)
+		}
 	}))
 	isoURL := server.URL + "/minikube-test.iso"
 	if err := dler.CacheMinikubeISOFromURL(isoURL); err != nil {
@@ -103,7 +105,9 @@ func TestIsMinikubeISOCached(t *testing.T) {
 		t.Fatalf("Expected IsMinikubeISOCached with input %s to return %t but instead got: %t", testFileURI, expected, out)
 	}
 
-	ioutil.WriteFile(filepath.Join(constants.GetMinipath(), "cache", "iso", "minikube-test.iso"), []byte(testISOString), os.FileMode(int(0644)))
+	if err := ioutil.WriteFile(filepath.Join(constants.GetMinipath(), "cache", "iso", "minikube-test.iso"), []byte(testISOString), os.FileMode(int(0644))); err != nil {
+		t.Fatalf("WriteFile: %v", err)
+	}
 
 	expected = true
 	if out := dler.IsMinikubeISOCached(testFileURI); out != expected {

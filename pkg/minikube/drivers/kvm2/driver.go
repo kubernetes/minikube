@@ -29,11 +29,13 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	if err := registry.Register(registry.DriverDef{
 		Name:          "kvm2",
 		Builtin:       false,
 		ConfigCreator: createKVM2Host,
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register failed: %v", err))
+	}
 }
 
 // Delete this once the following PR is merged:
@@ -50,6 +52,7 @@ type kvmDriver struct {
 	Boot2DockerURL string
 	DiskPath       string
 	GPU            bool
+	Hidden         bool
 }
 
 func createKVM2Host(config cfg.MachineConfig) interface{} {
@@ -68,5 +71,6 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
 		GPU:            config.GPU,
+		Hidden:         config.Hidden,
 	}
 }

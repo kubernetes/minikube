@@ -95,9 +95,9 @@ You can add one by annotating a service with the label %s:%s`, key, addonName)
 		}
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
-			service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate,
-				addonsURLMode, https, wait, interval)
-
+			if err := service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
+				exit.WithCode(exit.Unavailable, "Wait failed: %v", err)
+			}
 		}
 	},
 }

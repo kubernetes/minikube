@@ -1,0 +1,72 @@
+# Copyright 2018 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: Pod
+metadata: 
+  name: gvisor
+  namespace: kube-system
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    kubernetes.io/minikube-addons: gvisor
+spec: 
+  hostPID: true
+  containers: 
+    - name: gvisor
+      image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/gvisor-addon:latest
+      securityContext:
+        privileged: true
+      volumeMounts:
+      - mountPath: /node/
+        name: node
+      - mountPath: /usr/libexec/sudo
+        name: sudo
+      - mountPath: /var/run
+        name: varrun
+      - mountPath: /usr/bin
+        name: usrbin
+      - mountPath: /usr/lib
+        name: usrlib
+      - mountPath: /bin
+        name: bin
+      - mountPath: /tmp/gvisor
+        name: gvisor
+      env:
+        - name: PATH
+          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/node/bin
+        - name: SYSTEMD_IGNORE_CHROOT
+          value: "yes"
+  volumes:
+  - name: node
+    hostPath:
+      path: /
+  - name: sudo
+    hostPath:
+      path: /usr/libexec/sudo
+  - name: varrun
+    hostPath:
+      path: /var/run
+  - name: usrlib
+    hostPath:
+      path: /usr/lib
+  - name: usrbin
+    hostPath:
+      path: /usr/bin
+  - name: bin
+    hostPath:
+      path: /bin
+  - name: gvisor
+    hostPath:
+      path: /tmp/gvisor
+  restartPolicy: Always

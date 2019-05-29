@@ -31,7 +31,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/pkg/util/kubeconfig"
 )
 
 var (
@@ -65,7 +64,7 @@ func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
-	kubeCfgSetup := &kubeconfig.KubeConfigSetup{
+	kubeCfgSetup := &util.KubeConfigSetup{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: "https://localhost:8443",
 		ClientCertificate:    path.Join(util.DefaultCertPath, "apiserver.crt"),
@@ -75,7 +74,7 @@ func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
 	}
 
 	kubeCfg := api.NewConfig()
-	err := kubeconfig.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
+	err := util.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
 	if err != nil {
 		return errors.Wrap(err, "populating kubeconfig")
 	}

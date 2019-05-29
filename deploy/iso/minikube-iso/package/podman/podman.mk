@@ -1,5 +1,5 @@
-PODMAN_VERSION = v1.0.0
-PODMAN_COMMIT = 82e80110c3f2d8728745c47e340f3bee4d408846
+PODMAN_VERSION = v1.3.1
+PODMAN_COMMIT = 7210727e205c333af9a2d0ed0bb66adcf92a6369
 PODMAN_SITE = https://github.com/containers/libpod/archive
 PODMAN_SOURCE = $(PODMAN_VERSION).tar.gz
 PODMAN_LICENSE = Apache-2.0
@@ -20,7 +20,6 @@ define PODMAN_CONFIGURE_CMDS
 	ln -sf $(@D) $(PODMAN_GOPATH)/src/github.com/containers/libpod
 	mkdir -p $(PODMAN_GOPATH)/src/github.com/varlink
 	ln -sf $(@D)/vendor/github.com/varlink/go $(PODMAN_GOPATH)/src/github.com/varlink/go
-	$(PODMAN_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.tools DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
 endef
 
 define PODMAN_BUILD_CMDS
@@ -30,6 +29,7 @@ endef
 
 define PODMAN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 $(@D)/bin/podman $(TARGET_DIR)/usr/bin/podman
+	$(INSTALL) -Dm644 $(BR2_EXTERNAL_MINIKUBE_PATH)/package/podman/buildah.profile $(TARGET_DIR)/etc/profile.d/podman.sh
 endef
 
 $(eval $(generic-package))

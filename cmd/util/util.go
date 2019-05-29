@@ -14,22 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// package util is a hodge-podge of utility functions that should be moved elsewhere.
+// Package util is a hodge-podge of utility functions that should be moved elsewhere.
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 
+	"github.com/golang/glog"
+	ps "github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// Ask the kernel for a free open port that is ready to use
-func GetPort() (string, error) {
+// GetPort asks the kernel for a free open port that is ready to use
+func GetPort() (int, error) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		panic(err)
@@ -37,28 +40,61 @@ func GetPort() (string, error) {
 
 	l, err := net.ListenTCP("tcp", addr)
 	if err != nil {
-		return "", errors.Errorf("Error accessing port %d", addr.Port)
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
 	}
 	defer l.Close()
-	return strconv.Itoa(l.Addr().(*net.TCPAddr).Port), nil
+	return l.Addr().(*net.TCPAddr).Port, nil
 }
 
+// KillMountProcess kills the mount process, if it is running
 func KillMountProcess() error {
-	out, err := ioutil.ReadFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName))
-	if err != nil {
-		return nil // no mount process to kill
+	pidPath := filepath.Join(constants.GetMinipath(), constants.MountProcessFileName)
+	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
+		return nil
 	}
+
+	glog.Infof("Found %s ...", pidPath)
+	out, err := ioutil.ReadFile(pidPath)
+	if err != nil {
+		return errors.Wrap(err, "ReadFile")
+	}
+	glog.Infof("pidfile contents: %s", out)
 	pid, err := strconv.Atoi(string(out))
 	if err != nil {
-		return errors.Wrap(err, "error converting mount string to pid")
+		return errors.Wrap(err, "error parsing pid")
 	}
-	mountProc, err := os.FindProcess(pid)
+	// os.FindProcess does not check if pid is running :(
+	entry, err := ps.FindProcess(pid)
 	if err != nil {
-		return errors.Wrap(err, "error converting mount string to pid")
+		return errors.Wrap(err, "ps.FindProcess")
 	}
-	return mountProc.Kill()
+	if entry == nil {
+		glog.Infof("Stale pid: %d", pid)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing stale pid")
+		}
+		return nil
+	}
+
+	// We found a process, but it still may not be ours.
+	glog.Infof("Found process %d: %s", pid, entry.Executable())
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "os.FindProcess")
+	}
+
+	glog.Infof("Killing pid %d ...", pid)
+	if err := proc.Kill(); err != nil {
+		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing likely stale unkillable pid")
+		}
+		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
+	}
+	return nil
 }
 
+// GetKubeConfigPath gets the path to the first kubeconfig
 func GetKubeConfigPath() string {
 	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
 	if kubeConfigEnv == "" {

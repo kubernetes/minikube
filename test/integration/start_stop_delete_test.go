@@ -19,59 +19,97 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"net"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func TestStartStop(t *testing.T) {
 	tests := []struct {
-		runtime string
+		name string
+		args []string
 	}{
-		{runtime: "docker"},
-		{runtime: "containerd"},
-		{runtime: "crio"},
+		{"nocache_oldest", []string{
+			"--cache-images=false",
+			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+			// default is the network created by libvirt, if we change the name minikube won't boot
+			// because the given network doesn't exist
+			"--kvm-network=default",
+		}},
+		{"feature_gates_newest_cni", []string{
+			"--feature-gates",
+			"ServerSideApply=true",
+			"--network-plugin=cni",
+			"--extra-config=kubelet.network-plugin=cni",
+			"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
+			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
+		}},
+		{"containerd_and_non_default_apiserver_port", []string{
+			"--container-runtime=containerd",
+			"--docker-opt containerd=/var/run/containerd/containerd.sock",
+			"--apiserver-port=8444",
+		}},
+		{"crio_ignore_preflights", []string{
+			"--container-runtime=crio",
+			"--extra-config",
+			"kubeadm.ignore-preflight-errors=SystemVerification",
+		}},
 	}
 
 	for _, test := range tests {
-		t.Run(test.runtime, func(t *testing.T) {
-			runner := NewMinikubeRunner(t)
-			if test.runtime != "docker" && usingNoneDriver(runner) {
-				t.Skipf("skipping, can't use %s with none driver", test.runtime)
+		t.Run(test.name, func(t *testing.T) {
+			r := NewMinikubeRunner(t)
+			if !strings.Contains(test.name, "docker") && usingNoneDriver(r) {
+				t.Skipf("skipping %s - incompatible with none driver", test.name)
 			}
 
-			runner.RunCommand("config set WantReportErrorPrompt false", true)
-			runner.RunCommand("delete", false)
-			runner.CheckStatus(state.None.String())
+			r.RunCommand("config set WantReportErrorPrompt false", true)
+			r.RunCommand("delete", false)
+			r.CheckStatus(state.None.String())
+			r.Start(test.args...)
+			r.CheckStatus(state.Running.String())
 
-			runner.SetRuntime(test.runtime)
-			runner.Start()
-			runner.CheckStatus(state.Running.String())
-
-			ip := runner.RunCommand("ip", true)
+			ip := r.RunCommand("ip", true)
 			ip = strings.TrimRight(ip, "\n")
 			if net.ParseIP(ip) == nil {
 				t.Fatalf("IP command returned an invalid address: %s", ip)
 			}
 
+			// check for the current-context before and after the stop
+			kubectlRunner := util.NewKubectlRunner(t)
+			currentContext, err := kubectlRunner.RunCommand([]string{"config", "current-context"})
+			if err != nil {
+				t.Fatalf("Failed to fetch current-context")
+			}
+			if strings.TrimRight(string(currentContext), "\n") != "minikube" {
+				t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), "minikube")
+			}
+
 			checkStop := func() error {
-				runner.RunCommand("stop", true)
-				return runner.CheckStatusNoFail(state.Stopped.String())
+				r.RunCommand("stop", true)
+				return r.CheckStatusNoFail(state.Stopped.String())
 			}
 
 			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
 
-			runner.Start()
-			runner.CheckStatus(state.Running.String())
+			// running this command results in error when the current-context is not set
+			if err := r.Run("config current-context"); err != nil {
+				t.Logf("current-context is not set to minikube")
+			}
 
-			runner.RunCommand("delete", true)
-			runner.CheckStatus(state.None.String())
+			r.Start(test.args...)
+			r.CheckStatus(state.Running.String())
+
+			r.RunCommand("delete", true)
+			r.CheckStatus(state.None.String())
 		})
 	}
 }

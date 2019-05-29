@@ -17,14 +17,18 @@ limitations under the License.
 package config
 
 import (
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 )
 
+// AddonsCmd represents the addons command
 var AddonsCmd = &cobra.Command{
 	Use:   "addons SUBCOMMAND [flags]",
 	Short: "Modify minikube's kubernetes addons",
 	Long:  `addons modifies minikube addons files using subcommands like "minikube addons enable heapster"`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			glog.Errorf("help: %v", err)
+		}
 	},
 }

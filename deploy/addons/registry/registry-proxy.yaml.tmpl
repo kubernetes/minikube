@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  labels:
+    kubernetes.io/minikube-addons: registry
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: registry-proxy
+  namespace: kube-system
+spec:
+  template:
+    metadata:
+      labels:
+        kubernetes.io/minikube-addons: registry
+        addonmanager.kubernetes.io/mode: Reconcile
+    spec:
+      containers:
+      - image: gcr.io/google_containers/kube-registry-proxy:0.4
+        imagePullPolicy: IfNotPresent
+        name: registry-proxy
+        ports:
+        - name: registry
+          containerPort: 80
+          hostPort: 5000
+        env:
+        - name: REGISTRY_HOST
+          value: registry.kube-system.svc.cluster.local
+        - name: REGISTRY_PORT
+          value: "80"

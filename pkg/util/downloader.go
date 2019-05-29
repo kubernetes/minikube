@@ -31,13 +31,16 @@ import (
 
 const fileScheme = "file"
 
+// ISODownloader downloads an ISO
 type ISODownloader interface {
 	GetISOFileURI(isoURL string) string
 	CacheMinikubeISOFromURL(isoURL string) error
 }
 
+// DefaultDownloader is the default ISODownloader
 type DefaultDownloader struct{}
 
+// GetISOFileURI gets the local destination for a remote source
 func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 	urlObj, err := url.Parse(isoURL)
 	if err != nil {
@@ -51,6 +54,7 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 	return "file://" + filepath.ToSlash(isoPath)
 }
 
+// CacheMinikubeISOFromURL downloads the ISO, if it doesn't exist in cache
 func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 	if !f.ShouldCacheMinikubeISO(isoURL) {
 		glog.Infof("Not caching ISO, using %s", isoURL)
@@ -67,8 +71,8 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 	}
 
 	// Validate the ISO if it was the default URL, before writing it to disk.
-	if isoURL == constants.DefaultIsoUrl {
-		options.Checksum = constants.DefaultIsoShaUrl
+	if isoURL == constants.DefaultISOURL {
+		options.Checksum = constants.DefaultISOSHAURL
 		options.ChecksumHash = crypto.SHA256
 	}
 
@@ -80,6 +84,7 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 	return nil
 }
 
+// ShouldCacheMinikubeISO returns if we need to download the ISO
 func (f DefaultDownloader) ShouldCacheMinikubeISO(isoURL string) bool {
 	// store the minikube-iso inside the .minikube dir
 
@@ -96,10 +101,12 @@ func (f DefaultDownloader) ShouldCacheMinikubeISO(isoURL string) bool {
 	return true
 }
 
+// GetISOCacheFilepath returns the path of an ISO in the local cache
 func (f DefaultDownloader) GetISOCacheFilepath(isoURL string) string {
 	return filepath.Join(constants.GetMinipath(), "cache", "iso", filepath.Base(isoURL))
 }
 
+// IsMinikubeISOCached returns if an ISO exists in the local cache
 func (f DefaultDownloader) IsMinikubeISOCached(isoURL string) bool {
 	if _, err := os.Stat(f.GetISOCacheFilepath(isoURL)); os.IsNotExist(err) {
 		return false

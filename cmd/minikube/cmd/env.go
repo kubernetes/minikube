@@ -26,7 +26,9 @@ import (
 	"text/template"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/shell"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
@@ -104,6 +106,7 @@ REM @FOR /f "tokens=*" %i IN ('minikube docker-env') DO @%i
 `,
 }
 
+// ShellConfig represents the shell config
 type ShellConfig struct {
 	Prefix           string
 	Delimiter        string
@@ -125,16 +128,20 @@ var (
 	defaultNoProxyGetter NoProxyGetter
 )
 
+// ShellDetector detects shell
 type ShellDetector interface {
 	GetShell(string) (string, error)
 }
 
+// LibmachineShellDetector detects shell, using libmachine
 type LibmachineShellDetector struct{}
 
+// NoProxyGetter gets the no_proxy variable
 type NoProxyGetter interface {
 	GetNoProxyVar() (string, string)
 }
 
+// EnvNoProxyGetter gets the no_proxy variable, using environment
 type EnvNoProxyGetter struct{}
 
 func generateUsageHint(userShell string) string {
@@ -274,6 +281,7 @@ func executeTemplateStdout(shellCfg *ShellConfig) error {
 	return tmpl.Execute(os.Stdout, shellCfg)
 }
 
+// GetShell detects the shell
 func (LibmachineShellDetector) GetShell(userShell string) (string, error) {
 	if userShell != "" {
 		return userShell, nil
@@ -281,6 +289,7 @@ func (LibmachineShellDetector) GetShell(userShell string) (string, error) {
 	return shell.Detect()
 }
 
+// GetNoProxyVar gets the no_proxy var
 func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	// first check for an existing lower case no_proxy var
 	noProxyVar := "no_proxy"
@@ -294,12 +303,31 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 	return noProxyVar, noProxyValue
 }
 
+// same as drivers.RunSSHCommandFromDriver, but allows errors
+func runSSHCommandFromDriver(d drivers.Driver, command string) (string, error) {
+	client, err := drivers.GetSSHClientFromDriver(d)
+	if err != nil {
+		return "", err
+	}
+
+	log.Debugf("About to run SSH command:\n%s", command)
+	output, err := client.Output(command)
+	log.Debugf("SSH cmd err, output: %v: %s", err, output)
+	return output, err
+}
+
+// same as host.RunSSHCommand, but allows errors
+func runSSHCommand(h *host.Host, command string) (string, error) {
+	return runSSHCommandFromDriver(h.Driver, command)
+}
+
+// GetDockerActive checks if Docker is active
 func GetDockerActive(host *host.Host) (bool, error) {
 	statusCmd := `sudo systemctl is-active docker`
-	status, err := host.RunSSHCommand(statusCmd)
+	status, err := runSSHCommand(host, statusCmd)
 	// systemd returns error code on inactive
 	s := strings.TrimSpace(status)
-	return err == nil && s == "active", err
+	return err == nil && s == "active", nil
 }
 
 // envCmd represents the docker-env command
@@ -328,6 +356,9 @@ var dockerEnvCmd = &cobra.Command{
 			exit.WithCode(exit.Unavailable, `The docker host is currently not running`)
 		}
 		docker, err := GetDockerActive(host)
+		if err != nil {
+			exit.WithError("Error getting service status", err)
+		}
 		if !docker {
 			exit.WithCode(exit.Unavailable, `The docker service is currently not active`)
 		}
@@ -346,7 +377,9 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		executeTemplateStdout(shellCfg)
+		if err := executeTemplateStdout(shellCfg); err != nil {
+			exit.WithError("Error executing template", err)
+		}
 	},
 }
 

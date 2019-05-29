@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cloudfoundry-attic/jibber_jabber"
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
 	"golang.org/x/text/language"
@@ -40,7 +41,7 @@ import (
 // console.SetErrFile(os.Stderr)
 // console.Fatal("Oh no, everything failed.")
 
-// NOTE: If you do not want colorized output, set MINIKUBE_IN_COLOR=false in your environment.
+// NOTE: If you do not want colorized output, set MINIKUBE_IN_STYLE=false in your environment.
 
 var (
 	// outFile is where Out* functions send output to. Set using SetOutFile()
@@ -54,7 +55,7 @@ var (
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
 	// OverrideEnv is the environment variable used to override color/emoji usage
-	OverrideEnv = "MINIKUBE_IN_COLOR"
+	OverrideEnv = "MINIKUBE_IN_STYLE"
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
@@ -69,85 +70,86 @@ func HasStyle(style string) bool {
 }
 
 // OutStyle writes a stylized and formatted message to stdout
-func OutStyle(style, format string, a ...interface{}) error {
-	OutStyle, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+func OutStyle(style, format string, a ...interface{}) {
+	outStyled, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
-		if oerr := OutLn(format, a...); oerr != nil {
-			glog.Errorf("Out failed: %v", oerr)
-		}
-		return err
 	}
-	return Out(OutStyle)
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	outStyled = strings.Replace(outStyled, "%", "%%", -1)
+	Out(outStyled)
 }
 
 // Out writes a basic formatted string to stdout
-func Out(format string, a ...interface{}) error {
+func Out(format string, a ...interface{}) {
 	p := message.NewPrinter(preferredLanguage)
 	if outFile == nil {
-		if _, err := p.Fprintf(os.Stdout, "(stdout unset)"+format, a...); err != nil {
-			return err
-		}
-		return fmt.Errorf("no output file has been set")
+		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
+		return
 	}
 	_, err := p.Fprintf(outFile, format, a...)
-	return err
+	if err != nil {
+		glog.Errorf("Fprintf failed: %v", err)
+	}
 }
 
 // OutLn writes a basic formatted string with a newline to stdout
-func OutLn(format string, a ...interface{}) error {
-	return Out(format+"\n", a...)
+func OutLn(format string, a ...interface{}) {
+	Out(format+"\n", a...)
 }
 
 // ErrStyle writes a stylized and formatted error message to stderr
-func ErrStyle(style, format string, a ...interface{}) error {
-	format, err := applyStyle(style, useColor, fmt.Sprintf(format, a...))
+func ErrStyle(style, format string, a ...interface{}) {
+	format, err := applyStyle(style, useColor, format, a...)
 	if err != nil {
 		glog.Errorf("applyStyle(%s): %v", style, err)
-		if oerr := ErrLn(format, a...); oerr != nil {
-			glog.Errorf("Err(%s) failed: %v", format, oerr)
-		}
-		return err
+		ErrLn(format, a...)
 	}
-	return Err(format)
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	format = strings.Replace(format, "%", "%%", -1)
+	Err(format)
 }
 
 // Err writes a basic formatted string to stderr
-func Err(format string, a ...interface{}) error {
+func Err(format string, a ...interface{}) {
 	p := message.NewPrinter(preferredLanguage)
 	if errFile == nil {
-		if _, err := p.Fprintf(os.Stderr, "(stderr unset)"+format, a...); err != nil {
-			return err
-		}
-		return fmt.Errorf("no error file has been set")
+		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
+		return
 	}
 	_, err := p.Fprintf(errFile, format, a...)
-	return err
+	if err != nil {
+		glog.Errorf("Fprint failed: %v", err)
+	}
 }
 
 // ErrLn writes a basic formatted string with a newline to stderr
-func ErrLn(format string, a ...interface{}) error {
-	return Err(format+"\n", a...)
+func ErrLn(format string, a ...interface{}) {
+	Err(format+"\n", a...)
 }
 
 // Success is a shortcut for writing a styled success message to stdout
-func Success(format string, a ...interface{}) error {
-	return OutStyle("success", format, a...)
+func Success(format string, a ...interface{}) {
+	OutStyle("success", format, a...)
 }
 
 // Fatal is a shortcut for writing a styled fatal message to stderr
-func Fatal(format string, a ...interface{}) error {
-	return ErrStyle("fatal", format, a...)
+func Fatal(format string, a ...interface{}) {
+	ErrStyle("fatal", format, a...)
 }
 
 // Warning is a shortcut for writing a styled warning message to stderr
-func Warning(format string, a ...interface{}) error {
-	return ErrStyle("warning", format, a...)
+func Warning(format string, a ...interface{}) {
+	ErrStyle("warning", format, a...)
 }
 
 // Failure is a shortcut for writing a styled failure message to stderr
-func Failure(format string, a ...interface{}) error {
-	return ErrStyle("failure", format, a...)
+func Failure(format string, a ...interface{}) {
+	ErrStyle("failure", format, a...)
 }
 
 // SetPreferredLanguageTag configures which language future messages should use.
@@ -188,12 +190,23 @@ func SetErrFile(w fdWriter) {
 	useColor = wantsColor(w.Fd())
 }
 
+func DetermineLocale() {
+	locale, err := jibber_jabber.DetectIETF()
+	if err != nil {
+		glog.Warningf("Getting system locale failed: %s", err)
+		locale = ""
+	}
+	if err := SetPreferredLanguage(locale); err != nil {
+		glog.Errorf("Unable to set preferred language: %v", err)
+	}
+}
+
 // wantsColor determines if the user might want colorized output.
 func wantsColor(fd uintptr) bool {
 	// First process the environment: we allow users to force colors on or off.
 	//
-	// MINIKUBE_IN_COLOR=[1, T, true, TRUE]
-	// MINIKUBE_IN_COLOR=[0, f, false, FALSE]
+	// MINIKUBE_IN_STYLE=[1, T, true, TRUE]
+	// MINIKUBE_IN_STYLE=[0, f, false, FALSE]
 	//
 	// If unset, we try to automatically determine suitability from the environment.
 	val := os.Getenv(OverrideEnv)

@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v25/github"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
@@ -97,7 +97,7 @@ func printPullRequests() {
 }
 
 func getClient() *github.Client {
-	if len(token) <= 0 {
+	if len(token) == 0 {
 		return github.NewClient(nil)
 	}
 	ctx := context.Background()

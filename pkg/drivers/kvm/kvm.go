@@ -1,3 +1,5 @@
+// +build linux
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -20,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/config"
@@ -34,6 +37,7 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 )
 
+// Driver is the machine driver for KVM
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -73,6 +77,9 @@ type Driver struct {
 	// Whether to passthrough GPU devices from the host to the VM.
 	GPU bool
 
+	// Whether to hide the KVM hypervisor signature from the guest
+	Hidden bool
+
 	// XML that needs to be added to passthrough GPU devices.
 	DevicesXML string
 }
@@ -83,6 +90,7 @@ const (
 	defaultNetworkName        = "default"
 )
 
+// NewDriver creates a new driver for a host
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
@@ -91,7 +99,7 @@ func NewDriver(hostName, storePath string) *Driver {
 			SSHUser:     "docker",
 		},
 		CommonDriver:   &pkgdrivers.CommonDriver{},
-		Boot2DockerURL: constants.DefaultIsoUrl,
+		Boot2DockerURL: constants.DefaultISOURL,
 		CPU:            constants.DefaultCPUS,
 		DiskSize:       util.CalculateDiskSizeInMB(constants.DefaultDiskSize),
 		Memory:         constants.DefaultMemory,
@@ -102,6 +110,7 @@ func NewDriver(hostName, storePath string) *Driver {
 	}
 }
 
+// PreCommandCheck checks the connection before issuing a command
 func (d *Driver) PreCommandCheck() error {
 	conn, err := getConnection()
 	if err != nil {
@@ -116,6 +125,7 @@ func (d *Driver) PreCommandCheck() error {
 	return nil
 }
 
+// GetURL returns a Docker compatible host URL for connecting to this host
 func (d *Driver) GetURL() (string, error) {
 	if err := d.PreCommandCheck(); err != nil {
 		return "", errors.Wrap(err, "getting URL, precheck failed")
@@ -132,18 +142,28 @@ func (d *Driver) GetURL() (string, error) {
 	return fmt.Sprintf("tcp://%s:2376", ip), nil
 }
 
-func (d *Driver) GetState() (state.State, error) {
+// GetState returns the state that the host is in (running, stopped, etc)
+func (d *Driver) GetState() (st state.State, err error) {
 	dom, conn, err := d.getDomain()
 	if err != nil {
 		return state.None, errors.Wrap(err, "getting connection")
 	}
-	defer closeDomain(dom, conn)
+	defer func() {
+		if ferr := closeDomain(dom, conn); ferr != nil {
+			err = ferr
+		}
+	}()
 
-	libvirtState, _, err := dom.GetState() // state, reason, error
+	lvs, _, err := dom.GetState() // state, reason, error
 	if err != nil {
 		return state.None, errors.Wrap(err, "getting domain state")
 	}
+	st = machineState(lvs)
+	return // st, err
+}
 
+// machineState converts libvirt state to libmachine state
+func machineState(lvs libvirt.DomainState) state.State {
 	// Possible States:
 	//
 	// VIR_DOMAIN_NOSTATE no state
@@ -156,26 +176,27 @@ func (d *Driver) GetState() (state.State, error) {
 	// VIR_DOMAIN_PMSUSPENDED the domain is suspended by guest power management
 	// VIR_DOMAIN_LAST this enum value will increase over time as new events are added to the libvirt API. It reflects the last state supported by this version of the libvirt API.
 
-	switch libvirtState {
+	switch lvs {
 	// DOMAIN_SHUTDOWN technically means the VM is still running, but in the
 	// process of being shutdown, so we return state.Running
 	case libvirt.DOMAIN_RUNNING, libvirt.DOMAIN_SHUTDOWN:
-		return state.Running, nil
+		return state.Running
 	case libvirt.DOMAIN_BLOCKED, libvirt.DOMAIN_CRASHED:
-		return state.Error, nil
+		return state.Error
 	case libvirt.DOMAIN_PAUSED:
-		return state.Paused, nil
+		return state.Paused
 	case libvirt.DOMAIN_SHUTOFF:
-		return state.Stopped, nil
+		return state.Stopped
 	case libvirt.DOMAIN_PMSUSPENDED:
-		return state.Saved, nil
+		return state.Saved
 	case libvirt.DOMAIN_NOSTATE:
-		return state.None, nil
+		return state.None
 	default:
-		return state.None, nil
+		return state.None
 	}
 }
 
+// GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
 	s, err := d.GetState()
 	if err != nil {
@@ -192,33 +213,41 @@ func (d *Driver) GetIP() (string, error) {
 	return ip, nil
 }
 
+// GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
 	return d.GetIP()
 }
 
+// DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
 	return "kvm2"
 }
 
-func (d *Driver) Kill() error {
+// Kill stops a host forcefully, including any containers that we are managing.
+func (d *Driver) Kill() (err error) {
 	dom, conn, err := d.getDomain()
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
 	}
-	defer closeDomain(dom, conn)
-
+	defer func() {
+		if ferr := closeDomain(dom, conn); ferr != nil {
+			err = ferr
+		}
+	}()
 	return dom.Destroy()
 }
 
+// Restart a host
 func (d *Driver) Restart() error {
 	return pkgdrivers.Restart(d)
 }
 
-func (d *Driver) Start() error {
+// Start a host
+func (d *Driver) Start() (err error) {
 	// if somebody/something deleted the network in the meantime,
 	// we might need to recreate it. It's (nearly) a noop if the network exists.
 	log.Info("Creating network...")
-	err := d.createNetwork()
+	err = d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
 	}
@@ -235,7 +264,11 @@ func (d *Driver) Start() error {
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
 	}
-	defer closeDomain(dom, conn)
+	defer func() {
+		if ferr := closeDomain(dom, conn); ferr != nil {
+			err = ferr
+		}
+	}()
 
 	log.Info("Creating domain...")
 	if err := dom.Create(); err != nil {
@@ -274,10 +307,12 @@ func (d *Driver) Start() error {
 	return nil
 }
 
-func (d *Driver) Create() error {
-	log.Info("Creating machine...")
-	log.Info("Creating network...")
-	err := d.createNetwork()
+// Create a host using the driver's config
+func (d *Driver) Create() (err error) {
+	log.Info("Creating KVM machine...")
+	defer log.Infof("KVM machine creation complete!")
+
+	err = d.createNetwork()
 	if err != nil {
 		return errors.Wrap(err, "creating network")
 	}
@@ -289,27 +324,20 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	log.Info("Setting up minikube home directory...")
-	if err := os.MkdirAll(d.ResolveStorePath("."), 0755); err != nil {
-		return errors.Wrap(err, "Error making store path directory")
+	store := d.ResolveStorePath(".")
+	log.Infof("Setting up store path in %s ...", store)
+	// 0755 because it must be accessible by libvirt/qemu across a variety of configs
+	if err := os.MkdirAll(store, 0755); err != nil {
+		return errors.Wrap(err, "creating store")
 	}
 
-	for dir := d.ResolveStorePath("."); dir != "/"; dir = filepath.Dir(dir) {
-		info, err := os.Stat(dir)
-		if err != nil {
-			return err
-		}
-		mode := info.Mode()
-		if mode&0011 != 1 {
-			log.Debugf("Setting executable bit set on %s", dir)
-			mode |= 0011
-			os.Chmod(dir, mode)
-		}
-	}
-
-	log.Info("Building disk image...")
+	log.Infof("Building disk image from %s", d.Boot2DockerURL)
 	if err = pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
 		return errors.Wrap(err, "Error creating disk")
+	}
+
+	if err := ensureDirPermissions(store); err != nil {
+		log.Errorf("unable to ensure permissions on %s: %v", store, err)
 	}
 
 	log.Info("Creating domain...")
@@ -317,13 +345,43 @@ func (d *Driver) Create() error {
 	if err != nil {
 		return errors.Wrap(err, "creating domain")
 	}
-	defer dom.Free()
-
-	log.Debug("Finished creating machine, now starting machine...")
+	defer func() {
+		if ferr := dom.Free(); ferr != nil {
+			err = ferr
+		}
+	}()
 	return d.Start()
 }
 
-func (d *Driver) Stop() error {
+// ensureDirPermissions ensures that libvirt has access to access the image store directory
+func ensureDirPermissions(store string) error {
+	// traverse upwards from /home/user/.minikube/machines to ensure
+	// that libvirt/qemu has execute access
+	for dir := store; dir != "/"; dir = filepath.Dir(dir) {
+		log.Debugf("Checking permissions on dir: %s", dir)
+		s, err := os.Stat(dir)
+		if err != nil {
+			return err
+		}
+		owner := int(s.Sys().(*syscall.Stat_t).Uid)
+		if owner != os.Geteuid() {
+			log.Debugf("Skipping %s - not owner", dir)
+			continue
+		}
+		mode := s.Mode()
+		if mode&0011 != 1 {
+			log.Infof("Setting executable bit set on %s (perms=%s)", dir, mode)
+			mode |= 0011
+			if err := os.Chmod(dir, mode); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// Stop a host gracefully
+func (d *Driver) Stop() (err error) {
 	d.IPAddress = ""
 	s, err := d.GetState()
 	if err != nil {
@@ -332,7 +390,11 @@ func (d *Driver) Stop() error {
 
 	if s != state.Stopped {
 		dom, conn, err := d.getDomain()
-		defer closeDomain(dom, conn)
+		defer func() {
+			if ferr := closeDomain(dom, conn); ferr != nil {
+				err = ferr
+			}
+		}()
 		if err != nil {
 			return errors.Wrap(err, "getting connection")
 		}
@@ -356,9 +418,10 @@ func (d *Driver) Stop() error {
 
 	}
 
-	return fmt.Errorf("Could not stop VM, current state %s", s.String())
+	return fmt.Errorf("unable to stop vm, current state %q", s.String())
 }
 
+// Remove a host
 func (d *Driver) Remove() error {
 	log.Debug("Removing machine...")
 	conn, err := getConnection()
@@ -379,13 +442,54 @@ func (d *Driver) Remove() error {
 	log.Debug("Checking if the domain needs to be deleted")
 	dom, err := conn.LookupDomainByName(d.MachineName)
 	if err != nil {
-		log.Warn("Domain %s does not exist, nothing to clean up...", d.MachineName)
+		log.Warnf("Domain %s does not exist, nothing to clean up...", d.MachineName)
+		return nil
 	}
-	if dom != nil {
-		log.Infof("Domain %s exists, removing...", d.MachineName)
-		dom.Destroy()
-		dom.Undefine()
+
+	log.Infof("Domain %s exists, removing...", d.MachineName)
+	if err := d.destroyRunningDomain(dom); err != nil {
+		return errors.Wrap(err, "destroying running domain")
+	}
+
+	if err := d.undefineDomain(conn, dom); err != nil {
+		return errors.Wrap(err, "undefine domain")
 	}
 
 	return nil
+}
+
+func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
+	state, reason, err := dom.GetState()
+	if err != nil {
+		return errors.Wrap(err, "getting domain state")
+	}
+
+	if state == libvirt.DOMAIN_SHUTOFF && reason == int(libvirt.DOMAIN_SHUTOFF_DESTROYED) {
+		log.Warnf("Domain %s already destroyed, skipping...", d.MachineName)
+		return nil
+	}
+
+	return dom.Destroy()
+}
+
+func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) error {
+	definedDomains, err := conn.ListDefinedDomains()
+	if err != nil {
+		return errors.Wrap(err, "list defined domains")
+	}
+
+	var found bool
+	for _, domain := range definedDomains {
+		if domain == d.MachineName {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		log.Warnf("Domain %s not defined, skipping undefine...", d.MachineName)
+		return nil
+	}
+
+	return dom.Undefine()
 }

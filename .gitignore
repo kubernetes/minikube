@@ -4,6 +4,7 @@
 *.so
 
 # Folders
+.cache
 _obj
 _test
 
@@ -27,6 +28,7 @@ _testmain.go
 
 /out
 /_gopath
+
 
 #iso version file
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION

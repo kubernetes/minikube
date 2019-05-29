@@ -20,27 +20,28 @@ package exit
 import (
 	"fmt"
 	"os"
-	"strings"
+	"runtime"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/problem"
 )
 
 // Exit codes based on sysexits(3)
 const (
 	Failure     = 1  // Failure represents a general failure code
+	Interrupted = 2  // Ctrl-C (SIGINT)
 	BadUsage    = 64 // Usage represents an incorrect command line
 	Data        = 65 // Data represents incorrect data supplied by the user
 	NoInput     = 66 // NoInput represents that the input file did not exist or was not readable
 	Unavailable = 69 // Unavailable represents when a service was unavailable
 	Software    = 70 // Software represents an internal software error.
 	IO          = 74 // IO represents an I/O error
-	Config      = 78 // Config represents an unconfigured or miscon­figured state
+	Config      = 78 // Config represents an unconfigured or misconfigured state
 	Permissions = 77 // Permissions represents a permissions error
 
-	// MaxProblems controls the number of problems to show for each source
-	MaxProblems = 3
+	// MaxLogEntries controls the number of log entries to show for each source
+	MaxLogEntries = 3
 )
 
 // Usage outputs a usage error and exits with error code 64
@@ -59,21 +60,33 @@ func WithCode(code int, format string, a ...interface{}) {
 
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
+	p := problem.FromError(err, runtime.GOOS)
+	if p != nil {
+		WithProblem(msg, p)
+	}
 	displayError(msg, err)
-	// Here is where we would insert code to optionally upload a stack trace.
-
-	// We can be smarter about guessing exit codes, but EX_SOFTWARE should suffice.
 	os.Exit(Software)
 }
 
-// WithProblems outputs an error along with any autodetected problems, and exits.
-func WithProblems(msg string, err error, problems map[string][]string) {
+// WithProblem outputs info related to a known problem and exits.
+func WithProblem(msg string, p *problem.Problem) {
+	console.Err("\n")
+	console.Fatal(msg)
+	p.Display()
+	console.Err("\n")
+	console.ErrStyle("sad", "If the above advice does not help, please let us know: ")
+	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
+	os.Exit(Config)
+}
+
+// WithLogEntries outputs an error along with any important log entries, and exits.
+func WithLogEntries(msg string, err error, entries map[string][]string) {
 	displayError(msg, err)
 
-	for name, lines := range problems {
+	for name, lines := range entries {
 		console.OutStyle("failure", "Problems detected in %q:", name)
-		if len(lines) > MaxProblems {
-			lines = lines[:MaxProblems]
+		if len(lines) > MaxLogEntries {
+			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
 			console.OutStyle("log-entry", l)
@@ -85,17 +98,9 @@ func WithProblems(msg string, err error, problems map[string][]string) {
 func displayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
+	console.Err("\n")
 	console.Fatal(msg+": %v", err)
 	console.Err("\n")
-	// unfortunately Cause only supports one level of actual error wrapping
-	cause := errors.Cause(err)
-	text := cause.Error()
-	if strings.Contains(text, "VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path") ||
-		strings.Contains(text, "Driver \"kvm2\" not found. Do you have the plugin binary \"docker-machine-driver-kvm2\" accessible in your PATH?") {
-		console.ErrStyle("usage", "Make sure to install all necessary requirements, according to the documentation:")
-		console.ErrStyle("url", "https://kubernetes.io/docs/tasks/tools/install-minikube/")
-	} else {
-		console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
-		console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
-	}
+	console.ErrStyle("sad", "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
+	console.ErrStyle("url", "https://github.com/kubernetes/minikube/issues/new")
 }

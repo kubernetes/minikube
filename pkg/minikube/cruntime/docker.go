@@ -24,8 +24,6 @@ import (
 	"github.com/golang/glog"
 )
 
-const KubernetesContainerPrefix = "k8s_"
-
 // Docker contains Docker runtime state
 type Docker struct {
 	Socket string
@@ -35,6 +33,17 @@ type Docker struct {
 // Name is a human readable name for Docker
 func (r *Docker) Name() string {
 	return "Docker"
+}
+
+// Version retrieves the current version of this runtime
+func (r *Docker) Version() (string, error) {
+	// Note: the server daemon has to be running, for this call to return successfully
+	ver, err := r.Runner.CombinedOutput("docker version --format '{{.Server.Version}}'")
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Split(ver, "\n")[0], nil
 }
 
 // SocketPath returns the path to the socket file for Docker
@@ -64,7 +73,7 @@ func (r *Docker) Enable() error {
 	if err := disableOthers(r, r.Runner); err != nil {
 		glog.Warningf("disableOthers: %v", err)
 	}
-	return r.Runner.Run("sudo systemctl restart docker")
+	return r.Runner.Run("sudo systemctl start docker")
 }
 
 // Disable idempotently disables Docker on a host
@@ -87,7 +96,6 @@ func (r *Docker) KubeletOptions() map[string]string {
 
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(filter string) ([]string, error) {
-	filter = KubernetesContainerPrefix + filter
 	content, err := r.Runner.CombinedOutput(fmt.Sprintf(`docker ps -a --filter="name=%s" --format="{{.ID}}"`, filter))
 	if err != nil {
 		return nil, err

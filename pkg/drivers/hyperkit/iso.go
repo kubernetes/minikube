@@ -19,19 +19,19 @@ package hyperkit
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/hooklift/iso9660"
 )
 
+// ExtractFile extracts a file from an ISO
 func ExtractFile(isoPath, srcPath, destPath string) error {
 	iso, err := os.Open(isoPath)
-	defer iso.Close()
 	if err != nil {
 		return err
 	}
+	defer iso.Close()
 
 	r, err := iso9660.NewReader(iso)
 	if err != nil {
@@ -44,34 +44,13 @@ func ExtractFile(isoPath, srcPath, destPath string) error {
 	}
 
 	dst, err := os.Create(destPath)
-	defer dst.Close()
 	if err != nil {
 		return err
 	}
+	defer dst.Close()
 
 	_, err = io.Copy(dst, f.Sys().(io.Reader))
 	return err
-}
-
-func ReadFile(isoPath, srcPath string) (string, error) {
-	iso, err := os.Open(isoPath)
-	defer iso.Close()
-	if err != nil {
-		return "", err
-	}
-
-	r, err := iso9660.NewReader(iso)
-	if err != nil {
-		return "", err
-	}
-
-	f, err := findFile(r, srcPath)
-	if err != nil {
-		return "", err
-	}
-
-	contents, err := ioutil.ReadAll(f.Sys().(io.Reader))
-	return string(contents), err
 }
 
 func findFile(r *iso9660.Reader, path string) (os.FileInfo, error) {

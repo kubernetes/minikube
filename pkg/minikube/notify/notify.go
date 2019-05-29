@@ -42,10 +42,12 @@ var (
 	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
 )
 
+// MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub(output io.Writer) {
 	MaybePrintUpdateText(output, constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
+// MaybePrintUpdateText prints update text if needed
 func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
@@ -61,7 +63,9 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 		return
 	}
 	if localVersion.Compare(latestVersion) < 0 {
-		writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC())
+		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+			glog.Errorf("write time failed: %v", err)
+		}
 		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
 %s%s
 
@@ -80,14 +84,16 @@ func shouldCheckURLVersion(filePath string) bool {
 	return time.Since(lastUpdateTime).Hours() >= viper.GetFloat64(config.ReminderWaitPeriodInHours)
 }
 
+// Release represents a release
 type Release struct {
 	Name      string
 	Checksums map[string]string
 }
 
+// Releases represents several release
 type Releases []Release
 
-func getJson(url string, target *Releases) error {
+func getJSON(url string, target *Releases) error {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -116,10 +122,11 @@ func getLatestVersionFromURL(url string) (semver.Version, error) {
 	return semver.Make(strings.TrimPrefix(r[0].Name, version.VersionPrefix))
 }
 
+// GetAllVersionsFromURL get all versions from a JSON URL
 func GetAllVersionsFromURL(url string) (Releases, error) {
 	var releases Releases
 	glog.Info("Checking for updates...")
-	if err := getJson(url, &releases); err != nil {
+	if err := getJSON(url, &releases); err != nil {
 		return releases, errors.Wrap(err, "Error getting json from minikube version url")
 	}
 	if len(releases) == 0 {

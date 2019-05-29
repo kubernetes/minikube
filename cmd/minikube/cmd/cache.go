@@ -66,20 +66,43 @@ var deleteCacheCmd = &cobra.Command{
 	},
 }
 
-// LoadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
-func LoadCachedImagesInConfigFile() error {
+func imagesInConfigFile() ([]string, error) {
 	configFile, err := config.ReadConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if values, ok := configFile[constants.Cache]; ok {
 		var images []string
 		for key := range values.(map[string]interface{}) {
 			images = append(images, key)
 		}
-		return machine.CacheAndLoadImages(images)
+		return images, nil
 	}
-	return nil
+	return []string{}, nil
+}
+
+// CacheImagesInConfigFile caches the images currently in the config file (minikube start)
+func CacheImagesInConfigFile() error {
+	images, err := imagesInConfigFile()
+	if err != nil {
+		return err
+	}
+	if len(images) == 0 {
+		return nil
+	}
+	return machine.CacheImages(images, constants.ImageCacheDir)
+}
+
+// LoadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
+func LoadCachedImagesInConfigFile() error {
+	images, err := imagesInConfigFile()
+	if err != nil {
+		return err
+	}
+	if len(images) == 0 {
+		return nil
+	}
+	return machine.CacheAndLoadImages(images)
 }
 
 func init() {

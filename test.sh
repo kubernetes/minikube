@@ -14,59 +14,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -eu -o pipefail
 
-REPO_PATH="k8s.io/minikube"
+exitcode=0
 
-# Check for python on host, and use it if possible, otherwise fall back on python dockerized
-if [[ -f $(which python 2>&1) ]]; then
-	PYTHON="python"
+echo "= go mod ================================================================"
+go mod download 2>&1 | grep -v "go: finding" || true
+go mod tidy -v && echo ok || ((exitcode+=2))
+
+echo "= make lint ============================================================="
+make -s lint && echo ok || ((exitcode+=4))
+
+echo "= boilerplate ==========================================================="
+readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
+readonly BDIR="./hack/boilerplate"
+missing="$($PYTHON ${BDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BDIR} | grep -v \/assets.go || true)"
+if [[ -n "${missing}" ]]; then
+    echo "boilerplate missing: $missing"
+    echo "consider running: ${BDIR}/fix.sh"
+    ((exitcode+=4))
 else
-	PYTHON="docker run --rm -it -v $(pwd):/minikube -w /minikube python python"
+    echo "ok"
 fi
 
+echo "= schema_check =========================================================="
+go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode+=8))
 
-COV_FILE=coverage.txt
-COV_TMP_FILE=coverage_tmp.txt
+echo "= go test ==============================================================="
+cov_tmp="$(mktemp)"
+readonly COVERAGE_PATH=./out/coverage.txt
+echo "mode: count" > "${COVERAGE_PATH}"
+pkgs=$(go list -f '{{ if .TestGoFiles }}{{.ImportPath}}{{end}}' ./cmd/... ./pkg/... | xargs)
+go test \
+    -tags "container_image_ostree_stub containers_image_openpgp" \
+    -covermode=count \
+    -coverprofile="${cov_tmp}" \
+    ${pkgs} && echo ok || ((exitcode+=16))
+tail -n +2 "${cov_tmp}" >> "${COVERAGE_PATH}"
 
-# Run "go test" on packages that have test files.  Also create coverage profile
-echo "Running go tests..."
-cd ${GOPATH}/src/${REPO_PATH}
-rm -f out/$COV_FILE || true
-echo "mode: count" > out/$COV_FILE
-for pkg in $(go list -f '{{ if .TestGoFiles }} {{.ImportPath}} {{end}}' ./cmd/... ./pkg/...); do
-    go test -tags "container_image_ostree_stub containers_image_openpgp" -v $pkg -covermode=count -coverprofile=out/$COV_TMP_FILE
-    # tail -n +2 skips the first line of the file
-    # for coverprofile the first line is the `mode: count` line which we only want once in our file
-    tail -n +2 out/$COV_TMP_FILE >> out/$COV_FILE || (echo "Unable to append coverage for $pkg" && exit 1)
-done
-rm out/$COV_TMP_FILE
-
-# Ignore these paths in the following tests.
-ignore="vendor\|\_gopath\|assets.go\|out\/"
-
-# Check gofmt
-echo "Checking gofmt..."
-set +e
-files=$(gofmt -l -s . | grep -v ${ignore})
-set -e
-if [[ $files ]]; then
-  gofmt -d ${files}
-  echo "Gofmt errors in files: $files"
-  exit 1
-fi
-
-# Check boilerplate
-echo "Checking boilerplate..."
-BOILERPLATEDIR=./hack/boilerplate
-# Grep returns a non-zero exit code if we don't match anything, which is good in this case.
-set +e
-files=$(${PYTHON} ${BOILERPLATEDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BOILERPLATEDIR} | grep -v $ignore)
-set -e
-if [[ ! -z ${files} ]]; then
-	echo "Boilerplate missing in: ${files}."
-	exit 1
-fi
-
-echo "Checking releases.json schema"
-go run deploy/minikube/schema_check.go
+exit "${exitcode}"

@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -67,7 +68,13 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			exit.WithError("Unable to kill mount process", err)
+			console.OutStyle("warning", "Unable to kill mount process: %s", err)
+		}
+
+		machineName := pkg_config.GetMachineName()
+		err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, machineName)
+		if err != nil {
+			exit.WithError("update config", err)
 		}
 	},
 }

@@ -28,10 +28,13 @@ func TestIsProblem(t *testing.T) {
 	}{
 		{"almost", false, "F2350 I would love to be an unknown flag, but I am not -- :( --"},
 		{"apiserver-required-flag #1962", true, "error: [service-account-issuer is a required flag when BoundServiceAccountTokenVolume is enabled, --service-account-signing-key-file and --service-account-issuer are required flags"},
-		{"kubelet-eviction #", true, "I0213 07:16:44.041623    2410 eviction_manager.go:187] eviction manager: pods kube-apiserver-minikube_kube-system(87f41e2e0629c3deb5c2239e08d8045d) evicted, waiting for pod to be cleaned up"},
+		{"kubelet-eviction #3611", true, `eviction_manager.go:187] eviction manager: pods kube-proxy-kfs8p_kube-system(27fd6b4b-33cf-11e9-ae1d-00155d4b0144) evicted, waiting for pod to be cleaned up`},
 		{"kubelet-unknown-flag #3655", true, "F0212 14:55:46.443031    2693 server.go:148] unknown flag: --AllowedUnsafeSysctls"},
 		{"apiserver-auth-mode #2852", true, `{"log":"Error: unknown flag: --Authorization.Mode\n","stream":"stderr","time":"2018-06-17T22:16:35.134161966Z"}`},
 		{"apiserver-admission #3524", true, "error: unknown flag: --GenericServerRunOptions.AdmissionControl"},
+		{"no-providers-available #3818", true, ` kubelet.go:1662] Failed creating a mirror pod for "kube-apiserver-minikube_kube-system(c7d572aebd3d33b17fa78ae6395b6d0a)": pods "kube-apiserver-minikube" is forbidden: no providers available to validate pod request`},
+		{"no-objects-passed-to-apply #4010", false, "error: no objects passed to apply"},
+		{"bad-certificate #4251", true, "log.go:172] http: TLS handshake error from 127.0.0.1:49200: remote error: tls: bad certificate"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

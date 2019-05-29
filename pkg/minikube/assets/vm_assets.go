@@ -18,13 +18,17 @@ package assets
 
 import (
 	"bytes"
+	"fmt"
+	"html/template"
 	"io"
 	"os"
 	"path"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
+// CopyableFile is something that can be copied
 type CopyableFile interface {
 	io.Reader
 	GetLength() int
@@ -34,64 +38,65 @@ type CopyableFile interface {
 	GetPermissions() string
 }
 
+// BaseAsset is the base asset class
 type BaseAsset struct {
-	data        []byte
-	reader      io.Reader
-	Length      int
 	AssetName   string
 	TargetDir   string
 	TargetName  string
 	Permissions string
 }
 
+// GetAssetName returns asset name
 func (b *BaseAsset) GetAssetName() string {
 	return b.AssetName
 }
 
+// GetTargetDir returns target dir
 func (b *BaseAsset) GetTargetDir() string {
 	return b.TargetDir
 }
 
+// GetTargetName returns target name
 func (b *BaseAsset) GetTargetName() string {
 	return b.TargetName
 }
 
+// GetPermissions returns permissions
 func (b *BaseAsset) GetPermissions() string {
 	return b.Permissions
 }
 
+// FileAsset is an asset using a file
 type FileAsset struct {
 	BaseAsset
+	reader io.Reader
 }
 
+// NewMemoryAssetTarget creates a new MemoryAsset, with target
 func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset {
 	return NewMemoryAsset(d, path.Dir(targetPath), path.Base(targetPath), permissions)
 }
 
-func NewFileAsset(assetName, targetDir, targetName, permissions string) (*FileAsset, error) {
-	f := &FileAsset{
-		BaseAsset{
-			AssetName:   assetName,
+// NewFileAsset creates a new FileAsset
+func NewFileAsset(path, targetDir, targetName, permissions string) (*FileAsset, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error opening file asset: %s", path)
+	}
+	return &FileAsset{
+		BaseAsset: BaseAsset{
+			AssetName:   path,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
-	}
-	file, err := os.Open(f.AssetName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "Error opening file asset: %s", f.AssetName)
-	}
-	f.reader = file
-	return f, nil
+		reader: f,
+	}, nil
 }
 
-func (f *FileAsset) GetLength() int {
-	file, err := os.Open(f.AssetName)
-	defer file.Close()
-	if err != nil {
-		return 0
-	}
-	fi, err := file.Stat()
+// GetLength returns the file length, or 0 (on error)
+func (f *FileAsset) GetLength() (flen int) {
+	fi, err := os.Stat(f.AssetName)
 	if err != nil {
 		return 0
 	}
@@ -105,65 +110,132 @@ func (f *FileAsset) Read(p []byte) (int, error) {
 	return f.reader.Read(p)
 }
 
+// MemoryAsset is a memory-based asset
 type MemoryAsset struct {
 	BaseAsset
+	reader io.Reader
+	length int
 }
 
+// GetLength returns length
 func (m *MemoryAsset) GetLength() int {
-	return m.Length
+	return m.length
 }
 
+// Read reads the asset
 func (m *MemoryAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
 }
 
+// NewMemoryAsset creates a new MemoryAsset
 func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *MemoryAsset {
-	m := &MemoryAsset{
-		BaseAsset{
+	return &MemoryAsset{
+		BaseAsset: BaseAsset{
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
+		reader: bytes.NewReader(d),
+		length: len(d),
 	}
-
-	m.data = d
-	m.Length = len(m.data)
-	m.reader = bytes.NewReader(m.data)
-	return m
 }
 
-type BinDataAsset struct {
+// BinAsset is a bindata (binary data) asset
+type BinAsset struct {
 	BaseAsset
+	reader   io.Reader
+	template *template.Template
+	length   int
 }
 
-func NewBinDataAsset(assetName, targetDir, targetName, permissions string) *BinDataAsset {
-	m := &BinDataAsset{
-		BaseAsset{
-			AssetName:   assetName,
+// MustBinAsset creates a new BinAsset, or panics if invalid
+func MustBinAsset(name, targetDir, targetName, permissions string, isTemplate bool) *BinAsset {
+	asset, err := NewBinAsset(name, targetDir, targetName, permissions, isTemplate)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to define asset %s: %v", name, err))
+	}
+	return asset
+}
+
+// NewBinAsset creates a new BinAsset
+func NewBinAsset(name, targetDir, targetName, permissions string, isTemplate bool) (*BinAsset, error) {
+	m := &BinAsset{
+		BaseAsset: BaseAsset{
+			AssetName:   name,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
+		template: nil,
 	}
-	m.loadData()
-	return m
+	err := m.loadData(isTemplate)
+	return m, err
 }
 
-func (m *BinDataAsset) loadData() error {
+func defaultValue(defValue string, val interface{}) string {
+	if val == nil {
+		return defValue
+	}
+	strVal, ok := val.(string)
+	if !ok || strVal == "" {
+		return defValue
+	}
+	return strVal
+}
+
+func (m *BinAsset) loadData(isTemplate bool) error {
 	contents, err := Asset(m.AssetName)
 	if err != nil {
 		return err
 	}
-	m.data = contents
-	m.Length = len(contents)
-	m.reader = bytes.NewReader(m.data)
+
+	if isTemplate {
+		tpl, err := template.New(m.AssetName).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
+		if err != nil {
+			return err
+		}
+
+		m.template = tpl
+	}
+
+	m.length = len(contents)
+	m.reader = bytes.NewReader(contents)
+	glog.Infof("Created asset %s with %d bytes", m.AssetName, m.length)
+	if m.length == 0 {
+		return fmt.Errorf("%s is an empty asset", m.AssetName)
+	}
 	return nil
 }
 
-func (m *BinDataAsset) GetLength() int {
-	return m.Length
+// IsTemplate returns if the asset is a template
+func (m *BinAsset) IsTemplate() bool {
+	return m.template != nil
 }
 
-func (m *BinDataAsset) Read(p []byte) (int, error) {
+// Evaluate evaluates the template to a new asset
+func (m *BinAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
+	if !m.IsTemplate() {
+		return nil, errors.Errorf("the asset %s is not a template", m.AssetName)
+
+	}
+
+	var buf bytes.Buffer
+	if err := m.template.Execute(&buf, data); err != nil {
+		return nil, err
+	}
+
+	return NewMemoryAsset(buf.Bytes(), m.GetTargetDir(), m.GetTargetName(), m.GetPermissions()), nil
+}
+
+// GetLength returns length
+func (m *BinAsset) GetLength() int {
+	return m.length
+}
+
+// Read reads the asset
+func (m *BinAsset) Read(p []byte) (int, error) {
+	if m.GetLength() == 0 {
+		return 0, fmt.Errorf("attempted read from a 0 length asset")
+	}
 	return m.reader.Read(p)
 }

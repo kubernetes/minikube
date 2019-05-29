@@ -37,9 +37,10 @@ const (
 	ClusterDNSDomain = "cluster.local"
 )
 
+// MinikubeHome is the name of the minikube home directory variable.
 const MinikubeHome = "MINIKUBE_HOME"
 
-// Minipath is the path to the user's minikube dir
+// GetMinipath returns the path to the user's minikube dir
 func GetMinipath() string {
 	if os.Getenv(MinikubeHome) == "" {
 		return DefaultMinipath
@@ -48,6 +49,14 @@ func GetMinipath() string {
 		return os.Getenv(MinikubeHome)
 	}
 	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
+}
+
+// ArchTag returns the archtag for images
+func ArchTag(hasTag bool) string {
+	if runtime.GOARCH == "amd64" && !hasTag {
+		return ":"
+	}
+	return "-" + runtime.GOARCH + ":"
 }
 
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently
@@ -65,6 +74,7 @@ var SupportedVMDrivers = [...]string{
 	"none",
 }
 
+// DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
 // KubeconfigPath is the path to the Kubernetes client config
@@ -85,12 +95,13 @@ const DefaultMachineName = "minikube"
 // DefaultNodeName is the default name for the kubeadm node within the VM
 const DefaultNodeName = "minikube"
 
-// The name of the default storage class provisioner
+// DefaultStorageClassProvisioner is the name of the default storage class provisioner
 const DefaultStorageClassProvisioner = "standard"
 
-// Used to modify the cache field in the config file
+// Cache is used to modify the cache field in the config file
 const Cache = "cache"
 
+// TunnelRegistryPath returns the path to the runnel registry file
 func TunnelRegistryPath() string {
 	return filepath.Join(GetMinipath(), "tunnels.json")
 }
@@ -102,37 +113,67 @@ func MakeMiniPath(fileName ...string) string {
 	return filepath.Join(args...)
 }
 
+// MountProcessFileName is the filename of the mount process
 var MountProcessFileName = ".mount-process"
 
 const (
-	DefaultKeepContext  = false
-	ShaSuffix           = ".sha256"
-	DefaultMemory       = 2048
-	DefaultCPUS         = 2
-	DefaultDiskSize     = "20g"
-	MinimumDiskSizeMB   = 2000
-	DefaultVMDriver     = "virtualbox"
+	// DefaultKeepContext is if we should keep context by default
+	DefaultKeepContext = false
+	// SHASuffix is the suffix of a SHA-256 checksum file
+	SHASuffix = ".sha256"
+	// DefaultMemory is the default memory of a host, in megabytes
+	DefaultMemory = 2048
+	// DefaultCPUS is the default number of cpus of a host
+	DefaultCPUS = 2
+	// DefaultDiskSize is the default disk image size, parseable
+	DefaultDiskSize = "20g"
+	// MinimumDiskSizeMB is the minimum disk image size, in megabytes
+	MinimumDiskSizeMB = 2000
+	// DefaultVMDriver is the default virtual machine driver name
+	DefaultVMDriver = "virtualbox"
+	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
-apiserver: {{.ApiServer}}
+apiserver: {{.APIServer}}
 kubectl: {{.Kubeconfig}}
 `
-	DefaultAddonListFormat     = "- {{.AddonName}}: {{.AddonStatus}}\n"
-	DefaultConfigViewFormat    = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
-	DefaultCacheListFormat     = "{{.CacheImage}}\n"
-	GithubMinikubeReleasesURL  = "https://storage.googleapis.com/minikube/releases.json"
-	DefaultWait                = 20
-	DefaultInterval            = 6
-	DefaultK8sClientTimeout    = 60 * time.Second
+	// DefaultAddonListFormat is the default format of addon list
+	DefaultAddonListFormat = "- {{.AddonName}}: {{.AddonStatus}}\n"
+	// DefaultConfigViewFormat is the default format of config view
+	DefaultConfigViewFormat = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
+	// DefaultCacheListFormat is the default format of cache list
+	DefaultCacheListFormat = "{{.CacheImage}}\n"
+	// GithubMinikubeReleasesURL is the URL of the minikube github releases JSON file
+	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
+	// DefaultWait is the default wait time, in seconds
+	DefaultWait = 20
+	// DefaultInterval is the default interval, in seconds
+	DefaultInterval = 6
+	// DefaultK8sClientTimeout is the default kubernetes client timeout
+	DefaultK8sClientTimeout = 60 * time.Second
+	// DefaultClusterBootstrapper is the default cluster bootstrapper
 	DefaultClusterBootstrapper = "kubeadm"
 )
 
-var DefaultIsoUrl = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetIsoPath(), minikubeVersion.GetIsoVersion())
-var DefaultIsoShaUrl = DefaultIsoUrl + ShaSuffix
+// DefaultISOURL is the default location of the minikube.iso file
+var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
 
-var DefaultKubernetesVersion = "v1.13.4"
+// DefaultISOSHAURL is the default location of the minikube.iso.sha256 file
+var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
+// DefaultKubernetesVersion is the default kubernetes version
+var DefaultKubernetesVersion = "v1.14.2"
+
+// NewestKubernetesVersion is the newest Kubernetes version to test against
+var NewestKubernetesVersion = "v1.14.2"
+
+// OldestKubernetesVersion is the oldest Kubernetes version to test against
+var OldestKubernetesVersion = "v1.10.13"
+
+// ConfigFilePath is the path of the config directory
 var ConfigFilePath = MakeMiniPath("config")
+
+// ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
 
 // GetProfileFile returns the Minikube profile config file
@@ -141,132 +182,207 @@ func GetProfileFile(profile string) string {
 }
 
 // DockerAPIVersion is the API version implemented by Docker running in the minikube VM.
-const DockerAPIVersion = "1.35"
+const DockerAPIVersion = "1.39"
 
+// ReportingURL is the URL for reporting a minikube error
 const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
 
+// AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
+
+// FilesPath is the default path of files
 const FilesPath = "/files"
 
 const (
-	KubeletServiceFile      = "/lib/systemd/system/kubelet.service"
-	KubeletSystemdConfFile  = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	KubeadmConfigFile       = "/var/lib/kubeadm.yaml"
-	DefaultCNIConfigPath    = "/etc/cni/net.d/k8s.conf"
+	// KubeletServiceFile is the path to the kubelet systemd service
+	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
+	// KubeletSystemdConfFile is the path to the kubelet systemd configuration
+	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	// KubeadmConfigFile is the path to the kubeadm configuration
+	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
+	// DefaultCNIConfigPath is the path to the CNI configuration
+	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
+	// DefaultRktNetConfigPath is the path to the rkt net configuration
 	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 const (
-	DefaultUfsPort       = "5640"
-	DefaultUfsDebugLvl   = 0
+	// DefaultUfsPort is the default port of UFS
+	DefaultUfsPort = "5640"
+	// DefaultUfsDebugLvl is the default debug level of UFS
+	DefaultUfsDebugLvl = 0
+	// DefaultMountEndpoint is the default mount endpoint
 	DefaultMountEndpoint = "/minikube-host"
-	DefaultMsize         = 262144
-	DefaultMountVersion  = "9p2000.L"
+	// DefaultMsize is the default number of bytes to use for 9p packet payload
+	DefaultMsize = 262144
+	// DefaultMountVersion is the default 9p version to use for mount
+	DefaultMountVersion = "9p2000.L"
 )
 
-func GetKubernetesReleaseURL(binaryName, version string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/linux/%s/%s", version, runtime.GOARCH, binaryName)
+// ImageRepositories contains all known image repositories
+var ImageRepositories = map[string][]string{
+	"global": {""},
+	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
 }
 
-func GetKubernetesReleaseURLSha1(binaryName, version string) string {
-	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version))
+// GetKubernetesReleaseURL gets the location of a kubernetes client
+func GetKubernetesReleaseURL(binaryName, version, osName, archName string) string {
+	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
 }
 
+// GetKubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
+func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
+	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version, osName, archName))
+}
+
+// IsMinikubeChildProcess is the name of "is minikube child process" variable
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
+
+// DriverNone is the none driver
 const DriverNone = "none"
+
+// FileScheme is the file scheme
 const FileScheme = "file"
 
-func GetKubeadmCachedImages(kubernetesVersionStr string) []string {
+// GetKubeadmCachedBinaries gets the binaries to cache for kubeadm
+func GetKubeadmCachedBinaries() []string {
+	return []string{"kubelet", "kubeadm"}
+}
 
-	var images = []string{
-		"k8s.gcr.io/kube-proxy-amd64:" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-scheduler-amd64:" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-controller-manager-amd64:" + kubernetesVersionStr,
-		"k8s.gcr.io/kube-apiserver-amd64:" + kubernetesVersionStr,
+// GetKubeadmCachedImages gets the images to cache for kubeadm for a version
+func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {
+	minikubeRepository := imageRepository
+	if imageRepository == "" {
+		imageRepository = "k8s.gcr.io"
+		minikubeRepository = "gcr.io/k8s-minikube"
+	}
+	if !strings.HasSuffix(imageRepository, "/") {
+		imageRepository += "/"
+	}
+	if !strings.HasSuffix(minikubeRepository, "/") {
+		minikubeRepository += "/"
 	}
 
-	ge_v1_13 := semver.MustParseRange(">=1.13.0")
+	v1_14plus := semver.MustParseRange(">=1.14.0")
+	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
 	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
 	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
 	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
+	v1_12plus := semver.MustParseRange(">=1.12.0")
 
 	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
 	if err != nil {
 		glog.Errorln("Error parsing version semver: ", err)
 	}
 
-	if ge_v1_13(kubernetesVersion) {
+	var images []string
+	if v1_12plus(kubernetesVersion) {
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.24",
-			"k8s.gcr.io/coredns:1.2.6",
+			imageRepository + "kube-proxy" + ArchTag(false) + kubernetesVersionStr,
+			imageRepository + "kube-scheduler" + ArchTag(false) + kubernetesVersionStr,
+			imageRepository + "kube-controller-manager" + ArchTag(false) + kubernetesVersionStr,
+			imageRepository + "kube-apiserver" + ArchTag(false) + kubernetesVersionStr,
 		}...)
-
-	} else if v1_12(kubernetesVersion) {
+	} else {
 		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.24",
-			"k8s.gcr.io/coredns:1.2.2",
-		}...)
-
-	} else if v1_11(kubernetesVersion) {
-		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/pause:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.2.18",
-			"k8s.gcr.io/coredns:1.1.3",
-		}...)
-
-	} else if v1_10(kubernetesVersion) {
-		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.1",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.8",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.8",
-			"k8s.gcr.io/etcd-amd64:3.1.12",
-		}...)
-
-	} else if v1_9(kubernetesVersion) {
-		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.0",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.7",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.7",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.7",
-			"k8s.gcr.io/etcd-amd64:3.1.10",
-		}...)
-
-	} else if v1_8(kubernetesVersion) {
-		images = append(images, []string{
-			"k8s.gcr.io/pause-amd64:3.0",
-			"k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.5",
-			"k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.5",
-			"k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.5",
-			"k8s.gcr.io/etcd-amd64:3.0.17",
+			imageRepository + "kube-proxy" + ArchTag(true) + kubernetesVersionStr,
+			imageRepository + "kube-scheduler" + ArchTag(true) + kubernetesVersionStr,
+			imageRepository + "kube-controller-manager" + ArchTag(true) + kubernetesVersionStr,
+			imageRepository + "kube-apiserver" + ArchTag(true) + kubernetesVersionStr,
 		}...)
 	}
 
+	var podInfraContainerImage string
+	if v1_14plus(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause:3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.13",
+			imageRepository + "etcd" + ArchTag(false) + "3.3.10",
+			imageRepository + "coredns" + ArchTag(false) + "1.3.1",
+		}...)
+
+	} else if v1_13(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(false) + "3.2.24",
+			imageRepository + "coredns:1.2.6",
+		}...)
+
+	} else if v1_12(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause:3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(false) + "3.2.24",
+			imageRepository + "coredns:1.2.2",
+		}...)
+
+	} else if v1_11(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(true) + "3.2.18",
+			imageRepository + "coredns:1.1.3",
+		}...)
+
+	} else if v1_10(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
+			imageRepository + "etcd" + ArchTag(true) + "3.1.12",
+		}...)
+
+	} else if v1_9(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.7",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.7",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.7",
+			imageRepository + "etcd" + ArchTag(true) + "3.1.10",
+		}...)
+
+	} else if v1_8(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.5",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.5",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.5",
+			imageRepository + "etcd" + ArchTag(true) + "3.0.17",
+		}...)
+
+	} else {
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
+	}
+
 	images = append(images, []string{
-		"k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1",
-		"k8s.gcr.io/kube-addon-manager:v8.6",
-		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
+		imageRepository + "kubernetes-dashboard" + ArchTag(true) + "v1.10.1",
+		imageRepository + "kube-addon-manager" + ArchTag(false) + "v9.0",
+		minikubeRepository + "storage-provisioner" + ArchTag(false) + "v1.8.1",
 	}...)
 
-	return images
+	return podInfraContainerImage, images
 }
 
+// ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = MakeMiniPath("cache", "images")
 
 const (

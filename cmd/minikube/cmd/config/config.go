@@ -23,15 +23,18 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// Bootstrapper is the name for bootstrapper
 const Bootstrapper = "bootstrapper"
 
 type setFn func(string, string) error
 
+// Setting represents a setting
 type Setting struct {
 	name        string
 	set         func(config.MinikubeConfig, string, string) error
@@ -48,6 +51,11 @@ var settings = []Setting{
 		set:         SetString,
 		validations: []setFn{IsValidDriver},
 		callbacks:   []setFn{RequiresRestartMsg},
+	},
+	{
+		name:      "feature-gates",
+		set:       SetString,
+		callbacks: []setFn{RequiresRestartMsg},
 	},
 	{
 		name:        "v",
@@ -247,13 +255,16 @@ var settings = []Setting{
 	},
 }
 
+// ConfigCmd represents the config command
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
 	Short: "Modify minikube config",
 	Long: `config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
-		cmd.Help()
+		if err := cmd.Help(); err != nil {
+			glog.Errorf("help: %v", err)
+		}
 	},
 }
 
@@ -336,12 +347,12 @@ func DeleteFromConfigMap(name string, images []string) error {
 func WriteConfig(m config.MinikubeConfig) error {
 	f, err := os.Create(constants.ConfigFile)
 	if err != nil {
-		return fmt.Errorf("Could not open file %s: %s", constants.ConfigFile, err)
+		return fmt.Errorf("create %s: %s", constants.ConfigFile, err)
 	}
 	defer f.Close()
 	err = encode(f, m)
 	if err != nil {
-		return fmt.Errorf("Error encoding config %s: %s", constants.ConfigFile, err)
+		return fmt.Errorf("encode %s: %s", constants.ConfigFile, err)
 	}
 	return nil
 }

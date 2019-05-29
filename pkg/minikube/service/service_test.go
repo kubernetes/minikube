@@ -22,26 +22,30 @@ import (
 	"testing"
 	"text/template"
 
+	"time"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
-	"time"
 )
 
 type MockClientGetter struct {
-	servicesMap map[string]corev1.ServiceInterface
+	servicesMap  map[string]typed_core.ServiceInterface
+	endpointsMap map[string]typed_core.EndpointsInterface
 }
 
-func (m *MockClientGetter) GetCoreClient() (corev1.CoreV1Interface, error) {
+func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 	return &MockCoreClient{
-		servicesMap: m.servicesMap,
+		servicesMap:  m.servicesMap,
+		endpointsMap: m.endpointsMap,
 	}, nil
 }
 
@@ -51,61 +55,78 @@ func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clie
 
 type MockCoreClient struct {
 	fake.FakeCoreV1
-	servicesMap map[string]corev1.ServiceInterface
+	servicesMap  map[string]typed_core.ServiceInterface
+	endpointsMap map[string]typed_core.EndpointsInterface
 }
 
-var serviceNamespaces = map[string]corev1.ServiceInterface{
+var serviceNamespaces = map[string]typed_core.ServiceInterface{
 	"default": defaultNamespaceServiceInterface,
 }
 
 var defaultNamespaceServiceInterface = &MockServiceInterface{
-	ServiceList: &v1.ServiceList{
-		Items: []v1.Service{
+	ServiceList: &core.ServiceList{
+		Items: []core.Service{
 			{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "mock-dashboard",
 					Namespace: "default",
 				},
-				Spec: v1.ServiceSpec{
-					Ports: []v1.ServicePort{
-						{NodePort: int32(1111)},
-						{NodePort: int32(2222)},
+				Spec: core.ServiceSpec{
+					Ports: []core.ServicePort{
+						{
+							NodePort: int32(1111),
+							TargetPort: intstr.IntOrString{
+								IntVal: int32(11111),
+							},
+						},
+						{
+							NodePort: int32(2222),
+							TargetPort: intstr.IntOrString{
+								IntVal: int32(22222),
+							},
+						},
 					},
 				},
 			},
 			{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: meta.ObjectMeta{
 					Name:      "mock-dashboard-no-ports",
 					Namespace: "default",
 				},
-				Spec: v1.ServiceSpec{
-					Ports: []v1.ServicePort{},
+				Spec: core.ServiceSpec{
+					Ports: []core.ServicePort{},
 				},
 			},
 		},
 	},
 }
 
-func (m *MockCoreClient) Endpoints(namespace string) corev1.EndpointsInterface {
-	return &MockEndpointsInterface{}
+var endpointNamespaces = map[string]typed_core.EndpointsInterface{
+	"default": defaultNamespaceEndpointInterface,
 }
 
-func (m *MockCoreClient) Services(namespace string) corev1.ServiceInterface {
+var defaultNamespaceEndpointInterface = &MockEndpointsInterface{}
+
+func (m *MockCoreClient) Endpoints(namespace string) typed_core.EndpointsInterface {
+	return m.endpointsMap[namespace]
+}
+
+func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
 	return m.servicesMap[namespace]
 }
 
 type MockEndpointsInterface struct {
 	fake.FakeEndpoints
-	Endpoints *v1.Endpoints
+	Endpoints *core.Endpoints
 }
 
-var endpointMap = map[string]*v1.Endpoints{
+var endpointMap = map[string]*core.Endpoints{
 	"no-subsets": {},
 	"not-ready": {
-		Subsets: []v1.EndpointSubset{
+		Subsets: []core.EndpointSubset{
 			{
-				Addresses: []v1.EndpointAddress{},
-				NotReadyAddresses: []v1.EndpointAddress{
+				Addresses: []core.EndpointAddress{},
+				NotReadyAddresses: []core.EndpointAddress{
 					{IP: "1.1.1.1"},
 					{IP: "2.2.2.2"},
 				},
@@ -113,20 +134,36 @@ var endpointMap = map[string]*v1.Endpoints{
 		},
 	},
 	"one-ready": {
-		Subsets: []v1.EndpointSubset{
+		Subsets: []core.EndpointSubset{
 			{
-				Addresses: []v1.EndpointAddress{
+				Addresses: []core.EndpointAddress{
 					{IP: "1.1.1.1"},
 				},
-				NotReadyAddresses: []v1.EndpointAddress{
+				NotReadyAddresses: []core.EndpointAddress{
 					{IP: "2.2.2.2"},
+				},
+			},
+		},
+	},
+	"mock-dashboard": {
+		Subsets: []core.EndpointSubset{
+			{
+				Ports: []core.EndpointPort{
+					{
+						Name: "port1",
+						Port: int32(11111),
+					},
+					{
+						Name: "port2",
+						Port: int32(22222),
+					},
 				},
 			},
 		},
 	},
 }
 
-func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpoints, error) {
+func (e MockEndpointsInterface) Get(name string, _ meta.GetOptions) (*core.Endpoints, error) {
 	endpoint, ok := endpointMap[name]
 	if !ok {
 		return nil, errors.New("Endpoint not found")
@@ -136,12 +173,12 @@ func (e MockEndpointsInterface) Get(name string, _ metav1.GetOptions) (*v1.Endpo
 
 type MockServiceInterface struct {
 	fake.FakeServices
-	ServiceList *v1.ServiceList
+	ServiceList *core.ServiceList
 }
 
-func (s MockServiceInterface) List(opts metav1.ListOptions) (*v1.ServiceList, error) {
-	serviceList := &v1.ServiceList{
-		Items: []v1.Service{},
+func (s MockServiceInterface) List(opts meta.ListOptions) (*core.ServiceList, error) {
+	serviceList := &core.ServiceList{
+		Items: []core.Service{},
 	}
 	if opts.LabelSelector != "" {
 		keyValArr := strings.Split(opts.LabelSelector, "=")
@@ -158,7 +195,7 @@ func (s MockServiceInterface) List(opts metav1.ListOptions) (*v1.ServiceList, er
 	return s.ServiceList, nil
 }
 
-func (s MockServiceInterface) Get(name string, _ metav1.GetOptions) (*v1.Service, error) {
+func (s MockServiceInterface) Get(name string, _ meta.GetOptions) (*core.Service, error) {
 	for _, svc := range s.ServiceList.Items {
 		if svc.ObjectMeta.Name == name {
 			return &svc, nil
@@ -169,10 +206,10 @@ func (s MockServiceInterface) Get(name string, _ metav1.GetOptions) (*v1.Service
 }
 
 func TestGetServiceListFromServicesByLabel(t *testing.T) {
-	serviceList := &v1.ServiceList{
-		Items: []v1.Service{
+	serviceList := &core.ServiceList{
+		Items: []core.Service{
 			{
-				Spec: v1.ServiceSpec{
+				Spec: core.ServiceSpec{
 					Selector: map[string]string{
 						"foo": "bar",
 					},
@@ -195,7 +232,8 @@ func TestGetServiceListFromServicesByLabel(t *testing.T) {
 func TestPrintURLsForService(t *testing.T) {
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
 	client := &MockCoreClient{
-		servicesMap: serviceNamespaces,
+		servicesMap:  serviceNamespaces,
+		endpointsMap: endpointNamespaces,
 	}
 	var tests = []struct {
 		description    string
@@ -218,6 +256,13 @@ func TestPrintURLsForService(t *testing.T) {
 			namespace:      "default",
 			tmpl:           template.Must(template.New("svc-arbitrary-template").Parse("{{.IP}}:{{.Port}}")),
 			expectedOutput: []string{"127.0.0.1:1111", "127.0.0.1:2222"},
+		},
+		{
+			description:    "should get the name of all target ports with arbitrary format",
+			serviceName:    "mock-dashboard",
+			namespace:      "default",
+			tmpl:           template.Must(template.New("svc-arbitrary-template").Parse("{{.Name}}={{.IP}}:{{.Port}}")),
+			expectedOutput: []string{"port1=127.0.0.1:1111", "port2=127.0.0.1:2222"},
 		},
 		{
 			description:    "empty slice for no node ports",
@@ -361,7 +406,8 @@ func TestGetServiceURLs(t *testing.T) {
 			t.Parallel()
 
 			K8s = &MockClientGetter{
-				servicesMap: serviceNamespaces,
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
 			}
 			urls, err := GetServiceURLs(test.api, test.namespace, defaultTemplate)
 			if err != nil && !test.err {
@@ -428,7 +474,8 @@ func TestGetServiceURLsForService(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			K8s = &MockClientGetter{
-				servicesMap: serviceNamespaces,
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
 			}
 			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {

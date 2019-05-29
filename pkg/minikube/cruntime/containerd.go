@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/golang/glog"
 )
@@ -31,6 +32,21 @@ type Containerd struct {
 // Name is a human readable name for containerd
 func (r *Containerd) Name() string {
 	return "containerd"
+}
+
+// Version retrieves the current version of this runtime
+func (r *Containerd) Version() (string, error) {
+	ver, err := r.Runner.CombinedOutput("containerd --version")
+	if err != nil {
+		return "", err
+	}
+
+	// containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39
+	words := strings.Split(ver, " ")
+	if len(words) >= 4 && words[0] == "containerd" {
+		return strings.Replace(words[2], "v", "", 1), nil
+	}
+	return "", fmt.Errorf("unknown version: %q", ver)
 }
 
 // SocketPath returns the path to the socket file for containerd
@@ -80,7 +96,7 @@ func (r *Containerd) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	return r.Runner.Run(fmt.Sprintf("sudo ctr cri load %s", path))
+	return r.Runner.Run(fmt.Sprintf("sudo ctr images import %s", path))
 }
 
 // KubeletOptions returns kubelet options for a containerd

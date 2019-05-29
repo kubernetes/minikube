@@ -1,3 +1,5 @@
+// +build darwin
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -30,11 +32,19 @@ import (
 )
 
 const (
-	LeasesPath       = "/var/db/dhcpd_leases"
-	VMNetDomain      = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
+	// LeasesPath is the path to dhcpd leases
+	LeasesPath = "/var/db/dhcpd_leases"
+	// VMNetDomain is the domain for vmnet
+	VMNetDomain = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
+	// SharedNetAddrKey is the key for the network address
 	SharedNetAddrKey = "Shared_Net_Address"
 )
 
+var (
+	leadingZeroRegexp = regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
+)
+
+// DHCPEntry holds a parsed DNS entry
 type DHCPEntry struct {
 	Name      string
 	IPAddress string
@@ -43,6 +53,7 @@ type DHCPEntry struct {
 	Lease     string
 }
 
+// GetIPAddressByMACAddress gets the IP address of a MAC address
 func GetIPAddressByMACAddress(mac string) (string, error) {
 	return getIPAddressFromFile(mac, LeasesPath)
 }
@@ -113,12 +124,10 @@ func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
 
 // trimMacAddress trimming "0" of the ten's digit
 func trimMacAddress(rawUUID string) string {
-	re := regexp.MustCompile(`0([A-Fa-f0-9](:|$))`)
-	mac := re.ReplaceAllString(rawUUID, "$1")
-
-	return mac
+	return leadingZeroRegexp.ReplaceAllString(rawUUID, "$1")
 }
 
+// GetNetAddr gets the network address for vmnet
 func GetNetAddr() (net.IP, error) {
 	plistPath := VMNetDomain + ".plist"
 	if _, err := os.Stat(plistPath); err != nil {

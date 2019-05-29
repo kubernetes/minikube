@@ -34,13 +34,12 @@ func errorGenerator(n int, retryable bool) func() error {
 	errorCount := 0
 	return func() (err error) {
 		if errorCount < n {
-			errorCount += 1
-			e := errors.New("Error!")
+			errorCount++
+			e := errors.New("Error")
 			if retryable {
 				return &RetriableError{Err: e}
-			} else {
-				return e
 			}
+			return e
 
 		}
 
@@ -99,11 +98,15 @@ var testSHAString = "test"
 
 func TestParseSHAFromURL(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, testSHAString)
+		if _, err := io.WriteString(w, testSHAString); err != nil {
+			t.Fatalf("WriteString: %v", err)
+		}
 	}))
 	serverBadResponse := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("500 HTTP status code returned!"))
+		if _, err := w.Write([]byte("500 HTTP status code returned!")); err != nil {
+			t.Fatalf("Write: %v", err)
+		}
 	}))
 
 	argsList := [...]getTestArgs{
@@ -176,7 +179,9 @@ func TestTeePrefix(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		TeePrefix(":", &in, &out, logSink)
+		if err := TeePrefix(":", &in, &out, logSink); err != nil {
+			t.Errorf("TeePrefix: %v", err)
+		}
 		wg.Done()
 	}()
 
@@ -196,5 +201,45 @@ func TestTeePrefix(t *testing.T) {
 	wantLog := "(:goo)(:g)(:le)"
 	if gotLog != wantLog {
 		t.Errorf("log=%q, want: %q", gotLog, wantLog)
+	}
+}
+
+func TestReplaceChars(t *testing.T) {
+	testData := []struct {
+		src         []string
+		replacer    *strings.Replacer
+		expectedRes []string
+	}{
+		{[]string{"abc%def", "%Y%"}, strings.NewReplacer("%", "X"), []string{"abcXdef", "XYX"}},
+	}
+
+	for _, tt := range testData {
+		res := ReplaceChars(tt.src, tt.replacer)
+		for i, val := range res {
+			if val != tt.expectedRes[i] {
+				t.Fatalf("Expected '%s' but got '%s'", tt.expectedRes, res)
+			}
+		}
+	}
+}
+
+func TestConcatStrings(t *testing.T) {
+	testData := []struct {
+		src         []string
+		prefix      string
+		postfix     string
+		expectedRes []string
+	}{
+		{[]string{"abc", ""}, "xx", "yy", []string{"xxabcyy", "xxyy"}},
+		{[]string{"abc", ""}, "", "", []string{"abc", ""}},
+	}
+
+	for _, tt := range testData {
+		res := ConcatStrings(tt.src, tt.prefix, tt.postfix)
+		for i, val := range res {
+			if val != tt.expectedRes[i] {
+				t.Fatalf("Expected '%s' but got '%s'", tt.expectedRes, res)
+			}
+		}
 	}
 }

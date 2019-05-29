@@ -1,6 +1,7 @@
-## Add-ons
+# Add-ons
 
 Minikube has a set of built in addons that can be used enabled, disabled, and opened inside of the local k8s environment. Below is an example of this functionality for the `heapster` addon:
+
 ```shell
 $ minikube addons list
 - registry: disabled
@@ -26,6 +27,7 @@ Waiting, endpoint for service is not ready yet...
 Waiting, endpoint for service is not ready yet...
 Created new window in existing browser session.
 ```
+
 The currently supported addons include:
 
 * [Kubernetes Dashboard](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dashboard)

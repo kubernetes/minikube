@@ -10,11 +10,17 @@ The `none` driver allows advanced minikube users to skip VM creation, allowing m
 
 The `none` driver supports releases of Debian, Ubuntu, and Fedora that are less than 2 years old. In practice, any systemd-based modern distribution is likely to work, and we will accept pull requests which improve compatibility with other systems.
 
+## Example: basic usage
+
+`sudo minikube start --vm-driver=none`
+
+NOTE: The none driver requires minikube to be run as root, until [#3760](https://github.com/kubernetes/minikube/issues/3760) can be addressed.
+
 ## Example: Using minikube for continuous integration testing
 
 Most continuous integration environments are already running inside a VM, and may not supported nested virtualization. The `none` driver was designed for this use case. Here is an example, that runs minikube from a non-root user, and ensures that the latest stable kubectl is installed:
 
-```
+```shell
 curl -Lo minikube \
   https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 \
   && sudo install minikube /usr/local/bin/
@@ -23,7 +29,7 @@ kv=$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.tx
 curl -Lo kubectl \
   https://storage.googleapis.com/kubernetes-release/release/$kv/bin/linux/amd64/kubectl \
   && sudo install kubectl /usr/local/bin/
-  
+
 export MINIKUBE_WANTUPDATENOTIFICATION=false
 export MINIKUBE_WANTREPORTERRORPROMPT=false
 export MINIKUBE_HOME=$HOME
@@ -66,14 +72,14 @@ We'll cover these in detail below:
 
 * When run in `none` mode, minikube has no built-in resource limit mechanism, which means you could deploy pods which would consume all of the hosts resources.
 
-* minikube and the Kubernetes services it starts may interfere with other running software on the system. For instance, minikube will start and stop container runtimes via systemd, such as docker, rkt, containerd, cri-o.
+* minikube and the Kubernetes services it starts may interfere with other running software on the system. For instance, minikube will start and stop container runtimes via systemd, such as docker, containerd, cri-o.
 
 ### Data loss
 
 With the `none` driver, minikube will overwrite the following system paths:
 
 * /usr/bin/kubeadm - Updated to match the exact version of Kubernetes selected
-* /usr/bin/kubectl - Updated to match the exact version of Kubernetes selected
+* /usr/bin/kubelet - Updated to match the exact version of Kubernetes selected
 * /etc/kubernetes - configuration files
 
 These paths will be erased when running `minikube delete`:
@@ -92,12 +98,22 @@ Some environment variables may be useful for using the `none` driver:
 * **MINIKUBE_HOME**: Saves all files to this directory instead of $HOME
 * **MINIKUBE_WANTUPDATENOTIFICATION**: Toggles the notification that your version of minikube is obsolete
 * **MINIKUBE_WANTREPORTERRORPROMPT**: Toggles the error reporting prompt
-* **MINIKUBE_IN_COLOR**: Toggles color output and emoji usage
+* **MINIKUBE_IN_STYLE**: Toggles color output and emoji usage
 
 ## Known Issues
 
+* `systemctl` is required. [#2704](https://github.com/kubernetes/minikube/issues/2704)
 * `-p` (profiles) are unsupported: It is not possible to run more than one `--vm-driver=none` instance
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
 * CoreDNS detects resolver loop, goes into CrashloopBackoff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
+* Some versions of Linux have a version of docker that is newer then what Kubernetes expects. To overwrite this, run minikube with the following parameters: `sudo -E minikube start --vm-driver=none --kubernetes-version v1.11.8 --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
+* On Ubuntu 18.04 (and probably others), because of how `systemd-resolve` is configured by default, one needs to bypass the default `resolv.conf` file and use a different one instead.
+  - In this case, you should use this file: `/run/systemd/resolve/resolv.conf`
+  - `sudo -E minikube --vm-driver=none start --extra-config=kubelet.resolv-conf=/run/systemd/resolve/resolv.conf`
+  - Apperently, though, if `resolve.conf` is too big (about 10 lines!!!), one gets the following error: `Waiting for pods: apiserver proxy! Error restarting cluster: wait: waiting for k8s-app=kube-proxy: timed out waiting for the condition`
+  - This error happens in Kubernetes 0.11.x, 0.12.x and 0.13.x, but *not* in 0.14.x
+  - If that's your case, try this:
+  - `grep -E "^nameserver" /run/systemd/resolve/resolv.conf  |head -n 3 > /tmp/resolv.conf && sudo -E minikube --vm-driver=none start --extra-config=kubelet.resolv-conf=/tmp/resolv.conf`
+
 * [Full list of open 'none' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fnone-driver)

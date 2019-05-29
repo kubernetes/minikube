@@ -117,7 +117,7 @@ func runsc() error {
 	return downloadFileToDest(constants.GvisorURL, dest)
 }
 
-// downloadFileToDest downlaods the given file to the dest
+// downloadFileToDest downloads the given file to the dest
 // if something already exists at dest, first remove it
 func downloadFileToDest(url, dest string) error {
 	client := &http.Client{}
@@ -171,7 +171,7 @@ func copyConfigFiles() error {
 }
 
 func copyAssetToDest(targetName, dest string) error {
-	var asset *assets.BinDataAsset
+	var asset *assets.BinAsset
 	for _, a := range assets.Addons["gvisor"].Assets {
 		if a.GetTargetName() == targetName {
 			asset = a

@@ -18,14 +18,17 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 )
@@ -51,21 +54,24 @@ func findSetting(name string) (Setting, error) {
 			return s, nil
 		}
 	}
-	return Setting{}, fmt.Errorf("Property name %s not found", name)
+	return Setting{}, fmt.Errorf("property name %q not found", name)
 }
 
 // Set Functions
 
+// SetString sets a string value
 func SetString(m config.MinikubeConfig, name string, val string) error {
 	m[name] = val
 	return nil
 }
 
+// SetMap sets a map value
 func SetMap(m config.MinikubeConfig, name string, val map[string]interface{}) error {
 	m[name] = val
 	return nil
 }
 
+// SetConfigMap sets a config map value
 func SetConfigMap(m config.MinikubeConfig, name string, val string) error {
 	list := strings.Split(val, ",")
 	v := make(map[string]interface{})
@@ -76,6 +82,7 @@ func SetConfigMap(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// SetInt sets an int value
 func SetInt(m config.MinikubeConfig, name string, val string) error {
 	i, err := strconv.Atoi(val)
 	if err != nil {
@@ -85,6 +92,7 @@ func SetInt(m config.MinikubeConfig, name string, val string) error {
 	return nil
 }
 
+// SetBool sets a bool value
 func SetBool(m config.MinikubeConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
@@ -118,15 +126,47 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		return errors.Wrap(err, "command runner")
 	}
+
+	cfg, err := config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		exit.WithCode(exit.Data, "Unable to load config: %v", err)
+	}
+
+	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
+	return enableOrDisableAddonInternal(addon, cmd, data, enable)
+}
+
+func enableOrDisableAddonInternal(addon *assets.Addon, cmd bootstrapper.CommandRunner, data interface{}, enable bool) error {
+	var err error
 	if enable {
 		for _, addon := range addon.Assets {
-			if err := cmd.Copy(addon); err != nil {
+			var addonFile assets.CopyableFile
+			if addon.IsTemplate() {
+				addonFile, err = addon.Evaluate(data)
+				if err != nil {
+					return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+				}
+
+			} else {
+				addonFile = addon
+			}
+			if err := cmd.Copy(addonFile); err != nil {
 				return errors.Wrapf(err, "enabling addon %s", addon.AssetName)
 			}
 		}
 	} else {
 		for _, addon := range addon.Assets {
-			if err := cmd.Remove(addon); err != nil {
+			var addonFile assets.CopyableFile
+			if addon.IsTemplate() {
+				addonFile, err = addon.Evaluate(data)
+				if err != nil {
+					return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+				}
+
+			} else {
+				addonFile = addon
+			}
+			if err := cmd.Remove(addonFile); err != nil {
 				return errors.Wrapf(err, "disabling addon %s", addon.AssetName)
 			}
 		}
@@ -134,6 +174,7 @@ func EnableOrDisableAddon(name string, val string) error {
 	return nil
 }
 
+// EnableOrDisableStorageClasses enables or disables storage classes
 func EnableOrDisableStorageClasses(name, val string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {

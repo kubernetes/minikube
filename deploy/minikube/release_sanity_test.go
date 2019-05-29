@@ -31,7 +31,7 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-func getShaFromURL(url string) (string, error) {
+func getSHAFromURL(url string) (string, error) {
 	fmt.Println("Downloading: ", url)
 	r, err := http.Get(url)
 	if err != nil {
@@ -57,7 +57,7 @@ func TestReleasesJson(t *testing.T) {
 		fmt.Printf("Checking release: %s\n", r.Name)
 		for platform, sha := range r.Checksums {
 			fmt.Printf("Checking SHA for %s.\n", platform)
-			actualSha, err := getShaFromURL(util.GetBinaryDownloadURL(r.Name, platform))
+			actualSha, err := getSHAFromURL(util.GetBinaryDownloadURL(r.Name, platform))
 			if err != nil {
 				t.Errorf("Error calculating SHA for %s-%s. Error: %v", r.Name, platform, err)
 				continue

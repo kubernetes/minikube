@@ -17,6 +17,8 @@ limitations under the License.
 package virtualbox
 
 import (
+	"fmt"
+
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -27,7 +29,7 @@ import (
 const defaultVirtualboxNicType = "virtio"
 
 func init() {
-	registry.Register(registry.DriverDef{
+	err := registry.Register(registry.DriverDef{
 		Name:          "virtualbox",
 		Builtin:       true,
 		ConfigCreator: createVirtualboxHost,
@@ -35,6 +37,9 @@ func init() {
 			return virtualbox.NewDriver("", "")
 		},
 	})
+	if err != nil {
+		panic(fmt.Sprintf("unable to register: %v", err))
+	}
 }
 
 func createVirtualboxHost(config cfg.MachineConfig) interface{} {
@@ -43,7 +48,7 @@ func createVirtualboxHost(config cfg.MachineConfig) interface{} {
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
-	d.DiskSize = int(config.DiskSize)
+	d.DiskSize = config.DiskSize
 	d.HostOnlyCIDR = config.HostOnlyCIDR
 	d.NoShare = config.DisableDriverMounts
 	d.NoVTXCheck = config.NoVTXCheck

@@ -30,11 +30,11 @@ import (
 
 const errMsg = `
 The Xhyve driver is not included in minikube yet.  Please follow the directions at
-https://github.com/kubernetes/minikube/blob/master/DRIVERS.md#xhyve-driver
+https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver
 `
 
 func init() {
-	registry.Register(registry.DriverDef{
+	if err := registry.Register(registry.DriverDef{
 		Name:          "xhyve",
 		Builtin:       false,
 		ConfigCreator: createXhyveHost,
@@ -43,7 +43,9 @@ func init() {
 			os.Exit(1)
 			return nil
 		},
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register: %v", err))
+	}
 }
 
 type xhyveDriver struct {

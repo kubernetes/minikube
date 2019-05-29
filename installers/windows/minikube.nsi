@@ -25,7 +25,7 @@
 
 RequestExecutionLevel admin ;Require admin rights on NT6+ (When UAC is turned on)
 
-InstallDir "$PROGRAMFILES\${COMPANYNAME}\${APPNAME}"
+InstallDir "$PROGRAMFILES64\${COMPANYNAME}\${APPNAME}"
 !define UNINSTALLDIR "Software\Microsoft\Windows\CurrentVersion\Uninstall\${COMPANYNAME} ${APPNAME}"
 BrandingText " "
 
@@ -43,6 +43,8 @@ OutFile "minikube-installer.exe"
 !define MUI_WELCOMEFINISHPAGE_BITMAP "logo.bmp"
 !define MUI_UNWELCOMEFINISHPAGE_BITMAP "logo.bmp"
 !define MUI_HEADERIMAGE_BITMAP "logo.bmp"
+!define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_UNFINISHPAGE_NOAUTOCLOSE
 
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_LICENSE "LICENSE.txt"
@@ -124,7 +126,7 @@ Section "Install"
 	# Files added here should be removed by the uninstaller (see section "uninstall")
 	File "minikube.exe"
 	File "logo.ico"
-    File "update_path.bat"
+  File "update_path.ps1"
 	# Add any other files for the install directory (license files, app data, etc) here
 
 	# Uninstaller - See function un.onInit and section "uninstall" for configuration
@@ -147,17 +149,20 @@ Section "Install"
 	WriteRegStr HKLM "${UNINSTALLDIR}" "DisplayVersion" "$\"${VERSIONMAJOR}.${VERSIONMINOR}.${VERSIONBUILD}$\""
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "VersionMajor" ${VERSIONMAJOR}
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "VersionMinor" ${VERSIONMINOR}
-	# There is no option for modifying or repairing the install
+	
+  # There is no option for modifying or repairing the install
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "NoModify" 1
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "NoRepair" 1
-	# Set the INSTALLSIZE constant (!defined at the top of this script) so Add/Remove Programs can accurately report the size
+	
+  # Set the INSTALLSIZE constant (!defined at the top of this script) so Add/Remove Programs can accurately report the size
 	WriteRegDWORD HKLM "${UNINSTALLDIR}" "EstimatedSize" ${INSTALLSIZE}
 
 	# Add installed executable to PATH
-    # Cannot uset EnvVarUpdate since the path can be too long
-    # this is explicitly warned in the documentation page
-    # http://nsis.sourceforge.net/Environmental_Variables:_append,_prepend,_and_remove_entries
-    nsExec::Exec '"$INSTDIR\update_path.bat" add $INSTDIR'
+  # Cannot uset EnvVarUpdate since the path can be too long
+  # this is explicitly warned in the documentation page
+  # http://nsis.sourceforge.net/Environmental_Variables:_append,_prepend,_and_remove_entries
+  nsExec::ExecToLog 'powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File "$INSTDIR\update_path.ps1" -Add -Path "$INSTDIR"'
+
 SectionEnd
 
 Section "Uninstall"
@@ -168,12 +173,12 @@ Section "Uninstall"
 	RmDir /REBOOTOK "$SMPROGRAMS\${COMPANYNAME}"
 
 	# Remove uninstalled executable from PATH
-    nsExec::Exec '"$INSTDIR\update_path.bat" remove $INSTDIR' ; appends to the system path
+  nsExec::ExecToLog 'powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File "$INSTDIR\update_path.ps1" -Remove -Path "$INSTDIR"' ; appends to the system path
 
 	# Remove files
 	Delete /REBOOTOK $INSTDIR\minikube.exe
 	Delete /REBOOTOK $INSTDIR\logo.ico
-	Delete /REBOOTOK $INSTDIR\update_path.bat
+	Delete /REBOOTOK $INSTDIR\update_path.ps1
 
 	# Always delete uninstaller as the last action
 	Delete /REBOOTOK $INSTDIR\uninstall.exe

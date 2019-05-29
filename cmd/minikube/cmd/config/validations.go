@@ -33,28 +33,42 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
+// containerdOnlyMsg is the message shown when a containerd-only addon is enabled
+const containerdOnlyAddonMsg = `
+This addon can only be enabled with the containerd runtime backend. To enable this backend, please first stop minikube with:
+
+minikube stop
+
+and then start minikube again with the following flags:
+
+minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`
+
+// IsValidDriver checks if a driver is supported
 func IsValidDriver(string, driver string) error {
 	for _, d := range constants.SupportedVMDrivers {
 		if driver == d {
 			return nil
 		}
 	}
-	return fmt.Errorf("Driver %s is not supported", driver)
+	return fmt.Errorf("driver %q is not supported", driver)
 }
 
+// RequiresRestartMsg returns the "requires restart" message
 func RequiresRestartMsg(string, string) error {
 	console.OutStyle("warning", "These changes will take effect upon a minikube delete and then a minikube start")
 	return nil
 }
 
+// IsValidDiskSize checks if a string is a valid disk size
 func IsValidDiskSize(name string, disksize string) error {
 	_, err := units.FromHumanSize(disksize)
 	if err != nil {
-		return fmt.Errorf("Not valid disk size: %v", err)
+		return fmt.Errorf("invalid disk size: %v", err)
 	}
 	return nil
 }
 
+// IsValidURL checks if a location is a valid URL
 func IsValidURL(name string, location string) error {
 	_, err := url.Parse(location)
 	if err != nil {
@@ -63,6 +77,7 @@ func IsValidURL(name string, location string) error {
 	return nil
 }
 
+// IsURLExists checks if a location actually exists
 func IsURLExists(name string, location string) error {
 	parsed, err := url.Parse(location)
 	if err != nil {
@@ -96,6 +111,7 @@ func IsURLExists(name string, location string) error {
 	return nil
 }
 
+// IsPositive checks if an integer is positive
 func IsPositive(name string, val string) error {
 	i, err := strconv.Atoi(val)
 	if err != nil {
@@ -107,14 +123,16 @@ func IsPositive(name string, val string) error {
 	return nil
 }
 
+// IsValidCIDR checks if a string parses as a CIDR
 func IsValidCIDR(name string, cidr string) error {
 	_, _, err := net.ParseCIDR(cidr)
 	if err != nil {
-		return fmt.Errorf("Error parsing CIDR: %v", err)
+		return fmt.Errorf("invalid CIDR: %v", err)
 	}
 	return nil
 }
 
+// IsValidPath checks if a string is a valid path
 func IsValidPath(name string, path string) error {
 	_, err := os.Stat(path)
 	if err != nil {
@@ -123,6 +141,7 @@ func IsValidPath(name string, path string) error {
 	return nil
 }
 
+// IsValidAddon checks if a string is a valid addon
 func IsValidAddon(name string, val string) error {
 	if _, ok := assets.Addons[name]; ok {
 		return nil
@@ -142,16 +161,7 @@ func IsContainerdRuntime(_, _ string) error {
 	}
 	_, ok := r.(*cruntime.Containerd)
 	if !ok {
-		return fmt.Errorf(`This addon can only be enabled with the containerd runtime backend.
-
-To enable this backend, please first stop minikube with:
-
-minikube stop
-
-and then start minikube again with the following flags:
-
-minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`)
+		return fmt.Errorf(containerdOnlyAddonMsg)
 	}
-
 	return nil
 }

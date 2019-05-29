@@ -17,11 +17,9 @@ limitations under the License.
 package cluster
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"html/template"
 	"net"
 	"os/exec"
 	"regexp"
@@ -46,25 +44,33 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-const (
-	defaultVirtualboxNicType = "virtio"
-)
-
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 //INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
 //see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
-	flag.Set("logtostderr", "false")
+	if err := flag.Set("logtostderr", "false"); err != nil {
+		exit.WithError("unable to set logtostderr", err)
+	}
 
 	// Setting the default client to native gives much better performance.
 	ssh.SetDefaultClient(ssh.Native)
+}
+
+// CacheISO downloads and caches ISO.
+func CacheISO(config cfg.MachineConfig) error {
+	if config.VMDriver != "none" {
+		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	exists, err := api.Exists(cfg.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrapf(err, "machine name: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "exists: %s", cfg.GetMachineName())
 	}
 	if !exists {
 		glog.Infoln("Machine does not exist... provisioning new machine")
@@ -111,6 +117,16 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
+	err = waitForSSHAccess(h, e)
+	if err != nil {
+		return nil, err
+	}
+
+	return h, nil
+}
+
+func waitForSSHAccess(h *host.Host, e *engine.Options) error {
+
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
 	console.OutStyle("waiting", "Waiting for SSH access ...")
 
@@ -118,19 +134,20 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		h.HostOptions.EngineOptions.Env = e.Env
 		provisioner, err := provision.DetectProvisioner(h.Driver)
 		if err != nil {
-			return nil, errors.Wrap(err, "detecting provisioner")
+			return errors.Wrap(err, "detecting provisioner")
 		}
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
-			return nil, errors.Wrap(err, "provision")
+			return errors.Wrap(err, "provision")
 		}
 	}
 
 	if h.Driver.DriverName() != "none" {
 		if err := h.ConfigureAuth(); err != nil {
-			return nil, &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
+			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
 	}
-	return h, nil
+
+	return nil
 }
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
@@ -239,7 +256,7 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 	return &o
 }
 
-func preCreateHost(config *cfg.MachineConfig) error {
+func preCreateHost(config *cfg.MachineConfig) {
 	switch config.VMDriver {
 	case "kvm":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
@@ -263,16 +280,10 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
 		}
 	}
-
-	return nil
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	err := preCreateHost(&config)
-	if err != nil {
-		return nil, err
-	}
-
+	preCreateHost(&config)
 	console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
@@ -282,14 +293,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		exit.WithError("error getting driver", err)
 	}
 
-	if config.VMDriver != "none" {
-		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
-			return nil, errors.Wrap(err, "unable to cache ISO")
-		}
-	}
-
 	driver := def.ConfigCreator(config)
-
 	data, err := json.Marshal(driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
@@ -338,30 +342,6 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	return envMap, nil
 }
 
-// MountHost runs the mount command from the 9p client on the VM to the 9p server on the host
-func MountHost(api libmachine.API, ip net.IP, path, port, mountVersion string, uid, gid, msize int) error {
-	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
-	if err != nil {
-		return errors.Wrap(err, "Error checking that api exists and loading it")
-	}
-	if ip == nil {
-		ip, err = GetVMHostIP(host)
-		if err != nil {
-			return errors.Wrap(err, "Error getting the host IP address to use from within the VM")
-		}
-	}
-	host.RunSSHCommand(GetMountCleanupCommand(path))
-	mountCmd, err := GetMountCommand(ip, path, port, mountVersion, uid, gid, msize)
-	if err != nil {
-		return errors.Wrap(err, "mount command")
-	}
-	_, err = host.RunSSHCommand(mountCmd)
-	if err != nil {
-		return errors.Wrap(err, "running mount")
-	}
-	return nil
-}
-
 // GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
 func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
@@ -392,6 +372,16 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 		return ip, nil
 	case "xhyve", "hyperkit":
 		return net.ParseIP("192.168.64.1"), nil
+	case "vmware":
+		vmIPString, err := host.Driver.GetIP()
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error getting VM IP address")
+		}
+		vmIP := net.ParseIP(vmIPString).To4()
+		if vmIP == nil {
+			return []byte{}, errors.Wrap(err, "Error converting VM IP address to IPv4 address")
+		}
+		return net.IPv4(vmIP[0], vmIP[1], vmIP[2], byte(1)), nil
 	default:
 		return []byte{}, errors.New("Error, attempted to get host ip address for unsupported driver")
 	}
@@ -411,6 +401,7 @@ func getIPForInterface(name string) (net.IP, error) {
 	return nil, errors.Errorf("Error finding IPV4 address for %s", name)
 }
 
+// CheckIfHostExistsAndLoad checks if a host exists, and loads it if it does
 func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
 	exists, err := api.Exists(machineName)
 	if err != nil {
@@ -427,6 +418,7 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 	return host, nil
 }
 
+// CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, args []string) error {
 	machineName := cfg.GetMachineName()
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
@@ -460,39 +452,4 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 	if s != state.Running.String() {
 		exit.WithCode(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
 	}
-}
-
-func GetMountCleanupCommand(path string) string {
-	return fmt.Sprintf("sudo umount %s;", path)
-}
-
-var mountTemplate = `
-sudo mkdir -p {{.Path}} || true;
-sudo mount -t 9p -o trans=tcp,port={{.Port}},dfltuid={{.UID}},dfltgid={{.GID}},version={{.Version}},msize={{.Msize}} {{.IP}} {{.Path}};
-sudo chmod 775 {{.Path}} || true;`
-
-func GetMountCommand(ip net.IP, path, port, mountVersion string, uid, gid, msize int) (string, error) {
-	t := template.Must(template.New("mountCommand").Parse(mountTemplate))
-	buf := bytes.Buffer{}
-	data := struct {
-		IP      string
-		Path    string
-		Port    string
-		Version string
-		UID     int
-		GID     int
-		Msize   int
-	}{
-		IP:      ip.String(),
-		Path:    path,
-		Port:    port,
-		Version: mountVersion,
-		UID:     uid,
-		GID:     gid,
-		Msize:   msize,
-	}
-	if err := t.Execute(&buf, data); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
 }

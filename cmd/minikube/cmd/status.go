@@ -31,15 +31,16 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/util/kubeconfig"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 var statusFormat string
 
+// Status represents the status
 type Status struct {
 	Host       string
 	Kubelet    string
-	ApiServer  string
+	APIServer  string
 	Kubeconfig string
 }
 
@@ -91,14 +92,20 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverSt, err = clusterBootstrapper.GetApiServerStatus(ip)
+			apiserverPort, err := pkgutil.GetPortFromKubeConfig(util.GetKubeConfigPath(), config.GetMachineName())
+			if err != nil {
+				// Fallback to presuming default apiserver port
+				apiserverPort = pkgutil.APIServerPort
+			}
+
+			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, apiserverPort)
 			if err != nil {
 				glog.Errorln("Error apiserver status:", err)
 			} else if apiserverSt != state.Running.String() {
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := kubeconfig.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
+			ks, err := pkgutil.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}
@@ -116,7 +123,7 @@ var statusCmd = &cobra.Command{
 		status := Status{
 			Host:       hostSt,
 			Kubelet:    kubeletSt,
-			ApiServer:  apiserverSt,
+			APIServer:  apiserverSt,
 			Kubeconfig: kubeconfigSt,
 		}
 		tmpl, err := template.New("status").Parse(statusFormat)

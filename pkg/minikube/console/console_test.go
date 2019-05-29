@@ -18,7 +18,9 @@ package console
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"golang.org/x/text/language"
@@ -48,32 +50,38 @@ func (f *fakeFile) String() string {
 func TestOutStyle(t *testing.T) {
 
 	var tests = []struct {
-		style    string
-		envValue string
-		message  string
-		want     string
+		style     string
+		message   string
+		params    []interface{}
+		want      string
+		wantASCII string
 	}{
-		{"happy", "true", "This is happy.", "😄  This is happy.\n"},
-		{"Docker", "true", "This is Docker.", "🐳  This is Docker.\n"},
-		{"option", "true", "This is option.", "    ▪ This is option.\n"},
-
-		{"happy", "false", "This is happy.", "o   This is happy.\n"},
-		{"Docker", "false", "This is Docker.", "-   This is Docker.\n"},
-		{"option", "false", "This is option.", "    - This is option.\n"},
+		{"happy", "Happy", nil, "😄  Happy\n", "* Happy\n"},
+		{"option", "Option", nil, "    ▪ Option\n", "  - Option\n"},
+		{"warning", "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
+		{"fatal", "Fatal: %v", []interface{}{"ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
+		{"waiting-pods", "wait", nil, "⌛  wait", "* wait"},
+		{"issue", "http://i/%d", []interface{}{10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
+		{"usage", "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
 	}
 	for _, tc := range tests {
-		t.Run(tc.style+"-"+tc.envValue, func(t *testing.T) {
-			os.Setenv(OverrideEnv, tc.envValue)
-			f := newFakeFile()
-			SetOutFile(f)
-			if err := OutStyle(tc.style, tc.message); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
-			got := f.String()
-			if got != tc.want {
-				t.Errorf("OutStyle() = %q, want %q", got, tc.want)
-			}
-		})
+		for _, override := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s-override-%v", tc.style, override), func(t *testing.T) {
+				// Set MINIKUBE_IN_STYLE=<override>
+				os.Setenv(OverrideEnv, strconv.FormatBool(override))
+				f := newFakeFile()
+				SetOutFile(f)
+				OutStyle(tc.style, tc.message, tc.params...)
+				got := f.String()
+				want := tc.wantASCII
+				if override {
+					want = tc.want
+				}
+				if got != want {
+					t.Errorf("OutStyle() = %q (%d runes), want %q (%d runes)", got, len(got), want, len(want))
+				}
+			})
+		}
 	}
 }
 
@@ -88,12 +96,13 @@ func TestOut(t *testing.T) {
 	var tests = []struct {
 		format string
 		lang   language.Tag
-		arg    string
+		arg    interface{}
 		want   string
 	}{
 		{format: "xyz123", want: "xyz123"},
 		{format: "Installing Kubernetes version %s ...", lang: language.Arabic, arg: "v1.13", want: "... v1.13 تثبيت Kubernetes الإصدار"},
 		{format: "Installing Kubernetes version %s ...", lang: language.AmericanEnglish, arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
+		{format: "Parameter encoding: %s", arg: "%s%%%d", want: "Parameter encoding: %s%%%d"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.format, func(t *testing.T) {
@@ -101,9 +110,7 @@ func TestOut(t *testing.T) {
 			f := newFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
-			if err := Out(tc.format, tc.arg); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
+			Out(tc.format, tc.arg)
 			got := f.String()
 			if got != tc.want {
 				t.Errorf("Out(%s, %s) = %q, want %q", tc.format, tc.arg, got, tc.want)
@@ -116,13 +123,10 @@ func TestErr(t *testing.T) {
 	os.Setenv(OverrideEnv, "0")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := Err("xyz123\n"); err != nil {
-		t.Errorf("unexpected error: %q", err)
-	}
-
+	Err("xyz123 %s\n", "%s%%%d")
 	OutLn("unrelated message")
 	got := f.String()
-	want := "xyz123\n"
+	want := "xyz123 %s%%%d\n"
 
 	if got != want {
 		t.Errorf("Err() = %q, want %q", got, want)
@@ -133,11 +137,9 @@ func TestErrStyle(t *testing.T) {
 	os.Setenv(OverrideEnv, "1")
 	f := newFakeFile()
 	SetErrFile(f)
-	if err := ErrStyle("fatal", "It broke"); err != nil {
-		t.Errorf("unexpected error: %q", err)
-	}
+	ErrStyle("fatal", "error: %s", "%s%%%d")
 	got := f.String()
-	want := "💣  It broke\n"
+	want := "💣  error: %s%%%d\n"
 	if got != want {
 		t.Errorf("ErrStyle() = %q, want %q", got, want)
 	}
