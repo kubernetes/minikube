@@ -46,6 +46,7 @@ func createHypervHost(config cfg.MachineConfig) interface{} {
 	d.CPU = config.CPUs
 	d.DiskSize = int(config.DiskSize)
 	d.SSHUser = "docker"
+	d.DisableDynamicMemory  = true //default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
 
 	return d
 }
