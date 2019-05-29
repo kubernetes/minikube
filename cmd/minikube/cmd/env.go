@@ -35,7 +35,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -108,16 +107,15 @@ REM @FOR /f "tokens=*" %i IN ('minikube docker-env') DO @%i
 
 // ShellConfig represents the shell config
 type ShellConfig struct {
-	Prefix           string
-	Delimiter        string
-	Suffix           string
-	DockerCertPath   string
-	DockerHost       string
-	DockerTLSVerify  string
-	DockerAPIVersion string
-	UsageHint        string
-	NoProxyVar       string
-	NoProxyValue     string
+	Prefix          string
+	Delimiter       string
+	Suffix          string
+	DockerCertPath  string
+	DockerHost      string
+	DockerTLSVerify string
+	UsageHint       string
+	NoProxyVar      string
+	NoProxyValue    string
 }
 
 var (
@@ -165,11 +163,10 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	shellCfg := &ShellConfig{
-		DockerCertPath:   envMap["DOCKER_CERT_PATH"],
-		DockerHost:       envMap["DOCKER_HOST"],
-		DockerTLSVerify:  envMap["DOCKER_TLS_VERIFY"],
-		DockerAPIVersion: constants.DockerAPIVersion,
-		UsageHint:        generateUsageHint(userShell),
+		DockerCertPath:  envMap["DOCKER_CERT_PATH"],
+		DockerHost:      envMap["DOCKER_HOST"],
+		DockerTLSVerify: envMap["DOCKER_TLS_VERIFY"],
+		UsageHint:       generateUsageHint(userShell),
 	}
 
 	if noProxy {
