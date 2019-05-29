@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"math"
 	"net"
 	"os/exec"
 	"regexp"
@@ -49,8 +50,7 @@ import (
 var (
 	// The maximum the guest VM clock is allowed to be ahead and behind. This value is intentionally
 	// large to allow for inaccurate methodology, but still small enough so that certificates are likely valid.
-	maximumClockAhead  = time.Duration(-2 * time.Millisecond)
-	maximumClockBehind = time.Duration(2 * time.Millisecond)
+	maxClockDesyncSeconds = 0.001
 )
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
@@ -158,8 +158,8 @@ func configureHost(h *host.Host, e *engine.Options) error {
 			glog.Warningf("Unable to measure system clock delta: %v", err)
 			return nil
 		}
-		if d > maximumClockBehind || d < maximumClockAhead {
-			glog.Infof("system clock delta is within tolerence: %s", d)
+		if math.Abs(d.Seconds()) < maxClockDesyncSeconds {
+			glog.Infof("guest clock delta is within tolerance: %s", d)
 			return nil
 		}
 		if err := adjustGuestClock(h, d); err != nil {
@@ -188,7 +188,7 @@ func guestClockDelta(h *host.Host) (time.Duration, error) {
 	if err != nil {
 		return 0, errors.Wrap(err, "atoi")
 	}
-	// In a synced state, "remote" will be ahead of "local" by a few ms
+	// NOTE: In a synced state, remote is a few hundred ms ahead of local
 	remote := time.Unix(secs, nsecs)
 	return remote.Sub(local), nil
 }
