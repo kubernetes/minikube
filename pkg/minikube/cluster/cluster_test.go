@@ -394,10 +394,10 @@ func TestGuestClockDelta(t *testing.T) {
 	if err != nil {
 		t.Fatalf("guestClock: %v", err)
 	}
-	if got > time.Duration(time.Second*0) {
+	if got > (0 * time.Second) {
 		t.Errorf("unexpected positive delta (remote should be behind): %s", got)
 	}
-	if got < time.Duration(time.Second*-1) {
+	if got < (-1 * time.Second) {
 		t.Errorf("unexpectedly negative delta (remote too far behind): %s", got)
 	}
 }
