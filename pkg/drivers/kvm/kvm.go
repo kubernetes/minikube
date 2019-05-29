@@ -451,7 +451,11 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "destroying running domain")
 	}
 
-	return dom.Undefine()
+	if err := d.undefineDomain(conn, dom); err != nil {
+		return errors.Wrap(err, "undefine domain")
+	}
+
+	return nil
 }
 
 func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
@@ -466,4 +470,26 @@ func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
 	}
 
 	return dom.Destroy()
+}
+
+func (d *Driver) undefineDomain(conn *libvirt.Connect, dom *libvirt.Domain) error {
+	definedDomains, err := conn.ListDefinedDomains()
+	if err != nil {
+		return errors.Wrap(err, "list defined domains")
+	}
+
+	var found bool
+	for _, domain := range definedDomains {
+		if domain == d.MachineName {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		log.Warnf("Domain %s not defined, skipping undefine...", d.MachineName)
+		return nil
+	}
+
+	return dom.Undefine()
 }
