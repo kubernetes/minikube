@@ -47,6 +47,11 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
+// hostRunner is a minimal host.Host based interface for running commands
+type hostRunner interface {
+	RunSSHCommand(string) (string, error)
+}
+
 var (
 	// The maximum the guest VM clock is allowed to be ahead and behind. This value is intentionally
 	// large to allow for inaccurate methodology, but still small enough so that certificates are likely valid.
@@ -153,7 +158,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
-		d, err := guestClockDelta(h)
+		d, err := guestClockDelta(h, time.Now())
 		if err != nil {
 			glog.Warningf("Unable to measure system clock delta: %v", err)
 			return nil
@@ -172,8 +177,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 
 // systemClockDelta returns the approximate difference between the host and guest system clock
 // NOTE: This does not currently take into account ssh latency.
-func guestClockDelta(h *host.Host) (time.Duration, error) {
-	local := time.Now()
+func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	out, err := h.RunSSHCommand("date +%s.%N")
 	if err != nil {
 		return 0, errors.Wrap(err, "get clock")
@@ -194,7 +198,7 @@ func guestClockDelta(h *host.Host) (time.Duration, error) {
 }
 
 // adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
-func adjustGuestClock(h *host.Host, d time.Duration) error {
+func adjustGuestClock(h hostRunner, d time.Duration) error {
 	glog.Infof("Adjusting guest system clock by %s", d)
 	_, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", time.Now().Add(d).Unix()))
 	return err
