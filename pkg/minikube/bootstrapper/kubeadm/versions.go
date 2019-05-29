@@ -161,7 +161,7 @@ func Supports(featureName string) bool {
 
 // ParseKubernetesVersion validates the kubernetes version as legitimate
 func ParseKubernetesVersion(input string) (semver.Version, error) {
-	if input[0] != version.VersionPrefix {
+	if !strings.HasPrefix(input, version.VersionPrefix) {
 		return semver.Version{}, fmt.Errorf("version numbers must begin with %v", version.VersionPrefix)
 	}
 
