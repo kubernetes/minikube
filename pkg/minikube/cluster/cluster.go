@@ -50,7 +50,7 @@ import (
 var (
 	// The maximum the guest VM clock is allowed to be ahead and behind. This value is intentionally
 	// large to allow for inaccurate methodology, but still small enough so that certificates are likely valid.
-	maxClockDesyncSeconds = 0.001
+	maxClockDesyncSeconds = 2.1
 )
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
