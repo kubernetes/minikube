@@ -48,7 +48,7 @@ const (
 	Issues
 	Issue
 	Check
-	IsoDownload
+	ISODownload
 	FileDownload
 	Caching
 	StartingVM
@@ -62,7 +62,7 @@ const (
 	Celebrate
 	ContainerRuntime
 	Docker
-	Crio
+	CRIO
 	Containerd
 	Permissions
 	Enabling

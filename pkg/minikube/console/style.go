@@ -78,7 +78,7 @@ var styles = map[StyleEnum]style{
 	Check:         {Prefix: "✔️  "},
 
 	// Specialized purpose styles
-	IsoDownload:      {Prefix: "💿  "},
+	ISODownload:      {Prefix: "💿  "},
 	FileDownload:     {Prefix: "💾  "},
 	Caching:          {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
@@ -92,7 +92,7 @@ var styles = map[StyleEnum]style{
 	Celebrate:        {Prefix: "🎉  "},
 	ContainerRuntime: {Prefix: "🎁  "},
 	Docker:           {Prefix: "🐳  "},
-	Crio:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
+	CRIO:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
 	Containerd:       {Prefix: "📦  "},
 	Permissions:      {Prefix: "🔑  "},
 	Enabling:         {Prefix: "🔌  "},
