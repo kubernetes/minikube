@@ -84,12 +84,11 @@ func publicSSHKeyPath(d *drivers.BaseDriver) string {
 // Restart a host. This may just call Stop(); Start() if the provider does not
 // have any special restart behaviour.
 func Restart(d drivers.Driver) error {
-	for _, f := range []func() error{d.Stop, d.Start} {
-		if err := f(); err != nil {
-			return err
-		}
+	if err := d.Stop(); err != nil {
+		return err
 	}
-	return nil
+
+	return d.Start()
 }
 
 // MakeDiskImage makes a boot2docker VM disk image.
