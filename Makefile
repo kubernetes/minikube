@@ -209,6 +209,7 @@ checksum:
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f pkg/minikube/assets/assets.go
+	rm -rf ./vendor
 
 .PHONY: gendocs
 gendocs: out/docs/minikube.md
