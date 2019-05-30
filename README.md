@@ -21,13 +21,15 @@ minikube's [primary goals](https://github.com/kubernetes/minikube/blob/master/do
 
 ## News
 
+:mega: **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! :dancers:
+
 * 2019-05-21 - v1.1.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.1.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-110---2019-05-21)]
 * 2019-04-29 - v1.0.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.0.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-101---2019-04-29)]
 * 2019-03-27 - v1.0.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.0.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-1000---2019-03-27)]
 
 ## Features
 
-minikube runs the official stable release of Kubernetes, with support for standard Kubernetes features like:
+minikube runs the latest stable release of Kubernetes, with support for standard Kubernetes features like:
 
 * [LoadBalancer](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md) - using `minikube tunnel`
 * Multi-cluster - using `minikube start -p <name>`
