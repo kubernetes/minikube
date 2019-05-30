@@ -75,7 +75,7 @@ func WithProblem(msg string, p *problem.Problem) {
 	p.Display()
 	console.Err("\n")
 	console.ErrStyle(console.Sad, "If the above advice does not help, please let us know: ")
-	console.ErrStyle(console.Url, "https://github.com/kubernetes/minikube/issues/new")
+	console.ErrStyle(console.URL, "https://github.com/kubernetes/minikube/issues/new")
 	os.Exit(Config)
 }
 
@@ -102,5 +102,5 @@ func displayError(msg string, err error) {
 	console.Fatal(msg+": %v", err)
 	console.Err("\n")
 	console.ErrStyle(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
-	console.ErrStyle(console.Url, "https://github.com/kubernetes/minikube/issues/new")
+	console.ErrStyle(console.URL, "https://github.com/kubernetes/minikube/issues/new")
 }
