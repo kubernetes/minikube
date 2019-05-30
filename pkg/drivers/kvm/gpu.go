@@ -174,7 +174,7 @@ func isIsolated(device string) bool {
 	iommuGroupPath := filepath.Join(sysFsPCIDevicesPath, device, "iommu_group", "devices")
 	otherDevices, err := ioutil.ReadDir(iommuGroupPath)
 	if err != nil {
-		log.Infof("Error reading %q: %v", iommuGroupPath)
+		log.Infof("Error reading %q: %v", iommuGroupPath, err)
 		return false
 	}
 
