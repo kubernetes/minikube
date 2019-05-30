@@ -107,7 +107,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		console.Warning("Alternatively, you may delete the existing VM using `minikube delete -p %s`", cfg.GetMachineName())
 		console.Out("\n")
 	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
-		console.OutStyle("tip", "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
+		console.OutStyle(console.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
 	s, err := h.Driver.GetState()
@@ -117,9 +117,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		console.OutStyle("running", "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		console.OutStyle(console.Running, "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
 	} else {
-		console.OutStyle("restarting", "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		console.OutStyle(console.Restarting, "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -141,7 +141,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	console.OutStyle("waiting", "Waiting for SSH access ...")
+	console.OutStyle(console.Waiting, "Waiting for SSH access ...")
 
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
@@ -224,7 +224,7 @@ func trySSHPowerOff(h *host.Host) {
 		return
 	}
 
-	console.OutStyle("shutdown", "Powering off %q via SSH ...", cfg.GetMachineName())
+	console.OutStyle(console.Shutdown, "Powering off %q via SSH ...", cfg.GetMachineName())
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
@@ -236,7 +236,7 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
-	console.OutStyle("stopping", "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
+	console.OutStyle(console.Stopping, "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
@@ -258,7 +258,7 @@ func DeleteHost(api libmachine.API) error {
 		trySSHPowerOff(host)
 	}
 
-	console.OutStyle("deleting-host", "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
+	console.OutStyle(console.DeletingHost, "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
@@ -346,7 +346,7 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	preCreateHost(&config)
-	console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	console.OutStyle(console.StartingVm, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {

@@ -47,67 +47,67 @@ type style struct {
 
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
-var styles = map[string]style{
-	"happy":         {Prefix: "😄  "},
-	"success":       {Prefix: "✅  "},
-	"failure":       {Prefix: "❌  "},
-	"conflict":      {Prefix: "💥  ", LowPrefix: lowWarning},
-	"fatal":         {Prefix: "💣  ", LowPrefix: lowError},
-	"notice":        {Prefix: "📌  "},
-	"ready":         {Prefix: "🏄  "},
-	"running":       {Prefix: "🏃  "},
-	"provisioning":  {Prefix: "🌱  "},
-	"restarting":    {Prefix: "🔄  "},
-	"reconfiguring": {Prefix: "📯  "},
-	"stopping":      {Prefix: "✋  "},
-	"stopped":       {Prefix: "🛑  "},
-	"warning":       {Prefix: "⚠️  ", LowPrefix: lowWarning},
-	"waiting":       {Prefix: "⌛  "},
-	"waiting-pods":  {Prefix: "⌛  ", OmitNewline: true},
-	"usage":         {Prefix: "💡  "},
-	"launch":        {Prefix: "🚀  "},
-	"sad":           {Prefix: "😿  "},
-	"thumbs-up":     {Prefix: "👍  "},
-	"option":        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	"command":       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	"log-entry":     {Prefix: "    "},                         // Indent
-	"crushed":       {Prefix: "💔  "},
-	"url":           {Prefix: "👉  ", LowPrefix: lowIndent},
-	"documentation": {Prefix: "📘  "},
-	"issues":        {Prefix: "⁉️   "},
-	"issue":         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	"check":         {Prefix: "✔️  "},
+var styles = map[StyleEnum]style{
+	Happy:         {Prefix: "😄  "},
+	SuccessType:   {Prefix: "✅  "},
+	FailureType:   {Prefix: "❌  "},
+	Conflict:      {Prefix: "💥  ", LowPrefix: lowWarning},
+	FatalType:     {Prefix: "💣  ", LowPrefix: lowError},
+	Notice:        {Prefix: "📌  "},
+	Ready:         {Prefix: "🏄  "},
+	Running:       {Prefix: "🏃  "},
+	Provisioning:  {Prefix: "🌱  "},
+	Restarting:    {Prefix: "🔄  "},
+	Reconfiguring: {Prefix: "📯  "},
+	Stopping:      {Prefix: "✋  "},
+	Stopped:       {Prefix: "🛑  "},
+	WarningType:   {Prefix: "⚠️  ", LowPrefix: lowWarning},
+	Waiting:       {Prefix: "⌛  "},
+	WaitingPods:   {Prefix: "⌛  ", OmitNewline: true},
+	Usage:         {Prefix: "💡  "},
+	Launch:        {Prefix: "🚀  "},
+	Sad:           {Prefix: "😿  "},
+	ThumbsUp:      {Prefix: "👍  "},
+	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
+	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
+	LogEntry:      {Prefix: "    "},                         // Indent
+	Crushed:       {Prefix: "💔  "},
+	Url:           {Prefix: "👉  ", LowPrefix: lowIndent},
+	Documentation: {Prefix: "📘  "},
+	Issues:        {Prefix: "⁉️   "},
+	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
+	Check:         {Prefix: "✔️  "},
 
 	// Specialized purpose styles
-	"iso-download":      {Prefix: "💿  "},
-	"file-download":     {Prefix: "💾  "},
-	"caching":           {Prefix: "🤹  "},
-	"starting-vm":       {Prefix: "🔥  "},
-	"starting-none":     {Prefix: "🤹  "},
-	"resetting":         {Prefix: "🔄  "},
-	"deleting-host":     {Prefix: "🔥  "},
-	"copying":           {Prefix: "✨  "},
-	"connectivity":      {Prefix: "📶  "},
-	"internet":          {Prefix: "🌐  "},
-	"mounting":          {Prefix: "📁  "},
-	"celebrate":         {Prefix: "🎉  "},
-	"container-runtime": {Prefix: "🎁  "},
-	"Docker":            {Prefix: "🐳  "},
-	"CRI-O":             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
-	"containerd":        {Prefix: "📦  "},
-	"permissions":       {Prefix: "🔑  "},
-	"enabling":          {Prefix: "🔌  "},
-	"shutdown":          {Prefix: "🛑  "},
-	"pulling":           {Prefix: "🚜  "},
-	"verifying":         {Prefix: "🤔  "},
-	"verifying-noline":  {Prefix: "🤔  ", OmitNewline: true},
-	"kubectl":           {Prefix: "💗  "},
-	"meh":               {Prefix: "🙄  ", LowPrefix: lowWarning},
-	"embarrassed":       {Prefix: "🤦  ", LowPrefix: lowWarning},
-	"tip":               {Prefix: "💡  "},
-	"unmount":           {Prefix: "🔥  "},
-	"mount-options":     {Prefix: "💾  "},
-	"fileserver":        {Prefix: "🚀  ", OmitNewline: true},
+	IsoDownload:      {Prefix: "💿  "},
+	FileDownload:     {Prefix: "💾  "},
+	Caching:           {Prefix: "🤹  "},
+	StartingVm:       {Prefix: "🔥  "},
+	StartingNone:     {Prefix: "🤹  "},
+	Resetting:         {Prefix: "🔄  "},
+	DeletingHost:     {Prefix: "🔥  "},
+	Copying:           {Prefix: "✨  "},
+	Connectivity:      {Prefix: "📶  "},
+	Internet:          {Prefix: "🌐  "},
+	Mounting:          {Prefix: "📁  "},
+	Celebrate:         {Prefix: "🎉  "},
+	ContainerRuntime: {Prefix: "🎁  "},
+	Docker:            {Prefix: "🐳  "},
+	Crio:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
+	Containerd:        {Prefix: "📦  "},
+	Permissions:       {Prefix: "🔑  "},
+	Enabling:          {Prefix: "🔌  "},
+	Shutdown:          {Prefix: "🛑  "},
+	Pulling:           {Prefix: "🚜  "},
+	Verifying:         {Prefix: "🤔  "},
+	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
+	Kubectl:           {Prefix: "💗  "},
+	Meh:               {Prefix: "🙄  ", LowPrefix: lowWarning},
+	Embarrassed:       {Prefix: "🤦  ", LowPrefix: lowWarning},
+	Tip:               {Prefix: "💡  "},
+	Unmount:           {Prefix: "🔥  "},
+	MountOptions:     {Prefix: "💾  "},
+	Fileserver:        {Prefix: "🚀  ", OmitNewline: true},
 }
 
 // Add a prefix to a string
@@ -119,7 +119,7 @@ func applyPrefix(prefix, format string) string {
 	return prefix + format
 }
 
-func hasStyle(style string) bool {
+func hasStyle(style StyleEnum) bool {
 	_, exists := styles[style]
 	return exists
 }
@@ -136,7 +136,7 @@ func lowPrefix(s style) string {
 }
 
 // Apply styling to a format string
-func applyStyle(style string, useColor bool, format string, a ...interface{}) (string, error) {
+func applyStyle(style StyleEnum, useColor bool, format string, a ...interface{}) (string, error) {
 	p := message.NewPrinter(preferredLanguage)
 	for i, x := range a {
 		if _, ok := x.(int); ok {

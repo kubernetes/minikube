@@ -82,7 +82,7 @@ var dashboardCmd = &cobra.Command{
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
 		// Send status messages to stderr for folks re-using this output.
-		console.ErrStyle("enabling", "Enabling dashboard ...")
+		console.ErrStyle(console.Enabling, "Enabling dashboard ...")
 		// Enable the dashboard add-on
 		err = configcmd.Set("dashboard", "true")
 		if err != nil {
@@ -91,19 +91,19 @@ var dashboardCmd = &cobra.Command{
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
-		console.ErrStyle("verifying", "Verifying dashboard health ...")
+		console.ErrStyle(console.Verifying, "Verifying dashboard health ...")
 		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
 			exit.WithCode(exit.Unavailable, "%s:%s is not running: %v", ns, svc, err)
 		}
 
-		console.ErrStyle("launch", "Launching proxy ...")
+		console.ErrStyle(console.Launch, "Launching proxy ...")
 		p, hostPort, err := kubectlProxy(kubectl)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
-		console.ErrStyle("verifying", "Verifying proxy health ...")
+		console.ErrStyle(console.Verifying, "Verifying proxy health ...")
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
 			exit.WithCode(exit.Unavailable, "%s is not responding properly: %v", url, err)
 		}
@@ -111,7 +111,7 @@ var dashboardCmd = &cobra.Command{
 		if dashboardURLMode {
 			console.OutLn(url)
 		} else {
-			console.ErrStyle("celebrate", "Opening %s in your default browser...", url)
+			console.ErrStyle(console.Celebrate, "Opening %s in your default browser...", url)
 			if err = browser.OpenURL(url); err != nil {
 				console.Failure("failed to open browser: %v", err)
 			}
