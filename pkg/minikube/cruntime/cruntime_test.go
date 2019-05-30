@@ -47,7 +47,7 @@ func TestName(t *testing.T) {
 			if got != tc.want {
 				t.Errorf("Name(%s) = %q, want: %q", tc.runtime, got, tc.want)
 			}
-			if !console.HasStyle(got) {
+			if !console.HasStyle(r.Style()) {
 				t.Fatalf("console.HasStyle(%s): %v", got, false)
 			}
 		})

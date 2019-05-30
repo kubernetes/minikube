@@ -22,6 +22,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/console"
 )
 
 // CommandRunner is the subset of bootstrapper.CommandRunner this package consumes
@@ -44,6 +45,8 @@ type Manager interface {
 	Active() bool
 	// Available returns an error if it is not possible to use this runtime on a host
 	Available() error
+	// Style is an associated StyleEnum for Name()
+	Style() console.StyleEnum
 
 	// KubeletOptions returns kubelet options for a runtime.
 	KubeletOptions() map[string]string

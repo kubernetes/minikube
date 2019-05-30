@@ -259,7 +259,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		if urlMode || !isHTTPSchemedURL {
 			console.OutLn(urlString)
 		} else {
-			console.OutStyle("celebrate", "Opening kubernetes service %s/%s in default browser...", namespace, service)
+			console.OutStyle(console.Celebrate, "Opening kubernetes service %s/%s in default browser...", namespace, service)
 			if err := browser.OpenURL(urlString); err != nil {
 				console.Err("browser failed to open url: %v", err)
 			}
