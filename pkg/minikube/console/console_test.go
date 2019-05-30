@@ -66,7 +66,7 @@ func TestOutStyle(t *testing.T) {
 	}
 	for _, tc := range tests {
 		for _, override := range []bool{true, false} {
-			t.Run(fmt.Sprintf("%s-override-%v", tc.style, override), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s-override-%v", tc.message, override), func(t *testing.T) {
 				// Set MINIKUBE_IN_STYLE=<override>
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := newFakeFile()

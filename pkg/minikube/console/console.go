@@ -71,10 +71,7 @@ func HasStyle(style StyleEnum) bool {
 
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style StyleEnum, format string, a ...interface{}) {
-	outStyled, err := applyStyle(style, useColor, format, a...)
-	if err != nil {
-		glog.Errorf("applyStyle(%s): %v", style, err)
-	}
+	outStyled := applyStyle(style, useColor, format, a...)
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line
@@ -102,11 +99,7 @@ func OutLn(format string, a ...interface{}) {
 
 // ErrStyle writes a stylized and formatted error message to stderr
 func ErrStyle(style StyleEnum, format string, a ...interface{}) {
-	format, err := applyStyle(style, useColor, format, a...)
-	if err != nil {
-		glog.Errorf("applyStyle(%s): %v", style, err)
-		ErrLn(format, a...)
-	}
+	format = applyStyle(style, useColor, format, a...)
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line

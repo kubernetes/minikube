@@ -17,7 +17,6 @@ limitations under the License.
 package console
 
 import (
-	"fmt"
 	"strings"
 
 	"golang.org/x/text/message"
@@ -136,7 +135,7 @@ func lowPrefix(s style) string {
 }
 
 // Apply styling to a format string
-func applyStyle(style StyleEnum, useColor bool, format string, a ...interface{}) (string, error) {
+func applyStyle(style StyleEnum, useColor bool, format string, a ...interface{}) string {
 	p := message.NewPrinter(preferredLanguage)
 	for i, x := range a {
 		if _, ok := x.(int); ok {
@@ -152,11 +151,11 @@ func applyStyle(style StyleEnum, useColor bool, format string, a ...interface{})
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
 	if !ok {
-		return p.Sprintf(format, a...), fmt.Errorf("unknown style: %q", style)
+		return p.Sprintf(format, a...)
 	}
 
 	if !useColor {
-		return applyPrefix(lowPrefix(s), out), nil
+		return applyPrefix(lowPrefix(s), out)
 	}
-	return applyPrefix(s.Prefix, out), nil
+	return applyPrefix(s.Prefix, out)
 }
