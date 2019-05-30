@@ -37,7 +37,7 @@ func (r *CRIO) Name() string {
 
 // Name is a human readable name for CRIO
 func (r *CRIO) Style() console.StyleEnum {
-	return console.Crio
+	return console.CRIO
 }
 
 // Version retrieves the current version of this runtime
