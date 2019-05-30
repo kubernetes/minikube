@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"time"
@@ -32,9 +33,11 @@ import (
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util"
 )
@@ -52,11 +55,19 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+		cc, err := pkg_config.Load()
+		if err != nil && !os.IsNotExist(err) {
+			console.ErrLn("Error loading profile config: %v", err)
+		}
+		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
+		if err != nil {
+			glog.Errorf("Error excluding IP from proxy: %s", err)
+		}
+
 		kubectl, err := exec.LookPath("kubectl")
 		if err != nil {
 			exit.WithCode(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
-
 		api, err := machine.NewAPIClient()
 		defer func() {
 			err := api.Close()
@@ -71,7 +82,7 @@ var dashboardCmd = &cobra.Command{
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
 		// Send status messages to stderr for folks re-using this output.
-		console.ErrStyle("enabling", "Enabling dashboard ...")
+		console.ErrStyle(console.Enabling, "Enabling dashboard ...")
 		// Enable the dashboard add-on
 		err = configcmd.Set("dashboard", "true")
 		if err != nil {
@@ -80,19 +91,19 @@ var dashboardCmd = &cobra.Command{
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
-		console.ErrStyle("verifying", "Verifying dashboard health ...")
+		console.ErrStyle(console.Verifying, "Verifying dashboard health ...")
 		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
 			exit.WithCode(exit.Unavailable, "%s:%s is not running: %v", ns, svc, err)
 		}
 
-		console.ErrStyle("launch", "Launching proxy ...")
+		console.ErrStyle(console.Launch, "Launching proxy ...")
 		p, hostPort, err := kubectlProxy(kubectl)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
-		console.ErrStyle("verifying", "Verifying proxy health ...")
+		console.ErrStyle(console.Verifying, "Verifying proxy health ...")
 		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
 			exit.WithCode(exit.Unavailable, "%s is not responding properly: %v", url, err)
 		}
@@ -100,7 +111,7 @@ var dashboardCmd = &cobra.Command{
 		if dashboardURLMode {
 			console.OutLn(url)
 		} else {
-			console.ErrStyle("celebrate", "Opening %s in your default browser...", url)
+			console.ErrStyle(console.Celebrate, "Opening %s in your default browser...", url)
 			if err = browser.OpenURL(url); err != nil {
 				console.Failure("failed to open browser: %v", err)
 			}
@@ -117,7 +128,9 @@ var dashboardCmd = &cobra.Command{
 func kubectlProxy(path string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 	// config.GetMachineName() respects the -p (profile) flag
+
 	cmd := exec.Command(path, "--context", config.GetMachineName(), "proxy", "--port=0")
+
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, "", errors.Wrap(err, "cmd stdout")

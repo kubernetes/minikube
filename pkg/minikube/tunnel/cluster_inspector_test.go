@@ -19,6 +19,8 @@ package tunnel
 import (
 	"testing"
 
+	"k8s.io/minikube/pkg/util"
+
 	"net"
 	"reflect"
 	"strings"
@@ -78,10 +80,15 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 
 	ip := net.ParseIP("1.2.3.4")
 	_, ipNet, _ := net.ParseCIDR("96.0.0.0/12")
+	dnsIP, err := util.GetDNSIP(ipNet.String())
+	if err != nil {
+		t.Errorf("getdnsIP: %v", err)
+	}
 
 	expectedRoute := &Route{
-		Gateway:  ip,
-		DestCIDR: ipNet,
+		Gateway:      ip,
+		DestCIDR:     ipNet,
+		ClusterDNSIP: dnsIP,
 	}
 
 	if s != Running {

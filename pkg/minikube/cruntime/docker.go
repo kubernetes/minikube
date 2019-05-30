@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/console"
 )
 
 // Docker contains Docker runtime state
@@ -33,6 +34,11 @@ type Docker struct {
 // Name is a human readable name for Docker
 func (r *Docker) Name() string {
 	return "Docker"
+}
+
+// Name is a human readable name for Docker
+func (r *Docker) Style() console.StyleEnum {
+	return console.Docker
 }
 
 // Version retrieves the current version of this runtime

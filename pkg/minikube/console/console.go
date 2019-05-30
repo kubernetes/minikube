@@ -18,6 +18,7 @@ limitations under the License.
 package console
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -34,7 +35,7 @@ import (
 //
 // console.SetOutFile(os.Stdout)
 // console.Out("Starting up!")
-// console.OutStyle("status-change", "Configuring things")
+// console.OutStyle(console.StatusChange, "Configuring things")
 
 // console.SetErrFile(os.Stderr)
 // console.Fatal("Oh no, everything failed.")
@@ -58,17 +59,9 @@ type fdWriter interface {
 	Fd() uintptr
 }
 
-// HasStyle checks if a style exists
-func HasStyle(style string) bool {
-	return hasStyle(style)
-}
-
 // OutStyle writes a stylized and formatted message to stdout
-func OutStyle(style, format string, a ...interface{}) {
-	outStyled, err := applyStyle(style, useColor, format, a...)
-	if err != nil {
-		glog.Errorf("applyStyle(%s): %v", style, err)
-	}
+func OutStyle(style StyleEnum, format string, a ...interface{}) {
+	outStyled := applyStyle(style, useColor, format, a...)
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line
@@ -80,7 +73,7 @@ func OutStyle(style, format string, a ...interface{}) {
 func Out(format string, a ...interface{}) {
 	p := message.NewPrinter(translate.GetPreferredLanguage())
 	if outFile == nil {
-		glog.Errorf("no output file has been set")
+		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 	_, err := p.Fprintf(outFile, format, a...)
@@ -95,12 +88,8 @@ func OutLn(format string, a ...interface{}) {
 }
 
 // ErrStyle writes a stylized and formatted error message to stderr
-func ErrStyle(style, format string, a ...interface{}) {
-	format, err := applyStyle(style, useColor, format, a...)
-	if err != nil {
-		glog.Errorf("applyStyle(%s): %v", style, err)
-		ErrLn(format, a...)
-	}
+func ErrStyle(style StyleEnum, format string, a ...interface{}) {
+	format = applyStyle(style, useColor, format, a...)
 
 	// escape any outstanding '%' signs so that they don't get interpreted
 	// as a formatting directive down the line
@@ -112,7 +101,7 @@ func ErrStyle(style, format string, a ...interface{}) {
 func Err(format string, a ...interface{}) {
 	p := message.NewPrinter(translate.GetPreferredLanguage())
 	if errFile == nil {
-		glog.Errorf("no error file has been set")
+		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 	_, err := p.Fprintf(errFile, format, a...)
@@ -128,22 +117,22 @@ func ErrLn(format string, a ...interface{}) {
 
 // Success is a shortcut for writing a styled success message to stdout
 func Success(format string, a ...interface{}) {
-	OutStyle("success", format, a...)
+	OutStyle(SuccessType, format, a...)
 }
 
 // Fatal is a shortcut for writing a styled fatal message to stderr
 func Fatal(format string, a ...interface{}) {
-	ErrStyle("fatal", format, a...)
+	ErrStyle(FatalType, format, a...)
 }
 
 // Warning is a shortcut for writing a styled warning message to stderr
 func Warning(format string, a ...interface{}) {
-	ErrStyle("warning", format, a...)
+	ErrStyle(WarningType, format, a...)
 }
 
 // Failure is a shortcut for writing a styled failure message to stderr
 func Failure(format string, a ...interface{}) {
-	ErrStyle("failure", format, a...)
+	ErrStyle(FailureType, format, a...)
 }
 
 // SetOutFile configures which writer standard output goes to.

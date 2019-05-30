@@ -54,12 +54,8 @@ Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/
 
 ## Tag the Release
 
-NOTE: Confirm that all release-related PR's have been submitted before doing this step.
-
-Do this in a direct clone of the upstream kubernetes/minikube repository (not your fork!):
-
 ```shell
-hack/tag_release.sh <new version number>
+sh hack/tag_release.sh 1.<minor>.<patch>
 ```
 
 ## Build the Release
@@ -75,7 +71,7 @@ This step uses the git tag to publish new binaries to GCS and create a github re
 
 ## Check the release logs
 
-Once the release completes, click "Console Output" to look or anything unusual. This is typically where you will see the brew automation fail, for instance.
+After job completion, click "Console Output" to verify that the release completed without errors. This is typically where one  will see brew automation fail, for instance.
 
 ## Check releases.json
 

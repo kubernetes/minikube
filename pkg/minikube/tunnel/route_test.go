@@ -20,6 +20,8 @@ import (
 	"net"
 	"reflect"
 	"testing"
+
+	"k8s.io/minikube/pkg/util"
 )
 
 func TestRoutingTable(t *testing.T) {
@@ -130,10 +132,12 @@ got
 func unsafeParseRoute(gatewayIP string, destCIDR string) *Route {
 	ip := net.ParseIP(gatewayIP)
 	_, ipNet, _ := net.ParseCIDR(destCIDR)
+	dnsIP, _ := util.GetDNSIP(ipNet.String())
 
 	expectedRoute := &Route{
-		Gateway:  ip,
-		DestCIDR: ipNet,
+		Gateway:      ip,
+		DestCIDR:     ipNet,
+		ClusterDNSIP: dnsIP,
 	}
 	return expectedRoute
 }

@@ -51,21 +51,21 @@ type match struct {
 
 // Display problem metadata to the console
 func (p *Problem) Display() {
-	console.ErrStyle("failure", "Error:         [%s] %v", p.ID, p.Err)
-	console.ErrStyle("tip", "Advice:        %s", p.Advice)
+	console.ErrStyle(console.FailureType, "Error:         [%s] %v", p.ID, p.Err)
+	console.ErrStyle(console.Tip, "Advice:        %s", p.Advice)
 	if p.URL != "" {
-		console.ErrStyle("documentation", "Documentation: %s", p.URL)
+		console.ErrStyle(console.Documentation, "Documentation: %s", p.URL)
 	}
 	if len(p.Issues) == 0 {
 		return
 	}
-	console.ErrStyle("issues", "Related issues:")
+	console.ErrStyle(console.Issues, "Related issues:")
 	issues := p.Issues
 	if len(issues) > 3 {
 		issues = issues[0:3]
 	}
 	for _, i := range issues {
-		console.ErrStyle("issue", "%s/%d", issueBase, i)
+		console.ErrStyle(console.Issue, "%s/%d", issueBase, i)
 	}
 }
 

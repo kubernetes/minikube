@@ -78,3 +78,57 @@ func TestValidFlags(t *testing.T) {
 		}
 	}
 }
+
+func TestGet(t *testing.T) {
+	extraOptions := ExtraOptionSlice{
+		ExtraOption{Component: "c1", Key: "bar", Value: "c1-bar"},
+		ExtraOption{Component: "c1", Key: "bar-baz", Value: "c1-bar-baz"},
+		ExtraOption{Component: "c2", Key: "bar", Value: "c2-bar"},
+		ExtraOption{Component: "c3", Key: "bar", Value: "c3-bar"},
+	}
+
+	for _, tc := range []struct {
+		searchKey       string
+		searchComponent []string
+		expRes          string
+		values          ExtraOptionSlice
+	}{
+		{"nonexistent", nil, "", extraOptions},
+		{"nonexistent", []string{"c1"}, "", extraOptions},
+		{"bar", []string{"c2"}, "c2-bar", extraOptions},
+		{"bar", []string{"c2", "c3"}, "c2-bar", extraOptions},
+		{"bar", nil, "c1-bar", extraOptions},
+	} {
+		if res := tc.values.Get(tc.searchKey, tc.searchComponent...); res != tc.expRes {
+			t.Errorf("Unexpected value. Expected %s, got %s", tc.expRes, res)
+		}
+	}
+}
+
+func TestAsMap(t *testing.T) {
+	extraOptions := ExtraOptionSlice{
+		ExtraOption{Component: "c1", Key: "bar", Value: "c1-bar"},
+		ExtraOption{Component: "c1", Key: "bar-baz", Value: "c1-bar-baz"},
+		ExtraOption{Component: "c2", Key: "bar", Value: "c2-bar"},
+		ExtraOption{Component: "c3", Key: "bar", Value: "c3-bar"},
+	}
+
+	expectedRes := ComponentExtraOptionMap{
+		"c1": {
+			"bar":     "c1-bar",
+			"bar-baz": "c1-bar-baz",
+		},
+		"c2": {
+			"bar": "c2-bar",
+		},
+		"c3": {
+			"bar": "c3-bar",
+		},
+	}
+
+	res := extraOptions.AsMap()
+
+	if !reflect.DeepEqual(expectedRes, res) {
+		t.Errorf("Unexpected value. Expected %s, got %s", expectedRes, res)
+	}
+}
