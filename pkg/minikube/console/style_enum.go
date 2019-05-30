@@ -17,6 +17,7 @@ limitations under the License.
 package console
 
 type StyleEnum int
+
 const (
 	Happy StyleEnum = iota
 	SuccessType
@@ -42,7 +43,7 @@ const (
 	Command
 	LogEntry
 	Crushed
-	Url
+	URL
 	Documentation
 	Issues
 	Issue
@@ -50,7 +51,7 @@ const (
 	IsoDownload
 	FileDownload
 	Caching
-	StartingVm
+	StartingVM
 	StartingNone
 	Resetting
 	DeletingHost
@@ -103,7 +104,7 @@ func (style StyleEnum) String() string {
 		"Command",
 		"LogEntry",
 		"Crushed",
-		"Url",
+		"URL",
 		"Documentation",
 		"Issues",
 		"Issue",
@@ -111,7 +112,7 @@ func (style StyleEnum) String() string {
 		"IsoDownload",
 		"FileDownload",
 		"Caching",
-		"StartingVm",
+		"StartingVM",
 		"StartingNone",
 		"Resetting",
 		"DeletingHost",
@@ -122,7 +123,7 @@ func (style StyleEnum) String() string {
 		"Celebrate",
 		"ContainerRuntime",
 		"Docker",
-		"Crio", 
+		"Crio",
 		"Containerd",
 		"Permissions",
 		"Enabling",
@@ -131,14 +132,14 @@ func (style StyleEnum) String() string {
 		"Verifying",
 		"VerifyingNoLine",
 		"Kubectl",
-		"Meh",  
+		"Meh",
 		"Embarrassed",
-		"Tip",  
+		"Tip",
 		"Unmount",
 		"MountOptions",
 		"Fileserver"}
 
-	if style > Fileserver{
+	if style > Fileserver {
 		return "Unknown"
 	}
 

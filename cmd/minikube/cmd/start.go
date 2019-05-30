@@ -492,7 +492,7 @@ func prepareNone() {
 		console.OutLn("")
 		console.Warning("The 'none' driver provides limited isolation and may reduce system security and reliability.")
 		console.Warning("For more information, see:")
-		console.OutStyle(console.Url, "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
+		console.OutStyle(console.URL, "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
 		console.OutLn("")
 	}
 

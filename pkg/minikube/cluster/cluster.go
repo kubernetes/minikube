@@ -346,7 +346,7 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	preCreateHost(&config)
-	console.OutStyle(console.StartingVm, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
