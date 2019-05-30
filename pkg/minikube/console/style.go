@@ -118,11 +118,6 @@ func applyPrefix(prefix, format string) string {
 	return prefix + format
 }
 
-func hasStyle(style StyleEnum) bool {
-	_, exists := styles[style]
-	return exists
-}
-
 // lowPrefix returns a 7-bit compatible prefix for a style
 func lowPrefix(s style) string {
 	if s.LowPrefix != "" {
