@@ -55,7 +55,7 @@ func IsValidDriver(string, driver string) error {
 
 // RequiresRestartMsg returns the "requires restart" message
 func RequiresRestartMsg(string, string) error {
-	console.OutStyle("warning", "These changes will take effect upon a minikube delete and then a minikube start")
+	console.OutStyle(console.WarningType, "These changes will take effect upon a minikube delete and then a minikube start")
 	return nil
 }
 

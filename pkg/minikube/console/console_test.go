@@ -50,23 +50,23 @@ func (f *fakeFile) String() string {
 func TestOutStyle(t *testing.T) {
 
 	var tests = []struct {
-		style     string
+		style     StyleEnum
 		message   string
 		params    []interface{}
 		want      string
 		wantASCII string
 	}{
-		{"happy", "Happy", nil, "😄  Happy\n", "* Happy\n"},
-		{"option", "Option", nil, "    ▪ Option\n", "  - Option\n"},
-		{"warning", "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
-		{"fatal", "Fatal: %v", []interface{}{"ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
-		{"waiting-pods", "wait", nil, "⌛  wait", "* wait"},
-		{"issue", "http://i/%d", []interface{}{10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
-		{"usage", "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
+		{Happy, "Happy", nil, "😄  Happy\n", "* Happy\n"},
+		{Option, "Option", nil, "    ▪ Option\n", "  - Option\n"},
+		{WarningType, "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
+		{FatalType, "Fatal: %v", []interface{}{"ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
+		{WaitingPods, "wait", nil, "⌛  wait", "* wait"},
+		{Issue, "http://i/%d", []interface{}{10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
+		{Usage, "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
 	}
 	for _, tc := range tests {
 		for _, override := range []bool{true, false} {
-			t.Run(fmt.Sprintf("%s-override-%v", tc.style, override), func(t *testing.T) {
+			t.Run(fmt.Sprintf("%s-override-%v", tc.message, override), func(t *testing.T) {
 				// Set MINIKUBE_IN_STYLE=<override>
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := newFakeFile()
@@ -137,7 +137,7 @@ func TestErrStyle(t *testing.T) {
 	os.Setenv(OverrideEnv, "1")
 	f := newFakeFile()
 	SetErrFile(f)
-	ErrStyle("fatal", "error: %s", "%s%%%d")
+	ErrStyle(FatalType, "error: %s", "%s%%%d")
 	got := f.String()
 	want := "💣  error: %s%%%d\n"
 	if got != want {

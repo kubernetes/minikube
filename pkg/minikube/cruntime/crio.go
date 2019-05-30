@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/console"
 )
 
 // CRIO contains CRIO runtime state
@@ -32,6 +33,11 @@ type CRIO struct {
 // Name is a human readable name for CRIO
 func (r *CRIO) Name() string {
 	return "CRI-O"
+}
+
+// Name is a human readable name for CRIO
+func (r *CRIO) Style() console.StyleEnum {
+	return console.CRIO
 }
 
 // Version retrieves the current version of this runtime

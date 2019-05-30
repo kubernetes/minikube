@@ -53,7 +53,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 			err = cluster.StopHost(api)
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				console.OutStyle("meh", "%q VM does not exist, nothing to stop", profile)
+				console.OutStyle(console.Meh, "%q VM does not exist, nothing to stop", profile)
 				nonexistent = true
 				return nil
 			default:
@@ -64,11 +64,11 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 			exit.WithError("Unable to stop VM", err)
 		}
 		if !nonexistent {
-			console.OutStyle("stopped", "%q stopped.", profile)
+			console.OutStyle(console.Stopped, "%q stopped.", profile)
 		}
 
 		if err := cmdUtil.KillMountProcess(); err != nil {
-			console.OutStyle("warning", "Unable to kill mount process: %s", err)
+			console.OutStyle(console.WarningType, "Unable to kill mount process: %s", err)
 		}
 
 		machineName := pkg_config.GetMachineName()
