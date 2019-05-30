@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -401,12 +401,16 @@ func validateConfig() {
 
 	// This validates if the --registry-mirror args
 	// match the format of http://localhost
-	urlRe := regexp.MustCompile(`^http(s{0,1}):\/\/(.+?)`)
 	if len(registryMirror) > 0 {
 		for _, loc := range registryMirror {
-			if !urlRe.MatchString(loc) {
-				exit.WithCode(exit.Failure, "url provided with --registry-mirror flag is invalid %q", loc)
+			URL, err := url.Parse(loc)
+			if err != nil {
+				glog.Errorln("Error Parsing URL: ", err)
 			}
+			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
+				exit.Usage("Sorry, url provided with --registry-mirror flag is invalid %q", loc)
+			}
+
 		}
 	}
 
