@@ -76,6 +76,24 @@ or, to use kvm2 as a default driver for `minikube start`:
 minikube config set vm-driver kvm2
 ```
 
+### Troubleshoot
+
+If minikube can't start, check if the kvm default network exists.
+
+```shell
+virsh net-list
+ Name                 State      Autostart     Persistent
+----------------------------------------------------------
+ default              active     yes           yes
+```
+
+In case the default network doesn't exist you can define it.
+
+```shell
+curl https://raw.githubusercontent.com/libvirt/libvirt/master/src/network/default.xml > kvm-default.xml
+virsh net-define kvm-default.xml
+```
+
 ## Hyperkit driver
 
 Install the [hyperkit](http://github.com/moby/hyperkit) VM manager using [brew](https://brew.sh):
