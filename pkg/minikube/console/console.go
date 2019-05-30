@@ -64,11 +64,6 @@ type fdWriter interface {
 	Fd() uintptr
 }
 
-// HasStyle checks if a style exists
-func HasStyle(style StyleEnum) bool {
-	return hasStyle(style)
-}
-
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style StyleEnum, format string, a ...interface{}) {
 	outStyled := applyStyle(style, useColor, format, a...)
