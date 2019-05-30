@@ -17,8 +17,10 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
@@ -380,5 +382,22 @@ func TestCreateSSHShell(t *testing.T) {
 
 	if !s.IsSessionRequested() {
 		t.Fatalf("Expected ssh session to be run")
+	}
+}
+
+func TestGuestClockDelta(t *testing.T) {
+	local := time.Now()
+	h := tests.NewMockHost()
+	// Truncate remote clock so that it is between 0 and 1 second behind
+	h.CommandOutput["date +%s.%N"] = fmt.Sprintf("%d.0000", local.Unix())
+	got, err := guestClockDelta(h, local)
+	if err != nil {
+		t.Fatalf("guestClock: %v", err)
+	}
+	if got > (0 * time.Second) {
+		t.Errorf("unexpected positive delta (remote should be behind): %s", got)
+	}
+	if got < (-1 * time.Second) {
+		t.Errorf("unexpectedly negative delta (remote too far behind): %s", got)
 	}
 }

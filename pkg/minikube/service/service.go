@@ -40,6 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -84,6 +85,7 @@ func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clients
 		return nil, fmt.Errorf("kubeConfig: %v", err)
 	}
 	clientConfig.Timeout = timeout
+	clientConfig = proxy.UpdateTransport(clientConfig)
 	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "client from config")
@@ -257,7 +259,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		if urlMode || !isHTTPSchemedURL {
 			console.OutLn(urlString)
 		} else {
-			console.OutStyle("celebrate", "Opening kubernetes service %s/%s in default browser...", namespace, service)
+			console.OutStyle(console.Celebrate, "Opening kubernetes service %s/%s in default browser...", namespace, service)
 			if err := browser.OpenURL(urlString); err != nil {
 				console.Err("browser failed to open url: %v", err)
 			}

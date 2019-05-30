@@ -20,9 +20,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"math"
 	"net"
 	"os/exec"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -42,6 +45,17 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+)
+
+// hostRunner is a minimal host.Host based interface for running commands
+type hostRunner interface {
+	RunSSHCommand(string) (string, error)
+}
+
+var (
+	// The maximum the guest VM clock is allowed to be ahead and behind. This value is intentionally
+	// large to allow for inaccurate methodology, but still small enough so that certificates are likely valid.
+	maxClockDesyncSeconds = 2.1
 )
 
 //This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
@@ -93,7 +107,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		console.Warning("Alternatively, you may delete the existing VM using `minikube delete -p %s`", cfg.GetMachineName())
 		console.Out("\n")
 	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
-		console.OutStyle("tip", "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
+		console.OutStyle(console.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
 	s, err := h.Driver.GetState()
@@ -103,9 +117,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		console.OutStyle("running", "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		console.OutStyle(console.Running, "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
 	} else {
-		console.OutStyle("restarting", "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		console.OutStyle(console.Restarting, "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -117,18 +131,17 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
-	err = waitForSSHAccess(h, e)
+	err = configureHost(h, e)
 	if err != nil {
 		return nil, err
 	}
-
 	return h, nil
 }
 
-func waitForSSHAccess(h *host.Host, e *engine.Options) error {
-
+// configureHost handles any post-powerup configuration required
+func configureHost(h *host.Host, e *engine.Options) error {
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	console.OutStyle("waiting", "Waiting for SSH access ...")
+	console.OutStyle(console.Waiting, "Waiting for SSH access ...")
 
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
@@ -145,9 +158,58 @@ func waitForSSHAccess(h *host.Host, e *engine.Options) error {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
+		return ensureSyncedGuestClock(h)
 	}
 
 	return nil
+}
+
+// ensureGuestClockSync ensures that the guest system clock is relatively in-sync
+func ensureSyncedGuestClock(h hostRunner) error {
+	d, err := guestClockDelta(h, time.Now())
+	if err != nil {
+		glog.Warningf("Unable to measure system clock delta: %v", err)
+		return nil
+	}
+	if math.Abs(d.Seconds()) < maxClockDesyncSeconds {
+		glog.Infof("guest clock delta is within tolerance: %s", d)
+		return nil
+	}
+	if err := adjustGuestClock(h, time.Now()); err != nil {
+		return errors.Wrap(err, "adjusting system clock")
+	}
+	return nil
+}
+
+// guestClockDelta returns the approximate difference between the host and guest system clock
+// NOTE: This does not currently take into account ssh latency.
+func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
+	out, err := h.RunSSHCommand("date +%s.%N")
+	if err != nil {
+		return 0, errors.Wrap(err, "get clock")
+	}
+	glog.Infof("guest clock: %s", out)
+	ns := strings.Split(strings.TrimSpace(out), ".")
+	secs, err := strconv.ParseInt(strings.TrimSpace(ns[0]), 10, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "atoi")
+	}
+	nsecs, err := strconv.ParseInt(strings.TrimSpace(ns[1]), 10, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "atoi")
+	}
+	// NOTE: In a synced state, remote is a few hundred ms ahead of local
+	remote := time.Unix(secs, nsecs)
+	d := remote.Sub(local)
+	glog.Infof("Guest: %s Remote: %s (delta=%s)", remote, local, d)
+	return d, nil
+}
+
+// adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
+func adjustGuestClock(h hostRunner, t time.Time) error {
+	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
+	glog.Infof("clock set: %s (err=%v)", out, err)
+	return err
 }
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
@@ -162,7 +224,7 @@ func trySSHPowerOff(h *host.Host) {
 		return
 	}
 
-	console.OutStyle("shutdown", "Powering off %q via SSH ...", cfg.GetMachineName())
+	console.OutStyle(console.Shutdown, "Powering off %q via SSH ...", cfg.GetMachineName())
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
@@ -174,7 +236,7 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
-	console.OutStyle("stopping", "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
+	console.OutStyle(console.Stopping, "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
@@ -196,7 +258,7 @@ func DeleteHost(api libmachine.API) error {
 		trySSHPowerOff(host)
 	}
 
-	console.OutStyle("deleting-host", "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
+	console.OutStyle(console.DeletingHost, "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
@@ -284,7 +346,7 @@ To disable this message, run [minikube config set WantShowDriverDeprecationNotif
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	preCreateHost(&config)
-	console.OutStyle("starting-vm", "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {

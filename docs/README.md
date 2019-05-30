@@ -26,11 +26,15 @@
 
 * **Reusing the Docker Daemon** ([reusing_the_docker_daemon.md](reusing_the_docker_daemon.md)): How to point your docker CLI to the docker daemon running inside minikube
 
+* **Building images within the VM** ([building_images_within_the_vm.md](building_images_within_the_vm.md)): How to build a container image within the minikube VM
+
 #### Storage
 
 * **Persistent Volumes** ([persistent_volumes.md](persistent_volumes.md)): Persistent Volumes in Minikube and persisted locations in the VM
 
 * **Host Folder Mounting** ([host_folder_mount.md](host_folder_mount.md)): How to mount your files from your host into the minikube VM
+
+* **Syncing files into the VM** ([syncing-files.md](syncing-files.md)): How to sync files from your host into the minikube VM
 
 #### Networking
 

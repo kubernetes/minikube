@@ -153,6 +153,24 @@ func TestGenerateConfig(t *testing.T) {
 			Key:       "scheduler-name",
 			Value:     "mini-scheduler",
 		},
+		util.ExtraOption{
+			Component: Kubeadm,
+			Key:       "ignore-preflight-errors",
+			Value:     "true",
+		},
+		util.ExtraOption{
+			Component: Kubeadm,
+			Key:       "dry-run",
+			Value:     "true",
+		},
+	}
+
+	extraOptsPodCidr := util.ExtraOptionSlice{
+		util.ExtraOption{
+			Component: Kubeadm,
+			Key:       "pod-network-cidr",
+			Value:     "192.168.32.0/20",
+		},
 	}
 
 	// Test version policy: Last 4 major releases (slightly looser than our general policy)
@@ -177,6 +195,7 @@ func TestGenerateConfig(t *testing.T) {
 		{"crio-options-gates", "crio", false, config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}},
 		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: util.ExtraOptionSlice{util.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
 		{"containerd-api-port", "containerd", false, config.KubernetesConfig{NodePort: 12345}},
+		{"containerd-pod-network-cidr", "containerd", false, config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}},
 		{"image-repository", "docker", false, config.KubernetesConfig{ImageRepository: "test/repo"}},
 	}
 	for vname, version := range versions {

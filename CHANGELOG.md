@@ -1,5 +1,55 @@
 # Minikube Release Notes
 
+## Version 1.1.0 - 2019-05-21
+
+* Allow macOS to resolve service FQDNs during 'minikube tunnel' [#3464](https://github.com/kubernetes/minikube/pull/3464)
+* Expose ‘—pod-network-cidr’ argument in minikube [#3892](https://github.com/kubernetes/minikube/pull/3892)
+* Upgrade default Kubernetes release to v1.14.2 [#4279](https://github.com/kubernetes/minikube/pull/4279)
+* Update to Podman 1.3 & CRIO v1.14.1 [#4299](https://github.com/kubernetes/minikube/pull/4299)
+* Upgrade Docker, from 18.06.3-ce to 18.09.5 [#4204](https://github.com/kubernetes/minikube/pull/4204)
+* Upgrade Docker, from 18.09.5 to 18.09.6 [#4296](https://github.com/kubernetes/minikube/pull/4296)
+* Add Go modules support [#4241](https://github.com/kubernetes/minikube/pull/4241)
+* Add more solutions messages [#4257](https://github.com/kubernetes/minikube/pull/4257)
+* Add new kubectl command [#4193](https://github.com/kubernetes/minikube/pull/4193)
+* Add solution text for common kvm2 and VirtualBox problems [#4198](https://github.com/kubernetes/minikube/pull/4198)
+* Adding support for s390x [#4091](https://github.com/kubernetes/minikube/pull/4091)
+* Allow minikube to function with misconfigured NO_PROXY value [#4229](https://github.com/kubernetes/minikube/pull/4229)
+* Disable SystemVerification preflight on Kubernetes releases <1.13 [#4306](https://github.com/kubernetes/minikube/pull/4306)
+* Don't attempt to pull docker images on relaunch [#4129](https://github.com/kubernetes/minikube/pull/4129)
+* Fix location of Kubernetes binaries in cache directory [#4244](https://github.com/kubernetes/minikube/pull/4244)
+* Fix registry addon ReplicationController template [#4220](https://github.com/kubernetes/minikube/pull/4220)
+* Make default output of 'minikube start' consume fewer lines in the terminal [#4197](https://github.com/kubernetes/minikube/pull/4197)
+* Make handling of stale mount pid files more robust [#4191](https://github.com/kubernetes/minikube/pull/4191)
+* Make sure to start Docker, before getting version [#4307](https://github.com/kubernetes/minikube/pull/4307)
+* Restart kube-proxy using kubeadm & add bootstrapper.WaitCluster [#4276](https://github.com/kubernetes/minikube/pull/4276)
+* Return host IP when using vmware as vm driver. [#4255](https://github.com/kubernetes/minikube/pull/4255)
+* Select an accessible image repository for some users [#3937](https://github.com/kubernetes/minikube/pull/3937)
+* Set apiserver oom_adj to -10 to avoid OOMing before other pods [#4282](https://github.com/kubernetes/minikube/pull/4282)
+* Standardize ASCII prefix for info, warning, and error messages [#4162](https://github.com/kubernetes/minikube/pull/4162)
+* Unset the current-context after minikube stop [#4177](https://github.com/kubernetes/minikube/pull/4177)
+* Validate kvm network exists [#4308](https://github.com/kubernetes/minikube/pull/4308)
+* storageclass no longer beta #4148 [#4153](https://github.com/kubernetes/minikube/pull/4153)
+
+Thank you to the contributors whose work made v1.1 into something we could all be proud of:
+
+- Anders F Björklund
+- Chris Eason
+- Deepika Pandhi
+- Himanshu Pandey
+- Jan Janik
+- Marcos Diez
+- Maximilian Hess
+- Medya Gh
+- Sharif Elgamal
+- Thomas Strömberg
+- Tiago Ilieve
+- Tobias Bradtke
+- Zhongcheng Lao
+- Zoran Regvart
+- josedonizetti
+- kerami
+- salamani
+
 ## Version 1.0.1 - 2019-04-29
 
 * update-context is confusing with profiles [#4049](https://github.com/kubernetes/minikube/pull/4049)

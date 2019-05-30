@@ -142,29 +142,29 @@ var mountCmd = &cobra.Command{
 			cfg.Options[parts[0]] = parts[1]
 		}
 
-		console.OutStyle("mounting", "Mounting host path %s into VM as %s ...", hostPath, vmPath)
-		console.OutStyle("mount-options", "Mount options:")
-		console.OutStyle("option", "Type:     %s", cfg.Type)
-		console.OutStyle("option", "UID:      %s", cfg.UID)
-		console.OutStyle("option", "GID:      %s", cfg.GID)
-		console.OutStyle("option", "Version:  %s", cfg.Version)
-		console.OutStyle("option", "MSize:    %d", cfg.MSize)
-		console.OutStyle("option", "Mode:     %o (%s)", cfg.Mode, cfg.Mode)
-		console.OutStyle("option", "Options:  %s", cfg.Options)
+		console.OutStyle(console.Mounting, "Mounting host path %s into VM as %s ...", hostPath, vmPath)
+		console.OutStyle(console.MountOptions, "Mount options:")
+		console.OutStyle(console.Option, "Type:     %s", cfg.Type)
+		console.OutStyle(console.Option, "UID:      %s", cfg.UID)
+		console.OutStyle(console.Option, "GID:      %s", cfg.GID)
+		console.OutStyle(console.Option, "Version:  %s", cfg.Version)
+		console.OutStyle(console.Option, "MSize:    %d", cfg.MSize)
+		console.OutStyle(console.Option, "Mode:     %o (%s)", cfg.Mode, cfg.Mode)
+		console.OutStyle(console.Option, "Options:  %s", cfg.Options)
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
 			console.OutLn("")
-			console.OutStyle("warning", "%s is not yet a supported filesystem. We will try anyways!", cfg.Type)
+			console.OutStyle(console.WarningType, "%s is not yet a supported filesystem. We will try anyways!", cfg.Type)
 		}
 
 		var wg sync.WaitGroup
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
-				console.OutStyle("fileserver", "Userspace file server: ")
+				console.OutStyle(console.Fileserver, "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
-				console.OutStyle("stopped", "Userspace file server is shutdown")
+				console.OutStyle(console.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}()
 		}
@@ -180,10 +180,10 @@ var mountCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
-				console.OutStyle("unmount", "Unmounting %s ...", vmPath)
+				console.OutStyle(console.Unmount, "Unmounting %s ...", vmPath)
 				err := cluster.Unmount(runner, vmPath)
 				if err != nil {
-					console.ErrStyle("failure", "Failed unmount: %v", err)
+					console.ErrStyle(console.FailureType, "Failed unmount: %v", err)
 				}
 				exit.WithCode(exit.Interrupted, "Exiting due to %s signal", sig)
 			}
@@ -193,9 +193,9 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("mount failed", err)
 		}
-		console.OutStyle("success", "Successfully mounted %s to %s", hostPath, vmPath)
+		console.OutStyle(console.SuccessType, "Successfully mounted %s to %s", hostPath, vmPath)
 		console.OutLn("")
-		console.OutStyle("notice", "NOTE: This process must stay alive for the mount to be accessible ...")
+		console.OutStyle(console.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
 		wg.Wait()
 	},
 }
