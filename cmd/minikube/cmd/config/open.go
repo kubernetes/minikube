@@ -76,7 +76,7 @@ minikube addons list`, addonName)
 			exit.WithError("IsEnabled failed", err)
 		}
 		if !ok {
-			console.ErrStyle("conflict", `addon '%s' is currently not enabled.
+			console.ErrStyle(console.Conflict, `addon '%s' is currently not enabled.
 To enable this addon run:
 minikube addons enable %s`, addonName, addonName)
 			os.Exit(exit.Unavailable)
