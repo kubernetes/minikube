@@ -132,12 +132,15 @@ func mntCmd(source string, target string, c *MountConfig) string {
 
 // umountCmd returns a command for unmounting
 func umountCmd(target string, force bool) string {
-	flag := ""
+	// Call fuser before unmount, for killing the processes using the mount point. Notes: don't use 'lsof' to avoid the innocents
+	flag1 := fmt.Sprintf("sudo fuser -km %s;", target)
+	flag2 := ""
 	if force {
-		flag = "-f "
+		flag1 = ""
+		flag2 = "-f "
 	}
 	// grep because findmnt will also display the parent!
-	return fmt.Sprintf("findmnt -T %s | grep %s && sudo umount %s%s || true", target, target, flag, target)
+	return fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && { %s sudo umount %s%s; } || echo ", target, target, flag1, flag2, target)
 }
 
 // Unmount unmounts a path
