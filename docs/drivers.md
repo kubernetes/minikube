@@ -92,6 +92,7 @@ In case the default network doesn't exist you can define it.
 ```shell
 curl https://raw.githubusercontent.com/libvirt/libvirt/master/src/network/default.xml > kvm-default.xml
 virsh net-define kvm-default.xml
+virsh net-start default
 ```
 
 ## Hyperkit driver
