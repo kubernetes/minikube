@@ -41,6 +41,7 @@ func TestStartStop(t *testing.T) {
 			// default is the network created by libvirt, if we change the name minikube won't boot
 			// because the given network doesn't exist
 			"--kvm-network=default",
+			"--kvm-qemu-uri=qemu:///sytem",
 		}},
 		{"feature_gates_newest_cni", []string{
 			"--feature-gates",

@@ -82,6 +82,9 @@ type Driver struct {
 
 	// XML that needs to be added to passthrough GPU devices.
 	DevicesXML string
+
+	// QEMU Connection URI
+	ConnectionURI string
 }
 
 const (
@@ -107,12 +110,13 @@ func NewDriver(hostName, storePath string) *Driver {
 		Network:        defaultNetworkName,
 		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), fmt.Sprintf("%s.rawdisk", config.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), "boot2docker.iso"),
+		ConnectionURI:  qemusystem,
 	}
 }
 
 // PreCommandCheck checks the connection before issuing a command
 func (d *Driver) PreCommandCheck() error {
-	conn, err := getConnection()
+	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
 		return errors.Wrap(err, "Error connecting to libvirt socket.  Have you added yourself to the libvirtd group?")
 	}
@@ -424,7 +428,7 @@ func (d *Driver) Stop() (err error) {
 // Remove a host
 func (d *Driver) Remove() error {
 	log.Debug("Removing machine...")
-	conn, err := getConnection()
+	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
 		return errors.Wrap(err, "getting connection")
 	}

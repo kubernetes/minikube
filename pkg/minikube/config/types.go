@@ -46,6 +46,7 @@ type MachineConfig struct {
 	HostOnlyCIDR        string // Only used by the virtualbox driver
 	HypervVirtualSwitch string
 	KvmNetwork          string             // Only used by the KVM driver
+	KvmQemuURI          string             // Only used by kvm2
 	Downloader          util.ISODownloader `json:"-"`
 	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts bool               // Only used by virtualbox and xhyve

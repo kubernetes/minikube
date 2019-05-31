@@ -128,7 +128,7 @@ func randomMAC() (net.HardwareAddr, error) {
 }
 
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
-	conn, err := getConnection()
+	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting domain")
 	}
@@ -141,8 +141,8 @@ func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 	return dom, conn, nil
 }
 
-func getConnection() (*libvirt.Connect, error) {
-	conn, err := libvirt.NewConnect(qemusystem)
+func getConnection(connectionURI string) (*libvirt.Connect, error) {
+	conn, err := libvirt.NewConnect(connectionURI)
 	if err != nil {
 		return nil, errors.Wrap(err, connectionErrorText)
 	}
@@ -186,7 +186,7 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
 
-	conn, err := getConnection()
+	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting libvirt connection")
 	}
