@@ -17,6 +17,7 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"fmt"
 	"net"
 	"path"
 	"path/filepath"
@@ -66,7 +67,7 @@ func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
 
 	kubeCfgSetup := &util.KubeConfigSetup{
 		ClusterName:          k8s.NodeName,
-		ClusterServerAddress: "https://localhost:8443",
+		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
 		ClientCertificate:    path.Join(util.DefaultCertPath, "apiserver.crt"),
 		ClientKey:            path.Join(util.DefaultCertPath, "apiserver.key"),
 		CertificateAuthority: path.Join(util.DefaultCertPath, "ca.crt"),
