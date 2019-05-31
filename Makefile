@@ -366,7 +366,7 @@ release-minikube: out/minikube checksum
 out/docker-machine-driver-kvm2:
 	go build 																		\
 		-installsuffix "static" 													\
-		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
+		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION)" 	\
 		-tags libvirt.1.3.1 														\
 		-o $(BUILD_DIR)/docker-machine-driver-kvm2 									\
 		k8s.io/minikube/cmd/drivers/kvm
