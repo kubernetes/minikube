@@ -26,13 +26,13 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -59,15 +59,7 @@ var dashboardCmd = &cobra.Command{
 		if err != nil && !os.IsNotExist(err) {
 			console.ErrLn("Error loading profile config: %v", err)
 		}
-		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
-		if err != nil {
-			glog.Errorf("Error excluding IP from proxy: %s", err)
-		}
 
-		kubectl, err := exec.LookPath("kubectl")
-		if err != nil {
-			exit.WithCode(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
-		}
 		api, err := machine.NewAPIClient()
 		defer func() {
 			err := api.Close()
@@ -79,6 +71,28 @@ var dashboardCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting client", err)
 		}
+
+		_, err = api.Load(pkg_config.GetMachineName())
+		if err != nil {
+			switch err := errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				console.OutStyle(console.Meh, "%q cluster does not exist", pkg_config.GetMachineName())
+				os.Exit(0)
+			default:
+				exit.WithError("Error getting cluster", err)
+			}
+		}
+
+		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
+		if err != nil {
+			glog.Errorf("Error excluding IP from proxy: %s", err)
+		}
+
+		kubectl, err := exec.LookPath("kubectl")
+		if err != nil {
+			exit.WithCode(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		}
+
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
 		// Send status messages to stderr for folks re-using this output.
@@ -127,9 +141,9 @@ var dashboardCmd = &cobra.Command{
 // kubectlProxy runs "kubectl proxy", returning host:port
 func kubectlProxy(path string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
-	// config.GetMachineName() respects the -p (profile) flag
+	// pkg_config.GetMachineName() respects the -p (profile) flag
 
-	cmd := exec.Command(path, "--context", config.GetMachineName(), "proxy", "--port=0")
+	cmd := exec.Command(path, "--context", pkg_config.GetMachineName(), "proxy", "--port=0")
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
