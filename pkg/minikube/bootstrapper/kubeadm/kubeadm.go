@@ -634,8 +634,7 @@ func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubead
 	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
 	if cfg.EnableDefaultCNI {
 		files = append(files,
-			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"),
-			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultRktNetConfigPath, "0644"))
+			assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"))
 	}
 
 	return files

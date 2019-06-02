@@ -19,7 +19,7 @@ package kubeadm
 // defaultCNIConfig is the CNI config which is provisioned when --enable-default-cni
 // has been passed to `minikube start`.
 //
-// The config is being written to /etc/cni/net.d/k8s.conf and /etc/rkt/net.d/k8s.conf.
+// The config is being written to /etc/cni/net.d/k8s.conf.
 const defaultCNIConfig = `
 {
   "name": "rkt.kubernetes.io",
