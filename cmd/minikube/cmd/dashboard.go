@@ -72,12 +72,11 @@ var dashboardCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 
-		_, err = api.Load(pkg_config.GetMachineName())
-		if err != nil {
+		if _, err = api.Load(pkg_config.GetMachineName()); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
 				console.OutStyle(console.Meh, "%q cluster does not exist", pkg_config.GetMachineName())
-				os.Exit(0)
+				os.Exit(exit.Unavailable)
 			default:
 				exit.WithError("Error getting cluster", err)
 			}
