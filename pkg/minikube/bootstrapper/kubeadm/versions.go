@@ -242,7 +242,14 @@ var versionSpecificOpts = []VersionedExtraOption{
 
 	// System pods args
 	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
-	NewUnversionedOption(Kubelet, "allow-privileged", "true"),
+	{
+		Option: util.ExtraOption{
+			Component: Kubelet,
+			Key:       "allow-privileged",
+			Value:     "true",
+		},
+		LessThanOrEqual: semver.MustParse("1.14.2"),
+	},
 
 	// Network args
 	NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
