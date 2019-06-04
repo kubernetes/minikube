@@ -28,7 +28,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          "none",
+		Name:          constants.DriverNone,
 		Builtin:       true,
 		ConfigCreator: createNoneHost,
 		DriverCreator: func() drivers.Driver {

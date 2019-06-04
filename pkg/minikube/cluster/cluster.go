@@ -72,7 +72,7 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if config.VMDriver != "none" {
+	if config.MachineConfig.VMDriver == constants.DriverNone {
 		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		}
 	}
 
-	if h.Driver.DriverName() != "none" {
+	if h.Driver.DriverName() != constants.DriverNone {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}

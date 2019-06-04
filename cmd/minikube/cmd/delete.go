@@ -56,7 +56,7 @@ associated files.`,
 		}
 
 		// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
-		if err == nil && cc.MachineConfig.VMDriver == "none" {
+		if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
 			kc := cc.KubernetesConfig
 			bsName := viper.GetString(cmdcfg.Bootstrapper)
 			console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
