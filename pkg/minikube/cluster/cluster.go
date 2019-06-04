@@ -72,7 +72,7 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if config.MachineConfig.VMDriver == constants.DriverNone {
+	if config.VMDriver == constants.DriverNone {
 		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
 			return err
 		}
