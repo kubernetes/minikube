@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -42,7 +43,7 @@ var sshCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
-		if host.Driver.DriverName() == "none" {
+		if host.Driver.DriverName() == constants.DriverNone {
 			exit.Usage("'none' driver does not support 'minikube ssh' command")
 		}
 		err = cluster.CreateSSHShell(api, args)
