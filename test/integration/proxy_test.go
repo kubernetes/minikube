@@ -21,12 +21,14 @@ package integration
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"net/http"
+	"net/url"
 
 	"github.com/elazarl/goproxy"
 	"github.com/phayes/freeport"
@@ -107,7 +109,7 @@ func TestProxy(t *testing.T) {
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
 	r := NewMinikubeRunner(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 	startCmd := fmt.Sprintf("start %s %s %s", r.StartArgs, r.Args, "--alsologtostderr --v=5")
 	stdout, stderr, err := r.RunWithContext(ctx, startCmd)
@@ -123,5 +125,38 @@ func testProxyWarning(t *testing.T) {
 	msg = "You appear to be using a proxy"
 	if !strings.Contains(stderr, msg) {
 		t.Errorf("Proxy wranning (%s) is missing from the output: %s", msg, stderr)
+	}
+}
+
+// testProxyDashboard checks if dashboard URL is accessible if proxy is set
+func testProxyDashboard(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
+	defer func() {
+		err := cmd.Process.Kill()
+		if err != nil {
+			t.Logf("Failed to kill dashboard command: %v", err)
+		}
+	}()
+
+	s, err := readLineWithTimeout(out, 180*time.Second)
+	if err != nil {
+		t.Fatalf("failed to read url: %v", err)
+	}
+
+	u, err := url.Parse(strings.TrimSpace(s))
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", s, err)
+	}
+	resp, err := http.Get(u.String())
+	if err != nil {
+		t.Fatalf("failed get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("Unable to read http response body: %v", err)
+		}
+		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
 	}
 }
