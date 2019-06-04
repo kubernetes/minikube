@@ -150,20 +150,6 @@ func (d *Driver) createNetwork() error {
 }
 
 func (d *Driver) deleteNetwork() error {
-	type source struct {
-		//XMLName xml.Name `xml:"source"`
-		Network string `xml:"network,attr"`
-	}
-	type iface struct {
-		//XMLName xml.Name `xml:"interface"`
-		Source source `xml:"source"`
-	}
-	type result struct {
-		//XMLName xml.Name `xml:"domain"`
-		Name       string  `xml:"name"`
-		Interfaces []iface `xml:"devices>interface"`
-	}
-
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
