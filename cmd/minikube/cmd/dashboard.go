@@ -31,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
@@ -81,12 +82,17 @@ var dashboardCmd = &cobra.Command{
 		}
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 
-		// Send status messages to stderr for folks re-using this output.
-		console.ErrStyle(console.Enabling, "Enabling dashboard ...")
-		// Enable the dashboard add-on
-		err = configcmd.Set("dashboard", "true")
-		if err != nil {
-			exit.WithError("Unable to enable dashboard", err)
+		// Check dashboard status before enabling it
+		dashboardAddon := assets.Addons["dashboard"]
+		dashboardStatus, _ := dashboardAddon.IsEnabled()
+		if !dashboardStatus {
+			// Send status messages to stderr for folks re-using this output.
+			console.ErrStyle(console.Enabling, "Enabling dashboard ...")
+			// Enable the dashboard add-on
+			err = configcmd.Set("dashboard", "true")
+			if err != nil {
+				exit.WithError("Unable to enable dashboard", err)
+			}
 		}
 
 		ns := "kube-system"

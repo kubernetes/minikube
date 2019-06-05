@@ -47,6 +47,11 @@ func NewAddon(assets []*BinAsset, enabled bool, addonName string) *Addon {
 	return a
 }
 
+// Name get the addon name
+func (a *Addon) Name() string {
+	return a.addonName
+}
+
 // IsEnabled checks if an Addon is enabled
 func (a *Addon) IsEnabled() (bool, error) {
 	addonStatusText, err := config.Get(a.addonName)
