@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -62,7 +63,11 @@ func testTunnel(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	t.Log("deploying nginx...")
-	podPath, _ := filepath.Abs("testdata/testsvc.yaml")
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	podPath := path.Join(curdir, "testdata/testsvc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"apply", "-f", podPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
