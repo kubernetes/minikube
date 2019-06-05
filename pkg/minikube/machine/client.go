@@ -189,7 +189,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"waiting",
 			func() error {
-				if h.Driver.DriverName() == "none" {
+				if h.Driver.DriverName() == constants.DriverNone {
 					return nil
 				}
 				return mcnutils.WaitFor(drivers.MachineInState(h.Driver, state.Running))
@@ -198,7 +198,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"provisioning",
 			func() error {
-				if h.Driver.DriverName() == "none" {
+				if h.Driver.DriverName() == constants.DriverNone {
 					return nil
 				}
 				pv := provision.NewBuildrootProvisioner(h.Driver)
