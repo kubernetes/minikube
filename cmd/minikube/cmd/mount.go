@@ -102,7 +102,7 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}
-		if host.Driver.DriverName() == "none" {
+		if host.Driver.DriverName() == constants.DriverNone {
 			exit.Usage(`'none' driver does not support 'minikube mount' command`)
 		}
 		var ip net.IP
