@@ -21,6 +21,7 @@ To install the KVM2 driver, first install and configure the prerequisites, namel
 * Debian or Ubuntu 18.x: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
 * Ubuntu 16.x or older: `sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm`
 * Fedora/CentOS/RHEL: `sudo yum install libvirt-daemon-kvm qemu-kvm`
+* openSUSE/SLES: `sudo zypper install libvirt qemu-kvm`
 
 Check your installed virsh version:
 
