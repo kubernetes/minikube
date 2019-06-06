@@ -41,7 +41,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 const tempLoadDir = "/tmp"
@@ -129,11 +128,10 @@ func CacheAndLoadImages(images []string) error {
 		return err
 	}
 
-	client, err := sshutil.NewSSHClient(h.Driver)
+	runner, err := CommandRunner(h)
 	if err != nil {
 		return err
 	}
-	runner := bootstrapper.NewSSHRunner(client)
 	return LoadImages(runner, images, constants.ImageCacheDir)
 }
 
