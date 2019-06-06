@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -131,12 +132,16 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("waiting for default-http-backend to be up: %v", err)
 	}
 
-	ingressPath, _ := filepath.Abs("testdata/nginx-ing.yaml")
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	ingressPath := path.Join(curdir, "testdata", "nginx-ing.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
-	podPath, _ := filepath.Abs("testdata/nginx-pod-svc.yaml")
+	podPath := path.Join(curdir, "testdata", "nginx-pod-svc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
@@ -248,7 +253,11 @@ func testGvisorRestart(t *testing.T) {
 
 func createUntrustedWorkload(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t)
-	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
 	t.Log("creating pod with untrusted workload annotation")
 	if _, err := kubectlRunner.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
 		t.Fatalf("creating untrusted nginx resource: %v", err)
@@ -257,7 +266,11 @@ func createUntrustedWorkload(t *testing.T) {
 
 func deleteUntrustedWorkload(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t)
-	untrustedPath, _ := filepath.Abs("testdata/nginx-untrusted.yaml")
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
 		t.Logf("error deleting untrusted nginx resource: %v", err)
 	}
