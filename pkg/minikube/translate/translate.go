@@ -23,7 +23,6 @@ import (
 
 	"github.com/cloudfoundry-attic/jibber_jabber"
 	"github.com/golang/glog"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
 )
 
@@ -36,8 +35,6 @@ var (
 	// Translations is a translation map from strings that can be output to console
 	// to its translation in the user's system locale.
 	Translations map[string]interface{}
-
-	localizer i18n.Localizer
 )
 
 // Translate translates the given string to the supplied langauge.
@@ -69,7 +66,7 @@ func DetermineLocale() {
 
 	// Load translations for preferred language into memory.
 	if preferredLanguage != defaultLanguage {
-		translationFile := "pkg/minikube/translate/" + preferredLanguage.String() + ".json"
+		translationFile := "pkg/minikube/translate/translations" + preferredLanguage.String() + ".json"
 		t, err := ioutil.ReadFile(translationFile)
 		if err != nil {
 			glog.Infof("Failed to load transalation file for %s: %s", preferredLanguage.String(), err)
@@ -81,6 +78,7 @@ func DetermineLocale() {
 			glog.Infof("Failed to populate translation map: %s", err)
 		}
 	}
+
 }
 
 // SetPreferredLanguageTag configures which language future messages should use.
