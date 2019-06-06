@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -36,7 +37,11 @@ func TestPersistence(t *testing.T) {
 	minikubeRunner.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
-	podPath, _ := filepath.Abs("testdata/busybox.yaml")
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	podPath := path.Join(curdir, "testdata", "busybox.yaml")
 
 	// Create a pod and wait for it to be running.
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {

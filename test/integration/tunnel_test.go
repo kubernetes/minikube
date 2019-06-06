@@ -67,7 +67,7 @@ func testTunnel(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
 	}
-	podPath := path.Join(curdir, "testdata/testsvc.yaml")
+	podPath := path.Join(curdir, "testdata", "testsvc.yaml")
 	if _, err := kubectlRunner.RunCommand([]string{"apply", "-f", podPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
