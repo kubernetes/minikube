@@ -19,7 +19,6 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"runtime"
@@ -31,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/version"
 )
@@ -43,12 +43,12 @@ var (
 )
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
-func MaybePrintUpdateTextFromGithub(output io.Writer) {
-	MaybePrintUpdateText(output, constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+func MaybePrintUpdateTextFromGithub() {
+	MaybePrintUpdateText(constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
 // MaybePrintUpdateText prints update text if needed
-func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
+func MaybePrintUpdateText(url string, lastUpdatePath string) {
 	if !shouldCheckURLVersion(lastUpdatePath) {
 		return
 	}
@@ -66,12 +66,12 @@ func MaybePrintUpdateText(output io.Writer, url string, lastUpdatePath string) {
 		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 			glog.Errorf("write time failed: %v", err)
 		}
-		fmt.Fprintf(output, `There is a newer version of minikube available (%s%s).  Download it here:
+		console.ErrStyle(console.WarningType, `There is a newer version of minikube available (%s%s).  Download it here:
 %s%s
-
+		
 To disable this notification, run the following:
 minikube config set WantUpdateNotification false
-`,
+		`,
 			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion)
 	}
 }

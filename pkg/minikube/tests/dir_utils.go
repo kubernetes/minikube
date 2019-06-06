@@ -17,6 +17,7 @@ limitations under the License.
 package tests
 
 import (
+	"bytes"
 	"io/ioutil"
 	"log"
 	"os"
@@ -42,4 +43,24 @@ func MakeTempDir() string {
 	}
 	os.Setenv(constants.MinikubeHome, tempDir)
 	return constants.GetMinipath()
+}
+
+// FakeFile satisfies fdWriter
+type FakeFile struct {
+	b bytes.Buffer
+}
+
+func NewFakeFile() *FakeFile {
+	return &FakeFile{}
+}
+
+func (f *FakeFile) Fd() uintptr {
+	return uintptr(0)
+}
+
+func (f *FakeFile) Write(p []byte) (int, error) {
+	return f.b.Write(p)
+}
+func (f *FakeFile) String() string {
+	return f.b.String()
 }

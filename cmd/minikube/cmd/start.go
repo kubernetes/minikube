@@ -226,7 +226,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// Makes minikube node ip to bypass http(s) proxy. since it is local traffic.
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
-		console.ErrStyle(console.FailureType, "Failed to set NO_PROXY Env. please Use `export NO_PROXY=$NO_PROXY,%s`.", ip)
+		console.ErrStyle(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,%s`.", ip)
 	}
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
