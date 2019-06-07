@@ -1,5 +1,100 @@
 # Minikube Release Notes
 
+# Version 1.1.1 - 2019-06-07
+
+* Upgrade to kubernetes 1.14.3 [#4444](https://github.com/kubernetes/minikube/pull/4444)
+* fix ShowDriverDeprecationNotification config setting [#4431](https://github.com/kubernetes/minikube/pull/4431)
+* Add libvirt and qemu-kvm install docs for openSUSE/SLES [#4443](https://github.com/kubernetes/minikube/pull/4443)
+* Cache: don't use ssh runner for the none driver [#4439](https://github.com/kubernetes/minikube/pull/4439)
+* Fixing file path for windows [#4434](https://github.com/kubernetes/minikube/pull/4434)
+* Improve type check for driver none [#4419](https://github.com/kubernetes/minikube/pull/4419)
+* Dashboard: add --disable-settings-authorizer to avoid settings 403 forbidden [#4405](https://github.com/kubernetes/minikube/pull/4405)
+* dashboard: detect nonexistent profile instead of causing a panic [#4396](https://github.com/kubernetes/minikube/pull/4396)
+* Fixed addon-manager failing with non-default --apiserver-port [#4386](https://github.com/kubernetes/minikube/pull/4386)
+* clean vendor on make clean [#4382](https://github.com/kubernetes/minikube/pull/4382)
+* Fix kvm gpu log [#4381](https://github.com/kubernetes/minikube/pull/4381)
+* Windows installer: Use PowerShell to update PATH value to avoid 1024 char truncation [#4362](https://github.com/kubernetes/minikube/pull/4362)
+* Change console style string to enum [#4376](https://github.com/kubernetes/minikube/pull/4376)
+* Increase apiserver wait time from 1 minute to 3 minutes [#4372](https://github.com/kubernetes/minikube/pull/4372)
+* Sync guest system clock if desynchronized from host [#4283](https://github.com/kubernetes/minikube/pull/4283)
+* docker-env: Remove DOCKER_API_VERSION [#4364](https://github.com/kubernetes/minikube/pull/4364)
+* Disable hyperv dynamic memory for hyperv driver [#2797](https://github.com/kubernetes/minikube/pull/2797)
+* Fix kvm remove when domain is not defined [#4355](https://github.com/kubernetes/minikube/pull/4355)
+* Enable registry-proxy [#4341](https://github.com/kubernetes/minikube/pull/4341)
+* Make buildah --no-pivot default, using env var [#4321](https://github.com/kubernetes/minikube/pull/4321)
+* Pass minikube stdin to the kubectl command [#4354](https://github.com/kubernetes/minikube/pull/4354)
+* Refactor kvm lookupIPFromStatusFile [#4334](https://github.com/kubernetes/minikube/pull/4334)
+* kernel: Add config for tc u32 filter and mirred action [#4340](https://github.com/kubernetes/minikube/pull/4340)
+* Enable GatewayPorts in sshd_config, for proxying in services into minikube [#4338](https://github.com/kubernetes/minikube/pull/4338)
+* Fix kvm remove when domain is not running [#4344](https://github.com/kubernetes/minikube/pull/4344)
+* kvm2: Add support for --kvm-network to ensureNetwork [#4323](https://github.com/kubernetes/minikube/pull/4323)
+* Get current profile if no arguments given [#4335](https://github.com/kubernetes/minikube/pull/4335)
+* Skip kvm network deletion if private network doesn't exist [#4331](https://github.com/kubernetes/minikube/pull/4331)
+* Added test case for minikube config unset [#4262](https://github.com/kubernetes/minikube/pull/4262)
+
+Huge thank you for this release towards our contributors: 
+- Abdulla Bin Mustaqeem
+- Anders Björklund
+- Andy Daniels
+- Archana Shinde
+- Arnaud Jardiné
+- Artiom Diomin
+- Balint Pato
+- Benn Linger
+- Calin Don
+- Chris Eason
+- Cristian Măgherușan-Stanciu @magheru_san
+- Deepika Pandhi
+- Dmitry Budaev
+- Don McCasland
+- Douglas Thrift
+- Elijah Oyekunle
+- Filip Havlíček
+- Guang Ya Liu
+- Himanshu Pandey
+- Igor Akkerman
+- Ihor Dvoretskyi
+- Jan Janik
+- Jat
+- Joel Smith
+- Joji Mekkatt
+- Marco Vito Moscaritolo
+- Marcos Diez
+- Martynas Pumputis
+- Mas
+- Maximilian Hess
+- Medya Gh
+- Miel Donkers
+- Mike Lewis
+- Oleg Atamanenko
+- Om Kumar
+- Pradip-Khakurel
+- Pranav Jituri
+- RA489
+- Shahid Iqbal
+- Sharif Elgamal
+- Steven Davidovitz
+- Thomas Bechtold
+- Thomas Strömberg
+- Tiago Ilieve
+- Tobias Bradtke
+- Toliver Jue
+- Tom Reznik
+- Yaroslav Skopets
+- Yoan Blanc
+- Zhongcheng Lao
+- Zoran Regvart
+- fenglixa
+- flyingcircle
+- jay vyas
+- josedonizetti
+- karmab
+- kerami
+- morvencao
+- salamani
+- u5surf
+- wj24021040
+
 ## Version 1.1.0 - 2019-05-21
 
 * Allow macOS to resolve service FQDNs during 'minikube tunnel' [#3464](https://github.com/kubernetes/minikube/pull/3464)
