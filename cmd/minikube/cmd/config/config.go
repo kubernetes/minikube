@@ -132,6 +132,10 @@ var settings = []Setting{
 		set:  SetString, //TODO(r2d4): more validation here?
 	},
 	{
+		name: config.ShowDriverDeprecationNotification,
+		set:  SetBool,
+	},
+	{
 		name: config.ShowBootstrapperDeprecationNotification,
 		set:  SetBool,
 	},
