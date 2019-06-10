@@ -94,15 +94,15 @@ WARNING: The Brew cask automation is error-prone. please ensure that a PR was cr
 
 Verify release checksums by running`make check-release`
 
-## Update docs
+## Update minikube frontpage
+
+We document the last 3 releases on our frontpage. Please add it to the list: https://github.com/kubernetes/minikube/blob/master/README.md
+
+## Update official Kubernetes docs
 
 If there are major changes, please send a PR to update <https://kubernetes.io/docs/setup/minikube/>
 
-## Announce
-
-Please mention the new release https://github.com/kubernetes/minikube/blob/master/README.md
-
-Other places:
+## Announce!
 
 - #minikube on Slack
 - minikube-dev, minikube-users mailing list

@@ -21,12 +21,14 @@ package integration
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"net/http"
+	"net/url"
 
 	"github.com/elazarl/goproxy"
 	"github.com/phayes/freeport"
@@ -68,7 +70,17 @@ func TestProxy(t *testing.T) {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
 
-	defer func(t *testing.T) { // Clean up after setting up proxy
+	// making sure there is no running miniukube to avoid https://github.com/kubernetes/minikube/issues/4132
+	r := NewMinikubeRunner(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	_, _, err = r.RunWithContext(ctx, "delete")
+	if err != nil {
+		t.Logf("Error deleting minikube before test setup %s : ", err)
+	}
+
+	// Clean up after setting up proxy
+	defer func(t *testing.T) {
 		err = os.Setenv("HTTP_PROXY", origHP)
 		if err != nil {
 			t.Errorf("Error reverting the HTTP_PROXY env")
@@ -82,28 +94,29 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
+
+		_, _, err = r.RunWithContext(ctx, "delete")
+		if err != nil {
+			t.Logf("Error deleting minikube when cleaning up proxy setup: %s", err)
+		}
 	}(t)
 
-	t.Run("ConsoleWarnning", testProxyWarning)
-	t.Run("DashboardProxy", testDashboard)
+	t.Run("Proxy Console Warnning", testProxyWarning)
+	t.Run("Proxy Dashboard", testProxyDashboard)
 
 }
 
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
-	mk := NewMinikubeRunner(t)
-	// Start a timer for all remaining commands, to display failure output before a panic.
+	r := NewMinikubeRunner(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args, "--alsologtostderr --v=5")
-	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
+	startCmd := fmt.Sprintf("start %s %s %s", r.StartArgs, r.Args, "--alsologtostderr --v=5")
+	stdout, stderr, err := r.RunWithContext(ctx, startCmd)
 	if err != nil {
 		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}
-	mk.EnsureRunning()
 
-	// Pre-cleanup: this usually fails, because no instance is running.
-	// mk.RunWithContext(ctx, "delete")
 	msg := "Found network options:"
 	if !strings.Contains(stdout, msg) {
 		t.Errorf("Proxy wranning (%s) is missing from the output: %s", msg, stderr)
@@ -113,5 +126,37 @@ func testProxyWarning(t *testing.T) {
 	if !strings.Contains(stderr, msg) {
 		t.Errorf("Proxy wranning (%s) is missing from the output: %s", msg, stderr)
 	}
+}
 
+// testProxyDashboard checks if dashboard URL is accessible if proxy is set
+func testProxyDashboard(t *testing.T) {
+	minikubeRunner := NewMinikubeRunner(t)
+	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
+	defer func() {
+		err := cmd.Process.Kill()
+		if err != nil {
+			t.Logf("Failed to kill dashboard command: %v", err)
+		}
+	}()
+
+	s, err := readLineWithTimeout(out, 180*time.Second)
+	if err != nil {
+		t.Fatalf("failed to read url: %v", err)
+	}
+
+	u, err := url.Parse(strings.TrimSpace(s))
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", s, err)
+	}
+	resp, err := http.Get(u.String())
+	if err != nil {
+		t.Fatalf("failed get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("Unable to read http response body: %v", err)
+		}
+		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
+	}
 }

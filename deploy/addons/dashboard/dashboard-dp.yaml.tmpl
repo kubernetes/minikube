@@ -42,6 +42,8 @@ spec:
         ports:
         - containerPort: 9090
           protocol: TCP
+        args:
+          - --disable-settings-authorizer
         livenessProbe:
           httpGet:
             path: /

@@ -72,7 +72,7 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if config.VMDriver != "none" {
+	if config.VMDriver != constants.DriverNone {
 		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
 			return err
 		}
@@ -154,7 +154,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		}
 	}
 
-	if h.Driver.DriverName() != "none" {
+	if h.Driver.DriverName() != constants.DriverNone {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
@@ -325,21 +325,21 @@ func preCreateHost(config *cfg.MachineConfig) {
 			console.Warning(`The kvm driver is deprecated and support for it will be removed in a future release.
 				Please consider switching to the kvm2 driver, which is intended to replace the kvm driver.
 				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
-				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+				To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 		}
 	case "xhyve":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			console.Warning(`The xhyve driver is deprecated and support for it will be removed in a future release.
 Please consider switching to the hyperkit driver, which is intended to replace the xhyve driver.
 See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
-To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 		}
 	case "vmwarefusion":
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
-				To disable this message, run [minikube config set WantShowDriverDeprecationNotification false]`)
+				To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 		}
 	}
 }
