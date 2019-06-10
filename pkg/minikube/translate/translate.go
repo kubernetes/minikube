@@ -48,7 +48,10 @@ func Translate(s string) string {
 	}
 
 	if translation, ok := Translations[s]; ok {
-		return translation.(string)
+		t := translation.(string)
+		if len(t) > 0 && t != " " {
+			return t
+		}
 	}
 
 	return s
@@ -70,7 +73,7 @@ func DetermineLocale() {
 
 	// Load translations for preferred language into memory.
 	if preferredLanguage != defaultLanguage {
-		translationFile := "pkg/minikube/translate/translations" + preferredLanguage.String() + ".json"
+		translationFile := "pkg/minikube/translate/translations/" + preferredLanguage.String() + ".json"
 		t, err := ioutil.ReadFile(translationFile)
 		if err != nil {
 			glog.Infof("Failed to load transalation file for %s: %s", preferredLanguage.String(), err)

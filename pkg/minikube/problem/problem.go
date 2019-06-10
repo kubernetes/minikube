@@ -21,6 +21,7 @@ import (
 	"regexp"
 
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 const issueBase = "https://github.com/kubernetes/minikube/issues"
@@ -52,7 +53,7 @@ type match struct {
 // Display problem metadata to the console
 func (p *Problem) Display() {
 	console.ErrStyle(console.FailureType, "Error:         [%s] %v", p.ID, p.Err)
-	console.ErrStyle(console.Tip, "Advice:        %s", p.Advice)
+	console.ErrStyle(console.Tip, "Advice:        %s", translate.Translate(p.Advice))
 	if p.URL != "" {
 		console.ErrStyle(console.Documentation, "Documentation: %s", p.URL)
 	}
