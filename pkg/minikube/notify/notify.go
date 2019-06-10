@@ -68,10 +68,10 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) {
 		}
 		console.ErrStyle(console.WarningType, `There is a newer version of minikube available (%s%s).  Download it here:
 %s%s
-		
+
 To disable this notification, run the following:
 minikube config set WantUpdateNotification false
-		`,
+`,
 			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion)
 	}
 }
