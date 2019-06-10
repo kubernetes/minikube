@@ -31,9 +31,10 @@ func main() {
 		funcStack.Push(f)
 	}
 
+	fmt.Println("Compiling translation strings...")
 	for funcStack.Len() > 0 {
 		f := funcStack.Pop().(string)
-		fmt.Printf("-----%s------\n", f)
+		//fmt.Printf("-----%s------\n", f)
 		for _, root := range paths {
 			err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 				if shouldCheckFile(path) {
@@ -48,12 +49,22 @@ func main() {
 		}
 	}
 
+	err := writeStringsToFiles()
+
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Done!")
+}
+
+func writeStringsToFiles() error {
 	translationsFiles := "../pkg/minikube/translate/translations"
 	err := filepath.Walk(translationsFiles, func(path string, info os.FileInfo, err error) error {
 		if info.Mode().IsDir() {
 			return nil
 		}
-		fmt.Println(path)
+		fmt.Printf("Writing to %s\n", filepath.Base(path))
 		var currentTranslations map[string]interface{}
 		f, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -64,10 +75,10 @@ func main() {
 			return err
 		}
 
-		fmt.Println(currentTranslations)
+		//fmt.Println(currentTranslations)
 
 		for k := range translations {
-			fmt.Println(k)
+			//fmt.Println(k)
 			if _, ok := currentTranslations[k]; !ok {
 				currentTranslations[k] = " "
 			}
@@ -81,11 +92,7 @@ func main() {
 		return err
 	})
 
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Done!")
+	return err
 }
 
 func addFuncToList(f string) {
@@ -193,30 +200,38 @@ func checkCallExpression(t *ast.ExprStmt, parentFunc string, f string) {
 					if i.Obj != nil {
 						if as, ok := i.Obj.Decl.(*ast.AssignStmt); ok {
 							if rhs, ok := as.Rhs[0].(*ast.BasicLit); ok {
-								fmt.Printf("	%s\n", rhs.Value)
-								translations[rhs.Value] = ""
-								break
+								if addStringToList(rhs.Value) {
+									break
+								}
 							}
 						}
 					}
 				}
 				// Find string arguments
 				if argString, ok := arg.(*ast.BasicLit); ok {
-					stringToTranslate := argString.Value
-					// Don't translate integers
-					if _, err := strconv.Atoi(stringToTranslate); err != nil {
-						//Don't translate URLs
-						if u, err := url.Parse(stringToTranslate[1 : len(stringToTranslate)-1]); err != nil || u.Scheme == "" || u.Host == "" {
-							// Don't translate empty strings
-							if len(stringToTranslate) > 2 {
-								translations[stringToTranslate] = ""
-								fmt.Printf("	%s\n", stringToTranslate)
-								break
-							}
-						}
+					if addStringToList(argString.Value) {
+						break
 					}
 				}
 			}
 		}
 	}
+}
+
+func addStringToList(s string) bool {
+	// Don't translate empty strings
+	if len(s) > 2 {
+		// Parse out quote marks
+		stringToTranslate := s[1 : len(s)-1]
+		// Don't translate integers
+		if _, err := strconv.Atoi(stringToTranslate); err != nil {
+			//Don't translate URLs
+			if u, err := url.Parse(stringToTranslate); err != nil || u.Scheme == "" || u.Host == "" {
+				translations[stringToTranslate] = ""
+				//fmt.Printf("	%s\n", stringToTranslate)
+				return true
+			}
+		}
+	}
+	return false
 }
