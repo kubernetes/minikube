@@ -350,6 +350,17 @@ func validateConfig() {
 		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
 	}
 
+	// Adding extra option (resolv-conf) for none driver on ubutnu to address /issues/3511
+	if viper.GetString(vmDriver) == constants.DriverNone && noneNeedsResolveConf() {
+		o := "kubelet.resolv-conf=/run/systemd/resolve/resolv.conf"
+		err := extraOptions.Set(o)
+		if err == nil {
+			glog.Infof("Set extra option (%s) ubuntu-like on none driver.", o)
+		} else {
+			glog.Errorf("Error setting extra options (%s) for none driver on ubuntu: %s", o, err)
+		}
+	}
+
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
 		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
@@ -484,6 +495,16 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 		},
 	}
 	return cfg, nil
+}
+
+// noneNeedsResolveConf checks extra config option for resolv.conf is needed
+// for none driver. more info https://github.com/kubernetes/minikube/issues/3511
+func noneNeedsResolveConf() bool {
+	filename := "/run/systemd/resolve/resolv.conf"
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
