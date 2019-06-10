@@ -350,7 +350,7 @@ func validateConfig() {
 		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
 	}
 
-	err := autoSetOptions()
+	err := autoSetOptions(viper.GetString(vmDriver))
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
@@ -492,9 +492,9 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 }
 
 // autoSetOptions sets the options needed for specific configuration automatically.
-func autoSetOptions() error {
+func autoSetOptions(vmDriver string) error {
 	//  options for none driver
-	if viper.GetString(vmDriver) == constants.DriverNone {
+	if vmDriver == constants.DriverNone {
 		if o := autoOptionForNone(); o != "" {
 			return extraOptions.Set(o)
 		}
