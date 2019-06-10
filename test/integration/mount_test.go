@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -61,7 +62,11 @@ func testMounting(t *testing.T) {
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	podName := "busybox-mount"
-	podPath, _ := filepath.Abs("testdata/busybox-mount-test.yaml")
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	podPath := path.Join(curdir, "testdata", "busybox-mount-test.yaml")
 
 	// Write file in mounted dir from host
 	expected := "test\n"
