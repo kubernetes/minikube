@@ -355,9 +355,9 @@ func validateConfig() {
 		o := "kubelet.resolv-conf=/run/systemd/resolve/resolv.conf"
 		err := extraOptions.Set(o)
 		if err == nil {
-			glog.Infof("Set extra option (%s) ubuntu-like on none driver.", o)
+			glog.Infof("Sucsessfully set extra option (%s) for none driver on ubuntu-like OS.", o)
 		} else {
-			glog.Errorf("Error setting extra options (%s) for none driver on ubuntu: %s", o, err)
+			glog.Errorf("Error setting extra options (%s) for none driver on ubuntu-like OS: %s", o, err)
 		}
 	}
 
