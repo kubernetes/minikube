@@ -4,17 +4,14 @@
 
 * Upgrade to kubernetes 1.14.3 [#4444](https://github.com/kubernetes/minikube/pull/4444)
 * fix ShowDriverDeprecationNotification config setting [#4431](https://github.com/kubernetes/minikube/pull/4431)
-* Add libvirt and qemu-kvm install docs for openSUSE/SLES [#4443](https://github.com/kubernetes/minikube/pull/4443)
 * Cache: don't use ssh runner for the none driver [#4439](https://github.com/kubernetes/minikube/pull/4439)
 * Fixing file path for windows [#4434](https://github.com/kubernetes/minikube/pull/4434)
 * Improve type check for driver none [#4419](https://github.com/kubernetes/minikube/pull/4419)
 * Dashboard: add --disable-settings-authorizer to avoid settings 403 forbidden [#4405](https://github.com/kubernetes/minikube/pull/4405)
 * dashboard: detect nonexistent profile instead of causing a panic [#4396](https://github.com/kubernetes/minikube/pull/4396)
 * Fixed addon-manager failing with non-default --apiserver-port [#4386](https://github.com/kubernetes/minikube/pull/4386)
-* clean vendor on make clean [#4382](https://github.com/kubernetes/minikube/pull/4382)
 * Fix kvm gpu log [#4381](https://github.com/kubernetes/minikube/pull/4381)
 * Windows installer: Use PowerShell to update PATH value to avoid 1024 char truncation [#4362](https://github.com/kubernetes/minikube/pull/4362)
-* Change console style string to enum [#4376](https://github.com/kubernetes/minikube/pull/4376)
 * Increase apiserver wait time from 1 minute to 3 minutes [#4372](https://github.com/kubernetes/minikube/pull/4372)
 * Sync guest system clock if desynchronized from host [#4283](https://github.com/kubernetes/minikube/pull/4283)
 * docker-env: Remove DOCKER_API_VERSION [#4364](https://github.com/kubernetes/minikube/pull/4364)
@@ -23,14 +20,12 @@
 * Enable registry-proxy [#4341](https://github.com/kubernetes/minikube/pull/4341)
 * Make buildah --no-pivot default, using env var [#4321](https://github.com/kubernetes/minikube/pull/4321)
 * Pass minikube stdin to the kubectl command [#4354](https://github.com/kubernetes/minikube/pull/4354)
-* Refactor kvm lookupIPFromStatusFile [#4334](https://github.com/kubernetes/minikube/pull/4334)
 * kernel: Add config for tc u32 filter and mirred action [#4340](https://github.com/kubernetes/minikube/pull/4340)
 * Enable GatewayPorts in sshd_config, for proxying in services into minikube [#4338](https://github.com/kubernetes/minikube/pull/4338)
 * Fix kvm remove when domain is not running [#4344](https://github.com/kubernetes/minikube/pull/4344)
 * kvm2: Add support for --kvm-network to ensureNetwork [#4323](https://github.com/kubernetes/minikube/pull/4323)
 * Get current profile if no arguments given [#4335](https://github.com/kubernetes/minikube/pull/4335)
 * Skip kvm network deletion if private network doesn't exist [#4331](https://github.com/kubernetes/minikube/pull/4331)
-* Added test case for minikube config unset [#4262](https://github.com/kubernetes/minikube/pull/4262)
 
 Huge thank you for this release towards our contributors: 
 - Abdulla Bin Mustaqeem
