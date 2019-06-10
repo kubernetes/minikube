@@ -37,7 +37,7 @@ var (
 	Translations map[string]interface{}
 )
 
-// Translate translates the given string to the supplied langauge.
+// Translate translates the given string to the supplied language.
 func Translate(s string) string {
 	if preferredLanguage == defaultLanguage {
 		return s
@@ -62,7 +62,11 @@ func DetermineLocale() {
 		glog.Warningf("Getting system locale failed: %s", err)
 		locale = ""
 	}
-	SetPreferredLanguage(locale)
+	err = SetPreferredLanguage(locale)
+	if err != nil {
+		glog.Warningf("Setting locale failed: %s", err)
+		locale = ""
+	}
 
 	// Load translations for preferred language into memory.
 	if preferredLanguage != defaultLanguage {

@@ -1,3 +1,19 @@
+/*
+Copyright 2019 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package main
 
 import (
@@ -60,7 +76,7 @@ func main() {
 
 func writeStringsToFiles() error {
 	translationsFiles := "../pkg/minikube/translate/translations"
-	err := filepath.Walk(translationsFiles, func(path string, info os.FileInfo, err error) error {
+	e := filepath.Walk(translationsFiles, func(path string, info os.FileInfo, err error) error {
 		if info.Mode().IsDir() {
 			return nil
 		}
@@ -92,7 +108,7 @@ func writeStringsToFiles() error {
 		return err
 	})
 
-	return err
+	return e
 }
 
 func addFuncToList(f string) {
@@ -152,7 +168,7 @@ func checkStmt(stmt ast.Stmt, parentFunc string, f string) {
 		checkCallExpression(t, parentFunc, f)
 	}
 
-	// If this line is the beginning of an if statment, then check of the body of the block
+	// If this line is the beginning of an if statement, then check of the body of the block
 	if b, ok := stmt.(*ast.IfStmt); ok {
 		checkIfStmt(b, parentFunc, f)
 	}
