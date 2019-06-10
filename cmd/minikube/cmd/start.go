@@ -29,6 +29,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/drivers/none"
+
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -495,21 +497,11 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 func autoSetOptions(vmDriver string) error {
 	//  options for none driver
 	if vmDriver == constants.DriverNone {
-		if o := autoOptionForNone(); o != "" {
+		if o := none.AutoOptions(); o != "" {
 			return extraOptions.Set(o)
 		}
 	}
 	return nil
-}
-
-// autoOptionForNone returns suggested extra options for config none driver
-func autoOptionForNone() string {
-	// for more info see: https://github.com/kubernetes/minikube/issues/3511
-	f := "/run/systemd/resolve/resolv.conf"
-	if _, err := os.Stat(f); err != nil {
-		return ""
-	}
-	return fmt.Sprintf("kubelet.resolv-conf=%s", f)
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
