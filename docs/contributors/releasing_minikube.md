@@ -96,7 +96,7 @@ Verify release checksums by running`make check-release`
 
 ## Update minikube frontpage
 
-We document the last 4 releases on our frontpage. Please add it to the list: https://github.com/kubernetes/minikube/blob/master/README.md
+We document the last 3 releases on our frontpage. Please add it to the list: https://github.com/kubernetes/minikube/blob/master/README.md
 
 ## Update official Kubernetes docs
 
