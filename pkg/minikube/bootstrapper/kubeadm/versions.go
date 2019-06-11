@@ -248,7 +248,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 			Key:       "allow-privileged",
 			Value:     "true",
 		},
-		LessThanOrEqual: semver.MustParse("1.14.2"),
+		LessThanOrEqual: semver.MustParse("1.15.0-alpha.3"),
 	},
 
 	// Network args
