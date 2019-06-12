@@ -20,49 +20,61 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"runtime"
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-func TestVersionUpgrade(t *testing.T) {
-	currentRunner := NewMinikubeRunner(t)
-	currentRunner.RunCommand("delete", true)
-	currentRunner.CheckStatus(state.None.String())
-
+func downloadMinikubeBinary(version string) (*os.File, error) {
 	// Grab latest release binary
-	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
-	resp, err := http.Get(url)
+	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
+	resp, err := retryablehttp.Get(url)
 	if err != nil {
-		t.Fatal(errors.Wrap(err, "Failed to get latest release binary"))
+		return nil, err
+		// t.Fatal(errors.Wrap(err, "Failed to get latest release binary"))
 	}
 	defer resp.Body.Close()
 
 	tf, err := ioutil.TempFile("", "minikube")
 	if err != nil {
-		t.Fatal(errors.Wrap(err, "Failed to create binary file"))
+		return nil, err
+		// t.Fatal(errors.Wrap(err, "Failed to create binary file"))
 	}
-	defer os.Remove(tf.Name())
-
 	_, err = io.Copy(tf, resp.Body)
 	if err != nil {
-		t.Fatal(errors.Wrap(err, "Failed to populate temp file"))
+		return nil, err
+		// t.Fatal(errors.Wrap(err, "Failed to populate temp file"))
 	}
 	if err := tf.Close(); err != nil {
-		t.Fatal(errors.Wrap(err, "Failed to close temp file"))
+		return nil, err
+		// t.Fatal(errors.Wrap(err, "Failed to close temp file"))
 	}
 
 	if runtime.GOOS != "windows" {
 		if err := os.Chmod(tf.Name(), 0700); err != nil {
-			t.Fatal(errors.Wrap(err, "Failed to make binary executable."))
+			return nil, err
+			// t.Fatal(errors.Wrap(err, "Failed to make binary executable."))
 		}
 	}
+	return tf, err
+}
+
+// TestVersionUpgrade downloads latest version of minikube and runs with
+// the odlest supported k8s version and then runs the current head minikube
+// and it tries to upgrade from the older supported k8s to news supported k8s
+func TestVersionUpgrade(t *testing.T) {
+	currentRunner := NewMinikubeRunner(t)
+	currentRunner.RunCommand("delete", true)
+	currentRunner.CheckStatus(state.None.String())
+	tf, err := downloadMinikubeBinary("latest")
+	t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
+	defer os.Remove(tf.Name())
 
 	releaseRunner := NewMinikubeRunner(t)
 	releaseRunner.BinaryPath = tf.Name()
