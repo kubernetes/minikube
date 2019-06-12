@@ -73,7 +73,9 @@ func TestVersionUpgrade(t *testing.T) {
 	currentRunner.RunCommand("delete", true)
 	currentRunner.CheckStatus(state.None.String())
 	tf, err := downloadMinikubeBinary("latest")
-	t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
+	if err != nil || tf == nil {
+		t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
+	}
 	defer os.Remove(tf.Name())
 
 	releaseRunner := NewMinikubeRunner(t)
