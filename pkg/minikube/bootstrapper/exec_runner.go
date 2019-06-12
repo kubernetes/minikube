@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -34,10 +35,31 @@ import (
 // It implements the CommandRunner interface.
 type ExecRunner struct{}
 
+// splitCommandString splits a command string like `ls -l` into the command `ls` and `-l`
+func splitCommandString(cmd string) (string, []string) {
+	parts := strings.Split(cmd, " ")
+
+	command := parts[0]
+	arguments := parts[1:]
+
+	return command, arguments
+}
+
 // Run starts the specified command in a bash shell and waits for it to complete.
 func (*ExecRunner) Run(cmd string) error {
 	glog.Infoln("Run:", cmd)
-	c := exec.Command("/bin/bash", "-c", cmd)
+
+	command, arguments := splitCommandString(cmd)
+	if command == "" {
+		return errors.New("an empty command was supplied to Run")
+	}
+
+	commandPath, err := exec.LookPath(command)
+	if err != nil {
+		return errors.Wrapf(err, "looking up: %s. The executable does not exist in your path", cmd)
+	}
+
+	c := exec.Command(commandPath, arguments...)
 	if err := c.Run(); err != nil {
 		return errors.Wrapf(err, "running command: %s", cmd)
 	}
