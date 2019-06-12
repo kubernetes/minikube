@@ -516,10 +516,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 			return errors.Wrapf(err, "copy")
 		}
 	}
-	err = k.c.Run(`
-sudo systemctl daemon-reload &&
-sudo systemctl start kubelet
-`)
+	err = k.c.Run("sudo systemctl daemon-reload")
+	if err != nil {
+		return errors.Wrap(err, "reloading systemd")
+	}
+
+	err = k.c.Run("sudo systemctl start kubelet")
 	if err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
