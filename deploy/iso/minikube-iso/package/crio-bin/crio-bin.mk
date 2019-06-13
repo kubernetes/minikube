@@ -29,7 +29,8 @@ endef
 
 define CRIO_BIN_BUILD_CMDS
 	mkdir -p $(@D)/bin
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) GIT_COMMIT=$(CRIO_BIN_COMMIT) PREFIX=/usr binaries
+	# Only run one go build at a time, because of race conditions
+	$(CRIO_BIN_ENV) $(MAKE1) $(TARGET_CONFIGURE_OPTS) -C $(@D) GIT_COMMIT=$(CRIO_BIN_COMMIT) PREFIX=/usr binaries
 endef
 
 define CRIO_BIN_INSTALL_TARGET_CMDS
