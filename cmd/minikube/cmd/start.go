@@ -29,6 +29,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/drivers/none"
+
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -350,6 +352,11 @@ func validateConfig() {
 		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
 	}
 
+	err := autoSetOptions(viper.GetString(vmDriver))
+	if err != nil {
+		glog.Errorf("Error autoSetOptions : %v", err)
+	}
+
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
 		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
@@ -484,6 +491,17 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 		},
 	}
 	return cfg, nil
+}
+
+// autoSetOptions sets the options needed for specific configuration automatically.
+func autoSetOptions(vmDriver string) error {
+	//  options for none driver
+	if vmDriver == constants.DriverNone {
+		if o := none.AutoOptions(); o != "" {
+			return extraOptions.Set(o)
+		}
+	}
+	return nil
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
