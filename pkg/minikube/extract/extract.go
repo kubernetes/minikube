@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package extract
 
 import (
 	"encoding/json"
@@ -30,12 +30,15 @@ import (
 	"strings"
 
 	"github.com/golang-collections/collections/stack"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
-var Blacklist []string = []string{"%s: %v"}
+var blacklist []string = []string{"%s: %v"}
 
-type Extractor struct {
+type extractor struct {
 	funcs        map[string]struct{}
 	fs           *stack.Stack
 	translations map[string]interface{}
@@ -44,27 +47,14 @@ type Extractor struct {
 	filename     string
 }
 
-func main() {
-	cwd, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	if !strings.HasSuffix(cwd, "minikube") {
-		fmt.Println("Please run extractor from top level minikube directory.")
-		fmt.Println("Usage: go run hack/extract/extract.go")
-		os.Exit(1)
-	}
+func ExtractTranslatableStrings(paths []string, functions []string, output string) {
+	extractor := newExtractor(functions)
 
-	paths := []string{"cmd", "pkg"}
-	//paths := []string{"../cmd/minikube/cmd/delete.go"}
-	//paths := []string{"../pkg/minikube/cluster/cluster.go"}
-	extractor := newExtractor("Translate")
-
-	fmt.Println("Compiling translation strings...")
+	console.OutStyle(console.Waiting, "Compiling translation strings...")
 	for extractor.fs.Len() > 0 {
 		f := extractor.fs.Pop().(string)
 		extractor.currentFunc = f
-		//fmt.Printf("-----%s------\n", f)
+		glog.Infof("Checking function: %s\n", f)
 		for _, root := range paths {
 			err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 				if shouldCheckFile(path) {
@@ -75,21 +65,21 @@ func main() {
 			})
 
 			if err != nil {
-				panic(err)
+				exit.WithError("Extracting strings", err)
 			}
 		}
 	}
 
-	err = writeStringsToFiles(extractor)
+	err := writeStringsToFiles(extractor, output)
 
 	if err != nil {
-		panic(err)
+		exit.WithError("Writing translation files", err)
 	}
 
-	fmt.Println("Done!")
+	console.OutStyle(console.Ready, "Done!")
 }
 
-func newExtractor(functionsToCheck ...string) *Extractor {
+func newExtractor(functionsToCheck []string) *extractor {
 	funcs := make(map[string]struct{})
 	fs := stack.New()
 
@@ -98,20 +88,19 @@ func newExtractor(functionsToCheck ...string) *Extractor {
 		fs.Push(f)
 	}
 
-	return &Extractor{
+	return &extractor{
 		funcs:        funcs,
 		fs:           fs,
 		translations: make(map[string]interface{}),
 	}
 }
 
-func writeStringsToFiles(e *Extractor) error {
-	translationsFiles := "pkg/minikube/translate/translations"
-	err := filepath.Walk(translationsFiles, func(path string, info os.FileInfo, err error) error {
+func writeStringsToFiles(e *extractor, output string) error {
+	err := filepath.Walk(output, func(path string, info os.FileInfo, err error) error {
 		if info.Mode().IsDir() {
 			return nil
 		}
-		fmt.Printf("Writing to %s\n", filepath.Base(path))
+		console.OutStyle(console.Check, "Writing to %s", filepath.Base(path))
 		var currentTranslations map[string]interface{}
 		f, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -121,8 +110,6 @@ func writeStringsToFiles(e *Extractor) error {
 		if err != nil {
 			return errors.Wrap(err, "unmarshalling current translations")
 		}
-
-		//fmt.Println(currentTranslations)
 
 		for k := range e.translations {
 			//fmt.Println(k)
@@ -145,7 +132,7 @@ func writeStringsToFiles(e *Extractor) error {
 	return err
 }
 
-func addParentFuncToList(e *Extractor) {
+func addParentFuncToList(e *extractor) {
 	if _, ok := e.funcs[e.parentFunc]; !ok {
 		e.funcs[e.parentFunc] = struct{}{}
 		e.fs.Push(e.parentFunc)
@@ -156,13 +143,14 @@ func shouldCheckFile(path string) bool {
 	return strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go")
 }
 
-func inspectFile(e *Extractor) error {
+func inspectFile(e *extractor) error {
 	fset := token.NewFileSet()
 	r, err := ioutil.ReadFile(e.filename)
 	if err != nil {
 		return err
 	}
-	//fmt.Printf("    Parsing %s\n", filename)
+	glog.Infof("Parsing %s\n", e.filename)
+	fmt.Printf("Parsing %s\n", e.filename)
 	file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
 	if err != nil {
 		return err
@@ -170,7 +158,12 @@ func inspectFile(e *Extractor) error {
 
 	ast.Inspect(file, func(x ast.Node) bool {
 		fd, ok := x.(*ast.FuncDecl)
+
+		// Only check functions for now.
 		if !ok {
+			// Deal with Solutions text here
+
+			// Deal with Cobra stuff here
 			/*gd, ok := x.(*ast.GenDecl)
 			if !ok {
 				return true
@@ -189,6 +182,7 @@ func inspectFile(e *Extractor) error {
 
 		e.parentFunc = fd.Name.String()
 
+		// Check line inside the function
 		for _, stmt := range fd.Body.List {
 			checkStmt(stmt, e)
 		}
@@ -198,26 +192,26 @@ func inspectFile(e *Extractor) error {
 	return nil
 }
 
-func checkStmt(stmt ast.Stmt, e *Extractor) {
+func checkStmt(stmt ast.Stmt, e *extractor) {
 	// If this line is an expression, see if it's a function call
-	if t, ok := stmt.(*ast.ExprStmt); ok {
-		checkCallExpression(t, e)
+	if expr, ok := stmt.(*ast.ExprStmt); ok {
+		checkCallExpression(expr, e)
 	}
 
 	// If this line is the beginning of an if statement, then check of the body of the block
-	if b, ok := stmt.(*ast.IfStmt); ok {
-		checkIfStmt(b, e)
+	if ifstmt, ok := stmt.(*ast.IfStmt); ok {
+		checkIfStmt(ifstmt, e)
 	}
 
 	// Same for loops
-	if b, ok := stmt.(*ast.ForStmt); ok {
-		for _, s := range b.Body.List {
+	if forloop, ok := stmt.(*ast.ForStmt); ok {
+		for _, s := range forloop.Body.List {
 			checkStmt(s, e)
 		}
 	}
 }
 
-func checkIfStmt(stmt *ast.IfStmt, e *Extractor) {
+func checkIfStmt(stmt *ast.IfStmt, e *extractor) {
 	for _, s := range stmt.Body.List {
 		checkStmt(s, e)
 	}
@@ -237,62 +231,103 @@ func checkIfStmt(stmt *ast.IfStmt, e *Extractor) {
 	}
 }
 
-func checkCallExpression(t *ast.ExprStmt, e *Extractor) {
-	if s, ok := t.X.(*ast.CallExpr); ok {
-		sf, ok := s.Fun.(*ast.SelectorExpr)
-		if !ok {
-			addParentFuncToList(e)
-			return
+func checkCallExpression(expr *ast.ExprStmt, e *extractor) {
+	s, ok := expr.X.(*ast.CallExpr)
+
+	// This line isn't a function call
+	if !ok {
+		return
+	}
+
+	sf, ok := s.Fun.(*ast.SelectorExpr)
+	if !ok {
+		addParentFuncToList(e)
+		return
+	}
+
+	// Wrong function or called with no arguments.
+	if e.currentFunc != sf.Sel.Name || len(s.Args) == 0 {
+		return
+	}
+
+	for _, arg := range s.Args {
+		// This argument is an identifier.
+		if i, ok := arg.(*ast.Ident); ok {
+			if checkIdentForStringValue(i, e) {
+				break
+			}
 		}
-		if e.currentFunc == sf.Sel.Name && len(s.Args) > 0 {
-			addParentFuncToList(e)
-			for _, arg := range s.Args {
-				// Find references to strings
-				if i, ok := arg.(*ast.Ident); ok {
-					if i.Obj != nil {
-						if as, ok := i.Obj.Decl.(*ast.AssignStmt); ok {
-							if rhs, ok := as.Rhs[0].(*ast.BasicLit); ok {
-								if addStringToList(rhs.Value, e) {
-									break
-								}
-							}
-						}
-					}
-				}
-				// Find string arguments
-				if argString, ok := arg.(*ast.BasicLit); ok {
-					if addStringToList(argString.Value, e) {
-						break
-					}
-				}
+
+		// This argument is a string.
+		if argString, ok := arg.(*ast.BasicLit); ok {
+			if addStringToList(argString.Value, e) {
+				break
 			}
 		}
 	}
+
 }
 
-func addStringToList(s string, e *Extractor) bool {
-	// Don't translate empty strings
-	if len(s) > 2 {
-		// Parse out quote marks
-		stringToTranslate := s[1 : len(s)-1]
-		// Don't translate integers
-		if _, err := strconv.Atoi(stringToTranslate); err != nil {
-			//Don't translate URLs
-			if u, err := url.Parse(stringToTranslate); err != nil || u.Scheme == "" || u.Host == "" {
-				// Don't translate commands
-				if !strings.HasPrefix(stringToTranslate, "sudo ") {
-					// Don't translate blacklisted strings
-					for _, b := range Blacklist {
-						if b == stringToTranslate {
-							return false
-						}
-					}
-					e.translations[stringToTranslate] = ""
-					//fmt.Printf("	%s\n", stringToTranslate)
-					return true
-				}
-			}
+func checkIdentForStringValue(i *ast.Ident, e *extractor) bool {
+	// This identifier is nil
+	if i.Obj == nil {
+		return false
+	}
+
+	as, ok := i.Obj.Decl.(*ast.AssignStmt)
+
+	// This identifier wasn't assigned anything
+	if !ok {
+		return false
+	}
+
+	rhs, ok := as.Rhs[0].(*ast.BasicLit)
+
+	// This identifier was not assigned a string/basic value
+	if !ok {
+		return false
+	}
+
+	if addStringToList(rhs.Value, e) {
+		return true
+	}
+
+	return false
+}
+
+func addStringToList(s string, e *extractor) bool {
+	// Empty strings don't need translating
+	if len(s) <= 2 {
+		return false
+	}
+
+	// Parse out quote marks
+	stringToTranslate := s[1 : len(s)-1]
+
+	// Don't translate integers
+	if _, err := strconv.Atoi(stringToTranslate); err == nil {
+		return false
+	}
+
+	// Don't translate URLs
+	if u, err := url.Parse(stringToTranslate); err == nil && u.Scheme != "" && u.Host != "" {
+		return false
+	}
+
+	// Don't translate commands
+	if strings.HasPrefix(stringToTranslate, "sudo ") {
+		return false
+	}
+
+	// Don't translate blacklisted strings
+	for _, b := range blacklist {
+		if b == stringToTranslate {
+			return false
 		}
 	}
-	return false
+
+	// Hooray, we can translate the string!
+	e.translations[stringToTranslate] = ""
+	//fmt.Printf("	%s\n", stringToTranslate)
+	return true
 }
