@@ -319,9 +319,13 @@ func UnsetCurrentContext(filename, machineName string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
-	confg.CurrentContext = ""
-	if err := WriteConfig(confg, filename); err != nil {
-		return errors.Wrap(err, "writing kubeconfig")
+
+	// unset the current context only if its value is 'minikube'
+	if confg.CurrentContext == "minikube" {
+		confg.CurrentContext = ""
+		if err := WriteConfig(confg, filename); err != nil {
+			return errors.Wrap(err, "writing kubeconfig")
+		}
 	}
 	return nil
 }
