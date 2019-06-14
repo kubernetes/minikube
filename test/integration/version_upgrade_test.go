@@ -36,24 +36,20 @@ func downloadMinikubeBinary(version string) (*os.File, error) {
 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
 	resp, err := retryablehttp.Get(url)
 	if err != nil {
-		return nil, err
-		// t.Fatal(errors.Wrap(err, "Failed to get latest release binary"))
+		return nil, errors.Wrap(err, "Failed to get latest release binary")
 	}
 	defer resp.Body.Close()
 
 	tf, err := ioutil.TempFile("", "minikube")
 	if err != nil {
-		return nil, err
-		// t.Fatal(errors.Wrap(err, "Failed to create binary file"))
+		return nil, errors.Wrap(err, "Failed to create binary file")
 	}
 	_, err = io.Copy(tf, resp.Body)
 	if err != nil {
-		return nil, err
-		// t.Fatal(errors.Wrap(err, "Failed to populate temp file"))
+		return nil, errors.Wrap(err, "Failed to populate temp file")
 	}
 	if err := tf.Close(); err != nil {
-		return nil, err
-		// t.Fatal(errors.Wrap(err, "Failed to close temp file"))
+		return nil, errors.Wrap(err, "Failed to close temp file")
 	}
 
 	if runtime.GOOS != "windows" {
