@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -36,7 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
-var blacklist []string = []string{"%s: %v"}
+var blacklist = []string{"%s: %v"}
 
 type extractor struct {
 	funcs        map[string]struct{}
@@ -47,7 +48,7 @@ type extractor struct {
 	filename     string
 }
 
-func ExtractTranslatableStrings(paths []string, functions []string, output string) {
+func TranslatableStrings(paths []string, functions []string, output string) {
 	extractor := newExtractor(functions)
 
 	console.OutStyle(console.Waiting, "Compiling translation strings...")
@@ -150,7 +151,6 @@ func inspectFile(e *extractor) error {
 		return err
 	}
 	glog.Infof("Parsing %s\n", e.filename)
-	fmt.Printf("Parsing %s\n", e.filename)
 	file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func inspectFile(e *extractor) error {
 
 		e.parentFunc = fd.Name.String()
 
-		// Check line inside the function
+		// Check each line inside the function
 		for _, stmt := range fd.Body.List {
 			checkStmt(stmt, e)
 		}
@@ -193,6 +193,8 @@ func inspectFile(e *extractor) error {
 }
 
 func checkStmt(stmt ast.Stmt, e *extractor) {
+	//fmt.Printf("%s: %s\n", stmt, reflect.TypeOf(stmt))
+
 	// If this line is an expression, see if it's a function call
 	if expr, ok := stmt.(*ast.ExprStmt); ok {
 		checkCallExpression(expr, e)
@@ -237,6 +239,16 @@ func checkCallExpression(expr *ast.ExprStmt, e *extractor) {
 	// This line isn't a function call
 	if !ok {
 		return
+	}
+
+	for _, arg := range s.Args {
+		// This argument is a function literal, check its body.
+		if fl, ok := arg.(*ast.FuncLit); ok {
+			for _, stmt := range fl.Body.List {
+				fmt.Printf("%s: %s\n", stmt, reflect.TypeOf(stmt))
+				checkStmt(stmt, e)
+			}
+		}
 	}
 
 	sf, ok := s.Fun.(*ast.SelectorExpr)
