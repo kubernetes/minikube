@@ -22,6 +22,7 @@ package kubeadm
 // The config is being written to /etc/cni/net.d/k8s.conf and /etc/rkt/net.d/k8s.conf.
 const defaultCNIConfig = `
 {
+  "cniVersion": "0.3.0",
   "name": "rkt.kubernetes.io",
   "type": "bridge",
   "bridge": "mybridge",
