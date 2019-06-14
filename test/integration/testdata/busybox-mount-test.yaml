@@ -6,7 +6,7 @@ metadata:
     integration-test: busybox-mount
 spec:
   containers:
-  - image: busybox:glibc
+  - image: busybox:1.28.4-glibc
     command: [ "/bin/sh", "-c", "--" ]
     args: [ "cat /mount-9p/fromhost; echo test > /mount-9p/frompod; rm /mount-9p/fromhostremove; echo test > /mount-9p/frompodremove;" ]
     name: busybox
