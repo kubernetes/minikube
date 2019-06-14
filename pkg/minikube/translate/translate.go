@@ -68,7 +68,7 @@ func DetermineLocale() {
 	err = SetPreferredLanguage(locale)
 	if err != nil {
 		glog.Warningf("Setting locale failed: %s", err)
-		locale = ""
+		preferredLanguage = defaultLanguage
 	}
 
 	// Load translations for preferred language into memory.
@@ -88,8 +88,8 @@ func DetermineLocale() {
 
 }
 
-// SetPreferredLanguageTag configures which language future messages should use.
-func SetPreferredLanguageTag(l language.Tag) {
+// setPreferredLanguageTag configures which language future messages should use.
+func setPreferredLanguageTag(l language.Tag) {
 	glog.Infof("Setting Language to %s ...", l)
 	preferredLanguage = l
 }
@@ -98,7 +98,7 @@ func SetPreferredLanguageTag(l language.Tag) {
 func SetPreferredLanguage(s string) error {
 	// "C" is commonly used to denote a neutral POSIX locale. See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap07.html#tag_07_02
 	if s == "" || s == "C" {
-		SetPreferredLanguageTag(defaultLanguage)
+		setPreferredLanguageTag(defaultLanguage)
 		return nil
 	}
 	// Handles "de_DE" or "de_DE.utf8"
@@ -108,7 +108,7 @@ func SetPreferredLanguage(s string) error {
 	if err != nil {
 		return err
 	}
-	SetPreferredLanguageTag(l)
+	setPreferredLanguageTag(l)
 	return nil
 }
 

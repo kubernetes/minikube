@@ -18,7 +18,6 @@ package extract
 
 import (
 	"encoding/json"
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -26,7 +25,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -46,6 +44,22 @@ type extractor struct {
 	currentFunc  string
 	parentFunc   string
 	filename     string
+}
+
+func newExtractor(functionsToCheck []string) *extractor {
+	funcs := make(map[string]struct{})
+	fs := stack.New()
+
+	for _, f := range functionsToCheck {
+		funcs[f] = struct{}{}
+		fs.Push(f)
+	}
+
+	return &extractor{
+		funcs:        funcs,
+		fs:           fs,
+		translations: make(map[string]interface{}),
+	}
 }
 
 func TranslatableStrings(paths []string, functions []string, output string) {
@@ -80,70 +94,11 @@ func TranslatableStrings(paths []string, functions []string, output string) {
 	console.OutStyle(console.Ready, "Done!")
 }
 
-func newExtractor(functionsToCheck []string) *extractor {
-	funcs := make(map[string]struct{})
-	fs := stack.New()
-
-	for _, f := range functionsToCheck {
-		funcs[f] = struct{}{}
-		fs.Push(f)
-	}
-
-	return &extractor{
-		funcs:        funcs,
-		fs:           fs,
-		translations: make(map[string]interface{}),
-	}
-}
-
-func writeStringsToFiles(e *extractor, output string) error {
-	err := filepath.Walk(output, func(path string, info os.FileInfo, err error) error {
-		if info.Mode().IsDir() {
-			return nil
-		}
-		console.OutStyle(console.Check, "Writing to %s", filepath.Base(path))
-		var currentTranslations map[string]interface{}
-		f, err := ioutil.ReadFile(path)
-		if err != nil {
-			return errors.Wrap(err, "reading translation file")
-		}
-		err = json.Unmarshal(f, &currentTranslations)
-		if err != nil {
-			return errors.Wrap(err, "unmarshalling current translations")
-		}
-
-		for k := range e.translations {
-			//fmt.Println(k)
-			if _, ok := currentTranslations[k]; !ok {
-				currentTranslations[k] = ""
-			}
-		}
-
-		c, err := json.MarshalIndent(currentTranslations, "", "\t")
-		if err != nil {
-			return errors.Wrap(err, "marshalling translations")
-		}
-		err = ioutil.WriteFile(path, c, info.Mode())
-		if err != nil {
-			return errors.Wrap(err, "writing translation file")
-		}
-		return nil
-	})
-
-	return err
-}
-
-func addParentFuncToList(e *extractor) {
-	if _, ok := e.funcs[e.parentFunc]; !ok {
-		e.funcs[e.parentFunc] = struct{}{}
-		e.fs.Push(e.parentFunc)
-	}
-}
-
 func shouldCheckFile(path string) bool {
 	return strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go")
 }
 
+// inspectFile goes through the given file line by line looking for translatable strings
 func inspectFile(e *extractor) error {
 	fset := token.NewFileSet()
 	r, err := ioutil.ReadFile(e.filename)
@@ -192,6 +147,7 @@ func inspectFile(e *extractor) error {
 	return nil
 }
 
+// checkStmt checks each line to see if it's a call to print a string out to the console
 func checkStmt(stmt ast.Stmt, e *extractor) {
 	//fmt.Printf("%s: %s\n", stmt, reflect.TypeOf(stmt))
 
@@ -213,6 +169,7 @@ func checkStmt(stmt ast.Stmt, e *extractor) {
 	}
 }
 
+// checkIfStmt does if-statement-specific checks, especially relating to else stmts
 func checkIfStmt(stmt *ast.IfStmt, e *extractor) {
 	for _, s := range stmt.Body.List {
 		checkStmt(s, e)
@@ -233,6 +190,7 @@ func checkIfStmt(stmt *ast.IfStmt, e *extractor) {
 	}
 }
 
+// checkCallExpression takes a function call, and checks its arguments for strings
 func checkCallExpression(expr *ast.ExprStmt, e *extractor) {
 	s, ok := expr.X.(*ast.CallExpr)
 
@@ -245,7 +203,6 @@ func checkCallExpression(expr *ast.ExprStmt, e *extractor) {
 		// This argument is a function literal, check its body.
 		if fl, ok := arg.(*ast.FuncLit); ok {
 			for _, stmt := range fl.Body.List {
-				fmt.Printf("%s: %s\n", stmt, reflect.TypeOf(stmt))
 				checkStmt(stmt, e)
 			}
 		}
@@ -280,6 +237,7 @@ func checkCallExpression(expr *ast.ExprStmt, e *extractor) {
 
 }
 
+// checkIdentForStringValye takes a identifier and sees if it's a variable assigned to a string
 func checkIdentForStringValue(i *ast.Ident, e *extractor) bool {
 	// This identifier is nil
 	if i.Obj == nil {
@@ -307,6 +265,7 @@ func checkIdentForStringValue(i *ast.Ident, e *extractor) bool {
 	return false
 }
 
+// addStringToList takes a string, makes sure it's meant to be translated then adds it to the list if yes
 func addStringToList(s string, e *extractor) bool {
 	// Empty strings don't need translating
 	if len(s) <= 2 {
@@ -342,4 +301,53 @@ func addStringToList(s string, e *extractor) bool {
 	e.translations[stringToTranslate] = ""
 	//fmt.Printf("	%s\n", stringToTranslate)
 	return true
+}
+
+// writeStringsToFiles writes translations to all translation files in output
+func writeStringsToFiles(e *extractor, output string) error {
+	err := filepath.Walk(output, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return errors.Wrap(err, "accessing path")
+		}
+		if info.Mode().IsDir() {
+			return nil
+		}
+		console.OutStyle(console.Check, "Writing to %s", filepath.Base(path))
+		var currentTranslations map[string]interface{}
+		f, err := ioutil.ReadFile(path)
+		if err != nil {
+			return errors.Wrap(err, "reading translation file")
+		}
+		err = json.Unmarshal(f, &currentTranslations)
+		if err != nil {
+			return errors.Wrap(err, "unmarshalling current translations")
+		}
+
+		// Make sure to not overwrite already translated strings
+		for k := range e.translations {
+			//fmt.Println(k)
+			if _, ok := currentTranslations[k]; !ok {
+				currentTranslations[k] = ""
+			}
+		}
+
+		c, err := json.MarshalIndent(currentTranslations, "", "\t")
+		if err != nil {
+			return errors.Wrap(err, "marshalling translations")
+		}
+		err = ioutil.WriteFile(path, c, info.Mode())
+		if err != nil {
+			return errors.Wrap(err, "writing translation file")
+		}
+		return nil
+	})
+
+	return err
+}
+
+func addParentFuncToList(e *extractor) {
+	if _, ok := e.funcs[e.parentFunc]; !ok {
+		e.funcs[e.parentFunc] = struct{}{}
+		e.fs.Push(e.parentFunc)
+	}
 }
