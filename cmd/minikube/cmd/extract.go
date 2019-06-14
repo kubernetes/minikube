@@ -48,7 +48,7 @@ var extractCmd = &cobra.Command{
 			exit.WithError("Invalid output parameter", err)
 		}
 
-		extract.ExtractTranslatableStrings(p, f, o)
+		extract.TranslatableStrings(p, f, o)
 	},
 }
 
