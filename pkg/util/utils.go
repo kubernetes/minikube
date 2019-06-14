@@ -32,6 +32,7 @@ import (
 
 	units "github.com/docker/go-units"
 	"github.com/golang/glog"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 )
 
@@ -130,7 +131,7 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 
 // ParseSHAFromURL downloads and reads a SHA checksum from an URL
 func ParseSHAFromURL(url string) (string, error) {
-	r, err := http.Get(url)
+	r, err := retryablehttp.Get(url)
 	if err != nil {
 		return "", errors.Wrap(err, "Error downloading checksum.")
 	} else if r.StatusCode != http.StatusOK {

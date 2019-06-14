@@ -31,6 +31,7 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
 	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
 	github.com/hashicorp/go-multierror v0.0.0-20160811015721-8c5f0ad93604 // indirect
+	github.com/hashicorp/go-retryablehttp v0.5.4
 	github.com/hashicorp/go-version v1.1.0 // indirect
 	github.com/hashicorp/golang-lru v0.0.0-20160207214719-a0d98a5f2880 // indirect
 	github.com/hashicorp/hcl v0.0.0-20160711231752-d8c773c4cba1 // indirect
