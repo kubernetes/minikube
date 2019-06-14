@@ -31,6 +31,7 @@ import (
 	"net/url"
 
 	"github.com/elazarl/goproxy"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 )
@@ -148,7 +149,8 @@ func testProxyDashboard(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse %q: %v", s, err)
 	}
-	resp, err := http.Get(u.String())
+
+	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
 		t.Fatalf("failed get: %v", err)
 	}
