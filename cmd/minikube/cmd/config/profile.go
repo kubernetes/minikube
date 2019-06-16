@@ -53,16 +53,19 @@ var ProfileCmd = &cobra.Command{
 			exit.WithError("Setting profile failed", err)
 		}
 		cc, err := pkgConfig.Load()
+		// might err when loading older version of cfg file that doesn't have KeepContext field
 		if err != nil && !os.IsNotExist(err) {
 			console.ErrLn("Error loading profile config: %v", err)
 		}
-		if cc.MachineConfig.KeepContext {
-			console.Success("Skipped switching kubectl context for %s , because --keep-context", profile)
-			console.Success("To connect to this cluster, use: kubectl --context=%s", profile)
-		} else {
-			err := pkgutil.SetCurrentContext(constants.KubeconfigPath, profile)
-			if err != nil {
-				console.ErrLn("error while setting kubectl current context :  %v", err)
+		if err == nil {
+			if cc.MachineConfig.KeepContext {
+				console.Success("Skipped switching kubectl context for %s , because --keep-context", profile)
+				console.Success("To connect to this cluster, use: kubectl --context=%s", profile)
+			} else {
+				err := pkgutil.SetCurrentContext(constants.KubeconfigPath, profile)
+				if err != nil {
+					console.ErrLn("Error while setting kubectl current context :  %v", err)
+				}
 			}
 		}
 		console.Success("minikube profile was successfully set to %s", profile)
