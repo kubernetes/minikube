@@ -57,7 +57,7 @@ var ProfileCmd = &cobra.Command{
 			console.ErrLn("Error loading profile config: %v", err)
 		}
 		// don't change context is user has started the minikube with --keep-context
-		if cc.MachineConfig.KeepContext == false {
+		if !cc.MachineConfig.KeepContext {
 			err = pkgutil.SetCurrentContext(constants.KubeconfigPath, profile)
 			console.ErrLn("error while setting kubectl current context :  %v", err)
 		}
