@@ -325,3 +325,16 @@ func UnsetCurrentContext(filename, machineName string) error {
 	}
 	return nil
 }
+
+//SetCurrentContext sets the kubectl's current-context
+func SetCurrentContext(filename, name string) error {
+	kcfg, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	kcfg.CurrentContext = name
+	if err := WriteConfig(kcfg, filename); err != nil {
+		return errors.Wrap(err, "writing kubeconfig")
+	}
+	return nil
+}
