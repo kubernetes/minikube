@@ -132,6 +132,7 @@ func init() {
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
 	RootCmd.AddCommand(configCmd.ProfileCmd)
+	RootCmd.AddCommand(configCmd.ProfilesCmd)
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.WithError("Unable to bind flags", err)

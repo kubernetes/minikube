@@ -325,3 +325,16 @@ func UnsetCurrentContext(filename, machineName string) error {
 	}
 	return nil
 }
+
+//Fetch all the profiles and return
+func GetProfiles(filename string) ([]string, error) {
+	config, err := ReadConfigOrNew(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	profiles := make([]string, 0, 4)
+	for context, _ := range config.Contexts {
+		profiles = append(profiles, context)
+	}
+	return profiles, nil
+}
