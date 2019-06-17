@@ -18,6 +18,7 @@ package extract
 
 import (
 	"encoding/json"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -31,7 +32,6 @@ import (
 	"github.com/golang-collections/collections/stack"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
@@ -66,7 +66,7 @@ func newExtractor(functionsToCheck []string) *extractor {
 func TranslatableStrings(paths []string, functions []string, output string) {
 	extractor := newExtractor(functions)
 
-	console.OutStyle(console.Waiting, "Compiling translation strings...")
+	fmt.Println("Compiling translation strings...")
 	for extractor.fs.Len() > 0 {
 		f := extractor.fs.Pop().(string)
 		extractor.currentFunc = f
@@ -92,7 +92,7 @@ func TranslatableStrings(paths []string, functions []string, output string) {
 		exit.WithError("Writing translation files", err)
 	}
 
-	console.OutStyle(console.Ready, "Done!")
+	fmt.Println("Done!")
 }
 
 func shouldCheckFile(path string) bool {
@@ -313,7 +313,7 @@ func writeStringsToFiles(e *extractor, output string) error {
 		if info.Mode().IsDir() {
 			return nil
 		}
-		console.OutStyle(console.Check, "Writing to %s", filepath.Base(path))
+		fmt.Printf("Writing to %s\n", filepath.Base(path))
 		var currentTranslations map[string]interface{}
 		f, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -346,6 +346,7 @@ func writeStringsToFiles(e *extractor, output string) error {
 	return err
 }
 
+// addParentFuncToList adds the current parent function to the list of functions to inspect more closely.
 func addParentFuncToList(e *extractor) {
 	if _, ok := e.funcs[e.parentFunc]; !ok {
 		e.funcs[e.parentFunc] = struct{}{}
