@@ -138,7 +138,7 @@ func applyStyle(style StyleEnum, useColor bool, format string, a ...interface{})
 			a[i] = number.Decimal(x, number.NoSeparator())
 		}
 	}
-	format = translate.Translate(format)
+	format = translate.T(format)
 	out := p.Sprintf(format, a...)
 
 	s, ok := styles[style]

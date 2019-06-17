@@ -76,18 +76,18 @@ func TestOut(t *testing.T) {
 
 	var testCases = []struct {
 		format string
-		lang   language.Tag
+		lang   string
 		arg    interface{}
 		want   string
 	}{
 		{format: "xyz123", want: "xyz123"},
-		{format: "Installing Kubernetes version %s ...", lang: language.Arabic, arg: "v1.13", want: "... v1.13 تثبيت Kubernetes الإصدار"},
-		{format: "Installing Kubernetes version %s ...", lang: language.AmericanEnglish, arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
+		{format: "Installing Kubernetes version %s ...", lang: "ar", arg: "v1.13", want: "... v1.13 تثبيت Kubernetes الإصدار"},
+		{format: "Installing Kubernetes version %s ...", lang: "en-us", arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
 		{format: "Parameter encoding: %s", arg: "%s%%%d", want: "Parameter encoding: %s%%%d"},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.format, func(t *testing.T) {
-			translate.SetPreferredLanguageTag(tc.lang)
+			translate.SetPreferredLanguage(tc.lang)
 			f := tests.NewFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
@@ -140,7 +140,7 @@ func TestSetPreferredLanguage(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
 			// Set something so that we can assert change.
-			translate.SetPreferredLanguageTag(language.Icelandic)
+			translate.SetPreferredLanguage("is")
 			if err := translate.SetPreferredLanguage(tc.input); err != nil {
 				t.Errorf("unexpected error: %q", err)
 			}

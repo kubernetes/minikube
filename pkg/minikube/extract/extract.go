@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
+// A list of strings to explicitly omit from translation files.
 var blacklist = []string{"%s: %v"}
 
 type extractor struct {
