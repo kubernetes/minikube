@@ -38,16 +38,29 @@ import (
 // A list of strings to explicitly omit from translation files.
 var blacklist = []string{"%s: %v"}
 
-type extractor struct {
-	funcs        map[string]struct{}
-	fs           *stack.Stack
+// currentState is a struct that represent the current state of the extraction process
+type currentState struct {
+	// The list of functions to check for
+	funcs map[string]struct{}
+
+	// A stack representation of funcs for easy iteration
+	fs *stack.Stack
+
+	// The list of translatable strings, in map form for easy json marhsalling
 	translations map[string]interface{}
-	currentFunc  string
-	parentFunc   string
-	filename     string
+
+	// The function call we're currently checking for
+	currentFunc string
+
+	// The function we're currently parsing
+	parentFunc string
+
+	// The file we're currently checking
+	filename string
 }
 
-func newExtractor(functionsToCheck []string) *extractor {
+// newExtractor initializes state for extraction
+func newExtractor(functionsToCheck []string) *currentState {
 	funcs := make(map[string]struct{})
 	fs := stack.New()
 
@@ -56,26 +69,27 @@ func newExtractor(functionsToCheck []string) *extractor {
 		fs.Push(f)
 	}
 
-	return &extractor{
+	return &currentState{
 		funcs:        funcs,
 		fs:           fs,
 		translations: make(map[string]interface{}),
 	}
 }
 
+// TranslatableStrings finds all strings to that need to be translated in paths and prints them out to all json files in output
 func TranslatableStrings(paths []string, functions []string, output string) {
-	extractor := newExtractor(functions)
+	e := newExtractor(functions)
 
 	fmt.Println("Compiling translation strings...")
-	for extractor.fs.Len() > 0 {
-		f := extractor.fs.Pop().(string)
-		extractor.currentFunc = f
+	for e.fs.Len() > 0 {
+		f := e.fs.Pop().(string)
+		e.currentFunc = f
 		glog.Infof("Checking function: %s\n", f)
 		for _, root := range paths {
 			err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 				if shouldCheckFile(path) {
-					extractor.filename = path
-					return inspectFile(extractor)
+					e.filename = path
+					return inspectFile(e)
 				}
 				return nil
 			})
@@ -86,7 +100,7 @@ func TranslatableStrings(paths []string, functions []string, output string) {
 		}
 	}
 
-	err := writeStringsToFiles(extractor, output)
+	err := writeStringsToFiles(e, output)
 
 	if err != nil {
 		exit.WithError("Writing translation files", err)
@@ -100,7 +114,7 @@ func shouldCheckFile(path string) bool {
 }
 
 // inspectFile goes through the given file line by line looking for translatable strings
-func inspectFile(e *extractor) error {
+func inspectFile(e *currentState) error {
 	fset := token.NewFileSet()
 	r, err := ioutil.ReadFile(e.filename)
 	if err != nil {
@@ -149,7 +163,7 @@ func inspectFile(e *extractor) error {
 }
 
 // checkStmt checks each line to see if it's a call to print a string out to the console
-func checkStmt(stmt ast.Stmt, e *extractor) {
+func checkStmt(stmt ast.Stmt, e *currentState) {
 	//fmt.Printf("%s: %s\n", stmt, reflect.TypeOf(stmt))
 
 	// If this line is an expression, see if it's a function call
@@ -171,7 +185,7 @@ func checkStmt(stmt ast.Stmt, e *extractor) {
 }
 
 // checkIfStmt does if-statement-specific checks, especially relating to else stmts
-func checkIfStmt(stmt *ast.IfStmt, e *extractor) {
+func checkIfStmt(stmt *ast.IfStmt, e *currentState) {
 	for _, s := range stmt.Body.List {
 		checkStmt(s, e)
 	}
@@ -192,7 +206,7 @@ func checkIfStmt(stmt *ast.IfStmt, e *extractor) {
 }
 
 // checkCallExpression takes a function call, and checks its arguments for strings
-func checkCallExpression(expr *ast.ExprStmt, e *extractor) {
+func checkCallExpression(expr *ast.ExprStmt, e *currentState) {
 	s, ok := expr.X.(*ast.CallExpr)
 
 	// This line isn't a function call
@@ -239,7 +253,7 @@ func checkCallExpression(expr *ast.ExprStmt, e *extractor) {
 }
 
 // checkIdentForStringValye takes a identifier and sees if it's a variable assigned to a string
-func checkIdentForStringValue(i *ast.Ident, e *extractor) bool {
+func checkIdentForStringValue(i *ast.Ident, e *currentState) bool {
 	// This identifier is nil
 	if i.Obj == nil {
 		return false
@@ -266,8 +280,8 @@ func checkIdentForStringValue(i *ast.Ident, e *extractor) bool {
 	return false
 }
 
-// addStringToList takes a string, makes sure it's meant to be translated then adds it to the list if yes
-func addStringToList(s string, e *extractor) bool {
+// addStringToList takes a string, makes sure it's meant to be translated then adds it to the list if so
+func addStringToList(s string, e *currentState) bool {
 	// Empty strings don't need translating
 	if len(s) <= 2 {
 		return false
@@ -305,7 +319,7 @@ func addStringToList(s string, e *extractor) bool {
 }
 
 // writeStringsToFiles writes translations to all translation files in output
-func writeStringsToFiles(e *extractor, output string) error {
+func writeStringsToFiles(e *currentState, output string) error {
 	err := filepath.Walk(output, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "accessing path")
@@ -347,7 +361,7 @@ func writeStringsToFiles(e *extractor, output string) error {
 }
 
 // addParentFuncToList adds the current parent function to the list of functions to inspect more closely.
-func addParentFuncToList(e *extractor) {
+func addParentFuncToList(e *currentState) {
 	if _, ok := e.funcs[e.parentFunc]; !ok {
 		e.funcs[e.parentFunc] = struct{}{}
 		e.fs.Push(e.parentFunc)

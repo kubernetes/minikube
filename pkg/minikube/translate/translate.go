@@ -47,18 +47,16 @@ func T(s string) string {
 		return s
 	}
 
-	if translation, ok := Translations[s]; ok {
-		t := translation.(string)
-		if len(t) > 0 && t != " " {
-			return t
+	if t, ok := Translations[s]; ok {
+		if len(t.(string)) > 0 && t.(string) != " " {
+			return t.(string)
 		}
 	}
 
 	return s
 }
 
-// DetermineLocale finds the system locale and sets the preferred language
-// for output appropriately.
+// DetermineLocale finds the system locale and sets the preferred language for output appropriately.
 func DetermineLocale() {
 	locale, err := jibber_jabber.DetectIETF()
 	if err != nil {
@@ -71,19 +69,21 @@ func DetermineLocale() {
 		preferredLanguage = defaultLanguage
 	}
 
-	// Load translations for preferred language into memory.
-	if preferredLanguage != defaultLanguage {
-		translationFile := "pkg/minikube/translate/translations/" + preferredLanguage.String() + ".json"
-		t, err := ioutil.ReadFile(translationFile)
-		if err != nil {
-			glog.Infof("Failed to load transalation file for %s: %s", preferredLanguage.String(), err)
-			return
-		}
+	if preferredLanguage == defaultLanguage {
+		return
+	}
 
-		err = json.Unmarshal(t, &Translations)
-		if err != nil {
-			glog.Infof("Failed to populate translation map: %s", err)
-		}
+	// Load translations for preferred language into memory.
+	translationFile := "pkg/minikube/translate/translations/" + preferredLanguage.String() + ".json"
+	t, err := ioutil.ReadFile(translationFile)
+	if err != nil {
+		glog.Errorf("Failed to load transalation file for %s: %s", preferredLanguage.String(), err)
+		return
+	}
+
+	err = json.Unmarshal(t, &Translations)
+	if err != nil {
+		glog.Errorf("Failed to populate translation map: %s", err)
 	}
 
 }
