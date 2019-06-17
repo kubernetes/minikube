@@ -37,8 +37,8 @@ var (
 	Translations map[string]interface{}
 )
 
-// Translate translates the given string to the supplied language.
-func Translate(s string) string {
+// T translates the given string to the supplied language.
+func T(s string) string {
 	if preferredLanguage == defaultLanguage {
 		return s
 	}
