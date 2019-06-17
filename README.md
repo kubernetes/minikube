@@ -38,7 +38,7 @@ minikube runs the latest stable release of Kubernetes, with support for standard
 * [Persistent Volumes](https://github.com/kubernetes/minikube/blob/master/docs/persistent_volumes.md)
 * Ingress
 * RBAC
-* Dashboard - `minikube dashboard`
+* [Dashboard](https://github.com/kubernetes/minikube/blob/master/docs/dashboard.md) - `minikube dashboard`
 * [Container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md) - `start --container-runtime`
 * [Configure apiserver and kubelet options](https://github.com/kubernetes/minikube/blob/master/docs/configuring_kubernetes.md) via command-line flags
 
