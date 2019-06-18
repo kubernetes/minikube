@@ -23,7 +23,9 @@ import (
 	"github.com/spf13/viper"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // ProfileCmd represents the profile command
@@ -48,9 +50,24 @@ var ProfileCmd = &cobra.Command{
 		}
 		err := Set(pkgConfig.MachineProfile, profile)
 		if err != nil {
-			exit.WithError("set failed", err)
-		} else {
-			console.Success("minikube profile was successfully set to %s", profile)
+			exit.WithError("Setting profile failed", err)
 		}
+		cc, err := pkgConfig.Load()
+		// might err when loading older version of cfg file that doesn't have KeepContext field
+		if err != nil && !os.IsNotExist(err) {
+			console.ErrLn("Error loading profile config: %v", err)
+		}
+		if err == nil {
+			if cc.MachineConfig.KeepContext {
+				console.Success("Skipped switching kubectl context for %s , because --keep-context", profile)
+				console.Success("To connect to this cluster, use: kubectl --context=%s", profile)
+			} else {
+				err := pkgutil.SetCurrentContext(constants.KubeconfigPath, profile)
+				if err != nil {
+					console.ErrLn("Error while setting kubectl current context :  %v", err)
+				}
+			}
+		}
+		console.Success("minikube profile was successfully set to %s", profile)
 	},
 }
