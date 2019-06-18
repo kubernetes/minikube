@@ -38,8 +38,8 @@ import (
 // A list of strings to explicitly omit from translation files.
 var blacklist = []string{"%s: %v"}
 
-// currentState is a struct that represent the current state of the extraction process
-type currentState struct {
+// state is a struct that represent the current state of the extraction process
+type state struct {
 	// The list of functions to check for
 	funcs map[string]struct{}
 
@@ -60,7 +60,7 @@ type currentState struct {
 }
 
 // newExtractor initializes state for extraction
-func newExtractor(functionsToCheck []string) *currentState {
+func newExtractor(functionsToCheck []string) *state {
 	funcs := make(map[string]struct{})
 	fs := stack.New()
 
@@ -69,7 +69,7 @@ func newExtractor(functionsToCheck []string) *currentState {
 		fs.Push(f)
 	}
 
-	return &currentState{
+	return &state{
 		funcs:        funcs,
 		fs:           fs,
 		translations: make(map[string]interface{}),
@@ -78,6 +78,16 @@ func newExtractor(functionsToCheck []string) *currentState {
 
 // TranslatableStrings finds all strings to that need to be translated in paths and prints them out to all json files in output
 func TranslatableStrings(paths []string, functions []string, output string) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		exit.WithError("Getting current working directory", err)
+	}
+
+	if strings.Contains(cwd, "cmd") {
+		fmt.Println("Run extract.go from the minikube root directory.")
+		os.Exit(1)
+	}
+
 	e := newExtractor(functions)
 
 	fmt.Println("Compiling translation strings...")
@@ -100,7 +110,7 @@ func TranslatableStrings(paths []string, functions []string, output string) {
 		}
 	}
 
-	err := writeStringsToFiles(e, output)
+	err = writeStringsToFiles(e, output)
 
 	if err != nil {
 		exit.WithError("Writing translation files", err)
@@ -114,7 +124,7 @@ func shouldCheckFile(path string) bool {
 }
 
 // inspectFile goes through the given file line by line looking for translatable strings
-func inspectFile(e *currentState) error {
+func inspectFile(e *state) error {
 	fset := token.NewFileSet()
 	r, err := ioutil.ReadFile(e.filename)
 	if err != nil {
@@ -163,7 +173,7 @@ func inspectFile(e *currentState) error {
 }
 
 // checkStmt checks each line to see if it's a call to print a string out to the console
-func checkStmt(stmt ast.Stmt, e *currentState) {
+func checkStmt(stmt ast.Stmt, e *state) {
 	//fmt.Printf("%s: %s\n", stmt, reflect.TypeOf(stmt))
 
 	// If this line is an expression, see if it's a function call
@@ -185,7 +195,7 @@ func checkStmt(stmt ast.Stmt, e *currentState) {
 }
 
 // checkIfStmt does if-statement-specific checks, especially relating to else stmts
-func checkIfStmt(stmt *ast.IfStmt, e *currentState) {
+func checkIfStmt(stmt *ast.IfStmt, e *state) {
 	for _, s := range stmt.Body.List {
 		checkStmt(s, e)
 	}
@@ -206,7 +216,7 @@ func checkIfStmt(stmt *ast.IfStmt, e *currentState) {
 }
 
 // checkCallExpression takes a function call, and checks its arguments for strings
-func checkCallExpression(expr *ast.ExprStmt, e *currentState) {
+func checkCallExpression(expr *ast.ExprStmt, e *state) {
 	s, ok := expr.X.(*ast.CallExpr)
 
 	// This line isn't a function call
@@ -253,7 +263,7 @@ func checkCallExpression(expr *ast.ExprStmt, e *currentState) {
 }
 
 // checkIdentForStringValye takes a identifier and sees if it's a variable assigned to a string
-func checkIdentForStringValue(i *ast.Ident, e *currentState) bool {
+func checkIdentForStringValue(i *ast.Ident, e *state) bool {
 	// This identifier is nil
 	if i.Obj == nil {
 		return false
@@ -281,7 +291,7 @@ func checkIdentForStringValue(i *ast.Ident, e *currentState) bool {
 }
 
 // addStringToList takes a string, makes sure it's meant to be translated then adds it to the list if so
-func addStringToList(s string, e *currentState) bool {
+func addStringToList(s string, e *state) bool {
 	// Empty strings don't need translating
 	if len(s) <= 2 {
 		return false
@@ -319,12 +329,15 @@ func addStringToList(s string, e *currentState) bool {
 }
 
 // writeStringsToFiles writes translations to all translation files in output
-func writeStringsToFiles(e *currentState, output string) error {
+func writeStringsToFiles(e *state, output string) error {
 	err := filepath.Walk(output, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "accessing path")
 		}
 		if info.Mode().IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".json") {
 			return nil
 		}
 		fmt.Printf("Writing to %s\n", filepath.Base(path))
@@ -361,7 +374,7 @@ func writeStringsToFiles(e *currentState, output string) error {
 }
 
 // addParentFuncToList adds the current parent function to the list of functions to inspect more closely.
-func addParentFuncToList(e *currentState) {
+func addParentFuncToList(e *state) {
 	if _, ok := e.funcs[e.parentFunc]; !ok {
 		e.funcs[e.parentFunc] = struct{}{}
 		e.fs.Push(e.parentFunc)
